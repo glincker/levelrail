@@ -5,9 +5,10 @@ description: Connect S3-compatible buckets for log archive, build cache, and bac
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/minio.svg" alt="MinIO" title="MinIO" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/aws-amazon-simple-storage-service.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
 
-A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect shows up in both **Settings, Storage destinations** and **Settings, Backup targets**.
+A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect appears in both **Settings, Storage destinations** and **Settings, Backup targets**.
 
 Supported providers: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, and any custom S3-compatible endpoint.
+
 ## Connect a destination
 
 <Tabs>
@@ -143,10 +144,10 @@ levelrail-cli apps build-cache clear web
 levelrail-cli apps build-cache remove web
 ```
 
-- **Per-app prefix.** Layers live under `build-cache/<app>/` (change the root with `APP_BUILD_CACHE_PREFIX`), so apps never share cache and one app can be cleared without touching another. An app can opt out of the global default by saving a setting with the cache disabled (`--disable`).
-- **Mode.** `max` (the default) caches every layer and gives the fastest rebuilds. `min` caches only the final image layers and keeps the bucket smaller.
-- **Credentials.** They come from the destination's encrypted secrets, are passed to BuildKit for the one build, and are never logged, stored in build logs, or returned by the API.
-- **Fails open.** If the cache cannot be read or written (bad credentials, bucket gone, network), the build carries on without it. The reason is written to the build log as a warning, shown on the deploy attempt (`cache_warning`), and kept on the setting as the last build result. A build that genuinely fails is still a failed build.
+- Per-app prefix: layers live under `build-cache/<app>/` (change the root with `APP_BUILD_CACHE_PREFIX`), so apps never share cache and one app can be cleared without touching another. An app can opt out of the global default by saving a setting with the cache disabled (`--disable`).
+- Mode: `max` (the default) caches every layer and gives the fastest rebuilds. `min` caches only the final image layers and keeps the bucket smaller.
+- Credentials: they come from the destination's encrypted secrets, are passed to BuildKit for the one build, and are never logged, stored in build logs, or returned by the API.
+- Fails open: if the cache cannot be read or written (bad credentials, bucket gone, network), the build carries on without it. The reason is written to the build log as a warning, shown on the deploy attempt (`cache_warning`), and kept on the setting as the last build result. A build that genuinely fails is still a failed build.
 
 ### More behavior and limits
 

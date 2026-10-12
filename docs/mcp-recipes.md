@@ -4,7 +4,7 @@ tag: "Beta"
 description: Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
 ---
 
-Each recipe shows what you type, what the assistant runs, and what you should see. The tools and prompts are described in [MCP tools and write mode](/mcp). Start read only: `levelrail-mcp --print-config claude` prints a config with `--mode read-only`.
+Each recipe shows what you type, what the assistant runs and what comes back. The tools and prompts are described in [MCP tools and write mode](/mcp). Start read only: `levelrail-mcp --print-config claude` prints a config with `--mode read-only`.
 
 ## 1. "Why is web crashing?"
 
@@ -49,7 +49,7 @@ Prompt `first_hour_setup`.
 
 Runs: `get_onboarding_status`, `get_system_doctor`, `get_attention`, `list_nodes`, `list_apps`, `backups_health`, `get_upgrade_readiness`.
 
-Comes back: "Docker and ingress are healthy, no apps yet, no backup target. Next three: deploy a first app (`levelrail-cli apps create`), add a domain, add a backup target." The most valuable single step is named at the end. The assistant changes nothing.
+Comes back: "Docker and ingress are healthy, no apps yet, no backup target. Next three: deploy a first app (`levelrail-cli apps create`), add a domain, add a backup target." The assistant changes nothing.
 
 ## Attach a resource instead of calling a tool
 

@@ -4,9 +4,9 @@ tag: "Beta"
 description: The beta resource advisor that suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes Postgres, Redis and MySQL settings from local telemetry, with every rule and threshold explained.
 ---
 
-The resource advisor reads the usage history the platform already keeps on each server and turns it into plain suggestions: which containers need a memory limit, which limits are too tight or far too generous, which apps sit idle, how to size Postgres for the memory it has, and when a disk will fill. It never changes anything on its own. A suggestion is applied only when you open it, review the before and after, and confirm.
+The resource advisor reads the usage history the platform already keeps on each server and turns it into plain suggestions. It tells you which containers need a memory limit, which limits are too tight or far too generous, which apps sit idle, how to size Postgres for the memory it has, and when a disk will fill. It never changes anything on its own. You apply a suggestion by opening it, reviewing the before and after, and confirming.
 
-It is deterministic. The same history always gives the same findings, and no AI model is involved. The AI assistant and the MCP server can read the findings through the `resource_advice` tool, but the advisor works with no AI configured.
+It is deterministic: the same history always gives the same findings, and no AI model is involved. The AI assistant and the MCP server can read the findings through the `resource_advice` tool, but the advisor works fine with no AI configured.
 
 ## Turn it on
 
@@ -21,14 +21,14 @@ levelrail-cli advisor enable
 ## Where it shows up
 
 - **Infrastructure, Resource advisor**: every finding, grouped by resource or ordered by estimated saving, with a summary of warnings, applicable changes and memory to reclaim.
-- **Resources tab of an app or database**: the **Optimise** panel lists that resource's findings with the evidence collapsed (usage against the limit, the p95 line and the suggested value) and a **Review and apply** button. The cost comparison sits underneath, collapsed. With the beta off, the panel shows the plain limit suggestion instead.
+- **Resources tab of an app or database**: the **Optimise** panel lists that resource's findings. The evidence is collapsed (usage against the limit, the p95 line and the suggested value), and there is a **Review and apply** button. The cost comparison sits underneath, also collapsed. With the beta off, the panel shows the plain limit suggestion instead.
 - **Overview of an app or database**: one line pointing at the Optimise panel when there is advice.
 - **Dashboard**: a summary tile linking to the advisor page.
-- **Attention feed**: warnings appear as individual items and suggestions as one roll-up, marked as recommendations rather than incidents.
+- **Attention feed**: each warning is its own item, and suggestions come as one roll-up marked as recommendations rather than incidents.
 
 ## Apply, dismiss and snooze
 
-Only three kinds of action can be applied from the advisor: set a memory limit, set a CPU limit, and turn on [sleep when idle](/sleep-when-idle). Everything else (engine tuning, consolidation, disk cleanup) comes with instructions.
+The advisor can apply only three kinds of action: set a memory limit, set a CPU limit, and turn on [sleep when idle](/sleep-when-idle). Everything else (engine tuning, consolidation, disk cleanup) comes with instructions you follow yourself.
 
 ```bash
 levelrail-cli advisor findings --resource database:main
@@ -41,7 +41,7 @@ levelrail-cli advisor restore cpu_limit_missing:app:web
 
 `POST /api/v1/resource-advisor/findings/{id}/apply` without `{"confirm": true}` returns a preview (`before`, `after`, `confirm_required: true`) and changes nothing. With confirm, the limit is saved to the desired state and, when the container is running, applied to it live; otherwise it takes effect on the next start. If the setting changed after the suggestion was made, apply answers `409` and asks you to review again rather than overwrite your change.
 
-Dismiss hides a finding until you restore it. Snooze hides it for a period (7 days by default, at most 90). Both are stored per finding and shared by everyone on the instance.
+Dismiss hides a finding until you restore it. Snooze hides it for a while (7 days by default, at most 90). Both are stored per finding and everyone on the instance sees the same result.
 
 ## Who sees what
 
@@ -115,7 +115,7 @@ The analysis runs on request and is cached for the TTL. The one Docker call (rec
 ## What this does not know
 
 - **Your traffic plan.** It sees the last week, not next week's launch or a monthly batch job. A limit sized from a quiet week can be too small for a busy one.
-- **Connections.** Database connection counts are not measured. A database counts as unused only when no app links to it, which the advisor learns from managed references, attachments and plain env values. An app that holds the connection string in a secret makes links unknown, and then no database is flagged as unused.
+- **Connections.** It does not measure database connection counts. A database counts as unused only when no app links to it, which the advisor learns from managed references, attachments and plain env values. An app that holds the connection string in a secret makes links unknown, and then no database is flagged as unused.
 - **Current engine settings.** The advisor cannot read `shared_buffers` or `maxmemory` from inside the database. Tuning values assume image defaults; check yours with `SHOW` or `CONFIG GET` before applying.
 - **Short spikes in older history.** A week of history is read from hourly averages once raw samples age out, so a spike shorter than an hour is smoothed. Limits keep headroom above the highest hourly peak for that reason.
 - **Per-database volume size.** Disk forecasting is per server, not per database volume.

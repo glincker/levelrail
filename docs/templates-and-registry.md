@@ -52,8 +52,8 @@ A Compose document becomes one app with one service per Compose service, each re
 
 The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:
 
-- **Recommended memory**: a static advisory shown as a badge (for example "~6 GiB RAM recommended"). It is a rule of thumb. It is not checked against any node's free memory.
-- **Requires GPU**: the entry reserves an NVIDIA GPU through `deploy.resources.reservations.devices`. It needs a node with a GPU and the NVIDIA container runtime; see [AI models](/ai-models#gpu-nodes).
+- Recommended memory: a static hint shown as a badge (for example "~6 GiB RAM recommended"). It is a rule of thumb and is not checked against any node's free memory.
+- Requires GPU: the entry reserves an NVIDIA GPU through `deploy.resources.reservations.devices`. It needs a node with a GPU and the NVIDIA container runtime; see [AI models](/ai-models#gpu-nodes).
 
 Only the `resources.reservations.devices` and `replicas` keys of a Compose `deploy:` block are read. Other Swarm-only keys are reported rather than silently ignored.
 
@@ -105,9 +105,9 @@ A custom template never contains a secret value. Secret, database-derived, and V
 
 The saved Compose body does not capture everything about the app:
 
-- **Domains** stay with the source app. A new app starts with none, as with `apps clone`.
-- **Host port, bind address and bind mounts** are specific to the source machine.
-- **Resources and health checks** have no Compose representation Levelrail can read back, so they are dropped.
+- Domains stay with the source app. A new app starts with none, as with `apps clone`.
+- Host port, bind address and bind mounts are specific to the source machine.
+- Resources and health checks have no Compose representation Levelrail can read back, so they are dropped.
 
 ## Static sites
 

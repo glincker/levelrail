@@ -5,7 +5,7 @@ description: What Levelrail has shipped by area, what is still open, and what is
 
 There is no stable release yet (latest: 0.2.0-beta.18). "Shipped" on this page means built and merged, not proven in production. For per-feature maturity and the evidence behind each label, see [feature status](/feature-status). Release-by-release detail is in the [changelog](/changelog). The decisions behind the build order are in the [ADRs](https://github.com/glincker/levelrail/tree/main/adr).
 
-The build did not follow the original phase plan in order: parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
+The build did not follow the original phase plan in order. Parts of multi-node shipped while some single-node items (real public ACME renewal, a Linux idle-footprint measurement) are still open. This page describes what is true today, not a schedule.
 
 ## Phase status
 
@@ -83,22 +83,22 @@ These exist and are tested, but are gated or carry a beta label. See [feature st
 
 ## Open work
 
-- **Real public ACME.** One live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
-- **Multi-node on real hosts.** The WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
-- **Idle footprint on Linux.** Measured only on an Apple M4 Max dev build so far. See [performance](/performance).
-- **Template coverage.** A sample of the 311 templates is deployed by e2e tests, not the whole catalog.
-- **Other database engines.** PITR is Postgres only, and TLS by default is Postgres and Redis only.
-- **Stable release.** None yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
+- Real public ACME: one live run against Let's Encrypt on a public VPS is recorded in the [runbook](/acme-verification-runbook). Renewal close to expiry, DNS-01 wildcards and a deliberate failure against the production CA are not yet exercised live.
+- Multi-node on real hosts: the WireGuard mesh and cross-host remote transport are unverified outside fakes and local Docker daemons.
+- Idle footprint on Linux: measured only on an Apple M4 Max dev build so far. See [performance](/performance).
+- Template coverage: a sample of the 311 templates is deployed by e2e tests, not the whole catalog.
+- Other database engines: PITR is Postgres only, and TLS by default is Postgres and Redis only.
+- Stable release: none yet. Upgrade and downgrade testing across versions with real data is part of Phase 5.
 
 ## Out of scope
 
-- **Container runtime:** Docker Engine API only.
-- **Scheduler:** no bin-packing, affinity rules or autoscaling.
-- **Service mesh:** WireGuard plus DNS only.
-- **Windows or non-Linux nodes.**
-- **Managed cloud offering:** not before the self-hosted version has real users.
-- **AI in the reconciliation path:** AI is a read-and-suggest layer on top of the API.
-- **Kubernetes compatibility:** no CRDs, no custom orchestration standard.
+- Container runtime: Docker Engine API only.
+- Scheduler: no bin-packing, affinity rules or autoscaling.
+- Service mesh: WireGuard plus DNS only.
+- Windows or non-Linux nodes.
+- Managed cloud offering: not before the self-hosted version has real users.
+- AI in the reconciliation path: AI is a read-and-suggest layer on top of the API.
+- Kubernetes compatibility: no CRDs, no custom orchestration standard.
 
 ## See also
 

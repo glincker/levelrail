@@ -29,7 +29,7 @@ The platform is single-node-first. The dashboard node picker only renders once a
 Enrollment exchanges a one-time join token for a client certificate. The agent dials out to the control plane, and the control plane never initiates a connection. For a cloud server created for you, see [Node provisioning](/node-provisioning). To have the control plane set up a machine over SSH, see [Enrolling over SSH](#enrolling-over-ssh-instead-of-by-hand).
 
 <Warning>
-**Set the advertise host first.** Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent uses in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
+Set the advertise host first. Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent uses in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
 </Warning>
 
 ```mermaid
@@ -340,7 +340,7 @@ When you create an app or database without specifying a node, the server decides
 This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory or disk headroom.
 </Warning>
 
-**GPU apps:** a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](/ai-models#gpu-scheduling).
+GPU apps: a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](/ai-models#gpu-scheduling).
 
 ## Verified moves
 
@@ -375,8 +375,8 @@ Errors: `400` (same node, label mismatch, cordoned or offline target, no eligibl
 
 A move walks `preflight`, `stop_source`, `copy_volumes`, `place`, `verify`, `stop_old`, `finalize`, then `done`. If something fails after the source was touched it enters `rollback`. The final `status` is `succeeded`, `failed` or `rolled_back`, and every step records its outcome (`ok`, `retry`, `waiting` or `failed`).
 
-- **Stateless** (no volumes): stage, verify, switch, stop. The new copy is started and checked on the target before the old one is stopped, so there should be no downtime.
-- **Stateful** (volumes, and every database): stop, copy, start. Downtime lasts until the copy finishes.
+- Stateless (no volumes): stage, verify, switch, stop. The new copy is started and checked on the target before the old one is stopped, so there should be no downtime.
+- Stateful (volumes, and every database): stop, copy, start. Downtime lasts until the copy finishes.
 
 While the target comes up, ingress holds incoming requests instead of failing them.
 
@@ -422,18 +422,18 @@ When a move or a drain has no explicit target, the scheduler picks the least loa
 
 `POST /api/v1/apps/{name}/move-with-volumes` does a proper migration.
 
-- **Dashboard:** the "Take its volumes with it" checkbox. The dialog previews the plan before you confirm: stop the app, copy each named volume, switch placement, start it on the destination, with the expected downtime and rollback story spelled out.
-- **CLI:** `levelrail-cli apps set-node <name> <node-id> --with-volumes`. It polls `GET /apps/{name}/moves/{id}` until complete, then prints the finished move record (or the failure reason and the step it reached). `apps clear-node <name> [--with-volumes]` is the counterpart for returning to the local node.
+- Dashboard: the "Take its volumes with it" checkbox. The dialog previews the plan before you confirm: stop the app, copy each named volume, switch placement, start it on the destination, with the expected downtime and rollback story spelled out.
+- CLI: `levelrail-cli apps set-node <name> <node-id> --with-volumes`. It polls `GET /apps/{name}/moves/{id}` until complete, then prints the finished move record (or the failure reason and the step it reached). `apps clear-node <name> [--with-volumes]` is the counterpart for returning to the local node.
 
 </Tab>
 </Tabs>
 
 ### Steps
 
-1. **Stop:** the app is suspended and its containers torn down on the current node (synchronously), so nothing writes to volumes during archival.
-2. **Move each volume:** every named volume is tarred from the source node and untarred on the destination, one at a time, over the same transport volume backups use. No S3 bucket is needed, because both nodes' Docker daemons are directly reachable from the control plane.
-3. **Update placement:** only after all volumes copy successfully does `node_id` change.
-4. **Resume:** the suspension clears and the reconciler starts the app on the new node with the already-populated volumes.
+1. Stop: the app is suspended and its containers torn down on the current node (synchronously), so nothing writes to volumes during archival.
+2. Move each volume: every named volume is tarred from the source node and untarred on the destination, one at a time, over the same transport volume backups use. No S3 bucket is needed, because both nodes' Docker daemons are directly reachable from the control plane.
+3. Update placement: only after all volumes copy successfully does `node_id` change.
+4. Resume: the suspension clears and the reconciler starts the app on the new node with the already-populated volumes.
 
 ### Tracking progress
 
@@ -450,8 +450,8 @@ This is not atomic and has no automatic health gate or rollback. If any step fai
 
 <Accordion title="Special cases">
 
-- **No named volumes, or already on the destination node:** takes the simple move path. The response comes back `status: "succeeded"`, no polling needed.
-- **Bind mounts** (`app.yaml` host-path mounts): never moved by this path. Archive and restore primitives exist only for Docker-managed named volumes.
+- No named volumes, or already on the destination node: takes the simple move path. The response comes back `status: "succeeded"`, no polling needed.
+- Bind mounts (`app.yaml` host-path mounts): never moved by this path. Archive and restore primitives exist only for Docker-managed named volumes.
 
 </Accordion>
 
@@ -459,11 +459,11 @@ This is not atomic and has no automatic health gate or rollback. If any step fai
 
 There is no dedicated "workloads on this node" list. These show it indirectly:
 
-- **Network page and `levelrail-cli nodes topology`:** every node with the apps and databases placed on it. See [Network topology](/network-topology).
-- **App and database detail pages:** a Placement card shows the current node, the selector, eligible nodes and the move action.
-- **Placement names:** an app or database with no explicit node shows "This server" plus the hostname rather than a blank. API responses carry `node_name` and `node_is_local` beside `node_id`. "Unassigned" appears only when the stored node no longer exists, with a "Move to this server" action.
-- **Nodes page:** one row per node with status, usage bars, resource count, agent version and last seen, and a menu for cordon, drain and delete (delete asks you to type the node name).
-- **Drain and delete:** both enumerate everything on the node server-side, which is why deleting a node with placements fails instead of orphaning them.
+- Network page and `levelrail-cli nodes topology`: every node with the apps and databases placed on it. See [Network topology](/network-topology).
+- App and database detail pages: a Placement card shows the current node, the selector, eligible nodes and the move action.
+- Placement names: an app or database with no explicit node shows "This server" plus the hostname rather than a blank. API responses carry `node_name` and `node_is_local` beside `node_id`. "Unassigned" appears only when the stored node no longer exists, with a "Move to this server" action.
+- Nodes page: one row per node with status, usage bars, resource count, agent version and last seen, and a menu for cordon, drain and delete (delete asks you to type the node name).
+- Drain and delete: both enumerate everything on the node server-side, which is why deleting a node with placements fails instead of orphaning them.
 
 ## WireGuard mesh and internal DNS
 

@@ -101,7 +101,7 @@ levelrail-cli domains doctor my-app my-app.example.com
 
 ## How domain routing actually works
 
-When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container and are served by Caddy from disk. Requests to any configured domain flow through this decision chain:
+When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container and are served by Caddy from disk. Every request to a configured domain goes through this chain:
 
 ```mermaid
 flowchart TD
@@ -372,7 +372,7 @@ The tradeoff: browsers and HTTP clients show a trust warning until you accept th
 
 ### Real public ACME (Let's Encrypt or RFC 8555 CA)
 
-A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or:
+Real ACME issuance is built in. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or:
 
 ```bash
 levelrail-cli settings ingress set --acme-enabled --acme-email you@yourdomain.com
@@ -716,11 +716,11 @@ levelrail-cli domains auth-gate revoke my-app app.example.com
 Nobody gets in by default. A built-in gate with no allow rule denies everyone, including admins.
 </Warning>
 
-Behaviour worth knowing:
+A few behaviours to know:
 
-- **Denied users** see a plain 403 page that names the account they are signed in with, never a redirect loop. Fetch and XHR requests (`Accept: application/json` or `X-Requested-With`) get a `401` JSON body with a `login_url` instead of a redirect.
-- **Guests**: a user whose role only sees granted environments also needs a grant for the app's environment. Standalone domains have no environment, so they are closed to such users.
-- **Plain http** apps cannot use the built-in provider unless `APP_GATE_ALLOW_HTTP=true`; the session cookie is then not `Secure`.
+- Denied users see a plain 403 page that names the account they are signed in with, never a redirect loop. Fetch and XHR requests (`Accept: application/json` or `X-Requested-With`) get a `401` JSON body with a `login_url` instead of a redirect.
+- A guest, meaning a user whose role only sees granted environments, also needs a grant for the app's environment. Standalone domains have no environment, so they are closed to such users.
+- Plain http apps cannot use the built-in provider unless `APP_GATE_ALLOW_HTTP=true`; the session cookie is then not `Secure`.
 
 | Variable | Default | Effect |
 |---|---|---|
@@ -850,7 +850,7 @@ Scope: TCP only, one stream per forward, no access lists, and no TLS termination
 
 **Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
 
-It exists for one otherwise-invisible failure: the embedded Caddy ingress reaches an app on another node only over the WireGuard mesh. If that path is down, the app's container can be perfectly healthy while its domain silently never routes. When the path is healthy the domain shows **Reachable**. See [Multi-node: Routing to apps on remote nodes](/multi-node#routing-to-apps-on-remote-nodes) for how the mesh bind works.
+It exists to catch one failure that is otherwise invisible. The embedded Caddy ingress reaches an app on another node only over the WireGuard mesh. If that path is down, the app's container can be perfectly healthy while its domain silently never routes. When the path is healthy the domain shows **Reachable**. See [Multi-node: Routing to apps on remote nodes](/multi-node#routing-to-apps-on-remote-nodes) for how the mesh bind works.
 
 A domain in the broken state shows an **Unreachable** badge with the reason (with a banner at the top of the page when any exist; `levelrail-cli nodes traffic` prints the same reason). Each unreachable row carries a **Move** button straight to the move-with-volumes flow described in [Moving an app with its volumes](/multi-node#moving-an-app-with-its-volumes), or run the fix directly:
 

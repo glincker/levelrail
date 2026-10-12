@@ -4,13 +4,14 @@ description: Search logs, save queries, group errors into signatures, and create
 ---
 
 Logs are stored on the node that runs the container and searched from the control plane. The log explorer makes those searches reusable and turns them into alerts, without shipping logs anywhere.
+
 ## Saved queries
 
 A saved query is a named search: text, minimum level, stream, field filters (`status>=500`, `user~alice`) and a relative range such as `1h`.
 
-- **Private** queries are visible only to you. **Shared** queries are visible to everyone who can see the app, and sharing needs write access.
-- **Pinned** queries sit at the top of that app's menu.
-- **Recent** searches are remembered in your browser only.
+- Private queries are visible only to you. Shared queries are visible to everyone who can see the app, and sharing needs write access.
+- Pinned queries sit at the top of that app's menu.
+- Recent searches are remembered in your browser only.
 - A permalink (the Search tab's "Copy permalink") carries the filters and an absolute time range.
 
 ```bash
@@ -26,7 +27,7 @@ API: `GET/POST /api/v1/logs/queries`, `PUT/DELETE /api/v1/logs/queries/{id}`. At
 
 Lines that differ only in numbers, ids, UUIDs, hex, IP addresses, emails or timestamps share one signature. `ERROR upstream 10.0.0.4 timed out after 301ms` and `ERROR upstream 10.0.0.9 timed out after 87ms` become `upstream <ip> timed out after <num>`.
 
-The Errors tab on an app's Logs page lists the top signatures for a range with the count, first and last seen, a sparkline and a sample line. Marked **New** are signatures that did not occur in the window of equal length just before the range. "View lines" opens the Search tab filtered to that signature. "Alert on this" starts a rule from it.
+The Errors tab on an app's Logs page lists the top signatures for a range with the count, first and last seen, a sparkline and a sample line. Signatures marked **New** did not occur in the window of equal length just before the range. "View lines" opens the Search tab filtered to that signature. "Alert on this" starts a rule from it.
 
 ```bash
 levelrail-cli logs signatures web --since 24h --new

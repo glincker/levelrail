@@ -258,22 +258,22 @@ hub under Settings, Import from another platform. It is one guided run:
 Connect, Inventory, Preflight, Copy, Verify, Cutover. The plan is stored on
 the control plane, so you can leave and come back.
 
-- **Connect**: host, port, user and password once. The password is held in
+- Connect: host, port, user and password once. The password is held in
   memory for the session (`APP_MIGRATE_HUB_PASSWORD_TTL`, default 2h) and is
   never stored or logged. Postgres, MySQL, MariaDB and MongoDB are supported.
-- **Inventory**: every database with size, table count and extensions.
+- Inventory: every database with size, table count and extensions.
   Choose which to copy and edit the name of each new managed database.
-- **Preflight**: nothing is written until it passes. It checks extensions
+- Preflight: nothing is written until it passes. It checks extensions
   against what the managed image provides (an extension no image ships blocks
   that database, it is never dropped silently), major version, free disk with a
   margin (`APP_MIGRATE_DISK_MARGIN`, default 1.5), name collisions and an
   estimated copy time (`APP_MIGRATE_ASSUMED_MBPS`).
-- **Copy**: one managed database per selected source database, copied with
+- Copy: one managed database per selected source database, copied with
   bounded concurrency (`APP_MIGRATE_HUB_CONCURRENCY`, default 2). One failure
   never stops the others and repeating a copy is safe.
-- **Verify**: exact per-table row counts. A receipt (JSON, no secrets) records
+- Verify: exact per-table row counts. A receipt (JSON, no secrets) records
   each verified database and that the source was only read.
-- **Cutover**: the connection details and environment variables each app
+- Cutover: the connection details and environment variables each app
   needs. The secret is hidden until you click reveal, which is audited.
 
 The source is only read: sessions run with `default_transaction_read_only=on`
@@ -447,12 +447,12 @@ Warnings do not stop a dry run. A switch needs `--accept-warnings` (the checkbox
 
 ### What a run does
 
-1. **Dry run.** Starts the app here, waits until it is healthy, then sends a request with the domain's Host header through this node's own ingress listener. It stops the app again and changes no record. Run it as often as you like.
-2. **Switch.** Needs the app name typed as confirmation. It repeats the dry run, then switches each domain by the first method that applies:
-   - **DNS provider.** With Cloudflare or Route 53 connected and a root credential, the record is replaced and the previous value is stored in the run before the write, so a rollback restores it exactly.
-   - **Managed proxy.** With proxy coexistence active, the route is written to the proxy and no DNS record changes.
-   - **Manual.** Otherwise the run pauses and prints the exact record. Set it, then press "I changed it" (or `import cutover confirm-dns`).
-3. **Verify.** The public name is checked with the domain doctor, polling until it passes or `APP_CUTOVER_VERIFY_TIMEOUT` (5 minutes) passes. If it never passes, the run rolls itself back: DNS records are restored and the staged app is stopped.
+1. Dry run. Starts the app here, waits until it is healthy, then sends a request with the domain's Host header through this node's own ingress listener. It stops the app again and changes no record. Run it as often as you like.
+2. Switch. Needs the app name typed as confirmation. It repeats the dry run, then switches each domain by the first method that applies:
+   - DNS provider: with Cloudflare or Route 53 connected and a root credential, the record is replaced and the previous value is stored in the run before the write, so a rollback restores it exactly.
+   - Managed proxy: with proxy coexistence active, the route is written to the proxy and no DNS record changes.
+   - Manual: otherwise the run pauses and prints the exact record. Set it, then press "I changed it" (or `import cutover confirm-dns`).
+3. Verify. The public name is checked with the domain doctor, polling until it passes or `APP_CUTOVER_VERIFY_TIMEOUT` (5 minutes) passes. If it never passes, the run rolls itself back: DNS records are restored and the staged app is stopped.
 
 Rollback is one click (`import cutover rollback`) at any point after the switch. It is safe to repeat after a partial failure. A run interrupted by a restart resumes within `APP_CUTOVER_RESUME_MAX_AGE` (30 minutes), or is rolled back if it is older.
 

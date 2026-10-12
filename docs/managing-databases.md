@@ -346,10 +346,10 @@ A point-in-time restore replaces Postgres's own data directory, which cannot hap
 
 Postgres copies archived WAL into the database's `wal-archive` Docker volume on the same host. The control plane then ships it to the backup target of the newest base backup, under `<database>/wal/` next to the base backups.
 
-- **Shipping.** It runs every minute (`APP_PITR_WAL_SHIP_INTERVAL`, a Go duration, `0` disables it) and straight after every base backup, which first forces the current segment out. A segment still being written is never shipped, and an object already in the bucket at the same size is skipped. `pitr status` shows when WAL was last shipped and the last error, on the CLI and the dashboard card.
-- **Restore from the remote copy.** A restore pulls the shipped WAL back into the archive volume before it touches the database, so it works even after the database host's disk is lost.
-- **Pruning.** After every successful base backup the control plane keeps the newest `APP_PITR_BASE_BACKUP_KEEP` (default 3) base backups, deletes older ones and their bucket objects, and removes archived WAL older than the oldest remaining base backup, on the host and in the bucket. A base backup that a point-in-time restore record references is kept.
-- **Schedules.** When a database has a backup schedule, each scheduled backup of a PITR-enabled database is followed by a base backup, so there is no second schedule to set up. Without a schedule, base backups are manual.
+- Shipping runs every minute (`APP_PITR_WAL_SHIP_INTERVAL`, a Go duration, `0` disables it) and straight after every base backup, which first forces the current segment out. A segment still being written is never shipped, and an object already in the bucket at the same size is skipped. `pitr status` shows when WAL was last shipped and the last error, on the CLI and the dashboard card.
+- A restore pulls the shipped WAL back into the archive volume before it touches the database, so it works even after the database host's disk is lost.
+- After every successful base backup the control plane keeps the newest `APP_PITR_BASE_BACKUP_KEEP` (default 3) base backups, deletes older ones and their bucket objects, and removes archived WAL older than the oldest remaining base backup, on the host and in the bucket. A base backup that a point-in-time restore record references is kept.
+- When a database has a backup schedule, each scheduled backup of a PITR-enabled database is followed by a base backup, so there is no second schedule to set up. Without a schedule, base backups are manual.
 
 Limits of the remote copy:
 
@@ -469,7 +469,7 @@ Use the **Major version upgrade** card on a Postgres database's Overview tab. Ty
 </Tab>
 </Tabs>
 
-The database is **offline** while this runs, and the data files are never converted in place. The phases, in order:
+The database is offline while this runs, and the data files are never converted in place. The phases, in order:
 
 <Steps>
 <Step title="Preflight">
@@ -504,7 +504,7 @@ The server must report the target major, and every public table's row count must
 </Step>
 </Steps>
 
-A failure before the wipe unsuspends the database on the old version and removes the snapshot, so nothing changed. A failure after the wipe (a restore error, a count mismatch, the new version not starting) **rolls back automatically**: the snapshot is copied back, the old version is restored, and the attempt is marked `rolled_back`. If a control plane restart interrupts an upgrade, it settles the attempt the same way on the next start. If a rollback itself fails, the attempt is marked `failed` with the snapshot volume's name, and that volume is left intact.
+A failure before the wipe unsuspends the database on the old version and removes the snapshot, so nothing changed. A failure after the wipe (a restore error, a count mismatch, the new version not starting) rolls back automatically: the snapshot is copied back, the old version is restored, and the attempt is marked `rolled_back`. If a control plane restart interrupts an upgrade, it settles the attempt the same way on the next start. If a rollback itself fails, the attempt is marked `failed` with the snapshot volume's name, and that volume is left intact.
 
 After a success the snapshot is kept so `major-upgrade-rollback` can undo the upgrade (every write since is lost) until you run `major-upgrade-discard` to free the disk. A recorded snapshot volume is protected from orphaned volume cleanup.
 
@@ -542,7 +542,7 @@ These run passwordless by default, so `username` and `database` fields do not ap
 
 Slow query logs capture individual statements over a duration threshold, so you can find expensive queries before they cause an incident. They are available for Postgres and MySQL only. Redis has no log-based slow query record, and other engines return an error. For browsing schemas and rows or running ad hoc read-only SQL, see [Database viewer](/database-viewer).
 
-**Postgres** reads slow statements from the container's own log stream. **MySQL** reads the slow log file from the running container (`/var/log/mysql/slow.log`) and is configured with `slow_query_log=ON` at creation. The threshold is 1000 ms by default. Set `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` on the control plane to change it. Results are sorted by duration, longest first, 100 per page by default (maximum 500).
+Postgres reads slow statements from the container's own log stream. MySQL reads the slow log file from the running container (`/var/log/mysql/slow.log`) and is configured with `slow_query_log=ON` at creation. The threshold is 1000 ms by default. Set `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` on the control plane to change it. Results are sorted by duration, longest first, 100 per page by default (maximum 500).
 
 <Tabs>
 <Tab title="CLI">
@@ -590,9 +590,9 @@ The database Overview page has a **Slow Queries** tab with a time-range picker (
 </Tabs>
 
 <Accordion title="No slow queries in the results?">
-- **Postgres:** the statement must have exceeded the threshold. Faster queries never appear, however wide the window.
-- **MySQL:** the slow log file exists only after at least one slow statement has run. A new or never-slow database returns an empty result.
-- **Either:** if the container is stopped or crashed, nothing new is logged.
+- Postgres: the statement must have exceeded the threshold. Faster queries never appear, however wide the window.
+- MySQL: the slow log file exists only after at least one slow statement has run. A new or never-slow database returns an empty result.
+- Either engine: if the container is stopped or crashed, nothing new is logged.
 </Accordion>
 
 ## Reference

@@ -7,9 +7,9 @@ A compose app is one app built from a Docker Compose file. Every service in the 
 
 You can deploy a compose app three ways:
 
-- **Dashboard.** Open **New resource**, pick **Docker Compose**, then paste or upload the file. A preview lists every service, port, domain, volume and env var before anything is deployed.
-- **CLI.** Run `levelrail-cli compose deploy <app> -f compose.yaml`.
-- **Template.** Open a template page and fill in its settings, or run `levelrail-cli templates install <id>`.
+- In the dashboard, open **New resource**, pick **Docker Compose**, then paste or upload the file. A preview lists every service, port, domain, volume and env var before anything is deployed.
+- From the CLI, run `levelrail-cli compose deploy <app> -f compose.yaml`.
+- From a template, open a template page and fill in its settings, or run `levelrail-cli templates install <id>`.
 
 To deploy a compose file that lives in a git repository and needs `build:`, use a git deploy with `build.type: compose` ([Deploying apps](/deploying-apps)). This page covers compose files that use pre-built images.
 
@@ -142,11 +142,7 @@ healthcheck:
   path: /healthz
 ```
 
-The compose file refers to each setting as `${KEY}`. When a template is installed, each setting gets one of these values:
-
-- the value the operator supplied,
-- a generated secret, stored encrypted and reused on every redeploy,
-- or the default.
+The compose file refers to each setting as `${KEY}`. When a template is installed, each setting gets the value the operator supplied, a generated secret (stored encrypted and reused on every redeploy), or the default.
 
 Values are inserted into parsed YAML values, never into the raw text, so a value cannot change the structure of the file. A template whose settings and `${KEY}` uses do not match fails to load. One that fails the compose rules above also fails to load.
 

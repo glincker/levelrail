@@ -11,7 +11,7 @@ A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), 
 - A domain you control, with access to create an `A` or `AAAA` record.
 - A control plane reachable from the public internet (installed with `install.sh`, as `levelrail.service`, or in Docker).
 - DNS already pointing at the server's public IP and propagated.
-- Ports 80 and 443 open from the internet. HTTP-01 validates ownership on port 80, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead.
+- Ports 80 and 443 open from the internet. HTTP-01 is the check where the CA requests a file over port 80 to prove you own the domain, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead.
 - A `root` API token or admin dashboard access, since saving ingress settings (`PUT /api/v1/settings/ingress`) needs the `root` ability.
 
 ## Steps
@@ -59,10 +59,10 @@ Saving does not issue immediately. Ingress reconciles continuously, and any rout
 
 ## Confirm it worked
 
-- **Dashboard.** The **Certificate status** badge reads **Healthy**. The issuer names your CA (`Let's Encrypt`, or an intermediate such as `R11`), never Levelrail's internal issuer. The same data is at `GET /api/v1/certificates` and `levelrail-cli domains certificates`.
-- **Expiry.** `not_after` is about 90 days out for Let's Encrypt. A lifetime of a few hours means you are still on the internal self-signed issuer: the toggle did not save, or the page is stale.
-- **Renewal.** Nothing to configure. Caddy renews well before expiry (about 30 days out for a 90-day certificate). To see it work without waiting, look in the logs for `renewing certificate` or `certificate obtained successfully` before the current `not_after`.
-- **Logs.** `journalctl -u levelrail -n 200 --no-pager`, or your container's logs. Look for `"logger":"tls.obtain"` and `"logger":"http.acme_client"`.
+- Dashboard: the **Certificate status** badge reads **Healthy**. The issuer names your CA (`Let's Encrypt`, or an intermediate such as `R11`), never Levelrail's internal issuer. The same data is at `GET /api/v1/certificates` and `levelrail-cli domains certificates`.
+- Expiry: `not_after` is about 90 days out for Let's Encrypt. A lifetime of a few hours means you are still on the internal self-signed issuer: the toggle did not save, or the page is stale.
+- Renewal: nothing to configure. Caddy renews well before expiry (about 30 days out for a 90-day certificate). To see it work without waiting, look in the logs for `renewing certificate` or `certificate obtained successfully` before the current `not_after`.
+- Logs: `journalctl -u levelrail -n 200 --no-pager`, or your container's logs. Look for `"logger":"tls.obtain"` and `"logger":"http.acme_client"`.
 
 <Accordion title="Expected log sequence for a successful issuance">
 ```text

@@ -3,9 +3,9 @@ title: "Levelrail CLI Reference"
 description: Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
 ---
 
-`levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so it needs no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags that matter most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.
+`levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so you need no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags you will use most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.
 
-Commands are shown as `levelrail-cli ...`. If you rename the binary, the command name follows it (the CLI reads its name from `os.Args[0]`). The server is a separate binary, `levelrail`, which also has a few maintenance commands such as `setup-token`, `restore-snapshot`, `restore-db`, `recover-admin`, `upgrade-note` (record who swapped the binary by hand), and `healthcheck`. Those are covered in [Installing](/installing) and [Disaster recovery](/disaster-recovery).
+Commands are shown as `levelrail-cli ...`. If you rename the binary, the command name follows it (the CLI reads its name from `os.Args[0]`). The server is a separate binary, `levelrail`, which has a few maintenance commands of its own, such as `setup-token`, `restore-snapshot`, `restore-db`, `recover-admin`, `upgrade-note` (record who swapped the binary by hand), and `healthcheck`. Those are in [Installing](/installing) and [Disaster recovery](/disaster-recovery).
 
 ## Install and sign in
 
@@ -57,7 +57,7 @@ Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON er
 
 ## Scripting: `--debug`
 
-`--debug` works anywhere on the command line (before or after the subcommand) and traces every outgoing request this invocation makes to stderr: method, URL, and the response status and timing, one line per call. It never prints request/response headers or bodies, so `Authorization` and any token value never appear, even in debug mode; a token that somehow ended up in a URL's query string is also redacted. stdout is untouched, so `--debug` composes with `--json`/`--query` for scripting.
+`--debug` works anywhere on the command line (before or after the subcommand) and traces every outgoing request this invocation makes to stderr: method, URL, and the response status and timing, one line per call. It never prints request or response headers or bodies, so `Authorization` and any token value never appear, even in debug mode; a token that somehow ended up in a URL's query string is also redacted. stdout is untouched, so `--debug` composes with `--json`/`--query` for scripting.
 
 ```
 levelrail-cli apps list --debug --api-url http://10.0.0.5:8080
@@ -69,7 +69,7 @@ DEBUG: GET http://10.0.0.5:8080/api/v1/apps -> 200 OK (42ms)
 
 ## Experimental command groups
 
-Some groups are off by default and hidden from `--help` and shell completion until the shell you run the CLI from sets `APP_EXPERIMENTAL`. This page marks them. The keys are `ai-chat` (`ai`, `settings ai-assistant`), `ai-models` (`models`), `load-balancer` (`lb`), `iac` (`apply`, `diff`, `export`) and `cloudflare-tunnel` (`cloudflare-tunnel`). See [Experimental features](/experimental-features).
+Some groups are off by default and stay hidden from `--help` and shell completion until the shell you run the CLI from sets `APP_EXPERIMENTAL`. This page marks them. The keys are `ai-chat` (`ai`, `settings ai-assistant`), `ai-models` (`models`), `load-balancer` (`lb`), `iac` (`apply`, `diff`, `export`) and `cloudflare-tunnel` (`cloudflare-tunnel`). See [Experimental features](/experimental-features).
 
 ## Web CLI console: host diagnostics
 

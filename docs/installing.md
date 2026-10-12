@@ -79,7 +79,7 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 <Step title="Open the setup link">
 Open one of the `http://<ip>:8080/login?setup=<token>` links from the install summary. The public address is printed first, then private addresses. Container bridge addresses are hidden.
 
-**8080 is the default, not a guarantee.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
+**8080 is only the default.** If that port was taken, `install.sh` picks the next free one (`LEVELRAIL_DASHBOARD_PORT`) and prints the real one. Use the port from your own output.
 </Step>
 <Step title="Create the admin account">
 After you create the admin account, the setup wizard opens and runs the server checks shown above.
@@ -455,7 +455,7 @@ levelrail-cli version   # compare running vs. latest published release
 levelrail-cli status    # check Docker reachability and system config
 ```
 
-These call `GET /api/v1/updates` and `GET /api/v1/system/status`, confirming the control plane is reachable and you are authenticated.
+These call `GET /api/v1/updates` and `GET /api/v1/system/status`. A reply means the control plane is reachable and you are authenticated.
 </Tab>
 </Tabs>
 

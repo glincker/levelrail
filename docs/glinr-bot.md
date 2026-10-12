@@ -3,7 +3,7 @@ title: glinr-bot
 description: "How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge."
 ---
 
-A GitHub App that reads a policy file, checks each pull request against it, and
+This GitHub App reads a policy file, checks each pull request against it, and
 says why. In shadow mode it only comments. In enforce mode it can also approve
 and arm auto-merge, and GitHub still waits for the required checks.
 
@@ -11,7 +11,7 @@ and arm auto-merge, and GitHub still waits for the required checks.
 
 - Trigger: `pull_request_target`, so the app secrets are available to
   Dependabot and same-repo PRs.
-- Safety: the job checks out the **base** branch only. The policy and the
+- Safety: the job checks out the base branch only. The policy and the
   evaluator come from the base, so a PR cannot edit its own rules, and nothing
   from the PR is built or executed. It reads the PR through the API.
 - Output: one comment per PR, updated in place, with a table of gates.

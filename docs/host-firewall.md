@@ -3,26 +3,27 @@ title: "Host firewall"
 description: Manage allow and deny rules for the control plane host's ufw firewall from the dashboard, CLI or API, with a lockout guard against blocking essential ports.
 ---
 
-Levelrail can manage a set of allow and deny rules for the **control plane host's own `ufw` firewall**. You declare rules as records (a port, a protocol, an optional source, an action), and a reconciler converges `ufw` to match them. It is the same declarative model as the rest of the platform: edit the record, and the host follows.
+Levelrail can manage allow and deny rules for the control plane host's own `ufw` firewall (`ufw` is the firewall front end that ships with Ubuntu). You declare rules as records (a port, a protocol, an optional source, an action), and a reconciler changes `ufw` to match them. Edit the record and the host follows, like everything else on the platform.
 
-This is opt-in and narrow by design. If you never add a rule, nothing is changed on the host.
+This is opt-in and narrow. If you never add a rule, nothing on the host changes.
+
 ## What it does and does not touch
 
-- **Only tagged rules.** Every rule the platform creates carries a `ufw` comment prefix derived from the brand short name (`levelrail:` by default, see [White-labeling](/white-labeling)). Sync only adds and removes rules carrying that prefix. Rules you created yourself with `ufw` are never changed or deleted.
-- **Enables the firewall only when you ask.** Nothing is switched on automatically. Use **Settings, Firewall, Turn on firewall** (or `levelrail-cli firewall enable`) and the platform allows SSH first, then the control plane ports and HTTP/3, and only then runs `ufw --force enable`. It never changes the default policy by itself, and if any allow step fails, the firewall stays off. If `ufw` is installed but inactive, rules are stored but not applied until you turn it on.
-- **Only `ufw`, only the local host.** If `ufw` is not installed (you use firewalld, nftables, iptables or a cloud security group), nothing is applied and the reconciler reports that as informational, not a failure. Rules are stored for the control plane host. Per-node rules for remote nodes are not supported yet, and a rule pinned to a remote node would be skipped and logged.
-- **Not the installer's firewall step.** `install.sh` can allow SSH, 80 and 443 once with `LEVELRAIL_CONFIGURE_UFW=1` (see [Installing](/installing)). That is a one-time script action. This page covers the ongoing, managed rules.
+- Only tagged rules: every rule the platform creates carries a `ufw` comment prefix derived from the brand short name (`levelrail:` by default, see [White-labeling](/white-labeling)). Sync only adds and removes rules carrying that prefix. Rules you created yourself with `ufw` are never changed or deleted.
+- Enables the firewall only when you ask: nothing is switched on automatically. Use **Settings, Firewall, Turn on firewall** (or `levelrail-cli firewall enable`) and the platform allows SSH first, then the control plane ports and HTTP/3, and only then runs `ufw --force enable`. It never changes the default policy by itself, and if any allow step fails, the firewall stays off. If `ufw` is installed but inactive, rules are stored but not applied until you turn it on.
+- Only `ufw`, only the local host: if `ufw` is not installed (you use firewalld, nftables, iptables or a cloud security group), nothing is applied and the reconciler reports that as informational, not a failure. Rules are stored for the control plane host. Per-node rules for remote nodes are not supported yet, and a rule pinned to a remote node would be skipped and logged.
+- Not the installer's firewall step: `install.sh` can allow SSH, 80 and 443 once with `LEVELRAIL_CONFIGURE_UFW=1` (see [Installing](/installing)). That is a one-time script action. This page covers the ongoing, managed rules.
 
 ## The lockout guard
 
-A deny rule, or an allow rule restricted to a source CIDR, on a port the control plane itself needs is **refused** rather than applied. The protected ports are the ones this instance is actually configured to use:
+Levelrail refuses a deny rule, or an allow rule restricted to a source CIDR, on a port the control plane itself needs. The protected ports are the ones this instance is actually configured to use:
 
 - the management API address (`APP_HTTP_ADDR`),
 - the agent gRPC address (`APP_AGENT_ADDR`),
 - the ingress HTTP address (`APP_INGRESS_HTTP_ADDR`),
 - the ingress HTTPS address (`APP_INGRESS_HTTPS_ADDR`).
 
-With defaults these are 8080, 9443, 80 and 443. An unrestricted allow on a protected port is accepted. The check runs when you create the rule (the API returns a validation error) and again in the reconciler as a second line of defense. A control plane that has locked itself out cannot reopen itself, which is why this is refused unconditionally.
+With defaults these are 8080, 9443, 80 and 443. An unrestricted allow on a protected port is accepted. The check runs when you create the rule (the API returns a validation error) and again in the reconciler as a second line of defense. A control plane that has locked itself out cannot reopen itself, so this is always refused.
 
 ## Turn the firewall on or off
 

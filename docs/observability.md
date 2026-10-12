@@ -5,7 +5,7 @@ description: Node-local metrics, logs, and alerts with federated queries, no cen
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/grafana.svg" alt="Grafana" title="Grafana" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/prometheus.svg" alt="Prometheus" title="Prometheus" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/slack.svg" alt="Slack" title="Slack" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/discord.svg" alt="Discord" title="Discord" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/telegram.svg" alt="Telegram" title="Telegram" width="24" height="24" /></span></div>
 
-Every app gets CPU, memory, network, disk IO and request metrics automatically, full-text log search with live tail, and alert rules that route to email, Slack, Discord, or a webhook. Metrics and logs stay on each node's local store, and the control plane queries them on demand, so there is no separate observability stack to install.
+Every app gets CPU, memory, network, disk IO and request metrics without any setup. You also get full-text log search with live tail, and alert rules that can notify you by email, Slack, Discord, or a webhook. Metrics and logs stay in each node's local store and the control plane queries them on demand, so there is no separate observability stack to install.
 
 ## What this covers
 
@@ -94,11 +94,11 @@ A rule created without `--channel-id` (and without `--notify-url`) is saved but 
 
 ## Investigating a spike
 
-`GET /api/v1/apps/{name}/investigate?from=&to=` returns everything that explains one window in a single response. The window may be at most `APP_INVESTIGATE_MAX_SPAN` (default 24h).
+`GET /api/v1/apps/{name}/investigate?from=&to=` returns everything that explains one time window in a single response. The window can be at most `APP_INVESTIGATE_MAX_SPAN` (default 24h).
 
 - `summary` and `baseline`: request count, rate, 4xx and 5xx share, p50, p95 and p99 for the window and for the equal-length window before it.
 - `top_routes` and `status_codes`: the ten busiest route templates with share, 5xx share and mean latency, and the exact status code counts.
-- `timeline`: one ascending list of deploys, rollbacks, config, env, secret, domain, scale and [load balancer](/load-balancing) changes (from the same sources as [What changed before an alert](#what-changed-before-an-alert), with the most recent effective change flagged `likely_cause`), container restarts (a burst collapses into one entry with a count), and resource saturation (CPU or memory held at or above a threshold for several samples). It looks back `APP_INVESTIGATE_LOOKBACK` before the window, because the cause usually precedes the symptom.
+- `timeline`: one ascending list of deploys, rollbacks, config, env, secret, domain, scale and [load balancer](/load-balancing) changes (from the same sources as [What changed before an alert](#what-changed-before-an-alert), with the most recent effective change flagged `likely_cause`), container restarts (a burst collapses into one entry with a count), and resource saturation (CPU or memory held at or above a threshold for several samples). It looks back `APP_INVESTIGATE_LOOKBACK` before the window, because the cause usually comes before the symptom.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -127,7 +127,7 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 
 ## Failure context
 
-`GET /api/v1/apps/{name}/failure-context` answers "why is it down" without opening the log viewer.
+`GET /api/v1/apps/{name}/failure-context` tells you why an app is down without opening the log viewer.
 
 | State | When |
 | --- | --- |
@@ -139,7 +139,7 @@ For a crashloop the response carries the last `APP_FAILURE_CONTEXT_LINES` (defau
 
 The app overview page shows it automatically when the state is not `healthy`, and `levelrail-cli logs failure <app>` prints it.
 
-Notifications carry the same context. A firing crashloop alert attaches the last 200 lines, and a failed deploy notification does too. Chat channels get the last 10 lines (capped at 1200 characters), and the generic webhook payload gets `log_lines` with up to 200 and the `attempt_id`.
+Notifications carry the same context. A firing crashloop alert attaches the last 200 lines, and so does a failed deploy notification. Chat channels get the last 10 lines (capped at 1200 characters). The generic webhook payload gets `log_lines` with up to 200 and the `attempt_id`.
 
 ## Dashboard pages
 
@@ -176,9 +176,9 @@ Markers are keyboard focusable with aria labels and show details on hover or foc
 
 ![Levelrail live log viewer with full-text search](assets/screenshots/logs.png)
 
-Live tail, stored search and download are three reads over the same log store, not separate systems.
+Live tail, stored search and download are three ways to read the same log store.
 
-Log collection resumes where it stopped. When the control plane restarts, or a container exits and its log stream reconnects, collection continues from the newest stored line for that container instead of re-reading Docker's whole buffer, so lines are not duplicated.
+Log collection resumes where it stopped. After a control plane restart, or when a container exits and its log stream reconnects, collection continues from the newest stored line for that container. It does not re-read Docker's whole buffer, so lines are not duplicated.
 
 | Read | Endpoint | Use it for |
 | --- | --- | --- |
@@ -278,7 +278,7 @@ Container restart count, build duration and deploy frequency are recorded as dis
 
 ## Request metrics (RED)
 
-Every proxy and static route in the embedded Caddy is wrapped by a small `request_stats` handler (`internal/ingress/request_stats.go`). It times the request and counts it into fixed in-memory counters per route host, so idle cost is near zero and nothing is written to log files.
+Every proxy and static route in the embedded Caddy goes through a small `request_stats` handler (`internal/ingress/request_stats.go`). It times the request and counts it into fixed in-memory counters per route host. Idle cost is near zero and nothing is written to log files.
 
 - Query strings and client addresses are never read.
 - Request paths are reduced to a bounded route template (see [Route and status breakdown](#route-and-status-breakdown)), so cardinality stays bounded.
@@ -317,7 +317,7 @@ The `get_app_requests` MCP tool. In Go, `telemetry.SummarizeRequests(ctx, querie
 
 ## Route and status breakdown
 
-To answer "which route made the 3am spike slow", the request handler also counts, per app and minute, requests, 4xx, 5xx and total latency per **route template**, and requests per **exact status code**.
+To tell you which route made the 3am spike slow, the request handler also counts, per app and minute, requests, 4xx, 5xx and total latency per **route template**, and requests per **exact status code**.
 
 Only the URL path is read. A path is cut to its first segments, and any segment that looks like an identifier (digits, hex, UUID, long tokens) becomes `:id`, so `/api/users/42/orders/9f86d081...` is stored as `/api/users/:id/*`. Distinct routes per tick are capped, with the rest folded into `other`.
 
@@ -340,7 +340,7 @@ Every series query bounds its size instead of returning raw 15 second samples fo
 
 ## Resource-usage ranking
 
-`GET /api/v1/apps/resource-usage` answers "what is every app doing right now" in one call, avoiding the N+1 pattern on page load.
+`GET /api/v1/apps/resource-usage` tells you what every app is doing right now in one call, so a page load does not fire one query per app.
 
 - Every app that exists is included, including ones with no samples yet (a freshly deployed app appears as a zero-usage row, not missing).
 - Each field (`cpu_percent`, `memory_usage_bytes`, `memory_limit_bytes`, `network_rx_bytes`, `network_tx_bytes`) is present only when a sample has been recorded.
@@ -357,7 +357,7 @@ Every series query bounds its size instead of returning raw 15 second samples fo
 
 ## Fleet utilization
 
-`GET /api/v1/nodes/resource-usage` answers "how full are my servers" in one call. It is the node-scoped counterpart to `apps/resource-usage`, read by the node list's CPU, memory and disk columns and the dashboard's fleet summary card. The response is `{ "nodes": [...], "fleet": {...} }`.
+`GET /api/v1/nodes/resource-usage` tells you how full your servers are in one call. It is the node-scoped counterpart to `apps/resource-usage`, read by the node list's CPU, memory and disk columns and the dashboard's fleet summary card. The response is `{ "nodes": [...], "fleet": {...} }`.
 
 **Each node row**
 
@@ -376,7 +376,7 @@ The local node reads its own figures. A remote node's agent sends a periodic hos
 
 ## Capacity forecast
 
-`GET /api/v1/nodes/{id}/capacity-forecast` answers "at this rate, how long until disk or memory runs out". It is a rough heads-up built from the same `disk_used_bytes`, `disk_total_bytes`, `memory_total_bytes` and `memory_available_bytes` host samples the fleet views already read, not a second collector.
+`GET /api/v1/nodes/{id}/capacity-forecast` estimates how long until disk or memory runs out at the current rate. It is a rough heads-up built from the same `disk_used_bytes`, `disk_total_bytes`, `memory_total_bytes` and `memory_available_bytes` host samples the fleet views already read, not a second collector.
 
 The method (`kit/forecast`) is an ordinary-least-squares line fit over the lookback window's samples, projected forward to the resource's total capacity. It assumes the recent rate of change continues in a straight line, which real usage rarely does (a cleanup, a larger image, a burst of logs all bend the line). Every response carries a plain-English disclaimer in `note`.
 
@@ -408,7 +408,7 @@ The method (`kit/forecast`) is an ordinary-least-squares line fit over the lookb
 
 ## Health & readiness score
 
-`GET /api/v1/apps/{name}/health-score` synthesizes signals this page otherwise shows one at a time into a single pass, warn or fail verdict per category. It is computed live on every call (no new reconciler loop, no cache) and is a read-only aggregation: every category reads data an existing endpoint already exposes.
+`GET /api/v1/apps/{name}/health-score` combines signals this page otherwise shows one at a time into a pass, warn or fail verdict per category. It is computed live on every call (no new reconciler loop, no cache) and is read only: every category reads data an existing endpoint already exposes.
 
 | Category | Pass | Warn | Fail |
 | --- | --- | --- | --- |
@@ -425,7 +425,7 @@ Dashboard: the **Health & readiness** panel on an app's Overview tab (`AppHealth
 
 Rules of every kind live in one table (`alert_rules`). The evaluation loop (`internal/alerting.Engine`) runs every 30 seconds (`alertEvaluationInterval`, fixed, not env-configurable).
 
-Each rule tracks its own pending and firing state and notifies only on transitions (firing or resolved), never on every tick a rule stays in the same state. This keeps channels from being trained to ignore repeated alerts.
+Each rule tracks its own pending and firing state and notifies only on transitions (firing or resolved), never on every tick it stays in the same state. That way people do not learn to ignore repeated alerts.
 
 <Accordion title="Rule kinds and their configuration" defaultOpen>
 
@@ -464,7 +464,7 @@ Three more domain kinds are planned and not evaluated yet: `dns_drift` (records 
 
 Platform-wide rules are created through an app's `/apps/{name}/alerts` URL, but that URL only decides where the rule is listed. The rule evaluates every certificate, node, or disk across the entire control plane regardless of which app created it.
 
-Thresholds default sensibly and are overridable per control plane, not per rule.
+Thresholds have defaults and can be overridden per control plane, not per rule.
 
 | Signal | Default | Env var |
 | --- | --- | --- |
@@ -477,7 +477,7 @@ Thresholds default sensibly and are overridable per control plane, not per rule.
 | Backup missing grace period | 6h | `APP_ALERT_BACKUP_MISSING_GRACE_PERIOD` (or per rule via `for_duration`) |
 
 <Accordion title="Backup missing rule logic">
-The `backup_missing` rule does not invent its own cadence calculation. It reads the same `backup_schedule` cron expression and `backup_history` rows that `internal/backup.Scheduler` uses, computes the expected interval from the cron expression (`kit/cronexpr`), and fires once the last succeeded attempt is older than that interval plus a grace period.
+The `backup_missing` rule has no cadence logic of its own. It reads the same `backup_schedule` cron expression and `backup_history` rows that `internal/backup.Scheduler` uses, computes the expected interval from the cron expression (`kit/cronexpr`), and fires once the last succeeded attempt is older than that interval plus a grace period.
 
 - A target with attempts but no success in the lookback fires, anchored to its oldest attempt (a silently-failing backup reads the same as one that stopped).
 - A target with no schedule or no history yet stays quiet on day one.
@@ -501,7 +501,7 @@ The 2 minute maximum keeps a crashlooping app above the usual crashloop rule thr
 
 ### Auto-rollback
 
-Alerts notify, they do not fix anything by default. A failed deploy keeps retrying the same bad image until you intervene (level-triggered, never edge-triggered). Auto-rollback is the opt-in, per-app, off-by-default escape hatch.
+Alerts notify. By default they do not fix anything, and a failed deploy keeps retrying the same bad image until you step in (the reconciler is level-triggered, never edge-triggered). Auto-rollback is the escape hatch: it is opt-in, per app, and off by default.
 
 <Tabs>
 <Tab title="On crashloop">
@@ -542,7 +542,7 @@ Guardrails, same for both:
 
 ## Silences, maintenance windows, and noise control
 
-Everything in this section sits between rule evaluation and notification. A rule keeps evaluating, keeps its own firing state, and is always recorded in [alert history](#alert-history). These controls only decide whether a notification goes out.
+Everything in this section sits between rule evaluation and notification. A rule keeps evaluating, keeps its own firing state, and is always recorded in [alert history](#alert-history). These controls decide only whether a notification goes out.
 
 | Control | What it does |
 | --- | --- |
@@ -623,9 +623,9 @@ Entries are pruned after `APP_ALERT_HISTORY_RETENTION`. Who created, changed or 
 
 ## What changed before an alert
 
-Every firing app alert, its history entry, `diagnose` and the dashboard alert rows answer "what changed on this app in the last 30 minutes": deploys (with digest and who), rollbacks, config, domain, scaling and load balancer changes, freeze and maintenance events, and env or secret key names (never values). They come from the app event log, deploy attempts and the audit log, merged newest first by `internal/changes`.
+Every firing app alert, its history entry, `diagnose` and the dashboard alert rows show what changed on the app in the last 30 minutes: deploys (with digest and who), rollbacks, config, domain, scaling and load balancer changes, freeze and maintenance events, and env or secret key names (never values). They come from the app event log, deploy attempts and the audit log, merged newest first by `internal/changes`.
 
-The most recent change that took effect before the alert (a deploy, rollback, config, env, secret, domain, scaling or load balancer change) is tagged **Likely cause**. It is a heuristic: the nearest preceding change, not a proven culprit, and it never picks a restart, freeze or maintenance event or a failed deploy.
+The most recent change that took effect before the alert (a deploy, rollback, config, env, secret, domain, scaling or load balancer change) is tagged **Likely cause**. It is a heuristic: the nearest earlier change, not a proven culprit, and it never picks a restart, freeze or maintenance event or a failed deploy.
 
 <Tabs>
 <Tab title="Notifications">
@@ -679,7 +679,7 @@ An app with no traffic, or fewer than `APP_SLO_MIN_REQUESTS` requests in a tier'
 
 ## Notification channels
 
-Channels are global, connect-once destinations (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs per rule.
+Channels are global destinations you connect once (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs on every rule.
 
 **Supported kinds** (18, mapped to payload builders in `internal/alerting/notify.go`): `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`, `webpush`.
 
@@ -688,7 +688,7 @@ For most kinds, `notify_url` is a webhook URL. A few pack credentials into that 
 - `email` sends through the control plane's SMTP sender (Settings -> Email, or `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_SMTP_USERNAME`, `APP_SMTP_PASSWORD`, `APP_SMTP_FROM`).
 - `webpush` ignores `notify_url`: the destination is every browser subscription registered under Settings -> Notification channels -> Browser push.
 
-Both return a clear "not configured" error if the control plane has no master key set.
+Both return a "not configured" error if the control plane has no master key set.
 
 ### Destination checks and visibility
 
@@ -723,7 +723,7 @@ Every kind, including `email`, retries up to 3 times on a transient failure with
 | HTTP kinds (`postJSONWithAuth`) | Transport errors (DNS, TLS, connection refused, timeout), 5xx or 429 | Any other status (malformed payload, bad credential, 404'd URL) |
 | `email` (`sendEmailWithRetry`) | Transport failures (DNS, dial, TLS handshake, client timeout, any non-SMTP backend such as SES), SMTP 4xx replies | SMTP 5xx replies (bad recipient, bad auth, policy rejection) |
 
-Retrying inherently wrong requests only delays surfacing the real problem.
+Retrying a request that is wrong to begin with only delays the real error.
 
 **Test-send** sends a test message through the channel's kind and URL:
 
@@ -740,12 +740,12 @@ Deleting a channel still attached to a rule or deploy-notify target succeeds. Th
 
 ## Why node-local, not a central store
 
-Platforms in this category (and hosted observability vendors) centralize: ship every metric and log line to one place, index it there, query it there. That creates write amplification for every container on every node, plus a central index that keeps growing whether or not anyone queries it.
+Most platforms in this category, and hosted observability vendors, centralize: they ship every metric and log line to one place, index it there, and query it there. Every container on every node then writes to that store, and the central index keeps growing whether or not anyone queries it.
 
-This platform keeps metrics and logs where they are collected: each node's own SQLite-backed store (the same `modernc.org/sqlite` used elsewhere in the control plane). The control plane queries agents on demand instead of ingesting continuously.
+Levelrail keeps metrics and logs where they are collected, in each node's own SQLite-backed store (the same `modernc.org/sqlite` used elsewhere in the control plane). The control plane queries agents on demand instead of ingesting continuously.
 
 <Tip>
-Today there is exactly one node (control plane and agent share a process, see `internal/agent`'s in-memory transport), so "federated query" fans out to a single source. Nothing changes for you when a second node appears: the same queries and dashboards keep working against more sources.
+Today there is exactly one node (control plane and agent share a process, see `internal/agent`'s in-memory transport), so a "federated query" fans out to a single source. When a second node appears, nothing changes for you. The same queries and dashboards work against more sources.
 </Tip>
 
 ## How it actually works
@@ -772,9 +772,9 @@ graph LR
 | `database:<name>` | A managed database |
 | `node:<id>` | Per-node readings such as disk usage |
 
-The same scheme is used across `internal/alerting`, the log store and resource-usage ranking, so an app's metrics, logs and alert rules are always found under the one identifier its reconciler uses.
+The same scheme is used across `internal/alerting`, the log store and resource-usage ranking, so an app's metrics, logs and alert rules all sit under the one identifier its reconciler uses.
 
-**Log collection.** `internal/telemetry`'s log collector reads each container's Docker log stream directly (not the json-file driver's raw files), chunks and compresses it, and indexes it for full-text search. A `LogBroadcaster` fans out each line to live SSE subscribers at the same time it is written to the store, so live tailing and historical search are two views over the same pipe.
+**Log collection.** `internal/telemetry`'s log collector reads each container's Docker log stream directly (not the json-file driver's raw files), chunks and compresses it, and indexes it for full-text search. A `LogBroadcaster` sends each line to live SSE subscribers at the same moment it is written to the store, so live tailing and historical search read the same pipe.
 
 ## Rollups and retention
 

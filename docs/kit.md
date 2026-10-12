@@ -3,7 +3,7 @@ title: "Shared Go kit"
 description: Standard-library-only Go module with networking, scheduling, parsing and system helper packages.
 ---
 
-`kit` is a Go module that lives in this repository under `./kit`. It holds the small, self-contained building blocks that the control plane and node agent share, packaged so other Go programs can import them too. Every package uses the Go standard library only, and the module has no third-party requirements.
+`kit` is a Go module in this repository under `./kit`. It holds the small, self-contained building blocks the control plane and node agent share, packaged so other Go programs can import them too. Every package uses only the Go standard library, so the module has no third-party requirements.
 
 Import a single package rather than the whole module, for example `github.com/GLINCKER/levelrail/kit/cronexpr`. The full package list and install notes are in [kit/README.md](https://github.com/glincker/levelrail/blob/main/kit/README.md); this page explains what each package is for.
 
@@ -15,10 +15,10 @@ The module requires Go 1.24 or newer.
 
 ## Versioning and stability
 
-- The module is **v0.x**. The API may change between minor versions and there is no compatibility promise yet. Pin an exact version if you depend on it.
+- The module is **v0.x**. The API may change between minor versions and there is no compatibility promise yet, so pin an exact version if you depend on it.
 - The module lives in this repository as a nested module with its own `go.mod`, so it is versioned separately from the platform. Releases are tagged `kit/vX.Y.Z`, which is the tag form Go uses for a module in a subdirectory.
 - Changes to `kit/` go through the same pull request flow as the rest of the repository (see `CONTRIBUTING.md`). The module is Apache-2.0 licensed.
-- Source for the kit never names the product. A repository check (`scripts/check-brand-strings.sh`) scans `kit/**/*.go` for brand strings, in line with the platform's [rebrandability rule](/white-labeling).
+- The kit's source never names the product. A repository check (`scripts/check-brand-strings.sh`) scans `kit/**/*.go` for brand strings, in line with the platform's [rebrandability rule](/white-labeling).
 
 ## Packages
 

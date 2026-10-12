@@ -3,13 +3,13 @@ title: "Usage and cost"
 description: Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, monthly budgets with alerts, CSV export, and the limits of the numbers.
 ---
 
-The Usage and cost page answers two questions: what does this app cost me to run, and which team is using the most. It takes the prices you enter and applies them to the CPU, memory, storage and traffic each app and database actually used, then adds the result up per app, project, environment and team.
+The Usage and cost page answers two questions: what does this app cost me to run, and which team is using the most. You enter your prices, and the page applies them to the CPU, memory, storage and traffic each app and database actually used. It then adds the result up per app, project, environment and team.
 
-This is showback, not an invoice. Nothing is fetched from a cloud provider and nothing is billed. The numbers are only as good as the prices you enter and the usage the platform measured.
+This is showback, meaning a report of who used what, not an invoice. Nothing is fetched from a cloud provider and nothing is billed. The numbers are only as good as the prices you enter and the usage the platform measured.
 
 ## How a cost is worked out
 
-Each UTC day is priced once, when it is recorded, and the result is stored. That is why history survives telemetry retention and why changing a price does not silently rewrite last month.
+Each UTC day is priced once, when it is recorded, and the result is stored. So history outlives telemetry retention, and changing a price does not quietly rewrite last month.
 
 There are two ways to price compute.
 
@@ -24,13 +24,13 @@ app cost for the day = daily bill * share
 
 If the apps together use more than the server, their shares are scaled down so the total never exceeds the bill.
 
-**Price per unit of usage.** Enter a price per vCPU hour and per GiB of memory hour. An app costs `cores * hours * cpu price + GiB * hours * memory price`. Use this when there is no single bill to split. Presets turn a typical VPS size into unit prices as a starting point; they are illustrative and you should correct them.
+**Price per unit of usage.** Enter a price per vCPU hour and per GiB of memory hour. An app costs `cores * hours * cpu price + GiB * hours * memory price`. Use this when there is no single bill to split. Presets turn a typical VPS size into unit prices as a starting point. They are only illustrative, so correct them.
 
 In both modes you can also set a price per GiB of volume storage per month and per GiB sent out. Storage is the size of the app's local named volumes when the day was recorded. Egress is bytes served through the platform's ingress.
 
 ### What counts as usage
 
-Usage is measured from the metrics the collector already keeps, every 15 seconds. For each day the platform records the average and the median (p50) CPU and memory, and how many seconds the container was actually reporting. A stopped container accrues nothing, so downtime is not charged as if it had run. Choose whether allocation uses the average or the p50 in the prices dialog.
+Usage comes from the metrics the collector already keeps, sampled every 15 seconds. For each day the platform records the average and the median (p50) CPU and memory, and how many seconds the container was actually reporting. A stopped container accrues nothing, so you are not charged for downtime as if it had run. Choose whether allocation uses the average or the p50 in the prices dialog.
 
 ## The report
 
@@ -59,7 +59,7 @@ A rule that is already firing notifies again only when a new level is crossed. I
 
 ## Who sees what
 
-Instance admins see everything and set prices. A member of a team sees only the cost of the resources their team role can read: other teams' apps, project names and totals are not in their report. The unallocated share is an instance wide figure and is hidden from team scoped callers, and so are server bills. Team admins and owners can manage budgets for their own teams; instance admins manage any.
+Instance admins see everything and set prices. A member of a team sees only the cost of the resources their team role can read. Other teams' apps, project names and totals are not in their report. The unallocated share is an instance wide figure and is hidden from team scoped callers, and so are server bills. Team admins and owners can manage budgets for their own teams; instance admins manage any.
 
 ## Command line and API
 
@@ -84,10 +84,10 @@ Two environment variables tune the control plane: `APP_USAGE_ROLLUP_LOOKBACK_DAY
 
 ## Limits
 
-- **Costs are allocations of your own numbers.** If a server bill is wrong, every cost on it is wrong by the same factor.
-- **History starts when recording starts.** Days older than telemetry retention that were never recorded have no cost.
-- **Repricing is explicit.** Past days keep the prices of the day they were recorded unless you choose to reprice the month to date.
-- **Storage is a point in time.** A day uses the volume sizes seen when it was recorded, and only volumes on the control plane's own Docker daemon are measured.
-- **Servers without a price are not costed.** The report lists them so a missing price does not look like a free server.
-- **Days are UTC.** A day boundary is midnight UTC whatever your browser time zone is.
-- **Shared servers have one bill.** Anything that runs on a server but is not an app or database (the platform itself, the operating system) is part of the idle share, not its own line.
+- Costs are allocations of your own numbers. If a server bill is wrong, every cost on it is wrong by the same factor.
+- History starts when recording starts. Days older than telemetry retention that were never recorded have no cost.
+- Past days keep the prices of the day they were recorded, unless you choose to reprice the month to date.
+- Storage is a point in time. A day uses the volume sizes seen when it was recorded, and only volumes on the control plane's own Docker daemon are measured.
+- Servers without a price are not costed. The report lists them so a missing price does not look like a free server.
+- Days are UTC. A day boundary is midnight UTC whatever your browser time zone is.
+- A server has one bill. Anything that runs on it but is not an app or database (the platform itself, the operating system) is part of the idle share, not its own line.

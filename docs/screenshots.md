@@ -23,7 +23,7 @@ Screenshots are produced by `scripts/screenshots/capture.sh`, a manual maintaine
 scripts/screenshots/capture.sh
 ```
 
-The script performs a complete pipeline from building binaries through capturing screenshots:
+The script runs the whole pipeline, from building binaries to capturing screenshots:
 
 ```mermaid
 flowchart LR

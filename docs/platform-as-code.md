@@ -13,6 +13,7 @@ Everything goes through the ordinary REST API with your own token. If a policy d
 
 Platform as code is off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and in the shell where you run the CLI or the MCP server, to enable `apply`, `diff` and `export`. See [Experimental features](/experimental-features).
 </Warning>
+
 ## Quick start
 
 ```bash
@@ -257,7 +258,7 @@ Each item is executed through the existing endpoint. Apply is safe to repeat and
 </Step>
 </Steps>
 
-Semantics worth knowing:
+A few rules to know:
 
 - Validation and planning are all or nothing. Execution is per item: by default the first failure stops the run and later items are reported as skipped. With `--continue-on-error` the rest proceed.
 - A plan that contains an error item (a missing project, a read you are not permitted to make) applies nothing unless `--continue-on-error` is set.

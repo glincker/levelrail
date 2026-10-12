@@ -51,9 +51,9 @@ levelrail-cli network-shares update <id> --name nas-media --protocol nfs --host 
 levelrail-cli network-shares delete <id>
 ```
 
-- **`test`** opens a TCP connection from the control plane to the share's host on the protocol's standard port (2049 for NFS, 445 for CIFS) with a 10 second timeout. A failure returns the address it could not reach. This is a reachability check only. It does not authenticate and never reads the CIFS password, so a passing test does not prove the credentials or the export path are right.
-- **`update`** takes the full set of required fields again. Omit `--password` to keep the existing password; pass it to rotate it.
-- **`delete`** removes the record. The control plane's secrets store has no delete operation yet, so a deleted CIFS share's encrypted password stays in the store, unreferenced.
+- `test` opens a TCP connection from the control plane to the share's host on the protocol's standard port (2049 for NFS, 445 for CIFS) with a 10 second timeout. A failure returns the address it could not reach. This is a reachability check only. It does not authenticate and never reads the CIFS password, so a passing test does not prove the credentials or the export path are right.
+- `update` takes the full set of required fields again. Omit `--password` to keep the existing password; pass it to rotate it.
+- `delete` removes the record. The control plane's secrets store has no delete operation yet, so a deleted CIFS share's encrypted password stays in the store, unreferenced.
 
 All subcommands accept the standard `--token`, `--api-url`, `--profile`, `--json`, `--output` and `--query` flags.
 

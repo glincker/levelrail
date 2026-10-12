@@ -6,7 +6,7 @@ description: Create, deploy, roll back, configure, promote, and operate an app o
 
 ## What this covers
 
-An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is healthy, switches traffic to it, and keeps every previous image so you can go back. This page covers the whole life of an app: creating, deploying, rolling back, configuring, promoting, and operating it.
+An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is healthy, switches traffic to it, and keeps every previous image so you can go back. This page follows an app from creation through deploys, rollbacks, configuration, promotion, and day to day operation.
 
 ![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
 

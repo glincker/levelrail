@@ -8,11 +8,12 @@ description: Configure backup targets, registry credentials, and automated backu
 
 This guide covers three related resources:
 
-1. **Backup targets**: S3-compatible buckets where database and app volume backups are stored.
-2. **Registry credentials**: authentication for pulling private images from external registries.
-3. **Built-in registry**: Levelrail's own `registry:2` container for pushing and caching images locally.
+1. Backup targets: S3-compatible buckets where database and app volume backups are stored.
+2. Registry credentials: authentication for pulling private images from external registries.
+3. The built-in registry: Levelrail's own `registry:2` container for pushing and caching images locally.
 
 All three share one pattern: an external system that needs a working credential, which you test on demand instead of finding out it is broken mid-deploy or mid-backup. For the database side of backups (restore, point-in-time recovery, verification), see [Managing databases](/managing-databases). For backing up the control plane itself, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
+
 ## Backup lifecycle at a glance
 
 ```mermaid
@@ -124,7 +125,7 @@ CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test conne
 </Tabs>
 
 <Tip>
-Finding a stale credential here means fixing it now, not discovering it from a failed 3am backup or a failed deploy mid-pull.
+Better to find a stale credential here than from a failed 3am backup or a deploy that dies mid-pull.
 </Tip>
 
 ## Database and app volume backups
@@ -238,13 +239,13 @@ Coverage, protect-all and orphaned data are instance wide. Members of non-defaul
 
 Retention has two independent dimensions, both optional:
 
-- **`retain` (count):** keep the newest N successful backups by `started_at`.
-- **`retain_days` (age):** keep only backups less than N days old.
+- `retain` (count): keep the newest N successful backups by `started_at`.
+- `retain_days` (age): keep only backups less than N days old.
 
 They combine, so a backup is deleted when either rule would remove it. With `retain: 7` and `retain_days: 30`, you keep at most the 7 newest backups, and never anything older than 30 days. `0` disables a dimension, and `0` for both disables pruning.
 
 <Warning>
-Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since a failed attempt's logs have diagnostic value.
+Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since you may need a failed attempt's logs.
 </Warning>
 
 Pruning runs after every scheduled backup that succeeds, not after manual ones. A pruning failure is logged and does not fail the backup, which is already durably recorded. The dashboard's schedule form defaults a new database's "keep last N backups" to 7 and "delete backups older than (days)" to 0 (no age limit).

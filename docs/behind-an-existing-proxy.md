@@ -4,8 +4,8 @@ description: "Serve apps and the dashboard through the proxy that already owns p
 ---
 
 On a server that already runs Coolify, Dokploy or your own nginx, something else
-owns ports 80 and 443. Levelrail does not fight it: it detects the holder and
-generates the exact configuration to put the dashboard behind it.
+owns ports 80 and 443. Levelrail doesn't fight it. It detects what holds the ports
+and generates the configuration to put the dashboard behind it.
 
 ## One step setup (Traefik, including Coolify)
 
@@ -27,16 +27,16 @@ Run `proxy verify` again once Traefik has reloaded.
 
 Setup, in order:
 
-1. **Detect.** Reads the container publishing host port 80 or 443 through the
+1. Detect. It reads the container publishing host port 80 or 443 through the
    Docker API (no `docker` CLI): its arguments, mounts, published ports and
    extra hosts. A mounted `traefik.yml` is read instead of the arguments when
    Traefik loads one. Nothing is defaulted: anything it cannot determine is
    listed and setup stops with `409` and the exact gap.
-2. **TLS upstream.** Turns on `tls_terminated_upstream` and sets
+2. TLS upstream. It turns on `tls_terminated_upstream` and sets
    `public_https_port` to the host port the proxy publishes for HTTPS. This
    instance stops requesting certificates and stops redirecting HTTP itself.
-3. **Routes.** Saves the detected values and writes the route files.
-4. **Verify.** For every route: a TLS handshake to this server's public
+3. Routes. It saves the detected values and writes the route files.
+4. Verify. For every route it runs a TLS handshake to this server's public
    address with the domain as SNI (issuer and expiry of the certificate the
    proxy serves), then a request with the domain as `Host`. When Traefik's API
    is published without authentication, it also asks Traefik whether the
@@ -75,7 +75,7 @@ own `coolify.yaml` and `default_redirect_503.yaml`; leave them to Levelrail.
 
 ### When the listener is on loopback
 
-The proxy runs in a container, so it cannot reach a listener bound to
+The proxy runs in a container, so it can't reach a listener bound to
 `127.0.0.1`. Setup then stops with `upstream_unreachable` and the exact
 drop-in, for example:
 
@@ -127,8 +127,8 @@ directory detection could not map.
 
 ## From the dashboard
 
-**Domains > Put the dashboard behind your existing proxy.** Enter the domain,
-check the detected proxy, and copy the configuration. **Check it works**
+Open Domains, then "Put the dashboard behind your existing proxy". Enter the domain,
+check the detected proxy, and copy the configuration. "Check it works"
 resolves the domain, confirms it points at this server, and requests
 `/healthz` over HTTPS.
 
@@ -187,7 +187,7 @@ any other value is appended, and `0` keeps the ingress listen port.
 
 ## Several instances behind one proxy
 
-Each instance cannot own 80 or 443 and must not run ACME. Give every instance
+Each instance can't own 80 or 443 and must not run ACME. Give every instance
 its own ingress ports, let one proxy hold 80 and 443, and turn on **TLS is
 terminated by a proxy in front** (`--tls-terminated-upstream`) on each:
 

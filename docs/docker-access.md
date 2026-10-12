@@ -3,9 +3,9 @@ title: "Docker access and the API guard"
 description: Every Docker Engine API call Levelrail makes, why it needs it, and the guard that refuses everything else, including privileged containers and host mounts.
 ---
 
-The Docker socket is root equivalent: anything that can talk to it can start a privileged container that mounts `/` from the host. The control plane and every node agent hold that socket, so a bug or a compromise in either one is, by default, root on the machine.
+The Docker socket is root equivalent: anything that can talk to it can start a privileged container that mounts `/` from the host. The control plane and every node agent hold that socket, so a bug or a compromise in either one gives root on the machine.
 
-Levelrail narrows this with an in-process **Docker API guard**. Each process starts a private Unix socket proxy in front of the real daemon, and every Docker client inside the process dials the proxy instead of the daemon. The proxy forwards only the endpoints listed below, and for container create, update, exec and volume create it reads the request body and refuses configurations that would hand a container the host.
+Levelrail narrows this with an in-process Docker API guard. Each process starts a private Unix socket proxy in front of the real daemon, and every Docker client inside the process dials the proxy instead of the daemon. The proxy forwards only the endpoints listed below. For container create, update, exec and volume create it also reads the request body and refuses any configuration that would hand a container the host.
 
 ## Modes
 
@@ -15,7 +15,7 @@ Levelrail narrows this with an in-process **Docker API guard**. Each process sta
 | `enforce` | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
 | `off` | No proxy. Clients dial the daemon directly, as before the guard existed. |
 
-`audit` is the default so an upgrade never breaks a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
+`audit` is the default so an upgrade can't break a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
 
 ```
 levelrail-cli docker-guard status
@@ -99,12 +99,12 @@ Streaming and hijacked endpoints (`events`, `logs`, `stats`, exec start, `/grpc`
 
 ## What the guard does not protect against
 
-- **A process that is already compromised at code execution level.** The guard runs inside the same process and the service user can still open the real socket. It stops bugs, injected specs, and a control plane asking an agent for something dangerous; it does not stop an attacker who can run arbitrary code as the service user. For that, run Docker rootless or with userns-remap, which `docker_privilege` reports.
-- **The node agent container.** The default agent runs as root with the host Docker socket mounted. Its guard wraps its own Docker client, but anything running as root in that container can bypass it.
-- **BuildKit build steps.** The guard sees the `/grpc` upgrade, not the BuildKit requests inside it. Builds run in BuildKit's own sandbox; insecure entitlements stay off unless the daemon itself allows them.
-- **Image contents and allowed operations.** A pulled image runs with the hardened profile, but the guard does not judge what an image does. Exec into a running container, and copying files into it, stay allowed.
-- **Symlinked bind sources on a containerized process.** When the process runs in a container it cannot see the host filesystem, so a bind source is checked by path only, not by what it resolves to on the host.
-- **Agent denials in the dashboard.** An agent's denials are logged on the node and appended to its local audit file; the control plane sees them as the failed operation's error, which names the rule, not as audit rows.
+- A process that is already compromised at code execution level. The guard runs inside the same process and the service user can still open the real socket. It stops bugs, injected specs, and a control plane asking an agent for something dangerous. It does not stop an attacker who can run arbitrary code as the service user. For that, run Docker rootless or with userns-remap, which `docker_privilege` reports.
+- The node agent container. The default agent runs as root with the host Docker socket mounted. Its guard wraps its own Docker client, but anything running as root in that container can bypass it.
+- BuildKit build steps. The guard sees the `/grpc` upgrade, not the BuildKit requests inside it. Builds run in BuildKit's own sandbox; insecure entitlements stay off unless the daemon itself allows them.
+- Image contents and allowed operations. A pulled image runs with the hardened profile, but the guard does not judge what an image does. Exec into a running container, and copying files into it, stay allowed.
+- Symlinked bind sources on a containerized process. When the process runs in a container it cannot see the host filesystem, so a bind source is checked by path only, not by what it resolves to on the host.
+- Agent denials in the dashboard. An agent's denials are logged on the node and appended to its local audit file; the control plane sees them as the failed operation's error, which names the rule, not as audit rows.
 
 ## Prior art
 

@@ -61,9 +61,9 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 
 `NEXT_PUBLIC_*` values are compiled into the JavaScript bundle during `next build`. App env and secrets are only injected when the container is created, never into a build, so setting `NEXT_PUBLIC_*` with `apps env import` does not change the browser code. Verified on a Next.js 15 App Router app:
 
-- **Any build type, including push deploys:** commit a `.env.production` holding the `NEXT_PUBLIC_*` values. `next build` reads it, so it works with Railpack and with a Dockerfile that copies the repo. These values end up in public JavaScript anyway, so committing them exposes nothing new. This is the recommended path.
-- **With `build.type: railpack`:** there is no other way today. Railpack builds receive no build-time env, and `build.args` is rejected for Railpack. A value that is only set as app env stays undefined in the client bundle, and the server render shows a different value than the browser (a hydration mismatch).
-- **With `build.type: dockerfile`:** `build.args` plus matching `ARG` and `ENV` lines in the Dockerfile also work, but build args are not stored with the app. `apps builds trigger` needs `--build-arg` on every call, and push deploys from a git source build without them, so the values silently become empty. Prefer `.env.production`, or give each `ARG` a default in the Dockerfile.
+- Any build type, including push deploys: commit a `.env.production` holding the `NEXT_PUBLIC_*` values. `next build` reads it, so it works with Railpack and with a Dockerfile that copies the repo. These values end up in public JavaScript anyway, so committing them exposes nothing new. This is the recommended path.
+- With `build.type: railpack`: there is no other way today. Railpack builds receive no build-time env, and `build.args` is rejected for Railpack. A value that is only set as app env stays undefined in the client bundle, and the server render shows a different value than the browser (a hydration mismatch).
+- With `build.type: dockerfile`: `build.args` plus matching `ARG` and `ENV` lines in the Dockerfile also work, but build args are not stored with the app. `apps builds trigger` needs `--build-arg` on every call, and push deploys from a git source build without them, so the values silently become empty. Prefer `.env.production`, or give each `ARG` a default in the Dockerfile.
 
 Railpack starts the app with `npm run start`, so `next start` serves it. With `output: "standalone"` Next.js logs a warning that `next start` does not use the standalone output; the app still serves normally. The standalone output only matters for your own Dockerfile.
 
@@ -71,8 +71,8 @@ Server-only variables are set as normal app env or secrets and read when the con
 
 ## 3. Procedure
 
-1. **Connect the git provider** in the dashboard, then confirm it from the CLI with `git-providers`.
-2. **Create the app** from git, as in [Deploying apps](/deploying-apps#from-a-git-repository), or commit an `app.yaml`:
+1. Connect the git provider in the dashboard, then confirm it from the CLI with `git-providers`.
+2. Create the app from git, as in [Deploying apps](/deploying-apps#from-a-git-repository), or commit an `app.yaml`:
 
    ```yaml
    version: 1
@@ -92,12 +92,12 @@ Server-only variables are set as normal app env or secrets and read when the con
    Create it with `apps create --file app.yaml --repo URL --ref main --image-repo NAME --secret DATABASE_URL=...`. The first build starts as soon as the app exists, so a `{ secret: true, required: true }` variable must be given with `--secret` here; the CLI refuses to create the app without it. Without a Dockerfile use `--build-type railpack`, and pass the same `--build-type` to every later `apps builds trigger`, which does not remember it. `apps deploys wait <app>` follows the build.
 
    Leave out `domains:` for now, so nothing competes with Vercel for the real hostname. If `APP_PUBLIC_HOST` is set to a public IP, `apps network <app>` shows a zero-config sslip.io URL to test on. The host port behind it changes on every restart, so run `apps network` again after one.
-3. **Load env vars.** Plain values with `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`. Secrets with `apps secrets set <app> --env-file secrets.env`. Copy from the Production column in Vercel, not Preview. Keep `NEXT_PUBLIC_*` out of these files; see the build-time section above. Run `apps apply <app>` afterwards.
-4. **Add a readiness path.** Add a cheap route such as `/api/health` that does not depend on external services, and set it with `health.readiness` in `app.yaml` or `apps health set <app> --probe readiness --path /api/health`. A deploy that fails readiness does not take over traffic: the ingress keeps routing to the previous release and the attempt is recorded as failed. Still check `apps status <app>` after each deploy.
-5. **Deploy, then verify** on the zero-config URL: pages, API routes, auth callbacks, image requests, and streaming responses.
-6. **Move data** if the app uses Vercel Postgres or KV: create a managed database here, restore a dump into it, and rehearse the restore before cutover.
-7. **Recreate cron jobs** as scheduled tasks, and run each once with `apps scheduled-tasks run`.
-8. **Enable previews** with `apps previews enable <app>` if you rely on PR preview URLs.
+3. Load env vars. Plain values with `apps env import <app> --file prod.env --dry-run`, then again without `--dry-run`. Secrets with `apps secrets set <app> --env-file secrets.env`. Copy from the Production column in Vercel, not Preview. Keep `NEXT_PUBLIC_*` out of these files; see the build-time section above. Run `apps apply <app>` afterwards.
+4. Add a readiness path. Add a cheap route such as `/api/health` that does not depend on external services, and set it with `health.readiness` in `app.yaml` or `apps health set <app> --probe readiness --path /api/health`. A deploy that fails readiness does not take over traffic: the ingress keeps routing to the previous release and the attempt is recorded as failed. Still check `apps status <app>` after each deploy.
+5. Deploy, then verify on the zero-config URL: pages, API routes, auth callbacks, image requests, and streaming responses.
+6. Move data if the app uses Vercel Postgres or KV: create a managed database here, restore a dump into it, and rehearse the restore before cutover.
+7. Recreate cron jobs as scheduled tasks, and run each once with `apps scheduled-tasks run`.
+8. Enable previews with `apps previews enable <app>` if you rely on PR preview URLs.
 
 ## 4. What has no equivalent
 
@@ -117,14 +117,14 @@ Plan for these before you commit to moving.
 
 ## 5. DNS cutover and rollback plan
 
-1. **Lower TTLs first.** At least one full old-TTL period before cutover (often 24 hours), set the TTL on the relevant A, AAAA, and CNAME records to 60 to 300 seconds.
-2. **Add the real domains** to the app, including `www` if you redirect it: `apps domains add <app> app.example.com www.example.com`, or `domains:` in `app.yaml` and a redeploy. Then set the redirect, `domains redirect set <app> www.example.com --target https://app.example.com`. Check certificate state on the Domains tab.
-3. **Get a certificate ready before traffic arrives.** With ACME enabled, issuance needs the domain to already point at the server, so expect a short window. To avoid it, upload a bring-your-own certificate for the domain first, or rehearse ACME on a spare hostname using the [runbook](/acme-verification-runbook).
-4. **Test with a host override** before changing DNS, for example `curl --resolve app.example.com:443:<server-ip> https://app.example.com/` (add `-k` while the certificate is self-signed). Check the redirect the same way on `www.example.com`.
-5. **Cut over.** Change the A and AAAA records for the apex and `www` from Vercel to the Levelrail server's public IP. Do not remove the domain from Vercel until the shadow run is done.
-6. **Watch.** Run `dig +short app.example.com` from outside your network, then check the Metrics tab and `apps logs <app>`.
-7. **Rollback plan.** Write down the old record values before changing them, and keep the Vercel project and its domain configuration untouched. To roll back, restore the old records. With the low TTL, most clients return within minutes. A bad Levelrail release is a separate case: use `apps deploys rollback-to <app> <deploy-id>` or the dashboard button.
-8. **Raise TTLs again** only after the shadow run is clean.
+1. Lower TTLs first. At least one full old-TTL period before cutover (often 24 hours), set the TTL on the relevant A, AAAA, and CNAME records to 60 to 300 seconds.
+2. Add the real domains to the app, including `www` if you redirect it: `apps domains add <app> app.example.com www.example.com`, or `domains:` in `app.yaml` and a redeploy. Then set the redirect, `domains redirect set <app> www.example.com --target https://app.example.com`. Check certificate state on the Domains tab.
+3. Get a certificate ready before traffic arrives. With ACME enabled, issuance needs the domain to already point at the server, so expect a short window. To avoid it, upload a bring-your-own certificate for the domain first, or rehearse ACME on a spare hostname using the [runbook](/acme-verification-runbook).
+4. Test with a host override before changing DNS, for example `curl --resolve app.example.com:443:<server-ip> https://app.example.com/` (add `-k` while the certificate is self-signed). Check the redirect the same way on `www.example.com`.
+5. Cut over. Change the A and AAAA records for the apex and `www` from Vercel to the Levelrail server's public IP. Do not remove the domain from Vercel until the shadow run is done.
+6. Watch. Run `dig +short app.example.com` from outside your network, then check the Metrics tab and `apps logs <app>`.
+7. Rollback plan. Write down the old record values before changing them, and keep the Vercel project and its domain configuration untouched. To roll back, restore the old records. With the low TTL, most clients return within minutes. A bad Levelrail release is a separate case: use `apps deploys rollback-to <app> <deploy-id>` or the dashboard button.
+8. Raise TTLs again only after the shadow run is clean.
 
 ## 6. Shadow-run checklist
 

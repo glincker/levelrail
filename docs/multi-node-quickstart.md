@@ -12,8 +12,8 @@ This page is the short path to a second node. Each step links to the page that h
 
 Pick one of two paths:
 
-- **Bring your own server.** Any Linux box with Docker, systemd and outbound network access works. Use [Enrolling over SSH](/multi-node#enrolling-over-ssh-instead-of-by-hand) to have the control plane set it up, or [enroll it by hand](/multi-node#enrolling-a-second-node).
-- **Create one at a cloud provider.** Hetzner, DigitalOcean, AWS, Azure and GCP are supported. See the [multi-cloud provisioning quickstart](/multi-cloud-provisioning) for the command sequence and [Node provisioning](/node-provisioning) for credentials and cost.
+- Bring your own server: any Linux box with Docker, systemd and outbound network access works. Use [Enrolling over SSH](/multi-node#enrolling-over-ssh-instead-of-by-hand) to have the control plane set it up, or [enroll it by hand](/multi-node#enrolling-a-second-node).
+- Create one at a cloud provider: Hetzner, DigitalOcean, AWS, Azure and GCP are supported. See the [multi-cloud provisioning quickstart](/multi-cloud-provisioning) for the command sequence and [Node provisioning](/node-provisioning) for credentials and cost.
 
 </Step>
 <Step title="Set the advertise host before enrolling">
@@ -46,9 +46,9 @@ The join flow was run with two real agent processes, each with its own Docker da
 
 That run did not cover:
 
-- **A real WAN or second physical host.** Both daemons ran on one machine, so cross-datacenter latency and NAT traversal are untested.
-- **The WireGuard mesh between two real hosts.** The mesh code is tested against fakes and a single host with a real TUN device. If you turn it on across hosts, open inbound UDP 51820 on the control plane and check `levelrail-cli nodes mesh` for a handshake per peer. See [mesh requirements](/multi-node#multi-node-mesh-requirements).
-- **Cloud provisioning against real accounts.** See [what was not tested](/node-provisioning#what-was-not-tested).
+- A real WAN or second physical host. Both daemons ran on one machine, so cross-datacenter latency and NAT traversal are untested.
+- The WireGuard mesh between two real hosts. The mesh code is tested against fakes and a single host with a real TUN device. If you turn it on across hosts, open inbound UDP 51820 on the control plane and check `levelrail-cli nodes mesh` for a handshake per peer. See [mesh requirements](/multi-node#multi-node-mesh-requirements).
+- Cloud provisioning against real accounts. See [what was not tested](/node-provisioning#what-was-not-tested).
 
 ## If the control plane dies
 

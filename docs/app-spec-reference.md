@@ -3,9 +3,10 @@ title: "app.yaml reference"
 description: Complete reference for app.yaml - the declarative app spec for Levelrail
 ---
 
-`app.yaml` is the declarative spec Levelrail reads from your repo: services, their build and runtime settings, and the managed databases they use. Every field below is parsed and validated against the JSON Schema embedded in the control plane (`internal/spec/schema/app.schema.json`), and an unknown key is an error rather than being ignored.
+`app.yaml` is the declarative spec Levelrail reads from your repo: services, their build and runtime settings, and the managed databases they use. The control plane validates every field below against the JSON Schema embedded in it (`internal/spec/schema/app.schema.json`). An unknown key is an error, not something that gets quietly ignored.
 
-Levelrail looks for the file under these names, in order: `app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, then the product's own name with a `.yaml` or `.yml` extension. The generic names come first so a repo that already committed `app.yaml` keeps working.
+Levelrail looks for the file under these names, in this order: `app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, then the product's own name with a `.yaml` or `.yml` extension. The generic names come first so a repo that already committed `app.yaml` keeps working.
+
 ## Full example
 
 ```yaml
@@ -227,7 +228,7 @@ Shell commands the reconciler runs inside the service's own container via the Do
 **Rules**
 
 - At least one of `preDeploy`/`postDeploy` must be set; an empty `hooks: {}` block is rejected.
-- With more than one replica, each hook runs exactly once per deploy (against the first replica), not once per replica. Running a database migration N times per deploy would be wrong even though every replica gets a freshly built container from the same image.
+- With more than one replica, each hook runs exactly once per deploy (against the first replica), not once per replica. Running a database migration once per replica would be wrong, even though every replica gets a fresh container from the same image.
 - The most recent outcome of each hook (exit code, captured output) is queryable via `GET /api/v1/apps/{name}/hook-runs`.
 
 ### `Job` (an entry under `jobs`)
@@ -315,7 +316,7 @@ Every published port (a service's `port`/`host_port`, and a managed database's p
 
 ### Default behavior
 
-`private` is the default for anything created after this field shipped. A service or database that was already publicly exposed before the field existed was backfilled to `public` and keeps that exposure. The `private` default applies only when a redeploy or public-access change leaves `bind_address` unset on a newly created resource.
+`private` is the default for anything created after this field shipped. A service or database that was already publicly exposed before the field existed was backfilled to `public` and keeps that exposure. The `private` default only applies to a newly created resource when a redeploy or public-access change leaves `bind_address` unset.
 
 ## Validation
 

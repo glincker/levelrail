@@ -6,13 +6,13 @@ description: Run levelrail-mcp over stdio for a locally spawning client or over 
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/anthropic.svg" alt="Anthropic" title="Anthropic" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/openai.svg" alt="OpenAI" title="OpenAI" width="24" height="24" /></span></div>
 
-`levelrail-mcp` is an MCP (Model Context Protocol) server that exposes the control plane's REST API (`/api/v1`) as MCP tools. It is a thin client like `levelrail-cli`: it authenticates with an API token and calls the same routes the CLI and dashboard do. It has no special internal access, and a token with fewer abilities than a tool needs gets the same 403 the REST API would return.
+`levelrail-mcp` is an MCP (Model Context Protocol) server that turns the control plane's REST API (`/api/v1`) into MCP tools. It is a thin client like `levelrail-cli`: it authenticates with an API token and calls the same routes the CLI and dashboard do. It has no special internal access, and a token with fewer abilities than a tool needs gets the same 403 the REST API would return.
 
 Source: `cmd/levelrail-mcp` and `internal/mcptools`.
 
 ## What it exposes
 
-Tools cover apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, [feature flags](/feature-flags), and more, one tool per REST capability. See the [API reference](/api-reference) for the underlying routes, and [MCP tool surface](/mcp-tool-surface) for the tool count per toolset.
+There is one tool per REST capability: apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, [feature flags](/feature-flags) and more. See the [API reference](/api-reference) for the underlying routes, and [MCP tool surface](/mcp-tool-surface) for the tool count per toolset.
 
 Notable read-oriented tools for day-2 operation:
 
@@ -30,7 +30,7 @@ Env tools:
 <Tabs>
 <Tab title="stdio (local client)">
 
-This is the default and needs no extra flags. An MCP client that can launch local subprocesses (Claude Desktop, Claude Code, and similar tools) starts `levelrail-mcp` itself and talks to it over stdin/stdout:
+This is the default and needs no extra flags. An MCP client that can launch local subprocesses (Claude Desktop, Claude Code and similar tools) starts `levelrail-mcp` itself and talks to it over stdin/stdout:
 
 ```json
 {
@@ -60,9 +60,9 @@ Some MCP clients cannot spawn a local subprocess, for example an AI assistant th
 levelrail-mcp --transport=http --listen=127.0.0.1:8090 --token '<your API token>'
 ```
 
-- **Binds to loopback by default** (`127.0.0.1:8090`). Pass `--listen` explicitly (for example `0.0.0.0:8090`, or a WireGuard-mesh address) to expose it beyond the local machine; nothing does that by default, so an operator has to opt in deliberately.
-- **Fails closed with no token.** Unlike stdio, a network listener is reachable by anything that can route to it, so `--transport=http` with no API token configured (via `--token`, `APP_API_TOKEN`, or a `levelrail-cli auth login` credentials file) refuses to start rather than listen unauthenticated.
-- **Requires the same bearer token on every incoming request.** The token this process already uses outbound, against the control plane's REST API, is the same token an MCP client must present as `Authorization: Bearer <token>` on every request against the network listener. There is no separate auth concept to configure.
+- Binds to loopback by default (`127.0.0.1:8090`). Pass `--listen` explicitly (for example `0.0.0.0:8090`, or a WireGuard-mesh address) to expose it beyond the local machine. You have to opt in.
+- Fails closed with no token. A network listener is reachable by anything that can route to it, so `--transport=http` with no API token configured (via `--token`, `APP_API_TOKEN`, or a `levelrail-cli auth login` credentials file) refuses to start rather than listen unauthenticated.
+- Requires the same bearer token on every incoming request. The token this process already uses against the control plane's REST API is the one an MCP client must present as `Authorization: Bearer <token>` on every request to the listener. There is no separate auth to configure.
 - Put a reverse proxy or the WireGuard mesh (see [Multi-node](/multi-node)) in front of it for TLS if the client is not on the same trusted network; `levelrail-mcp` itself speaks plain HTTP.
 
 </Tab>
@@ -88,7 +88,7 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 APP_MCP_MODE=read-only APP_MCP_TOOLSETS=apps,nodes,logs,diagnostics levelrail-mcp
 ```
 
-The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement).
+The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement for the token scope).
 
 ## Reading logs without flooding the context
 
@@ -100,7 +100,7 @@ Logs, deploy output, error messages, commit messages, PR titles and similar text
 
 Limits come from `APP_UNTRUSTED_MAX_FIELD_BYTES` (per string field, default 4096) and `APP_UNTRUSTED_MAX_BLOCK_BYTES` (per wrapped block, default 65536).
 
-This is friction, not a guarantee. The real boundary is the assistant's confirmation gate, which uses each tool's MCP annotations instead of name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
+This is friction, not a guarantee. The real boundary is the assistant's confirmation gate. It goes by each tool's MCP annotations, not name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
 
 ## Generating and scoping a token
 
@@ -131,9 +131,9 @@ levelrail-cli audit-log --agent deploy-bot
 
 ## Running a separately licensed AI assistant
 
-`levelrail-mcp` is designed to sit in front of any MCP-compatible AI assistant, including one licensed under terms (for example AGPL) that are incompatible with this project's Apache 2.0 license, or any third-party assistant you do not want coupled to this codebase.
+`levelrail-mcp` works with any MCP-compatible AI assistant, including one licensed under terms (for example AGPL) that are incompatible with this project's Apache 2.0 license, or any third-party assistant you do not want coupled to this codebase.
 
-**That assistant must always run as its own independent, separately deployed service.** It connects to Levelrail purely as an MCP client, over stdio (if co-located and it can spawn a subprocess) or over `--transport=http` (if it runs elsewhere). Its code must never be imported, vendored, copied into, or otherwise combined with this repository, regardless of transport. This is the same brand- and dependency-neutrality this project already enforces elsewhere: an integration is a boundary, not a merge.
+That assistant must always run as its own, separately deployed service. It connects to Levelrail purely as an MCP client, over stdio (if co-located and it can spawn a subprocess) or over `--transport=http` (if it runs elsewhere). Its code must never be imported, vendored, copied into, or otherwise combined with this repository, regardless of transport. An integration is a boundary, not a merge.
 
 ## See also
 

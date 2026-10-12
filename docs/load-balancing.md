@@ -19,10 +19,10 @@ flowchart LR
 
 ## Where to find it
 
-- **Dashboard, all apps:** the **Load balancers** page in the sidebar lists every configured balancer with its state (`balancing`, `degraded`, `none`) and healthy upstream count. With none configured it offers a **Configure a load balancer** button that lets you pick an app.
-- **Dashboard, one app:** the **Load balancer** tab inside an app holds the settings, the live upstream table and the export.
-- **CLI:** `levelrail-cli lb list` for the overview, `levelrail-cli lb show|set|clear|status <app>` per app.
-- **API and MCP:** `GET /api/v1/loadbalancers` and the `list_load_balancers` tool.
+- Dashboard, all apps: the **Load balancers** page in the sidebar lists every configured balancer with its state (`balancing`, `degraded`, `none`) and healthy upstream count. With none configured it offers a **Configure a load balancer** button that lets you pick an app.
+- Dashboard, one app: the **Load balancer** tab inside an app holds the settings, the live upstream table and the export.
+- CLI: `levelrail-cli lb list` for the overview, `levelrail-cli lb show|set|clear|status <app>` per app.
+- API and MCP: `GET /api/v1/loadbalancers` and the `list_load_balancers` tool.
 
 ## Enable it
 
@@ -77,15 +77,15 @@ A deploy that carries a `loadbalancer:` block saves it. A deploy without the blo
 
 ## Health
 
-- **Active health checks** (`active_health`): Caddy probes each replica's `path` every `interval` and stops sending traffic to one that fails `fails` times in a row until it passes `passes` times. `expect_status` pins an exact status, otherwise any 2xx or 3xx counts.
-- **Passive health checks** (`passive_health`): a replica that fails `max_fails` real requests is skipped for `fail_duration`.
-- **Retries** (`retries`): a failed request is retried on another replica up to `count` times within `try_duration`.
+- Active health checks (`active_health`): Caddy probes each replica's `path` every `interval` and stops sending traffic to one that fails `fails` times in a row until it passes `passes` times. `expect_status` pins an exact status, otherwise any 2xx or 3xx counts.
+- Passive health checks (`passive_health`): a replica that fails `max_fails` real requests is skipped for `fail_duration`.
+- Retries (`retries`): a failed request is retried on another replica up to `count` times within `try_duration`.
 
 ## Deploys
 
-- **Drain** (`drain_timeout`): open streams (WebSockets, SSE, long downloads) stay up for this long after a cutover instead of being cut when the pool changes.
-- **Previous release fallback**: if none of the new release's replicas is running yet, the pool keeps serving the previous release's containers and reports `ServingPreviousRelease`. Traffic never falls into a gap between blue and green.
-- **Slow start** (`slow_start`, weighted only): a replica that joins the pool ramps from weight 1 to its configured weight over this duration, so a cold container is not hit with a full share at once. A control plane restart does not restart the ramp.
+- Drain (`drain_timeout`): open streams (WebSockets, SSE, long downloads) stay up for this long after a cutover instead of being cut when the pool changes.
+- Previous release fallback: if none of the new release's replicas is running yet, the pool keeps serving the previous release's containers and reports `ServingPreviousRelease`. Traffic never falls into a gap between blue and green.
+- Slow start (`slow_start`, weighted only): a replica that joins the pool ramps from weight 1 to its configured weight over this duration, so a cold container is not hit with a full share at once. A control plane restart does not restart the ramp.
 
 ## Limits and TLS
 

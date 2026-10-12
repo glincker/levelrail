@@ -3,7 +3,7 @@ title: "White-labeling"
 description: How the brand layer works, which names and prefixes it drives (dashboard, agent unit, firewall rule tag, mesh interface, update repository), the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
 ---
 
-The product name is never hardcoded in the Go or web source. Every user-visible identity string comes from one `Brand` struct in `internal/brand`, loaded at startup from a `brand.yaml` file and optionally overridden by environment variables. This page explains what that layer controls so you can run a renamed fork, or just understand why the platform names things the way it does.
+The product name is never hardcoded in the Go or web source. Every user-visible identity string comes from one `Brand` struct in `internal/brand`, loaded at startup from a `brand.yaml` file and optionally overridden by environment variables. This page covers what that layer controls, so you can run a renamed fork or just see why the platform names things the way it does.
 
 ## How the brand is loaded
 
@@ -14,7 +14,7 @@ The product name is never hardcoded in the Go or web source. Every user-visible 
 
 The node agent reads the same file and overrides to derive the same short name the control plane uses (see [what the brand drives](#what-the-brand-drives)). The dashboard does not embed any name: it fetches `GET /api/v1/brand` on boot, which is reachable before sign-in so the login screen can be branded, and applies the colors as CSS variables.
 
-The env prefix is deliberately `APP_BRAND_`, not one containing the product name, so a rename never needs an env migration.
+The env prefix is `APP_BRAND_` on purpose, not one containing the product name, so a rename never needs an env migration.
 
 ## Fields
 
@@ -61,13 +61,13 @@ The binary file name comes from how you build and install it, not from `brand.ya
 
 ## What a fork must still change
 
-The brand layer covers names and prefixes. These are concrete locations that stay upstream until you change them:
+The brand layer covers names and prefixes. These places stay upstream until you change them:
 
-- **Agent image registry.** Provisioned nodes pull `ghcr.io/glincker/<agent-name>:<tag>`. The `ghcr.io/glincker/` owner is a constant in `internal/provision/cloudinit.go` and in the SSH provisioning path in `internal/api/node_ssh_provision.go`, not a brand field. A fork publishing its own agent image must change both.
-- **Go module path.** The module is `github.com/GLINCKER/levelrail`. Renaming it means rewriting imports, and the [shared kit](/kit) has its own module path.
-- **The installer.** `install.sh` writes a default `brand.yaml` into the data directory only when none exists, and that default carries the upstream values. Edit the script's `write_brand` step, or place your own `brand.yaml` in the data directory before the first run.
-- **Release and docs hosting.** `repo_url` and `docs_url` point where you tell them to, but your fork needs its own releases and its own docs site for those links to resolve.
-- **Documentation text.** These docs name the product directly. The brand layer does not rewrite prose.
+- Agent image registry: provisioned nodes pull `ghcr.io/glincker/<agent-name>:<tag>`. The `ghcr.io/glincker/` owner is a constant in `internal/provision/cloudinit.go` and in the SSH provisioning path in `internal/api/node_ssh_provision.go`, not a brand field. A fork publishing its own agent image must change both.
+- Go module path: the module is `github.com/GLINCKER/levelrail`. Renaming it means rewriting imports, and the [shared kit](/kit) has its own module path.
+- The installer: `install.sh` writes a default `brand.yaml` into the data directory only when none exists, and that default carries the upstream values. Edit the script's `write_brand` step, or place your own `brand.yaml` in the data directory before the first run.
+- Release and docs hosting: `repo_url` and `docs_url` point where you tell them to, but your fork needs its own releases and its own docs site for those links to resolve.
+- Documentation text: these docs name the product directly. The brand layer does not rewrite prose.
 
 ## Set a brand at runtime
 

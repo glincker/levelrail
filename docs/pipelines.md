@@ -6,6 +6,7 @@ description: Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, 
 A pipeline is a YAML file that describes what should happen when code changes: run tests in a container, build an image, wait for a person to approve, then deploy. Pipelines sit on top of the build and deploy features that already exist. They call those primitives; they never touch the reconciler, and no AI is involved in running one.
 
 Each pipeline belongs to one app. Open **Pipelines** in an app's sidebar, use the CLI (`levelrail-cli pipelines ...`), or the API under `/api/v1/apps/{name}/pipelines`.
+
 ```mermaid
 flowchart LR
   P["Push to main"] --> T["test stage<br/>go test ./..."]

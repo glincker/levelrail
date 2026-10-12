@@ -3,7 +3,7 @@ title: "Feature catalog"
 description: Inventory of Levelrail's dashboard pages by area, with pointers to the generated API and CLI references.
 ---
 
-A flat map of what the dashboard offers, so you can find the right page or check whether something already exists. This is a hand-written snapshot. The API and CLI surfaces change faster than this page can, so they live in generated or per-command references instead: [API reference](/api-reference) (generated from the registered routes) and [CLI reference](/cli-reference). For how mature each feature is, see [feature status](/feature-status). For history, see the [roadmap](/roadmap).
+A flat map of what the dashboard offers, so you can find the right page or check whether something already exists. It is a hand-written snapshot. The API and CLI change faster than this page can keep up, so they have their own references: [API reference](/api-reference) (generated from the registered routes) and [CLI reference](/cli-reference). For how mature each feature is, see [feature status](/feature-status). For history, see the [roadmap](/roadmap).
 
 ## Dashboard pages
 

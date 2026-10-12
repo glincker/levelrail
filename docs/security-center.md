@@ -3,10 +3,11 @@ title: "Security center"
 description: The security center scores your instance from its real state, lists what to fix first with a one-click fix or a link, manages every session and device, and sets sign-in approval and API token policy.
 ---
 
-The security center is one page, **Security center** in the sidebar (`/security`), that answers three questions: how exposed is this instance right now, what should I fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the [exposure audit](/exposure-audit)) and never calls anything outside your servers.
+The security center is one page, **Security center** in the sidebar (`/security`). It answers three questions: how exposed is this instance right now, what should you fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the [exposure audit](/exposure-audit)) and never calls anything outside your servers.
+
 ## Security score and checklist
 
-`GET /api/v1/security/posture` returns a score from 0 to 100, a grade, and counts by severity. Every check that fails costs points: 25 for critical, 15 for high, 8 for medium and 3 for low. A check that could not be read shows as unknown and costs nothing, so a missing data source never makes the score look worse or better than it is.
+`GET /api/v1/security/posture` returns a score from 0 to 100, a grade, and counts by severity. Each failing check costs points: 25 for critical, 15 for high, 8 for medium and 3 for low. A check that could not be read shows as unknown and costs nothing, so a missing data source never makes the score look worse or better than it is.
 
 Anyone with `read` gets the score and counts, plus a short checklist for their own account (two-factor or passkey, recovery codes, a reset flag). Admins (`root`) also get the full platform checklist with the names of the accounts, tokens, domains and nodes behind each failing check. The result is cached for `APP_SECURITY_POSTURE_CACHE_TTL` (default 30s); the exposure audit inside it, which may ask remote agents for their containers, refreshes every `APP_SECURITY_POSTURE_EXPOSURE_TTL` (default 5m). Changing the policy, revoking sessions or a "this wasn't me" report refreshes it at once.
 
@@ -70,7 +71,7 @@ A sign-in is only held when the account already has another live session, so the
 
 Each account can also turn on **Require approval for new browsers on my account** in the Policy tab (`PUT /api/v1/security/account`). That applies approval to every method for that account whatever the platform scope is. Turning it off needs a signed-in dashboard session; a token can only turn it on.
 
-**Break-glass.** `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane, then a restart, turns approval off for every method and every account, whatever the scope and account switches say. Use it only when nobody can approve; set it back afterwards. `recover-admin` on the server still works.
+Break-glass: `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane, then a restart, turns approval off for every method and every account, whatever the scope and account switches say. Use it only when nobody can approve, and set it back afterwards. `recover-admin` on the server still works.
 
 ### New sign-in alerts
 

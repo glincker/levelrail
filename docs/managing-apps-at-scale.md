@@ -3,11 +3,11 @@ title: "Managing apps at scale"
 description: Filter, tag, bulk-act on, clone and promote apps when you run dozens of them.
 ---
 
-This page covers the tools for running many apps: filtering the list, environments and tags, bulk actions, cloning an app, and promoting a release from staging to production. Every operation is available in the dashboard, the CLI, and the API. Bulk actions and promotion are also MCP tools.
+Once you run dozens of apps, you need ways to find them and act on several at once. This page covers filtering the list, environments and tags, bulk actions, cloning an app, and promoting a release from staging to production. You can do all of it from the dashboard, the CLI, or the API. Bulk actions and promotion are also MCP tools.
 
 ## Environments and tags
 
-An **environment** (production, staging, or any name you create) belongs to a project, and an app is placed in one with `PUT /api/v1/apps/{name}/environment` or the bulk `set-environment` action. An environment can be marked **protected**, which makes deploys and promotions into it require confirmation and approval. See [Projects, organizations, and environments](/projects-and-organizations).
+An **environment** (production, staging, or any name you create) belongs to a project. You put an app in one with `PUT /api/v1/apps/{name}/environment` or the bulk `set-environment` action. You can mark an environment **protected**, and then deploys and promotions into it need confirmation and approval. See [Projects, organizations, and environments](/projects-and-organizations).
 
 **Tags** are free-form `key` or `key:value` labels that cut across projects. See [Tags](/tags) for the naming rules.
 
@@ -17,7 +17,7 @@ An **environment** (production, staging, or any name you create) belongs to a pr
 
 The dashboard list at `/apps` has a status strip (running, deploying, failing, stopped), a search box, environment chips, a tag filter, and a checkbox on every row. The list is virtualized, so hundreds of apps stay responsive.
 
-**Saved views** store the current search, environments and tags under a name. They are kept in your browser's local storage, not on the server: the control plane has no per-user preference store, and a view is a convenience rather than shared state.
+**Saved views** store the current search, environments and tags under a name. They live in your browser's local storage, not on the server. The control plane has no per-user preference store, so a saved view is yours alone and is not shared.
 
 Over the API:
 
@@ -28,7 +28,7 @@ curl "https://control-plane/api/v1/apps-summary?environment=production" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
-Apps you may not read (an IAM Deny on `app:<name>`) are left out of both.
+Apps you are not allowed to read (an IAM Deny on `app:<name>`) are left out of both.
 
 ## Bulk actions
 
@@ -67,11 +67,11 @@ levelrail-cli apps clone web web-staging --preview
 levelrail-cli apps clone web web-staging --domain-suffix stg --copy-secrets --environment env_abc
 ```
 
-A clone copies the image, port, command, plain env, secret names, vault references, replicas, strategy, resources, health checks, hooks, egress policy, volume definitions, and project.
+A clone copies the image, port, command, plain env, secret names, vault references, replicas, strategy, resources, health checks, hooks, egress policy, volume definitions, and project. Here is what it treats differently:
 
-- **Domains** are never copied as is, because two apps must not answer the same host. By default the clone has none. `--domain-suffix stg` derives `web-stg.example.com` from `web.example.com`.
-- **Secret values** are copied only with `--copy-secrets`, and only if you hold `read:sensitive`. Each value is decrypted and encrypted again under the new app's own key and slot binding.
-- **Volumes** are recreated as new, empty volumes. Copying volume data (`--with-data`) is not supported.
+- Domains are never copied as is, because two apps must not answer the same host. By default the clone has none. `--domain-suffix stg` derives `web-stg.example.com` from `web.example.com`.
+- Secret values are copied only with `--copy-secrets`, and only if you hold `read:sensitive`. Each value is decrypted and encrypted again under the new app's own key and slot binding.
+- Volumes are recreated as new, empty volumes. Copying volume data (`--with-data`) is not supported.
 - Scheduled tasks, node placement and deploy history are not copied.
 
 ## Promote a release
@@ -81,7 +81,7 @@ levelrail-cli apps promote web-staging --to env_prod --preview
 levelrail-cli apps promote web-staging --to env_prod --include-env --confirm
 ```
 
-The preview shows a diff before anything changes: image, replicas, resources, health, and the **names** (never values) of env keys that would be added, removed, or differ. Domains, ports, node placement, volumes and secret values are never touched. Applying promotes the source's deployed image reference to the destination and starts a deploy through the normal deploy path. With `--include-env`, env keys the source added or dropped are applied too; keys both apps have keep the destination's own value.
+The preview shows a diff before anything changes: image, replicas, resources, health, and the **names** (never values) of env keys that would be added, removed, or differ. Domains, ports, node placement, volumes and secret values are never touched. Applying sends the source's deployed image reference to the destination and starts a deploy through the normal deploy path. With `--include-env`, env keys the source added or dropped are applied too; keys both apps have keep the destination's own value.
 
 Guardrails:
 

@@ -4,6 +4,7 @@ description: Instance-wide environments (development, test, UAT, production and 
 ---
 
 An environment labels where an app or database runs: development, test, UAT, production, or one you define. Environments are instance-wide, so the same four are available to every project. Tagging resources with an environment lets you filter the dashboard, protect production, and write access rules per environment.
+
 Creating and renaming environments, the switcher and the database move route are behind the `global-environments` experimental flag: set `APP_EXPERIMENTAL=global-environments` on the control plane (see [Experimental features](/experimental-features)). Existing per-project environments keep working with or without it.
 
 ## Built-in environments
@@ -50,7 +51,7 @@ levelrail-cli databases move-env mydb env_dev
 
 Pass an empty id (`""`) to remove the tag. In the dashboard, use the Change button next to the environment on the app's Overview.
 
-A move **into or out of a protected environment** works differently:
+A move into or out of a protected environment works differently:
 
 1. Without `--confirm` the request is refused with 409 and nothing changes.
 2. With `--confirm` it becomes a pending approval instead of moving right away.
@@ -65,13 +66,13 @@ A move during a deploy freeze is refused with 423 unless you pass the freeze ove
 
 ## Protection
 
-Mark any environment as protected to put deploys and moves behind approval:
+Mark an environment as protected to put deploys and moves behind approval:
 
 ```bash
 levelrail-cli environments update env_abc --protected
 ```
 
-Turning protection on or off works without the experimental flag. Deploys to a protected environment already needed confirmation and approval before this release, and that is unchanged.
+Turning protection on or off works without the experimental flag. Deploys to a protected environment already needed confirmation and approval, and that has not changed.
 
 ## Switcher and filters
 

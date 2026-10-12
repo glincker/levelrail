@@ -152,7 +152,7 @@ The ingress needs a country source. Without one, geo rules are saved but inactiv
 
 | Source | How it works |
 | --- | --- |
-| Proxy header | A CDN or proxy in front adds the visitor's country, for example Cloudflare's `CF-IPCountry`. The header is honoured **only** when the connection comes from an address in `APP_INGRESS_TRUSTED_PROXIES`; anyone else could send it. Set the name with `APP_GEOIP_COUNTRY_HEADER` (default `CF-IPCountry`). |
+| Proxy header | A CDN or proxy in front adds the visitor's country, for example Cloudflare's `CF-IPCountry`. The header is honoured only when the connection comes from an address in `APP_INGRESS_TRUSTED_PROXIES`; anyone else could send it. Set the name with `APP_GEOIP_COUNTRY_HEADER` (default `CF-IPCountry`). |
 | Local database | Point `APP_GEOIP_DB` at an `.mmdb` country or city database. Nothing is downloaded by Levelrail; refresh the file yourself and restart. |
 | None | No rule is enforced. |
 
@@ -160,8 +160,8 @@ The ingress needs a country source. Without one, geo rules are saved but inactiv
 
 Two databases work out of the box:
 
-- **MaxMind GeoLite2 Country**: free, but needs a MaxMind account and licence key to download, and its EULA applies (including keeping the file updated).
-- **DB-IP IP to Country Lite**: free under CC BY 4.0, no account. Attribution is required wherever you show the data, for example "IP geolocation by DB-IP".
+- MaxMind GeoLite2 Country: free, but needs a MaxMind account and licence key to download, and its EULA applies (including keeping the file updated).
+- DB-IP IP to Country Lite: free under CC BY 4.0, no account. Attribution is required wherever you show the data, for example "IP geolocation by DB-IP".
 
 The database is read with [`oschwald/maxminddb-golang`](https://github.com/oschwald/maxminddb-golang) (ISC licence).
 
@@ -184,10 +184,10 @@ levelrail-cli domains geo set my-app shop.example.com --mode allow --countries U
 Caching is per domain and off by default. Each rule matches a path (prefix, exact or regex) and says how long to keep a response.
 
 - Only `GET` and `HEAD` are cached; a `HEAD` can be answered from a stored `GET`.
-- **Never cached**: requests with `Authorization`, requests with a `Cookie` (unless the rule sets `cache_with_cookies`), range requests, upgrades, and `Cache-Control: no-store` requests. Responses with `Set-Cookie`, `Cache-Control: private`, `no-store` or `no-cache`, `Vary: *`, a `Vary` on a header the rule does not list, a partial content range, or a status outside the rule's list (default `200`).
-- **TTL**: the app's `s-maxage`, then `max-age`, then the rule's `ttl_seconds`. With `override_upstream`, the rule's TTL always wins. A TTL of 0 means "do not store". TTLs are capped by `APP_INGRESS_CACHE_MAX_TTL`.
-- **Stale while revalidate**: after an entry expires, the first request fetches a fresh copy from the app, and requests arriving while that fetch is running get the expired copy, marked `STALE`, for up to `stale_while_revalidate_seconds`.
-- **Key**: the request host, path and query, `Accept-Encoding`, and the rule's `vary` headers. Entries from one host are never served for another.
+- Never cached: requests with `Authorization`, requests with a `Cookie` (unless the rule sets `cache_with_cookies`), range requests, upgrades, and `Cache-Control: no-store` requests. Responses with `Set-Cookie`, `Cache-Control: private`, `no-store` or `no-cache`, `Vary: *`, a `Vary` on a header the rule does not list, a partial content range, or a status outside the rule's list (default `200`).
+- TTL: the app's `s-maxage`, then `max-age`, then the rule's `ttl_seconds`. With `override_upstream`, the rule's TTL always wins. A TTL of 0 means "do not store". TTLs are capped by `APP_INGRESS_CACHE_MAX_TTL`.
+- Stale while revalidate: after an entry expires, the first request fetches a fresh copy from the app, and requests arriving while that fetch is running get the expired copy, marked `STALE`, for up to `stale_while_revalidate_seconds`.
+- Key: the request host, path and query, `Accept-Encoding`, and the rule's `vary` headers. Entries from one host are never served for another.
 - Every response on a cached path carries `X-Cache: HIT`, `MISS`, `STALE` or `BYPASS`, and a hit has an `Age` header. A hit answers `If-None-Match` with `304` when the ETag matches.
 
 The cache lives in the control plane's memory: a least recently used store capped by `APP_INGRESS_CACHE_MAX_BYTES` (default 64 MiB) across every domain, with single responses capped by `APP_INGRESS_CACHE_MAX_OBJECT_BYTES` (default 2 MiB) or the domain's own lower `max_object_bytes`. It is per instance, starts empty after a restart, and is not shared between nodes.
@@ -230,8 +230,8 @@ Pick one of the app's domains as the primary and mark others as aliases: each al
 
 ### Normalisation
 
-- **Trailing slash**: `add` (paths without a file extension get a slash), `remove`, or `off` (default). Uses `308`.
-- **Lower case host**: redirects `Example.COM` to `example.com`. Off by default.
+- Trailing slash: `add` (paths without a file extension get a slash), `remove`, or `off` (default). Uses `308`.
+- Lower case host: redirects `Example.COM` to `example.com`. Off by default.
 
 The tab walks `http://www.example.com/a?x=1`, `http://example.com/a` and `https://www.example.com/a` through your settings and shows each hop with its status code before you save.
 

@@ -3,12 +3,7 @@ title: "Identity and access: users, roles, and IAM policies"
 description: Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
 ---
 
-This page covers who can sign in, what they can do once they are in, and the record of what they did.
-
-- Add a teammate with a role, or invite them by email.
-- Scope a CI token down to one app.
-- Turn on two-factor auth, passkeys, OAuth, or sign-in codes.
-- Review who changed what in the audit log.
+This page covers who can sign in, what they can do once they are in, and the record of what they did. You can add a teammate with a role or invite them by email, scope a CI token down to one app, turn on two-factor auth, passkeys, OAuth or sign-in codes, and review who changed what in the audit log.
 
 Start with [Common tasks](#common-tasks). The sections after it explain how each mechanism behaves.
 
@@ -131,10 +126,10 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 
 ## Why two permission models instead of one
 
-Most self-hosted platforms pick one shape and live with the downside.
+Most self-hosted platforms pick one shape and live with its downside.
 
-- **Flat roles** (admin/member/viewer): easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else."
-- **Full IAM policy engine**: can express that but is overkill for "give Priya everything, give the contractor read-only."
+- Flat roles (admin/member/viewer) are easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else."
+- A full IAM policy engine can express that, but it is overkill for "give Priya everything, give the contractor read-only."
 
 This platform keeps both, layered:
 
@@ -144,7 +139,7 @@ This platform keeps both, layered:
 | Roles | Named presets over the same ability list: `admin`, `operator`, `viewer`, plus custom roles (see [Access control](/access-control)). A convenience for the common case, never a second storage location for permissions. |
 | IAM policies | Optional, additive documents of Allow/Deny statements scoped to one resource (`app:web`, `database:main`, or `*`). Attach to a user or token to grant or revoke access to a specific app without changing its ability list. |
 
-**Evaluation:** an explicit Deny in an attached policy always wins, even over `root`. Everything else falls back to the flat abilities exactly as if no policy existed.
+Evaluation: an explicit Deny in an attached policy always wins, even over `root`. Everything else falls back to the flat abilities exactly as if no policy existed.
 
 ## How it actually works
 
@@ -158,9 +153,9 @@ Sessions are an in-memory map keyed by an opaque token (`sessionStore`), with a 
 
 **Session cookie security**
 
-The session cookie's `Secure` flag follows the request: it is set when the request arrived over TLS, or through the embedded Caddy ingress (a loopback peer sending `X-Forwarded-Proto: https`). `X-Forwarded-Proto` from any other peer is ignored, so a remote client can't spoof it. A fresh install reached at `http://<server-ip>:8080` therefore works out of the box, and the dashboard shows a persistent "connection is not encrypted" banner until you move to HTTPS.
+The session cookie's `Secure` flag follows the request: it is set when the request arrived over TLS, or through the embedded Caddy ingress (a loopback peer sending `X-Forwarded-Proto: https`). `X-Forwarded-Proto` from any other peer is ignored, so a remote client cannot spoof it. A fresh install reached at `http://<server-ip>:8080` therefore works out of the box, and the dashboard shows a persistent "connection is not encrypted" banner until you move to HTTPS.
 
-Once you set an `https://` **dashboard URL** (Domains page, `levelrail-cli settings dashboard-url set --url https://...`, or `PUT /api/v1/settings/dashboard-url`), sign-in over plain HTTP is refused with a `403` pointing at that URL. This covers password login, 2FA verification, and invite acceptance. An `https://` URL can only be saved from a request that already arrived over HTTPS (or from the server itself), so saving it can't lock you out.
+Once you set an `https://` **dashboard URL** (Domains page, `levelrail-cli settings dashboard-url set --url https://...`, or `PUT /api/v1/settings/dashboard-url`), sign-in over plain HTTP is refused with a `403` pointing at that URL. This covers password login, 2FA verification, and invite acceptance. An `https://` URL can only be saved from a request that already arrived over HTTPS (or from the server itself), so saving it cannot lock you out.
 
 <Warning>
 If the https URL breaks later, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane and restart it to recover.
@@ -222,9 +217,9 @@ flowchart TD
   F -->|No| H[403 Forbidden]
 ```
 
-1. An explicit **Deny** matching the ability and resource, in any attached policy, always wins, even for a `root` principal.
+1. An explicit Deny matching the ability and resource, in any attached policy, always wins, even for a `root` principal.
 2. Otherwise, the principal's own flat abilities decide, unchanged from having no policies attached.
-3. Otherwise, an explicit **Allow** in an attached policy can still grant access the flat abilities don't, scoped to that one resource.
+3. Otherwise, an explicit Allow in an attached policy can still grant access the flat abilities don't, scoped to that one resource.
 
 **Attachment.** A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it is treated as if it doesn't mention the pair being checked.
 
@@ -232,13 +227,13 @@ flowchart TD
 
 **Test before you trust.** `iam simulate` answers "can this principal do this on this resource" with the real evaluator, `iam effective` shows everything a principal can do grouped by ability, `iam analyze` runs static checks over every policy, and `iam templates` creates ready-made policies. A newly attached Deny takes effect on the very next request.
 
-The behavior is covered end to end by `test/e2e/iam_policy_enforcement_test.go`, which drives a real admin session through the real HTTP API to mint a user and a token, attach Deny and Allow policies, and confirm the resulting 403/200s.
+`test/e2e/iam_policy_enforcement_test.go` covers this end to end: it drives a real admin session through the real HTTP API to mint a user and a token, attach Deny and Allow policies, and confirm the resulting 403 and 200 responses.
 
 ### Bootstrap: exactly one path to the first admin
 
 On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` only if zero users exist. It is a no-op on later restarts, so a password change doesn't get silently reverted.
 
-Without those env vars and with no user yet, the control plane generates a one-time **setup token**, writes it to `<data dir>/setup-token` (mode `0600`), and logs it once.
+Without those env vars and with no user yet, the control plane generates a one-time setup token, writes it to `<data dir>/setup-token` (mode `0600`), and logs it once.
 
 - `GET /api/v1/auth/setup-status` (public) returns `{"needs_setup": true}` until the first admin exists, and the login page switches to its setup form on its own.
 - `POST /api/v1/auth/register` requires the token in `setup_token` (constant-time compare) and deletes the file on success, so whoever reaches the dashboard first can't claim the instance without shell access to the server.
@@ -247,13 +242,13 @@ Without those env vars and with no user yet, the control plane generates a one-t
 `POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check), so concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
 
 <Tip>
-**Development only.** `APP_DEV_MODE=1` seeds a fixed `dev`/`dev` admin for local development. Never use this in a real deployment.
+Development only: `APP_DEV_MODE=1` seeds a fixed `dev`/`dev` admin for local development. Never use it in a real deployment.
 </Tip>
 
 **Subsequent users.** Every user after the first is created by an existing root user, either directly (`POST /api/v1/auth/users`) or via an accepted invite.
 
 <Note>
-**Lockout prevention.** A root user cannot edit their own abilities or delete their own account, and the last remaining user can never be deleted. Both are hard 400s, not soft warnings.
+A root user cannot edit their own abilities or delete their own account, and the last remaining user can never be deleted. Both return a hard 400, not a warning.
 </Note>
 
 ### Two-factor authentication (TOTP)
@@ -335,10 +330,10 @@ flowchart TD
 
 `POST /api/v1/invites` mints a token for one named email, with either `--role` or `--abilities`.
 
-- **Privilege check.** The caller cannot invite someone with an ability they don't hold themselves. `AbilityWrite` gates the route, but that per-ability cap is the actual boundary.
-- **Accept link.** The response always includes the plaintext accept link, whether or not SMTP is configured, so a control plane with no email is still fully usable by copy and paste.
-- **Acceptance.** Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a normal local-password user through the same path as `POST /api/v1/auth/users`, so an invited account is indistinguishable from an admin-created one.
-- **Visibility.** A non-root caller only sees invites they created. A root caller sees every pending invite.
+- Privilege check: The caller cannot invite someone with an ability they don't hold themselves. `AbilityWrite` gates the route, but that per-ability cap is the actual boundary.
+- Accept link: The response always includes the plaintext accept link, whether or not SMTP is configured, so a control plane with no email is still fully usable by copy and paste.
+- Acceptance: Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a normal local-password user through the same path as `POST /api/v1/auth/users`, so an invited account is indistinguishable from an admin-created one.
+- Visibility: A non-root caller only sees invites they created. A root caller sees every pending invite.
 
 <Warning>
 Set the dashboard URL before inviting people by email. The link is absolute only when the control plane knows its own origin: the primary domain if one is set, otherwise the dashboard URL (Domains page, or `levelrail-cli settings dashboard-url set`). With neither, the link is a bare path (`/accept-invite?token=...`) that only works if pasted after the dashboard's address. The request's `Host` header is never used to build the link. The password reset email follows the same rule.
@@ -360,7 +355,7 @@ Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Mint
 
 ### Session links
 
-A session link is a one-time login URL rather than a credential you type. Mint one from an authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window. Opening it signs that browser in immediately.
+A session link is a one-time login URL, not a credential you type. Mint one from an authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window. Opening it signs that browser in immediately.
 
 `POST /api/v1/auth/session-links` mints one. It is gated `root`, because the link is root-equivalent: anyone who gets hold of the token before it's used can sign in as whoever minted it.
 
@@ -391,14 +386,14 @@ Open the `url` in a browser. `/login?session_link=<token>` consumes the token on
 
 **Security model**
 
-- **Short-lived.** The token expires 2 minutes after minting (default, `APP_AUTH_ENGINE_SESSION_LINK_TTL`), whether or not it's used.
-- **Single-use.** Consuming it is an atomic claim; if two requests race on the same token, at most one succeeds and the other gets the same "invalid or expired" error a stale token would.
-- **Can't escalate.** The session carries exactly the minting identity's own abilities, snapshotted at mint time. Minting already requires `root`.
-- **Minted on behalf of an API token** (rather than a logged-in user) produces a session pinned to that token's ability snapshot. Revoking the token afterward doesn't end a session already established from it, the same way revoking a token never ends sessions a user already has open.
+- Short-lived: The token expires 2 minutes after minting (default, `APP_AUTH_ENGINE_SESSION_LINK_TTL`), whether or not it's used.
+- Single-use: Consuming it is an atomic claim; if two requests race on the same token, at most one succeeds and the other gets the same "invalid or expired" error a stale token would.
+- Can't escalate: The session carries exactly the minting identity's own abilities, snapshotted at mint time. Minting already requires `root`.
+- A link minted on behalf of an API token (rather than a logged-in user) produces a session pinned to that token's ability snapshot. Revoking the token afterward does not end a session already established from it, the same way revoking a token never ends sessions a user already has open.
 
 ### Sign in with a code
 
-The sign-in page offers **Sign in with a code instead**. You type your username or email and get a one-time code you type back in, no password.
+The sign-in page offers Sign in with a code instead. You type your username or email and get a one-time code you type back in, no password.
 
 <Steps>
 <Step title="Request">
@@ -490,7 +485,7 @@ A token owned by the user that holds `signin:approve` can decide too: `levelrail
 Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
 
 <Warning>
-**Break-glass.** If you are stuck waiting for an approval no one can give: sign in with a code sent to your email, approve from the CLI with a `signin:approve` token, sign out the other session, or wait for it to expire. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone and for every sign-in method, whatever `auth.approval_scope` and the per-account switches say. `recover-admin` on the server still works as it always has.
+Break-glass: if you are stuck waiting for an approval no one can give, sign in with a code sent to your email, approve from the CLI with a `signin:approve` token, sign out the other session, or wait for it to expire. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone and for every sign-in method, whatever `auth.approval_scope` and the per-account switches say. `recover-admin` on the server still works.
 </Warning>
 
 <Accordion title="Sign-in audit event names">
@@ -730,9 +725,9 @@ levelrail-cli audit-purge
 
 <Accordion title="Known limits">
 
-- **No per-team or per-project access boundary.** IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
-- **No SSO/SAML and no SCIM provisioning.** OAuth covers Google, GitHub, Microsoft, and generic OIDC. Nothing beyond that today.
-- **Sessions are in memory.** A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
+- There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
+- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft and generic OIDC, and nothing else today.
+- Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
 
 </Accordion>
 

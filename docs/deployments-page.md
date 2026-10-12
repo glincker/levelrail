@@ -9,9 +9,9 @@ The Deployments page (`/deployments`) lists every deploy across every app you ca
 
 ## What it shows
 
-- **Summary strip**: deploys in progress, failure rate over 24 hours, median duration, deploys that need attention (held, or running a different image than expected), and a 14 day sparkline.
-- **Building now**: queued and building deploys with a live timer and step progress. It is hidden when nothing is running.
-- **The list**: one row per deploy with the commit message, status and duration, environment, app, commit, branch, age and author. The live production release carries a highlighted Production pill. Redeploys and rollbacks show "Redeploy of ..." or "Rollback to ..." instead of a commit. Failed, held, queued and superseded rows show the reason under the message.
+- The summary strip at the top shows deploys in progress, failure rate over 24 hours, median duration, deploys that need attention (held, or running a different image than expected), and a 14 day sparkline.
+- The "Building now" section lists queued and building deploys with a live timer and step progress. It is hidden when nothing is running.
+- The list has one row per deploy with the commit message, status and duration, environment, app, commit, branch, age and author. The live production release carries a highlighted Production pill. Redeploys and rollbacks show "Redeploy of ..." or "Rollback to ..." instead of a commit. Failed, held, queued and superseded rows show the reason under the message.
 
 Use **Load More** to fetch the next page. Long lists are virtualized.
 
