@@ -15,6 +15,7 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { SettingRow, SettingRows } from '@/components/ui/setting-row'
 import { useBrand } from '../../hooks/useBrand'
 import {
   systemStatusQueryOptions,
@@ -91,20 +92,19 @@ function ConfiguredRow({
   falseLabel?: string
 }) {
   return (
-    <div className="flex items-center justify-between py-1.5 text-sm">
-      <span className="text-foreground">{label}</span>
+    <SettingRow title={label}>
       {configured ? (
-        <span className="inline-flex items-center gap-1.5 text-green-700 dark:text-green-400">
+        <span className="inline-flex items-center gap-1.5 text-sm text-green-700 dark:text-green-400">
           <CheckCircleIcon className="size-4" />
           {trueLabel}
         </span>
       ) : (
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
           <XCircleIcon className="size-4" />
           {falseLabel}
         </span>
       )}
-    </div>
+    </SettingRow>
   )
 }
 
@@ -195,30 +195,32 @@ function GeneralSettingsPage() {
               up.
             </CardDescription>
           </CardHeader>
-          <CardContent className="divide-y divide-border">
-            <ConfiguredRow
-              label="Secrets (encrypted env vars)"
-              configured={status.secrets_configured}
-            />
-            <ConfiguredRow
-              label="Metrics and logs"
-              configured={status.telemetry_configured}
-            />
-            <ConfiguredRow
-              label="Alert rules"
-              configured={status.alerts_configured}
-            />
-            <ConfiguredRow
-              label="Docker daemon"
-              configured={status.docker_connected}
-              trueLabel="Connected"
-              falseLabel="Not connected"
-            />
-            {!status.docker_connected && status.docker_error ? (
-              <p className="pb-1.5 text-xs text-muted-foreground">
-                {status.docker_error}
-              </p>
-            ) : null}
+          <CardContent>
+            <SettingRows>
+              <ConfiguredRow
+                label="Secrets (encrypted env vars)"
+                configured={status.secrets_configured}
+              />
+              <ConfiguredRow
+                label="Metrics and logs"
+                configured={status.telemetry_configured}
+              />
+              <ConfiguredRow
+                label="Alert rules"
+                configured={status.alerts_configured}
+              />
+              <ConfiguredRow
+                label="Docker daemon"
+                configured={status.docker_connected}
+                trueLabel="Connected"
+                falseLabel="Not connected"
+              />
+              {!status.docker_connected && status.docker_error ? (
+                <p className="py-3 text-xs text-muted-foreground">
+                  {status.docker_error}
+                </p>
+              ) : null}
+            </SettingRows>
           </CardContent>
         </Card>
 

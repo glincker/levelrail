@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { SettingRow, SettingRows } from '@/components/ui/setting-row'
 import {
   ShieldCheckIcon,
   SignOutIcon,
@@ -82,31 +84,38 @@ function formatDate(iso: string): string {
 }
 
 function SecuritySettingsPage() {
+  const { t } = useTranslation('settings')
   const { data: session } = useSession()
 
   return (
     <SecurityPageShell>
       <div className="space-y-6">
-        <Card>
+        <Card id="sessions">
           <CardHeader>
-            <CardTitle>Current session</CardTitle>
+            <CardTitle>{t('securityPage.session.title')}</CardTitle>
             <CardDescription>
-              The account and session this browser is signed in with.
+              {t('securityPage.session.description')}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <p>
-              <span className="text-muted-foreground">Signed in as </span>
-              <span className="font-medium text-foreground">
-                {session.username}
-              </span>
-            </p>
-            <p>
-              <span className="text-muted-foreground">Signed in until </span>
-              <span className="font-medium text-foreground">
-                {formatDate(session.expires_at)}
-              </span>
-            </p>
+          <CardContent>
+            <SettingRows>
+              <SettingRow
+                title={t('securityPage.session.account')}
+                description={t('securityPage.session.accountHelp')}
+              >
+                <span className="text-sm font-medium text-foreground">
+                  {session.username}
+                </span>
+              </SettingRow>
+              <SettingRow
+                title={t('securityPage.session.until')}
+                description={t('securityPage.session.untilHelp')}
+              >
+                <span className="text-sm font-medium text-foreground">
+                  {formatDate(session.expires_at)}
+                </span>
+              </SettingRow>
+            </SettingRows>
           </CardContent>
         </Card>
 
@@ -114,9 +123,13 @@ function SecuritySettingsPage() {
 
         <SignInSecurityCards />
 
-        <TwoFactorCard />
+        <div id="two-factor">
+          <TwoFactorCard />
+        </div>
 
-        <PasskeysCard />
+        <div id="passkeys">
+          <PasskeysCard />
+        </div>
 
         <AuthEngineCard />
 

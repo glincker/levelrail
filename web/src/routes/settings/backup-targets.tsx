@@ -10,6 +10,7 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { SetupStepHint } from '@/components/getStarted/SetupStepHint'
+import { BackupTargetsRail } from '../../components/settings/SettingsRails'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level: a backup target can back up more than one database, so
@@ -40,6 +41,8 @@ function BackupTargetsPage() {
         </Badge>
       }
       actions={<CreateBackupTargetDialog />}
+      aside={<BackupTargetsRail targets={targets} />}
+      asideLabel={t('backupTargetsPage.rail.label')}
       banners={
         targets.length === 0 ? (
           <Banner variant="warning" title={t('backupTargetsPage.banner.title')}>

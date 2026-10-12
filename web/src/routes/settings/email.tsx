@@ -30,7 +30,7 @@ function EmailSettingsPage() {
   const { data: settings } = useEmailSettings()
 
   return (
-    <EmailPageShell backend={settings.backend}>
+    <EmailPageShell settings={settings}>
       <EmailSettingsCard settings={settings} />
     </EmailPageShell>
   )

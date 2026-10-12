@@ -4,6 +4,7 @@ import { EnvelopeIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
+import { EmailRail } from './SettingsRails'
 import type { EmailSettings } from '../../queries/emailSettings'
 
 const BACKEND_LABEL: Record<Exclude<EmailSettings['backend'], ''>, string> = {
@@ -13,12 +14,13 @@ const BACKEND_LABEL: Record<Exclude<EmailSettings['backend'], ''>, string> = {
 }
 
 export function EmailPageShell({
-  backend,
+  settings,
   children,
 }: {
-  backend: EmailSettings['backend']
+  settings: EmailSettings
   children: ReactNode
 }) {
+  const backend = settings.backend
   const { t } = useTranslation('settings')
 
   return (
@@ -27,6 +29,8 @@ export function EmailPageShell({
       eyebrow={t('emailPage.eyebrow')}
       title={t('emailPage.title')}
       description={t('emailPage.description')}
+      aside={settings ? <EmailRail settings={settings} /> : undefined}
+      asideLabel={t('emailPage.rail.label')}
       helpPath="/email-notifications"
       helpLabel={t('emailPage.help')}
       status={

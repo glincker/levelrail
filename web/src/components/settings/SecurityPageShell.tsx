@@ -4,6 +4,7 @@ import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
+import { SecurityRail } from './SettingsRails'
 import { usePasskeys } from '../../queries/passkeys'
 import { useTwoFactorStatus } from '../../queries/twoFactor'
 
@@ -19,6 +20,8 @@ export function SecurityPageShell({ children }: { children: ReactNode }) {
       eyebrow={t('securityPage.eyebrow')}
       title={t('securityPage.title')}
       description={t('securityPage.description')}
+      aside={<SecurityRail />}
+      asideLabel={t('securityPage.rail.label')}
       helpPath="/security"
       helpLabel={t('securityPage.help')}
       status={
