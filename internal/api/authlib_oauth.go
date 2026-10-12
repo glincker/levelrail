@@ -62,6 +62,8 @@ func (rt *Router) authLibOAuthStart(w http.ResponseWriter, r *http.Request) {
 	case out.Status == http.StatusFound && out.Location != "":
 		rt.forwardOAuthCookies(w, r, provider, out.Cookies)
 		http.Redirect(w, r, out.Location, http.StatusFound)
+	case out.ErrorCode == authengine.OAuthErrRedirectUnavailable:
+		writeError(w, http.StatusBadRequest, authengine.ErrOAuthRedirectUnavailable.Error())
 	case out.Status == http.StatusNotFound:
 		writeError(w, http.StatusBadRequest, "this provider is not enabled")
 	case out.Status == http.StatusServiceUnavailable:

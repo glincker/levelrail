@@ -85,6 +85,7 @@ func (h *oauthHarness) callbackPath(provider string) string {
 func (h *oauthHarness) get(target string, withJar bool) *httptest.ResponseRecorder {
 	h.t.Helper()
 	req := httptest.NewRequest(http.MethodGet, testBaseURL+target, nil)
+	req.RemoteAddr = "127.0.0.1:50000"
 	if withJar {
 		for _, c := range h.jar {
 			req.AddCookie(&http.Cookie{Name: c.Name, Value: c.Value}) //nolint:gosec // test fixture
@@ -131,4 +132,41 @@ func (h *oauthHarness) sessionUser(rec *httptest.ResponseRecorder) (string, bool
 		}
 	}
 	return "", false
+}
+
+func TestOAuthStart_RefusesSpoofedHostFromUntrustedPeer(t *testing.T) {
+	t.Setenv("APP_DASHBOARD_URL", "")
+	h := newOAuthHarness(t, modeLibrary)
+	h.enable("oidc", "")
+	req := httptest.NewRequest(http.MethodGet, "http://attacker.example"+h.startPath("oidc"), nil)
+	req.RemoteAddr = "203.0.113.50:4444"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	rec := httptest.NewRecorder()
+	h.rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400, body = %s", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		t.Fatalf("redirected to %q", loc)
+	}
+}
+
+func TestOAuthStart_ConfiguredDashboardURLWinsOverHost(t *testing.T) {
+	t.Setenv("APP_DASHBOARD_URL", "https://dash.example.com")
+	h := newOAuthHarness(t, modeLibrary)
+	h.enable("oidc", "")
+	req := httptest.NewRequest(http.MethodGet, "http://attacker.example"+h.startPath("oidc"), nil)
+	req.RemoteAddr = "203.0.113.50:4444"
+	rec := httptest.NewRecorder()
+	h.rt.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	u, err := url.Parse(rec.Header().Get("Location"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := u.Query().Get("redirect_uri"); got != "https://dash.example.com"+h.callbackPath("oidc") {
+		t.Fatalf("redirect_uri = %q", got)
+	}
 }

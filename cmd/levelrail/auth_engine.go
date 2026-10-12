@@ -36,7 +36,7 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 			cfg.EncryptionKey = key
 		}
 		sdb := &store.DB{DB: db}
-		cfg.OAuth = &authengine.OAuthWiring{Settings: sdb, Secrets: mgr, Users: sdb, Logger: logger}
+		cfg.OAuth = &authengine.OAuthWiring{Settings: sdb, Secrets: mgr, Users: sdb, Logger: logger, TrustedPeer: api.PeerIsTrustedProxy}
 	}
 	eng, err := authengine.New(db, authengine.ConfigFromEnv(cfg))
 	if err != nil {
