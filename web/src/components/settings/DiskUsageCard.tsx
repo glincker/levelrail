@@ -58,7 +58,7 @@ export function DiskUsageCard({ status }: { status: SystemStatus }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-4">
         <Progress value={usedPercent} />
         <p className="text-sm text-muted-foreground">
           {formatBytes(usedBytes)} used of{' '}

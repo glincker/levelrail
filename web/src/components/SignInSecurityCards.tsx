@@ -144,7 +144,7 @@ function CodeLoginSettingsCard() {
         <CardTitle>{t('settings.title')}</CardTitle>
         <CardDescription>{t('settings.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="space-y-4 text-sm">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="font-medium">{t('settings.admins')}</p>

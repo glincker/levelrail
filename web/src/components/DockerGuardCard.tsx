@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -60,31 +60,26 @@ function DockerGuardForm({ status }: { status: DockerGuardStatus }) {
         </CardTitle>
         <CardDescription>{t('dockerGuard.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         {!status.configured ? (
           <p className="text-sm text-muted-foreground">
             {t('dockerGuard.notConfigured')}
           </p>
         ) : null}
         {status.restart_required ? (
-          <Alert>
-            <AlertDescription>
-              {t('dockerGuard.restartRequired')}
-            </AlertDescription>
-          </Alert>
+          <Banner variant="warning" title={t('dockerGuard.restartRequired')} />
         ) : null}
         {status.ready_to_enforce ? (
-          <Alert>
-            <AlertDescription>
-              {t('dockerGuard.readyToEnforce', { days })}
-            </AlertDescription>
-          </Alert>
+          <Banner
+            variant="info"
+            title={t('dockerGuard.readyToEnforce', { days })}
+          />
         ) : null}
 
         <div
           role="radiogroup"
           aria-label={t('dockerGuard.modeLabel')}
-          className="grid gap-2"
+          className="grid gap-1"
         >
           {MODES.map((m) => {
             const selected = mode === m
@@ -92,8 +87,8 @@ function DockerGuardForm({ status }: { status: DockerGuardStatus }) {
               <label
                 key={m}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm',
-                  selected ? 'border-primary bg-muted' : 'border-border',
+                  'flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 text-sm',
+                  selected ? 'bg-muted' : 'hover:bg-muted/50',
                   pinned && 'cursor-not-allowed opacity-60',
                 )}
               >
