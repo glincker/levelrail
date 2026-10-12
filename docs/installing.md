@@ -1,5 +1,6 @@
 ---
 title: "Installing Levelrail"
+sidebarTitle: "Install on a server"
 description: Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 ---
 

@@ -7,22 +7,25 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 ## Get started
 
-### Start here
+### Install and deploy
 
 - [Levelrail documentation](/index): Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
-- [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
+- [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
 - [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+- [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 
-### Tutorials
+### Add to your setup
 
-- [Tutorials](/tutorials/index): Step-by-step tutorials for self-hosting with Levelrail, from Docker deploys and Postgres to S3 backups, GitHub Actions, and built-in logs and metrics.
-- [Deploy a Docker app to your own server](/tutorials/deploy-a-docker-app): Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
-- [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): Add a readiness health check so a bad release fails before it takes over, read the structured failure, then fix it or roll back.
-- [Deploy to your own server from GitHub Actions](/tutorials/deploy-from-github-actions): Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
+- [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 - [Connect an app to a managed Postgres database](/tutorials/connect-an-app-to-postgres): Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
+- [Deploy to your own server from GitHub Actions](/tutorials/deploy-from-github-actions): Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
+- [Environment variables and secrets](/environment-and-secrets): Masking, reveal policies, and protection for app environment variables and secrets.
 - [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3): Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
-- [Self-host Vaultwarden on your own server](/tutorials/self-host-vaultwarden): Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
+- [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): Add a readiness health check so a bad release fails before it takes over, read the structured failure, then fix it or roll back.
 - [Debug an app with built-in logs and metrics](/tutorials/debug-an-app-with-logs-and-metrics): Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
+- [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
+- [Self-host Vaultwarden on your own server](/tutorials/self-host-vaultwarden): Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
+- [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
 
 ### Guides
 
@@ -30,11 +33,6 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Coolify vs Levelrail for self-hosters](/guides/coolify-vs-levelrail): A fair Coolify vs Levelrail comparison for self-hosters: how each manages servers, what each does well, what Levelrail lacks, and how to choose between them.
 - [Self-host Postgres with verified backups](/guides/self-host-postgres-with-backups): Run a managed Postgres on your own server, back it up to S3-compatible storage on a schedule, and restore it safely into a new database to prove the backup works.
 - [Zero-downtime deploys without Kubernetes](/guides/zero-downtime-deploys-without-kubernetes): How to ship containers to your own servers with no downtime and a fast rollback, using readiness probes, digest-pinned images, and freeze windows. No Kubernetes.
-
-### Announcements
-
-- [Announcements](/announcements/index): News about Levelrail: new guides, the self-host template gallery, and platform updates.
-- [Self-host template gallery and guides are live](/announcements/self-host-template-gallery-and-guides): Browse 330 one-click self-host templates and read new guides on backups, zero-downtime deploys and moving from Coolify.
 
 ## How-to guides
 

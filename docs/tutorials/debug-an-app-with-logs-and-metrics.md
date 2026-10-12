@@ -1,5 +1,6 @@
 ---
 title: "Debug an app with built-in logs and metrics"
+sidebarTitle: "See logs and metrics"
 description: Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
 ---
 

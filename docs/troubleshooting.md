@@ -1,5 +1,6 @@
 ---
 title: "Troubleshooting"
+sidebarTitle: "Troubleshooting"
 description: Fixes for the most common problems when deploying, logging in, or running Levelrail.
 ---
 

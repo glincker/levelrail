@@ -161,7 +161,5 @@ tabs.splice(tabs.length - 1, 0, {
     ...cats.map((c) => ({ group: c, pages: byCat.get(c).map((t) => `self-host/${t.id}`) })),
   ],
 })
-const start = tabs[0].groups[0]
-if (!start.pages.includes('all-pages')) start.pages.push('all-pages')
 cfg.navigation.tabs = tabs
 fs.writeFileSync('docs/docs.json', JSON.stringify(cfg, null, 2) + '\n')

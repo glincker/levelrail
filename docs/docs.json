@@ -16,12 +16,13 @@
   },
   "favicon": "/public/favicon.svg",
   "logo": {
-    "light": "/assets/brand/png/wordmark-for-light.png",
-    "dark": "/assets/brand/png/wordmark-for-dark.png",
+    "light": "/assets/brand/wordmark-light.svg",
+    "dark": "/assets/brand/wordmark-dark.svg",
     "href": "https://levelrail.com"
   },
   "appearance": {
-    "default": "system"
+    "default": "dark",
+    "strict": false
   },
   "styling": {
     "codeblocks": "dark"
@@ -61,25 +62,27 @@
         "tab": "Get started",
         "groups": [
           {
-            "group": "Start here",
+            "group": "Install and deploy",
             "pages": [
               "index",
-              "getting-started",
+              "what-you-need",
               "installing",
-              "all-pages"
+              "getting-started"
             ]
           },
           {
-            "group": "Tutorials",
+            "group": "Add to your setup",
             "pages": [
-              "tutorials/index",
-              "tutorials/deploy-a-docker-app",
-              "tutorials/zero-downtime-deploys-with-health-checks",
-              "tutorials/deploy-from-github-actions",
+              "domains-and-ingress",
               "tutorials/connect-an-app-to-postgres",
+              "tutorials/deploy-from-github-actions",
+              "environment-and-secrets",
               "tutorials/back-up-postgres-to-s3",
+              "tutorials/zero-downtime-deploys-with-health-checks",
+              "tutorials/debug-an-app-with-logs-and-metrics",
+              "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
-              "tutorials/debug-an-app-with-logs-and-metrics"
+              "troubleshooting"
             ]
           },
           {
@@ -92,10 +95,9 @@
             ]
           },
           {
-            "group": "Announcements",
+            "group": "Index",
             "pages": [
-              "announcements/index",
-              "announcements/self-host-template-gallery-and-guides"
+              "all-pages"
             ]
           }
         ]
@@ -754,5 +756,20 @@
         ]
       }
     ]
+  },
+  "fonts": {
+    "heading": {
+      "family": "Geist",
+      "weight": 500
+    },
+    "body": {
+      "family": "Geist"
+    }
+  },
+  "interaction": {
+    "drilldown": true
+  },
+  "metadata": {
+    "timestamp": true
   }
 }

@@ -1,5 +1,6 @@
 ---
 title: "Environment variables and secrets"
+sidebarTitle: "Set variables and secrets"
 description: Masking, reveal policies, and protection for app environment variables and secrets.
 ---
 

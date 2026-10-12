@@ -1,5 +1,6 @@
 ---
 title: "Deploy a Docker app to your own server"
+sidebarTitle: "Deploy your first app"
 description: Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
 ---
 

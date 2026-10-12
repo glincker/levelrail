@@ -1,5 +1,6 @@
 ---
 title: "Getting started"
+sidebarTitle: "Quickstart: first app"
 description: Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Domains and ingress"
+sidebarTitle: "Add a domain and HTTPS"
 description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 ---
 

@@ -1,5 +1,6 @@
 ---
 title: "Levelrail documentation"
+sidebarTitle: "What is Levelrail"
 description: Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
 ---
 
