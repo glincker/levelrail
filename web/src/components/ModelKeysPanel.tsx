@@ -97,7 +97,7 @@ export function ModelKeysPanel({
 
   return (
     <section aria-label="API keys" className="space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between">
         <h3 className="flex items-center gap-1 text-sm font-semibold">
           API keys
           <InfoTip label="About API keys">

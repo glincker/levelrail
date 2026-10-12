@@ -144,6 +144,7 @@ type Router struct {
 	organizations          OrganizationStore
 	environments           EnvironmentStore
 	envProtect             envProtection
+	cliConsole             *cliConsoleState   // web CLI console limits and config, see cli_console.go
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
@@ -175,6 +176,8 @@ type Router struct {
 	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState        // see mesh_settings.go
+	restart                restartState             // see system_restart.go
+	memAttribution         memoryAttributionCache   // see node_memory_attribution.go
 	dockerGuard            DockerGuardController    // nil is valid: the docker guard routes report it as not configured
 	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
 	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
@@ -204,6 +207,7 @@ type Router struct {
 	domainTLSCert          DomainTLSCertStore          // always set, same "core Store interface" shape as domainBasicAuth above
 	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
 	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
+	domainAuthGate         DomainAuthGateStore         // always set, core Store; the auth URL is not secret
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
@@ -699,6 +703,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		deployApprovals:             s,
 		domainTLSCert:               s,
 		domainWAF:                   s,
+		domainAuthGate:              s,
 		domainRedirect:              s,
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
@@ -833,5 +838,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.sessions = newSessionStore(rt.sessionTTL)
 	rt.attachAuthEngine(s)
 	rt.attachEnvProtection(s)
+	rt.cliConsole = newCLIConsoleState()
 	return rt
 }

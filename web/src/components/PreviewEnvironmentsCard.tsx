@@ -346,7 +346,7 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">
+                      <span className="break-all font-mono text-sm">
                         PR #{preview.pr_number}
                       </span>
                       <PreviewStatusBadge status={preview.status} />
@@ -364,7 +364,9 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       ) : null}
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
-                      <span className="font-mono">{preview.branch}</span>
+                      <span className="break-all font-mono">
+                        {preview.branch}
+                      </span>
                       {preview.domain ? (
                         <>
                           {' · '}

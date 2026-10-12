@@ -27,6 +27,7 @@ import {
   PlugsIcon,
   PulseIcon,
   RobotIcon,
+  TerminalWindowIcon,
   RocketLaunchIcon,
   ScrollIcon,
   ShareNetworkIcon,
@@ -65,6 +66,7 @@ export type GlobalTo =
   | '/loadbalancers'
   | '/models'
   | '/ai-assistant'
+  | '/terminal'
   | '/pipelines'
   | '/approvals'
   | '/alerts'
@@ -309,6 +311,13 @@ export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
     to: '/ai-assistant',
     icon: <RobotIcon />,
     feature: 'ai-chat',
+  },
+  {
+    id: 'console',
+    label: 'Console',
+    to: '/terminal',
+    icon: <TerminalWindowIcon />,
+    feature: 'cli-console',
   },
   { id: 'settings', label: 'Settings', to: '/settings', icon: <GearIcon /> },
   { id: 'help', label: 'Help', to: '/help', icon: <BookOpenIcon /> },

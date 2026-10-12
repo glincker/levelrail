@@ -50,7 +50,7 @@ function CertificateRow({ cert }: { cert: CertificateStatus }) {
         : XCircleIcon
 
   return (
-    <div className="flex items-center justify-between gap-3 py-2 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-sm">
       <div className="min-w-0">
         <p className="truncate font-medium text-foreground">{cert.domain}</p>
         <p className="text-xs text-muted-foreground">

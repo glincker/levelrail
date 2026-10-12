@@ -22,11 +22,11 @@ func leafPaths(prefix []string, nodes map[string]*cmdNode) [][]string {
 	var out [][]string
 	for name, n := range nodes {
 		path := append(append([]string{}, prefix...), name)
-		if n == nil || len(n.subs) == 0 {
+		if n == nil || len(n.Subs) == 0 {
 			out = append(out, path)
 			continue
 		}
-		out = append(out, leafPaths(path, n.subs)...)
+		out = append(out, leafPaths(path, n.Subs)...)
 	}
 	return out
 }

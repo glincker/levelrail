@@ -65,7 +65,7 @@ function DialogOverlay({
 // treatment rather than a true edge-to-edge one, and sidesteps the
 // mismatch entirely by never changing the radius at all.
 const dialogContentVariants = cva(
-  'fixed z-50 grid gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
+  'fixed z-50 grid gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground shadow-dialog ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95',
   {
     variants: {
       size: {
@@ -77,7 +77,7 @@ const dialogContentVariants = cva(
         // and scrolling internally is the same "the whole popup scrolls
         // together" contract `fullscreen` already documents below.
         default:
-          'top-1/2 left-1/2 max-h-[85vh] w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto sm:max-w-sm',
+          'inset-x-0 bottom-0 max-h-[90dvh] w-full overflow-y-auto rounded-b-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:max-h-[85vh] sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-b-xl sm:pb-4',
         // No centering transform: `inset-*` positions and sizes the
         // popup directly against the viewport instead of a centered
         // fixed-width box, which is also what makes this fill available
@@ -89,7 +89,8 @@ const dialogContentVariants = cva(
         // know about), so the whole popup scrolls together while the
         // close button stays pinned to the popup's frame because it's
         // positioned absolute against that same fixed-position ancestor.
-        fullscreen: 'inset-4 w-auto max-w-none overflow-y-auto sm:inset-6',
+        fullscreen:
+          'inset-0 w-auto max-w-none overflow-y-auto rounded-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:inset-6 sm:rounded-xl sm:pb-4',
       },
     },
     defaultVariants: {

@@ -239,7 +239,7 @@ export function UsersCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3">
+      <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
           <CardTitle className="flex items-center gap-1.5 text-sm">
             <UsersIcon className="size-4" aria-hidden="true" />

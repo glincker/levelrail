@@ -27,7 +27,7 @@ export function DomainSearchVisibilityControl({
   if (isLoading) {
     return (
       <div
-        className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3"
+        className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/30 p-3"
         aria-hidden="true"
       >
         <Skeleton className="h-5 w-28 rounded-full" />

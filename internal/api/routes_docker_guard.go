@@ -7,6 +7,12 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/docker-guard", rt.requireAbility(AbilityRead, rt.handleGetDockerGuard))
 	// Switching modes changes the host-protection boundary, so AbilityRoot.
 	mux.HandleFunc("PUT /api/v1/system/docker-guard", rt.requireAbility(AbilityRoot, rt.handleUpdateDockerGuard))
+	mux.HandleFunc("GET /api/v1/system/restart", rt.requireAbility(AbilityRead, rt.handleGetSystemRestart))
+	// Exiting the process drops every in-flight request and node session, so AbilityRoot.
+	mux.HandleFunc("POST /api/v1/system/restart", rt.requireAbility(AbilityRoot, rt.handleSystemRestart))
+	// The CLI console acts with the caller's full token, so root like the app terminal; step-up is checked inside.
+	mux.HandleFunc("GET /api/v1/system/cli-console/commands", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleCommands))
+	mux.HandleFunc("GET /api/v1/system/cli-console/session", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleSession))
 	mux.HandleFunc("GET /api/v1/mesh/settings", rt.requireAbility(AbilityRead, rt.handleGetMeshSettings))
 	// Turning the mesh on or off changes how every node talks to this host, so AbilityRoot.
 	mux.HandleFunc("PUT /api/v1/mesh/settings", rt.requireAbility(AbilityRoot, rt.handleUpdateMeshSettings))

@@ -145,6 +145,15 @@ describe('LoginScreen', () => {
     )
   })
 
+  it('shows a quiet attribution footer with safe external links', async () => {
+    mockFetch(false)
+    renderScreen()
+    expect(await findTitle('Sign in')).toBeInTheDocument()
+    const link = screen.getByRole('link', { name: /TheAuth|theAuthLabel/ })
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  })
+
   it('does not show the recovery hint while setting up the first admin', async () => {
     mockFetch(true)
     renderScreen()

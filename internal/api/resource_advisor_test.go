@@ -327,8 +327,13 @@ func TestBetaFeatures_ToggleFromSettings(t *testing.T) {
 	rec = httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/beta-features", ""))
 	var list []betaFeatureResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list) != 1 || list[0].Source != betaSourceOff {
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list) != len(experimental.ToggleableList()) {
 		t.Fatalf("list = %s", rec.Body.String())
+	}
+	for _, f := range list {
+		if f.Source != betaSourceOff {
+			t.Fatalf("%s source = %s, want off", f.Feature, f.Source)
+		}
 	}
 }
 

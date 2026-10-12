@@ -34,7 +34,7 @@ export function LiveDatabaseLogViewer({
 
   return (
     <div className="flex h-full flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs text-muted-foreground">
           {lines.length > 0
             ? `${lines.length.toLocaleString()} lines (recent context, then live)`

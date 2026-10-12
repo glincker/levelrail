@@ -45,7 +45,7 @@ export function LogArchiveObjects({
           {objects.data.objects.map((o) => (
             <li
               key={o.key}
-              className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 text-sm last:border-b-0"
+              className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-3 py-2 text-sm last:border-b-0"
             >
               <span className="min-w-0 truncate font-mono text-xs text-foreground">
                 {o.key}

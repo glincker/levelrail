@@ -169,6 +169,16 @@
     "turnedOn": "Resource advisor turned on",
     "turnedOff": "Resource advisor turned off",
     "error": "Could not change the beta feature: {{message}}",
-    "readOnly": "Only an administrator can switch beta features."
+    "readOnly": "Only an administrator can switch beta features.",
+    "aiChatTitle": "AI chat",
+    "aiChatDescription": "An assistant in the dock and on its own page that can look up apps, logs and deploys for you. It reads and suggests; anything that changes state asks you to confirm. You also need to connect an AI provider under AI assistant settings.",
+    "aiChatToggleLabel": "Turn on AI chat",
+    "aiChatTurnedOn": "AI chat turned on",
+    "aiChatTurnedOff": "AI chat turned off",
+    "cliConsoleTitle": "CLI console",
+    "cliConsoleDescription": "A terminal in the dashboard that runs the command line tool as you, with Tab completion and history. It cannot reach the host shell, and every command is audited. Opening it needs a fresh password or passkey confirmation. Set APP_CLI_CONSOLE=off on the server to disable it entirely.",
+    "cliConsoleToggleLabel": "Turn on the CLI console",
+    "cliConsoleTurnedOn": "CLI console turned on",
+    "cliConsoleTurnedOff": "CLI console turned off"
   }
 }

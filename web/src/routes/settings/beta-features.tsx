@@ -30,25 +30,55 @@ export const Route = createFileRoute('/settings/beta-features')({
   ),
 })
 
-const ADVISOR = 'resource-advisor'
+interface BetaCard {
+  feature: 'resource-advisor' | 'ai-chat' | 'cli-console'
+  title: string
+  description: string
+  toggleLabel: string
+  turnedOn: string
+  turnedOff: string
+}
 
 function BetaFeaturesPage() {
   const { t } = useTranslation('resourceAdvisor')
   const { data: features } = useBetaFeatures()
   const setFeature = useSetBetaFeature()
-  const switchId = useId()
-  const advisor = features?.find((f) => f.feature === ADVISOR)
+  const idPrefix = useId()
+  const cards: BetaCard[] = [
+    {
+      feature: 'ai-chat',
+      title: t('settings.aiChatTitle'),
+      description: t('settings.aiChatDescription'),
+      toggleLabel: t('settings.aiChatToggleLabel'),
+      turnedOn: t('settings.aiChatTurnedOn'),
+      turnedOff: t('settings.aiChatTurnedOff'),
+    },
+    {
+      feature: 'cli-console',
+      title: t('settings.cliConsoleTitle'),
+      description: t('settings.cliConsoleDescription'),
+      toggleLabel: t('settings.cliConsoleToggleLabel'),
+      turnedOn: t('settings.cliConsoleTurnedOn'),
+      turnedOff: t('settings.cliConsoleTurnedOff'),
+    },
+    {
+      feature: 'resource-advisor',
+      title: t('settings.advisorTitle'),
+      description: t('settings.advisorDescription'),
+      toggleLabel: t('settings.toggleLabel'),
+      turnedOn: t('settings.turnedOn'),
+      turnedOff: t('settings.turnedOff'),
+    },
+  ]
 
-  function toggle(enabled: boolean) {
+  function toggle(card: BetaCard, enabled: boolean) {
     setFeature.mutate(
-      { feature: ADVISOR, enabled },
+      { feature: card.feature, enabled },
       {
         onSuccess: (res) =>
           toast.add({
             type: 'success',
-            title: res.enabled
-              ? t('settings.turnedOn')
-              : t('settings.turnedOff'),
+            title: res.enabled ? card.turnedOn : card.turnedOff,
           }),
         onError: (err) =>
           toast.add({
@@ -70,38 +100,43 @@ function BetaFeaturesPage() {
           description={t('settings.description')}
         />
       </div>
-      {advisor ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {t('settings.advisorTitle')}
-              <Badge variant="outline" title={t('beta.hint')}>
-                {t('beta.label')}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {t('settings.advisorDescription')}
-            </p>
-            <div className="flex items-center gap-3">
-              <Switch
-                id={switchId}
-                checked={advisor.enabled}
-                disabled={advisor.locked || setFeature.isPending}
-                onCheckedChange={toggle}
-              />
-              <Label htmlFor={switchId}>{t('settings.toggleLabel')}</Label>
-            </div>
-            {advisor.locked ? (
-              <p className="text-xs text-muted-foreground">
-                {t('settings.locked')}
+      {cards.map((card) => {
+        const state = features?.find((f) => f.feature === card.feature)
+        if (!state) return null
+        const id = `${idPrefix}-${card.feature}`
+        return (
+          <Card key={card.feature}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                {card.title}
+                <Badge variant="outline" title={t('beta.hint')}>
+                  {t('beta.label')}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {card.description}
               </p>
-            ) : null}
-            <p className="text-xs text-muted-foreground">{t('beta.hint')}</p>
-          </CardContent>
-        </Card>
-      ) : null}
+              <div className="flex items-center gap-3">
+                <Switch
+                  id={id}
+                  checked={state.enabled}
+                  disabled={state.locked || setFeature.isPending}
+                  onCheckedChange={(v) => toggle(card, v)}
+                />
+                <Label htmlFor={id}>{card.toggleLabel}</Label>
+              </div>
+              {state.locked ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('settings.locked')}
+                </p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">{t('beta.hint')}</p>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

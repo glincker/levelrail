@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1018 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1025 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -518,6 +518,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/auth", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainBasicAuth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/auth", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainBasicAuth", Description: "Domain basic auth (domain_basic_auth.go): HTTP Basic Auth protection on one app-owned domain, enforced by Caddy's authentication handler (internal/reconcile/ingress) on the next reconcile pass. GET is AbilityRead, the same passive-visibility tier GET /api/v1/settings/cloudflare-tunnel uses for its own has_token-shaped read. PUT/DELETE are AbilityRoot, matching PUT/ DELETE /api/v1/settings/cloudflare-tunnel: this changes how a live, currently-routed host is secured, the same \"real infrastructure, high blast radius\" class of change Cloudflare Tunnel/DNS and the ACME toggle already reserve AbilityRoot for."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/auth", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainBasicAuth", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainAuthGate", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainAuthGate", Description: "Auth gate: same tiers as basic auth, it decides who reaches the host."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainAuthGate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteDomainPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicy", Description: "Ingress response cache rules, purge and per-domain stats."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainPolicy", Description: ""},
@@ -733,9 +736,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/log-archive/policy", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetLogArchivePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/log-archive/runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListLogArchiveRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedLogQueries", Description: ""},
-	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityRead", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
-	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
-	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
+	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
+	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -979,6 +982,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/system/backups/{name}", Ability: "AbilityRoot", Group: "System", Handler: "handleDeleteControlPlaneBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/backups/{name}/download", Ability: "AbilityRoot", Group: "System", Handler: "handleDownloadControlPlaneBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/backups/{name}/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyControlPlaneBackup", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/cli-console/commands", Ability: "AbilityRoot", Group: "System", Handler: "handleCLIConsoleCommands", Description: "The CLI console acts with the caller's full token, so root like the app terminal; step-up is checked inside."},
+	{Method: "GET", Path: "/api/v1/system/cli-console/session", Ability: "AbilityRoot", Group: "System", Handler: "handleCLIConsoleSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/containers", Ability: "AbilityRead", Group: "System", Handler: "handleListContainers", Description: "Every container on this node, Levelrail-managed or not (containers.go's own doc comment on why a Managed one stays read-only here), AbilityRead like system/status above."},
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/claim", Ability: "AbilityWrite", Group: "System", Handler: "handleClaimOrphanedContainer", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/remove", Ability: "AbilityRoot", Group: "System", Handler: "handleRemoveOrphanedContainer", Description: ""},
@@ -1003,6 +1008,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/proxy-integration/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyProxyIntegration", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/prune", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemPrune", Description: "POST /system/prune deletes real Docker resources (stopped containers, dangling images, anonymous volumes, unused build cache) fleet-wide, not scoped to one app: AbilityRoot, the same gate handleDrainNode uses for its own fleet-wide, no-undo action, not AbilityWrite (which a narrower, single-app token could hold)."},
 	{Method: "GET", Path: "/api/v1/system/readiness", Ability: "AbilityRead", Group: "System", Handler: "handleServerReadiness", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/restart", Ability: "AbilityRead", Group: "System", Handler: "handleGetSystemRestart", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/restart", Ability: "AbilityRoot", Group: "System", Handler: "handleSystemRestart", Description: "Exiting the process drops every in-flight request and node session, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/reverse-proxy", Ability: "AbilityRead", Group: "System", Handler: "handleReverseProxyGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/secrets/binding", Ability: "AbilityRead", Group: "System", Handler: "handleGetSecretBinding", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/secrets/rebind", Ability: "AbilityRoot", Group: "System", Handler: "handleRebindSecrets", Description: ""},

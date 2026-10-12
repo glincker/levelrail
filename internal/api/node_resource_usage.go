@@ -57,6 +57,15 @@ type nodeResourceUsageResource struct {
 	MemoryAvailableBytes *float64 `json:"memory_available_bytes,omitempty"`
 	DiskUsedBytes        *float64 `json:"disk_used_bytes,omitempty"`
 	DiskTotalBytes       *float64 `json:"disk_total_bytes,omitempty"`
+	// LevelrailMemoryBytes is the control plane process RSS (embedded
+	// ingress included). Local node only: a remote agent reports none.
+	LevelrailMemoryBytes *float64 `json:"levelrail_memory_bytes,omitempty"`
+	// OtherContainersMemoryBytes is running containers Levelrail does not
+	// manage; OtherContainers lists the largest few.
+	OtherContainersMemoryBytes *float64                  `json:"other_containers_memory_bytes,omitempty"`
+	OtherContainers            []unmanagedContainerUsage `json:"other_containers,omitempty"`
+	// SystemMemoryBytes is the used remainder: kernel, cache, other processes.
+	SystemMemoryBytes *float64 `json:"system_memory_bytes,omitempty"`
 }
 
 // fleetResourceUsageRollup sums nodeResourceUsageResource across every
@@ -201,6 +210,10 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 				usage.DiskTotalBytes = &value
 			}
 		}
+	}
+
+	if local, ok := byID[rt.localNodeID]; ok {
+		rt.applyMemoryAttribution(r.Context(), local)
 	}
 
 	out := make([]nodeResourceUsageResource, 0, len(byID))

@@ -331,7 +331,7 @@ function RecoveryCodeGrid({ codes }: { codes: string[] }) {
   const { copied, copy } = useCopyToClipboard()
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2 rounded-lg border border-input bg-muted/50 p-3 font-mono text-xs">
+      <div className="grid grid-cols-2 gap-2 rounded-lg border border-input bg-muted/50 p-3 break-all font-mono text-xs">
         {codes.map((code) => (
           <span key={code}>{code}</span>
         ))}

@@ -47,7 +47,7 @@ export function LbTopology({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="flex items-center gap-1 text-sm font-medium">
           Traffic
           <InfoTip label="How to read the diagram" side="right">

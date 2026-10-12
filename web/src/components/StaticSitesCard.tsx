@@ -37,7 +37,7 @@ export function StaticSitesCard() {
         {sites.map((site) => (
           <li
             key={site.name}
-            className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-b-0"
+            className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-b-0"
           >
             <span className="truncate text-sm font-medium text-foreground">
               {site.name}

@@ -51,7 +51,7 @@ export function ControlPlaneDrEscrow({ status }: { status: ControlPlaneDr }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-foreground">Key escrow</p>
           <p className="text-xs text-muted-foreground">

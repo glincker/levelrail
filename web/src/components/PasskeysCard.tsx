@@ -61,7 +61,7 @@ export function PasskeysCard() {
             {passkeys.map((p) => (
               <li
                 key={p.id}
-                className="flex items-center justify-between gap-3 p-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">

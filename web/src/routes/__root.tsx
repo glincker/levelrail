@@ -20,7 +20,10 @@ import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
+import { RestartBanner } from '../components/RestartBanner'
 import { Toaster } from '../components/ui/toast'
+
+const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
 
 // Router context carries the QueryClient so every route loader can call
 // queryClient.ensureQueryData / ensureInfiniteQueryData without importing
@@ -122,18 +125,22 @@ function AppShell() {
       <SidebarInset>
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
+        <RestartBanner />
         <DeviceLoginBanner />
         <SignInRequestsBanner />
         <main
           id={MAIN_CONTENT_ID}
           tabIndex={-1}
-          className="flex-1 overflow-y-auto p-4 outline-none md:p-6"
+          className="mr-[var(--dock-push-r,0px)] mb-[var(--dock-push-b,0px)] flex-1 overflow-y-auto p-4 outline-none md:p-6"
         >
           <div className="mx-auto w-full max-w-6xl">
             <div className="mb-4 empty:hidden"></div>
             <Outlet />
           </div>
         </main>
+        <React.Suspense fallback={null}>
+          <DockPanel />
+        </React.Suspense>
       </SidebarInset>
     </SidebarProvider>
   )

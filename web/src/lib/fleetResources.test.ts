@@ -69,6 +69,35 @@ describe('buildMemoryBreakdown', () => {
     })
   })
 
+  it('attributes the control plane and unmanaged containers', () => {
+    const withAttribution: FleetResourceUsage = {
+      ...fleet,
+      nodes: [
+        {
+          ...fleet.nodes[0]!,
+          levelrail_memory_bytes: 0.5 * GIB,
+          other_containers_memory_bytes: 1 * GIB,
+          other_containers: [{ name: 'coolify', memory_bytes: 1 * GIB }],
+        },
+      ],
+    }
+    const consumers = buildConsumers(
+      [{ name: 'web', memory_usage_bytes: 1 * GIB }],
+      [],
+      [],
+      withAttribution,
+    )
+    const b = buildMemoryBreakdown(withAttribution, consumers)
+    expect(b).toMatchObject({
+      apps: 1 * GIB,
+      levelrail: 0.5 * GIB,
+      otherContainers: 1 * GIB,
+      system: 1.5 * GIB,
+      free: 4 * GIB,
+    })
+    expect(consumers.some((c) => c.kind === 'other')).toBe(true)
+  })
+
   it('is undefined without host capacity', () => {
     expect(buildMemoryBreakdown({ ...fleet, nodes: [] }, [])).toBeUndefined()
   })

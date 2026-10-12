@@ -3,7 +3,7 @@ package experimental
 // Toggleable reports whether an operator may switch f on from Settings at
 // runtime, on top of the environment.
 func Toggleable(f Feature) bool {
-	return f == ResourceAdvisor
+	return f == ResourceAdvisor || f == AIChat || f == CLIConsole
 }
 
 // ToggleableList returns every feature Settings may switch, sorted.

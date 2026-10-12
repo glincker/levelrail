@@ -30,7 +30,7 @@ export function DoctorCheckRow({ check }: { check: DoctorCheck }) {
   const StatusIcon = meta.icon
   return (
     <div className="py-2.5 text-sm">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-foreground">{check.name}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">

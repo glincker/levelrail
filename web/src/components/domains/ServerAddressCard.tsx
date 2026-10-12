@@ -259,7 +259,7 @@ export function DomainRecords({ domain }: { domain: string }) {
   if (!domain || !data) return null
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-medium">{t('serverAddress.recordsTitle')}</p>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
           {t('serverAddress.dnsStatus')}

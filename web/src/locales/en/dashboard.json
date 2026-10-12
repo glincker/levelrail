@@ -127,11 +127,22 @@
     "noReadings": "No host readings from this node yet.",
     "memoryBreakdown": "Memory breakdown",
     "segment": {
+      "levelrail": "{{brand}}",
       "apps": "Apps",
       "databases": "Databases",
+      "other": "Other containers",
       "system": "System",
       "free": "Free"
     },
+    "segmentHelp": {
+      "levelrail": "The control plane and node agent",
+      "apps": "Containers of your deployed apps",
+      "databases": "Containers of your managed databases",
+      "other": "Running on this server but not managed by {{brand}}",
+      "system": "Kernel, page cache and other processes",
+      "free": "Memory still available"
+    },
+    "notManaged": "Not managed by {{brand}}",
     "topConsumers": "Top consumers",
     "sortBy": "Sort by",
     "sort": {
@@ -140,7 +151,8 @@
     },
     "kind": {
       "app": "App",
-      "database": "Database"
+      "database": "Database",
+      "other": "Container"
     },
     "requestTrend": "{{name}} request trend",
     "viewAll_one": "View all {{count}}",

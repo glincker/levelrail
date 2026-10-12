@@ -42,7 +42,7 @@ export function HostFirewallCard() {
           <>
             <p className="text-xs text-muted-foreground">
               {t('hostFirewall.required')}:{' '}
-              <span className="font-mono">
+              <span className="break-all font-mono">
                 {data.required.map((p) => `${p.port}/${p.protocol}`).join(', ')}
               </span>
             </p>

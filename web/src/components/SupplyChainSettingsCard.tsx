@@ -216,7 +216,7 @@ function SupplyChainForm({
         </p>
       )}
 
-      <div className="flex items-start justify-between gap-3 rounded-md border border-border p-3">
+      <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border p-3">
         <div className="min-w-0 space-y-0.5">
           <p className="text-sm font-medium">
             Scan each deploy

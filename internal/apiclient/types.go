@@ -712,6 +712,29 @@ type SetDomainWAFRequest struct {
 	RateLimitBurst int    `json:"rate_limit_burst"`
 }
 
+// DomainAuthGateResource mirrors internal/api's domainAuthGateResource.
+type DomainAuthGateResource struct {
+	Domain                string   `json:"domain"`
+	Configured            bool     `json:"configured"`
+	Enabled               bool     `json:"enabled"`
+	AuthURL               string   `json:"auth_url"`
+	CheckPath             string   `json:"check_path"`
+	CopyHeaders           []string `json:"copy_headers"`
+	TimeoutSeconds        int      `json:"timeout_seconds"`
+	DefaultTimeoutSeconds int      `json:"default_timeout_seconds"`
+	UpdatedAt             string   `json:"updated_at,omitempty"`
+}
+
+// SetDomainAuthGateRequest mirrors internal/api's setDomainAuthGateRequest.
+// TimeoutSeconds 0 uses the server's APP_AUTH_GATE_TIMEOUT default.
+type SetDomainAuthGateRequest struct {
+	Enabled        bool     `json:"enabled"`
+	AuthURL        string   `json:"auth_url"`
+	CheckPath      string   `json:"check_path"`
+	CopyHeaders    []string `json:"copy_headers"`
+	TimeoutSeconds int      `json:"timeout_seconds"`
+}
+
 // DNSRecordResource mirrors internal/api's dnsRecordResource
 // (internal/api/dns_records.go): one A/AAAA/CNAME/TXT/MX/SRV/CAA record,
 // used both in GET .../dns-records's own Records list and as the
@@ -3280,6 +3303,17 @@ type NodeResourceUsageResource struct {
 	MemoryTotalBytes *float64 `json:"memory_total_bytes,omitempty"`
 	DiskUsedBytes    *float64 `json:"disk_used_bytes,omitempty"`
 	DiskTotalBytes   *float64 `json:"disk_total_bytes,omitempty"`
+
+	LevelrailMemoryBytes       *float64                `json:"levelrail_memory_bytes,omitempty"`
+	OtherContainersMemoryBytes *float64                `json:"other_containers_memory_bytes,omitempty"`
+	OtherContainers            []UnmanagedContainerUse `json:"other_containers,omitempty"`
+	SystemMemoryBytes          *float64                `json:"system_memory_bytes,omitempty"`
+}
+
+// UnmanagedContainerUse is one running container the platform does not manage.
+type UnmanagedContainerUse struct {
+	Name        string  `json:"name"`
+	MemoryBytes float64 `json:"memory_bytes"`
 }
 
 // FleetResourceUsageRollup mirrors internal/api's

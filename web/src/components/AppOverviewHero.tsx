@@ -147,7 +147,7 @@ export function AppOverviewHero({
             )}
           </HeroField>
           <HeroField label="Image">
-            <span className="font-mono" title={app.image}>
+            <span className="break-all font-mono" title={app.image}>
               {unpinnedImage(app.image)}
             </span>
             {app.image_digest ? (

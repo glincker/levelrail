@@ -27,6 +27,7 @@ import {
   type MeshSettings,
 } from '../../queries/meshSettings'
 import { meshCardState } from '../../lib/meshCardState'
+import { RestartControlPlaneButton } from '../RestartControlPlaneButton'
 
 const CHECK_ICON: Record<MeshCheckStatus, typeof CheckCircleIcon> = {
   pass: CheckCircleIcon,
@@ -129,6 +130,7 @@ export function MeshSettingsBody({ settings }: { settings: MeshSettings }) {
                   {t('mesh.restartCommand')} {settings.restart_hint}
                 </p>
               ) : null}
+              <RestartControlPlaneButton />
             </AlertDescription>
           </Alert>
         ) : null}

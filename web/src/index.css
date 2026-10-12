@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './styles/glinui-tokens.css';
+@import './styles/glinr-tokens.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -52,7 +53,7 @@
   --chart-series-6: oklch(0.55 0.1 40);
   --chart-danger: oklch(0.577 0.245 27.325);
   --chart-muted: oklch(0.62 0.01 250);
-  --radius: 0.625rem;
+  --radius: var(--glinr-radius);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -266,6 +267,10 @@ body {
   --color-tone-accent-solid: var(--tone-accent-solid);
   --shadow-raised: var(--elev-1);
   --shadow-floating: var(--elev-2);
+  --shadow-header: var(--glinr-elev-header);
+  --shadow-card: var(--glinr-elev-card);
+  --shadow-popover: var(--glinr-elev-popover);
+  --shadow-dialog: var(--glinr-elev-dialog);
 }
 
 @keyframes kit-shimmer {

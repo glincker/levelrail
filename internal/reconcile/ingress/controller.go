@@ -890,6 +890,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
+	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain auth gates: %w", err)
+	}
 
 	var staticRoutes []ingress.StaticRoute
 	for _, site := range staticSites {

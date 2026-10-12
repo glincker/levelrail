@@ -118,7 +118,7 @@ export function OrphanedVolumesCard() {
           </Label>
         ))}
       </CardContent>
-      <CardContent className="flex items-center justify-between gap-3 pt-0">
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-0">
         <p className="text-xs text-muted-foreground">
           {selectedNames.length > 0
             ? `${selectedNames.length} selected`

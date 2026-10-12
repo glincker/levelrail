@@ -139,7 +139,7 @@ function RunPanel({
       {manual.map((d) => (
         <div
           key={d.domain}
-          className="rounded-md bg-muted p-2 font-mono text-xs"
+          className="rounded-md bg-muted p-2 break-all font-mono text-xs"
         >
           {t('appImport.cutover.guide.manualRecord', {
             domain: d.domain,

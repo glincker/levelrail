@@ -66,7 +66,8 @@ export function ChangeSummaryBar({
       <div
         role="region"
         aria-label="Unsaved changes"
-        className="sticky bottom-3 z-20 space-y-2 rounded-2xl border bg-popover p-3 shadow-floating kit-enter"
+        data-dock-avoid=""
+        className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 space-y-2 rounded-2xl border bg-popover p-3 shadow-floating kit-enter"
       >
         <ul className="flex flex-wrap gap-1.5">
           {chips.map((c) => (

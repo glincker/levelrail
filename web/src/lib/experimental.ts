@@ -11,6 +11,7 @@ export type ExperimentalFeature =
   | 'access-roles'
   | 'global-environments'
   | 'resource-advisor'
+  | 'cli-console'
 
 export function isFeatureVisible(
   feature: ExperimentalFeature | undefined,
