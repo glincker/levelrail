@@ -223,7 +223,7 @@ export function DeploymentsPage({
     <div ref={topRef} className="flex flex-col gap-5">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-lg font-semibold text-foreground">Deployments</h1>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <StatusPill
             size="sm"
             tone={streamView.tone}

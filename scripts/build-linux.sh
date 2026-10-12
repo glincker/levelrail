@@ -20,7 +20,7 @@ echo "==> web ($commit)"
 echo "==> go build linux/$arch as $version"
 mkdir -p "$(dirname "$out")"
 GOOS=linux GOARCH="$arch" CGO_ENABLED=0 go build -tags embedweb -trimpath \
-	-ldflags "-s -w -X github.com/GLINCKER/levelrail/internal/version.Version=${version}-${commit}" \
+	-ldflags "-s -w -X github.com/GLINCKER/levelrail/internal/version.Version=${version}" \
 	-o "$out" ./cmd/levelrail
 
 echo "==> $out"

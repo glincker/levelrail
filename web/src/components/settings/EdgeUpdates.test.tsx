@@ -118,10 +118,11 @@ describe('edge channel messaging', () => {
     expect(
       screen.getByText('docker compose pull app && docker compose up -d app'),
     ).toBeInTheDocument()
-    expect(screen.getByText('View commit')).toHaveAttribute(
+    expect(screen.getByText('Commit 07cd3bf').closest('a')).toHaveAttribute(
       'href',
       'https://github.com/x/y/commit/07cd3bf',
     )
+    expect(screen.queryByText('View commit')).not.toBeInTheDocument()
     expect(screen.queryByText(/sh -s upgrade/)).not.toBeInTheDocument()
   })
 
@@ -158,36 +159,59 @@ describe('UpdateStatusRow', () => {
     image: 'ghcr.io/x/y:edge',
   }
 
-  it('links an edge build to its commit, not a release', () => {
-    render(
+  function renderRow(status: UpdateStatus, data: UpdatePreflight) {
+    fetchMock.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(data),
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    })
+    return render(
       <I18nextProvider i18n={testI18n}>
-        <UpdateStatusRow status={edgeStatus} />
+        <QueryClientProvider client={qc}>
+          <UpdateStatusRow status={status} />
+        </QueryClientProvider>
       </I18nextProvider>,
     )
+  }
+
+  it('shows the newer edge build once, without a repeated commit link', async () => {
+    renderRow(edgeStatus, preflight(container))
     expect(
-      screen.getByText('A newer edge build is available: main-07cd3bf'),
+      await screen.findByText('A newer edge build is available: main-07cd3bf'),
     ).toBeInTheDocument()
-    expect(screen.getByText('View commit')).toBeInTheDocument()
+    expect(screen.queryByText('View commit')).not.toBeInTheDocument()
     expect(screen.queryByText('View release')).not.toBeInTheDocument()
-    expect(screen.getByText('Image: ghcr.io/x/y:edge')).toBeInTheDocument()
   })
 
-  it('keeps the release wording for a real release', () => {
-    render(
-      <I18nextProvider i18n={testI18n}>
-        <UpdateStatusRow
-          status={{
-            ...edgeStatus,
-            latest_version: 'v1.1.0',
-            release_kind: 'release',
-            channel: 'stable',
-            image: null,
-          }}
-        />
-      </I18nextProvider>,
+  it('explains instead of promising an edge build on a host binary', async () => {
+    renderRow(edgeStatus, preflight(binary))
+    expect(
+      await screen.findByText(
+        /runs as a host binary, so it cannot follow edge/,
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/newer edge build/)).not.toBeInTheDocument()
+  })
+
+  it('keeps the release wording for a real release', async () => {
+    renderRow(
+      {
+        ...edgeStatus,
+        latest_version: 'v1.1.0',
+        release_kind: 'release',
+        channel: 'stable',
+        image: null,
+      },
+      preflight(container),
     )
     expect(
-      screen.getByText('A new version is available: v1.1.0'),
+      await screen.findByText('A new version is available: v1.1.0'),
     ).toBeInTheDocument()
     expect(screen.getByText('View release')).toBeInTheDocument()
   })

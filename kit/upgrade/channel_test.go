@@ -207,3 +207,38 @@ func TestPickLatestPrerelease_IgnoresModuleTags(t *testing.T) {
 		t.Fatalf("pickLatestPrerelease() = %+v, want tag v0.2.0-beta.19 (the newer kit/ tag is not a platform release)", got)
 	}
 }
+
+func TestPickLatest_ChannelTable(t *testing.T) {
+	list := []rawRelease{
+		{TagName: "kit/v0.9.0", PublishedAt: "2026-10-11T09:00:00Z"},
+		{TagName: "v0.2.0", PublishedAt: "2026-10-10T00:00:00Z"},
+		{TagName: "v0.3.0", Draft: true, PublishedAt: "2026-10-11T00:00:00Z"},
+		{TagName: "v0.3.0-beta.2", Prerelease: true, PublishedAt: "2026-10-11T01:00:00Z"},
+		{TagName: "v0.3.0-beta.10", Prerelease: true, PublishedAt: "2026-10-11T00:30:00Z"},
+		{TagName: "v0.1.9", PublishedAt: "2026-10-12T00:00:00Z"},
+		{TagName: "kit/v1.0.0-beta.1", Prerelease: true, PublishedAt: "2026-10-12T00:00:00Z"},
+		{TagName: "v0.2.0-beta.20", Prerelease: true, PublishedAt: "2026-10-09T00:00:00Z"},
+	}
+	tests := []struct {
+		name    string
+		rrs     []rawRelease
+		pick    func([]rawRelease) *Release
+		wantTag string
+	}{
+		{"stable skips kit, drafts, prereleases and picks highest semver", list, pickLatestStable, "v0.2.0"},
+		{"prerelease picks highest semver not newest listed", list, pickLatestPrerelease, "v0.3.0-beta.10"},
+		{"no stable", []rawRelease{{TagName: "kit/v0.2.0"}, {TagName: "v0.2.0-beta.1", Prerelease: true}}, pickLatestStable, ""},
+		{"only kit tags", []rawRelease{{TagName: "kit/v0.2.0"}}, pickLatestPrerelease, ""},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := tc.pick(tc.rrs)
+			switch {
+			case tc.wantTag == "" && got != nil:
+				t.Fatalf("got %+v, want nil", got)
+			case tc.wantTag != "" && (got == nil || got.Tag != tc.wantTag):
+				t.Fatalf("got %+v, want tag %s", got, tc.wantTag)
+			}
+		})
+	}
+}

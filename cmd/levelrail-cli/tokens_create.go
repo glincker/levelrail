@@ -75,6 +75,9 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	if len(abilities) == 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--abilities is required (or use --preset)"))
 	}
+	if len(abilities) > 1 && slices.Contains(abilities, "root") {
+		return reportError(stdout, stderr, jsonOut, newValidationError("root cannot be combined with other abilities"))
+	}
 	if expiresInDays < 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
 	}

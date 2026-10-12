@@ -33,6 +33,6 @@
     "badge": "Automatic",
     "hint": "Assigned by Levelrail from this server's IP so the app works with no DNS setup. Add your own domain below to replace it.",
     "open": "Open",
-    "tlsNote": "Uses a self-signed certificate until HTTPS is enabled under Domains."
+    "tlsNote": "This automatic URL uses a self-signed certificate until HTTPS is enabled under Domains. Plain http gets a 308 redirect to it."
   }
 }

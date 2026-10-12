@@ -8,7 +8,11 @@ import { ReleaseNotes } from './ReleaseNotes'
 import { UpgradeCheckRow } from './UpgradeCheckRow'
 import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 
-export function UpgradePreflight() {
+export function UpgradePreflight({
+  hideEdgeGuidance = false,
+}: {
+  hideEdgeGuidance?: boolean
+}) {
   const { t } = useTranslation('updates')
   const { data, isPending, isError } = useQuery(preflightQueryOptions())
   const recheck = useRecheckPreflight()
@@ -52,10 +56,12 @@ export function UpgradePreflight() {
       ) : data.blocked ? (
         <p className="text-sm text-destructive">{t('preflight.blocked')}</p>
       ) : data.edge ? (
-        <EdgeUpdateGuidance
-          edge={data.edge}
-          updateAvailable={data.update_available}
-        />
+        hideEdgeGuidance ? null : (
+          <EdgeUpdateGuidance
+            edge={data.edge}
+            updateAvailable={data.update_available}
+          />
+        )
       ) : data.update_available ? (
         <div className="space-y-3">
           <CopyCommand

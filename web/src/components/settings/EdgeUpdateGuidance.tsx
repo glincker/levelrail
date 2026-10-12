@@ -52,21 +52,20 @@ export function EdgeUpdateGuidance({
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{t('edge.intro')}</p>
       <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        {edge.commit ? (
-          <span className="font-mono">
-            {t('edge.commit', { commit: edge.commit.slice(0, 7) })}
-          </span>
-        ) : null}
-        {edge.commit_url ? (
+        {edge.commit && edge.commit_url ? (
           <a
             href={edge.commit_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-primary hover:underline"
+            className="inline-flex items-center gap-1 font-mono text-primary hover:underline"
           >
-            {t('version.viewCommit')}
+            {t('edge.commit', { commit: edge.commit.slice(0, 7) })}
             <ArrowSquareOutIcon className="size-3.5" />
           </a>
+        ) : edge.commit ? (
+          <span className="font-mono">
+            {t('edge.commit', { commit: edge.commit.slice(0, 7) })}
+          </span>
         ) : null}
         <span className="font-mono">{edge.image}</span>
       </p>
@@ -101,7 +100,7 @@ export function EdgeUpdateGuidance({
                   key={c}
                   type="button"
                   size="sm"
-                  variant="outline"
+                  variant={c === 'stable' ? 'default' : 'outline'}
                   disabled={save.isPending}
                   onClick={() => {
                     switchTo(c)

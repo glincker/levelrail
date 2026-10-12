@@ -66,6 +66,8 @@
 #   LEVELRAIL_RELEASE_BASE_URL  download release assets from this https mirror
 #                            directory instead of GitHub (LEVELRAIL_INSECURE_MIRROR=1
 #                            permits http, for tests only)
+#   LEVELRAIL_INSTALL_CLI    0 skips installing levelrail-cli to /usr/local/bin
+#                            (default: installed from the same release)
 #   LEVELRAIL_PUBLIC_IP      skip public IP discovery
 #   LEVELRAIL_SKIP_REACHABILITY=1  skip the external port 80/443 self-test
 #   LEVELRAIL_MIN_RAM_MB     RAM warning threshold (default: 1024)
@@ -282,7 +284,7 @@ github_api() {
 list_releases() {
 	github_api "releases?per_page=30" | awk -v asset="\"name\": \"$1\"" '
 		/"tag_name":/ {
-			if (tag != "") print tag, pre, has, created
+			if (tag != "" && index(tag, "/") == 0) print tag, pre, has, created
 			tag = $0; sub(/.*"tag_name": *"/, "", tag); sub(/".*/, "", tag)
 			pre = "false"; has = 0; created = ""
 		}
@@ -292,7 +294,7 @@ list_releases() {
 			sub(/.*"created_at": *"/, "", created); sub(/".*/, "", created)
 		}
 		index($0, asset) { has = 1 }
-		END { if (tag != "") print tag, pre, has, created }' | sort -k4,4r
+		END { if (tag != "" && index(tag, "/") == 0) print tag, pre, has, created }' | sort -k4,4r
 }
 
 # resolve_version picks the newest release on the channel that actually
@@ -1293,8 +1295,8 @@ Manage it from your own machine with the CLI (no root needed there):
   Service status: systemctl status ${SERVICE_NAME}
   Logs:           journalctl -u ${SERVICE_NAME} -f
   Data directory: ${DATA_DIR}
-  Upgrade:        curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sudo sh -s upgrade
-  Uninstall:      curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sudo sh -s uninstall
+  Upgrade:        curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade
+  Uninstall:      curl -fsSL https://levelrail.com/install.sh | sudo sh -s uninstall
   Locked out:     sudo APP_DATA_DIR=${DATA_DIR} ${BIN_PATH} recover-admin --username admin
 EOF
 }
@@ -1361,6 +1363,28 @@ do_check() {
 	fi
 }
 
+CLI_INSTALLER_URL="${LEVELRAIL_CLI_INSTALLER_URL:-https://levelrail.com/install-cli.sh}"
+
+# install_cli reuses install-cli.sh so the CLI gets the same checksum and
+# signature checks as the server binary. Never fatal: the server is already up.
+install_cli() {
+	cli_hint="curl -fsSL ${CLI_INSTALLER_URL} | sudo sh"
+	[ "${LEVELRAIL_INSTALL_CLI:-1}" != "0" ] || return 0
+	if [ -n "${LEVELRAIL_BINARY_FILE:-}${LEVELRAIL_BINARY_URL:-}" ]; then
+		log "levelrail-cli not installed: run ${cli_hint}"
+		return 0
+	fi
+	cli_script="$(mktemp)"
+	if curl -fsSL --proto "$HTTPS_ONLY" --tlsv1.2 --connect-timeout 10 --max-time 30 -o "$cli_script" "$CLI_INSTALLER_URL" 2>/dev/null &&
+		LEVELRAIL_VERSION="$VERSION" LEVELRAIL_CLI_INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-/usr/local/bin}" sh "$cli_script"; then
+		rm -f "$cli_script"
+		return 0
+	fi
+	rm -f "$cli_script"
+	warn "levelrail-cli was not installed"
+	log "levelrail-cli not installed: run ${cli_hint}"
+}
+
 do_install() {
 	[ -n "$SOCKET_ACTIVATION" ] || SOCKET_ACTIVATION=1
 	load_settings
@@ -1383,6 +1407,7 @@ do_install() {
 	wait_healthy
 	discover_public_ip
 	reachability_test
+	install_cli
 	print_summary
 }
 
