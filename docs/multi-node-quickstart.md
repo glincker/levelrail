@@ -1,5 +1,6 @@
 ---
 title: "Multi-node quickstart"
+icon: "/assets/icons/hard-drives.svg"
 tag: "Beta"
 sidebarTitle: "Add a second server"
 description: The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
