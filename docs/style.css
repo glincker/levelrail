@@ -161,3 +161,16 @@ html:not(.dark) #table-of-contents a[data-active="true"] { color: #107292; }
 /* ---------- Table cell padding ---------- */
 #content-area table th, #content-area table td { padding: 0.75rem 1rem; vertical-align: top; }
 #content-area table td:first-child { font-weight: 500; }
+
+/* ---------- Active icon colour ---------- */
+/* Icons are neutral grey SVGs shown as <img>, so the active item is recoloured with a filter
+   chain that maps the grey to the brand blue (#2fb3dc in dark, #107292 in light). */
+#sidebar a[aria-current="page"] img[src*="/assets/icons/"],
+#navbar .nav-tabs-item[data-active="true"] img[src*="/assets/icons/"] {
+  filter: brightness(0) saturate(100%) invert(58%) sepia(96%) saturate(237%) hue-rotate(148deg) brightness(81%) contrast(149%);
+}
+html:not(.dark) #sidebar a[aria-current="page"] img[src*="/assets/icons/"],
+html:not(.dark) #navbar .nav-tabs-item[data-active="true"] img[src*="/assets/icons/"] {
+  filter: brightness(0) saturate(100%) invert(28%) sepia(90%) saturate(323%) hue-rotate(148deg) brightness(118%) contrast(123%);
+}
+

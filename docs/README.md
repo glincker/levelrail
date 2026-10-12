@@ -40,7 +40,7 @@ Four main types, plus two Levelrail-specific categories:
 | Doc | Covers |
 | --- | --- |
 | [getting-started.md](/getting-started) | Install on a Linux server, sign in, and deploy a first app from the dashboard or the CLI |
-| [tutorials/](/tutorials/index) | Step-by-step walkthroughs: deploy a Docker app, zero-downtime deploys, GitHub Actions, Postgres, S3 backups, self-hosting Vaultwarden, logs and metrics |
+| [tutorials/](/tutorials) | Step-by-step walkthroughs: deploy a Docker app, zero-downtime deploys, GitHub Actions, Postgres, S3 backups, self-hosting Vaultwarden, logs and metrics |
 
 ### How-to guides
 

@@ -912,21 +912,6 @@
       "source": "/tutorials",
       "destination": "/getting-started",
       "permanent": false
-    },
-    {
-      "source": "/guides",
-      "destination": "/guides/index",
-      "permanent": false
-    },
-    {
-      "source": "/announcements",
-      "destination": "/announcements/index",
-      "permanent": false
-    },
-    {
-      "source": "/self-host",
-      "destination": "/self-host/index",
-      "permanent": false
     }
   ]
 }

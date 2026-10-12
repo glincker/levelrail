@@ -4,7 +4,7 @@ tag: "Beta"
 description: Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
 ---
 
-<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/anthropic.svg" alt="Anthropic" title="Anthropic" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/openai.svg" alt="OpenAI" title="OpenAI" width="24" height="24" /></span></div>
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/anthropic/default.svg" alt="Anthropic" title="Anthropic" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/openai/default.svg" alt="OpenAI" title="OpenAI" width="24" height="24" /></span></div>
 
 `levelrail-mcp` is an MCP (Model Context Protocol) server that turns the control plane's REST API (`/api/v1`) into MCP tools. It is a thin client like `levelrail-cli`: it authenticates with an API token and calls the same routes the CLI and dashboard do. It has no special internal access, and a token with fewer abilities than a tool needs gets the same 403 the REST API would return.
 
