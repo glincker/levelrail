@@ -38,8 +38,11 @@ type githubRelease struct {
 // nil error means "checked, no release published yet" (GitHub 404).
 type fetchLatestReleaseFunc func(ctx context.Context) (*githubRelease, error)
 
+// fetchStableRelease is swapped in tests; production resolves through kit/upgrade.
+var fetchStableRelease = upgrade.FetchLatestStable
+
 func defaultFetchLatestRelease(ctx context.Context) (*githubRelease, error) {
-	rel, err := upgrade.FetchLatestStable(ctx, githubRepo)
+	rel, err := fetchStableRelease(ctx, githubRepo)
 	if err != nil {
 		return nil, fmt.Errorf("api: fetch github releases: %w", err)
 	}
