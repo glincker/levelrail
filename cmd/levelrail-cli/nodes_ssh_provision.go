@@ -1,10 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
+
+	"golang.org/x/term"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runNodesSSHProvision implements "nodes ssh-provision": POST
@@ -27,6 +34,10 @@ func runNodesSSHProvision(prog string, args []string, stdout, stderr io.Writer, 
 	fs.StringVar(&name, "name", "", "name for the new node: lowercase letters, digits, hyphens (required)")
 	fs.StringVar(&role, "role", "general", "general or build")
 	fs.StringVar(&controlPlaneAddr, "control-plane-addr", "", "host:port the adopted machine dials to reach this control plane's agent listener (default: this command's --api-url host, port 9443)")
+	var hostKeyFingerprint string
+	var insecureHostKey bool
+	fs.StringVar(&hostKeyFingerprint, "host-key-fingerprint", "", "the server's SHA256 host key fingerprint (ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub on the server); skips the interactive confirmation")
+	fs.BoolVar(&insecureHostKey, "insecure-skip-host-key-check", false, "do not verify the server's host key (unsafe: a machine in the middle can capture the credential and join token)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesSSHProvisionUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -54,6 +65,22 @@ func runNodesSSHProvision(prog string, args []string, stdout, stderr io.Writer, 
 	if controlPlaneAddr == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--control-plane-addr could not be derived from --api-url, pass it explicitly"))
 	}
+	if hostKeyFingerprint != "" && insecureHostKey {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--host-key-fingerprint and --insecure-skip-host-key-check are mutually exclusive"))
+	}
+
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+
+	// Resolve trust before reading any credential, so nothing is prompted for a server the operator rejects.
+	if insecureHostKey {
+		_, _ = fmt.Fprintln(stderr, "WARNING: skipping SSH host key verification; a machine in the middle of this connection could capture the credential and the join token")
+	} else if hostKeyFingerprint == "" {
+		fp, err := confirmSSHHostKeyInteractively(client, host, port, stderr)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		hostKeyFingerprint = fp
+	}
 
 	auth := createSSHNodeProvisionAuthRequest{}
 	if usePassword {
@@ -70,14 +97,16 @@ func runNodesSSHProvision(prog string, args []string, stdout, stderr io.Writer, 
 		auth.Type, auth.PrivateKey, auth.Passphrase = "key", string(key), passphrase
 	}
 
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-
 	provisioned, err := client.CreateSSHNodeProvision(context.Background(), createSSHNodeProvisionRequest{
 		Host: host, Port: port, Username: username, Auth: auth,
 		Name: name, Role: role, ControlPlaneAddr: controlPlaneAddr,
+		HostKeyFingerprint: hostKeyFingerprint, InsecureSkipHostKeyCheck: insecureHostKey,
 	})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create ssh node provision: %w", err))
+	}
+	for _, w := range provisioned.Warnings {
+		_, _ = fmt.Fprintln(stderr, "WARNING: "+w)
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, provisioned, func() {
@@ -88,6 +117,43 @@ func runNodesSSHProvision(prog string, args []string, stdout, stderr io.Writer, 
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+// confirmSSHHostKeyInteractively runs the preflight, shows every host key
+// the server presented, and returns the first one once the operator confirms it.
+func confirmSSHHostKeyInteractively(client *apiclient.Client, host string, port int, stderr io.Writer) (string, error) {
+	pre, err := client.PreflightSSHNodeProvision(context.Background(), sshProvisionPreflightRequest{Host: host, Port: port})
+	if err != nil {
+		return "", fmt.Errorf("read the server's host key: %w", err)
+	}
+	if len(pre.HostKeys) == 0 {
+		return "", errors.New("the server presented no host key")
+	}
+	_, _ = fmt.Fprintf(stderr, "Host keys presented by %s:%d:\n", pre.Host, pre.Port)
+	for _, k := range pre.HostKeys {
+		_, _ = fmt.Fprintf(stderr, "  %-22s %s\n", k.Type, k.Fingerprint)
+	}
+	_, _ = fmt.Fprintln(stderr, "Compare with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` run on the server.")
+	pinned := pre.HostKeys[0]
+	if err := confirmSSHHostKey(stderr, pinned.Type+" "+pinned.Fingerprint); err != nil {
+		return "", err
+	}
+	return pinned.Fingerprint, nil
+}
+
+// confirmSSHHostKey asks for a y/N answer on a terminal; a test can swap it.
+var confirmSSHHostKey = defaultConfirmSSHHostKey
+
+func defaultConfirmSSHHostKey(stderr io.Writer, key string) error {
+	if f, ok := stdinSource.(*os.File); !ok || !term.IsTerminal(int(f.Fd())) { //nolint:gosec // a terminal file descriptor always fits an int
+		return newValidationError("not a terminal: pass --host-key-fingerprint (from ssh-keygen -lf on the server) or --insecure-skip-host-key-check")
+	}
+	_, _ = fmt.Fprintf(stderr, "Trust %s and send the credential to this server? [y/N] ", key)
+	line, _ := bufio.NewReader(stdinSource).ReadString('\n')
+	if a := strings.ToLower(strings.TrimSpace(line)); a != "y" && a != "yes" {
+		return errors.New("cancelled: host key not confirmed")
+	}
+	return nil
 }
 
 // readSSHPassword resolves --password's actual value: a piped,
@@ -120,6 +186,11 @@ one line, trimmed), never taken as a flag value so it never lands in
 shell history or the process list. The credential (key or password) is
 used once for this install and never stored.
 
+Before any credential is sent, the server's host key is read without
+authenticating and shown for you to confirm; compare it with
+ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub run on the server. Pass
+--host-key-fingerprint to pin it non-interactively.
+
 Flags:
   --host string                  the remote machine's address (required)
   --port int                     the remote machine's SSH port (default 22)
@@ -130,6 +201,8 @@ Flags:
   --name string                  name for the new node: lowercase letters, digits, hyphens (required)
   --role string                  general or build (default general)
   --control-plane-addr string    host:port the adopted machine dials to reach this control plane's agent listener (default: --api-url's host, port 9443)
+  --host-key-fingerprint string  the server's SHA256 host key fingerprint, skips the interactive confirmation
+  --insecure-skip-host-key-check do not verify the server's host key (unsafe, warned and audited)
   --token string                 API token (default: %[2]s env var, then the credentials file)
   --api-url string               control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string                named credentials profile to read (overrides APP_PROFILE, default "default")
