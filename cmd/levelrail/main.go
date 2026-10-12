@@ -796,6 +796,7 @@ func run(logger *slog.Logger) error {
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
 	configureNodeCerts(apiRouter, agentServer)
+	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	setupDataExport(ctx, logger, b, db, telemetryDB, secretsManager, logBroadcaster, apiRouter)
@@ -899,6 +900,7 @@ func run(logger *slog.Logger) error {
 		meshDNSAddr:                  meshDNSAddr,
 		databaseSlowQueryThresholdMs: databaseSlowQueryThresholdMs(logger),
 		dashboardDial:                dashboardDialAddr(httpAddr()),
+		gateSecret:                   gateSecret,
 		networkPrefix:                b.ShortName,
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
@@ -2749,6 +2751,7 @@ func composeMux(apiHandler http.Handler, webhookHandler http.Handler, webHandler
 	mux.Handle("/.well-known/jwks.json", apiHandler)
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/public/", apiHandler)
+	mux.Handle("/gate/", apiHandler)
 	if webhookHandler != nil {
 		mux.Handle("POST /webhook", webhookHandler)
 	}
@@ -3642,6 +3645,7 @@ type dynamicSourceDeps struct {
 	meshCfg            *meshSetup
 	meshDNSAddr        string
 	dashboardDial      string
+	gateSecret         string
 	networkPrefix      string
 	firewallRulePrefix string
 	// databaseSlowQueryThresholdMs is 0 (databaseSlowQueryThresholdMs's own
@@ -3729,7 +3733,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithModelHosts(models.HostLister{Store: deps.db, Hosts: deps.models.hosts}))
 		}
 		if deps.dashboardDial != "" {
-			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial))
+			ingressOpts = append(ingressOpts, ingressreconcile.WithDashboardDial(deps.dashboardDial), ingressreconcile.WithGateSecret(deps.gateSecret))
 		}
 		// Cloudflare DNS-01 for wildcard domains: same nil-secretsManager
 		// hazard as the Tunnel token below, and the same "skipped

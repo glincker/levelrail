@@ -19,7 +19,7 @@ import {
 import { useCallback } from 'react'
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import { safeReturnPath } from '../lib/connectionState'
+import { isServerReturnPath, safeReturnPath } from '../lib/connectionState'
 import { setStoredUsername, clearStoredUsername } from '../lib/authStore'
 
 export interface AuthUser {
@@ -235,6 +235,10 @@ export function goAfterLogin(
   const back = safeReturnPath(
     new URLSearchParams(window.location.search).get('redirect'),
   )
+  if (back && isServerReturnPath(back)) {
+    window.location.assign(back)
+    return
+  }
   if (back) {
     void router.navigate({ href: back })
     return

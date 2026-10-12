@@ -145,6 +145,7 @@ type Router struct {
 	environments           EnvironmentStore
 	envProtect             envProtection
 	cliConsole             *cliConsoleState   // web CLI console limits and config, see cli_console.go
+	mobile                 *mobileState       // phone pairing rate limits, see mobile.go
 	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
 	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
@@ -208,6 +209,10 @@ type Router struct {
 	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
 	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainAuthGate         DomainAuthGateStore         // always set, core Store; the auth URL is not secret
+	gate                   GateStore                   // nil when the store lacks it: built-in gate requests fail closed
+	gateSecret             string                      // SetGate; empty refuses every gate check
+	gateSettings           GateSettings                // SetGate; zero fields fall back to defaults
+	gateEvents             gateEventCounter            // coalesced gate events awaiting flush
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
@@ -824,6 +829,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	if g, ok := any(s).(SetupGuideStore); ok {
 		rt.setupGuide = g
 	}
+	if g, ok := any(s).(GateStore); ok {
+		rt.gate = g
+	}
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 
 	rt.dash = newDashboardCache(0, 0)
@@ -839,5 +847,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.attachAuthEngine(s)
 	rt.attachEnvProtection(s)
 	rt.cliConsole = newCLIConsoleState()
+	rt.mobile = newMobileState()
 	return rt
 }

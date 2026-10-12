@@ -35,7 +35,11 @@ func (rt *Router) handleAttentionFeed(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: attention feed: resolve caller abilities failed", err)
 		return
 	}
-	now := time.Now()
+	writeJSON(w, http.StatusOK, attentionFeedResponse{Items: rt.attentionFeedItems(r, abilities, time.Now())})
+}
+
+// attentionFeedItems gathers every store-backed attention source for the caller.
+func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now time.Time) []attention.Item {
 	items := []attention.Item{}
 	items = append(items, rt.tokenAttentionItems(r, abilities, now)...)
 	items = append(items, rt.databaseAttentionItems(r, abilities, now)...)
@@ -49,7 +53,7 @@ func (rt *Router) handleAttentionFeed(w http.ResponseWriter, r *http.Request) {
 	items = append(items, rt.upgradeScheduleAttentionItems(r, abilities)...)
 	items = append(items, rt.resourceAdviceAttentionItems(r)...)
 	items = append(items, rt.backupCoverageAttentionItems(r, abilities)...)
-	writeJSON(w, http.StatusOK, attentionFeedResponse{Items: items})
+	return items
 }
 
 func feedItem(severity, kind, subject, detail string, params map[string]string) attention.Item {

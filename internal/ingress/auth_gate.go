@@ -26,6 +26,15 @@ const (
 	DefaultAuthGateCheckPath = "/"
 )
 
+// Subrequest headers the built-in gate provider sets; the check endpoint
+// trusts the others only when GateHeaderSecret matches.
+const (
+	GateHeaderSecret   = "X-Gate-Secret"
+	GateHeaderHost     = "X-Gate-Host"
+	GateHeaderProto    = "X-Gate-Proto"
+	GateHeaderClientIP = "X-Gate-Client-Ip"
+)
+
 // Copying these would either break the proxied request or strip the very
 // credentials the auth service needs, since copies are deleted up front.
 var reservedAuthGateHeaders = map[string]bool{
@@ -43,6 +52,9 @@ type AuthGate struct {
 	CheckPath   string
 	CopyHeaders []string
 	Timeout     time.Duration
+	// SetHeaders are set on the subrequest only, overwriting client values.
+	// Internal use (built-in provider); values may hold Caddy placeholders.
+	SetHeaders map[string]string
 }
 
 // VarsHandler is Caddy's no-op "vars" handler; handle_response skips a
@@ -220,17 +232,26 @@ func (g AuthGate) handlers() ([]any, error) {
 		})
 	}
 
+	set := map[string][]string{
+		"Host":               {u.Host},
+		"X-Forwarded-Method": {"{http.request.method}"},
+		"X-Forwarded-Uri":    {"{http.request.uri}"},
+	}
+	for name, value := range g.SetHeaders {
+		canon := http.CanonicalHeaderKey(name)
+		if !isHeaderToken(name) || reservedAuthGateHeaders[canon] || strings.ContainsAny(value, "\r\n") {
+			return nil, fmt.Errorf("auth gate: subrequest header %q is not allowed", name)
+		}
+		set[canon] = []string{value}
+	}
+
 	// GET drops the request body so the backend still receives it.
 	proxy := ReverseProxyHandler{
-		Handler:   "reverse_proxy",
-		Upstreams: []Upstream{{Dial: net.JoinHostPort(u.Hostname(), port)}},
-		Transport: transport,
-		Rewrite:   &ProxyRewrite{Method: http.MethodGet, URI: uri},
-		Headers: &ProxyHeaders{Request: &HeaderOps{Set: map[string][]string{
-			"Host":               {u.Host},
-			"X-Forwarded-Method": {"{http.request.method}"},
-			"X-Forwarded-Uri":    {"{http.request.uri}"},
-		}}},
+		Handler:        "reverse_proxy",
+		Upstreams:      []Upstream{{Dial: net.JoinHostPort(u.Hostname(), port)}},
+		Transport:      transport,
+		Rewrite:        &ProxyRewrite{Method: http.MethodGet, URI: uri},
+		Headers:        &ProxyHeaders{Request: &HeaderOps{Set: set}},
 		HandleResponse: []ResponseHandler{{Match: &ResponseMatcher{StatusCode: []int{2}}, Routes: good}},
 	}
 

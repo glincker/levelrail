@@ -33,6 +33,8 @@ const (
 	ResourceAdvisor Feature = "resource-advisor"
 	// CLIConsole is the dashboard's web console for the platform CLI (never a host shell).
 	CLIConsole Feature = "cli-console"
+	// MobileAPI is phone pairing, device tokens and the mobile overview endpoint.
+	MobileAPI Feature = "mobile-api"
 )
 
 // EnvVar names the env var holding the comma separated enabled features.
@@ -40,7 +42,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

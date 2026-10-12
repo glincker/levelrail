@@ -27,16 +27,43 @@ func (c *Controller) applyAuthGates(ctx context.Context, routes []ingress.ProxyR
 	if err != nil {
 		return routes, err
 	}
-	gates := authGatesByDomain(ctx, c.logger, rows, os.Getenv)
+	gates := authGatesByDomain(ctx, c.logger, rows, os.Getenv, builtinGate{dial: c.dashboardDial, secret: c.gateSecret})
 	if len(gates) == 0 {
 		return routes, nil
 	}
 	return attachAuthGates(routes, gates), nil
 }
 
+// builtinGate is where built-in provider gates send their check.
+type builtinGate struct {
+	dial   string
+	secret string
+}
+
+// Headers the built-in check answers with; always stripped from clients.
+var builtinGateIdentityHeaders = []string{"X-User", "X-Email", "X-Name"}
+
+// builtinAuthGate points a built-in provider row at the dashboard's check
+// endpoint over loopback, authenticated by the shared secret.
+func builtinAuthGate(row store.DomainAuthGate, b builtinGate, timeout time.Duration) *ingress.AuthGate {
+	headers := append(append([]string{}, builtinGateIdentityHeaders...), row.CopyHeaders...)
+	return &ingress.AuthGate{
+		URL:         "http://" + b.dial + "/api/v1/gate",
+		CheckPath:   "/check",
+		CopyHeaders: headers,
+		Timeout:     timeout,
+		SetHeaders: map[string]string{
+			ingress.GateHeaderSecret:   b.secret,
+			ingress.GateHeaderHost:     "{http.request.host}",
+			ingress.GateHeaderProto:    "{http.request.scheme}",
+			ingress.GateHeaderClientIP: "{http.request.remote.host}",
+		},
+	}
+}
+
 // authGatesByDomain maps every enabled row to its gate; a nil value marks a
 // gated domain whose stored config is invalid.
-func authGatesByDomain(ctx context.Context, logger *slog.Logger, rows []store.DomainAuthGate, getenv func(string) string) map[string]*ingress.AuthGate {
+func authGatesByDomain(ctx context.Context, logger *slog.Logger, rows []store.DomainAuthGate, getenv func(string) string, b builtinGate) map[string]*ingress.AuthGate {
 	defaultTimeout, err := ingress.AuthGateTimeoutFromEnv(getenv)
 	if err != nil {
 		logger.WarnContext(ctx, "ingress: ignoring invalid auth gate timeout", slog.String("error", err.Error()))
@@ -46,9 +73,18 @@ func authGatesByDomain(ctx context.Context, logger *slog.Logger, rows []store.Do
 		if !row.Enabled {
 			continue
 		}
-		g := &ingress.AuthGate{URL: row.AuthURL, CheckPath: row.CheckPath, CopyHeaders: row.CopyHeaders, Timeout: defaultTimeout}
+		timeout := defaultTimeout
 		if row.TimeoutSeconds > 0 {
-			g.Timeout = time.Duration(row.TimeoutSeconds) * time.Second
+			timeout = time.Duration(row.TimeoutSeconds) * time.Second
+		}
+		g := &ingress.AuthGate{URL: row.AuthURL, CheckPath: row.CheckPath, CopyHeaders: row.CopyHeaders, Timeout: timeout}
+		if row.Provider == store.GateProviderBuiltin {
+			if b.dial == "" || b.secret == "" {
+				logger.WarnContext(ctx, "ingress: built-in auth gate has no check endpoint, domain left unrouted", slog.String("domain", row.Domain))
+				gates[row.Domain] = nil
+				continue
+			}
+			g = builtinAuthGate(row, b, timeout)
 		}
 		if err := g.Validate(); err != nil {
 			logger.WarnContext(ctx, "ingress: auth gate invalid, domain left unrouted",

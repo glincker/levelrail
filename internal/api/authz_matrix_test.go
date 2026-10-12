@@ -42,6 +42,8 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
 	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
 	"GET /api/v1/dev-mode":                           "login screen banner, boolean only",
+	"GET /api/v1/gate/check":                         "ingress forward auth, 404 without the per-process gate secret",
+	"GET /gate/login":                                "app sign-in handoff, mints a token only for a signed-in dashboard session",
 	"POST /api/v1/auth/login":                        "credential exchange, rate limited",
 	"POST /api/v1/auth/register":                     "first-run setup, refuses once an admin exists",
 	"GET /api/v1/auth/setup-status":                  "tells the SPA whether to show first-run setup",
@@ -57,6 +59,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"POST /api/v1/auth/sign-in-alert/disown":         "authenticated by the signed single-use link from the owner's new-sign-in email, rate limited per IP",
 	"POST /api/v1/auth/device/start":                 "CLI device login start, rate limited",
 	"POST /api/v1/auth/device/token":                 "CLI device login poll, authenticated by the device code",
+	"POST /api/v1/mobile/pair":                       "phone pairing, authenticated by the one-time pairing code, rate limited per IP and code",
 	"GET /api/v1/auth/oauth/providers":               "login screen lists enabled providers",
 	"GET /api/v1/auth/oauth/{provider}/start":        "OAuth sign-in redirect",
 	"GET /api/v1/auth/oauth/{provider}/callback":     "OAuth sign-in callback, authenticated by state and code",
@@ -95,6 +98,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
 	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
+	"DELETE /api/v1/mobile/devices/{id}":                         "self service: revokes only a phone the caller paired, or any phone for root",
 	"POST /api/v1/apps/{name}/health/discover":                   "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
 }
 

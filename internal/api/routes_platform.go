@@ -514,6 +514,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth-gate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainAuthGate))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/auth-gate", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleSetDomainAuthGate))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleClearDomainAuthGate))
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/auth-gate/events", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleListAuthGateEvents))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions", rt.requireAbilityForResource(AbilityRoot, appResourceFromPath, rt.handleRevokeAuthGateSessions))
+	// Unauthenticated by design: the check proves itself with the ingress's
+	// gate secret, and login requires a dashboard session before minting.
+	mux.HandleFunc("GET /api/v1/gate/check", rt.handleGateCheck)
+	mux.HandleFunc("GET /gate/login", rt.handleGateLogin)
 
 	// Maintenance mode: GET is AbilityRead, matching the auth routes'
 	// own passive-visibility tier. PUT/DELETE are AbilityDeploy, not

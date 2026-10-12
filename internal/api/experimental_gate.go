@@ -39,6 +39,8 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.GlobalEnvironments, true
 	case strings.HasPrefix(p, "/api/v1/resource-advisor/"):
 		return experimental.ResourceAdvisor, true
+	case strings.HasPrefix(p, mobileRoutePrefix):
+		return experimental.MobileAPI, true
 	}
 	return "", false
 }
@@ -49,10 +51,29 @@ func environmentListForRoles(r *http.Request) bool {
 	return r.Method == http.MethodGet && r.URL.Path == "/api/v1/environments" && experimental.Enabled(experimental.AccessRoles)
 }
 
+// featureOn is experimental.Enabled plus per-feature env kill switches.
+func featureOn(f experimental.Feature) bool {
+	if f == experimental.MobileAPI {
+		return mobileAPIEnabled()
+	}
+	return experimental.Enabled(f)
+}
+
+// enabledFeatures is experimental.EnabledList with kill switches applied.
+func enabledFeatures() []experimental.Feature {
+	out := []experimental.Feature{}
+	for _, f := range experimental.EnabledList() {
+		if featureOn(f) {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
 // experimentalGateMiddleware answers 404 for routes of features that are off.
 func experimentalGateMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if f, gated := featureForPath(r.URL.Path); gated && !experimental.Enabled(f) && !environmentListForRoles(r) {
+		if f, gated := featureForPath(r.URL.Path); gated && !featureOn(f) && !environmentListForRoles(r) {
 			writeJSON(w, http.StatusNotFound, experimentalError{
 				Error:   experimental.DisabledMessage(f),
 				Code:    ExperimentalDisabledCode,

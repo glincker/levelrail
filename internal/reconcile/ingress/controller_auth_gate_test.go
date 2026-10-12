@@ -26,7 +26,7 @@ func TestAuthGatesByDomain(t *testing.T) {
 		}
 		return ""
 	}
-	got := authGatesByDomain(context.Background(), logger, rows, env)
+	got := authGatesByDomain(context.Background(), logger, rows, env, builtinGate{})
 	if _, ok := got["off.test"]; ok {
 		t.Error("disabled gate was applied")
 	}
@@ -77,5 +77,33 @@ func TestAttachAuthGates(t *testing.T) {
 				t.Errorf("attachAuthGates() = %+v\nwant %+v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestAuthGatesByDomain_Builtin(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	rows := []store.DomainAuthGate{{Domain: "sso.test", Enabled: true, Provider: store.GateProviderBuiltin, CheckPath: "/", CopyHeaders: []string{"X-Groups"}}}
+	noEnv := func(string) string { return "" }
+
+	got := authGatesByDomain(context.Background(), logger, rows, noEnv, builtinGate{dial: "127.0.0.1:8080", secret: "s3cret"})
+	g := got["sso.test"]
+	if g == nil || g.URL != "http://127.0.0.1:8080/api/v1/gate" || g.CheckPath != "/check" {
+		t.Fatalf("builtin gate = %+v", g)
+	}
+	if !reflect.DeepEqual(g.CopyHeaders, []string{"X-User", "X-Email", "X-Name", "X-Groups"}) {
+		t.Errorf("copy headers = %v, want identity headers always stripped and copied", g.CopyHeaders)
+	}
+	if g.SetHeaders[ingress.GateHeaderSecret] != "s3cret" || g.SetHeaders[ingress.GateHeaderHost] != "{http.request.host}" {
+		t.Errorf("subrequest headers = %v", g.SetHeaders)
+	}
+	if err := g.Validate(); err != nil {
+		t.Errorf("builtin gate does not compile: %v", err)
+	}
+
+	for name, b := range map[string]builtinGate{"no secret": {dial: "127.0.0.1:8080"}, "no dial": {secret: "s3cret"}} {
+		got := authGatesByDomain(context.Background(), logger, rows, noEnv, b)
+		if g, ok := got["sso.test"]; !ok || g != nil {
+			t.Errorf("%s: gate = %v (present %v), want unrouted", name, g, ok)
+		}
 	}
 }

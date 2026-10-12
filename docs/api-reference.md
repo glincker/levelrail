@@ -666,7 +666,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 89 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+::: details 91 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -768,6 +768,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRead | handleGetDomainAuthGate |
 | PUT | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRoot | handleSetDomainAuthGate |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRoot | handleClearDomainAuthGate |
+| GET | /api/v1/apps/{name}/domains/{domain}/auth-gate/events | AbilityReadSensitive | handleListAuthGateEvents |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions | AbilityRoot | handleRevokeAuthGateSessions |
 
 :::
 
@@ -1248,6 +1250,13 @@ Routes that do not fit an existing group.
 | GET | /api/v1/usage/budgets | AbilityRead | handleListUsageBudgets |
 | PUT | /api/v1/usage/budgets | AbilityWrite | handlePutUsageBudget |
 | DELETE | /api/v1/usage/budgets/{id} | AbilityWrite | handleDeleteUsageBudget |
+| POST | /api/v1/mobile/pairing-codes | AbilityRoot | handleCreateMobilePairing |
+| POST | /api/v1/mobile/pair | Public | handleMobilePair |
+| GET | /api/v1/mobile/devices | AbilityRead | handleListMobileDevices |
+| DELETE | /api/v1/mobile/devices/{id} | AbilityRead | handleRevokeMobileDevice |
+| GET | /api/v1/mobile/overview | AbilityRead | handleMobileOverview |
+| GET | /api/v1/gate/check | Public | handleGateCheck |
+| GET | /gate/login | Public | handleGateLogin |
 
 ## See also
 

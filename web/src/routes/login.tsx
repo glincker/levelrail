@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { safeReturnPath } from '../lib/connectionState'
+import { isServerReturnPath, safeReturnPath } from '../lib/connectionState'
 import { getStoredUsername } from '../lib/authStore'
 import { brandQueryOptions } from '../queries/brand'
 import { LoginScreen } from '../components/LoginScreen'
@@ -33,7 +33,11 @@ function validateLoginSearch(search: Record<string, unknown>): LoginSearch {
 
 export const Route = createFileRoute('/login')({
   validateSearch: validateLoginSearch,
-  beforeLoad: () => {
+  beforeLoad: ({ search }) => {
+    // A stale stored name must not skip the form on the way back to an app.
+    if (search.redirect && isServerReturnPath(search.redirect)) {
+      return
+    }
     if (getStoredUsername() !== null) {
       redirect({ to: '/', throw: true })
     }
