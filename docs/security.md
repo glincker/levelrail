@@ -3,11 +3,23 @@ title: "Security overview"
 description: How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
 ---
 
-This page is a map. Each topic below has its own detailed page. This one shows how the pieces fit together and links out.
+Levelrail keeps your secrets encrypted, signs every request in with a session or a scoped token, and never reaches into your servers over SSH after setup. This page explains how those pieces fit together and links to the detailed page for each. It is a map, not a duplicate.
+
+## Five things to do on a new install
+
+1. **Serve the dashboard over HTTPS and set the dashboard URL.** Once an `https://` URL is set, sign-in over plain HTTP is refused. See [Domains and ingress](/domains-and-ingress).
+2. **Give people the narrowest ability that works.** Most humans need `write` and `deploy`; keep `root` for a few. Give CI and AI tokens one ability, and attach a Deny for production apps. See [Identity and access](/identity-and-access).
+3. **Turn on two-factor sign-in** for every account that holds `root`.
+4. **Pin the control plane on every agent** by setting `APP_CA_FINGERPRINT`, so enrollment cannot be intercepted. See [Multi-node](/multi-node).
+5. **Back up the master key separately from the data directory**, and keep it out of the same snapshot. See [Master key rotation](/master-key-rotation) and [Control plane backup](/control-plane-backup).
+
+The [Security center](/security-center) in the dashboard checks most of these from your instance's real state.
+
+For what Levelrail defends against and where it does not yet, read the [threat model](/threat-model). Fixed issues are listed on the [security advisories](/security-advisories) page.
 
 ```mermaid
 flowchart TD
-  MK["Master key<br/>(in memory only, never written to disk)"]
+  MK["Master key<br/>(loaded into memory at start,<br/>stored in master.key or APP_MASTER_KEY)"]
   MK -->|wraps| D1["App A's DEK"]
   MK -->|wraps| D2["App B's DEK"]
   MK -->|wraps| D3["Backup target's DEK"]
@@ -20,12 +32,18 @@ flowchart TD
 
 ## Secrets: envelope encryption
 
-Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
+Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key. The control plane loads that key into memory at startup. By default the key is generated on first start and stored in `<data dir>/master.key` (mode `0600`); set `APP_MASTER_KEY` to supply it from your own secret manager instead. It is never included in a control plane backup snapshot.
 
-Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database can't copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](/master-key-rotation#binding-secrets-to-their-slot).
+<Warning>
+Anyone who can read your whole data directory (a disk image, a host-level backup, a cloud snapshot) can read `master.key` next to the database and decrypt every secret. Keep that key file out of host backups and snapshots, or run with `APP_MASTER_KEY` set from a secret store.
+</Warning>
+
+Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](/master-key-rotation#binding-secrets-to-their-slot).
 
 <Tip>
-Rotating the master key re-wraps every DEK without exposing plaintext, then binds any legacy values. See [Master key rotation](/master-key-rotation) for the procedure and failure modes.
+
+Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](/master-key-rotation) for the full procedure and failure modes.
+
 </Tip>
 
 Sensitive plain variables and secrets are masked on every read surface, and reading one back needs a confirmed, audited step-up. See [Environment variables and secrets](/environment-and-secrets).
@@ -34,23 +52,24 @@ Credentials for backup targets and registry integrations follow the same write-o
 
 ## Sessions and tokens
 
-- Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
-- Cross-origin guard: a state-changing request (POST, PUT, PATCH, DELETE) that authenticates with the session cookie and carries an `Origin` header naming a different host than the one served is rejected with 403. Bearer-token and CLI requests, which send no cookie or no `Origin`, are unaffected.
-- First admin registration requires the one-time setup token from `<data dir>/setup-token`, so an exposed fresh install can't be claimed by a stranger.
-- Token-redeeming routes are rate limited. `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
-- API tokens are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.
-- Two-factor authentication (TOTP) is available per user, with recovery codes for account lockout.
-- Two-factor codes are single-use. A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
-- Read-tier callers cannot enumerate people or credentials. `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](/observability#notification-channels).
+- **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
+- **Cross-origin guard**: a state-changing request (POST, PUT, PATCH, DELETE) that authenticates with the session cookie and carries an `Origin` header naming a different host than the one served is rejected with 403. Bearer-token and CLI requests, which send no cookie or no `Origin`, are unaffected.
+- **First admin** registration requires the one-time setup token from `<data dir>/setup-token`, so an exposed fresh install can't be claimed by a stranger.
+- **Rate limits use the real client address.** Behind the embedded ingress the control plane reads the right-most untrusted hop of `X-Forwarded-For`, but only when the TCP peer is loopback or listed in `APP_INGRESS_TRUSTED_PROXIES`. Any other peer cannot spoof its address, so one visitor can no longer exhaust the login or webhook budget for everyone.
+- **Token-redeeming routes are rate limited.** `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
+- **API tokens** are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.
+- **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
+- **Two-factor codes are single-use.** A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
+- **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](/observability#notification-channels).
 
-Full detail is in [Identity and access](/identity-and-access#principals-a-session-or-a-token).
+Full detail on all three: [Identity and access](/identity-and-access#principals-a-session-or-a-token).
 
 ## Authorization: abilities, roles, and IAM policies
 
 Levelrail layers two permission models:
 
-- Abilities are a flat list (`AbilityRead`, `AbilityWrite`, `AbilityDeploy`, `AbilityRoot`, and so on) attached to a user or token. They're cheap to check and coarse.
-- IAM policies are AWS-IAM-shaped Allow/Deny documents scoped to a specific app or database, for when a flat ability isn't precise enough.
+- **Abilities**: a flat list (`AbilityRead`, `AbilityWrite`, `AbilityDeploy`, `AbilityRoot`, and so on) attached to a user or token. Cheap to check, coarse-grained.
+- **IAM policies**: AWS-IAM-shaped Allow/Deny documents scoped to a specific app or database, for when a flat ability isn't precise enough.
 
 Evaluation order, the full ability list, and policy examples: [Identity and access](/identity-and-access#why-two-permission-models-instead-of-one).
 
@@ -59,10 +78,10 @@ Evaluation order, the full ability list, and policy examples: [Identity and acce
 - Certificates are issued and renewed automatically through embedded Caddy's ACME client. See the [ACME verification runbook](/acme-verification-runbook) if issuance fails.
 - HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](/domains-and-ingress#tls-whats-actually-shipped-today).
 - WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](/domains-and-ingress#opt-in-waf-and-rate-limiting).
-- The node agent dials out to the control plane. A managed server needs no inbound ports for enrollment or day-to-day operation.
-- Agent enrollment pins the control plane CA. A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
-- Container installs bind plain HTTP to loopback. The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](/docker#control-plane).
-- `install.sh` fails closed on checksums. A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](/installing#verifying-release-binaries).
+- The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
+- **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
+- **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](/docker#control-plane).
+- **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](/installing#verifying-release-binaries).
 
 ## Outbound requests to user-supplied URLs
 
@@ -84,12 +103,12 @@ Email notifications are separate: recipient addresses must be a single plain add
 
 A short list for the server itself, independent of anything Levelrail configures:
 
-- Use SSH key auth only. Disable password login (`PasswordAuthentication no` in `sshd_config`) before exposing the box to the internet. Neither `install.sh` nor the agent touch SSH configuration; this is standard server hygiene, not something Levelrail does for you.
-- Only the control-plane node needs inbound ports: `80/tcp` and `443/tcp` for ingress (the ACME HTTP-01 challenge plus HTTPS traffic), and your SSH port. Nothing else. See [Installing: requirements](/installing#requirements) for the full list and `install.sh`'s optional `ufw` setup.
-- The `firewall` check in `levelrail-cli doctor` detects ufw, firewalld, and nftables/iptables, whichever is installed on this host, and reports a concrete command to open 80/443 when they're closed. If none is installed it reports that as informational, not a failure, because Levelrail can't tell whether you're relying on something it can't see (a cloud security group, for example).
-- Agent-only nodes should accept no inbound traffic at all. The agent dials out to the control plane over mTLS and the control plane never initiates a connection, so leave the firewall closed.
-- Don't expose anything Levelrail didn't ask you to. Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](/multi-node#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
-- Keep the OS patched. The `patch_status` alert (see [Observability](/observability)) warns you about pending security patches on a managed node, but it only reports. Applying them is still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
+- **SSH key auth only.** Disable password login (`PasswordAuthentication no` in `sshd_config`) before exposing the box to the internet. Neither `install.sh` nor the agent touch SSH configuration; this is standard server hygiene, not something Levelrail does for you.
+- **Only the control-plane node needs inbound ports.** `80/tcp` and `443/tcp` for ingress (the ACME HTTP-01 challenge plus HTTPS traffic), your SSH port, and nothing else. See [Installing: requirements](/installing#requirements) for the full list and `install.sh`'s optional `ufw` setup.
+- **`levelrail-cli doctor`'s `firewall` check detects ufw, firewalld, and nftables/iptables**, whichever is actually installed on this host, and reports a concrete command to open 80/443 when it isn't. No supported tool installed is reported as informational, not a failure: this platform can't tell whether you're relying on something it can't introspect (a cloud security group, for example).
+- **Agent-only nodes should accept no inbound traffic at all.** The node agent dials out to the control plane over mTLS; the control plane never initiates a connection. A server running only the agent has nothing that needs to accept a connection, so leave its firewall closed by default rather than opening anything speculatively.
+- **Don't expose anything Levelrail didn't ask you to.** Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](/multi-node#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
+- **Keep the OS patched.** The `patch_status` alert (see [Observability](/observability)) can warn you about pending security patches on a managed node, but it only reports, it doesn't apply anything; that's still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
 
 ## Audit log
 
@@ -97,7 +116,7 @@ Every mutating API call from an authenticated principal is recorded: who, what, 
 
 ## Container hardening
 
-Every container Levelrail creates (apps, databases, catalogue services, helpers) gets secure defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:
+Every container Levelrail creates (apps, databases, catalogue services, helpers) can be created with secure defaults: all Linux capabilities dropped except a minimal set, `no-new-privileges`, and a per-container process limit. It is controlled by `APP_CONTAINER_HARDENING` on the control plane and on each agent:
 
 | Value | Behavior |
 | --- | --- |
@@ -128,11 +147,11 @@ Podman exposes a Docker-compatible Engine API socket, so the existing Docker Eng
 
 Container hardening (above) adjusts automatically under detected rootless: `PidsLimit` is disabled by default, because rootless Docker without a delegated cgroup v2 controller rejects a pids-limit `HostConfig` at container-create time. Set `APP_CONTAINER_PIDS_LIMIT` explicitly to override this. `CapDrop`, `CapAdd` and `no-new-privileges` are unaffected: those apply inside the container's own user namespace regardless of rootless mode, so nothing needed to come off the minimal capability list.
 
-What is not verified: this detection and the hardening adjustment above were tested against a fake Docker client, not a real rootless Docker or Podman installation. Known gaps to check before relying on this in production:
+**What is not verified:** this detection and the hardening adjustment above were tested against a fake Docker client, not a real rootless Docker or Podman installation. Known gaps to check before relying on this in production:
 
-- Bind-mount ownership: a bind mount's files keep the UID/GID they have on the host; under rootless Docker/Podman that UID sits inside a remapped user namespace, so a container process expecting to own a bind-mounted path can see a permission mismatch that doesn't happen under rootful Docker. Named volumes (Levelrail's default for [managed databases](/managing-databases)) aren't affected the same way.
-- Low host ports: rootless port publishing goes through a userspace proxy (`rootlesskit`/`slirp4netns`), which by default can't bind host ports below 1024 regardless of the container's own capabilities. The embedded ingress runs on the host directly, not in a rootless container, so this only affects an app that needs to publish a low host port itself.
-- cgroup limits beyond PidsLimit: memory and CPU limits also need a delegated cgroup v2 controller under rootless; unlike PidsLimit, this isn't currently detected or adjusted for `Resources.MemoryBytes`/`NanoCPUs`.
+- **Bind-mount ownership.** A bind mount's files keep the UID/GID they have on the host; under rootless Docker/Podman that UID sits inside a remapped user namespace, so a container process expecting to own a bind-mounted path can see a permission mismatch that doesn't happen under rootful Docker. Named volumes (Levelrail's default for managed databases) aren't affected the same way.
+- **Low host ports.** Rootless port publishing goes through a userspace proxy (`rootlesskit`/`slirp4netns`), which by default can't bind host ports below 1024 regardless of the container's own capabilities. The embedded ingress runs on the host directly, not in a rootless container, so this only affects an app that needs to publish a low host port itself.
+- **cgroup limits beyond PidsLimit.** Memory and CPU limits also need a delegated cgroup v2 controller under rootless; unlike PidsLimit, this isn't currently detected or adjusted for `Resources.MemoryBytes`/`NanoCPUs`.
 
 Treat single-container rootless or Podman hosts as best-effort, not fully verified, until tested against a real installation.
 
@@ -156,7 +175,7 @@ Stored certificates from other CAs are purged only when the configured CA change
 </Accordion>
 <Accordion title="Bind mounts">
 
-In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the control plane and agent data directories, and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
+In addition to `/etc`, `/root` and the Docker socket, `/run`, `/dev`, the directories that hold executables (`/bin`, `/sbin`, `/lib`, `/usr/bin`, `/usr/local/bin` and similar), `/var/spool/cron`, the control plane and agent data directories (including a custom `APP_DATA_DIR`), and any parent directory that would contain a protected path (`/var`, `/var/lib`) are refused. Paths are checked lexically: a symlink on the host that points into a protected path is not followed, so do not create such symlinks inside a directory you let apps mount.
 
 </Accordion>
 <Accordion title="Registry port">

@@ -24,7 +24,7 @@ levelrail-cli templates list | grep -i vaultwarden
 vaultwarden   Vaultwarden   Security   ~0 GiB   -   A lightweight, self-hosted password manager server compatible with the Bitwarden clients.
 ```
 
-![The service templates page with search, categories, and Deploy now cards](../assets/screenshots/templates-catalog.png)
+![The service templates page with search, categories, and Deploy now cards](/assets/screenshots/templates-catalog.png)
 
 The dashboard's **Templates** page lists the same catalog with search and categories. To see exactly what a template deploys before you run it:
 
@@ -80,7 +80,7 @@ levelrail-cli apps domains add vaultwarden-vaultwarden vault.example.com
 
 Create an `A` record for `vault.example.com` pointing at your server, then check it with `levelrail-cli domains check vaultwarden-vaultwarden vault.example.com`.
 
-Every routed domain gets a TLS certificate. By default it is self-signed, which Bitwarden clients reject. For clients to connect you need a certificate they trust: either enable Let's Encrypt under **Settings, Domains**, or upload your own. See [Domains and ingress](../domains-and-ingress.md#tls-what-s-actually-shipped-today) and the [ACME verification runbook](../acme-verification-runbook.md) if issuance fails.
+Every routed domain gets a TLS certificate. By default it is self-signed, which Bitwarden clients reject. For clients to connect you need a certificate they trust: either enable Let's Encrypt under **Settings, Domains**, or upload your own. See [Domains and ingress](/domains-and-ingress#tls-whats-actually-shipped-today) and the [ACME verification runbook](/acme-verification-runbook) if issuance fails.
 
 </Step>
 <Step title="Read the admin token">
@@ -144,6 +144,6 @@ levelrail-cli apps delete vaultwarden-vaultwarden
 
 ## Where to go next
 
-- [Template catalog](../template-catalog.md): every one-click service, by category.
-- [Templates and registry](../templates-and-registry.md): how templates work and how to save your own.
+- [Template catalog](/template-catalog): every one-click service, by category.
+- [Templates and registry](/templates-and-registry): how templates work and how to save your own.
 - [Debug a slow or failing app with built-in logs and metrics](/tutorials/debug-an-app-with-logs-and-metrics).

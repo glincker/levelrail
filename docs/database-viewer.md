@@ -1,10 +1,9 @@
 ---
+title: "Database viewer"
 description: Browse schemas and table data, run read-only SQL, and inspect Redis keys for a managed database from the dashboard or the CLI.
 ---
 
-# Database viewer
-
-Look inside a [managed database](/managing-databases) without opening a port or handing out its
+Look inside a managed database without opening a port or handing out its
 password. The dashboard's Explorer and SQL Console tabs, the CLI, and the API
 all go through the control plane, which runs the engine's own client inside
 the database container. Credentials never reach the browser and are never
@@ -43,7 +42,7 @@ Open **SQL Console**. Statements run read-only by default:
 
 ### Allowing writes
 
-An administrator (the `root` ability) can switch the console to [write mode](/mcp):
+An administrator (the `root` ability) can switch the console to write mode:
 turn on **Allow writes**, then type the database name to confirm. Each
 statement then runs in its own committed transaction and is recorded in the
 audit log with its fingerprint (never its text or results). Write mode is off

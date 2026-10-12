@@ -33,3 +33,20 @@ func TestValidateHostPath(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateHostPath_ExecutableDirsAndConfiguredDataDirs(t *testing.T) {
+	t.Setenv("APP_DATA_DIR", "/srv/levelrail-state")
+	for _, p := range []string{
+		"/usr/local/bin", "/usr/local/bin/tools", "/usr/bin", "/bin", "/sbin", "/lib", "/lib64",
+		"/var/spool/cron", "/srv/levelrail-state", "/srv/levelrail-state/secrets",
+	} {
+		if err := ValidateHostPath(p); err == nil {
+			t.Errorf("ValidateHostPath(%q) = nil, want a protected path error", p)
+		}
+	}
+	for _, p := range []string{"/srv/media", "/opt/app-data", "/home/deploy/uploads", "/mnt/nas"} {
+		if err := ValidateHostPath(p); err != nil {
+			t.Errorf("ValidateHostPath(%q) = %v, want nil", p, err)
+		}
+	}
+}

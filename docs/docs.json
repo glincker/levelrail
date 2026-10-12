@@ -96,6 +96,14 @@
               "guides/zero-downtime-deploys-without-kubernetes"
             ],
             "icon": "/assets/icons/compass.svg"
+          },
+          {
+            "group": "Announcements",
+            "icon": "/assets/icons/list-bullets.svg",
+            "pages": [
+              "announcements/index",
+              "announcements/self-host-template-gallery-and-guides"
+            ]
           }
         ],
         "icon": "/assets/icons/rocket-launch.svg"
@@ -134,7 +142,9 @@
               "supply-chain",
               "deploy-status-badge",
               "screenshots",
-              "docker"
+              "docker",
+              "zero-downtime-deploys",
+              "preview-environments"
             ],
             "icon": "/assets/icons/cloud-arrow-up.svg"
           },
@@ -171,7 +181,10 @@
               "data-export",
               "control-plane-backup",
               "disaster-recovery",
-              "upgrade-safely"
+              "upgrade-safely",
+              "database-access",
+              "database-explorer",
+              "database-viewer"
             ],
             "icon": "/assets/icons/database.svg"
           },
@@ -305,14 +318,33 @@
               "use-cases",
               "white-labeling",
               "glinr-bot",
-              "behind-an-existing-proxy"
+              "behind-an-existing-proxy",
+              "security-advisories"
             ],
             "icon": "/assets/icons/lightbulb.svg"
           },
           {
+            "group": "Compare and choose",
+            "icon": "/assets/icons/scales.svg",
+            "pages": [
+              "self-hosted-paas",
+              "coolify-alternative",
+              "dokploy-alternative",
+              "caprover-alternative",
+              "dokku-alternative",
+              "kamal-alternative",
+              "heroku-alternative",
+              "railway-alternative",
+              "vercel-alternative",
+              "cloud-run-alternative",
+              "self-host-nextjs"
+            ]
+          },
+          {
             "group": "Design proposals",
             "pages": [
-              "design/git-provider-integrations"
+              "design/git-provider-integrations",
+              "iam-design"
             ]
           }
         ],
@@ -754,7 +786,8 @@
               "feature-status",
               "experimental-features",
               "performance",
-              "changelog"
+              "changelog",
+              "upgrade-history"
             ],
             "icon": "/assets/icons/chart-line-up.svg"
           },
@@ -775,6 +808,20 @@
               "all-pages"
             ],
             "icon": "/assets/icons/list-bullets.svg"
+          },
+          {
+            "group": "About",
+            "icon": "/assets/icons/books.svg",
+            "pages": [
+              "about",
+              "pricing",
+              "demo",
+              "case-studies",
+              "get-involved",
+              "developers",
+              "contact",
+              "privacy"
+            ]
           },
           {
             "group": "Legal",

@@ -139,3 +139,24 @@ func TestHandleHealthz_OKWithNoAuth(t *testing.T) {
 		t.Errorf("status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
 	}
 }
+
+func TestRequestIDMiddleware_RejectsOddInboundID(t *testing.T) {
+	var got string
+	h := requestIDMiddleware(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		got = requestIDFromContext(r.Context())
+	}))
+	for _, in := range []string{"bad id with spaces", strings.Repeat("a", 129), "<script>"} {
+		req := httptest.NewRequest("GET", "/", nil)
+		req.Header.Set(requestIDHeader, in)
+		h.ServeHTTP(httptest.NewRecorder(), req)
+		if got == in || !strings.HasPrefix(got, "req_") {
+			t.Errorf("inbound %q kept, got %q", in, got)
+		}
+	}
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set(requestIDHeader, "trace-abc_1.2")
+	h.ServeHTTP(httptest.NewRecorder(), req)
+	if got != "trace-abc_1.2" {
+		t.Errorf("valid inbound id replaced: %q", got)
+	}
+}

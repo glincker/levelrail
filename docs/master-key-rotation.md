@@ -3,7 +3,7 @@ title: "Master key rotation"
 description: Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
 ---
 
-All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key re-wraps every DEK under a new key, and no plaintext secret is exposed along the way.
+All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
 
 ## When to rotate
 
@@ -12,19 +12,22 @@ All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.
 
 <Accordion title="What this does and does not require">
 
+
 Rotation runs live against the running control plane with zero downtime. The CLI calls an admin-only endpoint that re-wraps every DEK in a single database transaction. If any DEK fails to unwrap, the entire rotation aborts with no changes.
 
 While a rotation is in progress, all other secret reads and writes are blocked until it completes. This prevents mixing old and new keys.
 
-It is not fully hands-off, though. The control plane loads its master key at startup and never reloads it. A successful rotation immediately updates the running process's key, so it serves correctly right away. What happens on the next restart depends on where that key came from:
+However, this is not a fully unattended operation due to one constraint: the control plane loads its master key at startup and never reloads it. A successful rotation immediately updates the running process's key, so it serves correctly right away. What happens on the next restart depends on where that key came from:
 
-File-sourced (default, no `APP_MASTER_KEY` set):
+**File-sourced** (default, no `APP_MASTER_KEY` set). The file is `<data dir>/master.key`, or the path in `APP_MASTER_KEY_FILE` if you set it. Point `APP_MASTER_KEY_FILE` at an absolute path outside the data directory (for example `/etc/levelrail/master.key`, mode `0600`) so a copy of the data directory alone cannot decrypt your secrets. A file with group or world permissions is refused at startup.
+
 Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action.
 
-Env-sourced (`APP_MASTER_KEY` set):
+**Env-sourced** (`APP_MASTER_KEY` set):
 Rotation cannot rewrite an environment variable belonging to your process supervisor. The CLI output includes an explicit warning to update `APP_MASTER_KEY` in your systemd unit or Docker Compose file before the next restart. Restarting with the old value will make every secret permanently unreadable, since all DEKs are now wrapped only under the new key.
 
-Always read the CLI's output (or the JSON response's `warning`/`persistedToFile` fields). A skipped warning means a failure at the next restart, which is the worst time to find out.
+Always read the CLI's output (or the JSON response's `warning`/`persistedToFile` fields). A silently-skipped warning can cause failure at the next restart, the worst kind of problem to discover.
+
 </Accordion>
 
 ## How to rotate
@@ -68,7 +71,7 @@ Do this once you have confirmed the rotation succeeded. Keep it safe instead if 
 </Step>
 </Steps>
 
-This command requires an API token or session with the `root` ability. It is gated the same way as other fleet-wide, irreversible actions like `system prune`, so tokens scoped to one app can never run it.
+This command requires an API token or session with the `root` ability. It's gated the same way as other fleet-wide, irreversible actions like `system prune`, because narrower, per-app-scoped tokens should never reach such powerful operations.
 
 ## Refresh your escrow bundle
 
@@ -76,16 +79,22 @@ If you keep a [key escrow bundle](/disaster-recovery#after-rotating-the-master-k
 
 ## Failure modes and what they mean
 
-<Accordion title="rotate master key: ... unwrap DEK for ...: ...">
-A stored DEK could not be unwrapped with the control plane's current master key. Either the data is corrupt or the running process does not hold the key you expected. Nothing was changed, so it is safe to investigate and retry.
+<Accordion title="&quot;rotate master key: ... unwrap DEK for ...: ...&quot;">
+
+A stored DEK could not be unwrapped with the control plane's current master key. This suggests data corruption or that the running process does not hold the key you expected. Nothing was changed, so it is safe to investigate and retry.
+
 </Accordion>
 
 <Accordion title="`persistedToFile: false` with a warning about the key file">
+
 The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but writing the new key to `master.key` failed. Usually a permissions or disk-space problem. Fix it and copy the new key into place manually before the control plane restarts.
+
 </Accordion>
 
 <Accordion title="`persistedToFile: false` with a warning about `APP_MASTER_KEY`">
-Not a failure. This is the expected message when the master key is env-sourced (see above), and it tells you the follow-up step you need to do.
+
+Not a failure. This is the expected message when the master key is env-sourced (see above). It is the required follow-up step, not an error.
+
 </Accordion>
 
 ## Binding secrets to their slot
@@ -103,11 +112,11 @@ The same status and a **Bind now** button are on **Settings > General** under **
 
 What `rebind` guarantees:
 
-- Idempotent: already-bound values are checked and left alone. Running it again when nothing is legacy changes nothing.
-- Resumable: each value is rewritten on its own, and only if it has not changed since it was read. If a run stops partway (a restart, a disk error), the values it finished stay bound and the next run picks up the rest.
-- Never clobbers a write: a value someone sets while the rebind runs is reported as `changed` and kept; new writes are always bound.
-- Never launders a swap: a bound value that is already in the wrong slot is reported under `failed` and not touched. A value whose owner has no data encryption key, or whose key does not unwrap, is reported the same way.
-- Does not bump a secret's age: re-encrypting the same value is not a rotation of it, so the stale-secrets check is unaffected.
+- **Idempotent.** Already-bound values are checked and left alone. Running it again when nothing is legacy changes nothing.
+- **Resumable.** Each value is rewritten on its own, and only if it has not changed since it was read. If a run stops partway (a restart, a disk error), the values it finished stay bound and the next run picks up the rest.
+- **Never clobbers a write.** A value someone sets while the rebind runs is reported as `changed` and kept; new writes are always bound.
+- **Never launders a swap.** A bound value that is already in the wrong slot is reported under `failed` and not touched. A value whose owner has no data encryption key, or whose key does not unwrap, is reported the same way.
+- **Does not bump a secret's age.** Re-encrypting the same value is not a rotation of it, so the stale-secrets check is unaffected.
 
 Rebinding cannot tell whether a legacy value was already swapped before it ran: it binds whatever is in each slot at that moment. If you suspect database tampering, set the affected secrets again rather than rebinding them.
 

@@ -1,10 +1,7 @@
 ---
 title: "Deploy a Docker app to your own server"
-sidebarTitle: "Deploy your first app"
 description: Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
 ---
-
-<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/docker.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
 
 By the end of this tutorial you will have a Docker image running on your own server, reachable on a domain you control, with a second version deployed and a one-command rollback to the first. It takes about ten minutes and needs no Dockerfile or build step.
 
@@ -84,9 +81,9 @@ expected: 203.0.113.10
 
 Every routed domain gets a TLS certificate automatically. Out of the box it is self-signed, so browsers show a trust warning. That is fine for internal tools and first trials.
 
-Real Let's Encrypt certificates are switched on under **Settings, Domains**: enter an account email and enable ACME, with ports 80 and 443 open to the internet. See [Domains and ingress](/domains-and-ingress#real-public-acme-lets-encrypt-or-rfc-8555-ca) and the [ACME verification runbook](/acme-verification-runbook) if issuance fails.
+Real Let's Encrypt certificates are switched on under **Settings, Domains**: enter an account email and enable ACME, with ports 80 and 443 open to the internet. See [Domains and ingress](/domains-and-ingress#real-public-acme-let-s-encrypt-or-rfc-8555-ca) and the [ACME verification runbook](/acme-verification-runbook) if issuance fails.
 
-If you have no domain at all, a hostname of the form `<dashed-ip>.sslip.io` works with no DNS record; see [Zero DNS setup](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
+If you have no domain at all, a hostname of the form `<dashed-ip>.sslip.io` works with no DNS record; see [Zero DNS setup](/domains-and-ingress#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
 
 </Step>
 <Step title="Ship a second version">
@@ -108,7 +105,7 @@ dep_IUrA3qUFg7DV  nginx:1.27-alpine  65645c7bb6a0  image   succeeded  serving  2
 dep_FnrJJJnuh0Md  nginx:alpine       df221db836e1  image   succeeded  serving  2026-10-05T02:15:38Z
 ```
 
-![The Deployments page listing every deploy across apps, with status and rollback actions](../assets/screenshots/deployments-all.png)
+![The Deployments page listing every deploy across apps, with status and rollback actions](/assets/screenshots/deployments-all.png)
 
 The same history is on the dashboard's **Deployments** page, across every app.
 
@@ -143,5 +140,5 @@ levelrail-cli apps delete hello
 
 - [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): make a bad release fail before it takes over.
 - [Deploy from GitHub Actions](/tutorials/deploy-from-github-actions): run this same flow on every push.
-- [Deploy safety](../deploy-safety.md): the guarantees behind pinned images and rollback.
-- [Deploying apps](../deploying-apps.md): git builds, Compose, and `app.yaml` as other ways to create an app.
+- [Deploy safety](/deploy-safety): the guarantees behind pinned images and rollback.
+- [Deploying apps](/deploying-apps): git builds, Compose, and `app.yaml` as other ways to create an app.

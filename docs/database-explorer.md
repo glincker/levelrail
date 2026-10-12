@@ -1,8 +1,7 @@
 ---
+title: "Database explorer and fleet overview"
 description: How the database explorer lists tables, what its empty and error states mean, and what the dashboard shows for databases, reserved resources and storage.
 ---
-
-# Database explorer and fleet overview
 
 ## Explorer
 

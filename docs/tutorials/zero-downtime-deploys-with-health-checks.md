@@ -115,7 +115,7 @@ levelrail-cli apps deploys rollback-to hello dep_JJyaXkXlvjmO
 
 ## What the platform guarantees
 
-Levelrail keeps the previous release serving while a new one fails its readiness check, and holds the last good release for a short window after a successful cutover so rollback is instant. The full list, including digest-truthful deploys and the stale-deploy guard, is in [Deploy safety](../deploy-safety.md). Failure codes are in [Deploy failures](../deploy-failures.md).
+Levelrail keeps the previous release serving while a new one fails its readiness check, and holds the last good release for a short window after a successful cutover so rollback is instant. The full list, including digest-truthful deploys and the stale-deploy guard, is in [Deploy safety](/deploy-safety). Failure codes are in [Deploy failures](/deploy-failures).
 
 ## Clean up
 
@@ -126,5 +126,5 @@ levelrail-cli apps health clear hello
 ## Where to go next
 
 - [Deploy from GitHub Actions](/tutorials/deploy-from-github-actions): fail the pipeline when a rollout fails.
-- [Deploy safety](../deploy-safety.md): freeze windows and the post-cutover hold.
-- [Load balancing](../load-balancing.md): health checks across replicas.
+- [Deploy safety](/deploy-safety): freeze windows and the post-cutover hold.
+- [Load balancing](/load-balancing): health checks across replicas.

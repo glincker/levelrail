@@ -47,6 +47,21 @@ func requestIDFromContext(ctx context.Context) string {
 	return id
 }
 
+// validRequestID bounds an inbound id so a client cannot bloat logs or
+// response headers with arbitrary bytes.
+func validRequestID(id string) bool {
+	if id == "" || len(id) > 128 {
+		return false
+	}
+	for _, c := range id {
+		ok := c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9' || c == '_' || c == '-' || c == '.'
+		if !ok {
+			return false
+		}
+	}
+	return true
+}
+
 // requestIDMiddleware assigns every request a correlation ID (or reuses
 // one an upstream proxy already set), echoes it back on the response,
 // and threads it through the request context so panicRecoveryMiddleware
@@ -56,7 +71,7 @@ func requestIDFromContext(ctx context.Context) string {
 func requestIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get(requestIDHeader)
-		if id == "" {
+		if !validRequestID(id) {
 			id = newRequestID()
 		}
 		w.Header().Set(requestIDHeader, id)

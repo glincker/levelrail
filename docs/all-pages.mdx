@@ -31,8 +31,13 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 
 - [Guides](/guides/index): Task-focused Levelrail guides: compare it with Coolify, self-host Postgres with verified backups, and ship zero-downtime deploys on plain Docker.
 - [Coolify vs Levelrail for self-hosters](/guides/coolify-vs-levelrail): A fair Coolify vs Levelrail comparison for self-hosters: how each manages servers, what each does well, what Levelrail lacks, and how to choose between them.
-- [Self-host Postgres with verified backups](/guides/self-host-postgres-with-backups): Run a managed Postgres on your own server, back it up to S3-compatible storage on a schedule, and restore it safely into a new database to prove the backup works.
-- [Zero-downtime deploys without Kubernetes](/guides/zero-downtime-deploys-without-kubernetes): How to ship containers to your own servers with no downtime and a fast rollback, using readiness probes, digest-pinned images, and freeze windows. No Kubernetes.
+- [Self-host Postgres with verified backups](/guides/self-host-postgres-with-backups): Run managed Postgres on your own server and back it up to S3-compatible storage on a schedule, with a restore you have actually tested.
+- [Zero-downtime deploys without Kubernetes](/guides/zero-downtime-deploys-without-kubernetes): Ship containers to your own servers with no downtime and a fast rollback, using readiness probes, pinned images and freeze windows.
+
+### Announcements
+
+- [Announcements](/announcements/index): News about Levelrail: new guides, the self-host template gallery, and platform updates.
+- [Self-host template gallery and guides are live](/announcements/self-host-template-gallery-and-guides): Browse 330 one-click self-host templates and read new guides on backups, zero-downtime deploys and moving from Coolify.
 
 ## How-to guides
 
@@ -65,6 +70,8 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Deploy status badge](/deploy-status-badge): An opt-in, per-app SVG badge showing an app's latest deploy status and when it happened, for embedding in your own project's README.
 - [Dashboard screenshots](/screenshots): Regenerate real dashboard screenshots from a live control plane with metrics and logs.
 - [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
+- [Zero-downtime deploys with Docker: readiness-gated cutover and rollback](/zero-downtime-deploys): How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images.
+- [Preview environments per pull request on your own servers](/preview-environments): Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes.
 
 ### Networking and multi-node
 
@@ -96,6 +103,9 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Control plane backup and restore](/control-plane-backup): Back up and restore the control plane's database with automatic snapshots and offline restore.
 - [Disaster recovery](/disaster-recovery): Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
 - [Upgrade safely](/upgrade-safely): Upgrade the control plane safely with pre-flight checks and automatic rollback.
+- [Database access and network](/database-access): Manage database users, issue short-lived credentials, see who can reach a database, and control its network exposure, scope and TLS from the dashboard, CLI or API.
+- [Database explorer and fleet overview](/database-explorer): How the database explorer lists tables, what its empty and error states mean, and what the dashboard shows for databases, reserved resources and storage.
+- [Database viewer](/database-viewer): Browse schemas and table data, run read-only SQL, and inspect Redis keys for a managed database from the dashboard or the CLI.
 
 ### CI/CD and automation
 
@@ -194,11 +204,27 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Who Levelrail is for](/use-cases): Three real audiences for Levelrail (solo developers, small agencies, teams migrating off Coolify, Dokploy, Heroku, or Vercel), what each is likely trying to do, which shipped features actually fit, and where the project is not there yet.
 - [White-labeling](/white-labeling): How the brand layer works, which names and prefixes it drives (dashboard, agent unit, firewall rule tag, mesh interface, update repository), the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
 - [glinr-bot](/glinr-bot): How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge.
-- [Run behind an existing proxy](/behind-an-existing-proxy): Serve apps and the dashboard through the proxy that already owns ports 80 and 443: one step managed routes for Traefik (Coolify included), or generated configuration for nginx and Caddy.
+- [Run behind an existing proxy](/behind-an-existing-proxy): Run Levelrail behind the proxy that already owns ports 80 and 443, with managed routes for Traefik (including Coolify) and Nginx.
+- [Security advisories](/security-advisories): Every security issue Levelrail has found and fixed, with a stable ID, severity, affected versions, the fix, and how we disclose.
+
+### Compare and choose
+
+- [Self-hosted PaaS guide: what to look for and how Levelrail fits](/self-hosted-paas): A practical guide to choosing a self-hosted PaaS: how it manages servers, deploys, rolls back, observes, secures and costs.
+- [Coolify alternative: a self-hosted deploy platform that stays light](/coolify-alternative): Levelrail is an open source Coolify alternative: Docker Engine API instead of SSH, built-in metrics and logs, one-click rollback, read-only importer.
+- [Dokploy alternative: self-hosted deploys without Docker Swarm](/dokploy-alternative): Levelrail is an open source Dokploy alternative that skips Docker Swarm: an agent on each node and a reconciler over the Docker Engine API.
+- [CapRover alternative: self-hosted deploys without Docker Swarm](/caprover-alternative): Levelrail is an open source CapRover alternative: plain Docker instead of Swarm, an agent per node, built-in metrics and logs, one-click rollback.
+- [Dokku alternative: git push deploys with a dashboard and multi-server](/dokku-alternative): Levelrail is an open source Dokku alternative that adds a dashboard, deploy history with rollback, and built-in metrics and logs.
+- [Kamal alternative with a dashboard, history and built-in observability](/kamal-alternative): Levelrail is an open source Kamal alternative: the same zero-downtime idea plus a control plane, dashboard, deploy history and built-in metrics.
+- [Self-hosted Heroku alternative: git push to your own servers](/heroku-alternative): Levelrail is an open source Heroku alternative for your own Linux servers: git push deploys, managed Postgres and Redis, TLS, logs and rollback.
+- [Self-hosted Railway alternative with built-in observability](/railway-alternative): Levelrail is an open source Railway alternative you run on your own servers: git push deploys, managed databases, domains with TLS.
+- [Self-hosted Vercel alternative for Next.js and Docker apps](/vercel-alternative): Levelrail is an open source, self-hosted Vercel alternative: git push deploys, automatic TLS and preview environments per pull request.
+- [Self-hosted alternative to Cloud Run for steady workloads](/cloud-run-alternative): When an always-on container is cheaper on your own server than on Cloud Run, when it is not, and how Levelrail fits for git or image deploys.
+- [Self-host Next.js on your own server with git push, TLS and rollback](/self-host-nextjs): How to self-host a Next.js app with Levelrail: Dockerfile build, automatic HTTPS, preview environments per pull request and env vars.
 
 ### Design proposals
 
 - [Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX](/design/git-provider-integrations): Design for unified post-auth git provider abstraction supporting GitHub, GitLab, Bitbucket, and GitHub Enterprise Server
+- [IAM: what exists and what the authoring tools add](/iam-design): How IAM policies are stored, evaluated and attached, and what the policy builder, simulator and analyzer add without changing any decision.
 
 ## Appendix
 
@@ -209,6 +235,7 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Experimental features](/experimental-features): Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
 - [Performance](/performance): Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
 - [Changelog](/changelog): Every Levelrail release with highlights, fixes and upgrade notes.
+- [Upgrade history](/upgrade-history): Every version the control plane has run, recorded at boot, and how upgrades are acknowledged.
 
 ### Engineering notes
 
@@ -217,6 +244,17 @@ The complete index of the Levelrail docs. For a self-hosted app gallery, see the
 - [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
 - [GLINR design tokens](/design-tokens): The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
 - [Brand kit](/brand): Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it.
+
+### About
+
+- [About Levelrail: open source, built by GLINCKER](/about): Levelrail is an Apache 2.0 licensed, self-hosted deployment platform built by GLINCKER. Read what it is, how it is licensed, and how pre-release it still is.
+- [Pricing: Levelrail is free and open source (Apache 2.0)](/pricing): Levelrail costs nothing: Apache 2.0, one edition, no license key and no feature gated behind a plan. You only pay for your servers.
+- [Levelrail demo: install, deploy and roll back in minutes](/demo): See Levelrail in action: install script, git push deploys, live logs, metrics with deploy markers, multi-node and one-click rollback.
+- [Case studies: measured results, not testimonials](/case-studies): Real Levelrail measurements: a 500-app idle benchmark and multi-node verification against real Docker daemons, plus what is not proven yet.
+- [Contribute to Levelrail: open source deployment platform](/get-involved): Help build Levelrail: try it and report what breaks, pick a good first issue, improve docs, add templates or test multi-node. Apache 2.0, active development.
+- [Developers: API, CLI and MCP server for your Levelrail instance](/developers): Build on Levelrail: the REST API at /api/v1 on your own instance, the levelrail-cli command line, the self-hosted MCP server, and scoped API tokens.
+- [Contact Levelrail: support, community and security reports](/contact): How to reach the Levelrail team: support email, GitHub issues and discussions, the Discord community, and the private security reporting process.
+- [Privacy and data handling: what Levelrail stores and sends](/privacy): Where your data lives with Levelrail: secrets, metrics and logs stay on your own servers and the product sends no usage telemetry.
 
 ### Legal
 

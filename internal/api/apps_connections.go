@@ -94,6 +94,9 @@ func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Reque
 		field = defaultConnectionFieldRequest
 	}
 
+	if !rt.authorizeDatabaseRefs(w, r, req.Database) {
+		return
+	}
 	desiredDB, external, err := rt.lookupAppDatabase(r.Context(), req.Database)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusBadRequest, "unknown database")

@@ -1,6 +1,6 @@
 ---
 title: Run behind an existing proxy
-description: "Serve apps and the dashboard through the proxy that already owns ports 80 and 443: one step managed routes for Traefik (Coolify included), or generated configuration for nginx and Caddy."
+description: "Run Levelrail behind the proxy that already owns ports 80 and 443, with managed routes for Traefik (including Coolify) and Nginx."
 ---
 
 On a server that already runs Coolify, Dokploy or your own nginx, something else

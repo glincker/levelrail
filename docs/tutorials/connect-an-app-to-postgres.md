@@ -41,7 +41,7 @@ Ready  True    AlreadyRunning           2026-10-05T02:21:40Z
 
 The first start pulls the image, so allow a minute on a fresh server.
 
-![The Databases page listing a healthy Postgres 16 database](../assets/screenshots/databases-list.png)
+![The Databases page listing a healthy Postgres 16 database](/assets/screenshots/databases-list.png)
 
 </Step>
 <Step title="Connect the app">
@@ -99,7 +99,7 @@ If `apps exec` answers `app has no running container`, the new container is stil
 
 ## What the reachability badge means
 
-`apps connections list` and the dashboard's **Connections** card show whether the app and database are on the same node, on different nodes with the WireGuard mesh configured, or on different nodes with the mesh off. The last case does not connect. See [Connecting apps to databases](../connecting-apps-to-databases.md) for the full table.
+`apps connections list` and the dashboard's **Connections** card show whether the app and database are on the same node, on different nodes with the WireGuard mesh configured, or on different nodes with the mesh off. The last case does not connect. See [Connecting apps to databases](/connecting-apps-to-databases) for the full table.
 
 ## Clean up
 
@@ -113,5 +113,5 @@ Keep the database if you plan to follow the next tutorial.
 ## Where to go next
 
 - [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3): protect the data you just connected.
-- [Managing databases](../managing-databases.md): resources, public access for a GUI client, and slow query tracking.
-- [Network topology](../network-topology.md): see every app-to-database connection drawn across your servers.
+- [Managing databases](/managing-databases): resources, public access for a GUI client, and slow query tracking.
+- [Network topology](/network-topology): see every app-to-database connection drawn across your servers.

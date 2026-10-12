@@ -114,10 +114,10 @@ The action's `status` output is `succeeded`, `failed`, or `skipped`.
 
 ## Not on GitHub?
 
-The action is a thin wrapper over two commands, so any CI works. Install the CLI with the [install script](../installing.md#installing-just-the-cli), export `APP_API_URL` and `APP_API_TOKEN`, then run `levelrail-cli apps deploy my-app --image "$IMAGE"` and `levelrail-cli apps wait my-app`. Both exit non-zero on failure.
+The action is a thin wrapper over two commands, so any CI works. Install the CLI with the [install script](/installing#installing-just-the-cli), export `APP_API_URL` and `APP_API_TOKEN`, then run `levelrail-cli apps deploy my-app --image "$IMAGE"` and `levelrail-cli apps wait my-app`. Both exit non-zero on failure.
 
 ## Where to go next
 
-- [Deploying from GitHub Actions](../github-actions.md): the full action reference.
+- [Deploying from GitHub Actions](/github-actions): the full action reference.
 - [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): make a bad release fail the job before it replaces a good one.
-- [Pipelines](../pipelines.md): run builds and tests on your own nodes instead of GitHub's.
+- [Pipelines](/pipelines): run builds and tests on your own nodes instead of GitHub's.

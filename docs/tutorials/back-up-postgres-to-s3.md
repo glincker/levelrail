@@ -44,7 +44,7 @@ levelrail-cli backup-targets test bkt_Ra-kILVUyJaw
 backup target "bkt_Ra-kILVUyJaw" connected successfully
 ```
 
-![The Backups page, which asks for a backup target on a fresh install](../assets/screenshots/backups.png)
+![The Backups page, which asks for a backup target on a fresh install](/assets/screenshots/backups.png)
 
 </Step>
 <Step title="Take a first backup">
@@ -155,5 +155,5 @@ Keep the target if you want to keep the schedule running.
 ## Where to go next
 
 - [Back up an app's data volumes](/tutorials/self-host-vaultwarden#back-up-the-data): the same target also protects app volumes.
-- [Backups and storage](../backups-and-storage.md): retention, instance-wide visibility, and how schedules are stored.
-- [Control plane backup](../control-plane-backup.md) and [disaster recovery](../disaster-recovery.md): protect Levelrail's own state.
+- [Backups and storage](/backups-and-storage): retention, instance-wide visibility, and how schedules are stored.
+- [Control plane backup](/control-plane-backup) and [disaster recovery](/disaster-recovery): protect Levelrail's own state.

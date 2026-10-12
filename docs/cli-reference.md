@@ -1319,7 +1319,7 @@ levelrail-cli setup undo <step> [flags]
 levelrail-cli setup reset [flags]
 ```
 
-The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#the-get-started-guide). Supports `--json`, `--output json|table|text`, and `--query`.
+The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#finish-setting-up-for-real-use). Supports `--json`, `--output json|table|text`, and `--query`.
 
 ## Proxy
 
