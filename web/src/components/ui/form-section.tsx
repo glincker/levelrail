@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils'
 export interface FormSectionProps {
   title: ReactNode
   description?: ReactNode
+  /** Step number: renders a small marker aligned to the title. */
+  step?: number
   /** Small element beside the title, e.g. a connected badge or a BrandTile. */
   badge?: ReactNode
   /** Section-level validation or server error, announced to screen readers. */
@@ -21,6 +23,7 @@ export interface FormSectionProps {
 export function FormSection({
   title,
   description,
+  step,
   badge,
   error,
   hint,
@@ -36,6 +39,14 @@ export function FormSection({
     >
       <div className="space-y-1">
         <div className="flex flex-wrap items-center gap-2">
+          {step === undefined ? null : (
+            <span
+              aria-hidden="true"
+              className="flex size-5 shrink-0 items-center justify-center rounded-full bg-muted font-mono text-xs font-medium text-muted-foreground"
+            >
+              {step}
+            </span>
+          )}
           <Display as="h2" size="section">
             {title}
           </Display>

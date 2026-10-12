@@ -952,18 +952,40 @@
     },
     "steps": {
       "install": {
-        "title": "1. Install the CLI on your computer",
+        "title": "Install the CLI on your computer",
         "body": "Not the server. This is a small client binary for your laptop or CI runner, separate from the control plane install.",
         "note": "No root needed, installs to ~/.local/bin. macOS and Linux only today; on Windows, run this from WSL."
       },
       "point": {
-        "title": "2. Point it at this server",
+        "title": "Point it at this server",
         "body": "Set this once per shell or in your shell profile. Every command talks to that address, and defaults to localhost otherwise."
       },
       "login": {
-        "title": "3. Log in",
+        "title": "Log in",
         "body": "Opens a code here to approve, the same flow gh auth login and aws sso login use: no SSH key, no server port to open. Approval needs a signed-in dashboard session, so it inherits that session's 2FA or passkey."
       }
+    }
+  },
+  "gitConnection": {
+    "notConnected": "Not connected",
+    "primaryDomain": {
+      "title": "Set a primary domain first",
+      "body": "Git providers redirect back to this instance's primary domain for OAuth callbacks and manifest URLs.",
+      "domainLink": "Open domain settings",
+      "label": "Primary domain",
+      "placeholder": "deploy.example.com",
+      "helper": "Saved to ingress settings. ACME and email options stay in domain settings.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Primary domain set.",
+      "saveFailed": "Could not set the primary domain."
+    },
+    "githubCallback": {
+      "title": "Callback address",
+      "body": "Automated setup registers a callback at {{url}}. GitHub redirects there for the life of the App, so this instance must be publicly reachable at that address before you continue.",
+      "change": "Change it in domain settings",
+      "docs": "Manifest flow docs",
+      "manualHint": "No public address? Use manual setup instead."
     }
   }
 }

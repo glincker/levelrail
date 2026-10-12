@@ -6,12 +6,12 @@ import {
   GithubLogoIcon,
   ArrowSquareOutIcon,
   PlusIcon,
-  WarningIcon,
   XCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { Skeleton } from '@/components/ui/skeleton'
 import { RelativeTime } from '@/components/kit'
 import { useIngressSettings } from '../queries/domains'
@@ -25,7 +25,7 @@ import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import { GitHubAppManifestDialog } from './GitHubAppManifestDialog'
 import { ManualConnectDialog } from './GitHubAppManualConnectDialog'
 import {
-  ConnectionCardHeader,
+  ConnectionActions,
   DisconnectConnectionDialog,
   mutationToastCallbacks,
 } from './ConnectionCard'
@@ -40,6 +40,7 @@ import type { GitHubAppInstallation, GitHubAppStatus } from '@/types/githubApp'
 // paste credentials for an App they created themselves, no domain
 // required.
 export function GitHubAppConnectionCard() {
+  const { t } = useTranslation('settings')
   const { data: status } = useGitHubAppStatus()
   const { data: ingressSettings } = useIngressSettings()
   const disconnect = useDisconnectGitHubApp()
@@ -52,66 +53,54 @@ export function GitHubAppConnectionCard() {
 
   return (
     <Card>
-      <ConnectionCardHeader
-        icon={GithubLogoIcon}
-        title="GitHub App"
-        description="Connect a GitHub App for private-repository access and installation-based repo browsing."
-      />
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between rounded-lg border border-border px-4 py-3">
-          <div className="space-y-1">
-            {status.connected ? (
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
-                Connected
-                <InstallationBadge status={status} />
-              </div>
-            ) : null}
-            {status.connected ? (
-              <p className="font-mono text-sm text-muted-foreground">
-                {status.instance_url}
-              </p>
-            ) : (
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <XCircleIcon className="size-4" />
-                Not connected
-              </div>
-            )}
-            {status.connected ? (
-              <InstallationStatusMessage status={status} />
-            ) : null}
-            {!status.connected && !hasPrimaryDomain ? (
-              <SetPrimaryDomainPrompt />
-            ) : null}
-            {!status.connected && hasPrimaryDomain && baseURL ? (
-              <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-400">
-                <WarningIcon className="mt-0.5 size-3.5 shrink-0" />
-                <span>
-                  Automated setup registers a callback at{' '}
-                  <code className="font-mono">{baseURL}</code>. GitHub redirects
-                  there for the life of the App, so this instance must actually
-                  be publicly reachable at that address before you continue, not
-                  just wherever you&apos;re viewing this page from right now.
-                  Change it in{' '}
-                  <Link to="/domains" className="underline">
-                    domain settings
-                  </Link>{' '}
-                  if that&apos;s not where this instance actually lives, or use{' '}
-                  manual setup instead. See GitHub&apos;s own{' '}
-                  <a
-                    href="https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app-from-a-manifest"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="underline"
-                  >
-                    manifest flow docs
-                  </a>{' '}
-                  for why the callback has to be a real, reachable address.
-                </span>
-              </p>
-            ) : null}
-          </div>
-
+        <div className="space-y-1">
+          {status.connected ? (
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <CheckCircleIcon className="size-4 text-green-600 dark:text-green-400" />
+              Connected
+              <InstallationBadge status={status} />
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <XCircleIcon className="size-4" />
+              {t('gitConnection.notConnected')}
+            </div>
+          )}
+          {status.connected ? (
+            <p className="font-mono text-sm text-muted-foreground">
+              {status.instance_url}
+            </p>
+          ) : null}
+          {status.connected ? (
+            <InstallationStatusMessage status={status} />
+          ) : null}
+        </div>
+        {!status.connected && !hasPrimaryDomain ? (
+          <SetPrimaryDomainPrompt />
+        ) : null}
+        {!status.connected && hasPrimaryDomain && baseURL ? (
+          <Banner
+            variant="warning"
+            title={t('gitConnection.githubCallback.title')}
+          >
+            {t('gitConnection.githubCallback.body', { url: baseURL })}{' '}
+            <Link to="/domains" className="underline">
+              {t('gitConnection.githubCallback.change')}
+            </Link>
+            . {t('gitConnection.githubCallback.manualHint')}{' '}
+            <a
+              href="https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app-from-a-manifest"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              {t('gitConnection.githubCallback.docs')}
+            </a>
+          </Banner>
+        ) : null}
+        {status.connected ? <GitHubAppInstallationsSection /> : null}
+        <ConnectionActions>
           {status.connected ? (
             <DisconnectConnectionDialog
               open={confirmOpen}
@@ -138,7 +127,7 @@ export function GitHubAppConnectionCard() {
               }}
             />
           ) : (
-            <div className="flex shrink-0 items-center gap-2">
+            <>
               <Button
                 type="button"
                 variant="outline"
@@ -158,10 +147,9 @@ export function GitHubAppConnectionCard() {
                 <GithubLogoIcon className="size-4" />
                 Add GitHub App
               </Button>
-            </div>
+            </>
           )}
-        </div>
-        {status.connected ? <GitHubAppInstallationsSection /> : null}
+        </ConnectionActions>
       </CardContent>
       <ManualConnectDialog open={manualOpen} onOpenChange={setManualOpen} />
       <GitHubAppManifestDialog
@@ -184,7 +172,7 @@ function GitHubAppInstallationsSection() {
   const { data, isLoading, isError, error } = useGitHubAppInstallations(true)
 
   return (
-    <div className="space-y-2 border-t border-border pt-4">
+    <div className="space-y-4 border-t border-border pt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm font-medium text-foreground">
           Connected accounts
@@ -204,29 +192,29 @@ function GitHubAppInstallationsSection() {
         ) : null}
       </div>
       {data?.app_public === false ? (
-        <div className="space-y-2 rounded-md border border-border bg-muted/40 p-3">
-          <p className="text-sm text-foreground">
-            {t('githubAppOrg.privateTitle')}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {t('githubAppOrg.privateBody')}
-          </p>
-          {data.make_public_url ? (
-            <Button
-              type="button"
-              size="sm"
-              render={
-                <a
-                  href={data.make_public_url}
-                  target="_blank"
-                  rel="noreferrer"
-                />
-              }
-            >
-              {t('githubAppOrg.makePublic')}
-            </Button>
-          ) : null}
-        </div>
+        <Banner
+          variant="info"
+          title={t('githubAppOrg.privateTitle')}
+          action={
+            data.make_public_url ? (
+              <Button
+                type="button"
+                size="sm"
+                render={
+                  <a
+                    href={data.make_public_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  />
+                }
+              >
+                {t('githubAppOrg.makePublic')}
+              </Button>
+            ) : null
+          }
+        >
+          {t('githubAppOrg.privateBody')}
+        </Banner>
       ) : null}
       {data?.add_org_url && data.app_public !== false ? (
         <p className="text-xs text-muted-foreground">
@@ -256,7 +244,7 @@ function GitHubAppInstallationsSection() {
             No accounts connected yet.
           </p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="divide-y divide-border">
             {data.installations.map((installation) => (
               <GitHubAppInstallationRow
                 key={installation.id}
@@ -278,7 +266,7 @@ export function GitHubAppInstallationRow({
   const remove = useDeleteGitHubAppInstallation()
 
   return (
-    <li className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+    <li className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
       <div className="space-y-0.5">
         <p className="text-sm font-medium text-foreground">
           {installation.account_login}

@@ -19,6 +19,7 @@ export function EmptyState({
   hint,
   helpPath,
   helpLabel,
+  compact = false,
   className,
 }: {
   /** A single Phosphor icon element, e.g. `<PackageIcon className="size-5" />`. */
@@ -38,8 +39,32 @@ export function EmptyState({
   /** Docs path passed straight through to HelpLink; renders nothing if it resolves to neither a bundled page nor a configured docs URL. */
   helpPath?: string
   helpLabel?: string
+  /** Inline one-row state (icon, title, muted line), no dashed outline: for empty lists inside a page section. */
+  compact?: boolean
   className?: string
 }) {
+  if (compact) {
+    return (
+      <div
+        className={cn(
+          'flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-4',
+          className,
+        )}
+      >
+        <span
+          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+          aria-hidden="true"
+        >
+          {icon}
+        </span>
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-sm font-medium text-foreground">{title}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
+        {action ? <div className="ml-auto shrink-0">{action}</div> : null}
+      </div>
+    )
+  }
   return (
     <div
       className={cn(
