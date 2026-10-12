@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import {
   WarningCircleIcon,
   WifiSlashIcon,
@@ -59,6 +59,9 @@ export function ShellBanner() {
     getConnectionSnapshot,
   )
   const issues = usePlatformIssues()
+  const onDashboard = useRouterState({
+    select: (s) => s.location.pathname === '/',
+  })
   const { isSnoozed } = useSnoozed()
   const kind = pickBanner({
     offline: conn.offline,
@@ -105,7 +108,8 @@ export function ShellBanner() {
       </Bar>
     )
   }
-  if (kind === 'disk') {
+  // The dashboard renders its own disk Banner.
+  if (kind === 'disk' && !onDashboard) {
     const detail = find('disk')?.detail ?? ''
     return (
       <Bar

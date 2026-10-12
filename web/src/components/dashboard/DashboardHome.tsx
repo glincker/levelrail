@@ -13,9 +13,10 @@ import { CreateResourceWizard } from '../CreateResourceWizard'
 import { FleetResourceChart } from '../FleetResourceChart'
 import { FleetUtilizationSummary } from '../FleetUtilizationSummary'
 import { TopResourceConsumers } from '../TopResourceConsumers'
-import { StatusHeader } from './StatusHeader'
+import { DashboardHero } from './DashboardHero'
+import { DashboardBanners } from './DashboardBanners'
 import { FleetTiles } from './FleetTiles'
-import { NeedsAttention } from './NeedsAttention'
+import { NextSteps } from './NextSteps'
 import { RecentActivity } from './RecentActivity'
 import { QuickStart } from './QuickStart'
 import { ResourcesSection } from './ResourcesSection'
@@ -69,6 +70,7 @@ export function DashboardHome({
   onboarding: OnboardingState
 }) {
   const brand = useBrand()
+  const { t } = useTranslation('dashboard')
   const isRoot = useIsRoot()
   const completeOnboarding = useCompleteOnboarding()
   const hasApps = apps.length > 0
@@ -90,35 +92,37 @@ export function DashboardHome({
         <EmptyState
           illustration="rocket"
           icon={<RocketLaunchIcon className="size-6" />}
-          title={`Welcome to ${brand.Name}`}
-          description="Deploy your first app in under a minute."
+          title={t('welcome.title', { brand: brand.Name })}
+          description={t('welcome.description')}
           action={
             <CreateResourceWizard
-              trigger={<Button size="lg">Deploy your first app</Button>}
+              trigger={<Button size="lg">{t('welcome.cta')}</Button>}
             />
           }
         />
         <RecommendationsLine showSetup={isRoot} />
-        <QuickStart hasApps={false} />
+        <QuickStart />
         <PlatformCapabilities />
       </div>
     )
   }
 
   return (
-    <div className="space-y-8">
-      <StatusHeader />
+    <DashboardHero apps={apps} banners={<DashboardBanners />}>
       <FleetTiles apps={apps} />
+      <div className="@container">
+        <div className="grid gap-4 @4xl:grid-cols-2">
+          <NextSteps apps={apps} />
+          <RecentActivity apps={apps} />
+        </div>
+      </div>
       <ResourcesSection />
-      <NeedsAttention />
-      <RecentActivity apps={apps} />
       <ResourceAdvisorTile />
       <Suspense fallback={null}>
         <RecentAlertsCard />
       </Suspense>
-      <RecommendationsLine showSetup={isRoot} />
+      <RecommendationsLine showSetup={false} />
       <UsageDetails apps={apps} />
-      <QuickStart hasApps />
-    </div>
+    </DashboardHero>
   )
 }

@@ -167,5 +167,68 @@
   },
   "usageDetails": {
     "title": "Usage details"
+  },
+  "hero": {
+    "greeting_morning": "Good morning",
+    "greeting_afternoon": "Good afternoon",
+    "greeting_evening": "Good evening",
+    "greeting_night": "Working late",
+    "greetingNamed_morning": "Good morning, {{name}}",
+    "greetingNamed_afternoon": "Good afternoon, {{name}}",
+    "greetingNamed_evening": "Good evening, {{name}}",
+    "greetingNamed_night": "Working late, {{name}}",
+    "sentence": {
+      "allHealthy_one": "Your app is healthy",
+      "allHealthy_other": "All {{count}} apps healthy",
+      "needAttention_one": "{{count}} thing needs attention",
+      "needAttention_other": "{{count}} things need attention",
+      "noApps": "No apps yet. Deploy one and it shows up here."
+    }
+  },
+  "banners": {
+    "diskDetail": "{{detail}} on the data volume. Builds and deploys may fail if it runs out.",
+    "updateTitle": "Version {{version}} is available",
+    "updateDetail": "This server runs {{current}}.",
+    "updateAction": "View update"
+  },
+  "nextSteps": {
+    "title": "Recommended next steps",
+    "seeAll": "Status page",
+    "continue": "Continue",
+    "setupProgress": "Setup {{percent}}% ready",
+    "quiet": "Nothing needs you. {{running}} of {{total}} apps running, {{deploys}} deploys in the last 24 hours."
+  },
+  "deploys": {
+    "title": "Recent deploys",
+    "empty": "No deploys yet. Push to a connected repo to see them here.",
+    "status": {
+      "succeeded": "Deployed",
+      "failed": "Failed",
+      "running": "Deploying",
+      "held": "Held",
+      "superseded": "Superseded",
+      "queued": "Queued",
+      "canceled": "Canceled"
+    }
+  },
+  "quickStart": {
+    "title": "Quick start",
+    "import": {
+      "title": "Import anything",
+      "hint": "Coolify, Dokploy, CapRover, docker run"
+    },
+    "template": {
+      "title": "Deploy a template",
+      "hint": "Databases, tools and stacks in a click"
+    },
+    "git": {
+      "title": "Connect Git",
+      "hint": "Deploy on every push"
+    }
+  },
+  "welcome": {
+    "title": "Welcome to {{brand}}",
+    "description": "Deploy your first app in under a minute.",
+    "cta": "Deploy your first app"
   }
 }
