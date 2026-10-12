@@ -111,7 +111,7 @@ func ParseBIND(text, zone string, defaultTTL int) ([]RecordSet, []string, error)
 	z := NormalizeDomain(zone)
 	zp := dns.NewZoneParser(strings.NewReader(text), z+".", "")
 	if defaultTTL > 0 {
-		zp.SetDefaultTTL(uint32(defaultTTL)) //nolint:gosec // bounded by Normalize's TTLMax
+		zp.SetDefaultTTL(uint32(min(defaultTTL, TTLMax))) //nolint:gosec // clamped to TTLMax, fits uint32
 	}
 	var (
 		sets     []RecordSet

@@ -153,6 +153,16 @@ other.net. IN A 1.1.1.1
 	}
 }
 
+func TestParseBINDClampsHugeDefaultTTL(t *testing.T) {
+	sets, _, err := ParseBIND("www IN A 1.2.3.4\n", "example.com", 1<<33)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(sets) != 1 || sets[0].TTL != TTLMax {
+		t.Fatalf("sets = %+v, want one set with TTL %d", sets, TTLMax)
+	}
+}
+
 func TestComputeDelegation(t *testing.T) {
 	expected := []string{"ana.ns.cloudflare.com.", "bob.ns.cloudflare.com"}
 	cf := []string{"ana.ns.cloudflare.com", "bob.ns.cloudflare.com"}

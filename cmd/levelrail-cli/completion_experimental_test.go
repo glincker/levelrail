@@ -39,7 +39,7 @@ func TestCompletionTree_HidesDisabledExperimental(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			experimental.Set(tc.enable...)
-			t.Cleanup(experimental.Reset)
+			restoreAllExperimental(t)
 			if got := slices.Contains(children(tc.path), tc.verb); got != tc.visible {
 				t.Fatalf("verb %q under %q visible=%v, want %v", tc.verb, tc.path, got, tc.visible)
 			}
