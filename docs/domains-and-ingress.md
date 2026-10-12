@@ -5,10 +5,100 @@ description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, a
 
 Levelrail has nothing to install for ingress. The control plane embeds [Caddy](https://caddyserver.com/) as a Go library (`internal/ingress`) and drives it through its admin API, not a hand-written Caddyfile. Config comes from the app specs the reconciler already knows about, so there is no `caddy` binary, no separate proxy container, and no way for ingress config to drift from desired state. The reasoning is in [ADR 005](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md) and the [comparison](/comparison).
 
-To serve an app on a domain, write `domains:` in its `app.yaml` (or add the domain in the dashboard) and deploy. Routing and certificates follow automatically.
+## What this covers
+
+| You want to | Go to |
+| --- | --- |
+| Put an app on a domain | [Walkthrough: your first domain](#walkthrough-your-first-domain) |
+| Get HTTPS with no DNS at all | [Zero DNS setup](#zero-dns-setup-sslipio-hostnames-and-one-click-https) |
+| Have Levelrail create DNS records | [Add a domain and go live](#add-a-domain-and-go-live) |
+| Fix a certificate that will not issue | [TLS](#tls-whats-actually-shipped-today) and [Domain doctor](#domain-doctor) |
+| Block, throttle, redirect or gate traffic | [WAF](#opt-in-waf-and-rate-limiting), [Auth gate](#auth-gate-forward-auth), [Redirects](#domain-redirects) |
+| Tune timeouts, client IPs, failover | [Edge limits](#edge-limits-client-ips-and-failover) |
+| Open ports or change listen addresses | [Firewall](#firewall-ports-80-and-443) |
+
+## Walkthrough: your first domain
+
+This assumes the control plane is running and an app is deployed (see [Getting started](/getting-started)).
+
+<Steps>
+<Step title="Point DNS at your server">
+
+Create an A record (AAAA for IPv6) for the domain pointing at the server's public IP, then check it from a machine outside your network:
+
+```bash
+dig +short my-app.example.com
+levelrail-cli domains check my-app my-app.example.com
+```
+
+`domains check` reports whether the domain currently resolves to this control plane's advertised address.
+
+</Step>
+<Step title="Add the domain to your app">
+
+<Tabs>
+<Tab title="Dashboard">
+
+Open the app's **Domains** tab and add the domain inline. No redeploy is needed.
+
+</Tab>
+<Tab title="CLI">
+
+```bash
+levelrail-cli apps domains add my-app my-app.example.com
+levelrail-cli apps domains remove my-app my-app.example.com
+levelrail-cli domains list
+```
+
+</Tab>
+<Tab title="app.yaml">
+
+```yaml
+version: 1
+services:
+  web:
+    build:
+      type: dockerfile
+    domains:
+      - my-app.example.com
+    port: 3000
+```
+
+Redeploy after editing. Each domain can be claimed by only one service across your whole spec (see [App spec reference](/app-spec-reference)).
+
+</Tab>
+</Tabs>
+
+</Step>
+<Step title="Open ports 80 and 443">
+
+Open them in your cloud firewall, `ufw` or `iptables`, or re-run the installer with `LEVELRAIL_CONFIGURE_UFW=1 ./install.sh`. See [Firewall](#firewall-ports-80-and-443).
+
+</Step>
+<Step title="Get a trusted certificate">
+
+By default the domain is served over HTTPS with a self-signed certificate, so browsers warn. For a trusted one, enable real ACME (see [TLS](#tls-whats-actually-shipped-today)) and follow the [ACME verification runbook](/acme-verification-runbook).
+
+</Step>
+<Step title="Test it">
+
+```bash
+curl -v https://my-app.example.com
+levelrail-cli domains doctor my-app my-app.example.com
+```
+
+</Step>
+</Steps>
+
+<Note>
+**Infrastructure > Domains** lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode and basic auth. Edit those settings on the owning app's Domains tab.
+</Note>
+
+![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](/assets/screenshots/domains-list.png)
+
 ## How domain routing actually works
 
-Requests to any configured domain flow through a decision chain:
+When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container and are served by Caddy from disk. Requests to any configured domain flow through this decision chain:
 
 ```mermaid
 flowchart TD
@@ -31,83 +121,34 @@ flowchart TD
   M --> J
 ```
 
-Add `domains` to a service in `app.yaml`:
-
-```yaml
-version: 1
-services:
-  web:
-    build:
-      type: dockerfile
-    domains:
-      - app.example.com
-    port: 3000
-```
-
-`domains` is a list of public hostnames routed to that service. Each domain can be claimed by only one service across your whole spec (see [App spec reference](/app-spec-reference)). When you deploy, the control plane builds a Caddy route that matches incoming requests by `Host` header and reverse-proxies them to the service's container. Static sites (`build.type: static`) skip the container entirely and are served by Caddy from disk.
-
 ### Setting up DNS
 
-Create an **A record** (or AAAA for IPv6) for the domain, pointing at your server's public IP address. This tells the internet where `app.example.com` should go. DNS resolution happens before any request reaches your server, so this is no different from any other platform.
+Create an **A record** (or AAAA for IPv6) pointing at your server's public IP address. DNS resolution happens before any request reaches your server, so this is no different from any other platform. Once it resolves and the app is deployed, Caddy starts routing and issuing certificates (depending on your [TLS configuration](#tls-whats-actually-shipped-today)). No manual reload is needed.
 
-Check that DNS has propagated:
-
-```
-dig +short app.example.com
-```
-
-Run this from a machine outside your own network. The control plane can also check for you: `levelrail-cli domains check <app> <domain>` reports whether the domain currently resolves to this control plane's advertised address. Once it resolves and the app is deployed, Caddy starts routing and issuing certificates (depending on your TLS configuration below). No manual reload is needed.
+DNS changes usually appear within minutes but can take a few hours depending on the record's TTL.
 
 ### Managing DNS records from the dashboard
 
-If you've connected Cloudflare DNS or Route53 DNS (see [Wildcard domains](#wildcard-domains-dns-01-providers) below for how to enable either one), a domain's own Domains tab also gets a **DNS records** panel: the actual A/AAAA/CNAME/TXT/MX/SRV/CAA records in that domain's zone, listed, added, edited, and deleted without leaving the dashboard, each with a live resolved/pending/mismatch check against its configured value. This reuses the same provider credentials entered for wildcard ACME, no separate API token needed. NS and SOA records are read-only (provider-managed) and never appear in this view.
+If you have connected Cloudflare DNS or Route53 DNS (see [Wildcard domains](#wildcard-domains-dns-01-providers)), a domain's Domains tab also gets a **DNS records** panel: the A/AAAA/CNAME/TXT/MX/SRV/CAA records in that domain's zone, listed, added, edited and deleted without leaving the dashboard, each with a live resolved/pending/mismatch check against its configured value. It reuses the same provider credentials as wildcard ACME, so no separate API token is needed. NS and SOA records are read-only (provider-managed) and never appear.
 
-The zone shown is a best-effort guess, a domain's last two labels (`app.example.com` -> `example.com`), which is wrong for multi-label public suffixes like `.co.uk`; the panel always echoes the exact zone it queried so you can tell at a glance.
+<Note>
+The zone shown is a best-effort guess, the domain's last two labels (`app.example.com` becomes `example.com`). That is wrong for multi-label public suffixes like `.co.uk`; the panel always echoes the exact zone it queried.
+</Note>
 
-The CLI covers the same three operations:
+The CLI covers add, list and remove. Editing a record in place is dashboard-only (it is a delete-then-add under the hood).
 
-```
+```bash
 levelrail-cli domains dns list <app> <domain>
 levelrail-cli domains dns add <app> <domain> --type A --name www --value 203.0.113.10
 levelrail-cli domains dns remove <app> <domain> --type A --name www --value 203.0.113.10
 ```
-
-Editing a record in place is dashboard-only: it's a delete-then-add under the hood, and the CLI exposes those two primitives directly rather than a third verb that just composes them.
-
-### Adding or changing domains
-
-<Tabs>
-<Tab title="Dashboard">
-
-Open the app's **Domains** tab, add the domain inline, and view its DNS and certificate status. No redeploy is needed.
-
-</Tab>
-<Tab title="CLI">
-
-```bash
-levelrail-cli apps domains add <app> www.example.com
-levelrail-cli apps domains remove <app> www.example.com
-levelrail-cli domains list
-```
-
-</Tab>
-<Tab title="app.yaml">
-
-Edit `domains:` in `app.yaml` and redeploy.
-
-</Tab>
-</Tabs>
-
-**Infrastructure > Domains** lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode and basic auth. Edit those settings on the owning app's Domains tab.
-
-![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](assets/screenshots/domains-list.png)
 
 ### Guided setup: domain, DNS, port, certificate
 
 The **Guided setup** button on an app's Domains tab walks one domain through four checks before anything is saved:
 
 1. **Domain.** Pick the environment it belongs to, and optionally route the `www` or apex twin with a redirect to the one you typed.
-2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live. DNS changes usually appear within minutes but can take a few hours depending on the record's TTL.
+2. **DNS record.** The exact A, AAAA or CNAME record to add, re-checked live.
 3. **Container port.** Whether the running container really listens on the app's port. This reads the container's socket table, so it needs exec access enabled for the app; without it the step says it could not verify.
 4. **Certificate.** Which challenge applies. HTTP-01 needs the internet to reach port 80 on this server. If this server sits on a private (LAN, NAT, NAS) address, or the domain is a wildcard, only DNS-01 can work, and the step says which provider is connected (Cloudflare, Route53 or none) and where to connect one.
 
@@ -122,7 +163,7 @@ levelrail-cli domains connectivity           # do ports 80 and 443 answer here, 
 
 ### One app, one domain set per environment
 
-An app can carry a separate set of domains for each environment, so you do not duplicate the app for dev, UAT and production. The app routes the set of the environment it is tagged with. An environment without its own set falls back to the app's default domains, which is why existing apps keep working unchanged.
+An app can carry a separate set of domains for each environment, so you do not duplicate the app for dev, UAT and production. The app routes the set of the environment it is tagged with. An environment without its own set falls back to the app's default domains, so existing apps keep working unchanged.
 
 ```bash
 levelrail-cli apps domains add --env dev <app> dev.example.com
@@ -143,27 +184,71 @@ Use `--domain-prefix uat.` instead to prepend a label to every copied hostname.
 
 ### The dashboard's own domain
 
-**Infrastructure > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:` in `app.yaml`. Give it its own dedicated subdomain rather than reusing one an app already serves, the same convention CapRover uses for its panel (`captain.<domain>`): something like `console.example.com` or `panel.example.com`.
+**Infrastructure > Domains** sets the control plane's own `primary_domain`, the one the dashboard itself is reachable at, separate from any app's `domains:`. Give it a dedicated subdomain such as `console.example.com` or `panel.example.com` rather than reusing one an app already serves.
 
-Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app, so this is a real guardrail, not just a convention. Pick a domain no app uses from the start and there's nothing to collide with later.
-
-## Hide a domain from search engines
-
-Consoles, staging sites and internal tools should not show up in search results. Per domain, **Hide from search engines** (domain editor), `levelrail-cli domains search-visibility <app> <domain> --hide`, or `PUT /api/v1/apps/{name}/domains/{domain}/search-visibility` with `{"hidden": true}` makes the ingress:
-
-- send `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` on every
-  response, overriding the app's own value;
-- answer `/robots.txt` itself with a disallow-all file, even if the app serves
-  its own.
-
-This is a request that well-behaved crawlers honour. It is not access control:
-use basic auth to keep people out. The setting takes effect on the next ingress
-reconcile pass, and a crawler that already indexed the page drops it on its next
-visit. Domains are open to search engines by default.
+Setting the primary domain to a domain an app already owns is rejected with a `409` naming the conflicting app.
 
 ## Zero DNS setup: sslip.io hostnames and one-click HTTPS
 
-[sslip.io](https://sslip.io) is a public DNS service that resolves any dash-encoded IP straight to that IP, so `134-209-118-96.sslip.io` is `134.209.118.96` with no record to create and nothing to wait for. Levelrail builds on it so a fresh install gets working HTTPS URLs with no DNS setup at all.
+[sslip.io](https://sslip.io) is a public DNS service that resolves any dash-encoded IP straight to that IP, so `134-209-118-96.sslip.io` is `134.209.118.96` with no record to create and nothing to wait for. A fresh install uses it to get working HTTPS URLs with no DNS setup at all.
+
+### One-click HTTPS for the dashboard
+
+The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). Enter a contact email and click the button. The control plane:
+
+1. sets the dashboard's primary domain to `<dashed-ip>.sslip.io`,
+2. turns on real ACME issuance and asks Let's Encrypt for a certificate over the HTTP-01 challenge,
+3. shows `pending`, then `issued` with the issuer and expiry, and
+4. once you are looking at the dashboard on that https address, saves it as the dashboard URL (sign-in over plain HTTP is then refused).
+
+<Tabs>
+<Tab title="CLI">
+
+```bash
+levelrail-cli settings ingress https enable --email you@yourdomain.com --wait 2m
+levelrail-cli settings ingress https status
+```
+
+Add `--staging` to use the Let's Encrypt staging CA while debugging.
+
+</Tab>
+<Tab title="API">
+
+```text
+GET  /api/v1/settings/ingress/https
+POST /api/v1/settings/ingress/https
+```
+
+</Tab>
+</Tabs>
+
+The contact email is checked before anything is saved: it must be a plain address on a real domain, and `example.com`, `.test`, `.invalid`, `.localhost` and similar reserved names are rejected because Let's Encrypt refuses them. The same applies to the primary domain when real ACME is on.
+
+Ports 80 and 443 must be reachable from the internet. If issuance fails for any reason, the site keeps answering over HTTPS with a certificate signed by the platform's own CA instead of dropping the handshake, and the card shows the certificate authority's error with a hint:
+
+| Hint | Meaning |
+|---|---|
+| `unreachable` | Let's Encrypt could not connect to port 80. Open 80 and 443 in the host firewall (`ufw allow 80,443/tcp`) and in your cloud provider's security group. |
+| `rate_limited` | Let's Encrypt is throttling the hostname. Wait, and use staging while debugging. |
+| `dns` | The hostname did not resolve to this server. Check the detected public address. |
+| `caa` | A CAA record forbids Let's Encrypt from issuing for the hostname. |
+
+The public CA is retried each time the fallback certificate renews, every `APP_INGRESS_FALLBACK_CERT_LIFETIME` (default `6h`), and immediately when you run the enable command again with a corrected email.
+
+<Accordion title="Staging, rate limits and switching CA">
+
+Tick "Test with Let's Encrypt staging first" (or pass `--staging`) to use the staging CA: certificates are not browser trusted, but there are no meaningful limits. Production enable attempts are capped at 5 per hour per control plane (`APP_ACME_MAX_ATTEMPTS_PER_HOUR`) so a misconfiguration cannot burn Let's Encrypt's failed-validation limit; staging is never capped.
+
+| Variable | Effect |
+|---|---|
+| `APP_ACME_STAGING=true` | Makes staging the default CA. |
+| `APP_ACME_DIRECTORY_URL` | Points at any other RFC 8555 CA. |
+| `APP_ACME_MAX_ATTEMPTS_PER_HOUR` | Production enable cap (default 5). |
+| `APP_ACME_PENDING_TIMEOUT` | A request that never settles is reported as failed after this long (default 2 minutes). |
+
+Switching CA (staging to production, or from the internal issuer to ACME) drops the certificates stored for the previous issuer so they are re-issued. Without this, Caddy keeps serving the old still-valid certificate and never asks the new CA.
+
+</Accordion>
 
 ### The server's public address
 
@@ -181,116 +266,43 @@ The Domains page shows the address and how it was found (`from APP_PUBLIC_HOST`,
 | `APP_PUBLIC_IP_PROBE_URLS` | the three above | Comma separated list of URLs that return the caller's IP as plain text. |
 | `APP_PUBLIC_IP_PROBE_TIMEOUT` | `4s` | Overall budget for detection at startup. |
 
+<Warning>
 If the server is behind NAT or a load balancer, detection finds the wrong address. Set `APP_PUBLIC_HOST` to the address that actually reaches ports 80 and 443 on this box.
-
-### One-click HTTPS for the dashboard
-
-The Domains page opens with an **Enable HTTPS** card (the setup wizard's domain step shows the same card first). Enter a contact email and click the button. The control plane:
-
-1. sets the dashboard's primary domain to `<dashed-ip>.sslip.io`,
-2. turns on real ACME issuance and asks Let's Encrypt for a certificate over the HTTP-01 challenge,
-3. shows `pending`, then `issued` with the issuer and expiry, and
-4. once you are looking at the dashboard on that https address, saves it as the dashboard URL (sign-in over plain HTTP is then refused).
-
-From the CLI:
-
-```
-levelrail-cli settings ingress https enable --email you@yourdomain.com --wait 2m
-levelrail-cli settings ingress https status
-```
-
-The API is `GET` and `POST /api/v1/settings/ingress/https`.
-
-The contact email is checked before anything is saved: it must be a plain address on a real domain, and `example.com`, `.test`, `.invalid`, `.localhost` and similar reserved names are rejected because Let's Encrypt refuses them. The same applies to the primary domain when real ACME is on.
-
-If issuance fails for any reason (a rejected contact, a closed port, a rate limit), the site keeps answering over HTTPS with a certificate signed by the platform's own CA instead of dropping the handshake, and the domain shows the certificate authority's error with a hint. The public CA is retried each time that fallback certificate renews, every `APP_INGRESS_FALLBACK_CERT_LIFETIME` (default `6h`), and immediately when you run the enable command again with a corrected email.
-
-Ports 80 and 443 must be reachable from the internet. If issuance fails, the card shows the certificate authority's own error and a localized hint:
-
-| Hint | Meaning |
-|---|---|
-| `unreachable` | Let's Encrypt could not connect to port 80. Open 80 and 443 in the host firewall (`ufw allow 80,443/tcp`) and in your cloud provider's security group. |
-| `rate_limited` | Let's Encrypt is throttling the hostname. Wait, and use staging while debugging. |
-| `dns` | The hostname did not resolve to this server. Check the detected public address. |
-| `caa` | A CAA record forbids Let's Encrypt from issuing for the hostname. |
-
-**Staging and rate limits.** Tick "Test with Let's Encrypt staging first" (or pass `--staging`) to use the staging CA: certificates are not browser trusted, but there are no meaningful limits. Production enable attempts are capped at 5 per hour per control plane (`APP_ACME_MAX_ATTEMPTS_PER_HOUR`) so a misconfiguration cannot burn Let's Encrypt's failed-validation limit; staging is never capped. `APP_ACME_STAGING=true` makes staging the default CA, and `APP_ACME_DIRECTORY_URL` points at any other RFC 8555 CA. A request that never settles is reported as failed after `APP_ACME_PENDING_TIMEOUT` (default 2 minutes).
-
-Switching CA (staging to production, or from the internal issuer to ACME) drops the certificates stored for the previous issuer so they are re-issued. Without this, Caddy keeps serving the old still-valid certificate and never asks the new CA.
+</Warning>
 
 ### Automatic hostnames for apps
 
-Deploying an app without `domains:` does not leave it reachable only at `host:port`. Every app with no domain gets:
+Every app deployed without `domains:` gets:
 
-```
+```text
 https://<app-name>.<dashed-ip>.sslip.io
 ```
 
-It is routed by the same ingress and gets the same TLS treatment as any other domain: a Let's Encrypt certificate once ACME is enabled (the Enable HTTPS card above turns it on for every host), Caddy's internal issuer before that.
+It is routed by the same ingress and gets the same TLS treatment as any other domain: a Let's Encrypt certificate once ACME is enabled (the Enable HTTPS card turns it on for every host), Caddy's internal issuer before that.
 
-- It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, and in `levelrail-cli domains list` (source `automatic`) and `GET /api/v1/domains` (`"automatic": true`).
+- It appears on the app's **Network** tab, in `levelrail-cli apps network <name>`, in `levelrail-cli domains list` (source `automatic`) and in `GET /api/v1/domains` (`"automatic": true`).
 - It disappears the moment you add a real domain. A configured domain always wins.
 - It is generated each pass and never stored on the app, so per-domain features (basic auth, WAF, BYO certificate, maintenance mode) do not apply to it. Add a real domain for those.
-- **Toggle:** the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`. It is off-able per server, not per app.
+- Toggle it per server (not per app) with the **Automatic app hostnames** setting on the Domains page, or `levelrail-cli settings ingress set --fallback-domains=false`.
 - It needs a public IPv4 address (detected or `APP_PUBLIC_HOST`). With a private address, a hostname, or detection turned off there is nothing to build, and the Network tab says so.
 
 ### HTTP redirects to HTTPS
 
 When the control plane can bind the HTTP ingress port (port 80 as root, the installer's default), every routed host answers plain HTTP with a `308` redirect to the same URL over HTTPS, and Let's Encrypt's HTTP-01 challenge is served on the same listener. A non-root development run that cannot bind port 80 skips the redirect and logs why. `APP_INGRESS_HTTP_REDIRECT=true|false` forces the choice instead of auto detecting.
 
-## TLS: what's actually shipped today
-
-### Default: self-signed certificates
-
-Out of the box, every routed domain gets a certificate from Caddy's internal, self-signed issuer. This works immediately:
-
-- No DNS propagation needed.
-- No outbound connectivity to a certificate authority.
-- No configuration required.
-
-The tradeoff: browsers and HTTP clients show a trust warning until you accept the certificate or switch to a real issuer. Use self-signed for internal tools, staging environments, or first local trials, not for public-facing apps.
-
-### Real public ACME (Let's Encrypt or RFC 8555 CA)
-
-A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or with `levelrail-cli settings ingress set --acme-enabled --acme-email you@yourdomain.com`. The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and a directory URL is optional.
-
-<Tip>
-**Verified against a live domain**
-
-Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in [docs/acme-verification-runbook.md](/acme-verification-runbook#recorded-run-2026-10-05).
-</Tip>
-
-### HSTS (HTTP Strict Transport Security)
-
-Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress set --hsts-enabled`) to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.
-
-Setting the `APP_ENABLE_HSTS=true` environment variable still works the same way it always has, for anyone who already relies on it. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
-
-<Warning>
-HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
-</Warning>
-
-### Bring your own certificate
-
-For domains ACME can't reach (internal-only hosts, externally issued wildcards, or certificates provisioned before DNS cuts over), upload a certificate and key. Caddy loads it directly and skips automatic issuance for that host.
-
-```bash
-levelrail-cli domains tls-cert set <app> <domain> --cert-file fullchain.pem --key-file privkey.pem
-levelrail-cli domains tls-cert get <app> <domain>
-```
-
-The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
-
-## Domains without an app
-
-A domain does not have to belong to an app. A [standalone domain](/standalone-domains) proxies to a port on this server, an address on your network, an external URL, another app's port or a container, and gets every per-domain feature on this page. In the dashboard, **Add domain** offers **Proxy to a port or URL** next to **Route to an app**; from the CLI it is `levelrail-cli domains standalone add <domain> --target 127.0.0.1:3000 --confirm`. The same page explains the **Server address** card, which shows the public IPv4 and IPv6 your DNS records must point at, with a manual override.
-
 ## Add a domain and go live
 
 With a DNS provider connected, adding a domain does the rest: Levelrail creates the DNS record, waits for it to propagate, checks the certificate and confirms the site answers, then gives you one link.
 
-1. Connect Cloudflare or Route53 once (see [Wildcard domains: DNS-01 providers](#wildcard-domains-dns-01-providers)). The same credential is used for records.
-2. Add the domain from the dashboard (**Domains**, **Add domains**), with `levelrail-cli apps domains add <app> <domain> --wait`, or with `PATCH /api/v1/apps/{name}/domains`.
+<Steps>
+<Step title="Connect a DNS provider once">
+
+Connect Cloudflare or Route53 (see [Wildcard domains: DNS-01 providers](#wildcard-domains-dns-01-providers)). The same credential is used for records.
+
+</Step>
+<Step title="Add the domain">
+
+From the dashboard (**Domains**, **Add domains**), with the CLI, or with `PATCH /api/v1/apps/{name}/domains`:
 
 ```bash
 levelrail-cli apps domains add my-app app.example.com --wait
@@ -299,6 +311,9 @@ levelrail-cli domains go-live my-app app.example.com --wait --timeout 5m
 ```
 
 `--wait` prints each step as it happens and exits non-zero when the domain is not live within `--timeout`.
+
+</Step>
+</Steps>
 
 ### What gets created
 
@@ -342,15 +357,56 @@ The base domain must sit inside a zone your provider manages; the dashboard show
 | `wildcard_for_base_domain` | off | One `*.<base>` record covers every app under the base domain. |
 | `verify_after` | on | Probe propagation, certificate and HTTP and report each step. |
 
-A request can override any key with an `automation` object. `POST /api/v1/apps/{name}/domains/go-live/plan` is the dry run: it returns the planned steps and changes nothing. Each run is kept in the automation history with a one-step **Undo** that removes only what that run created (`levelrail-cli domains go-live runs`, `domains go-live undo <id>`).
+A request can override any key with an `automation` object. `POST /api/v1/apps/{name}/domains/go-live/plan` is the dry run: it returns the planned steps and changes nothing. Each run is kept in the automation history with a one-step **Undo** that removes only what that run created (`levelrail-cli domains go-live runs`, `domains go-live undo <id>`). Steps the server cannot do are reported as `skipped` and the rest still completes.
 
-Steps that the server cannot do are reported as `skipped` and the rest still completes.
+## TLS: what's actually shipped today
+
+### Default: self-signed certificates
+
+Out of the box, every routed domain gets a certificate from Caddy's internal, self-signed issuer. It works immediately with no DNS propagation, no outbound connectivity to a certificate authority and no configuration.
+
+The tradeoff: browsers and HTTP clients show a trust warning until you accept the certificate or switch to a real issuer. Use self-signed for internal tools, staging environments, or first local trials, not for public-facing apps.
+
+### Real public ACME (Let's Encrypt or RFC 8555 CA)
+
+A Caddy ACME issuer is built and wired end-to-end. Enable it with the **Issue real ACME certificates** toggle on the Domains page, or:
+
+```bash
+levelrail-cli settings ingress set --acme-enabled --acme-email you@yourdomain.com
+```
+
+The API is `GET/PUT /api/v1/settings/ingress`. An account email is required, and a directory URL is optional.
+
+<Tip>
+Real Let's Encrypt issuance, HTTP to HTTPS redirect and trusted-chain handshakes were run on a public VPS (`<dashed-ip>.sslip.io`, ports 80 and 443 open). The recorded run, including what failed before it worked, is in the [ACME verification runbook](/acme-verification-runbook#recorded-run-2026-10-05).
+</Tip>
+
+### HSTS (HTTP Strict Transport Security)
+
+Turn on **Enable HSTS** on the Domains page (or `levelrail-cli settings ingress set --hsts-enabled`) to send `Strict-Transport-Security` on every https response, including the dashboard's HTML page, no restart required. It is never sent over plain HTTP. HSTS defaults to off on purpose.
+
+`APP_ENABLE_HSTS=true` still works. The two are additive: HSTS is sent if either the dashboard toggle or the environment variable is on, so upgrading never turns HSTS off for a deployment that already had it on.
+
+<Warning>
+HSTS tells browsers to refuse plain HTTP and refuse certificate warnings on this host for 180 days. Enabling it before ACME is working (while still on self-signed certificates) can lock you out of your own dashboard. Only enable it once real, browser-trusted certificates are issuing.
+</Warning>
+
+### Bring your own certificate
+
+For domains ACME can't reach (internal-only hosts, externally issued wildcards, or certificates provisioned before DNS cuts over), upload a certificate and key. Caddy loads it directly and skips automatic issuance for that host.
+
+```bash
+levelrail-cli domains tls-cert set <app> <domain> --cert-file fullchain.pem --key-file privkey.pem
+levelrail-cli domains tls-cert get <app> <domain>
+```
+
+The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
 
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.
 
-Two providers are supported. Configure them platform-wide on the **Domains** page or with the CLI. Only one is active per reconcile pass, and Cloudflare wins if both are enabled.
+Two providers are supported, configured platform-wide on the **Domains** page or with the CLI. Only one is active per reconcile pass, and Cloudflare wins if both are enabled.
 
 <Tabs>
 <Tab title="Cloudflare">
@@ -381,13 +437,52 @@ The API is `GET/PUT/DELETE /api/v1/settings/route53-dns`.
 </Tab>
 </Tabs>
 
-### Credential storage
-
 Credentials are envelope-encrypted at rest and never returned by GET: responses report only whether a credential is present.
+
+## Domains without an app
+
+A domain does not have to belong to an app. A [standalone domain](/standalone-domains) proxies to a port on this server, an address on your network, an external URL, another app's port or a container, and gets every per-domain feature on this page. In the dashboard, **Add domain** offers **Proxy to a port or URL** next to **Route to an app**; from the CLI:
+
+```bash
+levelrail-cli domains standalone add <domain> --target 127.0.0.1:3000 --confirm
+```
+
+The same page explains the **Server address** card, which shows the public IPv4 and IPv6 your DNS records must point at, with a manual override.
+
+## Firewall: ports 80 and 443
+
+Public traffic and ACME's HTTP-01 challenge need your server reachable from the internet on **ports 80 and 443**. Port 80 is also how Let's Encrypt validates domain ownership. If it is blocked, issuance fails even if everything else is configured correctly.
+
+Common blockers, all of which look fine from the server itself: a cloud provider firewall or security group, a home router with no port forwarding, and `ufw` in default-deny state.
+
+### Automatic firewall setup
+
+`install.sh` has an opt-in flag:
+
+```bash
+LEVELRAIL_CONFIGURE_UFW=1 ./install.sh
+```
+
+It allows SSH, opens `80/tcp`, `443/tcp` and `443/udp` (HTTP/3), and enables `ufw` if it is not already active. If `ufw` was already active, it only adds the rules. Without the flag, open these ports yourself via your cloud firewall, `ufw` or `iptables`.
+
+### Running on non-default ports
+
+If port 443 (or 80) is already taken on the host, most often by a second control-plane instance, set the ingress listen addresses instead of fighting over the defaults:
+
+```bash
+APP_INGRESS_HTTPS_ADDR=:8443 \
+APP_INGRESS_HTTP_ADDR=:8080 \
+./levelrail
+```
+
+- `APP_INGRESS_HTTPS_ADDR` (default `:443`): the embedded Caddy ingress's HTTPS listener.
+- `APP_INGRESS_HTTP_ADDR` (default `:80`): kept off port 80 only when real ACME (not the default self-signed issuer) is enabled for a non-wildcard domain, since that is the one path that can otherwise reach for a literal port 80 for its HTTP-01 challenge.
+
+`GET /api/v1/system/doctor`'s port checks follow whatever you set here, so a second instance on `:8443`/`:8080` reports those ports as owned and available, not `:443`/`:80`.
 
 ## Opt-in WAF and rate limiting
 
-Both WAF and rate limiting are Caddy modules registered at build time, not separate containers. They are off by default and configured per domain.
+Both are Caddy modules registered at build time, not separate containers. They are off by default and configured per domain.
 
 - WAF: OWASP Coraza with the stock OWASP Core Rule Set (`github.com/corazawaf/coraza-caddy/v2`)
 - Rate limiting: Caddy's `rate_limit` module (`github.com/mholt/caddy-ratelimit`)
@@ -400,12 +495,12 @@ Both WAF and rate limiting are Caddy modules registered at build time, not separ
 | `block` | Actually rejects requests matching CRS rules | No | Deploy after validating detect logs |
 
 <Warning>
-The OWASP CRS can produce false positives against normal app traffic. This platform's core design principle is avoiding silent failures. Enable WAF in `detect` mode first, watch logs for a while, then switch to `block` once you're confident it isn't flagging legitimate traffic. There is no auto-promote from detect to block; you flip it yourself.
+The OWASP CRS can produce false positives against normal app traffic. Enable WAF in `detect` mode first, watch logs for a while, then switch to `block` once you are confident it is not flagging legitimate traffic. There is no auto-promote from detect to block; you flip it yourself.
 </Warning>
 
 ### Rate limiting parameters
 
-Rate limiting is independent of WAF. Configure per client IP with two numbers:
+Rate limiting is independent of WAF and configured per client IP with two numbers:
 
 | Parameter | What it does | Example |
 | --- | --- | --- |
@@ -440,151 +535,18 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 </Tabs>
 
 <Accordion title="Not included in v1">
+
 - No UI for custom CRS exclusion or override rules.
 - No per-path or per-route rate-limit scoping (whole-domain only).
 - No separate WAF/rate-limit event log (use Caddy's access log).
+
 </Accordion>
-
-## Auth gate (forward auth)
-
-An auth gate puts your own auth service (Authelia, oauth2-proxy, a small app of your own) in front of a domain. Before a request reaches your app, the ingress sends a `GET` to the auth service with the original request's `Cookie` and `Authorization` headers plus `X-Forwarded-Method`, `X-Forwarded-Uri`, `X-Forwarded-Host`, `X-Forwarded-Proto` and `X-Forwarded-For`. The request body is never sent to the auth service.
-
-- **2xx**: the request goes on to your app, carrying only the response headers you listed in **copy headers**.
-- **Anything else**: the auth service's status, headers (including `Location` and `Set-Cookie`) and body go straight back to the visitor. A `302` to your login page just works.
-- **Auth service down or too slow**: the visitor gets a `502` (unreachable) or `504` (timed out). The request never reaches your app.
-
-The gate is off by default and runs after rate limiting, the WAF and basic auth, and before caching and the proxy to your app.
-
-<Warning>
-**Header spoofing**
-
-On every request to a gated domain, the ingress first deletes any copy of each copy header that the visitor sent. Your app only ever sees values that came from the auth service.
-</Warning>
-
-### Worked example
-
-Your auth service answers `GET /check`. For a signed-in visitor it returns `200` with `X-User`, `X-Email` and `X-Name`; otherwise it returns `302` to its login page.
-
-```bash
-levelrail-cli domains auth-gate set my-app app.example.com \
-  --url http://auth:9091 --check-path /check \
-  --copy-header X-User,X-Email,X-Name
-```
-
-A visitor who sends `X-User: admin` themselves gets that header removed before the check, so your app cannot be fooled by it. If the visitor is signed in, the app receives the auth service's `X-User`, `X-Email` and `X-Name`.
-
-### Settings
-
-| Setting | Default | Notes |
-| --- | --- | --- |
-| Auth URL | required | `http` or `https`, a host, no username or password, no query. Internal addresses are allowed. A base path is kept: `https://auth.example.com/api` plus `/check` calls `/api/check`. |
-| Check path | `/` | Absolute path, may carry its own query. |
-| Copy headers | none | Up to 16 header names. `Cookie`, `Authorization`, `Host` and the `X-Forwarded-*` headers cannot be copied. |
-| Timeout | `APP_AUTH_GATE_TIMEOUT` | Per domain override in seconds. The env var takes a Go duration (`3s`) or whole seconds. |
-
-### Configuration
-
-<Tabs>
-<Tab title="Dashboard">
-
-Each domain's row in an app's **Domains** tab has an **Add an auth gate** control next to basic auth.
-
-</Tab>
-<Tab title="CLI">
-
-```bash
-levelrail-cli domains auth-gate get|set|clear <app> <domain>
-```
-
-</Tab>
-<Tab title="API">
-
-```text
-GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate
-```
-
-Writes need the root ability, like basic auth.
-
-</Tab>
-</Tabs>
-
-### Built-in sign-in (SSO for apps)
-
-Instead of running your own auth service, set the provider to **Levelrail sign-in** (`builtin`). Visitors then sign in with their account on this installation, through the same sign-in page as the dashboard (passwords, passkeys, two-factor), and only the users, teams and roles you allow get through. Your app receives `X-User` and `X-Email` (the email) and `X-Name` (the display name). Visitor-sent copies of those headers are always removed first.
-
-It needs the platform primary domain (**Settings > Ingress**), because visitors are sent to the dashboard to sign in. Signing in there with an OAuth provider (Google, GitHub) ends on the dashboard; open the app link again and it goes straight through.
-
-```bash
-levelrail-cli domains auth-gate set my-app app.example.com \
-  --provider builtin --allow alice@example.com --allow-team ops --allow-role support
-levelrail-cli domains auth-gate log my-app app.example.com --since 24h
-levelrail-cli domains auth-gate revoke my-app app.example.com
-```
-
-The flow, step by step:
-
-```text
-browser                 app.example.com (ingress)         dashboard (cp.example.com)
-   | GET /orders              |                                  |
-   |------------------------->| check: no gate session           |
-   |<-- 302 cp/gate/login?rd=https://app.example.com/orders&state=S
-   |    Set-Cookie: __Host-gate_state=S (app host only)          |
-   | GET /gate/login?rd=...&state=S --------------------------->|
-   |                          |   not signed in: 302 /login, then back here
-   |                          |   rd host must have a built-in gate
-   |                          |   user must match an allow rule
-   |<-- 302 https://app.example.com/orders?_gate_token=T --------|
-   | GET /orders?_gate_token=T|                                  |
-   |------------------------->| check: T unused, unexpired, for this host,
-   |                          | state cookie matches, dashboard session live
-   |<-- 302 /orders  Set-Cookie: __Host-gate_session (host only, 12h)
-   | GET /orders (cookie)     |                                  |
-   |------------------------->| check: session valid, user still allowed
-   |                          | -> app with X-User, X-Email, X-Name
-```
-
-- **Nobody gets in by default.** A built-in gate with no allow rule denies everyone, including admins.
-- **Denied users** see a plain 403 page that names the account they are signed in with, never a redirect loop. Fetch and XHR requests (`Accept: application/json` or `X-Requested-With`) get a `401` JSON body with a `login_url` instead of a redirect.
-- **Guests**: a user whose role only sees granted environments also needs a grant for the app's environment. Standalone domains have no environment, so they are closed to such users.
-- **Sign-in tokens** are single use, expire after `APP_GATE_TOKEN_TTL` (default `1m`), only work on the host they were issued for and only in the browser that started the sign-in. Only hashes are stored.
-- **Gate sessions** last `APP_GATE_SESSION_TTL` (default `12h`) and end early when the user signs out of the dashboard (or is signed out everywhere), is removed, loses access, or when you press **Sign out all visitors**. Access is re-checked on every request.
-- **Plain http** apps cannot use the built-in provider unless `APP_GATE_ALLOW_HTTP=true`; the session cookie is then not `Secure`.
-
-#### Access log
-
-Every decision is recorded with time, domain, user, decision, reason and client IP: `allowed`, `denied`, `login_redirect`, `token_issued`, `token_exchange` and `session_revoked`. Identical events in the same minute are stored as one row with a count, so busy apps do not grow the database per request. Rows older than `APP_GATE_EVENT_RETENTION` (default `30d`) are pruned hourly. Read it on the domain's auth gate card (**Show access log**), with `levelrail-cli domains auth-gate log`, or at `GET /api/v1/apps/{name}/domains/{domain}/auth-gate/events?since=24h` (needs `read:sensitive`).
 
 ## Domain redirects
 
 For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](/domain-traffic-controls).
 
-Route a domain to a different URL instead of proxying to a container. Use cases:
-
-- `www.example.com` to `example.com`
-- `old-domain.com` to `https://newapp.example.com/promo` (during a migration)
-
-This uses Caddy's `static_response` handler with a `Location` header and redirect status code. No new container, no new infrastructure.
-
-### Redirect status codes
-
-| Code | Type | Use case |
-| --- | --- | --- |
-| `301` | Permanent (default) | Renames, www-to-apex normalization, or expected permanent moves |
-| `302` | Temporary | Redirects you plan to undo (browsers and search engines don't cache these) |
-| `307` | Temporary, keeps the method | Like 302, but a POST stays a POST |
-| `308` | Permanent, keeps the method | Like 301, but a POST stays a POST |
-
-### Requirements
-
-- The domain must already be one of the app's domains. Add it first with `levelrail-cli apps domains add <app> www.example.com`.
-- Target must be an absolute URL, e.g. `https://example.com` or `https://newapp.example.com/promo`.
-- Bare hostnames, relative paths, and non-HTTP(S) schemes are rejected.
-
-A target that is only an origin, such as `https://example.com`, keeps the request path and query, so `www.example.com/pricing?plan=pro` goes to `https://example.com/pricing?plan=pro`. A target with its own path, query, or fragment always redirects to exactly that URL.
-
-### Interaction with maintenance mode
-
-If a domain has both a redirect and maintenance mode configured, maintenance mode takes precedence. The domain serves the maintenance response instead. Maintenance mode is an active operator decision; a redirect can be a stale leftover from an old migration. Clear maintenance mode to let a configured redirect take effect.
+A redirect sends a domain to a different URL instead of proxying to a container, for example `www.example.com` to `example.com`, or `old-domain.com` to `https://newapp.example.com/promo` during a migration. It uses Caddy's `static_response` handler with a `Location` header, so there is no new container or infrastructure.
 
 ### Configuration
 
@@ -612,6 +574,25 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/redirect
 
 </Tab>
 </Tabs>
+
+### Redirect status codes
+
+| Code | Type | Use case |
+| --- | --- | --- |
+| `301` | Permanent (default) | Renames, www-to-apex normalization, or expected permanent moves |
+| `302` | Temporary | Redirects you plan to undo (browsers and search engines don't cache these) |
+| `307` | Temporary, keeps the method | Like 302, but a POST stays a POST |
+| `308` | Permanent, keeps the method | Like 301, but a POST stays a POST |
+
+### Requirements
+
+- The domain must already be one of the app's domains. Add it first with `levelrail-cli apps domains add <app> www.example.com`.
+- Target must be an absolute URL, such as `https://example.com`. Bare hostnames, relative paths, and non-HTTP(S) schemes are rejected.
+- A target that is only an origin keeps the request path and query, so `www.example.com/pricing?plan=pro` goes to `https://example.com/pricing?plan=pro`. A target with its own path, query, or fragment always redirects to exactly that URL.
+
+<Note>
+If a domain has both a redirect and maintenance mode configured, maintenance mode wins and the domain serves the maintenance response. Clear maintenance mode to let a configured redirect take effect.
+</Note>
 
 ## Custom error pages
 
@@ -645,6 +626,133 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/error-pages
 </Tab>
 </Tabs>
 
+## Hide a domain from search engines
+
+Consoles, staging sites and internal tools should not show up in search results. Per domain, turn on **Hide from search engines** (domain editor), run `levelrail-cli domains search-visibility <app> <domain> --hide`, or `PUT /api/v1/apps/{name}/domains/{domain}/search-visibility` with `{"hidden": true}`. The ingress then:
+
+- sends `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet` on every response, overriding the app's own value;
+- answers `/robots.txt` itself with a disallow-all file, even if the app serves its own.
+
+<Note>
+This is a request that well-behaved crawlers honour. It is not access control: use basic auth or an [auth gate](#auth-gate-forward-auth) to keep people out. It takes effect on the next ingress reconcile pass, and a crawler that already indexed the page drops it on its next visit. Domains are open to search engines by default.
+</Note>
+
+## Auth gate (forward auth)
+
+An auth gate puts your own auth service (Authelia, oauth2-proxy, a small app of your own) in front of a domain. Before a request reaches your app, the ingress sends a `GET` to the auth service with the original request's `Cookie` and `Authorization` headers plus `X-Forwarded-Method`, `X-Forwarded-Uri`, `X-Forwarded-Host`, `X-Forwarded-Proto` and `X-Forwarded-For`. The request body is never sent.
+
+- **2xx**: the request goes on to your app, carrying only the response headers you listed in **copy headers**.
+- **Anything else**: the auth service's status, headers (including `Location` and `Set-Cookie`) and body go straight back to the visitor. A `302` to your login page just works.
+- **Auth service down or too slow**: the visitor gets a `502` (unreachable) or `504` (timed out). The request never reaches your app.
+
+The gate is off by default and runs after rate limiting, the WAF and basic auth, and before caching and the proxy to your app.
+
+<Warning>
+On every request to a gated domain, the ingress first deletes any copy of each copy header that the visitor sent. Your app only ever sees values that came from the auth service.
+</Warning>
+
+### Worked example
+
+Your auth service answers `GET /check`. For a signed-in visitor it returns `200` with `X-User`, `X-Email` and `X-Name`; otherwise it returns `302` to its login page.
+
+```bash
+levelrail-cli domains auth-gate set my-app app.example.com \
+  --url http://auth:9091 --check-path /check \
+  --copy-header X-User,X-Email,X-Name
+```
+
+A visitor who sends `X-User: admin` themselves gets that header removed before the check. If the visitor is signed in, the app receives the auth service's `X-User`, `X-Email` and `X-Name`.
+
+### Settings
+
+| Setting | Default | Notes |
+| --- | --- | --- |
+| Auth URL | required | `http` or `https`, a host, no username or password, no query. Internal addresses are allowed. A base path is kept: `https://auth.example.com/api` plus `/check` calls `/api/check`. |
+| Check path | `/` | Absolute path, may carry its own query. |
+| Copy headers | none | Up to 16 header names. `Cookie`, `Authorization`, `Host` and the `X-Forwarded-*` headers cannot be copied. |
+| Timeout | `APP_AUTH_GATE_TIMEOUT` (default `5s`) | Per domain override in seconds. The env var takes a Go duration (`3s`) or whole seconds. |
+
+<Tabs>
+<Tab title="Dashboard">
+
+Each domain's row in an app's **Domains** tab has an **Add an auth gate** control next to basic auth.
+
+</Tab>
+<Tab title="CLI">
+
+```bash
+levelrail-cli domains auth-gate get|set|clear <app> <domain>
+```
+
+</Tab>
+<Tab title="API">
+
+```text
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/auth-gate
+```
+
+Writes need the root ability, like basic auth.
+
+</Tab>
+</Tabs>
+
+### Built-in sign-in (SSO for apps)
+
+Instead of running your own auth service, set the provider to **Levelrail sign-in** (`builtin`). Visitors sign in with their account on this installation, through the same sign-in page as the dashboard (passwords, passkeys, two-factor), and only the users, teams and roles you allow get through. Your app receives `X-User` and `X-Email` (the email) and `X-Name` (the display name). Visitor-sent copies of those headers are always removed first.
+
+It needs the platform primary domain (**Settings > Ingress**), because visitors are sent to the dashboard to sign in. Signing in there with an OAuth provider (Google, GitHub) ends on the dashboard; open the app link again and it goes straight through.
+
+```bash
+levelrail-cli domains auth-gate set my-app app.example.com \
+  --provider builtin --allow alice@example.com --allow-team ops --allow-role support
+levelrail-cli domains auth-gate log my-app app.example.com --since 24h
+levelrail-cli domains auth-gate revoke my-app app.example.com
+```
+
+<Warning>
+Nobody gets in by default. A built-in gate with no allow rule denies everyone, including admins.
+</Warning>
+
+Behaviour worth knowing:
+
+- **Denied users** see a plain 403 page that names the account they are signed in with, never a redirect loop. Fetch and XHR requests (`Accept: application/json` or `X-Requested-With`) get a `401` JSON body with a `login_url` instead of a redirect.
+- **Guests**: a user whose role only sees granted environments also needs a grant for the app's environment. Standalone domains have no environment, so they are closed to such users.
+- **Plain http** apps cannot use the built-in provider unless `APP_GATE_ALLOW_HTTP=true`; the session cookie is then not `Secure`.
+
+| Variable | Default | Effect |
+|---|---|---|
+| `APP_GATE_TOKEN_TTL` | `1m` | Sign-in tokens are single use, only work on the host they were issued for and only in the browser that started the sign-in. Only hashes are stored. |
+| `APP_GATE_SESSION_TTL` | `12h` | Gate sessions end early when the user signs out of the dashboard (or is signed out everywhere), is removed, loses access, or when you press **Sign out all visitors**. Access is re-checked on every request. |
+| `APP_GATE_EVENT_RETENTION` | `30d` | Access log rows older than this are pruned hourly. |
+
+<Accordion title="Sign-in flow, step by step">
+
+```text
+browser                 app.example.com (ingress)         dashboard (cp.example.com)
+   | GET /orders              |                                  |
+   |------------------------->| check: no gate session           |
+   |<-- 302 cp/gate/login?rd=https://app.example.com/orders&state=S
+   |    Set-Cookie: __Host-gate_state=S (app host only)          |
+   | GET /gate/login?rd=...&state=S --------------------------->|
+   |                          |   not signed in: 302 /login, then back here
+   |                          |   rd host must have a built-in gate
+   |                          |   user must match an allow rule
+   |<-- 302 https://app.example.com/orders?_gate_token=T --------|
+   | GET /orders?_gate_token=T|                                  |
+   |------------------------->| check: T unused, unexpired, for this host,
+   |                          | state cookie matches, dashboard session live
+   |<-- 302 /orders  Set-Cookie: __Host-gate_session (host only, 12h)
+   | GET /orders (cookie)     |                                  |
+   |------------------------->| check: session valid, user still allowed
+   |                          | -> app with X-User, X-Email, X-Name
+```
+
+</Accordion>
+
+#### Access log
+
+Every decision is recorded with time, domain, user, decision, reason and client IP: `allowed`, `denied`, `login_redirect`, `token_issued`, `token_exchange` and `session_revoked`. Identical events in the same minute are stored as one row with a count, so busy apps do not grow the database per request. Read it on the domain's auth gate card (**Show access log**), with `levelrail-cli domains auth-gate log`, or at `GET /api/v1/apps/{name}/domains/{domain}/auth-gate/events?since=24h` (needs `read:sensitive`).
+
 ## Edge limits, client IPs and failover
 
 Every proxied domain gets the same edge policy, on by default. All of it is tuned by environment variables on the control plane (set them in the systemd unit or compose file); `APP_INGRESS_HARDENING=false` restores the bare Caddy config. `levelrail-cli doctor` shows the active policy in its `ingress_edge` check.
@@ -662,6 +770,7 @@ Every proxied domain gets the same edge policy, on by default. All of it is tune
 | `APP_INGRESS_PASSIVE_FAIL_DURATION` | `5s` | A replica that fails a connection is skipped for this long (pools of two or more replicas only). |
 | `APP_INGRESS_UNAVAILABLE_RETRY_AFTER` | `5` | Seconds in the `Retry-After` header of the friendly 503. |
 | `APP_INGRESS_GRACE_PERIOD` | `0` (`3s` with socket activation) | How long in-flight requests get to finish when the process stops. |
+| `APP_INGRESS_HOLD_WINDOW` | `10m` | How long a previously routed domain keeps its route and certificate while its app has no ready container (see [When a backend is down](#when-a-backend-is-down)). |
 
 There is no per-IP connection limit: Caddy has none built in. Put a firewall rule or the [WAF rate limit](#opt-in-waf-and-rate-limiting) in front if you need one.
 
@@ -674,7 +783,11 @@ APP_INGRESS_TRUSTED_PROXIES=203.0.113.0/24,private_ranges
 APP_INGRESS_CLIENT_IP_HEADERS=CF-Connecting-IP   # optional, defaults to X-Forwarded-For
 ```
 
-`private_ranges` expands to the RFC 1918 and loopback ranges. For a trusted peer, the client address is read from the header (right to left for `X-Forwarded-For`, so a forged left-most entry is ignored), appended to `X-Forwarded-For`, and sent to the app as `X-Real-IP`. Every app receives `X-Real-IP`, trusted proxy or not. Keep the list to the proxies you actually run: anything listed can claim any client address.
+`private_ranges` expands to the RFC 1918 and loopback ranges. For a trusted peer, the client address is read from the header (right to left for `X-Forwarded-For`, so a forged left-most entry is ignored), appended to `X-Forwarded-For`, and sent to the app as `X-Real-IP`. Every app receives `X-Real-IP`, trusted proxy or not.
+
+<Warning>
+Keep the trusted list to the proxies you actually run: anything listed can claim any client address.
+</Warning>
 
 ### Running behind a TLS proxy
 
@@ -701,52 +814,14 @@ LEVELRAIL_SOCKET_ACTIVATION=0 ./install.sh upgrade    # switch back
 
 An `upgrade` with the variable unset keeps whichever mode the install is already in. Docker Compose deployments are unchanged: they do not use systemd and bind the ports themselves.
 
-The installer writes `levelrail-http.socket` and `levelrail-https.socket`. The control plane detects the inherited sockets (`LISTEN_FDS`, named `http` and `https`) on its own; no extra setting is needed. While the process is down the kernel queues new connections, and the new process serves them when it is up, so visitors see a slower response instead of a refused connection. The measured numbers are on the [resilience](/resilience#ingress-availability-windows-measured) page, and the decision is in [ADR 025](https://github.com/glincker/levelrail/blob/main/adr/025-ingress-restart-gap-socket-activation.md). Trade-offs: HTTP/3 and ACME HTTP-01 are not available in this mode (TLS-ALPN-01 on 443 and DNS-01 still issue certificates), and the sockets stay open while the service is stopped on purpose.
+The installer writes `levelrail-http.socket` and `levelrail-https.socket`. The control plane detects the inherited sockets (`LISTEN_FDS`, named `http` and `https`) on its own; no extra setting is needed. While the process is down the kernel queues new connections, and the new process serves them when it is up, so visitors see a slower response instead of a refused connection. Measured numbers are on the [resilience](/resilience#ingress-availability-windows-measured) page, and the decision is in [ADR 025](https://github.com/glincker/levelrail/blob/main/adr/025-ingress-restart-gap-socket-activation.md).
 
-## Firewall: ports 80 and 443
+<Accordion title="Socket activation trade-offs">
 
-For public traffic and ACME's HTTP-01 challenge to work, your server must reach the internet on **ports 80 and 443**. Port 80 is also how Let's Encrypt validates domain ownership during ACME issuance. If it's blocked, issuance fails silently even if everything else is configured correctly.
+- HTTP/3 and ACME HTTP-01 are not available in this mode (TLS-ALPN-01 on 443 and DNS-01 still issue certificates).
+- The sockets stay open while the service is stopped on purpose.
 
-Common blockers:
-
-- Cloud provider firewall or security group
-- Home router with no port forwarding
-- `ufw` in default-deny state
-
-These block traffic from the outside while appearing fine from the server itself.
-
-### Automatic firewall setup
-
-`install.sh` has an opt-in flag to configure this for you:
-
-```bash
-LEVELRAIL_CONFIGURE_UFW=1 ./install.sh
-```
-
-This script will:
-
-1. Allow SSH
-2. Open `80/tcp`, `443/tcp` and `443/udp` (HTTP/3)
-3. Enable `ufw` (if not already active)
-
-If `ufw` was already active, it just adds the rules without re-enabling it.
-
-If you don't set this flag, open these ports manually via your cloud provider's firewall, `ufw`, or `iptables`.
-
-### Running on non-default ports
-
-If port 443 (or 80) is already taken on the host, most often by a second control-plane instance, set the ingress listen addresses instead of fighting over the defaults:
-
-```bash
-APP_INGRESS_HTTPS_ADDR=:8443 \
-APP_INGRESS_HTTP_ADDR=:8080 \
-./levelrail
-```
-
-- `APP_INGRESS_HTTPS_ADDR` (default `:443`): the embedded Caddy ingress's HTTPS listener.
-- `APP_INGRESS_HTTP_ADDR` (default `:80`): kept off port 80 only when real ACME (not the default self-signed issuer) is enabled for a non-wildcard domain, since that's the one path that can otherwise reach for a literal port 80 for its HTTP-01 challenge.
-
-`GET /api/v1/system/doctor`'s port checks follow whatever you set here, so a second instance running on `:8443`/`:8080` reports those ports as owned and available, not `:443`/`:80`.
+</Accordion>
 
 ## Raw TCP streams: forwarding a non-HTTP port
 
@@ -760,7 +835,11 @@ levelrail-cli apps streams delete my-postgres <id>
 
 The dashboard's app **Streams** tab lists, adds and removes forwards, and the API is `GET`/`POST`/`DELETE /api/v1/apps/{name}/streams`.
 
-Streams use the same embedded Caddy through its [`layer4`](https://github.com/mholt/caddy-l4) app, not a second proxy. Creating or deleting one restarts the app automatically, because Docker cannot add a published port to a running container.
+Streams use the same embedded Caddy through its [`layer4`](https://github.com/mholt/caddy-l4) app, not a second proxy.
+
+<Warning>
+Creating or deleting a stream restarts the app automatically, because Docker cannot add a published port to a running container.
+</Warning>
 
 Scope: TCP only, one stream per forward, no access lists, and no TLS termination on the stream (if the backend speaks TLS, that is between the client and the backend). Multi-app and load-balanced streams are not supported.
 
@@ -768,9 +847,9 @@ Scope: TCP only, one stream per forward, no access lists, and no TLS termination
 
 **Infrastructure > Traffic** in the dashboard (`GET /api/v1/network/proxy`, `read` ability) is a flat, one-row-per-domain table: which app a domain routes to, which node that app actually runs on, whether this control plane's own embedded ingress can reach it, its port, and TLS status and issuer.
 
-It exists for one otherwise-invisible failure: the embedded Caddy ingress reaches an app on another node only over the WireGuard mesh. If that path is down, the app's container can be perfectly healthy while its domain silently never routes. When the path is healthy the domain routes normally and shows **Reachable**. See [Multi-node: Routing to apps on remote nodes](/multi-node#routing-to-apps-on-remote-nodes) for how the mesh bind works.
+It exists for one otherwise-invisible failure: the embedded Caddy ingress reaches an app on another node only over the WireGuard mesh. If that path is down, the app's container can be perfectly healthy while its domain silently never routes. When the path is healthy the domain shows **Reachable**. See [Multi-node: Routing to apps on remote nodes](/multi-node#routing-to-apps-on-remote-nodes) for how the mesh bind works.
 
-This is the fastest way to spot it. A domain in that state shows an **Unreachable** badge with the reason (with a banner at the top of the page when any exist; `levelrail-cli nodes traffic` prints the same reason) instead of only turning up as a line in `GET /api/v1/doctor`'s report. Each unreachable row carries a **Move** button straight to the same move-with-volumes flow described in [Moving an app with its volumes](/multi-node#moving-an-app-with-its-volumes), or run the fix directly:
+A domain in the broken state shows an **Unreachable** badge with the reason (with a banner at the top of the page when any exist; `levelrail-cli nodes traffic` prints the same reason). Each unreachable row carries a **Move** button straight to the move-with-volumes flow described in [Moving an app with its volumes](/multi-node#moving-an-app-with-its-volumes), or run the fix directly:
 
 ```bash
 levelrail-cli apps set-node <app-name> <this control plane's own node id>
@@ -780,39 +859,18 @@ levelrail-cli apps clear-node <app-name>
 
 ## Reachable links, health summary and the domain doctor
 
-### `reachable_url`: the link that actually works
-
-`GET /api/v1/domains` returns `reachable_url` on every row, and `GET /api/v1/apps/{name}/environment-domains` returns a `reachability` map keyed by domain. The URL is `https://<domain>`, with the public HTTPS port only when one is configured (or 443 when TLS is terminated by a proxy in front). It is present only when the app is running and the domain is routable. Otherwise the field is omitted and `reachable_reason` says why:
-
-| Reason | Meaning |
-| --- | --- |
-| `held_back` | an app import staged the domain without routing it yet |
-| `stopped` | the app is stopped or has never run |
-| `not_routed` | no standard public link exists: the ingress listens on a non standard port and no public HTTPS port is set, or the domain is not in the app's active environment |
-| `not_resolving` | the last DNS check found no record, or a record pointing elsewhere (not counted when your own proxy fronts this server) |
-
-The dashboard builds its **Open site** button from this field only, so it never shows a `:8443` or sslip.io link that does not answer. `levelrail-cli domains list` prints it in the `URL` column.
-
-### Health summary
-
-`GET /api/v1/traffic/summary` (`read` ability) feeds the sidebar badge and the health strip. It counts domains as `live`, `propagating`, `waiting`, `needs_attention`, `not_set_up`, `paused` or `unknown`; certificates expiring within `APP_TRAFFIC_CERT_EXPIRY_DAYS` days (default 30), expired, or failing to renew; and the total needing attention. It never does network I/O: it reads stored state and the last DNS check result for each domain (a domain never checked since the control plane started counts as `unknown`), and it is cached for `APP_TRAFFIC_SUMMARY_CACHE_TTL` (default `5s`). Zone delegation and proxy route errors are listed in `unavailable` until those features report them.
-
-```json
-{
-  "generated_at": "2026-10-10T12:00:00Z",
-  "domains": {"total": 6, "live": 3, "waiting": 1, "propagating": 1, "needs_attention": 1, "not_set_up": 0, "paused": 0, "unknown": 0},
-  "certificates": {"window_days": 30, "expiring": 1, "expired": 0, "renewal_failing": 1},
-  "domains_not_resolving": 1,
-  "attention": 1,
-  "unavailable": ["zones_not_delegated", "routes_with_errors"]
-}
-```
-
-`levelrail-cli domains summary` prints the same counts.
-
 ### Domain doctor
 
-`POST /api/v1/apps/{name}/domains/{domain}/doctor` (`read` ability) runs ordered checks and returns one fix per problem:
+When a domain does not work, start here. `POST /api/v1/apps/{name}/domains/{domain}/doctor` (`read` ability) runs ordered checks and returns one fix per problem:
+
+```bash
+levelrail-cli domains doctor shop shop.example.com          # prioritised fix list
+levelrail-cli domains doctor shop shop.example.com --json
+```
+
+Each check has a `state` (`pass`, `warn`, `fail`, `skipped`, `unavailable`), a `tier` (1 blocks traffic, 2 blocks the certificate, 3 breaks soon, 4 hygiene) and, when it is not passing, a `fix` with a summary and at most one action (`request` with the API call, `link`, or `copy` with the exact record).
+
+<Accordion title="Every check the doctor runs">
 
 | Check | What it looks at |
 | --- | --- |
@@ -831,7 +889,7 @@ The dashboard builds its **Open site** button from this field only, so it never 
 | `hsts.risk` | an untrusted certificate behind HSTS (a header from the site, or a preloaded TLD such as `.dev`), which browsers refuse with `net::ERR_CERT_AUTHORITY_INVALID` and no way to click through |
 | `cert.renewal` | the stored certificate, stalled renewal, or the CA's last error with its next action |
 
-Each check has a `state` (`pass`, `warn`, `fail`, `skipped`, `unavailable`), a `tier` (1 blocks traffic, 2 blocks the certificate, 3 breaks soon, 4 hygiene) and, when it is not passing, a `fix` with a summary and at most one action (`request` with the API call, `link`, or `copy` with the exact record).
+Example response:
 
 ```json
 {
@@ -849,54 +907,53 @@ Each check has a `state` (`pass`, `warn`, `fail`, `skipped`, `unavailable`), a `
 }
 ```
 
-The doctor only connects to the domain when it resolves to this server's own public address (`APP_PUBLIC_HOST` or the detected public IPs, never the request's Host header), and it always dials that address, never an address taken from DNS. When the domain points elsewhere it runs the DNS checks only, sets `probed` to false and explains why in `probe_note`. The whole run is bounded by `APP_DOMAIN_DOCTOR_TIMEOUT` (default `20s`) and each probe by `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT` (default `4s`). Probes run from this server, so a NAT that does not hairpin can make a port check warn even when visitors connect fine.
+</Accordion>
 
-```bash
-levelrail-cli domains doctor shop shop.example.com          # prioritised fix list
-levelrail-cli domains doctor shop shop.example.com --json
+The doctor only connects to the domain when it resolves to this server's own public address (`APP_PUBLIC_HOST` or the detected public IPs, never the request's Host header), and it always dials that address, never an address taken from DNS. When the domain points elsewhere it runs the DNS checks only, sets `probed` to false and explains why in `probe_note`. The whole run is bounded by `APP_DOMAIN_DOCTOR_TIMEOUT` (default `20s`) and each probe by `APP_DOMAIN_DOCTOR_PROBE_TIMEOUT` (default `4s`).
+
+<Note>
+Probes run from this server, so a NAT that does not hairpin can make a port check warn even when visitors connect fine.
+</Note>
+
+### `reachable_url`: the link that actually works
+
+`GET /api/v1/domains` returns `reachable_url` on every row, and `GET /api/v1/apps/{name}/environment-domains` returns a `reachability` map keyed by domain. The URL is `https://<domain>`, with the public HTTPS port only when one is configured (or 443 when TLS is terminated by a proxy in front). It is present only when the app is running and the domain is routable. Otherwise the field is omitted and `reachable_reason` says why:
+
+| Reason | Meaning |
+| --- | --- |
+| `held_back` | an app import staged the domain without routing it yet |
+| `stopped` | the app is stopped or has never run |
+| `not_routed` | no standard public link exists: the ingress listens on a non standard port and no public HTTPS port is set, or the domain is not in the app's active environment |
+| `not_resolving` | the last DNS check found no record, or a record pointing elsewhere (not counted when your own proxy fronts this server) |
+
+The dashboard builds its **Open site** button from this field only, so it never shows a `:8443` or sslip.io link that does not answer. `levelrail-cli domains list` prints it in the `URL` column.
+
+### Health summary
+
+`GET /api/v1/traffic/summary` (`read` ability) feeds the sidebar badge and the health strip. `levelrail-cli domains summary` prints the same counts. It never does network I/O: it reads stored state and the last DNS check result for each domain, and is cached for `APP_TRAFFIC_SUMMARY_CACHE_TTL` (default `5s`).
+
+- Domains are counted as `live`, `propagating`, `waiting`, `needs_attention`, `not_set_up`, `paused` or `unknown` (a domain never checked since the control plane started is `unknown`).
+- Certificates are counted when expiring within `APP_TRAFFIC_CERT_EXPIRY_DAYS` days (default 30), expired, or failing to renew.
+- Zone delegation and proxy route errors are listed in `unavailable` until those features report them.
+
+<Accordion title="Example response">
+
+```json
+{
+  "generated_at": "2026-10-10T12:00:00Z",
+  "domains": {"total": 6, "live": 3, "waiting": 1, "propagating": 1, "needs_attention": 1, "not_set_up": 0, "paused": 0, "unknown": 0},
+  "certificates": {"window_days": 30, "expiring": 1, "expired": 0, "renewal_failing": 1},
+  "domains_not_resolving": 1,
+  "attention": 1,
+  "unavailable": ["zones_not_delegated", "routes_with_errors"]
+}
 ```
+
+</Accordion>
 
 ### Activity
 
 `GET /api/v1/domains/{domain}/activity` (`read` ability, limited to domains whose app you can see) returns the domain's recent changes from the audit log plus certificate issuance, renewals and the CA's last failure, newest first, as `{events: [{id, at, kind, title, detail, failed, action, actor: {type, name}, object: {type, id, href}}], next_cursor}`. Pass `next_cursor` back as `?before=` for the next page; `?limit=` and `?actions=` work as on the audit log. `levelrail-cli domains activity <domain>` prints it.
-
-## Walkthrough: your first domain
-
-This assumes the control plane is running and an app is deployed (see [Getting started](/getting-started)).
-
-<Steps>
-<Step title="Point DNS at your server">
-
-Create an A record for your domain pointing at the server's public IP, then check it from outside your network:
-
-```bash
-dig +short my-app.example.com
-```
-
-</Step>
-<Step title="Add the domain to your app">
-
-Run `levelrail-cli apps domains add my-app my-app.example.com`, add it on the app's **Domains** tab, or put it in `domains:` in `app.yaml` and redeploy.
-
-</Step>
-<Step title="Open ports 80 and 443">
-
-Open them in your cloud firewall, `ufw` or `iptables`, or re-run the installer with `LEVELRAIL_CONFIGURE_UFW=1 ./install.sh`. See [Firewall](#firewall-ports-80-and-443).
-
-</Step>
-<Step title="Get a trusted certificate">
-
-By default the domain is served over HTTPS with a self-signed certificate, so browsers warn. For a trusted one, enable ACME on the Domains page and follow the [ACME verification runbook](/acme-verification-runbook).
-
-</Step>
-<Step title="Test it">
-
-```bash
-curl -v https://my-app.example.com
-```
-
-</Step>
-</Steps>
 
 ## Next steps
 
@@ -924,6 +981,11 @@ Configure domains in `app.yaml`.
 <Card title="Multi-node" href="/multi-node">
 
 How ingress reaches apps on worker nodes.
+
+</Card>
+<Card title="Standalone domains" href="/standalone-domains">
+
+Proxy a domain to a port or URL with no app behind it.
 
 </Card>
 </CardGroup>

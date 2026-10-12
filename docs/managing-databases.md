@@ -3,31 +3,18 @@ title: "Managing databases"
 description: Create and manage databases with backups, point-in-time restore, and lifecycle management.
 ---
 
-Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API, and Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and the domain routing it does not need. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
-## Supported engines
+## What this covers
 
-`GET /api/v1/database-engines` serves the live list, which the dashboard's creation wizard and `databases create --interactive` read.
+Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
 
-| Engine | `--engine` | Default version | TLS |
-| --- | --- | --- | --- |
-| Postgres | `postgres` | `16` | on by default |
-| Redis | `redis` | `7` | on by default |
-| MySQL | `mysql` | `8` | no |
-| MongoDB | `mongodb` | `7` | no |
-| MariaDB | `mariadb` | `11` | no |
-| KeyDB | `keydb` | `latest` | no |
-| Dragonfly | `dragonfly` | `v1.27.1` | no |
-| ClickHouse | `clickhouse` | `24.8` | no |
-
-### Postgres with pgvector
-
-A Postgres version written `<major>-pgvector` (for example `17-pgvector`) runs the `pgvector/pgvector:pg17` image, so `CREATE EXTENSION vector` works. The engine stays `postgres`: backups, point-in-time restore, TLS, the database viewer, data copy, and the guarded major upgrade all behave the same. Only `<major>-pgvector` with Postgres 13 or newer is accepted; anything else mentioning pgvector is rejected with a `400`.
-
-```bash
-levelrail-cli databases create --name vec --engine postgres --version 17-pgvector
-```
-
-The dashboard create form has an **Include pgvector** checkbox for Postgres. The plain and pgvector images are built on different Debian releases, so a database cannot be switched between them with `set-version`: a glibc collation change can silently corrupt indexes. Move a plain database to pgvector with `databases major-upgrade <name> --version 17-pgvector` (dump and restore, works for the same major too), or restore a backup into a new database with `--version 17-pgvector`. Going from pgvector back to plain is refused.
+| I want to | Go to |
+| --- | --- |
+| Create a database | [Create a database](#create-a-database) |
+| Connect an app to it | [Attach a database to an app](#attach-a-database-to-an-app) |
+| Back it up or restore it | [Backups](#backups) |
+| Recover to an exact second | [Point-in-time restore](#point-in-time-restore-postgres-only) |
+| Reach it from my laptop | [Public access](#public-access) |
+| Upgrade the version | [Change the version](#change-the-version) |
 
 ## Create a database
 
@@ -66,6 +53,38 @@ A database's Overview tab shows its connection details, resource usage, and the 
 
 Omit `node_id` at creation to let the control plane pick a node, or pass it to choose one. To move an existing database, use `levelrail-cli databases set-node <name> <node-id>` (or `PUT /api/v1/databases/{name}/node`), and `databases clear-node <name>` to move it back to the local node. Placement is fleet-level infrastructure, so it needs the `root` ability.
 
+## Supported engines
+
+`GET /api/v1/database-engines` serves the live list, which the dashboard's creation wizard and `databases create --interactive` read.
+
+| Engine | `--engine` | Default version | TLS |
+| --- | --- | --- | --- |
+| Postgres | `postgres` | `16` | on by default |
+| Redis | `redis` | `7` | on by default |
+| MySQL | `mysql` | `8` | no |
+| MongoDB | `mongodb` | `7` | no |
+| MariaDB | `mariadb` | `11` | no |
+| KeyDB | `keydb` | `latest` | no |
+| Dragonfly | `dragonfly` | `v1.27.1` | no |
+| ClickHouse | `clickhouse` | `24.8` | no |
+
+### Postgres with pgvector
+
+A Postgres version written `<major>-pgvector` (for example `17-pgvector`) runs the `pgvector/pgvector:pg17` image, so `CREATE EXTENSION vector` works. The engine stays `postgres`: backups, point-in-time restore, TLS, the database viewer, data copy, and the guarded major upgrade all behave the same. Only `<major>-pgvector` with Postgres 13 or newer is accepted; anything else mentioning pgvector is rejected with a `400`.
+
+```bash
+levelrail-cli databases create --name vec --engine postgres --version 17-pgvector
+```
+
+The dashboard create form has an **Include pgvector** checkbox for Postgres.
+
+<Warning>
+The plain and pgvector images are built on different Debian releases, so a database cannot be switched between them with `set-version`: a glibc collation change can silently corrupt indexes.
+</Warning>
+
+- Plain to pgvector: `databases major-upgrade <name> --version 17-pgvector` (dump and restore, works for the same major too), or restore a backup into a new database with `--version 17-pgvector`.
+- pgvector back to plain: refused.
+
 ## Stop, start, and delete
 
 <Tabs>
@@ -74,7 +93,7 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 ```bash
 levelrail-cli databases stop <name>
 levelrail-cli databases start <name>
-levelrail-cli databases delete <name> [--force]
+levelrail-cli databases delete <name> [--force] [--delete-data --confirm NAME]
 ```
 
 </Tab>
@@ -91,7 +110,9 @@ DELETE /api/v1/databases/{name}[?force=true]
 
 Stop and start flip a `suspended` flag without touching the data volume. The reconciler removes or recreates the container against the same volume. On the dashboard they are one-click actions in the database page header, with no confirmation because neither is destructive.
 
-Delete stops and removes the container and the database record, but **keeps the data volume** (`db-<name>-data`) and every backup in your storage destination, so a mistaken delete never destroys data. If apps still connect to the database, delete is refused with a `409` naming them. The dashboard then offers "Delete anyway" and the CLI takes `--force`.
+Delete stops and removes the container and the database record, but **keeps the data volume** (`db-<name>-data`) and every backup in your storage destination, so a mistaken delete never destroys data. The CLI's `--delete-data` flag (with `--confirm NAME`) also destroys the data volumes.
+
+If apps still connect to the database, delete is refused with a `409` naming them. The dashboard then offers "Delete anyway" and the CLI takes `--force`.
 
 ### Reusing a name after a delete
 
@@ -106,180 +127,27 @@ Because the data volume survives, a new database with the same name would find t
 levelrail-cli databases create --name main --engine postgres --version 16 --existing-volume discard
 ```
 
+<Note>
 The check covers the control plane's own node only. A volume left on a remote node is not inspected, so remove that one yourself. Restore-as-new into a name with a leftover volume is refused the same way.
+</Note>
 
 ## Attach a database to an app
 
 Attach an already-created database to an app with `PUT /api/v1/apps/{name}/database`. The reconciler injects the resolved value as an env var the next time the app's container is created. You do not need an `app.yaml` env var of the form `{ from: "<database>.<field>" }` to do this.
 
+<Tip>
 This flow attaches at most one database per app. If an app needs more than one, or you want to see cross-node reachability before connecting, use [Connecting apps to databases](/connecting-apps-to-databases), a newer mechanism with no cap.
+</Tip>
 
-- `database_name`: required.
-- `env_var`: defaults to `DATABASE_URL`.
-- `field`: defaults to `url` (the full connection string). Other fields are `host`, `port`, `username`, `password`, and `database`.
+| Field | Required | Default | Notes |
+| --- | --- | --- | --- |
+| `database_name` | yes | none | The database to attach. |
+| `env_var` | no | `DATABASE_URL` | Env var the value is injected as. |
+| `field` | no | `url` | The full connection string. Others: `host`, `port`, `username`, `password`, `database`. |
 
 Fields are validated against the engine before saving: Redis, KeyDB, and Dragonfly do not support `username` or `database`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
 
-On the dashboard, use the **Database** card on the app's Overview page. Its "Env var / field options" disclosure covers anything past the URL default. It lives on the app's page because the attachment is the app's env var source.
-
-## TLS
-
-Postgres and Redis get TLS enabled automatically at creation, with a self-signed certificate generated once and persisted through the secrets mechanism. There is no operator toggle: TLS shows as on once a certificate exists for the database.
-
-Both engines have an "encrypt without verifying" mode in their standard connection URI (Postgres `sslmode=require`, Redis `rediss://`), which mainstream client libraries honor with no app-side change. When an app attaches to a TLS-enabled database, it automatically gets the TLS form of the connection string: `?sslmode=require` appended for Postgres, or `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this.
-
-The other engines connect in plaintext inside the Docker network.
-
-<Accordion title="Certificate details">
-The certificate is self-signed ECDSA P-256 and valid for ten years. It is never presented to a party that verifies its issuer, so rotation is a deliberate operator action, not forced by expiry. It is ECDSA rather than ed25519 because libpq's SCRAM channel binding fails on an ed25519 certificate, which broke `psql`, psycopg2, and other libpq clients using the default `sslmode=require` URL. Databases created by an earlier release get a new certificate and are recreated once, automatically, the next time the reconciler sees them.
-</Accordion>
-
-## Resource limits
-
-Set memory, CPU, swap, and CPU pin (`cpuset`) with `PUT /api/v1/databases/{name}/resources`. Omit a field or set it to `null` to clear it.
-
-```bash
-levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [--swap-memory SIZE] [--cpuset-cpus RANGE]
-levelrail-cli databases resource-recommendation <name>
-```
-
-When the database has a running container, new limits apply live. If the container does not exist yet or the node is unreachable, they apply on the next restart. The response's `resources_applied_live` field says which happened.
-
-`GET /api/v1/databases/{name}/resource-recommendation` suggests memory and CPU from the database's historical usage, the same feature as for apps. On the dashboard, the **Resources** tab has a recommendation card above the limits editor.
-
-## Public access
-
-By default a managed database is reachable only from the platform's Docker network. Public access binds it to a host port so you can use pgAdmin, TablePlus, RedisInsight, or similar tools from your machine.
-
-<Tabs>
-<Tab title="CLI">
-
-```bash
-levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]
-levelrail-cli databases public-access clear <name>
-```
-
-</Tab>
-<Tab title="API">
-
-```text
-PUT    /api/v1/databases/{name}/public-access
-DELETE /api/v1/databases/{name}/public-access
-```
-
-</Tab>
-<Tab title="Dashboard">
-
-Use the **Public access** card on the database's Overview tab. The port field is editable only before you enable access.
-
-</Tab>
-</Tabs>
-
-**Port selection**
-
-- Leave `port` at `0` or omit it to auto-assign the next free port.
-- A specific port must be in `1024-65535`. The reserved ports `80`, `443`, `8080`, and `9443` are rejected.
-- Changing the port while access is already enabled is a state change.
-
-**Bind address**
-
-`bind_address` chooses which interface the port binds to: `private` (loopback only, the default when omitted), `public` (every interface, an explicit opt-in), or a literal IP address. See [Bind addresses and exposure](/app-spec-reference#bind-addresses-and-exposure) for the full rules. A database that was already public before this field existed keeps that exposure (backfilled to `public`). Re-enabling later without an explicit `bind_address` uses the `private` default.
-
-Clearing public access reverts to internal-only, and the reconciler replaces the container without the host port binding on its next pass.
-
-<Warning>
-**Redis, KeyDB, and Dragonfly have no password**
-
-These engines run passwordless, so publishing the port gives unauthenticated read and write access to the whole dataset. The dashboard gates the toggle behind an "I understand this database has no password" checkbox for them. Postgres, MySQL, MongoDB, MariaDB, and ClickHouse get generated passwords and a plain, non-blocking warning.
-</Warning>
-
-## Change the version
-
-```bash
-levelrail-cli databases set-version <name> 16.4
-```
-
-`PUT /api/v1/databases/{name}/version` (dashboard: **Change** next to the version on the Overview tab) swaps the image tag. The container is stopped and recreated over the same data volume, so take a backup first.
-
-- **Postgres, MySQL, MariaDB, MongoDB, ClickHouse:** only minor and patch changes are accepted. A major change would corrupt the data directory and is refused with a `409`.
-- **Redis, KeyDB, Dragonfly:** a newer major is allowed, but never going back.
-- For a Postgres major upgrade, use the guarded flow below. For the other engines, back up, then restore into a new database on the new version with `backups restore-as-new`.
-
-To see which patch and minor releases are available, which fix CVEs, and to apply them automatically in a maintenance window with a backup first and an automatic revert, see [Database upgrades](/database-upgrades).
-
-Postgres 18 and newer images moved their default data directory outside the path this platform mounts, which would lose data on any container recreate. For version 18 and above the controller pins `PGDATA` back to the mounted path.
-
-### Postgres major version upgrade
-
-<Tabs>
-<Tab title="CLI">
-
-```bash
-levelrail-cli databases major-upgrade <name> --version 17 [--confirm NAME]
-levelrail-cli databases major-upgrades <name>
-levelrail-cli databases major-upgrade-rollback <name> <id> [--confirm NAME]
-levelrail-cli databases major-upgrade-discard <name> <id>
-levelrail-cli databases upgrades [<name>]
-levelrail-cli databases upgrade-policy <name>|--platform [--auto off|patch|minor] [--window CRON] [--duration 2h] [--timezone TZ]
-levelrail-cli databases upgrade-now <name> <version> [--confirm NAME]
-```
-
-</Tab>
-<Tab title="Dashboard">
-
-Use the **Major version upgrade** card on a Postgres database's Overview tab. Type the database name to enable the button.
-
-</Tab>
-</Tabs>
-
-The database is **offline** while this runs, and the data files are never converted in place. The phases, in order:
-
-<Steps>
-<Step title="Preflight">
-
-Checks free space in the data directory and that the target image can be pulled. A version that does not exist fails here, before any downtime.
-
-</Step>
-<Step title="Suspend">
-
-The database stops cleanly.
-
-</Step>
-<Step title="Snapshot">
-
-The data volume is copied to `db-<name>-data-pre<major>-<id>`.
-
-</Step>
-<Step title="Dump">
-
-A temporary container on the old version starts on that snapshot, which proves the snapshot boots and makes the dump consistent. `pg_dump` and a per-table row count are taken from it. A dump without the pg_dump completion marker is refused.
-
-</Step>
-<Step title="Wipe, upgrade, restore">
-
-The live volume is emptied, the version is changed, the reconciler starts the new version, and the dump is replayed in a single transaction.
-
-</Step>
-<Step title="Verify">
-
-The server must report the target major, and every public table's row count must equal the old cluster's.
-
-</Step>
-</Steps>
-
-A failure before the wipe unsuspends the database on the old version and removes the snapshot, so nothing changed. A failure after the wipe (a restore error, a count mismatch, the new version not starting) **rolls back automatically**: the snapshot is copied back, the old version is restored, and the attempt is marked `rolled_back`. If a control plane restart interrupts an upgrade, it settles the attempt the same way on the next start. If a rollback itself fails, the attempt is marked `failed` with the snapshot volume's name, and that volume is left intact.
-
-After a success the snapshot is kept so `major-upgrade-rollback` can undo the upgrade (every write since is lost) until you run `major-upgrade-discard` to free the disk. A recorded snapshot volume is protected from orphaned volume cleanup.
-
-Limits:
-
-- Roles other than the database's own user are not part of a single-database dump. Objects owned by another role make the restore fail, which rolls back safely, but the upgrade cannot proceed until that ownership is changed.
-- Only the `public` schema's tables are counted in verification, matching what restore recreates.
-- It is refused while point-in-time restore is enabled, because its base backups and WAL cannot be replayed on another major version. Disable it, upgrade, enable it again, and take a new base backup. Downgrades across a major are refused.
-- It needs free disk for the snapshot (the data volume's size again) on the Docker host, plus the dump file in the data directory. A copy that runs out of disk fails before the wipe and changes nothing.
-- Apps connected to the database see downtime for the whole run.
-- Each wait (a container stopping, starting, accepting connections) is bounded by `APP_MAJOR_UPGRADE_WAIT`, a Go duration defaulting to 5 minutes. Raise it for a large cluster that needs longer crash recovery.
-- Postgres only. The other engines use backup and restore-as-new.
+On the dashboard, use the **Database** card on the app's Overview page. Its "Env var / field options" disclosure covers anything past the URL default.
 
 ## Backups
 
@@ -488,6 +356,166 @@ Limits of the remote copy:
 - An object that exists at the same size is never re-uploaded. After a total host loss, a re-initialised cluster reuses segment names, and the bucket keeps the original lineage, which is what a restore wants.
 - If the bucket is unreachable, shipping fails visibly in `pitr status` and local WAL keeps accumulating on the host.
 
+## Public access
+
+By default a managed database is reachable only from the platform's Docker network. Public access binds it to a host port so you can use pgAdmin, TablePlus, RedisInsight, or similar tools from your machine.
+
+<Warning>
+**Redis, KeyDB, and Dragonfly have no password**
+
+These engines run passwordless, so publishing the port gives unauthenticated read and write access to the whole dataset. The dashboard gates the toggle behind an "I understand this database has no password" checkbox for them. Postgres, MySQL, MongoDB, MariaDB, and ClickHouse get generated passwords and a plain, non-blocking warning.
+</Warning>
+
+<Tabs>
+<Tab title="CLI">
+
+```bash
+levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]
+levelrail-cli databases public-access clear <name>
+```
+
+</Tab>
+<Tab title="API">
+
+```text
+PUT    /api/v1/databases/{name}/public-access
+DELETE /api/v1/databases/{name}/public-access
+```
+
+</Tab>
+<Tab title="Dashboard">
+
+Use the **Public access** card on the database's Overview tab. The port field is editable only before you enable access.
+
+</Tab>
+</Tabs>
+
+**Port selection**
+
+- Leave `port` at `0` or omit it to auto-assign the next free port.
+- A specific port must be in `1024-65535`. The reserved ports `80`, `443`, `8080`, and `9443` are rejected.
+- Changing the port while access is already enabled is a state change.
+
+**Bind address**
+
+`bind_address` chooses which interface the port binds to: `private` (loopback only, the default when omitted), `public` (every interface, an explicit opt-in), or a literal IP address. See [Bind addresses and exposure](/app-spec-reference#bind-addresses-and-exposure) for the full rules. A database that was already public before this field existed keeps that exposure (backfilled to `public`). Re-enabling later without an explicit `bind_address` uses the `private` default.
+
+Clearing public access reverts to internal-only, and the reconciler replaces the container without the host port binding on its next pass.
+
+## Resource limits
+
+Set memory, CPU, swap, and CPU pin (`cpuset`) with `PUT /api/v1/databases/{name}/resources`. Omit a field or set it to `null` to clear it.
+
+```bash
+levelrail-cli databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [--swap-memory SIZE] [--cpuset-cpus RANGE]
+levelrail-cli databases resource-recommendation <name>
+```
+
+When the database has a running container, new limits apply live. If the container does not exist yet or the node is unreachable, they apply on the next restart. The response's `resources_applied_live` field says which happened.
+
+`GET /api/v1/databases/{name}/resource-recommendation` suggests memory and CPU from the database's historical usage, the same feature as for apps. On the dashboard, the **Resources** tab has a recommendation card above the limits editor.
+
+## TLS
+
+Postgres and Redis get TLS enabled automatically at creation, with a self-signed certificate generated once and persisted through the secrets mechanism. There is no operator toggle: TLS shows as on once a certificate exists for the database. The other engines connect in plaintext inside the Docker network.
+
+Both engines have an "encrypt without verifying" mode in their standard connection URI (Postgres `sslmode=require`, Redis `rediss://`), which mainstream client libraries honor with no app-side change. When an app attaches to a TLS-enabled database, it automatically gets the TLS form of the connection string: `?sslmode=require` appended for Postgres, or `rediss://` on the TLS-only port for Redis. Nothing in `app.yaml` opts into this.
+
+<Accordion title="Certificate details">
+The certificate is self-signed ECDSA P-256 and valid for ten years. It is never presented to a party that verifies its issuer, so rotation is a deliberate operator action, not forced by expiry. It is ECDSA rather than ed25519 because libpq's SCRAM channel binding fails on an ed25519 certificate, which broke `psql`, psycopg2, and other libpq clients using the default `sslmode=require` URL. Databases created by an earlier release get a new certificate and are recreated once, automatically, the next time the reconciler sees them.
+</Accordion>
+
+## Change the version
+
+```bash
+levelrail-cli databases set-version <name> 16.4
+```
+
+`PUT /api/v1/databases/{name}/version` (dashboard: **Change** next to the version on the Overview tab) swaps the image tag. The container is stopped and recreated over the same data volume, so take a backup first.
+
+| Engine | What is accepted |
+| --- | --- |
+| Postgres, MySQL, MariaDB, MongoDB, ClickHouse | Only minor and patch changes. A major change would corrupt the data directory and is refused with a `409`. |
+| Redis, KeyDB, Dragonfly | A newer major is allowed, but never going back. |
+
+For a Postgres major upgrade, use the guarded flow below. For the other engines, back up, then restore into a new database on the new version with `backups restore-as-new`. To see which patch and minor releases are available, which fix CVEs, and to apply them automatically in a maintenance window with a backup first and an automatic revert, see [Database upgrades](/database-upgrades).
+
+<Note>
+Postgres 18 and newer images moved their default data directory outside the path this platform mounts, which would lose data on any container recreate. For version 18 and above the controller pins `PGDATA` back to the mounted path.
+</Note>
+
+### Postgres major version upgrade
+
+<Tabs>
+<Tab title="CLI">
+
+```bash
+levelrail-cli databases major-upgrade <name> --version 17 [--confirm NAME]
+levelrail-cli databases major-upgrades <name>
+levelrail-cli databases major-upgrade-rollback <name> <id> [--confirm NAME]
+levelrail-cli databases major-upgrade-discard <name> <id>
+levelrail-cli databases upgrades [<name>]
+levelrail-cli databases upgrade-policy <name>|--platform [--auto off|patch|minor] [--window CRON] [--duration 2h] [--timezone TZ]
+levelrail-cli databases upgrade-now <name> <version> [--confirm NAME]
+```
+
+</Tab>
+<Tab title="Dashboard">
+
+Use the **Major version upgrade** card on a Postgres database's Overview tab. Type the database name to enable the button.
+
+</Tab>
+</Tabs>
+
+The database is **offline** while this runs, and the data files are never converted in place. The phases, in order:
+
+<Steps>
+<Step title="Preflight">
+
+Checks free space in the data directory and that the target image can be pulled. A version that does not exist fails here, before any downtime.
+
+</Step>
+<Step title="Suspend">
+
+The database stops cleanly.
+
+</Step>
+<Step title="Snapshot">
+
+The data volume is copied to `db-<name>-data-pre<major>-<id>`.
+
+</Step>
+<Step title="Dump">
+
+A temporary container on the old version starts on that snapshot, which proves the snapshot boots and makes the dump consistent. `pg_dump` and a per-table row count are taken from it. A dump without the pg_dump completion marker is refused.
+
+</Step>
+<Step title="Wipe, upgrade, restore">
+
+The live volume is emptied, the version is changed, the reconciler starts the new version, and the dump is replayed in a single transaction.
+
+</Step>
+<Step title="Verify">
+
+The server must report the target major, and every public table's row count must equal the old cluster's.
+
+</Step>
+</Steps>
+
+A failure before the wipe unsuspends the database on the old version and removes the snapshot, so nothing changed. A failure after the wipe (a restore error, a count mismatch, the new version not starting) **rolls back automatically**: the snapshot is copied back, the old version is restored, and the attempt is marked `rolled_back`. If a control plane restart interrupts an upgrade, it settles the attempt the same way on the next start. If a rollback itself fails, the attempt is marked `failed` with the snapshot volume's name, and that volume is left intact.
+
+After a success the snapshot is kept so `major-upgrade-rollback` can undo the upgrade (every write since is lost) until you run `major-upgrade-discard` to free the disk. A recorded snapshot volume is protected from orphaned volume cleanup.
+
+Limits:
+
+- Roles other than the database's own user are not part of a single-database dump. Objects owned by another role make the restore fail, which rolls back safely, but the upgrade cannot proceed until that ownership is changed.
+- Only the `public` schema's tables are counted in verification, matching what restore recreates.
+- It is refused while point-in-time restore is enabled, because its base backups and WAL cannot be replayed on another major version. Disable it, upgrade, enable it again, and take a new base backup. Downgrades across a major are refused.
+- It needs free disk for the snapshot (the data volume's size again) on the Docker host, plus the dump file in the data directory. A copy that runs out of disk fails before the wipe and changes nothing.
+- Apps connected to the database see downtime for the whole run.
+- Each wait (a container stopping, starting, accepting connections) is bounded by `APP_MAJOR_UPGRADE_WAIT`, a Go duration defaulting to 5 minutes. Raise it for a large cluster that needs longer crash recovery.
+- Postgres only. The other engines use backup and restore-as-new.
+
 ## Engine notes
 
 <AccordionGroup>
@@ -629,7 +657,7 @@ levelrail-cli databases create --interactive
 levelrail-cli databases list
 levelrail-cli databases get <name>
 levelrail-cli databases status <name>
-levelrail-cli databases delete <name> [--force]
+levelrail-cli databases delete <name> [--force] [--delete-data --confirm NAME]
 levelrail-cli databases stop <name>
 levelrail-cli databases start <name>
 levelrail-cli databases set-version <name> <version>
@@ -699,6 +727,11 @@ Connect an app to several databases and read reachability badges.
 Retention, volume backups, and registry credentials.
 
 </Card>
+<Card title="Database upgrades" href="/database-upgrades">
+
+Patch and minor upgrades in a maintenance window, with backup and revert.
+
+</Card>
 <Card title="Identity and access" href="/identity-and-access">
 
 How the `write:sensitive` and `root` abilities are granted.
@@ -707,6 +740,11 @@ How the `write:sensitive` and `root` abilities are granted.
 <Card title="App spec reference" href="/app-spec-reference">
 
 Bind address rules and `{ from: "<database>.<field>" }` env vars.
+
+</Card>
+<Card title="Database viewer" href="/database-viewer">
+
+Browse schemas and rows, or run read-only SQL.
 
 </Card>
 </CardGroup>

@@ -5,7 +5,7 @@ description: Verify real ACME certificate issuance against a live public domain 
 
 ACME issuer configuration, settings toggles, and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and end-to-end tests against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that verification.
 
-A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
+A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslipio-hostnames-and-one-click-https).
 ## Prerequisites
 
 - A domain you control, with access to create an `A` or `AAAA` record.
