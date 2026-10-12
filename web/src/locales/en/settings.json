@@ -736,5 +736,106 @@
       "title": "No email backend is configured",
       "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
     }
+  },
+  "channelsPage": {
+    "eyebrow": "Notifications",
+    "title": "Notification channels",
+    "description": "Connect Slack, Discord, Telegram, a generic webhook, or email once, then attach it from any app's deploy notifications.",
+    "help": "Notifications guide",
+    "enabledCount_one": "{{count}} channel enabled",
+    "enabledCount_other": "{{count}} channels enabled",
+    "empty": {
+      "title": "No notification channels connected",
+      "body": "Connect Slack, Discord, Telegram, a generic webhook, or email once here, then attach it from any app instead of retyping a URL."
+    },
+    "banner": {
+      "none": "Nobody will hear about a failed deploy",
+      "noneBody": "No notification channel is connected, so deploy results and alerts only show up in the dashboard. Connect one to get them where you already are.",
+      "allOff": "Every channel is disabled",
+      "allOffBody_one": "Your {{count}} connected channel is switched off, so nothing is being delivered. Enable it from its edit dialog.",
+      "allOffBody_other": "Your {{count}} connected channels are switched off, so nothing is being delivered. Enable one from its edit dialog."
+    },
+    "table": {
+      "label": "Notification channels",
+      "name": "Name",
+      "type": "Type",
+      "destination": "Destination",
+      "status": "Status",
+      "connected": "Connected",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "test": "Test",
+      "sending": "Sending...",
+      "testOk": "Test notification sent.",
+      "testFailed": "Test notification failed."
+    }
+  },
+  "registryPage": {
+    "eyebrow": "Builds",
+    "title": "Registry credentials",
+    "description": "Usernames and passwords for pulling private images with build.type: image, referenced by name from app.yaml.",
+    "help": "Registry guide",
+    "count_one": "{{count}} credential",
+    "count_other": "{{count}} credentials",
+    "empty": {
+      "title": "No registry credentials",
+      "body": "Add a username and password (or access token) to pull private images from a container registry, referenced by name from app.yaml's build.registryCredential field."
+    },
+    "banner": {
+      "expired_one": "{{count}} registry credential has expired",
+      "expired_other": "{{count}} registry credentials have expired",
+      "expiredBody": "Private image pulls using an expired credential will fail on the next deploy. Replace it before then.",
+      "expiring_one": "{{count}} registry credential expires soon",
+      "expiring_other": "{{count}} registry credentials expire soon",
+      "expiringBody": "Rotate it at the registry and update it here before the date shown in the table."
+    },
+    "table": {
+      "label": "Registry credentials",
+      "name": "Name",
+      "host": "Registry host",
+      "username": "Username",
+      "added": "Added",
+      "expiryHeader": "Expiry",
+      "noExpiry": "No expiry set",
+      "expiry": {
+        "healthy": "Healthy",
+        "expiring_soon": "Expiring soon",
+        "expired": "Expired"
+      },
+      "expiredOn": "Expired {{date}}",
+      "expiresOn": "Expires {{date}}",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "\"{{name}}\" authenticated successfully.",
+      "testFailed": "\"{{name}}\" failed to authenticate."
+    }
+  },
+  "backupTargetsPage": {
+    "eyebrow": "Storage",
+    "title": "Backup targets",
+    "description": "S3-compatible buckets connected as backup destinations for managed databases. AWS S3, Cloudflare R2, or any other S3-compatible endpoint.",
+    "help": "Backups guide",
+    "count_one": "{{count}} target",
+    "count_other": "{{count}} targets",
+    "empty": {
+      "title": "No backup targets connected",
+      "body": "Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+    },
+    "banner": {
+      "title": "No backup target configured",
+      "body": "Managed databases have nowhere to send backups until you connect an S3-compatible bucket. Add one before you need a restore."
+    },
+    "table": {
+      "label": "Backup targets",
+      "name": "Name",
+      "provider": "Provider",
+      "bucket": "Bucket",
+      "region": "Region / endpoint",
+      "connected": "Connected",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "\"{{name}}\" connected successfully.",
+      "testFailed": "\"{{name}}\" failed to connect."
+    }
   }
 }

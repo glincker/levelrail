@@ -1,11 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { PackageIcon } from '@phosphor-icons/react/dist/ssr'
 import { registryCredentialListQueryOptions } from '../../queries/registryCredentials'
 import { RegistryCredentialTable } from '../../components/RegistryCredentialTable'
 import { CreateRegistryCredentialDialog } from '../../components/CreateRegistryCredentialDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, same reasoning settings/backup-targets.tsx's own doc
@@ -20,29 +23,57 @@ export const Route = createFileRoute('/settings/registry-credentials')({
 })
 
 function RegistryCredentialsPage() {
+  const { t } = useTranslation('settings')
   const { data: credentials } = useSuspenseQuery(
     registryCredentialListQueryOptions(),
   )
+  const expired = credentials.filter((c) => c.expiry_status === 'expired')
+  const expiring = credentials.filter(
+    (c) => c.expiry_status === 'expiring_soon',
+  )
+
+  let banner = null
+  if (expired.length > 0) {
+    banner = (
+      <Banner
+        variant="critical"
+        title={t('registryPage.banner.expired', { count: expired.length })}
+      >
+        {t('registryPage.banner.expiredBody')}
+      </Banner>
+    )
+  } else if (expiring.length > 0) {
+    banner = (
+      <Banner
+        variant="warning"
+        title={t('registryPage.banner.expiring', { count: expiring.length })}
+      >
+        {t('registryPage.banner.expiringBody')}
+      </Banner>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <PackageIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title="Registry credentials"
-            description="Usernames and passwords for pulling private images with build.type: image, referenced by name from app.yaml."
-            actions={<CreateRegistryCredentialDialog />}
-          />
-        </div>
-      </div>
+    <PageTemplate
+      icon={<PackageIcon />}
+      eyebrow={t('registryPage.eyebrow')}
+      title={t('registryPage.title')}
+      description={t('registryPage.description')}
+      helpPath="/templates-and-registry"
+      helpLabel={t('registryPage.help')}
+      status={
+        <Badge variant={credentials.length > 0 ? 'success' : 'muted'}>
+          {t('registryPage.count', { count: credentials.length })}
+        </Badge>
+      }
+      actions={<CreateRegistryCredentialDialog />}
+      banners={banner}
+    >
       <RegistryCredentialTable
         credentials={credentials}
         action={<CreateRegistryCredentialDialog />}
       />
-    </div>
+    </PageTemplate>
   )
 }
 

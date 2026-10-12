@@ -1,19 +1,16 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CloudArrowUpIcon,
   PlugsConnectedIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
@@ -31,6 +28,7 @@ function formatDate(iso: string): string {
 // identical "verify a stored credential by actually using it, once, on
 // demand" action against a different resource.
 function TestButton({ target }: { target: BackupTarget }) {
+  const { t } = useTranslation('settings')
   const testTarget = useTestBackupTarget()
   return (
     <Button
@@ -42,13 +40,17 @@ function TestButton({ target }: { target: BackupTarget }) {
         testTarget.mutate(target.id, {
           onSuccess: () => {
             toast.add({
-              title: `"${target.name}" connected successfully.`,
+              title: t('backupTargetsPage.table.testOk', {
+                name: target.name,
+              }),
               type: 'success',
             })
           },
           onError: (error) => {
             toast.add({
-              title: `"${target.name}" failed to connect.`,
+              title: t('backupTargetsPage.table.testFailed', {
+                name: target.name,
+              }),
               description: error.message,
               type: 'error',
             })
@@ -57,7 +59,9 @@ function TestButton({ target }: { target: BackupTarget }) {
       }}
     >
       <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
-      {testTarget.isPending ? 'Testing...' : 'Test connection'}
+      {testTarget.isPending
+        ? t('backupTargetsPage.table.testing')
+        : t('backupTargetsPage.table.test')}
     </Button>
   )
 }
@@ -74,79 +78,89 @@ export function BackupTargetTable({
   targets: BackupTarget[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('settings')
+
   if (targets.length === 0) {
     return (
       <EmptyState
         className="py-12"
         icon={<CloudArrowUpIcon className="size-5" />}
-        title="No backup targets connected"
-        description="Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+        title={t('backupTargetsPage.empty.title')}
+        description={t('backupTargetsPage.empty.body')}
         action={action}
       />
     )
   }
 
+  const columns: ResponsiveColumn<BackupTarget>[] = [
+    {
+      id: 'name',
+      header: t('backupTargetsPage.table.name'),
+      primary: true,
+      cell: (target) => (
+        <span className="font-medium text-foreground">{target.name}</span>
+      ),
+    },
+    {
+      id: 'provider',
+      header: t('backupTargetsPage.table.provider'),
+      cell: (target) => (
+        <Badge variant="outline" className="gap-1.5">
+          <BrandLogoBadge
+            logoId={logoIdForBackupTarget(target.provider, target.endpoint)}
+            className="size-4 p-px"
+          />
+          {PROVIDER_LABEL[target.provider]}
+        </Badge>
+      ),
+    },
+    {
+      id: 'bucket',
+      header: t('backupTargetsPage.table.bucket'),
+      cell: (target) => (
+        <span className="text-muted-foreground">{target.bucket}</span>
+      ),
+    },
+    {
+      id: 'region',
+      header: t('backupTargetsPage.table.region'),
+      priority: 2,
+      cell: (target) =>
+        target.region || target.endpoint ? (
+          <div className="flex flex-col gap-0.5 text-muted-foreground">
+            {target.region ? <span>{target.region}</span> : null}
+            {target.endpoint ? (
+              <span className="text-xs break-all">{target.endpoint}</span>
+            ) : null}
+          </div>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+    },
+    {
+      id: 'connected',
+      header: t('backupTargetsPage.table.connected'),
+      priority: 3,
+      cell: (target) => (
+        <span className="text-muted-foreground">
+          {formatDate(target.created_at)}
+        </span>
+      ),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Provider</TableHead>
-            <TableHead>Bucket</TableHead>
-            <TableHead>Region / endpoint</TableHead>
-            <TableHead>Connected</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {targets.map((target) => (
-            <TableRow key={target.id}>
-              <TableCell className="font-medium text-foreground">
-                {target.name}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="gap-1.5">
-                  <BrandLogoBadge
-                    logoId={logoIdForBackupTarget(
-                      target.provider,
-                      target.endpoint,
-                    )}
-                    className="size-4 p-px"
-                  />
-                  {PROVIDER_LABEL[target.provider]}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {target.bucket}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {target.region || target.endpoint ? (
-                  <div className="flex flex-col gap-0.5">
-                    {target.region ? <span>{target.region}</span> : null}
-                    {target.endpoint ? (
-                      <span className="text-xs break-all">
-                        {target.endpoint}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : (
-                  '-'
-                )}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(target.created_at)}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <TestButton target={target} />
-                  <DeleteBackupTargetDialog target={target} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={targets}
+      columns={columns}
+      getRowId={(target) => target.id}
+      ariaLabel={t('backupTargetsPage.table.label')}
+      renderActions={(target) => (
+        <div className="flex flex-wrap justify-end gap-2">
+          <TestButton target={target} />
+          <DeleteBackupTargetDialog target={target} />
+        </div>
+      )}
+    />
   )
 }
