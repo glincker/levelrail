@@ -327,7 +327,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field>
+                      <Field data-invalid={formState.errors.smtpHost ? true : undefined}>
                         <FieldLabel htmlFor="smtp-host">
                           {t('email.smtp.host')}
                         </FieldLabel>
@@ -335,10 +335,11 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="smtp-host"
                           {...register('smtpHost')}
                           placeholder="smtp.example.com"
+                          aria-invalid={!!formState.errors.smtpHost}
                         />
                         <FieldError errors={[formState.errors.smtpHost]} />
                       </Field>
-                      <Field>
+                      <Field data-invalid={formState.errors.smtpPort ? true : undefined}>
                         <FieldLabel htmlFor="smtp-port">
                           {t('email.smtp.port')}
                         </FieldLabel>
@@ -347,19 +348,21 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           type="number"
                           {...register('smtpPort')}
                           placeholder="587"
+                          aria-invalid={!!formState.errors.smtpPort}
                         />
                         <FieldError errors={[formState.errors.smtpPort]} />
                       </Field>
-                      <Field>
+                      <Field data-invalid={formState.errors.smtpUsername ? true : undefined}>
                         <FieldLabel htmlFor="smtp-username">
                           {t('email.smtp.username')}
                         </FieldLabel>
                         <Input
                           id="smtp-username"
                           {...register('smtpUsername')}
+                          aria-invalid={!!formState.errors.smtpUsername}
                         />
                       </Field>
-                      <Field>
+                      <Field data-invalid={formState.errors.smtpFrom ? true : undefined}>
                         <FieldLabel htmlFor="smtp-from">
                           {t('email.smtp.from')}
                         </FieldLabel>
@@ -367,11 +370,12 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="smtp-from"
                           {...register('smtpFrom')}
                           placeholder="no-reply@example.com"
+                          aria-invalid={!!formState.errors.smtpFrom}
                         />
                         <FieldError errors={[formState.errors.smtpFrom]} />
                       </Field>
                     </div>
-                    <Field>
+                    <Field data-invalid={formState.errors.smtpPassword ? true : undefined}>
                       <FieldLabel htmlFor="smtp-password">
                         {t('email.smtp.password')}
                       </FieldLabel>
@@ -379,6 +383,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                         id="smtp-password"
                         type="password"
                         {...register('smtpPassword')}
+                        aria-invalid={!!formState.errors.smtpPassword}
                       />
                       <FieldDescription>
                         {settings.smtp_password_set
@@ -394,7 +399,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       {t('email.ses.label')}
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field>
+                      <Field data-invalid={formState.errors.sesRegion ? true : undefined}>
                         <FieldLabel htmlFor="ses-region">
                           {t('email.ses.region')}
                         </FieldLabel>
@@ -402,22 +407,24 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="ses-region"
                           {...register('sesRegion')}
                           placeholder="us-east-1"
+                          aria-invalid={!!formState.errors.sesRegion}
                         />
                         <FieldError errors={[formState.errors.sesRegion]} />
                       </Field>
-                      <Field>
+                      <Field data-invalid={formState.errors.sesAccessKeyId ? true : undefined}>
                         <FieldLabel htmlFor="ses-access-key-id">
                           {t('email.ses.accessKeyId')}
                         </FieldLabel>
                         <Input
                           id="ses-access-key-id"
                           {...register('sesAccessKeyId')}
+                          aria-invalid={!!formState.errors.sesAccessKeyId}
                         />
                         <FieldError
                           errors={[formState.errors.sesAccessKeyId]}
                         />
                       </Field>
-                      <Field>
+                      <Field data-invalid={formState.errors.sesFrom ? true : undefined}>
                         <FieldLabel htmlFor="ses-from">
                           {t('email.ses.from')}
                         </FieldLabel>
@@ -425,11 +432,12 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="ses-from"
                           {...register('sesFrom')}
                           placeholder="no-reply@example.com"
+                          aria-invalid={!!formState.errors.sesFrom}
                         />
                         <FieldError errors={[formState.errors.sesFrom]} />
                       </Field>
                     </div>
-                    <Field>
+                    <Field data-invalid={formState.errors.sesSecretAccessKey ? true : undefined}>
                       <FieldLabel htmlFor="ses-secret-access-key">
                         {t('email.ses.secretAccessKey')}
                       </FieldLabel>
@@ -437,6 +445,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                         id="ses-secret-access-key"
                         type="password"
                         {...register('sesSecretAccessKey')}
+                        aria-invalid={!!formState.errors.sesSecretAccessKey}
                       />
                       <FieldDescription>
                         {settings.ses_secret_access_key_set
@@ -452,7 +461,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       {t('email.resend.label')}
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field>
+                      <Field data-invalid={formState.errors.resendFrom ? true : undefined}>
                         <FieldLabel htmlFor="resend-from">
                           {t('email.resend.from')}
                         </FieldLabel>
@@ -460,10 +469,11 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="resend-from"
                           {...register('resendFrom')}
                           placeholder="no-reply@example.com"
+                          aria-invalid={!!formState.errors.resendFrom}
                         />
                         <FieldError errors={[formState.errors.resendFrom]} />
                       </Field>
-                      <Field>
+                      <Field data-invalid={formState.errors.resendApiKey ? true : undefined}>
                         <FieldLabel htmlFor="resend-api-key">
                           {t('email.resend.apiKey')}
                         </FieldLabel>
@@ -471,6 +481,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="resend-api-key"
                           type="password"
                           {...register('resendApiKey')}
+                          aria-invalid={!!formState.errors.resendApiKey}
                         />
                         <FieldDescription>
                           {settings.resend_api_key_set
