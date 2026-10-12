@@ -52,7 +52,8 @@ type Server struct {
 	store     EnrollStore
 	registry  *Registry
 	logger    *slog.Logger
-	gpuSink   GPUSink // nil is valid: GPU reports are ignored
+	gpuSink   GPUSink        // nil is valid: GPU reports are ignored
+	hostSink  HostReportSink // nil is valid: host reports are ignored
 	onSession func(nodeID, remoteIP string)
 
 	certValidity time.Duration
@@ -280,6 +281,11 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	heartbeats := make(chan struct{}, 1)
 	m := newMuxWithHandlers(stream, muxHandlers{
 		gpu: s.onGPUReport(nodeID),
+		hostReport: func(r *agentpb.HostReport) {
+			if s.hostSink != nil {
+				s.hostSink.SetNodeHostReport(nodeID, hostReportFromPB(r))
+			}
+		},
 		heartbeat: func() {
 			select {
 			case heartbeats <- struct{}{}:

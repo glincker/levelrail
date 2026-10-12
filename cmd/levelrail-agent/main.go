@@ -180,6 +180,7 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 	if meshCfg != nil {
 		opts = append(opts, agent.WithMesh(holder.Current().NodeID, meshCfg.sink))
 	}
+	opts = append(opts, agent.WithHostProbe(agent.NewHostProbe(rt)))
 	if rl, ok := rt.(gpu.RuntimeLister); ok {
 		opts = append(opts, agent.WithGPUProbe(func(ctx context.Context) gpu.Info {
 			return gpu.Detect(ctx, gpu.ExecRunner{}, rl)
