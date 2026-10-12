@@ -1,0 +1,26 @@
+---
+layout: home
+title: Self-hosted deployment platform
+description: Push to git, get a running app with TLS, logs, metrics and rollback. Self-hosted, one Go binary, no Kubernetes.
+
+hero:
+  name: Levelrail
+  text: A self-hosted deployment platform
+  tagline: Push to a git repo, get a running app with TLS, logs, metrics, and rollback. The agent talks to Docker's own Engine API directly, no SSH, no CLI shelling.
+  actions:
+    - theme: brand
+      text: Quickstart
+      link: https://docs.levelrail.com/getting-started
+    - theme: alt
+      text: Live demo
+      link: https://docs.levelrail.com/demo
+    - theme: alt
+      text: Compare
+      link: https://docs.levelrail.com/comparison
+---
+
+<script setup lang="ts">
+import HomeSections from './.vitepress/theme/HomeSections.vue'
+</script>
+
+<HomeSections />

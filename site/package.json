@@ -1,0 +1,27 @@
+{
+  "name": "levelrail-site",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Marketing site for Levelrail (VitePress). Docs live at docs.levelrail.com (Mintlify).",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev .",
+    "build": "vitepress build .",
+    "preview": "vitepress preview ."
+  },
+  "devDependencies": {
+    "@fontsource/jetbrains-mono": "^5.3.0",
+    "gsap": "^3.13.0",
+    "vitepress": "^1.6.4"
+  },
+  "overrides": {
+    "vite": "^6.4.3",
+    "esbuild": "^0.25.0"
+  },
+  "dependencies": {
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
+    "@fontsource/lora": "^5.3.0",
+    "@phosphor-icons/vue": "^2.2.1",
+    "thesvg": "^3.3.9"
+  }
+}
