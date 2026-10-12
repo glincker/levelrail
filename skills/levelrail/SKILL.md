@@ -57,4 +57,4 @@ Roll back first when production is down, then investigate.
 
 ## More
 
-Full documentation for models: https://levelrail.com/llms.txt (index) and https://levelrail.com/llms-full.txt (full text). Agent setup details: https://levelrail.com/agents.
+Full documentation for models: https://docs.levelrail.com/llms.txt (index) and https://docs.levelrail.com/llms-full.txt (full text). Agent setup details: https://docs.levelrail.com/agents.

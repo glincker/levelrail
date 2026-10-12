@@ -254,7 +254,7 @@ func (r Release) renderFooter(b *strings.Builder) {
 	if r.DocsURL != "" {
 		docs := strings.TrimSuffix(r.DocsURL, "/")
 		links = append(links,
-			fmt.Sprintf("[Release page](%s/changelog/%s)", docs, Slug(r.Tag)),
+			fmt.Sprintf("[Release page](%s/changelog)", docs),
 			fmt.Sprintf("[Installing](%s/installing)", docs),
 			fmt.Sprintf("[Upgrading](%s/installing#upgrading)", docs),
 			fmt.Sprintf("[Verifying signatures](%s/installing#verifying-image-signatures)", docs))
