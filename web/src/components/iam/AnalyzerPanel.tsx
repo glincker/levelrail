@@ -192,6 +192,7 @@ export function AnalyzerPanel({
       </header>
       {findings.length === 0 ? (
         <EmptyState
+          className="gap-2 border-0 bg-transparent py-4"
           icon={<CheckCircleIcon className="size-5" />}
           title={t('analyzer.clean.title')}
           description={t('analyzer.clean.description')}

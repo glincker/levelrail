@@ -174,6 +174,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
         ) : null}
         {shown.length === 0 ? (
           <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
             icon={<UserIcon className="size-5" />}
             title={t('access.empty.title')}
             description={t('access.empty.description')}
@@ -207,6 +208,7 @@ export function AccessPanel({ initialKey }: { initialKey?: string }) {
       <section className="min-w-0 space-y-4">
         {!current ? (
           <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
             icon={<UserIcon className="size-5" />}
             title={t('access.pickOne.title')}
             description={t('access.pickOne.description')}

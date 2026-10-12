@@ -22,7 +22,8 @@ import { ApiError } from '../../lib/apiError'
 import { useContainers } from '../../queries/containers'
 import type { ContainerPort, ContainerResource } from '../../queries/containers'
 import { ContainerRowActions } from '../../components/ContainerRowActions'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { useTranslation } from 'react-i18next'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { OrphanReaperCard } from '../../components/OrphanReaperCard'
 
 // Web equivalent of "levelrail-cli containers": GET
@@ -76,20 +77,15 @@ function ContainerRow({ container }: { container: ContainerResource }) {
 }
 
 function ContainersPage() {
+  const { t } = useTranslation('settings')
   const { data: containers, isLoading, isError, error } = useContainers()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <StackIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="Containers"
-          description="Every container on this node, whether or not it's managed by this platform."
-        />
-      </div>
-
+    <PageTemplate
+      icon={<StackIcon />}
+      title={t('containersPage.title')}
+      description={t('containersPage.description')}
+    >
       <OrphanReaperCard />
 
       {isLoading ? <ListSkeleton rows={5} /> : null}
@@ -113,7 +109,7 @@ function ContainersPage() {
       {!isLoading && !isError && containers ? (
         containers.length === 0 ? (
           <EmptyState
-            className="py-12"
+            className="gap-2 border-0 bg-transparent py-4"
             icon={<CubeIcon className="size-5" />}
             title="No containers"
             description="Nothing is running on this node's Docker daemon right now."
@@ -140,6 +136,6 @@ function ContainersPage() {
           </div>
         )
       ) : null}
-    </div>
+    </PageTemplate>
   )
 }

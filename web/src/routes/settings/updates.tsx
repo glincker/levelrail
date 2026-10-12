@@ -2,7 +2,10 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { ArrowClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowCircleUpIcon,
+  ArrowClockwiseIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardContent,
@@ -36,7 +39,7 @@ import { ServerReadiness } from '../../components/settings/ServerReadiness'
 import { ReleaseHistory } from '../../components/settings/ReleaseHistory'
 import { UpgradeHistory } from '../../components/settings/UpgradeHistory'
 import { PostUpgradeVerify } from '../../components/settings/PostUpgradeVerify'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -79,12 +82,11 @@ function UpdatesSettingsPage() {
     autoUpdateEnabled !== settings.auto_update_enabled
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Updates"
-        description="Current version, release channel, and available releases."
-      />
-
+    <PageTemplate
+      icon={<ArrowCircleUpIcon />}
+      title={t('page.title')}
+      description={t('page.description')}
+    >
       <Card>
         <CardHeader>
           <CardTitle>Version</CardTitle>
@@ -281,6 +283,6 @@ function UpdatesSettingsPage() {
           <PostUpgradeVerify />
         </CardContent>
       </Card>
-    </div>
+    </PageTemplate>
   )
 }

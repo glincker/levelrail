@@ -116,7 +116,7 @@ export function RegistryCredentialTable({
   if (credentials.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<PackageIcon className="size-5" />}
         title={t('registryPage.empty.title')}
         description={t('registryPage.empty.body')}

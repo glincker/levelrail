@@ -6,7 +6,9 @@ import { useBrand } from '../../hooks/useBrand'
 import { AgentConnectCard } from '../../components/agents/AgentConnectCard'
 import { AgentTokensCard } from '../../components/agents/AgentTokensCard'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { useTranslation } from 'react-i18next'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 export const Route = createFileRoute('/settings/agents')({
   loader: ({ context: { queryClient } }) =>
@@ -16,33 +18,29 @@ export const Route = createFileRoute('/settings/agents')({
 })
 
 function AgentsPage() {
+  const { t } = useTranslation('settings')
   const { data: tokens } = useSuspenseQuery(tokenListQueryOptions())
   const brand = useBrand()
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <PlugsConnectedIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="Agents"
-          description="Connect an AI agent to this instance through MCP, and manage the tokens it uses."
-        />
-      </div>
+    <PageTemplate
+      icon={<PlugsConnectedIcon />}
+      title={t('agentsPage.title')}
+      description={t('agentsPage.description')}
+    >
       <AgentConnectCard
         serverKey={brand.ShortName.toLowerCase()}
         binary={`${brand.BinaryName}-mcp`}
         apiURL={window.location.origin}
       />
       <AgentTokensCard tokens={tokens} />
-    </div>
+    </PageTemplate>
   )
 }
 
 function AgentsPending() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Agents" />
+      <SettingsPageTitle id="agents" />
       <TableSkeleton columnCount={6} />
     </div>
   )

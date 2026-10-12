@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { PlusIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -51,25 +51,17 @@ export function IamWorkspace() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <ShieldCheckIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title={t('page.title')}
-            description={t('page.description')}
-            actions={
-              <Button onClick={() => setBuilder({ open: true })}>
-                <PlusIcon />
-                {t('page.createPolicy')}
-              </Button>
-            }
-          />
-        </div>
-      </div>
-
+    <PageTemplate
+      icon={<ShieldCheckIcon />}
+      title={t('page.title')}
+      description={t('page.description')}
+      actions={
+        <Button onClick={() => setBuilder({ open: true })}>
+          <PlusIcon />
+          {t('page.createPolicy')}
+        </Button>
+      }
+    >
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)}>
         <TabsList>
           <TabsTrigger value="policies">{t('page.tabs.policies')}</TabsTrigger>
@@ -153,6 +145,6 @@ export function IamWorkspace() {
           preselected={attach.keys}
         />
       ) : null}
-    </div>
+    </PageTemplate>
   )
 }

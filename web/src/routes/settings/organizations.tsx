@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   organizationListQueryOptions,
@@ -7,7 +8,7 @@ import {
 import { OrganizationTable } from '../../components/OrganizationTable'
 import { CreateOrganizationDialog } from '../../components/CreateOrganizationDialog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, mirroring routes/settings/notification-channels.tsx:
@@ -22,27 +23,21 @@ export const Route = createFileRoute('/settings/organizations')({
 })
 
 function OrganizationsPage() {
+  const { t } = useTranslation('settings')
   const { data: organizations } = useOrganizations()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <BuildingsIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title="Organizations"
-            description="Group related projects under an organization. File a project into one from the project's own detail page."
-            actions={<CreateOrganizationDialog />}
-          />
-        </div>
-      </div>
+    <PageTemplate
+      icon={<BuildingsIcon />}
+      title={t('organizationsPage.title')}
+      description={t('organizationsPage.description')}
+      actions={<CreateOrganizationDialog />}
+    >
       <OrganizationTable
         organizations={organizations}
         action={<CreateOrganizationDialog />}
       />
-    </div>
+    </PageTemplate>
   )
 }
 

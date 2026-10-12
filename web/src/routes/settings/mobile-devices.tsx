@@ -7,7 +7,7 @@ import {
   DeviceMobileIcon,
   QrCodeIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -50,7 +50,7 @@ function CopyRow({ value, label }: { value: string; label: string }) {
   return (
     <div className="space-y-1">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+      <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
         <code className="min-w-0 flex-1 text-xs break-all">{value}</code>
         <Button
           type="button"
@@ -107,23 +107,23 @@ function MobileDevicesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('mobileDevices.title')}
-        description={t('mobileDevices.description')}
-        actions={
-          <Button type="button" onClick={startPairing}>
-            <QrCodeIcon aria-hidden="true" />
-            {t('mobileDevices.pair')}
-          </Button>
-        }
-      />
+    <PageTemplate
+      icon={<DeviceMobileIcon />}
+      title={t('mobileDevices.title')}
+      description={t('mobileDevices.description')}
+      actions={
+        <Button type="button" onClick={startPairing}>
+          <QrCodeIcon aria-hidden="true" />
+          {t('mobileDevices.pair')}
+        </Button>
+      }
+    >
       {pairing ? (
         <Card>
           <CardHeader>
             <CardTitle>{t('mobileDevices.pairingTitle')}</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
               {t('mobileDevices.pairingHint', {
                 time: formatTime(pairing.expires_at),
@@ -156,6 +156,7 @@ function MobileDevicesPage() {
         <TableSkeleton columnCount={6} rowCount={3} />
       ) : devices.length === 0 ? (
         <EmptyState
+          className="gap-2 border-0 bg-transparent py-4"
           icon={<DeviceMobileIcon className="size-5" />}
           title={t('mobileDevices.emptyTitle')}
           description={t('mobileDevices.emptyDescription')}
@@ -236,6 +237,6 @@ function MobileDevicesPage() {
         }}
         onCancel={gate.cancel}
       />
-    </div>
+    </PageTemplate>
   )
 }
