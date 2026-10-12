@@ -1,20 +1,10 @@
-import { useState } from 'react'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { useTranslation } from 'react-i18next'
+import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { toast } from '@/components/ui/toast'
 import { useDeleteModel } from '../queries/models'
 
-// DELETE /api/v1/models/{name} removes the engine container; the
-// downloaded weights volume is kept so a redeploy does not download again.
 export function DeleteModelDialog({
   name,
   disabled,
@@ -22,77 +12,62 @@ export function DeleteModelDialog({
   name: string
   disabled?: boolean
 }) {
-  const [open, setOpen] = useState(false)
+  const { t } = useTranslation('common')
   const deleteModel = useDeleteModel()
 
   return (
-    <Dialog
-      open={open}
+    <ConfirmAction
+      trigger={(openDialog) => (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={`${t('confirmAction.model.trigger', { defaultValue: 'Delete' })} ${name}`}
+          title={t('confirmAction.model.trigger', { defaultValue: 'Delete' })}
+          disabled={disabled}
+          onClick={openDialog}
+        >
+          <TrashIcon aria-hidden="true" />
+        </Button>
+      )}
+      title={t('confirmAction.model.title', {
+        defaultValue: 'Delete "{{name}}"?',
+        name: name,
+      })}
+      consequences={[
+        t('confirmAction.model.consequence0', {
+          defaultValue:
+            'The engine container is removed and the API key stops working.',
+        }),
+        t('confirmAction.model.consequence1', {
+          defaultValue:
+            'Downloaded weights are kept, so deploying the same model again does not download them twice.',
+        }),
+      ]}
+      confirmLabel={t('confirmAction.model.confirm', {
+        defaultValue: 'Delete',
+      })}
+      pendingLabel={t('confirmAction.model.pending', {
+        defaultValue: 'Deleting...',
+      })}
+      pending={deleteModel.isPending}
+      error={deleteModel.isError ? deleteModel.error.message : null}
       onOpenChange={(next) => {
-        setOpen(next)
         if (!next) deleteModel.reset()
       }}
-    >
-      <DialogTrigger
-        render={
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={`Delete ${name}`}
-            title="Delete"
-            disabled={disabled}
-          />
-        }
-      >
-        <TrashIcon aria-hidden="true" />
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
-            Delete &ldquo;{name}&rdquo;?
-          </DialogTitle>
-          <DialogDescription>
-            The engine container is removed and the API key stops working. The
-            downloaded weights are kept, so deploying the same model again does
-            not download it twice.
-          </DialogDescription>
-        </DialogHeader>
-        {deleteModel.isError ? (
-          <p className="text-sm text-destructive">
-            {deleteModel.error.message}
-          </p>
-        ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setOpen(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={deleteModel.isPending}
-            onClick={() => {
-              deleteModel.mutate(name, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Model "${name}" deleted.`,
-                    type: 'success',
-                  })
-                },
-              })
-            }}
-          >
-            {deleteModel.isPending ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      onConfirm={(close) => {
+        deleteModel.mutate(name, {
+          onSuccess: () => {
+            close()
+            toast.add({
+              title: t('confirmAction.model.success', {
+                defaultValue: 'Model "{{name}}" deleted.',
+                name: name,
+              }),
+              type: 'success',
+            })
+          },
+        })
+      }}
+    />
   )
 }

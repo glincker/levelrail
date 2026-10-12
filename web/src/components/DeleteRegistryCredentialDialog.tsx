@@ -1,98 +1,77 @@
-import { useState } from 'react'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { useTranslation } from 'react-i18next'
+import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { toast } from '@/components/ui/toast'
 import { useDeleteRegistryCredential } from '../queries/registryCredentials'
 import type { RegistryCredential } from '../types/registryCredential'
 
-// One registry credential's delete action, the same split-out-of-the-
-// table shape DeleteBackupTargetDialog already establishes. DELETE
-// /api/v1/registry-credentials/{id} is destructive and irreversible,
-// so this is a confirm dialog, not a bare one-click button.
 export function DeleteRegistryCredentialDialog({
   credential,
 }: {
   credential: RegistryCredential
 }) {
-  const [open, setOpen] = useState(false)
+  const { t } = useTranslation('common')
   const deleteCredential = useDeleteRegistryCredential()
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      deleteCredential.reset()
-    }
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
-        Delete
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
-            Delete &ldquo;{credential.name}&rdquo;?
-          </DialogTitle>
-          <DialogDescription>
-            Any service still referencing this credential in its
-            registryCredential field will fail to pull a private image on its
-            next deploy. This cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        {deleteCredential.isError ? (
-          <p className="text-sm text-destructive">
-            {deleteCredential.error.message}
-          </p>
-        ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              handleOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={deleteCredential.isPending}
-            onClick={() => {
-              deleteCredential.mutate(credential.id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Registry credential "${credential.name}" deleted.`,
-                    type: 'success',
-                  })
-                },
-                onError: (error) => {
-                  toast.add({
-                    title: `Could not delete "${credential.name}".`,
-                    description: error.message,
-                    type: 'error',
-                  })
-                },
-              })
-            }}
-          >
-            {deleteCredential.isPending ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmAction
+      trigger={(openDialog) => (
+        <Button variant="destructive" size="sm" onClick={openDialog}>
+          <TrashIcon className="size-3.5" aria-hidden="true" />
+          {t('confirmAction.registryCredential.trigger', {
+            defaultValue: 'Delete',
+          })}
+        </Button>
+      )}
+      title={t('confirmAction.registryCredential.title', {
+        defaultValue: 'Delete "{{name}}"?',
+        name: credential.name,
+      })}
+      consequences={[
+        t('confirmAction.registryCredential.consequence0', {
+          defaultValue:
+            'Any service referencing this credential fails to pull a private image on its next deploy.',
+        }),
+        t('confirmAction.registryCredential.consequence1', {
+          defaultValue: 'This cannot be undone.',
+        }),
+      ]}
+      confirmLabel={t('confirmAction.registryCredential.confirm', {
+        defaultValue: 'Delete',
+      })}
+      pendingLabel={t('confirmAction.registryCredential.pending', {
+        defaultValue: 'Deleting...',
+      })}
+      pending={deleteCredential.isPending}
+      error={deleteCredential.isError ? deleteCredential.error.message : null}
+      onOpenChange={(next) => {
+        if (!next) deleteCredential.reset()
+      }}
+      onConfirm={(close) => {
+        deleteCredential.mutate(credential.id, {
+          onSuccess: () => {
+            close()
+            toast.add({
+              title: t('confirmAction.registryCredential.success', {
+                defaultValue: 'Registry credential "{{name}}" deleted.',
+                name: credential.name,
+              }),
+              type: 'success',
+            })
+          },
+          onError: (error) => {
+            toast.add({
+              title: t('confirmAction.registryCredential.error', {
+                defaultValue: 'Could not delete "{{name}}".',
+                name: credential.name,
+              }),
+              description: error.message,
+              type: 'error',
+            })
+          },
+        })
+      }}
+    />
   )
 }

@@ -1,25 +1,11 @@
-import { useState } from 'react'
-import { TrashIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { useTranslation } from 'react-i18next'
+import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
 import { toast } from '@/components/ui/toast'
 import { useDeleteAlertRule } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
 
-// One rule's delete action, split out of AlertRulesPanel the same way
-// RevokeTokenDialog is split out of TokenTable. DELETE
-// /api/v1/apps/{name}/alerts/{id} (internal/api/alerts.go's
-// handleDeleteAlertRule) is destructive and irreversible, there is no
-// undo, so this is a confirm dialog, not a bare one-click button, same
-// reasoning RevokeTokenDialog's own header comment gives.
 export function DeleteAlertRuleDialog({
   appName,
   rule,
@@ -27,66 +13,54 @@ export function DeleteAlertRuleDialog({
   appName: string
   rule: AlertRule
 }) {
-  const [open, setOpen] = useState(false)
+  const { t } = useTranslation('common')
   const deleteRule = useDeleteAlertRule(appName)
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      deleteRule.reset()
-    }
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="destructive" size="sm" />}>
-        <TrashIcon className="size-3.5" aria-hidden="true" />
-        Delete
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5 text-destructive">
-            <WarningIcon className="size-4" aria-hidden="true" />
-            Delete &ldquo;{rule.name}&rdquo;?
-          </DialogTitle>
-          <DialogDescription>
-            This rule stops evaluating and notifying immediately. This cannot be
-            undone.
-          </DialogDescription>
-        </DialogHeader>
-        {deleteRule.isError ? (
-          <p className="text-sm text-destructive">{deleteRule.error.message}</p>
-        ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              handleOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={deleteRule.isPending}
-            onClick={() => {
-              deleteRule.mutate(rule.id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Alert rule "${rule.name}" deleted.`,
-                    type: 'success',
-                  })
-                },
-              })
-            }}
-          >
-            {deleteRule.isPending ? 'Deleting...' : 'Delete rule'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmAction
+      trigger={(openDialog) => (
+        <Button variant="destructive" size="sm" onClick={openDialog}>
+          <TrashIcon className="size-3.5" aria-hidden="true" />
+          {t('confirmAction.alertRule.trigger', { defaultValue: 'Delete' })}
+        </Button>
+      )}
+      title={t('confirmAction.alertRule.title', {
+        defaultValue: 'Delete "{{name}}"?',
+        name: rule.name,
+      })}
+      consequences={[
+        t('confirmAction.alertRule.consequence0', {
+          defaultValue: 'The rule stops evaluating and notifying immediately.',
+        }),
+        t('confirmAction.alertRule.consequence1', {
+          defaultValue: 'This cannot be undone.',
+        }),
+      ]}
+      confirmLabel={t('confirmAction.alertRule.confirm', {
+        defaultValue: 'Delete rule',
+      })}
+      pendingLabel={t('confirmAction.alertRule.pending', {
+        defaultValue: 'Deleting...',
+      })}
+      pending={deleteRule.isPending}
+      error={deleteRule.isError ? deleteRule.error.message : null}
+      onOpenChange={(next) => {
+        if (!next) deleteRule.reset()
+      }}
+      onConfirm={(close) => {
+        deleteRule.mutate(rule.id, {
+          onSuccess: () => {
+            close()
+            toast.add({
+              title: t('confirmAction.alertRule.success', {
+                defaultValue: 'Alert rule "{{name}}" deleted.',
+                name: rule.name,
+              }),
+              type: 'success',
+            })
+          },
+        })
+      }}
+    />
   )
 }
