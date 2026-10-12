@@ -12,7 +12,10 @@ import { InvitesTable } from '../../components/InvitesTable'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
+import { useTranslation } from 'react-i18next'
 import { hasAbility } from '../../types/token'
 import type { CreateInviteResponse } from '../../queries/invites'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
@@ -35,6 +38,7 @@ export const Route = createFileRoute('/settings/users')({
 })
 
 function UsersSettingsPage() {
+  const { t } = useTranslation('settings')
   const { data: users } = useSuspenseQuery(userListQueryOptions())
   const { data: invites } = useSuspenseQuery(inviteListQueryOptions())
   // Known accept links for invites created during this page session
@@ -65,32 +69,43 @@ function UsersSettingsPage() {
     setInviteLinks((prev) => ({ ...prev, [invite.id]: invite.link }))
   }
 
+  const pendingInvites = invites.filter((inv) => !inv.expired).length
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <UsersIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title="Users"
-            description="Everyone with access to this platform, and what each account can do."
-            actions={
-              canInvite ? (
-                <div className="flex items-center gap-2">
-                  {canInvite ? (
-                    <InviteMemberDialog
-                      callerAbilities={ownAbilities}
-                      onCreated={handleInviteCreated}
-                    />
-                  ) : null}
-                  {isRoot ? <CreateUserDialog /> : null}
-                </div>
-              ) : null
-            }
-          />
-        </div>
-      </div>
+    <PageTemplate
+      icon={<UsersIcon />}
+      eyebrow={t('usersPage.eyebrow')}
+      title={t('usersPage.title')}
+      description={t('usersPage.description')}
+      helpPath="/teams-and-roles"
+      helpLabel={t('usersPage.help')}
+      status={
+        <Badge variant="muted">
+          {t('usersPage.count', { count: users.length })}
+        </Badge>
+      }
+      actions={
+        canInvite ? (
+          <>
+            <InviteMemberDialog
+              callerAbilities={ownAbilities}
+              onCreated={handleInviteCreated}
+            />
+            {isRoot ? <CreateUserDialog /> : null}
+          </>
+        ) : null
+      }
+      banners={
+        canInvite && pendingInvites > 0 ? (
+          <Banner
+            variant="info"
+            title={t('usersPage.banner.title', { count: pendingInvites })}
+          >
+            {t('usersPage.banner.body')}
+          </Banner>
+        ) : null
+      }
+    >
       <UserTable users={users} />
 
       {canInvite ? (
@@ -98,7 +113,7 @@ function UsersSettingsPage() {
           <div className="flex items-center gap-2">
             <EnvelopeIcon className="size-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold text-foreground">
-              Pending invites
+              {t('usersPage.pendingInvites')}
             </h2>
           </div>
           <InvitesTable
@@ -109,7 +124,7 @@ function UsersSettingsPage() {
           />
         </div>
       ) : null}
-    </div>
+    </PageTemplate>
   )
 }
 

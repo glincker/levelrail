@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CloudArrowUpIcon,
   PlugsConnectedIcon,
 } from '@phosphor-icons/react/dist/ssr'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
-import { useTranslation } from 'react-i18next'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from '@/components/ui/toast'
 import { DeleteBackupTargetDialog } from './DeleteBackupTargetDialog'
 import { PROVIDER_LABEL } from './backupTargetProvider'
@@ -28,6 +28,7 @@ function formatDate(iso: string): string {
 // identical "verify a stored credential by actually using it, once, on
 // demand" action against a different resource.
 function TestButton({ target }: { target: BackupTarget }) {
+  const { t } = useTranslation('settings')
   const testTarget = useTestBackupTarget()
   return (
     <Button
@@ -39,13 +40,17 @@ function TestButton({ target }: { target: BackupTarget }) {
         testTarget.mutate(target.id, {
           onSuccess: () => {
             toast.add({
-              title: `"${target.name}" connected successfully.`,
+              title: t('backupTargetsPage.table.testOk', {
+                name: target.name,
+              }),
               type: 'success',
             })
           },
           onError: (error) => {
             toast.add({
-              title: `"${target.name}" failed to connect.`,
+              title: t('backupTargetsPage.table.testFailed', {
+                name: target.name,
+              }),
               description: error.message,
               type: 'error',
             })
@@ -54,7 +59,9 @@ function TestButton({ target }: { target: BackupTarget }) {
       }}
     >
       <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
-      {testTarget.isPending ? 'Testing...' : 'Test connection'}
+      {testTarget.isPending
+        ? t('backupTargetsPage.table.testing')
+        : t('backupTargetsPage.table.test')}
     </Button>
   )
 }
@@ -77,8 +84,8 @@ export function BackupTargetTable({
       <EmptyState
         className="py-12"
         icon={<CloudArrowUpIcon className="size-5" />}
-        title="No backup targets connected"
-        description="Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+        title={t('backupTargetsPage.empty.title')}
+        description={t('backupTargetsPage.empty.body')}
         action={action}
       />
     )
@@ -88,14 +95,14 @@ export function BackupTargetTable({
     {
       id: 'name',
       primary: true,
-      header: 'Name',
+      header: t('backupTargetsPage.table.name'),
       cell: (target) => (
         <span className="font-medium text-foreground">{target.name}</span>
       ),
     },
     {
       id: 'provider',
-      header: 'Provider',
+      header: t('backupTargetsPage.table.provider'),
       priority: 2,
       cell: (target) => (
         <Badge variant="outline" className="gap-1.5">
@@ -110,14 +117,14 @@ export function BackupTargetTable({
     },
     {
       id: 'bucket',
-      header: 'Bucket',
+      header: t('backupTargetsPage.table.bucket'),
       cell: (target) => (
         <span className="text-muted-foreground">{target.bucket}</span>
       ),
     },
     {
       id: 'location',
-      header: 'Region / endpoint',
+      header: t('backupTargetsPage.table.region'),
       priority: 3,
       cell: (target) =>
         target.region || target.endpoint ? (
@@ -128,12 +135,12 @@ export function BackupTargetTable({
             ) : null}
           </div>
         ) : (
-          '-'
+          <span className="text-muted-foreground">-</span>
         ),
     },
     {
       id: 'connected',
-      header: 'Connected',
+      header: t('backupTargetsPage.table.connected'),
       priority: 3,
       cell: (target) => (
         <span className="text-muted-foreground">
@@ -148,7 +155,7 @@ export function BackupTargetTable({
       rows={targets}
       columns={columns}
       getRowId={(target) => target.id}
-      ariaLabel={t('tables.backupTargets')}
+      ariaLabel={t('backupTargetsPage.table.label')}
       renderActions={(target) => (
         <div className="flex flex-wrap items-center justify-end gap-2">
           <TestButton target={target} />

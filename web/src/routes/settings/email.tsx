@@ -4,11 +4,11 @@ import {
   useEmailSettings,
 } from '../../queries/emailSettings'
 import { EmailSettingsCard } from '../../components/EmailSettingsCard'
+import { EmailPageShell } from '../../components/settings/EmailPageShell'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
-import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/settings/email')({
   loader: ({ context: { queryClient } }) =>
@@ -30,13 +30,8 @@ function EmailSettingsPage() {
   const { data: settings } = useEmailSettings()
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Email"
-        description="The backend that sends alert notifications and password-reset links."
-      />
-
+    <EmailPageShell backend={settings.backend}>
       <EmailSettingsCard settings={settings} />
-    </div>
+    </EmailPageShell>
   )
 }

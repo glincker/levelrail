@@ -3,7 +3,9 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { UsersThreeIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -74,13 +76,30 @@ function TeamsSettingsPage() {
     (root ||
       (!team.default && (team.role === 'owner' || team.role === 'admin')))
 
+  const onlyDefault = teams.length === 1 && teams[0]?.default === true
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title={t('page.title')}
-        description={t('page.description')}
-        actions={root ? <CreateTeamForm /> : undefined}
-      />
+    <PageTemplate
+      icon={<UsersThreeIcon />}
+      eyebrow={t('page.eyebrow')}
+      title={t('page.title')}
+      description={t('page.description')}
+      helpPath="/teams-and-roles"
+      helpLabel={t('page.help')}
+      status={
+        <Badge variant="muted">
+          {t('page.count', { count: teams.length })}
+        </Badge>
+      }
+      actions={root ? <CreateTeamForm /> : undefined}
+      banners={
+        onlyDefault && root ? (
+          <Banner variant="info" title={t('page.banner.title')}>
+            {t('page.banner.body')}
+          </Banner>
+        ) : null
+      }
+    >
       {team === undefined ? (
         <EmptyState
           icon={<UsersThreeIcon className="size-5" />}
@@ -121,6 +140,6 @@ function TeamsSettingsPage() {
           {manager && <TeamEventsCard teamId={team.id} />}
         </>
       )}
-    </div>
+    </PageTemplate>
   )
 }
