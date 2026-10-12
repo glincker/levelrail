@@ -1,4 +1,5 @@
 import { Fragment, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CaretDownIcon,
   CaretRightIcon,
@@ -125,6 +126,7 @@ function HistoryRow({ entry }: { entry: AlertHistoryEntry }) {
 // Alert firings and what happened to each notification. Scoped to one
 // app when app is set, global otherwise.
 export function AlertHistoryTable({ app }: { app?: string }) {
+  const { t } = useTranslation('settings')
   const [outcome, setOutcome] = useState<AlertOutcome | ''>('')
   const [event, setEvent] = useState<AlertEventName | ''>('')
   const { data, isLoading, error } = useAlertHistory({ app, outcome, event })
@@ -182,7 +184,12 @@ export function AlertHistoryTable({ app }: { app?: string }) {
           description="Every firing, resolution and suppressed notification is recorded here."
         />
       ) : (
-        <div className="rounded-lg border border-border">
+        <div
+          role="region"
+          aria-label={t('tables.alertHistory')}
+          tabIndex={0}
+          className="overflow-x-auto rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
           <Table>
             <TableHeader>
               <TableRow>

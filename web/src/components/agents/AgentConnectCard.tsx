@@ -115,11 +115,11 @@ export function AgentConnectCard({
           <TableBody>
             {AGENT_MODES.map((m) => (
               <TableRow key={m.id}>
-                <TableCell className="font-medium text-foreground">
+                <TableCell className="font-medium whitespace-normal text-foreground">
                   {m.label}
                 </TableCell>
-                <TableCell>{m.tools}</TableCell>
-                <TableCell>{m.tokens}</TableCell>
+                <TableCell className="whitespace-normal">{m.tools}</TableCell>
+                <TableCell className="whitespace-normal">{m.tokens}</TableCell>
                 <TableCell className="whitespace-normal text-muted-foreground">
                   {m.hint}
                 </TableCell>

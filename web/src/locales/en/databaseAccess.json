@@ -13,6 +13,7 @@
     "loadFailed": "Could not read this database's users: {{error}}"
   },
   "users": {
+    "tableLabel": "Database users",
     "title": "Database users",
     "description": "Logins on the database itself. Your apps keep using the platform's own credentials, so a user here never breaks them.",
     "create": "Create user",
@@ -96,6 +97,7 @@
     "tlsNote": "TLS is required by this connection string."
   },
   "temp": {
+    "tableLabel": "Temporary logins",
     "title": "Temporary credentials",
     "description": "A short-lived login for a developer or a one-off job. It expires and is removed on its own, even if this control plane restarts.",
     "preset": "Access",
@@ -124,6 +126,7 @@
     "expiredWaiting": "expired, being removed"
   },
   "who": {
+    "tableLabel": "Who can access",
     "title": "Who can manage this database",
     "description": "People and tokens on this platform with abilities on this database, from their own abilities and from IAM policies.",
     "grant": "Grant access",
@@ -175,6 +178,7 @@
     "loadFailed": "Could not read this database's network: {{error}}"
   },
   "reach": {
+    "tableLabel": "Connected clients",
     "title": "Reachability",
     "verdict": {
       "stopped": "The database is not running, so nothing can reach it.",

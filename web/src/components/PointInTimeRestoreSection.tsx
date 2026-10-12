@@ -17,20 +17,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
 import { formatDate } from '../lib/format'
 import { WalShipStatusItem } from './WalShipStatusItem'
 import { ApiError } from '../lib/apiError'
-import { StatusBadge } from './backupAttemptStatus'
+import {
+  BaseBackupHistoryTableView,
+  PITRRestoreHistoryTableView,
+} from './PITRHistoryTables'
 import { TriggerBackupRowView } from './BackupsSection'
 import {
   useBaseBackupHistory,
@@ -228,125 +223,6 @@ function EnabledPITRContent({ databaseName }: { databaseName: string }) {
           isLoading={restoreHistory.isLoading}
         />
       </div>
-    </div>
-  )
-}
-
-function BaseBackupHistoryTableView({
-  history,
-  isLoading,
-}: {
-  history: BaseBackupHistoryRecord[]
-  isLoading: boolean
-}) {
-  if (isLoading || history.length === 0) {
-    return null
-  }
-  return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Status</TableHead>
-            <TableHead>Size</TableHead>
-            <TableHead>Started</TableHead>
-            <TableHead>Finished</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {history.map((record) => (
-            <TableRow key={record.id}>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <StatusBadge status={record.status} />
-                  {record.status === 'failed' && record.error ? (
-                    <span
-                      className="max-w-[20rem] truncate text-xs text-destructive"
-                      title={record.error}
-                    >
-                      {record.error}
-                    </span>
-                  ) : null}
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {record.size_bytes > 0
-                  ? `${(record.size_bytes / 1024 / 1024).toFixed(1)} MiB`
-                  : '-'}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.started_at, '-')}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.finished_at, '-')}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  )
-}
-
-function PITRRestoreHistoryTableView({
-  history,
-  isLoading,
-}: {
-  history: {
-    id: string
-    status: string
-    error?: string
-    target_timestamp: string
-    started_at: string
-    finished_at?: string
-  }[]
-  isLoading: boolean
-}) {
-  if (isLoading || history.length === 0) {
-    return null
-  }
-  return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Status</TableHead>
-            <TableHead>Target time</TableHead>
-            <TableHead>Started</TableHead>
-            <TableHead>Finished</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {history.map((record) => (
-            <TableRow key={record.id}>
-              <TableCell>
-                <div className="flex flex-col gap-1">
-                  <StatusBadge
-                    status={record.status as 'running' | 'succeeded' | 'failed'}
-                  />
-                  {record.status === 'failed' && record.error ? (
-                    <span
-                      className="max-w-[20rem] truncate text-xs text-destructive"
-                      title={record.error}
-                    >
-                      {record.error}
-                    </span>
-                  ) : null}
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.target_timestamp, '-')}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.started_at, '-')}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(record.finished_at, '-')}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
     </div>
   )
 }

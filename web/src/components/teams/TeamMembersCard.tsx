@@ -10,13 +10,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import { useAuthUsername } from '../../hooks/useAuthUsername'
 import {
@@ -25,6 +21,7 @@ import {
   useRemoveMember,
   useSetMemberRole,
   useTransferTeam,
+  type TeamMemberResource,
   type TeamResource,
   type TeamRole,
 } from '../../queries/teams'
@@ -70,6 +67,61 @@ export function TeamMembersCard({
       }),
   })
 
+  const isEditable = (m: TeamMemberResource) =>
+    canManage && m.email !== me && roles.includes(m.role)
+
+  const columns: ResponsiveColumn<TeamMemberResource>[] = [
+    {
+      id: 'email',
+      header: t('members.email'),
+      primary: true,
+      cell: (m) => (
+        <span className="font-mono text-xs break-all">{m.email}</span>
+      ),
+    },
+    {
+      id: 'name',
+      header: t('members.name'),
+      priority: 3,
+      cell: (m) => m.display_name,
+    },
+    {
+      id: 'role',
+      header: t('members.role'),
+      cell: (m) =>
+        isEditable(m) ? (
+          <Select
+            value={m.role}
+            onValueChange={(next) => {
+              if (next && next !== m.role) {
+                setRole.mutate(
+                  { userId: m.user_id, role: next },
+                  report('members.roleChanged'),
+                )
+              }
+            }}
+          >
+            <SelectTrigger
+              size="sm"
+              className="w-36"
+              aria-label={t('members.roleLabel', { email: m.email })}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.map((r) => (
+                <SelectItem key={r} value={r}>
+                  {t(`roles.${r}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <TeamRoleBadge role={m.role} />
+        ),
+    },
+  ]
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between">
@@ -86,95 +138,46 @@ export function TeamMembersCard({
         </Button>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('members.email')}</TableHead>
-              <TableHead>{t('members.name')}</TableHead>
-              <TableHead>{t('members.role')}</TableHead>
-              <TableHead className="text-right">
-                {t('members.actions')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {members.map((m) => {
-              const editable =
-                canManage && m.email !== me && roles.includes(m.role)
-              return (
-                <TableRow key={m.user_id}>
-                  <TableCell className="font-mono text-xs">{m.email}</TableCell>
-                  <TableCell>{m.display_name}</TableCell>
-                  <TableCell>
-                    {editable ? (
-                      <Select
-                        value={m.role}
-                        onValueChange={(next) => {
-                          if (next && next !== m.role) {
-                            setRole.mutate(
-                              { userId: m.user_id, role: next },
-                              report('members.roleChanged'),
-                            )
-                          }
-                        }}
-                      >
-                        <SelectTrigger
-                          size="sm"
-                          className="w-36"
-                          aria-label={t('members.roleLabel', {
-                            email: m.email,
-                          })}
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {roles.map((r) => (
-                            <SelectItem key={r} value={r}>
-                              {t(`roles.${r}`)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <TeamRoleBadge role={m.role} />
-                    )}
-                  </TableCell>
-                  <TableCell className="space-x-2 text-right">
-                    {team.role === 'owner' &&
-                    m.email !== me &&
-                    !team.default ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          transfer.mutate(
-                            m.user_id,
-                            report('members.transferred'),
-                          )
-                        }}
-                      >
-                        {t('members.transfer')}
-                      </Button>
-                    ) : null}
-                    {editable ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          remove.mutate(m.user_id, report('members.removed'))
-                        }}
-                      >
-                        {t('members.remove')}
-                      </Button>
-                    ) : null}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          rows={members}
+          columns={columns}
+          getRowId={(m) => m.user_id}
+          ariaLabel={t('members.tableLabel')}
+          renderActions={(m) => {
+            const editable = isEditable(m)
+            const canTransfer =
+              team.role === 'owner' && m.email !== me && !team.default
+            if (!canTransfer && !editable) return null
+            return (
+              <span className="flex items-center gap-1">
+                {canTransfer ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      transfer.mutate(m.user_id, report('members.transferred'))
+                    }}
+                  >
+                    {t('members.transfer')}
+                  </Button>
+                ) : null}
+                {editable ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      remove.mutate(m.user_id, report('members.removed'))
+                    }}
+                  >
+                    {t('members.remove')}
+                  </Button>
+                ) : null}
+              </span>
+            )
+          }}
+        />
       </CardContent>
     </Card>
   )

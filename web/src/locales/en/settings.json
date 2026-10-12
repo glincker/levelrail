@@ -183,7 +183,17 @@
     },
     "loadFailed": "Could not load AI control settings."
   },
+  "tables": {
+    "users": "Users",
+    "invites": "Pending invites",
+    "organizations": "Organizations",
+    "backupTargets": "Backup targets",
+    "storageDestinations": "Storage destinations",
+    "notificationChannels": "Notification channels",
+    "alertHistory": "Alert history entries"
+  },
   "tokens": {
+    "tableLabel": "API tokens",
     "emptyTitle": "No tokens yet",
     "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
     "name": "Name",

@@ -4,6 +4,7 @@
     "description": "Every domain routed through this control plane's embedded ingress, which node actually serves it, and whether it can be reached."
   },
   "table": {
+    "label": "Routed domains",
     "domain": "Domain",
     "app": "App",
     "node": "Node",

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PlusCircleIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -12,18 +13,15 @@ import {
 } from '@/components/ui/select'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import {
   useCreateStatusComponent,
   useDeleteStatusComponent,
   useStatusComponents,
+  type StatusComponent,
   type StatusComponentKind,
 } from '../queries/statusPage'
 
@@ -120,9 +118,33 @@ function AddComponentForm() {
 }
 
 export function StatusComponentsPanel() {
+  const { t } = useTranslation('common')
   const { data, isLoading, error } = useStatusComponents()
   const del = useDeleteStatusComponent()
   const components = data ?? []
+  const columns = useMemo<ResponsiveColumn<StatusComponent>[]>(
+    () => [
+      {
+        id: 'name',
+        header: 'Public name',
+        primary: true,
+        cell: (c) => (
+          <span className="font-medium text-foreground">{c.display_name}</span>
+        ),
+      },
+      { id: 'kind', header: 'Kind', priority: 2, cell: (c) => c.kind },
+      {
+        id: 'target',
+        header: 'Target (private)',
+        cell: (c) => (
+          <span className="block truncate font-mono text-xs text-muted-foreground">
+            {c.target}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
 
   return (
     <div className="space-y-4">
@@ -137,46 +159,27 @@ export function StatusComponentsPanel() {
           the page.
         </p>
       ) : (
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Public name</TableHead>
-                <TableHead>Kind</TableHead>
-                <TableHead>Target (private)</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {components.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium text-foreground">
-                    {c.display_name}
-                  </TableCell>
-                  <TableCell>{c.kind}</TableCell>
-                  <TableCell className="max-w-[18rem] truncate font-mono text-xs text-muted-foreground">
-                    {c.target}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      disabled={del.isPending}
-                      aria-label={`Remove ${c.display_name}`}
-                      onClick={() => {
-                        if (c.id) del.mutate(c.id)
-                      }}
-                    >
-                      <TrashIcon className="size-3.5" aria-hidden="true" />
-                      Remove
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ResponsiveTable
+          rows={components}
+          columns={columns}
+          getRowId={(c) => c.id ?? `${c.kind}:${c.target}`}
+          ariaLabel={t('tableLabels.statusComponents')}
+          renderActions={(c) => (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              disabled={del.isPending}
+              aria-label={`Remove ${c.display_name}`}
+              onClick={() => {
+                if (c.id) del.mutate(c.id)
+              }}
+            >
+              <TrashIcon className="size-3.5" aria-hidden="true" />
+              Remove
+            </Button>
+          )}
+        />
       )}
     </div>
   )

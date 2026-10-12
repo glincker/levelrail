@@ -4,13 +4,10 @@ import {
   WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -77,6 +74,7 @@ export function NotificationChannelTable({
   channels: NotificationChannel[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('settings')
   if (channels.length === 0) {
     return (
       <EmptyState
@@ -89,64 +87,80 @@ export function NotificationChannelTable({
     )
   }
 
+  const columns: ResponsiveColumn<NotificationChannel>[] = [
+    {
+      id: 'name',
+      primary: true,
+      header: 'Name',
+      cell: (channel) => (
+        <span className="font-medium text-foreground">{channel.name}</span>
+      ),
+    },
+    {
+      id: 'type',
+      header: 'Type',
+      priority: 2,
+      cell: (channel) => {
+        const brandIcon = CHANNEL_KIND_BRAND_ICON[channel.kind]
+        return (
+          <Badge variant="outline" className="gap-1.5">
+            {brandIcon ? (
+              <BrandIcon name={brandIcon} className="size-3.5" />
+            ) : null}
+            {CHANNEL_KIND_LABEL[channel.kind]}
+          </Badge>
+        )
+      },
+    },
+    {
+      id: 'destination',
+      header: 'Destination',
+      priority: 3,
+      cell: (channel) => (
+        <span
+          className="block truncate font-mono text-xs text-muted-foreground"
+          title={channel.notify_url}
+        >
+          {maskNotifyUrl(channel.notify_url)}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (channel) =>
+        channel.enabled ? (
+          <Badge variant="success">Enabled</Badge>
+        ) : (
+          <Badge variant="muted">Disabled</Badge>
+        ),
+    },
+    {
+      id: 'connected',
+      header: 'Connected',
+      priority: 3,
+      cell: (channel) => (
+        <span className="text-muted-foreground">
+          {formatDate(channel.created_at)}
+        </span>
+      ),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Destination</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Connected</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {channels.map((channel) => {
-            const brandIcon = CHANNEL_KIND_BRAND_ICON[channel.kind]
-            return (
-              <TableRow key={channel.id}>
-                <TableCell className="font-medium text-foreground">
-                  {channel.name}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="gap-1.5">
-                    {brandIcon ? (
-                      <BrandIcon name={brandIcon} className="size-3.5" />
-                    ) : null}
-                    {CHANNEL_KIND_LABEL[channel.kind]}
-                  </Badge>
-                </TableCell>
-                <TableCell
-                  className="max-w-[16rem] truncate font-mono text-xs text-muted-foreground"
-                  title={channel.notify_url}
-                >
-                  {maskNotifyUrl(channel.notify_url)}
-                </TableCell>
-                <TableCell>
-                  {channel.enabled ? (
-                    <Badge variant="success">Enabled</Badge>
-                  ) : (
-                    <Badge variant="muted">Disabled</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(channel.created_at)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <TestButton channel={channel} />
-                    <NotificationDeliveryHistoryDialog channel={channel} />
-                    <EditNotificationChannelDialog channel={channel} />
-                    <DeleteNotificationChannelDialog channel={channel} />
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={channels}
+      columns={columns}
+      getRowId={(channel) => channel.id}
+      ariaLabel={t('tables.notificationChannels')}
+      renderActions={(channel) => (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TestButton channel={channel} />
+          <NotificationDeliveryHistoryDialog channel={channel} />
+          <EditNotificationChannelDialog channel={channel} />
+          <DeleteNotificationChannelDialog channel={channel} />
+        </div>
+      )}
+    />
   )
 }

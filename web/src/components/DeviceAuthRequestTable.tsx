@@ -3,13 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { DeviceLoginConfirmDialog } from './attention/DeviceLoginConfirmDialog'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -68,110 +64,123 @@ export function DeviceAuthRequestTable({
     )
   }
 
+  const columns: ResponsiveColumn<DeviceAuthRequest>[] = [
+    {
+      id: 'code',
+      primary: true,
+      header: 'Code',
+      cell: (request) => (
+        <span className="font-mono font-medium text-foreground">
+          {request.user_code}
+        </span>
+      ),
+    },
+    {
+      id: 'device',
+      header: 'Device',
+      cell: (request) =>
+        request.client_name ? (
+          request.client_name
+        ) : (
+          <span className="text-muted-foreground">Unknown device</span>
+        ),
+    },
+    {
+      id: 'from',
+      header: 'From',
+      priority: 2,
+      cell: (request) => (
+        <span className="text-muted-foreground">
+          <span className="font-mono text-xs">
+            {request.requester_ip || '-'}
+          </span>
+          {request.ip_mismatch ? (
+            <span
+              className="ml-1.5 inline-flex items-center gap-1 text-xs font-medium text-destructive"
+              title={t('deviceLogin.ipMismatch', { ip: request.requester_ip })}
+            >
+              <WarningIcon aria-hidden="true" className="size-3.5" />
+              {t('deviceLogin.review')}
+            </span>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: 'requested',
+      header: 'Requested',
+      priority: 3,
+      cell: (request) => (
+        <span className="text-muted-foreground">
+          {formatRequestedAgo(request.created_at)}
+        </span>
+      ),
+    },
+    {
+      id: 'expires',
+      header: 'Expires',
+      priority: 2,
+      cell: (request) => (
+        <Badge variant="muted">{formatExpiresIn(request.expires_at)}</Badge>
+      ),
+    },
+  ]
+
   return (
     <>
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Code</TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead>From</TableHead>
-              <TableHead>Requested</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requests.map((request) => {
-              const isHighlighted = highlightUserCode === request.user_code
-              const isDeciding =
-                (approve.isPending &&
-                  approve.variables === request.user_code) ||
-                (deny.isPending && deny.variables === request.user_code)
-              return (
-                <TableRow
-                  key={request.user_code}
-                  className={isHighlighted ? 'bg-primary/5' : undefined}
-                >
-                  <TableCell className="font-mono font-medium text-foreground">
-                    {request.user_code}
-                  </TableCell>
-                  <TableCell>
-                    {request.client_name ? (
-                      request.client_name
-                    ) : (
-                      <span className="text-muted-foreground">
-                        Unknown device
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    <span className="font-mono text-xs">
-                      {request.requester_ip || '-'}
-                    </span>
-                    {request.ip_mismatch ? (
-                      <span
-                        className="ml-1.5 inline-flex items-center gap-1 text-xs font-medium text-destructive"
-                        title={t('deviceLogin.ipMismatch', {
-                          ip: request.requester_ip,
-                        })}
-                      >
-                        <WarningIcon aria-hidden="true" className="size-3.5" />
-                        {t('deviceLogin.review')}
-                      </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatRequestedAgo(request.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="muted">
-                      {formatExpiresIn(request.expires_at)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        disabled={isDeciding}
-                        onClick={() => {
-                          deny.mutate(request.user_code, {
-                            onSuccess: () => {
-                              toast.add({
-                                title: `Denied login for "${request.client_name || 'Unknown device'}".`,
-                                type: 'success',
-                              })
-                            },
-                            onError: (error) => {
-                              toast.add({ title: error.message, type: 'error' })
-                            },
-                          })
-                        }}
-                      >
-                        Deny
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="default"
-                        size="sm"
-                        disabled={isDeciding}
-                        onClick={() => {
-                          setConfirming(request)
-                        }}
-                      >
-                        {t('deviceLogin.review')}
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
-      </div>
+      <ResponsiveTable
+        rows={requests}
+        columns={columns}
+        getRowId={(request) => request.user_code}
+        ariaLabel={t('deviceLogin.tableLabel')}
+        getRowProps={(request) => ({
+          className:
+            highlightUserCode === request.user_code
+              ? 'bg-primary/5'
+              : undefined,
+        })}
+        renderActions={(request) => {
+          const isDeciding =
+            (approve.isPending && approve.variables === request.user_code) ||
+            (deny.isPending && deny.variables === request.user_code)
+          return (
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={isDeciding}
+                onClick={() => {
+                  deny.mutate(request.user_code, {
+                    onSuccess: () => {
+                      toast.add({
+                        title: `Denied login for "${request.client_name || 'Unknown device'}".`,
+                        type: 'success',
+                      })
+                    },
+                    onError: (error) => {
+                      toast.add({ title: error.message, type: 'error' })
+                    },
+                  })
+                }}
+              >
+                Deny
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                disabled={isDeciding}
+                onClick={() => {
+                  setConfirming(request)
+                }}
+              >
+                {t('deviceLogin.review')}
+              </Button>
+            </div>
+          )
+        }}
+      />
       {confirming ? (
         <DeviceLoginConfirmDialog
           request={confirming}

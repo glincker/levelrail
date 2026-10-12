@@ -237,6 +237,7 @@
     "count_one": "{{count}} domain",
     "count_other": "{{count}} domains",
     "search": "Filter domains",
+    "tableLabel": "Domains",
     "noMatch": "No domain matches \"{{query}}\"",
     "noMatchBody": "Check the spelling or clear the filter.",
     "clearSearch": "Clear filter",

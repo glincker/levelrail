@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CalendarBlankIcon,
   PlusCircleIcon,
@@ -27,13 +28,9 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import {
   useDeleteMaintenanceWindow,
@@ -219,21 +216,49 @@ function WindowDialog({
   )
 }
 
-function WindowRow({ window: w }: { window: MaintenanceWindow }) {
+function WindowActions({ window: w }: { window: MaintenanceWindow }) {
   const del = useDeleteMaintenanceWindow()
-  const state = !w.enabled ? 'disabled' : w.active ? 'active' : 'idle'
   return (
-    <TableRow>
-      <TableCell className="font-medium text-foreground">{w.name}</TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground">
-        {w.cron} ({w.timezone ?? 'UTC'}) for {w.duration}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {w.scope === 'all'
-          ? 'all alerts'
-          : `${w.scope}: ${(w.targets ?? []).join(', ')}`}
-      </TableCell>
-      <TableCell>
+    <span className="flex flex-wrap justify-end gap-2">
+      <WindowDialog
+        existing={w}
+        trigger={<Button type="button" variant="outline" size="sm" />}
+        label="Edit"
+      />
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        disabled={del.isPending}
+        onClick={() => {
+          if (w.id) {
+            del.mutate(w.id, {
+              onSuccess: () => {
+                toast.add({ title: 'Window deleted.', type: 'success' })
+              },
+            })
+          }
+        }}
+      >
+        Delete
+      </Button>
+    </span>
+  )
+}
+
+const windowColumns: ResponsiveColumn<MaintenanceWindow>[] = [
+  {
+    id: 'name',
+    header: 'Name',
+    primary: true,
+    cell: (w) => <span className="font-medium text-foreground">{w.name}</span>,
+  },
+  {
+    id: 'state',
+    header: 'State',
+    cell: (w) => {
+      const state = !w.enabled ? 'disabled' : w.active ? 'active' : 'idle'
+      return (
         <Badge
           variant={
             state === 'active'
@@ -245,43 +270,47 @@ function WindowRow({ window: w }: { window: MaintenanceWindow }) {
         >
           {state}
         </Badge>
-      </TableCell>
-      <TableCell className="whitespace-nowrap text-muted-foreground">
+      )
+    },
+  },
+  {
+    id: 'schedule',
+    header: 'Schedule',
+    priority: 2,
+    cell: (w) => (
+      <span className="font-mono text-xs break-words text-muted-foreground">
+        {w.cron} ({w.timezone ?? 'UTC'}) for {w.duration}
+      </span>
+    ),
+  },
+  {
+    id: 'scope',
+    header: 'Applies to',
+    priority: 3,
+    cell: (w) => (
+      <span className="text-muted-foreground">
+        {w.scope === 'all'
+          ? 'all alerts'
+          : `${w.scope}: ${(w.targets ?? []).join(', ')}`}
+      </span>
+    ),
+  },
+  {
+    id: 'next',
+    header: 'Next start',
+    priority: 2,
+    cell: (w) => (
+      <span className="text-muted-foreground">
         {w.next_start ? new Date(w.next_start).toLocaleString() : '-'}
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          <WindowDialog
-            existing={w}
-            trigger={<Button type="button" variant="outline" size="sm" />}
-            label="Edit"
-          />
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            disabled={del.isPending}
-            onClick={() => {
-              if (w.id) {
-                del.mutate(w.id, {
-                  onSuccess: () => {
-                    toast.add({ title: 'Window deleted.', type: 'success' })
-                  },
-                })
-              }
-            }}
-          >
-            Delete
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
-  )
-}
+      </span>
+    ),
+  },
+]
 
 export function MaintenanceWindowsPanel() {
   const { data, isLoading, error } = useMaintenanceWindows()
   const windows = data ?? []
+  const { t } = useTranslation('common')
   const createLabel = (
     <>
       <PlusCircleIcon className="size-4" aria-hidden="true" />
@@ -308,25 +337,13 @@ export function MaintenanceWindowsPanel() {
           description="Schedule a recurring window so planned work does not page anyone."
         />
       ) : (
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Schedule</TableHead>
-                <TableHead>Applies to</TableHead>
-                <TableHead>State</TableHead>
-                <TableHead>Next start</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {windows.map((w) => (
-                <WindowRow key={w.id} window={w} />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ResponsiveTable
+          rows={windows}
+          columns={windowColumns}
+          getRowId={(w) => w.id ?? w.name}
+          ariaLabel={t('tableLabels.maintenanceWindows')}
+          renderActions={(w) => <WindowActions window={w} />}
+        />
       )}
     </section>
   )

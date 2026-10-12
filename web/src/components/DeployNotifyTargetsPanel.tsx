@@ -1,12 +1,10 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { RocketLaunchIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateDeployNotifyTargetDialog } from './CreateDeployNotifyTargetDialog'
@@ -36,41 +34,45 @@ function maskNotifyUrl(url: string): string {
   }
 }
 
-function TargetRow({
-  appName,
-  target,
-}: {
-  appName: string
-  target: DeployNotifyTarget
-}) {
-  return (
-    <TableRow>
-      <TableCell>
-        <Badge variant="outline">{target.notify_kind ?? 'generic'}</Badge>
-      </TableCell>
-      <TableCell
-        className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground"
-        title={target.notify_url}
-      >
-        {target.notify_url ? maskNotifyUrl(target.notify_url) : '-'}
-      </TableCell>
-      <TableCell>
-        {target.enabled ? (
-          <Badge variant="success">Enabled</Badge>
-        ) : (
-          <Badge variant="muted">Disabled</Badge>
-        )}
-      </TableCell>
-      <TableCell className="text-right">
-        <DeleteDeployNotifyTargetDialog appName={appName} target={target} />
-      </TableCell>
-    </TableRow>
-  )
-}
-
 export function DeployNotifyTargetsPanel({ appName }: { appName: string }) {
+  const { t } = useTranslation('common')
   const { data, isLoading, error } = useDeployNotifyTargets(appName)
   const targets = data ?? []
+  const columns = useMemo<ResponsiveColumn<DeployNotifyTarget>[]>(
+    () => [
+      {
+        id: 'channel',
+        header: 'Channel',
+        primary: true,
+        cell: (target) => (
+          <Badge variant="outline">{target.notify_kind ?? 'generic'}</Badge>
+        ),
+      },
+      {
+        id: 'destination',
+        header: 'Destination',
+        cell: (target) => (
+          <span
+            className="block truncate font-mono text-xs text-muted-foreground"
+            title={target.notify_url}
+          >
+            {target.notify_url ? maskNotifyUrl(target.notify_url) : '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        cell: (target) =>
+          target.enabled ? (
+            <Badge variant="success">Enabled</Badge>
+          ) : (
+            <Badge variant="muted">Disabled</Badge>
+          ),
+      },
+    ],
+    [],
+  )
 
   return (
     <section className="rounded-lg border border-border p-4">
@@ -103,27 +105,18 @@ export function DeployNotifyTargetsPanel({ appName }: { appName: string }) {
             succeeds or fails.
           </p>
         ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Channel</TableHead>
-                  <TableHead>Destination</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {targets.map((target) => (
-                  <TargetRow
-                    key={target.id}
-                    appName={appName}
-                    target={target}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <ResponsiveTable
+            rows={targets}
+            columns={columns}
+            getRowId={(target) => target.id}
+            ariaLabel={t('tableLabels.deployNotifyTargets')}
+            renderActions={(target) => (
+              <DeleteDeployNotifyTargetDialog
+                appName={appName}
+                target={target}
+              />
+            )}
+          />
         )}
       </div>
     </section>

@@ -55,11 +55,6 @@ import {
   StandaloneTargetCell,
 } from './domains/StandaloneRowParts'
 
-// Shared by the sticky header in DomainsTable and every row, so labels
-// line up with row content.
-export const DOMAIN_LIST_GRID =
-  'grid min-w-[58rem] grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)_7rem_8rem_7rem_4.5rem_2rem] items-center gap-3'
-
 const FLAGS: {
   key: keyof Pick<
     Domain,
@@ -81,23 +76,6 @@ const FLAGS: {
   },
   { key: 'has_basic_auth', icon: LockKeyIcon, label: 'page.flag.basicAuth' },
 ]
-
-export function RowSkeleton() {
-  return (
-    <div
-      className={`${DOMAIN_LIST_GRID} border-b border-border px-4 py-3`}
-      aria-hidden="true"
-    >
-      <Skeleton className="h-4 w-44" />
-      <Skeleton className="h-4 w-24" />
-      <Skeleton className="h-5 w-16" />
-      <Skeleton className="h-5 w-16" />
-      <Skeleton className="h-4 w-16" />
-      <Skeleton className="h-5 w-9" />
-      <span />
-    </div>
-  )
-}
 
 // First problem wins, so a row carries at most one inline warning.
 function inlineWarning(
@@ -289,7 +267,15 @@ function RowActions({
   )
 }
 
-export function DomainRow({
+// Plain query, no polling: one row per visible domain must stay cheap.
+function useDomainDns(domain: Domain) {
+  return useQuery({
+    ...domainCheckQueryOptions(domainScope(domain), domain.domain),
+    staleTime: 60_000,
+  })
+}
+
+export function DomainNameCell({
   domain,
   cert: storedCert,
 }: {
@@ -298,114 +284,131 @@ export function DomainRow({
 }) {
   const cert = effectiveDomainCert(domain, storedCert)
   const { t } = useTranslation('domains')
-  const [recordOpen, setRecordOpen] = useState(false)
-  // Plain query, no polling: one row per visible domain must stay cheap.
-  const dns = useQuery({
-    ...domainCheckQueryOptions(domainScope(domain), domain.domain),
-    staleTime: 60_000,
-  })
+  const dns = useDomainDns(domain)
   const warning = inlineWarning(domain, cert, dns.data, t)
-  const standalone = isStandaloneDomain(domain)
   const flags = FLAGS.filter((flag) => domain[flag.key])
 
   return (
-    <div
-      className={`${DOMAIN_LIST_GRID} h-full w-full border-b border-border px-4 py-2 transition-colors hover:bg-muted/40`}
-    >
-      <div className="min-w-0">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Link
-            to="/domains/$domain"
-            params={{ domain: domain.domain }}
-            search={{ app: domainScope(domain) }}
-            className="min-w-0 truncate font-mono text-sm font-medium text-foreground hover:underline"
-          >
-            {domain.domain}
-          </Link>
-          <a
-            href={`https://${domain.domain.replace(/^\*\./, '')}`}
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={t('page.row.open', { domain: domain.domain })}
-            className="shrink-0 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
-          </a>
-          {domain.automatic ? (
-            <Badge variant="outline">{t('page.row.automatic')}</Badge>
-          ) : null}
-          {domain.domain.startsWith('*.') ? (
-            <Badge variant="outline" title={t('page.row.wildcardHint')}>
-              {t('page.row.wildcard')}
-            </Badge>
-          ) : null}
-          {flags.map((flag) => (
-            <span
-              key={flag.key}
-              className="shrink-0 text-muted-foreground"
-              title={t(flag.label)}
-            >
-              <flag.icon className="size-3.5" aria-hidden="true" />
-              <span className="sr-only">{t(flag.label)}</span>
-            </span>
-          ))}
-        </div>
-        {warning ? (
-          <p
-            className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-amber-700 dark:text-amber-400"
-            title={warning.title}
-          >
-            <WarningCircleIcon
-              className="size-3.5 shrink-0"
-              aria-hidden="true"
-            />
-            <span className="truncate">{warning.text}</span>
-          </p>
-        ) : null}
-      </div>
-
-      {standalone ? (
-        <StandaloneTargetCell domain={domain} />
-      ) : (
+    <div className="min-w-0">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         <Link
-          to="/apps/$name"
-          params={{ name: domain.service_name }}
-          className="min-w-0 truncate text-sm text-muted-foreground hover:text-foreground hover:underline"
+          to="/domains/$domain"
+          params={{ domain: domain.domain }}
+          search={{ app: domainScope(domain) }}
+          className="min-w-0 font-mono text-sm font-medium break-all text-foreground hover:underline"
         >
-          {domain.service_name}
+          {domain.domain}
         </Link>
-      )}
+        <a
+          href={`https://${domain.domain.replace(/^\*\./, '')}`}
+          target="_blank"
+          rel="noreferrer noopener"
+          aria-label={t('page.row.open', { domain: domain.domain })}
+          className="shrink-0 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowSquareOutIcon className="size-3" aria-hidden="true" />
+        </a>
+        {domain.automatic ? (
+          <Badge variant="outline">{t('page.row.automatic')}</Badge>
+        ) : null}
+        {domain.domain.startsWith('*.') ? (
+          <Badge variant="outline" title={t('page.row.wildcardHint')}>
+            {t('page.row.wildcard')}
+          </Badge>
+        ) : null}
+        {flags.map((flag) => (
+          <span
+            key={flag.key}
+            className="shrink-0 text-muted-foreground"
+            title={t(flag.label)}
+          >
+            <flag.icon className="size-3.5" aria-hidden="true" />
+            <span className="sr-only">{t(flag.label)}</span>
+          </span>
+        ))}
+      </div>
+      {warning ? (
+        <p
+          className="mt-0.5 flex min-w-0 items-start gap-1 text-xs text-amber-700 dark:text-amber-400"
+          title={warning.title}
+        >
+          <WarningCircleIcon
+            className="mt-0.5 size-3.5 shrink-0"
+            aria-hidden="true"
+          />
+          <span>{warning.text}</span>
+        </p>
+      ) : null}
+    </div>
+  )
+}
 
-      <DomainDnsStatusBadge status={dns.data?.status} />
+export function DomainTargetCell({ domain }: { domain: Domain }) {
+  if (isStandaloneDomain(domain))
+    return <StandaloneTargetCell domain={domain} />
+  return (
+    <Link
+      to="/apps/$name"
+      params={{ name: domain.service_name }}
+      className="min-w-0 truncate text-sm text-muted-foreground hover:text-foreground hover:underline"
+    >
+      {domain.service_name}
+    </Link>
+  )
+}
 
-      <CertCell domain={domain} cert={cert} />
+export function DomainDnsCell({ domain }: { domain: Domain }) {
+  const dns = useDomainDns(domain)
+  return <DomainDnsStatusBadge status={dns.data?.status} />
+}
 
-      <ExpiryCell cert={cert} />
+export function DomainCertCell({
+  domain,
+  cert,
+}: {
+  domain: Domain
+  cert?: CertificateStatus
+}) {
+  return <CertCell domain={domain} cert={effectiveDomainCert(domain, cert)} />
+}
 
-      <SearchVisibilityCell domain={domain} />
+export function DomainExpiryCell({
+  domain,
+  cert,
+}: {
+  domain: Domain
+  cert?: CertificateStatus
+}) {
+  return <ExpiryCell cert={effectiveDomainCert(domain, cert)} />
+}
 
-      {standalone ? (
+export { SearchVisibilityCell as DomainVisibilityCell }
+
+export function DomainRowActions({ domain }: { domain: Domain }) {
+  const [recordOpen, setRecordOpen] = useState(false)
+  const dns = useDomainDns(domain)
+  const onShowRecord = () => {
+    setRecordOpen(true)
+  }
+  const onRecheck = () => {
+    void dns.refetch()
+  }
+
+  return (
+    <>
+      {isStandaloneDomain(domain) ? (
         <StandaloneRowActions
           domain={domain}
-          onShowRecord={() => {
-            setRecordOpen(true)
-          }}
-          onRecheck={() => {
-            void dns.refetch()
-          }}
+          onShowRecord={onShowRecord}
+          onRecheck={onRecheck}
         />
       ) : (
         <RowActions
           domain={domain}
-          onShowRecord={() => {
-            setRecordOpen(true)
-          }}
-          onRecheck={() => {
-            void dns.refetch()
-          }}
+          onShowRecord={onShowRecord}
+          onRecheck={onRecheck}
         />
       )}
-
       {recordOpen ? (
         <DomainDnsRecordDialog
           appName={domainScope(domain)}
@@ -415,6 +418,6 @@ export function DomainRow({
           }}
         />
       ) : null}
-    </div>
+    </>
   )
 }

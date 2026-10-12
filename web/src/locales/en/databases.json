@@ -469,5 +469,9 @@
     "node": "Node",
     "project": "Project",
     "noProject": "No project"
+  },
+  "slowQueries": {
+    "tableLabel": "Slow queries",
+    "sortBy": "Sort by"
   }
 }

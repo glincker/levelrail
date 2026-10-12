@@ -55,11 +55,11 @@ export function StructureView({
       <section className="space-y-2">
         <h3 className="text-sm font-medium">{t('viewer.explorer.columns')}</h3>
         <div className="overflow-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm [&_tr>:first-child]:sticky [&_tr>:first-child]:left-0 [&_tr>:first-child]:bg-card">
             <caption className="sr-only">
               {t('viewer.explorer.columns')}
             </caption>
-            <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
+            <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">
                   {t('viewer.explorer.colName')}

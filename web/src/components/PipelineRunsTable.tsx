@@ -1,14 +1,12 @@
+import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { usePipelineRuns } from '../queries/pipelines'
 import { formatDuration } from '../lib/pipelineStatus'
@@ -22,7 +20,84 @@ export function PipelineRunsTable({
   appName: string
   pipeline?: string
 }) {
+  const { t } = useTranslation('backups')
   const { data, isLoading, error } = usePipelineRuns(appName, pipeline)
+  type Run = NonNullable<typeof data>[number]
+  const columns = useMemo<ResponsiveColumn<Run>[]>(
+    () => [
+      {
+        id: 'run',
+        header: 'Run',
+        primary: true,
+        cell: (r) => (
+          <Link
+            to="/apps/$name/pipelines/runs/$runId"
+            params={{ name: appName, runId: r.id }}
+            className="font-medium text-foreground underline-offset-2 hover:underline"
+          >
+            {r.pipeline_name} #{r.number}
+          </Link>
+        ),
+      },
+      {
+        id: 'status',
+        header: 'Status',
+        cell: (r) => <PipelineStatusBadge status={r.status} />,
+      },
+      {
+        id: 'trigger',
+        header: 'Trigger',
+        priority: 2,
+        cell: (r) => (
+          <span className="text-xs text-muted-foreground">
+            {r.trigger}
+            {r.actor ? ` by ${r.actor}` : ''}
+          </span>
+        ),
+      },
+      {
+        id: 'ref',
+        header: 'Ref',
+        priority: 2,
+        cell: (r) => (
+          <span className="block max-w-48 truncate font-mono text-xs text-muted-foreground">
+            {r.ref ?? ''}
+          </span>
+        ),
+      },
+      {
+        id: 'started',
+        header: 'Started',
+        priority: 3,
+        cell: (r) => (
+          <span className="text-xs text-muted-foreground">
+            {new Date(r.created_at).toLocaleString()}
+          </span>
+        ),
+      },
+      {
+        id: 'duration',
+        header: 'Duration',
+        priority: 3,
+        cell: (r) => (
+          <span className="text-xs tabular-nums text-muted-foreground">
+            {formatDuration(r.started_at, r.finished_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'forge',
+        header: 'Forge status',
+        priority: 3,
+        cell: (r) => (
+          <span className="text-xs">
+            <PipelineReportLink report={r.report} />
+          </span>
+        ),
+      },
+    ],
+    [appName],
+  )
   if (isLoading) {
     return <TableSkeleton columnCount={7} rowCount={4} />
   }
@@ -39,54 +114,11 @@ export function PipelineRunsTable({
     return <p className="text-sm text-muted-foreground">No runs yet.</p>
   }
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Run</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Trigger</TableHead>
-            <TableHead>Ref</TableHead>
-            <TableHead>Started</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Forge status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {runs.map((r) => (
-            <TableRow key={r.id}>
-              <TableCell>
-                <Link
-                  to="/apps/$name/pipelines/runs/$runId"
-                  params={{ name: appName, runId: r.id }}
-                  className="font-medium text-foreground underline-offset-2 hover:underline"
-                >
-                  {r.pipeline_name} #{r.number}
-                </Link>
-              </TableCell>
-              <TableCell>
-                <PipelineStatusBadge status={r.status} />
-              </TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {r.trigger}
-                {r.actor ? ` by ${r.actor}` : ''}
-              </TableCell>
-              <TableCell className="max-w-48 truncate font-mono text-xs text-muted-foreground">
-                {r.ref ?? ''}
-              </TableCell>
-              <TableCell className="text-xs text-muted-foreground">
-                {new Date(r.created_at).toLocaleString()}
-              </TableCell>
-              <TableCell className="text-xs tabular-nums text-muted-foreground">
-                {formatDuration(r.started_at, r.finished_at)}
-              </TableCell>
-              <TableCell className="text-xs">
-                <PipelineReportLink report={r.report} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={runs}
+      columns={columns}
+      getRowId={(r) => r.id}
+      ariaLabel={t('tables.pipelineRuns')}
+    />
   )
 }

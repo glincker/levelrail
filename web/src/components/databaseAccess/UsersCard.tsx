@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { UserPlusIcon, UsersIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
@@ -6,13 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import type {
   DatabaseCredential,
@@ -23,17 +19,27 @@ import {
   useRotateDatabaseUser,
   useSetDatabaseUserLogin,
 } from '../../queries/databaseAccess'
-import { useWindowedRows } from '../../lib/useWindowedRows'
 import { CreateUserDialog } from './CreateUserDialog'
 import { DeleteUserDialog } from './DeleteUserDialog'
 
-function UserRow({
-  user,
+function userStatus(user: DatabaseUser): 'disabled' | 'expired' | 'active' {
+  if (!user.can_login) return 'disabled'
+  return user.expired ? 'expired' : 'active'
+}
+
+const STATUS_VARIANT = {
+  active: 'success',
+  expired: 'warning',
+  disabled: 'muted',
+} as const
+
+function UsersTable({
+  users,
   databaseName,
   onCredential,
   onDelete,
 }: {
-  user: DatabaseUser
+  users: DatabaseUser[]
   databaseName: string
   onCredential: (c: DatabaseCredential) => void
   onDelete: (name: string) => void
@@ -41,11 +47,6 @@ function UserRow({
   const { t } = useTranslation('databaseAccess')
   const rotate = useRotateDatabaseUser(databaseName)
   const setLogin = useSetDatabaseUserLogin(databaseName)
-  const status = !user.can_login
-    ? 'disabled'
-    : user.expired
-      ? 'expired'
-      : 'active'
 
   function fail(err: Error) {
     toast.add({
@@ -55,7 +56,7 @@ function UserRow({
     })
   }
 
-  function toggleLogin() {
+  function toggleLogin(user: DatabaseUser) {
     setLogin.mutate(
       { role: user.name, login: !user.can_login },
       {
@@ -72,46 +73,83 @@ function UserRow({
     )
   }
 
+  const columns = useMemo<ResponsiveColumn<DatabaseUser>[]>(
+    () => [
+      {
+        id: 'name',
+        header: t('users.columns.name'),
+        primary: true,
+        cell: (user) => (
+          <div>
+            <div className="font-mono text-xs">{user.name}</div>
+            <div className="text-xs font-normal text-muted-foreground">
+              {t(`users.kind.${user.kind}`)}
+            </div>
+          </div>
+        ),
+      },
+      {
+        id: 'access',
+        header: t('users.columns.access'),
+        priority: 2,
+        cell: (user) => (
+          <span className="text-xs">
+            {user.preset ? t(`users.preset.${user.preset}`) : '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'status',
+        header: t('users.columns.status'),
+        cell: (user) => {
+          const status = userStatus(user)
+          return (
+            <Badge variant={STATUS_VARIANT[status]}>
+              {t(`users.status.${status}`)}
+            </Badge>
+          )
+        },
+      },
+      {
+        id: 'connections',
+        header: t('users.columns.connections'),
+        priority: 3,
+        cell: (user) => (
+          <span className="text-xs">
+            {user.connections}
+            <span className="text-muted-foreground">
+              {' / '}
+              {user.connection_limit > 0
+                ? user.connection_limit
+                : t('users.unlimited')}
+            </span>
+          </span>
+        ),
+      },
+      {
+        id: 'expires',
+        header: t('users.columns.expires'),
+        priority: 3,
+        cell: (user) => (
+          <span className="text-xs">
+            {user.valid_until
+              ? new Date(user.valid_until).toLocaleDateString()
+              : t('users.never')}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  )
+
   return (
-    <TableRow>
-      <TableCell>
-        <div className="font-mono text-xs">{user.name}</div>
-        <div className="text-xs text-muted-foreground">
-          {t(`users.kind.${user.kind}`)}
-        </div>
-      </TableCell>
-      <TableCell className="text-xs">
-        {user.preset ? t(`users.preset.${user.preset}`) : '-'}
-      </TableCell>
-      <TableCell>
-        <Badge
-          variant={
-            status === 'active'
-              ? 'success'
-              : status === 'expired'
-                ? 'warning'
-                : 'muted'
-          }
-        >
-          {t(`users.status.${status}`)}
-        </Badge>
-      </TableCell>
-      <TableCell className="text-xs">
-        {user.connections}
-        <span className="text-muted-foreground">
-          {' / '}
-          {user.connection_limit > 0
-            ? user.connection_limit
-            : t('users.unlimited')}
-        </span>
-      </TableCell>
-      <TableCell className="text-xs">
-        {user.valid_until
-          ? new Date(user.valid_until).toLocaleDateString()
-          : t('users.never')}
-      </TableCell>
-      <TableCell className="text-right">
-        {user.protected ? (
+    <ResponsiveTable
+      rows={users}
+      columns={columns}
+      getRowId={(u) => u.name}
+      ariaLabel={t('users.tableLabel')}
+      renderActions={(user) =>
+        user.protected ? (
           <span className="text-xs text-muted-foreground">
             {t('users.protectedNote')}
           </span>
@@ -140,7 +178,9 @@ function UserRow({
               variant="ghost"
               size="sm"
               disabled={setLogin.isPending}
-              onClick={toggleLogin}
+              onClick={() => {
+                toggleLogin(user)
+              }}
             >
               {user.can_login ? t('users.disable') : t('users.enable')}
             </Button>
@@ -152,73 +192,9 @@ function UserRow({
               {t('users.delete')}
             </Button>
           </div>
-        )}
-      </TableCell>
-    </TableRow>
-  )
-}
-
-function UsersTable({
-  users,
-  databaseName,
-  onCredential,
-  onDelete,
-}: {
-  users: DatabaseUser[]
-  databaseName: string
-  onCredential: (c: DatabaseCredential) => void
-  onDelete: (name: string) => void
-}) {
-  const { t } = useTranslation('databaseAccess')
-  const { parentRef, windowed, indices, padTop, padBottom } = useWindowedRows(
-    users.length,
-  )
-
-  return (
-    <div
-      ref={parentRef}
-      className={windowed ? 'max-h-[560px] overflow-auto' : 'overflow-auto'}
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('users.columns.name')}</TableHead>
-            <TableHead>{t('users.columns.access')}</TableHead>
-            <TableHead>{t('users.columns.status')}</TableHead>
-            <TableHead>{t('users.columns.connections')}</TableHead>
-            <TableHead>{t('users.columns.expires')}</TableHead>
-            <TableHead className="text-right">
-              {t('users.columns.actions')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {padTop > 0 ? (
-            <TableRow aria-hidden="true">
-              <TableCell colSpan={6} style={{ height: padTop }} />
-            </TableRow>
-          ) : null}
-          {indices.map((i) => {
-            const user = users[i]
-            if (!user) return null
-            return (
-              <UserRow
-                key={user.name}
-                user={user}
-                databaseName={databaseName}
-                onCredential={onCredential}
-                onDelete={onDelete}
-              />
-            )
-          })}
-          {padBottom > 0 ? (
-            <TableRow aria-hidden="true">
-              <TableCell colSpan={6} style={{ height: padBottom }} />
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
-    </div>
+        )
+      }
+    />
   )
 }
 

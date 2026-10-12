@@ -1,13 +1,10 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PackageIcon, PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -98,6 +95,54 @@ export function RegistryCredentialTable({
   credentials: RegistryCredential[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('common')
+  const columns = useMemo<ResponsiveColumn<RegistryCredential>[]>(
+    () => [
+      {
+        id: 'name',
+        header: 'Name',
+        primary: true,
+        cell: (c) => (
+          <span className="font-medium text-foreground">{c.name}</span>
+        ),
+      },
+      {
+        id: 'host',
+        header: 'Registry host',
+        cell: (c) => (
+          <span className="font-mono break-all text-muted-foreground">
+            {c.registry_host}
+          </span>
+        ),
+      },
+      {
+        id: 'username',
+        header: 'Username',
+        priority: 2,
+        cell: (c) => (
+          <span className="text-muted-foreground">{c.username}</span>
+        ),
+      },
+      {
+        id: 'added',
+        header: 'Added',
+        priority: 3,
+        cell: (c) => (
+          <span className="text-muted-foreground">
+            {formatDate(c.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'expiry',
+        header: 'Expiry',
+        priority: 2,
+        cell: (c) => <ExpiryCell credential={c} />,
+      },
+    ],
+    [],
+  )
+
   if (credentials.length === 0) {
     return (
       <EmptyState
@@ -111,47 +156,18 @@ export function RegistryCredentialTable({
   }
 
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Registry host</TableHead>
-            <TableHead>Username</TableHead>
-            <TableHead>Added</TableHead>
-            <TableHead>Expiry</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {credentials.map((cred) => (
-            <TableRow key={cred.id}>
-              <TableCell className="font-medium text-foreground">
-                {cred.name}
-              </TableCell>
-              <TableCell className="font-mono text-muted-foreground">
-                {cred.registry_host}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {cred.username}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(cred.created_at)}
-              </TableCell>
-              <TableCell>
-                <ExpiryCell credential={cred} />
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <BrowseRegistryCredentialDialog credential={cred} />
-                  <TestButton credential={cred} />
-                  <DeleteRegistryCredentialDialog credential={cred} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={credentials}
+      columns={columns}
+      getRowId={(c) => c.id}
+      ariaLabel={t('tableLabels.registryCredentials')}
+      renderActions={(c) => (
+        <span className="flex flex-wrap justify-end gap-2">
+          <BrowseRegistryCredentialDialog credential={c} />
+          <TestButton credential={c} />
+          <DeleteRegistryCredentialDialog credential={c} />
+        </span>
+      )}
+    />
   )
 }
