@@ -29,7 +29,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // Environment detail route: the one place an operator can see every app
 // tagged with a specific staging/production-style label, plus jump to a
@@ -96,60 +96,58 @@ function EnvironmentDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        breadcrumb={<Breadcrumbs projectId={id} environmentId={envId} />}
-        title={
-          <span className="flex items-center gap-2">
-            <StackSimpleIcon className="size-4 text-muted-foreground" />
-            {environment.name}
-          </span>
-        }
-        actions={
-          <div className="flex items-center gap-4">
-            {siblingEnvironments.length > 0 ? (
-              <Button
-                variant="outline"
-                size="sm"
-                nativeButton={false}
-                render={
-                  <Link
-                    to="/projects/$id/environments/compare"
-                    params={{ id }}
-                    search={{ a: envId }}
-                  />
-                }
-              >
-                <ArrowsLeftRightIcon
-                  className="size-3.5"
-                  data-icon="inline-start"
+    <PageTemplate
+      breadcrumb={<Breadcrumbs projectId={id} environmentId={envId} />}
+      title={
+        <span className="flex items-center gap-2">
+          <StackSimpleIcon className="size-4 text-muted-foreground" />
+          {environment.name}
+        </span>
+      }
+      actions={
+        <div className="flex items-center gap-4">
+          {siblingEnvironments.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={
+                <Link
+                  to="/projects/$id/environments/compare"
+                  params={{ id }}
+                  search={{ a: envId }}
                 />
-                Compare
-              </Button>
-            ) : null}
-            <ProtectedEnvironmentToggle
-              id={environment.id}
-              name={environment.name}
-              protectedFlag={environment.protected}
-              projectId={id}
-            />
-            <CloneEnvironmentDialog
-              environmentId={environment.id}
-              environmentName={environment.name}
-              projectId={id}
-            />
-            <DeleteEnvironmentDialog
-              id={environment.id}
-              name={environment.name}
-              projectId={id}
-              onDeleted={() => {
-                void navigate({ to: '/projects/$id', params: { id } })
-              }}
-            />
-          </div>
-        }
-      />
-
+              }
+            >
+              <ArrowsLeftRightIcon
+                className="size-3.5"
+                data-icon="inline-start"
+              />
+              Compare
+            </Button>
+          ) : null}
+          <ProtectedEnvironmentToggle
+            id={environment.id}
+            name={environment.name}
+            protectedFlag={environment.protected}
+            projectId={id}
+          />
+          <CloneEnvironmentDialog
+            environmentId={environment.id}
+            environmentName={environment.name}
+            projectId={id}
+          />
+          <DeleteEnvironmentDialog
+            id={environment.id}
+            name={environment.name}
+            projectId={id}
+            onDeleted={() => {
+              void navigate({ to: '/projects/$id', params: { id } })
+            }}
+          />
+        </div>
+      }
+    >
       <EnvironmentEnvEditor environmentId={envId} />
       <SharedEnvSecretsCard scope="environment" id={envId} />
 
@@ -214,7 +212,7 @@ function EnvironmentDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageTemplate>
   )
 }
 

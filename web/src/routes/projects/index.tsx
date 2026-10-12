@@ -10,7 +10,7 @@ import {
 } from '../../components/ProjectRow'
 import { CreateProjectDialog } from '../../components/CreateProjectDialog'
 import { EmptyState } from '../../components/ui/empty-state'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '../../components/shell/PageTemplate'
 
 // Typed loader primes the Query cache, the component only reads that
 // cache via useProjects() (suspense), mirroring routes/nodes/index.tsx
@@ -52,24 +52,20 @@ function ProjectListPage() {
   })
 
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader
-          title="Projects"
-          description="Optional labels to group related apps and databases. An app or database with no project is just as valid, it still shows up on its own list either way."
-          actions={
-            <>
-              {projects.length > 0 ? (
-                <span className="text-sm text-muted-foreground">
-                  {projects.length}{' '}
-                  {projects.length === 1 ? 'project' : 'projects'}
-                </span>
-              ) : null}
-              <CreateProjectDialog />
-            </>
-          }
-        />
-      </div>
+    <PageTemplate
+      title="Projects"
+      description="Optional labels to group related apps and databases. An app or database with no project is just as valid, it still shows up on its own list either way."
+      actions={
+        <>
+          {projects.length > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {projects.length} {projects.length === 1 ? 'project' : 'projects'}
+            </span>
+          ) : null}
+          <CreateProjectDialog />
+        </>
+      }
+    >
       {projects.length === 0 ? (
         <EmptyState
           icon={<FolderIcon className="size-5" />}
@@ -114,22 +110,19 @@ function ProjectListPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageTemplate>
   )
 }
 
 function ProjectListPending() {
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader title="Projects" />
-      </div>
+    <PageTemplate title="Projects">
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 3 }, (_, i) => (
           <RowSkeleton key={i} />
         ))}
       </div>
-    </div>
+    </PageTemplate>
   )
 }

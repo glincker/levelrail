@@ -1,3 +1,4 @@
+import { PageTemplate } from '../shell/PageTemplate'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
@@ -220,10 +221,11 @@ export function DeploymentsPage({
         : { tone: 'neutral' as const, label: 'Connecting' }
 
   return (
-    <div ref={topRef} className="flex flex-col gap-5">
-      <header className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold text-foreground">Deployments</h1>
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
+    <PageTemplate
+      title="Deployments"
+      width="wide"
+      actions={
+        <>
           <StatusPill
             size="sm"
             tone={streamView.tone}
@@ -235,9 +237,10 @@ export function DeploymentsPage({
             selected={filters.app}
           />
           <ShortcutsHelp />
-        </div>
-      </header>
-
+        </>
+      }
+    >
+      <div ref={topRef} className="hidden" />
       <DeploymentsSummary
         summary={summary.data}
         loading={summary.isPending}
@@ -369,6 +372,6 @@ export function DeploymentsPage({
         onConfirm={actions.confirm}
         onDismiss={actions.dismiss}
       />
-    </div>
+    </PageTemplate>
   )
 }

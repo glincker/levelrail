@@ -10,7 +10,7 @@ import { NodesTable } from '../../components/NodesTable'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '../../components/shell/PageTemplate'
 import { countResourcesByNode } from '../../lib/nodeResourceCounts'
 
 // The loader primes the cache; the table virtualizes itself past 50 rows.
@@ -54,25 +54,22 @@ function NodeListPage() {
       ? countResourcesByNode(nodes, apps, databases)
       : new Map<string, number>()
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader
-          title={t('list.title')}
-          description={t('list.description')}
-          helpPath="/multi-node"
-          helpLabel={t('list.help')}
-          actions={
-            <>
-              {nodes.length > 0 ? (
-                <span className="text-sm text-muted-foreground">
-                  {t('list.count', { count: nodes.length })}
-                </span>
-              ) : null}
-              <AddNodeWizard />
-            </>
-          }
-        />
-      </div>
+    <PageTemplate
+      title={t('list.title')}
+      description={t('list.description')}
+      helpPath="/multi-node"
+      helpLabel={t('list.help')}
+      actions={
+        <>
+          {nodes.length > 0 ? (
+            <span className="text-sm text-muted-foreground">
+              {t('list.count', { count: nodes.length })}
+            </span>
+          ) : null}
+          <AddNodeWizard />
+        </>
+      }
+    >
       <BuildStrainSuggestion nodes={nodes} />
       {nodes.length === 0 ? (
         <EmptyState
@@ -88,23 +85,20 @@ function NodeListPage() {
           counts={counts}
         />
       )}
-    </div>
+    </PageTemplate>
   )
 }
 
 function NodeListPending() {
   const { t } = useTranslation('nodes')
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader title={t('list.title')} />
-      </div>
+    <PageTemplate title={t('list.title')}>
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 3 }, (_, i) => (
           <RowSkeleton key={i} />
         ))}
       </div>
-    </div>
+    </PageTemplate>
   )
 }

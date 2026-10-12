@@ -25,7 +25,9 @@ export function BuildingNowLane({
       aria-label="Building now"
       className={cn('flex flex-col gap-2', rows.length === 0 && 'sr-only')}
     >
-      <h2 className="text-sm font-medium">Building now</h2>
+      <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+        Building now
+      </h2>
       <div aria-live="polite" aria-atomic="false">
         <p className="sr-only">
           {rows.length === 0
