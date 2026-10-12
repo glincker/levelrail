@@ -1,16 +1,15 @@
 ---
+title: "Migrating a Next.js app from Vercel"
 description: A practical runbook for moving a Vercel-hosted Next.js app to Levelrail, with an inventory, a concept mapping table, a DNS cutover and rollback plan, the gaps that have no equivalent, and a shadow-run checklist.
 ---
-
-# Migrating a Next.js app from Vercel
 
 This is a runbook for moving one Vercel-hosted Next.js app onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
 ::: warning
-Levelrail has no stable release yet (see [feature status](feature-status.md)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](acme-verification-runbook.md)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
+Levelrail has no stable release yet (see [feature status](/feature-status)), and real public ACME has one recorded live run but no renewal or wildcard verification yet (see the [ACME verification runbook](/acme-verification-runbook)). Run the new deployment in parallel with Vercel, and keep Vercel as the rollback path until the shadow run in section 6 is clean.
 :::
 
-Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](migrating-from-coolify-dokploy-and-caprover.md), there is no importer for Vercel. Everything below is manual. Record every surprise you hit in `FRICTION.md` at the repo root.
+Unlike the platform importer in [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover), there is no importer for Vercel. Everything below is manual. Record every surprise you hit in `FRICTION.md` at the repo root.
 
 ## 1. Inventory what Vercel holds
 
@@ -32,29 +31,29 @@ Collect this before touching Levelrail. Vercel keeps configuration in its dashbo
 
 | Vercel | Levelrail equivalent | Notes |
 | --- | --- | --- |
-| Project | An app, with one or more services | See [Deploying apps](deploying-apps.md). |
-| Git deploy on push | A git source with `trigger_mode: push`, from a GitHub, GitLab, Bitbucket, or Gitea connection | Provider connections are set up in the dashboard only. Path filters (`--paths`, `--paths-ignore`) exist. See [Git integrations](git-integrations.md). |
+| Project | An app, with one or more services | See [Deploying apps](/deploying-apps). |
+| Git deploy on push | A git source with `trigger_mode: push`, from a GitHub, GitLab, Bitbucket, or Gitea connection | Provider connections are set up in the dashboard only. Path filters (`--paths`, `--paths-ignore`) exist. See [Git integrations](/git-integrations). |
 | Build with framework preset | `build.type: railpack` (Node.js is a supported provider) or `build.type: dockerfile` | The "Deploy from git" wizard shows what Railpack detects before you build. Only Node.js, Go, Java (Spring Boot), and Python are accepted. |
 | `output: "standalone"` with your own Dockerfile | `build.type: dockerfile`, with `build.args` for `ARG` values | Use this when you need control over the image. You own the Dockerfile. Build args are not stored with the app, see the build-time section below. |
 | Static export (`output: "export"`) | `build.type: static`, served by the embedded Caddy with no container | Static runs no build step. It copies `build.path` (relative to the repo root, or to `build.baseDirectory`) from the commit as it is, so the exported `out/` directory must be committed. Otherwise build with `dockerfile` or `railpack`. Deploy it with `apps deploy-spec <app> --file app.yaml --repo-url URL --ref main`, or `apps create --file`, which routes a static service through the same path. The spec forbids `port`, `host_port`, `bind_address`, and `hooks`. |
-| Production and Preview environments | Optional environments inside a project. Apps are tagged with one. Promote copies only the image tag to a sibling app in another environment | Env vars stay per app, so a staging and a production app each keep their own. See [Projects and organizations](projects-and-organizations.md) and [Promote details](deploying-apps.md#promote-between-environments). |
+| Production and Preview environments | Optional environments inside a project. Apps are tagged with one. Promote copies only the image tag to a sibling app in another environment | Env vars stay per app, so a staging and a production app each keep their own. See [Projects and organizations](/projects-and-organizations) and [Promote details](/deploying-apps#promote-between-environments). |
 | Environment variables | Plain env (`apps env import --file`), encrypted secrets (`apps secrets set --env-file`), or Vault references | Plain import skips keys that are already secrets. Export never includes secret values. |
 | Sensitive env vars | `apps secrets set`, envelope-encrypted and write-only | Never returned by the API after save. |
-| Shared env vars | Shared env scoped to a project, organization, or environment (`shared-env set`) | See [Projects and organizations](projects-and-organizations.md). |
-| Preview deployments per pull request | Preview environments per PR, opt-in per app: `apps previews enable <app>`. Deployed as `<app>-pr-<number>`, torn down on close or merge | GitHub, GitLab, Bitbucket, and Gitea. The preview domain is `pr-<number>.<app>.<primary-domain>` and needs a control-plane primary domain. There is no per-branch preview URL. See [Git integrations](git-integrations.md#preview-environments). |
+| Shared env vars | Shared env scoped to a project, organization, or environment (`shared-env set`) | See [Projects and organizations](/projects-and-organizations). |
+| Preview deployments per pull request | Preview environments per PR, opt-in per app: `apps previews enable <app>`. Deployed as `<app>-pr-<number>`, torn down on close or merge | GitHub, GitLab, Bitbucket, and Gitea. The preview domain is `pr-<number>.<app>.<primary-domain>` and needs a control-plane primary domain. There is no per-branch preview URL. See [Git integrations](/git-integrations#preview-environments). |
 | Preview-only env values | `apps preview-env set`, and branch-scoped `apps branch-env set` | Single-service previews only. |
 | PR comment with preview URL | A PR comment and a `levelrail/preview` commit status, when `apps previews pr-status enable` is on | One comment per PR, kept up to date. |
-| Deployment protection | Protected environments and deploy approvals | Deploy approvals are labeled stable in [feature status](feature-status.md). |
-| Domains | `domains:` in the app spec, or `apps domains add`. Caddy routes by `Host` and handles TLS | Point an A or AAAA record at the server. See [Domains and ingress](domains-and-ingress.md). |
+| Deployment protection | Protected environments and deploy approvals | Deploy approvals are labeled stable in [feature status](/feature-status). |
+| Domains | `domains:` in the app spec, or `apps domains add`. Caddy routes by `Host` and handles TLS | Point an A or AAAA record at the server. See [Domains and ingress](/domains-and-ingress). |
 | `www` to apex redirect | Add `www` to the app's domains, then `domains redirect set <app> www.example.com --target https://example.com` (301, 302, 307 or 308), or `domains redirects canonical <app> example.com www-to-apex` to attach www and redirect it in one step | The target must be an absolute URL. A bare origin target keeps the request path and query; a target with its own path always redirects there. |
 | Automatic HTTPS | Caddy internal issuer by default (self-signed), or real ACME once enabled in settings | ACME has one recorded live run on a public VPS, with renewal and wildcards not yet verified. Bring-your-own certificate is also supported. |
 | Instant Rollback | `apps deploys rollback-to <app> <deploy-id>` (pinned by digest), `apps rollback <app> --image <tag>` for a tag listed by `apps images <app>`, the dashboard's per-deploy Rollback button, and auto-rollback on crashloop | Prior images are pinned so garbage collection cannot remove a rollback target. Take the deploy id from `apps deploys list <app>`. |
 | Cron Jobs | Scheduled tasks: `apps scheduled-tasks create`, with a 5-field cron expression and an argv command run inside the running container | Not an HTTP call. To trigger a route, the command must use something present in your image. Confirm the tool exists in the image. |
-| Runtime and build logs | `apps logs`, `apps deploys logs`, a node-local log store with full-text search, and live build steps | See [Observability](observability.md). |
-| Firewall and rate limiting | Opt-in WAF (detect or block) and rate limiting per domain | See [Domains and ingress](domains-and-ingress.md). |
+| Runtime and build logs | `apps logs`, `apps deploys logs`, a node-local log store with full-text search, and live build steps | See [Observability](/observability). |
+| Firewall and rate limiting | Opt-in WAF (detect or block) and rate limiting per domain | See [Domains and ingress](/domains-and-ingress). |
 | Maintenance page | Per-domain maintenance mode | Takes precedence over a redirect. |
-| Vercel Postgres, KV | Managed databases (Postgres, Redis, and others) with scheduled backups | You dump and restore the data yourself. See [Managing databases](managing-databases.md). |
-| Team members and roles | IAM-style Allow and Deny policies and scoped tokens | See [Identity and access](identity-and-access.md). |
+| Vercel Postgres, KV | Managed databases (Postgres, Redis, and others) with scheduled backups | You dump and restore the data yourself. See [Managing databases](/managing-databases). |
+| Team members and roles | IAM-style Allow and Deny policies and scoped tokens | See [Identity and access](/identity-and-access). |
 
 ### Build-time versus runtime env
 
@@ -71,7 +70,7 @@ Server-only variables are set as normal app env or secrets and read when the con
 ## 3. Procedure
 
 1. **Connect the git provider** in the dashboard, then confirm it from the CLI with `git-providers`.
-2. **Create the app** from git, as in [Deploying apps, git-repo build](deploying-apps.md#from-a-git-repository), or commit an `app.yaml`:
+2. **Create the app** from git, as in [Deploying apps, git-repo build](/deploying-apps#from-a-git-repository), or commit an `app.yaml`:
 
    ```yaml
    version: 1
@@ -107,7 +106,7 @@ Plan for these before you commit to moving.
 | Edge Functions and Edge Middleware runtime | None. Everything runs as a normal Node container. Middleware that only uses Node-compatible APIs works. Code that depends on the edge runtime needs to move to the Node runtime. |
 | Image Optimization CDN | No global image CDN. `next/image` runs inside your container, so it uses your server's CPU and memory and is served from wherever your node is. Consider `sharp` in the image, or `images.unoptimized`. |
 | Global CDN and edge caching | None built in. Caddy serves from the node or nodes you run. ISR and the Next.js data cache live on the container's filesystem, so use a volume if they must survive redeploys. Multiple replicas do not share that cache. |
-| Web Analytics and Speed Insights (real-user Core Web Vitals) | No browser-side analytics. Server-side request metrics exist (rate, 4xx and 5xx, p50, p95, p99 per app). The [integrations](integrations.md) page lists third-party options such as PostHog. |
+| Web Analytics and Speed Insights (real-user Core Web Vitals) | No browser-side analytics. Server-side request metrics exist (rate, 4xx and 5xx, p50, p95, p99 per app). The [integrations](/integrations) page lists third-party options such as PostHog. |
 | Blob, KV, Edge Config | No drop-in equivalents. Managed Redis exists, but you rewrite the client code. |
 | Per-branch preview URLs | Previews are per pull request only. |
 | Serverless scale to zero and autoscaling | Long-running containers with fixed replicas. There is no autoscaling. |
@@ -118,7 +117,7 @@ Plan for these before you commit to moving.
 
 1. **Lower TTLs first.** At least one full old-TTL period before cutover (often 24 hours), set the TTL on the relevant A, AAAA, and CNAME records to 60 to 300 seconds.
 2. **Add the real domains** to the app, including `www` if you redirect it: `apps domains add <app> app.example.com www.example.com`, or `domains:` in `app.yaml` and a redeploy. Then set the redirect, `domains redirect set <app> www.example.com --target https://app.example.com`. Check certificate state on the Domains tab.
-3. **Get a certificate ready before traffic arrives.** With ACME enabled, issuance needs the domain to already point at the server, so expect a short window. To avoid it, upload a bring-your-own certificate for the domain first, or rehearse ACME on a spare hostname using the [runbook](acme-verification-runbook.md).
+3. **Get a certificate ready before traffic arrives.** With ACME enabled, issuance needs the domain to already point at the server, so expect a short window. To avoid it, upload a bring-your-own certificate for the domain first, or rehearse ACME on a spare hostname using the [runbook](/acme-verification-runbook).
 4. **Test with a host override** before changing DNS, for example `curl --resolve app.example.com:443:<server-ip> https://app.example.com/` (add `-k` while the certificate is self-signed). Check the redirect the same way on `www.example.com`.
 5. **Cut over.** Change the A and AAAA records for the apex and `www` from Vercel to the Levelrail server's public IP. Do not remove the domain from Vercel until the shadow run is done.
 6. **Watch.** Run `dig +short app.example.com` from outside your network, then check the Metrics tab and `apps logs <app>`.
@@ -130,7 +129,7 @@ Plan for these before you commit to moving.
 Run both platforms side by side long enough for boring problems to appear. Suggested minimum: one full business cycle, including any weekly or monthly cron.
 
 - [ ] Readiness probe passes, and a deliberately broken deploy is rejected while the old container keeps serving.
-- [ ] Plain `http://` links to your domain redirect to HTTPS (the ingress does this when it can bind port 80, see [Domains and ingress](domains-and-ingress.md)).
+- [ ] Plain `http://` links to your domain redirect to HTTPS (the ingress does this when it can bind port 80, see [Domains and ingress](/domains-and-ingress)).
 - [ ] The `www` redirect, basic auth, WAF, and uploaded certificates are still set after an env change and a redeploy.
 - [ ] A rollback to the previous image works, from both the CLI and the dashboard.
 - [ ] Every env var key present in Vercel Production exists here.
@@ -144,17 +143,17 @@ Run both platforms side by side long enough for boring problems to appear. Sugge
 - [ ] Image optimization, ISR, and file uploads behave acceptably under real traffic.
 - [ ] Response time and error rate compare acceptably against Vercel, using the app's request metrics.
 - [ ] Preview environments open, update, and tear down on a test pull request.
-- [ ] A control plane backup exists (see [Control plane backup](control-plane-backup.md)).
+- [ ] A control plane backup exists (see [Control plane backup](/control-plane-backup)).
 - [ ] Every issue found is logged in `FRICTION.md` with a severity.
 
 Decommission Vercel only after this passes and you have decided what to do about each gap in section 4.
 
 ## See also
 
-- [Deploying and managing apps](deploying-apps.md)
-- [Domains and ingress](domains-and-ingress.md)
-- [Git integrations](git-integrations.md)
-- [app.yaml reference](app-spec-reference.md)
-- [Feature status](feature-status.md)
-- [Vercel alternative](vercel-alternative.md)
-- [Migrating from Cloud Run](migrating-from-cloud-run.md)
+- [Deploying and managing apps](/deploying-apps)
+- [Domains and ingress](/domains-and-ingress)
+- [Git integrations](/git-integrations)
+- [app.yaml reference](/app-spec-reference)
+- [Feature status](/feature-status)
+- [Vercel alternative](/vercel-alternative)
+- [Migrating from Cloud Run](/migrating-from-cloud-run)

@@ -1,13 +1,9 @@
 ---
+title: "Security center"
 description: The security center scores your instance from its real state, lists what to fix first with a one-click fix or a link, manages every session and device, and sets sign-in approval and API token policy.
 ---
 
-# Security center
-
 The security center is one page, **Security center** in the sidebar (`/security`), that answers three questions: how exposed is this instance right now, what should I fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the exposure audit) and never calls anything outside your servers.
-
-<InlineToc default-open />
-
 ## Security score and checklist
 
 `GET /api/v1/security/posture` returns a score from 0 to 100, a grade, and counts by severity. Every check that fails costs points: 25 for critical, 15 for high, 8 for medium and 3 for low. A check that could not be read shows as unknown and costs nothing, so a missing data source never makes the score look worse or better than it is.
@@ -63,7 +59,7 @@ An admin can pick another account in the tab, or pass `--user <user id>` (`?user
 
 ### Approval scope
 
-New browser approval (see [Identity and access](identity-and-access.md#new-browser-approval)) always applies to password sign-ins. `auth.approval_scope` decides whether it also applies to passkey and OAuth sign-ins:
+New browser approval (see [Identity and access](/identity-and-access#new-browser-approval)) always applies to password sign-ins. `auth.approval_scope` decides whether it also applies to passkey and OAuth sign-ins:
 
 | Value | Password | Passkey | OAuth / OIDC |
 | --- | --- | --- | --- |
@@ -115,7 +111,7 @@ levelrail-cli security policy set --max-token-lifetime-days 90 --disable-unused-
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Identity and access" href="/identity-and-access">
 
 Users, roles, tokens, sign in with a code and new browser approval.

@@ -706,8 +706,3 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: scripts/release-notes.sh "$RELEASE_TAG"
-
-      - name: Rebuild docs changelog
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy-docs.yml --repo "${{ github.repository }}" --ref main

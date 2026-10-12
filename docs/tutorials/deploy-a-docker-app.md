@@ -1,8 +1,7 @@
 ---
+title: "Deploy a Docker app to your own server"
 description: Deploy a Docker image to your own Linux server with Levelrail, attach a custom domain, ship a second version, and roll back in one command. About 10 minutes.
 ---
-
-# Deploy a Docker app to your own server
 
 By the end of this tutorial you will have a Docker image running on your own server, reachable on a domain you control, with a second version deployed and a one-command rollback to the first. It takes about ten minutes and needs no Dockerfile or build step.
 
@@ -139,7 +138,7 @@ levelrail-cli apps delete hello
 
 ## Where to go next
 
-- [Zero-downtime deploys with health checks](zero-downtime-deploys-with-health-checks.md): make a bad release fail before it takes over.
-- [Deploy from GitHub Actions](deploy-from-github-actions.md): run this same flow on every push.
+- [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): make a bad release fail before it takes over.
+- [Deploy from GitHub Actions](/tutorials/deploy-from-github-actions): run this same flow on every push.
 - [Deploy safety](../deploy-safety.md): the guarantees behind pinned images and rollback.
 - [Deploying apps](../deploying-apps.md): git builds, Compose, and `app.yaml` as other ways to create an app.

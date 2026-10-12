@@ -1,8 +1,7 @@
 ---
+title: "Observability: metrics, logs, and alerts"
 description: Node-local metrics, logs, and alerts with federated queries, no central ingestion.
 ---
-
-# Observability: metrics, logs, and alerts
 
 This platform keeps metrics and logs on each node's local store, with a federated query layer and alert engine on top. Every app gets CPU, memory, and request metrics automatically, full-text log search with live tail, and alert rules you can route to email, Slack, Discord, or a webhook, with no separate observability stack to install.
 
@@ -13,9 +12,6 @@ This platform keeps metrics and logs on each node's local store, with a federate
 - `logs.go`, `live_logs.go`, `logs_download.go` - log handlers
 - `app_resource_usage.go`, `alerts.go`, `notification_channels.go` - supporting handlers
 :::
-
-<InlineToc default-open />
-
 ## Why node-local, not a central store
 
 Every other platform in this category (and every hosted observability vendor) centralizes: ship every metric and log line to one place, index it there, query it there. That creates write amplification for every container on every node, plus a central index that keeps growing whether or not anyone queries it.
@@ -308,7 +304,7 @@ The response shape:
 
 `disk`/`memory` are absent (`null`), not a zero-value object, whenever:
 - There isn't enough history yet (fewer than 6 samples, or the samples span less than 6 hours).
-- The fitted trend is flat or improving (slope <= 0): an operator should never be warned about a resource that isn't actually trending toward exhaustion, even if the raw samples are noisy around a flat average.
+- The fitted trend is flat or improving (slope &lt;= 0): an operator should never be warned about a resource that isn't actually trending toward exhaustion, even if the raw samples are noisy around a flat average.
 
 Absence must always be read as "nothing to warn about," never as "0 days left." The node detail page's capacity forecast card follows the same rule: it renders nothing at all when both fields are absent, rather than a reassuring "capacity looks fine" message that would age badly the day usage actually turns upward.
 
@@ -340,7 +336,7 @@ Each rule tracks its own pending/firing state and notifies only on transitions (
 | `control_plane_backup_stale` | platform-wide | the newest control plane self-backup snapshot (see [control plane backup](/control-plane-backup)) being older than a maximum age; quiet when scheduled backups are disabled or no snapshot exists yet | `for_duration` (reused as the maximum age, default 3d) |
 | `slo_burn` | one app | error budget burn rate over the app's ingress request metrics, see [SLO burn-rate alerts](#slo-burn-rate-alerts) | `slo` (target, optional latency limit) |
 | `version_skew` | platform-wide | the running build is behind the latest release on the configured update channel | none required |
-| `budget_threshold` | platform-wide | any project or team budget is at its warning level, over its limit or forecast to overrun this month | none required, see [usage and cost](usage-and-cost.md) |
+| `budget_threshold` | platform-wide | any project or team budget is at its warning level, over its limit or forecast to overrun this month | none required, see [usage and cost](/usage-and-cost) |
 | `log_archive_stale` | platform-wide | a log archive policy's last run failed, or it has not succeeded within a maximum age (see [log archive](/log-archive)) | `for_duration` (reused as the maximum age, default three intervals, at least 2h) |
 | `cert_expiring` | platform-wide, or one hostname | any certificate whose expiry falls within the window | `threshold` (days, default 14), `resource_id` `domain:<name>` to watch one hostname |
 | `cert_renewal_stalled` | platform-wide | a renewal that has not moved the certificate's expiry for the stalled threshold (`APP_CERT_RENEWAL_STALLED_THRESHOLD`, default 6h), or an ACME failure that has persisted that long | none required |
@@ -789,7 +785,7 @@ levelrail-cli push-subscriptions revoke <id>
 
 ## See also
 
-- [Public status page](./status-page.md) - opt-in read-only page with component status, uptime bars and incidents
-- [API Reference](./api-reference.md#telemetry) - full telemetry endpoint documentation
-- [Feature Catalog](./feature-catalog.md) - metrics and logs in the platform overview
-- [Architecture](./architecture.md) - telemetry design decisions and phase 2 rationale
+- [Public status page](/status-page) - opt-in read-only page with component status, uptime bars and incidents
+- [API Reference](/api-reference#telemetry) - full telemetry endpoint documentation
+- [Feature Catalog](/feature-catalog) - metrics and logs in the platform overview
+- [Architecture](/architecture) - telemetry design decisions and phase 2 rationale

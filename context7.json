@@ -5,10 +5,9 @@
   "folders": ["docs", "skills"],
   "excludeFolders": [
     "docs/node_modules",
-    "docs/.vitepress",
     "docs/public",
     "docs/assets",
-    "docs/changelog"
+    "docs/changelog.mdx"
   ],
   "excludeFiles": ["roadmap.md", "feature-status.md", "vps-smoke.md"],
   "rules": [

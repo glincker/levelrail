@@ -1,15 +1,14 @@
 ---
+title: "Zero-downtime deploys with health checks"
 description: Add a readiness health check so a bad release fails before it takes over, read the structured failure, then fix it or roll back.
 ---
-
-# Zero-downtime deploys with health checks
 
 A deploy that starts a container is not a deploy that works. In this tutorial you will add a readiness check, ship a release that fails it on purpose, read exactly why it failed, and recover. The point is that a broken release never replaces a working one.
 
 ## Before you start
 
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
-- An app that is already running. This tutorial reuses `hello` from [Deploy a Docker app](deploy-a-docker-app.md), which serves the stock `nginx` page.
+- An app that is already running. This tutorial reuses `hello` from [Deploy a Docker app](/tutorials/deploy-a-docker-app), which serves the stock `nginx` page.
 
 <Steps>
 <Step title="Add a readiness check">
@@ -125,6 +124,6 @@ levelrail-cli apps health clear hello
 
 ## Where to go next
 
-- [Deploy from GitHub Actions](deploy-from-github-actions.md): fail the pipeline when a rollout fails.
+- [Deploy from GitHub Actions](/tutorials/deploy-from-github-actions): fail the pipeline when a rollout fails.
 - [Deploy safety](../deploy-safety.md): freeze windows and the post-cutover hold.
 - [Load balancing](../load-balancing.md): health checks across replicas.

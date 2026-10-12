@@ -1,0 +1,49 @@
+---
+title: "Self-host vLLM with Docker"
+sidebarTitle: "vLLM"
+description: "A fast, high-throughput inference server that exposes an OpenAI-compatible API for open-weight language models."
+---
+
+A fast, high-throughput inference server that exposes an OpenAI-compatible API for open-weight language models.
+
+This page describes the Levelrail template for vLLM (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.vllm.ai.
+
+Recommended memory: about 8192 MiB.
+
+<Warning>This template reserves an NVIDIA GPU, so it needs a node with a GPU and the NVIDIA container runtime.</Warning>
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `vllm` | `vllm/vllm-openai:v0.30.0` | 8000 | `vllm_hf_cache -&#62; /root/.cache/huggingface` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `vllm` | `HF_HOME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy vLLM with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select vLLM. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy vllm --name my-vllm
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host/index).

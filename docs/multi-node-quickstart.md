@@ -1,8 +1,7 @@
 ---
+title: "Multi-node quickstart"
 description: The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 ---
-
-# Multi-node quickstart
 
 This page is the short path to a second node. Each step links to the page that holds the detail, so nothing is repeated here. It also says plainly what has and has not been verified, per [Feature status](/feature-status).
 
@@ -55,7 +54,7 @@ A container placed on a remote node keeps running and serving, because the agent
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Multi-node" href="/multi-node">
 
 Enrollment, placement, health, certificates, mesh and the CLI reference.

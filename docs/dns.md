@@ -1,21 +1,17 @@
 ---
+title: "DNS zones and records"
 description: Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
 ---
-
-# DNS zones and records
 
 The **DNS** page (Infrastructure, DNS) manages whole zones at the DNS provider you already connected for certificates: Cloudflare or Amazon Route53. It covers creating a zone, moving a domain's name servers to it, importing what the domain serves today, editing records, and checking that the world sees your changes. The CLI has the same surface under `levelrail-cli dns`, and the API lives under `/api/v1/dns`.
 
 Nothing here is a DNS server of its own. Zones and records live at the provider; the control plane calls its API with the credentials stored under Domains, DNS provider.
-
-<InlineToc default-open />
-
 ## Connect a provider
 
-Zone management reuses the DNS-01 credentials from [Domains and ingress](domains-and-ingress.md#wildcard-domains-dns-01-providers). Zone level work needs a little more access than DNS-01 alone.
+Zone management reuses the DNS-01 credentials from [Domains and ingress](/domains-and-ingress#wildcard-domains-dns-01-providers). Zone level work needs a little more access than DNS-01 alone.
 
-<Tabs :items="['Cloudflare', 'Route53']">
-<Tab value="Cloudflare">
+<Tabs>
+<Tab title="Cloudflare">
 
 Create an API token (never the global API key) with:
 
@@ -32,7 +28,7 @@ levelrail-cli domains cloudflare-dns set --cf-api-token <token>
 A new zone is created in the account the token's existing zones belong to. When the token sees several accounts, pass `--account-id` to `dns zones create`.
 
 </Tab>
-<Tab value="Route53">
+<Tab title="Route53">
 
 Attach an IAM policy with these actions to the access key:
 

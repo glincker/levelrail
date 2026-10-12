@@ -1,8 +1,7 @@
 ---
+title: "API explorer"
 description: The in-dashboard API explorer under Settings, where signed-in operators browse every control plane route and try requests against their own instance.
 ---
-
-# API explorer
 
 The API explorer lists every HTTP route the control plane registers and lets you fire a real request at it from the browser. Use it to find out what the API offers, or to prototype a script or integration before writing any code.
 
@@ -20,6 +19,6 @@ Most routes have no worked example and about three quarters have no description.
 
 ## Where the data comes from
 
-The explorer reads `GET /api/v1/openapi.json`, which needs the `read` ability (a session or a token). Despite the name it is not a full OpenAPI document: it is a subset with method, path, ability, group and description for each route, generated from the route registrations at build time. The static [API reference](/api-reference) and the published [OpenAPI 3.1 file](/openapi.json) (methods, paths, path parameters and required ability, with generic bodies) are generated from the same source, so all three list the same routes.
+The explorer reads `GET /api/v1/openapi.json`, which needs the `read` ability (a session or a token). Despite the name it is not a full OpenAPI document: it is a subset with method, path, ability, group and description for each route, generated from the route registrations at build time. The static [API reference](/api-reference) and the published [OpenAPI 3.1 file](/public/openapi.json) (methods, paths, path parameters and required ability, with generic bodies) are generated from the same source, so all three list the same routes.
 
 For calling the API from outside the dashboard, create a token as described in [Identity and access](/identity-and-access). AI agents reach the same API through the [MCP tool surface](/mcp-tool-surface).

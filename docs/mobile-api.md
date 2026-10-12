@@ -1,8 +1,7 @@
 ---
+title: "Mobile API"
 description: "Pair a phone with the control plane: one-time pairing codes, scoped device tokens, revocation, and the single round trip overview endpoint."
 ---
-
-# Mobile API
 
 The mobile API is the server side of the phone app: pairing, per-device tokens, and an overview endpoint sized for a phone. It is a beta feature and off by default.
 

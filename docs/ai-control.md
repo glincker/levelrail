@@ -1,13 +1,9 @@
 ---
+title: "AI control"
 description: Decide what AI agents and agent tokens may do on your instance, from off to admin, enforced on the server for every request.
 ---
 
-# AI control
-
 AI control is a switch in Settings that decides what agents may do on this instance. It is enforced on the control plane for every request, so it does not depend on the agent, the MCP client or the token's own abilities. The page is always visible, because it is the guardrail.
-
-<InlineToc default-open />
-
 ## What counts as an agent
 
 An agent is an API token that has an **agent name**, or the built-in assistant token (agent name `ai-assistant`). Agent tokens can only be created by a signed-in person, never by another token.
@@ -104,7 +100,7 @@ The MCP server reads the mode each time a client asks for its tool list, and hid
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="AI assistant integration" href="/ai-assistant">
 
 Scope an API token for an MCP client or an AI agent.

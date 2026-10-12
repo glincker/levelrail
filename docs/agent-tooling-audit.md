@@ -9,10 +9,7 @@ An MCP client loads every tool definition from `tools/list` into the model's con
 
 Numbers are estimates: the serialized `tools/list` JSON length divided by 4 (no tokenizer is in `go.mod`). They are good for comparing modes and catching regressions, not for billing. They are a snapshot of the 156 registered tools and drift as tools are added, so rerun the commands below for current figures.
 
-This page complements [MCP tool surface](mcp-tool-surface.md). That report counts each tool's name, description and input schema per toolset. This page measures the whole serialized `tools/list` response a client receives, which also carries output schemas and annotations, so its totals are larger.
-
-<InlineToc default-open />
-
+This page complements [MCP tool surface](/mcp-tool-surface). That report counts each tool's name, description and input schema per toolset. This page measures the whole serialized `tools/list` response a client receives, which also carries output schemas and annotations, so its totals are larger.
 ## Tools and tokens per mode
 
 Measured by `go test -run TestToolListTokenBudget -v ./internal/mcptools` (or `scripts/mcp-token-budget.sh`).
@@ -27,7 +24,7 @@ Modes are defined in `internal/mcptools/modes.go` and driven by the class table 
 
 ## The agent-core profile
 
-The `agent-core` profile lists 15 tools and omits output schemas from `tools/list` (results are still returned as text and structured content). Its full listing is about 2,600 estimated tokens against about 66,700 for `full` mode. The tools are listed in [MCP tool surface](mcp-tool-surface.md#agent-core-profile). A test holds the listing under a budget (default 3,500, override with `APP_MCP_TOKEN_BUDGET_AGENT_CORE`).
+The `agent-core` profile lists 15 tools and omits output schemas from `tools/list` (results are still returned as text and structured content). Its full listing is about 2,600 estimated tokens against about 66,700 for `full` mode. The tools are listed in [MCP tool surface](/mcp-tool-surface#agent-core-profile). A test holds the listing under a budget (default 3,500, override with `APP_MCP_TOKEN_BUDGET_AGENT_CORE`).
 
 Use this profile for autonomous agents: `levelrail-mcp --tool-profile agent-core` or `APP_MCP_TOOL_PROFILE=agent-core`.
 
@@ -65,6 +62,6 @@ Output schemas dominate. Typed handlers derive them from the Go result struct, s
 
 Run it with a report of the heaviest tools:
 
-<CopyCommand command="scripts/mcp-token-budget.sh" />
+`scripts/mcp-token-budget.sh`
 
 Raise a budget only with a reason in the PR that changes it.

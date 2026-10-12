@@ -1,0 +1,45 @@
+---
+title: "Self-host Web Check with Docker"
+sidebarTitle: "Web Check"
+description: "An all-in-one OSINT tool for inspecting a website's DNS, headers, certs, and security posture."
+---
+
+An all-in-one OSINT tool for inspecting a website's DNS, headers, certs, and security posture.
+
+This page describes the Levelrail template for Web Check (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/lissy93/web-check.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `web-check` | `lissy93/web-check:2.3.0` | 3000 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Web Check with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Web Check. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy web-check --name my-web-check
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host/index).

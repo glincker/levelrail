@@ -1,0 +1,54 @@
+---
+title: "Self-host HedgeDoc with Docker"
+sidebarTitle: "HedgeDoc"
+description: "Real-time collaborative markdown notes you can host yourself."
+---
+
+Real-time collaborative markdown notes you can host yourself.
+
+This page describes the Levelrail template for HedgeDoc (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.hedgedoc.org.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `hedgedoc_db_data -&#62; /var/lib/postgresql/data` |
+| `hedgedoc` | `quay.io/hedgedoc/hedgedoc:1.9.9` | 3000 | `hedgedoc_uploads -&#62; /hedgedoc/public/uploads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Generated at deploy |
+| `hedgedoc` | `CMD_DB_URL` | Generated at deploy |
+| `hedgedoc` | `CMD_DOMAIN` | Preset in the template |
+| `hedgedoc` | `CMD_SESSION_SECRET` | Generated at deploy |
+| `hedgedoc` | `CMD_URL_ADDPORT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy HedgeDoc with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select HedgeDoc. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy hedgedoc --name my-hedgedoc
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host/index).

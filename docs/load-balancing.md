@@ -1,8 +1,7 @@
 ---
+title: "Load balancing across replicas"
 description: Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status, and Terraform, CDK, CloudFormation or Caddy export.
 ---
-
-# Load balancing across replicas
 
 Set `replicas: 3` and the control plane starts three containers. Any app with more than one replica is balanced across all of them by default: round robin, a replica that fails a request is skipped for 30s, and a failed request is retried on another replica. Set `APP_INGRESS_IMPLICIT_LB=false` to send traffic to the first replica only. To tune the pool (health checks, sticky sessions, weights), use the app's Load balancer tab, the CLI, or `app.yaml`; an explicit configuration replaces the default. Balancing uses the same embedded Caddy that terminates TLS for your domains, so there is no extra container to run.
 
@@ -26,13 +25,13 @@ flowchart LR
 
 ## Enable it
 
-<Tabs :items="['Dashboard', 'CLI', 'app.yaml']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open the app, then **Load balancer** in the sidebar, then **Set up load balancer**.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli lb set web --algorithm least_conn --health-path /healthz --retries 2
@@ -41,7 +40,7 @@ levelrail-cli lb status web
 ```
 
 </Tab>
-<Tab value="app.yaml">
+<Tab title="app.yaml">
 
 ```yaml
 version: 1
@@ -182,5 +181,5 @@ Formats: `terraform` (AWS ALB, target group, listener), `cdk` (AWS CDK TypeScrip
 
 ## See also
 
-- [Domains and ingress](domains-and-ingress.md): the embedded Caddy that does the balancing, and how a backend outage is handled.
-- [Multi-node](multi-node.md#routing-to-apps-on-remote-nodes): how replicas on other nodes are reached.
+- [Domains and ingress](/domains-and-ingress): the embedded Caddy that does the balancing, and how a backend outage is handled.
+- [Multi-node](/multi-node#routing-to-apps-on-remote-nodes): how replicas on other nodes are reached.

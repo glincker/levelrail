@@ -1,0 +1,48 @@
+---
+title: "Self-host Proxyscotch with Docker"
+sidebarTitle: "Proxyscotch"
+description: "A small CORS proxy that lets Hoppscotch call APIs from the browser."
+---
+
+A small CORS proxy that lets Hoppscotch call APIs from the browser.
+
+This page describes the Levelrail template for Proxyscotch (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/hoppscotch/proxyscotch.
+
+Recommended memory: about 64 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `proxyscotch` | `hoppscotch/proxyscotch:v0.1.4` | 9159 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `proxyscotch` | `PROXYSCOTCH_ALLOWED_ORIGINS` | Preset in the template |
+| `proxyscotch` | `PROXYSCOTCH_TOKEN` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Proxyscotch with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Proxyscotch. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy proxyscotch --name my-proxyscotch
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host/index).

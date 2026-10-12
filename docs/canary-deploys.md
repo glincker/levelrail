@@ -1,8 +1,7 @@
 ---
+title: "Canary deploys"
 description: Send a share of an app's traffic to a new image before promoting it, with one-command promote and abort.
 ---
-
-# Canary deploys
 
 Run a new image next to the current release and send it a percentage of
 requests. If it looks healthy, promote it. If not, abort and every request
@@ -53,7 +52,7 @@ and Promote and Abort buttons while a canary is running.
 
 `GET`, `POST`, `PUT` and `DELETE /api/v1/apps/{name}/canary`, and
 `POST /api/v1/apps/{name}/canary/promote`. All need the `deploy` ability, and
-`GET` needs `read`. See the [API reference](api-reference.md).
+`GET` needs `read`. See the [API reference](/api-reference).
 
 ## Verified
 

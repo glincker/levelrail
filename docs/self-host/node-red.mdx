@@ -1,0 +1,45 @@
+---
+title: "Self-host Node-RED with Docker"
+sidebarTitle: "Node-RED"
+description: "A flow-based visual editor for wiring together hardware, APIs, and online services."
+---
+
+A flow-based visual editor for wiring together hardware, APIs, and online services.
+
+This page describes the Levelrail template for Node-RED (Automation). It deploys the services below as one Docker Compose app on your own server. Project site: https://nodered.org/docs/getting-started/docker.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `nodered` | `nodered/node-red:4.1.15-22` | 1880 | `nodered_data -&#62; /data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Node-RED with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Node-RED. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy node-red --name my-node-red
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Automation templates
+
+- [Activepieces](/self-host/activepieces)
+- [autobrr](/self-host/autobrr)
+- [n8n](/self-host/n8n)
+- [n8n (Postgres)](/self-host/n8n-postgres)
+- [Prefect](/self-host/prefect)
+
+All templates are listed in the [self-host gallery](/self-host/index).

@@ -1,8 +1,7 @@
 ---
+title: "Service template catalog"
 description: Deploy ready-made services from the built-in template catalog, save your own apps as templates, and see how templates, Compose and static sites relate.
 ---
-
-# Service template catalog
 
 A template is a curated Docker Compose file for a well-known service (n8n, Uptime Kuma, a Postgres-backed app, a local LLM runtime). Deploying one fills in a Compose body for you and sends it through the same endpoint as `levelrail-cli apps deploy-compose`. There is no separate template deploy path, so a template-deployed app behaves like any other Compose app.
 
@@ -12,13 +11,13 @@ This page covers how to deploy templates, how `$SERVICE_...` variables work, and
 
 ## Deploy a template
 
-<Tabs :items="['Dashboard', 'CLI', 'API']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open **Apps**, choose **New app**, then **Browse templates**. Search by name, slogan or category, or pick a category. Selecting a card pre-fills the app name (the template ID) and an editable Compose body. Review it, replace any `$SERVICE_...` token you want to set yourself, and deploy. The result lists each deployed service with a link to its app page.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli templates list
@@ -34,7 +33,7 @@ levelrail-cli apps deploy-compose my-status-page --file uptime-kuma.compose.yaml
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" https://levelrail.example.com/api/v1/service-templates
@@ -53,7 +52,7 @@ A Compose document becomes one app with one service per Compose service, each re
 The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:
 
 - **Recommended memory**: a static advisory shown as a badge (for example "~6 GiB RAM recommended"). It is a rule of thumb. It is not checked against any node's free memory.
-- **Requires GPU**: the entry reserves an NVIDIA GPU through `deploy.resources.reservations.devices`. It needs a node with a GPU and the NVIDIA container runtime; see [AI models](ai-models.md#gpu-nodes).
+- **Requires GPU**: the entry reserves an NVIDIA GPU through `deploy.resources.reservations.devices`. It needs a node with a GPU and the NVIDIA container runtime; see [AI models](/ai-models#gpu-nodes).
 
 Only the `resources.reservations.devices` and `replicas` keys of a Compose `deploy:` block are read. Other Swarm-only keys are reported rather than silently ignored.
 
@@ -111,7 +110,7 @@ The saved Compose body does not capture everything about the app:
 
 ## Static sites
 
-An app whose `app.yaml` sets `build.type: static` has no container. The control plane copies the built output to a directory on its own host and Caddy serves it directly. These sites are created only by a git push to such an app. `levelrail-cli static-sites list` (and `GET /api/v1/static-sites`) lists their names and domains, and the Apps page shows a read-only **Static sites** card when any exist. See [app.yaml reference](app-spec-reference.md#build) for the build types.
+An app whose `app.yaml` sets `build.type: static` has no container. The control plane copies the built output to a directory on its own host and Caddy serves it directly. These sites are created only by a git push to such an app. `levelrail-cli static-sites list` (and `GET /api/v1/static-sites`) lists their names and domains, and the Apps page shows a read-only **Static sites** card when any exist. See [app.yaml reference](/app-spec-reference#build) for the build types.
 
 ## API and CLI reference
 
@@ -140,11 +139,11 @@ levelrail-cli static-sites list
 ## Limits
 
 - There is no versioning. A template's Compose body can change between control plane releases, and nothing records what an already-deployed app was created from.
-- Importing a catalog from an external source is not supported: the built-in set is the one in the [template catalog](/template-catalog). The reasoning is in [ADR 015](../adr/015-service-template-catalog-reversal.md).
+- Importing a catalog from an external source is not supported: the built-in set is the one in the [template catalog](/template-catalog). The reasoning is in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Template catalog" href="/template-catalog">
 
 Every built-in template by category.

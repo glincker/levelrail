@@ -1,10 +1,9 @@
 ---
+title: "Architecture"
 description: Core architecture of Levelrail's reconciler, agent, builds, ingress, state, observability, and security layers.
 ---
 
-# Architecture
-
-This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. It describes the code as it is today. To use the platform, start with [Getting started](getting-started.md). For maturity per feature, see [feature status](feature-status.md).
+This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. It describes the code as it is today. To use the platform, start with [Getting started](/getting-started). For maturity per feature, see [feature status](/feature-status).
 
 ## Control plane
 
@@ -61,7 +60,7 @@ graph LR
 ```
 
 **Additional capabilities:**
-- **WireGuard mesh** - `internal/network` (built on `wireguard-go`) is designed to give every node a peer and internal DNS names that resolve across machines. It is beta and not yet verified across real hosts, see [feature status](feature-status.md)
+- **WireGuard mesh** - `internal/network` (built on `wireguard-go`) is designed to give every node a peer and internal DNS names that resolve across machines. It is beta and not yet verified across real hosts, see [feature status](/feature-status)
 - **Dedicated build nodes** - Nodes marked build-capable run builds so they don't compete with production containers for CPU
 
 ## Builds
@@ -94,7 +93,7 @@ Package: `internal/ingress` (see `internal/ingress/driver.go`, `internal/ingress
 **TLS issuance:**
 - Defaults to an internal, self-signed issuer
 - A real Caddy ACME issuer, settings toggle, and form validation are built and wired end to end
-- Verified: real Let's Encrypt issuance over `<dashed-ip>.sslip.io` on a public VPS (see [the recorded run](acme-verification-runbook.md#recorded-run-2026-10-05)). Renewal and DNS-01 wildcards are still not exercised live
+- Verified: real Let's Encrypt issuance over `<dashed-ip>.sslip.io` on a public VPS (see [the recorded run](/acme-verification-runbook#recorded-run-2026-10-05)). Renewal and DNS-01 wildcards are still not exercised live
 
 ## State
 
@@ -166,7 +165,7 @@ Directory: `web/` (React, Vite, TypeScript, Tailwind, TanStack Router and Query)
 
 ## See also
 
-- [Comparison](comparison.md): how this architecture compares to Coolify, Dokploy, and others
-- [Security overview](security.md): how secrets, tokens, and TLS fit into this design
-- [Feature status](feature-status.md): maturity of each layer
-- [ADRs](../adr): the decisions behind this design
+- [Comparison](/comparison): how this architecture compares to Coolify, Dokploy, and others
+- [Security overview](/security): how secrets, tokens, and TLS fit into this design
+- [Feature status](/feature-status): maturity of each layer
+- [ADRs](https://github.com/glincker/levelrail/tree/main/adr): the decisions behind this design

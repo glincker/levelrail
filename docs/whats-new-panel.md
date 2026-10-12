@@ -1,8 +1,7 @@
 ---
+title: "What's new panel"
 description: The dashboard's "What's new" panel shows recent release notes after an upgrade, sourced from the control plane's own CHANGELOG.md.
 ---
-
-# What's new panel
 
 A sparkle icon in the dashboard header, next to the notifications bell, opens a short list of recent releases: version, date, and the bullet points from that release.
 

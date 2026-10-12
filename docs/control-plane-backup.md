@@ -1,8 +1,7 @@
 ---
+title: "Control plane backup and restore"
 description: "Back up and restore the control plane's own database: automatic snapshots, manual snapshots, pre-upgrade safety copies, and the offline restore command."
 ---
-
-# Control plane backup and restore
 
 The control plane keeps everything it knows (apps, domains, tokens, users, encrypted secrets, deploy history) in one SQLite database. A control plane backup is a consistent snapshot of that file, taken while the server keeps running.
 
@@ -171,7 +170,7 @@ A local snapshot is on the dead machine's disk, so it is of no use there. For a 
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Disaster recovery" href="/disaster-recovery">
 
 Encrypted off-box backups, key escrow, and restore drills.

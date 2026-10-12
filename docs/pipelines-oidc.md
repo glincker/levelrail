@@ -1,8 +1,7 @@
 ---
+title: "Pipelines: OIDC federation"
 description: Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
 ---
-
-# Pipelines: OIDC federation
 
 A pipeline job normally reaches a cloud provider with a long-lived credential stored as a secret. OIDC federation replaces that with a short-lived, signed token the control plane mints per job run, verified by the provider against a published public key. Nothing long-lived ever sits in a secret or a job's environment.
 
@@ -112,8 +111,8 @@ The signing key is ES256 (ECDSA P-256), generated once and persisted encrypted a
 
 ## Wiring to a provider
 
-<Tabs :items="['AWS IAM', 'GCP', 'Vault']">
-<Tab value="AWS IAM">
+<Tabs>
+<Tab title="AWS IAM">
 
 1. IAM > Identity providers > Add provider > OpenID Connect.
    - Provider URL: the issuer URL (`APP_OIDC_ISSUER_URL`).
@@ -140,14 +139,14 @@ The signing key is ES256 (ECDSA P-256), generated once and persisted encrypted a
 3. Set `AWS_ROLE_ARN` as a job env var (or a secret) to the role's ARN, and call `aws sts assume-role-with-web-identity` as in the example above.
 
 </Tab>
-<Tab value="GCP">
+<Tab title="GCP">
 
 1. Create a workload identity pool and an OIDC provider inside it, issuer URI set to the issuer URL above, and an attribute mapping such as `google.subject=assertion.sub`.
 2. Grant the target service account `roles/iam.workloadIdentityUser` scoped to the pool, with an attribute condition matching `sub`, `repo`, or `ref`.
 3. Exchange the token for a Google access token via the STS `token` endpoint (`https://sts.googleapis.com/v1/token`) with `subject_token` set to `$PIPELINE_OIDC_TOKEN`, or use `gcloud auth login --cred-file` pointed at a generated credential config that references the token file path if the job writes it to disk first.
 
 </Tab>
-<Tab value="Vault">
+<Tab title="Vault">
 
 1. Enable the JWT auth method and configure it with `oidc_discovery_url` set to the issuer URL (Vault fetches the JWKS from there automatically).
 2. Create a role with `bound_audiences` matching `oidc.audience`, and `bound_claims` matching `sub`, `repo`, or `ref` as needed.
@@ -176,7 +175,7 @@ Rotation generates a fresh key and signs every new token with it immediately. Th
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Pipelines" href="/pipelines">
 
 The pipeline format and how runs execute.

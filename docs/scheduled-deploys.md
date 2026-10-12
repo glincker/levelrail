@@ -1,8 +1,7 @@
 ---
+title: "Scheduled deploys"
 description: Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
 ---
-
-# Scheduled deploys
 
 A per-app cron schedule that redeploys the latest commit on a branch
 automatically, for apps that want a recurring refresh (a nightly rebuild
@@ -15,13 +14,13 @@ must be a repo to redeploy from.
 
 ## Configure
 
-<Tabs :items="['UI','CLI','API']">
-<Tab value="UI">
+<Tabs>
+<Tab title="UI">
 
 Open the app, then **Deploy settings**, and use the **Scheduled deploys** card. It has the same fields as the CLI, a next-run preview, and a short history list.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps schedule set web --cron "0 3 * * *" --branch main --timezone UTC
@@ -30,7 +29,7 @@ levelrail-cli apps schedule history web
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 `PUT /api/v1/apps/{name}/schedule` with `{cron, branch, timezone?, enabled?}`. The full endpoint list is under [API](#api).
 
@@ -57,7 +56,7 @@ list`), distinct from `git push`, `manual`, `api`, `rollback` and
 
 ### Freeze windows
 
-A schedule due while a [deploy freeze window](deploy-safety.md#freeze-windows)
+A schedule due while a [deploy freeze window](/deploy-safety#freeze-windows)
 is active is **skipped, not forced**: no deploy is triggered, and the
 skip is recorded in the schedule's history with the freeze's reason and
 end time. It is not queued to run once the freeze lifts; it simply waits
@@ -105,8 +104,8 @@ freeze windows already use.
 
 ## See also
 
-- [Deploy safety](deploy-safety.md) for freeze windows and the
+- [Deploy safety](/deploy-safety) for freeze windows and the
   stale-deploy guard a scheduled deploy respects the same way any other
   automatic deploy does.
-- [Git integrations](git-integrations.md) for connecting the git source
+- [Git integrations](/git-integrations) for connecting the git source
   a schedule redeploys from.

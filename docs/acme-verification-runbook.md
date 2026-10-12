@@ -1,21 +1,17 @@
 ---
+title: "Verifying real ACME issuance against a live domain"
 description: Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA, including what to check, common failures, and a recorded run.
 ---
 
-# Verifying real ACME issuance against a live domain
-
 The ACME issuer, settings toggle and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and an end-to-end test against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that check.
 
-A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
-
-<InlineToc default-open />
-
+A first run is recorded [at the bottom of this page](#recorded-run-2026-10-05), so you do not need to repeat it before trusting the feature. Repeating it on your own host is the fastest way to confirm your firewall is right. For a version that needs no DNS, use the **Enable HTTPS** card described in [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslip-io-hostnames-and-one-click-https).
 ## Prerequisites
 
 - A domain you control, with access to create an `A` or `AAAA` record.
 - A control plane reachable from the public internet (installed with `install.sh`, as `levelrail.service`, or in Docker).
 - DNS already pointing at the server's public IP and propagated.
-- Ports 80 and 443 open from the internet. HTTP-01 validates ownership on port 80, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](domains-and-ingress.md#wildcard-domains-dns-01-providers) instead.
+- Ports 80 and 443 open from the internet. HTTP-01 validates ownership on port 80, so a cloud firewall, a router without port forwarding or `ufw` in default-deny will break issuance while looking fine from the server itself. Wildcards need [DNS-01](/domains-and-ingress#wildcard-domains-dns-01-providers) instead.
 - A `root` API token or admin dashboard access, since saving ingress settings (`PUT /api/v1/settings/ingress`) needs the `root` ability.
 
 ## Steps
@@ -107,7 +103,7 @@ Check `dig +short your-domain.example.com` from outside your network, wait out t
 
 `dig` resolves correctly, but the log shows the challenge request timing out or being refused. Typical causes are cloud security groups, `ufw`, routers without port forwarding, and another proxy holding port 80.
 
-Open ports 80 and 443 inbound. `levelrail-cli doctor` and the dashboard's status page include reachability checks. See [Firewall: ports 80 and 443](domains-and-ingress.md#firewall-ports-80-and-443).
+Open ports 80 and 443 inbound. `levelrail-cli doctor` and the dashboard's status page include reachability checks. See [Firewall: ports 80 and 443](/domains-and-ingress#firewall-ports-80-and-443).
 
 </Accordion>
 <Accordion title="Rate limited">
@@ -150,7 +146,7 @@ Not covered by this run: the live capture of a CA error (item 5 is covered by un
 
 ## See also
 
-- [Domains and ingress](domains-and-ingress.md): TLS options, DNS-01 wildcards and the one-click HTTPS flow.
-- [Installing Levelrail](installing.md): initial setup and prerequisites.
-- [Troubleshooting](troubleshooting.md): broader platform diagnostics.
-- [ADR 005: Caddy embedded ingress](../adr/005-caddy-embedded-ingress.md): the design decisions.
+- [Domains and ingress](/domains-and-ingress): TLS options, DNS-01 wildcards and the one-click HTTPS flow.
+- [Installing Levelrail](/installing): initial setup and prerequisites.
+- [Troubleshooting](/troubleshooting): broader platform diagnostics.
+- [ADR 005: Caddy embedded ingress](https://github.com/glincker/levelrail/blob/main/adr/005-caddy-embedded-ingress.md): the design decisions.

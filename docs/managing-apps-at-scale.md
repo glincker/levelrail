@@ -1,16 +1,15 @@
 ---
+title: "Managing apps at scale"
 description: Filter, tag, bulk-act on, clone and promote apps when you run dozens of them.
 ---
-
-# Managing apps at scale
 
 This page covers the tools for running many apps: filtering the list, environments and tags, bulk actions, cloning an app, and promoting a release from staging to production. Every operation is available in the dashboard, the CLI, and the API. Bulk actions and promotion are also MCP tools.
 
 ## Environments and tags
 
-An **environment** (production, staging, or any name you create) belongs to a project, and an app is placed in one with `PUT /api/v1/apps/{name}/environment` or the bulk `set-environment` action. An environment can be marked **protected**, which makes deploys and promotions into it require confirmation and approval. See [Projects, organizations, and environments](./projects-and-organizations.md).
+An **environment** (production, staging, or any name you create) belongs to a project, and an app is placed in one with `PUT /api/v1/apps/{name}/environment` or the bulk `set-environment` action. An environment can be marked **protected**, which makes deploys and promotions into it require confirmation and approval. See [Projects, organizations, and environments](/projects-and-organizations).
 
-**Tags** are free-form `key` or `key:value` labels that cut across projects. See [Tags](./tags.md) for the naming rules.
+**Tags** are free-form `key` or `key:value` labels that cut across projects. See [Tags](/tags) for the naming rules.
 
 ## The apps list
 
@@ -92,7 +91,7 @@ Guardrails:
 
 ## Related
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Tags" href="/tags">
 
 Naming rules for the labels bulk actions select on.

@@ -1,15 +1,11 @@
 ---
+title: "Exposure audit"
 description: Find which published container ports are reachable from the internet, why ufw does not cover them, and how to restrict one with a reversible DOCKER-USER allow-list.
 ---
-
-# Exposure audit
 
 Docker publishes a container port by adding NAT rules that send traffic straight to the container. That traffic never reaches the INPUT chain, so `ufw` and a "firewall is active" check say nothing about it. A search engine or database container published on `0.0.0.0` is reachable by anyone, even on a host with `ufw` on and a deny default.
 
 The exposure audit lists, for each node, every running container's published ports and how reachable each one is. It is read-only. Nothing is changed until you choose to restrict a port.
-
-<InlineToc default-open />
-
 ## What each state means
 
 | State | Meaning |

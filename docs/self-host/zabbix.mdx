@@ -1,0 +1,61 @@
+---
+title: "Self-host Zabbix with Docker"
+sidebarTitle: "Zabbix"
+description: "Enterprise-grade network, server, and application monitoring with alerting and trend graphs."
+---
+
+Enterprise-grade network, server, and application monitoring with alerting and trend graphs.
+
+This page describes the Levelrail template for Zabbix (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.zabbix.com/documentation/current/en/manual/installation/containers.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `zabbix_db_data -&#62; /var/lib/postgresql/data` |
+| `zabbix-server` | `zabbix/zabbix-server-pgsql:alpine-7.4-latest` | none | `zabbix_server_data -&#62; /var/lib/zabbix` |
+| `zabbix-web` | `zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest` | 8080 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `zabbix-server` | `DB_SERVER_HOST` | Preset in the template |
+| `zabbix-server` | `POSTGRES_DB` | Preset in the template |
+| `zabbix-server` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `zabbix-server` | `POSTGRES_USER` | Preset in the template |
+| `zabbix-web` | `DB_SERVER_HOST` | Preset in the template |
+| `zabbix-web` | `PHP_TZ` | Preset in the template |
+| `zabbix-web` | `POSTGRES_DB` | Preset in the template |
+| `zabbix-web` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `zabbix-web` | `POSTGRES_USER` | Preset in the template |
+| `zabbix-web` | `ZBX_SERVER_HOST` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Zabbix with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Zabbix. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy zabbix --name my-zabbix
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+- [Diun](/self-host/diun)
+
+All templates are listed in the [self-host gallery](/self-host/index).

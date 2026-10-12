@@ -1,12 +1,11 @@
 ---
+title: "Preview environments per pull request"
 description: Per pull request preview environments on your own servers, with their own domain and DNS record, safe defaults for data and secrets, a TTL and cap, idle sleep, and a PR comment that links back.
 ---
 
-# Preview environments per pull request
-
 Open a pull request and Levelrail builds its head commit, deploys it as `<app>-pr-<n>` on its own domain, and posts one comment on the pull request with the URL. Push again and the same preview updates. Close or merge the pull request and everything the preview created is removed, including its DNS record.
 
-This page covers the lifecycle and the safety defaults. For the git hosts that support previews and the status reporting each one gets, see [Preview environments](preview-environments.md) and [Git integrations](git-integrations.md).
+This page covers the lifecycle and the safety defaults. For the git hosts that support previews and the status reporting each one gets, see [Preview environments](/preview-environments) and [Git integrations](/git-integrations).
 
 ## Turn it on
 
@@ -29,7 +28,7 @@ Platform defaults come from `APP_PREVIEW_MEMORY`, `APP_PREVIEW_CPU` and `APP_PRE
 
 ## Environment variables per preview
 
-A preview inherits the app's plain environment, minus database connection variables (see below). Use [preview-only overrides and branch overrides](environments.md) to give a preview its own values: they are applied last, so they always win.
+A preview inherits the app's plain environment, minus database connection variables (see below). Use [preview-only overrides and branch overrides](/environments) to give a preview its own values: they are applied last, so they always win.
 
 ## Database strategy
 

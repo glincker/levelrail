@@ -1,8 +1,7 @@
 ---
+title: "Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX"
 description: Design for unified post-auth git provider abstraction supporting GitHub, GitLab, Bitbucket, and GitHub Enterprise Server
 ---
-
-# Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX
 
 **Status:** Proposed. Feeds implementation for Bitbucket support, GitHub Enterprise Server, and connect-flow preview.
 
@@ -349,4 +348,4 @@ This is a design note, not an ADR. Two decisions here are ADR-shaped and should 
 
 - [Git integrations user guide](../git-integrations.md) - operator documentation for connecting providers
 - [Identity and access guide](../identity-and-access.md) - user management and permissions context
-- [ADR 010: Extend own auth](../adr/010-extend-own-auth-not-theauth-go.md) - why Levelrail uses its own auth system
+- [ADR 010: Extend own auth](https://github.com/glincker/levelrail/blob/main/adr/010-extend-own-auth-not-theauth-go.md) - why Levelrail uses its own auth system

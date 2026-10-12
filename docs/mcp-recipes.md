@@ -1,10 +1,9 @@
 ---
+title: "MCP recipes"
 description: Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
 ---
 
-# MCP recipes
-
-Each recipe shows what you type, what the assistant runs, and what you should see. The tools and prompts are described in [MCP tools and write mode](mcp.md). Start read only: `levelrail-mcp --print-config claude` prints a config with `--mode read-only`.
+Each recipe shows what you type, what the assistant runs, and what you should see. The tools and prompts are described in [MCP tools and write mode](/mcp). Start read only: `levelrail-mcp --print-config claude` prints a config with `--mode read-only`.
 
 ## 1. "Why is web crashing?"
 

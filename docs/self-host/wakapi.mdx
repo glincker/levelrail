@@ -1,0 +1,56 @@
+---
+title: "Self-host Wakapi with Docker"
+sidebarTitle: "Wakapi"
+description: "A self-hosted, WakaTime-compatible backend for tracking coding time and stats."
+---
+
+A self-hosted, WakaTime-compatible backend for tracking coding time and stats.
+
+This page describes the Levelrail template for Wakapi (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://wakapi.dev.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `wakapi_db_data -&#62; /var/lib/postgresql/data` |
+| `wakapi` | `ghcr.io/muety/wakapi:2.13.0` | 3000 | `wakapi_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Generated at deploy |
+| `wakapi` | `WAKAPI_DB_HOST` | Preset in the template |
+| `wakapi` | `WAKAPI_DB_NAME` | Preset in the template |
+| `wakapi` | `WAKAPI_DB_PASSWORD` | Generated at deploy |
+| `wakapi` | `WAKAPI_DB_TYPE` | Preset in the template |
+| `wakapi` | `WAKAPI_DB_USER` | Generated at deploy |
+| `wakapi` | `WAKAPI_SECURITY_PASSWORD_SALT` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Wakapi with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Wakapi. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy wakapi --name my-wakapi
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host/index).

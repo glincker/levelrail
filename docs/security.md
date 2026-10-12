@@ -1,8 +1,7 @@
 ---
+title: "Security overview"
 description: How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
 ---
-
-# Security overview
 
 This page is a map, not a duplicate. Each topic below has its own detailed page; this one explains how the pieces fit together and links out.
 
@@ -23,15 +22,15 @@ flowchart TD
 
 Every owner of secrets (an app, a backup target, the email settings, and so on) gets its own random data encryption key (DEK), and each of its values (an app env var marked `secret: true`, email credentials, API tokens) is encrypted under that DEK with AES-256-GCM. Every DEK is wrapped under one master key held in memory by the control plane, never written to disk in plaintext.
 
-Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](master-key-rotation.md#binding-secrets-to-their-slot).
+Each encrypted value is also bound to the slot it was written to: its owner and key name are sealed inside the ciphertext and checked on every read. Someone with write access to the database cannot copy one app's `DATABASE_URL` ciphertext into another app's `API_KEY` row and have it decrypt there; the read fails closed instead. Values written before this existed are "legacy" and should be bound once with `levelrail-cli secrets rebind`, see [Binding secrets to their slot](/master-key-rotation#binding-secrets-to-their-slot).
 
 ::: tip
-Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](master-key-rotation.md) for the full procedure and failure modes.
+Rotating the master key re-wraps every DEK without ever exposing plaintext, then binds any legacy values. See [Master key rotation](/master-key-rotation) for the full procedure and failure modes.
 :::
 
-Sensitive plain variables and secrets are masked on every read surface, and reading one back needs a confirmed, audited step-up. See [Environment variables and secrets](environment-and-secrets.md).
+Sensitive plain variables and secrets are masked on every read surface, and reading one back needs a confirmed, audited step-up. See [Environment variables and secrets](/environment-and-secrets).
 
-Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](backups-and-storage.md#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
+Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](/backups-and-storage#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
 
 ## Sessions and tokens
 
@@ -42,9 +41,9 @@ Credentials for backup targets and registry integrations follow the same write-o
 - **API tokens** are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
 - **Two-factor codes are single-use.** A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
-- **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](observability.md#notification-channels).
+- **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](/observability#notification-channels).
 
-Full detail on all three: [Identity and access](identity-and-access.md#principals-a-session-or-a-token).
+Full detail on all three: [Identity and access](/identity-and-access#principals-a-session-or-a-token).
 
 ## Authorization: abilities, roles, and IAM policies
 
@@ -53,17 +52,17 @@ Levelrail layers two permission models:
 - **Abilities**: a flat list (`AbilityRead`, `AbilityWrite`, `AbilityDeploy`, `AbilityRoot`, and so on) attached to a user or token. Cheap to check, coarse-grained.
 - **IAM policies**: AWS-IAM-shaped Allow/Deny documents scoped to a specific app or database, for when a flat ability isn't precise enough.
 
-Evaluation order, the full ability list, and policy examples: [Identity and access](identity-and-access.md#why-two-permission-models-instead-of-one).
+Evaluation order, the full ability list, and policy examples: [Identity and access](/identity-and-access#why-two-permission-models-instead-of-one).
 
 ## TLS and network exposure
 
-- Certificates are issued and renewed automatically through embedded Caddy's ACME client. See the [ACME verification runbook](acme-verification-runbook.md) if issuance fails.
-- HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](domains-and-ingress.md#tls-what-s-actually-shipped-today).
-- WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](domains-and-ingress.md#opt-in-waf-and-rate-limiting).
+- Certificates are issued and renewed automatically through embedded Caddy's ACME client. See the [ACME verification runbook](/acme-verification-runbook) if issuance fails.
+- HSTS (`Strict-Transport-Security`) is opt-in, not on by default, because turning it on for a domain that later loses TLS locks users out until the header expires. See [Domains and ingress](/domains-and-ingress#tls-what-s-actually-shipped-today).
+- WAF mode and rate limiting are configurable per domain, with a detect-only mode for testing rules before enforcing them. See [Domains and ingress](/domains-and-ingress#opt-in-waf-and-rate-limiting).
 - The node agent dials **out** to the control plane. No inbound ports need to be open on a managed server for enrollment or day-to-day operation.
 - **Agent enrollment pins the control plane CA.** A join token is shown together with the agent CA's SHA-256 fingerprint; with `APP_CA_FINGERPRINT` set, the agent checks the control plane's certificate against that CA before it sends the token, so an attacker in the network path cannot capture the token or pose as the control plane. Without the fingerprint the agent falls back to trust on first use and logs a warning. After enrollment every connection is mutual TLS against the saved CA.
-- **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](docker.md#control-plane).
-- **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](installing.md#verifying-release-binaries).
+- **Container installs bind plain HTTP to loopback.** The committed `docker-compose.yml` publishes `8080` on `127.0.0.1` only (override with `LEVELRAIL_HTTP_BIND`), see [Docker](/docker#control-plane).
+- **`install.sh` fails closed on checksums.** A release without a usable `checksums.txt` aborts the install unless you pass `LEVELRAIL_SKIP_CHECKSUM=1`. Release checksums are cosign-signed; `APP_INSTALL_VERIFY=require` makes the installer insist on a valid signature, see [Verifying release binaries](/installing#verifying-release-binaries).
 
 ## Outbound requests to user-supplied URLs
 
@@ -86,15 +85,15 @@ Email notifications are separate: recipient addresses must be a single plain add
 A short list for the server itself, independent of anything Levelrail configures:
 
 - **SSH key auth only.** Disable password login (`PasswordAuthentication no` in `sshd_config`) before exposing the box to the internet. Neither `install.sh` nor the agent touch SSH configuration; this is standard server hygiene, not something Levelrail does for you.
-- **Only the control-plane node needs inbound ports.** `80/tcp` and `443/tcp` for ingress (the ACME HTTP-01 challenge plus HTTPS traffic), your SSH port, and nothing else. See [Installing: requirements](installing.md#requirements) for the full list and `install.sh`'s optional `ufw` setup.
+- **Only the control-plane node needs inbound ports.** `80/tcp` and `443/tcp` for ingress (the ACME HTTP-01 challenge plus HTTPS traffic), your SSH port, and nothing else. See [Installing: requirements](/installing#requirements) for the full list and `install.sh`'s optional `ufw` setup.
 - **`levelrail-cli doctor`'s `firewall` check detects ufw, firewalld, and nftables/iptables**, whichever is actually installed on this host, and reports a concrete command to open 80/443 when it isn't. No supported tool installed is reported as informational, not a failure: this platform can't tell whether you're relying on something it can't introspect (a cloud security group, for example).
 - **Agent-only nodes should accept no inbound traffic at all.** The node agent dials out to the control plane over mTLS; the control plane never initiates a connection. A server running only the agent has nothing that needs to accept a connection, so leave its firewall closed by default rather than opening anything speculatively.
-- **Don't expose anything Levelrail didn't ask you to.** Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](multi-node.md#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
-- **Keep the OS patched.** The `patch_status` alert (see [Observability](observability.md)) can warn you about pending security patches on a managed node, but it only reports, it doesn't apply anything; that's still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
+- **Don't expose anything Levelrail didn't ask you to.** Docker's daemon socket, the SQLite database file, and the mesh DNS listener (`:5390` by default, see [Multi-node](/multi-node#wireguard-mesh-and-internal-dns)) are all meant to stay local to the box.
+- **Keep the OS patched.** The `patch_status` alert (see [Observability](/observability)) can warn you about pending security patches on a managed node, but it only reports, it doesn't apply anything; that's still on you (`unattended-upgrades`, `dnf-automatic`, or your distro's equivalent).
 
 ## Audit log
 
-Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable and exportable as CSV. See [Identity and access](identity-and-access.md#audit-log).
+Every mutating API call from an authenticated principal is recorded: who, what, when, and the outcome. The log is queryable and exportable as CSV. See [Identity and access](/identity-and-access#audit-log).
 
 ## Container hardening
 
@@ -189,7 +188,7 @@ Data and install directories must be absolute, free of shell and unit metacharac
 
 ## Reporting a vulnerability
 
-Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](../SECURITY.md) has the full policy, including what to expect after reporting.
+Levelrail does not yet have a dedicated security disclosure address. Until one exists, open a private security advisory on the [GitHub repository](https://github.com/glincker/levelrail/security/advisories/new) rather than a public issue. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) has the full policy, including what to expect after reporting.
 
 ## What this does not cover yet
 
@@ -203,7 +202,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Identity and access" href="/identity-and-access">
 
 Users, tokens, roles, and IAM policies.

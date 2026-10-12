@@ -1,15 +1,11 @@
 ---
+title: "Prove your backups work"
 description: Prove a backup restores before you need it. Run restore drills, read backup health per app, restore a volume into a new app or node, and respond when a drill fails.
 ---
 
-# Prove your backups work
-
 A backup file is not a backup until a restore of it has worked. Levelrail separates the two: **last backup** says an object was uploaded, **last verified restore** says a copy of it was restored into a scratch resource and checked. This guide shows how to get the second number green and what to do when it is not.
 
-For targets, schedules and retention basics, see [Backups and storage](backups-and-storage.md).
-
-<InlineToc default-open />
-
+For targets, schedules and retention basics, see [Backups and storage](/backups-and-storage).
 ## What a drill does
 
 A restore drill takes a stored backup and:
@@ -84,7 +80,7 @@ Encrypted backups are decrypted with this control plane's key. To restore somewh
 age -d -i backup-encryption.key object.tar.zst.age | zstd -d | tar -x -C ./restore
 ```
 
-For databases, the same Backups row links to the database page, where **Restore as new database** and the point-in-time restore picker live. Point-in-time restore needs PITR enabled on the database first; see [Managing databases](managing-databases.md).
+For databases, the same Backups row links to the database page, where **Restore as new database** and the point-in-time restore picker live. Point-in-time restore needs PITR enabled on the database first; see [Managing databases](/managing-databases).
 
 ## Encryption and the key
 

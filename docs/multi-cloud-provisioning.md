@@ -1,8 +1,7 @@
 ---
+title: "Multi-cloud provisioning quickstart"
 description: Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Auth modes, cost and known gaps are on the node provisioning page.
 ---
-
-# Multi-cloud provisioning quickstart
 
 [Node provisioning](/node-provisioning) explains how cloud provisioning works: the join-token flow it drives, the cloud-init script, status polling and the known gaps per provider. This page is the short version: which providers are supported, what credential each needs, and the fastest path to a running node.
 
@@ -64,7 +63,7 @@ The same shape works for DigitalOcean, AWS, Azure and GCP: store the credential 
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Node provisioning" href="/node-provisioning">
 
 How it works, auth modes, cost and known gaps.

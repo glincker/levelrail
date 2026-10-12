@@ -1,0 +1,49 @@
+---
+title: "Self-host Once Campfire with Docker"
+sidebarTitle: "Once Campfire"
+description: "A simple, self-hosted group chat app from 37signals, no subscription required."
+---
+
+A simple, self-hosted group chat app from 37signals, no subscription required.
+
+This page describes the Levelrail template for Once Campfire (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/basecamp/once-campfire.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `campfire` | `ghcr.io/basecamp/once-campfire:main` | 80 | `campfire_storage -&#62; /rails/storage` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `campfire` | `DISABLE_SSL` | Preset in the template |
+| `campfire` | `SECRET_KEY_BASE` | Generated at deploy |
+| `campfire` | `SKIP_TELEMETRY` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Once Campfire with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Once Campfire. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy once-campfire --name my-once-campfire
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [FreeScout](/self-host/freescout)
+
+All templates are listed in the [self-host gallery](/self-host/index).

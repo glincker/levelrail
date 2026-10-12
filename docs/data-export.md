@@ -1,13 +1,9 @@
 ---
+title: "Data export"
 description: Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
 ---
 
-# Data export
-
 Metrics, logs and the audit log stay on the control plane and its nodes by default. Data export sends copies to the tools you already run: Grafana and Prometheus, Loki, a syslog server, a SIEM webhook, an S3 compatible bucket, or an OpenTelemetry collector. Nothing is exported until you add a destination, and a destination that is down never slows a container, a deploy or the API.
-
-<InlineToc default-open />
-
 ## What you can export
 
 | Signal | Destination type | How it leaves |
@@ -62,7 +58,7 @@ The prefix is the lowercase brand short name followed by an underscore, `levelra
    docker run -d --name grafana --network obs -p 3000:3000 grafana/grafana:11.3.0
    ```
 
-2. Loki on the same host or a private network is an internal address, which export refuses by default. On the control plane set `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true` and restart (see [Environment variables](environment-variables.md#data-export)). A public HTTPS Loki needs nothing.
+2. Loki on the same host or a private network is an internal address, which export refuses by default. On the control plane set `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true` and restart (see [Environment variables](/environment-variables#data-export)). A public HTTPS Loki needs nothing.
 3. Add the destination:
 
    ```bash
@@ -107,7 +103,7 @@ def verify(key: bytes, header: str, body: bytes, tolerance=300) -> bool:
     return hmac.compare_digest(expected, parts["v1"]) and abs(time.time() - int(parts["t"])) <= tolerance
 ```
 
-`audit_s3` writes each batch to `<prefix>/<yyyy>/<mm>/<dd>/<first-created-at>-<first-id>.ndjson` in a [storage destination](object-storage.md). The key is derived from the batch's first row, so a retried batch overwrites itself.
+`audit_s3` writes each batch to `<prefix>/<yyyy>/<mm>/<dd>/<first-created-at>-<first-id>.ndjson` in a [storage destination](/object-storage). The key is derived from the batch's first row, so a retried batch overwrites itself.
 
 Tokens, bearer values, URL credentials and token-shaped strings are masked in every exported field. By default streaming starts at the moment the destination is created. `--backfill` starts at the oldest audit row instead.
 
@@ -160,6 +156,6 @@ levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
 
 ## Related
 
-- [Observability](observability.md) for node-local metrics and the remote read endpoint
-- [Log archive](log-archive.md) for scheduled, compressed log archives in a bucket
-- [Environment variables](environment-variables.md#data-export) for every `APP_EXPORT_*` setting
+- [Observability](/observability) for node-local metrics and the remote read endpoint
+- [Log archive](/log-archive) for scheduled, compressed log archives in a bucket
+- [Environment variables](/environment-variables#data-export) for every `APP_EXPORT_*` setting

@@ -1,8 +1,7 @@
 ---
+title: "Self-host Vaultwarden on your own server"
 description: Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
 ---
-
-# Self-host Vaultwarden on your own server
 
 Vaultwarden is a lightweight server that works with the official Bitwarden apps and browser extensions. In this tutorial you will deploy it from Levelrail's template catalog in one command, check that it is alive, put it on a domain, and back up its data. The same steps work for the rest of the catalog.
 
@@ -109,7 +108,7 @@ Resilience     warn   no backup schedule configured for volume(s): ...vaultwarde
 Observability  fail   no alert rules configured for this app
 ```
 
-Connect a bucket by following [Back up Postgres to S3](back-up-postgres-to-s3.md), then back up the volume:
+Connect a bucket by following [Back up Postgres to S3](/tutorials/back-up-postgres-to-s3), then back up the volume:
 
 ```bash
 levelrail-cli app-volume-backups trigger vaultwarden-vaultwarden vaultwarden_data --target bkt_Ra-kILVUyJaw
@@ -132,7 +131,7 @@ levelrail-cli apps deploy vaultwarden-vaultwarden --image vaultwarden/server:<ne
 levelrail-cli apps wait vaultwarden-vaultwarden
 ```
 
-If the new version misbehaves, roll back with `levelrail-cli apps deploys rollback-to`. See [Deploy a Docker app](deploy-a-docker-app.md).
+If the new version misbehaves, roll back with `levelrail-cli apps deploys rollback-to`. See [Deploy a Docker app](/tutorials/deploy-a-docker-app).
 
 ## Clean up
 
@@ -144,4 +143,4 @@ levelrail-cli apps delete vaultwarden-vaultwarden
 
 - [Template catalog](../template-catalog.md): every one-click service, by category.
 - [Templates and registry](../templates-and-registry.md): how templates work and how to save your own.
-- [Debug a slow or failing app with built-in logs and metrics](debug-an-app-with-logs-and-metrics.md).
+- [Debug a slow or failing app with built-in logs and metrics](/tutorials/debug-an-app-with-logs-and-metrics).

@@ -1,8 +1,7 @@
 ---
+title: "Migrating from Coolify, Dokploy, or CapRover"
 description: Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
 ---
-
-# Migrating from Coolify, Dokploy, or CapRover
 
 The platform importer reads a live Coolify, Dokploy or CapRover instance through its own HTTP API and creates the matching apps and databases here. It is read-only against the source: it never stops, changes or deletes anything there, and a test asserts it issues nothing but GET requests (CapRover's one login POST aside).
 
@@ -30,18 +29,18 @@ Always start with a dry run. `--dry-run` (or the dashboard's Discover step) read
 
 What the token is, per platform:
 
-<Tabs :items="['Coolify', 'Dokploy', 'CapRover']">
-<Tab value="Coolify">
+<Tabs>
+<Tab title="Coolify">
 
 An API token (Keys and tokens). Use `read:sensitive` to get real env values. It is sent as `Authorization: Bearer`.
 
 </Tab>
-<Tab value="Dokploy">
+<Tab title="Dokploy">
 
 An API key, sent in the `x-api-key` header.
 
 </Tab>
-<Tab value="CapRover">
+<Tab title="CapRover">
 
 The login password, exchanged for a session token via `POST /api/v2/login`.
 
@@ -386,11 +385,11 @@ Because nothing on the source changed, no source-side rollback is needed. Keep D
 
 ## See also
 
-- [Getting started](getting-started.md): deploying your first app
-- [App spec reference](app-spec-reference.md): full app.yaml schema
-- [Backups and storage](backups-and-storage.md): dump and restore tools for engines the copy step does not cover
-- [Comparison](comparison.md): architectural differences between platforms
-- [Coolify alternative](coolify-alternative.md) and [Dokploy alternative](dokploy-alternative.md): why people switch
+- [Getting started](/getting-started): deploying your first app
+- [App spec reference](/app-spec-reference): full app.yaml schema
+- [Backups and storage](/backups-and-storage): dump and restore tools for engines the copy step does not cover
+- [Comparison](/comparison): architectural differences between platforms
+- [Coolify alternative](/coolify-alternative) and [Dokploy alternative](/dokploy-alternative): why people switch
 
 ## Guided app import from Coolify
 

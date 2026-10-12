@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { renderDocsMarkdown } from './renderDocsMarkdown'
+import { stripFrontmatter } from './frontmatter'
 import type { DocsManifest } from '../types/docs'
 
 const manifest: DocsManifest = {
@@ -139,5 +140,16 @@ describe('renderDocsMarkdown', () => {
     )
     expect(html).not.toContain('<a ')
     expect(html).toContain('ADR 5')
+  })
+})
+
+describe('stripFrontmatter title restore', () => {
+  it('prepends the frontmatter title as an H1 when the body has none', () => {
+    expect(
+      stripFrontmatter('---\ntitle: "Getting started"\n---\n\nHello\n'),
+    ).toBe('# Getting started\n\nHello\n')
+  })
+  it('leaves a body that already has an H1 alone', () => {
+    expect(stripFrontmatter('---\ntitle: X\n---\n\n# Own\n')).toBe('\n# Own\n')
   })
 })

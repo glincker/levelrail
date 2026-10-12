@@ -1,0 +1,51 @@
+---
+title: "Self-host Checkmate with Docker"
+sidebarTitle: "Checkmate"
+description: "An open-source uptime and server monitoring app with incident history and status pages."
+---
+
+An open-source uptime and server monitoring app with incident history and status pages.
+
+This page describes the Levelrail template for Checkmate (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.checkmate.so.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `checkmate` | `ghcr.io/bluewave-labs/checkmate-backend-mono-multiarch:v3.2.0` | 52345 | none |
+| `mongo` | `mongo:7` | none | `checkmate_mongo_data -&#62; /data/db` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `checkmate` | `DB_CONNECTION_STRING` | Preset in the template |
+| `checkmate` | `JWT_SECRET` | Generated at deploy |
+| `checkmate` | `UPTIME_APP_API_BASE_URL` | Preset in the template |
+| `checkmate` | `UPTIME_APP_CLIENT_HOST` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Checkmate with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Checkmate. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy checkmate --name my-checkmate
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Diun](/self-host/diun)
+- [Glances](/self-host/glances)
+
+All templates are listed in the [self-host gallery](/self-host/index).

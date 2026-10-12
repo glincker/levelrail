@@ -1,8 +1,7 @@
 ---
+title: "Upgrade safely"
 description: "Runbook for upgrading the control plane: checks and their fixes, upgrade now, scheduled and automatic upgrades, automatic rollback, interrupted upgrades and the downgrade guard."
 ---
-
-# Upgrade safely
 
 This is the runbook for moving a running server to a newer release. The self-update verifies the release, snapshots your data, tries the migrations on a copy, and puts the old binary and data back by itself when the new release does not become healthy.
 
@@ -197,6 +196,6 @@ Self-upgrade (`--apply`, and the dashboard Upgrade button) only ever applies a r
 
 ## See also
 
-- [Installing](installing.md) for first install, `install.sh --check` and the installer's own `upgrade`
-- [Upgrade history](upgrade-history.md) for the record of every version that ran
-- [Disaster recovery](disaster-recovery.md) for restoring from backups
+- [Installing](/installing) for first install, `install.sh --check` and the installer's own `upgrade`
+- [Upgrade history](/upgrade-history) for the record of every version that ran
+- [Disaster recovery](/disaster-recovery) for restoring from backups

@@ -1,8 +1,7 @@
 ---
+title: "Terminal UI"
 description: Run Levelrail from the terminal with a live, keyboard-driven UI for apps, databases, deploys, nodes, domains, alerts and backups.
 ---
-
-# Terminal UI
 
 `levelrail-cli tui` is a k9s-style terminal UI for operators who live in the shell. It shows the same data as the dashboard, refreshes on its own, tails logs, and can restart, deploy, roll back, stop and start an app, always behind a typed-name confirmation.
 

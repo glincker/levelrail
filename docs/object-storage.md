@@ -1,24 +1,20 @@
 ---
+title: "Object storage"
 description: Connect an S3-compatible bucket (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint) for log archive, build cache, and database and volume backups.
 ---
-
-# Object storage
 
 A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect shows up in both **Settings, Storage destinations** and **Settings, Backup targets**.
 
 Supported providers: AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, and any custom S3-compatible endpoint.
-
-<InlineToc default-open />
-
 ## Connect a destination
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Go to **Settings, Storage destinations, Add destination**. Pick a provider, fill in the fields it asks for, and leave "Test the connection before saving" on.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli storage providers
@@ -57,8 +53,8 @@ Outbound connections to a destination go through the same SSRF guard as webhooks
 
 ## Provider walkthroughs
 
-<Tabs :items="['Cloudflare R2', 'AWS S3']">
-<Tab value="Cloudflare R2">
+<Tabs>
+<Tab title="Cloudflare R2">
 
 <Steps>
 <Step title="Create a bucket">
@@ -89,7 +85,7 @@ Under an app's **Logs, Archive** tab (or Settings, Storage destinations for ever
 </Steps>
 
 </Tab>
-<Tab value="AWS S3">
+<Tab title="AWS S3">
 
 <Steps>
 <Step title="Create a private bucket">
@@ -180,7 +176,7 @@ REST routes live under `/api/v1/storage`, `/api/v1/log-archive`, and `/api/v1/bu
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Log archive" href="/log-archive">
 
 Ship container logs to a destination on a schedule.

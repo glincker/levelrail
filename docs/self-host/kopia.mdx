@@ -1,0 +1,49 @@
+---
+title: "Self-host Kopia with Docker"
+sidebarTitle: "Kopia"
+description: "Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script."
+---
+
+Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script.
+
+This page describes the Levelrail template for Kopia (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://kopia.io/docs/installation/#quick-setup-using-docker.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `kopia` | `kopia/kopia:0.19.0` | 51515 | `kopia_repository -&#62; /app/repository`<br />`kopia_config -&#62; /app/config`<br />`kopia_cache -&#62; /app/cache`<br />`kopia_logs -&#62; /app/logs` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `kopia` | `KOPIA_PASSWORD` | Generated at deploy |
+| `kopia` | `KOPIA_SERVER_PASSWORD` | Generated at deploy |
+| `kopia` | `KOPIA_SERVER_USERNAME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Kopia with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Kopia. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy kopia --name my-kopia
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Duplicati](/self-host/duplicati)
+- [File Browser](/self-host/filebrowser)
+
+All templates are listed in the [self-host gallery](/self-host/index).

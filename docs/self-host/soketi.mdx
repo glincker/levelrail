@@ -1,0 +1,50 @@
+---
+title: "Self-host Soketi with Docker"
+sidebarTitle: "Soketi"
+description: "A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features."
+---
+
+A simple, fast, Pusher-protocol-compatible WebSockets server for real-time app features.
+
+This page describes the Levelrail template for Soketi (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.soketi.app.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `soketi` | `quay.io/soketi/soketi:1.6-16-debian` | 6001 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `soketi` | `SOKETI_DEFAULT_APP_ID` | Generated at deploy |
+| `soketi` | `SOKETI_DEFAULT_APP_KEY` | Generated at deploy |
+| `soketi` | `SOKETI_DEFAULT_APP_SECRET` | Generated at deploy |
+| `soketi` | `SOKETI_PUSHER_SCHEME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Soketi with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Soketi. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy soketi --name my-soketi
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host/index).

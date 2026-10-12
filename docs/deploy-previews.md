@@ -1,8 +1,7 @@
 ---
+title: "Deploy previews"
 description: Thumbnails of each deploy in three tiers, from free (page metadata, no browser) to a real screenshot from a short-lived browser container. What each tier costs, what it can leak, how it is cleaned up and every APP_PREVIEW_* setting.
 ---
-
-# Deploy previews
 
 When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app, and the default costs about nothing.
 
@@ -30,13 +29,13 @@ New apps start in the server's default mode, `metadata`. Nothing runs while idle
 
 ## Choose a mode
 
-<Tabs :items="['UI','CLI']">
-<Tab value="UI">
+<Tabs>
+<Tab title="UI">
 
 Open the app, then **Deploy settings**, then **Deploy previews**, and pick a mode.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli preview enable web --mode metadata

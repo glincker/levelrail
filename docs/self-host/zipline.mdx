@@ -1,0 +1,53 @@
+---
+title: "Self-host Zipline with Docker"
+sidebarTitle: "Zipline"
+description: "A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener."
+---
+
+A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener.
+
+This page describes the Levelrail template for Zipline (Storage). It deploys the services below as one Docker Compose app on your own server. Project site: https://zipline.diced.sh/docs.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `zipline_db_data -&#62; /var/lib/postgresql/data` |
+| `zipline` | `ghcr.io/diced/zipline:3.7.9` | 3000 | `zipline_uploads -&#62; /zipline/uploads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `zipline` | `CORE_DATABASE_URL` | Generated at deploy |
+| `zipline` | `CORE_RETURN_HTTPS` | Preset in the template |
+| `zipline` | `CORE_SECRET` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Zipline with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Zipline. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy zipline --name my-zipline
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Storage templates
+
+- [Chibisafe](/self-host/chibisafe)
+- [Cloudreve](/self-host/cloudreve)
+- [copyparty](/self-host/copyparty)
+- [Duplicati](/self-host/duplicati)
+- [File Browser](/self-host/filebrowser)
+
+All templates are listed in the [self-host gallery](/self-host/index).

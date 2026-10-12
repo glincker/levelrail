@@ -1,15 +1,11 @@
 ---
+title: "Node provisioning"
 description: Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs, how status polling works, cost, and known gaps.
 ---
-
-# Node provisioning
 
 [Multi-node](/multi-node) covers enrolling a machine you already have. This page covers the step before that: having Levelrail create the machine at a cloud provider. For the short command sequence, see the [multi-cloud provisioning quickstart](/multi-cloud-provisioning).
 
 Provisioning drives the same join-token enrollment that multi-node uses. The control plane mints a token, hands it to the new VM's first-boot script, and the agent enrolls the way it always does.
-
-<InlineToc default-open />
-
 ```mermaid
 sequenceDiagram
   participant Op as Operator
@@ -42,18 +38,18 @@ Store a credential once under **Settings > Cloud node providers** (`/settings/no
 echo "$TOKEN" | levelrail-cli nodes providers set-credential --provider hetzner
 ```
 
-<Tabs :items="['Hetzner', 'DigitalOcean', 'AWS', 'Azure', 'GCP']">
-<Tab value="Hetzner">
+<Tabs>
+<Tab title="Hetzner">
 
 A project API token with **Read & Write** access. Tokens are scoped to one project, and servers are created in that project.
 
 </Tab>
-<Tab value="DigitalOcean">
+<Tab title="DigitalOcean">
 
 A personal access token with **read and write** scope.
 
 </Tab>
-<Tab value="AWS">
+<Tab title="AWS">
 
 EC2 has no single bearer token, so `set-credential --provider aws` takes one of two shapes:
 
@@ -105,7 +101,7 @@ The size list is a short curated set of `t3.*` types (`t3.micro` through `t3.xla
 </AccordionGroup>
 
 </Tab>
-<Tab value="Azure">
+<Tab title="Azure">
 
 A service principal (Azure AD app registration) with **Contributor** on one resource group, entered as a single-line JSON object:
 
@@ -132,7 +128,7 @@ Levelrail does not mint the JWT. The file is re-read whenever a fresh access tok
 </AccordionGroup>
 
 </Tab>
-<Tab value="GCP">
+<Tab title="GCP">
 
 A service account JSON key with the **Compute Instance Admin** role on the project, pasted as-is (minified to one line). The project ID comes from the key's own `project_id` field, so there is no separate project setting. A VPC network named `default` must exist in the project, which every new project has unless it was deleted.
 
@@ -146,7 +142,7 @@ GCP has no workload identity federation mode. Google's `external_account` creden
 1. `POST /api/v1/nodes/provision` (or `nodes provision`, or the Nodes page's **Add node** wizard) mints a join token through the same code path as `POST /api/v1/nodes/join-tokens`, then asks the provider to create a server with a cloud-init script as user-data.
 2. The script installs Docker if the image lacks it (the same `get.docker.com` script `install.sh` uses) and starts the agent as a systemd-managed container. The join token and CA fingerprint go through a root-only environment file, not the container's command line.
 3. `GET /api/v1/node-provisions/{id}` (or `nodes provisions show <id>`, or the wizard's progress view) recomputes status on every call. It asks the provider whether the server is up and checks whether a node with the expected name has enrolled. Status moves through `creating`, `booting`, `enrolling` and `ready`, or `failed` with a reason.
-4. Once the node is found, its workload kinds are set from the provision's `role`: `general` accepts apps, `build` accepts builds (see [Build node routing](build-node-routing.md)). Enrollment itself always starts a node as a plain app node.
+4. Once the node is found, its workload kinds are set from the provision's `role`: `general` accepts apps, `build` accepts builds (see [Build node routing](/build-node-routing)). Enrollment itself always starts a node as a plain app node.
 
 A name already used by an enrolled node, or by another provision that has not failed, is rejected with `409`. The name is how step 3 matches a node to its provision.
 
@@ -156,7 +152,7 @@ The status vocabulary includes `installing`, but nothing emits it: the control p
 
 ### The agent runs from an image
 
-The control plane binary that `install.sh` installs is checked against a published `checksums.txt`. The agent in provisioning is different: cloud-init pulls the container image `ghcr.io/glincker/levelrail-agent`, one tag per release and cosign-signed by the release pipeline. The pull is a plain `docker pull` over the registry's TLS, and cloud-init does not verify the cosign signature before running it. Treat this like any unverified script run on first boot. Later releases also attach a raw agent binary (see [Docker](docker.md#without-a-container)), but the provisioning script does not use it.
+The control plane binary that `install.sh` installs is checked against a published `checksums.txt`. The agent in provisioning is different: cloud-init pulls the container image `ghcr.io/glincker/levelrail-agent`, one tag per release and cosign-signed by the release pipeline. The pull is a plain `docker pull` over the registry's TLS, and cloud-init does not verify the cosign signature before running it. Treat this like any unverified script run on first boot. Later releases also attach a raw agent binary (see [Docker](/docker#without-a-container)), but the provisioning script does not use it.
 
 ### Token visibility on the node
 
@@ -203,7 +199,7 @@ Before relying on this in production, provision one real node per provider and c
 
 ## See also
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Multi-cloud quickstart" href="/multi-cloud-provisioning">
 
 The three-command version.

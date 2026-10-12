@@ -1,8 +1,7 @@
 ---
+title: "Resilience, in short"
 description: A short answer to what survives a control plane crash, with a link to the full measured page.
 ---
-
-# Resilience, in short
 
 When the control plane process is killed outright, already-running app containers keep running and keep serving traffic on their own. A node agent never takes a destructive action on disconnect: it retries the connection with backoff until the control plane comes back.
 

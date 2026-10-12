@@ -1,0 +1,45 @@
+---
+title: "Self-host Ollama: DeepSeek-R1 7B with Docker"
+sidebarTitle: "Ollama: DeepSeek-R1 7B"
+description: "DeepSeek's R1 distilled 7B reasoning model, served locally through Ollama's HTTP API."
+---
+
+DeepSeek's R1 distilled 7B reasoning model, served locally through Ollama's HTTP API.
+
+This page describes the Levelrail template for Ollama: DeepSeek-R1 7B (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://ollama.com/library/deepseek-r1.
+
+Recommended memory: about 6144 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `ollama` | `ollama/ollama:0.33.3` | 11434 | `ollama_data -&#62; /root/.ollama` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Ollama: DeepSeek-R1 7B with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Ollama: DeepSeek-R1 7B. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy ollama-deepseek --name my-ollama-deepseek
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host/index).

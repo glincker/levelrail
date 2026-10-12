@@ -1,0 +1,57 @@
+---
+title: "Self-host AFFiNE with Docker"
+sidebarTitle: "AFFiNE"
+description: "A block-based workspace combining docs, whiteboards, and databases in one self-hosted app."
+---
+
+A block-based workspace combining docs, whiteboards, and databases in one self-hosted app.
+
+This page describes the Levelrail template for AFFiNE (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.affine.pro/self-host-affine/references/docker-compose-yml.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `affine` | `ghcr.io/toeverything/affine:stable` | 3010 | `affine_storage -&#62; /root/.affine/storage`<br />`affine_config -&#62; /root/.affine/config` |
+| `db` | `pgvector/pgvector:pg16` | none | `affine_db_data -&#62; /var/lib/postgresql/data` |
+| `redis` | `redis:7-alpine` | none | `affine_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `affine` | `AFFINE_SERVER_HOST` | Preset in the template |
+| `affine` | `AFFINE_SERVER_HTTPS` | Preset in the template |
+| `affine` | `AFFINE_SERVER_PORT` | Preset in the template |
+| `affine` | `DATABASE_URL` | Generated at deploy |
+| `affine` | `NODE_ENV` | Preset in the template |
+| `affine` | `REDIS_SERVER_HOST` | Preset in the template |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy AFFiNE with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select AFFiNE. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy affine --name my-affine
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+- [ConvertX](/self-host/convertx-app)
+
+All templates are listed in the [self-host gallery](/self-host/index).

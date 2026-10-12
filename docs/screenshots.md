@@ -1,8 +1,7 @@
 ---
+title: "Dashboard screenshots"
 description: Regenerate real dashboard screenshots from a live control plane with metrics and logs.
 ---
-
-# Dashboard screenshots
 
 The PNG files in `docs/assets/screenshots/` are captured from a real, running control plane. They show real deployed containers, real metrics, and real log lines, with no mocking or hand-editing.
 
@@ -76,7 +75,7 @@ All credentials are freshly created for each run and never leave the scratch dat
 
 ## Screens that need more than one node
 
-Some screens do not exist on a single node: the multi-node topology view, cross-node ingress routing, a second node's own health. `capture.sh` does not cover them. Capture these by hand from a real multi-node cluster you control, with a logged-in browser session, and save the PNGs to `docs/assets/screenshots/` with a `multi-node-` prefix so their source is obvious. Embed them in [Multi-node](multi-node.md) or [Network topology](network-topology.md).
+Some screens do not exist on a single node: the multi-node topology view, cross-node ingress routing, a second node's own health. `capture.sh` does not cover them. Capture these by hand from a real multi-node cluster you control, with a logged-in browser session, and save the PNGs to `docs/assets/screenshots/` with a `multi-node-` prefix so their source is obvious. Embed them in [Multi-node](/multi-node) or [Network topology](/network-topology).
 
 ::: warning
 Never commit a credential, a session token, or a `.env` file from this process. Only the resulting PNGs and doc edits are safe to commit.
@@ -86,6 +85,6 @@ If you lose access to the admin account on a cluster you own, `sudo APP_DATA_DIR
 
 ## See also
 
-- [Getting started](getting-started.md) for building and running the control plane locally
-- [Identity and access](identity-and-access.md) for device login flow details
-- [Feature catalog](feature-catalog.md) to understand which dashboard pages are captured
+- [Getting started](/getting-started) for building and running the control plane locally
+- [Identity and access](/identity-and-access) for device login flow details
+- [Feature catalog](/feature-catalog) to understand which dashboard pages are captured

@@ -1,0 +1,50 @@
+---
+title: "Self-host OpenObserve with Docker"
+sidebarTitle: "OpenObserve"
+description: "A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI."
+---
+
+A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI.
+
+This page describes the Levelrail template for OpenObserve (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://openobserve.ai/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `openobserve` | `public.ecr.aws/zinclabs/openobserve:v0.90.0` | 5080 | `openobserve_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `openobserve` | `ZO_DATA_DIR` | Preset in the template |
+| `openobserve` | `ZO_ROOT_USER_EMAIL` | Preset in the template |
+| `openobserve` | `ZO_ROOT_USER_PASSWORD` | Generated at deploy |
+| `openobserve` | `ZO_TELEMETRY` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy OpenObserve with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select OpenObserve. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy openobserve --name my-openobserve
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+- [Diun](/self-host/diun)
+
+All templates are listed in the [self-host gallery](/self-host/index).

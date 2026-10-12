@@ -1,0 +1,131 @@
+// Generates the Mintlify pages that have no hand-written source: the
+// self-host template gallery and the changelog. Run from the repo root.
+import fs from 'node:fs'
+
+const kindLabel = { generated: 'Generated at deploy', required: 'You must provide', preset: 'Preset in the template' }
+const templates = JSON.parse(fs.readFileSync('scripts/gen-template-gallery/templates.json', 'utf8'))
+const esc = (s) => String(s).replace(/\|/g, '\\|').replace(/[<>{}]/g, (c) => `&#${c.charCodeAt(0)};`)
+const q = (s) => JSON.stringify(String(s))
+
+fs.mkdirSync('docs/self-host', { recursive: true })
+for (const f of fs.readdirSync('docs/self-host')) if (f.endsWith('.mdx')) fs.unlinkSync(`docs/self-host/${f}`)
+
+const byCat = new Map()
+for (const t of templates) {
+  if (!byCat.has(t.category)) byCat.set(t.category, [])
+  byCat.get(t.category).push(t)
+}
+
+for (const t of templates) {
+  const related = (byCat.get(t.category) ?? []).filter((r) => r.id !== t.id).slice(0, 5)
+  const svc = t.services
+    .map(
+      (s) =>
+        `| \`${s.name}\` | \`${esc(s.image)}\` | ${s.ports.length ? s.ports.join(', ') : 'none'} | ${
+          s.volumes.length ? s.volumes.map((v) => `\`${esc(v)}\``).join('<br />') : 'none'
+        } |`,
+    )
+    .join('\n')
+  const env = t.env.length
+    ? `| Service | Variable | Value |\n| --- | --- | --- |\n${t.env
+        .map((e) => `| \`${e.service}\` | \`${e.key}\` | ${kindLabel[e.kind] ?? e.kind} |`)
+        .join('\n')}`
+    : 'This template sets no environment variables.'
+  const cmd = t.needsConfig
+    ? `levelrail-cli templates get ${t.id} --output json | jq -r .compose > ${t.id}.compose.yaml\n# edit ${t.id}.compose.yaml to set the variables you must provide\nlevelrail-cli apps deploy-compose my-${t.id} --file ${t.id}.compose.yaml`
+    : `levelrail-cli templates deploy ${t.id} --name my-${t.id}`
+  const out = `---
+title: ${q(`Self-host ${t.name} with Docker`)}
+sidebarTitle: ${q(t.name)}
+description: ${q(t.slogan)}
+---
+
+${esc(t.slogan)}
+
+This page describes the Levelrail template for ${esc(t.name)} (${esc(t.category)}). It deploys the services below as one Docker Compose app on your own server.${t.docUrl ? ` Project site: ${t.docUrl}.` : ''}
+${t.memoryMiB ? `\nRecommended memory: about ${t.memoryMiB} MiB.\n` : ''}${t.gpu ? '\n<Warning>This template reserves an NVIDIA GPU, so it needs a node with a GPU and the NVIDIA container runtime.</Warning>\n' : ''}
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+${svc}
+
+## Environment variables
+
+${env}
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+${t.needsConfig ? '\n<Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>\n' : ''}
+## Deploy ${esc(t.name)} with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ${esc(t.name)}. Review the Compose body and deploy.
+
+With the CLI:
+
+\`\`\`bash
+${cmd}
+\`\`\`
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+${related.length ? `\n## More ${esc(t.category)} templates\n\n${related.map((r) => `- [${esc(r.name)}](/self-host/${r.id})`).join('\n')}\n` : ''}
+All templates are listed in the [self-host gallery](/self-host/index).
+`
+  fs.writeFileSync(`docs/self-host/${t.id}.mdx`, out)
+}
+
+const cats = [...byCat.keys()].sort()
+const index = `---
+title: "Self-host gallery"
+description: Browse self-hostable open-source apps you can deploy with Levelrail templates, with the services, ports, volumes and environment variables for each.
+---
+
+${templates.length} open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
+
+${cats
+  .map(
+    (c) =>
+      `## ${c}\n\n${byCat
+        .get(c)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((t) => `- [${esc(t.name)}](/self-host/${t.id}): ${esc(t.slogan)}`)
+        .join('\n')}\n`,
+  )
+  .join('\n')}`
+fs.writeFileSync('docs/self-host/index.mdx', index)
+
+// Changelog from release-please's CHANGELOG.md.
+const cl = fs.readFileSync('CHANGELOG.md', 'utf8')
+const updates = cl
+  .split(/^## /m)
+  .slice(1)
+  .map((e) => {
+    const [head, ...rest] = e.split('\n')
+    const m = head.match(/\[?([^\]\s]+)\]?(?:\([^)]*\))?\s*\((\d{4}-\d{2}-\d{2})\)/)
+    if (!m) return ''
+    const body = rest
+      .join('\n')
+      .replace(/^### (.*)$/gm, '**$1**')
+      .replace(/\s*\(\[[0-9a-f]{7}\]\([^)]*\)\)/g, '')
+      .replace(/\[\\?#(\d+)\]\([^)]*\)/g, '#$1')
+      .replace(/[<>{}]/g, (c) => `&#${c.charCodeAt(0)};`)
+      .trim()
+    return `<Update label=${q(m[1])} description=${q(m[2])}>\n${body}\n</Update>`
+  })
+  .filter(Boolean)
+fs.writeFileSync(
+  'docs/changelog.mdx',
+  `---\ntitle: "Changelog"\ndescription: Every Levelrail release with highlights, fixes and upgrade notes.\n---\n\n${updates.join('\n\n')}\n`,
+)
+
+// Keep docs.json's gallery tab in sync.
+const cfg = JSON.parse(fs.readFileSync('docs/docs.json', 'utf8'))
+const tabs = cfg.navigation.tabs.filter((t) => t.tab !== 'Self-host gallery')
+tabs.splice(tabs.length - 1, 0, {
+  tab: 'Self-host gallery',
+  groups: [
+    { group: 'Gallery', pages: ['self-host/index'] },
+    ...cats.map((c) => ({ group: c, pages: byCat.get(c).map((t) => `self-host/${t.id}`) })),
+  ],
+})
+cfg.navigation.tabs = tabs
+fs.writeFileSync('docs/docs.json', JSON.stringify(cfg, null, 2) + '\n')
