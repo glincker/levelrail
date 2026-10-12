@@ -1,0 +1,45 @@
+---
+title: "Self-host Docker Registry with Docker"
+sidebarTitle: "Docker Registry"
+description: "The official open source registry for storing and distributing your own container images."
+---
+
+The official open source registry for storing and distributing your own container images.
+
+This page describes the Levelrail template for Docker Registry (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://distribution.github.io/distribution/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `registry` | `registry:2.8.3` | 5000 | `registry_data -&#62; /var/lib/registry` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Docker Registry with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Docker Registry. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy registry --name my-registry
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host/index).

@@ -1,0 +1,45 @@
+---
+title: "Self-host Text Embeddings Inference with Docker"
+sidebarTitle: "Text Embeddings Inference"
+description: "A lean server that turns text into embeddings with popular open models, on CPU with no extra setup."
+---
+
+A lean server that turns text into embeddings with popular open models, on CPU with no extra setup.
+
+This page describes the Levelrail template for Text Embeddings Inference (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://huggingface.co/docs/text-embeddings-inference.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `tei` | `ghcr.io/huggingface/text-embeddings-inference:cpu-1.8` | 80 | `tei_data -&#62; /data` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Text Embeddings Inference with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Text Embeddings Inference. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy text-embeddings-inference --name my-text-embeddings-inference
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host/index).

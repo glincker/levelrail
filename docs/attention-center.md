@@ -1,8 +1,7 @@
 ---
+title: "Attention center"
 description: How the dashboard surfaces things that wait on an operator, including CLI login approvals, expired logins, deploy approvals, expiring tokens, failed data copies, overdue backups and stalled certificate renewals.
 ---
-
-# Attention center
 
 Some states block on a person and used to be visible only if you went looking. The attention center puts them in one place: the banner and bell in the dashboard header, the Status page, `levelrail-cli attention`, and the MCP `get_attention` tool.
 
@@ -61,7 +60,7 @@ A background sweeper records expiry whether or not the CLI ever polls again. It 
 
 ## Sign-in codes and new browsers
 
-When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists one `login_code` or `login_approval` item for your account, with a count and the newest requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**; approving asks you to type the number the waiting browser shows. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](identity-and-access.md#sign-in-with-a-code).
+When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists one `login_code` or `login_approval` item for your account, with a count and the newest requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**; approving asks you to type the number the waiting browser shows. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](/identity-and-access#sign-in-with-a-code).
 
 ## Running the CLI through a tunnel or proxy
 

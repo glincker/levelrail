@@ -1,17 +1,13 @@
 ---
+title: "Multi-node: adding and managing nodes"
 description: Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
 ---
-
-# Multi-node: adding and managing nodes
 
 Everything on this page is optional. A fresh install runs entirely on the control plane's own local node, and nothing here has to be touched to make it work.
 
 A second node is something you add when one box runs out of room, when you want to isolate builds from production containers, or when you want a dedicated database host. The platform never makes you think about it on day one.
-
-<InlineToc default-open />
-
 ::: tip Ingress listens on the control-plane node and reaches workers over the mesh
-The embedded Caddy ingress ([Domains and ingress](domains-and-ingress.md)) runs in the control plane's own process. A worker node has **no public listener**: nothing is bound to 80/443 there. When the WireGuard mesh is up, the ingress reaches an app on a worker through that node's mesh address, so its domains and its `<app>.<ip>.sslip.io` hostname work with normal TLS. See [Routing to apps on remote nodes](#routing-to-apps-on-remote-nodes).
+The embedded Caddy ingress ([Domains and ingress](/domains-and-ingress)) runs in the control plane's own process. A worker node has **no public listener**: nothing is bound to 80/443 there. When the WireGuard mesh is up, the ingress reaches an app on a worker through that node's mesh address, so its domains and its `<app>.<ip>.sslip.io` hostname work with normal TLS. See [Routing to apps on remote nodes](#routing-to-apps-on-remote-nodes).
 
 If the mesh path is down (mesh off, node not joined, no recent handshake), the app is **not** routed: a browser gets a TLS handshake failure while the app reports healthy. Levelrail reports this as the `NoMeshIngressPath` condition on the app, in `levelrail-cli doctor` (`cross_node_ingress`), in preflight and on the Traffic page, each with the reason and a fix:
 
@@ -33,7 +29,7 @@ This shows up in three ways:
 
 ## Enrolling a second node
 
-Enrollment exchanges a one-time join token for a client certificate. The agent dials out to the control plane, and the control plane never initiates a connection. For a cloud server created for you, see [Node provisioning](node-provisioning.md). To have the control plane set up a machine over SSH, see [Enrolling over SSH](#enrolling-over-ssh-instead-of-by-hand).
+Enrollment exchanges a one-time join token for a client certificate. The agent dials out to the control plane, and the control plane never initiates a connection. For a cloud server created for you, see [Node provisioning](/node-provisioning). To have the control plane set up a machine over SSH, see [Enrolling over SSH](#enrolling-over-ssh-instead-of-by-hand).
 
 ::: warning Set the advertise host first
 Before enrolling a real (non-local) node, set `APP_AGENT_ADVERTISE_HOST` on the control plane to the host or IP the remote agent will use in `APP_CONTROL_PLANE_ADDR`. It defaults to `127.0.0.1`, which only matches a single-machine test. With a mismatch, enrollment still succeeds (the first certificate exchange pins the CA fingerprint, not the hostname) and the node appears in `nodes list`, but its persistent session then fails TLS hostname verification on every attempt and the node stays `pending` forever.
@@ -51,20 +47,20 @@ graph LR
 <Steps>
 <Step title="Mint a join token">
 
-<Tabs :items="['Dashboard', 'CLI', 'API']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open the Nodes page and click **Add node**.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli nodes join-token
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -104,7 +100,7 @@ docker run -d --name levelrail-agent --restart unless-stopped --network host \
 
 Add `--user 0:0` for images older than `v0.2.0-beta.16`, which defaulted to a non-root user that could not write into a root-owned directory.
 
-Without Docker for the agent itself, install the `.deb` or `.rpm` attached to releases after `v0.2.0-beta.15` (see [Docker: without a container](docker.md#without-a-container)), or run the binary as root. `v0.2.0-beta.15` has no agent binary asset, so use the image or a later release.
+Without Docker for the agent itself, install the `.deb` or `.rpm` attached to releases after `v0.2.0-beta.15` (see [Docker: without a container](/docker#without-a-container)), or run the binary as root. `v0.2.0-beta.15` has no agent binary asset, so use the image or a later release.
 
 ```bash
 sudo APP_CONTROL_PLANE_ADDR=controlplane.example.com:9443 \
@@ -142,7 +138,7 @@ A node `pending` for more than five minutes (`APP_NODE_PENDING_STALE_AFTER`) is 
 
 Once connected, the node is a normal placement target. Pick it in an app or database create form, move an existing resource onto it, or let [auto-placement](#simple-spread-placement-auto-placement) send new resources there.
 
-A node accepts app workloads by default but not build workloads. See [Build node routing](build-node-routing.md) to enable builds.
+A node accepts app workloads by default but not build workloads. See [Build node routing](/build-node-routing) to enable builds.
 
 </Step>
 </Steps>
@@ -151,13 +147,13 @@ A node accepts app workloads by default but not build workloads. See [Build node
 
 Steps 1 and 2 above can be automated: instead of minting a token and running the agent command yourself on the new machine, the control plane can SSH into it and do both for you.
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Nodes page, **Add node**, then **Connect over SSH**. After the host and port, the **Verify server** step shows the server's host key fingerprints; confirm one before the credential fields appear.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli nodes ssh-provision \
@@ -176,7 +172,7 @@ The command first prints the server's host key fingerprints and asks you to conf
 
 1. Verifies the server's host key against the pinned fingerprint, then connects over SSH and detects the OS, kernel architecture, and whether Docker and systemd are already present. Only Linux with systemd is supported (the same requirement `install.sh` has); an unsupported host fails here with a clear reason before anything is changed.
 2. Installs Docker via `get.docker.com` if it's missing.
-3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same steps cloud-init runs on a freshly created VM (see [Node provisioning](node-provisioning.md)), executed over the SSH session instead.
+3. Writes the agent's environment file and a systemd unit, then enables and starts it, the same steps cloud-init runs on a freshly created VM (see [Node provisioning](/node-provisioning)), executed over the SSH session instead.
 4. Confirms the service actually stays active, surfacing the last `journalctl` lines as the failure reason if it doesn't.
 
 The SSH credential (key or password) is held only in memory for this one call and is never written to the database or logged; the join token itself is written to a root-only (`0600`) environment file on the target host, the same handling the cloud-init path uses.
@@ -230,7 +226,7 @@ The control plane's own local node uses the same health system: it heartbeats it
 
 ## Agent certificates: renewal and re-enrollment
 
-Each agent authenticates with a client certificate issued by the control plane's own CA (90 days by default, `APP_AGENT_CERT_VALIDITY` on the control plane). The design and its rejected alternatives are in [ADR 021](../adr/021-agent-cert-lifecycle.md).
+Each agent authenticates with a client certificate issued by the control plane's own CA (90 days by default, `APP_AGENT_CERT_VALIDITY` on the control plane). The design and its rejected alternatives are in [ADR 021](https://github.com/glincker/levelrail/blob/main/adr/021-agent-cert-lifecycle.md).
 
 ### Automatic renewal
 
@@ -314,7 +310,7 @@ Effects:
 **Behavior:**
 - Each resource is a verified move (see [Verified moves](#verified-moves)), run one after another.
 - The drain stops at the first failed move and leaves the node cordoned. Fix the cause, then drain again or uncordon the node.
-- GPU apps (`resources.gpu`) only move to a node with a working nvidia runtime and enough free GPUs. An app no node can host stays where it is and is listed under `blocked` with a per-node reason. Models cannot be moved, so any model on the node is always listed as blocked. See [GPU scheduling](ai-models.md#gpu-scheduling).
+- GPU apps (`resources.gpu`) only move to a node with a working nvidia runtime and enough free GPUs. An app no node can host stays where it is and is listed under `blocked` with a per-node reason. Models cannot be moved, so any model on the node is always listed as blocked. See [GPU scheduling](/ai-models#gpu-scheduling).
 - Progress is a job, not a single response: poll `GET /api/v1/node-drains/{id}`, or use `nodes drain <id> --wait`. `nodes drains <id>` and `GET /api/v1/nodes/{id}/drains` list the newest 20.
 
 A `NodeDrain` carries `status` (`running`, `succeeded`, `failed`), an `error`, the `blocked` list and the `moves` in the order they ran. The node page's **Drain** dialog polls it every couple of seconds and lists each move with its phase; the **Drains** card keeps the history.
@@ -331,7 +327,7 @@ A `NodeDrain` carries `status` (`running`, `succeeded`, `failed`), an `error`, t
 
 There is no dedicated "workloads on this node" list. These show it indirectly:
 
-- **Network page and `levelrail-cli nodes topology`:** every node with the apps and databases placed on it. See [Network topology](network-topology.md).
+- **Network page and `levelrail-cli nodes topology`:** every node with the apps and databases placed on it. See [Network topology](/network-topology).
 - **App and database detail pages:** a Placement card shows the current node, the selector, eligible nodes and the move action.
 - **Placement names:** an app or database with no explicit node runs on this server, so it shows "This server" plus the hostname rather than a blank. API responses carry `node_name` and `node_is_local` beside `node_id`. "Unassigned" appears only when the stored node no longer exists, with a "Move to this server" action.
 - **Nodes page:** one row per node with status, usage bars, resource count, agent version and last seen, and a menu for cordon, drain and delete (delete asks you to type the node name).
@@ -370,7 +366,7 @@ Databases placed on a node are excluded from the sum (only app services are incl
 levelrail-cli nodes resource-usage
 ```
 
-`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart to the per-node time series above: one snapshot with every node's latest CPU/memory/disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. The same caveats apply: CPU and memory are summed from containers, and disk is a real host reading that today is populated only for the node running the control plane. See [Observability](observability.md) for the response shape. `levelrail-cli nodes capacity-forecast <id>` projects when disk or memory runs out.
+`GET /api/v1/nodes/resource-usage` is the fleet-wide counterpart to the per-node time series above: one snapshot with every node's latest CPU/memory/disk reading plus a rollup, read by the node list's CPU/Memory/Disk columns and the dashboard's fleet summary card. The same caveats apply: CPU and memory are summed from containers, and disk is a real host reading that today is populated only for the node running the control plane. See [Observability](/observability) for the response shape. `levelrail-cli nodes capacity-forecast <id>` projects when disk or memory runs out.
 
 ## OS patch status
 
@@ -412,7 +408,7 @@ When you create an app or database without specifying a node, the server decides
 - If enabled: `autoPlaceNode` picks the schedulable, online node with the fewest resources (apps + databases). Tie broken by lexicographically smallest node ID.
 - With no eligible remote node: Falls back to local node.
 
-**GPU apps:** a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](ai-models.md#gpu-scheduling).
+**GPU apps:** a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](/ai-models#gpu-scheduling).
 
 **Important:** This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory, or disk headroom.
 
@@ -577,15 +573,15 @@ Without port 53, containers fall back to Docker's embedded resolver. Mesh failur
 
 Check the control plane's live WireGuard mesh state, interface details, and every peer:
 
-<Tabs :items="['CLI', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli nodes mesh
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" \
@@ -609,15 +605,15 @@ A peer with `live: false` is registered in the node inventory but the mesh devic
 
 Generate a fresh WireGuard keypair for a node and make it that node's live mesh identity immediately. This works for any node with a live session, local or remote.
 
-<Tabs :items="['CLI', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli nodes rotate-key <node-id>
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -775,11 +771,11 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 
 `nodes workloads` is a full replace of both flags, not a per-field patch.
 
-Both `--accepts-app` and `--accepts-build` are required on every call, so one flag can never silently reset to `false`. See [Build node routing](build-node-routing.md) for what `accepts_build_workloads` does.
+Both `--accepts-app` and `--accepts-build` are required on every call, so one flag can never silently reset to `false`. See [Build node routing](/build-node-routing) for what `accepts_build_workloads` does.
 
 ## See also
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Node provisioning" href="/node-provisioning">
 
 Create nodes at a cloud provider.

@@ -1,26 +1,21 @@
 ---
-layout: home
-title: Self-hosted deployment platform
-description: Push to git, get a running app with TLS, logs, metrics and rollback. Self-hosted, one Go binary, no Kubernetes.
-
-hero:
-  name: Levelrail
-  text: A self-hosted deployment platform
-  tagline: Push to a git repo, get a running app with TLS, logs, metrics, and rollback. The agent talks to Docker's own Engine API directly, no SSH, no CLI shelling.
-  actions:
-    - theme: brand
-      text: Quickstart
-      link: /getting-started
-    - theme: alt
-      text: Live demo
-      link: /demo
-    - theme: alt
-      text: Compare
-      link: /comparison
+title: "Levelrail documentation"
+description: Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
 ---
 
-<script setup lang="ts">
-import HomeSections from './.vitepress/theme/HomeSections.vue'
-</script>
+Levelrail turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
 
-<HomeSections />
+<CardGroup cols={2}>
+  <Card title="Getting started" icon="rocket" href="/getting-started">
+    Install, sign in and deploy your first app in about ten minutes.
+  </Card>
+  <Card title="Deploying apps" icon="cloud-arrow-up" href="/deploying-apps">
+    Dockerfile, Compose and Railpack builds with zero-downtime cutover.
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/cli-reference">
+    Every command, flag and exit code.
+  </Card>
+  <Card title="Architecture" icon="sitemap" href="/architecture">
+    The reconciler, the node agent and how state flows.
+  </Card>
+</CardGroup>

@@ -1,8 +1,7 @@
 ---
+title: "Deploy links and badge"
 description: Put a "Deploy with" button in your README. A visitor enters their own server once and lands on its create-app form with your image, port, env variable names and health path prefilled, never submitted automatically.
 ---
-
-# Deploy links and badge
 
 A deploy link lets a project author add a button to a README. A visitor who clicks it picks their own server (remembered in their browser) and lands on that server's create-app form with the details filled in. Nothing is created until the visitor reviews the form and presses Deploy.
 
@@ -61,7 +60,7 @@ Percent-encode `:` `/` and `,` inside parameter values as shown. For a project t
 levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
 ```
 
-It validates the same rules as the form and prints the launcher link and the README Markdown. Add `--server https://levelrail.example.com` to also print the direct link for one specific server, or `--launcher URL` to point at a self-hosted copy of the launcher. See the [CLI reference](cli-reference.md#deploy-link).
+It validates the same rules as the form and prints the launcher link and the README Markdown. Add `--server https://levelrail.example.com` to also print the direct link for one specific server, or `--launcher URL` to point at a self-hosted copy of the launcher. See the [CLI reference](/cli-reference#deploy-link).
 
 ## Self-hosting the launcher
 

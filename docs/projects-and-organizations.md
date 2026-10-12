@@ -1,13 +1,9 @@
 ---
+title: "Projects, organizations, and environments"
 description: Organize apps and databases into optional projects, organizations, and environments with shared configuration and deployment gates.
 ---
 
-# Projects, organizations, and environments
-
 Group your apps and databases into projects, file projects under organizations, and tag apps with an environment (staging, production, and so on) so they share config and get deployment gates. All of it is optional: add structure when you need it.
-
-<InlineToc default-open />
-
 ## The model
 
 Apps and databases are the real, running things. Projects, organizations, and environments are labels on top of them.
@@ -26,7 +22,7 @@ graph TD
   C -->|tags| D
 ```
 
-Grouping is not an access boundary. Access is controlled by roles and IAM policies, which scope to individual resources and never to a project or organization. See [Identity and access](identity-and-access.md).
+Grouping is not an access boundary. Access is controlled by roles and IAM policies, which scope to individual resources and never to a project or organization. See [Identity and access](/identity-and-access).
 
 Environments exist for the protected-environment gate, which guards deploy, rollback and promote. Databases have no such action, so only apps can be tagged with an environment.
 
@@ -74,7 +70,7 @@ levelrail-cli apps set-environment my-app env_prod123
 
 Projects, organizations, and environments can each hold shared env vars. These layer automatically into every app's effective environment. Each scope can hold a mix of plain and encrypted (secret) variables.
 
-They stack in a fixed order, lowest to highest. [App integrations](integrations.md) sit at the same tier as the shared layers, below the app's own env.
+They stack in a fixed order, lowest to highest. [App integrations](/integrations) sit at the same tier as the shared layers, below the app's own env.
 
 ```mermaid
 flowchart TD
@@ -100,7 +96,7 @@ An app with no project and no environment gets its own `env`/`secretEnv` (plus a
 
 ### Secret-marked shared env vars
 
-Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets-envelope-encryption)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
+Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](/security#secrets-envelope-encryption)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
 
 **Creating a secret shared env var via CLI:**
 
@@ -388,7 +384,7 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Deploying apps" href="/deploying-apps">
 
 The apps being grouped, plus promote and clone.

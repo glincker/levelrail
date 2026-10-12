@@ -1,0 +1,84 @@
+---
+title: "Self-host AppFlowy with Docker"
+sidebarTitle: "AppFlowy"
+description: "A self-hosted, open-source workspace for notes and collaborative knowledge, an alternative to Notion."
+---
+
+A self-hosted, open-source workspace for notes and collaborative knowledge, an alternative to Notion.
+
+This page describes the Levelrail template for AppFlowy (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.appflowy.io/docs/documentation/appflowy-cloud.
+
+Recommended memory: about 1536 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `admin_frontend` | `appflowyinc/admin_frontend:0.9.149` | 3000 | none |
+| `appflowy_cloud` | `appflowyinc/appflowy_cloud:0.9.149` | none | none |
+| `gotrue` | `appflowyinc/gotrue:0.9.149` | none | none |
+| `minio` | `ghcr.io/coollabsio/minio:RELEASE.2025-10-15T17-29-55Z` | none | `appflowy_minio_data -&#62; /data` |
+| `postgres` | `pgvector/pgvector:pg16` | none | `appflowy_postgres_data -&#62; /var/lib/postgresql/data` |
+| `redis` | `redis:7-alpine` | none | `appflowy_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `admin_frontend` | `APPFLOWY_BASE_URL` | Preset in the template |
+| `admin_frontend` | `APPFLOWY_GOTRUE_BASE_URL` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_ACCESS_CONTROL` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_BASE_URL` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_DATABASE_URL` | Generated at deploy |
+| `appflowy_cloud` | `APPFLOWY_ENVIRONMENT` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_GOTRUE_BASE_URL` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_GOTRUE_JWT_SECRET` | Generated at deploy |
+| `appflowy_cloud` | `APPFLOWY_REDIS_URI` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_S3_ACCESS_KEY` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_S3_BUCKET` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_S3_CREATE_BUCKET` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_S3_MINIO_URL` | Preset in the template |
+| `appflowy_cloud` | `APPFLOWY_S3_SECRET_KEY` | Generated at deploy |
+| `appflowy_cloud` | `APPFLOWY_S3_USE_MINIO` | Preset in the template |
+| `appflowy_cloud` | `RUST_LOG` | Preset in the template |
+| `gotrue` | `API_EXTERNAL_URL` | Preset in the template |
+| `gotrue` | `DATABASE_URL` | Generated at deploy |
+| `gotrue` | `GOTRUE_ADMIN_EMAIL` | Preset in the template |
+| `gotrue` | `GOTRUE_ADMIN_PASSWORD` | Generated at deploy |
+| `gotrue` | `GOTRUE_API_HOST` | Preset in the template |
+| `gotrue` | `GOTRUE_API_PORT` | Preset in the template |
+| `gotrue` | `GOTRUE_DB_DRIVER` | Preset in the template |
+| `gotrue` | `GOTRUE_DISABLE_SIGNUP` | Preset in the template |
+| `gotrue` | `GOTRUE_JWT_SECRET` | Generated at deploy |
+| `gotrue` | `GOTRUE_MAILER_AUTOCONFIRM` | Preset in the template |
+| `gotrue` | `GOTRUE_SITE_URL` | Preset in the template |
+| `gotrue` | `GOTRUE_URI_ALLOW_LIST` | Preset in the template |
+| `minio` | `MINIO_ROOT_PASSWORD` | Generated at deploy |
+| `minio` | `MINIO_ROOT_USER` | Preset in the template |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy AppFlowy with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select AppFlowy. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy appflowy --name my-appflowy
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+- [ConvertX](/self-host/convertx-app)
+
+All templates are listed in the [self-host gallery](/self-host/index).

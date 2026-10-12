@@ -1,8 +1,7 @@
 ---
+title: "Debug an app with built-in logs and metrics"
 description: Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
 ---
-
-# Debug an app with built-in logs and metrics
 
 Most self-hosted platforms tell you to install Grafana and a log stack before you can answer "what happened?". Levelrail stores metrics and logs on each node as part of the platform, so the answer is a command away. In this tutorial you will search an app's logs, follow them live, read CPU and memory over time, and use the health score and attention list to find what needs work first.
 
@@ -133,4 +132,4 @@ The health score above flagged `Observability: fail` because no alert rules exis
 
 - [Observability](../observability.md): how the node-local stores work and how retention is set.
 - [Log archive](../log-archive.md): keep logs in object storage beyond the local window.
-- [Zero-downtime deploys with health checks](zero-downtime-deploys-with-health-checks.md): catch the problem before it ships.
+- [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): catch the problem before it ships.

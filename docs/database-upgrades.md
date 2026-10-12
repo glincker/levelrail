@@ -1,15 +1,11 @@
 ---
+title: "Database upgrades"
 description: Keep managed databases patched. See available versions with security and end-of-life status, schedule automatic patch and minor upgrades in a maintenance window, and let failed upgrades revert themselves.
 ---
-
-# Database upgrades
 
 Levelrail tells you which managed databases are behind, which ones miss security fixes, and which run a release past its end of life. It can apply patch and minor releases for you inside a maintenance window. Every upgrade, automatic or started by hand, takes a fresh backup first, checks it, and reverts on its own when the new version does not come up healthy.
 
 Major upgrades are never automatic. For those, use the [guarded Postgres major upgrade](/managing-databases#postgres-major-version-upgrade) or restore a backup into a new database.
-
-<InlineToc default-open />
-
 ## What the advisor shows
 
 Open a database and select **Upgrades**, or run:

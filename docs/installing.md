@@ -1,8 +1,7 @@
 ---
+title: "Installing Levelrail"
 description: Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 ---
-
-# Installing Levelrail
 
 Levelrail ships as two static Go binaries (`levelrail`, the control
 plane, and `levelrail-agent`, the node agent) plus a CLI
@@ -13,7 +12,7 @@ control an already-running instance from your own laptop, skip to
 [Installing just the CLI](#installing-just-the-cli) instead, `install.sh`
 below sets up the server, not a remote client.
 
-<CardGroup :cols="3">
+<CardGroup cols={3}>
 <Card title="install.sh" href="#option-1-install-sh-recommended">
 
 **Recommended.** One command provisions Docker, a systemd unit, and the control plane on a real Linux server.
@@ -30,9 +29,6 @@ For contributors, unreleased commits, or trying Levelrail locally without a serv
 
 </Card>
 </CardGroup>
-
-<InlineToc default-open />
-
 ## Requirements
 
 Confirm these before you provision a server.
@@ -43,14 +39,14 @@ Linux, `amd64` or `arm64`, with systemd as the init system. `install.sh` runs a 
 
 **RAM, CPU, and disk**
 
-`install.sh` warns below 1 GB of RAM (`LEVELRAIL_MIN_RAM_MB`) and fails below 10 GB of free disk on the data directory's filesystem (`LEVELRAIL_MIN_DISK_GB`); the control plane itself checks no minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published (see the [roadmap](roadmap.md)).
+`install.sh` warns below 1 GB of RAM (`LEVELRAIL_MIN_RAM_MB`) and fails below 10 GB of free disk on the data directory's filesystem (`LEVELRAIL_MIN_DISK_GB`); the control plane itself checks no minimum. `levelrail-cli doctor` (`GET /api/v1/system/doctor`) checks Docker reachability, free disk space (warns below 1 GiB by default), and data-directory writability, not a memory or CPU floor, and no official minimum has been benchmarked or published (see the [roadmap](/roadmap)).
 
 As a practical starting point, not a hard requirement: 1 vCPU / 1 GB RAM / 10 GB disk is enough to boot Docker and the control plane on a small single-node instance. BuildKit builds and whatever apps you deploy need headroom of their own on top of that, so 2 vCPU / 2 GB RAM / 20 GB disk is more comfortable in practice. Scale up from there based on what you actually run.
 
 **Ports**
 
-- **Control-plane node:** `80/tcp` and `443/tcp`, inbound, reachable from the internet. Port 80 specifically is required for Let's Encrypt's HTTP-01 challenge during ACME issuance; both are what embedded Caddy binds for ingress, and `GET /api/v1/system/doctor` checks both are free to bind. See [Domains and ingress: firewall](domains-and-ingress.md#firewall-ports-80-and-443) if one is blocked.
-- **Agent-only nodes** (additional servers added later via [Multi-node](multi-node.md)): none. The agent dials *out* to the control plane and the control plane never initiates a connection, so a managed node needs no inbound ports open at all.
+- **Control-plane node:** `80/tcp` and `443/tcp`, inbound, reachable from the internet. Port 80 specifically is required for Let's Encrypt's HTTP-01 challenge during ACME issuance; both are what embedded Caddy binds for ingress, and `GET /api/v1/system/doctor` checks both are free to bind. See [Domains and ingress: firewall](/domains-and-ingress#firewall-ports-80-and-443) if one is blocked.
+- **Agent-only nodes** (additional servers added later via [Multi-node](/multi-node)): none. The agent dials *out* to the control plane and the control plane never initiates a connection, so a managed node needs no inbound ports open at all.
 - `install.sh` can configure `ufw` for you with `LEVELRAIL_CONFIGURE_UFW=1` (see the table below), or open `80/tcp`, `443/tcp` and `443/udp` (HTTP/3) yourself via your cloud provider's firewall, `ufw`, or `iptables`.
 
 ## Option 1: install.sh (recommended)
@@ -82,13 +78,13 @@ Open one of the printed `http://<ip>:8080/login?setup=<token>` links from the in
 sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token
 ```
 
-The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@yourdomain.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](domains-and-ingress.md#zero-dns-setup-sslip-io-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
+The dashboard shows a "connection is not encrypted" banner until you enable HTTPS. The quickest way needs no DNS: open the Domains page and click **Enable HTTPS** (or run `levelrail-cli settings ingress https enable --email you@yourdomain.com`), which issues a real Let's Encrypt certificate for `<dashed-ip>.sslip.io` (see [Domains and ingress](/domains-and-ingress#zero-dns-setup-sslip-io-hostnames-and-one-click-https)). Using your own domain works too: set a primary domain plus ACME on the same page. Either way the result is an `https://` **dashboard URL**. After that, sign-in over plain HTTP is refused. To recover if the https URL breaks, add `APP_ALLOW_INSECURE_LOGIN=true` with `sudo systemctl edit levelrail` (`[Service]` then `Environment=APP_ALLOW_INSECURE_LOGIN=true`) and restart.
 
-**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](domains-and-ingress.md#the-dashboard-s-own-domain) for why this matters.
+**Pick a dashboard-only subdomain, not an app's own domain.** Use something like `console.example.com` or `panel.example.com` for the primary domain, the same convention CapRover uses for its own panel (`captain.<domain>`). Reusing a domain an app already serves breaks whichever one loses the conflict, silently, with no warning. See [Domains and ingress](/domains-and-ingress#the-dashboard-s-own-domain) for why this matters.
 
 To skip the setup token and create the admin non-interactively, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in the unit (again via `systemctl edit levelrail`) before the first start.
 
-AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](experimental-features.md).
+AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](/experimental-features).
 
 ::: details Optional environment variables
 
@@ -105,7 +101,7 @@ AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel ar
 | `LEVELRAIL_SKIP_REACHABILITY` | unset | Set to `1` to skip the port 80/443 test |
 | `LEVELRAIL_MIN_RAM_MB` / `LEVELRAIL_MIN_DISK_GB` / `LEVELRAIL_MIN_DOCKER_MAJOR` | `1024` / `10` / `24` | Preflight thresholds |
 | `LEVELRAIL_HEALTH_WAIT` | `60` | Seconds to wait for the service to become healthy |
-| `LEVELRAIL_SOCKET_ACTIVATION` | unset (on for a new install) | systemd holds ports 80/443, so restarting the control plane queues connections instead of refusing them. Set `0` to opt out and let the control plane bind the ports itself. On `upgrade`, unset keeps the current mode, `1` switches an existing install over and `0` switches it back. See [Surviving a control plane restart](domains-and-ingress.md#surviving-a-control-plane-restart). |
+| `LEVELRAIL_SOCKET_ACTIVATION` | unset (on for a new install) | systemd holds ports 80/443, so restarting the control plane queues connections instead of refusing them. Set `0` to opt out and let the control plane bind the ports itself. On `upgrade`, unset keeps the current mode, `1` switches an existing install over and `0` switches it back. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
 | `LEVELRAIL_CONFIGURE_UFW` | unset (off) | Set to `1` to allow SSH, then 80/443 (and 443/udp for HTTP/3), then enable `ufw` if it wasn't already active. The script never touches your firewall otherwise. |
 | `LEVELRAIL_DASHBOARD_PORT` | `8080` | Dashboard/API port. If this default is taken, the installer picks the next free port on its own (no action needed); set this to pin a specific one instead |
 | `LEVELRAIL_HTTP_PORT` / `LEVELRAIL_HTTPS_PORT` | `80` / `443` | Ingress ports. Unlike the dashboard port, the installer never moves these without consent: Let's Encrypt's HTTP-01 challenge only ever talks to 80/443, so if either is already taken (an existing reverse proxy, another Coolify/Dokploy instance, etc.) preflight names the holder and offers [coexist mode](#server-already-runs-a-proxy), or fails with the fix spelled out when it cannot ask. Set both explicitly once you've accepted that moving off 80/443 means no automatic ACME TLS |
@@ -229,7 +225,7 @@ gh attestation verify levelrail-linux-amd64 --repo glincker/levelrail
 
 ## Option 2: Docker
 
-Already running everything else as containers? See [Docker](docker.md) for `docker run` and `docker-compose.yml` examples.
+Already running everything else as containers? See [Docker](/docker) for `docker run` and `docker-compose.yml` examples.
 
 Images available:
 - `ghcr.io/glincker/levelrail` (control plane)
@@ -343,11 +339,11 @@ control plane itself, the same model `gh auth login` and `aws sso login`
 use. Approving a code requires an already-authenticated dashboard
 session, so it inherits whatever two-factor or passkey requirement that
 account already has, there is nothing extra to configure for this. See
-[CLI reference](cli-reference.md) for every command, or
+[CLI reference](/cli-reference) for every command, or
 **Settings, CLI access** in the dashboard for a copy-pasteable version of the steps above.
 
 Running from CI or a script instead of a person approving in a browser?
-Mint an [API token](getting-started.md#use-the-cli-from-your-laptop) instead,
+Mint an [API token](/getting-started#use-the-cli-from-your-laptop) instead,
 `--api-token` or `APP_API_TOKEN` skips the device flow entirely.
 
 ## Verifying the install
@@ -372,7 +368,7 @@ journalctl -u levelrail -f
 
 **Authenticated checks (after initial setup):**
 
-Once you've created an admin account and minted an API token (see [Getting started](getting-started.md#use-the-cli-from-your-laptop)), you can use `levelrail-cli` for deeper validation:
+Once you've created an admin account and minted an API token (see [Getting started](/getting-started#use-the-cli-from-your-laptop)), you can use `levelrail-cli` for deeper validation:
 
 ```bash
 levelrail-cli version   # compare running vs. latest published release
@@ -385,7 +381,7 @@ Both commands talk to the control plane's API (`GET /api/v1/updates` and `GET /a
 
 ### Check first, then upgrade
 
-`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or you turned on automatic upgrades (off by default, see [Upgrade safely](upgrade-safely.md#automatic-upgrades)):
+`levelrail-cli upgrade` (or Settings > Updates in the dashboard) runs read-only preflight checks. Nothing is applied unless you start or schedule an upgrade, or you turned on automatic upgrades (off by default, see [Upgrade safely](/upgrade-safely#automatic-upgrades)):
 
 - the latest release publishes `checksums.txt` and its cosign signature (the installer verifies both);
 - the Docker Engine version is not on the known-bad list (`kit/upgrade/docker_known_bad.json`, replace it with your own file via `APP_DOCKER_KNOWN_BAD_FILE`);
@@ -404,7 +400,7 @@ levelrail-cli upgrade --apply --ack-breaking ID # acknowledge flagged ones, then
 levelrail-cli upgrade --attempts                # history with step timelines
 ```
 
-The same engine runs on the host as `sudo levelrail self-upgrade --to <version>`. See [Upgrade safely](upgrade-safely.md) for the runbook, what is checked, and what to do when something fails.
+The same engine runs on the host as `sudo levelrail self-upgrade --to <version>`. See [Upgrade safely](/upgrade-safely) for the runbook, what is checked, and what to do when something fails.
 
 ### Run the upgrade
 
@@ -454,7 +450,7 @@ sudo levelrail upgrade-note --by "$USER" --reason "manual swap"
 sudo systemctl start levelrail
 ```
 
-`--method` is `manual` (default), `package` or `ci`; `--data-dir` defaults to `APP_DATA_DIR`. The note names the version of the binary that runs it, so it must be the new binary. See [Upgrade history](upgrade-history.md).
+`--method` is `manual` (default), `package` or `ci`; `--data-dir` defaults to `APP_DATA_DIR`. The note names the version of the binary that runs it, so it must be the new binary. See [Upgrade history](/upgrade-history).
 
 ### Older binary refuses to start
 
@@ -499,13 +495,13 @@ docker volume rm levelrail-data
 
 ## Getting help
 
-- Ran into a specific error? Check [Troubleshooting](troubleshooting.md) first.
+- Ran into a specific error? Check [Troubleshooting](/troubleshooting) first.
 - Bugs, questions, feature requests: open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 - Everything else: email [support@levelrail.com](mailto:support@levelrail.com).
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Getting started" href="/getting-started">
 
 Sign in and deploy your first app.

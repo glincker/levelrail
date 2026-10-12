@@ -1,14 +1,13 @@
 ---
+title: "Deploy to your own server from GitHub Actions"
 description: Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
 ---
-
-# Deploy to your own server from GitHub Actions
 
 By the end of this tutorial every push to `main` builds your image, deploys it to your own server, and turns the workflow red if the rollout fails. Levelrail's deploy action does the last step; you keep your existing build step.
 
 ## Before you start
 
-- A running Levelrail instance with an existing app to deploy to ([Deploy a Docker app](deploy-a-docker-app.md) creates one).
+- A running Levelrail instance with an existing app to deploy to ([Deploy a Docker app](/tutorials/deploy-a-docker-app) creates one).
 - A container registry the server can pull from. This example uses GitHub's `ghcr.io`.
 - Permission to add secrets to your GitHub repository.
 
@@ -117,5 +116,5 @@ The action is a thin wrapper over two commands, so any CI works. Install the CLI
 ## Where to go next
 
 - [Deploying from GitHub Actions](../github-actions.md): the full action reference.
-- [Zero-downtime deploys with health checks](zero-downtime-deploys-with-health-checks.md): make a bad release fail the job before it replaces a good one.
+- [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): make a bad release fail the job before it replaces a good one.
 - [Pipelines](../pipelines.md): run builds and tests on your own nodes instead of GitHub's.

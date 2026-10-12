@@ -1,8 +1,7 @@
 ---
+title: "Feature flags"
 description: Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
 ---
-
-# Feature flags
 
 Feature flags let you change behavior in a running app with no redeploy or restart. You create a flag, your app asks the control plane whether it is on, and you flip it from the dashboard or CLI whenever you like.
 
@@ -36,7 +35,7 @@ levelrail-cli flags create my-app --key new-checkout --name "New checkout" --rol
 levelrail-cli tokens create --name app-flags --abilities read
 ```
 
-Inject the token into your app as a secret env var such as `FLAGS_TOKEN` (`{ secret: true }` in [app.yaml](app-spec-reference.md#envvar-an-entry-under-env)).
+Inject the token into your app as a secret env var such as `FLAGS_TOKEN` (`{ secret: true }` in [app.yaml](/app-spec-reference#envvar-an-entry-under-env)).
 
 </Step>
 <Step title="Call the evaluate endpoint from your app">
@@ -97,7 +96,7 @@ The evaluate response is only `key` and `enabled`, because apps may call it on e
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Identity and access" href="/identity-and-access">
 
 Creating read-only tokens.

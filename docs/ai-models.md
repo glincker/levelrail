@@ -1,8 +1,7 @@
 ---
+title: "AI models"
 description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
 ---
-
-# AI models
 
 A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. It is available from the dashboard (**AI models**), the CLI (`levelrail-cli models`), the REST API (`/api/v1/models`) and the MCP server.
 
@@ -309,7 +308,7 @@ The control plane has no Prometheus endpoint yet, so usage is exposed through `G
 
 ## GPU apps
 
-Any app can request a GPU with `resources.gpu` in `app.yaml` (see the [app spec reference](app-spec-reference.md)). Such an app only runs on a node with a usable GPU: the reconciler reports `NoGPUOnNode` or `GPURuntimeMissing` instead of starting it, and moving it to a node without one is rejected.
+Any app can request a GPU with `resources.gpu` in `app.yaml` (see the [app spec reference](/app-spec-reference)). Such an app only runs on a node with a usable GPU: the reconciler reports `NoGPUOnNode` or `GPURuntimeMissing` instead of starting it, and moving it to a node without one is rejected.
 
 ## GPU scheduling
 

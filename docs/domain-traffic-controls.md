@@ -1,8 +1,7 @@
 ---
+title: "Domain traffic controls"
 description: Per-domain traffic controls in the embedded ingress, covering header rules, path forwarders, country rules, response caching, redirects and raw ports, from the dashboard, CLI or API.
 ---
-
-# Domain traffic controls
 
 Every domain an app owns has its own set of traffic controls, enforced by the embedded Caddy ingress before a request reaches the container:
 
@@ -19,13 +18,13 @@ None of these needs a second proxy or a container restart. A change is stored, a
 
 ## Where to find it
 
-<Tabs :items="['Dashboard', 'CLI', 'API']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Cache, Redirects, Ports and Danger zone. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli domains headers <verb> <app> <domain>
@@ -39,7 +38,7 @@ levelrail-cli domains ports <verb> <app> <domain>
 Run any of them with `-h` for its verbs and flags. Every command accepts `--json` and `-o`.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```text
 GET    /api/v1/apps/{name}/domains/{domain}/policies           every section plus status, in one call
@@ -202,7 +201,7 @@ levelrail-cli domains cache stats my-app example.com
 
 ## Redirects
 
-Whole-domain redirects (one host to a target URL) still use [domain redirects](domains-and-ingress.md#domain-redirects); the controls here build on them.
+Whole-domain redirects (one host to a target URL) still use [domain redirects](/domains-and-ingress#domain-redirects); the controls here build on them.
 
 ### Force HTTPS
 
@@ -245,9 +244,9 @@ levelrail-cli domains redirect set my-app example.com --preset apex-to-www
 
 ## Ports
 
-Raw TCP and UDP port forwards are app streams ([raw TCP streams](domains-and-ingress.md#raw-tcp-streams-forwarding-a-non-http-port)); the Ports tab and `domains ports show` list them for the domain's app with their target, who may reach them, and conflicts: another stream on the same port, the HTTP ingress port, or a container that already publishes the port.
+Raw TCP and UDP port forwards are app streams ([raw TCP streams](/domains-and-ingress#raw-tcp-streams-forwarding-a-non-http-port)); the Ports tab and `domains ports show` list them for the domain's app with their target, who may reach them, and conflicts: another stream on the same port, the HTTP ingress port, or a container that already publishes the port.
 
-"Open this port only to these IPs" writes [firewall rules](domains-and-ingress.md#firewall-ports-80-and-443): one allow rule per address or range, then a deny for everyone else, all labelled `domain-ports:PORT/PROTO`. Removing the restriction deletes exactly those rules.
+"Open this port only to these IPs" writes [firewall rules](/domains-and-ingress#firewall-ports-80-and-443): one allow rule per address or range, then a deny for everyone else, all labelled `domain-ports:PORT/PROTO`. Removing the restriction deletes exactly those rules.
 
 ```bash
 levelrail-cli domains ports restrict my-app example.com 5432 --source 203.0.113.10 --source 198.51.100.0/24
@@ -287,7 +286,7 @@ Every change is recorded in the audit log like any other API write.
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Domains and ingress" href="/domains-and-ingress">
 
 TLS, WAF, maintenance mode and the rest of the ingress.

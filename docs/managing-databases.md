@@ -1,13 +1,9 @@
 ---
+title: "Managing databases"
 description: Create, secure, upgrade, back up, and restore managed databases (Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse), including point-in-time restore for Postgres.
 ---
 
-# Managing databases
-
 Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API, and Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and the domain routing it does not need. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
-
-<InlineToc default-open />
-
 ## Supported engines
 
 `GET /api/v1/database-engines` serves the live list, which the dashboard's creation wizard and `databases create --interactive` read.
@@ -35,8 +31,8 @@ The dashboard create form has an **Include pgvector** checkbox for Postgres. The
 
 ## Create a database
 
-<Tabs :items="['CLI', 'API', 'Dashboard']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli databases create --name main --engine postgres --version 16
@@ -46,12 +42,12 @@ levelrail-cli databases create --interactive
 `--node-id` pins a node. Without it the database is placed on the least-loaded registered node, or the local node if there is only one. `--interactive` also prompts for resource limits, public access, and a backup schedule. Check the result with `levelrail-cli databases get main` or `levelrail-cli databases status main`.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 `POST /api/v1/databases` writes the desired state (name, engine, version) and returns immediately. The reconciler starts the container on its next pass. If credentials are needed but do not exist yet, the reconciler refuses to start and reports that as a status condition. Check `GET /api/v1/databases/{name}/status`.
 
 </Tab>
-<Tab value="Dashboard">
+<Tab title="Dashboard">
 
 Use the databases list page's create dialog. It collects name, engine, version, and node. Resource limits, public access, and a backup schedule are configured afterward from the database's Overview and Resources tabs.
 
@@ -72,8 +68,8 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 
 ## Stop, start, and delete
 
-<Tabs :items="['CLI', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli databases stop <name>
@@ -82,7 +78,7 @@ levelrail-cli databases delete <name> [--force]
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```text
 POST   /api/v1/databases/{name}/stop
@@ -116,7 +112,7 @@ The check covers the control plane's own node only. A volume left on a remote no
 
 Attach an already-created database to an app with `PUT /api/v1/apps/{name}/database`. The reconciler injects the resolved value as an env var the next time the app's container is created. You do not need an `app.yaml` env var of the form `{ from: "<database>.<field>" }` to do this.
 
-This flow attaches at most one database per app. If an app needs more than one, or you want to see cross-node reachability before connecting, use [Connecting apps to databases](connecting-apps-to-databases.md), a newer mechanism with no cap.
+This flow attaches at most one database per app. If an app needs more than one, or you want to see cross-node reachability before connecting, use [Connecting apps to databases](/connecting-apps-to-databases), a newer mechanism with no cap.
 
 - `database_name`: required.
 - `env_var`: defaults to `DATABASE_URL`.
@@ -155,8 +151,8 @@ When the database has a running container, new limits apply live. If the contain
 
 By default a managed database is reachable only from the platform's Docker network. Public access binds it to a host port so you can use pgAdmin, TablePlus, RedisInsight, or similar tools from your machine.
 
-<Tabs :items="['CLI', 'API', 'Dashboard']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli databases public-access set <name> [--port N] [--bind-address ADDR]
@@ -164,7 +160,7 @@ levelrail-cli databases public-access clear <name>
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```text
 PUT    /api/v1/databases/{name}/public-access
@@ -172,7 +168,7 @@ DELETE /api/v1/databases/{name}/public-access
 ```
 
 </Tab>
-<Tab value="Dashboard">
+<Tab title="Dashboard">
 
 Use the **Public access** card on the database's Overview tab. The port field is editable only before you enable access.
 
@@ -187,7 +183,7 @@ Use the **Public access** card on the database's Overview tab. The port field is
 
 **Bind address**
 
-`bind_address` chooses which interface the port binds to: `private` (loopback only, the default when omitted), `public` (every interface, an explicit opt-in), or a literal IP address. See [Bind addresses and exposure](app-spec-reference.md#bind-addresses-and-exposure) for the full rules. A database that was already public before this field existed keeps that exposure (backfilled to `public`). Re-enabling later without an explicit `bind_address` uses the `private` default.
+`bind_address` chooses which interface the port binds to: `private` (loopback only, the default when omitted), `public` (every interface, an explicit opt-in), or a literal IP address. See [Bind addresses and exposure](/app-spec-reference#bind-addresses-and-exposure) for the full rules. A database that was already public before this field existed keeps that exposure (backfilled to `public`). Re-enabling later without an explicit `bind_address` uses the `private` default.
 
 Clearing public access reverts to internal-only, and the reconciler replaces the container without the host port binding on its next pass.
 
@@ -213,8 +209,8 @@ Postgres 18 and newer images moved their default data directory outside the path
 
 ### Postgres major version upgrade
 
-<Tabs :items="['CLI', 'Dashboard']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli databases major-upgrade <name> --version 17 [--confirm NAME]
@@ -227,7 +223,7 @@ levelrail-cli databases upgrade-now <name> <version> [--confirm NAME]
 ```
 
 </Tab>
-<Tab value="Dashboard">
+<Tab title="Dashboard">
 
 Use the **Major version upgrade** card on a Postgres database's Overview tab. Type the database name to enable the button.
 
@@ -285,7 +281,7 @@ Limits:
 
 ## Backups
 
-Every backup, restore, and verify action for a database goes through a backup target: a connected S3-compatible bucket whose access key is stored through the same envelope-encrypted secrets path as any other credential. Create one under **Settings, Backup targets** or with `levelrail-cli backup-targets create` (see [Backup targets](backups-and-storage.md)) before anything below works. Every backup, restore, and verify endpoint returns `501` if the control plane has no master key configured.
+Every backup, restore, and verify action for a database goes through a backup target: a connected S3-compatible bucket whose access key is stored through the same envelope-encrypted secrets path as any other credential. Create one under **Settings, Backup targets** or with `levelrail-cli backup-targets create` (see [Backup targets](/backups-and-storage)) before anything below works. Every backup, restore, and verify endpoint returns `501` if the control plane has no master key configured.
 
 ```mermaid
 flowchart TD
@@ -331,7 +327,7 @@ levelrail-cli backups schedule set <database> --target <id> --cron "0 3 * * *" [
 levelrail-cli backups schedule clear <database>
 ```
 
-`PUT /api/v1/databases/{name}/backup-schedule` stores a target, a standard 5-field cron expression, and retention settings. `retain` keeps the last N successful backups and `retain_days` deletes anything older than N days. They are independent, and `0` means no limit. See [Retention](backups-and-storage.md#retention).
+`PUT /api/v1/databases/{name}/backup-schedule` stores a target, a standard 5-field cron expression, and retention settings. `retain` keeps the last N successful backups and `retain_days` deletes anything older than N days. They are independent, and `0` means no limit. See [Retention](/backups-and-storage#retention).
 
 The cron expression is validated when you set it, so a typo is a `400` instead of a silently skipped tick. A scheduler inside the control plane evaluates every schedule on its own tick, and nothing else needs to be running. On the dashboard, use the schedule form at the top of the **Backups** card.
 
@@ -412,7 +408,7 @@ levelrail-cli backups delete <database> <backup-id>
 
 `GET /api/v1/databases/{name}/backups/{historyId}/download` streams the stored object straight through without buffering, so large dumps are never held whole in memory. It needs `read:sensitive`, one tier above the metadata-only `read` that lists history, because the body can be an entire production database. Only a succeeded backup can be downloaded. On the dashboard, use the **Download** button next to Restore.
 
-Deleting removes the stored object and its history row and does not touch the schedule. See [Delete one backup on demand](backups-and-storage.md#delete-one-backup-on-demand).
+Deleting removes the stored object and its history row and does not touch the schedule. See [Delete one backup on demand](/backups-and-storage#delete-one-backup-on-demand).
 
 ## Point-in-time restore (Postgres only)
 
@@ -510,12 +506,12 @@ These run passwordless by default, so `username` and `database` fields do not ap
 
 ## Slow query log
 
-Slow query logs capture individual statements over a duration threshold, so you can find expensive queries before they cause an incident. They are available for Postgres and MySQL only. Redis has no log-based slow query record, and other engines return an error. For browsing schemas and rows or running ad hoc read-only SQL, see [Database viewer](database-viewer.md).
+Slow query logs capture individual statements over a duration threshold, so you can find expensive queries before they cause an incident. They are available for Postgres and MySQL only. Redis has no log-based slow query record, and other engines return an error. For browsing schemas and rows or running ad hoc read-only SQL, see [Database viewer](/database-viewer).
 
 **Postgres** reads slow statements from the container's own log stream. **MySQL** reads the slow log file from the running container (`/var/log/mysql/slow.log`) and is configured with `slow_query_log=ON` at creation. The threshold is 1000 ms by default. Set `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` on the control plane to change it. Results are sorted by duration, longest first, 100 per page by default (maximum 500).
 
-<Tabs :items="['CLI', 'Dashboard', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli databases slow-queries <name> [--since DURATION] [--from RFC3339] [--to RFC3339] [--limit N] [--offset N]
@@ -533,12 +529,12 @@ SELECT COUNT(*) FROM users WHERE ...              1523.21        2000000
 ```
 
 </Tab>
-<Tab value="Dashboard">
+<Tab title="Dashboard">
 
 The database Overview page has a **Slow Queries** tab with a time-range picker (default last hour) and a table sorted by duration. Rows examined is shown for MySQL only.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 `GET /api/v1/databases/{name}/slow-queries` takes `from`, `to` (RFC3339), `limit`, and `offset`, and returns:
 
@@ -688,7 +684,7 @@ The backup schedule has no `databases` subcommand: use `backups schedule set`, o
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Connecting apps to databases" href="/connecting-apps-to-databases">
 
 Connect an app to several databases and read reachability badges.

@@ -1,0 +1,49 @@
+---
+title: "Self-host Calibre-Web with Docker"
+sidebarTitle: "Calibre-Web"
+description: "A clean web interface for browsing, reading, and downloading your existing Calibre ebook library."
+---
+
+A clean web interface for browsing, reading, and downloading your existing Calibre ebook library.
+
+This page describes the Levelrail template for Calibre-Web (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/janeczku/calibre-web/wiki.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `calibre-web` | `lscr.io/linuxserver/calibre-web:0.6.24` | 8083 | `calibreweb_config -&#62; /config`<br />`calibreweb_books -&#62; /books` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `calibre-web` | `PGID` | Preset in the template |
+| `calibre-web` | `PUID` | Preset in the template |
+| `calibre-web` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Calibre-Web with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Calibre-Web. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy calibre-web --name my-calibre-web
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+- [Grimmory](/self-host/grimmory)
+
+All templates are listed in the [self-host gallery](/self-host/index).

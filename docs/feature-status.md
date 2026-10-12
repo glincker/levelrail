@@ -1,8 +1,7 @@
 ---
+title: "Feature status"
 description: Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
 ---
-
-# Feature status
 
 This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. The e2e rows, counts, and template and MCP rows were re-checked against main on 2026-10-05. Every claim cites a path. Where evidence is absent, the page says so instead of guessing.
 
@@ -12,7 +11,7 @@ This page labels every major feature by how much evidence backs it today. The ev
 | --- | --- |
 | **stable** | Unit tests, a doc page, and either a live end-to-end test in `test/e2e` or a documented live verification. |
 | **beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. Expect rough edges. |
-| **hide-behind-flag** | Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](experimental-features.md)). |
+| **hide-behind-flag** | Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). |
 
 Evidence tiers used below, weakest to strongest:
 
@@ -208,11 +207,11 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 
 | Number | Value | Source |
 | --- | --- | --- |
-| MCP tools | 156 in full mode, 146 in the default standard mode, 118 in read-only mode | `go test ./internal/mcptools -run TestToolListTokenBudget -v`, and the generated [MCP tool surface](mcp-tool-surface.md) |
+| MCP tools | 156 in full mode, 146 in the default standard mode, 118 in read-only mode | `go test ./internal/mcptools -run TestToolListTokenBudget -v`, and the generated [MCP tool surface](/mcp-tool-surface) |
 | Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
 | Alert rule kinds | 14 | `Kind` constants in `internal/alerting/rules.go` |
 | Managed database engines | 8 | `internal/store/database.go` |
-| Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](template-catalog.md) |
+| Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
 | Latest release | 0.2.0-beta.18, so there is no stable release yet | `.release-please-manifest.json` |
 
-Two caveats that still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](performance.md)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](acme-verification-runbook.md), 2026-10-05); renewal and DNS-01 wildcards are still unproven.
+Two caveats that still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](/performance)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](/acme-verification-runbook), 2026-10-05); renewal and DNS-01 wildcards are still unproven.

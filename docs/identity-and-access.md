@@ -1,8 +1,7 @@
 ---
+title: "Identity and access: users, roles, and IAM policies"
 description: Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
 ---
-
-# Identity and access: users, roles, and IAM policies
 
 Create a teammate with a curated role, scope a CI token down to one app, turn on two-factor auth, or review who changed what: this page covers who can sign in, what they can do once they're in, and a record of what they actually did.
 
@@ -12,9 +11,6 @@ Create a teammate with a curated role, scope a CI token down to one app, turn on
 - Dashboard: `web/src/routes/settings/{users,iam-policies,security,tokens,oauth,cli-access,audit-log}.tsx`
 - OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
 :::
-
-<InlineToc default-open />
-
 ## Why two permission models instead of one
 
 Most self-hosted platforms pick one of two shapes and live with the downside.
@@ -261,7 +257,7 @@ A non-root caller only sees invites they created themselves. A root caller sees 
 
 ### API tokens
 
-Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Minted with the same six-string ability vocabulary users carry, plus an optional expiry (`expires_in_days`, 0 means never). The plaintext is returned exactly once at creation; every later read (`GET /api/v1/auth/tokens`) shows only metadata. The security policy can cap the lifetime of new tokens and disable tokens that go unused, after a notice: see [API token hygiene](security-center.md#api-token-hygiene).
+Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Minted with the same six-string ability vocabulary users carry, plus an optional expiry (`expires_in_days`, 0 means never). The plaintext is returned exactly once at creation; every later read (`GET /api/v1/auth/tokens`) shows only metadata. The security policy can cap the lifetime of new tokens and disable tokens that go unused, after a notice: see [API token hygiene](/security-center#api-token-hygiene).
 
 **Session-only token management**
 
@@ -342,12 +338,12 @@ When a password sign-in is correct but comes from a browser without a trusted-de
 - An approved browser, or one that signed in with a code, gets a trusted-device cookie: a random token stored only as a hash, valid `APP_AUTH_TRUSTED_DEVICE_TTL` (default 90 days). Signing in again from that browser extends the same entry instead of adding one. Its next password sign-in goes straight through. Revoke it under **Settings > Security > Trusted browsers** or with `levelrail-cli auth devices revoke <id>`. Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
 - Accounts with two-factor authentication on are not paused: password plus TOTP still signs in without a separate approval. Passing TOTP does not trust the browser on its own; tick **Remember this browser for N days** on the two-factor step (off by default) to trust it.
 - An account with no other live session signs in as before, so the last way in is never blocked.
-- By default only password sign-ins pause. Setting `auth.approval_scope` to `all_methods` (**Security center > Policy**, `levelrail-cli security policy set --approval-scope all_methods`, or `APP_AUTH_APPROVAL_SCOPE`) pauses passkey and OAuth/OIDC sign-ins from a new browser too, and each account can require it for itself with **Require approval for new browsers on my account**. A held OAuth sign-in returns to the sign-in page to wait. See [Security center](security-center.md#approval-scope).
-- A sign-in from a browser and network the account has not used before emails the owner a single-use **this wasn't me** link that signs that session out, drops trusted browsers and flags the account for a new password. See [New sign-in alerts](security-center.md#new-sign-in-alerts).
+- By default only password sign-ins pause. Setting `auth.approval_scope` to `all_methods` (**Security center > Policy**, `levelrail-cli security policy set --approval-scope all_methods`, or `APP_AUTH_APPROVAL_SCOPE`) pauses passkey and OAuth/OIDC sign-ins from a new browser too, and each account can require it for itself with **Require approval for new browsers on my account**. A held OAuth sign-in returns to the sign-in page to wait. See [Security center](/security-center#approval-scope).
+- A sign-in from a browser and network the account has not used before emails the owner a single-use **this wasn't me** link that signs that session out, drops trusted browsers and flags the account for a new password. See [New sign-in alerts](/security-center#new-sign-in-alerts).
 
 **Break-glass.** If you are stuck waiting for an approval no one can give: sign in with a code sent to your email, approve from the CLI with a `signin:approve` token, sign out the other session, or wait for it to expire. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone and for every sign-in method, whatever `auth.approval_scope` and the per-account switches say. `recover-admin` on the server still works as it always has.
 
-**Audit events.** Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired`, `new_device.superseded`, `new_device.trust_revoked` and `new_device.approver_tokens_revoked`. The security center adds its own `security.*` events, listed in [Security center](security-center.md#audit-events). Requests from someone who is not signed in are recorded with the actor `Sign-in` and the target user id when the account exists.
+**Audit events.** Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired`, `new_device.superseded`, `new_device.trust_revoked` and `new_device.approver_tokens_revoked`. The security center adds its own `security.*` events, listed in [Security center](/security-center#audit-events). Requests from someone who is not signed in are recorded with the actor `Sign-in` and the target user id when the account exists.
 
 ### Audit log
 
@@ -366,7 +362,7 @@ Recording is best-effort and runs after the real request completes. A failed aud
 
 **Query**
 
-`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](ai-assistant.md#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export. Cells that start with `=`, `+`, `-`, `@` or a tab get a leading `'` in the CSV, so a token named `=HYPERLINK(...)` is not evaluated as a formula when the export is opened in a spreadsheet.
+`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](/ai-assistant#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export. Cells that start with `=`, `+`, `-`, `@` or a tab get a leading `'` in the CSV, so a token named `=HYPERLINK(...)` is not evaluated as a formula when the export is opened in a spreadsheet.
 
 **Retention**
 
@@ -659,7 +655,7 @@ levelrail-cli audit-purge
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Access control" href="/access-control">
 
 Custom roles, IAM policies and environment grants.

@@ -1,8 +1,7 @@
 ---
+title: "Starter kit templates"
 description: "Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends."
 ---
-
-# Starter kit templates
 
 The `Starter Kits` category of the [template catalog](/template-catalog) holds seven small multi-service templates. Unlike the rest of the catalog, where each entry deploys one open-source project, these show wiring patterns across two or three services: a web tier talking to a database, a worker pulling from a queue, a reverse proxy fanning out to backends.
 
@@ -32,13 +31,13 @@ Every template with a real dependency declares `depends_on:` on it. The reconcil
 
 ## Deploy one
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Go to **Apps**, choose **New app**, then **Browse templates**. Search for "Starter Kits", pick a template, review the pre-filled Compose body, and deploy.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```sh
 levelrail-cli templates list

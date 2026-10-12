@@ -1,0 +1,57 @@
+---
+title: "Self-host Linkwarden with Docker"
+sidebarTitle: "Linkwarden"
+description: "A bookmark manager that archives full page snapshots, not just links, so pages stay readable."
+---
+
+A bookmark manager that archives full page snapshots, not just links, so pages stay readable.
+
+This page describes the Levelrail template for Linkwarden (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.linkwarden.app/self-hosting/setup.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `linkwarden_db_data -&#62; /var/lib/postgresql/data` |
+| `linkwarden` | `ghcr.io/linkwarden/linkwarden:v2.9.3` | 3000 | `linkwarden_data -&#62; /data/data` |
+| `meilisearch` | `getmeili/meilisearch:v1.11.1` | none | `linkwarden_meili_data -&#62; /meili_data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `linkwarden` | `DATABASE_URL` | Generated at deploy |
+| `linkwarden` | `MEILI_HOST` | Preset in the template |
+| `linkwarden` | `MEILI_MASTER_KEY` | Generated at deploy |
+| `linkwarden` | `NEXTAUTH_SECRET` | Generated at deploy |
+| `linkwarden` | `NEXTAUTH_URL` | Preset in the template |
+| `meilisearch` | `MEILI_MASTER_KEY` | Generated at deploy |
+| `meilisearch` | `MEILI_NO_ANALYTICS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Linkwarden with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Linkwarden. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy linkwarden --name my-linkwarden
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host/index).

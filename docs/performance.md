@@ -1,8 +1,7 @@
 ---
+title: "Performance"
 description: Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
 ---
-
-# Performance
 
 ## Method
 
@@ -56,7 +55,7 @@ Latency in ms, p50 / p95:
 
 ## Re-running
 
-<CopyCommand command="scripts/bench-idle.sh" />
+`scripts/bench-idle.sh`
 
 The defaults are N = 0, 100, 500 and a 60 second window. For a quicker run:
 

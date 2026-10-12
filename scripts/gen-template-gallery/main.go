@@ -154,7 +154,7 @@ func generate(templates []catalog.Template) ([]byte, error) {
 }
 
 func main() {
-	path := flag.String("out", "docs/.vitepress/data/templates.json", "JSON file to write")
+	path := flag.String("out", "scripts/gen-template-gallery/templates.json", "JSON file to write")
 	check := flag.Bool("check", false, "fail instead of writing when the file is stale")
 	flag.Parse()
 

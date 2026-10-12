@@ -5,7 +5,7 @@ description: "An honest comparison of Levelrail with Coolify, Dokploy, CapRover,
 
 # Comparison
 
-This page compares architecture and feature breadth, not maturity. Levelrail has no stable release yet, and most feature areas are labeled beta in [feature status](feature-status.md).
+This page compares architecture and feature breadth, not maturity. Levelrail has no stable release yet, and most feature areas are labeled beta in [feature status](/feature-status).
 
 Positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all real, useful projects with active users, and any of them may be the right choice for you. This page explains where Levelrail makes different design choices, so you can decide.
 
@@ -42,8 +42,8 @@ Positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all 
 
 - **Agent instead of SSH or Swarm.** Managed nodes need no inbound ports: each agent dials out with mutual TLS, streams Docker events up, and talks to the Docker Engine API directly. Nothing shells out to the `docker` CLI.
 - **A reconciler, not a script.** Desired state lives in the database; a level-triggered loop converges the node toward it and writes a status condition with a reason after every pass. A deploy is reported healthy only after the new container's readiness probe passes.
-- **Observability in the core.** Each node keeps its own metrics and logs (15 second resolution metrics, full-text log search), queried through the control plane. Alerting, crashloop detection with the last log lines, and a Prometheus remote-read endpoint are built in. See [Observability](observability.md).
-- **One small footprint.** SQLite in WAL mode, an embedded Caddy, and an embedded dashboard mean a single binary on a single node. See [Performance](performance.md) for measured numbers.
+- **Observability in the core.** Each node keeps its own metrics and logs (15 second resolution metrics, full-text log search), queried through the control plane. Alerting, crashloop detection with the last log lines, and a Prometheus remote-read endpoint are built in. See [Observability](/observability).
+- **One small footprint.** SQLite in WAL mode, an embedded Caddy, and an embedded dashboard mean a single binary on a single node. See [Performance](/performance) for measured numbers.
 - **Rollback that survives cleanup.** Prior images are pinned so garbage collection cannot remove a rollback target.
 - **AI-ready, not AI-driven.** An MCP server exposes the same API and permission model to agents. AI is never in the reconcile path.
 
@@ -51,20 +51,20 @@ Positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all 
 
 Levelrail has one edition. It is Apache 2.0 licensed, there is no license key, no enterprise tier and no feature gated behind a plan. Everything below ships in the same binary for everyone:
 
-- **Sign-in.** Email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with Google, GitHub, Microsoft or any generic OpenID Connect provider. See [Identity and access](identity-and-access.md).
+- **Sign-in.** Email and password, TOTP two-factor authentication, passkeys, and OAuth sign-in with Google, GitHub, Microsoft or any generic OpenID Connect provider. See [Identity and access](/identity-and-access).
 - **IAM.** AWS-style Allow and Deny policies scoped to `app:name`, `database:name` or `*`, attachable to users and API tokens, on top of three role presets (admin, operator, viewer). API tokens carry fine-grained abilities.
 - **Audit log.** Every mutating and sensitive request is recorded with actor, ability, method, path, status, remote address and caller surface (CLI, dashboard, MCP or API). It is queryable and exportable as CSV with configurable retention.
-- **Backups.** Scheduled database and volume backups with retention, automatic verification after each run, restore, and restore into a new resource. The control plane database gets automatic snapshots, a pre-migration snapshot, encrypted off-box backups and restore drills. See [Backups and storage](backups-and-storage.md) and [Control plane backup](control-plane-backup.md).
-- **Approvals and freezes.** Protected environments, deploy approvals and deploy freeze windows. See [Deploy safety](deploy-safety.md).
+- **Backups.** Scheduled database and volume backups with retention, automatic verification after each run, restore, and restore into a new resource. The control plane database gets automatic snapshots, a pre-migration snapshot, encrypted off-box backups and restore drills. See [Backups and storage](/backups-and-storage) and [Control plane backup](/control-plane-backup).
+- **Approvals and freezes.** Protected environments, deploy approvals and deploy freeze windows. See [Deploy safety](/deploy-safety).
 
 If SSO, audit logging or fine-grained roles matter to you, check each project's own pricing and licensing pages. We have not verified every project's current split, and it changes over time.
 
 ## What Levelrail does not do yet
 
 - **SAML and SCIM.** OAuth and OIDC are supported; SAML single sign-on and SCIM provisioning are not.
-- **The largest template catalog.** Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](templates-and-registry.md).
+- **The largest template catalog.** Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](/templates-and-registry).
 - **Track record.** Fewer real-world deployments and less community knowledge than projects that have existed for years.
-- **Public ACME has had one live run.** TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](roadmap.md).
+- **Public ACME has had one live run.** TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](/roadmap).
 - **No Windows or non-Linux nodes, and no Kubernetes compatibility layer.** These are deliberate non-goals.
 
 ## Choosing
@@ -74,12 +74,12 @@ If SSO, audit logging or fine-grained roles matter to you, check each project's 
 - Docker Swarm is already your model: Dokploy or CapRover.
 - Want an agent-based control plane with built-in observability, IAM and audit on one binary: Levelrail.
 
-To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](migrating-from-coolify-dokploy-and-caprover.md).
+To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](/migrating-from-coolify-dokploy-and-caprover).
 
 ## See also
 
-- [Coolify alternative](coolify-alternative.md), [Dokploy alternative](dokploy-alternative.md), [Vercel alternative](vercel-alternative.md), [Cloud Run alternative](cloud-run-alternative.md), [Heroku alternative](heroku-alternative.md) and [Railway alternative](railway-alternative.md): focused guides for each switch
-- [Architecture](architecture.md): how Levelrail is built internally
-- [Feature catalog](feature-catalog.md): the dashboard pages by area
-- [Cloud integrations](cloud-integrations.md): what works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner
-- [Roadmap](roadmap.md): what has shipped and what is open
+- [Coolify alternative](/coolify-alternative), [Dokploy alternative](/dokploy-alternative), [Vercel alternative](/vercel-alternative), [Cloud Run alternative](/cloud-run-alternative), [Heroku alternative](/heroku-alternative) and [Railway alternative](/railway-alternative): focused guides for each switch
+- [Architecture](/architecture): how Levelrail is built internally
+- [Feature catalog](/feature-catalog): the dashboard pages by area
+- [Cloud integrations](/cloud-integrations): what works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner
+- [Roadmap](/roadmap): what has shipped and what is open

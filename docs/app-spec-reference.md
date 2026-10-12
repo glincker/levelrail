@@ -1,15 +1,11 @@
 ---
+title: "app.yaml reference"
 description: Complete reference for app.yaml - the declarative app spec for Levelrail
 ---
-
-# app.yaml reference
 
 `app.yaml` is the declarative spec Levelrail reads from your repo: services, their build and runtime settings, and the managed databases they use. Every field below is parsed and validated against the JSON Schema embedded in the control plane (`internal/spec/schema/app.schema.json`), and an unknown key is an error rather than being ignored.
 
 Levelrail looks for the file under these names, in order: `app.yaml`, `app.yml`, `deploy.yaml`, `deploy.yml`, then the product's own name with a `.yaml` or `.yml` extension. The generic names come first so a repo that already committed `app.yaml` keeps working.
-
-<InlineToc default-open />
-
 ## Full example
 
 ```yaml
@@ -95,10 +91,10 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `labels` | map of string to string | no | none | Arbitrary operator-supplied Docker labels applied to the container at create time. See Validation below for the limits enforced on these. |
 | `volumes` | list of `Volume` | no | none | Named Docker volumes and host-directory bind mounts this service's container mounts. |
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
-| `jobs` | list of `Job` | no | none | Cron-scheduled commands, each run in a fresh container of this service's image or exec'd into it. See [Scheduled jobs](scheduled-jobs.md). Not meaningful when `build.type` is `static` or `compose`. |
+| `jobs` | list of `Job` | no | none | Cron-scheduled commands, each run in a fresh container of this service's image or exec'd into it. See [Scheduled jobs](/scheduled-jobs). Not meaningful when `build.type` is `static` or `compose`. |
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
-| `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](load-balancing.md). |
+| `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](/load-balancing). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
 
 ### `Build`
@@ -199,11 +195,11 @@ A Compose file's `healthcheck:` is translated into a readiness probe: a `curl`/`
 | `cpu` | number | no | none | Must be greater than 0 if set. |
 | `swapMemory` | string | no | none | Same pattern as `memory`. Docker's `MemorySwap`: the combined memory+swap ceiling, not swap on top of memory, so it must be at least `memory` and requires `memory` to also be set. |
 | `cpuSet` | string | no | none | Docker's `cpuset-cpus` format, for example `0-3` or `0,2`. Pins the container to specific host CPUs. |
-| `gpu` | `all`, integer, or object | no | none | Requests NVIDIA GPUs. `all`, a count such as `2`, or `{count: 2}` / `{devices: ["0", "GPU-uuid"]}` (device indexes or UUIDs win over count). The app is refused on a node without a GPU and the nvidia container runtime, and moving it to such a node is rejected. See [AI models](ai-models.md#gpu-nodes). |
+| `gpu` | `all`, integer, or object | no | none | Requests NVIDIA GPUs. `all`, a count such as `2`, or `{count: 2}` / `{devices: ["0", "GPU-uuid"]}` (device indexes or UUIDs win over count). The app is refused on a node without a GPU and the nvidia container runtime, and moving it to such a node is rejected. See [AI models](/ai-models#gpu-nodes). |
 
 ### `LoadBalancer`
 
-All fields are optional. Durations are Go duration strings such as `500ms`, `5s` or `2m`. See [Load balancing](load-balancing.md) for behavior.
+All fields are optional. Durations are Go duration strings such as `500ms`, `5s` or `2m`. See [Load balancing](/load-balancing) for behavior.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -254,7 +250,7 @@ Shell commands the reconciler runs inside the service's own container via the Do
 | `warnAfter` | duration | no | none | Raises the running-too-long alert. |
 | `enabled` | boolean | no | `true` | Keep the job but do not run it. |
 
-See [Scheduled jobs](scheduled-jobs.md) for how runs, retries and catch-up behave.
+See [Scheduled jobs](/scheduled-jobs) for how runs, retries and catch-up behave.
 
 ### `EnvVar` (an entry under `env`)
 
@@ -266,7 +262,7 @@ an object with these fields.
 | `from` | string | no | none | References another resource's computed value, for example `postgres.main.url`. |
 | `secret` | boolean | no | `false` | The operator provides this value at deploy time through envelope-encrypted secret storage; it is never written to `app.yaml` or the git repo. |
 | `required` | boolean | no | `false` | Only meaningful alongside `secret: true`: fail the deploy if no value has been provided, rather than starting the container with the variable unset. |
-| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](deploying-apps.md#external-secrets-from-hashicorp-vault). |
+| `vault` | `VaultRef` | no | none | Resolves this value live from an external HashiCorp Vault instance instead of Levelrail's own envelope-encrypted storage. Mutually exclusive with `from` and `secret`. See [external secrets: HashiCorp Vault](/deploying-apps#external-secrets-from-hashicorp-vault). |
 
 The object form must set at least one of `from`, `secret`, or `vault`.
 `vault` is mutually exclusive with both `from` and `secret`: a given env
@@ -297,7 +293,7 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 | `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
-| `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once the app's git source has preview environments enabled; see [Git integrations](git-integrations.md) and [Deploy previews](deploy-previews.md). |
+| `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once the app's git source has preview environments enabled; see [Git integrations](/git-integrations) and [Deploy previews](/deploy-previews). |
 | `isolatedInPreviews` | boolean | no | `false` | Give each preview its own credential on the existing database (a Postgres role or a Redis ACL user scoped to its own key prefix) instead of a new instance. Postgres and Redis only. Ignored when `ephemeralInPreviews` is also set. |
 
 ### `Backup`
@@ -309,11 +305,11 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 
 ## Bind addresses and exposure
 
-Every published port (a service's `port`/`host_port`, and a managed database's public-access port; see [managing databases](managing-databases.md)) binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:
+Every published port (a service's `port`/`host_port`, and a managed database's public-access port; see [managing databases](/managing-databases)) binds to `bind_address`, resolved by `internal/bindaddr.Resolve`:
 
 | Value | Resolves to | Meaning |
 | --- | --- | --- |
-| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. On a remote node with a healthy WireGuard mesh, the main port binds to that node's mesh IP instead (never public), so the control plane's ingress can reach it; see [multi-node](multi-node.md#routing-to-apps-on-remote-nodes). |
+| `private` (default, or omitted) | `127.0.0.1` | Reachable only from this host. On a remote node with a healthy WireGuard mesh, the main port binds to that node's mesh IP instead (never public), so the control plane's ingress can reach it; see [multi-node](/multi-node#routing-to-apps-on-remote-nodes). |
 | `public` | `0.0.0.0` | Reachable from any network that can route to this host. Requires the literal string `public`; blank or malformed values never resolve here. |
 | any other value | itself | Treated as a literal IP (a specific host interface or, once the WireGuard mesh lands, a mesh peer address). Must parse as a valid IP. |
 
@@ -409,7 +405,7 @@ Checked by `ValidateLabels` (`internal/spec/labels.go`):
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Getting started" href="/getting-started">
 
 Deploy your first app with an `app.yaml`.

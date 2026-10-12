@@ -1,24 +1,23 @@
 ---
+title: "Chat-interactive deploy approvals"
 description: Approve or deny a protected-environment deploy directly from the Slack or Discord notification, without opening the dashboard.
 ---
 
-# Chat-interactive deploy approvals
-
-When a deploy or promotion targets a protected environment, Levelrail requires a second, distinct user to approve it (see [Deploy safety](deploy-safety.md) for the two-person gate). By default an approver opens the dashboard's Approvals queue. This feature adds Approve and Deny buttons to the Slack or Discord message Levelrail sends when a request comes in, so an approver can decide from a phone.
+When a deploy or promotion targets a protected environment, Levelrail requires a second, distinct user to approve it (see [Deploy safety](/deploy-safety) for the two-person gate). By default an approver opens the dashboard's Approvals queue. This feature adds Approve and Deny buttons to the Slack or Discord message Levelrail sends when a request comes in, so an approver can decide from a phone.
 
 It is an opt-in addition to an existing notification channel (**Settings > Notification channels**), not a separate integration. Connect a Slack or Discord channel the normal way first, then turn on **Interactive approval buttons** on that channel's edit dialog. It is off by default, and the toggle requires the secret from the platform setup below, because without one there is nothing to verify an incoming click against.
 
 ## Set up the platform
 
-<Tabs :items="['Slack', 'Discord']">
-<Tab value="Slack">
+<Tabs>
+<Tab title="Slack">
 
 Levelrail's Slack channel sends through an Incoming Webhook. To receive button clicks, that webhook must belong to a Slack app with **Interactivity** turned on.
 
 <Steps>
 <Step title="Open your Slack app">
 
-Create one at <https://api.slack.com/apps>, or use the app your Incoming Webhook already belongs to.
+Create one at https://api.slack.com/apps, or use the app your Incoming Webhook already belongs to.
 
 </Step>
 <Step title="Set the Request URL">
@@ -43,14 +42,14 @@ Make sure the same app owns the Incoming Webhook URL the channel is configured w
 </Steps>
 
 </Tab>
-<Tab value="Discord">
+<Tab title="Discord">
 
 Discord's equivalent of a Request URL is an application's Interactions Endpoint URL, and verification uses the application's public key instead of a shared secret.
 
 <Steps>
 <Step title="Copy the public key">
 
-Open your application at <https://discord.com/developers/applications> (the one your Incoming Webhook belongs to). Under **General Information**, copy the **Public Key** and paste it into the channel's interactive approval secret field. Save the channel with interactive approvals on first.
+Open your application at https://discord.com/developers/applications (the one your Incoming Webhook belongs to). Under **General Information**, copy the **Public Key** and paste it into the channel's interactive approval secret field. Save the channel with interactive approvals on first.
 
 </Step>
 <Step title="Set the Interactions Endpoint URL">

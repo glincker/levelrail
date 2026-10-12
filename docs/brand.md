@@ -13,7 +13,7 @@ The mark is three stacked rails. The wordmark is the mark plus the name in capit
 
 | Mark | Mark on dark | Wordmark (for dark) | Wordmark (for light) |
 | --- | --- | --- | --- |
-| <img src="/assets/brand/png/mark-1024.png" alt="Levelrail mark" width="96" loading="lazy"> | <img src="/assets/brand/png/mark-on-dark-1024.png" alt="Levelrail mark on a dark square" width="96" loading="lazy"> | <span style="background:#04141a;display:inline-block;padding:8px"><img src="/assets/brand/png/wordmark-for-dark.png" alt="Levelrail wordmark" width="160" loading="lazy"></span> | <img src="/assets/brand/png/wordmark-for-light.png" alt="Levelrail wordmark" width="160" loading="lazy"> |
+| <img src="/assets/brand/png/mark-1024.png" alt="Levelrail mark" width="96" loading="lazy" /> | <img src="/assets/brand/png/mark-on-dark-1024.png" alt="Levelrail mark on a dark square" width="96" loading="lazy" /> | <img src="/assets/brand/png/wordmark-for-dark.png" alt="Levelrail wordmark" width="160" loading="lazy" /> | <img src="/assets/brand/png/wordmark-for-light.png" alt="Levelrail wordmark" width="160" loading="lazy" /> |
 
 Files: [mark.svg](/assets/brand/levelrail-default.svg), [mark-1024.png](/assets/brand/png/mark-1024.png), [mark-on-dark-1024.png](/assets/brand/png/mark-on-dark-1024.png), [wordmark-for-dark.png](/assets/brand/png/wordmark-for-dark.png), [wordmark-for-light.png](/assets/brand/png/wordmark-for-light.png).
 
@@ -48,7 +48,7 @@ Pick the line that fits where you are posting.
 | [Idle apps sleep. Requests wake.](/assets/og/sleep.jpg) 1200x630 | Resource and cost posts |
 | [Ask your server what broke.](/assets/og/mcp.jpg) 1200x630 | AI and MCP posts |
 
-<img src="/assets/og-home.png" alt="Levelrail social card: Your own Vercel. One binary." loading="lazy" style="width:100%;border-radius:8px">
+<img src="/assets/og-home.png" alt="Levelrail social card: Your own Vercel. One binary." loading="lazy" style="width:100%;border-radius:8px" />
 
 ### Sizes per platform
 

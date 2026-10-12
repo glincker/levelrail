@@ -25,9 +25,6 @@ node_modules/
 /web/dist/
 /web/build/
 
-# VitePress docs site build output and local cache.
-/docs/.vitepress/dist/
-/docs/.vitepress/cache/
 
 # Local runtime state: databases, mTLS CA material, anything a local
 # run generates under the default DataDir. Never versioned, regardless

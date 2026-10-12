@@ -1,15 +1,11 @@
 ---
+title: "Pipelines"
 description: Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
 ---
-
-# Pipelines
 
 A pipeline is a YAML file that describes what should happen when code changes: run tests in a container, build an image, wait for a person to approve, then deploy. Pipelines sit on top of the build and deploy features that already exist. They call those primitives; they never touch the reconciler, and no AI is involved in running one.
 
 Each pipeline belongs to one app. Open **Pipelines** in an app's sidebar, use the CLI (`levelrail-cli pipelines ...`), or the API under `/api/v1/apps/{name}/pipelines`.
-
-<InlineToc default-open />
-
 ```mermaid
 flowchart LR
   P["Push to main"] --> T["test stage<br/>go test ./..."]
@@ -340,7 +336,7 @@ jobs:
       - run: aws sts assume-role-with-web-identity --role-arn $AWS_ROLE_ARN --web-identity-token "$PIPELINE_OIDC_TOKEN" --role-session-name pipeline
 ```
 
-The token arrives as the `PIPELINE_OIDC_TOKEN` env var (masked in logs, same as a secret), valid for 10 minutes. See [Pipelines: OIDC federation](pipelines-oidc.md) for the full claim shape and how to wire it to AWS IAM, GCP workload identity federation, or Vault.
+The token arrives as the `PIPELINE_OIDC_TOKEN` env var (masked in logs, same as a secret), valid for 10 minutes. See [Pipelines: OIDC federation](/pipelines-oidc) for the full claim shape and how to wire it to AWS IAM, GCP workload identity federation, or Vault.
 
 ## Concurrency, timeouts, and retries
 
@@ -400,7 +396,7 @@ Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="OIDC federation" href="/pipelines-oidc">
 
 Short-lived cloud credentials for jobs, no stored keys.

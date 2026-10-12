@@ -1,0 +1,58 @@
+---
+title: "Self-host Grist with Docker"
+sidebarTitle: "Grist"
+description: "A modern relational spreadsheet that combines spreadsheet flexibility with database structure."
+---
+
+A modern relational spreadsheet that combines spreadsheet flexibility with database structure.
+
+This page describes the Levelrail template for Grist (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://support.getgrist.com.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `grist_db_data -&#62; /var/lib/postgresql/data` |
+| `grist` | `gristlabs/grist:1.3.3` | 8484 | `grist_data -&#62; /persist` |
+| `redis` | `redis:7-alpine` | none | `grist_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Generated at deploy |
+| `grist` | `GRIST_SESSION_SECRET` | Generated at deploy |
+| `grist` | `REDIS_URL` | Preset in the template |
+| `grist` | `TYPEORM_DATABASE` | Preset in the template |
+| `grist` | `TYPEORM_HOST` | Preset in the template |
+| `grist` | `TYPEORM_PASSWORD` | Generated at deploy |
+| `grist` | `TYPEORM_TYPE` | Preset in the template |
+| `grist` | `TYPEORM_USERNAME` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Grist with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Grist. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy grist --name my-grist
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host/index).

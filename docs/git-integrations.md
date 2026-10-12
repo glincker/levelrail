@@ -1,13 +1,9 @@
 ---
+title: "Git integrations"
 description: Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
 ---
 
-# Git integrations
-
 Connect a git provider once for the whole control plane, then point any number of apps at repositories it can see. A push, a tag, or a pull request on the repository then deploys the app, builds a preview, or both.
-
-<InlineToc default-open />
-
 ## Provider connections and git sources
 
 Two records are involved, and keeping them separate is deliberate.
@@ -36,8 +32,8 @@ Connecting is done in the dashboard on purpose. Each flow ends in a real browser
 
 All four need a master key configured on the control plane, the same one that encrypts every secret. Routes that need it return `501` without one. GitHub's manifest flow also needs a primary domain set in ingress settings first, because GitHub needs a reachable callback URL. Without one you get a `409` that says so.
 
-<Tabs :items="['GitHub','GitLab','Bitbucket','Gitea']">
-<Tab value="GitHub">
+<Tabs>
+<Tab title="GitHub">
 
 Open the GitHub App settings page (`/settings/github-app`).
 
@@ -63,21 +59,21 @@ After GitHub creates the App, Levelrail sends you to `/apps/<slug>/installations
 **Manual.** If the control plane has no publicly reachable primary domain yet, create the App at `github.com/settings/apps` yourself and connect it with `PUT /api/v1/github-app/manual`, giving the app ID, client ID, client secret, webhook secret, and the private key PEM.
 
 </Tab>
-<Tab value="GitLab">
+<Tab title="GitLab">
 
 Open the GitLab App settings page (`/settings/gitlab-app`).
 
 Register an OAuth Application in GitLab, then paste its `instance_url`, `client_id`, and `client_secret`. Authorize through the redirect to your instance's `/oauth/authorize`.
 
 </Tab>
-<Tab value="Bitbucket">
+<Tab title="Bitbucket">
 
 Open the Bitbucket App settings page (`/settings/bitbucket-app`).
 
 Register an OAuth consumer in Bitbucket Cloud, then paste its key and secret and authorize through the redirect.
 
 </Tab>
-<Tab value="Gitea">
+<Tab title="Gitea">
 
 Open the Gitea App settings page (`/settings/gitea-app`).
 
@@ -92,8 +88,8 @@ Register an OAuth2 application in Gitea, then paste its `instance_url`, `client_
 
 Once a provider is connected, the CLI can list repositories and branches and connect a repository to an app. `use-as-source` also registers the webhook in the same call.
 
-<Tabs :items="['GitHub','GitLab','Bitbucket','Gitea']">
-<Tab value="GitHub">
+<Tabs>
+<Tab title="GitHub">
 
 ```bash
 levelrail-cli github-app repos
@@ -102,7 +98,7 @@ levelrail-cli github-app use-as-source <owner> <repo> --app-name my-app --branch
 ```
 
 </Tab>
-<Tab value="GitLab">
+<Tab title="GitLab">
 
 GitLab identifies a project by its numeric ID, so these commands take one positional argument.
 
@@ -113,7 +109,7 @@ levelrail-cli gitlab-app use-as-source <project-id> --app-name my-app
 ```
 
 </Tab>
-<Tab value="Bitbucket">
+<Tab title="Bitbucket">
 
 ```bash
 levelrail-cli bitbucket-app repos
@@ -122,7 +118,7 @@ levelrail-cli bitbucket-app use-as-source <workspace> <repo-slug> --app-name my-
 ```
 
 </Tab>
-<Tab value="Gitea">
+<Tab title="Gitea">
 
 ```bash
 levelrail-cli gitea-app repos
@@ -329,7 +325,7 @@ The file list comes from the push payload. When the payload has none (Bitbucket,
 
 With `report_status` on (the default), the control plane reports to the provider:
 
-- **Pipeline runs:** a commit status per run, linking to the run page. See [Pipelines](pipelines.md#reporting-status-to-the-git-provider).
+- **Pipeline runs:** a commit status per run, linking to the run page. See [Pipelines](/pipelines#reporting-status-to-the-git-provider).
 - **GitHub deploys:** a Deployments API entry for each push deploy (environment `production`) and each pull request preview (environment `preview`), moving through `in_progress` to `success` or `failure`. A newer successful deploy marks earlier ones in the same environment `inactive`, a partially failed multi-service deploy is `failure`, a superseded deploy is `inactive`, and closing a pull request marks its preview deployment `inactive`. A deployment the provider refuses to create is kept as an `error` row with the reason.
 
 GitHub Apps registered recently request `statuses: write` and `deployments: write`. An App registered earlier needs those permissions added and accepted in GitHub, otherwise posts fail with a warning and nothing else changes. A failed post never fails a deploy or run.
@@ -369,8 +365,8 @@ Previews are opt-in per app and off by default. Once enabled, opening a pull req
 
 A single app with a persisted multi-service `services:` map fans a preview out the same way `POST /api/v1/apps/{name}/deploy-spec` does for a real deploy.
 
-<Tabs :items="['CLI','Dashboard']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps previews enable storefront
@@ -379,7 +375,7 @@ levelrail-cli apps previews list storefront
 ```
 
 </Tab>
-<Tab value="Dashboard">
+<Tab title="Dashboard">
 
 Use the **Enabled** toggle on the app's Source tab, next to the git source card.
 
@@ -431,7 +427,7 @@ levelrail-cli apps branch-env clear storefront <id>
 
 ### Databases in previews
 
-A preview that declares `ephemeralInPreviews` databases in `app.yaml` gets its own disposable instance, removed with the preview. A database that declares `isolatedInPreviews` instead gets its own credential on the existing database (a Postgres role or a Redis ACL user) with no new container. See the [app.yaml reference](app-spec-reference.md#database-an-entry-under-databases).
+A preview that declares `ephemeralInPreviews` databases in `app.yaml` gets its own disposable instance, removed with the preview. A database that declares `isolatedInPreviews` instead gets its own credential on the existing database (a Postgres role or a Redis ACL user) with no new container. See the [app.yaml reference](/app-spec-reference#database-an-entry-under-databases).
 
 ### Limits, forks, and approval
 
@@ -543,7 +539,7 @@ Disconnecting deletes the local connection and its secrets. It never revokes the
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Deploying and managing apps" href="/deploying-apps">
 
 The app lifecycle: deploy, rollback, resources, health checks.

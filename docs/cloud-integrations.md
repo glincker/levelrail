@@ -1,12 +1,11 @@
 ---
+title: "Cloud integrations"
 description: What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
 ---
 
-# Cloud integrations
-
 This page lists, per cloud, what Levelrail does with it today and what is only planned. If an item is under Planned, nothing for it exists in the product yet. For the per-app tools catalog (Sentry, PostHog and similar), see [Integrations](/integrations).
 
-How these fit together is decided in [ADR 031](../adr/031-integration-points.md). Short version: integrations run outside the control plane, through API tokens and events. There is no plugin runtime.
+How these fit together is decided in [ADR 031](https://github.com/glincker/levelrail/blob/main/adr/031-integration-points.md). Short version: integrations run outside the control plane, through API tokens and events. There is no plugin runtime.
 
 ## Summary
 

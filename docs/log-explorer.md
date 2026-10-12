@@ -1,13 +1,9 @@
 ---
+title: "Log explorer"
 description: Save and share log searches, group similar errors into signatures, spot new error types after a deploy and alert on log patterns, from the dashboard, the CLI or the API.
 ---
 
-# Log explorer
-
 Logs are stored on the node that runs the container and searched from the control plane. The log explorer makes those searches reusable and turns them into alerts, without shipping logs anywhere.
-
-<InlineToc default-open />
-
 ## Saved queries
 
 A saved query is a named search: text, minimum level, stream, field filters (`status>=500`, `user~alice`) and a relative range such as `1h`.

@@ -1,0 +1,56 @@
+---
+title: "Self-host Infisical with Docker"
+sidebarTitle: "Infisical"
+description: "An open-source secrets manager to centralize API keys, database credentials, and app config."
+---
+
+An open-source secrets manager to centralize API keys, database credentials, and app config.
+
+This page describes the Levelrail template for Infisical (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://infisical.com/docs/self-hosting/overview.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `infisical_db_data -&#62; /var/lib/postgresql/data` |
+| `infisical` | `infisical/infisical:v0.154.6` | 8080 | none |
+| `redis` | `redis:7-alpine` | none | `infisical_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `infisical` | `AUTH_SECRET` | Generated at deploy |
+| `infisical` | `DB_CONNECTION_URI` | Generated at deploy |
+| `infisical` | `ENCRYPTION_KEY` | Generated at deploy |
+| `infisical` | `REDIS_URL` | Preset in the template |
+| `infisical` | `SITE_URL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Infisical with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Infisical. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy infisical --name my-infisical
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Keycloak](/self-host/keycloak)
+
+All templates are listed in the [self-host gallery](/self-host/index).

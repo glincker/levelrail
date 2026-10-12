@@ -1,8 +1,7 @@
 ---
+title: "Deploying and managing apps"
 description: The life of an app on Levelrail, from creating it and deploying it to watching a rollout, rolling back, changing configuration, promoting between environments, and operating it day to day.
 ---
-
-# Deploying and managing apps
 
 An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is actually healthy, switches traffic to it, and keeps every previous image available so you can go back.
 
@@ -10,10 +9,7 @@ This page follows an app through its life: [create it](#create-an-app), [deploy 
 
 ![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
 
-Domains and TLS, managed databases, and git provider setup have their own pages: [Domains and ingress](domains-and-ingress.md), [Managing databases](managing-databases.md), and [Git integrations](git-integrations.md).
-
-<InlineToc default-open />
-
+Domains and TLS, managed databases, and git provider setup have their own pages: [Domains and ingress](/domains-and-ingress), [Managing databases](/managing-databases), and [Git integrations](/git-integrations).
 ## The model in one minute
 
 - **An app is desired state.** It is a record: an image, a port, and the settings around them. Saving it changes the record. A level-triggered reconciler then converges the running containers to match. Nothing is edge-triggered, so a missed event never leaves an app out of sync.
@@ -123,7 +119,7 @@ levelrail-cli apps deploy-spec NAME --file app.yaml --repo-url URL --ref REF
 
 `POST /api/v1/apps/{name}/deploy-spec` builds and deploys each service in `services:` in key order, under one app. It is synchronous per service, and one service's build failure does not stop the others. The response is `207 Multi-Status` when at least one service failed. Unlike Compose, it records no per-service deploy attempt yet, so the response is the only record of what happened. The dashboard form is on an existing app's **Services** tab.
 
-Every field of the spec is in the [app.yaml reference](app-spec-reference.md).
+Every field of the spec is in the [app.yaml reference](/app-spec-reference).
 
 ## Deploy and watch a rollout
 
@@ -134,7 +130,7 @@ levelrail-cli apps deploy NAME --image IMAGE
 levelrail-cli apps wait NAME      # block until the attempt converges, exit code says how it went
 ```
 
-`apps wait` exits 5 when the deploy failed and 6 when it timed out, which makes it a CI gate. See the [CLI reference](cli-reference.md#scripting-json-and-exit-codes) for every exit code.
+`apps wait` exits 5 when the deploy failed and 6 when it timed out, which makes it a CI gate. See the [CLI reference](/cli-reference#scripting-json-and-exit-codes) for every exit code.
 
 ### What a rollout does
 
@@ -161,7 +157,7 @@ sequenceDiagram
     Control Plane->>Control Plane: deploy complete
 ```
 
-The reconciler tracks both containers until the old one exits. If the new container never becomes ready, the old one keeps serving and the deploy fails with a specific reason: `OOMKilledDuringReadiness`, `ExitedDuringReadiness`, or `ReadinessFailed`. The first two are reported the moment the container dies, instead of after the full readiness budget has been spent probing a dead address. The budget is 60 seconds by default and `health.readyTimeout` in `app.yaml` overrides it per service. The reason shows in the deploy history and in `levelrail-cli apps deploys list`. Guarantees around stale deploys, freeze windows, and a short hold of the previous release are in [Deploy safety](deploy-safety.md).
+The reconciler tracks both containers until the old one exits. If the new container never becomes ready, the old one keeps serving and the deploy fails with a specific reason: `OOMKilledDuringReadiness`, `ExitedDuringReadiness`, or `ReadinessFailed`. The first two are reported the moment the container dies, instead of after the full readiness budget has been spent probing a dead address. The budget is 60 seconds by default and `health.readyTimeout` in `app.yaml` overrides it per service. The reason shows in the deploy history and in `levelrail-cli apps deploys list`. Guarantees around stale deploys, freeze windows, and a short hold of the previous release are in [Deploy safety](/deploy-safety).
 
 ### Live deploy view
 
@@ -180,13 +176,13 @@ It is fed by a server-sent events stream, `GET /api/v1/apps/{name}/deploys/{depl
 
 A failed attempt opens with a **What went wrong** card: the failing stage, the recorded error, a likely cause with a suggested fix, and three actions: **View full logs**, **Retry deploy**, and **Roll back to last good** (shown only when an earlier attempt succeeded).
 
-The cause is a heuristic match against a fixed rule table, not a diagnosis. It never changes the attempt's real status. The rules cover a missing environment variable, a port mismatch, a container killed for memory (OOMKilled or exit 137), registry auth, an image or tag that cannot be found, a health check timeout, a wrong Dockerfile path, a failed dependency install, and a few older npm, pip, heap, disk, and permission patterns. For the structured failure object that the API, CLI, and MCP tools return, see [Deploy failures](deploy-failures.md). `levelrail-cli apps diagnose NAME` explains a failed deploy or crashloop and can apply a fix.
+The cause is a heuristic match against a fixed rule table, not a diagnosis. It never changes the attempt's real status. The rules cover a missing environment variable, a port mismatch, a container killed for memory (OOMKilled or exit 137), registry auth, an image or tag that cannot be found, a health check timeout, a wrong Dockerfile path, a failed dependency install, and a few older npm, pip, heap, disk, and permission patterns. For the structured failure object that the API, CLI, and MCP tools return, see [Deploy failures](/deploy-failures). `levelrail-cli apps diagnose NAME` explains a failed deploy or crashloop and can apply a fix.
 
 ### Deploys across all apps
 
 ![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
 
-`GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first. It is cursor paginated (`limit` defaults to 50, maximum 200, pass `next_cursor` back as `cursor`). An IAM Deny on `app:web` hides web's deployments from the list, the summary, and the stream. The dashboard page is described in [Deployments page](deployments-page.md).
+`GET /api/v1/deployments` lists deploy attempts across every app the caller can read, newest first. It is cursor paginated (`limit` defaults to 50, maximum 200, pass `next_cursor` back as `cursor`). An IAM Deny on `app:web` hides web's deployments from the list, the summary, and the stream. The dashboard page is described in [Deployments page](/deployments-page).
 
 - **Filters:** `status` (queued, held, awaiting_approval, building, ready, failed, canceled, rolled_back, superseded; comma separated or repeated), `app`, `branch`, `trigger` (git push, manual, rollback, api, preview, schedule, pipeline), `environment` (name or ID), `since` and `until` (RFC3339 or a duration such as `24h`, `7d`), `q` (commit message, SHA prefix, app name), `live=true` (only the release currently serving each app), and `pr` (previews of one pull request).
 - **How fields are derived:** `rolled_back` is a succeeded deploy that a later rollback replaced (`rolled_back_by`). A rollback carries `rollback_of`, the attempt whose image it re-deployed. `held` is a deploy parked by a freeze window. `canceled` is a failed attempt whose error is a canceled context. `image_ref` pins the tag to a digest only when the digest is registry verified, and `digest_reason` says why when it is not. Commit message, author, and branch are recorded for git push deploys only. `steps` and the failing step are known only while an attempt runs, because step history is not persisted.
@@ -215,11 +211,11 @@ levelrail-cli apps deploys rollback-to NAME DEPLOY_ID          # exact image of 
 levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag yourself
 ```
 
-`rollback-to` is `POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](deploy-safety.md#queue-cancel-and-rollback-to-a-release). Prior images are pinned, so garbage collection cannot remove a rollback target.
+`rollback-to` is `POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release). Prior images are pinned, so garbage collection cannot remove a rollback target.
 
 Two related options:
 
-- **Auto-rollback on crashloop** is opt-in per app and computes the last known-good tag itself: `levelrail-cli apps auto-rollback enable NAME`. An SLO burn variant is `apps auto-rollback-slo-burn set`. Both are covered in [Observability](observability.md).
+- **Auto-rollback on crashloop** is opt-in per app and computes the last known-good tag itself: `levelrail-cli apps auto-rollback enable NAME`. An SLO burn variant is `apps auto-rollback-slo-burn set`. Both are covered in [Observability](/observability).
 - **Deploy freeze windows** hold automatic deploys on a cron schedule: `levelrail-cli apps freeze set|show|clear NAME`.
 
 ## Change configuration
@@ -282,7 +278,7 @@ env:
   API_KEY: { vault: { path: myapp/config, key: api_key } }
 ```
 
-`path` is the secret's path in Vault's KV v2 engine and `key` is the field inside it. `vault` is mutually exclusive with `from` and `secret` on the same variable. The field table is in the [app.yaml reference](app-spec-reference.md#envvar-an-entry-under-env).
+`path` is the secret's path in Vault's KV v2 engine and `key` is the field inside it. `vault` is mutually exclusive with `from` and `secret` on the same variable. The field table is in the [app.yaml reference](/app-spec-reference#envvar-an-entry-under-env).
 
 Configure the connection once for the instance, under **Settings, Vault**, with `levelrail-cli vault set`, or with `PUT /api/v1/settings/vault`. You need the Vault address, an auth method (`token` or `approle`), and a token or a role ID plus secret ID. The credential is envelope encrypted, write-only over the API, and never logged.
 
@@ -292,7 +288,7 @@ An app created directly can add or remove a Vault variable at any time, from the
 
 ### Health checks
 
-An app has up to two probes, readiness and liveness. Readiness gates the cutover of a deploy. Liveness runs on every reconcile pass against a running container and restarts it after consecutive failures. A probe is an HTTP(S) request (`path`) or a command run in the container (`exec`). The full field table and the Compose `healthcheck:` translation are in the [app.yaml reference](app-spec-reference.md#health-checks).
+An app has up to two probes, readiness and liveness. Readiness gates the cutover of a deploy. Liveness runs on every reconcile pass against a running container and restarts it after consecutive failures. A probe is an HTTP(S) request (`path`) or a command run in the container (`exec`). The full field table and the Compose `healthcheck:` translation are in the [app.yaml reference](/app-spec-reference#health-checks).
 
 ```bash
 levelrail-cli apps health get NAME
@@ -319,7 +315,7 @@ Set them on the **Resources** tab, in `app.yaml`, or with `PUT /api/v1/apps/{nam
 
 ![Levelrail app resources tab](assets/screenshots/app-resources.png)
 
-`GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it in the Optimise panel on the Resources tab, or run `levelrail-cli apps resource-recommendation NAME`. With the [resource advisor](resource-advisor.md) beta on, the same suggestion arrives as an advisor finding you can apply after a preview.
+`GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it in the Optimise panel on the Resources tab, or run `levelrail-cli apps resource-recommendation NAME`. With the [resource advisor](/resource-advisor) beta on, the same suggestion arrives as an advisor finding you can apply after a preview.
 
 ### Outbound network allowlist
 
@@ -384,7 +380,7 @@ levelrail-cli deploy-approvals approve ID
 levelrail-cli deploy-approvals reject ID [--reason "why"]
 ```
 
-A pending request shows as a banner on the app's detail page with inline **Approve** and **Reject**, and the cross-app queue is at `/approvals` in the sidebar, badged with the pending count. The list endpoint defaults to `status=pending`, and `status=all` includes decided and expired requests. Approvals can also be decided from chat, see [Chat deploy approvals](chat-deploy-approvals.md).
+A pending request shows as a banner on the app's detail page with inline **Approve** and **Reject**, and the cross-app queue is at `/approvals` in the sidebar, badged with the pending count. The list endpoint defaults to `status=pending`, and `status=all` includes decided and expired requests. Approvals can also be decided from chat, see [Chat deploy approvals](/chat-deploy-approvals).
 
 ### Clone an environment
 
@@ -501,7 +497,7 @@ levelrail-cli apps scheduled-tasks list NAME
 levelrail-cli apps scheduled-tasks run NAME ID
 ```
 
-The dashboard's **Jobs** tab does the same, and adds fresh-container runs, run history, retries and catch-up: see [Scheduled jobs](scheduled-jobs.md). `update` is a full replace: resupply `command`, `schedule`, and `concurrency_policy`, not only the field you are changing.
+The dashboard's **Jobs** tab does the same, and adds fresh-container runs, run history, retries and catch-up: see [Scheduled jobs](/scheduled-jobs). `update` is a full replace: resupply `command`, `schedule`, and `concurrency_policy`, not only the field you are changing.
 
 Each task tracks `last_run_at`, `last_run_status`, `last_run_output`, and a `consecutive_failures` counter (the input for `scheduled_task_failure` alert rules). That is the whole run history: there is no log of every past run.
 
@@ -608,7 +604,7 @@ Changing or removing an app's domain drops its route on the next ingress pass, a
 | `GET` | `/api/v1/environments/{id}/clone/preview?new_environment_name=NAME` | `read` |
 | `POST` | `/api/v1/environments/{id}/clone` | `deploy` |
 
-The CLI groups below cover an app's own lifecycle. Run `levelrail-cli apps SUBCOMMAND -h` for any command's flags, and see the [CLI reference](cli-reference.md) for the rest.
+The CLI groups below cover an app's own lifecycle. Run `levelrail-cli apps SUBCOMMAND -h` for any command's flags, and see the [CLI reference](/cli-reference) for the rest.
 
 ```bash
 levelrail-cli apps create | list | get | delete | validate
@@ -633,8 +629,8 @@ levelrail-cli deploy-approvals list | get | approve | reject
 
 ## See also
 
-- [Git integrations](git-integrations.md): trigger deploys from git push and pull requests
-- [Domains and ingress](domains-and-ingress.md): custom domains and HTTPS certificates
-- [Managing databases](managing-databases.md): attach Postgres, MySQL, Redis, and others
-- [app.yaml reference](app-spec-reference.md): every field of the deployment spec
-- [Deploy safety](deploy-safety.md) and [Deploy failures](deploy-failures.md): what protects a rollout and how failures are explained
+- [Git integrations](/git-integrations): trigger deploys from git push and pull requests
+- [Domains and ingress](/domains-and-ingress): custom domains and HTTPS certificates
+- [Managing databases](/managing-databases): attach Postgres, MySQL, Redis, and others
+- [app.yaml reference](/app-spec-reference): every field of the deployment spec
+- [Deploy safety](/deploy-safety) and [Deploy failures](/deploy-failures): what protects a rollout and how failures are explained

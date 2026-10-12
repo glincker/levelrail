@@ -1,8 +1,7 @@
 ---
+title: "Disaster recovery"
 description: Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
 ---
-
-# Disaster recovery
 
 If the machine running the control plane dies, your apps keep running but you lose the thing that manages them: apps, domains, users, tokens, deploy history and every stored secret. Local [snapshots](/control-plane-backup) sit on the same disk, so they do not help. This page covers the off-box path: encrypted backups in an S3 compatible bucket, an escrow copy of the master key, a tested restore, and a drill that keeps proving it works.
 
@@ -328,7 +327,7 @@ Restore is intentionally not an API call. The escrow endpoint returns the bundle
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Control plane backup" href="/control-plane-backup">
 
 Local snapshots, verification, and the offline restore commands.

@@ -1,0 +1,757 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Levelrail",
+  "description": "Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.",
+  "colors": {
+    "primary": "#107292",
+    "light": "#2FB3DC",
+    "dark": "#084F67"
+  },
+  "background": {
+    "color": {
+      "light": "#ffffff",
+      "dark": "#04141a"
+    }
+  },
+  "favicon": "/public/favicon.svg",
+  "logo": {
+    "light": "/assets/brand/png/wordmark-for-light.png",
+    "dark": "/assets/brand/png/wordmark-for-dark.png",
+    "href": "https://levelrail.com"
+  },
+  "appearance": {
+    "default": "system"
+  },
+  "styling": {
+    "codeblocks": "dark"
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "cursor",
+      "mcp"
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/glincker/levelrail"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "/getting-started"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/glincker/levelrail",
+      "x": "https://x.com/thegdsks"
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Get started",
+        "groups": [
+          {
+            "group": "Start here",
+            "pages": [
+              "index",
+              "getting-started",
+              "installing"
+            ]
+          },
+          {
+            "group": "Tutorials",
+            "pages": [
+              "tutorials/index",
+              "tutorials/deploy-a-docker-app",
+              "tutorials/zero-downtime-deploys-with-health-checks",
+              "tutorials/deploy-from-github-actions",
+              "tutorials/connect-an-app-to-postgres",
+              "tutorials/back-up-postgres-to-s3",
+              "tutorials/self-host-vaultwarden",
+              "tutorials/debug-an-app-with-logs-and-metrics"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/index",
+              "guides/coolify-vs-levelrail",
+              "guides/self-host-postgres-with-backups",
+              "guides/zero-downtime-deploys-without-kubernetes"
+            ]
+          },
+          {
+            "group": "Announcements",
+            "pages": [
+              "announcements/index",
+              "announcements/self-host-template-gallery-and-guides"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "How-to guides",
+        "groups": [
+          {
+            "group": "Essentials",
+            "pages": [
+              "troubleshooting",
+              "email-notifications",
+              "attention-center"
+            ]
+          },
+          {
+            "group": "Deploying",
+            "pages": [
+              "deploying-apps",
+              "compose-apps",
+              "new-app-wizard",
+              "importing-apps",
+              "deploy-safety",
+              "deploy-failures",
+              "scheduled-deploys",
+              "scheduled-jobs",
+              "image-auto-update",
+              "sleep-when-idle",
+              "functions",
+              "canary-deploys",
+              "deployments-page",
+              "deploy-previews",
+              "deploy-link",
+              "previews",
+              "chat-deploy-approvals",
+              "supply-chain",
+              "deploy-status-badge",
+              "screenshots",
+              "docker"
+            ]
+          },
+          {
+            "group": "Networking and multi-node",
+            "pages": [
+              "domains-and-ingress",
+              "standalone-domains",
+              "dns",
+              "domain-traffic-controls",
+              "load-balancing",
+              "acme-verification-runbook",
+              "multi-node",
+              "multi-node-quickstart",
+              "node-provisioning",
+              "multi-cloud-provisioning",
+              "network-topology",
+              "service-topology-graph",
+              "build-node-routing"
+            ]
+          },
+          {
+            "group": "Databases and storage",
+            "pages": [
+              "managing-databases",
+              "database-upgrades",
+              "external-databases",
+              "connecting-apps-to-databases",
+              "backups-and-storage",
+              "prove-your-backups-work",
+              "object-storage",
+              "network-shares",
+              "log-archive",
+              "log-explorer",
+              "data-export",
+              "control-plane-backup",
+              "disaster-recovery",
+              "upgrade-safely"
+            ]
+          },
+          {
+            "group": "CI/CD and automation",
+            "pages": [
+              "github-actions",
+              "pipelines",
+              "pipelines-oidc",
+              "platform-as-code",
+              "git-integrations"
+            ]
+          },
+          {
+            "group": "Security and access",
+            "pages": [
+              "feature-flags",
+              "auth-engine",
+              "host-firewall",
+              "exposure-audit",
+              "security-center",
+              "emergency-access",
+              "master-key-rotation",
+              "access-control",
+              "teams-and-roles",
+              "environments",
+              "identity-and-access",
+              "projects-and-organizations"
+            ]
+          },
+          {
+            "group": "Scale and operations",
+            "pages": [
+              "managing-apps-at-scale",
+              "tags",
+              "command-palette",
+              "cost-estimate",
+              "usage-and-cost",
+              "resource-advisor",
+              "integrations",
+              "cloud-integrations",
+              "rollback",
+              "resilience",
+              "resilience-summary",
+              "observability",
+              "status-page",
+              "whats-new-panel"
+            ]
+          },
+          {
+            "group": "AI and agents",
+            "pages": [
+              "ai-models",
+              "agents",
+              "ai-assistant",
+              "mcp",
+              "mcp-recipes",
+              "ai-assistant-chat",
+              "ai-control"
+            ]
+          },
+          {
+            "group": "Templates and catalog",
+            "pages": [
+              "templates-and-registry",
+              "template-catalog",
+              "templates"
+            ]
+          },
+          {
+            "group": "Migrating from other platforms",
+            "pages": [
+              "migrating-from-coolify-dokploy-and-caprover",
+              "migrating-from-vercel",
+              "migrating-from-cloud-run"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Reference",
+            "pages": [
+              "app-spec-reference",
+              "feature-catalog",
+              "cli-reference",
+              "cli-tui",
+              "environment-variables",
+              "environment-and-secrets",
+              "api-reference",
+              "api-explorer",
+              "mobile-api",
+              "mcp-tool-surface",
+              "agent-tooling-audit",
+              "kit"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Concepts",
+        "groups": [
+          {
+            "group": "Explanation",
+            "pages": [
+              "architecture",
+              "security",
+              "threat-model",
+              "docker-access",
+              "security-alert-verdicts",
+              "comparison",
+              "use-cases",
+              "white-labeling",
+              "brand",
+              "glinr-bot",
+              "behind-an-existing-proxy"
+            ]
+          },
+          {
+            "group": "Design proposals",
+            "pages": [
+              "design/git-provider-integrations"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Self-host gallery",
+        "groups": [
+          {
+            "group": "Gallery",
+            "pages": [
+              "self-host/index"
+            ]
+          },
+          {
+            "group": "AI",
+            "pages": [
+              "self-host/anythingllm",
+              "self-host/comfyui",
+              "self-host/flowise",
+              "self-host/flowise-postgres",
+              "self-host/jupyter-gpu",
+              "self-host/label-studio",
+              "self-host/langflow",
+              "self-host/langfuse",
+              "self-host/librechat",
+              "self-host/litellm",
+              "self-host/llama-cpp",
+              "self-host/lobe-chat",
+              "self-host/localai",
+              "self-host/mlflow",
+              "self-host/n8n-ai-starter",
+              "self-host/new-api",
+              "self-host/ollama",
+              "self-host/ollama-open-webui",
+              "self-host/ollama-deepseek",
+              "self-host/ollama-llama3",
+              "self-host/ollama-mistral",
+              "self-host/ollama-phi",
+              "self-host/ollama-qwen",
+              "self-host/open-webui",
+              "self-host/speaches",
+              "self-host/stable-diffusion-webui",
+              "self-host/text-embeddings-inference",
+              "self-host/text-generation-inference",
+              "self-host/unstructured",
+              "self-host/vllm"
+            ]
+          },
+          {
+            "group": "Analytics",
+            "pages": [
+              "self-host/embystat",
+              "self-host/goatcounter",
+              "self-host/matomo",
+              "self-host/metabase",
+              "self-host/plausible",
+              "self-host/umami"
+            ]
+          },
+          {
+            "group": "Applications",
+            "pages": [
+              "self-host/budibase",
+              "self-host/cockpit-cms",
+              "self-host/drupal",
+              "self-host/espocrm",
+              "self-host/ghost",
+              "self-host/glpi",
+              "self-host/joomla",
+              "self-host/lowcoder",
+              "self-host/mediawiki",
+              "self-host/minecraft",
+              "self-host/moodle",
+              "self-host/nextcloud",
+              "self-host/odoo",
+              "self-host/orangehrm",
+              "self-host/redlib",
+              "self-host/searxng",
+              "self-host/vvveb",
+              "self-host/wordpress"
+            ]
+          },
+          {
+            "group": "Automation",
+            "pages": [
+              "self-host/activepieces",
+              "self-host/autobrr",
+              "self-host/n8n",
+              "self-host/n8n-postgres",
+              "self-host/node-red",
+              "self-host/prefect",
+              "self-host/temporal",
+              "self-host/windmill"
+            ]
+          },
+          {
+            "group": "Communication",
+            "pages": [
+              "self-host/answer",
+              "self-host/apprise-api",
+              "self-host/campfire",
+              "self-host/chatwoot",
+              "self-host/freescout",
+              "self-host/gotify",
+              "self-host/listmonk",
+              "self-host/matrix-synapse",
+              "self-host/matrix-synapse-postgres",
+              "self-host/mattermost",
+              "self-host/nodebb",
+              "self-host/ntfy",
+              "self-host/once-campfire",
+              "self-host/postiz",
+              "self-host/rocketchat",
+              "self-host/roundcube",
+              "self-host/stalwart"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "self-host/dashy",
+              "self-host/flame",
+              "self-host/glance",
+              "self-host/heimdall",
+              "self-host/homarr",
+              "self-host/homepage",
+              "self-host/homer",
+              "self-host/organizr"
+            ]
+          },
+          {
+            "group": "Database Tools",
+            "pages": [
+              "self-host/adminer",
+              "self-host/baserow",
+              "self-host/bytebase",
+              "self-host/chroma",
+              "self-host/clickhouse",
+              "self-host/cloudbeaver",
+              "self-host/elasticsearch-kibana",
+              "self-host/influxdb",
+              "self-host/milvus",
+              "self-host/nocodb",
+              "self-host/pgbackweb",
+              "self-host/pgadmin",
+              "self-host/pgvector",
+              "self-host/phpmyadmin",
+              "self-host/qdrant",
+              "self-host/redis-insight",
+              "self-host/redisinsight",
+              "self-host/weaviate"
+            ]
+          },
+          {
+            "group": "Developer Tools",
+            "pages": [
+              "self-host/appsmith",
+              "self-host/appwrite",
+              "self-host/browserless",
+              "self-host/bytestash",
+              "self-host/code-server",
+              "self-host/convertx",
+              "self-host/cyberchef",
+              "self-host/databasus",
+              "self-host/directus",
+              "self-host/docker-registry",
+              "self-host/registry",
+              "self-host/docker-registry-auth",
+              "self-host/flaresolverr",
+              "self-host/flipt",
+              "self-host/forgejo",
+              "self-host/forgejo-postgres",
+              "self-host/gitea",
+              "self-host/gitea-postgres",
+              "self-host/gitlab",
+              "self-host/gitlab-ce",
+              "self-host/gotenberg",
+              "self-host/hoppscotch",
+              "self-host/imgcompress",
+              "self-host/it-tools",
+              "self-host/jenkins",
+              "self-host/jupyter-notebook",
+              "self-host/jupyter-notebook-python",
+              "self-host/libretranslate",
+              "self-host/mailpit",
+              "self-host/marimo",
+              "self-host/meilisearch",
+              "self-host/nocobase",
+              "self-host/pocketbase",
+              "self-host/proxyscotch",
+              "self-host/semaphore",
+              "self-host/shlink",
+              "self-host/soketi",
+              "self-host/sonarqube",
+              "self-host/nexus",
+              "self-host/strapi",
+              "self-host/termix",
+              "self-host/tolgee",
+              "self-host/trailbase",
+              "self-host/typesense",
+              "self-host/unleash-postgres",
+              "self-host/verdaccio",
+              "self-host/wakapi",
+              "self-host/web-check",
+              "self-host/weblate",
+              "self-host/woodpecker"
+            ]
+          },
+          {
+            "group": "Finance",
+            "pages": [
+              "self-host/actual-budget",
+              "self-host/actualbudget",
+              "self-host/budge",
+              "self-host/dolibarr",
+              "self-host/firefly-iii",
+              "self-host/ghostfolio",
+              "self-host/invoice-ninja",
+              "self-host/sure",
+              "self-host/wallos"
+            ]
+          },
+          {
+            "group": "Infrastructure",
+            "pages": [
+              "self-host/adguard-home",
+              "self-host/cloudflare-ddns",
+              "self-host/elasticsearch",
+              "self-host/netbox",
+              "self-host/nginx-proxy-manager",
+              "self-host/pi-hole",
+              "self-host/portainer",
+              "self-host/rabbitmq",
+              "self-host/snipe-it",
+              "self-host/technitium-dns"
+            ]
+          },
+          {
+            "group": "IoT",
+            "pages": [
+              "self-host/mosquitto",
+              "self-host/home-assistant",
+              "self-host/traccar"
+            ]
+          },
+          {
+            "group": "Media",
+            "pages": [
+              "self-host/audiobookshelf",
+              "self-host/bazarr",
+              "self-host/calibre-web",
+              "self-host/castopod",
+              "self-host/emby",
+              "self-host/grimmory",
+              "self-host/immich",
+              "self-host/jackett",
+              "self-host/jellyfin",
+              "self-host/jellyseerr",
+              "self-host/kavita",
+              "self-host/komga",
+              "self-host/lidarr",
+              "self-host/metube",
+              "self-host/navidrome",
+              "self-host/overseerr",
+              "self-host/owncast",
+              "self-host/photoprism",
+              "self-host/photoview",
+              "self-host/pinchflat",
+              "self-host/plex",
+              "self-host/prowlarr",
+              "self-host/qbittorrent",
+              "self-host/radarr",
+              "self-host/sonarr",
+              "self-host/tdarr",
+              "self-host/transmission",
+              "self-host/yamtrack"
+            ]
+          },
+          {
+            "group": "Monitoring",
+            "pages": [
+              "self-host/beszel",
+              "self-host/bugsink",
+              "self-host/changedetection",
+              "self-host/checkmate",
+              "self-host/diun",
+              "self-host/glances",
+              "self-host/glitchtip",
+              "self-host/grafana",
+              "self-host/grafana-postgres",
+              "self-host/loki",
+              "self-host/healthchecks",
+              "self-host/librespeed",
+              "self-host/netdata",
+              "self-host/openobserve",
+              "self-host/prometheus",
+              "self-host/speedtest-tracker",
+              "self-host/statusnook",
+              "self-host/tautulli",
+              "self-host/uptime-kuma",
+              "self-host/uptime-kuma-mariadb",
+              "self-host/victoriametrics",
+              "self-host/zabbix"
+            ]
+          },
+          {
+            "group": "Productivity",
+            "pages": [
+              "self-host/affine",
+              "self-host/appflowy",
+              "self-host/babybuddy",
+              "self-host/bookstack",
+              "self-host/calcom",
+              "self-host/convertx-app",
+              "self-host/docmost",
+              "self-host/documenso",
+              "self-host/docuseal",
+              "self-host/dokuwiki",
+              "self-host/drawio",
+              "self-host/easyappointments",
+              "self-host/etherpad",
+              "self-host/excalidraw",
+              "self-host/fider",
+              "self-host/firefox-browser",
+              "self-host/flatnotes",
+              "self-host/formbricks",
+              "self-host/freshrss",
+              "self-host/gramps-web",
+              "self-host/grist",
+              "self-host/grocy",
+              "self-host/hedgedoc",
+              "self-host/homebox",
+              "self-host/joplin",
+              "self-host/joplin-server",
+              "self-host/kanboard",
+              "self-host/karakeep",
+              "self-host/kimai",
+              "self-host/leantime",
+              "self-host/libreoffice",
+              "self-host/limesurvey",
+              "self-host/linkding",
+              "self-host/linkding-plus",
+              "self-host/linkwarden",
+              "self-host/mealie",
+              "self-host/memos",
+              "self-host/miniflux",
+              "self-host/obsidian-livesync",
+              "self-host/osticket",
+              "self-host/outline",
+              "self-host/pairdrop",
+              "self-host/paperless-ngx",
+              "self-host/penpot",
+              "self-host/plane",
+              "self-host/planka",
+              "self-host/rallly",
+              "self-host/readeck",
+              "self-host/redmine",
+              "self-host/ryot",
+              "self-host/shiori",
+              "self-host/silverbullet",
+              "self-host/siyuan",
+              "self-host/slash",
+              "self-host/snapdrop",
+              "self-host/sparkyfitness",
+              "self-host/stirling-pdf",
+              "self-host/tandoor-recipes",
+              "self-host/teable",
+              "self-host/triliumnext",
+              "self-host/trilium",
+              "self-host/twenty",
+              "self-host/vert",
+              "self-host/vikunja",
+              "self-host/wallabag",
+              "self-host/wikijs"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "self-host/2fauth",
+              "self-host/authentik",
+              "self-host/cap-captcha",
+              "self-host/cryptgeon",
+              "self-host/infisical",
+              "self-host/keycloak",
+              "self-host/keycloak-postgres",
+              "self-host/lldap",
+              "self-host/logto",
+              "self-host/onetimesecret",
+              "self-host/passbolt",
+              "self-host/pocket-id",
+              "self-host/privatebin",
+              "self-host/supertokens",
+              "self-host/vault",
+              "self-host/vaultwarden",
+              "self-host/whoogle"
+            ]
+          },
+          {
+            "group": "Starter Kits",
+            "pages": [
+              "self-host/worker-redis-queue-starter",
+              "self-host/fastapi-postgres-starter",
+              "self-host/nextjs-postgres-starter",
+              "self-host/nginx-multi-backend-starter",
+              "self-host/node-postgres-starter",
+              "self-host/redis-cache-starter",
+              "self-host/static-site-api-starter"
+            ]
+          },
+          {
+            "group": "Storage",
+            "pages": [
+              "self-host/chibisafe",
+              "self-host/cloudreve",
+              "self-host/copyparty",
+              "self-host/duplicati",
+              "self-host/filebrowser",
+              "self-host/kopia",
+              "self-host/minio",
+              "self-host/pingvin-share",
+              "self-host/seafile",
+              "self-host/seaweedfs",
+              "self-host/sftpgo",
+              "self-host/syncthing",
+              "self-host/zipline"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Project",
+        "groups": [
+          {
+            "group": "Status",
+            "pages": [
+              "roadmap",
+              "feature-status",
+              "experimental-features",
+              "performance",
+              "ci",
+              "vps-smoke",
+              "i18n",
+              "design-tokens",
+              "changelog"
+            ]
+          },
+          {
+            "group": "Legal",
+            "pages": [
+              "terms",
+              "privacy-policy",
+              "cookies",
+              "license-and-notices"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

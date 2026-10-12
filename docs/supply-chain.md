@@ -1,8 +1,7 @@
 ---
+title: "Supply chain visibility"
 description: A software bill of materials for each Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can keep a release from going live. What it costs, what it does not cover and every APP_BUILD_ATTEST, APP_SCAN and APP_SBOM setting.
 ---
-
-# Supply chain visibility
 
 A Dockerfile build can record what is inside the image, and the control plane can check that list for known vulnerabilities before the release goes live. Both are off by default.
 
@@ -24,13 +23,13 @@ Set `APP_BUILD_ATTEST=true` on the control plane and restart it. From then on ea
 </Step>
 <Step title="Turn on scanning for an app">
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open the app, then **Deploy settings**, then **Supply chain**, and turn on scanning.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps scan enable web

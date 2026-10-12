@@ -1,16 +1,15 @@
 ---
+title: "Migrating a service from Cloud Run"
 description: A practical runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, deploying the same container image from a registry, secrets, Cloud SQL, domains, scheduled jobs, and an honest list of what you give up.
 ---
-
-# Migrating a service from Cloud Run
 
 This is a runbook for moving one Cloud Run service onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.
 
 ::: warning
-Levelrail has no stable release yet (see [feature status](feature-status.md)). You operate the server it runs on: OS updates, disk, backups and the Docker daemon are yours. Run the new deployment in parallel with Cloud Run, and keep Cloud Run as the rollback path until the shadow run in section 7 is clean.
+Levelrail has no stable release yet (see [feature status](/feature-status)). You operate the server it runs on: OS updates, disk, backups and the Docker daemon are yours. Run the new deployment in parallel with Cloud Run, and keep Cloud Run as the rollback path until the shadow run in section 7 is clean.
 :::
 
-There is no importer for Cloud Run. Everything below is manual. The good news is that a Cloud Run service is already a container image listening on a port, which is the unit Levelrail deploys, so most services move without a rebuild. Whether the move saves money is a separate question, covered in [Cloud Run alternative](cloud-run-alternative.md).
+There is no importer for Cloud Run. Everything below is manual. The good news is that a Cloud Run service is already a container image listening on a port, which is the unit Levelrail deploys, so most services move without a rebuild. Whether the move saves money is a separate question, covered in [Cloud Run alternative](/cloud-run-alternative).
 
 ## 1. Inventory what Cloud Run holds
 
@@ -34,26 +33,26 @@ Collect this before touching Levelrail. Much of it lives in the Google Cloud con
 
 | Cloud Run | Levelrail equivalent | Notes |
 | --- | --- | --- |
-| Service | An app with one service | See [Deploying apps](deploying-apps.md). |
+| Service | An app with one service | See [Deploying apps](/deploying-apps). |
 | Container image from a registry | `apps create --image`, or `image:` in `app.yaml` | A private registry uses a registry credential, section 3. |
 | Revision | A deploy | Each deploy is recorded with its image, status and reason. `apps deploys list <app>` shows them. |
 | Traffic to a previous revision, or revert | `apps deploys rollback-to <app> <deploy-id>`, or `apps rollback <app> --image <tag>` | Prior images are pinned so garbage collection cannot remove a rollback target. |
-| Gradual traffic split between revisions | Canary deploys, see [Canary deploys](canary-deploys.md) | Check that page for the exact split behavior before relying on it. |
+| Gradual traffic split between revisions | Canary deploys, see [Canary deploys](/canary-deploys) | Check that page for the exact split behavior before relying on it. |
 | Min instances | `replicas` | Fixed, always running. `apps scale <app> --replicas N`. |
 | Max instances and autoscaling | None | There is no autoscaling. You choose the replica count. |
-| Concurrency per instance | No setting | The container serves as many concurrent requests as it can handle. Replicas share load through the ingress, see [Load balancing](load-balancing.md). |
+| Concurrency per instance | No setting | The container serves as many concurrent requests as it can handle. Replicas share load through the ingress, see [Load balancing](/load-balancing). |
 | CPU and memory limits | `resources.cpu` and `resources.memory` in `app.yaml` | `512Mi` and `1` style values. Cloud Run's CPU throttling when idle has no equivalent: the container always has its CPU. |
 | Env vars | Plain env, `apps env import --file` | Applied at container create. |
-| Secret Manager secrets | `apps secrets set`, envelope-encrypted and write-only | Values are never returned after save. See [Environment and secrets](environment-and-secrets.md). |
+| Secret Manager secrets | `apps secrets set`, envelope-encrypted and write-only | Values are never returned after save. See [Environment and secrets](/environment-and-secrets). |
 | Startup probe | `health.readiness` | A deploy that fails readiness does not take traffic. |
 | Liveness probe | `health.liveness` | |
-| Custom domain with a managed certificate | `domains:` in the spec, or `apps domains add`, with Caddy handling TLS | See [Domains and ingress](domains-and-ingress.md). |
+| Custom domain with a managed certificate | `domains:` in the spec, or `apps domains add`, with Caddy handling TLS | See [Domains and ingress](/domains-and-ingress). |
 | Cloud SQL | A managed database on Levelrail | You dump and restore the data yourself, section 5. |
 | Cloud Scheduler to an HTTP endpoint | Scheduled tasks: `apps scheduled-tasks create` | A command inside the container, not an HTTP call. |
-| Cloud Logging | `apps logs`, a node-local log store with search | See [Observability](observability.md). |
+| Cloud Logging | `apps logs`, a node-local log store with search | See [Observability](/observability). |
 | Cloud Monitoring request metrics | `apps requests` and `apps metrics` | Server-side request rate, errors and latency percentiles per app. |
-| IAM invoker and "allow unauthenticated" | Public by default once a domain is attached. Per-domain basic auth and an auth gate exist | See [Domains and ingress](domains-and-ingress.md). |
-| Min instances at zero (scale to zero) | Opt-in whole-app sleep: `apps sleep enable <app> --after 30m` | Not the same thing, see section 6 and [Sleep when idle](sleep-when-idle.md). |
+| IAM invoker and "allow unauthenticated" | Public by default once a domain is attached. Per-domain basic auth and an auth gate exist | See [Domains and ingress](/domains-and-ingress). |
+| Min instances at zero (scale to zero) | Opt-in whole-app sleep: `apps sleep enable <app> --after 30m` | Not the same thing, see section 6 and [Sleep when idle](/sleep-when-idle). |
 
 ## 3. Deploy the same container image
 
@@ -117,7 +116,7 @@ services:
 levelrail-cli apps create --file app.yaml --secret DATABASE_URL=postgres://...
 ```
 
-A `{ secret: true, required: true }` variable must be supplied with `--secret` at creation, otherwise the CLI refuses to create the app. The field reference is in [app.yaml reference](app-spec-reference.md), and the registry credential steps are in [Backup targets, registry credentials and app volume backups](backups-and-storage.md#registry-credentials).
+A `{ secret: true, required: true }` variable must be supplied with `--secret` at creation, otherwise the CLI refuses to create the app. The field reference is in [app.yaml reference](/app-spec-reference), and the registry credential steps are in [Backup targets, registry credentials and app volume backups](/backups-and-storage#registry-credentials).
 
 ### Image not reachable from your server
 
@@ -129,7 +128,7 @@ docker tag us-central1-docker.pkg.dev/PROJECT/REPO/web:1.4.2 registry.example.co
 docker push registry.example.com/web:1.4.2
 ```
 
-Image deploys do not rebuild anything. If you want Levelrail to build from your repo instead, that is the git flow in [Deploying apps](deploying-apps.md#from-a-git-repository).
+Image deploys do not rebuild anything. If you want Levelrail to build from your repo instead, that is the git flow in [Deploying apps](/deploying-apps#from-a-git-repository).
 
 ### Redeploy and roll back
 
@@ -162,7 +161,7 @@ levelrail-cli apps deploys rollback-to web <deploy-id> --watch
 
 ## 5. Move Cloud SQL data
 
-A managed database on Levelrail is a container on your node with its own volume, credentials and scheduled backups. It is not a hosted service with a replica in another zone. Read [Managing databases](managing-databases.md) before you commit.
+A managed database on Levelrail is a container on your node with its own volume, credentials and scheduled backups. It is not a hosted service with a replica in another zone. Read [Managing databases](/managing-databases) before you commit.
 
 1. **Create the database** with a matching major version:
 
@@ -196,9 +195,9 @@ A managed database on Levelrail is a container on your node with its own volume,
    ```
 
 5. **Rehearse the cutover.** A dump is a point in time. For a live database, plan a short write freeze: stop writes on Cloud Run, take a final dump, restore, switch. Time the restore before the real day.
-6. **Backups.** Configure a backup target and a schedule, then run a restore into a new database to prove it works. See [Backup targets](backups-and-storage.md).
+6. **Backups.** Configure a backup target and a schedule, then run a restore into a new database to prove it works. See [Backup targets](/backups-and-storage).
 
-Cloud SQL's automatic failover, read replicas and point-in-time recovery are not replicated by default here. Point-in-time restore exists for Postgres, see [Managing databases](managing-databases.md).
+Cloud SQL's automatic failover, read replicas and point-in-time recovery are not replicated by default here. Point-in-time restore exists for Postgres, see [Managing databases](/managing-databases).
 
 ## 6. Domains, jobs, logs and metrics
 
@@ -217,7 +216,7 @@ Cloud SQL's automatic failover, read replicas and point-in-time recovery are not
    ```
 
 3. Lower the DNS TTL a day ahead, then change the A and AAAA records to the server's public IP. Cloud Run domain mappings point at Google's records, so those are replaced, not edited.
-4. Certificates: with ACME enabled, issuance needs the domain to already point at the server, so expect a short window, or upload a certificate for the domain first. ACME has one recorded live run, see the [ACME verification runbook](acme-verification-runbook.md).
+4. Certificates: with ACME enabled, issuance needs the domain to already point at the server, so expect a short window, or upload a certificate for the domain first. ACME has one recorded live run, see the [ACME verification runbook](/acme-verification-runbook).
 5. Keep the Cloud Run service and its domain mapping untouched until the shadow run is clean. Restoring the old DNS records is the rollback.
 
 ### Scheduled jobs
@@ -227,7 +226,7 @@ A Cloud Scheduler job that POSTs to `/cron/cleanup` has no direct equivalent, be
 - Put the work behind a command your image already contains and schedule that: `levelrail-cli apps scheduled-tasks create web --schedule "0 3 * * *" -- ./cleanup.sh`.
 - Keep the HTTP route and call it from a command that exists in the image, for example `curl` if it is installed. Confirm the tool exists before relying on it.
 
-Run each once with `levelrail-cli apps scheduled-tasks run web <id>` and check `last_run_status`. More in [Scheduled jobs](scheduled-jobs.md). Cloud Run Jobs (batch tasks) can use the `jobs:` block, which runs a command in a fresh container of the service's image.
+Run each once with `levelrail-cli apps scheduled-tasks run web <id>` and check `last_run_status`. More in [Scheduled jobs](/scheduled-jobs). Cloud Run Jobs (batch tasks) can use the `jobs:` block, which runs a command in a fresh container of the service's image.
 
 ### Logs and metrics
 
@@ -238,7 +237,7 @@ levelrail-cli apps requests web
 levelrail-cli apps metrics web --metric cpu_percent --since 1h --step 5m
 ```
 
-Logs and metrics are stored on the node. If you have alerts or dashboards in Google Cloud Monitoring, rebuild them as Levelrail alert rules, see [Observability](observability.md). Structured JSON logs written to stdout work as they do on Cloud Run, but the field names Google uses for severity and trace are not interpreted specially.
+Logs and metrics are stored on the node. If you have alerts or dashboards in Google Cloud Monitoring, rebuild them as Levelrail alert rules, see [Observability](/observability). Structured JSON logs written to stdout work as they do on Cloud Run, but the field names Google uses for severity and trace are not interpreted specially.
 
 ## 7. Cutover and shadow run
 
@@ -253,7 +252,7 @@ Run both platforms side by side long enough for boring problems to appear. Sugge
 - [ ] A database backup ran, and a restore was rehearsed into a new database.
 - [ ] Certificate issuance finished and expiry alerting is configured.
 - [ ] Response time and error rate compare acceptably against Cloud Run, using `apps requests`.
-- [ ] A control plane backup exists, see [Control plane backup](control-plane-backup.md).
+- [ ] A control plane backup exists, see [Control plane backup](/control-plane-backup).
 - [ ] The server has an owner for patching and disk monitoring.
 
 Decommission the Cloud Run service only after this passes and you have decided what to do about each item in the next section.
@@ -264,20 +263,20 @@ Decommission the Cloud Run service only after this passes and you have decided w
 | --- | --- |
 | Scale to zero | Not automatic per request. Whole-app sleep after a quiet period exists as an opt-in, and the first request waits for a cold start of seconds to a minute. Compare that to Cloud Run's much shorter cold starts. |
 | Autoscaling | None. Replicas are fixed. A traffic spike beyond your server's capacity is a slow service, not a new instance. |
-| Pay per request billing | You pay for the server whether it is busy or idle. See [Cloud Run alternative](cloud-run-alternative.md) for when that favors you. |
+| Pay per request billing | You pay for the server whether it is busy or idle. See [Cloud Run alternative](/cloud-run-alternative) for when that favors you. |
 | Multi-zone and regional redundancy | One server is one failure domain. A multi-node setup is possible, but you build and run it. |
 | Google's global frontend and edge | Caddy serves from the nodes you run. Put a CDN in front if you need one. |
 | Managed IAM, workload identity and service-to-service auth | Your app's Google API calls need a credential you provide, such as a service account key stored as a secret. |
-| Cloud SQL operations (automated patching, HA, replicas) | You upgrade and back up the database container yourself, see [Database upgrades](database-upgrades.md). |
+| Cloud SQL operations (automated patching, HA, replicas) | You upgrade and back up the database container yourself, see [Database upgrades](/database-upgrades). |
 | Automatic OS and runtime patching | The host and Docker are yours to patch. |
-| Revision traffic percentages in the console | Canary deploys cover a subset, see [Canary deploys](canary-deploys.md). |
+| Revision traffic percentages in the console | Canary deploys cover a subset, see [Canary deploys](/canary-deploys). |
 
 ## See also
 
-- [Cloud Run alternative](cloud-run-alternative.md)
-- [Deploying and managing apps](deploying-apps.md)
-- [Domains and ingress](domains-and-ingress.md)
-- [Managing databases](managing-databases.md)
-- [app.yaml reference](app-spec-reference.md)
-- [Feature status](feature-status.md)
-- [Migrating from Vercel](migrating-from-vercel.md)
+- [Cloud Run alternative](/cloud-run-alternative)
+- [Deploying and managing apps](/deploying-apps)
+- [Domains and ingress](/domains-and-ingress)
+- [Managing databases](/managing-databases)
+- [app.yaml reference](/app-spec-reference)
+- [Feature status](/feature-status)
+- [Migrating from Vercel](/migrating-from-vercel)

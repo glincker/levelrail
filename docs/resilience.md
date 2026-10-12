@@ -1,12 +1,11 @@
 ---
+title: "Resilience: what survives a control plane crash"
 description: What actually survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed from the architecture.
 ---
 
-# Resilience: what survives a control plane crash
-
 This page answers one question precisely: if the `levelrail` process dies outright (a panic, an OOM kill, `kill -9`, the host rebooting the process), what happens to your running apps, and what happens to node agents?
 
-The answer has two halves, because the control plane is one process that owns two different things: the reconcile loop that manages containers, and an embedded Caddy instance that routes traffic to them (see [architecture.md](architecture.md) and ADR 005). Those two halves fail differently, and this page measures both rather than assuming either.
+The answer has two halves, because the control plane is one process that owns two different things: the reconcile loop that manages containers, and an embedded Caddy instance that routes traffic to them (see [architecture.md](/architecture) and ADR 005). Those two halves fail differently, and this page measures both rather than assuming either.
 
 Everything below was measured against a real control plane binary, real Docker containers, a real node agent process, and a real `SIGKILL`.
 
@@ -49,7 +48,7 @@ Concretely: from the moment the control plane process exits to the moment a new 
 
 This is a real outage window, not a theoretical one, and its length is bounded by how fast you get the control plane process back up (a process supervisor restarting it in seconds, versus a human noticing and running `docker start` by hand). It is not bounded by anything the reconciler does, because the reconciler cannot run either while the process is down.
 
-**In-flight reconcile work is lost, not resumed mid-step.** If a deploy, a build, or a container removal was in progress when the process died, that specific in-flight operation does not continue from where it left off. It does not need to: every controller in this codebase is level-triggered and idempotent (see [architecture.md](architecture.md#control-plane)), so a restart re-derives what to do from scratch by diffing desired state against whatever Docker actually reports, the same way it would on any other reconcile pass.
+**In-flight reconcile work is lost, not resumed mid-step.** If a deploy, a build, or a container removal was in progress when the process died, that specific in-flight operation does not continue from where it left off. It does not need to: every controller in this codebase is level-triggered and idempotent (see [architecture.md](/architecture#control-plane)), so a restart re-derives what to do from scratch by diffing desired state against whatever Docker actually reports, the same way it would on any other reconcile pass.
 
 ## What happens when it restarts
 
@@ -73,16 +72,16 @@ Measured locally on an Apple silicon laptop (real Docker, a real `traefik/whoami
 
 Where the windows cannot be removed:
 
-- **Without socket activation a restart still refuses connections** for the length of the restart. It is on by default for new installs. An install that predates it needs `LEVELRAIL_SOCKET_ACTIVATION=1 ./install.sh upgrade` ([how](domains-and-ingress.md#surviving-a-control-plane-restart)).
+- **Without socket activation a restart still refuses connections** for the length of the restart. It is on by default for new installs. An install that predates it needs `LEVELRAIL_SOCKET_ACTIVATION=1 ./install.sh upgrade` ([how](/domains-and-ingress#surviving-a-control-plane-restart)).
 - **Even with it, the instant the old process stops, a handful of TLS handshakes already in progress can fail** (most likely Caddy unloading its certificate cache while the listener is still draining, which we did not confirm). Browsers retry these; a script without retries may see an error.
 - **A killed single-replica container still has a window** of about the reconciler's reaction time (a few hundred milliseconds locally, up to a second on a small server) in which requests get the friendly `503`. Retrying the same address cannot help because the replacement usually gets a new port. Use two replicas for a service that must not drop requests.
 - **`recreate` deploys are down by design** while the old container stops and the new one starts. Visitors get the styled `503` and a page that reloads itself, not a dead connection or a TLS error.
-- **A pinned host port** still needs a stop-then-start swap, see [deploy safety](deploy-safety.md#pinned-host-ports).
+- **A pinned host port** still needs a stop-then-start swap, see [deploy safety](/deploy-safety#pinned-host-ports).
 - **A control plane crash** (not a restart) with socket activation queues connections until `Restart=on-failure` brings it back, 5 seconds by default (`RestartSec`). Connections wait that long and may time out at the client.
 
 ## What this page does not cover
 
-- **Data loss.** This page is about a process crash where the disk is intact. If the disk holding `levelrail.db` is lost or corrupted, see [disaster-recovery.md](disaster-recovery.md) for off-box backups and the master key escrow you need to recover at all.
+- **Data loss.** This page is about a process crash where the disk is intact. If the disk holding `levelrail.db` is lost or corrupted, see [disaster-recovery.md](/disaster-recovery) for off-box backups and the master key escrow you need to recover at all.
 - **Multiple control plane replicas or an external load balancer in front of the control plane itself.** There is exactly one control plane process today (single control plane, per the locked architecture); there is no failover between two control planes to measure, because there is nothing to fail over to yet.
 - **A crash during the brief window `caddy.Load` is applying a new config.** This page measures a crash of an already-converged, steady-state system, which is the common case; a crash mid-config-apply is a narrower race not covered by the tests above.
 - **Multi-replica app failover during the ingress outage window.** If an app has more than one replica, Caddy stops routing to all of them equally during the outage window described above; this page does not measure whether one replica coming back before another changes anything, because ingress is down for all of them regardless until the control plane restarts.
@@ -110,7 +109,7 @@ Not measured: Docker daemon restart mid-run and disk pressure (the shared test h
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Disaster recovery" href="/disaster-recovery">
 
 What to do when the disk or the whole machine is lost.

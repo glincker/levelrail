@@ -1,10 +1,9 @@
 ---
+title: "Importing apps"
 description: Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
 ---
 
-# Importing apps
-
-For a repository, the [New app wizard](new-app-wizard.md) reads the files and pre-fills the build, port, health path, variables and databases for you.
+For a repository, the [New app wizard](/new-app-wizard) reads the files and pre-fills the build, port, health path, variables and databases for you.
 
 The "New app" dialog opens with one input, "Import anything". Paste or upload what you already have and Levelrail classifies it and shows a deployment plan preview before anything is created. The same flow is available from the CLI (`levelrail-cli import`), the HTTP API (`POST /api/v1/imports/plan`) and the MCP server (`plan_import`).
 
@@ -84,13 +83,13 @@ Flags that are not supported are listed as warnings and ignored, never dropped s
 
 ## Run an import
 
-<Tabs :items="['UI','CLI','API']">
-<Tab value="UI">
+<Tabs>
+<Tab title="UI">
 
 Open New app, paste into "Import anything" (or upload a compose file or Dockerfile), and choose Preview plan. The plan shows the source, the build method with its reason, an editable app name and container port, an env table with Required and Secret indicators and inline value inputs, volumes, a domain suggestion and warnings. Deploy stays disabled until every required variable has a value. Deploying a repo opens the live build log. The template, image, git and compose cards below the input remain available.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 # preview only, creates nothing
@@ -109,7 +108,7 @@ levelrail-cli import nginx:1.27 --json
 When required variables have no value and no terminal is attached, `--deploy` fails and lists them. Other flags: `--port`, `--ref`.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 `POST /api/v1/imports/plan` needs the write ability and returns the plan JSON. The body is `{"text": "...", "kind": "repo|docker_run|image|compose|dockerfile", "ref": "", "name": "", "port": 0, "env": {}}`; only `text` is required. Supplying `env` values satisfies required variables and injects them into a generated compose file. The `plan_import` MCP tool wraps the same call, is read-only, and its result carries repository text that should be treated as untrusted data.
 

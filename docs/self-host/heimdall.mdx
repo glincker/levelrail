@@ -1,0 +1,49 @@
+---
+title: "Self-host Heimdall with Docker"
+sidebarTitle: "Heimdall"
+description: "An application dashboard that gathers links to all your self-hosted services on one start page."
+---
+
+An application dashboard that gathers links to all your self-hosted services on one start page.
+
+This page describes the Levelrail template for Heimdall (Dashboard). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/linuxserver/Heimdall.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `heimdall` | `lscr.io/linuxserver/heimdall:2.6.3` | 80 | `heimdall_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `heimdall` | `PGID` | Preset in the template |
+| `heimdall` | `PUID` | Preset in the template |
+| `heimdall` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Heimdall with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Heimdall. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy heimdall --name my-heimdall
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Dashboard templates
+
+- [Dashy](/self-host/dashy)
+- [Flame](/self-host/flame)
+- [Glance](/self-host/glance)
+- [Homarr](/self-host/homarr)
+- [Homepage](/self-host/homepage)
+
+All templates are listed in the [self-host gallery](/self-host/index).

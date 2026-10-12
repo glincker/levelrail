@@ -1,21 +1,17 @@
 ---
+title: "Host firewall"
 description: Manage allow and deny rules for the control plane host's ufw firewall from the dashboard, CLI or API, how the reconciler applies them, and the lockout guard that refuses a rule on a port the platform needs.
 ---
-
-# Host firewall
 
 Levelrail can manage a set of allow and deny rules for the **control plane host's own `ufw` firewall**. You declare rules as records (a port, a protocol, an optional source, an action), and a reconciler converges `ufw` to match them. It is the same declarative model as the rest of the platform: edit the record, and the host follows.
 
 This is opt-in and narrow by design. If you never add a rule, nothing is changed on the host.
-
-<InlineToc default-open />
-
 ## What it does and does not touch
 
-- **Only tagged rules.** Every rule the platform creates carries a `ufw` comment prefix derived from the brand short name (`levelrail:` by default, see [White-labeling](white-labeling.md)). Sync only adds and removes rules carrying that prefix. Rules you created yourself with `ufw` are never changed or deleted.
+- **Only tagged rules.** Every rule the platform creates carries a `ufw` comment prefix derived from the brand short name (`levelrail:` by default, see [White-labeling](/white-labeling)). Sync only adds and removes rules carrying that prefix. Rules you created yourself with `ufw` are never changed or deleted.
 - **Enables the firewall only when you ask.** Nothing is switched on automatically. Use **Settings, Firewall, Turn on firewall** (or `levelrail-cli firewall enable`) and the platform allows SSH first, then the control plane ports and HTTP/3, and only then runs `ufw --force enable`. It never changes the default policy by itself, and if any allow step fails, the firewall stays off. If `ufw` is installed but inactive, rules are stored but not applied until you turn it on.
 - **Only `ufw`, only the local host.** If `ufw` is not installed (you use firewalld, nftables, iptables or a cloud security group), nothing is applied and the reconciler reports that as informational, not a failure. Rules are stored for the control plane host. Per-node rules for remote nodes are not supported yet, and a rule pinned to a remote node would be skipped and logged.
-- **Not the installer's firewall step.** `install.sh` can allow SSH, 80 and 443 once with `LEVELRAIL_CONFIGURE_UFW=1` (see [Installing](installing.md)). That is a one-time script action. This page covers the ongoing, managed rules.
+- **Not the installer's firewall step.** `install.sh` can allow SSH, 80 and 443 once with `LEVELRAIL_CONFIGURE_UFW=1` (see [Installing](/installing)). That is a one-time script action. This page covers the ongoing, managed rules.
 
 ## The lockout guard
 
@@ -45,13 +41,13 @@ The API is `GET /api/v1/firewall/host`, `POST /api/v1/firewall/host/enable` and 
 
 ## Add and remove rules
 
-<Tabs :items="['Dashboard', 'CLI', 'API']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open **Settings**, then **Firewall**. The page lists each rule with its action, port, protocol, source and label, and shows the host's firewall preflight result from the system doctor. Use the add action to create a rule. Creating a deny rule, or an allow rule restricted to a source, shows a confirmation that explains it will close or narrow a port.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli firewall list
@@ -63,7 +59,7 @@ levelrail-cli firewall delete <id>
 `allow` and `deny` take `--port` (required, 1 to 65535), `--protocol` (`tcp` or `udp`, default `tcp`), `--source-cidr` (default: any source) and `--label`. `delete` takes the rule ID printed by `list` and `allow` or `deny`. All subcommands accept the standard `--token`, `--api-url`, `--profile`, `--json`, `--output` and `--query` flags.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 | Method | Path | Notes |
 | --- | --- | --- |
@@ -93,11 +89,11 @@ The reconciler reports one of these outcomes as the firewall controller's status
 
 ## Published container ports
 
-`ufw` does not cover ports Docker publishes: they skip the INPUT chain. The [Exposure audit](exposure-audit.md) lists which of your containers are reachable from outside and can restrict them with DOCKER-USER rules.
+`ufw` does not cover ports Docker publishes: they skip the INPUT chain. The [Exposure audit](/exposure-audit) lists which of your containers are reachable from outside and can restrict them with DOCKER-USER rules.
 
 ## Related
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Security overview" href="/security">
 
 Fresh-box hardening checklist and the doctor's firewall check.

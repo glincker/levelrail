@@ -1,8 +1,7 @@
 ---
+title: "Build node routing"
 description: Which node a deploy's build runs on, how to mark a node build-only, and what to do when a single node is under sustained load.
 ---
-
-# Build node routing
 
 On a single node, every build runs locally, alongside the control plane and every running app. Nothing on this page needs deciding until you add a second node.
 
@@ -54,7 +53,7 @@ levelrail-cli nodes workloads <primary-node-id> --accepts-app=true --accepts-bui
 </Step>
 </Steps>
 
-A node created with `nodes provision --role build` or `nodes ssh-provision --role build` is set up as a build node when it enrolls. See [Node provisioning](node-provisioning.md).
+A node created with `nodes provision --role build` or `nodes ssh-provision --role build` is set up as a build node when it enrolls. See [Node provisioning](/node-provisioning).
 
 ## The Nodes page suggestion
 
@@ -62,5 +61,5 @@ On a single-node install, the Nodes page can suggest adding a second node when t
 
 ## See also
 
-- [Multi-node](multi-node.md): enrolling nodes and managing placement.
-- [Observability](observability.md): the node alerts behind the suggestion.
+- [Multi-node](/multi-node): enrolling nodes and managing placement.
+- [Observability](/observability): the node alerts behind the suggestion.

@@ -1,8 +1,7 @@
 ---
+title: "Public status page"
 description: An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
 ---
-
-# Public status page
 
 The control plane can serve a read-only status page for your users. It is off until you turn it on, it lists only the components you choose under a public name you choose, and it never shows anything else.
 
@@ -26,13 +25,13 @@ Incident and maintenance text is escaped. Only paragraphs, line breaks, `- ` lis
 
 ![Levelrail status page settings with the page switched off, and a title and custom domain field](assets/screenshots/status-page-settings.png)
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open **Settings, Status page**, switch the page on, set a title and description, and add components.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli status-page set --enable --title "Acme status" --description "Live service health"
@@ -107,7 +106,7 @@ The `get_status_page` and `list_status_incidents` MCP tools are read only. Publi
 
 ## Related
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Observability" href="/observability">
 
 Alerts and metrics that run alongside the status page.

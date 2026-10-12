@@ -18,7 +18,7 @@ The control plane records history itself, at boot. It compares the running versi
 
 ## Self-upgrade attempts
 
-Upgrades run by the safe self-update (Settings > Updates > Upgrade this server, `levelrail-cli upgrade --apply`, `levelrail self-upgrade`) are also recorded as attempts with a step timeline, including ones that were refused or rolled back, which never reach this history because the old version kept running. `levelrail-cli upgrade --attempts` lists them, API `GET /api/v1/updates/self-upgrade/attempts`. The version transition itself still appears here with method `self-upgrade`. See [Upgrade safely](upgrade-safely.md).
+Upgrades run by the safe self-update (Settings > Updates > Upgrade this server, `levelrail-cli upgrade --apply`, `levelrail self-upgrade`) are also recorded as attempts with a step timeline, including ones that were refused or rolled back, which never reach this history because the old version kept running. `levelrail-cli upgrade --attempts` lists them, API `GET /api/v1/updates/self-upgrade/attempts`. The version transition itself still appears here with method `self-upgrade`. See [Upgrade safely](/upgrade-safely).
 
 ## Who did it
 

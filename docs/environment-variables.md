@@ -1,13 +1,9 @@
 ---
+title: "Environment variables"
 description: Reference for operator-facing APP_ environment variables not covered on feature pages, with defaults, units, and which component reads each one.
 ---
 
-# Environment variables
-
-This page lists the operator-facing `APP_*` environment variables that are not already explained on a feature page. Each row was checked against the code that reads it, and each default is the fallback in that code. Variables that a feature page already documents (for example the `APP_INGRESS_*` hardening limits in [Domains and ingress](domains-and-ingress.md#edge-limits-client-ips-and-failover) or the `APP_PIPELINE_*` settings in [Pipelines](pipelines.md)) stay on those pages. Branding variables (`APP_BRAND_*`) are covered in [White-labeling](white-labeling.md).
-
-<InlineToc default-open />
-
+This page lists the operator-facing `APP_*` environment variables that are not already explained on a feature page. Each row was checked against the code that reads it, and each default is the fallback in that code. Variables that a feature page already documents (for example the `APP_INGRESS_*` hardening limits in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover) or the `APP_PIPELINE_*` settings in [Pipelines](/pipelines)) stay on those pages. Branding variables (`APP_BRAND_*`) are covered in [White-labeling](/white-labeling).
 ## How to set these
 
 Every variable on this page is read by a process at startup, so a change takes effect after a restart.
@@ -30,16 +26,16 @@ Every variable on this page is read by a process at startup, so a change takes e
   sudo systemctl restart levelrail
   ```
 
-  This is the same method [Installing](installing.md) uses for `APP_ALLOW_INSECURE_LOGIN`.
-- **Docker or Compose:** pass them with `-e NAME=value` or an `environment:` block, as in the examples in [Docker](docker.md).
-- **Node agent:** variables marked "agent" below are read by `levelrail-agent`. Set them on the agent's container or service, not on the control plane. See [Docker](docker.md) and [Node provisioning](node-provisioning.md).
+  This is the same method [Installing](/installing) uses for `APP_ALLOW_INSECURE_LOGIN`.
+- **Docker or Compose:** pass them with `-e NAME=value` or an `environment:` block, as in the examples in [Docker](/docker).
+- **Node agent:** variables marked "agent" below are read by `levelrail-agent`. Set them on the agent's container or service, not on the control plane. See [Docker](/docker) and [Node provisioning](/node-provisioning).
 - **Command line client:** variables marked "CLI" are read by `levelrail-cli` in the shell where you run it.
 
 Duration values use Go duration syntax such as `30s`, `5m`, `1h30m`. Most variables fall back to their default when the value is unset or invalid; the exceptions are called out in the tables.
 
 ## Builds and build cache
 
-The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache. See [Build node routing](build-node-routing.md) for dedicated build nodes.
+The control plane builds images with BuildKit. By default each build starts from whatever cache BuildKit already holds. These variables add a shared cache. See [Build node routing](/build-node-routing) for dedicated build nodes.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -49,7 +45,7 @@ The control plane builds images with BuildKit. By default each build starts from
 
 ## Git webhook (single repository mode)
 
-These variables turn on the control plane's own `POST /webhook` receiver for one repository. They are separate from the per-app webhooks and GitHub App flow in [Git integrations](git-integrations.md). The three required variables must all be set. If any is missing, the control plane still starts and logs a `webhook not configured` warning, and only this receiver is unavailable.
+These variables turn on the control plane's own `POST /webhook` receiver for one repository. They are separate from the per-app webhooks and GitHub App flow in [Git integrations](/git-integrations). The three required variables must all be set. If any is missing, the control plane still starts and logs a `webhook not configured` warning, and only this receiver is unavailable.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -57,7 +53,7 @@ These variables turn on the control plane's own `POST /webhook` receiver for one
 | `APP_WEBHOOK_SECRET` | none, required | Shared secret used to verify the `X-Hub-Signature-256` header on incoming pushes. Control plane. |
 | `APP_IMAGE_REPO` | none, required | Image repository that built images are tagged into. Control plane. |
 | `APP_GIT_BRANCH` | `main` | Only pushes to this branch trigger a deploy. Control plane. |
-| `APP_SPEC_DIR` | `.` (the process working directory) | Directory searched for the app spec file. See [App spec reference](app-spec-reference.md). Control plane. |
+| `APP_SPEC_DIR` | `.` (the process working directory) | Directory searched for the app spec file. See [App spec reference](/app-spec-reference). Control plane. |
 | `APP_SERVICE_NAME` | the only service in the spec | Which service from the spec to deploy. Required when the spec declares more than one service. Control plane. |
 
 ## GitHub App manifest
@@ -68,7 +64,7 @@ These variables turn on the control plane's own `POST /webhook` receiver for one
 
 ## Pipelines and OIDC
 
-The pipeline engine's own tuning variables are listed in [Pipelines](pipelines.md). These extra ones cover the scheduler, commit status reporting, and the OIDC token service described in [Pipelines OIDC](pipelines-oidc.md). Non-positive or unparseable values for the duration variables here fall back to the default without a warning.
+The pipeline engine's own tuning variables are listed in [Pipelines](/pipelines). These extra ones cover the scheduler, commit status reporting, and the OIDC token service described in [Pipelines OIDC](/pipelines-oidc). Non-positive or unparseable values for the duration variables here fall back to the default without a warning.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -84,16 +80,16 @@ Each of these is how often a background loop wakes to check for work. Standard f
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_BACKUP_SCHEDULER_INTERVAL` | `1m` | How often the database backup scheduler checks for backups whose cron schedule is due. See [Backups and storage](backups-and-storage.md). Control plane. |
+| `APP_BACKUP_SCHEDULER_INTERVAL` | `1m` | How often the database backup scheduler checks for backups whose cron schedule is due. See [Backups and storage](/backups-and-storage). Control plane. |
 | `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL` | `1m` | How often the scheduler checks for scheduled tasks that are due. Control plane. |
-| `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` | `5m` | How often pending deploy approvals are checked against their 24 hour expiry. See [Chat deploy approvals](chat-deploy-approvals.md). Control plane. |
+| `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` | `5m` | How often pending deploy approvals are checked against their 24 hour expiry. See [Chat deploy approvals](/chat-deploy-approvals). Control plane. |
 | `APP_RESOURCE_RECOMMENDATION_LOOKBACK` | `168h` (7 days) | History window used when computing app resource recommendations. Control plane. |
 
 For the invalid-value behavior of the first three, see the note at the end of this page.
 
 ## Control plane off-box backups
 
-These tune the scheduled off-box copy of the control plane's own state and its restore drills, described in [Control plane backup](control-plane-backup.md) and [Disaster recovery](disaster-recovery.md). Values that are unset, unparseable, or not greater than zero use the default. Control plane.
+These tune the scheduled off-box copy of the control plane's own state and its restore drills, described in [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery). Values that are unset, unparseable, or not greater than zero use the default. Control plane.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -104,11 +100,11 @@ These tune the scheduled off-box copy of the control plane's own state and its r
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](managing-databases.md#point-in-time-restore-postgres-only). |
+| `APP_PITR_WAL_SEGMENT_BYTES` | `16777216` (16 MiB) | WAL segment size, in bytes, that the restore path assumes when it maps a base backup's start position to a segment. Set it only if the Postgres server was initialized with a non-default WAL segment size. Positive integer. Control plane. See [Managing databases](/managing-databases#point-in-time-restore-postgres-only). |
 
 ## Log archive
 
-The archiver's other settings are on [Log archive](log-archive.md). These two bound how much one run does. Positive values only; anything else uses the default. Control plane.
+The archiver's other settings are on [Log archive](/log-archive). These two bound how much one run does. Positive values only; anything else uses the default. Control plane.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -117,7 +113,7 @@ The archiver's other settings are on [Log archive](log-archive.md). These two bo
 
 ## Data export
 
-How these are used is on [Data export](data-export.md). Positive values only; anything else uses the default. Control plane.
+How these are used is on [Data export](/data-export). Positive values only; anything else uses the default. Control plane.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -141,12 +137,12 @@ How these are used is on [Data export](data-export.md). Positive values only; an
 
 ## Ingress
 
-The edge hardening limits are in [Domains and ingress](domains-and-ingress.md#edge-limits-client-ips-and-failover). These two are not listed there. Control plane.
+The edge hardening limits are in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover). These two are not listed there. Control plane.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_INGRESS_RETRY_INTERVAL` | `250ms` | Pause between retries when a proxied backend cannot be reached during the `APP_INGRESS_RETRY_WINDOW`. A negative or unparseable value is a startup error, not a silent fallback. |
-| `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](domains-and-ingress.md#surviving-a-control-plane-restart). |
+| `APP_INGRESS_SOCKET_ACTIVATION` | `auto` | Controls use of sockets inherited from systemd. `auto` uses them if present. `true` (also `1`, `on`) makes missing inherited sockets a startup error. `false` (also `0`, `off`) ignores them. See [Surviving a control plane restart](/domains-and-ingress#surviving-a-control-plane-restart). |
 
 ## Certificates and request thresholds
 
@@ -162,12 +158,12 @@ For all of these, a value that does not parse logs a warning and uses the defaul
 
 ## Doctor and diagnosis
 
-These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys. See [Troubleshooting](troubleshooting.md) and [Deploy failures](deploy-failures.md).
+These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys. See [Troubleshooting](/troubleshooting) and [Deploy failures](/deploy-failures).
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `APP_DOCTOR_DISK_WARNING_BYTES` | `1073741824` (1 GiB) | Free disk space below which the `disk_space` check warns. Integer bytes. Control plane. |
-| `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `365` | Age of the master key, in whole days, after which doctor suggests rotating it. See [Master key rotation](master-key-rotation.md). Control plane. |
+| `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `365` | Age of the master key, in whole days, after which doctor suggests rotating it. See [Master key rotation](/master-key-rotation). Control plane. |
 | `APP_DOCTOR_NETWORK_TIMEOUT` | `5s` | Shared time limit for the network checks in the doctor endpoint. Control plane. |
 | `APP_PROXY_VERIFY_TIMEOUT` | `8s` | Time limit for each managed proxy route check (TLS handshake and request through the proxy) and for the DNS checks of the proxy setup checklist. Control plane. |
 | `APP_DOCTOR_PUBLIC_IP_ENDPOINT` | `https://api.ipify.org` | URL that returns the caller's public IP as plain text, used by the `public_ip` doctor check and by deploy preflight. Control plane. |
@@ -185,13 +181,13 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_SSH_NODE_PROVISION_TIMEOUT` | `10m` | Time limit for installing the agent over SSH, and how long the control plane waits for the new node to enroll before reporting the provision as failed. Zero or invalid values use the default. Control plane. See [Node provisioning](node-provisioning.md). |
+| `APP_SSH_NODE_PROVISION_TIMEOUT` | `10m` | Time limit for installing the agent over SSH, and how long the control plane waits for the new node to enroll before reporting the provision as failed. Zero or invalid values use the default. Control plane. See [Node provisioning](/node-provisioning). |
 
 ## Mesh networking
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_MESH_KEY_FILE` | `levelrail-agent-mesh.key` in the same directory as the agent identity file | Path where the agent stores its WireGuard private key. Only used when `APP_MESH_ENABLED=1`. Agent. See [Network topology](network-topology.md). |
+| `APP_MESH_KEY_FILE` | `levelrail-agent-mesh.key` in the same directory as the agent identity file | Path where the agent stores its WireGuard private key. Only used when `APP_MESH_ENABLED=1`. Agent. See [Network topology](/network-topology). |
 
 ## Behavior to know about
 

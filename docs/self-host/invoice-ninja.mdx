@@ -1,0 +1,59 @@
+---
+title: "Self-host Invoice Ninja with Docker"
+sidebarTitle: "Invoice Ninja"
+description: "Self-hosted invoicing, quotes, and payments for freelancers and small businesses."
+---
+
+Self-hosted invoicing, quotes, and payments for freelancers and small businesses.
+
+This page describes the Levelrail template for Invoice Ninja (Finance). It deploys the services below as one Docker Compose app on your own server. Project site: https://invoiceninja.github.io.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11` | none | `invoiceninja_db_data -&#62; /var/lib/mysql` |
+| `invoiceninja` | `invoiceninja/invoiceninja:5` | 80 | `invoiceninja_data -&#62; /var/www/app/storage` |
+| `redis` | `redis:7.4-alpine` | none | `invoiceninja_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MYSQL_DATABASE` | Preset in the template |
+| `db` | `MYSQL_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_USER` | Preset in the template |
+| `invoiceninja` | `APP_KEY` | Generated at deploy |
+| `invoiceninja` | `APP_URL` | Preset in the template |
+| `invoiceninja` | `DB_DATABASE` | Preset in the template |
+| `invoiceninja` | `DB_HOST` | Preset in the template |
+| `invoiceninja` | `DB_PASSWORD` | Generated at deploy |
+| `invoiceninja` | `DB_USERNAME` | Preset in the template |
+| `invoiceninja` | `REDIS_HOST` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Invoice Ninja with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Invoice Ninja. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy invoice-ninja --name my-invoice-ninja
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Finance templates
+
+- [Actual Budget](/self-host/actual-budget)
+- [Actual Budget](/self-host/actualbudget)
+- [Budge](/self-host/budge)
+- [Dolibarr](/self-host/dolibarr)
+- [Firefly III](/self-host/firefly-iii)
+
+All templates are listed in the [self-host gallery](/self-host/index).

@@ -1,0 +1,47 @@
+---
+title: "Self-host Pi-hole with Docker"
+sidebarTitle: "Pi-hole"
+description: "Network-wide ad blocking that works as a DNS sinkhole for your whole network."
+---
+
+Network-wide ad blocking that works as a DNS sinkhole for your whole network.
+
+This page describes the Levelrail template for Pi-hole (Infrastructure). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.pi-hole.net.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `pihole` | `pihole/pihole:2024.07.0` | 80 | `pihole_data -&#62; /etc/pihole` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `pihole` | `FTLCONF_webserver_api_password` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Pi-hole with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Pi-hole. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy pi-hole --name my-pi-hole
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Infrastructure templates
+
+- [AdGuard Home](/self-host/adguard-home)
+- [Cloudflare DDNS](/self-host/cloudflare-ddns)
+- [Elasticsearch](/self-host/elasticsearch)
+- [NetBox](/self-host/netbox)
+- [Nginx Proxy Manager](/self-host/nginx-proxy-manager)
+
+All templates are listed in the [self-host gallery](/self-host/index).

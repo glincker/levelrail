@@ -1,8 +1,7 @@
 ---
+title: "Integrations"
 description: Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
 ---
-
-# Integrations
 
 An integration is a curated third-party tool you can attach to an app from a small catalog. Attaching one stores the field values it needs (an API key, a DSN) through the same envelope encryption every app secret uses, and injects the tool's env vars into the app's container at its next build or deploy.
 
@@ -10,13 +9,13 @@ This is env-var injection only: there is no webhook or OAuth wiring with the ven
 
 ## Attaching an integration
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open an app, go to its **Integrations** tab, and use **Attach integration** under **Third-party tools**. Search the catalog, pick a tool, fill in its required fields, and save. The values you type are never shown again after saving.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```sh
 levelrail-cli apps integrations catalog

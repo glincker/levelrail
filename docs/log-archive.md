@@ -1,8 +1,7 @@
 ---
+title: "Log archive"
 description: Ship node-local container logs to a connected storage destination as gzip-compressed NDJSON, on a schedule or on demand, and retrieve them by CLI or API.
 ---
-
-# Log archive
 
 Container logs are stored node-local (see [observability](/observability)) with a bounded retention window. Log archive ships them to a [storage destination](/object-storage) as gzip-compressed NDJSON, on a schedule you set per app or once for every app, so logs outlive the node-local store without needing a third-party log shipper.
 
@@ -37,13 +36,13 @@ Set "Keep for (days)" on a policy (0 means forever) to have the archiver delete 
 
 ## Manage policies
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Use an app's **Logs, Archive** tab for a per-app policy, or **Settings, Storage destinations** for the global policy that covers every app.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli logs archive set --target <id> --app web --interval 1h --retention-days 30
@@ -91,7 +90,7 @@ REST routes live under `/api/v1/log-archive` (see the [API reference](/api-refer
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Object storage" href="/object-storage">
 
 Connect the bucket that archived logs are written to.

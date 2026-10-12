@@ -1,8 +1,7 @@
 ---
+title: "Shared Go kit"
 description: The shared Go kit, a nested standard-library-only module of small infrastructure packages (SSRF-safe HTTP, cron parsing, health probes, log parsing, firewall sync and more) that Levelrail itself uses, and how to import it.
 ---
-
-# Shared Go kit
 
 `kit` is a Go module that lives in this repository under `./kit`. It holds the small, self-contained building blocks that the control plane and node agent share, packaged so other Go programs can import them too. Every package uses the Go standard library only, and the module has no third-party requirements.
 
@@ -10,7 +9,7 @@ Import a single package rather than the whole module, for example `github.com/GL
 
 ## Install
 
-<CopyCommand command="go get github.com/GLINCKER/levelrail/kit@latest" />
+`go get github.com/GLINCKER/levelrail/kit@latest`
 
 The module requires Go 1.24 or newer.
 
@@ -19,7 +18,7 @@ The module requires Go 1.24 or newer.
 - The module is **v0.x**. The API may change between minor versions and there is no compatibility promise yet. Pin an exact version if you depend on it.
 - The module lives in this repository as a nested module with its own `go.mod`, so it is versioned separately from the platform. Releases are tagged `kit/vX.Y.Z`, which is the tag form Go uses for a module in a subdirectory.
 - Changes to `kit/` go through the same pull request flow as the rest of the repository (see `CONTRIBUTING.md`). The module is Apache-2.0 licensed.
-- Source for the kit never names the product. A repository check (`scripts/check-brand-strings.sh`) scans `kit/**/*.go` for brand strings, in line with the platform's [rebrandability rule](white-labeling.md).
+- Source for the kit never names the product. A repository check (`scripts/check-brand-strings.sh`) scans `kit/**/*.go` for brand strings, in line with the platform's [rebrandability rule](/white-labeling).
 
 ## Packages
 
@@ -61,7 +60,7 @@ The module requires Go 1.24 or newer.
 
 Most packages ship runnable `Example` functions next to their code (in each package's `example_test.go`), which `go doc` and pkg.go.dev render. Start there for exact signatures.
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="White-labeling" href="/white-labeling">
 
 How the platform derives names, prefixes and the update repository from one brand file.

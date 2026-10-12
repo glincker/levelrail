@@ -1,0 +1,56 @@
+---
+title: "Self-host New API with Docker"
+sidebarTitle: "New API"
+description: "An LLM gateway and AI asset management system that unifies many model providers."
+---
+
+An LLM gateway and AI asset management system that unifies many model providers.
+
+This page describes the Levelrail template for New API (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.newapi.pro/en/getting-started/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `new-api` | `calciumion/new-api:v0.9.2.0` | 3000 | none |
+| `postgres` | `postgres:16-alpine` | none | `postgres_data -&#62; /var/lib/postgresql/data` |
+| `redis` | `redis:7-alpine` | none | `redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `new-api` | `ERROR_LOG_ENABLED` | Preset in the template |
+| `new-api` | `REDIS_CONN_STRING` | Preset in the template |
+| `new-api` | `SESSION_SECRET` | Generated at deploy |
+| `new-api` | `SQL_DSN` | Generated at deploy |
+| `new-api` | `TZ` | Preset in the template |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy New API with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select New API. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy new-api --name my-new-api
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host/index).

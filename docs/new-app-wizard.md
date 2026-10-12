@@ -1,8 +1,7 @@
 ---
+title: "New app wizard"
 description: How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
 ---
-
-# New app wizard
 
 The New app page (`/apps/new`) turns a repository into a running app with suggestions instead of blank forms. It reads the repository, proposes every setting with the evidence behind it, and creates nothing until you press Deploy. The same analysis is available from the CLI and the HTTP API.
 

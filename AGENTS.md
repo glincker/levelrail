@@ -12,7 +12,7 @@ Levelrail is a self-hosted deployment platform: one Go control plane, one Go nod
 | `cmd/levelrail-mcp` | MCP server over the same HTTP API |
 | `internal/` | Everything else: `api`, `reconcile`, `store`, `docker`, `build`, `ingress`, `agent`, `catalog`, `mcptools`, `brand` |
 | `web/` | Vite, React, TypeScript, Tailwind dashboard |
-| `docs/` | VitePress site, served at levelrail.com |
+| `docs/` | Mintlify docs (`docs/docs.json`); preview with `cd docs && npx mint dev` |
 | `adr/` | Architecture decision records. Read the relevant one before changing a locked decision |
 | `scripts/` | Hooks, test runners, generators, `screenshots/capture.sh` |
 

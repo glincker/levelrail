@@ -1,8 +1,7 @@
 ---
+title: "Rolling back a release"
 description: "How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server."
 ---
-
-# Rolling back a release
 
 Settings > Updates lists the last five releases for a channel (stable, beta, or
 both) with a compatibility verdict against your database. Picking one shows

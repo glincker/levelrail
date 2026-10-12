@@ -1,0 +1,52 @@
+---
+title: "Self-host ByteStash with Docker"
+sidebarTitle: "ByteStash"
+description: "A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants."
+---
+
+A fast, self-hosted code snippet manager with syntax highlighting, tagging, and a built-in MCP endpoint for AI assistants.
+
+This page describes the Levelrail template for ByteStash (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/jordan-dalby/ByteStash.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `bytestash` | `ghcr.io/jordan-dalby/bytestash:1.5.13` | 5000 | `bytestash_data -&#62; /data/snippets` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `bytestash` | `ALLOW_NEW_ACCOUNTS` | Preset in the template |
+| `bytestash` | `BASE_PATH` | Preset in the template |
+| `bytestash` | `DISABLE_ACCOUNTS` | Preset in the template |
+| `bytestash` | `DISABLE_INTERNAL_ACCOUNTS` | Preset in the template |
+| `bytestash` | `OIDC_ENABLED` | Preset in the template |
+| `bytestash` | `TOKEN_EXPIRY` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy ByteStash with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select ByteStash. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy bytestash --name my-bytestash
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [code-server](/self-host/code-server)
+- [ConvertX](/self-host/convertx)
+
+All templates are listed in the [self-host gallery](/self-host/index).

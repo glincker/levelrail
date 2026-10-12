@@ -1,8 +1,7 @@
 ---
+title: "External databases"
 description: Connect a database that already runs somewhere else, or adopt a running container, without moving or changing any data, and point apps at it.
 ---
-
-# External databases
 
 An external database is one Levelrail connects to but does not run. Use it when
 a database already holds real data and you want apps to use it where it is:
@@ -20,7 +19,7 @@ You can move the data into a managed database later, or never.
   version change, major upgrade, backups, public access) are not offered.
 - Injects the same connection env into apps as a managed database does
   (`host`, `port`, `username`, `password`, `database`, `url`).
-- Opens the [database viewer](database-viewer.md) against it (Postgres, MySQL,
+- Opens the [database viewer](/database-viewer) against it (Postgres, MySQL,
   MariaDB), read-only unless an admin uses the guarded write route.
 - Removing it deletes only Levelrail's record and the stored password. The
   database is never contacted.

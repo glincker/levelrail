@@ -1,15 +1,14 @@
 ---
+title: "Back up Postgres to S3 and test the restore"
 description: Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
 ---
-
-# Back up Postgres to S3 and test the restore
 
 A backup you have never restored is a guess. In this tutorial you will connect an S3-compatible bucket, take a backup of a real Postgres database, schedule the next ones, delete data on purpose, and bring it back two ways: over the original database and into a brand-new copy.
 
 ## Before you start
 
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
-- A Postgres database. Create `main-db` as in [Connect an app to Postgres](connect-an-app-to-postgres.md), or use your own.
+- A Postgres database. Create `main-db` as in [Connect an app to Postgres](/tutorials/connect-an-app-to-postgres), or use your own.
 - A bucket and an access key pair with read and write access. AWS S3, Cloudflare R2, Backblaze B2, and MinIO all work.
 
 <Steps>
@@ -150,6 +149,6 @@ Keep the target if you want to keep the schedule running.
 
 ## Where to go next
 
-- [Back up an app's data volumes](self-host-vaultwarden.md#back-up-the-data): the same target also protects app volumes.
+- [Back up an app's data volumes](/tutorials/self-host-vaultwarden#back-up-the-data): the same target also protects app volumes.
 - [Backups and storage](../backups-and-storage.md): retention, instance-wide visibility, and how schedules are stored.
 - [Control plane backup](../control-plane-backup.md) and [disaster recovery](../disaster-recovery.md): protect Levelrail's own state.

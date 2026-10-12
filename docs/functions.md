@@ -1,12 +1,11 @@
 ---
+title: "Functions"
 description: Run an image as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
 ---
 
-# Functions
-
 A function is an image app that costs nothing while idle. It sleeps after a
 quiet period and starts on the next request. Unlike a plain
-[sleeping app](sleep-when-idle.md), a request that arrives while it is asleep
+[sleeping app](/sleep-when-idle), a request that arrives while it is asleep
 waits through the cold start and is then answered, so API callers see one slower
 response instead of an error page. It runs on your own server next to your other
 apps, with the same logs, metrics, secrets, domains and rollbacks.
@@ -56,7 +55,7 @@ If the app does not become ready within 30 seconds, the caller gets the
 - Callers must follow redirects. Streaming request bodies larger than memory
   are not replayed by every client.
 - It needs requests through the built-in ingress to count as activity, the same
-  as [sleep when idle](sleep-when-idle.md#limits).
+  as [sleep when idle](/sleep-when-idle#limits).
 
 ## Verified
 

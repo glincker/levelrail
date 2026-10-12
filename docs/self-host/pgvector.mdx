@@ -1,0 +1,49 @@
+---
+title: "Self-host pgvector Postgres with Docker"
+sidebarTitle: "pgvector Postgres"
+description: "PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data."
+---
+
+PostgreSQL 17 with the pgvector extension preinstalled, for embeddings next to your relational data.
+
+This page describes the Levelrail template for pgvector Postgres (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/pgvector/pgvector.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `pgvector` | `pgvector/pgvector:0.8.6-pg17-trixie` | 5432 | `pgvector_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `pgvector` | `POSTGRES_DB` | Preset in the template |
+| `pgvector` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `pgvector` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy pgvector Postgres with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select pgvector Postgres. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy pgvector --name my-pgvector
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host/index).

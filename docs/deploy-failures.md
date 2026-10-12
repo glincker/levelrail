@@ -1,8 +1,7 @@
 ---
+title: "Deploy failures"
 description: The structured failure object every failed or blocked deploy carries, and what each failure code means.
 ---
-
-# Deploy failures
 
 A deploy that fails, is held, or does not become healthy carries one structured `failure` object. The same object comes back from the API, the CLI and the MCP tools, so a person and an agent read the same explanation.
 

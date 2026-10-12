@@ -55,7 +55,7 @@ The MCP server exposes a subset of its tools depending on the mode. Token counts
 | `standard` | 146 | about 61,200 | Read and mutating tools, no destructive ones. |
 | `full` | 156 | about 66,700 | Every tool, including destructive ones. |
 
-See [Agent tooling audit](agent-tooling-audit.md) for how the numbers are measured.
+See [Agent tooling audit](/agent-tooling-audit) for how the numbers are measured.
 
 ## Tokens
 
@@ -92,7 +92,7 @@ Agents should never assume a deploy worked. `wait_for_deploy` (MCP) or `levelrai
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="AI assistant integration" href="/ai-assistant">
 
 Run `levelrail-mcp` over stdio or HTTP and scope its token.

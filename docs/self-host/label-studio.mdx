@@ -1,0 +1,49 @@
+---
+title: "Self-host Label Studio with Docker"
+sidebarTitle: "Label Studio"
+description: "A flexible data labeling tool for text, images, audio, and video, with export to common ML formats."
+---
+
+A flexible data labeling tool for text, images, audio, and video, with export to common ML formats.
+
+This page describes the Levelrail template for Label Studio (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://labelstud.io/guide.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `label-studio` | `heartexlabs/label-studio:1.21.0` | 8080 | `label_studio_data -&#62; /label-studio/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `label-studio` | `LABEL_STUDIO_DISABLE_SIGNUP_WITHOUT_LINK` | Preset in the template |
+| `label-studio` | `LABEL_STUDIO_PASSWORD` | Generated at deploy |
+| `label-studio` | `LABEL_STUDIO_USERNAME` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Label Studio with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Label Studio. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy label-studio --name my-label-studio
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host/index).

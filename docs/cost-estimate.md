@@ -1,20 +1,19 @@
 ---
+title: "Cost estimate"
 description: How Levelrail's "what this would cost elsewhere" app cost estimate is calculated, its assumptions, and the env vars that let you correct the reference rates for your own region.
 ---
 
-# Cost estimate
-
 An app's **Resources** tab shows an estimated monthly cost under three illustrative reference pricing profiles, folded under **What this would cost elsewhere** at the bottom of the Optimise panel.
 
-<Tabs :items="['CLI', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps cost NAME
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" https://levelrail.example.com/api/v1/apps/NAME/cost-estimate

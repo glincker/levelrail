@@ -1,8 +1,7 @@
 ---
+title: "REST API Reference"
 description: Complete HTTP API reference for the control plane, organized by resource group.
 ---
-
-# REST API Reference
 
 Route inventory for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
@@ -411,7 +410,7 @@ Endpoints for:
 
 :::
 
-`PUT /api/v1/apps/{name}/health` replaces only the app's health config (the body is a `ServiceHealth`: `readiness`, `liveness`, `ready_timeout`), leaving every other field alone; an empty body clears it. Probe fields and validation match [the app spec](app-spec-reference.md#probe), with durations in nanoseconds.
+`PUT /api/v1/apps/{name}/health` replaces only the app's health config (the body is a `ServiceHealth`: `readiness`, `liveness`, `ready_timeout`), leaving every other field alone; an empty body clears it. Probe fields and validation match [the app spec](/app-spec-reference#probe), with durations in nanoseconds.
 
 ## Secrets / Git Source / Webhooks / Preview Environments
 
@@ -1261,7 +1260,7 @@ Routes that do not fit an existing group.
 
 ## See also
 
-- [Feature Catalog](./feature-catalog.md) - high-level overview of platform capabilities
-- [Observability](./observability.md) - metrics, logs, alerts, and telemetry APIs
-- [Architecture](./architecture.md) - control plane design and reconciliation patterns
-- [CLI Reference](cli-reference.md) - command-line tool for all API operations
+- [Feature Catalog](/feature-catalog) - high-level overview of platform capabilities
+- [Observability](/observability) - metrics, logs, alerts, and telemetry APIs
+- [Architecture](/architecture) - control plane design and reconciliation patterns
+- [CLI Reference](/cli-reference) - command-line tool for all API operations

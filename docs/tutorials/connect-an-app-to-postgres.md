@@ -1,15 +1,14 @@
 ---
+title: "Connect an app to a managed Postgres database"
 description: Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
 ---
-
-# Connect an app to a managed Postgres database
 
 By the end of this tutorial you will have a Postgres database running next to your app, a connection string injected into the app as an environment variable, and a check that the app actually sees it. No password handling, no copy and paste of credentials.
 
 ## Before you start
 
 - A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
-- An app to connect. This tutorial reuses the `hello` app from [Deploy a Docker app](deploy-a-docker-app.md). Any app works.
+- An app to connect. This tutorial reuses the `hello` app from [Deploy a Docker app](/tutorials/deploy-a-docker-app). Any app works.
 
 <Steps>
 <Step title="Create the database">
@@ -110,6 +109,6 @@ Keep the database if you plan to follow the next tutorial.
 
 ## Where to go next
 
-- [Back up Postgres to S3 and test the restore](back-up-postgres-to-s3.md): protect the data you just connected.
+- [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3): protect the data you just connected.
 - [Managing databases](../managing-databases.md): resources, public access for a GUI client, and slow query tracking.
 - [Network topology](../network-topology.md): see every app-to-database connection drawn across your servers.
