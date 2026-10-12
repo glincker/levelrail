@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1025 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1029 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -521,6 +521,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainAuthGate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainAuthGate", Description: "Auth gate: same tiers as basic auth, it decides who reaches the host."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainAuthGate", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate/events", Ability: "AbilityReadSensitive", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleListAuthGateEvents", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/auth-gate/sessions", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleRevokeAuthGateSessions", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteDomainPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicy", Description: "Ingress response cache rules, purge and per-domain stats."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/cache", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainPolicy", Description: ""},
@@ -708,6 +710,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisableHostFirewall", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnableHostFirewall", Description: ""},
+	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
 	{Method: "DELETE", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGiteaApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetGiteaAppStatus", Description: "Gitea App: the OAuth-Application counterpart of the GitLab App routes above, same ability tiers and self-hosted instance_url shape (Gitea is almost always self-hosted). Repos are addressed by an \"owner/repo\" path pair like Bitbucket's workspace/repoSlug, not a numeric id like GitLab's."},
 	{Method: "PUT", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleConnectGiteaApp", Description: ""},
@@ -874,6 +877,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetUsageSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/usage/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutUsageSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/usage/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleUsageSummary", Description: ""},
+	{Method: "GET", Path: "/gate/login", Ability: "Public", Group: "Other", Handler: "handleGateLogin", Description: ""},
 	{Method: "GET", Path: "/metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleScrapeMetrics", Description: ""},
 	{Method: "GET", Path: "/public/status", Ability: "Public", Group: "Other", Handler: "handlePublicStatusHTML", Description: ""},
 	{Method: "GET", Path: "/public/status.json", Ability: "Public", Group: "Other", Handler: "handlePublicStatusJSON", Description: ""},

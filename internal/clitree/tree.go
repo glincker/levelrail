@@ -125,7 +125,7 @@ var Tree = map[string]*Node{
 		"cloudflare-dns":       {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"route53-dns":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"basic-auth":           {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
-		"auth-gate":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
+		"auth-gate":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "log": nil, "revoke": nil}},
 		"maintenance":          {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"redirect":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"tls-cert":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "renew": nil}},

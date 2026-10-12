@@ -208,6 +208,10 @@ type Router struct {
 	domainTLSCertSecrets   DomainTLSCertSecrets        // nil is valid: PUT/DELETE .../domains/{domain}/tls-cert return 501, same shape as domainBasicAuthSecrets above
 	domainWAF              DomainWAFStore              // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainAuthGate         DomainAuthGateStore         // always set, core Store; the auth URL is not secret
+	gate                   GateStore                   // nil when the store lacks it: built-in gate requests fail closed
+	gateSecret             string                      // SetGate; empty refuses every gate check
+	gateSettings           GateSettings                // SetGate; zero fields fall back to defaults
+	gateEvents             gateEventCounter            // coalesced gate events awaiting flush
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
@@ -823,6 +827,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
 	if g, ok := any(s).(SetupGuideStore); ok {
 		rt.setupGuide = g
+	}
+	if g, ok := any(s).(GateStore); ok {
+		rt.gate = g
 	}
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 

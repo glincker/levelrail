@@ -512,6 +512,52 @@ Writes need the root ability, like basic auth.
 </Tab>
 </Tabs>
 
+### Built-in sign-in (SSO for apps)
+
+Instead of running your own auth service, set the provider to **Levelrail sign-in** (`builtin`). Visitors then sign in with their account on this installation, through the same sign-in page as the dashboard (passwords, passkeys, two-factor), and only the users, teams and roles you allow get through. Your app receives `X-User` and `X-Email` (the email) and `X-Name` (the display name). Visitor-sent copies of those headers are always removed first.
+
+It needs the platform primary domain (**Settings > Ingress**), because visitors are sent to the dashboard to sign in. Signing in there with an OAuth provider (Google, GitHub) ends on the dashboard; open the app link again and it goes straight through.
+
+```bash
+levelrail-cli domains auth-gate set my-app app.example.com \
+  --provider builtin --allow alice@example.com --allow-team ops --allow-role support
+levelrail-cli domains auth-gate log my-app app.example.com --since 24h
+levelrail-cli domains auth-gate revoke my-app app.example.com
+```
+
+The flow, step by step:
+
+```text
+browser                 app.example.com (ingress)         dashboard (cp.example.com)
+   | GET /orders              |                                  |
+   |------------------------->| check: no gate session           |
+   |<-- 302 cp/gate/login?rd=https://app.example.com/orders&state=S
+   |    Set-Cookie: __Host-gate_state=S (app host only)          |
+   | GET /gate/login?rd=...&state=S --------------------------->|
+   |                          |   not signed in: 302 /login, then back here
+   |                          |   rd host must have a built-in gate
+   |                          |   user must match an allow rule
+   |<-- 302 https://app.example.com/orders?_gate_token=T --------|
+   | GET /orders?_gate_token=T|                                  |
+   |------------------------->| check: T unused, unexpired, for this host,
+   |                          | state cookie matches, dashboard session live
+   |<-- 302 /orders  Set-Cookie: __Host-gate_session (host only, 12h)
+   | GET /orders (cookie)     |                                  |
+   |------------------------->| check: session valid, user still allowed
+   |                          | -> app with X-User, X-Email, X-Name
+```
+
+- **Nobody gets in by default.** A built-in gate with no allow rule denies everyone, including admins.
+- **Denied users** see a plain 403 page that names the account they are signed in with, never a redirect loop. Fetch and XHR requests (`Accept: application/json` or `X-Requested-With`) get a `401` JSON body with a `login_url` instead of a redirect.
+- **Guests**: a user whose role only sees granted environments also needs a grant for the app's environment. Standalone domains have no environment, so they are closed to such users.
+- **Sign-in tokens** are single use, expire after `APP_GATE_TOKEN_TTL` (default `1m`), only work on the host they were issued for and only in the browser that started the sign-in. Only hashes are stored.
+- **Gate sessions** last `APP_GATE_SESSION_TTL` (default `12h`) and end early when the user signs out of the dashboard (or is signed out everywhere), is removed, loses access, or when you press **Sign out all visitors**. Access is re-checked on every request.
+- **Plain http** apps cannot use the built-in provider unless `APP_GATE_ALLOW_HTTP=true`; the session cookie is then not `Secure`.
+
+#### Access log
+
+Every decision is recorded with time, domain, user, decision, reason and client IP: `allowed`, `denied`, `login_redirect`, `token_issued`, `token_exchange` and `session_revoked`. Identical events in the same minute are stored as one row with a count, so busy apps do not grow the database per request. Rows older than `APP_GATE_EVENT_RETENTION` (default `30d`) are pruned hourly. Read it on the domain's auth gate card (**Show access log**), with `levelrail-cli domains auth-gate log`, or at `GET /api/v1/apps/{name}/domains/{domain}/auth-gate/events?since=24h` (needs `read:sensitive`).
+
 ## Domain redirects
 
 For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](domain-traffic-controls.md).

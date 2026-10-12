@@ -42,6 +42,11 @@ export function shouldGoOffline(
 }
 
 /** Accepts only same-origin absolute paths, so a crafted link cannot redirect off-site. */
+// App sign-in (/gate/login) is served by the server, not the SPA router.
+export function isServerReturnPath(path: string): boolean {
+  return path.startsWith('/gate/')
+}
+
 export function safeReturnPath(value: unknown): string | undefined {
   if (typeof value !== 'string') {
     return undefined

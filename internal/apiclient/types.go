@@ -723,16 +723,55 @@ type DomainAuthGateResource struct {
 	TimeoutSeconds        int      `json:"timeout_seconds"`
 	DefaultTimeoutSeconds int      `json:"default_timeout_seconds"`
 	UpdatedAt             string   `json:"updated_at,omitempty"`
+	// Provider is "external" or "builtin"; Allow only applies to builtin.
+	Provider         string         `json:"provider"`
+	Allow            []AuthGateRule `json:"allow"`
+	LiveSessions     int            `json:"live_sessions"`
+	BuiltinAvailable bool           `json:"builtin_available"`
+}
+
+// AuthGateRule is one built-in gate allow rule; Label is the email, team
+// name or role name.
+type AuthGateRule struct {
+	Kind    string `json:"kind"`
+	Subject string `json:"subject"`
+	Label   string `json:"label,omitempty"`
+}
+
+// AuthGateEvent mirrors internal/api's authGateEventResource.
+type AuthGateEvent struct {
+	At        string `json:"at"`
+	UserID    string `json:"user_id"`
+	UserEmail string `json:"user_email"`
+	Decision  string `json:"decision"`
+	Reason    string `json:"reason"`
+	IP        string `json:"ip"`
+	Count     int    `json:"count"`
+}
+
+// AuthGateEventsResponse mirrors internal/api's authGateEventsResponse.
+type AuthGateEventsResponse struct {
+	Domain string          `json:"domain"`
+	Since  string          `json:"since"`
+	Events []AuthGateEvent `json:"events"`
+}
+
+// AuthGateSessionsRevoked mirrors internal/api's gateSessionsRevokedResponse.
+type AuthGateSessionsRevoked struct {
+	Domain  string `json:"domain"`
+	Revoked int64  `json:"revoked"`
 }
 
 // SetDomainAuthGateRequest mirrors internal/api's setDomainAuthGateRequest.
 // TimeoutSeconds 0 uses the server's APP_AUTH_GATE_TIMEOUT default.
 type SetDomainAuthGateRequest struct {
-	Enabled        bool     `json:"enabled"`
-	AuthURL        string   `json:"auth_url"`
-	CheckPath      string   `json:"check_path"`
-	CopyHeaders    []string `json:"copy_headers"`
-	TimeoutSeconds int      `json:"timeout_seconds"`
+	Enabled        bool           `json:"enabled"`
+	AuthURL        string         `json:"auth_url"`
+	CheckPath      string         `json:"check_path"`
+	CopyHeaders    []string       `json:"copy_headers"`
+	TimeoutSeconds int            `json:"timeout_seconds"`
+	Provider       string         `json:"provider,omitempty"`
+	Allow          []AuthGateRule `json:"allow,omitempty"`
 }
 
 // DNSRecordResource mirrors internal/api's dnsRecordResource
