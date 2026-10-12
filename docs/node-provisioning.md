@@ -56,7 +56,7 @@ EC2 has no single bearer token, so `set-credential --provider aws` takes one of 
 - **Access key and secret.** `--provider-token` is the access key id and `--secret-access-key` the secret. Optional: `--session-token` for temporary credentials, `--region` for the default region (default `us-east-1`), and `--role-arn` to assume an IAM role through STS before every call. With a role set, the stored key needs only `sts:AssumeRole` on that role.
 - **The control plane's own AWS identity.** `--use-ambient-credentials` resolves credentials from the environment, shared config or an EC2 instance profile. It is useful only when the control plane itself runs on AWS. Combine it with `--role-arn` to narrow permissions through STS.
 
-Full OIDC federation (`AssumeRoleWithWebIdentity`) is not supported, because it would require the control plane to be its own OIDC token issuer.
+Full [OIDC federation](/pipelines-oidc) (`AssumeRoleWithWebIdentity`) is not supported, because it would require the control plane to be its own OIDC token issuer.
 
 The target region needs a **default VPC**, which every account created since December 2013 has unless it was deleted. There is no option yet to name a specific VPC or subnet.
 

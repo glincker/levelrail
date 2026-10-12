@@ -22,7 +22,7 @@ Every edge is derived from one specific field on the project's apps and database
 | Volume attachment | A named Docker volume an app mounts (`PUT /apps/{name}/volumes`, or `app.yaml`'s `volumes:` block). Two apps that happen to mount the same volume name render as one shared volume box, not two | `web` mounts `app-web-uploads` |
 | Egress allow-rule | An entry in an app's [egress policy](/api-reference) allowlist, but only when that entry's host matches a domain another app in the same project actually owns. An allow-listed third-party host (the common case, e.g. `api.stripe.com`) has nothing to point at in this project and is left off the diagram rather than drawn as a guess | `web` is allowed to reach `admin` over its `admin.example.com` domain |
 
-Network shares (`/api/v1/network-shares`) are left off this diagram: nothing in a project's stored configuration links a share to an app, so an edge would be a guess.
+[Network shares](/network-shares) (`/api/v1/network-shares`) are left off this diagram: nothing in a project's stored configuration links a share to an app, so an edge would be a guess.
 
 ## CLI and API
 

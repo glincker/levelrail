@@ -30,8 +30,8 @@ Beta features can also be switched on without a restart from **Settings, Beta fe
 - **API**: routes of the feature answer `404` with `{"error": "...", "code": "experimental_feature_disabled", "feature": "<key>"}`. The message names `APP_EXPERIMENTAL`.
 - **CLI**: the commands are hidden from `--help` and from shell completion, and exit with a usage error naming `APP_EXPERIMENTAL`. The CLI reads its own environment, not the control plane's: set the variable in the shell you run the CLI from, and regenerate any installed completion script after changing it.
 - **MCP**: the tools are not registered. The MCP server is a separate process and reads its own environment: set the variable there, not only on the control plane.
-- **Dashboard**: navigation entries, command palette entries, `g` shortcuts and in-page pointers are hidden, pages redirect home on direct visits. The dashboard follows the control plane's setting.
-- **Reconcilers**: the model, load balancer routing and Cloudflare Tunnel controllers do not start.
+- **Dashboard**: navigation entries, [command palette](/command-palette) entries, `g` shortcuts and in-page pointers are hidden, pages redirect home on direct visits. The dashboard follows the control plane's setting.
+- **Reconcilers**: the model, [load balancer](/load-balancing) routing and Cloudflare Tunnel controllers do not start.
 - **Data**: nothing is deleted. Turning a feature back on restores it as it was.
 
 Set the variable on the control plane with `sudo systemctl edit levelrail` (`[Service]`, then `Environment=APP_EXPERIMENTAL=...`) and restart.

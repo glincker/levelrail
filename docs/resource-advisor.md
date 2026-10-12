@@ -27,7 +27,7 @@ levelrail-cli advisor enable
 
 ## Apply, dismiss and snooze
 
-Only three kinds of action can be applied from the advisor: set a memory limit, set a CPU limit, and turn on sleep when idle. Everything else (engine tuning, consolidation, disk cleanup) comes with instructions.
+Only three kinds of action can be applied from the advisor: set a memory limit, set a CPU limit, and turn on [sleep when idle](/sleep-when-idle). Everything else (engine tuning, consolidation, disk cleanup) comes with instructions.
 
 ```bash
 levelrail-cli advisor findings --resource database:main

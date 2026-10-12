@@ -1,5 +1,6 @@
 ---
 title: "Troubleshooting"
+sidebarTitle: "Troubleshooting"
 description: Fixes for the most common problems when deploying, logging in, or running Levelrail.
 ---
 
@@ -16,7 +17,7 @@ levelrail-cli apps logs NAME --follow
 levelrail-cli doctor                 # preflight checks for Docker, disk, ports, and the database
 ```
 
-Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the Status page (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
+Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the [Status page](/status-page) (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
 
 ## Apps and deploys
 
@@ -141,7 +142,7 @@ Create an A (or AAAA for IPv6) record pointing the domain at your server's publi
 
 <Accordion title="Ports 80/443 are open on the server but blocked by a firewall" id="ports-80-443-are-open-on-the-server-but-blocked-by-a-firewal">
 
-`install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a host firewall looks the same from outside as a closed port. Open both ports:
+`install.sh`'s own reachability self-test, and doctor's `external_reachability_80`/`external_reachability_443` checks, both warn rather than fail here, since a [host firewall](/host-firewall) looks the same from outside as a closed port. Open both ports:
 
 <Tabs>
 <Tab title="Ubuntu/Debian (ufw)">

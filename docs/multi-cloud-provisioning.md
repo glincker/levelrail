@@ -56,7 +56,7 @@ levelrail-cli nodes provision --provider hetzner --region fsn1 --size cx22 --nam
 levelrail-cli nodes provisions show <id>
 ```
 
-Repeat `show` until the status is `ready`. Status moves through `creating`, `booting` and `enrolling`. Add `--role build` to make it a build node.
+Repeat `show` until the status is `ready`. Status moves through `creating`, `booting` and `enrolling`. Add `--role build` to make it a [build node](/build-node-routing).
 
 </Step>
 </Steps>

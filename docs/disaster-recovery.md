@@ -271,7 +271,7 @@ Things this runbook cannot do, because they are not in the backup:
   from those backups (`backups restore-as-new`) after the control plane is up.
 - Without the escrow bundle or `APP_MASTER_KEY`, no stored secret can be read.
 - Without the agent CA files the restored control plane makes a new CA and every
-  node agent must be re-enrolled with a new join token.
+  node agent must be re-enrolled with a new [join token](/multi-node).
 
 ### Local snapshots
 

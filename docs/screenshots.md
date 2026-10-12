@@ -43,7 +43,7 @@ flowchart LR
 3. Deploy two real apps from public images, plus a real managed Postgres database
 4. Trigger real redeploys to build deploy history
 5. Send real HTTP traffic to the apps
-6. Set an example secret, a domain, and a load balancer so the environment, domains, and load balancer pages aren't empty
+6. Set an example secret, a domain, and a [load balancer](/load-balancing) so the environment, domains, and load balancer pages aren't empty
 7. Wait about 75 seconds for metrics to accumulate at 15-second resolution
 8. Log in through the real `/login` form
 9. Capture screenshots with `shot-scraper`

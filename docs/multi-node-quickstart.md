@@ -1,5 +1,6 @@
 ---
 title: "Multi-node quickstart"
+sidebarTitle: "Add a second server"
 description: The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 ---
 
@@ -57,7 +58,7 @@ A container placed on a remote node keeps running and serving, because the agent
 <CardGroup cols={2}>
 <Card title="Multi-node" href="/multi-node">
 
-Enrollment, placement, health, certificates, mesh and the CLI reference.
+Enrollment, placement, health, certificates, mesh and the [CLI reference](/cli-reference).
 
 </Card>
 <Card title="Node provisioning" href="/node-provisioning">

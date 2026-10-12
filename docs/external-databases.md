@@ -7,7 +7,7 @@ An external database is one Levelrail connects to but does not run. Use it when
 a database already holds real data and you want apps to use it where it is:
 a Postgres container left over from another platform, a managed cloud
 database, or a server on your LAN. Nothing is copied, restarted or modified.
-You can move the data into a managed database later, or never.
+You can move the data into a [managed database](/managing-databases) later, or never.
 
 ## What it does and does not do
 

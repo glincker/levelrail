@@ -246,7 +246,7 @@ Every document is checked against the schema and the semantic rules. If any docu
 </Step>
 <Step title="Plan">
 
-Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, load balancer, pipeline, alert rule.
+Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, [load balancer](/load-balancing), pipeline, alert rule.
 
 </Step>
 <Step title="Apply">

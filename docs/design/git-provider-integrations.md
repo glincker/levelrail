@@ -226,7 +226,7 @@ Third branch in `verifyGitPushWebhookAuth` for `X-Hub-Signature`.
 
 **Out of scope for first slice**
 
-Bitbucket Server / Data Center, app passwords as alternative credential, workspace-restriction UI, pull-request preview environments, auto-populating clone deploy token from OAuth token.
+Bitbucket Server / Data Center, app passwords as alternative credential, workspace-restriction UI, pull-request [preview environments](/previews), auto-populating clone deploy token from OAuth token.
 
 ## 4. Manifest preview and confirm step
 

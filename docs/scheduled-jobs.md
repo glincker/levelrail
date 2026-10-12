@@ -21,7 +21,7 @@ surface.
 
 A fresh job gets no published ports and no restart policy, and only the volumes
 the app already declares. It runs as the image's user under the same Docker
-guard rules as the app itself. On a multi-node setup the job runs on the node
+guard rules as the app itself. On a [multi-node](/multi-node) setup the job runs on the node
 the app is placed on.
 
 The command is a real argv list with no shell involved. Use

@@ -18,7 +18,7 @@ Evidence tiers used below, weakest to strongest:
 1. **Unit**: `*_test.go` against fakes or `httptest` servers.
 2. **Live Docker**: tests named `*_Live_*` or `*_live_test.go` that skip when no Docker daemon is reachable and run against a real local daemon (for example `internal/pipeline/live_test.go`, `internal/backup/pitr_live_test.go`). `nightly.yml` has a `docker` lane, but `test/e2e` itself is only named in the flake sweep (`.github/workflows/nightly.yml:111`).
 3. **E2E**: `test/e2e/*_test.go`, which drive the real HTTP API and a real reconciler against real containers on one machine.
-4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. Real public ACME now has one recorded run against a live public VPS (`docs/acme-verification-runbook.md`, 2026-10-05); the e2e suite itself still "does not yet exercise a full multi-node mesh or real ACME against a live domain".
+4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; [multi-node](/multi-node) enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. Real public ACME now has one recorded run against a live public VPS (`docs/acme-verification-runbook.md`, 2026-10-05); the e2e suite itself still "does not yet exercise a full multi-node mesh or real ACME against a live domain".
 
 Because tier 4 is empty for almost every row, the "real infra" column below reads "none found" outside multi-node. The distinction that matters is tier 3 versus tiers 1 and 2.
 
@@ -125,7 +125,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - Live Docker: `pitr_live_test.go`, `dump_live_test.go`, `restore_live_test.go`, `clone_restore_live_test.go`, `volume_live_test.go`, `volume_clone_restore_live_test.go`.
 - E2E: `test/e2e/pitr_test.go` (real API, real reconciler, MinIO bucket, marker-row restore), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`).
 - Docs: `docs/backups-and-storage.md`, `docs/managing-databases.md`, `docs/control-plane-backup.md`, `docs/disaster-recovery.md`. `docs/roadmap.md` notes PITR is "Live-Docker-verified end to end".
-- Real infra: none found. The real S3 and R2 test is skipped in CI (see log archive).
+- Real infra: none found. The real S3 and R2 test is skipped in CI (see [log archive](/log-archive)).
 - Label: **stable** for PITR and dump/restore/verify on Postgres. Other engines (eight are defined in `internal/store/database.go:16-23`) only have the Redis e2e, so treat them as beta until each has a live restore run.
 
 ### Cloudflare tunnel

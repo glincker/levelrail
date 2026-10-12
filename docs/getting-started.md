@@ -1,5 +1,6 @@
 ---
 title: "Getting started"
+sidebarTitle: "Quickstart: first app"
 description: Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 ---
 
@@ -42,7 +43,7 @@ Pin a release with `LEVELRAIL_VERSION=v0.2.0-beta.14`, or run it as a container 
 Open the printed setup link, choose a password, and you are the admin. The first sign-in opens a setup wizard, not an empty app list:
 
 1. **Server check** runs the same checks as `levelrail-cli doctor`. Each failure shows a command to fix it and a docs link. Only Docker, the database, or the data directory failing blocks you.
-2. **Topology** (optional) explains single node versus multi-node. Single node is the default and nothing needs deciding now.
+2. **Topology** (optional) explains single node versus [multi-node](/multi-node). Single node is the default and nothing needs deciding now.
 3. **Dashboard domain** (optional, recommended) shows the exact DNS record to create, then watches DNS and the HTTPS certificate until both are green. Use a dedicated name such as `console.example.com`, not a domain an app will serve.
 4. **Email** (optional) saves an SMTP server and sends a test message, so password resets and alert emails work. SES and Resend are set up under **Settings, Email**.
 5. **Git provider** (optional) connects GitHub, GitLab, Bitbucket, or Gitea.
@@ -109,7 +110,7 @@ Every field, including resources, environment, replicas, and deploy strategy, is
 </Tabs>
 
 <Accordion title="Prefer a guided prompt?">
-`levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits, then either writes `app.yaml` or creates the app. `databases create --interactive` does the same for a managed database.
+`levelrail-cli apps create --interactive` asks for the name, source, port, domain, health path, and limits, then either writes `app.yaml` or creates the app. `databases create --interactive` does the same for a [managed database](/managing-databases).
 </Accordion>
 
 ### Check on it

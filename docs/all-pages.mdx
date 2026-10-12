@@ -1,0 +1,220 @@
+---
+title: "All pages"
+description: Every Levelrail documentation page with a one-line summary, grouped by section.
+---
+
+The complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host/index).
+
+## Get started
+
+### Install and deploy
+
+- [Levelrail documentation](/index): Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
+- [What you need before you start](/what-you-need): A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience.
+- [Installing Levelrail](/installing): Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
+- [Getting started](/getting-started): Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
+
+### Add to your setup
+
+- [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
+- [Connect an app to a managed Postgres database](/tutorials/connect-an-app-to-postgres): Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
+- [Deploy to your own server from GitHub Actions](/tutorials/deploy-from-github-actions): Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
+- [Environment variables and secrets](/environment-and-secrets): Masking, reveal policies, and protection for app environment variables and secrets.
+- [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3): Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
+- [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): Add a readiness health check so a bad release fails before it takes over, read the structured failure, then fix it or roll back.
+- [Debug an app with built-in logs and metrics](/tutorials/debug-an-app-with-logs-and-metrics): Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
+- [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
+- [Self-host Vaultwarden on your own server](/tutorials/self-host-vaultwarden): Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
+- [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
+
+### Guides
+
+- [Guides](/guides/index): Task-focused Levelrail guides: compare it with Coolify, self-host Postgres with verified backups, and ship zero-downtime deploys on plain Docker.
+- [Coolify vs Levelrail for self-hosters](/guides/coolify-vs-levelrail): A fair Coolify vs Levelrail comparison for self-hosters: how each manages servers, what each does well, what Levelrail lacks, and how to choose between them.
+- [Self-host Postgres with verified backups](/guides/self-host-postgres-with-backups): Run a managed Postgres on your own server, back it up to S3-compatible storage on a schedule, and restore it safely into a new database to prove the backup works.
+- [Zero-downtime deploys without Kubernetes](/guides/zero-downtime-deploys-without-kubernetes): How to ship containers to your own servers with no downtime and a fast rollback, using readiness probes, digest-pinned images, and freeze windows. No Kubernetes.
+
+## How-to guides
+
+### Essentials
+
+- [Troubleshooting](/troubleshooting): Fixes for the most common problems when deploying, logging in, or running Levelrail.
+- [Email notifications](/email-notifications): Configure SMTP, AWS SES, or Resend as the backend for alert emails and password resets, and send a test email to confirm it works.
+- [Attention center](/attention-center): How the dashboard surfaces things that wait on an operator, including CLI login approvals, expired logins, deploy approvals, expiring tokens, failed data copies, overdue backups and stalled certificate renewals.
+
+### Deploying
+
+- [Deploying and managing apps](/deploying-apps): Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
+- [Compose apps](/compose-apps): Run a Docker Compose file as one app with per-service status, start order, rollback to an earlier compose file, teardown, and installable templates.
+- [New app wizard](/new-app-wizard): How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
+- [Importing apps](/importing-apps): Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
+- [Deploy safety](/deploy-safety): What stands between a deploy being triggered and that exact content serving, a readiness gate with a stable window, a drain, pinned rollback targets, a post-deploy watch with automatic rollback, digest-truthful deploys, a stale-deploy guard and freeze windows.
+- [Deploy failures](/deploy-failures): The structured failure object every failed or blocked deploy carries, and what each failure code means.
+- [Scheduled deploys](/scheduled-deploys): Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
+- [Scheduled jobs](/scheduled-jobs): Run commands on a cron schedule against your app, in a fresh container with the app's env, secrets and volumes, with run history, logs, retries and alerts.
+- [Image auto-update](/image-auto-update): Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.
+- [Sleep when idle](/sleep-when-idle): Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
+- [Functions](/functions): Run an image as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
+- [Canary deploys](/canary-deploys): Send a share of an app's traffic to a new image before promoting it, with one-command promote and abort.
+- [Deployments page](/deployments-page): The cross-app Deployments page shows every deploy in one live list, with filters kept in the URL, a details drawer, redeploy and rollback actions, and keyboard shortcuts.
+- [Deploy previews](/deploy-previews): Thumbnails of each deploy in three tiers, from free (page metadata, no browser) to a real screenshot from a short-lived browser container. What each tier costs, what it can leak, how it is cleaned up and every APP_PREVIEW_* setting.
+- [Deploy links and badge](/deploy-link): Put a "Deploy with" button in your README. A visitor enters their own server once and lands on its create-app form with your image, port, env variable names and health path prefilled, never submitted automatically.
+- [Preview environments per pull request](/previews): Per pull request preview environments on your own servers, with their own domain and DNS record, safe defaults for data and secrets, a TTL and cap, idle sleep, and a PR comment that links back.
+- [Chat-interactive deploy approvals](/chat-deploy-approvals): Approve or deny a protected-environment deploy directly from the Slack or Discord notification, without opening the dashboard.
+- [Supply chain visibility](/supply-chain): A software bill of materials for each Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can keep a release from going live. What it costs, what it does not cover and every APP_BUILD_ATTEST, APP_SCAN and APP_SBOM setting.
+- [Deploy status badge](/deploy-status-badge): An opt-in, per-app SVG badge showing an app's latest deploy status and when it happened, for embedding in your own project's README.
+- [Dashboard screenshots](/screenshots): Regenerate real dashboard screenshots from a live control plane with metrics and logs.
+- [Running Levelrail in Docker](/docker): Run Levelrail control plane and node agent as Docker containers.
+
+### Networking and multi-node
+
+- [Domains and ingress](/domains-and-ingress): Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
+- [Standalone domains](/standalone-domains): Proxy a domain to a port on this server, an address on your network, an external URL, another app's port or a container, with no app needed, and find the server address your DNS records must point at.
+- [DNS zones and records](/dns): Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+- [Domain traffic controls](/domain-traffic-controls): Per-domain traffic controls in the embedded ingress, covering header rules, path forwarders, country rules, response caching, redirects and raw ports, from the dashboard, CLI or API.
+- [Load balancing across replicas](/load-balancing): Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status, and Terraform, CDK, CloudFormation or Caddy export.
+- [Verifying real ACME issuance against a live domain](/acme-verification-runbook): Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA, including what to check, common failures, and a recorded run.
+- [Multi-node: adding and managing nodes](/multi-node): Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
+- [Multi-node quickstart](/multi-node-quickstart): The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
+- [Node provisioning](/node-provisioning): Create a server at Hetzner, DigitalOcean, AWS, Azure or GCP and enroll it as a node, with the credential each provider needs, how status polling works, cost, and known gaps.
+- [Multi-cloud provisioning quickstart](/multi-cloud-provisioning): Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Auth modes, cost and known gaps are on the node provisioning page.
+- [Network topology view](/network-topology): Read the Network page, how this server and nodes group into cards, how to turn the mesh on, and what the connection and reachability notes mean.
+- [Project topology graph](/service-topology-graph): Read a project's topology diagram, what each node and edge represents, and exactly which stored field each edge is derived from.
+- [Build node routing](/build-node-routing): Which node a deploy's build runs on, how to mark a node build-only, and what to do when a single node is under sustained load.
+
+### Databases and storage
+
+- [Managing databases](/managing-databases): Create and manage databases with backups, point-in-time restore, and lifecycle management.
+- [Database upgrades](/database-upgrades): Schedule automatic database upgrades with security checks and automatic rollback on failure.
+- [External databases](/external-databases): Connect a database that already runs somewhere else, or adopt a running container, without moving or changing any data, and point apps at it.
+- [Connecting apps to databases](/connecting-apps-to-databases): Connect apps to multiple databases and view reachability badges.
+- [Backup targets, registry credentials, and app volume backups](/backups-and-storage): Configure backup targets, registry credentials, and automated backup schedules with retention policies.
+- [Prove your backups work](/prove-your-backups-work): Run restore drills to verify backups work before you need them.
+- [Object storage](/object-storage): Connect S3-compatible buckets for log archive, build cache, and backups.
+- [Network shares](/network-shares): Register and test network shares (NFS and CIFS) with the control plane.
+- [Log archive](/log-archive): Ship container logs to storage as compressed NDJSON on a schedule.
+- [Log explorer](/log-explorer): Search logs, save queries, group errors into signatures, and create alert rules.
+- [Data export](/data-export): Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
+- [Control plane backup and restore](/control-plane-backup): Back up and restore the control plane's database with automatic snapshots and offline restore.
+- [Disaster recovery](/disaster-recovery): Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
+- [Upgrade safely](/upgrade-safely): Upgrade the control plane safely with pre-flight checks and automatic rollback.
+
+### CI/CD and automation
+
+- [Deploying from GitHub Actions](/github-actions): Deploy a prebuilt image from a GitHub Actions workflow with the bundled composite action, no Go toolchain needed.
+- [Pipelines](/pipelines): Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
+- [Pipelines: OIDC federation](/pipelines-oidc): Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
+- [Platform as code](/platform-as-code): Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
+- [Git integrations](/git-integrations): Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
+
+### Security and access
+
+- [Feature flags](/feature-flags): Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
+- [Sign-in engine](/auth-engine): How sign-in, API tokens, two-factor, passkeys and OAuth are served, and the settings that tune them.
+- [Host firewall](/host-firewall): Manage allow and deny rules for the control plane host's ufw firewall from the dashboard, CLI or API, with a lockout guard against blocking essential ports.
+- [Exposure audit](/exposure-audit): Find which published container ports are reachable from the internet, why ufw does not cover them, and how to restrict one with a reversible DOCKER-USER allow-list.
+- [Security center](/security-center): The security center scores your instance from its real state, lists what to fix first with a one-click fix or a link, manages every session and device, and sets sign-in approval and API token policy.
+- [Emergency access](/emergency-access): Get back into a control plane you cannot sign in to by resetting the admin password, minting a short-lived root token from the host, or using a break-glass token made in advance, and what keeps each safe.
+- [Master key rotation](/master-key-rotation): Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
+- [Access control](/access-control): Roles for multi-user access, per-user environment grants, the guest role, IAM policies on apps, databases and environments, and ready-made policy templates.
+- [Teams and roles](/teams-and-roles): Teams own projects, environments, apps and databases. Four roles (owner, admin, developer, viewer), invitations, team scoped API tokens, protected environments and the dashboard and CLI switchers.
+- [Environments](/environments): Instance-wide environments (development, test, UAT, production and custom), the dashboard environment switcher, and moving apps and databases between them with approval for protected ones.
+- [Identity and access: users, roles, and IAM policies](/identity-and-access): Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
+- [Projects, organizations, and environments](/projects-and-organizations): Organize apps and databases into optional projects, organizations, and environments with shared configuration and deployment gates.
+
+### Scale and operations
+
+- [Managing apps at scale](/managing-apps-at-scale): Filter, tag, bulk-act on, clone and promote apps when you run dozens of them.
+- [Tags](/tags): Label apps with tags such as team:payments, then filter the dashboard, CLI and API by them.
+- [Command palette](/command-palette): Keyboard-first command palette and shortcuts for navigating the dashboard and running quick app actions.
+- [Cost estimate](/cost-estimate): How Levelrail's "what this would cost elsewhere" app cost estimate is calculated, its assumptions, and the env vars that let you correct the reference rates for your own region.
+- [Usage and cost](/usage-and-cost): Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, monthly budgets with alerts, CSV export, and the limits of the numbers.
+- [Resource advisor (beta)](/resource-advisor): The beta resource advisor that suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes Postgres, Redis and MySQL settings from local telemetry, with every rule and threshold explained.
+- [Integrations](/integrations): Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
+- [Cloud integrations](/cloud-integrations): What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
+- [Rolling back the control plane](/rollback): How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server.
+- [Resilience: what survives a control plane crash](/resilience): What actually survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed from the architecture.
+- [Resilience, in short](/resilience-summary): A short answer to what survives a control plane crash, with a link to the full measured page.
+- [Observability: metrics, logs, and alerts](/observability): Node-local metrics, logs, and alerts with federated queries, no central ingestion.
+- [Public status page](/status-page): An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
+- [What's new panel](/whats-new-panel): The dashboard's "What's new" panel shows recent release notes after an upgrade, sourced from the control plane's own CHANGELOG.md.
+
+### AI and agents
+
+- [AI models](/ai-models): Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
+- [Working with AI agents](/agents): Connect an AI coding agent to your instance, scope its token, and give it the instructions it needs to deploy safely.
+- [AI assistant integration: levelrail-mcp](/ai-assistant): Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
+- [MCP tools, token budget and write mode](/mcp): The levelrail-mcp tool listing, its token budget, the read-only diagnostic tools, the confirm-gated write tools behind --allow-write, and the prompt injection threat model.
+- [MCP recipes](/mcp-recipes): Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
+- [In-app AI assistant chat](/ai-assistant-chat): The in-app AI assistant chat, how to enable it behind the ai-chat experimental flag, and the read-and-suggest confirmation gate that bounds what it can do.
+- [AI control](/ai-control): Decide what AI agents and agent tokens may do on your instance, from off to admin, enforced on the server for every request.
+
+### Templates and catalog
+
+- [Service template catalog](/templates-and-registry): Deploy ready-made services from the built-in template catalog, save your own apps as templates, and see how templates, Compose and static sites relate.
+- [Template catalog](/template-catalog): Every service in Levelrail's one-click template catalog, grouped by category, generated straight from the Go source
+- [Starter kit templates](/templates): Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends.
+
+### Migrating from other platforms
+
+- [Migrating from Coolify, Dokploy, or CapRover](/migrating-from-coolify-dokploy-and-caprover): Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
+- [Migrating a Next.js app from Vercel](/migrating-from-vercel): A practical runbook for moving a Vercel-hosted Next.js app to Levelrail, with an inventory, a concept mapping table, a DNS cutover and rollback plan, the gaps that have no equivalent, and a shadow-run checklist.
+- [Migrating a service from Cloud Run](/migrating-from-cloud-run): A practical runbook for moving a Google Cloud Run service to Levelrail, with a concept mapping table, deploying the same container image from a registry, secrets, Cloud SQL, domains, scheduled jobs, and an honest list of what you give up.
+
+## Reference
+
+### Reference
+
+- [app.yaml reference](/app-spec-reference): Complete reference for app.yaml - the declarative app spec for Levelrail
+- [Feature catalog](/feature-catalog): Inventory of Levelrail's dashboard pages by area, with pointers to the generated API and CLI references.
+- [Levelrail CLI Reference](/cli-reference): Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
+- [Terminal UI](/cli-tui): Run Levelrail from the terminal with a live, keyboard-driven UI for apps, databases, deploys, nodes, domains, alerts and backups.
+- [Environment variables](/environment-variables): Reference for operator-facing APP_ environment variables not covered on feature pages, with defaults, units, and which component reads each one.
+- [Environment variables and secrets](/environment-and-secrets): Masking, reveal policies, and protection for app environment variables and secrets.
+- [REST API Reference](/api-reference): Complete HTTP API reference for the control plane, organized by resource group.
+- [API explorer](/api-explorer): The in-dashboard API explorer under Settings, where signed-in operators browse every control plane route and try requests against their own instance.
+- [Mobile API](/mobile-api): Pair a phone with the control plane: one-time pairing codes, scoped device tokens, revocation, and the single round trip overview endpoint.
+- [MCP tool surface](/mcp-tool-surface): Estimated model context cost of the MCP tool list, by toolset.
+- [Agent tooling audit](/agent-tooling-audit): Size, overlap and annotation audit of the levelrail-mcp tool surface, with the token budget test that keeps it from regressing.
+- [Shared Go kit](/kit): Standard-library-only Go module with networking, scheduling, parsing and system helper packages.
+
+## Concepts
+
+### Explanation
+
+- [Architecture](/architecture): Core architecture of Levelrail's reconciler, agent, builds, ingress, state, observability, and security layers.
+- [Security overview](/security): How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
+- [Threat model](/threat-model): Trust boundaries, assets, attackers, the mitigations that exist today with file references, known gaps, and how to report a vulnerability.
+- [Docker access and the API guard](/docker-access): Every Docker Engine API call Levelrail makes, why it needs it, and the guard that refuses everything else, including privileged containers and host mounts.
+- [Security alert verdicts](/security-alert-verdicts): Verdict, evidence, and dismissal command for each code scanning alert open when this page was written.
+- [vs Coolify, Dokploy, CapRover, Dokku, and Kamal](/comparison): An honest comparison of Levelrail with Coolify, Dokploy, CapRover, Dokku, and Kamal: architecture, what each is good at, and what Levelrail ships without a paywall.
+- [Who Levelrail is for](/use-cases): Three real audiences for Levelrail (solo developers, small agencies, teams migrating off Coolify, Dokploy, Heroku, or Vercel), what each is likely trying to do, which shipped features actually fit, and where the project is not there yet.
+- [White-labeling](/white-labeling): How the brand layer works, which names and prefixes it drives (dashboard, agent unit, firewall rule tag, mesh interface, update repository), the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand.
+- [Brand kit](/brand): Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it.
+- [glinr-bot](/glinr-bot): How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge.
+- [Run behind an existing proxy](/behind-an-existing-proxy): Serve apps and the dashboard through the proxy that already owns ports 80 and 443: one step managed routes for Traefik (Coolify included), or generated configuration for nginx and Caddy.
+
+### Design proposals
+
+- [Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX](/design/git-provider-integrations): Design for unified post-auth git provider abstraction supporting GitHub, GitLab, Bitbucket, and GitHub Enterprise Server
+
+## Project
+
+### Status
+
+- [Roadmap](/roadmap): What Levelrail has shipped by area, what is still open, and what is out of scope. There is no stable release yet.
+- [Feature status](/feature-status): Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
+- [Experimental features](/experimental-features): Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
+- [Performance](/performance): Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
+- [CI](/ci): How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+- [VPS smoke test](/vps-smoke): scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
+- [Internationalization (i18n)](/i18n): How the dashboard's i18n works for contributors: where strings live, how to add one to a component, and how TypeScript catches a mistyped key.
+- [GLINR design tokens](/design-tokens): The single source of truth for color, space, radius, elevation, type and motion in the Levelrail dashboard, and how to add or change a token.
+- [Changelog](/changelog): Every Levelrail release with highlights, fixes and upgrade notes.
+
+### Legal
+
+- [Terms of use](/terms): Terms for using the Levelrail website and software, including the Apache 2.0 license, no warranty, trademarks and third-party links.
+- [Privacy policy](/privacy-policy): What the Levelrail website collects, which browser storage it uses, and where to find how the software itself handles data.
+- [Cookie notice](/cookies): The Levelrail website sets no cookies of its own and stores only your theme preference in your browser's local storage.
+- [License and notices](/license-and-notices): Levelrail is licensed under Apache 2.0 with one edition and no paid tier. What that means in plain language and where to read the full text.

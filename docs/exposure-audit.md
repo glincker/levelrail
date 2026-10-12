@@ -26,7 +26,7 @@ Severity follows what is exposed, not just that something is.
 - **Medium**: the same kinds when you opted in (a database with public access enabled), or an unrecognised service from an unmanaged container.
 - **Low or info**: a web port. Apps behind the ingress are expected to be reachable, ideally only through it.
 
-The owner is shown too: a managed database, a managed app, or an unmanaged container. A managed database bound publicly without public access enabled is a drift worth fixing.
+The owner is shown too: a [managed database](/managing-databases), a managed app, or an unmanaged container. A managed database bound publicly without public access enabled is a drift worth fixing.
 
 ## Where it shows up
 
@@ -79,4 +79,4 @@ Rules in DOCKER-USER live in the kernel only. The restriction is stored in the c
 - Rules can be applied only on the control plane's own host. For a remote node, copy the dry-run commands and run them there. An agent RPC for this is planned.
 - Only IPv4 sources and the iptables backend are supported. Docker's experimental nftables mode has no DOCKER-USER chain and is reported as unreadable.
 - Reading the chain needs root, the same as turning on `ufw`. Without it, wildcard-bound ports are reported as Unknown.
-- On macOS or Docker Desktop the host firewall is not visible, so publicly bound ports are Unknown.
+- On macOS or Docker Desktop the [host firewall](/host-firewall) is not visible, so publicly bound ports are Unknown.

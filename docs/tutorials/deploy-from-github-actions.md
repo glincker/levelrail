@@ -1,5 +1,6 @@
 ---
 title: "Deploy to your own server from GitHub Actions"
+sidebarTitle: "Deploy on every git push"
 description: Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
 ---
 

@@ -50,7 +50,7 @@ All are `read` class and available in every mode. Tools marked untrusted return 
 | `list_teams` | Teams the token can see, honouring the configured scope. | no |
 | `list_team_members` | Members and roles of one team. | no |
 
-Preview environments are listed by the existing `list_preview_environments`.
+[Preview environments](/previews) are listed by the existing `list_preview_environments`.
 
 ## Write tools (`--allow-write`)
 
