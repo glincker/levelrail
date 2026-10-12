@@ -94,6 +94,10 @@ func Assess(ctx context.Context, t Target, env Env) (Assessment, error) {
 		a.NeedsConfirmation = append(a.NeedsConfirmation, fmt.Sprintf("this server will connect to container %s on port %d over the container network", t.Container, t.Port))
 		return a, nil
 	}
+	// Target is exported and may not come from ParseTarget; a wrapped port would assess one address and dial another.
+	if t.Port < 1 || t.Port > 65535 {
+		return a, fmt.Errorf("%w: port %d is out of range (1 to 65535)", ErrInvalidTarget, t.Port)
+	}
 	addrs, err := resolve(ctx, t.Host, env.Resolver)
 	if err != nil {
 		return a, err
