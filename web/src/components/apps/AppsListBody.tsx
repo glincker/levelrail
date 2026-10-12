@@ -4,6 +4,7 @@ import { APP_LIST_GRID, AppRow } from '../AppRow'
 import type { AppListEntry } from '../../types/appDetail'
 import type { ViewMode } from '../../lib/appsListView'
 import { AppCard } from './AppCard'
+import { AppsTable } from './AppsTable'
 
 export function ListHeader() {
   return (
@@ -44,7 +45,7 @@ function useColumns(ref: React.RefObject<HTMLDivElement | null>): number {
   return cols
 }
 
-export function AppsListBody({
+function AppsGridBody({
   apps,
   mode,
   selected,
@@ -127,4 +128,22 @@ export function AppsListBody({
       </div>
     </div>
   )
+}
+
+export function AppsListBody(props: {
+  apps: AppListEntry[]
+  mode: ViewMode
+  selected: string[]
+  onSelect: (name: string, checked: boolean) => void
+}) {
+  if (props.mode === 'table') {
+    return (
+      <AppsTable
+        apps={props.apps}
+        selected={props.selected}
+        onSelect={props.onSelect}
+      />
+    )
+  }
+  return <AppsGridBody {...props} />
 }

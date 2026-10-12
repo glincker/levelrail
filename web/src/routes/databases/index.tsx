@@ -1,17 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { useVirtualizer } from '@tanstack/react-virtual'
-import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DatabaseIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { useEnvironmentScope } from '../../lib/environmentScope'
 import { routeErrorMessage } from '../../lib/apiError'
 import { databaseListQueryOptions } from '../../queries/databases'
-import {
-  DATABASE_LIST_GRID,
-  DatabaseRow,
-  RowSkeleton,
-} from '../../components/DatabaseRow'
+import { DATABASE_LIST_GRID, RowSkeleton } from '../../components/DatabaseRow'
+import { DatabasesTable } from '../../components/DatabasesTable'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { ConnectDatabaseDialog } from '../../components/ConnectDatabaseDialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -64,15 +59,6 @@ function DatabaseListPage() {
   const { t } = useTranslation('databases')
   useEnvironmentScope()
   const { data: databases } = useSuspenseQuery(databaseListQueryOptions())
-  const parentRef = useRef<HTMLDivElement>(null)
-
-  const virtualizer = useVirtualizer({
-    count: databases.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 60,
-    overscan: 8,
-  })
-
   return (
     <div className="space-y-4">
       <PageHeader
@@ -97,41 +83,7 @@ function DatabaseListPage() {
           action={<NewDatabaseButton />}
         />
       ) : (
-        <div
-          ref={parentRef}
-          className="max-h-[70vh] overflow-auto rounded-lg border border-border bg-card"
-        >
-          <ListHeader />
-          <div
-            style={{
-              height: virtualizer.getTotalSize(),
-              position: 'relative',
-            }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const database = databases[virtualRow.index]
-              if (!database) {
-                return null
-              }
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <DatabaseRow database={database} />
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <DatabasesTable databases={databases} />
       )}
     </div>
   )

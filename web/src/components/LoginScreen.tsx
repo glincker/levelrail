@@ -28,6 +28,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { LoginBrandPanel } from './LoginBrandPanel'
 import { LoginAttribution } from './LoginAttribution'
+import { Display, Eyebrow, Lede } from './ui/typography'
 
 // internal/api/devmode.go's fixed pair; release builds ignore dev mode entirely (ADR 013).
 const DEV_MODE_USERNAME = 'dev'
@@ -139,14 +140,6 @@ export function LoginScreen({
   return (
     <div className="grid min-h-dvh bg-background lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
       <div className="relative flex min-w-0 flex-col px-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-10">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-72"
-          style={{
-            background:
-              'radial-gradient(60% 70% at 50% 0%, rgb(245 158 11 / 0.10), transparent 70%)',
-          }}
-        />
         <header className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span
@@ -172,24 +165,33 @@ export function LoginScreen({
             </Alert>
           ) : null}
 
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-              {isRegister ? 'Set up the admin account' : 'Sign in'}
-            </h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <Eyebrow>
               {isRegister
-                ? 'Create the first account for this instance. Registration is for the first account only.'
-                : 'Enter your credentials to continue.'}
-            </p>
+                ? t('foundation.signIn.eyebrowSetup')
+                : t('foundation.signIn.eyebrowSignIn')}
+            </Eyebrow>
+            <Display as="h1" size="3xl">
+              {isRegister
+                ? t('foundation.signIn.titleSetup')
+                : t('foundation.signIn.titleSignIn')}
+            </Display>
+            <Lede>
+              {isRegister
+                ? t('foundation.signIn.subtitleSetup')
+                : t('foundation.signIn.subtitleSignIn')}
+            </Lede>
           </div>
 
           <div className="space-y-4">
             {showRegisterTab ? (
               <Tabs value={tab} onValueChange={handleTabChange}>
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="sign-in">Sign in</TabsTrigger>
+                  <TabsTrigger value="sign-in">
+                    {t('foundation.signIn.tabSignIn')}
+                  </TabsTrigger>
                   <TabsTrigger value="register">
-                    Set up admin account
+                    {t('foundation.signIn.tabSetup')}
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="sign-in" className="space-y-3 pt-2">

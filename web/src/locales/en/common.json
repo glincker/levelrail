@@ -31,6 +31,13 @@
   },
   "appsList": {
     "title": "Apps",
+    "tableLabel": "Apps",
+    "colName": "Name",
+    "colTraffic": "Traffic 1h",
+    "colP95": "p95",
+    "colErrors": "Errors",
+    "colDeployed": "Deployed",
+    "selectApp": "Select {{name}}",
     "count_one": "{{count}} app",
     "count_other": "{{count}} apps",
     "count_filtered_one": "{{count}} of {{total}} app",
@@ -314,5 +321,35 @@
     "timeout": "The control plane has not come back after two minutes. Check the service on the server.",
     "keepWaiting": "Keep waiting",
     "dismiss": "Dismiss"
+  },
+  "foundation": {
+    "signIn": {
+      "eyebrowSignIn": "Sign in",
+      "eyebrowSetup": "First run",
+      "titleSignIn": "Sign in",
+      "titleSetup": "Set up the admin account",
+      "subtitleSignIn": "Enter your credentials to continue.",
+      "subtitleSetup": "Create the first account for this instance. Registration is for the first account only.",
+      "tabSignIn": "Sign in",
+      "tabSetup": "Set up admin account",
+      "or": "or",
+      "continueWith": "Continue with {{provider}}",
+      "sso": "SSO"
+    },
+    "banner": {
+      "dismiss": "Dismiss"
+    },
+    "saveBar": {
+      "label": "Unsaved changes",
+      "unsaved": "You have unsaved changes.",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "discard": "Discard"
+    },
+    "table": {
+      "actions": "Actions",
+      "select": "Select",
+      "rowActions": "Actions for {{name}}"
+    }
   }
 }

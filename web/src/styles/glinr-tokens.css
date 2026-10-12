@@ -13,6 +13,18 @@
   --glinr-border: oklch(0.922 0 0);
   --glinr-radius: 0.625rem;
 
+  --glinr-content-max: 72rem;
+  --glinr-content-max-wide: 88rem;
+  --glinr-page-gap: 1.5rem;
+  --glinr-tile-size: 2.5rem;
+  --glinr-hero-tile-size: 3rem;
+
+  /* Display and eyebrow type only. Swap the first family here to ship a
+     bundled face (e.g. Geist Variable); body copy stays on --font-sans. */
+  --glinr-font-display: var(--font-sans);
+  --glinr-font-eyebrow: var(--font-mono);
+  --glinr-display-weight: 300;
+
   --glinr-showcase-bg: #000;
   --glinr-showcase-surface: #0e0f11;
   --glinr-showcase-text: #cfcfd3;

@@ -1,22 +1,31 @@
 import type { ComponentType, SVGProps } from 'react'
 import BitbucketLogo from '@thesvg/react/bitbucket'
+import Auth0Logo from '@thesvg/react/auth0'
+import AuthentikLogo from '@thesvg/react/authentik'
 import ClickhouseLogo from '@thesvg/react/clickhouse'
+import CloudflareLogo from '@thesvg/react/cloudflare'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import DragonflyLogo from '@thesvg/react/dragonfly'
+import GiteaLogo from '@thesvg/react/gitea'
 import GitHubLogo from '@thesvg/react/github'
 import GitLabLogo from '@thesvg/react/gitlab'
 import GoLogo from '@thesvg/react/go'
+import GoogleLogo from '@thesvg/react/google'
 import GoogleChatLogo from '@thesvg/react/google-chat'
 import JavaLogo from '@thesvg/react/java'
+import KeycloakLogo from '@thesvg/react/keycloak'
 import KeydbLogo from '@thesvg/react/keydb'
 import MariadbLogo from '@thesvg/react/mariadb'
 import MattermostLogo from '@thesvg/react/mattermost'
+import MicrosoftLogo from '@thesvg/react/microsoft'
 import MicrosoftTeamsLogo from '@thesvg/react/microsoft-teams'
 import MongodbLogo from '@thesvg/react/mongodb'
 import MysqlLogo from '@thesvg/react/mysql'
 import NodedotjsLogo from '@thesvg/react/nodedotjs'
 import NtfyLogo from '@thesvg/react/ntfy'
+import OktaLogo from '@thesvg/react/okta'
+import OpenidLogo from '@thesvg/react/openid'
 import OpsgenieLogo from '@thesvg/react/opsgenie'
 import PagerdutyLogo from '@thesvg/react/pagerduty'
 import PostgresqlLogo from '@thesvg/react/postgresql'
@@ -58,6 +67,15 @@ export type BrandIconName =
   | 'opsgenie'
   | 'webex'
   | 'google-chat'
+  | 'google'
+  | 'microsoft'
+  | 'gitea'
+  | 'openid'
+  | 'okta'
+  | 'keycloak'
+  | 'auth0'
+  | 'authentik'
+  | 'cloudflare'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -90,6 +108,15 @@ const BRAND_ICONS: Record<
   opsgenie: OpsgenieLogo,
   webex: WebexLogo,
   'google-chat': GoogleChatLogo,
+  google: GoogleLogo,
+  microsoft: MicrosoftLogo,
+  gitea: GiteaLogo,
+  openid: OpenidLogo,
+  okta: OktaLogo,
+  keycloak: KeycloakLogo,
+  auth0: Auth0Logo,
+  authentik: AuthentikLogo,
+  cloudflare: CloudflareLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -124,11 +151,45 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'opsgenie',
   'webex',
   'google-chat',
+  'google',
+  'microsoft',
+  'gitea',
+  'openid',
+  'okta',
+  'keycloak',
+  'auth0',
+  'authentik',
+  'cloudflare',
 ]
+
+type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>
+
+// Single-colour variants that follow currentColor, for tiles that tint a
+// mark (disconnected state, dark surfaces) instead of using brand colours.
+const MONO_ICONS: Partial<Record<BrandIconName, SvgComponent>> = {
+  github: (p) => <GitHubLogo variant="mono" {...p} />,
+  google: (p) => <GoogleLogo variant="mono" {...p} />,
+  gitea: (p) => <GiteaLogo variant="mono" {...p} />,
+  go: (p) => <GoLogo variant="mono" {...p} />,
+}
+
+const NAME_SET: ReadonlySet<string> = new Set(BRAND_ICON_NAMES)
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function isBrandIconName(name: string): name is BrandIconName {
+  return NAME_SET.has(name)
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function hasMonoVariant(name: BrandIconName): boolean {
+  return name in MONO_ICONS
+}
 
 export interface BrandIconProps extends SVGProps<SVGSVGElement> {
   /** Which brand mark to render. */
   name: BrandIconName
+  /** Single-colour mark that follows currentColor, when the brand has one. */
+  mono?: boolean
 }
 
 // Renders a single brand/service logo. Size via a Tailwind `size-*`
@@ -136,12 +197,17 @@ export interface BrandIconProps extends SVGProps<SVGSVGElement> {
 // is normally paired with a visible text label.
 export function BrandIcon({
   name,
+  mono = false,
   'aria-hidden': ariaHidden,
   ...props
 }: BrandIconProps) {
   // mysql/go's default variants don't work on a light background
   // (white-on-transparent; a wordmark lockup), so both use an explicit
   // non-default variant. Every other icon's default variant is fine.
+  const MonoLogo = mono ? MONO_ICONS[name] : undefined
+  if (MonoLogo) {
+    return <MonoLogo aria-hidden={ariaHidden ?? 'true'} {...props} />
+  }
   if (name === 'mysql') {
     return (
       <MysqlLogo

@@ -1,15 +1,17 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import {
-  GithubLogoIcon,
-  GoogleLogoIcon,
-  ShieldCheckIcon,
-  WindowsLogoIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CopyIcon } from '@phosphor-icons/react/dist/ssr'
 import type { OAuthProviderSettings } from '../queries/oauth'
 import { useUpdateOAuthProviderSettings } from '../queries/oauth'
-import { Alert, AlertDescription } from './ui/alert'
+import {
+  brandKeyFor,
+  callbackUrl,
+  connectionState,
+} from '../lib/oauthProviders'
+import { BrandTile } from './BrandLogoBadge'
+import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
 import {
@@ -19,22 +21,22 @@ import {
   FieldGroup,
   FieldLabel,
 } from './ui/field'
+import { FormSection, StickySaveBar } from './ui/form-section'
 import { Input } from './ui/input'
 import { Switch } from './ui/switch'
 import { toast } from './ui/toast'
 
-const PROVIDER_META: Record<string, { label: string; icon: React.ReactNode }> =
-  {
-    google: { label: 'Google', icon: <GoogleLogoIcon className="size-4" /> },
-    github: { label: 'GitHub', icon: <GithubLogoIcon className="size-4" /> },
-    microsoft: {
-      label: 'Microsoft',
-      icon: <WindowsLogoIcon className="size-4" />,
-    },
-    oidc: { label: 'OIDC / SSO', icon: <ShieldCheckIcon className="size-4" /> },
-  }
+interface SchemaMessages {
+  clientId: string
+  clientSecret: string
+  issuerUrl: string
+}
 
-function buildSchema(provider: string, hasClientSecret: boolean) {
+function buildSchema(
+  provider: string,
+  hasClientSecret: boolean,
+  msg: SchemaMessages,
+) {
   return z
     .object({
       enabled: z.boolean(),
@@ -51,22 +53,21 @@ function buildSchema(provider: string, hasClientSecret: boolean) {
       if (!data.clientId) {
         ctx.addIssue({
           code: 'custom',
-          message: 'Client ID is required to enable this provider',
+          message: msg.clientId,
           path: ['clientId'],
         })
       }
       if (!hasClientSecret && !data.clientSecret) {
         ctx.addIssue({
           code: 'custom',
-          message:
-            'Client secret is required the first time this provider is enabled',
+          message: msg.clientSecret,
           path: ['clientSecret'],
         })
       }
       if (provider === 'oidc' && !data.issuerUrl) {
         ctx.addIssue({
           code: 'custom',
-          message: 'Issuer URL is required to enable OIDC',
+          message: msg.issuerUrl,
           path: ['issuerUrl'],
         })
       }
@@ -75,30 +76,60 @@ function buildSchema(provider: string, hasClientSecret: boolean) {
 
 type FormValues = z.infer<ReturnType<typeof buildSchema>>
 
-// One card per OAuth provider: enabled toggle, client ID, client secret
-// (write-only, never redisplayed), and an optional email domain allowlist.
+const STATE_BADGE = {
+  connected: 'success',
+  disabled: 'muted',
+  unconfigured: 'outline',
+} as const
+
+// One card per OAuth provider: brand tile and connection state in the
+// header, credentials and restrictions as two FormSections.
 export function OAuthProviderCard({
   settings,
 }: {
   settings: OAuthProviderSettings
 }) {
+  const { t } = useTranslation('settings')
+  const providerLabel = (provider: string): string => {
+    switch (provider) {
+      case 'google':
+        return t('oauthPage.providers.google')
+      case 'github':
+        return t('oauthPage.providers.github')
+      case 'microsoft':
+        return t('oauthPage.providers.microsoft')
+      case 'oidc':
+        return t('oauthPage.providers.oidc')
+      default:
+        return provider
+    }
+  }
   const updateSettings = useUpdateOAuthProviderSettings()
-  const meta = PROVIDER_META[settings.provider]
   const isOIDC = settings.provider === 'oidc'
-  const { control, register, handleSubmit, formState } = useForm<FormValues>({
-    resolver: zodResolver(
-      buildSchema(settings.provider, settings.has_client_secret),
-    ),
-    values: {
-      enabled: settings.enabled,
-      clientId: settings.client_id ?? '',
-      clientSecret: '',
-      allowedEmailDomain: settings.allowed_email_domain ?? '',
-      issuerUrl: settings.issuer_url ?? '',
-      displayName: settings.display_name ?? '',
-    },
-    resetOptions: { keepDirtyValues: true },
-  })
+  const label = providerLabel(settings.provider)
+  const state = connectionState(settings)
+  const callback = callbackUrl(window.location.origin, settings.provider)
+  const id = (suffix: string) => `${settings.provider}-${suffix}`
+
+  const { control, register, handleSubmit, reset, formState } =
+    useForm<FormValues>({
+      resolver: zodResolver(
+        buildSchema(settings.provider, settings.has_client_secret, {
+          clientId: t('oauthPage.errors.clientId'),
+          clientSecret: t('oauthPage.errors.clientSecret'),
+          issuerUrl: t('oauthPage.errors.issuerUrl'),
+        }),
+      ),
+      values: {
+        enabled: settings.enabled,
+        clientId: settings.client_id ?? '',
+        clientSecret: '',
+        allowedEmailDomain: settings.allowed_email_domain ?? '',
+        issuerUrl: settings.issuer_url ?? '',
+        displayName: settings.display_name ?? '',
+      },
+      resetOptions: { keepDirtyValues: true },
+    })
 
   const onSubmit = handleSubmit((values) => {
     updateSettings.mutate(
@@ -116,7 +147,7 @@ export function OAuthProviderCard({
       {
         onSuccess: () => {
           toast.add({
-            title: `${meta?.label ?? settings.provider} settings saved.`,
+            title: t('oauthPage.saved', { provider: label }),
             type: 'success',
           })
         },
@@ -124,12 +155,46 @@ export function OAuthProviderCard({
     )
   })
 
+  const copyCallback = () => {
+    void navigator.clipboard.writeText(callback).then(
+      () => {
+        toast.add({ title: t('oauthPage.callbackCopied'), type: 'success' })
+      },
+      () => {
+        toast.add({ title: t('oauthPage.callbackCopyFailed'), type: 'error' })
+      },
+    )
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {meta?.icon}
-          {meta?.label ?? settings.provider}
+        <CardTitle className="flex flex-wrap items-center gap-3">
+          <BrandTile
+            name={brandKeyFor(settings.provider)}
+            label={label}
+            muted={state !== 'connected'}
+          />
+          <span className="text-base font-medium">{label}</span>
+          <Badge variant={STATE_BADGE[state]}>
+            {t(`oauthPage.state.${state}`)}
+          </Badge>
+          <span className="ml-auto flex items-center gap-2">
+            <FieldLabel htmlFor={id('enabled')} className="text-sm font-normal">
+              {t('oauthPage.enable')}
+            </FieldLabel>
+            <Controller
+              control={control}
+              name="enabled"
+              render={({ field }) => (
+                <Switch
+                  id={id('enabled')}
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -137,114 +202,138 @@ export function OAuthProviderCard({
           onSubmit={(e) => {
             void onSubmit(e)
           }}
-          className="space-y-4"
+          className="space-y-2"
         >
-          <Field orientation="horizontal">
-            <Controller
-              control={control}
-              name="enabled"
-              render={({ field }) => (
-                <Switch
-                  id={`${settings.provider}-enabled`}
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              )}
-            />
-            <FieldLabel htmlFor={`${settings.provider}-enabled`}>
-              Allow sign-in with {meta?.label ?? settings.provider}
-            </FieldLabel>
-          </Field>
-
-          <FieldGroup className="gap-3">
-            {isOIDC ? (
+          <FormSection
+            title={t('oauthPage.credentials.title')}
+            description={t('oauthPage.credentials.description', {
+              provider: label,
+            })}
+            error={
+              updateSettings.isError ? updateSettings.error.message : undefined
+            }
+          >
+            <FieldGroup className="gap-4">
               <Field>
-                <FieldLabel htmlFor={`${settings.provider}-issuer-url`}>
-                  Issuer URL
+                <FieldLabel htmlFor={id('callback')}>
+                  {t('oauthPage.callbackLabel')}
+                </FieldLabel>
+                <div className="flex gap-2">
+                  <Input
+                    id={id('callback')}
+                    readOnly
+                    value={callback}
+                    className="font-mono"
+                    onFocus={(e) => {
+                      e.currentTarget.select()
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={t('oauthPage.copyCallback')}
+                    onClick={copyCallback}
+                  >
+                    <CopyIcon aria-hidden="true" />
+                  </Button>
+                </div>
+              </Field>
+              {isOIDC ? (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor={id('issuer-url')}>
+                      {t('oauthPage.issuerUrl.label')}
+                    </FieldLabel>
+                    <Input
+                      id={id('issuer-url')}
+                      {...register('issuerUrl')}
+                      placeholder="https://idp.example.com"
+                      className="font-mono"
+                    />
+                    <FieldDescription>
+                      {t('oauthPage.issuerUrl.hint')}
+                    </FieldDescription>
+                    <FieldError errors={[formState.errors.issuerUrl]} />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor={id('display-name')}>
+                      {t('oauthPage.displayName.label')}
+                    </FieldLabel>
+                    <Input
+                      id={id('display-name')}
+                      {...register('displayName')}
+                      placeholder="Okta"
+                    />
+                    <FieldDescription>
+                      {t('oauthPage.displayName.hint')}
+                    </FieldDescription>
+                  </Field>
+                </>
+              ) : null}
+              <Field>
+                <FieldLabel htmlFor={id('client-id')}>
+                  {t('oauthPage.clientId')}
                 </FieldLabel>
                 <Input
-                  id={`${settings.provider}-issuer-url`}
-                  {...register('issuerUrl')}
-                  placeholder="https://idp.example.com"
+                  id={id('client-id')}
+                  {...register('clientId')}
                   className="font-mono"
+                  autoComplete="off"
                 />
-                <FieldDescription>
-                  Your identity provider's OIDC issuer, e.g. what
-                  /.well-known/openid-configuration is served from.
-                </FieldDescription>
-                <FieldError errors={[formState.errors.issuerUrl]} />
+                <FieldError errors={[formState.errors.clientId]} />
               </Field>
-            ) : null}
-            {isOIDC ? (
               <Field>
-                <FieldLabel htmlFor={`${settings.provider}-display-name`}>
-                  Display name (optional)
+                <FieldLabel htmlFor={id('client-secret')}>
+                  {t('oauthPage.clientSecret.label')}
                 </FieldLabel>
                 <Input
-                  id={`${settings.provider}-display-name`}
-                  {...register('displayName')}
-                  placeholder="Okta"
+                  id={id('client-secret')}
+                  type="password"
+                  autoComplete="new-password"
+                  {...register('clientSecret')}
+                  placeholder={
+                    settings.has_client_secret
+                      ? t('oauthPage.clientSecret.unchanged')
+                      : ''
+                  }
                 />
                 <FieldDescription>
-                  Shown on the login button as "Continue with ...". Defaults to
-                  "SSO".
+                  {settings.has_client_secret
+                    ? t('oauthPage.clientSecret.stored')
+                    : t('oauthPage.clientSecret.neverShown')}
                 </FieldDescription>
+                <FieldError errors={[formState.errors.clientSecret]} />
               </Field>
-            ) : null}
+            </FieldGroup>
+          </FormSection>
+
+          <FormSection
+            title={t('oauthPage.restrict.title')}
+            description={t('oauthPage.restrict.description')}
+          >
             <Field>
-              <FieldLabel htmlFor={`${settings.provider}-client-id`}>
-                Client ID
+              <FieldLabel htmlFor={id('domain')}>
+                {t('oauthPage.restrict.label')}
               </FieldLabel>
               <Input
-                id={`${settings.provider}-client-id`}
-                {...register('clientId')}
-                className="font-mono"
-              />
-              <FieldError errors={[formState.errors.clientId]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${settings.provider}-client-secret`}>
-                Client secret
-              </FieldLabel>
-              <Input
-                id={`${settings.provider}-client-secret`}
-                type="password"
-                {...register('clientSecret')}
-                placeholder={settings.has_client_secret ? 'Unchanged' : ''}
-              />
-              <FieldDescription>
-                {settings.has_client_secret
-                  ? 'A secret is already stored. Leave blank to keep it.'
-                  : 'Never shown again once saved.'}
-              </FieldDescription>
-              <FieldError errors={[formState.errors.clientSecret]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={`${settings.provider}-domain`}>
-                Restrict to email domain (optional)
-              </FieldLabel>
-              <Input
-                id={`${settings.provider}-domain`}
+                id={id('domain')}
                 {...register('allowedEmailDomain')}
                 placeholder="example.com"
               />
-              <FieldDescription>
-                Only new sign-ins from this email domain get an account created
-                automatically. Leave blank to allow any email.
-              </FieldDescription>
             </Field>
-          </FieldGroup>
+          </FormSection>
 
-          <Button type="submit" size="sm" disabled={updateSettings.isPending}>
-            {updateSettings.isPending ? 'Saving...' : 'Save'}
-          </Button>
-          {updateSettings.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>
-                {updateSettings.error.message}
-              </AlertDescription>
-            </Alert>
-          ) : null}
+          <StickySaveBar
+            dirty={formState.isDirty}
+            saving={updateSettings.isPending}
+            onSave={() => {
+              void onSubmit()
+            }}
+            onReset={() => {
+              reset()
+            }}
+          />
         </form>
       </CardContent>
     </Card>

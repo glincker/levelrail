@@ -1,9 +1,8 @@
 import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { TeaBagIcon } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { GitProviderPage } from '@/components/settings/GitProviderPage'
 import { GiteaAppConnectionCard } from '../../components/GiteaAppConnectionCard'
 import { GiteaAppReposCard } from '../../components/GiteaAppReposCard'
 import { giteaAppStatusQueryOptions } from '../../queries/giteaApp'
@@ -52,18 +51,9 @@ function GiteaAppSettingsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <TeaBagIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="Gitea App"
-          description="Connect a self-hosted Gitea OAuth2 application for repository browsing and webhook-driven deploys."
-        />
-      </div>
+    <GitProviderPage provider="gitea">
       <GiteaAppConnectionCard />
       <GiteaAppReposCard />
-    </div>
+    </GitProviderPage>
   )
 }

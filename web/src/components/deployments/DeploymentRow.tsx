@@ -72,7 +72,7 @@ export function EnvPill({ d }: { d: Deployment }) {
   )
 }
 
-function Author({ name }: { name: string }) {
+export function Author({ name }: { name: string }) {
   if (!name) return null
   return (
     <span
@@ -85,7 +85,7 @@ function Author({ name }: { name: string }) {
   )
 }
 
-function RowThumb({ url, app }: { url: string | null; app: string }) {
+export function RowThumb({ url, app }: { url: string | null; app: string }) {
   const [failed, setFailed] = useState<string | null>(null)
   if (url === null || url === failed) return null
   return (

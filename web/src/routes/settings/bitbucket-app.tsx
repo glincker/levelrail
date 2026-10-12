@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { GitBranchIcon } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
 import { BitbucketAppConnectionCard } from '../../components/BitbucketAppConnectionCard'
 import { BitbucketAppReposCard } from '../../components/BitbucketAppReposCard'
@@ -10,7 +9,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '@/components/settings/SettingsSkeletons'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { GitProviderPage } from '@/components/settings/GitProviderPage'
 
 // Account-level, mirroring routes/settings/gitlab-app.tsx's own
 // structure and placement.
@@ -52,18 +51,9 @@ function BitbucketAppSettingsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <GitBranchIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="Bitbucket App"
-          description="Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys."
-        />
-      </div>
+    <GitProviderPage provider="bitbucket">
       <BitbucketAppConnectionCard />
       <BitbucketAppReposCard />
-    </div>
+    </GitProviderPage>
   )
 }
