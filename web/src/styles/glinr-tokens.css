@@ -41,8 +41,11 @@
   --glinr-hero-tile-size: 2.5rem;
   --glinr-hero-tile-size-comfortable: 2.5rem;
   --glinr-content-narrow: 40rem;
-  --glinr-content-max: 72rem;
-  --glinr-content-max-wide: 88rem;
+  --glinr-content-max: 96rem;
+  --glinr-content-max-wide: 120rem;
+  --glinr-page-pad-x: 1.5rem;
+  --glinr-aside-width: 20rem;
+  --glinr-aside-top: 1.5rem;
   --glinr-radius-sm: 0.375rem;
   --glinr-radius-md: 0.5rem;
   --glinr-radius: 0.625rem;

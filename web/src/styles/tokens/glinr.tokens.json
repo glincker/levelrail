@@ -299,8 +299,8 @@
       }
     },
     "max": {
-      "$value": "72rem",
-      "$description": "Default page content width.",
+      "$value": "96rem",
+      "$description": "Default page content width, fluid below it and centered above it.",
       "$extensions": {
         "glinr": {
           "name": "content-max",
@@ -310,7 +310,7 @@
       }
     },
     "max-wide": {
-      "$value": "88rem",
+      "$value": "120rem",
       "$description": "Wide page content width for tables and dashboards.",
       "$extensions": {
         "glinr": {
@@ -318,6 +318,27 @@
           "stability": "stable",
           "tailwind": "container-glinr-wide"
         }
+      }
+    },
+    "page-pad-x": {
+      "$value": "1.5rem",
+      "$description": "Symmetric left and right padding of the page column from md up.",
+      "$extensions": {
+        "glinr": { "name": "page-pad-x", "stability": "experimental" }
+      }
+    },
+    "aside": {
+      "$value": "20rem",
+      "$description": "Width of the right rail slot in PageTemplate from xl up.",
+      "$extensions": {
+        "glinr": { "name": "aside-width", "stability": "experimental" }
+      }
+    },
+    "aside-top": {
+      "$value": "1.5rem",
+      "$description": "Sticky offset of the right rail inside the scrolling main column.",
+      "$extensions": {
+        "glinr": { "name": "aside-top", "stability": "experimental" }
       }
     }
   },
