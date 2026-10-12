@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
@@ -18,6 +18,7 @@ import { Banner } from '@/components/ui/banner'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { FormSection } from '@/components/ui/form-section'
+import { CliAccessRail } from '../../components/settings/CliAccessRail'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Matches the copy-row idiom GitSourceWebhookBanner already established
@@ -98,6 +99,8 @@ function CliAccessPage() {
       eyebrow={t('cliAccessPage.eyebrow')}
       title={t('cliAccessPage.title')}
       description={t('cliAccessPage.description')}
+      aside={<CliAccessRail pending={requests.length} apiUrl={apiUrl} />}
+      asideLabel={t('cliAccessPage.rail.label')}
       actions={
         <HelpLink path="/cli-reference" label={t('cliAccessPage.help')} />
       }
@@ -143,16 +146,6 @@ function CliAccessPage() {
           <CopyCommand command="levelrail-cli auth login --device" />
         </FormSection>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        {t('cliAccessPage.ciHint')}{' '}
-        <Link
-          to="/settings/tokens"
-          className="font-medium text-foreground underline underline-offset-4 hover:no-underline"
-        >
-          {t('cliAccessPage.ciLink')}
-        </Link>
-      </p>
 
       <DeviceAuthRequestTable
         requests={requests}

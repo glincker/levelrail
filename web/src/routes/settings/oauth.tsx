@@ -7,6 +7,7 @@ import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
 import { oauthSettingsQueryOptions } from '../../queries/oauth'
 import { OAuthProviderRow } from '../../components/OAuthProviderRow'
+import { OAuthRail } from '../../components/settings/OAuthRail'
 import { connectionState } from '../../lib/oauthProviders'
 import {
   SettingsCardSkeleton,
@@ -45,6 +46,8 @@ function OAuthSettingsPage() {
       eyebrow={t('oauthPage.eyebrow')}
       title={t('oauthPage.title')}
       description={t('oauthPage.description')}
+      aside={<OAuthRail settings={settings} />}
+      asideLabel={t('oauthPage.rail.label')}
       status={
         <Badge variant={connected > 0 ? 'success' : 'muted'}>
           {t('oauthPage.connectedCount', { count: connected })}
