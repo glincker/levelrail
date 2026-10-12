@@ -56,7 +56,7 @@ const PROVIDER_PLACEHOLDER: Record<string, string> = {
 // Instance-level cloud provider credentials for "nodes provision" and the
 // nodes page's own Add node wizard: GET/POST /api/v1/node-providers. One
 // card per known provider, the same "one Card per credential" shape
-// OAuthProviderCard and EmailSettingsCard already establish.
+// OAuthProviderForm and EmailSettingsCard already establish.
 export function NodeProviderCredentialsCard() {
   const providers = useNodeProviders()
 

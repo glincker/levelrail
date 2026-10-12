@@ -6,7 +6,7 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { Badge } from '@/components/ui/badge'
 import { oauthSettingsQueryOptions } from '../../queries/oauth'
-import { OAuthProviderCard } from '../../components/OAuthProviderCard'
+import { OAuthProviderRow } from '../../components/OAuthProviderRow'
 import { connectionState } from '../../lib/oauthProviders'
 import {
   SettingsCardSkeleton,
@@ -60,11 +60,11 @@ function OAuthSettingsPage() {
         </Banner>
       }
     >
-      <div className="space-y-6">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4">
         {settings.map((s) => (
-          <OAuthProviderCard key={s.provider} settings={s} />
+          <OAuthProviderRow key={s.provider} settings={s} />
         ))}
-      </div>
+      </ul>
     </PageTemplate>
   )
 }
