@@ -53,6 +53,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMobileRoutes(mux)
 
 	var h http.Handler = mux
+	h = rt.bodyLimitMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
