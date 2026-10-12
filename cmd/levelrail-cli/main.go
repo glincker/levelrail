@@ -199,6 +199,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuthEngine(prog, args[1:], stdout, stderr, lookupEnv)
 	case "api-docs":
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "deploy-link":
+		return runDeployLink(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system":
@@ -357,6 +359,7 @@ Usage:
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
   %[1]s proxy setup|status|apply|verify|disable [flags]       let this server manage its routes in that proxy (Traefik)
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
+  %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create

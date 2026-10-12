@@ -1231,6 +1231,17 @@ Prints every HTTP route registered on the control plane: method, path, required 
 levelrail-cli api-docs --query "routes[?method=='GET'].path"
 ```
 
+## Deploy link
+
+```
+levelrail-cli deploy-link --image REF --name NAME --port PORT [--env K1,K2] [--health /path] [--server URL] [--launcher URL] [flags]
+```
+Prints a "Deploy with" link and the README Markdown for it, after validating the image reference, DNS label name, port range, uppercase env names and health path. Env values are never part of a link. Without `--launcher`, the launcher is `APP_BRAND_DOCS_URL` plus `/deploy.html`. `--server` also prints the direct `https://<server>/apps/new?deploy=1&...` link. Supports `--json`, `--output` and `--query`. See [Deploy links and badge](deploy-link.md).
+
+```
+levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
+```
+
 ## AI assistant
 
 Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider, model and key set with `settings ai-assistant set`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](ai-assistant-chat.md).
