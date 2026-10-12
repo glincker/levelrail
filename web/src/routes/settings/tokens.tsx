@@ -6,22 +6,14 @@ import { TokenTable } from '../../components/TokenTable'
 import { CreateTokenDialog } from '../../components/CreateTokenDialog'
 import { useBrand } from '../../hooks/useBrand'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
+import { useTranslation } from 'react-i18next'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
-// Account-level, not scoped to one app, so it lives under
-// routes/settings/ rather than routes/apps/, for API token management.
-// Reachable directly at
-// /settings/tokens; no nav link wires it in yet, see this route's own
-// report for why (routes/__root.tsx had unrelated concurrent edits in
-// flight when this was built, deliberately avoiding stepping on live
-// work in the same file from a parallel pass).
-//
-// Typed loader primes the Query cache before render, same pattern
-// routes/apps/index.tsx already established: the component below only
-// ever reads that warm cache via useSuspenseQuery, never fetches data in
-// its own body (no data fetching in component bodies is a project-wide
-// rule).
+// Account-level, so it lives under routes/settings/. The loader primes
+// the cache; the component only reads it.
 export const Route = createFileRoute('/settings/tokens')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(tokenListQueryOptions()),
@@ -30,42 +22,51 @@ export const Route = createFileRoute('/settings/tokens')({
 })
 
 function TokensPage() {
+  const { t } = useTranslation('settings')
   const { data: tokens } = useSuspenseQuery(tokenListQueryOptions())
   const brand = useBrand()
+  const active = tokens.filter((tok) => !tok.revoked_at)
+  const longLivedRoot = active.filter(
+    (tok) => tok.abilities.includes('root') && !tok.expires_at,
+  ).length
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <KeyIcon className="size-4" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title="API tokens"
-            description="Scoped, revocable credentials for the CLI, CI, and MCP integrations. Session login only mints tokens: a token can never mint or revoke another token on its own behalf."
-            actions={<CreateTokenDialog />}
-          />
-          {/* Dokploy's API-keys screen links straight to /swagger from
-              this same header: the moment someone has a credential
-              is the moment they most want to know what to do with it.
-              brand.DocsURL is a real field on the /api/v1/brand response
-              (part of the rebrandability contract), not an invented
-              route, so this only renders when the running instance
-              actually configured one. */}
-          {brand.DocsURL ? (
-            <a
-              href={brand.DocsURL}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-1 inline-block text-sm text-primary underline underline-offset-4 hover:no-underline"
-            >
-              View API docs
-            </a>
-          ) : null}
-        </div>
-      </div>
+    <PageTemplate
+      icon={<KeyIcon />}
+      eyebrow={t('tokensPage.eyebrow')}
+      title={t('tokensPage.title')}
+      description={t('tokensPage.description')}
+      helpPath="/api-reference"
+      helpLabel={t('tokensPage.help')}
+      status={
+        <Badge variant={active.length > 0 ? 'success' : 'muted'}>
+          {t('tokensPage.activeCount', { count: active.length })}
+        </Badge>
+      }
+      actions={<CreateTokenDialog />}
+      banners={
+        longLivedRoot > 0 ? (
+          <Banner
+            variant="warning"
+            title={t('tokensPage.banner.title', { count: longLivedRoot })}
+          >
+            {t('tokensPage.banner.body')}
+          </Banner>
+        ) : null
+      }
+    >
+      {brand.DocsURL ? (
+        <a
+          href={brand.DocsURL}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block text-sm text-primary underline underline-offset-4 hover:no-underline"
+        >
+          {t('tokensPage.docsLink')}
+        </a>
+      ) : null}
       <TokenTable tokens={tokens} />
-    </div>
+    </PageTemplate>
   )
 }
 

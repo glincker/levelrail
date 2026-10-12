@@ -1,22 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import {
-  CheckCircleIcon,
-  MinusCircleIcon,
-  RobotIcon,
-} from '@phosphor-icons/react/dist/ssr'
 import type { AiAssistantSettings } from '../queries/aiAssistantSettings'
 import {
   useClearAiAssistantSettings,
   useUpdateAiAssistantSettings,
 } from '../queries/aiAssistantSettings'
-import { StatusBadge } from '@/components/ui/status-badge'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -84,25 +72,8 @@ export function AiAssistantSettingsCard({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <RobotIcon className="size-4" />
-          AI Assistant
-          <StatusBadge
-            variant={settings.configured ? 'success' : 'muted'}
-            label={settings.configured ? 'Configured' : 'Not configured'}
-            icon={settings.configured ? CheckCircleIcon : MinusCircleIcon}
-          />
-        </CardTitle>
-        <CardDescription>
-          Bring your own LLM API key to chat with an assistant that reads logs,
-          metrics, and deploy history through the platform&apos;s own MCP tools.
-          It always pauses for your approval before any action that changes
-          state (deploy, rollback, restart).
-        </CardDescription>
-      </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Field>
             <FieldLabel htmlFor="ai-assistant-provider">Provider</FieldLabel>
             <Select

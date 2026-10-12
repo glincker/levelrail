@@ -14,7 +14,7 @@ import { routeErrorMessage } from '../../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // This project's own topology: how its apps, databases, and shared
 // volumes actually relate, derived from existing desired state (see
@@ -40,12 +40,11 @@ function ProjectTopologyPage() {
   const empty = graph.nodes.length === 0
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        breadcrumb={<Breadcrumbs projectId={id} />}
-        title={`${project.name}: Topology`}
-        description="How this project's apps, databases, and shared volumes relate, derived from their actual configuration."
-      />
+    <PageTemplate
+      breadcrumb={<Breadcrumbs projectId={id} />}
+      title={`${project.name}: Topology`}
+      description="How this project's apps, databases, and shared volumes relate, derived from their actual configuration."
+    >
       {empty ? (
         <EmptyState
           icon={<ShareNetworkIcon className="size-5" />}
@@ -64,7 +63,7 @@ function ProjectTopologyPage() {
       ) : (
         <ProjectTopologyView graph={graph} />
       )}
-    </div>
+    </PageTemplate>
   )
 }
 

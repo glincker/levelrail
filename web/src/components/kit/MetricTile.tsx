@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { formatDeltaPercent } from '@/lib/deltaPercent'
 import type { ReactNode } from 'react'
 import { ArrowDownIcon, ArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
@@ -67,9 +68,9 @@ export function MetricTile({
         <span className="truncate">{label}</span>
       </div>
       <div className="flex items-baseline gap-1.5">
-        <span className="text-2xl font-semibold tracking-tight">
+        <Display as="span" size="page" className="tabular-nums">
           {typeof value === 'number' ? <AnimatedNumber value={value} /> : value}
-        </span>
+        </Display>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
         {delta && (
           <span className="ml-auto self-center">

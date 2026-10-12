@@ -21,14 +21,14 @@ import {
   RocketLaunchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -464,30 +464,30 @@ export function EditAlertRuleDialog({
   })
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetTrigger render={<Button variant="outline" size="sm" />}>
         <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
         Edit
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5">
+      </SheetTrigger>
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-1.5">
             <PencilSimpleIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
             Edit alert rule
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Fully replaces this rule&apos;s configuration. Its notification
             delivery history stays attached to the same rule id.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <form
           onSubmit={(e) => {
             void onSubmit(e)
           }}
-          className="space-y-4"
+          className="space-y-4 px-4 pb-4"
         >
           <Field>
             <FieldLabel htmlFor="edit-rule-name">Name</FieldLabel>
@@ -831,13 +831,13 @@ export function EditAlertRuleDialog({
             </p>
           ) : null}
 
-          <DialogFooter>
+          <SheetFooter>
             <Button type="submit" disabled={updateRule.isPending}>
               {updateRule.isPending ? 'Saving...' : 'Save changes'}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

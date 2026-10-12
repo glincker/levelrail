@@ -5,13 +5,10 @@ import {
   EnvelopeIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
+import { useTranslation } from 'react-i18next'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { RevokeInviteDialog } from './RevokeInviteDialog'
@@ -67,13 +64,14 @@ export function InvitesTable({
   isRoot: boolean
   ownUserID?: string
 }) {
+  const { t } = useTranslation('settings')
   if (invites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-12 text-center">
-        <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
-          <EnvelopeIcon className="size-5" />
+      <div className="flex items-center gap-3 py-4">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <EnvelopeIcon className="size-4" />
         </div>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <p className="text-sm font-medium text-foreground">
             No pending invites
           </p>
@@ -85,70 +83,88 @@ export function InvitesTable({
     )
   }
 
+  const columns: ResponsiveColumn<InviteResource>[] = [
+    {
+      id: 'email',
+      primary: true,
+      header: 'Email',
+      cell: (invite) => (
+        <span className="font-medium break-all text-foreground">
+          {invite.email}
+        </span>
+      ),
+    },
+    {
+      id: 'role',
+      header: 'Role',
+      priority: 2,
+      cell: (invite) => invite.role ?? 'custom',
+    },
+    {
+      id: 'sent',
+      header: 'Sent',
+      priority: 3,
+      cell: (invite) => (
+        <span className="text-muted-foreground">
+          {new Date(invite.created_at).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      id: 'expires',
+      header: 'Expires',
+      priority: 3,
+      cell: (invite) => (
+        <span className="text-muted-foreground">
+          {new Date(invite.expires_at).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      cell: (invite) =>
+        invite.expired ? (
+          <Badge variant="destructive">Expired</Badge>
+        ) : (
+          <Badge variant="muted">Pending</Badge>
+        ),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Sent</TableHead>
-            <TableHead>Expires</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {invites.map((invite) => {
-            const link = links[invite.id]
-            return (
-              <TableRow
-                key={invite.id}
-                className={invite.expired ? 'opacity-60' : undefined}
+    <ResponsiveTable
+      rows={invites}
+      columns={columns}
+      getRowId={(invite) => invite.id}
+      ariaLabel={t('tables.invites')}
+      getRowProps={(invite) => ({
+        className: invite.expired ? 'opacity-60' : undefined,
+      })}
+      renderActions={(invite) => {
+        const link = links[invite.id]
+        return (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {link ? (
+              <CopyLinkButton link={link} />
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled
+                title="The invite link was only shown when this invite was created. Revoke and send a new one if it's needed again."
               >
-                <TableCell className="font-medium text-foreground">
-                  {invite.email}
-                </TableCell>
-                <TableCell>{invite.role ?? 'custom'}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(invite.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {new Date(invite.expires_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  {invite.expired ? (
-                    <Badge variant="destructive">Expired</Badge>
-                  ) : (
-                    <Badge variant="muted">Pending</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    {link ? (
-                      <CopyLinkButton link={link} />
-                    ) : (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled
-                        title="The invite link was only shown when this invite was created. Revoke and send a new one if it's needed again."
-                      >
-                        <CopyIcon />
-                        Copy link
-                      </Button>
-                    )}
-                    {isRoot || invite.created_by === ownUserID ? (
-                      <RevokeInviteDialog invite={invite} />
-                    ) : null}
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </div>
+                <CopyIcon />
+                Copy link
+              </Button>
+            )}
+            {isRoot || invite.created_by === ownUserID ? (
+              <RevokeInviteDialog invite={invite} />
+            ) : null}
+          </div>
+        )
+      }}
+    />
   )
 }

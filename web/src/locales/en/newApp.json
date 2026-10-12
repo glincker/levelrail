@@ -128,5 +128,30 @@
   "toast": {
     "created": "Creating \"{{name}}\".",
     "watching": "Watching the first build now."
+  },
+  "deployLink": {
+    "title": "Prefilled from a link: review before deploying",
+    "fromSource": "This form was filled in by a link from {{host}}. Nothing is created until you press Deploy.",
+    "fromUnknown": "This form was filled in by a link. Nothing is created until you press Deploy.",
+    "ignoredTitle": "Some link parameters were ignored",
+    "ignoredBody": "These were missing or invalid: {{params}}.",
+    "name": "Name",
+    "image": "Image",
+    "port": "Port",
+    "portHint": "The port the app listens on inside its container.",
+    "health": "Health check path",
+    "healthHint": "Leave empty to skip the health check.",
+    "envTitle": "Environment variables",
+    "envHint": "The link names these variables. Enter your own values; they are stored as secrets.",
+    "envValue": "Value for {{key}}",
+    "deploy": "Deploy",
+    "deploying": "Creating...",
+    "missingImage": "The link did not include a valid image, so choose where this app comes from below.",
+    "errors": {
+      "name": "Use lowercase letters, digits and hyphens.",
+      "image": "Enter an image such as ghcr.io/you/app:latest.",
+      "port": "Enter a port from 1 to 65535.",
+      "health": "The path must start with a single slash."
+    }
   }
 }

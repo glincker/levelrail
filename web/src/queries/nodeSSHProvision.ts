@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { SSHNodeProvisionResource } from '../types/nodeSSHProvision'
+import type {
+  SSHNodeProvisionResource,
+  SSHProvisionPreflightResource,
+} from '../types/nodeSSHProvision'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const sshNodeProvisionKeys = {
@@ -20,6 +23,38 @@ export interface CreateSSHNodeProvisionInput {
   name: string
   role: 'general' | 'build'
   control_plane_addr: string
+  host_key_fingerprint?: string
+  insecure_skip_host_key_check?: boolean
+}
+
+export interface SSHProvisionPreflightInput {
+  host: string
+  port?: number
+}
+
+async function preflightSSHNodeProvision(
+  input: SSHProvisionPreflightInput,
+): Promise<SSHProvisionPreflightResource> {
+  const res = await fetch('/api/v1/nodes/ssh-provision/preflight', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `read the server host key failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as SSHProvisionPreflightResource
+}
+
+// Reads the server's host keys without authenticating; nothing is cached.
+export function usePreflightSSHNodeProvision() {
+  return useMutation({ mutationFn: preflightSSHNodeProvision })
 }
 
 async function createSSHNodeProvision(

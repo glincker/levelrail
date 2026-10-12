@@ -10,6 +10,7 @@ import { CreateTokenDialog } from './CreateTokenDialog'
 import { TokenTable } from './TokenTable'
 import { collectAgentNames } from '../lib/agentNames'
 import { buildAuditLogParams, type AuditLogEntry } from '../queries/auditLog'
+import auditLogEn from '../locales/en/auditLog.json'
 import settingsEn from '../locales/en/settings.json'
 import type { TokenResource } from '../types/token'
 
@@ -17,9 +18,9 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['settings'],
+  ns: ['settings', 'auditLog'],
   defaultNS: 'settings',
-  resources: { en: { settings: settingsEn } },
+  resources: { en: { settings: settingsEn, auditLog: auditLogEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -108,7 +109,11 @@ describe('AgentFilterChips', () => {
 
 describe('AuditLogTable', () => {
   it('shows the agent name or None in the Agent column', () => {
-    render(<AuditLogTable entries={[entry(1, 'Claude Code'), entry(2)]} />)
+    render(
+      <I18nextProvider i18n={testI18n}>
+        <AuditLogTable entries={[entry(1, 'Claude Code'), entry(2)]} />
+      </I18nextProvider>,
+    )
     expect(
       screen.getByRole('columnheader', { name: 'Agent' }),
     ).toBeInTheDocument()
@@ -120,7 +125,11 @@ describe('AuditLogTable', () => {
     const many = Array.from({ length: AUDIT_VIRTUALIZE_OVER + 1 }, (_, i) =>
       entry(i),
     )
-    render(<AuditLogTable entries={many} />)
+    render(
+      <I18nextProvider i18n={testI18n}>
+        <AuditLogTable entries={many} />
+      </I18nextProvider>,
+    )
     expect(screen.getByRole('table', { name: 'Audit log' })).toHaveAttribute(
       'aria-rowcount',
       String(many.length + 1),

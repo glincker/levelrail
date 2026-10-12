@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useBackupCoverage } from '../../queries/backupCoverage'
@@ -34,19 +34,13 @@ function BackupsPage() {
   const data = coverage.data
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <CloudArrowUpIcon className="size-4" aria-hidden="true" />
-        </div>
-        <PageHeader
-          title={t('page.title')}
-          helpPath="/backups-and-storage"
-          helpLabel={t('page.helpLabel')}
-          description={t('page.description')}
-        />
-      </div>
-
+    <PageTemplate
+      title={t('page.title')}
+      description={t('page.description')}
+      icon={<CloudArrowUpIcon />}
+      helpPath="/backups-and-storage"
+      helpLabel={t('page.helpLabel')}
+    >
       {coverage.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {t('page.loadFailed', { error: coverage.error.message })}
@@ -100,6 +94,6 @@ function BackupsPage() {
           scratchCount={data.summary.scratch}
         />
       ) : null}
-    </div>
+    </PageTemplate>
   )
 }

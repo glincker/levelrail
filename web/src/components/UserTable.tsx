@@ -1,15 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import { UserIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from './ui/table'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { EmptyState } from './ui/empty-state'
+import { ResponsiveTable, type ResponsiveColumn } from './ui/responsive-table'
 import { RemoveUserDialog } from './RemoveUserDialog'
 import { EditUserAbilitiesDialog } from './EditUserAbilitiesDialog'
 import { UserRoleDialog } from './access/UserRoleDialog'
@@ -20,19 +14,8 @@ import { useAuthUsername } from '../hooks/useAuthUsername'
 import { ABILITY_BADGE_VARIANT } from '../types/token'
 import type { UserResource } from '../queries/users'
 
-function formatDate(iso: string | undefined, fallback: string): string {
-  return iso ? new Date(iso).toLocaleString() : fallback
-}
-
-function authMethods(user: UserResource): string {
-  const methods = [...user.providers]
-  if (user.has_password) {
-    methods.push('password')
-  }
-  return methods.length > 0 ? methods.join(', ') : 'none'
-}
-
 export function UserTable({ users }: { users: UserResource[] }) {
+  const { t } = useTranslation('settings')
   // The client-side mirror of "who am I signed in as" (authStore's own
   // doc comment): good enough to decide whether to show this row's edit
   // control, since PUT .../abilities enforces the real self-lockout rule
@@ -46,101 +29,122 @@ export function UserTable({ users }: { users: UserResource[] }) {
     return (
       <EmptyState
         icon={<UserIcon className="size-5" />}
-        title="No users found"
-        description="Invite a teammate or create a user from the actions above."
+        title={t('usersPage.empty.title')}
+        description={t('usersPage.empty.body')}
       />
     )
   }
 
+  function authMethods(user: UserResource): string {
+    const methods = [...user.providers]
+    if (user.has_password) {
+      methods.push(t('usersPage.table.password'))
+    }
+    return methods.length > 0
+      ? methods.join(', ')
+      : t('usersPage.table.noMethod')
+  }
+
+  const columns: ResponsiveColumn<UserResource>[] = [
+    {
+      id: 'email',
+      primary: true,
+      header: t('usersPage.table.email'),
+      cell: (user) => (
+        <span className="font-medium break-all text-foreground">
+          {user.email}
+          {user.is_first_user ? (
+            <Badge variant="outline" className="ml-2">
+              {t('usersPage.table.firstUser')}
+            </Badge>
+          ) : null}
+          {ownEmail !== null && ownEmail === user.email ? (
+            <Badge variant="muted" className="ml-2">
+              {t('usersPage.table.you')}
+            </Badge>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: 'displayName',
+      header: t('usersPage.table.displayName'),
+      priority: 3,
+      cell: (user) => user.display_name,
+    },
+    {
+      id: 'signsInWith',
+      header: t('usersPage.table.signsInWith'),
+      priority: 3,
+      cell: (user) => authMethods(user),
+    },
+    {
+      id: 'role',
+      header: t('usersPage.table.role'),
+      priority: 2,
+      cell: (user) =>
+        user.role ? (
+          <Badge variant={user.role === 'admin' ? 'destructive' : 'outline'}>
+            {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+          </Badge>
+        ) : (
+          <Badge variant="muted">{t('usersPage.table.custom')}</Badge>
+        ),
+    },
+    {
+      id: 'abilities',
+      header: t('usersPage.table.abilities'),
+      priority: 2,
+      cell: (user) => (
+        <div className="flex flex-wrap gap-1">
+          {user.abilities.map((ability) => (
+            <Badge key={ability} variant={ABILITY_BADGE_VARIANT[ability]}>
+              {ability}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: 'lastLogin',
+      header: t('usersPage.table.lastLogin'),
+      priority: 3,
+      cell: (user) =>
+        user.last_login_at
+          ? new Date(user.last_login_at).toLocaleString()
+          : t('usersPage.table.never'),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Display name</TableHead>
-            <TableHead>Signs in with</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Abilities</TableHead>
-            <TableHead>Last login</TableHead>
-            <TableHead />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => {
-            const isSelf = ownEmail !== null && ownEmail === user.email
-            return (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium text-foreground">
-                  {user.email}
-                  {user.is_first_user ? (
-                    <Badge variant="outline" className="ml-2">
-                      First user
-                    </Badge>
-                  ) : null}
-                  {isSelf ? (
-                    <Badge variant="muted" className="ml-2">
-                      You
-                    </Badge>
-                  ) : null}
-                </TableCell>
-                <TableCell>{user.display_name}</TableCell>
-                <TableCell>{authMethods(user)}</TableCell>
-                <TableCell>
-                  {user.role ? (
-                    <Badge
-                      variant={
-                        user.role === 'admin' ? 'destructive' : 'outline'
-                      }
-                    >
-                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                    </Badge>
-                  ) : (
-                    <Badge variant="muted">Custom</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {user.abilities.map((ability) => (
-                      <Badge
-                        key={ability}
-                        variant={ABILITY_BADGE_VARIANT[ability]}
-                      >
-                        {ability}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>{formatDate(user.last_login_at, 'Never')}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    {/* isSelf disables editing your own abilities in the
-                        UI itself, not just relying on the server's own
-                        400 (handleUpdateUserAbilities's self-lockout
-                        guard) after a wasted round trip. */}
-                    {isSelf ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled
-                        title="You cannot edit your own abilities"
-                      >
-                        Edit abilities
-                      </Button>
-                    ) : (
-                      <>
-                        {canAssignRoles ? <UserRoleDialog user={user} /> : null}
-                        <EditUserAbilitiesDialog user={user} />
-                      </>
-                    )}
-                    <RemoveUserDialog user={user} />
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={users}
+      columns={columns}
+      getRowId={(user) => user.id}
+      ariaLabel={t('usersPage.table.label')}
+      renderActions={(user) => {
+        const isSelf = ownEmail !== null && ownEmail === user.email
+        return (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {isSelf ? (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled
+                title={t('usersPage.table.selfEditHint')}
+              >
+                {t('usersPage.table.editAbilities')}
+              </Button>
+            ) : (
+              <>
+                {canAssignRoles ? <UserRoleDialog user={user} /> : null}
+                <EditUserAbilitiesDialog user={user} />
+              </>
+            )}
+            <RemoveUserDialog user={user} />
+          </div>
+        )
+      }}
+    />
   )
 }

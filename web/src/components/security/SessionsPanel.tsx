@@ -28,13 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { userListQueryOptions } from '../../queries/users'
@@ -47,6 +43,8 @@ import {
 } from '../../queries/securityCenter'
 
 const SELF = ''
+
+type SessionRow = SecuritySessions['sessions'][number]
 
 function when(iso: string): string {
   return iso ? new Date(iso).toLocaleString() : ''
@@ -99,66 +97,76 @@ function SessionsTable({
       <p className="text-sm text-muted-foreground">{t('sessions.empty')}</p>
     )
   }
+  const columns: ResponsiveColumn<SessionRow>[] = [
+    {
+      id: 'browser',
+      header: t('sessions.browser'),
+      primary: true,
+      cell: (s) => (
+        <span className="flex items-center gap-2">
+          <DesktopIcon className="size-4 shrink-0" aria-hidden="true" />
+          {s.browser}
+          {s.current ? (
+            <Badge variant="success">{t('sessions.current')}</Badge>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      id: 'network',
+      header: t('sessions.network'),
+      priority: 2,
+      cell: (s) => <span className="font-mono text-xs">{s.network}</span>,
+    },
+    {
+      id: 'created',
+      header: t('sessions.created'),
+      priority: 3,
+      cell: (s) => <span className="text-xs">{when(s.created_at)}</span>,
+    },
+    {
+      id: 'lastSeen',
+      header: t('sessions.lastSeen'),
+      cell: (s) => <span className="text-xs">{when(s.last_seen_at)}</span>,
+    },
+  ]
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>{t('sessions.browser')}</TableHead>
-          <TableHead>{t('sessions.network')}</TableHead>
-          <TableHead>{t('sessions.created')}</TableHead>
-          <TableHead>{t('sessions.lastSeen')}</TableHead>
-          <TableHead />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.sessions.map((s) => (
-          <TableRow key={s.id}>
-            <TableCell>
-              <span className="flex items-center gap-2">
-                <DesktopIcon className="size-4 shrink-0" aria-hidden="true" />
-                {s.browser}
-                {s.current ? (
-                  <Badge variant="success">{t('sessions.current')}</Badge>
-                ) : null}
-              </span>
-            </TableCell>
-            <TableCell className="font-mono text-xs">{s.network}</TableCell>
-            <TableCell className="text-xs">{when(s.created_at)}</TableCell>
-            <TableCell className="text-xs">{when(s.last_seen_at)}</TableCell>
-            <TableCell className="text-right">
-              {s.current ? null : (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  aria-label={t('sessions.revokeAria', { id: s.id })}
-                  disabled={revoke.isPending}
-                  onClick={() => {
-                    revoke.mutate(
-                      { id: s.id, userId },
-                      {
-                        onSuccess: () =>
-                          toast.add({
-                            title: t('sessions.revoked'),
-                            type: 'success',
-                          }),
-                        onError: (e) =>
-                          toast.add({
-                            title: e.message || t('sessions.revokeError'),
-                            type: 'error',
-                          }),
-                      },
-                    )
-                  }}
-                >
-                  {t('sessions.revoke')}
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <ResponsiveTable
+      rows={data.sessions}
+      columns={columns}
+      getRowId={(s) => s.id}
+      ariaLabel={t('sessions.tableLabel')}
+      renderActions={(s) =>
+        s.current ? null : (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            aria-label={t('sessions.revokeAria', { id: s.id })}
+            disabled={revoke.isPending}
+            onClick={() => {
+              revoke.mutate(
+                { id: s.id, userId },
+                {
+                  onSuccess: () =>
+                    toast.add({
+                      title: t('sessions.revoked'),
+                      type: 'success',
+                    }),
+                  onError: (e) =>
+                    toast.add({
+                      title: e.message || t('sessions.revokeError'),
+                      type: 'error',
+                    }),
+                },
+              )
+            }}
+          >
+            {t('sessions.revoke')}
+          </Button>
+        )
+      }
+    />
   )
 }
 

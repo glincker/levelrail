@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
+import { BrandTile } from './BrandLogoBadge'
 import { ApiError } from '../lib/apiError'
 import { useBrand } from '../hooks/useBrand'
 import { useCreateRegistryCredential } from '../queries/registryCredentials'
@@ -258,19 +259,54 @@ export function CreateRegistryCredentialDialog() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="docker-hub">
-                      {REGISTRY_HOST_PRESETS['docker-hub'].label}
+                      <span className="flex items-center gap-2">
+                        <BrandTile
+                          name="docker"
+                          label={REGISTRY_HOST_PRESETS['docker-hub'].label}
+                          size="xs"
+                        />
+                        {REGISTRY_HOST_PRESETS['docker-hub'].label}
+                      </span>
                     </SelectItem>
                     <SelectItem value="ghcr">
-                      {REGISTRY_HOST_PRESETS.ghcr.label}
+                      <span className="flex items-center gap-2">
+                        <BrandTile
+                          name="github"
+                          label={REGISTRY_HOST_PRESETS.ghcr.label}
+                          size="xs"
+                        />
+                        {REGISTRY_HOST_PRESETS.ghcr.label}
+                      </span>
                     </SelectItem>
                     <SelectItem value="gcr">
-                      {REGISTRY_HOST_PRESETS.gcr.label}
+                      <span className="flex items-center gap-2">
+                        <BrandTile
+                          name="google-artifact-registry"
+                          label={REGISTRY_HOST_PRESETS.gcr.label}
+                          size="xs"
+                        />
+                        {REGISTRY_HOST_PRESETS.gcr.label}
+                      </span>
                     </SelectItem>
                     <SelectItem value="ecr">
-                      {REGISTRY_HOST_PRESETS.ecr.label}
+                      <span className="flex items-center gap-2">
+                        <BrandTile
+                          name="ecr"
+                          label={REGISTRY_HOST_PRESETS.ecr.label}
+                          size="xs"
+                        />
+                        {REGISTRY_HOST_PRESETS.ecr.label}
+                      </span>
                     </SelectItem>
                     <SelectItem value="acr">
-                      {REGISTRY_HOST_PRESETS.acr.label}
+                      <span className="flex items-center gap-2">
+                        <BrandTile
+                          name="azure"
+                          label={REGISTRY_HOST_PRESETS.acr.label}
+                          size="xs"
+                        />
+                        {REGISTRY_HOST_PRESETS.acr.label}
+                      </span>
                     </SelectItem>
                     <SelectItem value="custom">Custom</SelectItem>
                   </SelectContent>

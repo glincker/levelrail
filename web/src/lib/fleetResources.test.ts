@@ -98,6 +98,47 @@ describe('buildMemoryBreakdown', () => {
     expect(consumers.some((c) => c.kind === 'other')).toBe(true)
   })
 
+  it('attributes a remote node from its agent report', () => {
+    const remote: FleetResourceUsage = {
+      ...fleet,
+      nodes: [
+        {
+          node_id: 'r1',
+          name: 'edge-1',
+          is_local: false,
+          memory_total_bytes: 16 * GIB,
+          memory_available_bytes: 8 * GIB,
+          levelrail_memory_bytes: 1 * GIB,
+          other_containers_memory_bytes: 2 * GIB,
+          system_memory_bytes: 2 * GIB,
+          other_containers: [{ name: 'proxy', memory_bytes: 2 * GIB }],
+        },
+      ],
+    }
+    const consumers = buildConsumers(
+      [{ name: 'web', memory_usage_bytes: 3 * GIB }],
+      [],
+      [],
+      remote,
+    )
+    const b = buildMemoryBreakdown(remote, consumers)!
+    expect(b).toMatchObject({
+      apps: 3 * GIB,
+      levelrail: 1 * GIB,
+      otherContainers: 2 * GIB,
+      system: 2 * GIB,
+      free: 8 * GIB,
+    })
+    expect(
+      b.apps +
+        b.databases +
+        b.levelrail +
+        b.otherContainers +
+        b.system +
+        b.free,
+    ).toBe(b.totalBytes)
+  })
+
   it('is undefined without host capacity', () => {
     expect(buildMemoryBreakdown({ ...fleet, nodes: [] }, [])).toBeUndefined()
   })

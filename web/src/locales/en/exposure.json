@@ -1,4 +1,5 @@
 {
+  "tableLabel": "Published ports",
   "title": "Published ports",
   "description": "Container ports published on a server's network interfaces. Docker bypasses ufw for these, so a firewall that looks active does not cover them.",
   "probe": "Check from outside",

@@ -87,7 +87,9 @@ function HostCard({ host }: { host: HostGauge }) {
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="truncate text-sm font-medium">{host.name}</h3>
+        <h3 className="truncate text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {host.name}
+        </h3>
         {host.isLocal ? (
           <span className="text-xs text-muted-foreground">
             {t('resources.controlPlane')}
@@ -194,7 +196,7 @@ function MemoryStack({ breakdown }: { breakdown: MemoryBreakdown }) {
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-sm font-medium">
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
           {t('resources.memoryBreakdown')}
         </h3>
         <span className="text-xs tabular-nums text-muted-foreground">
@@ -332,7 +334,9 @@ export function TopConsumers({ consumers }: { consumers: Consumer[] }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium">{t('resources.topConsumers')}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('resources.topConsumers')}
+        </h3>
         <div
           role="group"
           aria-label={t('resources.sortBy')}
@@ -397,7 +401,7 @@ export function ResourcesView({ data }: { data: DashboardResources }) {
   return (
     <section aria-label={t('resources.title')} className="space-y-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-semibold text-foreground">
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('resources.title')}
         </h2>
         {data.databaseCount > 0 ? (

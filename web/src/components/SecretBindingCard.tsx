@@ -72,7 +72,7 @@ export function SecretBindingCard() {
           ) : null}
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-4">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {status.legacy > 0 ? (
             <Badge variant="warning">{status.legacy} legacy</Badge>

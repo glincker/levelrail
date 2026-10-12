@@ -218,10 +218,10 @@ export function DatabaseResourceLimitsEditor({
           onSubmit={(e) => {
             void onSubmit(e)
           }}
-          className="space-y-6"
+          className="space-y-4"
         >
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="rounded-md border border-border p-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
               <Field orientation="horizontal">
                 <Controller
                   control={control}
@@ -273,7 +273,7 @@ export function DatabaseResourceLimitsEditor({
               />
             </div>
 
-            <div className="rounded-md border border-border p-3">
+            <div>
               <Field orientation="horizontal">
                 <Controller
                   control={control}
@@ -323,7 +323,7 @@ export function DatabaseResourceLimitsEditor({
               />
             </div>
 
-            <div className="rounded-md border border-border p-3">
+            <div>
               <Field orientation="horizontal">
                 <Controller
                   control={control}
@@ -369,7 +369,7 @@ export function DatabaseResourceLimitsEditor({
               />
             </div>
 
-            <div className="rounded-md border border-border p-3">
+            <div>
               <Field orientation="horizontal">
                 <Controller
                   control={control}

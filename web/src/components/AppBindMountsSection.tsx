@@ -1,16 +1,49 @@
+import { useTranslation } from 'react-i18next'
 import { FolderOpenIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import type { AppBindMount } from '../types/appDetail'
+
+const COLUMNS: ResponsiveColumn<AppBindMount>[] = [
+  {
+    id: 'host',
+    header: 'Host path',
+    primary: true,
+    cell: (mount) => (
+      <span className="inline-flex items-center gap-1.5 font-mono text-xs text-foreground">
+        <FolderOpenIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+        <span className="min-w-0 break-all">{mount.host_path}</span>
+      </span>
+    ),
+  },
+  {
+    id: 'container',
+    header: 'Container path',
+    cell: (mount) => (
+      <span className="font-mono text-xs break-all text-muted-foreground">
+        {mount.container_path}
+      </span>
+    ),
+  },
+  {
+    id: 'access',
+    header: 'Access',
+    priority: 2,
+    cell: (mount) => (
+      <Badge variant={mount.read_only ? 'outline' : 'muted'}>
+        {mount.read_only ? 'Read-only' : 'Read/write'}
+      </Badge>
+    ),
+  },
+]
 
 // Read-only listing of an app's bind-mounted host directories
 // (store.ServiceBindMount), the AppVolumeBackupsSection counterpart for
@@ -27,6 +60,7 @@ export function AppBindMountsSection({
 }: {
   bindMounts: AppBindMount[] | undefined
 }) {
+  const { t } = useTranslation('common')
   if (!bindMounts || bindMounts.length === 0) {
     return null
   }
@@ -47,40 +81,12 @@ export function AppBindMountsSection({
             mounted by redeploying this app&rsquo;s compose file.
           </AlertDescription>
         </Alert>
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Host path</TableHead>
-                <TableHead>Container path</TableHead>
-                <TableHead>Access</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bindMounts.map((mount) => (
-                <TableRow key={mount.host_path + mount.container_path}>
-                  <TableCell className="font-mono text-xs text-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <FolderOpenIcon
-                        className="size-3.5 text-muted-foreground"
-                        aria-hidden="true"
-                      />
-                      {mount.host_path}
-                    </span>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {mount.container_path}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={mount.read_only ? 'outline' : 'muted'}>
-                      {mount.read_only ? 'Read-only' : 'Read/write'}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ResponsiveTable
+          rows={bindMounts}
+          columns={COLUMNS}
+          getRowId={(m) => m.host_path + m.container_path}
+          ariaLabel={t('tableLabels.bindMounts')}
+        />
       </CardContent>
     </Card>
   )

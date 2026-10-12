@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -105,7 +106,12 @@ func unmanagedUsage(ctx context.Context, list []docker.ContainerState, desired o
 }
 
 func (rt *Router) applyMemoryAttribution(ctx context.Context, row *nodeResourceUsageResource) {
-	attr := rt.localMemoryAttribution(ctx)
+	applyAttributionToRow(row, rt.localMemoryAttribution(ctx))
+}
+
+// applyAttributionToRow sets the levelrail/other/system split on row. Without
+// host capacity only the raw shares are known, so system stays unset.
+func applyAttributionToRow(row *nodeResourceUsageResource, attr hostMemoryAttribution) {
 	lr, oc := attr.Levelrail, attr.OtherContainers
 	row.LevelrailMemoryBytes = &lr
 	row.OtherContainersMemoryBytes = &oc
@@ -119,4 +125,42 @@ func (rt *Router) applyMemoryAttribution(ctx context.Context, row *nodeResourceU
 	}
 	lr, oc, system := splitHostMemory(*row.MemoryTotalBytes, *row.MemoryAvailableBytes, services, attr.Levelrail, attr.OtherContainers)
 	row.LevelrailMemoryBytes, row.OtherContainersMemoryBytes, row.SystemMemoryBytes = &lr, &oc, &system
+}
+
+// NodeHostReports is the control plane's latest per-node agent host report.
+type NodeHostReports interface {
+	Get(nodeID string) (agent.HostReport, bool)
+}
+
+// SetNodeHostReports wires remote nodes' agent-reported host memory split
+// into GET /api/v1/nodes/resource-usage.
+func (rt *Router) SetNodeHostReports(src NodeHostReports) {
+	rt.nodeHostReports = src
+}
+
+// applyRemoteMemoryAttribution fills a remote row from its agent's report.
+// An agent that predates host reports (or a stale one) leaves the row in
+// the old shape, only the placed-services sum.
+func (rt *Router) applyRemoteMemoryAttribution(row *nodeResourceUsageResource) {
+	if rt.nodeHostReports == nil {
+		return
+	}
+	rep, ok := rt.nodeHostReports.Get(row.NodeID)
+	if !ok {
+		return
+	}
+	if row.MemoryTotalBytes == nil && rep.MemoryTotalBytes > 0 {
+		total, avail := float64(rep.MemoryTotalBytes), float64(rep.MemoryAvailableBytes)
+		row.MemoryTotalBytes, row.MemoryAvailableBytes = &total, &avail
+	}
+	top := make([]unmanagedContainerUsage, 0, len(rep.OtherContainers))
+	for _, c := range rep.OtherContainers {
+		top = append(top, unmanagedContainerUsage{Name: c.Name, MemoryBytes: float64(c.MemoryBytes)})
+	}
+	attr := hostMemoryAttribution{
+		Levelrail:       float64(rep.AgentRSSBytes),
+		OtherContainers: float64(rep.OtherContainersMemoryBytes),
+		OtherTop:        top,
+	}
+	applyAttributionToRow(row, attr)
 }

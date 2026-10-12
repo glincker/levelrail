@@ -27,8 +27,8 @@ function EnvironmentSection() {
     <div className="space-y-6">
       <EnvironmentEditor app={app} />
       <EnvActivityPanel appName={app.name} />
-      <Collapsible className="rounded-lg border border-border">
-        <CollapsibleTrigger className="group/advanced flex items-start justify-between gap-3 px-4 py-3">
+      <Collapsible>
+        <CollapsibleTrigger className="group/advanced flex items-start justify-between gap-3 py-1">
           <span className="space-y-0.5">
             <span className="block text-sm font-medium">
               {t('advanced.title')}
@@ -42,7 +42,7 @@ function EnvironmentSection() {
             className="mt-1 size-4 transition-transform group-data-[panel-open]/advanced:rotate-180"
           />
         </CollapsibleTrigger>
-        <CollapsiblePanel className="space-y-6 px-4 pb-4">
+        <CollapsiblePanel className="space-y-6 pt-4">
           <PreviewEnvOverridesEditor
             appName={app.name}
             overrides={app.preview_env_overrides}

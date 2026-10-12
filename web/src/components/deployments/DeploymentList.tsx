@@ -1,12 +1,29 @@
-import { useEffect, useRef, type RefObject } from 'react'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useMemo, type RefObject } from 'react'
+import { useTranslation } from 'react-i18next'
+import {
+  ArrowUUpLeftIcon,
+  ArrowsClockwiseIcon,
+  GitBranchIcon,
+  GitCommitIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import { SkeletonLine } from '@/components/kit'
+import { RelativeTime, SkeletonLine } from '@/components/kit'
+import {
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
+import { cn } from '@/lib/utils'
 import type { Deployment } from '../../types/deployment'
-import { DeploymentRow } from './DeploymentRow'
+import {
+  headline,
+  isRollback,
+  rowKind,
+  shortSha,
+  subtitle,
+} from '../../lib/deploymentPresentation'
+import { Author, EnvPill, RowThumb, StatusCell } from './DeploymentRow'
 
 export const VIRTUALIZE_AFTER = 50
-const ESTIMATED_ROW_PX = 56
 
 export function DeploymentsSkeleton({ rows = 8 }: { rows?: number }) {
   return (
@@ -42,39 +59,45 @@ export interface DeploymentListProps {
   scrollRef: RefObject<HTMLDivElement | null>
 }
 
-function PlainList({
-  rows,
-  now,
-  openId,
-  focusId,
-  onOpen,
-}: DeploymentListProps) {
-  useEffect(() => {
-    if (!focusId) return
-    const el = document.querySelector(
-      `[data-deployment-id="${CSS.escape(focusId)}"]`,
-    )
-    if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ block: 'nearest' })
-    }
-  }, [focusId])
+function TitleCell({ d }: { d: Deployment }) {
+  const kind = rowKind(d)
+  const sub = subtitle(d)
+  const Lead = isRollback(d)
+    ? ArrowUUpLeftIcon
+    : kind === 'redeploy'
+      ? ArrowsClockwiseIcon
+      : null
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      {rows.map((d) => (
-        <DeploymentRow
-          key={d.id}
-          d={d}
-          now={now}
-          open={d.id === openId}
-          focused={d.id === focusId}
-          onOpen={onOpen}
-        />
-      ))}
-    </div>
+    <span className="flex min-w-0 flex-col">
+      <span className="flex min-w-0 items-center gap-1.5 text-sm font-medium">
+        {Lead ? (
+          <Lead
+            className="size-3.5 shrink-0 text-muted-foreground"
+            aria-hidden="true"
+          />
+        ) : null}
+        <span className="truncate" title={headline(d)}>
+          {headline(d)}
+        </span>
+      </span>
+      {sub ? (
+        <span
+          className={cn(
+            'truncate text-xs',
+            d.status === 'failed'
+              ? 'text-tone-danger'
+              : 'text-muted-foreground',
+          )}
+          title={sub}
+        >
+          {sub}
+        </span>
+      ) : null}
+    </span>
   )
 }
 
-function VirtualList({
+export function DeploymentList({
   rows,
   now,
   openId,
@@ -82,59 +105,119 @@ function VirtualList({
   onOpen,
   scrollRef,
 }: DeploymentListProps) {
-  const virtualizer = useVirtualizer({
-    count: rows.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => ESTIMATED_ROW_PX,
-    overscan: 8,
-    getItemKey: (i) => rows[i]?.id ?? i,
-  })
-  const lastFocus = useRef('')
-  useEffect(() => {
-    if (!focusId || focusId === lastFocus.current) return
-    lastFocus.current = focusId
-    const idx = rows.findIndex((r) => r.id === focusId)
-    if (idx >= 0) virtualizer.scrollToIndex(idx, { align: 'auto' })
-  }, [focusId, rows, virtualizer])
-
-  return (
-    <div
-      ref={scrollRef}
-      className="h-[70vh] overflow-auto rounded-xl border border-border bg-card"
-    >
-      {/* Virtual row offsets are computed at runtime, so these two styles cannot be Tailwind classes. */}
-      <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-        {virtualizer.getVirtualItems().map((v) => {
-          const d = rows[v.index]
-          if (!d) return null
-          return (
-            <div
-              key={v.key}
-              data-index={v.index}
-              ref={virtualizer.measureElement}
-              className="absolute top-0 left-0 w-full"
-              style={{ transform: `translateY(${String(v.start)}px)` }}
-            >
-              <DeploymentRow
-                d={d}
-                now={now}
-                open={d.id === openId}
-                focused={d.id === focusId}
-                onOpen={onOpen}
-              />
-            </div>
-          )
-        })}
-      </div>
-    </div>
+  const { t } = useTranslation('deploys')
+  const columns = useMemo<ResponsiveColumn<Deployment>[]>(
+    () => [
+      {
+        id: 'deploy',
+        primary: true,
+        header: t('table.deploy'),
+        cell: (d) => <TitleCell d={d} />,
+      },
+      {
+        id: 'status',
+        header: t('table.status'),
+        width: 'w-44',
+        cell: (d) => <StatusCell d={d} now={now} />,
+      },
+      {
+        id: 'app',
+        header: t('table.app'),
+        priority: 2,
+        width: 'w-36',
+        cell: (d) => (
+          <span
+            className="block truncate text-sm text-foreground"
+            title={d.app}
+          >
+            {d.app}
+          </span>
+        ),
+      },
+      {
+        id: 'env',
+        header: t('table.environment'),
+        priority: 3,
+        width: 'w-28',
+        cell: (d) => <EnvPill d={d} />,
+      },
+      {
+        id: 'commit',
+        header: t('table.commit'),
+        priority: 3,
+        width: 'w-28',
+        cell: (d) =>
+          !isRollback(d) && d.commit_sha ? (
+            <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+              <GitCommitIcon className="size-3.5" aria-hidden="true" />
+              {shortSha(d.commit_sha)}
+            </span>
+          ) : null,
+      },
+      {
+        id: 'branch',
+        header: t('table.branch'),
+        priority: 3,
+        width: 'w-32',
+        cell: (d) =>
+          !isRollback(d) && d.branch ? (
+            <span className="flex items-center gap-1 font-mono text-xs text-muted-foreground">
+              <GitBranchIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              <span className="truncate">{d.branch}</span>
+            </span>
+          ) : null,
+      },
+      {
+        id: 'started',
+        header: t('table.started'),
+        priority: 2,
+        width: 'w-28',
+        cell: (d) => (
+          <span className="text-xs text-muted-foreground">
+            <RelativeTime at={d.started_at} live />
+          </span>
+        ),
+      },
+      {
+        id: 'by',
+        header: t('table.by'),
+        priority: 3,
+        width: 'w-24',
+        hideInCard: true,
+        cell: (d) => (
+          <span className="flex items-center gap-2">
+            <RowThumb url={d.preview_image_url} app={d.app} />
+            <Author name={d.author} />
+          </span>
+        ),
+      },
+    ],
+    [t, now],
   )
-}
-
-export function DeploymentList(props: DeploymentListProps) {
-  return props.rows.length > VIRTUALIZE_AFTER ? (
-    <VirtualList {...props} />
-  ) : (
-    <PlainList {...props} />
+  return (
+    <ResponsiveTable
+      rows={rows}
+      columns={columns}
+      getRowId={(d) => d.id}
+      ariaLabel={t('table.label')}
+      virtualizeOver={VIRTUALIZE_AFTER}
+      scrollHeightClass="h-[70vh]"
+      scrollRef={scrollRef}
+      focusRowId={focusId}
+      onRowClick={(d) => {
+        onOpen(d.id)
+      }}
+      getRowProps={(d) => ({
+        'data-kind': rowKind(d),
+        'aria-current': d.id === openId ? 'true' : undefined,
+        className: cn(
+          d.id === openId && 'bg-muted/60',
+          d.id === focusId && 'ring-2 ring-ring/60 ring-inset',
+          (rowKind(d) === 'superseded' || d.status === 'canceled') &&
+            'opacity-70',
+        ),
+      })}
+    />
   )
 }
 

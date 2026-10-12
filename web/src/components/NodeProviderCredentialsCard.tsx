@@ -1,11 +1,5 @@
 import { useState } from 'react'
-import {
-  CloudIcon,
-  DropIcon,
-  HardDrivesIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import type { Icon } from '@phosphor-icons/react'
+import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
   CardAction,
@@ -24,6 +18,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from '@/components/ui/toast'
+import { BrandTile } from './BrandLogoBadge'
+import { nodeProviderBrand } from '../lib/providerBrands'
 import { StatusPill } from './kit/StatusPill'
 import { HelpLink } from '@/components/HelpLink'
 import { SettingsCardSkeleton } from '@/components/settings/SettingsSkeletons'
@@ -39,14 +35,6 @@ const PROVIDER_LABELS: Record<string, string> = {
   aws: 'AWS',
   azure: 'Azure',
   gcp: 'Google Cloud',
-}
-
-// Phosphor has no brand marks for these providers. Hetzner and
-// DigitalOcean each get an icon tied to a real product detail (bare
-// metal racks, "Droplets") instead of every row sharing CloudIcon.
-const PROVIDER_ICONS: Record<string, Icon> = {
-  hetzner: HardDrivesIcon,
-  digitalocean: DropIcon,
 }
 
 // Hetzner and DigitalOcean take a plain API token; Azure and GCP take a
@@ -68,7 +56,7 @@ const PROVIDER_PLACEHOLDER: Record<string, string> = {
 // Instance-level cloud provider credentials for "nodes provision" and the
 // nodes page's own Add node wizard: GET/POST /api/v1/node-providers. One
 // card per known provider, the same "one Card per credential" shape
-// OAuthProviderCard and EmailSettingsCard already establish.
+// OAuthProviderForm and EmailSettingsCard already establish.
 export function NodeProviderCredentialsCard() {
   const providers = useNodeProviders()
 
@@ -121,7 +109,6 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
   const setCredential = useSetNodeProviderCredential()
   const label = PROVIDER_LABELS[provider.provider] ?? provider.provider
   const fieldLabel = PROVIDER_FIELD_LABEL[provider.provider] ?? 'API token'
-  const ProviderIcon = PROVIDER_ICONS[provider.provider] ?? CloudIcon
 
   const canSubmit = isAWS
     ? useAmbient || (token !== '' && secretAccessKey !== '')
@@ -159,7 +146,12 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <ProviderIcon className="size-4" />
+          <BrandTile
+            name={nodeProviderBrand(provider.provider)}
+            label={label}
+            size="sm"
+            labelled
+          />
           {label}
         </CardTitle>
         <CardAction>
@@ -172,7 +164,7 @@ function ProviderForm({ provider }: { provider: NodeProviderResource }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <FieldGroup className="gap-3">
+          <FieldGroup className="gap-4">
             {!isAWS ? (
               <Field>
                 <FieldLabel

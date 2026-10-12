@@ -1,9 +1,7 @@
+import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
-import {
-  StackIcon,
-  GlobeIcon,
-  CaretRightIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { StackIcon, GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { useAppGroup } from '../queries/appGroup'
 import { STATUS_DOT_COLOR } from '../lib/appStatus'
 import {
@@ -15,20 +13,101 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ROW_LINK_OVERLAY,
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
+import type { AppDetail } from '../types/appDetail'
 
 // A suspense query primed by the route's loader; fetch failures surface
 // through the route's errorComponent (routes/apps/$name.tsx), not locally.
 export function AppServicesPanel({ appName }: { appName: string }) {
+  const { t } = useTranslation('common')
   const { data: group } = useAppGroup(appName)
   const hasDependsOn = group.services.some(
     (svc) => svc.depends_on && svc.depends_on.length > 0,
+  )
+  const columns = useMemo<ResponsiveColumn<AppDetail>[]>(
+    () => [
+      {
+        id: 'service',
+        header: 'Service',
+        primary: true,
+        cell: (svc) => (
+          <span className="relative flex flex-wrap items-center gap-1">
+            <Link
+              to="/apps/$name/overview"
+              params={{ name: svc.name }}
+              className={`hover:underline ${ROW_LINK_OVERLAY}`}
+            >
+              {svc.name}
+            </Link>
+            {svc.name === appName ? (
+              <Badge variant="muted" className="px-1.5 text-[10px]">
+                this app
+              </Badge>
+            ) : null}
+          </span>
+        ),
+      },
+      {
+        id: 'image',
+        header: 'Image',
+        priority: 2,
+        cell: (svc) => (
+          <span className="block truncate font-mono text-xs text-muted-foreground">
+            {svc.image}
+          </span>
+        ),
+      },
+      {
+        id: 'port',
+        header: 'Port',
+        width: 'w-20',
+        cell: (svc) => (
+          <span className="text-xs text-muted-foreground">{svc.port}</span>
+        ),
+      },
+      {
+        id: 'domains',
+        header: 'Domains',
+        priority: 2,
+        cell: (svc) => (
+          <span className="text-xs text-muted-foreground">
+            {svc.domains && svc.domains.length > 0 ? (
+              <span className="flex items-center gap-1">
+                <GlobeIcon className="size-3.5 shrink-0" aria-hidden="true" />
+                {svc.domains[0]}
+                {svc.domains.length > 1 ? ` +${svc.domains.length - 1}` : ''}
+              </span>
+            ) : (
+              <span className="italic text-muted-foreground/60">no domain</span>
+            )}
+          </span>
+        ),
+      },
+      ...(hasDependsOn
+        ? [
+            {
+              id: 'dependsOn',
+              header: 'Depends on',
+              priority: 3 as const,
+              cell: (svc: AppDetail) => (
+                <span className="text-xs text-muted-foreground">
+                  {svc.depends_on && svc.depends_on.length > 0 ? (
+                    svc.depends_on.join(', ')
+                  ) : (
+                    <span className="italic text-muted-foreground/60">
+                      none
+                    </span>
+                  )}
+                </span>
+              ),
+            },
+          ]
+        : []),
+    ],
+    [appName, hasDependsOn],
   )
 
   return (
@@ -54,81 +133,13 @@ export function AppServicesPanel({ appName }: { appName: string }) {
           <Badge variant={group.status.variant}>{group.status.label}</Badge>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Service</TableHead>
-              <TableHead>Image</TableHead>
-              <TableHead>Port</TableHead>
-              <TableHead>Domains</TableHead>
-              {hasDependsOn ? <TableHead>Depends on</TableHead> : null}
-              <TableHead className="w-8" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {group.services.map((svc) => (
-              <TableRow key={svc.name}>
-                <TableCell className="font-medium">
-                  <Link
-                    to="/apps/$name/overview"
-                    params={{ name: svc.name }}
-                    className="hover:underline"
-                  >
-                    {svc.name}
-                  </Link>
-                  {svc.name === appName ? (
-                    <Badge variant="muted" className="ml-2 px-1.5 text-[10px]">
-                      this app
-                    </Badge>
-                  ) : null}
-                </TableCell>
-                <TableCell className="max-w-[16rem] truncate font-mono text-xs text-muted-foreground">
-                  {svc.image}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {svc.port}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {svc.domains && svc.domains.length > 0 ? (
-                    <span className="flex items-center gap-1">
-                      <GlobeIcon
-                        className="size-3.5 shrink-0"
-                        aria-hidden="true"
-                      />
-                      {svc.domains[0]}
-                      {svc.domains.length > 1
-                        ? ` +${svc.domains.length - 1}`
-                        : ''}
-                    </span>
-                  ) : (
-                    <span className="italic text-muted-foreground/60">
-                      no domain
-                    </span>
-                  )}
-                </TableCell>
-                {hasDependsOn ? (
-                  <TableCell className="text-xs text-muted-foreground">
-                    {svc.depends_on && svc.depends_on.length > 0 ? (
-                      svc.depends_on.join(', ')
-                    ) : (
-                      <span className="italic text-muted-foreground/60">
-                        none
-                      </span>
-                    )}
-                  </TableCell>
-                ) : null}
-                <TableCell>
-                  <Link to="/apps/$name/overview" params={{ name: svc.name }}>
-                    <CaretRightIcon
-                      className="size-3.5 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  </Link>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          rows={group.services}
+          columns={columns}
+          getRowId={(svc) => svc.name}
+          ariaLabel={t('tableLabels.appServices')}
+          className="border-0"
+        />
       </CardContent>
     </Card>
   )

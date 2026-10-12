@@ -18,7 +18,7 @@ import {
 import { SetPrimaryDomainPrompt } from './SetPrimaryDomainPrompt'
 import {
   ConfiguredStatusHeading,
-  ConnectionCardHeader,
+  ConnectionActions,
   DisconnectConnectionDialog,
   FormDialogFooter,
   mutationToastCallbacks,
@@ -43,48 +43,30 @@ export function GiteaAppConnectionCard() {
 
   return (
     <Card>
-      <ConnectionCardHeader
-        icon={TeaBagIcon}
-        title="Gitea App"
-        description="Connect a Gitea OAuth2 application for repo browsing and webhook-driven deploys, including self-hosted instances."
-      />
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between rounded-lg border border-border px-4 py-3">
-          <div className="space-y-1">
-            <ConfiguredStatusHeading
-              connected={status.connected}
-              authorized={status.authorized}
-            />
-            {status.connected ? (
-              <p className="font-mono text-sm text-muted-foreground">
-                {status.instance_url}
-              </p>
-            ) : null}
-            {status.connected && !status.authorized && status.base_url ? (
-              <p className="text-sm text-muted-foreground">
-                The OAuth2 application is configured but hasn&apos;t been
-                authorized yet. Click Connect to finish.
-              </p>
-            ) : null}
-            {status.connected && !status.authorized && !status.base_url ? (
-              <SetPrimaryDomainPrompt />
-            ) : null}
-          </div>
-
+        <div className="space-y-1">
+          <ConfiguredStatusHeading
+            connected={status.connected}
+            authorized={status.authorized}
+          />
           {status.connected ? (
-            <div className="flex shrink-0 items-center gap-2">
-              {!status.authorized && status.base_url ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    window.location.href = '/api/v1/gitea-app/connect'
-                  }}
-                >
-                  <TeaBagIcon className="size-4" />
-                  Connect
-                </Button>
-              ) : null}
+            <p className="font-mono text-sm text-muted-foreground">
+              {status.instance_url}
+            </p>
+          ) : null}
+          {status.connected && !status.authorized && status.base_url ? (
+            <p className="text-sm text-muted-foreground">
+              The OAuth2 application is configured but hasn&apos;t been
+              authorized yet. Click Connect to finish.
+            </p>
+          ) : null}
+        </div>
+        {status.connected && !status.authorized && !status.base_url ? (
+          <SetPrimaryDomainPrompt />
+        ) : null}
+        <ConnectionActions>
+          {status.connected ? (
+            <>
               <DisconnectConnectionDialog
                 open={confirmOpen}
                 onOpenChange={setConfirmOpen}
@@ -108,7 +90,19 @@ export function GiteaAppConnectionCard() {
                   )
                 }}
               />
-            </div>
+              {!status.authorized && status.base_url ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => {
+                    window.location.href = '/api/v1/gitea-app/connect'
+                  }}
+                >
+                  <TeaBagIcon className="size-4" />
+                  Connect
+                </Button>
+              ) : null}
+            </>
           ) : (
             <Button
               type="button"
@@ -119,7 +113,7 @@ export function GiteaAppConnectionCard() {
               Configure
             </Button>
           )}
-        </div>
+        </ConnectionActions>
       </CardContent>
       <ConfigureDialog
         open={configureOpen}

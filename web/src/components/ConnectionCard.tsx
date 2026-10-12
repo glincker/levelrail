@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Icon } from '@phosphor-icons/react'
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
   WarningIcon,
@@ -7,7 +7,6 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -19,27 +18,14 @@ import {
 } from '@/components/ui/dialog'
 import { toast } from '@/components/ui/toast'
 
-export function ConnectionCardHeader({
-  icon: HeaderIcon,
-  title,
-  description,
-}: Readonly<{
-  icon: Icon
-  title: string
-  description: ReactNode
-}>) {
+/** ConnectionActions is the separated action row of a connection card: 16px above, right-aligned, primary action last. */
+export function ConnectionActions({
+  children,
+}: Readonly<{ children: ReactNode }>) {
   return (
-    <CardHeader>
-      <div className="flex items-center gap-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <HeaderIcon className="size-4" />
-        </div>
-        <div>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </div>
-      </div>
-    </CardHeader>
+    <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4">
+      {children}
+    </div>
   )
 }
 
@@ -50,11 +36,12 @@ export function ConfiguredStatusHeading({
   connected: boolean
   authorized: boolean
 }>) {
+  const { t } = useTranslation('settings')
   if (!connected) {
     return (
       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
         <XCircleIcon className="size-4" />
-        Not connected
+        {t('gitConnection.notConnected')}
       </div>
     )
   }

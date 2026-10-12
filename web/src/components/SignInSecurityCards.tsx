@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { SettingRow, SettingRows } from '@/components/ui/setting-row'
 import { toast } from '@/components/ui/toast'
 import {
   codeLoginSettingsQueryOptions,
@@ -144,35 +145,42 @@ function CodeLoginSettingsCard() {
         <CardTitle>{t('settings.title')}</CardTitle>
         <CardDescription>{t('settings.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="font-medium">{t('settings.admins')}</p>
-            <p className="text-xs text-muted-foreground">
-              {t('settings.adminsHint')}
-            </p>
-          </div>
-          <Switch
-            checked={data.admins}
-            disabled={!isRoot || update.isPending}
-            aria-label={t('settings.admins')}
-            onCheckedChange={(next) => save({ admins: next })}
-          />
-        </div>
-        <div className="flex items-center justify-between gap-4">
-          <p className="font-medium">{t('settings.others')}</p>
-          <Switch
-            checked={data.others}
-            disabled={!isRoot || update.isPending}
-            aria-label={t('settings.others')}
-            onCheckedChange={(next) => save({ others: next })}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {data.new_device_approval
-            ? t('settings.approvalOn')
-            : t('settings.approvalOff')}
-        </p>
+      <CardContent>
+        <SettingRows>
+          <SettingRow
+            title={t('settings.admins')}
+            description={t('settings.adminsHint')}
+          >
+            <Switch
+              checked={data.admins}
+              disabled={!isRoot || update.isPending}
+              aria-label={t('settings.admins')}
+              onCheckedChange={(next) => save({ admins: next })}
+            />
+          </SettingRow>
+          <SettingRow title={t('settings.others')}>
+            <Switch
+              checked={data.others}
+              disabled={!isRoot || update.isPending}
+              aria-label={t('settings.others')}
+              onCheckedChange={(next) => save({ others: next })}
+            />
+          </SettingRow>
+          <SettingRow
+            title={t('settings.approvalTitle')}
+            description={
+              data.new_device_approval
+                ? t('settings.approvalOn')
+                : t('settings.approvalOff')
+            }
+          >
+            <span className="text-sm text-muted-foreground">
+              {data.new_device_approval
+                ? t('settings.approvalStateOn')
+                : t('settings.approvalStateOff')}
+            </span>
+          </SettingRow>
+        </SettingRows>
       </CardContent>
     </Card>
   )

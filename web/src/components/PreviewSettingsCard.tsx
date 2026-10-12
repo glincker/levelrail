@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -137,13 +138,16 @@ function PreviewSettingsForm({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {!status.server_enabled ? (
-        <p className="rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
-          Previews are switched off on this server. Set{' '}
+        <Banner
+          variant="info"
+          title="Previews are switched off on this server."
+        >
+          Set{' '}
           <code className="font-mono text-xs">APP_PREVIEW_ENABLED=true</code>{' '}
           and restart the control plane to allow them.
-        </p>
+        </Banner>
       ) : null}
 
       <PreviewModeSelector

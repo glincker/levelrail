@@ -10,7 +10,15 @@
     "empty": "You are not in any team yet. Ask a team admin for an invite link.",
     "pick": "Team",
     "defaultTeam": "Default",
-    "defaultHint": "The default team is the instance itself. Instance admins manage its members on the Users page and here."
+    "defaultHint": "The default team is the instance itself. Instance admins manage its members on the Users page and here.",
+    "eyebrow": "Access",
+    "help": "Teams and roles guide",
+    "count_one": "{{count}} team",
+    "count_other": "{{count}} teams",
+    "banner": {
+      "title": "Everyone is in the default team",
+      "body": "Create a team to give a group its own projects, environments, apps and databases, with its own owners and members."
+    }
   },
   "roles": {
     "owner": "Owner",
@@ -24,6 +32,7 @@
     "yourRole": "Your role: {{role}}"
   },
   "members": {
+    "tableLabel": "Team members",
     "title": "Members",
     "email": "Email",
     "name": "Name",
@@ -39,6 +48,8 @@
     "roleLabel": "Role for {{email}}"
   },
   "invites": {
+    "tableLabel": "Team invites",
+    "statusHeader": "Status",
     "title": "Invitations",
     "create": "Invite",
     "email": "Email (optional)",

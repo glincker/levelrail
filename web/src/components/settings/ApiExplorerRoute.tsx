@@ -108,11 +108,7 @@ export function ApiExplorerRoute({ route }: { route: OpenAPIRoute }) {
   }
 
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      className="rounded-lg border border-border"
-    >
+    <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="flex items-center gap-3 px-3 py-2.5">
         <Badge
           variant={methodBadgeVariant[route.method] ?? 'default'}

@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -122,11 +121,9 @@ export function PlatformImportCard() {
               : ''}
           </p>
           {report.notes?.map((n) => (
-            <Alert key={n}>
-              <WarningIcon />
-              <AlertTitle>Data is not migrated</AlertTitle>
-              <AlertDescription>{n}</AlertDescription>
-            </Alert>
+            <Banner key={n} variant="warning" title="Data is not migrated">
+              {n}
+            </Banner>
           ))}
           <PlatformImportReportList items={report.items} />
           <Button variant="outline" onClick={reset}>
@@ -158,17 +155,14 @@ export function PlatformImportCard() {
             />
           )}
           {report.notes?.map((n) => (
-            <Alert key={n}>
-              <WarningIcon />
-              <AlertTitle>Data is not migrated</AlertTitle>
-              <AlertDescription>{n}</AlertDescription>
-            </Alert>
+            <Banner key={n} variant="warning" title="Data is not migrated">
+              {n}
+            </Banner>
           ))}
           {apply.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Import failed</AlertTitle>
-              <AlertDescription>{errorMessage(apply.error)}</AlertDescription>
-            </Alert>
+            <Banner variant="critical" title="Import failed">
+              {errorMessage(apply.error)}
+            </Banner>
           ) : null}
           {applying ? <Progress value={null} aria-label="Importing" /> : null}
           <div className="flex gap-2">
@@ -190,7 +184,7 @@ export function PlatformImportCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Import from another platform</CardTitle>
+        <CardTitle>Connect the source platform</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onDiscover} className="space-y-4">
@@ -264,12 +258,9 @@ export function PlatformImportCard() {
             </Label>
           </div>
           {discover.isError ? (
-            <Alert variant="destructive">
-              <AlertTitle>Could not read the source</AlertTitle>
-              <AlertDescription>
-                {errorMessage(discover.error)}
-              </AlertDescription>
-            </Alert>
+            <Banner variant="critical" title="Could not read the source">
+              {errorMessage(discover.error)}
+            </Banner>
           ) : null}
           <Button type="submit" disabled={discover.isPending}>
             {discover.isPending ? 'Reading source...' : 'Discover'}

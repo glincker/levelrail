@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
 import {
@@ -19,17 +19,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import type { DatabaseNetwork } from '../../types/databaseAccess'
 import { useMakePrivate } from '../../queries/databaseAccess'
-import { useWindowedRows } from '../../lib/useWindowedRows'
 
 function verdictText(
   t: TFunction<'databaseAccess'>,
@@ -54,61 +49,60 @@ function verdictText(
   }
 }
 
+type NetworkClient = DatabaseNetwork['clients'][number]
+
 function ClientsTable({ clients }: { clients: DatabaseNetwork['clients'] }) {
   const { t } = useTranslation('databaseAccess')
-  const { parentRef, windowed, indices, padTop, padBottom } = useWindowedRows(
-    clients.length,
+  const columns = useMemo<ResponsiveColumn<NetworkClient>[]>(
+    () => [
+      {
+        id: 'app',
+        header: t('reach.columns.app'),
+        primary: true,
+        cell: (c) => <span className="font-mono text-xs">{c.app}</span>,
+      },
+      {
+        id: 'via',
+        header: t('reach.columns.via'),
+        priority: 2,
+        cell: (c) => <span className="text-xs">{c.via}</span>,
+      },
+      {
+        id: 'project',
+        header: t('reach.columns.project'),
+        priority: 3,
+        cell: (c) => (
+          <span className="text-xs">
+            {c.project_name || c.project_id || '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'environment',
+        header: t('reach.columns.environment'),
+        priority: 3,
+        cell: (c) => <span className="text-xs">{c.environment || '-'}</span>,
+      },
+      {
+        id: 'scope',
+        header: t('reach.columns.scope'),
+        cell: (c) => (
+          <Badge variant={c.in_scope ? 'success' : 'warning'}>
+            {c.in_scope ? t('reach.inScope') : t('reach.outOfScope')}
+          </Badge>
+        ),
+      },
+    ],
+    [t],
   )
   return (
-    <div
-      ref={parentRef}
-      className={windowed ? 'max-h-[420px] overflow-auto' : 'overflow-auto'}
-    >
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('reach.columns.app')}</TableHead>
-            <TableHead>{t('reach.columns.via')}</TableHead>
-            <TableHead>{t('reach.columns.project')}</TableHead>
-            <TableHead>{t('reach.columns.environment')}</TableHead>
-            <TableHead>{t('reach.columns.scope')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {padTop > 0 ? (
-            <TableRow aria-hidden="true">
-              <TableCell colSpan={5} style={{ height: padTop }} />
-            </TableRow>
-          ) : null}
-          {indices.map((i) => {
-            const c = clients[i]
-            if (!c) return null
-            return (
-              <TableRow key={c.app}>
-                <TableCell className="font-mono text-xs">{c.app}</TableCell>
-                <TableCell className="text-xs">{c.via}</TableCell>
-                <TableCell className="text-xs">
-                  {c.project_name || c.project_id || '-'}
-                </TableCell>
-                <TableCell className="text-xs">
-                  {c.environment || '-'}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={c.in_scope ? 'success' : 'warning'}>
-                    {c.in_scope ? t('reach.inScope') : t('reach.outOfScope')}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-          {padBottom > 0 ? (
-            <TableRow aria-hidden="true">
-              <TableCell colSpan={5} style={{ height: padBottom }} />
-            </TableRow>
-          ) : null}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={clients}
+      columns={columns}
+      getRowId={(c) => c.app}
+      ariaLabel={t('reach.tableLabel')}
+      scrollHeightClass="max-h-[420px]"
+    />
   )
 }
 

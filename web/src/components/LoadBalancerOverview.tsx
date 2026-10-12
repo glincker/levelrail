@@ -116,7 +116,7 @@ export function LoadBalancerOverview() {
     )
   } else if (items.length === 0) {
     content = (
-      <p className="rounded-lg border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
+      <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
         No load balancers match this filter.
       </p>
     )
@@ -130,7 +130,7 @@ export function LoadBalancerOverview() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-(length:--glinr-type-size-page) leading-(--glinr-type-leading-page) font-(weight:--glinr-type-heading-weight) text-foreground">
             Load balancers
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">

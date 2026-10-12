@@ -23,6 +23,7 @@
     "unknown": "Support unknown"
   },
   "targets": {
+    "tableLabel": "Upgrade targets",
     "title": "Available versions",
     "description": "Patch and minor upgrades can run from here. Major upgrades change the on-disk format and are guarded.",
     "empty": "You are on the newest version the catalog knows about.",

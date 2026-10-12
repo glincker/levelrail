@@ -31,7 +31,9 @@ export function ActivityTimeline({
   return (
     <section aria-label="Activity" className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-medium text-foreground">Activity</h2>
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+          Activity
+        </h2>
         <Link
           to="/apps/$name/deploys"
           params={{ name: app.name }}

@@ -1,5 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import type { UseMutationResult } from '@tanstack/react-query'
 import {
   CloudArrowUpIcon,
@@ -16,13 +17,9 @@ import {
 } from '@/components/ui/select'
 import { Field, FieldLabel } from '@/components/ui/field'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
@@ -44,7 +41,7 @@ import { CloneRestoreHistoryTable } from './CloneRestoreHistoryTable'
 import { BackupScheduleForm } from './BackupScheduleForm'
 import { BackupScheduleSuggestion } from './backups/BackupScheduleSuggestion'
 import { BackupVerificationBadge } from './BackupVerificationBadge'
-import { StatusBadge } from './backupAttemptStatus'
+import { RestoreStatusCell } from './RestoreStatusCell'
 import type { BackupHistoryRecord } from '../types/backupHistory'
 import type { DatabaseResource } from '../types/databaseDetail'
 
@@ -89,7 +86,7 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // master-key gap.
 export function NoTargetsConfigured() {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-6 py-8 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-border bg-muted/30 px-4 py-4 text-center">
       <CloudArrowUpIcon
         className="size-5 text-muted-foreground"
         aria-hidden="true"
@@ -322,6 +319,62 @@ export function BackupHistoryTableView({
   renderActions: (record: BackupHistoryRecord) => ReactNode
   renderDeleteAction: (record: BackupHistoryRecord) => ReactNode
 }) {
+  const { t } = useTranslation('backups')
+  const columns: ResponsiveColumn<BackupHistoryRecord>[] = [
+    {
+      id: 'status',
+      header: 'Status',
+      primary: true,
+      cell: (r) => <RestoreStatusCell status={r.status} error={r.error} />,
+    },
+    {
+      id: 'target',
+      header: 'Target',
+      priority: 2,
+      cell: (r) => targetName(r.target_id),
+    },
+    {
+      id: 'size',
+      header: 'Size',
+      cell: (r) => (
+        <span className="text-muted-foreground">
+          {r.status === 'running' ? '-' : formatBytes(r.size_bytes)}
+        </span>
+      ),
+    },
+    {
+      id: 'started',
+      header: 'Started',
+      priority: 2,
+      cell: (r) => (
+        <span className="text-muted-foreground">
+          {formatDate(r.started_at, '-')}
+        </span>
+      ),
+    },
+    {
+      id: 'finished',
+      header: 'Finished',
+      priority: 3,
+      cell: (r) => (
+        <span className="text-muted-foreground">
+          {formatDate(r.finished_at, '-')}
+        </span>
+      ),
+    },
+    {
+      id: 'verification',
+      header: 'Verification',
+      priority: 3,
+      cell: (r) =>
+        r.status === 'succeeded' ? (
+          renderVerification(r)
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+    },
+  ]
+
   if (isLoading) {
     return <TableSkeleton columnCount={7} rowCount={3} />
   }
@@ -334,73 +387,18 @@ export function BackupHistoryTableView({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>Target</TableHead>
-              <TableHead>Size</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Finished</TableHead>
-              <TableHead>Verification</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((record: BackupHistoryRecord) => (
-              <TableRow key={record.id}>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <StatusBadge status={record.status} />
-                    {record.status === 'failed' && record.error ? (
-                      <span
-                        className="max-w-[20rem] truncate text-xs text-destructive"
-                        title={record.error}
-                      >
-                        {record.error}
-                      </span>
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell className="text-foreground">
-                  {targetName(record.target_id)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {record.status === 'running'
-                    ? '-'
-                    : formatBytes(record.size_bytes)}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.started_at, '-')}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.finished_at, '-')}
-                </TableCell>
-                <TableCell>
-                  {record.status === 'succeeded' ? (
-                    renderVerification(record)
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    {record.status === 'succeeded'
-                      ? renderActions(record)
-                      : null}
-                    {record.status !== 'running'
-                      ? renderDeleteAction(record)
-                      : null}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <ResponsiveTable
+        rows={history}
+        columns={columns}
+        getRowId={(record) => record.id}
+        ariaLabel={t('tables.snapshots')}
+        renderActions={(record) => (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {record.status === 'succeeded' ? renderActions(record) : null}
+            {record.status !== 'running' ? renderDeleteAction(record) : null}
+          </div>
+        )}
+      />
 
       {loadMoreError ? (
         <p className="text-sm text-destructive">{loadMoreError}</p>

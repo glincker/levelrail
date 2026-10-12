@@ -22,10 +22,10 @@ var nodeResourceUsagePlacedMetrics = []string{
 // (nodeHostMetrics in node_metrics.go, minus the OS-patch counters,
 // which don't belong in a utilization view) this endpoint reads
 // directly under nodeResourceID(id) rather than summing.
-// HostDiskCollector/HostMemoryCollector still only run for this
-// process's own host, so (unlike nodeResourceUsagePlacedMetrics below)
-// a remote node's fields here still stay nil; see
-// docs-local/agent-metrics-findings-2026-10-04.md.
+// HostDiskCollector/HostMemoryCollector only run for this process's own
+// host; a remote node's memory capacity comes from its agent's host
+// report instead (applyRemoteMemoryAttribution), and its disk fields
+// stay nil.
 var nodeResourceUsageHostMetrics = []string{
 	telemetry.MetricMemoryTotalBytes,
 	telemetry.MetricMemoryAvailableBytes,
@@ -58,7 +58,7 @@ type nodeResourceUsageResource struct {
 	DiskUsedBytes        *float64 `json:"disk_used_bytes,omitempty"`
 	DiskTotalBytes       *float64 `json:"disk_total_bytes,omitempty"`
 	// LevelrailMemoryBytes is the control plane process RSS (embedded
-	// ingress included). Local node only: a remote agent reports none.
+	// ingress included). A remote node reports its agent process RSS.
 	LevelrailMemoryBytes *float64 `json:"levelrail_memory_bytes,omitempty"`
 	// OtherContainersMemoryBytes is running containers Levelrail does not
 	// manage; OtherContainers lists the largest few.
@@ -212,8 +212,12 @@ func (rt *Router) handleFleetResourceUsage(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	if local, ok := byID[rt.localNodeID]; ok {
-		rt.applyMemoryAttribution(r.Context(), local)
+	for id, usage := range byID {
+		if id == rt.localNodeID {
+			rt.applyMemoryAttribution(r.Context(), usage)
+			continue
+		}
+		rt.applyRemoteMemoryAttribution(usage)
 	}
 
 	out := make([]nodeResourceUsageResource, 0, len(byID))

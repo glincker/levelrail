@@ -1,27 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { CloudArrowUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { backupTargetListQueryOptions } from '../../queries/backupTargets'
 import { BackupTargetTable } from '../../components/BackupTargetTable'
 import { CreateBackupTargetDialog } from '../../components/CreateBackupTargetDialog'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { SetupStepHint } from '@/components/getStarted/SetupStepHint'
+import { BackupTargetsRail } from '../../components/settings/SettingsRails'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
-// Account-level, not scoped to one app or database, so it lives under
-// routes/settings/ next to tokens.tsx rather than under routes/apps/ or
-// routes/databases/, same reasoning that route's own doc comment gives.
-// Typed loader primes the Query cache before render, same pattern
-// tokens.tsx already established: the component below only ever reads
-// that warm cache via useSuspenseQuery, never fetches data in its own
-// body.
-//
-// This page only covers connecting/listing/removing a bucket
-// destination. Triggering an actual backup and viewing its history lives
-// on the database that owns it (components/BackupsSection.tsx, rendered
-// from routes/databases/$name/overview.tsx), not here: a backup target is
-// account-level and can back up more than one database, so its own runs
-// belong on the database's page, not this one.
+// Account-level: a backup target can back up more than one database, so
+// it lives here. Triggering a backup and its history live on the owning
+// database's page (components/BackupsSection.tsx), not this one.
 export const Route = createFileRoute('/settings/backup-targets')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(backupTargetListQueryOptions()),
@@ -30,39 +24,49 @@ export const Route = createFileRoute('/settings/backup-targets')({
 })
 
 function BackupTargetsPage() {
+  const { t } = useTranslation('settings')
   const { data: targets } = useSuspenseQuery(backupTargetListQueryOptions())
 
   return (
-    <div className="space-y-6">
+    <PageTemplate
+      icon={<CloudArrowUpIcon />}
+      eyebrow={t('backupTargetsPage.eyebrow')}
+      title={t('backupTargetsPage.title')}
+      description={t('backupTargetsPage.description')}
+      helpPath="/backups-and-storage"
+      helpLabel={t('backupTargetsPage.help')}
+      status={
+        <Badge variant={targets.length > 0 ? 'success' : 'warning'}>
+          {t('backupTargetsPage.count', { count: targets.length })}
+        </Badge>
+      }
+      actions={<CreateBackupTargetDialog />}
+      aside={<BackupTargetsRail targets={targets} />}
+      asideLabel={t('backupTargetsPage.rail.label')}
+      banners={
+        targets.length === 0 ? (
+          <Banner variant="warning" title={t('backupTargetsPage.banner.title')}>
+            {t('backupTargetsPage.banner.body')}
+          </Banner>
+        ) : null
+      }
+    >
       <SetupStepHint step="backup_target" />
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <CloudArrowUpIcon className="size-4" />
-          </div>
-          <PageHeader
-            title="Backup targets"
-            description="S3-compatible buckets connected as backup destinations for managed databases. AWS S3, Cloudflare R2, or any other S3-compatible endpoint."
-          />
-        </div>
-        <CreateBackupTargetDialog />
-      </div>
       <BackupTargetTable
         targets={targets}
         action={<CreateBackupTargetDialog />}
       />
-    </div>
+    </PageTemplate>
   )
 }
 
-// Route-level fallback for the loader's pending phase, matching
-// BackupTargetTable's own 6-column shape so the skeleton doesn't jump
-// when real rows swap in.
+// Matches BackupTargetTable's 5-column shape so the skeleton doesn't
+// jump when real rows swap in.
 function BackupTargetsPending() {
   return (
     <div className="space-y-6">
-      <PageHeader title="Backup targets" />
-      <TableSkeleton columnCount={6} />
+      <SettingsPageTitle id="backup-targets" />
+      <TableSkeleton columnCount={5} />
     </div>
   )
 }

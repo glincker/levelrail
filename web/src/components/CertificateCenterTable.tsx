@@ -16,6 +16,7 @@ import { RenewCertificateButton } from './RenewCertificateButton'
 
 function CertificateRow({ row }: { row: CertificateCenterRow }) {
   const { t } = useTranslation('https')
+  const { t: ts } = useTranslation('settings')
   const { domain, appName, cert } = row
   const internal = cert ? isInternalCert(cert) : false
   const proxyManaged = cert
@@ -32,7 +33,9 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
             {appName ? (
               <Badge variant="outline">{appName}</Badge>
             ) : (
-              <Badge variant="muted">No app</Badge>
+              <Badge variant="muted">
+                {ts('certificatesPage.table.noApp')}
+              </Badge>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -45,8 +48,8 @@ function CertificateRow({ row }: { row: CertificateCenterRow }) {
               : proxyManaged
                 ? t('certTable.proxyUnknown')
                 : appName
-                  ? 'Not yet issued'
-                  : 'Certificate remains from a domain no longer configured on any app'}
+                  ? ts('certificatesPage.table.notIssued')
+                  : ts('certificatesPage.table.orphaned')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -101,13 +104,14 @@ export function CertificateCenterTable({
 }: {
   rows: CertificateCenterRow[]
 }) {
+  const { t } = useTranslation('settings')
   if (rows.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<ShieldCheckIcon className="size-5" />}
-        title="No domains configured yet"
-        description="Add a domain to an app to see its certificate here, automatic or custom."
+        title={t('certificatesPage.empty.title')}
+        description={t('certificatesPage.empty.body')}
       />
     )
   }

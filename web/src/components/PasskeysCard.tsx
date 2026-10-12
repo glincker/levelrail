@@ -55,13 +55,13 @@ export function PasskeysCard() {
           password.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {passkeys.length > 0 ? (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border">
             {passkeys.map((p) => (
               <li
                 key={p.id}
-                className="flex flex-wrap items-center justify-between gap-3 p-3 text-sm"
+                className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">

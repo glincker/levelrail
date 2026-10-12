@@ -12,7 +12,7 @@ import {
   PlusIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { EmptyState } from '@/components/ui/empty-state'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { appListQueryOptions } from '../../queries/apps'
 import { staticSitesQueryOptions } from '../../queries/staticSites'
 import { RowSkeleton } from '../../components/AppRow'
@@ -121,59 +121,56 @@ function AppListPage() {
         })
 
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader
-          title={t('appsList.title', { defaultValue: 'Apps' })}
-          description={countLabel}
-          actions={
-            <>
-              {selected.length > 0 ? (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setSelected(
-                      allVisibleSelected ? [] : filteredApps.map((a) => a.name),
-                    )
-                  }}
-                >
-                  {allVisibleSelected
-                    ? t('appsList.deselectAll', {
-                        defaultValue: 'Deselect all',
-                      })
-                    : t('appsList.selectAll', { defaultValue: 'Select all' })}
-                </Button>
-              ) : null}
-              {apps.length > 0 ? (
-                <span className="hidden sm:block">
-                  <ViewToggle mode={mode} onChange={changeMode} />
-                </span>
-              ) : null}
-              <Button
-                size="sm"
-                variant="outline"
-                className="max-sm:hidden"
-                render={<Link to="/databases" />}
-                nativeButton={false}
-              >
-                <DatabaseIcon />
-                {t('appsList.newDatabase', { defaultValue: 'New database' })}
-              </Button>
-              <Button
-                size="sm"
-                render={<Link to="/apps/new" />}
-                nativeButton={false}
-              >
-                <PlusIcon />
-                {t('appsList.newApp', { defaultValue: 'New app' })}
-              </Button>
-            </>
-          }
-        />
-      </div>
+    <PageTemplate
+      title={t('appsList.title', { defaultValue: 'Apps' })}
+      description={countLabel}
+      actions={
+        <>
+          {selected.length > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelected(
+                  allVisibleSelected ? [] : filteredApps.map((a) => a.name),
+                )
+              }}
+            >
+              {allVisibleSelected
+                ? t('appsList.deselectAll', {
+                    defaultValue: 'Deselect all',
+                  })
+                : t('appsList.selectAll', { defaultValue: 'Select all' })}
+            </Button>
+          ) : null}
+          {apps.length > 0 ? (
+            <span className="hidden sm:block">
+              <ViewToggle mode={mode} onChange={changeMode} />
+            </span>
+          ) : null}
+          <Button
+            size="sm"
+            variant="outline"
+            className="max-sm:hidden"
+            render={<Link to="/databases" />}
+            nativeButton={false}
+          >
+            <DatabaseIcon />
+            {t('appsList.newDatabase', { defaultValue: 'New database' })}
+          </Button>
+          <Button
+            size="sm"
+            render={<Link to="/apps/new" />}
+            nativeButton={false}
+          >
+            <PlusIcon />
+            {t('appsList.newApp', { defaultValue: 'New app' })}
+          </Button>
+        </>
+      }
+    >
       {apps.length > 0 ? (
-        <div className="mb-3 space-y-3">
+        <div className="space-y-3">
           <AppsStatusChips
             counts={counts}
             active={status}
@@ -258,31 +255,27 @@ function AppListPage() {
           setSelected([])
         }}
       />
-    </div>
+    </PageTemplate>
   )
 }
 
 function AppListPending() {
   return (
-    <div>
-      <div className="mb-4">
-        <PageHeader title="Apps" />
-      </div>
+    <PageTemplate title="Apps">
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ListHeader />
         {Array.from({ length: 6 }, (_, i) => (
           <RowSkeleton key={i} />
         ))}
       </div>
-    </div>
+    </PageTemplate>
   )
 }
 
 function AppListError({ error }: { error: unknown }) {
   const { t } = useTranslation('common')
   return (
-    <div className="space-y-4">
-      <PageHeader title={t('appsList.title', { defaultValue: 'Apps' })} />
+    <PageTemplate title={t('appsList.title', { defaultValue: 'Apps' })}>
       <Alert variant="destructive">
         <AlertDescription className="space-y-2">
           <p>
@@ -302,6 +295,6 @@ function AppListError({ error }: { error: unknown }) {
           </Button>
         </AlertDescription>
       </Alert>
-    </div>
+    </PageTemplate>
   )
 }

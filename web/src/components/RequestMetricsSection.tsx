@@ -105,7 +105,7 @@ export function RequestMetricsSection({
   }
   if (points.length === 0) {
     return (
-      <div className="mt-4 flex items-start gap-2 rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+      <div className="mt-4 flex items-start gap-2 rounded-lg bg-muted/30 p-3 text-sm text-muted-foreground">
         <GlobeIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <p>{t('requests.empty')}</p>
       </div>

@@ -1,23 +1,16 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { useRestoreHistory } from '../queries/restoreHistory'
 import { formatDate } from '../lib/format'
-import { StatusBadge } from './backupAttemptStatus'
+import { RestoreStatusCell } from './RestoreStatusCell'
 import type { RestoreHistoryRecord } from '../types/restoreHistory'
 
-// Shared presentational table between RestoreHistoryTable (a database's
-// restore attempts) and AppVolumeBackupsSection's own volume restore
-// table: same shape (a status-first table, newest attempt on top),
-// rendered only once at least one restore has ever been triggered, so a
-// resource nobody has ever restored shows nothing extra here rather than
-// an empty table with nothing in it. Each caller supplies its own query
-// hook's result; only the data source differs between resource kinds.
+// Shared by a database's restore attempts and AppVolumeBackupsSection's volume
+// restores; rendered only once a restore has ever been triggered.
 export function RestoreHistoryTableView({
   history,
   isLoading,
@@ -27,6 +20,46 @@ export function RestoreHistoryTableView({
   isLoading: boolean
   error: Error | null
 }) {
+  const { t } = useTranslation('backups')
+  const columns = useMemo<ResponsiveColumn<RestoreHistoryRecord>[]>(
+    () => [
+      {
+        id: 'status',
+        header: 'Status',
+        primary: true,
+        cell: (r) => <RestoreStatusCell status={r.status} error={r.error} />,
+      },
+      {
+        id: 'backup',
+        header: 'From backup',
+        cell: (r) => (
+          <span className="text-muted-foreground">{r.backup_history_id}</span>
+        ),
+      },
+      {
+        id: 'started',
+        header: 'Started',
+        priority: 2,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDate(r.started_at, '-')}
+          </span>
+        ),
+      },
+      {
+        id: 'finished',
+        header: 'Finished',
+        priority: 3,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDate(r.finished_at, '-')}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
+
   if (isLoading || history.length === 0) {
     return null
   }
@@ -36,47 +69,15 @@ export function RestoreHistoryTableView({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium text-foreground">Restores</h3>
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>From backup</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Finished</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((record: RestoreHistoryRecord) => (
-              <TableRow key={record.id}>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <StatusBadge status={record.status} />
-                    {record.status === 'failed' && record.error ? (
-                      <span
-                        className="max-w-[20rem] truncate text-xs text-destructive"
-                        title={record.error}
-                      >
-                        {record.error}
-                      </span>
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {record.backup_history_id}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.started_at, '-')}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.finished_at, '-')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+        Restores
+      </h3>
+      <ResponsiveTable
+        rows={history}
+        columns={columns}
+        getRowId={(r) => r.id}
+        ariaLabel={t('tables.restores')}
+      />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { useTranslation } from 'react-i18next'
 import { ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
@@ -26,20 +27,17 @@ export function CoverageSummary({
   const headline = coverageHeadline(summary)
   return (
     <section
-      className="space-y-4 rounded-lg border border-border p-4"
+      className="space-y-4 rounded-lg border border-border bg-card p-4"
       aria-labelledby="coverage-summary-title"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2
-            id="coverage-summary-title"
-            className="text-2xl font-semibold tracking-tight"
-          >
+          <Display as="h2" size="section" id="coverage-summary-title">
             {t('summary.protected', {
               protected: summary.protected,
               total: summary.total,
             })}
-          </h2>
+          </Display>
           <p className="text-sm text-muted-foreground">
             {t(`summary.headline.${headline}`, {
               count: summary.unprotected,

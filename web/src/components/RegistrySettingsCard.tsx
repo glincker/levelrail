@@ -2,11 +2,9 @@ import { useState } from 'react'
 import {
   CheckIcon,
   CopyIcon,
-  HardDrivesIcon,
   CheckCircleIcon,
   WarningCircleIcon,
   MinusCircleIcon,
-  WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Icon } from '@phosphor-icons/react'
 import type { VariantProps } from 'class-variance-authority'
@@ -17,14 +15,9 @@ import {
 } from '../queries/registry'
 import type { badgeVariants } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/ui/status-badge'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
@@ -53,6 +46,20 @@ const STATUS_ICON: Record<RegistrySettings['status'], Icon> = {
   running: CheckCircleIcon,
   error: WarningCircleIcon,
   stopped: MinusCircleIcon,
+}
+
+export function RegistryStatusBadge({
+  status,
+}: {
+  status: RegistrySettings['status']
+}) {
+  return (
+    <StatusBadge
+      variant={STATUS_VARIANT[status]}
+      label={STATUS_LABEL[status]}
+      icon={STATUS_ICON[status]}
+    />
+  )
 }
 
 // Instance-level built-in container registry: GET/PUT/DELETE
@@ -120,30 +127,12 @@ export function RegistrySettingsCard({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <HardDrivesIcon className="size-4" />
-          Container registry
-          <StatusBadge
-            variant={STATUS_VARIANT[settings.status]}
-            label={STATUS_LABEL[settings.status]}
-            icon={STATUS_ICON[settings.status]}
-          />
-        </CardTitle>
-        <CardDescription>
-          Levelrail&apos;s own built-in image registry: a build cache and
-          distribution backend for multi-node deployments with no external
-          registry to sign up for. Fronted by TLS through the embedded ingress;
-          the registry enforces its own login, so credentials are required even
-          if the published port is reached directly.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
         <form
           onSubmit={(e) => {
             handleSubmit(e)
           }}
-          className="space-y-5"
+          className="space-y-4"
         >
           <SettingsEnabledRow
             description="Runs the registry container and routes it through the configured host."
@@ -180,14 +169,11 @@ export function RegistrySettingsCard({
           ) : null}
 
           {revealedPassword ? (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
-                <WarningIcon className="mt-0.5 size-4 shrink-0" />
-                <p className="text-sm">
-                  Copy this password now. It will not be shown again.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+            <div className="space-y-4">
+              <Banner variant="warning" title="Copy this password now.">
+                It will not be shown again.
+              </Banner>
+              <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-2">
                 <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
                   {revealedPassword}
                 </code>

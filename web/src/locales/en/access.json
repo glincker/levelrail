@@ -8,6 +8,7 @@
       "description": "Create a role to give people a named set of abilities."
     },
     "table": {
+      "label": "Roles",
       "name": "Name",
       "abilities": "Abilities",
       "visibility": "Sees",

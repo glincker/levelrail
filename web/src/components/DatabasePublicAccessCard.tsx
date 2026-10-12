@@ -1,10 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
@@ -19,8 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { TONE } from '@/components/kit/tone'
-import { cn } from '@/lib/utils'
+import { Banner } from '@/components/ui/banner'
 import {
   useClearDatabasePublicAccess,
   useSetDatabasePublicAccess,
@@ -50,12 +45,6 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // different risk than Postgres/MySQL's generated passwords, so this
 // family gets its own copy plus an explicit confirmation checkbox
 // gating the toggle; the other engines keep the single passive warning.
-const WARNING_TONE = cn(
-  TONE.warning.soft,
-  TONE.warning.border,
-  TONE.warning.text,
-)
-
 const NO_AUTH_ENGINES = new Set(['redis', 'keydb', 'dragonfly'])
 
 // BIND_ADDRESS_MODES mirrors PortEditor's own identically-named
@@ -180,14 +169,12 @@ export function DatabasePublicAccessCard({
         </div>
 
         {!enabled && requiresNoAuthAck && (
-          <div
-            className={cn('space-y-2 rounded-lg border p-2.5', WARNING_TONE)}
-          >
-            <div className="flex items-start gap-2">
-              <WarningIcon className="mt-0.5 size-4 shrink-0" />
-              <p className="text-sm">{t('publicAccess.noPasswordWarning')}</p>
-            </div>
-            <label className="flex items-center gap-2 pl-6 text-sm">
+          <>
+            <Banner
+              variant="warning"
+              title={t('publicAccess.noPasswordWarning')}
+            />
+            <label className="flex items-center gap-2 text-sm">
               <Checkbox
                 checked={noAuthAcknowledged}
                 onCheckedChange={(checked) => {
@@ -196,7 +183,7 @@ export function DatabasePublicAccessCard({
               />
               I understand this database has no password.
             </label>
-          </div>
+          </>
         )}
 
         {!enabled && (
@@ -264,7 +251,7 @@ export function DatabasePublicAccessCard({
         )}
 
         {enabled && connectionString ? (
-          <div className="space-y-2">
+          <div className="space-y-4">
             {database.public_bind_address ? (
               <p className="text-sm text-muted-foreground">
                 Bound to{' '}
@@ -273,20 +260,15 @@ export function DatabasePublicAccessCard({
                 ] ?? database.public_bind_address}
               </p>
             ) : null}
-            <div
-              className={cn(
-                'flex items-start gap-2 rounded-lg border p-2.5',
-                WARNING_TONE,
-              )}
-            >
-              <WarningIcon className="mt-0.5 size-4 shrink-0" />
-              <p className="text-sm">
-                {requiresNoAuthAck
+            <Banner
+              variant="warning"
+              title={
+                requiresNoAuthAck
                   ? t('publicAccess.noPasswordOpen')
-                  : t('publicAccess.openPort')}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+                  : t('publicAccess.openPort')
+              }
+            />
+            <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2">
               <code className="min-w-0 flex-1 overflow-x-auto text-xs break-all">
                 {connectionString}
               </code>

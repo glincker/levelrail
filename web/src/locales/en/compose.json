@@ -1,5 +1,6 @@
 {
   "stack": {
+    "tableLabel": "Compose services",
     "title": "Compose stack",
     "open": "Open stack",
     "description": "{{count}} services deployed from one compose file, reconciled one by one in dependency order.",

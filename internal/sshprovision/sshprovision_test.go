@@ -32,6 +32,8 @@ type fakeHost struct {
 	unsupportedArc bool
 	failInstall    bool
 
+	fingerprint string
+
 	mu       sync.Mutex
 	envFile  string
 	unitFile string
@@ -44,6 +46,9 @@ func newFakeHost(t *testing.T, password string, authorizedKey ssh.PublicKey) (ad
 	srv := &gliderssh.Server{
 		Handler: host.handle,
 	}
+	hostSigner := newHostSigner(t)
+	srv.AddHostKey(hostSigner)
+	host.fingerprint = ssh.FingerprintSHA256(hostSigner.PublicKey())
 	if password != "" {
 		srv.PasswordHandler = func(_ gliderssh.Context, pass string) bool { return pass == password }
 	}
@@ -166,6 +171,19 @@ func generateTestKey(t *testing.T) (pemBytes []byte, pub ssh.PublicKey) {
 	return pem.EncodeToMemory(block), signerPub
 }
 
+func newHostSigner(t *testing.T) ssh.Signer {
+	t.Helper()
+	_, priv, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate host key: %v", err)
+	}
+	signer, err := ssh.NewSignerFromKey(priv)
+	if err != nil {
+		t.Fatalf("host signer: %v", err)
+	}
+	return signer
+}
+
 func hostPort(t *testing.T, addr string) (string, int) {
 	t.Helper()
 	host, portStr, err := net.SplitHostPort(addr)
@@ -195,6 +213,7 @@ func TestProvisionPasswordAuthDockerAlreadyPresent(t *testing.T) {
 	var events []Event
 	det, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), func(e Event) { events = append(events, e) })
 	if err != nil {
 		t.Fatalf("Provision: %v", err)
@@ -243,6 +262,7 @@ func TestProvisionKeyAuthInstallsDocker(t *testing.T) {
 
 	det, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthKey, PrivateKey: string(keyPEM),
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), nil)
 	if err != nil {
 		t.Fatalf("Provision: %v", err)
@@ -262,6 +282,7 @@ func TestProvisionRejectsUnsupportedOS(t *testing.T) {
 
 	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported OS") {
 		t.Fatalf("expected an unsupported OS error, got %v", err)
@@ -275,6 +296,7 @@ func TestProvisionRejectsUnsupportedArch(t *testing.T) {
 
 	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "unsupported CPU architecture") {
 		t.Fatalf("expected an unsupported architecture error, got %v", err)
@@ -288,6 +310,7 @@ func TestProvisionRejectsNoSystemd(t *testing.T) {
 
 	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "no systemd") {
 		t.Fatalf("expected a no-systemd error, got %v", err)
@@ -295,11 +318,12 @@ func TestProvisionRejectsNoSystemd(t *testing.T) {
 }
 
 func TestProvisionFailsOnWrongPassword(t *testing.T) {
-	addr, _ := newFakeHost(t, "s3cret", nil)
+	addr, host := newFakeHost(t, "s3cret", nil)
 	h, p := hostPort(t, addr)
 
 	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "wrong",
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "authenticate") {
 		t.Fatalf("expected an authentication error, got %v", err)
@@ -313,6 +337,7 @@ func TestProvisionFailsWhenAgentServiceDoesNotStayActive(t *testing.T) {
 
 	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
+		HostKeyFingerprint: host.fingerprint,
 	}, testParams(), nil)
 	if err == nil || !strings.Contains(err.Error(), "did not stay active") {
 		t.Fatalf("expected an agent-not-active error, got %v", err)
@@ -320,11 +345,12 @@ func TestProvisionFailsWhenAgentServiceDoesNotStayActive(t *testing.T) {
 }
 
 func TestProvisionRequiresParams(t *testing.T) {
-	addr, _ := newFakeHost(t, "s3cret", nil)
+	addr, host := newFakeHost(t, "s3cret", nil)
 	h, p := hostPort(t, addr)
 
 	_, err := New("acme-agent", "Acme").Provision(context.Background(), Credentials{
 		Host: h, Port: p, Username: "root", Auth: AuthPassword, Password: "s3cret",
+		HostKeyFingerprint: host.fingerprint,
 	}, InstallParams{}, nil)
 	if err == nil {
 		t.Fatalf("expected an error for missing required params")
@@ -335,6 +361,7 @@ func TestProvisionUnreachableHostFailsFast(t *testing.T) {
 	p := &Provisioner{DialTimeout: 500 * time.Millisecond}
 	_, err := p.Provision(context.Background(), Credentials{
 		Host: "127.0.0.1", Port: 1, Username: "root", Auth: AuthPassword, Password: "x",
+		HostKeyFingerprint: "SHA256:" + strings.Repeat("A", 43),
 	}, testParams(), nil)
 	if err == nil {
 		t.Fatalf("expected a dial error")

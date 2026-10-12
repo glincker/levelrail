@@ -68,11 +68,11 @@ export function AppIntegrationsCard({ appName }: { appName: string }) {
             description="Attach PostHog, Sentry, and other curated tools to inject their env vars automatically at deploy time."
           />
         ) : (
-          <ul className="space-y-2">
+          <ul className="divide-y divide-border">
             {attached.map((integration) => (
               <li
                 key={integration.id}
-                className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-2.5"
+                className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
               >
                 <div className="flex items-center gap-2">
                   <BrandLogoBadge

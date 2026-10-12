@@ -1,3 +1,4 @@
+import { Display } from '@/components/ui/typography'
 import { CpuIcon, MemoryIcon } from '@phosphor-icons/react/dist/ssr'
 import { InfoTip, SkeletonTile, Sparkline } from '@/components/kit'
 import { formatBytes } from '../../lib/format'
@@ -46,7 +47,9 @@ export function ResourceTile({
         <span>{label}</span>
         <InfoTip label={`About ${label}`}>{info}</InfoTip>
       </div>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <Display as="p" size="page" className="mt-1 tabular-nums">
+        {value}
+      </Display>
       <p className="text-xs text-muted-foreground">{context}</p>
       {series.length > 1 ? (
         <Sparkline

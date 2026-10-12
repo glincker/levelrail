@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { BellSlashIcon, PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,13 +18,9 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
 import {
   useCreateSilence,
@@ -204,57 +201,25 @@ function CreateSilenceDialog() {
   )
 }
 
-function SilenceRow({ silence }: { silence: Silence }) {
+function EndSilenceButton({ silence }: { silence: Silence }) {
   const expire = useExpireSilence()
+  if (silence.status === 'expired') return null
   return (
-    <TableRow>
-      <TableCell>
-        <Badge
-          variant={
-            silence.status === 'active'
-              ? 'warning'
-              : silence.status === 'pending'
-                ? 'outline'
-                : 'muted'
-          }
-        >
-          {silence.status}
-        </Badge>
-      </TableCell>
-      <TableCell className="max-w-[20rem] truncate text-sm">
-        {describeMatchers(silence.matchers)}
-        {silence.reason ? (
-          <span className="block text-xs text-muted-foreground">
-            {silence.reason}
-          </span>
-        ) : null}
-      </TableCell>
-      <TableCell className="whitespace-nowrap text-muted-foreground">
-        {new Date(silence.ends_at).toLocaleString()}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {silence.created_by || '-'}
-      </TableCell>
-      <TableCell className="text-right">
-        {silence.status === 'expired' ? null : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={expire.isPending}
-            onClick={() => {
-              expire.mutate(silence.id, {
-                onSuccess: () => {
-                  toast.add({ title: 'Silence ended.', type: 'success' })
-                },
-              })
-            }}
-          >
-            End now
-          </Button>
-        )}
-      </TableCell>
-    </TableRow>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={expire.isPending}
+      onClick={() => {
+        expire.mutate(silence.id, {
+          onSuccess: () => {
+            toast.add({ title: 'Silence ended.', type: 'success' })
+          },
+        })
+      }}
+    >
+      End now
+    </Button>
   )
 }
 
@@ -262,6 +227,61 @@ export function AlertSilencesPanel() {
   const [showExpired, setShowExpired] = useState(false)
   const { data, isLoading, error } = useSilences(showExpired)
   const silences = data ?? []
+  const { t } = useTranslation('common')
+  const columns = useMemo<ResponsiveColumn<Silence>[]>(
+    () => [
+      {
+        id: 'status',
+        header: 'Status',
+        primary: true,
+        cell: (s) => (
+          <Badge
+            variant={
+              s.status === 'active'
+                ? 'warning'
+                : s.status === 'pending'
+                  ? 'outline'
+                  : 'muted'
+            }
+          >
+            {s.status}
+          </Badge>
+        ),
+      },
+      {
+        id: 'matches',
+        header: 'Matches',
+        cell: (s) => (
+          <span className="block text-sm break-words">
+            {describeMatchers(s.matchers)}
+            {s.reason ? (
+              <span className="block text-xs text-muted-foreground">
+                {s.reason}
+              </span>
+            ) : null}
+          </span>
+        ),
+      },
+      {
+        id: 'until',
+        header: 'Until',
+        cell: (s) => (
+          <span className="text-muted-foreground">
+            {new Date(s.ends_at).toLocaleString()}
+          </span>
+        ),
+      },
+      {
+        id: 'createdBy',
+        header: 'Created by',
+        priority: 3,
+        cell: (s) => (
+          <span className="text-muted-foreground">{s.created_by || '-'}</span>
+        ),
+      },
+    ],
+    [],
+  )
 
   return (
     <section className="space-y-3" aria-label="Silences">
@@ -288,24 +308,13 @@ export function AlertSilencesPanel() {
           description="Silence an alert from its row, or create a silence here for a planned change."
         />
       ) : (
-        <div className="rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Matches</TableHead>
-                <TableHead>Until</TableHead>
-                <TableHead>Created by</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {silences.map((s) => (
-                <SilenceRow key={s.id} silence={s} />
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <ResponsiveTable
+          rows={silences}
+          columns={columns}
+          getRowId={(s) => s.id}
+          ariaLabel={t('tableLabels.alertSilences')}
+          renderActions={(s) => <EndSilenceButton silence={s} />}
+        />
       )}
     </section>
   )

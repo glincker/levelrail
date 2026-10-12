@@ -7,13 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { useDatabaseWho } from '../../queries/databaseAccess'
 import { GrantDialog } from './GrantDialog'
 
@@ -24,6 +20,40 @@ export function WhoCanAccessCard({ databaseName }: { databaseName: string }) {
   const [granting, setGranting] = useState(false)
   const principals = data?.principals ?? []
   const policies = data?.policies ?? []
+  const columns: ResponsiveColumn<(typeof principals)[number]>[] = [
+    {
+      id: 'who',
+      header: t('who.columns.who'),
+      primary: true,
+      cell: (p) => (
+        <div className="text-sm">
+          {p.name}
+          <div className="text-xs font-normal text-muted-foreground">
+            {t(`who.type.${p.type}`)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'abilities',
+      header: t('who.columns.abilities'),
+      cell: (p) => (
+        <div className="flex flex-wrap gap-1">
+          {p.effective.map((a) => (
+            <Badge key={a} variant="muted">
+              {a}
+            </Badge>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: 'via',
+      header: t('who.columns.via'),
+      priority: 2,
+      cell: (p) => <span className="text-xs">{p.via.join(', ')}</span>,
+    },
+  ]
 
   return (
     <Card>
@@ -58,37 +88,12 @@ export function WhoCanAccessCard({ databaseName }: { databaseName: string }) {
             description={t('who.emptyBody')}
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('who.columns.who')}</TableHead>
-                <TableHead>{t('who.columns.abilities')}</TableHead>
-                <TableHead>{t('who.columns.via')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {principals.map((p) => (
-                <TableRow key={`${p.type}:${p.id}`}>
-                  <TableCell className="text-sm">
-                    {p.name}
-                    <div className="text-xs text-muted-foreground">
-                      {t(`who.type.${p.type}`)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {p.effective.map((a) => (
-                        <Badge key={a} variant="muted">
-                          {a}
-                        </Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs">{p.via.join(', ')}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <ResponsiveTable
+            rows={principals}
+            columns={columns}
+            getRowId={(p) => `${p.type}:${p.id}`}
+            ariaLabel={t('who.tableLabel')}
+          />
         )}
         {policies.length > 0 ? (
           <div className="space-y-1">

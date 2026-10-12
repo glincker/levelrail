@@ -23,7 +23,7 @@ import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // Matches the 18 real section routes under /apps/$name/* (see
 // AppScopedSidebar.tsx's own nav, the source of truth for these labels):
@@ -95,28 +95,22 @@ function AppDetailLayout() {
     return <Outlet />
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <Breadcrumbs
-          projectId={app.project_id}
-          environmentId={app.environment_id}
-          appName={app.name}
-          page={section ? APP_SECTION_LABELS[section] : undefined}
-        />
-      </div>
-      {isOverview ? null : (
-        <PageHeader
-          title={app.name}
-          status={<Badge variant={status.variant}>{status.label}</Badge>}
-          actions={<AppActionBar app={app} onDeploy={setDeployTab} />}
-        />
-      )}
-
+  const breadcrumb = (
+    <Breadcrumbs
+      projectId={app.project_id}
+      environmentId={app.environment_id}
+      appName={app.name}
+      page={section ? APP_SECTION_LABELS[section] : undefined}
+    />
+  )
+  const banners = (
+    <>
       {app.is_trial ? <TrialAppBanner name={app.name} /> : null}
-
       <PendingDeployApprovalBanner appName={app.name} />
-
+    </>
+  )
+  const content = (
+    <>
       <DeploySheet
         appName={app.name}
         tab={deployTab}
@@ -124,9 +118,30 @@ function AppDetailLayout() {
           setDeployTab(null)
         }}
       />
-
       <Outlet />
-    </div>
+    </>
+  )
+
+  if (isOverview) {
+    return (
+      <div className="space-y-6">
+        {breadcrumb}
+        {banners}
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <PageTemplate
+      title={app.name}
+      breadcrumb={breadcrumb}
+      status={<Badge variant={status.variant}>{status.label}</Badge>}
+      actions={<AppActionBar app={app} onDeploy={setDeployTab} />}
+      banners={banners}
+    >
+      {content}
+    </PageTemplate>
   )
 }
 

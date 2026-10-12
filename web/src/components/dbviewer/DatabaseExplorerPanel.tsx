@@ -19,7 +19,7 @@ export function DatabaseExplorerPanel({
 
   return (
     <div className="space-y-4">
-      <h1 className="flex items-center gap-2 text-lg font-semibold">
+      <h1 className="flex items-center gap-2 text-(length:--glinr-type-size-page) leading-(--glinr-type-leading-page) font-(weight:--glinr-type-heading-weight)">
         {KV_ENGINES.has(engine)
           ? t('viewer.keys.title')
           : t('viewer.explorer.title')}

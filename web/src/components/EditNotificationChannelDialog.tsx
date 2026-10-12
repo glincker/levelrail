@@ -10,21 +10,21 @@ import {
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Field, FieldError, FieldHint, FieldLabel } from '@/components/ui/field'
 import { toast } from '@/components/ui/toast'
-import { BrandIcon } from './BrandIcon'
+import { BrandTile } from './BrandLogoBadge'
 import {
   CHANNEL_KIND_BRAND_ICON,
   CHANNEL_KIND_LABEL,
@@ -210,27 +210,27 @@ export function EditNotificationChannelDialog({
   })
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetTrigger render={<Button variant="outline" size="sm" />}>
         <PencilSimpleIcon className="size-3.5" aria-hidden="true" />
         Edit
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      </SheetTrigger>
+      <SheetContent className="overflow-y-auto sm:max-w-lg">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <PencilSimpleIcon className="size-4 text-muted-foreground" />
             Edit channel
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Fully replaces this channel&apos;s configuration. Its recorded
             delivery history stays attached to the same channel id.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
         <form
           onSubmit={(e) => {
             void onSubmit(e)
           }}
-          className="space-y-4"
+          className="space-y-4 px-4 pb-4"
         >
           <Field>
             <FieldLabel>Channel type</FieldLabel>
@@ -258,7 +258,11 @@ export function EditNotificationChannelDialog({
                         }`}
                       >
                         {brandIcon ? (
-                          <BrandIcon name={brandIcon} className="size-5" />
+                          <BrandTile
+                            name={brandIcon}
+                            label={CHANNEL_KIND_LABEL[option]}
+                            size="sm"
+                          />
                         ) : null}
                         <span className="truncate">
                           {CHANNEL_KIND_LABEL[option]}
@@ -444,13 +448,13 @@ export function EditNotificationChannelDialog({
             </Alert>
           ) : null}
 
-          <DialogFooter>
+          <SheetFooter>
             <Button type="submit" disabled={updateChannel.isPending}>
               {updateChannel.isPending ? 'Saving...' : 'Save changes'}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }

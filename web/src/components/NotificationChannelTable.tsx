@@ -1,21 +1,18 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   PaperPlaneTiltIcon,
   WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
-import { BrandIcon } from './BrandIcon'
+import { BrandTile } from './BrandLogoBadge'
 import { DeleteNotificationChannelDialog } from './DeleteNotificationChannelDialog'
 import { EditNotificationChannelDialog } from './EditNotificationChannelDialog'
 import { NotificationDeliveryHistoryDialog } from './NotificationDeliveryHistoryDialog'
@@ -42,6 +39,7 @@ function maskNotifyUrl(url: string): string {
 }
 
 function TestButton({ channel }: { channel: NotificationChannel }) {
+  const { t } = useTranslation('settings')
   const testChannel = useTestExistingNotificationChannel()
   return (
     <Button
@@ -52,11 +50,14 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
       onClick={() => {
         testChannel.mutate(channel.id, {
           onSuccess: () => {
-            toast.add({ title: 'Test notification sent.', type: 'success' })
+            toast.add({
+              title: t('channelsPage.table.testOk'),
+              type: 'success',
+            })
           },
           onError: (error) => {
             toast.add({
-              title: 'Test notification failed.',
+              title: t('channelsPage.table.testFailed'),
               description: error.message,
               type: 'error',
             })
@@ -65,7 +66,9 @@ function TestButton({ channel }: { channel: NotificationChannel }) {
       }}
     >
       <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
-      {testChannel.isPending ? 'Sending...' : 'Test'}
+      {testChannel.isPending
+        ? t('channelsPage.table.sending')
+        : t('channelsPage.table.test')}
     </Button>
   )
 }
@@ -77,76 +80,95 @@ export function NotificationChannelTable({
   channels: NotificationChannel[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('settings')
   if (channels.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<WebhooksLogoIcon className="size-5" />}
-        title="No notification channels connected"
-        description="Connect Slack, Discord, Telegram, a generic webhook, or email once here, then attach it from any app instead of retyping a URL."
+        title={t('channelsPage.empty.title')}
+        description={t('channelsPage.empty.body')}
         action={action}
       />
     )
   }
 
+  const columns: ResponsiveColumn<NotificationChannel>[] = [
+    {
+      id: 'name',
+      primary: true,
+      header: t('channelsPage.table.name'),
+      cell: (channel) => (
+        <span className="font-medium text-foreground">{channel.name}</span>
+      ),
+    },
+    {
+      id: 'type',
+      header: t('channelsPage.table.type'),
+      priority: 2,
+      cell: (channel) => {
+        const brandIcon = CHANNEL_KIND_BRAND_ICON[channel.kind]
+        return (
+          <Badge variant="outline" className="gap-1.5">
+            <BrandTile
+              name={brandIcon ?? ''}
+              label={CHANNEL_KIND_LABEL[channel.kind]}
+              size="xs"
+            />
+            {CHANNEL_KIND_LABEL[channel.kind]}
+          </Badge>
+        )
+      },
+    },
+    {
+      id: 'destination',
+      header: t('channelsPage.table.destination'),
+      priority: 3,
+      cell: (channel) => (
+        <span
+          className="block truncate font-mono text-xs text-muted-foreground"
+          title={channel.notify_url}
+        >
+          {maskNotifyUrl(channel.notify_url)}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: t('channelsPage.table.status'),
+      cell: (channel) =>
+        channel.enabled ? (
+          <Badge variant="success">{t('channelsPage.table.enabled')}</Badge>
+        ) : (
+          <Badge variant="muted">{t('channelsPage.table.disabled')}</Badge>
+        ),
+    },
+    {
+      id: 'connected',
+      header: t('channelsPage.table.connected'),
+      priority: 3,
+      cell: (channel) => (
+        <span className="text-muted-foreground">
+          {formatDate(channel.created_at)}
+        </span>
+      ),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Destination</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Connected</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {channels.map((channel) => {
-            const brandIcon = CHANNEL_KIND_BRAND_ICON[channel.kind]
-            return (
-              <TableRow key={channel.id}>
-                <TableCell className="font-medium text-foreground">
-                  {channel.name}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="gap-1.5">
-                    {brandIcon ? (
-                      <BrandIcon name={brandIcon} className="size-3.5" />
-                    ) : null}
-                    {CHANNEL_KIND_LABEL[channel.kind]}
-                  </Badge>
-                </TableCell>
-                <TableCell
-                  className="max-w-[16rem] truncate font-mono text-xs text-muted-foreground"
-                  title={channel.notify_url}
-                >
-                  {maskNotifyUrl(channel.notify_url)}
-                </TableCell>
-                <TableCell>
-                  {channel.enabled ? (
-                    <Badge variant="success">Enabled</Badge>
-                  ) : (
-                    <Badge variant="muted">Disabled</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(channel.created_at)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <TestButton channel={channel} />
-                    <NotificationDeliveryHistoryDialog channel={channel} />
-                    <EditNotificationChannelDialog channel={channel} />
-                    <DeleteNotificationChannelDialog channel={channel} />
-                  </div>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={channels}
+      columns={columns}
+      getRowId={(channel) => channel.id}
+      ariaLabel={t('channelsPage.table.label')}
+      renderActions={(channel) => (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TestButton channel={channel} />
+          <NotificationDeliveryHistoryDialog channel={channel} />
+          <EditNotificationChannelDialog channel={channel} />
+          <DeleteNotificationChannelDialog channel={channel} />
+        </div>
+      )}
+    />
   )
 }

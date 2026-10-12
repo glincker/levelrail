@@ -159,7 +159,7 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
         {selected && table ? (
           <div className="space-y-3">
             <div>
-              <h2 className="text-base font-semibold">
+              <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
                 {selected.schema}.{table.name}
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -206,7 +206,7 @@ export function SchemaExplorer({ databaseName }: { databaseName: string }) {
             </Tabs>
           </div>
         ) : (
-          <p className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
             {t('viewer.explorer.selectTable')}
           </p>
         )}

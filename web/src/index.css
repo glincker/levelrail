@@ -2,11 +2,26 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './styles/glinui-tokens.css';
+@import './styles/glinr-fonts.css';
 @import './styles/glinr-tokens.css';
+@import './styles/glinr-theme.css';
 
 @custom-variant dark (&:is(.dark *));
 
+/* Tailwind skips node_modules and a file-path @source duplicated the whole sheet, so list the
+   classes of the published Skeleton variants we map to (see components/ui/skeleton.tsx). */
+@source inline("relative isolate overflow-hidden rounded-xl border border-black/[0.06] bg-[linear-gradient(180deg,rgb(244_244_246),rgb(232_232_236))] dark:border-white/[0.1] dark:bg-[linear-gradient(180deg,rgb(40_42_48),rgb(30_32_36))] bg-neutral-200/80 dark:bg-neutral-800/80 border-neutral-300 bg-transparent dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800/50 pointer-events-none absolute inset-0 motion-safe:animate-skeleton-shimmer motion-reduce:hidden bg-gradient-to-r from-transparent to-transparent via-white/50 via-white/60 via-white/70 via-neutral-200/60 dark:via-white/[0.08] dark:via-white/[0.06]");
+
 @theme {
+  --animate-skeleton-shimmer: skeleton-shimmer 1.6s ease-in-out infinite;
+  @keyframes skeleton-shimmer {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
   --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, Consolas, monospace;
 }
@@ -267,10 +282,6 @@ body {
   --color-tone-accent-solid: var(--tone-accent-solid);
   --shadow-raised: var(--elev-1);
   --shadow-floating: var(--elev-2);
-  --shadow-header: var(--glinr-elev-header);
-  --shadow-card: var(--glinr-elev-card);
-  --shadow-popover: var(--glinr-elev-popover);
-  --shadow-dialog: var(--glinr-elev-dialog);
 }
 
 @keyframes kit-shimmer {
@@ -431,4 +442,13 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Density: compact is the :root default in glinr-tokens.css; comfortable swaps in the paired tokens. */
+[data-density='comfortable'] {
+  --glinr-hero-tile-size: var(--glinr-hero-tile-size-comfortable);
+  --glinr-page-gap: var(--glinr-page-gap-comfortable);
+  --glinr-card-pad: var(--glinr-card-pad-comfortable);
+  --glinr-section-pad: var(--glinr-section-pad-comfortable);
+  --glinr-banner-pad: var(--glinr-banner-pad-comfortable);
 }

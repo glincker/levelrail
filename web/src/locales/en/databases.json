@@ -399,6 +399,7 @@
   },
   "list": {
     "title": "Databases",
+    "tableLabel": "Databases",
     "count_one": "{{count}} database",
     "count_other": "{{count}} databases",
     "new": "New database",
@@ -468,5 +469,9 @@
     "node": "Node",
     "project": "Project",
     "noProject": "No project"
+  },
+  "slowQueries": {
+    "tableLabel": "Slow queries",
+    "sortBy": "Sort by"
   }
 }

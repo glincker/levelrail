@@ -100,7 +100,9 @@ export function LbNodeDrawer({
             ) : null}
 
             <section className="space-y-2">
-              <h3 className="text-sm font-medium">Actions</h3>
+              <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+                Actions
+              </h3>
               <ul className="space-y-2">
                 {adminActions(u, historySupported).map((a) => (
                   <li
@@ -127,7 +129,9 @@ export function LbNodeDrawer({
             {historySupported ? (
               <>
                 <section className="space-y-2">
-                  <h3 className="text-sm font-medium">Recent checks</h3>
+                  <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+                    Recent checks
+                  </h3>
                   <HealthHistoryStrip checks={history?.checks ?? []} />
                   <p className="text-xs text-muted-foreground">
                     {summarizeChecks(history?.checks ?? [])}
@@ -153,7 +157,9 @@ export function LbNodeDrawer({
                   ) : null}
                 </section>
                 <section className="space-y-2">
-                  <h3 className="text-sm font-medium">State changes</h3>
+                  <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+                    State changes
+                  </h3>
                   <Timeline
                     emptyLabel="No changes recorded."
                     items={(history?.transitions ?? [])

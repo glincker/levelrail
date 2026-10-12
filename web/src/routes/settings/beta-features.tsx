@@ -2,7 +2,8 @@ import { useId } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { Banner } from '@/components/ui/banner'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -98,16 +99,16 @@ function BetaFeaturesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <FlaskIcon className="size-4" />
-        </div>
-        <PageHeader
-          title={t('settings.title')}
-          description={t('settings.description')}
-        />
-      </div>
+    <PageTemplate
+      icon={<FlaskIcon />}
+      title={t('settings.title')}
+      description={t('settings.description')}
+      banners={
+        <Banner variant="info" title={t('beta.label')}>
+          {t('beta.hint')}
+        </Banner>
+      }
+    >
       {cards.map((card) => {
         const state = features?.find((f) => f.feature === card.feature)
         if (!state) return null
@@ -117,12 +118,10 @@ function BetaFeaturesPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 {card.title}
-                <Badge variant="outline" title={t('beta.hint')}>
-                  {t('beta.label')}
-                </Badge>
+                <Badge variant="outline">{t('beta.label')}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 {card.description}
               </p>
@@ -140,11 +139,10 @@ function BetaFeaturesPage() {
                   {t('settings.locked')}
                 </p>
               ) : null}
-              <p className="text-xs text-muted-foreground">{t('beta.hint')}</p>
             </CardContent>
           </Card>
         )
       })}
-    </div>
+    </PageTemplate>
   )
 }

@@ -1,11 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { VaultIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   vaultSettingsQueryOptions,
   useVaultSettings,
 } from '../../queries/vault'
 import { VaultSettingsCard } from '../../components/VaultSettingsCard'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -36,21 +37,16 @@ function VaultSettingsSkeleton() {
 }
 
 function VaultSettingsPage() {
+  const { t } = useTranslation('settings')
   const { data: settings } = useVaultSettings()
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <VaultIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="Vault"
-          description="Resolve app secrets live from an external HashiCorp Vault instance."
-        />
-      </div>
-
+    <PageTemplate
+      icon={<VaultIcon />}
+      title={t('vaultPage.title')}
+      description={t('vaultPage.description')}
+    >
       <VaultSettingsCard settings={settings} />
-    </div>
+    </PageTemplate>
   )
 }

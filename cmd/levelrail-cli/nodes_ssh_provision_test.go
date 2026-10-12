@@ -38,7 +38,7 @@ func TestRun_NodesSSHProvision_KeyAuth(t *testing.T) {
 	stdout, _ := runCLIExpectOK(t, []string{
 		"nodes", "ssh-provision",
 		"--host", "192.0.2.10", "--user", "root", "--key-file", keyFile,
-		"--name", "web-1", "--control-plane-addr", "cp.example.com:9443",
+		"--name", "web-1", "--control-plane-addr", "cp.example.com:9443", "--host-key-fingerprint", testCLIHostKeyFP,
 		"--api-url", srv.URL,
 	})
 	if gotMethod != http.MethodPost || gotPath != "/api/v1/nodes/ssh-provision" {
@@ -73,7 +73,7 @@ func TestRun_NodesSSHProvision_PasswordAuth(t *testing.T) {
 	runCLIExpectOK(t, []string{
 		"nodes", "ssh-provision",
 		"--host", "192.0.2.11", "--user", "root", "--password",
-		"--name", "web-2", "--control-plane-addr", "cp.example.com:9443",
+		"--name", "web-2", "--control-plane-addr", "cp.example.com:9443", "--insecure-skip-host-key-check",
 		"--api-url", srv.URL,
 	})
 	if gotBody.Auth.Type != "password" || gotBody.Auth.Password != "s3cret" {

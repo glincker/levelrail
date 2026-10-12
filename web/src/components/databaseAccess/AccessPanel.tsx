@@ -23,7 +23,9 @@ export function AccessPanel({ databaseName }: { databaseName: string }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold">{t('access.title')}</h2>
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('access.title')}
+        </h2>
         <p className="text-sm text-muted-foreground">
           {t('access.description')}
         </p>

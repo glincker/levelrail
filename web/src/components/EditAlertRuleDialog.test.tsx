@@ -73,7 +73,7 @@ function renderDialog(rule: AlertRule = thresholdRule) {
 async function openDialog() {
   fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
   await screen.findByText('Edit alert rule')
-  const popup = document.querySelector('[data-slot="dialog-content"]')
+  const popup = document.querySelector('[data-slot="sheet-content"]')
   if (!popup) throw new Error('dialog content did not render')
   return popup as HTMLElement
 }

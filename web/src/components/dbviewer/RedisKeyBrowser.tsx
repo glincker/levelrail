@@ -77,7 +77,7 @@ export function RedisKeyBrowser({ databaseName }: { databaseName: string }) {
               {scan.error.message}
             </p>
           ) : collected.length === 0 && done ? (
-            <p className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            <p className="rounded-lg border border-border bg-muted/30 px-4 py-4 text-center text-sm text-muted-foreground">
               {t('viewer.keys.empty')}
             </p>
           ) : (

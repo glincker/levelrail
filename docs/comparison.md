@@ -81,4 +81,5 @@ To move an existing setup, see [Migrating from Coolify, Dokploy and CapRover](mi
 - [Coolify alternative](coolify-alternative.md), [Dokploy alternative](dokploy-alternative.md), [Vercel alternative](vercel-alternative.md), [Cloud Run alternative](cloud-run-alternative.md), [Heroku alternative](heroku-alternative.md) and [Railway alternative](railway-alternative.md): focused guides for each switch
 - [Architecture](architecture.md): how Levelrail is built internally
 - [Feature catalog](feature-catalog.md): the dashboard pages by area
+- [Cloud integrations](cloud-integrations.md): what works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner
 - [Roadmap](roadmap.md): what has shipped and what is open

@@ -57,15 +57,15 @@ export function OrphanReaperCard() {
         </CardTitle>
         <CardDescription>{t('orphans.description')}</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {report.findings.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('orphans.empty')}</p>
         ) : (
-          <ul className="divide-y divide-border rounded-lg border border-border">
+          <ul className="divide-y divide-border">
             {shown.map((f) => (
               <li
                 key={`${f.kind}:${f.node_id}:${f.name}`}
-                className="flex flex-wrap items-center gap-2 px-3 py-2 text-sm"
+                className="flex flex-wrap items-center gap-2 py-2 text-sm"
               >
                 <Badge variant="outline">{t(`orphans.kind.${f.kind}`)}</Badge>
                 <span className="font-medium text-foreground">{f.name}</span>

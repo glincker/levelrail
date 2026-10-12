@@ -183,7 +183,17 @@
     },
     "loadFailed": "Could not load AI control settings."
   },
+  "tables": {
+    "users": "Users",
+    "invites": "Pending invites",
+    "organizations": "Organizations",
+    "backupTargets": "Backup targets",
+    "storageDestinations": "Storage destinations",
+    "notificationChannels": "Notification channels",
+    "alertHistory": "Alert history entries"
+  },
   "tokens": {
+    "tableLabel": "API tokens",
     "emptyTitle": "No tokens yet",
     "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
     "name": "Name",
@@ -613,5 +623,561 @@
     "revokeTitle": "Revoke {{name}}?",
     "revokeDescription": "The phone loses access at once and has to be paired again.",
     "revoked": "{{name}} revoked"
+  },
+  "oauthPage": {
+    "eyebrow": "Sign-in",
+    "title": "OAuth sign-in",
+    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. Every signed-in account has identical access, there are no roles yet.",
+    "connectedCount_one": "{{count}} provider connected",
+    "connectedCount_other": "{{count}} providers connected",
+    "rail": {
+      "label": "Sign-in summary",
+      "summary": "Providers",
+      "connected": "Connected",
+      "connectedOf": "{{connected}} of {{total}}",
+      "callbacks": "Callback URLs",
+      "copyFor": "Copy the {{provider}} callback URL",
+      "docs": "Docs",
+      "docsLink": "Identity and access guide"
+    },
+    "banner": {
+      "title": "Register the callback URL with each provider first",
+      "body": "Every provider asks for a redirect (callback) URL when you create its OAuth app. Copy the URL shown in its row exactly, including the scheme, or sign-in fails with a redirect mismatch."
+    },
+    "providers": {
+      "google": "Google",
+      "github": "GitHub",
+      "microsoft": "Microsoft",
+      "oidc": "OIDC / SSO"
+    },
+    "state": {
+      "connected": "Connected",
+      "disabled": "Disabled",
+      "unconfigured": "Not set up"
+    },
+    "enable": "Allow sign-in",
+    "saved": "{{provider}} settings saved.",
+    "callbackCopied": "Callback URL copied.",
+    "callbackCopyFailed": "Could not copy. Select the URL and copy it by hand.",
+    "callbackLabel": "Callback URL",
+    "copyCallback": "Copy callback URL",
+    "copyCallbackFor": "Copy {{provider}} callback URL",
+    "configure": "Configure",
+    "sheet": {
+      "title": "Configure {{provider}}",
+      "description": "Credentials and who may sign in with this provider."
+    },
+    "clientId": "Client ID",
+    "credentials": {
+      "title": "Credentials",
+      "description": "Create an OAuth app at {{provider}} and paste its client ID and secret here."
+    },
+    "restrict": {
+      "title": "Who can join",
+      "description": "Only new sign-ins from this email domain get an account created automatically. Leave blank to allow any email.",
+      "label": "Restrict to email domain (optional)"
+    },
+    "issuerUrl": {
+      "label": "Issuer URL",
+      "hint": "Your identity provider's OIDC issuer, the address /.well-known/openid-configuration is served from."
+    },
+    "displayName": {
+      "label": "Display name (optional)",
+      "hint": "Shown on the sign-in button as \"Continue with ...\". Defaults to \"SSO\"."
+    },
+    "clientSecret": {
+      "label": "Client secret",
+      "unchanged": "Unchanged",
+      "stored": "A secret is already stored. Leave blank to keep it.",
+      "neverShown": "Never shown again once saved."
+    },
+    "errors": {
+      "clientId": "Client ID is required to enable this provider",
+      "clientSecret": "Client secret is required the first time this provider is enabled",
+      "issuerUrl": "Issuer URL is required to enable OIDC"
+    }
+  },
+  "gitProviders": {
+    "eyebrow": "Git provider",
+    "github": {
+      "title": "GitHub App",
+      "description": "Connect a GitHub App for private-repository access and installation-based repo browsing when creating an app from git.",
+      "banner": "Once the App is installed, its repositories are available to pick from when you create an app."
+    },
+    "gitlab": {
+      "title": "GitLab App",
+      "description": "Connect a GitLab OAuth Application, gitlab.com or self-hosted, for project browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its projects are available to pick from when you create an app."
+    },
+    "gitea": {
+      "title": "Gitea App",
+      "description": "Connect a self-hosted Gitea OAuth2 application for repository browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its repositories are available to pick from when you create an app."
+    },
+    "bitbucket": {
+      "title": "Bitbucket App",
+      "description": "Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys.",
+      "banner": "Once the consumer is authorized, its repositories are available to pick from when you create an app."
+    },
+    "rail": {
+      "label": "Connection summary",
+      "connection": "Connection",
+      "status": "Status",
+      "connected": "Connected",
+      "notConnected": "Not connected",
+      "account": "Account",
+      "accounts": "Connected accounts",
+      "instance": "Instance",
+      "accessTitle": "What it can access",
+      "docs": "Docs",
+      "docsLink": "Git integrations guide",
+      "access": {
+        "github": [
+          "Repositories the App is installed on",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "gitlab": [
+          "Projects your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "gitea": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ],
+        "bitbucket": [
+          "Repositories your authorized account can read",
+          "Branches and commits for deploys",
+          "Webhook delivery for push events"
+        ]
+      }
+    }
+  },
+  "securityPage": {
+    "session": {
+      "title": "Current session",
+      "description": "The account and session this browser is signed in with.",
+      "account": "Signed in as",
+      "accountHelp": "The account every action here is attributed to.",
+      "until": "Signed in until",
+      "untilHelp": "After this time you are asked to sign in again."
+    },
+    "rail": {
+      "label": "Sign-in protection summary",
+      "protection": "Sign-in protection",
+      "twoFactor": "Two-factor authentication",
+      "on": "On",
+      "off": "Off",
+      "passkeys": "Passkeys registered",
+      "signedIn": "Signed in as",
+      "until": "Session expires",
+      "jump": "On this page",
+      "sessionsLink": "Sessions",
+      "twoFactorLink": "Two-factor authentication",
+      "passkeysLink": "Passkeys"
+    },
+    "eyebrow": "Account",
+    "title": "Security",
+    "description": "Sessions, two-factor authentication, passkeys, and login protection for this account.",
+    "help": "Security guide",
+    "status": {
+      "protected": "Second factor on",
+      "open": "Password only"
+    },
+    "banner": {
+      "title": "Sign-in relies on a password alone",
+      "body": "Turn on two-factor authentication or register a passkey so a leaked password cannot open this dashboard on its own."
+    }
+  },
+  "generalPage": {
+    "rail": {
+      "label": "Instance summary",
+      "instance": "Instance",
+      "url": "Instance URL",
+      "version": "Version",
+      "health": "Health",
+      "docker": "Docker daemon",
+      "connected": "Connected",
+      "disconnected": "Not connected",
+      "secrets": "Secrets",
+      "configured": "Configured",
+      "notConfigured": "Not configured",
+      "docs": "Docs"
+    },
+    "eyebrow": "Platform",
+    "title": "General",
+    "description": "What this instance is running on, how much disk it has left, and which core features are configured.",
+    "help": "Troubleshooting guide",
+    "density": {
+      "title": "Interface density",
+      "description": "Compact fits more on screen. Comfortable adds spacing. Stored in this browser only.",
+      "compact": "Compact",
+      "comfortable": "Comfortable"
+    },
+    "status": {
+      "healthy": "Healthy",
+      "attention": "Needs attention"
+    },
+    "banner": {
+      "docker": "Docker is not reachable",
+      "dockerBody": "The control plane cannot talk to the Docker engine, so nothing can be deployed or reconciled until it comes back.",
+      "secrets": "Secrets encryption is not configured",
+      "secretsBody": "Environment secrets cannot be stored until a master key is set for this instance."
+    }
+  },
+  "emailPage": {
+    "rail": {
+      "label": "Email summary",
+      "delivery": "Delivery",
+      "backend": "Backend",
+      "from": "Sender address",
+      "usedFor": "Used for",
+      "usedForBody": "Alert notifications and password-reset links.",
+      "docs": "Docs",
+      "backends": {
+        "smtp": "SMTP",
+        "ses": "Amazon SES",
+        "resend": "Resend"
+      }
+    },
+    "eyebrow": "Notifications",
+    "title": "Email",
+    "description": "The backend that sends alert notifications and password-reset links.",
+    "help": "Email notifications guide",
+    "status": {
+      "none": "Not configured"
+    },
+    "banner": {
+      "title": "No email backend is configured",
+      "body": "Alert emails and password-reset links will not be sent until you pick SMTP, Amazon SES, or Resend below."
+    }
+  },
+  "channelsPage": {
+    "eyebrow": "Notifications",
+    "title": "Notification channels",
+    "description": "Connect Slack, Discord, Telegram, a generic webhook, or email once, then attach it from any app's deploy notifications.",
+    "help": "Notifications guide",
+    "enabledCount_one": "{{count}} channel enabled",
+    "enabledCount_other": "{{count}} channels enabled",
+    "empty": {
+      "title": "No notification channels connected",
+      "body": "Connect Slack, Discord, Telegram, a generic webhook, or email once here, then attach it from any app instead of retyping a URL."
+    },
+    "banner": {
+      "none": "Nobody will hear about a failed deploy",
+      "noneBody": "No notification channel is connected, so deploy results and alerts only show up in the dashboard. Connect one to get them where you already are.",
+      "allOff": "Every channel is disabled",
+      "allOffBody_one": "Your {{count}} connected channel is switched off, so nothing is being delivered. Enable it from its edit dialog.",
+      "allOffBody_other": "Your {{count}} connected channels are switched off, so nothing is being delivered. Enable one from its edit dialog."
+    },
+    "table": {
+      "label": "Notification channels",
+      "name": "Name",
+      "type": "Type",
+      "destination": "Destination",
+      "status": "Status",
+      "connected": "Connected",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "test": "Test",
+      "sending": "Sending...",
+      "testOk": "Test notification sent.",
+      "testFailed": "Test notification failed."
+    }
+  },
+  "registryPage": {
+    "eyebrow": "Builds",
+    "title": "Registry credentials",
+    "description": "Usernames and passwords for pulling private images with build.type: image, referenced by name from app.yaml.",
+    "help": "Registry guide",
+    "count_one": "{{count}} credential",
+    "count_other": "{{count}} credentials",
+    "empty": {
+      "title": "No registry credentials",
+      "body": "Add a username and password (or access token) to pull private images from a container registry, referenced by name from app.yaml's build.registryCredential field."
+    },
+    "banner": {
+      "expired_one": "{{count}} registry credential has expired",
+      "expired_other": "{{count}} registry credentials have expired",
+      "expiredBody": "Private image pulls using an expired credential will fail on the next deploy. Replace it before then.",
+      "expiring_one": "{{count}} registry credential expires soon",
+      "expiring_other": "{{count}} registry credentials expire soon",
+      "expiringBody": "Rotate it at the registry and update it here before the date shown in the table."
+    },
+    "table": {
+      "label": "Registry credentials",
+      "name": "Name",
+      "host": "Registry host",
+      "username": "Username",
+      "added": "Added",
+      "expiryHeader": "Expiry",
+      "noExpiry": "No expiry set",
+      "expiry": {
+        "healthy": "Healthy",
+        "expiring_soon": "Expiring soon",
+        "expired": "Expired"
+      },
+      "expiredOn": "Expired {{date}}",
+      "expiresOn": "Expires {{date}}",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "\"{{name}}\" authenticated successfully.",
+      "testFailed": "\"{{name}}\" failed to authenticate."
+    }
+  },
+  "backupTargetsPage": {
+    "rail": {
+      "label": "Backup targets summary",
+      "targets": "Targets",
+      "count": "Connected targets",
+      "providers": "Providers",
+      "provider": {
+        "aws": "AWS S3",
+        "r2": "Cloudflare R2",
+        "custom": "S3-compatible"
+      },
+      "status": "Backup status",
+      "statusBody": "Runs, coverage and restore drills live on the Backups page.",
+      "statusLink": "Open Backups",
+      "docs": "Docs"
+    },
+    "eyebrow": "Storage",
+    "title": "Backup targets",
+    "description": "S3-compatible buckets connected as backup destinations for managed databases. AWS S3, Cloudflare R2, or any other S3-compatible endpoint.",
+    "help": "Backups guide",
+    "count_one": "{{count}} target",
+    "count_other": "{{count}} targets",
+    "empty": {
+      "title": "No backup targets connected",
+      "body": "Connect an S3-compatible bucket (AWS S3, Cloudflare R2, or any other S3-compatible endpoint) to use as a backup destination for managed databases."
+    },
+    "banner": {
+      "title": "No backup target configured",
+      "body": "Managed databases have nowhere to send backups until you connect an S3-compatible bucket. Add one before you need a restore."
+    },
+    "table": {
+      "label": "Backup targets",
+      "name": "Name",
+      "provider": "Provider",
+      "bucket": "Bucket",
+      "region": "Region / endpoint",
+      "connected": "Connected",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "testOk": "\"{{name}}\" connected successfully.",
+      "testFailed": "\"{{name}}\" failed to connect."
+    }
+  },
+  "certificatesPage": {
+    "eyebrow": "Ingress",
+    "title": "TLS certificates",
+    "description": "Every domain's certificate, automatic or custom, with expiry and a renew action. Use Renew now to force an immediate re-issuance instead of waiting for the next scheduled check.",
+    "help": "Domains and ingress guide",
+    "count_one": "{{count}} domain",
+    "count_other": "{{count}} domains",
+    "empty": {
+      "title": "No domains configured yet",
+      "body": "Add a domain to an app to see its certificate here, automatic or custom."
+    },
+    "banner": {
+      "expired_one": "{{count}} certificate has expired",
+      "expired_other": "{{count}} certificates have expired",
+      "expiredBody": "Visitors to those domains see a browser warning. Use Renew now on the row, or check that the domain still points at this server.",
+      "expiring_one": "{{count}} certificate expires soon",
+      "expiring_other": "{{count}} certificates expire soon",
+      "expiringBody": "Automatic certificates renew on their own. If one stays in this state, force a renewal from its row."
+    },
+    "table": {
+      "noApp": "No app",
+      "notIssued": "Not yet issued",
+      "orphaned": "Certificate remains from a domain no longer configured on any app"
+    }
+  },
+  "tokensPage": {
+    "eyebrow": "Access",
+    "title": "API tokens",
+    "description": "Scoped, revocable credentials for the CLI, CI, and MCP integrations. Session login only mints tokens: a token can never mint or revoke another token on its own behalf.",
+    "help": "API reference",
+    "docsLink": "View API docs",
+    "activeCount_one": "{{count}} active token",
+    "activeCount_other": "{{count}} active tokens",
+    "banner": {
+      "title_one": "{{count}} root token never expires",
+      "title_other": "{{count}} root tokens never expire",
+      "body": "A leaked root token can change anything on this instance. Revoke it and mint a narrower one with an expiry."
+    }
+  },
+  "usersPage": {
+    "eyebrow": "Access",
+    "title": "Users",
+    "description": "Everyone with access to this platform, and what each account can do.",
+    "help": "Teams and roles guide",
+    "count_one": "{{count}} user",
+    "count_other": "{{count}} users",
+    "pendingInvites": "Pending invites",
+    "empty": {
+      "title": "No users found",
+      "body": "Invite a teammate or create a user from the actions above."
+    },
+    "banner": {
+      "title_one": "{{count}} invite is waiting to be accepted",
+      "title_other": "{{count}} invites are waiting to be accepted",
+      "body": "Invitees have no access until they open their link. Copy it again from the pending invites list below if it got lost."
+    },
+    "table": {
+      "label": "Users",
+      "email": "Email",
+      "displayName": "Display name",
+      "signsInWith": "Signs in with",
+      "role": "Role",
+      "abilities": "Abilities",
+      "lastLogin": "Last login",
+      "never": "Never",
+      "password": "password",
+      "noMethod": "none",
+      "firstUser": "First user",
+      "you": "You",
+      "custom": "Custom",
+      "editAbilities": "Edit abilities",
+      "selfEditHint": "You cannot edit your own abilities"
+    }
+  },
+  "cliAccessPage": {
+    "eyebrow": "Access",
+    "title": "CLI access",
+    "description": "Control this instance from your own computer, like aws or gh, not over SSH.",
+    "help": "CLI reference",
+    "copy": "Copy",
+    "copied": "Copied",
+    "waitingCount_one": "{{count}} login waiting",
+    "waitingCount_other": "{{count}} logins waiting",
+    "rail": {
+      "label": "CLI summary",
+      "status": "Status",
+      "pending": "Logins waiting",
+      "apiUrl": "API URL",
+      "ci": "CI and scripts",
+      "docs": "Docs"
+    },
+    "ciHint": "Running from CI or a script instead of a person at a keyboard? Use an API token, nothing to approve by hand.",
+    "ciLink": "Create an API token",
+    "banner": {
+      "title_one": "{{count}} CLI login is waiting for approval",
+      "title_other": "{{count}} CLI logins are waiting for approval",
+      "body": "Approve it below only if you started it. If the requesting IP looks wrong, deny it."
+    },
+    "steps": {
+      "install": {
+        "title": "Install the CLI on your computer",
+        "body": "Not the server. This is a small client binary for your laptop or CI runner, separate from the control plane install.",
+        "note": "No root needed, installs to ~/.local/bin. macOS and Linux only today; on Windows, run this from WSL."
+      },
+      "point": {
+        "title": "Point it at this server",
+        "body": "Set this once per shell or in your shell profile. Every command talks to that address, and defaults to localhost otherwise."
+      },
+      "login": {
+        "title": "Log in",
+        "body": "Opens a code here to approve, the same flow gh auth login and aws sso login use: no SSH key, no server port to open. Approval needs a signed-in dashboard session, so it inherits that session's 2FA or passkey."
+      }
+    }
+  },
+  "accountPage": {
+    "title": "Account",
+    "description": "Profile and password.",
+    "profile": {
+      "title": "Profile",
+      "description": "Every signed-in account has identical access on this platform: no teams or roles yet.",
+      "email": "Email",
+      "displayName": "Display name",
+      "hasPassword": "This account signs in with a password.",
+      "noPassword": "This account has no password set, only OAuth sign-in."
+    }
+  },
+  "apiExplorerPage": {
+    "title": "API explorer",
+    "description": "Browse and try every registered HTTP route on this instance, using your current session. Requests fire for real, same as hitting the endpoint with curl.",
+    "filterPlaceholder": "Filter by path, method, ability, or description",
+    "filterLabel": "Filter routes",
+    "summary": "{{count}} routes, {{examples}} with a worked example ({{percent}}%). A route with no description just means its registration has no doc comment above it yet, not that it is unsupported.",
+    "routeCount_one": "{{count}} route",
+    "routeCount_other": "{{count}} routes",
+    "noMatch": "No routes match \"{{filter}}\"."
+  },
+  "importPlatformPage": {
+    "title": "Import from another platform",
+    "description": "Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported."
+  },
+  "builtInRegistryPage": {
+    "title": "Container registry",
+    "description": "The built-in image registry: a build cache and distribution backend for multi-node deployments, with no external registry to sign up for. It is served over TLS through the embedded ingress and enforces its own login even if the published port is reached directly."
+  },
+  "vaultPage": {
+    "title": "Vault",
+    "description": "Resolve an app.yaml env var's value live from an external HashiCorp Vault instance, as an alternative to this platform's own envelope-encrypted secret storage."
+  },
+  "aiAssistantPage": {
+    "title": "AI Assistant",
+    "description": "Bring your own LLM API key to chat with an assistant that reads logs, metrics, and deploy history through the platform's MCP tools. It always pauses for your approval before any action that changes state.",
+    "configured": "Configured",
+    "notConfigured": "Not configured"
+  },
+  "observabilityPage": {
+    "title": "Observability",
+    "description": "Connect your own Grafana to this control plane's metrics."
+  },
+  "nodeProvidersPage": {
+    "title": "Cloud node providers",
+    "description": "API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH."
+  },
+  "containersPage": {
+    "title": "Containers",
+    "description": "Every container on this node, whether or not it's managed by this platform."
+  },
+  "networkSharesPage": {
+    "title": "Network shares",
+    "description": "NFS and CIFS/SMB exports, mounted as Docker volumes using Docker's own local-driver network passthrough. Attach one as a volume source when configuring an app's volumes."
+  },
+  "organizationsPage": {
+    "title": "Organizations",
+    "description": "Group related projects under an organization. File a project into one from the project's own detail page."
+  },
+  "agentsPage": {
+    "title": "Agents",
+    "description": "Connect an AI agent to this instance through MCP, and manage the tokens it uses."
+  },
+  "firewallPage": {
+    "title": "Firewall",
+    "description": "Declarative host firewall rules, reconciled onto this node's firewall (ufw)."
+  },
+  "gitConnection": {
+    "fields": {
+      "status": "Connection",
+      "statusHelp": "Whether this control plane can use the App right now.",
+      "instance": "Instance URL",
+      "instanceHelp": "The server this connection talks to."
+    },
+    "notConnected": "Not connected",
+    "primaryDomain": {
+      "title": "Set a primary domain first",
+      "body": "Git providers redirect back to this instance's primary domain for OAuth callbacks and manifest URLs.",
+      "domainLink": "Open domain settings",
+      "label": "Primary domain",
+      "placeholder": "deploy.example.com",
+      "helper": "Saved to ingress settings. ACME and email options stay in domain settings.",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Primary domain set.",
+      "saveFailed": "Could not set the primary domain."
+    },
+    "githubCallback": {
+      "title": "Callback address",
+      "body": "Automated setup registers a callback at {{url}}. GitHub redirects there for the life of the App, so this instance must be publicly reachable at that address before you continue.",
+      "change": "Change it in domain settings",
+      "docs": "Manifest flow docs",
+      "manualHint": "No public address? Use manual setup instead."
+    }
   }
 }

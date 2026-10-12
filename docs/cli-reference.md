@@ -1121,7 +1121,7 @@ levelrail-cli nodes traffic [flags]
 levelrail-cli nodes providers list|set-credential [flags]
 levelrail-cli nodes provision --provider P --region R --size S --name NAME [flags]
 levelrail-cli nodes provisions list|show <id> [flags]
-levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --password PASS) --name NAME [flags]
+levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --password PASS) --name NAME [--host-key-fingerprint SHA256:... | --insecure-skip-host-key-check] [flags]
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
 ```
 
@@ -1229,6 +1229,17 @@ Prints every HTTP route registered on the control plane: method, path, required 
 
 ```
 levelrail-cli api-docs --query "routes[?method=='GET'].path"
+```
+
+## Deploy link
+
+```
+levelrail-cli deploy-link --image REF --name NAME --port PORT [--env K1,K2] [--health /path] [--server URL] [--launcher URL] [flags]
+```
+Prints a "Deploy with" link and the README Markdown for it, after validating the image reference, DNS label name, port range, uppercase env names and health path. Env values are never part of a link. Without `--launcher`, the launcher is `APP_BRAND_DOCS_URL` plus `/deploy.html`. `--server` also prints the direct `https://<server>/apps/new?deploy=1&...` link. Supports `--json`, `--output` and `--query`. See [Deploy links and badge](deploy-link.md).
+
+```
+levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
 ```
 
 ## AI assistant

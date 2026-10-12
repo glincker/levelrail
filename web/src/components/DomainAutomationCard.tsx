@@ -79,7 +79,7 @@ function PolicyPreview({ policy }: { policy: GoLivePolicy }) {
   const plan = useGoLivePlan(app)
   const domain = example.trim().toLowerCase()
   return (
-    <div className="space-y-2 rounded-md border border-border p-3">
+    <div className="space-y-2">
       <Label htmlFor="automation-preview-domain">
         {t('automation.previewLabel')}
       </Label>
@@ -130,7 +130,9 @@ function History() {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium">{t('automation.historyTitle')}</h4>
+        <h4 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('automation.historyTitle')}
+        </h4>
         <Link
           to="/settings/audit-log"
           className="text-xs text-muted-foreground underline"

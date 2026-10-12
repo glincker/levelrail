@@ -1,17 +1,16 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PackageIcon, PlugsConnectedIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { toast } from '@/components/ui/toast'
+import { BrandTile } from './BrandLogoBadge'
+import { registryBrandForHost } from '../lib/providerBrands'
 import { BrowseRegistryCredentialDialog } from './BrowseRegistryCredentialDialog'
 import { DeleteRegistryCredentialDialog } from './DeleteRegistryCredentialDialog'
 import { useTestRegistryCredential } from '../queries/registryCredentials'
@@ -27,34 +26,44 @@ function formatDate(iso: string): string {
 // Mirrors settings/general.tsx's certStatusMeta for the same three-state
 // signal (alerting.CertExpiryStatus), reused server-side for this
 // resource's own expiry_status.
-const expiryStatusMeta: Record<
+const EXPIRY_VARIANT: Record<
   RegistryCredentialExpiryStatus,
-  { label: string; variant: 'success' | 'warning' | 'destructive' }
+  'success' | 'warning' | 'destructive'
 > = {
-  healthy: { label: 'Healthy', variant: 'success' },
-  expiring_soon: { label: 'Expiring soon', variant: 'warning' },
-  expired: { label: 'Expired', variant: 'destructive' },
+  healthy: 'success',
+  expiring_soon: 'warning',
+  expired: 'destructive',
 }
 
 function ExpiryCell({ credential }: { credential: RegistryCredential }) {
+  const { t } = useTranslation('settings')
   if (!credential.expires_at || !credential.expiry_status) {
-    return <span className="text-muted-foreground">No expiry set</span>
+    return (
+      <span className="text-muted-foreground">
+        {t('registryPage.table.noExpiry')}
+      </span>
+    )
   }
-  const meta = expiryStatusMeta[credential.expiry_status]
+  const date = new Date(credential.expires_at).toLocaleDateString()
   return (
     <div className="flex flex-col gap-1">
-      <Badge variant={meta.variant} className="w-fit">
-        {meta.label}
+      <Badge
+        variant={EXPIRY_VARIANT[credential.expiry_status]}
+        className="w-fit"
+      >
+        {t(`registryPage.table.expiry.${credential.expiry_status}`)}
       </Badge>
       <span className="text-xs text-muted-foreground">
-        {credential.expiry_status === 'expired' ? 'Expired' : 'Expires'}{' '}
-        {new Date(credential.expires_at).toLocaleDateString()}
+        {credential.expiry_status === 'expired'
+          ? t('registryPage.table.expiredOn', { date })
+          : t('registryPage.table.expiresOn', { date })}
       </span>
     </div>
   )
 }
 
 function TestButton({ credential }: { credential: RegistryCredential }) {
+  const { t } = useTranslation('settings')
   const testCredential = useTestRegistryCredential()
   return (
     <Button
@@ -66,13 +75,15 @@ function TestButton({ credential }: { credential: RegistryCredential }) {
         testCredential.mutate(credential.id, {
           onSuccess: () => {
             toast.add({
-              title: `"${credential.name}" authenticated successfully.`,
+              title: t('registryPage.table.testOk', { name: credential.name }),
               type: 'success',
             })
           },
           onError: (error) => {
             toast.add({
-              title: `"${credential.name}" failed to authenticate.`,
+              title: t('registryPage.table.testFailed', {
+                name: credential.name,
+              }),
               description: error.message,
               type: 'error',
             })
@@ -81,7 +92,9 @@ function TestButton({ credential }: { credential: RegistryCredential }) {
       }}
     >
       <PlugsConnectedIcon className="size-3.5" aria-hidden="true" />
-      {testCredential.isPending ? 'Testing...' : 'Test connection'}
+      {testCredential.isPending
+        ? t('registryPage.table.testing')
+        : t('registryPage.table.test')}
     </Button>
   )
 }
@@ -98,60 +111,82 @@ export function RegistryCredentialTable({
   credentials: RegistryCredential[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('settings')
+
   if (credentials.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<PackageIcon className="size-5" />}
-        title="No registry credentials"
-        description="Add a username and password (or access token) to pull private images from a container registry, referenced by name from app.yaml's build.registryCredential field."
+        title={t('registryPage.empty.title')}
+        description={t('registryPage.empty.body')}
         action={action}
       />
     )
   }
 
+  const columns: ResponsiveColumn<RegistryCredential>[] = [
+    {
+      id: 'name',
+      header: t('registryPage.table.name'),
+      primary: true,
+      cell: (cred) => (
+        <span className="font-medium text-foreground">{cred.name}</span>
+      ),
+    },
+    {
+      id: 'host',
+      header: t('registryPage.table.host'),
+      cell: (cred) => (
+        <span className="inline-flex items-center gap-2 font-mono break-all text-muted-foreground">
+          <BrandTile
+            name={registryBrandForHost(cred.registry_host)}
+            label={cred.registry_host}
+            size="xs"
+          />
+          {cred.registry_host}
+        </span>
+      ),
+    },
+    {
+      id: 'username',
+      header: t('registryPage.table.username'),
+      priority: 2,
+      cell: (cred) => (
+        <span className="text-muted-foreground">{cred.username}</span>
+      ),
+    },
+    {
+      id: 'added',
+      header: t('registryPage.table.added'),
+      priority: 3,
+      cell: (cred) => (
+        <span className="text-muted-foreground">
+          {formatDate(cred.created_at)}
+        </span>
+      ),
+    },
+    {
+      id: 'expiry',
+      header: t('registryPage.table.expiryHeader'),
+      priority: 2,
+      cell: (cred) => <ExpiryCell credential={cred} />,
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Registry host</TableHead>
-            <TableHead>Username</TableHead>
-            <TableHead>Added</TableHead>
-            <TableHead>Expiry</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {credentials.map((cred) => (
-            <TableRow key={cred.id}>
-              <TableCell className="font-medium text-foreground">
-                {cred.name}
-              </TableCell>
-              <TableCell className="font-mono text-muted-foreground">
-                {cred.registry_host}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {cred.username}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(cred.created_at)}
-              </TableCell>
-              <TableCell>
-                <ExpiryCell credential={cred} />
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <BrowseRegistryCredentialDialog credential={cred} />
-                  <TestButton credential={cred} />
-                  <DeleteRegistryCredentialDialog credential={cred} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={credentials}
+      columns={columns}
+      getRowId={(cred) => cred.id}
+      ariaLabel={t('registryPage.table.label')}
+      renderActions={(cred) => (
+        <div className="flex flex-wrap justify-end gap-2">
+          <BrowseRegistryCredentialDialog credential={cred} />
+          <TestButton credential={cred} />
+          <DeleteRegistryCredentialDialog credential={cred} />
+        </div>
+      )}
+    />
   )
 }

@@ -372,7 +372,9 @@ export function LoadBalancerPage({ appName, replicas, onSetReplicas }: Props) {
         </>
       ) : (
         <header>
-          <h2 className="text-lg font-semibold">New load balancer</h2>
+          <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+            New load balancer
+          </h2>
           <p className="text-sm text-muted-foreground">
             Review the settings, then create it.
           </p>

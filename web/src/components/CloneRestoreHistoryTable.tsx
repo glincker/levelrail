@@ -1,34 +1,78 @@
+import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { useCloneRestores } from '../queries/cloneRestore'
 import { formatDate } from '../lib/format'
-import { StatusBadge } from './backupAttemptStatus'
+import { RestoreStatusCell } from './RestoreStatusCell'
 import type { CloneRestoreRecord } from '../types/cloneRestore'
 
-// CloneRestoreHistoryTable is RestoreHistoryTable's "restore as new
-// database" counterpart: same shape (status-first, newest attempt on
-// top, self-terminating polling via useCloneRestores), rendered only
-// once at least one clone-restore has ever been triggered from this
-// database, the same "nothing extra for a database nobody has restored"
-// convention RestoreHistoryTable already follows. The new database's own
-// name links to its detail page once the row exists, succeeded or not:
-// even a still-running or failed attempt already created the database
-// row itself (createDesiredDatabase runs synchronously before the
-// background restore starts), so the link is never dead.
+// Rendered only once a clone-restore has been triggered. The new database row
+// exists as soon as the attempt starts, so its link is never dead.
 export function CloneRestoreHistoryTable({
   databaseName,
 }: {
   databaseName: string
 }) {
+  const { t } = useTranslation('backups')
   const { data, isLoading, error } = useCloneRestores(databaseName)
   const history = data ?? []
+
+  const columns = useMemo<ResponsiveColumn<CloneRestoreRecord>[]>(
+    () => [
+      {
+        id: 'status',
+        header: 'Status',
+        primary: true,
+        cell: (r) => <RestoreStatusCell status={r.status} error={r.error} />,
+      },
+      {
+        id: 'new',
+        header: 'New database',
+        cell: (r) => (
+          <Link
+            to="/databases/$name"
+            params={{ name: r.new_database_name }}
+            className="text-primary underline underline-offset-2"
+          >
+            {r.new_database_name}
+          </Link>
+        ),
+      },
+      {
+        id: 'backup',
+        header: 'From backup',
+        priority: 2,
+        cell: (r) => (
+          <span className="text-muted-foreground">{r.backup_history_id}</span>
+        ),
+      },
+      {
+        id: 'started',
+        header: 'Started',
+        priority: 2,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDate(r.started_at, '-')}
+          </span>
+        ),
+      },
+      {
+        id: 'finished',
+        header: 'Finished',
+        priority: 3,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDate(r.finished_at, '-')}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
 
   if (isLoading || history.length === 0) {
     return null
@@ -39,59 +83,15 @@ export function CloneRestoreHistoryTable({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium text-foreground">
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         Restored as new database
       </h3>
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>New database</TableHead>
-              <TableHead>From backup</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Finished</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((record: CloneRestoreRecord) => (
-              <TableRow key={record.id}>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <StatusBadge status={record.status} />
-                    {record.status === 'failed' && record.error ? (
-                      <span
-                        className="max-w-[20rem] truncate text-xs text-destructive"
-                        title={record.error}
-                      >
-                        {record.error}
-                      </span>
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Link
-                    to="/databases/$name"
-                    params={{ name: record.new_database_name }}
-                    className="text-primary underline underline-offset-2"
-                  >
-                    {record.new_database_name}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {record.backup_history_id}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.started_at, '-')}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.finished_at, '-')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <ResponsiveTable
+        rows={history}
+        columns={columns}
+        getRowId={(r) => r.id}
+        ariaLabel={t('tables.cloneDatabases')}
+      />
     </div>
   )
 }

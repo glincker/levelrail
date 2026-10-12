@@ -359,6 +359,16 @@
     "loading": "Loading...",
     "loadOlder": "Load older entries"
   },
+  "tables": {
+    "restores": "Restores",
+    "cloneDatabases": "Databases restored as new",
+    "cloneVolumes": "Volumes restored as new",
+    "pipelineRuns": "Pipeline runs",
+    "activity": "Backup activity",
+    "snapshots": "Backups",
+    "pitrBackups": "Base backups",
+    "pitrRestores": "Point-in-time restores"
+  },
   "suggestion": {
     "title": "Back this database up",
     "description": "A destination is connected, but this database has no schedule. Suggested: {{schedule}}, keeping the last {{retain}}.",

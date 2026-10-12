@@ -139,7 +139,7 @@ export function MetricChartCard({
     <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h3 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <svg
               className="size-2 shrink-0"
               viewBox="0 0 8 8"

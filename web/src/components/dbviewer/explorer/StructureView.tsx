@@ -53,13 +53,15 @@ export function StructureView({
       </div>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">{t('viewer.explorer.columns')}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('viewer.explorer.columns')}
+        </h3>
         <div className="overflow-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm [&_tr>:first-child]:sticky [&_tr>:first-child]:left-0 [&_tr>:first-child]:bg-card">
             <caption className="sr-only">
               {t('viewer.explorer.columns')}
             </caption>
-            <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
+            <thead className="bg-muted text-left text-xs text-muted-foreground">
               <tr>
                 <th scope="col" className="px-3 py-2 font-medium">
                   {t('viewer.explorer.colName')}
@@ -133,7 +135,9 @@ export function StructureView({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">{t('viewer.explorer.indexes')}</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {t('viewer.explorer.indexes')}
+        </h3>
         {structure.indexes.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             {t('viewer.explorer.noIndexes')}
@@ -162,7 +166,7 @@ export function StructureView({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-medium">
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
           {t('viewer.structure.relations')}
         </h3>
         <RelationsGraph
@@ -177,7 +181,9 @@ export function StructureView({
       {structure.ddl ? (
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">{t('viewer.structure.ddl')}</h3>
+            <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+              {t('viewer.structure.ddl')}
+            </h3>
             <Button
               type="button"
               size="sm"

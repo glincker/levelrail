@@ -608,7 +608,8 @@ func run(logger *slog.Logger) error {
 		}),
 	)
 	meshEndpoints := newMeshEndpointBook(logger)
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	hostReports := agent.NewHostReportStore()
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
@@ -796,6 +797,7 @@ func run(logger *slog.Logger) error {
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
 	configureNodeCerts(apiRouter, agentServer)
+	apiRouter.SetNodeHostReports(hostReports)
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -22,13 +23,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 
 type BadgeVariant = 'success' | 'warning' | 'destructive' | 'muted' | 'info'
 
@@ -52,6 +49,73 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
   const { t } = useTranslation('compose')
   const stack = useComposeStack(appId)
   const redeploy = useRedeployCompose(appId ?? '')
+  const columns = useMemo<ResponsiveColumn<ComposeStackService>[]>(
+    () => [
+      {
+        id: 'service',
+        primary: true,
+        header: t('stack.columns.service'),
+        cell: (svc) => (
+          <Link
+            to="/apps/$name/overview"
+            params={{ name: svc.name }}
+            className="font-medium hover:underline"
+          >
+            {svc.key}
+          </Link>
+        ),
+      },
+      {
+        id: 'status',
+        header: t('stack.columns.status'),
+        cell: (svc) => (
+          <div className="min-w-0">
+            <Badge variant={READY_VARIANT[svc.ready]}>
+              {t(`stack.ready.${svc.ready}`)}
+            </Badge>
+            {svc.reason ? (
+              <p
+                className="mt-1 truncate text-xs text-muted-foreground"
+                title={svc.message}
+              >
+                {svc.reason}
+                {svc.message ? `: ${svc.message}` : ''}
+              </p>
+            ) : null}
+          </div>
+        ),
+      },
+      {
+        id: 'image',
+        header: t('stack.columns.image'),
+        priority: 2,
+        cell: (svc) => (
+          <span className="block truncate font-mono text-xs text-muted-foreground">
+            {svc.image}
+          </span>
+        ),
+      },
+      {
+        id: 'dependsOn',
+        header: t('stack.columns.dependsOn'),
+        priority: 3,
+        cell: (svc) => (
+          <span className="text-xs text-muted-foreground">
+            {svc.depends_on && svc.depends_on.length > 0
+              ? svc.depends_on
+                  .map((d) =>
+                    svc.depends_on_healthy?.includes(d)
+                      ? t('stack.healthyDependency', { name: d })
+                      : d,
+                  )
+                  .join(', ')
+              : t('stack.noDependencies')}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  )
 
   if (!appId || stack.isPending) return null
   if (stack.isError) {
@@ -126,94 +190,41 @@ export function ComposeStackPanel({ appId }: { appId?: string }) {
         </div>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('stack.columns.service')}</TableHead>
-              <TableHead>{t('stack.columns.status')}</TableHead>
-              <TableHead>{t('stack.columns.image')}</TableHead>
-              <TableHead>{t('stack.columns.dependsOn')}</TableHead>
-              <TableHead className="text-right">
-                {t('stack.columns.actions')}
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.services.map((svc) => (
-              <TableRow key={svc.name}>
-                <TableCell className="font-medium">
-                  <Link
-                    to="/apps/$name/overview"
-                    params={{ name: svc.name }}
-                    className="hover:underline"
-                  >
-                    {svc.key}
-                  </Link>
-                </TableCell>
-                <TableCell className="max-w-[18rem]">
-                  <Badge variant={READY_VARIANT[svc.ready]}>
-                    {t(`stack.ready.${svc.ready}`)}
-                  </Badge>
-                  {svc.reason ? (
-                    <p
-                      className="mt-1 truncate text-xs text-muted-foreground"
-                      title={svc.message}
-                    >
-                      {svc.reason}
-                      {svc.message ? `: ${svc.message}` : ''}
-                    </p>
-                  ) : null}
-                </TableCell>
-                <TableCell className="max-w-[14rem] truncate font-mono text-xs text-muted-foreground">
-                  {svc.image}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {svc.depends_on && svc.depends_on.length > 0
-                    ? svc.depends_on
-                        .map((d) =>
-                          svc.depends_on_healthy?.includes(d)
-                            ? t('stack.healthyDependency', { name: d })
-                            : d,
-                        )
-                        .join(', ')
-                    : t('stack.noDependencies')}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      render={
-                        <Link
-                          to="/apps/$name/logs"
-                          params={{ name: svc.name }}
-                        />
-                      }
-                      nativeButton={false}
-                    >
-                      {t('stack.logs')}
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      aria-label={t('stack.redeployServiceLabel', {
-                        service: svc.key,
-                      })}
-                      disabled={redeploy.isPending}
-                      onClick={() => {
-                        runRedeploy(svc.key)
-                      }}
-                    >
-                      {t('stack.redeployService')}
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          rows={data.services}
+          columns={columns}
+          getRowId={(svc) => svc.name}
+          ariaLabel={t('stack.tableLabel')}
+          renderActions={(svc) => (
+            <div className="flex justify-end gap-1">
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                render={
+                  <Link to="/apps/$name/logs" params={{ name: svc.name }} />
+                }
+                nativeButton={false}
+              >
+                {t('stack.logs')}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                aria-label={t('stack.redeployServiceLabel', {
+                  service: svc.key,
+                })}
+                disabled={redeploy.isPending}
+                onClick={() => {
+                  runRedeploy(svc.key)
+                }}
+              >
+                {t('stack.redeployService')}
+              </Button>
+            </div>
+          )}
+        />
       </CardContent>
     </Card>
   )

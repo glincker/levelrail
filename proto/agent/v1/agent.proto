@@ -171,6 +171,9 @@ message AgentMessage {
     // Hello is sent once, first, on every Session. Control planes that
     // predate it ignore the frame.
     AgentInfo hello = 9;
+    // HostReport is the agent's host memory split, sent periodically.
+    // Control planes that predate it ignore the frame.
+    HostReport host_report = 10;
   }
 }
 
@@ -368,6 +371,27 @@ message GPUReport {
   string driver_version = 2;
   repeated GPUDevice devices = 3;
   bool runtime_installed = 4;
+}
+
+// UnmanagedContainer is one running container the agent's node hosts that
+// Levelrail does not manage.
+message UnmanagedContainer {
+  string name = 1;
+  uint64 memory_bytes = 2;
+}
+
+// HostReport is the agent's own host memory reading. A zero
+// memory_total_bytes means the host total could not be read. Fields are
+// additive only so old agents and old control planes keep interoperating.
+message HostReport {
+  uint64 memory_total_bytes = 1;
+  uint64 memory_available_bytes = 2;
+  // agent_rss_bytes is the agent process's resident set size.
+  uint64 agent_rss_bytes = 3;
+  // other_containers_memory_bytes sums every unmanaged running container;
+  // other_containers lists only the largest few.
+  uint64 other_containers_memory_bytes = 4;
+  repeated UnmanagedContainer other_containers = 5;
 }
 
 message ContainerState {

@@ -53,7 +53,7 @@ export function BuildStrainSuggestion({ nodes }: { nodes: NodeResource[] }) {
   const href = buildNodeRoutingDocHref(brand.DocsURL)
 
   return (
-    <div className="mb-4">
+    <div>
       <Suggestion
         tone="warning"
         icon={<GaugeIcon />}

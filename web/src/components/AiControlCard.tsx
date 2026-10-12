@@ -1,17 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
-import {
-  PauseCircleIcon,
-  ShieldCheckIcon,
-} from '@phosphor-icons/react/dist/ssr'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { PauseCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from '@/components/ui/toast'
@@ -98,14 +89,7 @@ export function AiControlCard({ settings }: { settings: AiControlSettings }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShieldCheckIcon className="size-4" aria-hidden="true" />
-          {t('aiControl.title')}
-        </CardTitle>
-        <CardDescription>{t('aiControl.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4">
         <div
           role="radiogroup"
           aria-label={t('aiControl.modeLabel')}

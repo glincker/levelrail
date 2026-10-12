@@ -36,7 +36,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '../../../components/ui/empty-state'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { cn } from '@/lib/utils'
 
 // Project detail route: the project's own name plus every app and
@@ -90,41 +90,40 @@ function ProjectDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <PageHeader
-          breadcrumb={<Breadcrumbs projectId={id} />}
-          title={project.name}
-          actions={
-            <>
-              {isEmpty ? null : (
-                <Link
-                  to="/projects/$id/topology"
-                  params={{ id: project.id }}
-                  className={cn(
-                    buttonVariants({ variant: 'outline', size: 'sm' }),
-                  )}
-                >
-                  <ShareNetworkIcon aria-hidden="true" />
-                  Topology
-                </Link>
-              )}
-              {isEmpty ? null : (
-                <PauseResumeProjectButton id={project.id} name={project.name} />
-              )}
-              <RestartProjectButton
-                id={project.id}
-                disabled={projectApps.length === 0}
-              />
-              <DeleteProjectDialog
-                id={project.id}
-                name={project.name}
-                onDeleted={() => {
-                  void navigate({ to: '/projects' })
-                }}
-              />
-            </>
-          }
-        />
+      <PageTemplate
+        breadcrumb={<Breadcrumbs projectId={id} />}
+        title={project.name}
+        actions={
+          <>
+            {isEmpty ? null : (
+              <Link
+                to="/projects/$id/topology"
+                params={{ id: project.id }}
+                className={cn(
+                  buttonVariants({ variant: 'outline', size: 'sm' }),
+                )}
+              >
+                <ShareNetworkIcon aria-hidden="true" />
+                Topology
+              </Link>
+            )}
+            {isEmpty ? null : (
+              <PauseResumeProjectButton id={project.id} name={project.name} />
+            )}
+            <RestartProjectButton
+              id={project.id}
+              disabled={projectApps.length === 0}
+            />
+            <DeleteProjectDialog
+              id={project.id}
+              name={project.name}
+              onDeleted={() => {
+                void navigate({ to: '/projects' })
+              }}
+            />
+          </>
+        }
+      >
         <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Organization:</span>
           {project.org_id ? (
@@ -144,7 +143,7 @@ function ProjectDetailPage() {
             currentOrgId={project.org_id}
           />
         </div>
-      </div>
+      </PageTemplate>
 
       <ProjectEnvironmentsPanel projectId={project.id} />
       <ProjectEnvEditor projectId={project.id} />

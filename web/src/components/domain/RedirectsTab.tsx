@@ -264,7 +264,7 @@ function RedirectsEditor({
           <tbody>
             {data.app_domains.map((d) => (
               <tr key={d.domain} className="border-t border-border">
-                <td className="py-1 font-mono text-xs">{d.domain}</td>
+                <td className="py-1 font-mono text-xs break-all">{d.domain}</td>
                 <td className="py-1">
                   <input
                     type="radio"

@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { useTranslation } from 'react-i18next'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { nodeProviderListQueryOptions } from '../../queries/nodeProvision'
 import { NodeProviderCredentialsCard } from '../../components/NodeProviderCredentialsCard'
 import {
@@ -36,18 +37,15 @@ function NodeProvidersSettingsSkeleton() {
 }
 
 function NodeProvidersSettingsPage() {
+  const { t } = useTranslation('settings')
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <CloudIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="Cloud node providers"
-          description="API tokens for creating servers automatically from the Nodes page. Used only to create and inspect VMs, day to day operation never touches SSH."
-        />
-      </div>
+    <PageTemplate
+      icon={<CloudIcon />}
+      title={t('nodeProvidersPage.title')}
+      description={t('nodeProvidersPage.description')}
+    >
       <NodeProviderCredentialsCard />
-    </div>
+    </PageTemplate>
   )
 }

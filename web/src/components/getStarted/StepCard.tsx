@@ -65,7 +65,7 @@ export function StepCard({
         </span>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
               {t(`steps.${step.id}.title`)}
             </h3>
             {step.optional ? (

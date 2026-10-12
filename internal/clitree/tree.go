@@ -238,6 +238,7 @@ var Tree = map[string]*Node{
 	"proxy":                    {Subs: map[string]*Node{"setup": nil, "status": nil, "apply": nil, "verify": nil, "disable": nil}},
 	"auth-engine":              {Subs: map[string]*Node{"status": nil}},
 	"api-docs":                 nil,
+	"deploy-link":              nil,
 	"init":                     nil,
 	"containers":               {Subs: map[string]*Node{"list": nil, "stop": nil, "remove": nil, "claim": nil, "orphans": nil, "reap": nil}},
 	"system":                   {Subs: map[string]*Node{"address": nil, "restart": {Subs: map[string]*Node{"status": nil}}}},

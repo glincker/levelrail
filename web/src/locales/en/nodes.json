@@ -195,6 +195,7 @@
   },
   "list": {
     "title": "Nodes",
+    "tableLabel": "Nodes",
     "description": "Servers this control plane places apps and databases on.",
     "help": "Multi-node guide",
     "count_one": "{{count}} node",
@@ -249,5 +250,20 @@
     "confirm": "Delete node",
     "deleting": "Deleting...",
     "deleted": "Node \"{{name}}\" deleted."
+  },
+  "sshVerify": {
+    "verifyButton": "Verify server",
+    "verifying": "Reading host key...",
+    "title": "Verify the server",
+    "description": "These host keys were read from {{host}}:{{port}} without sending any credential. Confirm one matches the server before continuing.",
+    "compareHint": "Compare this with the output of this command run on the server:",
+    "keyLegend": "Host key to trust",
+    "copy": "Copy fingerprint",
+    "copied": "Copied",
+    "confirm": "I compared this fingerprint with the server and it matches",
+    "continue": "Continue",
+    "change": "Change",
+    "pinned": "Trusting {{type}} {{fingerprint}}",
+    "noKeys": "The server presented no host key."
   }
 }

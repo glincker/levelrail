@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from '@tanstack/react-router'
 import {
@@ -6,13 +7,9 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -32,7 +29,74 @@ export function ProxyReachabilityTable({
   domains: NetworkProxyDomain[]
 }) {
   const { t } = useTranslation('networkProxy')
+  const appList = useAppListOptional()
   const unreachableCount = domains.filter((d) => !d.reachable).length
+  const columns = useMemo<ResponsiveColumn<NetworkProxyDomain>[]>(
+    () => [
+      {
+        id: 'domain',
+        header: t('table.domain'),
+        primary: true,
+        cell: (row) => (
+          <Link
+            to="/apps/$name/domains"
+            params={{ name: row.app }}
+            className="font-mono text-sm break-all text-foreground hover:underline"
+          >
+            {row.domain}
+          </Link>
+        ),
+      },
+      {
+        id: 'app',
+        header: t('table.app'),
+        priority: 2,
+        cell: (row) => (
+          <Link
+            to="/apps/$name"
+            params={{ name: row.app }}
+            className="text-sm text-foreground hover:underline"
+          >
+            {row.app}
+          </Link>
+        ),
+      },
+      {
+        id: 'node',
+        header: t('table.node'),
+        priority: 3,
+        cell: (row) => (
+          <span className="text-sm text-muted-foreground">
+            {row.is_local_node
+              ? 'This control plane (local)'
+              : row.node_name || row.node_id || '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'reachable',
+        header: t('table.reachable'),
+        cell: (row) => <ReachableBadge row={row} />,
+      },
+      {
+        id: 'port',
+        header: t('table.port'),
+        priority: 3,
+        cell: (row) => (
+          <span className="font-mono text-sm text-muted-foreground">
+            :{row.port}
+          </span>
+        ),
+      },
+      {
+        id: 'tls',
+        header: t('table.tls'),
+        priority: 2,
+        cell: (row) => <TlsCell row={row} />,
+      },
+    ],
+    [t],
+  )
 
   if (domains.length === 0) {
     return (
@@ -57,86 +121,31 @@ export function ProxyReachabilityTable({
         </Alert>
       ) : null}
 
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('table.domain')}</TableHead>
-              <TableHead>{t('table.app')}</TableHead>
-              <TableHead>{t('table.node')}</TableHead>
-              <TableHead>{t('table.reachable')}</TableHead>
-              <TableHead>{t('table.port')}</TableHead>
-              <TableHead>{t('table.tls')}</TableHead>
-              <TableHead aria-hidden="true" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {domains.map((row) => (
-              <ProxyDomainRow key={`${row.app}:${row.domain}`} row={row} />
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <ResponsiveTable
+        rows={domains}
+        columns={columns}
+        getRowId={(row) => `${row.app}:${row.domain}`}
+        ariaLabel={t('table.label')}
+        renderActions={(row) => {
+          if (row.reachable) return null
+          const app = appList.data?.find((a) => a.name === row.app)
+          return (
+            <div className="flex max-w-3xs flex-col items-end gap-1">
+              <MoveToNodeDialog
+                kind="app"
+                name={row.app}
+                currentNodeId={row.node_id}
+                volumeCount={app?.volumes?.length ?? 0}
+                volumeNames={app?.volumes?.map((v) => v.name) ?? []}
+              />
+              <span className="text-right text-[11px] text-muted-foreground">
+                {row.reason ?? t('fix.explanation')}
+              </span>
+            </div>
+          )
+        }}
+      />
     </div>
-  )
-}
-
-function ProxyDomainRow({ row }: { row: NetworkProxyDomain }) {
-  const { t } = useTranslation('networkProxy')
-  const appList = useAppListOptional()
-  const app = appList.data?.find((a) => a.name === row.app)
-
-  return (
-    <TableRow>
-      <TableCell className="min-w-0">
-        <Link
-          to="/apps/$name/domains"
-          params={{ name: row.app }}
-          className="truncate font-mono text-sm text-foreground hover:underline"
-        >
-          {row.domain}
-        </Link>
-      </TableCell>
-      <TableCell>
-        <Link
-          to="/apps/$name"
-          params={{ name: row.app }}
-          className="text-sm text-foreground hover:underline"
-        >
-          {row.app}
-        </Link>
-      </TableCell>
-      <TableCell className="text-sm text-muted-foreground">
-        {row.is_local_node
-          ? 'This control plane (local)'
-          : row.node_name || row.node_id || '-'}
-      </TableCell>
-      <TableCell>
-        <ReachableBadge row={row} />
-      </TableCell>
-      <TableCell className="font-mono text-sm text-muted-foreground">
-        :{row.port}
-      </TableCell>
-      <TableCell>
-        <TlsCell row={row} />
-      </TableCell>
-      <TableCell className="max-w-3xs text-right whitespace-normal">
-        {!row.reachable ? (
-          <div className="flex flex-col items-end gap-1">
-            <MoveToNodeDialog
-              kind="app"
-              name={row.app}
-              currentNodeId={row.node_id}
-              volumeCount={app?.volumes?.length ?? 0}
-              volumeNames={app?.volumes?.map((v) => v.name) ?? []}
-            />
-            <span className="text-right text-[11px] text-muted-foreground">
-              {row.reason ?? t('fix.explanation')}
-            </span>
-          </div>
-        ) : null}
-      </TableCell>
-    </TableRow>
   )
 }
 

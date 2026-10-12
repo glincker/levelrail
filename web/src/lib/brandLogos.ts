@@ -52,7 +52,7 @@ export function logoIdForIntegration(key: string): string | undefined {
   return INTEGRATION_LOGOS[key.toLowerCase()]
 }
 
-function endpointHostname(endpoint?: string): string {
+export function endpointHostname(endpoint?: string): string {
   const raw = (endpoint ?? '').trim()
   if (!raw) return ''
   try {
@@ -64,7 +64,7 @@ function endpointHostname(endpoint?: string): string {
   }
 }
 
-function isHostOrSubdomain(host: string, domain: string): boolean {
+export function isHostOrSubdomain(host: string, domain: string): boolean {
   return host === domain || host.endsWith(`.${domain}`)
 }
 

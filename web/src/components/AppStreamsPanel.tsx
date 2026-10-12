@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   PlugsIcon,
@@ -20,13 +20,9 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -70,30 +66,7 @@ export function AppStreamsPanel({ appName }: { appName: string }) {
             description={t('empty.description')}
           />
         ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('table.hostPort')}</TableHead>
-                  <TableHead>{t('table.containerPort')}</TableHead>
-                  <TableHead>{t('table.protocol')}</TableHead>
-                  <TableHead>{t('table.created')}</TableHead>
-                  <TableHead className="text-right">
-                    {t('table.actions')}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {streams.map((stream) => (
-                  <StreamRow
-                    key={stream.id}
-                    appName={appName}
-                    stream={stream}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <StreamsTable appName={appName} streams={streams} />
         )}
 
         <p className="text-xs text-muted-foreground">{t('page.pendingNote')}</p>
@@ -102,56 +75,90 @@ export function AppStreamsPanel({ appName }: { appName: string }) {
   )
 }
 
-function StreamRow({
+function StreamsTable({
   appName,
-  stream,
+  streams,
 }: {
   appName: string
-  stream: AppStream
+  streams: readonly AppStream[]
 }) {
   const { t } = useTranslation('streams')
   const deleteStream = useDeleteAppStream(appName)
+  const columns = useMemo<ResponsiveColumn<AppStream>[]>(
+    () => [
+      {
+        id: 'hostPort',
+        primary: true,
+        header: t('table.hostPort'),
+        cell: (s) => <span className="font-mono">{s.host_port}</span>,
+      },
+      {
+        id: 'containerPort',
+        header: t('table.containerPort'),
+        cell: (s) => (
+          <span className="font-mono text-muted-foreground">
+            {s.container_port}
+          </span>
+        ),
+      },
+      {
+        id: 'protocol',
+        header: t('table.protocol'),
+        priority: 2,
+        cell: (s) => (
+          <span className="text-muted-foreground uppercase">{s.protocol}</span>
+        ),
+      },
+      {
+        id: 'created',
+        header: t('table.created'),
+        priority: 3,
+        cell: (s) => (
+          <span className="text-muted-foreground">
+            {formatDate(s.created_at)}
+          </span>
+        ),
+      },
+    ],
+    [t],
+  )
+
+  function remove(stream: AppStream) {
+    deleteStream.mutate(stream.id, {
+      onSuccess: () => {
+        toast.add({ title: t('toast.removed'), type: 'success' })
+      },
+      onError: (error) => {
+        toast.add({
+          title: t('toast.errorTitle'),
+          description: error.message,
+          type: 'error',
+        })
+      },
+    })
+  }
 
   return (
-    <TableRow>
-      <TableCell className="font-mono text-foreground">
-        {stream.host_port}
-      </TableCell>
-      <TableCell className="font-mono text-muted-foreground">
-        {stream.container_port}
-      </TableCell>
-      <TableCell className="text-muted-foreground uppercase">
-        {stream.protocol}
-      </TableCell>
-      <TableCell className="text-muted-foreground">
-        {formatDate(stream.created_at)}
-      </TableCell>
-      <TableCell className="text-right">
+    <ResponsiveTable
+      rows={streams}
+      columns={columns}
+      getRowId={(s) => s.id}
+      ariaLabel={t('tableLabel')}
+      renderActions={(stream) => (
         <Button
           type="button"
           variant="outline"
           size="sm"
           disabled={deleteStream.isPending}
           onClick={() => {
-            deleteStream.mutate(stream.id, {
-              onSuccess: () => {
-                toast.add({ title: t('toast.removed'), type: 'success' })
-              },
-              onError: (error) => {
-                toast.add({
-                  title: t('toast.errorTitle'),
-                  description: error.message,
-                  type: 'error',
-                })
-              },
-            })
+            remove(stream)
           }}
         >
           <TrashIcon aria-hidden="true" />
           {deleteStream.isPending ? t('remove.removing') : t('remove.trigger')}
         </Button>
-      </TableCell>
-    </TableRow>
+      )}
+    />
   )
 }
 
@@ -192,10 +199,7 @@ function AddStreamForm({ appName }: { appName: string }) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-wrap items-end gap-3 rounded-lg border border-border p-3"
-    >
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
       <Field className="w-32">
         <FieldLabel htmlFor="stream-host-port">
           {t('add.hostPortLabel')}

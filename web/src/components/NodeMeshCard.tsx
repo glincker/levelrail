@@ -1,7 +1,5 @@
 import {
-  CheckCircleIcon,
   ClockCounterClockwiseIcon,
-  WarningCircleIcon,
   WifiHighIcon,
   WifiSlashIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -12,6 +10,7 @@ import { RejoinMeshButton } from './RejoinMeshButton'
 import { RotateMeshKeyDialog } from './RotateMeshKeyDialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
 import { EmptyState } from '@/components/ui/empty-state'
 
 // Shared column grid for the peer list, the same sticky-header-plus-row
@@ -177,27 +176,14 @@ export function NodeMeshCard({
         </dl>
 
         {rotation ? (
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm">
-            {rotation.confirmed ? (
-              <CheckCircleIcon
-                className="size-4 text-green-600"
-                aria-hidden="true"
-              />
-            ) : (
-              <WarningCircleIcon
-                className="size-4 text-amber-600"
-                aria-hidden="true"
-              />
-            )}
-            <span>
-              Last rotation{' '}
-              {rotation.confirmed ? 'confirmed' : 'still confirming'}: started{' '}
-              {new Date(rotation.started_at).toLocaleString()}
-              {rotation.confirmed && rotation.confirmed_at
+          <Banner
+            variant={rotation.confirmed ? 'success' : 'warning'}
+            title={`Last rotation ${rotation.confirmed ? 'confirmed' : 'still confirming'}: started ${new Date(rotation.started_at).toLocaleString()}${
+              rotation.confirmed && rotation.confirmed_at
                 ? `, confirmed ${new Date(rotation.confirmed_at).toLocaleString()}`
-                : ''}
-            </span>
-          </div>
+                : ''
+            }`}
+          />
         ) : null}
 
         {data.peers.length === 0 ? (

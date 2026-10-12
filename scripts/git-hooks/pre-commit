@@ -186,7 +186,8 @@ fi
 # dash sweep above excludes it: the check's own source line contains the
 # literal string it's searching for.
 echo "pre-commit: lucide-react sweep (this repo is Phosphor-only, ADR 014)"
-staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^scripts/git-hooks/pre-commit$')
+# Lockfiles list transitive dependencies (e.g. @glinui/ui pulls lucide-react); the rule is about our own imports.
+staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v -e '^scripts/git-hooks/pre-commit$' -e 'package-lock\.json$')
 lucide_hits=""
 for f in $staged_all_files; do
 	[ -f "$f" ] || continue

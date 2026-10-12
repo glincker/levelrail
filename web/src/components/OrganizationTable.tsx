@@ -2,13 +2,10 @@ import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { BuildingsIcon, CaretRightIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { DeleteOrganizationDialog } from './DeleteOrganizationDialog'
@@ -30,10 +27,11 @@ export function OrganizationTable({
   organizations: OrganizationResource[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('settings')
   if (organizations.length === 0) {
     return (
       <EmptyState
-        className="py-12"
+        className="gap-2 border-0 bg-transparent py-4"
         icon={<BuildingsIcon className="size-5" />}
         title="No organizations yet"
         description="Group related projects under an organization. A project with no organization is just as valid."
@@ -42,40 +40,44 @@ export function OrganizationTable({
     )
   }
 
+  const columns: ResponsiveColumn<OrganizationResource>[] = [
+    {
+      id: 'name',
+      primary: true,
+      header: 'Name',
+      cell: (org) => (
+        <span className="font-medium text-foreground">{org.name}</span>
+      ),
+    },
+    {
+      id: 'created',
+      header: 'Created',
+      priority: 2,
+      cell: (org) => (
+        <span className="text-muted-foreground">
+          {formatDate(org.created_at)}
+        </span>
+      ),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {organizations.map((org) => (
-            <TableRow key={org.id}>
-              <TableCell className="font-medium text-foreground">
-                {org.name}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(org.created_at)}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Link to="/organizations/$id" params={{ id: org.id }}>
-                    <Button type="button" variant="outline" size="sm">
-                      View
-                      <CaretRightIcon className="size-3.5" aria-hidden="true" />
-                    </Button>
-                  </Link>
-                  <DeleteOrganizationDialog id={org.id} name={org.name} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={organizations}
+      columns={columns}
+      getRowId={(org) => org.id}
+      ariaLabel={t('tables.organizations')}
+      renderActions={(org) => (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Link to="/organizations/$id" params={{ id: org.id }}>
+            <Button type="button" variant="outline" size="sm">
+              View
+              <CaretRightIcon className="size-3.5" aria-hidden="true" />
+            </Button>
+          </Link>
+          <DeleteOrganizationDialog id={org.id} name={org.name} />
+        </div>
+      )}
+    />
   )
 }

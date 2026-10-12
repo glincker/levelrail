@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
   CopyIcon,
-  KeyIcon,
   TerminalWindowIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -11,16 +11,22 @@ import {
   useDeviceAuthRequests,
 } from '../../queries/deviceAuth'
 import { DeviceAuthRequestTable } from '../../components/DeviceAuthRequestTable'
-import { Button } from '@/components/ui/button'
-import { TableSkeleton } from '@/components/ui/table-skeleton'
-import { PageHeader } from '@/components/shell/PageHeader'
 import { HelpLink } from '../../components/HelpLink'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Banner } from '@/components/ui/banner'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { PageTemplate } from '@/components/shell/PageTemplate'
+import { FormSection } from '@/components/ui/form-section'
+import { CliAccessRail } from '../../components/settings/CliAccessRail'
+import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Matches the copy-row idiom GitSourceWebhookBanner already established
 // (code block + copy button in a muted bordered row); kept local since
 // this page is the only place showing a shell command rather than a
 // webhook URL/secret.
 function CopyCommand({ command }: { command: string }) {
+  const { t } = useTranslation('settings')
   const [copied, setCopied] = useState(false)
   return (
     <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
@@ -45,7 +51,7 @@ function CopyCommand({ command }: { command: string }) {
         ) : (
           <CopyIcon aria-hidden="true" />
         )}
-        {copied ? 'Copied' : 'Copy'}
+        {copied ? t('cliAccessPage.copied') : t('cliAccessPage.copy')}
       </Button>
     </div>
   )
@@ -80,94 +86,79 @@ export const Route = createFileRoute('/settings/cli-access')({
 })
 
 function CliAccessPage() {
+  const { t } = useTranslation('settings')
   const { data: requests } = useDeviceAuthRequests()
   const { user_code: highlightUserCode } = Route.useSearch()
   // Same origin the dashboard itself is served from: in production the
-  // API and web UI are one embedded binary (CLAUDE.md 4.12), so this is
-  // exactly the address an operator's CLI needs, no separate lookup.
+  // API and web UI are one embedded binary, so this is the address the CLI needs.
   const apiUrl = window.location.origin
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <TerminalWindowIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="CLI access"
-          description="Control this instance from your own computer, like aws or gh, not over SSH."
-        />
-      </div>
-
-      <div className="space-y-3 rounded-lg border border-border p-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <h3 className="text-sm font-medium">
-            1. Install levelrail-cli on your computer
-          </h3>
-          <HelpLink
-            path="/cli-reference"
-            label="Full CLI reference"
-            variant="inline"
-          />
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Not the server. This is a small client binary for your laptop or CI
-          runner, separate from the control plane install.
-        </p>
-        <CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
-        <p className="text-xs text-muted-foreground">
-          No root needed, installs to ~/.local/bin. macOS and Linux only today;
-          on Windows, run this from WSL.
-        </p>
-
-        <h3 className="pt-2 text-sm font-medium">2. Point it at this server</h3>
-        <CopyCommand command={`export APP_API_URL=${apiUrl}`} />
-        <p className="text-sm text-muted-foreground">
-          Set this once per shell (or in your shell profile); every command
-          below talks to that address. Defaults to localhost otherwise.
-        </p>
-
-        <h3 className="pt-2 text-sm font-medium">3. Log in</h3>
-        <CopyCommand command="levelrail-cli auth login --device" />
-        <p className="text-sm text-muted-foreground">
-          Opens a browser code here to approve, the same flow{' '}
-          <code className="text-xs">gh auth login</code> and{' '}
-          <code className="text-xs">aws sso login</code> use: no SSH key, no
-          server port to open. Approving requires an already-signed-in dashboard
-          session, so it inherits whatever 2FA or passkey that session already
-          required, nothing extra to configure here.
-        </p>
-      </div>
-
-      <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4 text-sm">
-        <KeyIcon
-          aria-hidden="true"
-          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-        />
-        <p className="text-muted-foreground">
-          Running from CI or a script instead of a person at a keyboard? Use an{' '}
-          <Link
-            to="/settings/tokens"
-            className="font-medium text-foreground underline underline-offset-4 hover:no-underline"
+    <PageTemplate
+      icon={<TerminalWindowIcon />}
+      eyebrow={t('cliAccessPage.eyebrow')}
+      title={t('cliAccessPage.title')}
+      description={t('cliAccessPage.description')}
+      aside={<CliAccessRail pending={requests.length} apiUrl={apiUrl} />}
+      asideLabel={t('cliAccessPage.rail.label')}
+      actions={
+        <HelpLink path="/cli-reference" label={t('cliAccessPage.help')} />
+      }
+      status={
+        <Badge variant={requests.length > 0 ? 'warning' : 'muted'}>
+          {t('cliAccessPage.waitingCount', { count: requests.length })}
+        </Badge>
+      }
+      banners={
+        requests.length > 0 ? (
+          <Banner
+            variant="warning"
+            title={t('cliAccessPage.banner.title', { count: requests.length })}
           >
-            API token
-          </Link>{' '}
-          instead, nothing to approve by hand.
-        </p>
+            {t('cliAccessPage.banner.body')}
+          </Banner>
+        ) : null
+      }
+    >
+      <div>
+        <FormSection
+          step={1}
+          title={t('cliAccessPage.steps.install.title')}
+          description={t('cliAccessPage.steps.install.body')}
+        >
+          <CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
+          <p className="text-xs text-muted-foreground">
+            {t('cliAccessPage.steps.install.note')}
+          </p>
+        </FormSection>
+        <FormSection
+          step={2}
+          title={t('cliAccessPage.steps.point.title')}
+          description={t('cliAccessPage.steps.point.body')}
+        >
+          <CopyCommand command={`export APP_API_URL=${apiUrl}`} />
+        </FormSection>
+        <FormSection
+          step={3}
+          title={t('cliAccessPage.steps.login.title')}
+          description={t('cliAccessPage.steps.login.body')}
+        >
+          <CopyCommand command="levelrail-cli auth login --device" />
+        </FormSection>
       </div>
 
       <DeviceAuthRequestTable
         requests={requests}
         highlightUserCode={highlightUserCode}
       />
-    </div>
+    </PageTemplate>
   )
 }
 
 function CliAccessPending() {
   return (
     <div className="space-y-6">
-      <PageHeader title="CLI access" />
+      <SettingsPageTitle id="cli-access" />
       <TableSkeleton columnCount={5} />
     </div>
   )

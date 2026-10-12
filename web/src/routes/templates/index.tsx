@@ -3,7 +3,7 @@ import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
 import { TemplateMarketplace } from '../../components/TemplateMarketplace'
 import { Button } from '@/components/ui/button'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
 
 // Standalone, shareable "what's in the catalog" page, separate from the
@@ -24,22 +24,21 @@ function TemplatesPage() {
   const deployTemplateNow = useDeployTemplateNow()
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Service templates"
-        description="Curated, one-click services from the catalog. Pick one to see what it deploys."
-        actions={
-          <CreateResourceWizard
-            initialSelected="browse-templates"
-            trigger={
-              <Button size="sm" variant="outline">
-                <PlusIcon />
-                New from a template
-              </Button>
-            }
-          />
-        }
-      />
+    <PageTemplate
+      title="Service templates"
+      description="Curated, one-click services from the catalog. Pick one to see what it deploys."
+      actions={
+        <CreateResourceWizard
+          initialSelected="browse-templates"
+          trigger={
+            <Button size="sm" variant="outline">
+              <PlusIcon />
+              New from a template
+            </Button>
+          }
+        />
+      }
+    >
       <TemplateMarketplace
         onSelect={(id) => {
           void navigate({ to: '/templates/$id', params: { id } })
@@ -49,6 +48,6 @@ function TemplatesPage() {
         }}
         deployingId={deployTemplateNow.pendingId}
       />
-    </div>
+    </PageTemplate>
   )
 }

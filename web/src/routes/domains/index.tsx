@@ -27,7 +27,7 @@ import { serverAddressQueryOptions } from '../../queries/serverAddress'
 import { useProxyIntegration } from '../../queries/proxyIntegration'
 import { proxyCertStatus } from '../../lib/certStatus'
 import { PlatformSettingsSection } from '../../components/PlatformSettingsSection'
-import { PageHeader } from '../../components/shell/PageHeader'
+import { PageTemplate } from '../../components/shell/PageTemplate'
 import { SetupStepHint } from '../../components/getStarted/SetupStepHint'
 
 // The loader primes every query the page and its collapsed settings use,
@@ -90,26 +90,24 @@ function DomainsPage() {
   )
 
   return (
-    <div className="space-y-6">
-      <SetupStepHint step="app_domain" />
-      <PageHeader
-        title={t('page.title')}
-        description={t('page.description')}
-        helpPath="/domains-and-ingress"
-        helpLabel="Domains and ingress guide"
-        actions={
-          <Button
-            size="sm"
-            onClick={() => {
-              setAddOpen(true)
-            }}
-          >
-            <PlusIcon />
-            {t('page.add')}
-          </Button>
-        }
-      />
-
+    <PageTemplate
+      title={t('page.title')}
+      description={t('page.description')}
+      helpPath="/domains-and-ingress"
+      helpLabel="Domains and ingress guide"
+      banners={<SetupStepHint step="app_domain" />}
+      actions={
+        <Button
+          size="sm"
+          onClick={() => {
+            setAddOpen(true)
+          }}
+        >
+          <PlusIcon />
+          {t('page.add')}
+        </Button>
+      }
+    >
       <ProxySetupCard />
 
       <ServerAddressCard />
@@ -140,25 +138,23 @@ function DomainsPage() {
         apps={appChoices}
         claimedBy={claimedBy}
       />
-    </div>
+    </PageTemplate>
   )
 }
 
 function DomainsPending() {
   const { t } = useTranslation('domains')
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('page.title')} />
+    <PageTemplate title={t('page.title')}>
       <DomainsTableSkeleton />
-    </div>
+    </PageTemplate>
   )
 }
 
 function DomainsError({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation('domains')
   return (
-    <div className="space-y-6">
-      <PageHeader title={t('page.title')} />
+    <PageTemplate title={t('page.title')}>
       <EmptyState
         icon={<WarningCircleIcon className="size-5" />}
         title={t('page.error.title')}
@@ -169,6 +165,6 @@ function DomainsError({ error, reset }: ErrorComponentProps) {
           </Button>
         }
       />
-    </div>
+    </PageTemplate>
   )
 }

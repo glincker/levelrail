@@ -231,6 +231,8 @@ type (
 	sshNodeProvisionResource          = apiclient.SSHNodeProvisionResource
 	createSSHNodeProvisionAuthRequest = apiclient.SSHNodeProvisionAuthRequest
 	createSSHNodeProvisionRequest     = apiclient.CreateSSHNodeProvisionRequest
+	sshProvisionPreflightRequest      = apiclient.SSHProvisionPreflightRequest
+	sshProvisionPreflight             = apiclient.SSHProvisionPreflight
 
 	organizationResource             = apiclient.OrganizationResource
 	createOrganizationRequest        = apiclient.CreateOrganizationRequest

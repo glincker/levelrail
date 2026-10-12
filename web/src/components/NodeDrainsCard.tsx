@@ -52,30 +52,32 @@ export function NodeDrainsCard({ nodeId }: { nodeId: string }) {
             <p className="text-muted-foreground">{t('drains.emptyHint')}</p>
           </div>
         ) : (
-          drains.data.map((drain) => (
-            <div
-              key={drain.id}
-              className="space-y-2 rounded-lg border border-border p-3"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="text-sm">
-                  <p className="font-medium text-foreground">
-                    {t('drains.startedAt', {
-                      time: new Date(drain.started_at).toLocaleString(),
-                    })}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {t('drains.moveCount', { count: drain.moves.length })}
-                    {drain.target_node_id
-                      ? `, ${t('drain.toNode', { node: nodeName(drain.target_node_id) })}`
-                      : `, ${t('drain.toAuto')}`}
-                  </p>
+          <div className="divide-y divide-border">
+            {drains.data.map((drain) => (
+              <div
+                key={drain.id}
+                className="space-y-2 py-3 first:pt-0 last:pb-0"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="text-sm">
+                    <p className="font-medium text-foreground">
+                      {t('drains.startedAt', {
+                        time: new Date(drain.started_at).toLocaleString(),
+                      })}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t('drains.moveCount', { count: drain.moves.length })}
+                      {drain.target_node_id
+                        ? `, ${t('drain.toNode', { node: nodeName(drain.target_node_id) })}`
+                        : `, ${t('drain.toAuto')}`}
+                    </p>
+                  </div>
+                  <DrainStatusBadge status={drain.status} />
                 </div>
-                <DrainStatusBadge status={drain.status} />
+                <NodeDrainProgress drain={drain} />
               </div>
-              <NodeDrainProgress drain={drain} />
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>

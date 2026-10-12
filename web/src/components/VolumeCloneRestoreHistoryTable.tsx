@@ -1,24 +1,16 @@
+import { useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { useVolumeCloneRestores } from '../queries/volumeCloneRestore'
 import { formatDate } from '../lib/format'
-import { StatusBadge } from './backupAttemptStatus'
+import { RestoreStatusCell } from './RestoreStatusCell'
 import type { VolumeCloneRestoreRecord } from '../types/volumeCloneRestore'
 
-// VolumeCloneRestoreHistoryTable is CloneRestoreHistoryTable's app service
-// volume counterpart: same shape (status-first, newest attempt on top,
-// self-terminating polling), rendered only once at least one clone-restore
-// has ever been triggered for this volume. Unlike CloneRestoreHistoryTable
-// the new volume's name is plain text, not a link: a standalone Docker
-// volume has no detail page anywhere in this app today, so there is
-// nowhere to link to (see AppVolumeBackupsSection's own header comment for
-// this limitation).
+// The new volume name is plain text: a standalone Docker volume has no detail
+// page to link to.
 export function VolumeCloneRestoreHistoryTable({
   appName,
   volumeName,
@@ -26,8 +18,58 @@ export function VolumeCloneRestoreHistoryTable({
   appName: string
   volumeName: string
 }) {
+  const { t } = useTranslation('backups')
   const { data, isLoading, error } = useVolumeCloneRestores(appName, volumeName)
   const history = data ?? []
+
+  const columns = useMemo<ResponsiveColumn<VolumeCloneRestoreRecord>[]>(
+    () => [
+      {
+        id: 'status',
+        header: 'Status',
+        primary: true,
+        cell: (r) => <RestoreStatusCell status={r.status} error={r.error} />,
+      },
+      {
+        id: 'new',
+        header: 'New volume',
+        cell: (r) => (
+          <span className="font-mono text-xs text-foreground">
+            {r.new_volume_name}
+          </span>
+        ),
+      },
+      {
+        id: 'backup',
+        header: 'From backup',
+        priority: 2,
+        cell: (r) => (
+          <span className="text-muted-foreground">{r.backup_history_id}</span>
+        ),
+      },
+      {
+        id: 'started',
+        header: 'Started',
+        priority: 2,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDate(r.started_at, '-')}
+          </span>
+        ),
+      },
+      {
+        id: 'finished',
+        header: 'Finished',
+        priority: 3,
+        cell: (r) => (
+          <span className="text-muted-foreground">
+            {formatDate(r.finished_at, '-')}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
 
   if (isLoading || history.length === 0) {
     return null
@@ -38,53 +80,15 @@ export function VolumeCloneRestoreHistoryTable({
 
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-medium text-foreground">
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
         Restored as new volume
       </h3>
-      <div className="rounded-lg border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Status</TableHead>
-              <TableHead>New volume</TableHead>
-              <TableHead>From backup</TableHead>
-              <TableHead>Started</TableHead>
-              <TableHead>Finished</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {history.map((record: VolumeCloneRestoreRecord) => (
-              <TableRow key={record.id}>
-                <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <StatusBadge status={record.status} />
-                    {record.status === 'failed' && record.error ? (
-                      <span
-                        className="max-w-[20rem] truncate text-xs text-destructive"
-                        title={record.error}
-                      >
-                        {record.error}
-                      </span>
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono text-xs text-foreground">
-                  {record.new_volume_name}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {record.backup_history_id}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.started_at, '-')}
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {formatDate(record.finished_at, '-')}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <ResponsiveTable
+        rows={history}
+        columns={columns}
+        getRowId={(r) => r.id}
+        ariaLabel={t('tables.cloneVolumes')}
+      />
     </div>
   )
 }

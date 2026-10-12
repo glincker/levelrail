@@ -118,7 +118,7 @@ export function StorageUsageCard() {
         {owned.length > 0 || backups.items.length > 0 ? (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-1">
-              <h3 className="text-sm font-medium">
+              <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
                 {t('fleet.storage.largestVolumes')}
               </h3>
               {owned.length === 0 ? (
@@ -145,7 +145,7 @@ export function StorageUsageCard() {
               )}
             </div>
             <div className="space-y-1">
-              <h3 className="text-sm font-medium">
+              <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
                 {t('fleet.storage.largestBackups')}
               </h3>
               {backups.items.length === 0 ? (

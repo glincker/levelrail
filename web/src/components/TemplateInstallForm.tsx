@@ -79,7 +79,7 @@ export function TemplateInstallForm({
       }}
     >
       <div className="space-y-1">
-        <h2 className="text-base font-semibold text-foreground">
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
           {t('install.title')}
         </h2>
         <p className="text-sm text-muted-foreground">

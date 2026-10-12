@@ -208,7 +208,7 @@ export function ExposureCard() {
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="space-y-4 text-sm">
         <p className="text-muted-foreground">{t('description')}</p>
         {probe ? (
           <p className="text-xs text-muted-foreground">{t('probeNote')}</p>
@@ -230,38 +230,46 @@ export function ExposureCard() {
         ))}
         {rows.length === 0 ? (
           <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
             icon={<ShieldCheckIcon className="size-5" />}
             title={t('emptyTitle')}
             description={t('emptyBody')}
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('columns.severity')}</TableHead>
-                <TableHead>{t('columns.port')}</TableHead>
-                <TableHead>{t('columns.container')}</TableHead>
-                <TableHead>{t('columns.owner')}</TableHead>
-                <TableHead>{t('columns.bind')}</TableHead>
-                <TableHead>{t('columns.state')}</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map(({ node, finding }) => {
-                const key = `${node.node_id}:${finding.protocol}:${finding.host_port}:${finding.container}`
-                return (
-                  <FindingRow
-                    key={key}
-                    finding={finding}
-                    local={node.local}
-                    open={openKey === key}
-                    onToggle={() => setOpenKey(openKey === key ? null : key)}
-                  />
-                )
-              })}
-            </TableBody>
-          </Table>
+          <div
+            role="region"
+            aria-label={t('tableLabel')}
+            tabIndex={0}
+            className="overflow-x-auto rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('columns.severity')}</TableHead>
+                  <TableHead>{t('columns.port')}</TableHead>
+                  <TableHead>{t('columns.container')}</TableHead>
+                  <TableHead>{t('columns.owner')}</TableHead>
+                  <TableHead>{t('columns.bind')}</TableHead>
+                  <TableHead>{t('columns.state')}</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map(({ node, finding }) => {
+                  const key = `${node.node_id}:${finding.protocol}:${finding.host_port}:${finding.container}`
+                  return (
+                    <FindingRow
+                      key={key}
+                      finding={finding}
+                      local={node.local}
+                      open={openKey === key}
+                      onToggle={() => setOpenKey(openKey === key ? null : key)}
+                    />
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

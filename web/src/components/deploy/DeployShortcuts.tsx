@@ -32,7 +32,9 @@ export function DeployShortcuts({
   if (!last && !previous) return null
   return (
     <section aria-label={t('git.shortcuts.title')} className="space-y-2">
-      <h3 className="text-sm font-medium">{t('git.shortcuts.title')}</h3>
+      <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+        {t('git.shortcuts.title')}
+      </h3>
       <div className="flex flex-wrap gap-2">
         {last ? (
           <Button

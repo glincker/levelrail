@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   GaugeIcon,
   CaretUpIcon,
@@ -17,14 +18,7 @@ import { Input } from './ui/input'
 import { EmptyState } from './ui/empty-state'
 import { Skeleton } from './ui/skeleton'
 import { TimeRangeControls } from './TimeRangeControls'
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from './ui/table'
+import { ResponsiveTable, type ResponsiveColumn } from './ui/responsive-table'
 
 // Slow query log viewer for a Postgres/MySQL database, the slow-query
 // counterpart to DatabaseLogSearchPanel: same time-range presets and
@@ -66,6 +60,7 @@ export function DatabaseSlowQueriesPanel({
 }: {
   databaseName: string
 }) {
+  const { t } = useTranslation('databases')
   const { data: database } = useDatabase(databaseName)
   const engine = database?.engine ?? ''
   const supported = SUPPORTED_ENGINES.has(engine)
@@ -114,11 +109,18 @@ export function DatabaseSlowQueriesPanel({
     }
   }
 
+  const rows = useMemo(
+    () =>
+      filtered.map((entry, i) => ({ id: `${entry.timestamp}-${i}`, entry })),
+    [filtered],
+  )
+  const columns = buildColumns(sortField, sortDir, toggleSort)
+
   return (
     <section id="slow-queries" className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          <h2 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <GaugeIcon
               className="size-4 text-muted-foreground"
               aria-hidden="true"
@@ -203,42 +205,30 @@ export function DatabaseSlowQueriesPanel({
                     ? ` at or above ${minDurationNum}ms`
                     : ''}
                 </p>
-                <div className="max-h-[60vh] overflow-auto rounded-lg border border-border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>
-                          <SortHeader
-                            field="timestamp"
-                            label="Timestamp"
-                            sortField={sortField}
-                            sortDir={sortDir}
-                            onToggle={toggleSort}
-                          />
-                        </TableHead>
-                        <TableHead>
-                          <SortHeader
-                            field="duration_ms"
-                            label="Duration"
-                            sortField={sortField}
-                            sortDir={sortDir}
-                            onToggle={toggleSort}
-                          />
-                        </TableHead>
-                        <TableHead>Rows examined</TableHead>
-                        <TableHead>Query</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filtered.map((entry, i) => (
-                        <SlowQueryRow
-                          key={`${entry.timestamp}-${i}`}
-                          entry={entry}
-                        />
-                      ))}
-                    </TableBody>
-                  </Table>
+                <div className="mb-2 flex items-center gap-3 text-xs text-muted-foreground md:hidden">
+                  <span>{t('slowQueries.sortBy')}</span>
+                  <SortHeader
+                    field="timestamp"
+                    label="Timestamp"
+                    sortField={sortField}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
+                  <SortHeader
+                    field="duration_ms"
+                    label="Duration"
+                    sortField={sortField}
+                    sortDir={sortDir}
+                    onToggle={toggleSort}
+                  />
                 </div>
+                <ResponsiveTable
+                  rows={rows}
+                  columns={columns}
+                  getRowId={(r) => r.id}
+                  ariaLabel={t('slowQueries.tableLabel')}
+                  scrollHeightClass="max-h-[60vh]"
+                />
               </>
             )}
           </div>
@@ -290,17 +280,48 @@ function SortHeader({
   )
 }
 
-function SlowQueryRow({ entry }: { entry: SlowQueryEntry }) {
-  const query =
-    entry.query.length > MAX_QUERY_PREVIEW_CHARS
-      ? entry.query.slice(0, MAX_QUERY_PREVIEW_CHARS) + '...'
-      : entry.query
-  return (
-    <TableRow>
-      <TableCell className="text-xs text-muted-foreground">
-        {new Date(entry.timestamp).toLocaleString()}
-      </TableCell>
-      <TableCell>
+interface SlowRow {
+  id: string
+  entry: SlowQueryEntry
+}
+
+function buildColumns(
+  sortField: SortField,
+  sortDir: SortDir,
+  onToggle: (field: SortField) => void,
+): ResponsiveColumn<SlowRow>[] {
+  return [
+    {
+      id: 'timestamp',
+      header: (
+        <SortHeader
+          field="timestamp"
+          label="Timestamp"
+          sortField={sortField}
+          sortDir={sortDir}
+          onToggle={onToggle}
+        />
+      ),
+      cardLabel: 'Timestamp',
+      cell: ({ entry }) => (
+        <span className="text-xs text-muted-foreground">
+          {new Date(entry.timestamp).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: 'duration',
+      header: (
+        <SortHeader
+          field="duration_ms"
+          label="Duration"
+          sortField={sortField}
+          sortDir={sortDir}
+          onToggle={onToggle}
+        />
+      ),
+      cardLabel: 'Duration',
+      cell: ({ entry }) => (
         <span
           className={
             entry.duration_ms >= 1000
@@ -313,18 +334,34 @@ function SlowQueryRow({ entry }: { entry: SlowQueryEntry }) {
           })}{' '}
           ms
         </span>
-      </TableCell>
-      <TableCell className="text-xs text-muted-foreground">
-        {entry.rows_examined !== undefined
-          ? entry.rows_examined.toLocaleString()
-          : '-'}
-      </TableCell>
-      <TableCell
-        className="max-w-xl truncate font-mono text-xs whitespace-pre-wrap"
-        title={entry.query}
-      >
-        {query}
-      </TableCell>
-    </TableRow>
-  )
+      ),
+    },
+    {
+      id: 'rows',
+      header: 'Rows examined',
+      priority: 2,
+      cell: ({ entry }) => (
+        <span className="text-xs text-muted-foreground">
+          {entry.rows_examined !== undefined
+            ? entry.rows_examined.toLocaleString()
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'query',
+      header: 'Query',
+      primary: true,
+      cell: ({ entry }) => (
+        <span
+          className="block font-mono text-xs break-words whitespace-pre-wrap"
+          title={entry.query}
+        >
+          {entry.query.length > MAX_QUERY_PREVIEW_CHARS
+            ? entry.query.slice(0, MAX_QUERY_PREVIEW_CHARS) + '...'
+            : entry.query}
+        </span>
+      ),
+    },
+  ]
 }
