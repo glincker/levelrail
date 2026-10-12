@@ -25,6 +25,15 @@ type fakeSSHProvisioner struct {
 
 	lastCreds  sshprovision.Credentials
 	lastParams sshprovision.InstallParams
+
+	scanKeys  []sshprovision.HostKey
+	scanErr   error
+	scanCalls int
+}
+
+func (f *fakeSSHProvisioner) ScanHostKeys(_ context.Context, _ string, _ int) ([]sshprovision.HostKey, error) {
+	f.scanCalls++
+	return f.scanKeys, f.scanErr
 }
 
 func (f *fakeSSHProvisioner) Provision(_ context.Context, creds sshprovision.Credentials, params sshprovision.InstallParams, onEvent func(sshprovision.Event)) (sshprovision.DetectedHost, error) {
@@ -45,6 +54,8 @@ func newTestRouterWithSSHProvisioning(t *testing.T, fake *fakeSSHProvisioner) (*
 	return NewRouter(logger, testBrand(), db, WithSSHProvisioner(fake)), db
 }
 
+var testHostKeyFingerprint = "SHA256:" + strings.Repeat("k", 43)
+
 func createSSHProvisionBody() string {
 	return `{
 		"host": "192.0.2.10",
@@ -53,7 +64,8 @@ func createSSHProvisionBody() string {
 		"auth": {"type": "password", "password": "s3cret"},
 		"name": "ssh-web-1",
 		"role": "general",
-		"control_plane_addr": "cp.example:9443"
+		"control_plane_addr": "cp.example:9443",
+		"host_key_fingerprint": "` + testHostKeyFingerprint + `"
 	}`
 }
 

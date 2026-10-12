@@ -85,6 +85,9 @@ func SaveAuditEntryTx(ctx context.Context, tx *sql.Tx, e AuditEntry) error {
 	return insertAuditEntry(ctx, tx, e)
 }
 
+// AuditActionSSHProvisionHostKeySkipped marks an SSH node provision that skipped host key verification.
+const AuditActionSSHProvisionHostKeySkipped = "node_ssh_provision.host_key_skipped"
+
 // AuditActionLegacyTokenMigrated marks a pre-library API token imported into the auth library on upgrade.
 const AuditActionLegacyTokenMigrated = "api_token.legacy_migrated"
 

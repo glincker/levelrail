@@ -45,6 +45,11 @@ type Credentials struct {
 	Passphrase string
 	// Password authenticates when Auth is AuthPassword.
 	Password string
+	// HostKeyFingerprint pins the server's host key (SHA256:...). Provision
+	// refuses to send credentials to a server presenting any other key.
+	HostKeyFingerprint string
+	// InsecureSkipHostKeyCheck accepts any host key; the caller must warn loudly.
+	InsecureSkipHostKeyCheck bool
 }
 
 func (c Credentials) addr() string {
@@ -263,33 +268,42 @@ func ifEmpty(s, fallback string) string {
 	return s
 }
 
+func (p *Provisioner) dialTimeout() time.Duration {
+	if p.DialTimeout > 0 {
+		return p.DialTimeout
+	}
+	return defaultDialTimeout
+}
+
 func (p *Provisioner) dial(ctx context.Context, creds Credentials) (*ssh.Client, error) {
 	auth, err := creds.authMethod()
 	if err != nil {
 		return nil, fmt.Errorf("sshprovision: build auth method: %w", err)
 	}
-	timeout := p.DialTimeout
-	if timeout <= 0 {
-		timeout = defaultDialTimeout
+	callback, algos, err := p.hostKeyConfig(ctx, creds)
+	if err != nil {
+		return nil, err
 	}
+	timeout := p.dialTimeout()
 	dialer := net.Dialer{Timeout: timeout}
 	conn, err := dialer.DialContext(ctx, "tcp", creds.addr())
 	if err != nil {
 		return nil, fmt.Errorf("sshprovision: dial %s: %w", creds.addr(), err)
 	}
 	config := &ssh.ClientConfig{
-		User: creds.Username,
-		Auth: []ssh.AuthMethod{auth},
-		// No known_hosts store exists for an operator's own arbitrary
-		// machine (no prior trust-on-first-use pinning to check against):
-		// a documented, known limitation, see docs/node-provisioning.md's
-		// SSH section, not an oversight.
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), //nolint:gosec // documented known limitation above, no host key store exists yet for an arbitrary operator machine
-		Timeout:         timeout,
+		User:              creds.Username,
+		Auth:              []ssh.AuthMethod{auth},
+		HostKeyCallback:   callback,
+		HostKeyAlgorithms: algos,
+		Timeout:           timeout,
 	}
 	sshConn, chans, reqs, err := ssh.NewClientConn(conn, creds.addr(), config)
 	if err != nil {
 		_ = conn.Close()
+		var mismatch *HostKeyMismatchError
+		if errors.As(err, &mismatch) {
+			return nil, mismatch
+		}
 		return nil, fmt.Errorf("sshprovision: authenticate to %s: %w", creds.addr(), err)
 	}
 	return ssh.NewClient(sshConn, chans, reqs), nil

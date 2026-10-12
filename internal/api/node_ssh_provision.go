@@ -44,6 +44,7 @@ func sshNodeProvisionTimeout() time.Duration {
 // for the cloud path.
 type SSHProvisioner interface {
 	Provision(ctx context.Context, creds sshprovision.Credentials, params sshprovision.InstallParams, onEvent func(sshprovision.Event)) (sshprovision.DetectedHost, error)
+	ScanHostKeys(ctx context.Context, host string, port int) ([]sshprovision.HostKey, error)
 }
 
 // SSHNodeProvisionStore is the store surface the SSH node provisioning
@@ -60,17 +61,21 @@ type SSHNodeProvisionStore interface {
 // stored past the one provisioning call, so there is nothing to echo
 // back even on the create response.
 type sshNodeProvisionResource struct {
-	ID            string    `json:"id"`
-	Name          string    `json:"name"`
-	Role          string    `json:"role"`
-	Status        string    `json:"status"`
-	DetectedOS    string    `json:"detected_os,omitempty"`
-	DetectedArch  string    `json:"detected_arch,omitempty"`
-	NodeID        string    `json:"node_id,omitempty"`
-	FailureReason string    `json:"failure_reason,omitempty"`
-	Log           string    `json:"log,omitempty"`
-	CreatedAt     time.Time `json:"created_at"`
-	UpdatedAt     time.Time `json:"updated_at"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Role          string `json:"role"`
+	Status        string `json:"status"`
+	DetectedOS    string `json:"detected_os,omitempty"`
+	DetectedArch  string `json:"detected_arch,omitempty"`
+	NodeID        string `json:"node_id,omitempty"`
+	FailureReason string `json:"failure_reason,omitempty"`
+	Log           string `json:"log,omitempty"`
+	// HostKeyFingerprint is the pinned SHA256 host key; empty means the check was skipped.
+	HostKeyFingerprint string    `json:"host_key_fingerprint,omitempty"`
+	HostKeyVerified    bool      `json:"host_key_verified"`
+	Warnings           []string  `json:"warnings,omitempty"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
 }
 
 func toSSHNodeProvisionResource(p store.SSHNodeProvision) sshNodeProvisionResource {
@@ -78,9 +83,13 @@ func toSSHNodeProvisionResource(p store.SSHNodeProvision) sshNodeProvisionResour
 		ID: p.ID, Name: p.Name, Role: p.Role, Status: p.Status,
 		DetectedOS: p.DetectedOS, DetectedArch: p.DetectedArch, NodeID: p.NodeID,
 		FailureReason: p.FailureReason, Log: p.Log,
+		HostKeyFingerprint: p.HostKeyFingerprint, HostKeyVerified: p.HostKeyFingerprint != "",
 		CreatedAt: p.CreatedAt, UpdatedAt: p.UpdatedAt,
 	}
 }
+
+// sshInsecureHostKeyWarning is returned and audited whenever an operator skips host key verification.
+const sshInsecureHostKeyWarning = "host key verification was skipped: a machine in the middle of this connection could capture the SSH credential and the join token"
 
 // createSSHNodeProvisionAuthRequest is one of two credential shapes: a
 // private key (optionally passphrase-protected) or a password. Neither
@@ -107,6 +116,30 @@ type createSSHNodeProvisionRequest struct {
 	// createNodeProvisionRequest already requires for the same reason
 	// (see its own doc comment).
 	ControlPlaneAddr string `json:"control_plane_addr"`
+	// HostKeyFingerprint is the server's SHA256 host key fingerprint, as the
+	// preflight returned it or ssh-keygen -l prints it. Required unless
+	// InsecureSkipHostKeyCheck is set.
+	HostKeyFingerprint       string `json:"host_key_fingerprint,omitempty"`
+	InsecureSkipHostKeyCheck bool   `json:"insecure_skip_host_key_check,omitempty"`
+}
+
+// hostKeyPolicy validates the host key fields, returning the normalized
+// fingerprint or an operator-facing validation message.
+func (req createSSHNodeProvisionRequest) hostKeyPolicy() (string, string) {
+	if req.InsecureSkipHostKeyCheck {
+		if req.HostKeyFingerprint != "" {
+			return "", "host_key_fingerprint and insecure_skip_host_key_check are mutually exclusive"
+		}
+		return "", ""
+	}
+	if req.HostKeyFingerprint == "" {
+		return "", "host_key_fingerprint is required: call POST /api/v1/nodes/ssh-provision/preflight, confirm the fingerprint with the server, and send it back (or set insecure_skip_host_key_check)"
+	}
+	fp, ok := sshprovision.NormalizeFingerprint(req.HostKeyFingerprint)
+	if !ok {
+		return "", "host_key_fingerprint must be SHA256:... as ssh-keygen -l prints it"
+	}
+	return fp, ""
 }
 
 // credentials builds the sshprovision.Credentials this request describes,
@@ -174,6 +207,13 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
+	fingerprint, msg := req.hostKeyPolicy()
+	if msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	creds.HostKeyFingerprint = fingerprint
+	creds.InsecureSkipHostKeyCheck = req.InsecureSkipHostKeyCheck
 
 	if taken, err := rt.nodeNameTaken(r.Context(), req.Name); err != nil {
 		rt.logger.Error("api: ssh node provision: check name collision failed", slog.String("error", err.Error()))
@@ -199,7 +239,7 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 	}
 	now := time.Now()
 	rec := store.SSHNodeProvision{
-		ID: id, Name: req.Name, Role: role,
+		ID: id, Name: req.Name, Role: role, HostKeyFingerprint: fingerprint,
 		Status: store.SSHNodeProvisionStatusConnecting, CreatedAt: now, UpdatedAt: now,
 	}
 	if err := rt.sshProvisions.SaveSSHNodeProvision(r.Context(), rec); err != nil {
@@ -219,7 +259,95 @@ func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Re
 	go rt.runSSHNodeProvision(id, creds, params) //nolint:gosec // deliberate: the request context is gone by the time this goroutine finishes, runSSHNodeProvision derives its own bounded context (sshNodeProvisionTimeout) instead
 
 	rt.logger.Info("api: ssh node provision created", slog.String("provision_id", id), slog.String("name", req.Name))
-	writeJSON(w, http.StatusCreated, toSSHNodeProvisionResource(rec))
+	resp := toSSHNodeProvisionResource(rec)
+	if req.InsecureSkipHostKeyCheck {
+		rt.logger.Warn("api: ssh node provision skips host key verification", slog.String("provision_id", id), slog.String("name", req.Name))
+		rt.auditSSHHostKeySkipped(r, id)
+		resp.Warnings = []string{sshInsecureHostKeyWarning}
+	}
+	writeJSON(w, http.StatusCreated, resp)
+}
+
+// auditSSHHostKeySkipped writes a dedicated audit row so an insecure
+// provision stands out from the ordinary request row next to it.
+func (rt *Router) auditSSHHostKeySkipped(r *http.Request, provisionID string) {
+	a := rt.accessActor(r)
+	id, err := store.NewAuditEntryID()
+	if err != nil {
+		rt.logger.Warn("api: ssh host key audit id failed", slog.String("error", err.Error()))
+		return
+	}
+	entry := store.AuditEntry{
+		ID: id, ActorType: a.kind, ActorID: a.id, ActorName: a.name,
+		Ability: AbilityRoot, Method: r.Method, Path: r.URL.Path + "#" + provisionID, StatusCode: http.StatusCreated,
+		RemoteAddr: clientIP(r), CreatedAt: store.FormatAuditTime(time.Now()),
+		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+		Action:     store.AuditActionSSHProvisionHostKeySkipped,
+	}
+	if err := rt.auditLog.SaveAuditEntry(r.Context(), entry); err != nil {
+		rt.logger.Warn("api: ssh host key audit save failed", slog.String("error", err.Error()), slog.String("provision_id", provisionID))
+	}
+}
+
+type sshProvisionPreflightRequest struct {
+	Host string `json:"host"`
+	Port int    `json:"port,omitempty"`
+}
+
+type sshHostKeyResource struct {
+	Type        string `json:"type"`
+	Fingerprint string `json:"fingerprint"`
+}
+
+type sshProvisionPreflightResource struct {
+	Host     string               `json:"host"`
+	Port     int                  `json:"port"`
+	HostKeys []sshHostKeyResource `json:"host_keys"`
+}
+
+// sshPreflightTimeout caps the whole multi-handshake scan, not each dial.
+const sshPreflightTimeout = 45 * time.Second
+
+// handleSSHProvisionPreflight handles POST /api/v1/nodes/ssh-provision/preflight:
+// reads the server's host keys without authenticating, so the operator can
+// confirm a fingerprint before any credential leaves the control plane.
+func (rt *Router) handleSSHProvisionPreflight(w http.ResponseWriter, r *http.Request) {
+	var req sshProvisionPreflightRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.Host == "" {
+		writeError(w, http.StatusBadRequest, "host is required")
+		return
+	}
+	if req.Port == 0 {
+		req.Port = 22
+	}
+	if req.Port < 1 || req.Port > 65535 {
+		writeError(w, http.StatusBadRequest, "port must be between 1 and 65535")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), sshPreflightTimeout)
+	defer cancel()
+	keys, err := rt.sshProvisionerOrDefault().ScanHostKeys(ctx, req.Host, req.Port)
+	if err != nil {
+		rt.logger.Warn("api: ssh provision preflight failed", slog.String("host", req.Host), slog.String("error", err.Error()))
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	out := sshProvisionPreflightResource{Host: req.Host, Port: req.Port, HostKeys: make([]sshHostKeyResource, 0, len(keys))}
+	for _, k := range keys {
+		out.HostKeys = append(out.HostKeys, sshHostKeyResource{Type: k.Type, Fingerprint: k.Fingerprint})
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (rt *Router) sshProvisionerOrDefault() SSHProvisioner {
+	if rt.sshProvisioner != nil {
+		return rt.sshProvisioner
+	}
+	return sshprovision.New(rt.brand.AgentName(), rt.brand.Name)
 }
 
 // runSSHNodeProvision runs the SSH install in the background: creds live
@@ -233,10 +361,7 @@ func (rt *Router) runSSHNodeProvision(id string, creds sshprovision.Credentials,
 	defer cancel()
 
 	var log logAccumulator
-	provisioner := rt.sshProvisioner
-	if provisioner == nil {
-		provisioner = sshprovision.New(rt.brand.AgentName(), rt.brand.Name)
-	}
+	provisioner := rt.sshProvisionerOrDefault()
 
 	host, err := provisioner.Provision(ctx, creds, params, func(e sshprovision.Event) {
 		log.add(string(e.Step) + ": " + e.Message)

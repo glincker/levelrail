@@ -13,7 +13,7 @@ func TestSSHNodeProvision_SaveGetList(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
 
 	p := SSHNodeProvision{
-		ID: "sshp_1", Name: "web-1", Role: "general",
+		ID: "sshp_1", Name: "web-1", Role: "general", HostKeyFingerprint: "SHA256:abc",
 		Status: SSHNodeProvisionStatusConnecting, CreatedAt: now, UpdatedAt: now,
 	}
 	if err := db.SaveSSHNodeProvision(ctx, p); err != nil {
@@ -24,7 +24,7 @@ func TestSSHNodeProvision_SaveGetList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetSSHNodeProvision: %v", err)
 	}
-	if got.Name != "web-1" || got.Status != SSHNodeProvisionStatusConnecting {
+	if got.Name != "web-1" || got.Status != SSHNodeProvisionStatusConnecting || got.HostKeyFingerprint != "SHA256:abc" {
 		t.Errorf("got = %+v", got)
 	}
 	if !got.CreatedAt.Equal(now) {

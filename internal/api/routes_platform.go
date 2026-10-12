@@ -423,6 +423,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// conflict with "/api/v1/nodes/{id}/health" the exact way that
 	// comment already explains for the cloud path.
 	mux.HandleFunc("POST /api/v1/nodes/ssh-provision", rt.requireAbility(AbilityRoot, rt.handleCreateSSHNodeProvision))
+	mux.HandleFunc("POST /api/v1/nodes/ssh-provision/preflight", rt.requireAbility(AbilityRoot, rt.handleSSHProvisionPreflight))
 	mux.HandleFunc("GET /api/v1/ssh-node-provisions", rt.requireAbility(AbilityRoot, rt.handleListSSHNodeProvisions))
 	mux.HandleFunc("GET /api/v1/ssh-node-provisions/{id}", rt.requireAbility(AbilityRoot, rt.handleGetSSHNodeProvision))
 	// Node-level metrics (sum of per-container samples for everything
