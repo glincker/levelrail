@@ -184,6 +184,7 @@
     "loadFailed": "Could not load AI control settings."
   },
   "tokens": {
+    "tableLabel": "API tokens",
     "emptyTitle": "No tokens yet",
     "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
     "name": "Name",
@@ -836,6 +837,112 @@
       "testing": "Testing...",
       "testOk": "\"{{name}}\" connected successfully.",
       "testFailed": "\"{{name}}\" failed to connect."
+    }
+  },
+  "certificatesPage": {
+    "eyebrow": "Ingress",
+    "title": "TLS certificates",
+    "description": "Every domain's certificate, automatic or custom, with expiry and a renew action. Use Renew now to force an immediate re-issuance instead of waiting for the next scheduled check.",
+    "help": "Domains and ingress guide",
+    "count_one": "{{count}} domain",
+    "count_other": "{{count}} domains",
+    "empty": {
+      "title": "No domains configured yet",
+      "body": "Add a domain to an app to see its certificate here, automatic or custom."
+    },
+    "banner": {
+      "expired_one": "{{count}} certificate has expired",
+      "expired_other": "{{count}} certificates have expired",
+      "expiredBody": "Visitors to those domains see a browser warning. Use Renew now on the row, or check that the domain still points at this server.",
+      "expiring_one": "{{count}} certificate expires soon",
+      "expiring_other": "{{count}} certificates expire soon",
+      "expiringBody": "Automatic certificates renew on their own. If one stays in this state, force a renewal from its row."
+    },
+    "table": {
+      "noApp": "No app",
+      "notIssued": "Not yet issued",
+      "orphaned": "Certificate remains from a domain no longer configured on any app"
+    }
+  },
+  "tokensPage": {
+    "eyebrow": "Access",
+    "title": "API tokens",
+    "description": "Scoped, revocable credentials for the CLI, CI, and MCP integrations. Session login only mints tokens: a token can never mint or revoke another token on its own behalf.",
+    "help": "API reference",
+    "docsLink": "View API docs",
+    "activeCount_one": "{{count}} active token",
+    "activeCount_other": "{{count}} active tokens",
+    "banner": {
+      "title_one": "{{count}} root token never expires",
+      "title_other": "{{count}} root tokens never expire",
+      "body": "A leaked root token can change anything on this instance. Revoke it and mint a narrower one with an expiry."
+    }
+  },
+  "usersPage": {
+    "eyebrow": "Access",
+    "title": "Users",
+    "description": "Everyone with access to this platform, and what each account can do.",
+    "help": "Teams and roles guide",
+    "count_one": "{{count}} user",
+    "count_other": "{{count}} users",
+    "pendingInvites": "Pending invites",
+    "empty": {
+      "title": "No users found",
+      "body": "Invite a teammate or create a user from the actions above."
+    },
+    "banner": {
+      "title_one": "{{count}} invite is waiting to be accepted",
+      "title_other": "{{count}} invites are waiting to be accepted",
+      "body": "Invitees have no access until they open their link. Copy it again from the pending invites list below if it got lost."
+    },
+    "table": {
+      "label": "Users",
+      "email": "Email",
+      "displayName": "Display name",
+      "signsInWith": "Signs in with",
+      "role": "Role",
+      "abilities": "Abilities",
+      "lastLogin": "Last login",
+      "never": "Never",
+      "password": "password",
+      "noMethod": "none",
+      "firstUser": "First user",
+      "you": "You",
+      "custom": "Custom",
+      "editAbilities": "Edit abilities",
+      "selfEditHint": "You cannot edit your own abilities"
+    }
+  },
+  "cliAccessPage": {
+    "eyebrow": "Access",
+    "title": "CLI access",
+    "description": "Control this instance from your own computer, like aws or gh, not over SSH.",
+    "help": "CLI reference",
+    "copy": "Copy",
+    "copied": "Copied",
+    "waitingCount_one": "{{count}} login waiting",
+    "waitingCount_other": "{{count}} logins waiting",
+    "ciHint": "Running from CI or a script instead of a person at a keyboard? Use an API token, nothing to approve by hand.",
+    "ciLink": "Create an API token",
+    "banner": {
+      "title_one": "{{count}} CLI login is waiting for approval",
+      "title_other": "{{count}} CLI logins are waiting for approval",
+      "body": "Approve it below only if you started it. If the requesting IP looks wrong, deny it."
+    },
+    "steps": {
+      "install": {
+        "title": "1. Install the CLI on your computer",
+        "body": "Not the server. This is a small client binary for your laptop or CI runner, separate from the control plane install.",
+        "note": "No root needed, installs to ~/.local/bin. macOS and Linux only today; on Windows, run this from WSL."
+      },
+      "point": {
+        "title": "2. Point it at this server",
+        "body": "Set this once per shell or in your shell profile. Every command talks to that address, and defaults to localhost otherwise."
+      },
+      "login": {
+        "title": "3. Log in",
+        "body": "Opens a code here to approve, the same flow gh auth login and aws sso login use: no SSH key, no server port to open. Approval needs a signed-in dashboard session, so it inherits that session's 2FA or passkey."
+      }
     }
   }
 }
