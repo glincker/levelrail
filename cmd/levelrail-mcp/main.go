@@ -40,6 +40,7 @@
 //
 // Confirm-gated write tools are hidden unless --allow-write (or
 // APP_MCP_ALLOW_WRITE=1) is set; see docs/mcp.md for the threat model.
+// --readonly refuses to start with a token that can change anything.
 //
 // # Running over the network
 //
@@ -102,6 +103,12 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	apiclient.SetScope(apiclient.ResolveScope(apiclient.Scope{Team: f.team, Project: f.project}, lookupEnv, prog, profile))
 	client := apiclient.NewClient(apiURL, token, apiclient.WithUserAgent("levelrail-mcp/"+version.Version))
+	if f.readonly || envTrue(lookupEnv, envReadonly) {
+		if err := enforceReadonly(client); err != nil {
+			return err
+		}
+		opts.Mode, opts.AllowWrite = mcptools.ModeReadOnly, false
+	}
 
 	server, summary := mcptools.NewServerWithOptions(client, opts)
 	logAttrs := []any{
@@ -183,7 +190,7 @@ const defaultListenAddr = "127.0.0.1:8090"
 type cliFlags struct {
 	token, apiURL, profile, transport, listen, mode, toolsets, toolProfile string
 	team, project, printConfig                                             string
-	allowWrite, outputSchemas                                              bool
+	allowWrite, outputSchemas, readonly                                    bool
 }
 
 func parseAllFlags(prog string, args []string) (f cliFlags, err error) {
@@ -200,6 +207,7 @@ func parseAllFlags(prog string, args []string) (f cliFlags, err error) {
 	fs.StringVar(&f.project, "project", "", "narrow every request to one project (overrides "+apiclient.EnvProject+")")
 	fs.StringVar(&f.printConfig, "print-config", "", "print a ready MCP client config block for one of: "+strings.Join(configClients, ", ")+", then exit (read-only unless --allow-write or --mode is set)")
 	fs.BoolVar(&f.allowWrite, "allow-write", false, "expose confirm-gated write tools such as extend_preview and run_restore_drill (or set "+mcptools.EnvAllowWrite+"=1); never exposed in read-only mode")
+	fs.BoolVar(&f.readonly, "readonly", false, "refuse to start unless the API token holds no write, write:sensitive, deploy or root ability, and expose read tools only (or set "+envReadonly+"=1)")
 	fs.BoolVar(&f.outputSchemas, "output-schemas", false, "advertise every tool's outputSchema in tools/list, about 2.4x the listing size (or set "+mcptools.EnvOutputSchemas+"=1)")
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(fs.Output(), "%s: an MCP server exposing the control plane's REST API as tools over stdio or streamable HTTP.\n\nFlags:\n", prog)

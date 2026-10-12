@@ -42,7 +42,9 @@ var (
 // AIChatSession is one chat conversation's identity and timestamps. The
 // message history itself lives in AIChatMessage rows, not embedded here.
 type AIChatSession struct {
-	ID        string
+	ID string
+	// Owner is the creating principal ("user:<id>" or "token:<id>").
+	Owner     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -65,6 +67,9 @@ type AIChatToolCall struct {
 	Status  string          `json:"status"`
 	Result  json.RawMessage `json:"result,omitempty"`
 	IsError bool            `json:"is_error,omitempty"`
+	// ActingAs and Abilities say which human the call ran as and what the API checked.
+	ActingAs  string   `json:"acting_as,omitempty"`
+	Abilities []string `json:"abilities,omitempty"`
 }
 
 // AIChatMessage is one turn in a chat session's history: a plain user
@@ -121,23 +126,26 @@ func NewAIChatMessageID() (string, error) { return newAIChatID("aimsg_") }
 // NewAIChatConfirmationID mints a confirmation id.
 func NewAIChatConfirmationID() (string, error) { return newAIChatID("aiconf_") }
 
-// CreateAIChatSession inserts a new, empty session row.
-func (db *DB) CreateAIChatSession(ctx context.Context, id string, now time.Time) (AIChatSession, error) {
+// CreateAIChatSession inserts a new, empty session row owned by owner.
+func (db *DB) CreateAIChatSession(ctx context.Context, id, owner string, now time.Time) (AIChatSession, error) {
+	if owner == "" {
+		return AIChatSession{}, errors.New("store: create ai chat session: owner is required")
+	}
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO ai_chat_sessions (id, created_at, updated_at) VALUES (?, ?, ?)
-	`, id, now, now)
+		INSERT INTO ai_chat_sessions (id, owner_principal, created_at, updated_at) VALUES (?, ?, ?, ?)
+	`, id, owner, now, now)
 	if err != nil {
 		return AIChatSession{}, fmt.Errorf("store: create ai chat session: %w", err)
 	}
-	return AIChatSession{ID: id, CreatedAt: now, UpdatedAt: now}, nil
+	return AIChatSession{ID: id, Owner: owner, CreatedAt: now, UpdatedAt: now}, nil
 }
 
 // GetAIChatSession returns one session by id, or ErrAIChatSessionNotFound.
 func (db *DB) GetAIChatSession(ctx context.Context, id string) (AIChatSession, error) {
 	var s AIChatSession
 	err := db.QueryRowContext(ctx, `
-		SELECT id, created_at, updated_at FROM ai_chat_sessions WHERE id = ?
-	`, id).Scan(&s.ID, &s.CreatedAt, &s.UpdatedAt)
+		SELECT id, owner_principal, created_at, updated_at FROM ai_chat_sessions WHERE id = ?
+	`, id).Scan(&s.ID, &s.Owner, &s.CreatedAt, &s.UpdatedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return AIChatSession{}, ErrAIChatSessionNotFound
 	}
@@ -147,11 +155,12 @@ func (db *DB) GetAIChatSession(ctx context.Context, id string) (AIChatSession, e
 	return s, nil
 }
 
-// ListAIChatSessions returns every session, most recently updated first.
-func (db *DB) ListAIChatSessions(ctx context.Context) ([]AIChatSession, error) {
+// ListAIChatSessions returns owner's sessions, most recently updated first.
+func (db *DB) ListAIChatSessions(ctx context.Context, owner string) ([]AIChatSession, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, created_at, updated_at FROM ai_chat_sessions ORDER BY updated_at DESC, id DESC
-	`)
+		SELECT id, owner_principal, created_at, updated_at FROM ai_chat_sessions
+		WHERE owner_principal = ? AND owner_principal != '' ORDER BY updated_at DESC, id DESC
+	`, owner)
 	if err != nil {
 		return nil, fmt.Errorf("store: list ai chat sessions: %w", err)
 	}
@@ -160,7 +169,7 @@ func (db *DB) ListAIChatSessions(ctx context.Context) ([]AIChatSession, error) {
 	out := []AIChatSession{}
 	for rows.Next() {
 		var s AIChatSession
-		if err := rows.Scan(&s.ID, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.Owner, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("store: list ai chat sessions: %w", err)
 		}
 		out = append(out, s)
@@ -171,11 +180,11 @@ func (db *DB) ListAIChatSessions(ctx context.Context) ([]AIChatSession, error) {
 	return out, nil
 }
 
-// DeleteAIChatSession removes a session and, via ON DELETE CASCADE
+// DeleteAIChatSession removes owner's session and, via ON DELETE CASCADE
 // (migrations/0108), every message and confirmation row under it.
-// Returns ErrAIChatSessionNotFound if id doesn't exist.
-func (db *DB) DeleteAIChatSession(ctx context.Context, id string) error {
-	res, err := db.ExecContext(ctx, `DELETE FROM ai_chat_sessions WHERE id = ?`, id)
+// Returns ErrAIChatSessionNotFound if owner has no session with that id.
+func (db *DB) DeleteAIChatSession(ctx context.Context, id, owner string) error {
+	res, err := db.ExecContext(ctx, `DELETE FROM ai_chat_sessions WHERE id = ? AND owner_principal = ? AND owner_principal != ''`, id, owner)
 	if err != nil {
 		return fmt.Errorf("store: delete ai chat session: %w", err)
 	}

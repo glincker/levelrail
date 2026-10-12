@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
@@ -91,6 +92,9 @@ func printAIChatEventHuman(stdout, stderr io.Writer, ev apiclient.AIChatSSEEvent
 	case "tool_call_proposed":
 		_, _ = fmt.Fprintf(stderr, "\n[pending confirmation] %s (confirmation_id=%s)\n  resolve: %s ai sessions resolve <session> %s --approve|--reject\n", ev.Name, ev.ConfirmationID, "levelrail-cli", ev.ConfirmationID)
 	case "tool_result":
+		if ev.ActingAs != "" {
+			_, _ = fmt.Fprintf(stderr, "\n[tool] %s%s\n", ev.Name, aiToolActor(ev.ActingAs, ev.Abilities))
+		}
 		if ev.IsError {
 			_, _ = fmt.Fprintf(stderr, "\n[tool error] %s: %s\n", ev.Name, string(ev.Result))
 		}
@@ -120,4 +124,16 @@ Flags:
   --json                    print one JSON object per stream event instead of text
   -h, --help               show this help
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
+}
+
+// aiToolActor renders who a tool call ran as, empty when unknown.
+func aiToolActor(actingAs string, abilities []string) string {
+	if actingAs == "" {
+		return ""
+	}
+	out := " acting as " + actingAs
+	if len(abilities) > 0 {
+		out += " (ability " + strings.Join(abilities, ", ") + ")"
+	}
+	return out
 }

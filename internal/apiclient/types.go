@@ -3721,6 +3721,8 @@ type AIChatToolCallResource struct {
 	Status         string          `json:"status"`
 	Result         json.RawMessage `json:"result,omitempty"`
 	IsError        bool            `json:"is_error,omitempty"`
+	ActingAs       string          `json:"acting_as,omitempty"`
+	Abilities      []string        `json:"abilities,omitempty"`
 }
 
 // AIChatMessageResource mirrors internal/api's aiChatMessageResource.
@@ -3756,6 +3758,8 @@ type AIChatSSEEvent struct {
 	ReadOnly       bool            `json:"read_only,omitempty"`
 	Result         json.RawMessage `json:"result,omitempty"`
 	IsError        bool            `json:"is_error,omitempty"`
+	ActingAs       string          `json:"acting_as,omitempty"`
+	Abilities      []string        `json:"abilities,omitempty"`
 }
 
 // CreateAIChatMessageRequest mirrors internal/api's

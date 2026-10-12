@@ -125,6 +125,7 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 	if actorType == "token" {
 		entry.AgentName = agentNameFrom(ctx)
 		entry.AgentClient = sanitizeAgentClient(r.Header.Get(AgentClientHeader))
+		entry.OnBehalfOf = onBehalfOfFrom(ctx)
 	}
 	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
 		rt.logger.Warn("api: save audit entry failed", slog.String("error", err.Error()), slog.String("path", r.URL.Path))
@@ -152,6 +153,8 @@ type auditLogEntryResource struct {
 	// Action is the stable event name for lifecycle rows such as
 	// device_login.expired, empty for plain request rows.
 	Action string `json:"action,omitempty"`
+	// OnBehalfOf is the human principal an AI assistant turn acted for.
+	OnBehalfOf string `json:"on_behalf_of,omitempty"`
 }
 
 func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
@@ -167,7 +170,7 @@ func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
 		RemoteAddr: e.RemoteAddr,
 		CreatedAt:  e.CreatedAt,
 		ClientKind: e.ClientKind,
-		AgentName:  e.AgentName, AgentClient: e.AgentClient, Action: e.Action,
+		AgentName:  e.AgentName, AgentClient: e.AgentClient, Action: e.Action, OnBehalfOf: e.OnBehalfOf,
 	}
 }
 

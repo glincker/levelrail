@@ -119,7 +119,7 @@ func gateFixture(t *testing.T, mode string, kinds []string) (*Router, *store.DB,
 	mint("agent-write", "claude", []string{AbilityRead, AbilityWrite, AbilityDeploy})
 	mint("agent-root", "claude-root", []string{AbilityRoot})
 	mint("human-root", "", []string{AbilityRoot})
-	tok, err := MintAIAssistantToken(ctx, db)
+	tok, _, err := MintAgentAPIToken(ctx, db, AIAssistantTokenName, []string{AbilityRoot}, nil, agentIdentity{Name: AIAssistantAgentName}, "")
 	if err != nil {
 		t.Fatal(err)
 	}

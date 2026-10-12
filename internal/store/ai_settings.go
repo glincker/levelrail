@@ -18,15 +18,8 @@ func AIAssistantSecretsKey() string {
 	return "ai-assistant"
 }
 
-// AIInternalTokenSecretsKey is the internal/secrets serviceName the
-// control plane's own self-call API token is stored under (envKey
-// "token"): minted once so the embedded AI engine can call this
-// instance's own REST API the same way any external MCP client would.
-// Deliberately a separate serviceName from AIAssistantSecretsKey, not a
-// second envKey under it: clearing the operator's BYOK LLM key
-// (DELETE /api/v1/settings/ai-assistant) must never invalidate this
-// platform-internal credential, since re-enabling the assistant later
-// shouldn't require re-minting a root-scoped token.
+// AIInternalTokenSecretsKey is where older releases stored the assistant's
+// persistent root token; boot deletes it, turns now mint per-sender tokens.
 func AIInternalTokenSecretsKey() string {
 	return "ai-assistant-internal-token"
 }
