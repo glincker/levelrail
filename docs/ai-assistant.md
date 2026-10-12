@@ -99,6 +99,16 @@ Limits come from `APP_UNTRUSTED_MAX_FIELD_BYTES` (per string field, default 4096
 
 This is friction, not a guarantee. The real boundary is the assistant's confirmation gate, which uses each tool's MCP annotations instead of name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
 
+## Whose authority the in-dashboard assistant uses
+
+The assistant built into the dashboard has no standing credential of its own. Every chat message (and every Approve click on a pending action) mints a token for that one turn: owned by the person who sent it, carrying only their abilities, their IAM policies and their team scope, labeled with the agent name `ai-assistant`, and revoked when the turn ends. It expires after 15 minutes even if the control plane dies mid-turn (`APP_AI_TURN_TOKEN_TTL`, a Go duration such as `10m`). So a prompt injection in a log line can never do more than the human who asked, and an IAM Deny on that human also binds the assistant.
+
+- The [AI control](/ai-control) mode still applies to every tool call, because the turn token is an agent token.
+- Each tool call row in the chat shows who it ran as and which abilities the API checked for that call, for example "Acting as alice@example.com with read". `levelrail-cli ai chat` and `ai sessions show` print the same.
+- Audit entries made by a turn token carry `on_behalf_of` (`user:<id>`) next to the `ai-assistant` agent name.
+- Chat sessions belong to the principal that created them. Another user or token, even one holding `root`, gets 404 for them. Sessions created before this release have no owner and are no longer listed.
+- Older releases kept a persistent `root` token for the assistant in the secrets store. The control plane deletes and revokes it at boot.
+
 ## Generating and scoping a token
 
 Use the same token machinery the CLI and dashboard already use ([Identity and access](/identity-and-access#api-tokens)): scoped, revocable bearer credentials minted with the six-string ability vocabulary (`read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`).

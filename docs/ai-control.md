@@ -6,7 +6,7 @@ description: Decide what AI agents and agent tokens may do on your instance, fro
 AI control is a switch in Settings that decides what agents may do on this instance. It is enforced on the control plane for every request, so it does not depend on the agent, the MCP client or the token's own abilities. The page is always visible, because it is the guardrail.
 ## What counts as an agent
 
-An agent is an API token that has an **agent name**, or the built-in assistant token (agent name `ai-assistant`). Agent tokens can only be created by a signed-in person, never by another token.
+An agent is an API token that has an **agent name**, including the short-lived token the in-app assistant mints for each chat turn (agent name `ai-assistant`). That turn token is owned by the person who sent the message and carries only their abilities and IAM policies, so the mode below narrows what the assistant may do on their behalf, never widens it. Agent tokens can only be created by a signed-in person, never by another token.
 
 AI control does **not** govern:
 
@@ -57,7 +57,7 @@ levelrail-cli ai-control set --mode operate --env-kinds dev,test,uat,preview,cus
 levelrail-cli ai-control revoke-agents --yes
 ```
 
-This revokes every token that has an agent name and reports how many. The built-in assistant token is not revoked, because that would break the in-app assistant. Set the mode to `off` to stop it instead.
+This revokes every token that has an agent name and reports how many. The in-app assistant's per-turn tokens are skipped: each one is already revoked when its turn ends. Set the mode to `off` to stop the assistant instead.
 
 ## Defaults and upgrades
 
@@ -66,7 +66,7 @@ This revokes every token that has an agent name and reports how many. The built-
 
 ## Audit
 
-Every request an agent makes that this switch refuses is written to the audit log with the agent name and the reason. Changes to the setting and token revocations are audited too. To see one agent:
+Every request an agent makes that this switch refuses is written to the audit log with the agent name and the reason. Changes to the setting and token revocations are audited too. Requests from the in-app assistant also record `on_behalf_of`, the person whose chat turn made them. To see one agent:
 
 ```bash
 levelrail-cli audit-log --agent my-agent

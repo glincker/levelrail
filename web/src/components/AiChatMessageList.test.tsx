@@ -1,7 +1,13 @@
+import type { ReactElement } from 'react'
+import { AiAssistantI18n } from '../test/aiAssistantI18n'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AiChatMessageList } from './AiChatMessageList'
 import type { AiChatMessage } from '../types/aiAssistant'
+
+function renderWithI18n(ui: ReactElement) {
+  return render(ui, { wrapper: AiAssistantI18n })
+}
 
 function messages(): AiChatMessage[] {
   return [
@@ -38,7 +44,7 @@ function messages(): AiChatMessage[] {
 
 describe('AiChatMessageList', () => {
   it('renders user and assistant messages, and tool calls attached to the assistant message', () => {
-    render(
+    renderWithI18n(
       <AiChatMessageList
         messages={messages()}
         streaming={false}
@@ -65,7 +71,7 @@ describe('AiChatMessageList', () => {
   })
 
   it('renders a tool-role message as a lightweight system row', () => {
-    render(
+    renderWithI18n(
       <AiChatMessageList
         messages={[
           {
@@ -88,7 +94,7 @@ describe('AiChatMessageList', () => {
   })
 
   it('omits the content bubble for an empty in-flight assistant message', () => {
-    render(
+    renderWithI18n(
       <AiChatMessageList
         messages={[
           {
