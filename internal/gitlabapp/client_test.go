@@ -313,3 +313,10 @@ func TestClient_CreateCommitStatus_ErrorResponse(t *testing.T) {
 		t.Fatal("CreateCommitStatus() error = nil, want an error for a 404 response")
 	}
 }
+
+func TestNewClient(t *testing.T) {
+	c := NewClient()
+	if c.HTTP == nil {
+		t.Fatal("NewClient() returned a Client with a nil HTTP field")
+	}
+}
