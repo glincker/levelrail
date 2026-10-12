@@ -64,51 +64,21 @@ export const settingsNavSections: SettingsNavSection[] = [
   {
     id: 'general',
     items: [
-      { id: 'account', to: '/settings/account', icon: UserIcon },
       {
-        id: 'cli-access',
-        to: '/settings/cli-access',
-        icon: TerminalWindowIcon,
+        id: 'account',
+        to: '/settings/account',
+        icon: UserIcon,
       },
-      { id: 'api-explorer', to: '/settings/api-explorer', icon: CodeIcon },
-      { id: 'data-export', to: '/settings/data-export', icon: ExportIcon },
       {
-        id: 'import-platform',
-        to: '/settings/import-platform',
-        icon: DownloadSimpleIcon,
+        id: 'setup-wizard',
+        to: '/settings/setup-wizard',
+        icon: SparkleIcon,
       },
-      { id: 'setup-wizard', to: '/settings/setup-wizard', icon: SparkleIcon },
-      { id: 'general', to: '/settings/general', icon: GearIcon },
-    ],
-  },
-  {
-    id: 'security',
-    items: [
       {
-        id: 'iam-policies',
-        to: '/settings/iam-policies',
-        icon: ShieldCheckIcon,
+        id: 'general',
+        to: '/settings/general',
+        icon: GearIcon,
       },
-      { id: 'security', to: '/settings/security', icon: ShieldIcon },
-      { id: 'security-center', to: '/security', icon: ShieldCheckIcon },
-      { id: 'tokens', to: '/settings/tokens', icon: KeyIcon },
-      {
-        id: 'mobile-devices',
-        to: '/settings/mobile-devices',
-        icon: DeviceMobileIcon,
-        feature: 'mobile-api',
-      },
-      { id: 'agents', to: '/settings/agents', icon: PlugsConnectedIcon },
-      { id: 'ai-control', to: '/settings/ai-control', icon: ShieldCheckIcon },
-      { id: 'users', to: '/settings/users', icon: UsersIcon },
-      { id: 'teams', to: '/settings/teams', icon: UsersThreeIcon },
-      {
-        id: 'roles',
-        to: '/settings/roles',
-        icon: IdentificationBadgeIcon,
-        feature: 'access-roles',
-      },
-      { id: 'oauth', to: '/settings/oauth', icon: LockKeyIcon },
       {
         id: 'organizations',
         to: '/settings/organizations',
@@ -120,7 +90,58 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: StackIcon,
         feature: 'global-environments',
       },
-      { id: 'vault', to: '/settings/vault', icon: LockKeyIcon },
+      {
+        id: 'import-platform',
+        to: '/settings/import-platform',
+        icon: DownloadSimpleIcon,
+      },
+      {
+        id: 'data-export',
+        to: '/settings/data-export',
+        icon: ExportIcon,
+      },
+    ],
+  },
+  {
+    id: 'access',
+    items: [
+      {
+        id: 'users',
+        to: '/settings/users',
+        icon: UsersIcon,
+      },
+      {
+        id: 'teams',
+        to: '/settings/teams',
+        icon: UsersThreeIcon,
+      },
+      {
+        id: 'roles',
+        to: '/settings/roles',
+        icon: IdentificationBadgeIcon,
+        feature: 'access-roles',
+      },
+      {
+        id: 'oauth',
+        to: '/settings/oauth',
+        icon: LockKeyIcon,
+      },
+      {
+        id: 'iam-policies',
+        to: '/settings/iam-policies',
+        icon: ShieldCheckIcon,
+      },
+      {
+        id: 'tokens',
+        to: '/settings/tokens',
+        icon: KeyIcon,
+      },
+      {
+        id: 'mobile-devices',
+        to: '/settings/mobile-devices',
+        icon: DeviceMobileIcon,
+        feature: 'mobile-api',
+      },
       {
         id: 'audit-log',
         to: '/settings/audit-log',
@@ -129,19 +150,84 @@ export const settingsNavSections: SettingsNavSection[] = [
     ],
   },
   {
+    id: 'security',
+    items: [
+      {
+        id: 'security',
+        to: '/settings/security',
+        icon: ShieldIcon,
+      },
+      {
+        id: 'security-center',
+        to: '/security',
+        icon: ShieldCheckIcon,
+      },
+      {
+        id: 'vault',
+        to: '/settings/vault',
+        icon: LockKeyIcon,
+      },
+      {
+        id: 'firewall',
+        to: '/settings/firewall',
+        icon: ShieldIcon,
+      },
+    ],
+  },
+  {
+    id: 'developer',
+    items: [
+      {
+        id: 'cli-access',
+        to: '/settings/cli-access',
+        icon: TerminalWindowIcon,
+      },
+      {
+        id: 'api-explorer',
+        to: '/settings/api-explorer',
+        icon: CodeIcon,
+      },
+    ],
+  },
+  {
+    id: 'ai',
+    items: [
+      {
+        id: 'agents',
+        to: '/settings/agents',
+        icon: PlugsConnectedIcon,
+      },
+      {
+        id: 'ai-control',
+        to: '/settings/ai-control',
+        icon: ShieldCheckIcon,
+      },
+      {
+        id: 'ai-assistant',
+        to: '/settings/ai-assistant',
+        icon: RobotIcon,
+        feature: 'ai-chat',
+      },
+    ],
+  },
+  {
     id: 'domains',
     items: [
+      {
+        id: 'domains',
+        to: '/domains',
+        icon: GlobeIcon,
+      },
+      {
+        id: 'certificates',
+        to: '/settings/certificates',
+        icon: ShieldCheckIcon,
+      },
       {
         id: 'cloudflare-tunnel',
         to: '/settings/cloudflare-tunnel',
         icon: CloudCheckIcon,
         feature: 'cloudflare-tunnel',
-      },
-      { id: 'domains', to: '/domains', icon: GlobeIcon },
-      {
-        id: 'certificates',
-        to: '/settings/certificates',
-        icon: ShieldCheckIcon,
       },
     ],
   },
@@ -153,10 +239,19 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/backup-targets',
         icon: CloudArrowUpIcon,
       },
-      { id: 'storage', to: '/settings/storage', icon: CloudArrowUpIcon },
+      {
+        id: 'storage',
+        to: '/settings/storage',
+        icon: CloudArrowUpIcon,
+      },
       {
         id: 'control-plane-backup',
         to: '/settings/control-plane-backup',
+        icon: DatabaseIcon,
+      },
+      {
+        id: 'database-upgrades',
+        to: '/settings/database-upgrades',
         icon: DatabaseIcon,
       },
     ],
@@ -169,55 +264,92 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/notification-channels',
         icon: WebhooksLogoIcon,
       },
-      { id: 'status-page', to: '/settings/status-page', icon: HeartbeatIcon },
-      { id: 'email', to: '/settings/email', icon: EnvelopeIcon },
+      {
+        id: 'email',
+        to: '/settings/email',
+        icon: EnvelopeIcon,
+      },
+      {
+        id: 'status-page',
+        to: '/settings/status-page',
+        icon: HeartbeatIcon,
+      },
     ],
   },
   {
     id: 'integrations',
     items: [
-      { id: 'github-app', to: '/settings/github-app', icon: GithubLogoIcon },
-      { id: 'gitlab-app', to: '/settings/gitlab-app', icon: GitlabLogoIcon },
+      {
+        id: 'github-app',
+        to: '/settings/github-app',
+        icon: GithubLogoIcon,
+      },
+      {
+        id: 'gitlab-app',
+        to: '/settings/gitlab-app',
+        icon: GitlabLogoIcon,
+      },
       {
         id: 'bitbucket-app',
         to: '/settings/bitbucket-app',
         icon: GitBranchIcon,
       },
-      { id: 'gitea-app', to: '/settings/gitea-app', icon: TeaBagIcon },
+      {
+        id: 'gitea-app',
+        to: '/settings/gitea-app',
+        icon: TeaBagIcon,
+      },
+      {
+        id: 'registry',
+        to: '/settings/registry',
+        icon: HardDrivesIcon,
+      },
       {
         id: 'registry-credentials',
         to: '/settings/registry-credentials',
         icon: PackageIcon,
-      },
-      {
-        id: 'node-providers',
-        to: '/settings/node-providers',
-        icon: HardDrivesIcon,
-      },
-      { id: 'registry', to: '/settings/registry', icon: HardDrivesIcon },
-      {
-        id: 'ai-assistant',
-        to: '/settings/ai-assistant',
-        icon: RobotIcon,
-        feature: 'ai-chat',
       },
     ],
   },
   {
     id: 'beta',
     items: [
-      { id: 'beta-features', to: '/settings/beta-features', icon: FlaskIcon },
+      {
+        id: 'beta-features',
+        to: '/settings/beta-features',
+        icon: FlaskIcon,
+      },
     ],
   },
   {
     id: 'updates',
     items: [
-      { id: 'updates', to: '/settings/updates', icon: ArrowCircleUpIcon },
+      {
+        id: 'updates',
+        to: '/settings/updates',
+        icon: ArrowCircleUpIcon,
+      },
     ],
   },
   {
     id: 'advanced',
     items: [
+      {
+        id: 'node-providers',
+        to: '/settings/node-providers',
+        icon: HardDrivesIcon,
+      },
+      {
+        id: 'containers',
+        to: '/settings/containers',
+        icon: StackIcon,
+      },
+      {
+        id: 'infrastructure',
+        to: '/settings/infrastructure',
+        icon: FileCodeIcon,
+        feature: 'iac',
+      },
       {
         id: 'observability',
         to: '/settings/observability',
@@ -227,19 +359,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'system-status',
         to: '/settings/system-status',
         icon: HeartbeatIcon,
-      },
-      { id: 'firewall', to: '/settings/firewall', icon: ShieldIcon },
-      { id: 'containers', to: '/settings/containers', icon: StackIcon },
-      {
-        id: 'infrastructure',
-        to: '/settings/infrastructure',
-        icon: FileCodeIcon,
-        feature: 'iac',
-      },
-      {
-        id: 'database-upgrades',
-        to: '/settings/database-upgrades',
-        icon: DatabaseIcon,
       },
     ],
   },

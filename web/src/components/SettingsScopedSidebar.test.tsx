@@ -95,10 +95,10 @@ describe('SettingsScopedSidebar', () => {
 
     expect(screen.getByText('Users')).toBeInTheDocument()
 
-    await user.click(screen.getByText('Security and access'))
+    await user.click(screen.getByText('People and access'))
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
 
-    await user.click(screen.getByText('Security and access'))
+    await user.click(screen.getByText('People and access'))
     expect(screen.getByText('Users')).toBeInTheDocument()
   })
 
@@ -109,11 +109,14 @@ describe('SettingsScopedSidebar', () => {
       'settings-sidebar-open-groups',
       JSON.stringify({
         general: true,
-        security: false,
+        security: true,
+        access: false,
         domains: true,
         backups: true,
         notifications: true,
         integrations: true,
+        developer: true,
+        ai: true,
         beta: true,
         updates: true,
         advanced: true,
@@ -137,7 +140,7 @@ describe('SettingsScopedSidebar', () => {
     await user.type(screen.getByLabelText('Search settings'), 'vault')
 
     expect(screen.getByText('Vault')).toBeInTheDocument()
-    expect(screen.getByText('Security and access')).toBeInTheDocument()
+    expect(screen.getByText('Security')).toBeInTheDocument()
     expect(screen.queryByText('Firewall')).not.toBeInTheDocument()
     expect(screen.queryByText('Domains and TLS')).not.toBeInTheDocument()
 
