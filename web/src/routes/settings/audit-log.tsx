@@ -35,6 +35,7 @@ import { tokenListQueryOptions } from '../../queries/tokens'
 import { domainsQueryOptions } from '../../queries/domains'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // ALL_CLIENT_KINDS is the filter dropdown's "no filter" sentinel: Base
 // UI's Select cannot use an empty string as an item value (it reads as
@@ -244,15 +245,13 @@ function AuditLogSettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-start gap-3">
-          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <ClockCounterClockwiseIcon className="size-4" />
-          </div>
-          <PageHeader title="Audit log" description={t('page.description')} />
-        </div>
-        <div className="flex items-center gap-2">
+    <PageTemplate
+      icon={<ClockCounterClockwiseIcon />}
+      title={t('page.title')}
+      description={t('page.description')}
+      width="wide"
+      actions={
+        <>
           <Select
             value={clientKindFilter}
             onValueChange={(value) => {
@@ -284,9 +283,9 @@ function AuditLogSettingsPage() {
               path={pathFilter}
             />
           ) : null}
-        </div>
-      </div>
-
+        </>
+      }
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={search}
@@ -344,6 +343,7 @@ function AuditLogSettingsPage() {
         <TableSkeleton columnCount={8} rowCount={8} />
       ) : entries.length === 0 ? (
         <EmptyState
+          className="gap-2 border-0 bg-transparent py-4"
           icon={<ClockCounterClockwiseIcon className="size-5" />}
           title="No entries found"
           description={
@@ -375,7 +375,7 @@ function AuditLogSettingsPage() {
           {loadingMore ? 'Loading...' : 'Load older entries'}
         </Button>
       ) : null}
-    </div>
+    </PageTemplate>
   )
 }
 

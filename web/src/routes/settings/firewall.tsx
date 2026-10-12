@@ -57,7 +57,8 @@ import {
 } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { useTranslation } from 'react-i18next'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
@@ -79,18 +80,18 @@ function formatDate(iso: string): string {
 }
 
 function FirewallPage() {
+  const { t } = useTranslation('settings')
   const { data: rules } = useFirewallRules()
   const { data: doctor } = useSystemDoctor()
   const firewallCheck = doctor.checks.find((c) => c.code === 'firewall')
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Firewall"
-        description="Declarative host firewall rules, reconciled onto this node's firewall (ufw)."
-        actions={<AddFirewallRuleDialog />}
-      />
-
+    <PageTemplate
+      icon={<ShieldIcon />}
+      title={t('firewallPage.title')}
+      description={t('firewallPage.description')}
+      actions={<AddFirewallRuleDialog />}
+    >
       <HostFirewallCard />
       <ExposureCard />
 
@@ -107,7 +108,7 @@ function FirewallPage() {
           </CardHeader>
           <CardContent>
             <DoctorCheckRow check={firewallCheck} />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-4 text-xs text-muted-foreground">
               From this host's own preflight check. See Settings &rarr; System
               status for the full hardening checklist.
             </p>
@@ -117,7 +118,7 @@ function FirewallPage() {
 
       {rules.length === 0 ? (
         <EmptyState
-          className="py-12"
+          className="gap-2 border-0 bg-transparent py-4"
           icon={<ShieldIcon className="size-5" />}
           title="No firewall rules configured"
           description="Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR."
@@ -167,7 +168,7 @@ function FirewallPage() {
           </Table>
         </div>
       )}
-    </div>
+    </PageTemplate>
   )
 }
 

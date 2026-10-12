@@ -208,7 +208,7 @@ export function ExposureCard() {
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="space-y-4 text-sm">
         <p className="text-muted-foreground">{t('description')}</p>
         {probe ? (
           <p className="text-xs text-muted-foreground">{t('probeNote')}</p>
@@ -230,6 +230,7 @@ export function ExposureCard() {
         ))}
         {rows.length === 0 ? (
           <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
             icon={<ShieldCheckIcon className="size-5" />}
             title={t('emptyTitle')}
             description={t('emptyBody')}

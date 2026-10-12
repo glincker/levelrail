@@ -30,7 +30,7 @@ export function HostFirewallCard() {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="space-y-4 text-sm">
         <p className="text-muted-foreground">
           {t(
             data.installed

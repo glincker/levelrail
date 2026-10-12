@@ -391,5 +391,9 @@
     "switchTo": "Switch to {{channel}}",
     "switched": "Channel switched to {{channel}}.",
     "commit": "Commit {{commit}}"
+  },
+  "page": {
+    "title": "Updates",
+    "description": "Current version, release channel, and available releases."
   }
 }
