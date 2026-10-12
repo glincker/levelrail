@@ -55,6 +55,9 @@ func validHostPort(h string) bool {
 	return h != "" && !strings.ContainsAny(h, "/\\@ \t?#")
 }
 
+// PeerIsTrustedProxy is peerIsTrustedProxy for wiring outside this package.
+func PeerIsTrustedProxy(r *http.Request) bool { return peerIsTrustedProxy(r) }
+
 // peerIsTrustedProxy reports whether the TCP peer may set forwarding headers.
 func peerIsTrustedProxy(r *http.Request) bool {
 	host, _, err := net.SplitHostPort(r.RemoteAddr)

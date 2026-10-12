@@ -580,13 +580,44 @@ func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, event
 		rt.logger.Error("api: save webhook delivery: mint id failed", slog.String("error", err.Error()), slog.String("name", name))
 		return
 	}
+	truncated := false
+	if !signatureValid {
+		if limit := rt.failedWebhookBodyBytes(); len(payload) > limit {
+			payload, truncated = payload[:limit], true
+		}
+	}
 	if err := rt.webhookDeliveries.SaveWebhookDelivery(ctx, store.WebhookDelivery{
 		ID: id, ServiceName: name, Provider: provider, EventType: eventType,
 		HeaderFields: headerFields, SignatureValid: signatureValid, Matched: matched,
-		StatusCode: statusCode, Payload: payload, Error: errMsg, Note: note, ReceivedAt: time.Now(),
+		StatusCode: statusCode, Payload: payload, PayloadTruncated: truncated, Error: errMsg, Note: note, ReceivedAt: time.Now(),
 	}); err != nil {
 		rt.logger.Error("api: save webhook delivery failed", slog.String("error", err.Error()), slog.String("name", name))
+		return
 	}
+	if !signatureValid {
+		if _, err := rt.webhookDeliveries.PruneFailedWebhookDeliveries(ctx, name, rt.failedWebhookKeep()); err != nil {
+			rt.logger.Error("api: prune failed webhook deliveries failed", slog.String("error", err.Error()), slog.String("name", name))
+		}
+	}
+}
+
+const (
+	defaultWebhookFailedKeep      = 20
+	defaultWebhookFailedBodyBytes = 2048
+)
+
+func (rt *Router) failedWebhookKeep() int {
+	if rt.webhookFailedKeep > 0 {
+		return rt.webhookFailedKeep
+	}
+	return defaultWebhookFailedKeep
+}
+
+func (rt *Router) failedWebhookBodyBytes() int {
+	if rt.webhookFailedBodyBytes > 0 {
+		return rt.webhookFailedBodyBytes
+	}
+	return defaultWebhookFailedBodyBytes
 }
 
 // maxWebhookDeliveryNoteBytes caps a stored outcome note: the message can

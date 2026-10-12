@@ -179,6 +179,29 @@ func (db *DB) ListWebhookDeliveries(ctx context.Context, serviceName string, lim
 	return out, nil
 }
 
+// PruneFailedWebhookDeliveries keeps only the newest keep unsigned
+// (signature_valid = 0) deliveries for serviceName and returns how many
+// older ones it removed. Verified deliveries are never touched.
+func (db *DB) PruneFailedWebhookDeliveries(ctx context.Context, serviceName string, keep int) (int64, error) {
+	res, err := db.ExecContext(ctx, `
+		DELETE FROM webhook_deliveries
+		WHERE service_name = ? AND signature_valid = 0 AND id NOT IN (
+			SELECT id FROM webhook_deliveries
+			WHERE service_name = ? AND signature_valid = 0
+			ORDER BY received_at DESC, id DESC
+			LIMIT ?
+		)
+	`, serviceName, serviceName, keep)
+	if err != nil {
+		return 0, fmt.Errorf("store: prune failed webhook deliveries for %q: %w", serviceName, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: count pruned webhook deliveries: %w", err)
+	}
+	return n, nil
+}
+
 // DeleteWebhookDeliveriesOlderThan removes every webhook_deliveries row
 // received strictly before cutoff, returning the number of rows removed.
 // Mirrors DeleteAuditEntriesOlderThan (audit.go): without this, a table

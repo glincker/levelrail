@@ -2,6 +2,7 @@ package authengine
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"sync"
@@ -9,17 +10,18 @@ import (
 
 // Short error codes the dashboard login page already understands.
 const (
-	OAuthErrInvalidProvider  = "invalid_provider"
-	OAuthErrInvalidRequest   = "invalid_request"
-	OAuthErrInvalidState     = "invalid_state"
-	OAuthErrProviderDenied   = "provider_denied"
-	OAuthErrProviderDisabled = "provider_disabled"
-	OAuthErrExchangeFailed   = "exchange_failed"
-	OAuthErrUserInfoFailed   = "userinfo_failed"
-	OAuthErrEmailInUse       = "email_in_use"
-	OAuthErrDomainNotAllowed = "domain_not_allowed"
-	OAuthErrSigninFailed     = "signin_failed"
-	OAuthErrInternal         = "internal_error"
+	OAuthErrInvalidProvider     = "invalid_provider"
+	OAuthErrInvalidRequest      = "invalid_request"
+	OAuthErrInvalidState        = "invalid_state"
+	OAuthErrProviderDenied      = "provider_denied"
+	OAuthErrProviderDisabled    = "provider_disabled"
+	OAuthErrExchangeFailed      = "exchange_failed"
+	OAuthErrUserInfoFailed      = "userinfo_failed"
+	OAuthErrEmailInUse          = "email_in_use"
+	OAuthErrDomainNotAllowed    = "domain_not_allowed"
+	OAuthErrSigninFailed        = "signin_failed"
+	OAuthErrInternal            = "internal_error"
+	OAuthErrRedirectUnavailable = "redirect_unavailable"
 
 	sessionCookieName = cookieName
 )
@@ -136,6 +138,11 @@ func (e *Engine) drive(r *http.Request, route, provider string) (OAuthOutcome, *
 // OAuthStart runs the library start step for provider. A 404 status means the
 // provider is unknown or disabled, a 503 means its settings could not be resolved.
 func (e *Engine) OAuthStart(r *http.Request, provider string) OAuthOutcome {
+	if e.oauth != nil {
+		if _, err := e.oauth.redirect.Resolve(r, provider); errors.Is(err, ErrOAuthRedirectUnavailable) {
+			return OAuthOutcome{Status: http.StatusBadRequest, ErrorCode: OAuthErrRedirectUnavailable}
+		}
+	}
 	out, _ := e.drive(r, "start", provider)
 	return out
 }

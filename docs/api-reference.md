@@ -148,7 +148,7 @@ Endpoints for:
 | GET | /api/v1/settings/observability | AbilityRead | handleGetObservabilitySettings |
 | PUT | /api/v1/settings/observability | AbilityRoot | handleUpdateObservabilitySettings |
 | POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
-| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
+| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLinkGET |
 | GET | /api/v1/auth/whoami | Public | handleWhoami |
 | POST | /api/v1/roles | AbilityRoot | handleCreateRole |
 | PUT | /api/v1/roles/{id} | AbilityRoot | handleUpdateRole |
@@ -206,6 +206,7 @@ Endpoints for:
 | POST | /api/v1/auth/step-up/passkey/finish | Public | handleStepUpPasskeyFinish |
 | GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
 | PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
+| POST | /api/v1/auth/session-links/consume | Public | handleConsumeSessionLink |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

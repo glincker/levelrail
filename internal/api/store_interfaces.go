@@ -277,6 +277,9 @@ type WebhookDeliveryStore interface {
 	// (webhook_delivery_retention.go), the same age-based deletion
 	// AuditStore.DeleteAuditEntriesOlderThan already provides for audit_log.
 	DeleteWebhookDeliveriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error)
+	// PruneFailedWebhookDeliveries caps unsigned deliveries per app so
+	// junk requests cannot grow the table between retention sweeps.
+	PruneFailedWebhookDeliveries(ctx context.Context, serviceName string, keep int) (int64, error)
 }
 
 // DeployLogQuerier is the telemetry-side read surface

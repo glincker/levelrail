@@ -214,3 +214,36 @@ func TestHandleReplayWebhookDelivery_WrongApp_NotFound(t *testing.T) {
 		t.Fatalf("status = %d, want 404: web's delivery id must not replay under app other", rec.Code)
 	}
 }
+
+func TestHandleGitPushWebhook_UnsignedDeliveriesAreCappedAndTruncated(t *testing.T) {
+	secrets := newFakeGitSourceSecrets()
+	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
+	rt.webhookFailedKeep, rt.webhookFailedBodyBytes = 3, 16
+	cookie := loginTestSession(t, rt, db)
+	seedApp(t, db, "web")
+	connectGitSource(t, rt, cookie, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
+
+	body := pushBody("refs/heads/main")
+	for range 8 {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
+		req.Header.Set("X-Hub-Signature-256", sign([]byte("wrong-secret"), body))
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("status = %d, want 401", rec.Code)
+		}
+	}
+
+	deliveries, err := db.ListWebhookDeliveries(context.Background(), "web", 50, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(deliveries) != 3 {
+		t.Fatalf("stored %d unsigned deliveries, want 3", len(deliveries))
+	}
+	for _, d := range deliveries {
+		if len(d.Payload) != 16 || !d.PayloadTruncated {
+			t.Errorf("payload len = %d truncated = %v, want 16 and true", len(d.Payload), d.PayloadTruncated)
+		}
+	}
+}

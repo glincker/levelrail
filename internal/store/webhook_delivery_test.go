@@ -227,3 +227,44 @@ func TestListWebhookDeliveries_UsesCoveringIndex(t *testing.T) {
 		t.Errorf("query plan doesn't use idx_webhook_deliveries_service_received:\n%s", plan)
 	}
 }
+
+func TestPruneFailedWebhookDeliveries_KeepsNewestUnsignedOnly(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	base := time.Now().UTC().Add(-time.Hour)
+	save := func(id, svc string, signed bool, offset time.Duration) {
+		t.Helper()
+		if err := db.SaveWebhookDelivery(ctx, WebhookDelivery{ID: id, ServiceName: svc, SignatureValid: signed, StatusCode: 200, ReceivedAt: base.Add(offset)}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i := range 5 {
+		save("bad"+string(rune('a'+i)), "web", false, time.Duration(i)*time.Minute)
+	}
+	save("good1", "web", true, -time.Minute)
+	save("other1", "api", false, 0)
+
+	n, err := db.PruneFailedWebhookDeliveries(ctx, "web", 2)
+	if err != nil || n != 3 {
+		t.Fatalf("PruneFailedWebhookDeliveries() = %d, %v; want 3, nil", n, err)
+	}
+	got, err := db.ListWebhookDeliveries(ctx, "web", 10, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := map[string]bool{}
+	for _, d := range got {
+		ids[d.ID] = true
+	}
+	for _, want := range []string{"bade", "badd", "good1"} {
+		if !ids[want] {
+			t.Errorf("missing %s in %v", want, ids)
+		}
+	}
+	if len(ids) != 3 {
+		t.Errorf("ids = %v, want 3 rows", ids)
+	}
+	if other, _ := db.ListWebhookDeliveries(ctx, "api", 10, nil); len(other) != 1 {
+		t.Errorf("another service lost rows: %d", len(other))
+	}
+}
