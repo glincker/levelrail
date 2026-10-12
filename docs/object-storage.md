@@ -3,7 +3,7 @@ title: "Object storage"
 description: Connect S3-compatible buckets for log archive, build cache, and backups.
 ---
 
-<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/minio.svg" alt="MinIO" title="MinIO" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/aws-amazon-simple-storage-service.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/minio/default.svg" alt="MinIO" title="MinIO" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws-amazon-simple-storage-service/default.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
 
 A storage destination is an S3-compatible bucket the control plane can write to. Log archive and the remote build cache use it, and database and volume backups use the same destinations: a destination is a backup target with a few extra options, so anything you connect appears in both **Settings, Storage destinations** and **Settings, Backup targets**.
 

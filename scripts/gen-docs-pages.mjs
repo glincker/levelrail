@@ -68,7 +68,7 @@ ${cmd}
 
 See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
 ${related.length ? `\n## More ${esc(t.category)} templates\n\n${related.map((r) => `- [${esc(r.name)}](/self-host/${r.id})`).join('\n')}\n` : ''}
-All templates are listed in the [self-host gallery](/self-host/index).
+All templates are listed in the [self-host gallery](/self-host).
 `
   fs.writeFileSync(`docs/self-host/${t.id}.mdx`, out)
 }
@@ -147,7 +147,7 @@ fs.writeFileSync(
   }
   fs.writeFileSync(
     'docs/all-pages.mdx',
-    `---\ntitle: "All pages"\ndescription: Every Levelrail documentation page with a one-line summary, grouped by section.\n---\n\nThe complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host/index).\n\n${sections.join('\n')}`,
+    `---\ntitle: "All pages"\ndescription: Every Levelrail documentation page with a one-line summary, grouped by section.\n---\n\nThe complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host).\n\n${sections.join('\n')}`,
   )
 }
 

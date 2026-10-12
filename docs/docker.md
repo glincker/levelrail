@@ -3,7 +3,7 @@ title: "Running Levelrail in Docker"
 description: Run Levelrail control plane and node agent as Docker containers.
 ---
 
-<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/docker.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
 
 Levelrail publishes two images to GitHub Container Registry, built for `linux/amd64` and `linux/arm64`, signed with cosign:
 

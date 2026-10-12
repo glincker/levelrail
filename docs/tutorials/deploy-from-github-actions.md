@@ -5,7 +5,7 @@ sidebarTitle: "Deploy on every git push"
 description: Build an image in GitHub Actions and deploy it to your own server with Levelrail on every push, failing the pipeline if the rollout fails. About 15 minutes.
 ---
 
-<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="/assets/logos/github.svg" alt="GitHub" title="GitHub" width="24" height="24" /></span></div>
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/github/default.svg" alt="GitHub" title="GitHub" width="24" height="24" /></span></div>
 
 By the end of this tutorial every push to `main` builds your image, deploys it to your own server, and turns the workflow red if the rollout fails. Levelrail's deploy action does the last step; you keep your existing build step.
 
