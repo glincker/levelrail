@@ -199,5 +199,5 @@ func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 
 // nodeResourceFromPath is the IAM resource for a node route: "node:<id>".
 func nodeResourceFromPath(r *http.Request) string {
-	return "node:" + r.PathValue("id")
+	return resourcePrefixNode + r.PathValue("id")
 }

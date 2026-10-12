@@ -64,6 +64,9 @@ func (rt *Router) handleHubLocalSources(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	nodeID := r.URL.Query().Get("node_id")
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadGateway, "the node is not currently reachable"), nodeRef(nodeID)) {
+		return
+	}
 	runtime, err := rt.execRuntime(nodeID)
 	if err != nil {
 		rt.logger.Error("api: migration hub: resolve node runtime failed", slog.String("error", err.Error()), slog.String("node_id", nodeID))

@@ -245,6 +245,9 @@ func (rt *Router) handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(req.NodeID)) {
+		return
+	}
 	created, err := rt.models.Create(r.Context(), models.CreateInput{
 		Spec: models.Spec{
 			Name: req.Name, Engine: req.Engine, ModelRef: req.Model, GPUCount: req.GPUCount,

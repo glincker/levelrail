@@ -35,6 +35,9 @@ func (rt *Router) handleModelFitCheck(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "weights_bytes and context_length must not be negative")
 		return
 	}
+	if req.NodeID != nil && !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(*req.NodeID)) {
+		return
+	}
 	rep, err := rt.models.FitCheck(r.Context(), models.FitRequest{
 		Engine: req.Engine, ModelRef: req.Model, Quantization: req.Quantization, ContextLength: req.ContextLength,
 		GPUCount: req.GPUCount, GPUDeviceIDs: req.GPUDeviceIDs, WeightsBytes: req.WeightsBytes, NodeID: req.NodeID,

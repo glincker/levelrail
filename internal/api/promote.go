@@ -137,6 +137,9 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusForbidden, "your account lacks the required ability on the target app (needs "+AbilityDeploy+")"), appRef(res.target.Name)) {
+		return
+	}
 	if promoteNeedsConfirmation(res.env, req.Confirm) {
 		writeEnvironmentConfirmationRequired(w, res.env)
 		return
@@ -214,6 +217,9 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 		writeError(w, http.StatusBadRequest, "to is required")
 		return promoteResolution{}, false
 	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown environment: "+envID), environmentRef(envID)) {
+		return promoteResolution{}, false
+	}
 	env, err := rt.environments.GetEnvironment(r.Context(), envID)
 	if errors.Is(err, store.ErrEnvironmentNotFound) {
 		writeError(w, http.StatusBadRequest, "unknown environment: "+envID)
@@ -235,6 +241,9 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 			writeError(w, http.StatusBadRequest, "target app must be different from the source app")
 			return promoteResolution{}, false
 		}
+		if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "target app not found: "+targetName), appRef(targetName)) {
+			return promoteResolution{}, false
+		}
 		target, err := rt.apps.GetDesiredService(r.Context(), targetName)
 		if errors.Is(err, store.ErrServiceNotFound) {
 			writeError(w, http.StatusNotFound, "target app not found: "+targetName)
@@ -253,6 +262,9 @@ func (rt *Router) resolvePromotion(w http.ResponseWriter, r *http.Request, sourc
 	}
 
 	candidates, err := rt.findPromotionCandidates(r.Context(), sourceName, env)
+	if err == nil {
+		candidates, err = rt.authorizeReadableServices(r, candidates)
+	}
 	if err != nil {
 		rt.logger.Error("api: resolve promotion: list candidates failed", slog.String("error", err.Error()), slog.String("environment_id", envID))
 		writeError(w, http.StatusInternalServerError, "internal error")

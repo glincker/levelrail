@@ -62,6 +62,9 @@ func (rt *Router) handlePreflightNew(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(body.NodeID)) {
+		return
+	}
 	req := preflight.Request{
 		Name: body.Name, NodeID: body.NodeID, Image: body.Image, Port: body.Port, HostPort: body.HostPort,
 		Domains: body.Domains, MemoryBytes: body.MemoryBytes, RequiredEnv: body.RequiredEnv, EnvKeys: body.EnvKeys,

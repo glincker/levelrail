@@ -41,7 +41,7 @@ func (rt *Router) externalViewerTarget(w http.ResponseWriter, r *http.Request, n
 		writeError(w, http.StatusBadRequest, "key browser is not supported for engine "+rec.Engine)
 		return dbviewer.Target{}, desired, true, false
 	}
-	runtime, rok := rt.externalNodeRuntime(w, rec.NodeID)
+	runtime, rok := rt.externalNodeRuntime(w, r, rec.NodeID)
 	if !rok {
 		return dbviewer.Target{}, desired, true, false
 	}

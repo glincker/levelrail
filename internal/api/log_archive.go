@@ -77,9 +77,12 @@ type logArchivePolicyRequest struct {
 	Enabled       *bool  `json:"enabled,omitempty"`
 }
 
-func (rt *Router) appExistsOrEmpty(w http.ResponseWriter, r *http.Request, app string) bool {
+func (rt *Router) authorizeAppOrEmpty(w http.ResponseWriter, r *http.Request, app string) bool {
 	if app == "" {
 		return true
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(app)) {
+		return false
 	}
 	_, found, err := rt.lookupAppResource(r.Context(), app)
 	if err != nil {
@@ -148,7 +151,7 @@ func (rt *Router) handleSetLogArchivePolicy(w http.ResponseWriter, r *http.Reque
 	if _, ok := rt.loadStorageTarget(w, r, req.TargetID); !ok {
 		return
 	}
-	if !rt.appExistsOrEmpty(w, r, req.AppName) {
+	if !rt.authorizeAppOrEmpty(w, r, req.AppName) {
 		return
 	}
 
@@ -180,7 +183,11 @@ func (rt *Router) handleDeleteLogArchivePolicy(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	err := d.Archive.DeleteLogArchivePolicy(r.Context(), r.URL.Query().Get("app"))
+	app := r.URL.Query().Get("app")
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "log archive policy not found"), appRef(app)) {
+		return
+	}
+	err := d.Archive.DeleteLogArchivePolicy(r.Context(), app)
 	if errors.Is(err, store.ErrLogArchivePolicyNotFound) {
 		writeError(w, http.StatusNotFound, "log archive policy not found")
 		return
@@ -222,7 +229,7 @@ func (rt *Router) handleLogArchiveDump(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "target_id is required")
 		return
 	}
-	if !rt.appExistsOrEmpty(w, r, req.AppName) {
+	if !rt.authorizeAppOrEmpty(w, r, req.AppName) {
 		return
 	}
 	run, err := d.Archiver.StartDump(r.Context(), objectstore.DumpRequest{TargetID: req.TargetID, AppName: req.AppName, From: from, To: to})
@@ -253,7 +260,11 @@ func (rt *Router) handleListLogArchiveRuns(w http.ResponseWriter, r *http.Reques
 		limit = n
 	}
 	all := r.URL.Query().Get("all") == "true"
-	runs, err := d.Archive.ListLogArchiveRuns(r.Context(), r.URL.Query().Get("app"), all, limit)
+	app := r.URL.Query().Get("app")
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "app not found"), appRef(app)) {
+		return
+	}
+	runs, err := d.Archive.ListLogArchiveRuns(r.Context(), app, all, limit)
 	if err != nil {
 		rt.logger.Error("api: list log archive runs failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -283,6 +294,9 @@ func (rt *Router) handleListLogArchiveObjects(w http.ResponseWriter, r *http.Req
 		return
 	}
 	prefix := d.ArchiveRoot + "/"
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "app not found"), appRef(q.Get("app"))) {
+		return
+	}
 	if app := q.Get("app"); app != "" {
 		prefix = objectstore.AppPrefix(d.ArchiveRoot, app)
 	}

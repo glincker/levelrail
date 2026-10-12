@@ -80,6 +80,8 @@ func (rt *Router) applyCloneExtras(ctx context.Context, source store.DesiredServ
 	return nil
 }
 
+const errCloneEnvironmentMsg = "environment_id must be an environment of the source app's project"
+
 // validateCloneEnvironment checks envID before anything is written.
 func (rt *Router) validateCloneEnvironment(ctx context.Context, source store.DesiredService, envID string) error {
 	if envID == "" {
@@ -87,7 +89,7 @@ func (rt *Router) validateCloneEnvironment(ctx context.Context, source store.Des
 	}
 	env, err := rt.environments.GetEnvironment(ctx, envID)
 	if errors.Is(err, store.ErrEnvironmentNotFound) || (err == nil && env.ProjectID != source.ProjectID) {
-		return errCloneRequest("environment_id must be an environment of the source app's project")
+		return errCloneRequest(errCloneEnvironmentMsg)
 	}
 	if err != nil {
 		return fmt.Errorf("load environment %q: %w", envID, err)

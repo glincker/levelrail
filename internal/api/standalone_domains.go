@@ -295,7 +295,7 @@ func (rt *Router) handleValidateStandaloneDomain(w http.ResponseWriter, r *http.
 		}
 	}
 	req.apply(&d)
-	resp.Assessment, resp.TargetURL, resp.TargetError = rt.assessStandalone(r.Context(), &d)
+	resp.Assessment, resp.TargetURL, resp.TargetError = rt.assessStandalone(r, &d)
 	writeJSON(w, http.StatusOK, resp)
 }
 
@@ -310,7 +310,7 @@ type standaloneValidation struct {
 // prepareStandalone validates d's target and options in place and writes
 // the error or confirmation response itself; ok is false when it did.
 func (rt *Router) prepareStandalone(w http.ResponseWriter, r *http.Request, d *store.StandaloneDomain, confirm bool) bool {
-	a, _, msg := rt.assessStandalone(r.Context(), d)
+	a, _, msg := rt.assessStandalone(r, d)
 	if msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
 		return false

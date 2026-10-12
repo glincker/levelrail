@@ -120,6 +120,16 @@ func (rt *Router) decodeExternalDatabaseRequest(w http.ResponseWriter, r *http.R
 		return req, false
 	}
 	req.Name = strings.TrimSpace(req.Name)
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadGateway, msgExternalNodeUnreachable), nodeRef(req.NodeID)) {
+		return req, false
+	}
+	if err := rt.validateProjectID(r.Context(), req.ProjectID); errors.Is(err, store.ErrProjectNotFound) {
+		writeError(w, http.StatusBadRequest, "unknown project_id")
+		return req, false
+	} else if err != nil {
+		rt.internalError(w, "api: external database: check project failed", err, slog.String("project_id", req.ProjectID))
+		return req, false
+	}
 	return req, true
 }
 
@@ -427,7 +437,7 @@ func (rt *Router) handleRevealExternalDatabasePassword(w http.ResponseWriter, r 
 // GET /api/v1/external-databases/candidates?node_id=. It reads container
 // metadata only.
 func (rt *Router) handleListExternalDatabaseCandidates(w http.ResponseWriter, r *http.Request) {
-	runtime, ok := rt.externalNodeRuntime(w, r.URL.Query().Get("node_id"))
+	runtime, ok := rt.externalNodeRuntime(w, r, r.URL.Query().Get("node_id"))
 	if !ok {
 		return
 	}
@@ -442,15 +452,20 @@ func (rt *Router) handleListExternalDatabaseCandidates(w http.ResponseWriter, r 
 	writeJSON(w, http.StatusOK, cands)
 }
 
-func (rt *Router) externalNodeRuntime(w http.ResponseWriter, nodeID string) (docker.Runtime, bool) {
+const msgExternalNodeUnreachable = "the node is not currently reachable"
+
+func (rt *Router) externalNodeRuntime(w http.ResponseWriter, r *http.Request, nodeID string) (docker.Runtime, bool) {
 	if rt.execRuntime == nil {
 		writeError(w, http.StatusNotImplemented, "docker access is not configured on this control plane")
+		return nil, false
+	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadGateway, msgExternalNodeUnreachable), nodeRef(nodeID)) {
 		return nil, false
 	}
 	runtime, err := rt.execRuntime(nodeID)
 	if err != nil {
 		rt.logger.Warn("api: external database: resolve node runtime failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
-		writeError(w, http.StatusBadGateway, "the node is not currently reachable")
+		writeError(w, http.StatusBadGateway, msgExternalNodeUnreachable)
 		return nil, false
 	}
 	return runtime, true
@@ -468,7 +483,7 @@ func (rt *Router) handleAdoptExternalDatabase(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusBadRequest, "container is required")
 		return
 	}
-	runtime, ok := rt.externalNodeRuntime(w, req.NodeID)
+	runtime, ok := rt.externalNodeRuntime(w, r, req.NodeID)
 	if !ok {
 		return
 	}

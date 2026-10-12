@@ -54,6 +54,9 @@ func (rt *Router) handleStartDrain(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: drain node: look up node failed", err, slog.String("node_id", id))
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown target_node_id"), nodeRef(target)) {
+		return
+	}
 	if target != "" {
 		if target == id {
 			writeError(w, http.StatusBadRequest, "target_node_id must be a different node")

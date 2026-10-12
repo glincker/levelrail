@@ -144,6 +144,13 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		rt.internalError(w, "api: deploy compose: list previous services failed", err, slog.String("name", name))
 		return composeDeployResponse{}, false
 	}
+	serviceNames := make([]string, 0, len(services))
+	for _, svc := range services {
+		serviceNames = append(serviceNames, svc.Name)
+	}
+	if !rt.authorizeServiceNames(w, r, name, serviceNames) {
+		return composeDeployResponse{}, false
+	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
 	if err := rt.appCompose.SaveApp(r.Context(), store.App{ID: name, Name: name, CreatedAt: now, UpdatedAt: now}); err != nil {

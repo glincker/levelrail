@@ -323,6 +323,9 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 	if rule.Kind == alerting.KindBackupMissing {
 		switch rule.BackupResourceKind {
 		case store.BackupResourceKindDatabase:
+			if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown backup_database_name"), databaseRef(rule.BackupDatabaseName)) {
+				return false
+			}
 			if _, err := rt.databases.GetDesiredDatabase(r.Context(), rule.BackupDatabaseName); errors.Is(err, store.ErrDatabaseNotFound) {
 				writeError(w, http.StatusBadRequest, "unknown backup_database_name")
 				return false
