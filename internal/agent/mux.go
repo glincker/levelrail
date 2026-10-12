@@ -123,6 +123,8 @@ type mux struct {
 	onGPU func(*agentpb.GPUReport)
 
 	onHello func(*agentpb.AgentInfo)
+
+	onHostReport func(*agentpb.HostReport)
 }
 
 // frameSub is one in-flight multi-frame operation's control-plane-side
@@ -167,9 +169,10 @@ func newMux(stream sessionStream) *mux {
 // muxHandlers are optional callbacks for unprompted agent frames. They run
 // on recvLoop and must not block.
 type muxHandlers struct {
-	gpu       func(*agentpb.GPUReport)
-	heartbeat func()
-	hello     func(*agentpb.AgentInfo)
+	gpu        func(*agentpb.GPUReport)
+	heartbeat  func()
+	hello      func(*agentpb.AgentInfo)
+	hostReport func(*agentpb.HostReport)
 }
 
 // newMuxWithHandlers is newMux plus h. They are passed here, before
@@ -186,6 +189,7 @@ func newMuxWithHandlers(stream sessionStream, h muxHandlers) *mux {
 	m.onHeartbeat = h.heartbeat
 	m.onGPU = h.gpu
 	m.onHello = h.hello
+	m.onHostReport = h.hostReport
 	go m.recvLoop()
 	return m
 }
@@ -221,6 +225,10 @@ func (m *mux) recvLoop() {
 		case *agentpb.AgentMessage_Hello:
 			if m.onHello != nil {
 				m.onHello(p.Hello)
+			}
+		case *agentpb.AgentMessage_HostReport:
+			if m.onHostReport != nil {
+				m.onHostReport(p.HostReport)
 			}
 		}
 	}

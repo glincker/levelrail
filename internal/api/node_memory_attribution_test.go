@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -61,5 +62,55 @@ func TestUnmanagedUsage(t *testing.T) {
 	}
 	if len(top) != 2 || top[0].Name != "old-db" || top[1].Name != "coolify-proxy" {
 		t.Fatalf("top = %+v", top)
+	}
+}
+
+type fakeHostReports map[string]agent.HostReport
+
+func (f fakeHostReports) Get(id string) (agent.HostReport, bool) {
+	r, ok := f[id]
+	return r, ok
+}
+
+func TestApplyRemoteMemoryAttribution(t *testing.T) {
+	const gb = float64(1 << 30)
+	svc := 3 * gb
+	report := agent.HostReport{
+		MemoryTotalBytes: 16 << 30, MemoryAvailableBytes: 8 << 30,
+		AgentRSSBytes: 1 << 30, OtherContainersMemoryBytes: 2 << 30,
+		OtherContainers: []agent.UnmanagedContainer{{Name: "proxy", MemoryBytes: 2 << 30}},
+	}
+	tests := []struct {
+		name       string
+		reports    NodeHostReports
+		wantFilled bool
+	}{
+		{"agent report fills the split", fakeHostReports{"n1": report}, true},
+		{"old agent keeps old shape", fakeHostReports{}, false},
+		{"no source configured", nil, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := &Router{nodeHostReports: tt.reports}
+			row := &nodeResourceUsageResource{NodeID: "n1", MemoryUsageBytes: &svc}
+			rt.applyRemoteMemoryAttribution(row)
+			if !tt.wantFilled {
+				if row.LevelrailMemoryBytes != nil || row.SystemMemoryBytes != nil || row.MemoryTotalBytes != nil {
+					t.Fatalf("row = %+v, want untouched", row)
+				}
+				return
+			}
+			if *row.MemoryTotalBytes != 16*gb || *row.LevelrailMemoryBytes != 1*gb ||
+				*row.OtherContainersMemoryBytes != 2*gb || *row.SystemMemoryBytes != 2*gb {
+				t.Fatalf("row = lr %v oc %v sys %v total %v", *row.LevelrailMemoryBytes, *row.OtherContainersMemoryBytes, *row.SystemMemoryBytes, *row.MemoryTotalBytes)
+			}
+			used := *row.MemoryTotalBytes - *row.MemoryAvailableBytes
+			if got := svc + *row.LevelrailMemoryBytes + *row.OtherContainersMemoryBytes + *row.SystemMemoryBytes; got != used {
+				t.Fatalf("segments sum %v, want used %v", got, used)
+			}
+			if len(row.OtherContainers) != 1 || row.OtherContainers[0].Name != "proxy" {
+				t.Fatalf("other containers = %+v", row.OtherContainers)
+			}
+		})
 	}
 }
