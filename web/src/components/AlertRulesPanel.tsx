@@ -1,17 +1,13 @@
-import { Fragment, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { Badge, type badgeVariants } from '@/components/ui/badge'
-import type { VariantProps } from 'class-variance-authority'
+import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
+import {
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
@@ -21,239 +17,24 @@ import { RuleNoiseDialog } from './RuleNoiseDialog'
 import { RecentChanges } from './RecentChanges'
 import { SilenceRuleMenu } from './SilenceRuleMenu'
 import { SloSuggestion } from './SloSuggestion'
+import {
+  STATE_BADGE_VARIANT,
+  STATE_LABEL,
+  formatCondition,
+  formatDate,
+  formatLastValue,
+  maskNotifyUrl,
+  ruleState,
+  type RuleState,
+} from './alertRulesFormat'
+import { StateDot } from './AlertStateDot'
 import { useAlertRules } from '../queries/alerts'
 import type { AlertRule } from '../types/alerts'
 import type { AppVolume } from '../types/appDetail'
 
-// Alert rules section for the app detail page, wired against
-// GET/POST/DELETE /api/v1/apps/{name}/alerts. This is the dashboard-side
-// half of a known gap: the backend already evaluates threshold and
-// crashloop rules and dispatches webhook/Slack/Discord notifications,
-// but until this panel there was no way to see or manage a rule without
-// leaving the dashboard.
-//
-// One honest gap this panel does NOT paper over: the backend also
-// attaches the last 200 lines of a crashlooping container's logs to
-// the *notification event* (internal/alerting's Engine.dispatch,
-// fetchRecentLogLines), sent to whatever notify_url is configured. There
-// is no API endpoint that returns "the log lines attached to the most
-// recent firing event" back to this dashboard, only to the outbound
-// webhook payload, so a firing crashloop rule below links to this app's
-// own live/historical log view (/apps/$name/logs) instead of trying to
-// reconstruct or fabricate the exact lines that fired. That is the real,
-// buildable thing this API surface supports today.
-
-const STATE_LABEL = {
-  firing: 'Firing',
-  pending: 'Pending',
-  ok: 'OK',
-} as const
-
-type RuleState = keyof typeof STATE_LABEL
-
-// Sourced from the shared destructive/warning/success variants in
-// badgeVariants (components/ui/badge.tsx) rather than a locally hand-rolled
-// class string, same as ConditionsPanel's STATUS_BADGE_VARIANT map.
-const STATE_BADGE_VARIANT: Record<
-  RuleState,
-  VariantProps<typeof badgeVariants>['variant']
-> = {
-  firing: 'destructive',
-  pending: 'warning',
-  ok: 'success',
-}
-
-// The solid dot color that pairs with STATE_BADGE_CLASS above, used both
-// inside each row's state badge and in the header's firing/pending/ok
-// summary counts, so a rule's state reads as a color before the label
-// text is even parsed.
-const STATE_DOT_CLASS: Record<RuleState, string> = {
-  firing: 'bg-red-600 dark:bg-red-400',
-  pending: 'bg-amber-600 dark:bg-amber-400',
-  ok: 'bg-green-600 dark:bg-green-400',
-}
-
-// A firing rule gets a pulsing dot, not just a static one: it is the
-// state most likely to need immediate attention, and a still dashboard
-// full of quiet badges is exactly the "bolted on" observability feel
-// this project set out to avoid, the kind Coolify/Dokploy have.
-// Pending/ok stay static so the motion budget on this page is spent
-// only where it is meaningful.
-function StateDot({ state }: { state: RuleState }) {
-  return (
-    <span className="relative inline-flex size-2 shrink-0" aria-hidden="true">
-      {state === 'firing' ? (
-        <span
-          className={`absolute inline-flex size-full animate-ping rounded-full opacity-75 ${STATE_DOT_CLASS[state]}`}
-        />
-      ) : null}
-      <span
-        className={`relative inline-flex size-2 rounded-full ${STATE_DOT_CLASS[state]}`}
-      />
-    </span>
-  )
-}
-
-// firing implies a non-null pending_since too (advanceState,
-// internal/alerting/evaluate.go, keeps the original PendingSince set
-// once a rule transitions to firing rather than clearing it), so firing
-// is checked first: pending_since alone only means "pending" once
-// firing is ruled out.
-function ruleState(rule: AlertRule): RuleState {
-  if (rule.firing) {
-    return 'firing'
-  }
-  if (rule.pending_since) {
-    return 'pending'
-  }
-  return 'ok'
-}
-
-function formatCondition(rule: AlertRule): string {
-  if (rule.kind === 'threshold') {
-    const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
-    return `${rule.metric ?? '?'} ${rule.comparator ?? '?'} ${rule.threshold}${forPart}`
-  }
-  if (rule.kind === 'cert_expiry') {
-    return 'any certificate expiring soon or expired (platform-wide)'
-  }
-  if (rule.kind === 'patch_status') {
-    return 'any node over its pending security-patch threshold (platform-wide)'
-  }
-  if (rule.kind === 'node_disk_space') {
-    return 'any node over its disk-usage percentage threshold (platform-wide)'
-  }
-  if (rule.kind === 'node_offline') {
-    return 'any node offline (platform-wide)'
-  }
-  if (rule.kind === 'node_cert_expiring') {
-    return "any node's agent certificate close to expiry or expired (platform-wide)"
-  }
-  if (rule.kind === 'budget_threshold') {
-    return 'any project or team budget at its warning level, over its limit or forecast to overrun'
-  }
-  if (rule.kind === 'version_skew') {
-    return "running build behind the configured update channel's latest release"
-  }
-  if (rule.kind === 'node_resource_usage') {
-    return 'any node over its summed CPU or memory threshold (platform-wide)'
-  }
-  if (rule.kind === 'scheduled_task_failure') {
-    return `job ${rule.scheduled_task_id ?? '?'} fails ${rule.restart_count_threshold} runs in a row`
-  }
-  if (rule.kind === 'scheduled_task_missed') {
-    return `job ${rule.scheduled_task_id ?? '?'} misses scheduled runs`
-  }
-  if (rule.kind === 'scheduled_task_running_long') {
-    return `job ${rule.scheduled_task_id ?? '?'} runs past its warning threshold`
-  }
-  if (rule.kind === 'domain_health') {
-    const forPart = rule.for_duration ? ` for ${rule.for_duration}` : ''
-    return `any of this app's own domains not resolving correctly or pointing elsewhere${forPart}`
-  }
-  if (rule.kind === 'slo_burn') {
-    const slo = rule.slo
-    if (!slo) return 'SLO burn rate'
-    const what =
-      slo.objective === 'latency'
-        ? `${slo.target}% of requests under ${slo.latency_ms ?? '?'}ms`
-        : `${slo.target}% availability`
-    return `${what}, alerts on 30 day error budget burn`
-  }
-  if (rule.kind === 'log_archive_stale') {
-    return `a log archive policy failing or not succeeding within ${rule.for_duration || 'its default age limit'} (platform-wide)`
-  }
-  if (rule.kind === 'control_plane_backup_stale') {
-    return `control plane's newest snapshot older than ${rule.for_duration || '3d (default)'} (platform-wide)`
-  }
-  if (rule.kind === 'backup_missing') {
-    const target =
-      rule.backup_resource_kind === 'volume'
-        ? `${rule.backup_service_name ?? '?'}/${rule.backup_volume_name ?? '?'}`
-        : (rule.backup_database_name ?? '?')
-    const grace = rule.for_duration || '6h (default)'
-    return `${target} has no successful backup within its schedule plus ${grace}`
-  }
-  return `${rule.restart_count_threshold} restarts in ${rule.restart_window ?? '?'}`
-}
-
-function formatDate(iso: string | undefined, fallback: string): string {
-  return iso ? new Date(iso).toLocaleString() : fallback
-}
-
-function formatLastValue(rule: AlertRule): string {
-  if (rule.last_value === undefined) {
-    return '-'
-  }
-  if (rule.kind === 'crashloop') {
-    return `${rule.last_value} restarts`
-  }
-  if (rule.kind === 'cert_expiry') {
-    return `${rule.last_value.toFixed(1)} days to earliest expiry`
-  }
-  if (rule.kind === 'patch_status') {
-    return `${rule.last_value} security patches (highest across nodes)`
-  }
-  if (rule.kind === 'node_disk_space') {
-    return `${rule.last_value.toFixed(1)}% disk used (highest across nodes)`
-  }
-  if (rule.kind === 'node_offline') {
-    return `${rule.last_value} node(s) offline`
-  }
-  if (rule.kind === 'node_cert_expiring') {
-    return `${rule.last_value.toFixed(1)} days left (soonest node certificate)`
-  }
-  if (rule.kind === 'version_skew') {
-    return rule.last_value ? 'update available' : 'up to date'
-  }
-  if (rule.kind === 'budget_threshold') {
-    return `${rule.last_value.toFixed(0)}% of the most used budget`
-  }
-  if (rule.kind === 'node_resource_usage') {
-    // Only the CPU signal is tracked here; memory has no comparable unit
-    // to take a single cross-node max with, see EvaluateNodeResourceUsage's
-    // own doc comment.
-    return `${rule.last_value.toFixed(1)}% CPU used (highest across nodes)`
-  }
-  if (rule.kind === 'scheduled_task_failure') {
-    return `${rule.last_value} consecutive failures`
-  }
-  if (rule.kind === 'scheduled_task_missed') {
-    return `${rule.last_value} missed runs in a row`
-  }
-  if (rule.kind === 'scheduled_task_running_long') {
-    return `running for ${Math.round(rule.last_value)}s`
-  }
-  if (rule.kind === 'domain_health') {
-    return `${rule.last_value} domain(s) unhealthy`
-  }
-  if (rule.kind === 'slo_burn') {
-    return `${rule.last_value.toFixed(1)}x burn rate (fastest tier)`
-  }
-  if (rule.kind === 'log_archive_stale') {
-    return `${rule.last_value} log archive policy(ies) unhealthy`
-  }
-  if (rule.kind === 'control_plane_backup_stale') {
-    return `${rule.last_value.toFixed(1)}h since newest control plane snapshot`
-  }
-  if (rule.kind === 'backup_missing') {
-    return `${rule.last_value.toFixed(1)}h since last successful backup`
-  }
-  return String(rule.last_value)
-}
-
-// Shows enough of notify_url to identify the destination (host, plus a
-// masked path) without printing the full URL: a webhook URL frequently
-// embeds a bearer secret in its path (Slack/Discord incoming webhooks
-// both do exactly this), so this panel never renders one in full.
-function maskNotifyUrl(url: string): string {
-  try {
-    const parsed = new URL(url)
-    return `${parsed.host}/••••`
-  } catch {
-    return '••••'
-  }
-}
+// Alert rules for the app detail page. A firing crashloop rule links to the
+// app's own log view: the API has no endpoint returning the log lines that
+// were attached to the outbound notification event.
 
 function NotifyChannelCell({ rule }: { rule: AlertRule }) {
   if (!rule.notify_url) {
@@ -272,45 +53,30 @@ function NotifyChannelCell({ rule }: { rule: AlertRule }) {
   )
 }
 
-function RuleRow({
-  appName,
-  rule,
-  volumes,
-}: {
-  appName: string
-  rule: AlertRule
-  volumes: AppVolume[] | undefined
-}) {
-  const state = ruleState(rule)
-  const showLogsLink = rule.kind === 'crashloop' && state === 'firing'
-
-  return (
-    <Fragment>
-      <TableRow>
-        <TableCell className="font-medium text-foreground">
+function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
+  return [
+    {
+      id: 'name',
+      header: 'Name',
+      primary: true,
+      cell: (rule) => (
+        <span className="font-medium text-foreground">
           {rule.name}
           {!rule.enabled ? (
             <Badge variant="muted" className="ml-2">
               Disabled
             </Badge>
           ) : null}
-        </TableCell>
-        <TableCell>
-          <Badge
-            variant={rule.kind === 'crashloop' ? 'destructive' : 'outline'}
-          >
-            {rule.kind}
-          </Badge>
-        </TableCell>
-        <TableCell className="max-w-[20rem] truncate font-mono text-xs text-muted-foreground">
-          {rule.log_rule ? (
-            <LogRuleCondition rule={rule} />
-          ) : (
-            formatCondition(rule)
-          )}
-        </TableCell>
-        <TableCell>
-          <div className="flex flex-col gap-1">
+        </span>
+      ),
+    },
+    {
+      id: 'state',
+      header: 'State',
+      cell: (rule) => {
+        const state: RuleState = ruleState(rule)
+        return (
+          <div className="flex flex-col items-start gap-1">
             <Badge variant={STATE_BADGE_VARIANT[state]}>
               <StateDot state={state} />
               {STATE_LABEL[state]}
@@ -320,7 +86,7 @@ function RuleRow({
                 Silenced
               </Badge>
             ) : null}
-            {showLogsLink ? (
+            {rule.kind === 'crashloop' && state === 'firing' ? (
               <Link
                 to="/apps/$name/logs"
                 params={{ name: appName }}
@@ -330,44 +96,58 @@ function RuleRow({
               </Link>
             ) : null}
           </div>
-        </TableCell>
-        <TableCell className="text-muted-foreground">
+        )
+      },
+    },
+    {
+      id: 'kind',
+      header: 'Kind',
+      priority: 2,
+      cell: (rule) => (
+        <Badge variant={rule.kind === 'crashloop' ? 'destructive' : 'outline'}>
+          {rule.kind}
+        </Badge>
+      ),
+    },
+    {
+      id: 'condition',
+      header: 'Condition',
+      priority: 2,
+      cell: (rule) => (
+        <span className="block font-mono text-xs break-words text-muted-foreground">
+          {rule.log_rule ? (
+            <LogRuleCondition rule={rule} />
+          ) : (
+            formatCondition(rule)
+          )}
+        </span>
+      ),
+    },
+    {
+      id: 'lastEvaluated',
+      header: 'Last evaluated',
+      priority: 3,
+      cell: (rule) => (
+        <span className="text-muted-foreground">
           {formatDate(rule.last_evaluated_at, 'Never')}
-        </TableCell>
-        <TableCell className="text-muted-foreground">
-          {formatLastValue(rule)}
-        </TableCell>
-        <TableCell>
-          <NotifyChannelCell rule={rule} />
-        </TableCell>
-        <TableCell className="text-right">
-          <div className="flex flex-wrap justify-end gap-2">
-            <SilenceRuleMenu
-              appName={appName}
-              ruleId={rule.id}
-              ruleName={rule.name}
-            />
-            <RuleNoiseDialog appName={appName} rule={rule} />
-            {rule.log_rule ? null : (
-              <EditAlertRuleDialog
-                appName={appName}
-                rule={rule}
-                volumes={volumes}
-              />
-            )}
-            <DeleteAlertRuleDialog appName={appName} rule={rule} />
-          </div>
-        </TableCell>
-      </TableRow>
-      {state === 'firing' ? (
-        <TableRow>
-          <TableCell colSpan={8} className="bg-muted/30 whitespace-normal">
-            <RecentChanges app={appName} />
-          </TableCell>
-        </TableRow>
-      ) : null}
-    </Fragment>
-  )
+        </span>
+      ),
+    },
+    {
+      id: 'lastValue',
+      header: 'Last value',
+      priority: 3,
+      cell: (rule) => (
+        <span className="text-muted-foreground">{formatLastValue(rule)}</span>
+      ),
+    },
+    {
+      id: 'notify',
+      header: 'Notify',
+      priority: 3,
+      cell: (rule) => <NotifyChannelCell rule={rule} />,
+    },
+  ]
 }
 
 // Small "N firing / N pending / N ok" chips above the table, so a rule's
@@ -404,8 +184,11 @@ export function AlertRulesPanel({
   appName: string
   volumes?: AppVolume[]
 }) {
+  const { t } = useTranslation('common')
   const { data, isLoading, error } = useAlertRules(appName)
   const rules = data ?? []
+  const columns = useMemo(() => buildColumns(appName), [appName])
+  const anyFiring = rules.some((r) => ruleState(r) === 'firing')
 
   return (
     <section className="rounded-lg border border-border p-4">
@@ -433,7 +216,7 @@ export function AlertRulesPanel({
 
       <SloSuggestion appName={appName} rules={rules} />
 
-      <div className="mt-3">
+      <div className="mt-3 space-y-3">
         {isLoading ? (
           <TableSkeleton columnCount={8} rowCount={3} />
         ) : error ? (
@@ -448,32 +231,37 @@ export function AlertRulesPanel({
             }
           />
         ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Kind</TableHead>
-                  <TableHead>Condition</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Last evaluated</TableHead>
-                  <TableHead>Last value</TableHead>
-                  <TableHead>Notify</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rules.map((rule) => (
-                  <RuleRow
-                    key={rule.id}
+          <>
+            <ResponsiveTable
+              rows={rules}
+              columns={columns}
+              getRowId={(rule) => rule.id}
+              ariaLabel={t('tableLabels.alertRules')}
+              renderActions={(rule) => (
+                <span className="flex flex-wrap justify-end gap-2">
+                  <SilenceRuleMenu
                     appName={appName}
-                    rule={rule}
-                    volumes={volumes}
+                    ruleId={rule.id}
+                    ruleName={rule.name}
                   />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                  <RuleNoiseDialog appName={appName} rule={rule} />
+                  {rule.log_rule ? null : (
+                    <EditAlertRuleDialog
+                      appName={appName}
+                      rule={rule}
+                      volumes={volumes}
+                    />
+                  )}
+                  <DeleteAlertRuleDialog appName={appName} rule={rule} />
+                </span>
+              )}
+            />
+            {anyFiring ? (
+              <div className="rounded-lg border border-border bg-muted/30 p-3">
+                <RecentChanges app={appName} />
+              </div>
+            ) : null}
+          </>
         )}
       </div>
     </section>

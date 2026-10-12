@@ -2,13 +2,9 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -165,6 +161,72 @@ export function JobRunsPanel({ appName }: { appName: string }) {
   )
   const runs = data ?? []
 
+  const columns: ResponsiveColumn<JobRun>[] = [
+    {
+      id: 'job',
+      header: t('history.columns.job'),
+      primary: true,
+      cell: (run) => (
+        <span className="text-xs">{run.job_name || run.task_id}</span>
+      ),
+    },
+    {
+      id: 'status',
+      header: t('history.columns.status'),
+      cell: (run) => <JobStatusBadge status={run.status} />,
+    },
+    {
+      id: 'started',
+      header: t('history.columns.started'),
+      priority: 2,
+      cell: (run) => (
+        <span className="text-xs text-muted-foreground">
+          {new Date(run.started_at).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      id: 'trigger',
+      header: t('history.columns.trigger'),
+      priority: 2,
+      cell: (run) => (
+        <Badge variant="muted">{t(`trigger.${run.trigger}`)}</Badge>
+      ),
+    },
+    {
+      id: 'duration',
+      header: t('history.columns.duration'),
+      priority: 3,
+      cell: (run) => (
+        <span className="text-xs">{formatDuration(run.duration_ms)}</span>
+      ),
+    },
+    {
+      id: 'exit',
+      header: t('history.columns.exit'),
+      priority: 3,
+      cell: (run) => (
+        <span className="font-mono text-xs">{run.exit_code ?? '-'}</span>
+      ),
+    },
+    {
+      id: 'attempts',
+      header: t('history.columns.attempts'),
+      priority: 3,
+      cell: (run) => <span className="text-xs">{run.attempts}</span>,
+    },
+    {
+      id: 'node',
+      header: t('history.columns.node'),
+      priority: 3,
+      cell: (run) => (
+        <span className="text-xs text-muted-foreground">
+          {run.node_id || t('localNode')}
+        </span>
+      ),
+    },
+  ]
+
   return (
     <section className="rounded-lg border border-border p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -212,56 +274,15 @@ export function JobRunsPanel({ appName }: { appName: string }) {
             {status === ALL ? t('history.empty') : t('history.emptyFiltered')}
           </p>
         ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('history.columns.started')}</TableHead>
-                  <TableHead>{t('history.columns.job')}</TableHead>
-                  <TableHead>{t('history.columns.status')}</TableHead>
-                  <TableHead>{t('history.columns.trigger')}</TableHead>
-                  <TableHead>{t('history.columns.duration')}</TableHead>
-                  <TableHead>{t('history.columns.exit')}</TableHead>
-                  <TableHead>{t('history.columns.attempts')}</TableHead>
-                  <TableHead>{t('history.columns.node')}</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {runs.map((run) => (
-                  <TableRow key={run.id}>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(run.started_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {run.job_name || run.task_id}
-                    </TableCell>
-                    <TableCell>
-                      <JobStatusBadge status={run.status} />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="muted">
-                        {t(`trigger.${run.trigger}`)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs">
-                      {formatDuration(run.duration_ms)}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {run.exit_code ?? '-'}
-                    </TableCell>
-                    <TableCell className="text-xs">{run.attempts}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {run.node_id || t('localNode')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <RunLogsDialog appName={appName} run={run} />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <ResponsiveTable
+            rows={runs}
+            columns={columns}
+            getRowId={(run) => run.id}
+            ariaLabel={t('history.title')}
+            renderActions={(run) => (
+              <RunLogsDialog appName={appName} run={run} />
+            )}
+          />
         )}
       </div>
       <p className="mt-3 text-xs text-muted-foreground">

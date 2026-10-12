@@ -1,13 +1,10 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FlagIcon } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Switch } from '@/components/ui/switch'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/components/ui/toast'
@@ -118,32 +115,41 @@ function RolloutInput({
   )
 }
 
-function FlagRow({ appName, flag }: { appName: string; flag: FeatureFlag }) {
-  return (
-    <TableRow>
-      <TableCell className="font-mono text-xs text-foreground">
-        {flag.key}
-      </TableCell>
-      <TableCell className="text-sm text-foreground">{flag.name}</TableCell>
-      <TableCell>
-        <EnabledToggle appName={appName} flag={flag} />
-      </TableCell>
-      <TableCell>
-        <RolloutInput appName={appName} flag={flag} />
-      </TableCell>
-      <TableCell className="text-right">
-        <div className="flex justify-end gap-2">
-          <FeatureFlagDialog appName={appName} flag={flag} />
-          <DeleteFeatureFlagDialog appName={appName} flag={flag} />
-        </div>
-      </TableCell>
-    </TableRow>
-  )
-}
-
 export function FeatureFlagsPanel({ appName }: { appName: string }) {
   const { data, isLoading, error } = useFeatureFlags(appName)
   const flags = data ?? []
+  const { t } = useTranslation('common')
+  const columns = useMemo<ResponsiveColumn<FeatureFlag>[]>(
+    () => [
+      {
+        id: 'key',
+        header: 'Key',
+        primary: true,
+        cell: (f) => (
+          <span className="font-mono text-xs break-all text-foreground">
+            {f.key}
+          </span>
+        ),
+      },
+      {
+        id: 'name',
+        header: 'Name',
+        priority: 2,
+        cell: (f) => <span className="text-foreground">{f.name}</span>,
+      },
+      {
+        id: 'enabled',
+        header: 'Enabled',
+        cell: (f) => <EnabledToggle appName={appName} flag={f} />,
+      },
+      {
+        id: 'rollout',
+        header: 'Rollout',
+        cell: (f) => <RolloutInput appName={appName} flag={f} />,
+      },
+    ],
+    [appName],
+  )
 
   return (
     <section className="rounded-lg border border-border p-4">
@@ -178,24 +184,18 @@ export function FeatureFlagsPanel({ appName }: { appName: string }) {
             action={<FeatureFlagDialog appName={appName} />}
           />
         ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Key</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Enabled</TableHead>
-                  <TableHead>Rollout</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {flags.map((flag) => (
-                  <FlagRow key={flag.id} appName={appName} flag={flag} />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <ResponsiveTable
+            rows={flags}
+            columns={columns}
+            getRowId={(f) => f.id}
+            ariaLabel={t('tableLabels.featureFlags')}
+            renderActions={(f) => (
+              <span className="flex flex-wrap justify-end gap-2">
+                <FeatureFlagDialog appName={appName} flag={f} />
+                <DeleteFeatureFlagDialog appName={appName} flag={f} />
+              </span>
+            )}
+          />
         )}
       </div>
     </section>
