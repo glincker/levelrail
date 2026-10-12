@@ -19,7 +19,10 @@ import type {
   NodeProviderSizeResource,
   NodeProvisionResource,
 } from '../types/nodeProvision'
-import type { SSHNodeProvisionResource } from '../types/nodeSSHProvision'
+import type {
+  SSHNodeProvisionResource,
+  SSHProvisionPreflightResource,
+} from '../types/nodeSSHProvision'
 
 void i18next.use(initReactI18next).init({
   lng: 'en',
@@ -124,10 +127,17 @@ vi.mock('../queries/nodeProvision', () => ({
 }))
 
 const createSSHNodeProvisionMutate = vi.fn()
+const preflightSSHMutate = vi.fn()
 let sshProvisionData: SSHNodeProvisionResource | undefined
+const TEST_FP = 'SHA256:' + 'k'.repeat(43)
 vi.mock('../queries/nodeSSHProvision', () => ({
   useCreateSSHNodeProvision: () => ({
     mutate: createSSHNodeProvisionMutate,
+    isPending: false,
+    isError: false,
+  }),
+  usePreflightSSHNodeProvision: () => ({
+    mutate: preflightSSHMutate,
     isPending: false,
     isError: false,
   }),
@@ -156,11 +166,46 @@ async function pickOption(
   await user.click(selectOptionByText(optionText))
 }
 
+// Walks the SSH path's host and verify steps, returning on the credentials form.
+function verifySSHHost() {
+  preflightSSHMutate.mockImplementation(
+    (
+      _input: unknown,
+      opts: { onSuccess: (r: SSHProvisionPreflightResource) => void },
+    ) => {
+      opts.onSuccess({
+        host: '192.0.2.10',
+        port: 22,
+        host_keys: [{ type: 'ssh-ed25519', fingerprint: TEST_FP }],
+      })
+    },
+  )
+  fireEvent.change(screen.getByLabelText('Host'), {
+    target: { value: '192.0.2.10' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Verify server' }))
+  expect(preflightSSHMutate).toHaveBeenCalledWith(
+    { host: '192.0.2.10', port: 22 },
+    expect.anything(),
+  )
+  expect(screen.getByText(TEST_FP)).toBeVisible()
+  const continueButton = screen.getByRole('button', { name: 'Continue' })
+  expect(continueButton).toBeDisabled()
+  fireEvent.click(
+    screen.getByRole('checkbox', {
+      name: 'I compared this fingerprint with the server and it matches',
+    }),
+  )
+  expect(continueButton).toBeEnabled()
+  fireEvent.click(continueButton)
+}
+
 describe('AddNodeWizard', () => {
   afterEach(() => {
     cleanup()
     createNodeProvisionMutate.mockReset()
     createSSHNodeProvisionMutate.mockReset()
+    preflightSSHMutate.mockReset()
     sshProvisionData = undefined
     navigateMock.mockReset()
   })
@@ -324,6 +369,7 @@ describe('AddNodeWizard', () => {
       name: 'home-server',
       role: 'general',
       status: 'connecting',
+      host_key_verified: true,
       created_at: '2026-09-27T00:00:00Z',
       updated_at: '2026-09-27T00:00:00Z',
     }
@@ -342,9 +388,7 @@ describe('AddNodeWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /Connect over SSH/ }))
 
     expect(screen.getByText('Connect over SSH')).toBeVisible()
-    fireEvent.change(screen.getByLabelText('Host'), {
-      target: { value: '192.0.2.10' },
-    })
+    verifySSHHost()
     fireEvent.change(screen.getByLabelText('Username'), {
       target: { value: 'root' },
     })
@@ -365,6 +409,7 @@ describe('AddNodeWizard', () => {
         username: 'root',
         name: 'home-server',
         role: 'general',
+        host_key_fingerprint: TEST_FP,
         auth: {
           type: 'key',
           private_key: 'fake-key-material-for-test',
@@ -380,9 +425,7 @@ describe('AddNodeWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
     fireEvent.click(screen.getByRole('button', { name: /Connect over SSH/ }))
 
-    fireEvent.change(screen.getByLabelText('Host'), {
-      target: { value: '192.0.2.10' },
-    })
+    verifySSHHost()
     fireEvent.change(screen.getByLabelText('Username'), {
       target: { value: 'root' },
     })
@@ -400,5 +443,16 @@ describe('AddNodeWizard', () => {
       target: { value: 'valid-name' },
     })
     expect(screen.getByRole('button', { name: 'Connect' })).toBeEnabled()
+  })
+
+  it('never shows credential fields before the host key is confirmed', () => {
+    render(<AddNodeWizard />)
+    fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Connect over SSH/ }))
+
+    expect(screen.queryByLabelText('Private key')).toBeNull()
+    expect(screen.queryByLabelText('Password')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Verify server' })).toBeDisabled()
+    expect(createSSHNodeProvisionMutate).not.toHaveBeenCalled()
   })
 })

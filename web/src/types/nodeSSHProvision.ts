@@ -25,6 +25,9 @@ export interface SSHNodeProvisionResource {
   node_id?: string
   failure_reason?: string
   log?: string
+  host_key_fingerprint?: string
+  host_key_verified: boolean
+  warnings?: string[]
   created_at: string
   updated_at: string
 }
@@ -33,4 +36,16 @@ export function isTerminalSSHProvisionStatus(
   status: SSHNodeProvisionStatus,
 ): boolean {
   return status === 'ready' || status === 'failed'
+}
+
+// One host key the server presented during the credential-free preflight.
+export interface SSHHostKey {
+  type: string
+  fingerprint: string
+}
+
+export interface SSHProvisionPreflightResource {
+  host: string
+  port: number
+  host_keys: SSHHostKey[]
 }
