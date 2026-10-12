@@ -1,5 +1,73 @@
 # Changelog
 
+## [0.2.0](https://github.com/glincker/levelrail/compare/v0.2.0-beta.20...v0.2.0) (2026-10-12)
+
+
+### Features
+
+* 0.6 upgrades, dashboard v2, standalone domains, secrets v2 and reliability fixes ([#1164](https://github.com/glincker/levelrail/issues/1164)) ([0c6fd6c](https://github.com/glincker/levelrail/commit/0c6fd6c0ac4737981691c9cbc43786278108d48d))
+* attribute dashboard memory to the control plane and unmanaged containers ([aafa40d](https://github.com/glincker/levelrail/commit/aafa40da963e8a4d3ced4c79d05b9cd8421c11f1))
+* CLI for standalone domains and the server address ([c748d6c](https://github.com/glincker/levelrail/commit/c748d6c1d80beb34b6cdcd08273b948cf652df01))
+* cost showback per app, project, environment and team ([66750ba](https://github.com/glincker/levelrail/commit/66750ba88b837c4c994c1a76a734e9af22292df0))
+* coverage-first backups page, protect-all, and orphaned data reclaim ([4d51dc0](https://github.com/glincker/levelrail/commit/4d51dc08d5281bab5b3b8486ad88683d85473d0e))
+* dashboard restart, dock and CLI console, forward auth, responsive pass ([f9f7e20](https://github.com/glincker/levelrail/commit/f9f7e20ca015545afd8c63976f5661746c7efa7b))
+* dock as fixed overlay widget with float, bottom and side modes ([ce2f759](https://github.com/glincker/levelrail/commit/ce2f75962a2f3ae6760a465467149b36a7e89006))
+* docked bottom panel hosting the AI chat with ctrl+j toggle ([4aade49](https://github.com/glincker/levelrail/commit/4aade494139703e672bdc1cfcc0195f36b601a94))
+* fold the create-app repo fields into a summary once a repo is picked ([#1168](https://github.com/glincker/levelrail/issues/1168)) ([9906f44](https://github.com/glincker/levelrail/commit/9906f448af97d2edd0208b5a9ddf4d5fdd91dbea))
+* Get started hub with live setup steps, server-side progress and CLI ([5b2d364](https://github.com/glincker/levelrail/commit/5b2d3640bfe8050acdd9a9d46898921a87d3d1d9))
+* levelrail-cli tui, a k9s-style terminal UI for apps, deploys, logs and actions ([4499dca](https://github.com/glincker/levelrail/commit/4499dca5eb23f83d71bea34f0c8407a48fe6eef1))
+* log explorer with saved queries, error signatures and log alert rules ([0b246f6](https://github.com/glincker/levelrail/commit/0b246f6e16b6034ca4c9bd4de388e477657c3b37))
+* mask sensitive env everywhere, step-up reveal, one environment editor ([7b9e454](https://github.com/glincker/levelrail/commit/7b9e454980a422d36f3c3e5efbc4573899cc35ab))
+* MCP prompts, resources and --print-config for levelrail-mcp ([0a2e459](https://github.com/glincker/levelrail/commit/0a2e459c6aede77a858e7cf91ab5e2ad140ceab2))
+* mobile pairing API and built-in sign-in provider for the auth gate ([#1173](https://github.com/glincker/levelrail/issues/1173)) ([67c1e6e](https://github.com/glincker/levelrail/commit/67c1e6e32356df462ef25211c84cd34a21ccddcd))
+* network page groups this server as a real node and mesh can be enabled from the UI and CLI ([b33140e](https://github.com/glincker/levelrail/commit/b33140ead73bd55141878a42a3c54a286d646e4e))
+* one click quick actions in the web CLI console ([ba4b3a9](https://github.com/glincker/levelrail/commit/ba4b3a96fc1be171d7560a69e9063ab0186960ea))
+* per-domain auth gate (forward auth) in the embedded ingress ([6061ab6](https://github.com/glincker/levelrail/commit/6061ab6e4db021dc64cea25beb3c058989707512))
+* per-domain auth gate (forward auth) with header spoof stripping ([944dfc8](https://github.com/glincker/levelrail/commit/944dfc8f9c1a5e9008116c1b71706c176426f61a))
+* read-only host diagnostics in the web CLI console ([26b5089](https://github.com/glincker/levelrail/commit/26b508928e22b389a5e6438b8f5df855e13c7aa9))
+* redesign deploy history rows and the deploy page around the logs ([#1165](https://github.com/glincker/levelrail/issues/1165)) ([a3742d9](https://github.com/glincker/levelrail/commit/a3742d9d124312a253cf3323f41bc76fe53976d1))
+* resource advisor dashboard, Optimise panel, beta settings and docs ([30c6324](https://github.com/glincker/levelrail/commit/30c632431ee2ab8cad55815a7d995669a6aea6b4))
+* resource advisor engine, API, CLI and MCP tool behind a beta flag ([4b1abf8](https://github.com/glincker/levelrail/commit/4b1abf8b1bef5c2d243ac37fade6d15dc16b5d73))
+* responsive pass for phone and tablet across dashboard, lists and settings ([427afe5](https://github.com/glincker/levelrail/commit/427afe5dcdca5bc264f022e0809d3424cdd389ea))
+* restart the control plane from the dashboard ([aefb0e0](https://github.com/glincker/levelrail/commit/aefb0e0564093e59a2e833c5b2bccf75eec6c553))
+* show the live preview image and commit subject on the app overview ([#1167](https://github.com/glincker/levelrail/issues/1167)) ([288ec96](https://github.com/glincker/levelrail/commit/288ec96e369b1893eb9083075d5e19b006a9e0ff))
+* sign-in attribution footer with GLINR Studios and TheAuth marks ([d19355b](https://github.com/glincker/levelrail/commit/d19355be4e54ddfa044b8991e20afee1947c9934))
+* sign-in screens and remaining charts use design tokens ([c17a766](https://github.com/glincker/levelrail/commit/c17a7660080ca020557fc210a96fd6d46cd611c4))
+* single-node placement shows this server, nodes table and settings index regrouped ([41384a9](https://github.com/glincker/levelrail/commit/41384a9c1462ce3258f2d0ccb3f16e4477744a26))
+* split-screen sign-in with a rotating brand showcase from the TheAuth visuals ([#1169](https://github.com/glincker/levelrail/issues/1169)) ([4e1d555](https://github.com/glincker/levelrail/commit/4e1d5552e727f47764ca8d42a4476500d7ed3048))
+* standalone domains proxy to a port, address, URL, app or container ([d6deec7](https://github.com/glincker/levelrail/commit/d6deec7c95815084472c13f446f6baaad2de1f43))
+* sticky dashboard header, dark elevation tokens and GLINR CSS tokens ([5573cfe](https://github.com/glincker/levelrail/commit/5573cfe81143b31817ad71d1a63a032ed76ba94f))
+* suggestion-driven New app wizard with repository analysis ([f29163a](https://github.com/glincker/levelrail/commit/f29163a5f869ae139b7a654664c6360ff194dad1))
+* system restart CLI command with --wait and status ([126011f](https://github.com/glincker/levelrail/commit/126011f356118030b5aca2b6fb7a7bf6161e46c5))
+* triage model, certificate guardrails and resources-first dashboard home ([cb03ac2](https://github.com/glincker/levelrail/commit/cb03ac278eb806991b1abcc7c4057e914c36ed56))
+* turn AI chat on from Settings, Beta features, and fix header right alignment ([00b1acf](https://github.com/glincker/levelrail/commit/00b1acf490c5ed46b72c5a971bee6e159074bfbd))
+* two-mode add domain dialog, standalone rows and server address card ([7aa9c8b](https://github.com/glincker/levelrail/commit/7aa9c8bb2a375bc10941dcf4c3e53f58d418512d))
+* upgrade blockers with fixes, upgrade now, scheduled and automatic upgrades ([70b677c](https://github.com/glincker/levelrail/commit/70b677c68e8476caec42a48c4356b7f9fac447ea))
+* web CLI console over WebSocket, scoped to the platform CLI ([e913570](https://github.com/glincker/levelrail/commit/e9135707b5767b795a0b9307774d3b1cd64e8c55))
+* web CLI console route, dock tab and beta toggle ([c555dfe](https://github.com/glincker/levelrail/commit/c555dfe72e9dc4f39b22df1c46c2d23865fb0770))
+
+
+### Bug Fixes
+
+* auth gate keeps the client query on the auth subrequest ([8036bbc](https://github.com/glincker/levelrail/commit/8036bbc9ce9072fdd77e091d6f9584080a12f96c))
+* deployments rows open the deploy page, and long commit messages no longer flood the drawer ([#1163](https://github.com/glincker/levelrail/issues/1163)) ([5858816](https://github.com/glincker/levelrail/commit/5858816ba7480915497ccb1c584544796f39a14b))
+* dock AI tab explains when the ai-chat experimental flag is off ([22f5e5f](https://github.com/glincker/levelrail/commit/22f5e5f51a86dd67e24f9fe5fc88572faece79c8))
+* keep placement display fields out of the MCP client types to stay under the tool token budget ([a009399](https://github.com/glincker/levelrail/commit/a0093992caa418bbdd8ce755311006a33855eb40))
+* keep pre-library API tokens working after upgrade ([e7cc8b2](https://github.com/glincker/levelrail/commit/e7cc8b21e4cda0753fe2c86bae6b118c32a7aaf1))
+* merge edge channel modelling and stale incident fixes with scheduled upgrades ([63c2390](https://github.com/glincker/levelrail/commit/63c23901e61f34045222d1202b6ee5fcfdcef17c))
+* picking a repo prefills the create-app form and collapses the repo grid ([#1166](https://github.com/glincker/levelrail/issues/1166)) ([a661d57](https://github.com/glincker/levelrail/commit/a661d57b84d22ae6165a21cb6ffbffadb14b0820))
+* sanitize terminal escape sequences in web console output ([5a1c837](https://github.com/glincker/levelrail/commit/5a1c837f070e39581b5869ccc87bc5cc90c3093c))
+* serve /metrics and jwks, restart after swap on self-upgrade, restore-as-new owner, ungate data export CLI ([536d94f](https://github.com/glincker/levelrail/commit/536d94f4094358132304f68c2550c7fdc986b833))
+* serve internal fallback certs when ACME fails, validate ACME contact, abort never-listening deploys ([8d82c09](https://github.com/glincker/levelrail/commit/8d82c09fab0e7643b68cfe581772bee7d343bee0))
+* stale data copy incidents, plain-language copy failures, and edge channel update messaging ([1109cee](https://github.com/glincker/levelrail/commit/1109ceeacbba27c7234b6064f5a71004aa55d4af))
+* tcp readiness fallback, server help flags, backup target validation, version stamp ([cb01128](https://github.com/glincker/levelrail/commit/cb01128313e239338a9550605540826e57cebb5b))
+* wait for proxy route load in verify, warn on alert rules with no channel ([ff4ce70](https://github.com/glincker/levelrail/commit/ff4ce70039afd9150a5a15817cbe68f1cc3915ba))
+
+
+### Documentation
+
+* standalone domains, server address, and confirmation fixes ([1626c51](https://github.com/glincker/levelrail/commit/1626c5106ad3e3478dc128bde8454ce9e790a3ed))
+
 ## [0.2.0-beta.20](https://github.com/glincker/levelrail/compare/v0.2.0-beta.19...v0.2.0-beta.20) (2026-10-11)
 
 

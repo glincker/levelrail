@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0](https://github.com/glincker/levelrail/compare/kit/v0.1.0...kit/v0.2.0) (2026-10-12)
+
+
+### Features
+
+* 0.6 upgrades, dashboard v2, standalone domains, secrets v2 and reliability fixes ([#1164](https://github.com/glincker/levelrail/issues/1164)) ([0c6fd6c](https://github.com/glincker/levelrail/commit/0c6fd6c0ac4737981691c9cbc43786278108d48d))
+* upgrade blockers with fixes, upgrade now, scheduled and automatic upgrades ([70b677c](https://github.com/glincker/levelrail/commit/70b677c68e8476caec42a48c4356b7f9fac447ea))
+
+
+### Bug Fixes
+
+* ignore nested module tags when picking the latest platform release ([#1158](https://github.com/glincker/levelrail/issues/1158)) ([843d71a](https://github.com/glincker/levelrail/commit/843d71a5704abb2c799112faa583effaebf66c1a))
+* merge edge channel modelling and stale incident fixes with scheduled upgrades ([63c2390](https://github.com/glincker/levelrail/commit/63c23901e61f34045222d1202b6ee5fcfdcef17c))
+* stale data copy incidents, plain-language copy failures, and edge channel update messaging ([1109cee](https://github.com/glincker/levelrail/commit/1109ceeacbba27c7234b6064f5a71004aa55d4af))
+* tcp readiness fallback, server help flags, backup target validation, version stamp ([cb01128](https://github.com/glincker/levelrail/commit/cb01128313e239338a9550605540826e57cebb5b))
+
 ## [0.1.0](https://github.com/glincker/levelrail/compare/kit/v0.1.0...kit/v0.1.0) (2026-10-11)
 
 
