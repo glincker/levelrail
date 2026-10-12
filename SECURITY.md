@@ -23,6 +23,9 @@ Include as much detail as you reasonably can:
 - Steps to reproduce, or a proof of concept if you have one.
 - The impact you believe the issue has.
 
+Fixed issues are listed with stable IDs on the
+[security advisories page](docs/security-advisories.md).
+
 ## What to expect
 
 There is no dedicated security team yet and no formal SLA. Reports are

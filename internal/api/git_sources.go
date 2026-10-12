@@ -583,6 +583,9 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if !rt.authorizeSpecDatabaseRefs(w, r, req.Services) {
+		return
+	}
 	if err := validateGitSourceDatabases(req.Databases); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
