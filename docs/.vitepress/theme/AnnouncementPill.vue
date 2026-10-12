@@ -7,7 +7,7 @@ const latest = computed(() => releases[0])
 </script>
 
 <template>
-  <a class="announce-pill" href="/changelog/">
+  <a class="announce-pill" href="https://docs.levelrail.com/changelog/">
     <span class="announce-pill__tag">{{ latest ? latest.tag : 'Pre-release' }}</span>
     <span class="announce-pill__text">See what's new</span>
     <PhArrowRight class="announce-pill__icon" weight="bold" aria-hidden="true" />

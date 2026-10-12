@@ -22,7 +22,7 @@ import { compare, switching } from './homeData'
     >
       <TerminalDemo v-reveal />
       <p class="lp-note">
-        <code>levelrail-cli deploy</code> points an app at an image and cuts traffic over only once the new container's readiness probe passes. To build from a git repository instead, connect it from the dashboard or run <code>levelrail-cli import &lt;repo-url&gt; --deploy</code>. The full walkthrough is in <a href="/getting-started">Getting started</a>.
+        <code>levelrail-cli deploy</code> points an app at an image and cuts traffic over only once the new container's readiness probe passes. To build from a git repository instead, connect it from the dashboard or run <code>levelrail-cli import &lt;repo-url&gt; --deploy</code>. The full walkthrough is in <a href="https://docs.levelrail.com/getting-started">Getting started</a>.
       </p>
     </LpSection>
 
@@ -68,7 +68,7 @@ import { compare, switching } from './homeData'
     <LpCta
       heading="Run your own platform"
       sub="Install it on one Linux server, deploy an app, and see the logs and metrics without adding anything else."
-      :primary="{ text: 'Get started', link: '/getting-started' }"
+      :primary="{ text: 'Get started', link: 'https://docs.levelrail.com/getting-started' }"
     />
   </div>
 </template>

@@ -40,7 +40,7 @@ function handleScroll() {
   scrolled.value = window.scrollY > 40
 }
 
-const COMPACT_QUERY = '(max-width: 1024px)'
+const COMPACT_QUERY = '(max-width: 1180px)'
 const SCROLL_LOCK_CLASS = 'nav-scroll-locked'
 
 const mounted = ref(false)

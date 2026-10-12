@@ -104,19 +104,46 @@ export const globalNav: { section: string; items: MockNavItem[] }[] = [
     { id: 'apps', label: 'Apps', icon: 'apps' },
     { id: 'deployments', label: 'Deployments', icon: 'deployments' },
     { id: 'projects', label: 'Projects', icon: 'projects' },
+    { id: 'registry', label: 'Container registry', icon: 'registry' },
+    { id: 'credentials', label: 'Credentials', icon: 'credentials' },
   ] },
   { section: 'Data', items: [
     { id: 'databases', label: 'Databases', icon: 'databases' },
     { id: 'backups', label: 'Backups', icon: 'backups' },
+    { id: 'shares', label: 'Network shares', icon: 'shares' },
   ] },
-  { section: 'Infrastructure', items: [
-    { id: 'nodes', label: 'Nodes', icon: 'nodes' },
-    { id: 'network', label: 'Network', icon: 'network' },
+  { section: 'Networking', items: [
     { id: 'domains', label: 'Domains', icon: 'domains' },
+    { id: 'dns', label: 'DNS', icon: 'dns' },
+    { id: 'proxy', label: 'Proxy', icon: 'proxy' },
     { id: 'loadbalancers', label: 'Load balancers', icon: 'loadbalancers' },
-    { id: 'registry', label: 'Container registry', icon: 'registry' },
-    { id: 'credentials', label: 'Registry credentials', icon: 'credentials' },
+    { id: 'network', label: 'Topology', icon: 'network' },
   ] },
+  { section: 'Fleet', items: [
+    { id: 'nodes', label: 'Nodes', icon: 'nodes' },
+    { id: 'providers', label: 'Cloud providers', icon: 'providers' },
+    { id: 'advisor', label: 'Resource advisor', icon: 'advisor' },
+    { id: 'usage', label: 'Usage and cost', icon: 'usage' },
+  ] },
+  { section: 'Automation', items: [
+    { id: 'pipelines', label: 'Pipelines', icon: 'pipelines' },
+    { id: 'approvals', label: 'Deploy approvals', icon: 'approvals' },
+    { id: 'galerts', label: 'Alerts', icon: 'alerts' },
+  ] },
+  { section: 'Security', items: [
+    { id: 'security', label: 'Security center', icon: 'security' },
+    { id: 'iam', label: 'IAM policies', icon: 'iam' },
+  ] },
+  { section: 'AI', items: [
+    { id: 'models', label: 'AI models', icon: 'models' },
+  ] },
+]
+
+export const globalFooterNav: MockNavItem[] = [
+  { id: 'assistant', label: 'AI assistant', icon: 'assistant' },
+  { id: 'console', label: 'Console', icon: 'exec' },
+  { id: 'settings', label: 'Settings', icon: 'settings' },
+  { id: 'help', label: 'Help', icon: 'help' },
 ]
 
 export const appNav: MockNavItem[] = [

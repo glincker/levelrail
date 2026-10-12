@@ -10,13 +10,13 @@ hero:
   actions:
     - theme: brand
       text: Quickstart
-      link: /getting-started
+      link: https://docs.levelrail.com/getting-started
     - theme: alt
       text: Live demo
-      link: /demo
+      link: https://docs.levelrail.com/demo
     - theme: alt
       text: Compare
-      link: /comparison
+      link: https://docs.levelrail.com/comparison
 ---
 
 <script setup lang="ts">

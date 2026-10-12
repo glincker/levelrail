@@ -395,3 +395,40 @@
   box-shadow: inset 0 0 0 1px var(--glinui-accent-active-ring) !important;
 }
 
+
+/* Fit: the pill holds brand, 8 entries, search, theme and GitHub without
+   spilling. Links shrink first, the search collapses to an icon, and the
+   hamburger takes over at 1180px (matches COMPACT_QUERY in CustomTopNav.vue). */
+.custom-nav__inner {
+  min-width: 0;
+}
+.custom-nav__links {
+  flex: 0 1 auto;
+  min-width: 0;
+  gap: 0;
+}
+.custom-nav__links > .custom-nav__link:not(.nav-dropdown__trigger) .nav-dropdown__dot {
+  display: none;
+}
+.custom-nav__link {
+  padding: 7px 8px;
+  font-size: 13px;
+  gap: 5px;
+}
+.custom-nav__socials.VPSocialLinks {
+  margin-left: 0;
+}
+@media (max-width: 1360px) {
+  .DocSearch.DocSearch-Button {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+  .DocSearch-Button .DocSearch-Button-Placeholder,
+  .DocSearch-Button .DocSearch-Button-Keys {
+    display: none;
+  }
+  .DocSearch-Button .DocSearch-Search-Icon {
+    margin: 0;
+  }
+}

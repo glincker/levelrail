@@ -17,28 +17,28 @@ export const showcaseSlides: CarouselSlide[] = [
     label: 'Apps',
     icon: PhSquaresFour,
     caption: 'Every app at a glance, with its health and the node it is placed on.',
-    link: { text: 'How nodes and placement work', href: '/multi-node' },
+    link: { text: 'How nodes and placement work', href: 'https://docs.levelrail.com/multi-node' },
   },
   {
     view: 'deploys',
     label: 'Deploy and rollback',
     icon: PhArrowCounterClockwise,
     caption: 'Deploy history with one-click rollback. Cleanup never touches a rollback target.',
-    link: { text: 'Deploy safety', href: '/deploy-safety' },
+    link: { text: 'Deploy safety', href: 'https://docs.levelrail.com/deploy-safety' },
   },
   {
     view: 'overview',
     label: 'Metrics',
     icon: PhChartLineUp,
     caption: 'Per-app metrics with deploy markers on the charts. They stay on each node, with no separate stack to install.',
-    link: { text: 'Observability', href: '/observability' },
+    link: { text: 'Observability', href: 'https://docs.levelrail.com/observability' },
   },
   {
     view: 'logs',
     label: 'Live logs',
     icon: PhTerminalWindow,
     caption: 'Live log tail with full-text search, read from the node that runs the app.',
-    link: { text: 'Observability', href: '/observability' },
+    link: { text: 'Observability', href: 'https://docs.levelrail.com/observability' },
   },
 ]
 

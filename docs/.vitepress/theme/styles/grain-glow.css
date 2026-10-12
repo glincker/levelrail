@@ -1,0 +1,109 @@
+/* Grain glow: a soft three-colour wash plus the same wash masked by a
+   thresholded noise tile, so the colour breaks into grains toward its
+   edge instead of banding. Used under the home hero and at the top of
+   doc pages so both read as one surface. */
+:root {
+  --grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -4.2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-a: rgba(47, 179, 220, 0.32);
+  --grain-b: rgba(16, 114, 146, 0.3);
+  --grain-c: rgba(99, 102, 241, 0.18);
+  --grain-soft: 0.35;
+}
+.dark {
+  --grain-a: rgba(47, 179, 220, 0.4);
+  --grain-b: rgba(16, 114, 146, 0.45);
+  --grain-c: rgba(129, 140, 248, 0.26);
+  --grain-soft: 0.5;
+}
+
+.home-proof,
+.VPDoc {
+  position: relative;
+  isolation: isolate;
+}
+.home-proof > *,
+.VPDoc > * {
+  position: relative;
+  z-index: 1;
+}
+
+.home-proof::before,
+.home-proof::after,
+.VPDoc::before,
+.VPDoc::after {
+  content: '';
+  position: absolute;
+  top: -110px;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  height: 630px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 52% 90% at 18% 0%, var(--grain-a), transparent 70%),
+    radial-gradient(ellipse 48% 80% at 82% 0%, var(--grain-b), transparent 72%),
+    radial-gradient(ellipse 40% 60% at 50% 0%, var(--grain-c), transparent 75%);
+}
+.home-proof::before,
+.VPDoc::before {
+  opacity: var(--grain-soft);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24%, transparent 90%);
+  mask-image: linear-gradient(to bottom, transparent, #000 24%, transparent 90%);
+}
+.home-proof::after,
+.VPDoc::after {
+  -webkit-mask-image: var(--grain-tile), linear-gradient(to bottom, transparent, #000 26%, transparent 100%);
+  mask-image: var(--grain-tile), linear-gradient(to bottom, transparent, #000 26%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.VPDoc::before {
+  height: 420px;
+}
+.VPDoc::after {
+  height: 420px;
+}
+.dark .VPDoc::before {
+  background:
+    radial-gradient(ellipse 52% 90% at 18% 0%, var(--grain-a), transparent 70%),
+    radial-gradient(ellipse 48% 80% at 82% 0%, var(--grain-b), transparent 72%),
+    radial-gradient(ellipse 40% 60% at 50% 0%, var(--grain-c), transparent 75%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .home-proof::after,
+  .VPDoc::after {
+    animation: grain-in 0.8s ease both;
+  }
+}
+@keyframes grain-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.VPHome {
+  overflow-x: clip;
+}
+
+.VPDoc::before,
+.VPDoc::after {
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  height: 420px;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent 85%);
+  mask-image: linear-gradient(to bottom, #000, transparent 85%);
+}
+.VPDoc::after {
+  -webkit-mask-image: var(--grain-tile), linear-gradient(to bottom, #000 10%, transparent 100%);
+  mask-image: var(--grain-tile), linear-gradient(to bottom, #000 10%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+.VPContent:not(.is-home) {
+  overflow-x: clip;
+}

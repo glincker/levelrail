@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { PhArrowLeft, PhCaretDown, PhCaretRight } from '@phosphor-icons/vue'
 import MockStatusPill from './MockStatusPill.vue'
-import { appNav, activeApp, brand, globalNav } from './mockData'
+import { appNav, activeApp, brand, globalFooterNav, globalNav } from './mockData'
 import { mockIcons } from './mockIcons'
 
-defineProps<{ mode: 'global' | 'app'; active: string }>()
+const props = defineProps<{ mode: 'global' | 'app'; active: string }>()
+
+// Mirrors the real sidebar: everyday groups stay open, the group holding the
+// current page opens, the rest collapse to a header.
+const EVERYDAY = new Set(['Home', 'Apps'])
+const isOpen = (g: { section: string; items: { id: string }[] }) =>
+  EVERYDAY.has(g.section) || g.items.some((i) => i.id === props.active)
 </script>
 
 <template>
@@ -19,11 +25,16 @@ defineProps<{ mode: 'global' | 'app'; active: string }>()
 
     <template v-if="mode === 'global'">
       <section v-for="g in globalNav" :key="g.section">
-        <div class="pm-side__sec"><span>{{ g.section }}</span><PhCaretDown :size="12" /></div>
-        <div v-for="i in g.items" :key="i.id" class="pm-side__item" :class="{ 'is-active': i.id === active }">
+        <div class="pm-side__sec"><span>{{ g.section }}</span><component :is="isOpen(g) ? PhCaretDown : PhCaretRight" :size="12" /></div>
+        <div v-for="i in isOpen(g) ? g.items : []" :key="i.id" class="pm-side__item" :class="{ 'is-active': i.id === active }">
           <component :is="mockIcons[i.icon]" :size="16" />{{ i.label }}
         </div>
       </section>
+      <div class="pm-side__foot">
+        <div v-for="i in globalFooterNav" :key="i.id" class="pm-side__item" :class="{ 'is-active': i.id === active }">
+          <component :is="mockIcons[i.icon]" :size="16" />{{ i.label }}
+        </div>
+      </div>
     </template>
 
     <template v-else>
@@ -132,4 +143,5 @@ defineProps<{ mode: 'global' | 'app'; active: string }>()
   background: var(--pm-sunken);
   font-size: 10px;
 }
+.pm-side__foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--pm-border); }
 </style>

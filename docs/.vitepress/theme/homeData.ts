@@ -7,26 +7,26 @@ export const proofStats = [
   { value: '91 MB', label: 'memory at 500 apps, development build' },
 ]
 
-export const proofLink = { text: 'See the measurements and what is not proven yet', href: '/case-studies' }
+export const proofLink = { text: 'See the measurements and what is not proven yet', href: 'https://docs.levelrail.com/case-studies' }
 
 export const pathCards: LandingCard[] = [
   {
     title: 'Try it in 5 minutes',
     icon: 'terminal',
     body: 'Run the install script on a Linux box, finish the setup wizard, and deploy your first app.',
-    link: { text: 'Open the quickstart', href: '/getting-started' },
+    link: { text: 'Open the quickstart', href: 'https://docs.levelrail.com/getting-started' },
   },
   {
     title: 'See a demo',
     icon: 'eye',
     body: 'Click through the dashboard with sample data before you install anything.',
-    link: { text: 'Open the demo', href: '/demo' },
+    link: { text: 'Open the demo', href: 'https://docs.levelrail.com/demo' },
   },
   {
     title: 'Switching from another platform?',
     icon: 'branch',
     body: 'See how Levelrail differs from Coolify and what moving over involves.',
-    link: { text: 'Read the Coolify guide', href: '/coolify-alternative' },
+    link: { text: 'Read the Coolify guide', href: 'https://docs.levelrail.com/coolify-alternative' },
   },
 ]
 
@@ -56,17 +56,17 @@ export const compare = {
       right: 'SQLite in WAL mode, an embedded Caddy ingress, and an embedded dashboard: one control plane binary on one node.',
     },
   ],
-  more: { text: 'See the full comparison against Coolify, Dokploy, CapRover, Dokku, and Kamal', href: '/comparison' },
+  more: { text: 'See the full comparison against Coolify, Dokploy, CapRover, Dokku, and Kamal', href: 'https://docs.levelrail.com/comparison' },
 }
 
 export const switching = [
-  { text: 'Coolify', link: '/coolify-alternative' },
-  { text: 'Dokploy', link: '/dokploy-alternative' },
-  { text: 'Vercel', link: '/vercel-alternative' },
-  { text: 'Heroku', link: '/heroku-alternative' },
-  { text: 'Railway', link: '/railway-alternative' },
-  { text: 'Demo', link: '/demo' },
-  { text: 'Pricing', link: '/pricing' },
+  { text: 'Coolify', link: 'https://docs.levelrail.com/coolify-alternative' },
+  { text: 'Dokploy', link: 'https://docs.levelrail.com/dokploy-alternative' },
+  { text: 'Vercel', link: 'https://docs.levelrail.com/vercel-alternative' },
+  { text: 'Heroku', link: 'https://docs.levelrail.com/heroku-alternative' },
+  { text: 'Railway', link: 'https://docs.levelrail.com/railway-alternative' },
+  { text: 'Demo', link: 'https://docs.levelrail.com/demo' },
+  { text: 'Pricing', link: 'https://docs.levelrail.com/pricing' },
 ]
 
 export const gallery = [

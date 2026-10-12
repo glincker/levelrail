@@ -1,6 +1,6 @@
 import {
   PhSquaresFour, PhRocketLaunch, PhHeartbeat, PhStack, PhFolder, PhDatabase, PhCloudArrowUp,
-  PhHardDrives, PhShareNetwork, PhGlobe, PhScales, PhPackage, PhKey, PhActivity, PhScroll,
+  PhHardDrives, PhShareNetwork, PhFolderOpen, PhListBullets, PhTrafficSignal, PhArrowsSplit, PhCloud, PhLightbulb, PhCoins, PhTreeStructure, PhGavel, PhShieldWarning, PhShieldCheck, PhCpu, PhRobot, PhBookOpen, PhGlobe, PhScales, PhPackage, PhKey, PhActivity, PhScroll,
   PhTerminal, PhGitBranch, PhGear, PhWrench, PhEye, PhClockCounterClockwise, PhBell, PhGauge,
 } from '@phosphor-icons/vue'
 import type { Component } from 'vue'
@@ -30,4 +30,17 @@ export const mockIcons: Record<string, Component> = {
   alerts: PhBell,
   exec: PhTerminal,
   settings: PhGear,
+  shares: PhFolderOpen,
+  dns: PhListBullets,
+  proxy: PhTrafficSignal,
+  providers: PhCloud,
+  advisor: PhLightbulb,
+  usage: PhCoins,
+  pipelines: PhTreeStructure,
+  approvals: PhGavel,
+  security: PhShieldWarning,
+  iam: PhShieldCheck,
+  models: PhCpu,
+  assistant: PhRobot,
+  help: PhBookOpen,
 }

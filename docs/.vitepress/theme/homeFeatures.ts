@@ -75,6 +75,6 @@ export const homeFeatures: LandingCard[] = [
       { method: 'GET', path: '/api/v1/apps/{name}/logs' },
       { method: 'POST', path: '/api/v1/apps/{name}/deploy' },
     ],
-    link: { text: 'MCP tool surface', href: '/mcp-tool-surface' },
+    link: { text: 'MCP tool surface', href: 'https://docs.levelrail.com/mcp-tool-surface' },
   },
 ]

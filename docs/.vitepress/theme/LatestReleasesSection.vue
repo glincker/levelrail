@@ -16,7 +16,7 @@ function excerpt(highlights: string[]): string {
   <div class="releases-feed">
     <ul class="releases-feed__list">
       <li v-for="r in latest" :key="r.tag" class="releases-feed__item">
-        <a :href="`/changelog/${r.slug}`" class="releases-feed__link">
+        <a :href="`https://docs.levelrail.com/changelog/${r.slug}`" class="releases-feed__link">
           <p class="releases-feed__meta">
             <time class="releases-feed__date" :datetime="r.date">{{ r.date }}</time>
             <span v-if="r.prerelease" class="releases-feed__badge">pre-release</span>
@@ -26,6 +26,6 @@ function excerpt(highlights: string[]): string {
         </a>
       </li>
     </ul>
-    <a class="releases-feed__all" href="/changelog/">View all releases</a>
+    <a class="releases-feed__all" href="https://docs.levelrail.com/changelog/">View all releases</a>
   </div>
 </template>
