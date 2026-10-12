@@ -841,6 +841,9 @@ func postJSONWithAuth(ctx context.Context, client *http.Client, url string, payl
 	if url == "" {
 		return fmt.Errorf("alerting: notify: no notify_url configured")
 	}
+	if IsMaskedNotifyTarget(url) {
+		return ErrChannelSecretNotRevealed
+	}
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("alerting: notify: encode payload: %w", err)

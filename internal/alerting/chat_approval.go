@@ -177,12 +177,13 @@ var ErrInteractiveApprovalUnsupported = fmt.Errorf("alerting: send approval requ
 // Records delivery history the same way Dispatch does for a deploy
 // outcome, under trigger "deploy-approval-requested".
 func (d *DeployDispatcher) SendApprovalRequest(ctx context.Context, c NotificationChannel, info ApprovalRequestInfo) error {
-	var sendErr error
-	switch c.Kind {
-	case NotifySlack:
-		sendErr = postJSON(ctx, d.client, c.NotifyURL, buildSlackApprovalPayload(info))
-	case NotifyDiscord:
-		sendErr = postJSON(ctx, d.client, c.NotifyURL, buildDiscordApprovalPayload(info))
+	revealed, sendErr := d.db.RevealNotificationChannel(ctx, c)
+	switch {
+	case sendErr != nil:
+	case c.Kind == NotifySlack:
+		sendErr = postJSON(ctx, d.client, revealed.NotifyURL, buildSlackApprovalPayload(info))
+	case c.Kind == NotifyDiscord:
+		sendErr = postJSON(ctx, d.client, revealed.NotifyURL, buildDiscordApprovalPayload(info))
 	default:
 		sendErr = ErrInteractiveApprovalUnsupported
 	}

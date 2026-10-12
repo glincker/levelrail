@@ -273,6 +273,9 @@ type deployGenericPayload struct {
 // NotifyKind falls back to the generic JSON shape (deployGenericPayload)
 // so a notification still goes out somewhere.
 func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, t DeployTarget, ev DeployOutcome) error {
+	if IsMaskedNotifyTarget(t.NotifyURL) {
+		return ErrChannelSecretNotRevealed
+	}
 	if client == nil {
 		client = netguard.NewClient()
 	}
@@ -514,7 +517,11 @@ func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev D
 		if !t.Enabled {
 			continue
 		}
-		sendErr := sendDeployOutcome(ctx, d.client, d.sender, d.pushSender, t, ev)
+		target, sendErr := d.db.RevealChannelTarget(ctx, t.ChannelID, t.NotifyURL)
+		if sendErr == nil {
+			t.NotifyURL = target
+			sendErr = sendDeployOutcome(ctx, d.client, d.sender, d.pushSender, t, ev)
+		}
 		if sendErr != nil {
 			d.logger.Error("alerting: deploy outcome notification failed",
 				slog.String("target_id", t.ID), slog.String("resource_id", resourceID),

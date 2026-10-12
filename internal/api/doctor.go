@@ -147,6 +147,7 @@ func (rt *Router) runDoctorChecks(ctx context.Context) systemDoctorResponse {
 		one(func() doctorCheckResource { return rt.doctorCheckMasterKeyRotation(ctx) }),
 		one(func() doctorCheckResource { return rt.doctorCheckSecretBinding(ctx) }),
 		one(func() doctorCheckResource { return rt.doctorCheckStaleSecrets(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckNotificationChannelSecrets(ctx) }),
 		one(doctorCheckSecretReveal),
 		one(func() doctorCheckResource { return rt.doctorCheckLegacyTokens(ctx) }),
 		one(rt.doctorCheckControlPlaneBackup),

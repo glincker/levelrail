@@ -18,7 +18,7 @@ const (
 // DeviceLoginNotifier sends one plain-text notice through a channel.
 // *alerting.DeployDispatcher satisfies it.
 type DeviceLoginNotifier interface {
-	SendNotice(ctx context.Context, kind alerting.NotifyKind, notifyURL, text string) error
+	SendNotice(ctx context.Context, c alerting.NotificationChannel, text string) error
 }
 
 // deviceNoticeGate allows at most one outbound notice per interval across
@@ -61,7 +61,7 @@ func (rt *Router) notifyDeviceLoginWaiting() {
 			if !c.Enabled || !c.NotifyDeviceLogin {
 				continue
 			}
-			if err := rt.deviceNotifier.SendNotice(ctx, c.Kind, c.NotifyURL, text); err != nil {
+			if err := rt.deviceNotifier.SendNotice(ctx, c, text); err != nil {
 				rt.logger.Error("api: send device login notice failed",
 					slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 			}

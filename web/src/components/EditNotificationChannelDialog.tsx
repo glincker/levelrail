@@ -30,6 +30,7 @@ import {
   CHANNEL_KIND_LABEL,
 } from './notificationChannelKind'
 import {
+  useTestExistingNotificationChannel,
   useTestNotificationChannel,
   useUpdateNotificationChannel,
 } from '../queries/notificationChannels'
@@ -139,6 +140,7 @@ export function EditNotificationChannelDialog({
   const [verified, setVerified] = useState(false)
   const updateChannel = useUpdateNotificationChannel()
   const testChannel = useTestNotificationChannel()
+  const testExisting = useTestExistingNotificationChannel()
   const defaultValues = defaultsFromChannel(channel)
   const { control, register, handleSubmit, formState, reset, watch } =
     useForm<EditChannelForm>({
@@ -159,27 +161,31 @@ export function EditNotificationChannelDialog({
       setVerified(false)
       updateChannel.reset()
       testChannel.reset()
+      testExisting.reset()
     }
   }
 
   function handleTest() {
     setVerified(false)
-    testChannel.mutate(
-      { kind, notify_url: notifyUrl.trim() },
-      {
-        onSuccess: () => {
-          setVerified(true)
-          toast.add({ title: 'Test notification sent.', type: 'success' })
-        },
-        onError: (error) => {
-          toast.add({
-            title: 'Test notification failed.',
-            description: error.message,
-            type: 'error',
-          })
-        },
+    const callbacks = {
+      onSuccess: () => {
+        setVerified(true)
+        toast.add({ title: 'Test notification sent.', type: 'success' })
       },
-    )
+      onError: (error: Error) => {
+        toast.add({
+          title: 'Test notification failed.',
+          description: error.message,
+          type: 'error',
+        })
+      },
+    }
+    // An unchanged target is the masked placeholder; only the server holds the real one.
+    if (kind === channel.kind && notifyUrl.trim() === channel.notify_url) {
+      testExisting.mutate(channel.id, callbacks)
+      return
+    }
+    testChannel.mutate({ kind, notify_url: notifyUrl.trim() }, callbacks)
   }
 
   const onSubmit = handleSubmit((values) => {
@@ -322,12 +328,15 @@ export function EditNotificationChannelDialog({
               size="sm"
               disabled={
                 testChannel.isPending ||
+                testExisting.isPending ||
                 (kind !== 'webpush' && !notifyUrl.trim())
               }
               onClick={handleTest}
             >
               <PaperPlaneTiltIcon className="size-3.5" aria-hidden="true" />
-              {testChannel.isPending ? 'Sending...' : 'Send test message'}
+              {testChannel.isPending || testExisting.isPending
+                ? 'Sending...'
+                : 'Send test message'}
             </Button>
             {verified ? (
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">

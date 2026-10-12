@@ -643,6 +643,7 @@ func run(logger *slog.Logger) error {
 		// loadSecretsManager.
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
+	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// emailSender is shared by alert-rule/deploy-outcome notifications
 	// and the password-reset flow. Always non-nil: a DynamicSender

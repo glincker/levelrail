@@ -13,9 +13,10 @@ type ChannelStore interface {
 	GetNotificationChannel(ctx context.Context, id string) (*alerting.NotificationChannel, error)
 }
 
-// NoticeSender delivers plain text; *alerting.DeployDispatcher satisfies it.
+// NoticeSender delivers plain text to a channel, decrypting its credential
+// at send time; *alerting.DeployDispatcher satisfies it.
 type NoticeSender interface {
-	SendNotice(ctx context.Context, kind alerting.NotifyKind, notifyURL, text string) error
+	SendNotice(ctx context.Context, c alerting.NotificationChannel, text string) error
 }
 
 // ChannelNotifier sends upgrade notices through the alert channels an
@@ -37,7 +38,7 @@ func (n ChannelNotifier) Notify(ctx context.Context, channelIDs []string, text s
 		if !ch.Enabled {
 			continue
 		}
-		if err := n.Sender.SendNotice(ctx, ch.Kind, ch.NotifyURL, text); err != nil {
+		if err := n.Sender.SendNotice(ctx, *ch, text); err != nil {
 			errs = append(errs, fmt.Errorf("channel %q: %w", id, err))
 		}
 	}

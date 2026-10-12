@@ -199,7 +199,7 @@ func (rt *Router) notifyDeviceLoginExpired() {
 			if !c.Enabled || !c.NotifyDeviceLoginExpired {
 				continue
 			}
-			if err := rt.deviceNotifier.SendNotice(ctx, c.Kind, c.NotifyURL, text); err != nil {
+			if err := rt.deviceNotifier.SendNotice(ctx, c, text); err != nil {
 				rt.logger.Error("api: send device login expiry notice failed",
 					slog.String("channel_id", c.ID), slog.String("error", err.Error()))
 			}

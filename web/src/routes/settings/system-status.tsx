@@ -61,6 +61,7 @@ const SECURITY_CODES = [
   'firewall',
   'master_key_rotation',
   'stale_secrets',
+  'notification_channel_secrets',
   'secret_reveal_policy',
   'legacy_tokens',
 ]
