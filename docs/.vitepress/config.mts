@@ -199,6 +199,7 @@ const sidebarGroups = [
           { text: 'Usage and cost', link: '/usage-and-cost' },
           { text: 'Resource advisor (beta)', link: '/resource-advisor' },
           { text: 'Integrations', link: '/integrations' },
+          { text: 'Cloud integrations', link: '/cloud-integrations' },
           { text: 'Rolling back a release', link: '/rollback' },
           { text: 'Resilience', link: '/resilience' },
           { text: 'Resilience, in short', link: '/resilience-summary' },
