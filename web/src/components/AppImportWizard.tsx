@@ -56,7 +56,7 @@ function Stepper({
 function SafeToSkip() {
   const { t } = useTranslation('migration')
   return (
-    <div className="rounded-md border bg-muted/30 p-3 text-sm">
+    <div className="space-y-1 text-sm">
       <p className="font-medium">{t('appImport.safe.title')}</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-5 text-muted-foreground">
         <li>{t('appImport.safe.readOnly')}</li>

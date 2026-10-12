@@ -1,8 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { UserIcon } from '@phosphor-icons/react/dist/ssr'
 import { sessionQueryOptions, useSession } from '../../queries/security'
 import { ChangePasswordCard } from '../../components/ChangePasswordCard'
-import { Field, FieldDescription, FieldLabel } from '../../components/ui/field'
 import {
   Card,
   CardContent,
@@ -14,7 +14,7 @@ import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // Two independent cards: profile (read-only) and change-password
 // (ChangePasswordCard.tsx, split out so TanStack Router's
@@ -39,50 +39,53 @@ function AccountSettingsSkeleton() {
 }
 
 function AccountSettingsPage() {
+  const { t } = useTranslation('settings')
   return (
-    <div className="space-y-6">
-      <PageHeader title="Account" description="Profile and password." />
-
-      <ProfileCard />
-      <ChangePasswordCard />
-    </div>
+    <PageTemplate
+      icon={<UserIcon />}
+      title={t('accountPage.title')}
+      description={t('accountPage.description')}
+    >
+      <div className="space-y-6">
+        <ProfileCard />
+        <ChangePasswordCard />
+      </div>
+    </PageTemplate>
   )
 }
 
 function ProfileCard() {
+  const { t } = useTranslation('settings')
   const { data: session } = useSession()
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile</CardTitle>
+        <CardTitle>{t('accountPage.profile.title')}</CardTitle>
         <CardDescription>
-          Every signed-in account has identical access on this platform: no
-          teams or roles yet.
+          {t('accountPage.profile.description')}
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <Field>
-          <FieldLabel htmlFor="account-email">Email</FieldLabel>
-          <div
-            id="account-email"
-            className="flex h-9 items-center gap-2 rounded-md border border-border bg-muted/50 px-3 text-sm text-foreground"
-          >
-            <UserIcon className="size-4 text-muted-foreground" />
-            {session.username}
+      <CardContent>
+        <dl className="space-y-4 text-sm">
+          <div className="space-y-1">
+            <dt className="text-xs font-medium text-muted-foreground">
+              {t('accountPage.profile.email')}
+            </dt>
+            <dd className="text-foreground">{session.username}</dd>
           </div>
-        </Field>
-        <Field>
-          <FieldLabel>Display name</FieldLabel>
-          <div className="flex h-9 items-center rounded-md border border-border bg-muted/50 px-3 text-sm text-foreground">
-            {session.display_name}
+          <div className="space-y-1">
+            <dt className="text-xs font-medium text-muted-foreground">
+              {t('accountPage.profile.displayName')}
+            </dt>
+            <dd className="text-foreground">{session.display_name}</dd>
+            <dd className="text-xs text-muted-foreground">
+              {session.has_password
+                ? t('accountPage.profile.hasPassword')
+                : t('accountPage.profile.noPassword')}
+            </dd>
           </div>
-          <FieldDescription>
-            {session.has_password
-              ? 'This account signs in with a password.'
-              : 'This account has no password set, only OAuth sign-in.'}
-          </FieldDescription>
-        </Field>
+        </dl>
       </CardContent>
     </Card>
   )
