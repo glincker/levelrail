@@ -1,4 +1,15 @@
 {
+  "table": {
+    "label": "Audit log",
+    "time": "Time",
+    "actor": "Actor",
+    "agent": "Agent",
+    "client": "Client",
+    "ability": "Ability",
+    "method": "Method",
+    "path": "Path",
+    "status": "Status"
+  },
   "page": {
     "description": "Who changed what: every write, deploy, or root-tier request, plus automatic certificate renewals, newest first. Read-only requests aren't recorded here."
   },

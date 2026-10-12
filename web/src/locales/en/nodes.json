@@ -195,6 +195,7 @@
   },
   "list": {
     "title": "Nodes",
+    "tableLabel": "Nodes",
     "description": "Servers this control plane places apps and databases on.",
     "help": "Multi-node guide",
     "count_one": "{{count}} node",

@@ -1,9 +1,8 @@
 import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { GithubLogoIcon } from '@phosphor-icons/react/dist/ssr'
 import { toast } from '@/components/ui/toast'
-import { PageHeader } from '@/components/shell/PageHeader'
+import { GitProviderPage } from '@/components/settings/GitProviderPage'
 import { GitHubAppConnectionCard } from '../../components/GitHubAppConnectionCard'
 import { githubAppStatusQueryOptions } from '../../queries/githubApp'
 import { ingressSettingsQueryOptions } from '../../queries/domains'
@@ -70,17 +69,8 @@ function GitHubAppSettingsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-          <GithubLogoIcon className="size-4" />
-        </div>
-        <PageHeader
-          title="GitHub App"
-          description="Connect a GitHub App for private-repository access and installation-based repo browsing when creating an app from git."
-        />
-      </div>
+    <GitProviderPage provider="github">
       <GitHubAppConnectionCard />
-    </div>
+    </GitProviderPage>
   )
 }

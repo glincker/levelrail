@@ -1,4 +1,15 @@
 {
+  "table": {
+    "label": "Deployments",
+    "deploy": "Deployment",
+    "status": "Status",
+    "app": "App",
+    "environment": "Environment",
+    "commit": "Commit",
+    "branch": "Branch",
+    "started": "Started",
+    "by": "By"
+  },
   "autoRollback": {
     "title": "Auto-rollback on crashloop",
     "infoTipLabel": "About auto-rollback on crashloop",

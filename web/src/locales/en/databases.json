@@ -399,6 +399,7 @@
   },
   "list": {
     "title": "Databases",
+    "tableLabel": "Databases",
     "count_one": "{{count}} database",
     "count_other": "{{count}} databases",
     "new": "New database",

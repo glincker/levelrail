@@ -1,21 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useVirtualizer } from '@tanstack/react-virtual'
-import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
 import { useAppListOptional } from '../../queries/apps'
 import { useDatabases } from '../../queries/databases'
-import { NODE_LIST_GRID, NodeRow, RowSkeleton } from '../../components/NodeRow'
+import { NODE_LIST_GRID, RowSkeleton } from '../../components/NodeRow'
+import { NodesTable } from '../../components/NodesTable'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '../../components/shell/PageHeader'
 import { countResourcesByNode } from '../../lib/nodeResourceCounts'
 
-// The loader primes the cache and the list is virtualized unconditionally,
-// per the standing rule for lists, even though nodes are a 1-10 machine list.
+// The loader primes the cache; the table virtualizes itself past 50 rows.
 export const Route = createFileRoute('/nodes/')({
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(nodeListQueryOptions()),
@@ -55,15 +53,6 @@ function NodeListPage() {
     apps && databases
       ? countResourcesByNode(nodes, apps, databases)
       : new Map<string, number>()
-  const parentRef = useRef<HTMLDivElement>(null)
-
-  const virtualizer = useVirtualizer({
-    count: nodes.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 64,
-    overscan: 8,
-  })
-
   return (
     <div>
       <div className="mb-4">
@@ -93,38 +82,11 @@ function NodeListPage() {
           action={<AddNodeWizard />}
         />
       ) : (
-        <div
-          ref={parentRef}
-          className="h-[70vh] overflow-auto rounded-lg border border-border bg-card"
-        >
-          <ListHeader />
-          <div
-            className="relative"
-            style={{ height: virtualizer.getTotalSize() }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const node = nodes[virtualRow.index]
-              if (!node) {
-                return null
-              }
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  className="absolute top-0 left-0 w-full"
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
-                >
-                  <NodeRow
-                    node={node}
-                    usage={usageByNodeId.get(node.id)}
-                    resourceCount={counts.get(node.id)}
-                  />
-                </div>
-              )
-            })}
-          </div>
-        </div>
+        <NodesTable
+          nodes={nodes}
+          usageByNodeId={usageByNodeId}
+          counts={counts}
+        />
       )}
     </div>
   )

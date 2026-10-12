@@ -613,5 +613,85 @@
     "revokeTitle": "Revoke {{name}}?",
     "revokeDescription": "The phone loses access at once and has to be paired again.",
     "revoked": "{{name}} revoked"
+  },
+  "oauthPage": {
+    "eyebrow": "Sign-in",
+    "title": "OAuth sign-in",
+    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. Every signed-in account has identical access, there are no roles yet.",
+    "connectedCount_one": "{{count}} provider connected",
+    "connectedCount_other": "{{count}} providers connected",
+    "banner": {
+      "title": "Register the callback URL with each provider first",
+      "body": "Every provider asks for a redirect (callback) URL when you create its OAuth app. Copy the URL shown on its card exactly, including the scheme, or sign-in fails with a redirect mismatch."
+    },
+    "providers": {
+      "google": "Google",
+      "github": "GitHub",
+      "microsoft": "Microsoft",
+      "oidc": "OIDC / SSO"
+    },
+    "state": {
+      "connected": "Connected",
+      "disabled": "Disabled",
+      "unconfigured": "Not set up"
+    },
+    "enable": "Allow sign-in",
+    "saved": "{{provider}} settings saved.",
+    "callbackCopied": "Callback URL copied.",
+    "callbackCopyFailed": "Could not copy. Select the URL and copy it by hand.",
+    "callbackLabel": "Callback URL",
+    "copyCallback": "Copy callback URL",
+    "clientId": "Client ID",
+    "credentials": {
+      "title": "Credentials",
+      "description": "Create an OAuth app at {{provider}} and paste its client ID and secret here."
+    },
+    "restrict": {
+      "title": "Who can join",
+      "description": "Only new sign-ins from this email domain get an account created automatically. Leave blank to allow any email.",
+      "label": "Restrict to email domain (optional)"
+    },
+    "issuerUrl": {
+      "label": "Issuer URL",
+      "hint": "Your identity provider's OIDC issuer, the address /.well-known/openid-configuration is served from."
+    },
+    "displayName": {
+      "label": "Display name (optional)",
+      "hint": "Shown on the sign-in button as \"Continue with ...\". Defaults to \"SSO\"."
+    },
+    "clientSecret": {
+      "label": "Client secret",
+      "unchanged": "Unchanged",
+      "stored": "A secret is already stored. Leave blank to keep it.",
+      "neverShown": "Never shown again once saved."
+    },
+    "errors": {
+      "clientId": "Client ID is required to enable this provider",
+      "clientSecret": "Client secret is required the first time this provider is enabled",
+      "issuerUrl": "Issuer URL is required to enable OIDC"
+    }
+  },
+  "gitProviders": {
+    "eyebrow": "Git provider",
+    "github": {
+      "title": "GitHub App",
+      "description": "Connect a GitHub App for private-repository access and installation-based repo browsing when creating an app from git.",
+      "banner": "Once the App is installed, its repositories are available to pick from when you create an app."
+    },
+    "gitlab": {
+      "title": "GitLab App",
+      "description": "Connect a GitLab OAuth Application, gitlab.com or self-hosted, for project browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its projects are available to pick from when you create an app."
+    },
+    "gitea": {
+      "title": "Gitea App",
+      "description": "Connect a self-hosted Gitea OAuth2 application for repository browsing and webhook-driven deploys.",
+      "banner": "Once the application is authorized, its repositories are available to pick from when you create an app."
+    },
+    "bitbucket": {
+      "title": "Bitbucket App",
+      "description": "Connect a Bitbucket Cloud OAuth consumer for repository browsing and webhook-driven deploys.",
+      "banner": "Once the consumer is authorized, its repositories are available to pick from when you create an app."
+    }
   }
 }
