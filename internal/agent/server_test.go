@@ -143,7 +143,7 @@ func TestServer_Enroll_Success(t *testing.T) {
 	}
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "plaintext-token", time.Hour)
-	srv := NewServer(ca, st, NewRegistry(), nil)
+	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
 
 	resp, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-1"})
 	if err != nil {
@@ -177,7 +177,7 @@ func TestServer_Enroll_Success(t *testing.T) {
 
 func TestServer_Enroll_InvalidToken(t *testing.T) {
 	ca, _ := GenerateCA()
-	srv := NewServer(ca, newFakeEnrollStore(), NewRegistry(), nil)
+	srv := NewServer(ca, newFakeEnrollStore(), NewRegistry(), nil, WithRequireCSR(false))
 
 	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "nonexistent", NodeName: "worker-1"})
 	if status.Code(err) != codes.Unauthenticated {
@@ -189,7 +189,7 @@ func TestServer_Enroll_ExpiredToken(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "plaintext-token", -time.Hour) // already expired
-	srv := NewServer(ca, st, NewRegistry(), nil)
+	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
 
 	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-1"})
 	if status.Code(err) != codes.Unauthenticated {
@@ -201,7 +201,7 @@ func TestServer_Enroll_AlreadyUsedToken(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "plaintext-token", time.Hour)
-	srv := NewServer(ca, st, NewRegistry(), nil)
+	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
 
 	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-1"}); err != nil {
 		t.Fatalf("first Enroll() error = %v", err)
@@ -217,7 +217,7 @@ func TestServer_Enroll_DuplicateNodeName(t *testing.T) {
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "token-1", time.Hour)
 	seedJoinToken(st, "token-2", time.Hour)
-	srv := NewServer(ca, st, NewRegistry(), nil)
+	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
 
 	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "token-1", NodeName: "worker-1"}); err != nil {
 		t.Fatalf("first Enroll() error = %v", err)

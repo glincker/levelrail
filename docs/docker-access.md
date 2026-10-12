@@ -11,8 +11,8 @@ Levelrail narrows this with an in-process Docker API guard. Each process starts 
 
 | `APP_DOCKER_GUARD` | Behavior |
 | --- | --- |
-| `audit` (default) | Everything is forwarded. A request a rule would deny is logged and written to the audit log as `docker_guard.would_deny`. |
-| `enforce` | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
+| `audit` | Everything is forwarded. A request a rule would deny is logged and written to the audit log as `docker_guard.would_deny`. |
+| `enforce` (default) | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
 | `off` | No proxy. Clients dial the daemon directly, as before the guard existed. |
 
 `audit` is the default so an upgrade can't break a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
@@ -22,7 +22,7 @@ levelrail-cli docker-guard status
 levelrail-cli docker-guard set --mode enforce
 ```
 
-The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` ability). Switching between `audit` and `enforce` applies immediately. Switching to or from `off` takes effect at the next restart; until then `off` behaves like `audit`. When `APP_DOCKER_GUARD` is set on the server it wins and the API returns `409`. An unrecognized value fails closed to `enforce`, and in `enforce` mode a guard that cannot start stops the process instead of running unguarded.
+The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` ability). Switching between `audit` and `enforce` applies immediately. Switching to or from `off` takes effect at the next restart; until then `off` behaves like `audit`. When `APP_DOCKER_GUARD` is set on the server it wins and the API returns `409`. An unrecognized value fails closed to `enforce`, and when `enforce` was chosen explicitly (the env var or the dashboard), a guard that cannot start stops the process instead of running unguarded.
 
 `levelrail-cli doctor` reports two checks: `docker_guard` (the mode and what it flagged in the summary window) and `docker_privilege` (whether the daemon is rootless or uses userns-remap, and whether the service user is root or in the `docker` group).
 
@@ -30,7 +30,7 @@ The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` a
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_DOCKER_GUARD` | `audit` | `off`, `audit` or `enforce`. Overrides the setting saved from the dashboard. |
+| `APP_DOCKER_GUARD` | `enforce` | `off`, `audit` or `enforce`. Overrides the setting saved from the dashboard. |
 | `APP_DOCKER_GUARD_SOCKET` | `<data dir>/guard/docker-guard.sock` | Where the proxy listens. Its directory must be `0700`; the socket is `0600`. |
 | `APP_DOCKER_GUARD_ALLOW_HOST_NETWORK` | `false` | Lets a container declared with host networking through `network_host`. |
 | `APP_DOCKER_GUARD_MAX_BODY_BYTES` | `4194304` | Largest create, update, exec or volume body the guard reads. Larger is denied. |

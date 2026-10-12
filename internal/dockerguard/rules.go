@@ -75,6 +75,8 @@ var allowlist = []endpoint{
 	{http.MethodPost, "/containers/*/start", bodyNone},
 	{http.MethodPost, "/containers/*/stop", bodyNone},
 	{http.MethodPost, "/containers/*/kill", bodyNone},
+	{http.MethodPost, "/containers/*/pause", bodyNone},
+	{http.MethodPost, "/containers/*/unpause", bodyNone},
 	{http.MethodPost, "/containers/*/wait", bodyNone},
 	{http.MethodPost, "/containers/*/update", bodyContainerUpdate},
 	{http.MethodDelete, "/containers/*", bodyNone},

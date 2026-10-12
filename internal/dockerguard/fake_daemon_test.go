@@ -88,6 +88,16 @@ func (f *fakeDaemon) serve(w http.ResponseWriter, r *http.Request) {
 		_, _ = io.WriteString(w, `{"Id":"e1"}`)
 	case strings.HasPrefix(path, "/exec/") && strings.HasSuffix(path, "/start"):
 		f.hijackEcho(w)
+	case path == "/containers/json" || path == "/images/json" || path == "/volumes" || path == "/networks":
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `[]`)
+	case r.Method == http.MethodGet && strings.HasPrefix(path, "/images/") && strings.HasSuffix(path, "/json"):
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"Id":"sha256:abc","Config":{}}`)
+	case r.Method == http.MethodPost && path == "/volumes/create":
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = io.WriteString(w, `{"Name":"v"}`)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = io.WriteString(w, `[]`)
