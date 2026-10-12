@@ -622,7 +622,7 @@ How this interacts with `bind_address` and `host_port`:
 | a literal IP | that IP, unchanged (ingress routes only if it is the mesh IP or a wildcard) |
 | `host_port` pinned | the pinned port on the same address as above |
 
-Only the app's main port moves. App streams, managed databases and every unpublished container port are untouched: a database is never bound to the mesh address by this feature.
+Only the app's main port moves. App streams, [managed databases](/managing-databases) and every unpublished container port are untouched: a database is never bound to the mesh address by this feature.
 
 <Warning>
 If the mesh path is down (mesh off, node not joined, no recent handshake), the app is **not** routed: a browser gets a TLS handshake failure while the app reports healthy. Levelrail reports this as the `NoMeshIngressPath` reason on the app's `CrossNodeIngress` condition, in `levelrail-cli doctor` (`cross_node_ingress`), in preflight and on the Traffic page, each with the cause and a fix.

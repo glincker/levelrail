@@ -27,16 +27,16 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - App spec (`app.yaml` or `deploy.yaml`) parsing with an embedded JSON Schema. See the [app spec reference](/app-spec-reference).
 - Docker Engine API wrapper, with no `docker` CLI shelling.
 - Application reconciler with readiness probes gating every cutover and liveness probes on each pass. A container that OOM-kills or exits during the readiness wait fails immediately (`OOMKilledDuringReadiness`, `ExitedDuringReadiness`) instead of retrying a dead address.
-- BuildKit builds with live build-log streaming over SSE. Railpack auto-detection, static sites (`build.type: static`), and dedicated build nodes with a registry-backed cache (a built-in registry can be enabled in Settings).
+- BuildKit builds with live build-log streaming over SSE. Railpack auto-detection, static sites (`build.type: static`), and dedicated [build nodes](/build-node-routing) with a registry-backed cache (a built-in registry can be enabled in Settings).
 - Docker Compose as a deploy target for a supported subset of `compose.yaml`, and multi-service apps (`deploy-spec`) with per-service builds and deploys.
 - Deploy strategies: rolling, recreate, blue-green. Rollback to retained images, deploy history, deploy comparison, and deterministic build-failure diagnosis.
 - Pre and post-deploy hooks. A failing pre-deploy hook blocks cutover and keeps the old container serving.
 - Git providers: GitHub (App flow, including GitHub Enterprise Server), GitLab, Bitbucket Cloud and Gitea, with HMAC-verified webhooks and webhook delivery history with replay. See [git integrations](/git-integrations).
-- Preview environments per pull request (opt-in), with optional ephemeral databases and PR status comments. See [deploy previews](/deploy-previews).
+- [Preview environments](/previews) per pull request (opt-in), with optional ephemeral databases and PR status comments. See [deploy previews](/deploy-previews).
 - Embedded Caddy ingress: automatic TLS (internal issuer by default, public ACME toggleable), zero-config `sslip.io` hostnames, per-domain bring-your-own certificates. See [domains and ingress](/domains-and-ingress).
 - Envelope-encrypted secrets with master-key rotation. See [security](/security).
 - Container exec and an interactive terminal (dashboard or `apps exec --interactive`), gated to root-level tokens.
-- Service template catalog: 311 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
+- [Service template](/templates-and-registry) catalog: 311 entries (see [template catalog](/template-catalog)), reversing the original non-goal in [ADR 015](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md).
 
 ### Data
 
@@ -50,7 +50,7 @@ Phase 5 (chaos testing, upgrade and downgrade testing across versions, security 
 - Node-local metrics (15s resolution) and log store with full-text and JSON search, federated across nodes, and a Prometheus remote-read endpoint. Deploy markers appear on metric charts.
 - Crashloop detection with the last 200 log lines surfaced in the UI.
 - Alerting over 14 rule kinds and 18 notification channel kinds, with retries for transient failures and delivery history.
-- Attention list, status page, capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
+- Attention list, [status page](/status-page), capacity forecast, right-sizing suggestions and certificate renewal visibility. See [observability](/observability).
 
 ### Multi-node
 
@@ -78,8 +78,8 @@ The join flow is verified across two real Docker daemons, but not across a real 
 
 These exist and are tested, but are gated or carry a beta label. See [feature status](/feature-status) and [experimental features](/experimental-features).
 
-- In-app AI chat, AI models on GPU nodes, load balancer, platform as code, Cloudflare Tunnel (all behind `APP_EXPERIMENTAL`).
-- Pipelines, feature flags, deploy freeze, supply chain scanning, log archive, scheduled deploys, deploy cost estimate.
+- In-app AI chat, AI models on GPU nodes, [load balancer](/load-balancing), [platform as code](/platform-as-code), Cloudflare Tunnel (all behind `APP_EXPERIMENTAL`).
+- Pipelines, feature flags, deploy freeze, supply chain scanning, [log archive](/log-archive), [scheduled deploys](/scheduled-deploys), deploy cost estimate.
 
 ## Open work
 

@@ -7,7 +7,7 @@ The New app page (`/apps/new`) turns a repository into a running app with sugges
 
 ## The three steps
 
-1. **Where is it from.** Pick a repository from the connected GitHub, GitLab, Gitea or Bitbucket app (searchable, with language and last push), paste a git URL (optionally with a one-shot access token for a private repository), or switch to the "Image, compose or docker run" tab or the template catalog.
+1. **Where is it from.** Pick a repository from the connected GitHub, GitLab, Gitea or Bitbucket app (searchable, with language and last push), paste a git URL (optionally with a one-shot access token for a private repository), or switch to the "Image, compose or docker run" tab or the [template catalog](/templates-and-registry).
 2. **What we found.** Every item is an editable, pre-filled suggestion with a line of evidence, for example "found Dockerfile at apps/web/Dockerfile" or "Next.js default port".
 3. **Review and deploy.** A plain summary and a list of everything that will be created (app, repository link, databases, domain, environment variables), then one Deploy button that opens the live build log.
 

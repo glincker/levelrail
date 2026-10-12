@@ -24,7 +24,7 @@ sudo nvidia-ctk runtime configure --runtime=docker
 sudo systemctl restart docker
 ```
 
-When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card shows "nvidia runtime missing" with this fix, `levelrail-cli doctor` and the Status page raise a warning, and models placed there stay in the `GPURuntimeMissing` state until it is fixed. Run `levelrail-cli models restart <name>` afterwards.
+When a node has a GPU but Docker has no `nvidia` runtime, the dashboard card shows "nvidia runtime missing" with this fix, `levelrail-cli doctor` and the [Status page](/status-page) raise a warning, and models placed there stay in the `GPURuntimeMissing` state until it is fixed. Run `levelrail-cli models restart <name>` afterwards.
 
 If the agent runs inside a container, `nvidia-smi` must be reachable from it, or run the agent directly on the host.
 

@@ -117,6 +117,40 @@ fs.writeFileSync(
   `---\ntitle: "Changelog"\ndescription: Every Levelrail release with highlights, fixes and upgrade notes.\n---\n\n${updates.join('\n\n')}\n`,
 )
 
+// "All pages" index: every nav page with its description, so no page is an orphan
+// and crawlers get one hub that links the whole docs set.
+{
+  const cfgNav = JSON.parse(fs.readFileSync('docs/docs.json', 'utf8'))
+  const flat = (items) => items.flatMap((i) => (typeof i === 'string' ? [i] : flat(i.pages)))
+  const meta = (slug) => {
+    for (const ext of ['md', 'mdx']) {
+      const f = `docs/${slug}.${ext}`
+      if (!fs.existsSync(f)) continue
+      const fm = fs.readFileSync(f, 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? ''
+      const get = (k) => fm.match(new RegExp(`^${k}:\\s*"?(.*?)"?\\s*$`, 'm'))?.[1]
+      return { title: get('title') ?? slug, description: get('description') ?? '' }
+    }
+    return null
+  }
+  const sections = []
+  for (const tab of cfgNav.navigation.tabs) {
+    if (tab.tab === 'Self-host gallery') continue
+    sections.push(`## ${tab.tab}\n`)
+    for (const g of tab.groups) {
+      const rows = flat(g.pages)
+        .filter((s) => s !== 'all-pages')
+        .map((s) => [s, meta(s)])
+        .filter(([, m]) => m)
+        .map(([s, m]) => `- [${esc(m.title)}](/${s})${m.description ? `: ${esc(m.description)}` : ''}`)
+      if (rows.length) sections.push(`### ${g.group}\n\n${rows.join('\n')}\n`)
+    }
+  }
+  fs.writeFileSync(
+    'docs/all-pages.mdx',
+    `---\ntitle: "All pages"\ndescription: Every Levelrail documentation page with a one-line summary, grouped by section.\n---\n\nThe complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host/index).\n\n${sections.join('\n')}`,
+  )
+}
+
 // Keep docs.json's gallery tab in sync.
 const cfg = JSON.parse(fs.readFileSync('docs/docs.json', 'utf8'))
 const tabs = cfg.navigation.tabs.filter((t) => t.tab !== 'Self-host gallery')
@@ -127,5 +161,7 @@ tabs.splice(tabs.length - 1, 0, {
     ...cats.map((c) => ({ group: c, pages: byCat.get(c).map((t) => `self-host/${t.id}`) })),
   ],
 })
+const start = tabs[0].groups[0]
+if (!start.pages.includes('all-pages')) start.pages.push('all-pages')
 cfg.navigation.tabs = tabs
 fs.writeFileSync('docs/docs.json', JSON.stringify(cfg, null, 2) + '\n')

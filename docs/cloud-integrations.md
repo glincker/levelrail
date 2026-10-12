@@ -23,7 +23,7 @@ Works today:
 
 - **EC2 nodes.** Provision a server and enroll it as a node, with a static key, an assumable role, or the control plane's own AWS identity. Needs a default VPC in the target region. Sizes are a short curated `t3.*` list. See [Node provisioning](/node-provisioning#provider-credentials). Status: exercised against test doubles only, not yet against a real AWS account.
 - **Route53.** Zones, records, weighted, failover and multivalue routing, health checks, DNS-01 for wildcards, and automatic records when adding a domain. See [DNS zones and records](/dns).
-- **S3.** Backup targets and storage destinations for database backups, app volume backups, log archive, build cache and audit export. See [Backup targets](/backups-and-storage) and [Object storage](/object-storage).
+- **S3.** Backup targets and storage destinations for database backups, app volume backups, [log archive](/log-archive), build cache and audit export. See [Backup targets](/backups-and-storage) and [Object storage](/object-storage).
 - **Private images.** Registry credentials take a host, username and password, so any registry that accepts those works.
 
 Planned:
@@ -54,7 +54,7 @@ Works today:
 - **Proxy flag.** `proxied` on A, AAAA and CNAME records, and automatic records with `--dns-proxied`. Set the zone's SSL/TLS mode to Full (strict) when it is on.
 - **R2.** Backup targets and storage destinations, with the endpoint filled in from the account id.
 
-Not supported: Cloudflare Tunnel, Workers, and Cloudflare load balancing (routing policies are refused on Cloudflare).
+Not supported: Cloudflare Tunnel, Workers, and Cloudflare [load balancing](/load-balancing) (routing policies are refused on Cloudflare).
 
 ## DigitalOcean
 

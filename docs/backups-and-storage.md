@@ -194,7 +194,7 @@ Each resource is in exactly one state:
 | Backups failing | Every attempt failed, or the last drill failed | Back up now |
 | Not protected | No schedule or no target. A backup taken by hand does not count | Protect |
 
-A resource counts as protected only when it is scheduled and has a successful backup. Preview environments and canaries are marked **Scratch** and left out of the totals.
+A resource counts as protected only when it is scheduled and has a successful backup. [Preview environments](/previews) and canaries are marked **Scratch** and left out of the totals.
 
 **Protect everything** (`POST /api/v1/backups/protect-all`) schedules every unprotected resource in one step. You pick a destination (or connect one inline from a provider preset: Cloudflare R2, Backblaze B2, Wasabi, AWS S3, MinIO, or local disk), a schedule, and how many backups to keep. The dialog previews the plan first, and nothing changes until you apply. Scratch resources are off unless you opt in. The same flow on the CLI:
 

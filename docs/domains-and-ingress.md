@@ -267,7 +267,7 @@ The Domains page shows the address and how it was found (`from APP_PUBLIC_HOST`,
 | `APP_PUBLIC_IP_PROBE_TIMEOUT` | `4s` | Overall budget for detection at startup. |
 
 <Warning>
-If the server is behind NAT or a load balancer, detection finds the wrong address. Set `APP_PUBLIC_HOST` to the address that actually reaches ports 80 and 443 on this box.
+If the server is behind NAT or a [load balancer](/load-balancing), detection finds the wrong address. Set `APP_PUBLIC_HOST` to the address that actually reaches ports 80 and 443 on this box.
 </Warning>
 
 ### Automatic hostnames for apps
@@ -698,7 +698,7 @@ Writes need the root ability, like basic auth.
 
 ### Built-in sign-in (SSO for apps)
 
-Instead of running your own auth service, set the provider to **Levelrail sign-in** (`builtin`). Visitors sign in with their account on this installation, through the same sign-in page as the dashboard (passwords, passkeys, two-factor), and only the users, teams and roles you allow get through. Your app receives `X-User` and `X-Email` (the email) and `X-Name` (the display name). Visitor-sent copies of those headers are always removed first.
+Instead of running your own auth service, set the provider to **Levelrail sign-in** (`builtin`). Visitors sign in with their account on this installation, through the same sign-in page as the dashboard (passwords, passkeys, two-factor), and only the users, [teams and roles](/teams-and-roles) you allow get through. Your app receives `X-User` and `X-Email` (the email) and `X-Name` (the display name). Visitor-sent copies of those headers are always removed first.
 
 It needs the platform primary domain (**Settings > Ingress**), because visitors are sent to the dashboard to sign in. Signing in there with an OAuth provider (Google, GitHub) ends on the dashboard; open the app link again and it goes straight through.
 

@@ -65,7 +65,8 @@
             "pages": [
               "index",
               "getting-started",
-              "installing"
+              "installing",
+              "all-pages"
             ]
           },
           {

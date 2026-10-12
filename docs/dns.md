@@ -135,7 +135,7 @@ levelrail-cli dns records add example.com --name app --type A --value 198.51.100
   --routing failover --set-id standby --failover SECONDARY
 ```
 
-A name cannot mix simple and routed sets of the same type. Cloudflare has no equivalent in plain DNS (its load balancing is a separate paid product), so routing policies are refused there with a clear error.
+A name cannot mix simple and routed sets of the same type. Cloudflare has no equivalent in plain DNS (its [load balancing](/load-balancing) is a separate paid product), so routing policies are refused there with a clear error.
 
 ### Import and export
 
@@ -194,7 +194,7 @@ An app can serve every name under a domain: add `*.example.com` (or `*.apps.exam
 - When the provider manages the domain's zone, a `*` A record pointing at this server is created for you. An existing `*` record is never overwritten.
 - The domain check resolves a random name under the wildcard, so it tests the wildcard record rather than a cached exact name. The Domains table marks these domains **Wildcard**.
 
-Per environment and preview environment wildcards are not part of this yet.
+Per environment and [preview environment](/previews) wildcards are not part of this yet.
 
 ## Permissions and audit
 

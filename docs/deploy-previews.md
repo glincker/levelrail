@@ -91,7 +91,7 @@ A preview is a picture of what the app served, so treat it like the app.
 - **Metadata is on by default, screenshots are opt-in.** The default reads only the public head of your page and, at most, one image the page itself names. A screenshot is never taken unless you choose it for that app.
 - **Internal pages can leak.** If the path you pick shows internal data to anyone who can reach the app, the thumbnail shows it too. Pick a public page, such as `/`.
 - **No login.** The browser sends no cookies and no tokens. A 401 or 403, or a redirect to a login page, is recorded as skipped and no image is stored.
-- **Same access as the app.** The image is served only to people who can read the app, through the authenticated API. It is never public and never appears on the public status page.
+- **Same access as the app.** The image is served only to people who can read the app, through the authenticated API. It is never public and never appears on the public [status page](/status-page).
 - **Not a sandbox for hostile apps.** The page is loaded by a real browser next to the app. The container limits above contain a browser bug, but only capture apps you run.
 - The browser's debugging port is published on the host loopback interface for the length of a capture, on a random port, so other processes on the host can reach it during that window.
 

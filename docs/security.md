@@ -130,7 +130,7 @@ Container hardening (above) adjusts automatically under detected rootless: `Pids
 
 **What is not verified:** this detection and the hardening adjustment above were tested against a fake Docker client, not a real rootless Docker or Podman installation. Known gaps to check before relying on this in production:
 
-- **Bind-mount ownership.** A bind mount's files keep the UID/GID they have on the host; under rootless Docker/Podman that UID sits inside a remapped user namespace, so a container process expecting to own a bind-mounted path can see a permission mismatch that doesn't happen under rootful Docker. Named volumes (Levelrail's default for managed databases) aren't affected the same way.
+- **Bind-mount ownership.** A bind mount's files keep the UID/GID they have on the host; under rootless Docker/Podman that UID sits inside a remapped user namespace, so a container process expecting to own a bind-mounted path can see a permission mismatch that doesn't happen under rootful Docker. Named volumes (Levelrail's default for [managed databases](/managing-databases)) aren't affected the same way.
 - **Low host ports.** Rootless port publishing goes through a userspace proxy (`rootlesskit`/`slirp4netns`), which by default can't bind host ports below 1024 regardless of the container's own capabilities. The embedded ingress runs on the host directly, not in a rootless container, so this only affects an app that needs to publish a low host port itself.
 - **cgroup limits beyond PidsLimit.** Memory and CPU limits also need a delegated cgroup v2 controller under rootless; unlike PidsLimit, this isn't currently detected or adjusted for `Resources.MemoryBytes`/`NanoCPUs`.
 

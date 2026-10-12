@@ -64,7 +64,7 @@ Manual snapshots (created from the CLI or API) and pre-upgrade snapshots are nev
 
 ### Doctor check
 
-`levelrail-cli doctor` and the dashboard Status page include a `control_plane_backup` check. It warns when the newest snapshot is older than 3 days (the fix is `levelrail-cli control-plane-backups create`), is ok when a recent one exists, and reports unknown when scheduled snapshots are disabled with `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`. It never fails. See [troubleshooting](/troubleshooting#control-plane-backup-is-stale).
+`levelrail-cli doctor` and the dashboard [Status page](/status-page) include a `control_plane_backup` check. It warns when the newest snapshot is older than 3 days (the fix is `levelrail-cli control-plane-backups create`), is ok when a recent one exists, and reports unknown when scheduled snapshots are disabled with `APP_CONTROL_PLANE_BACKUP_INTERVAL=0`. It never fails. See [troubleshooting](/troubleshooting#control-plane-backup-is-stale).
 
 ### Stale backup alert
 

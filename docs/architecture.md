@@ -38,7 +38,7 @@ Packages: `internal/agent` (see `internal/agent/transport.go`, `internal/agent/g
 
 **Pluggable transport:** The transport is an interface (`agent.Transport`) with two implementations:
 - `Local` - calls a `docker.Runtime` in-process (single-node)
-- `GRPCTransport` - dispatches the same calls over a real reverse-dialed gRPC connection with mTLS (multi-node)
+- `GRPCTransport` - dispatches the same calls over a real reverse-dialed gRPC connection with mTLS ([multi-node](/multi-node))
 
 Both are shipped and in use today. Node enrollment (one-time join tokens exchanged for client certificates), a real `levelrail-agent` binary, and cross-node service placement all work today. Reconcilers and everything above the transport boundary don't know or care which implementation they're talking to, which keeps single-node and multi-node the same code path.
 
@@ -74,7 +74,7 @@ Package: `internal/build` (see `internal/build/client.go`, `internal/build/solve
 - **Railpack auto-detection** - (`github.com/railwayapp/railpack`) auto-detects a build plan for apps that don't ship a Dockerfile
 - **Static site serving** - `build.type: static` is its own path with no container involved
 
-**Remote cache:** Registry-backed (`internal/build/cache.go`), with an S3 option (`internal/build/cache_s3.go`), so dedicated build nodes can share cache state instead of each one rebuilding from scratch.
+**Remote cache:** Registry-backed (`internal/build/cache.go`), with an S3 option (`internal/build/cache_s3.go`), so dedicated [build nodes](/build-node-routing) can share cache state instead of each one rebuilding from scratch.
 
 ## Ingress
 

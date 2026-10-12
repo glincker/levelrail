@@ -29,7 +29,7 @@ So you connect GitHub once, wire ten apps to ten different repositories, and nev
 | **Bitbucket** | OAuth consumer you register | Long-lived | Bitbucket Cloud only |
 | **Gitea** | OAuth2 Application you register | Long-lived, refreshed | Almost always, via `instance_url` |
 
-All four support webhooks, preview environments, and PR comments and commit statuses. GitHub's manifest flow creates the App on GitHub's side for you. GitLab, Bitbucket, and Gitea need you to create the application in their own settings first and paste its credentials in.
+All four support webhooks, [preview environments](/previews), and PR comments and commit statuses. GitHub's manifest flow creates the App on GitHub's side for you. GitLab, Bitbucket, and Gitea need you to create the application in their own settings first and paste its credentials in.
 
 `GET /api/v1/git-providers` (and `levelrail-cli git-providers`) answers "what can I do with each provider?" in one call: whether it is connected, can list branches, can register a webhook, and can authenticate a clone. The dashboard's repository picker uses it.
 
@@ -376,7 +376,7 @@ Every webhook creates a delivery history entry, whether it succeeds, fails, or d
 
 ## Webhook deliveries
 
-Every inbound request is recorded, signature valid or not, matched or not. Bad signatures, unconnected sources, and deploy failures all show up. The app's **Source** tab (`/apps/{name}/source`) has a "Recent webhook deliveries" panel.
+Every inbound request is recorded, signature valid or not, matched or not. Bad signatures, unconnected sources, and [deploy failures](/deploy-failures) all show up. The app's **Source** tab (`/apps/{name}/source`) has a "Recent webhook deliveries" panel.
 
 ```bash
 levelrail-cli apps webhook-deliveries list storefront

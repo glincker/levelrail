@@ -41,4 +41,4 @@ Focus stays inside the palette while it is open and returns to the page on close
 | `g` then `m` | Go to AI models (experimental, see below) |
 | `g` then `t` | Go to Settings |
 
-The second key of a `g` chord must follow within 1.5 seconds. Shortcuts are ignored while you type in an input, textarea, select or editable field, while Ctrl, Cmd or Alt is held, and while any dialog is open. They run in the browser only, so there is no API or CLI equivalent. The load balancer and AI models shortcuts need their [experimental feature](/experimental-features) switched on.
+The second key of a `g` chord must follow within 1.5 seconds. Shortcuts are ignored while you type in an input, textarea, select or editable field, while Ctrl, Cmd or Alt is held, and while any dialog is open. They run in the browser only, so there is no API or CLI equivalent. The [load balancer](/load-balancing) and AI models shortcuts need their [experimental feature](/experimental-features) switched on.

@@ -52,7 +52,7 @@ When the mesh is on, an app or database with no mesh address shows a "No mesh ad
 ## Legend
 
 - **Node / zone**: a managed node, grouped by region.
-- **App** / **Database**: a deployed app or managed database, placed under the node it runs on.
+- **App** / **Database**: a deployed app or [managed database](/managing-databases), placed under the node it runs on.
 - **Load balanced**: a service the reconciler is load-balancing across its own replicas (this platform balances a service's own replicas, not multiple distinct backends).
 - **Connects to**: a note under an app for each database it connects to.
 - **No mesh address**: the mesh is on but the resource has no mesh address yet. Never shown while the mesh is off.

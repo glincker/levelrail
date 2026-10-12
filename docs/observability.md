@@ -96,7 +96,7 @@ A rule created without `--channel-id` (and without `--notify-url`) is saved but 
 
 - `summary` and `baseline`: request count, rate, 4xx and 5xx share, p50, p95 and p99 for the window and for the equal-length window before it.
 - `top_routes` and `status_codes`: the ten busiest route templates with share, 5xx share and mean latency, and the exact status code counts.
-- `timeline`: one ascending list of deploys, rollbacks, config, env, secret, domain, scale and load balancer changes (from the same sources as [What changed before an alert](#what-changed-before-an-alert), with the most recent effective change flagged `likely_cause`), container restarts (a burst collapses into one entry with a count), and resource saturation (CPU or memory held at or above a threshold for several samples). It looks back `APP_INVESTIGATE_LOOKBACK` before the window, because the cause usually precedes the symptom.
+- `timeline`: one ascending list of deploys, rollbacks, config, env, secret, domain, scale and [load balancer](/load-balancing) changes (from the same sources as [What changed before an alert](#what-changed-before-an-alert), with the most recent effective change flagged `likely_cause`), container restarts (a burst collapses into one entry with a count), and resource saturation (CPU or memory held at or above a threshold for several samples). It looks back `APP_INVESTIGATE_LOOKBACK` before the window, because the cause usually precedes the symptom.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -144,7 +144,7 @@ Notifications carry the same context. A firing crashloop alert attaches the last
 <AccordionGroup>
 <Accordion title="Per-app, database and node metrics" defaultOpen>
 - `/apps/$name/metrics` (`MetricsDashboard`): CPU, memory, disk IO, network IO, request rate, error rate, p50/p95/p99 latency and restarts. A range picker (15 minutes to 30 days, or a custom window, kept in the URL so it is a permalink), a "compare to previous period" toggle, and deploy and restart markers on every chart. Series are downsampled server side. Click a deploy marker for its status, image and commit, or click the chart to open the investigation panel for that moment.
-- `/databases/$name/metrics` (`DatabaseMetricsDashboard`): the same charts scoped to a managed database.
+- `/databases/$name/metrics` (`DatabaseMetricsDashboard`): the same charts scoped to a [managed database](/managing-databases).
 - Node metrics (`NodeMetricsDashboard`): the sum-across-placed-services view plus real disk and patch readings.
 </Accordion>
 <Accordion title="App health timeline">

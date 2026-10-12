@@ -26,7 +26,7 @@ The data comes from a curated catalog that ships with Levelrail (`internal/dbupg
 
 A floating tag such as `16` could be any 16.x release, so it is treated as the oldest of its line, and upgrading pins it to an exact release. A pgvector variant (`17-pgvector`) and a non-numeric tag such as `latest` have no targets.
 
-The attention center shows **N databases have security updates available**, plus one item per database past end of life and per database whose last upgrade failed.
+The [attention center](/attention-center) shows **N databases have security updates available**, plus one item per database past end of life and per database whose last upgrade failed.
 
 ## Automatic upgrades
 

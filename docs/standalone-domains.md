@@ -51,13 +51,13 @@ A standalone domain lets anyone on the internet reach whatever the target is, so
 - Loopback, private, mesh and container targets are allowed on purpose, but need an explicit confirmation (`confirm: true` in the API, `--confirm` in the CLI, a checkbox in the dashboard) that names the address this server will connect to. Editing other settings later does not ask again; a new target does.
 - This platform's own dashboard and agent ports need the same confirmation. The ingress admin API port can never be a target.
 - A target that resolves to this server's own public address on 80 or 443, or to a local ingress port, is refused as a loop.
-- The domain must be free: an app, environment, preview, static site, the dashboard's primary domain, the built-in registry, the status page or an AI model already using it is named in the error.
+- The domain must be free: an app, environment, preview, static site, the dashboard's primary domain, the built-in registry, the [status page](/status-page) or an AI model already using it is named in the error.
 
 Standalone domains are instance wide. Members of non-default teams cannot list or change them; the routes answer 403 for them.
 
 ## Server address and DNS records
 
-The **Server address** card on the Domains page shows this server's public IPv4 and IPv6 with copy buttons. They come from `APP_PUBLIC_HOST` or detection (`APP_PUBLIC_IP_DETECT`), and you can override them by hand when the server sits behind a load balancer or detection is wrong. The override also drives every DNS check and go-live.
+The **Server address** card on the Domains page shows this server's public IPv4 and IPv6 with copy buttons. They come from `APP_PUBLIC_HOST` or detection (`APP_PUBLIC_IP_DETECT`), and you can override them by hand when the server sits behind a [load balancer](/load-balancing) or detection is wrong. The override also drives every DNS check and go-live.
 
 The card warns when:
 

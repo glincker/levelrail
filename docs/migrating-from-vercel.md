@@ -142,7 +142,7 @@ Run both platforms side by side long enough for boring problems to appear. Sugge
 - [ ] A database backup ran, and a restore was actually rehearsed.
 - [ ] Image optimization, ISR, and file uploads behave acceptably under real traffic.
 - [ ] Response time and error rate compare acceptably against Vercel, using the app's request metrics.
-- [ ] Preview environments open, update, and tear down on a test pull request.
+- [ ] [Preview environments](/previews) open, update, and tear down on a test pull request.
 - [ ] A control plane backup exists (see [Control plane backup](/control-plane-backup)).
 - [ ] Every issue found is logged in `FRICTION.md` with a severity.
 

@@ -50,7 +50,7 @@ Schedule backups to S3, R2, or any S3-compatible bucket, verify them, and restor
 
 <Card title="Self-host Vaultwarden (Bitwarden-compatible)" href="/tutorials/self-host-vaultwarden">
 
-Deploy from the template catalog, add a domain, and back up the data volume.
+Deploy from the [template catalog](/templates-and-registry), add a domain, and back up the data volume.
 
 </Card>
 </CardGroup>

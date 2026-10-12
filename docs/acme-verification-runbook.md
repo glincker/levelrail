@@ -103,7 +103,7 @@ Check `dig +short your-domain.example.com` from outside your network, wait out t
 
 `dig` resolves correctly, but the log shows the challenge request timing out or being refused. Typical causes are cloud security groups, `ufw`, routers without port forwarding, and another proxy holding port 80.
 
-Open ports 80 and 443 inbound. `levelrail-cli doctor` and the dashboard's status page include reachability checks. See [Firewall: ports 80 and 443](/domains-and-ingress#firewall-ports-80-and-443).
+Open ports 80 and 443 inbound. `levelrail-cli doctor` and the dashboard's [status page](/status-page) include reachability checks. See [Firewall: ports 80 and 443](/domains-and-ingress#firewall-ports-80-and-443).
 
 </Accordion>
 <Accordion title="Rate limited">

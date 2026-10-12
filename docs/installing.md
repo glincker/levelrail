@@ -132,7 +132,7 @@ Environment=APP_ALLOW_INSECURE_LOGIN=true
 
 </Accordion>
 
-AI chat, AI models, the load balancer, platform as code and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](/experimental-features).
+AI chat, AI models, the [load balancer](/load-balancing), [platform as code](/platform-as-code) and Cloudflare Tunnel are hidden until you opt in with `APP_EXPERIMENTAL`, see [experimental features](/experimental-features).
 
 ### Common scenarios
 
@@ -207,7 +207,7 @@ levelrail-cli readiness [--domain D]
 </Tab>
 </Tabs>
 
-It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a container or a host process), the Docker version and whether the daemon is rootless, whether the Docker API is exposed on the network, free disk, memory, the host firewall, and whether the domain you give resolves to this server. It ends with the recommended mode, own ports or behind your existing proxy, and the exact command to run next. It exits non-zero when a check fails.
+It reports who holds ports 80 and 443 (Traefik, nginx, Caddy, Apache, HAProxy, a container or a host process), the Docker version and whether the daemon is rootless, whether the Docker API is exposed on the network, free disk, memory, the [host firewall](/host-firewall), and whether the domain you give resolves to this server. It ends with the recommended mode, own ports or behind your existing proxy, and the exact command to run next. It exits non-zero when a check fails.
 
 ### Server already runs a proxy
 
@@ -471,7 +471,7 @@ Pick the path that matches how you installed. The self-update (next section) is 
 | Free disk | Above `APP_UPGRADE_MIN_FREE_BYTES` (default 2 GiB) |
 | Control plane backup | Exists and is newer than `APP_UPGRADE_MAX_BACKUP_AGE` (default 26h). **Back up now** in the dashboard, or `levelrail-cli upgrade backup-now`, clears this blocker in one step |
 
-The CLI also takes a fresh control plane backup unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
+The CLI also takes a fresh [control plane backup](/control-plane-backup) unless you pass `--no-backup`, then prints the exact command to run. The API is `GET /api/v1/updates/preflight`.
 
 ### Upgrade with automatic rollback
 

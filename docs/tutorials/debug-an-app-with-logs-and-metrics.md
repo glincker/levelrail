@@ -131,5 +131,5 @@ The health score above flagged `Observability: fail` because no alert rules exis
 ## Where to go next
 
 - [Observability](../observability.md): how the node-local stores work and how retention is set.
-- [Log archive](../log-archive.md): keep logs in object storage beyond the local window.
+- [Log archive](../log-archive.md): keep logs in [object storage](/object-storage) beyond the local window.
 - [Zero-downtime deploys with health checks](/tutorials/zero-downtime-deploys-with-health-checks): catch the problem before it ships.

@@ -9,7 +9,7 @@ Source: `cmd/levelrail-mcp` and `internal/mcptools`.
 
 ## What it exposes
 
-Tools cover apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, feature flags, and more, one tool per REST capability. See the [API reference](/api-reference) for the underlying routes, and [MCP tool surface](/mcp-tool-surface) for the tool count per toolset.
+Tools cover apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, [feature flags](/feature-flags), and more, one tool per REST capability. See the [API reference](/api-reference) for the underlying routes, and [MCP tool surface](/mcp-tool-surface) for the tool count per toolset.
 
 Notable read-oriented tools for day-2 operation:
 

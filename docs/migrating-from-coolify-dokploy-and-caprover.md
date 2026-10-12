@@ -218,7 +218,7 @@ A database whose engine or version cannot be determined is reported as unsupport
 
 ### Compose files and Dokku
 
-The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as managed databases) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
+The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as [managed databases](/managing-databases)) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
 
 ## Step 2: copy database data
 
@@ -350,7 +350,7 @@ Writes accepted by the source after the final copy and before clients move are n
 - Volume contents are only moved by running the commands from step 3. Bind mounts need the same host path on the target node and the root ability; without root they are skipped and reported.
 - Git-built apps do not build automatically. They are created with a pending image so nothing runs, and the report names the repository and branch. Connect the repository (with credentials for a private one) and run a build.
 - CapRover apps have no recoverable image, because CapRover builds locally. Connect a repository or push an image to a registry, then set it as the source.
-- Compose stacks, Coolify one-click services and Dokploy compose apps. They are multi-service and are reported as unsupported, deploy their compose file with the compose deploy command.
+- Compose stacks, Coolify one-click services and Dokploy [compose apps](/compose-apps). They are multi-service and are reported as unsupported, deploy their compose file with the compose deploy command.
 - Dokploy apps uploaded as an archive (`drop`), and file mounts. Unsupported.
 - Health checks that are shell commands, pre and post deploy commands, extra ports and raw host port mappings, Coolify preview variables. Called out as needs attention where relevant.
 - TLS certificates, DNS records, deploy history, logs and metrics. Certificates are issued here on first use. Re-point DNS only after the cutover check says `go`.

@@ -28,7 +28,7 @@ Positioning, not a ranking. Coolify, Dokploy, CapRover, Dokku and Kamal are all 
 
 **Coolify** has a large catalog of one-click services and a polished dashboard, and supports servers you already have over plain SSH with nothing to install on them beyond Docker. If you want the broadest template list and are comfortable with SSH-driven management, it is a strong choice.
 
-**Dokploy** builds on Docker Swarm, so multi-node scheduling and rolling updates come from a mature, widely understood mechanism, with a modern dashboard on top. If you already think in Swarm terms it is a natural fit.
+**Dokploy** builds on Docker Swarm, so [multi-node](/multi-node) scheduling and rolling updates come from a mature, widely understood mechanism, with a modern dashboard on top. If you already think in Swarm terms it is a natural fit.
 
 **CapRover** is a long-standing, simple, Swarm-based platform with a one-click app store and a CLI. It has a large install base and a gentle learning curve.
 

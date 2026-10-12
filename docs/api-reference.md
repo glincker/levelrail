@@ -418,7 +418,7 @@ Endpoints for:
 - Encrypted secrets management and locking
 - Git repository connections and configuration
 - Webhook delivery history and replay
-- Preview environment configuration and lifecycle
+- [Preview environment](/previews) configuration and lifecycle
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -469,7 +469,7 @@ Endpoints for:
 Endpoints for:
 - Alert rule creation and management
 - Scheduled task configuration and execution
-- Feature flag configuration and evaluation
+- [Feature flag](/feature-flags) configuration and evaluation
 - Notification channel management and delivery tracking
 
 | Method | Path | Ability | Handler |
@@ -931,7 +931,7 @@ Endpoints for:
 ## App Storage / Database Attach
 
 Endpoints for:
-- Object storage bucket attachment and configuration
+- [Object storage](/object-storage) bucket attachment and configuration
 - Database connectivity for applications
 
 | Method | Path | Ability | Handler |

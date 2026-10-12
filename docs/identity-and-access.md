@@ -408,7 +408,7 @@ The sign-in page offers **Sign in with a code instead**. You type your username 
 The response sets an httpOnly, `SameSite=Strict` cookie bound to that browser. The code only works together with that cookie, so a code read over someone's shoulder is useless in another browser.
 </Step>
 <Step title="Read the code">
-The code goes to the account's own open dashboard sessions (a banner on every page, the attention center, and **Settings > Security**), each showing the requester's IP address, browser and time, and to the account's email when email is set up. Run `levelrail-cli auth code` to print it from a terminal.
+The code goes to the account's own open dashboard sessions (a banner on every page, the [attention center](/attention-center), and **Settings > Security**), each showing the requester's IP address, browser and time, and to the account's email when email is set up. Run `levelrail-cli auth code` to print it from a terminal.
 </Step>
 <Step title="Redeem">
 `POST /api/v1/auth/login-code/redeem` with the code signs the browser in. If the account has two-factor authentication on, the code replaces only the password: the response asks for the TOTP or a recovery code next, exactly like a password sign-in.

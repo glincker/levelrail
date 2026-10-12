@@ -190,7 +190,7 @@ avoids.
   run is clean, specifically because there is no stable release yet and
   public ACME renewal is unverified. That caution applies to
   anyone moving off any existing platform, not just Vercel.
-- Preview environments are stable for GitHub but beta for GitLab and
+- [Preview environments](/previews) are stable for GitHub but beta for GitLab and
   Bitbucket ([feature-status.md](/feature-status#previews)), so a team
   that lives on GitLab should expect rougher edges there than a GitHub-based
   team would.

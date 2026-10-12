@@ -34,7 +34,7 @@ Levelrail has no stable release yet and is the younger project. This guide compa
 ## What Levelrail does not do yet
 
 - No SAML or SCIM. OAuth and OIDC sign-in work.
-- A smaller template catalog than Coolify.
+- A smaller [template catalog](/templates-and-registry) than Coolify.
 - Public ACME certificate issuance has had less field testing than the rest of the ingress.
 - No Windows or non-Linux nodes, and no Kubernetes compatibility layer. Those are deliberate non-goals.
 

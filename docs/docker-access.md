@@ -68,7 +68,7 @@ Every rule id appears in the `403` body, the log line and the audit row (`abilit
 
 ### How declarations work
 
-`internal/docker`'s `Create` builds every app, database and sidecar container from the stored app spec. Right before the create call it registers a declaration for that container name: its bind host paths, whether it asked for a GPU, host networking, and extra capabilities. The guard looks the declaration up by the `name` query parameter and drops it when `Create` returns. A create request that did not come through `Create`, or names a container `Create` is not creating at that moment, carries no grants. In enforce mode the guard forwards a re-encoded copy of the body it validated, so unknown fields and case or duplicate key tricks never reach the daemon in a form the guard did not see.
+`internal/docker`'s `Create` builds every app, database and sidecar container from the stored [app spec](/app-spec-reference). Right before the create call it registers a declaration for that container name: its bind host paths, whether it asked for a GPU, host networking, and extra capabilities. The guard looks the declaration up by the `name` query parameter and drops it when `Create` returns. A create request that did not come through `Create`, or names a container `Create` is not creating at that moment, carries no grants. In enforce mode the guard forwards a re-encoded copy of the body it validated, so unknown fields and case or duplicate key tricks never reach the daemon in a form the guard did not see.
 
 ## The Engine API surface Levelrail uses
 

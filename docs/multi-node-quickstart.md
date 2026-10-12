@@ -57,7 +57,7 @@ A container placed on a remote node keeps running and serving, because the agent
 <CardGroup cols={2}>
 <Card title="Multi-node" href="/multi-node">
 
-Enrollment, placement, health, certificates, mesh and the CLI reference.
+Enrollment, placement, health, certificates, mesh and the [CLI reference](/cli-reference).
 
 </Card>
 <Card title="Node provisioning" href="/node-provisioning">

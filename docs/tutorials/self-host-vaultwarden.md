@@ -3,7 +3,7 @@ title: "Self-host Vaultwarden on your own server"
 description: Self-host Vaultwarden, a Bitwarden-compatible password manager, with one Levelrail command, then add a domain and back up its data.
 ---
 
-Vaultwarden is a lightweight server that works with the official Bitwarden apps and browser extensions. In this tutorial you will deploy it from Levelrail's template catalog in one command, check that it is alive, put it on a domain, and back up its data. The same steps work for the rest of the catalog.
+Vaultwarden is a lightweight server that works with the official Bitwarden apps and browser extensions. In this tutorial you will deploy it from Levelrail's [template catalog](/templates-and-registry) in one command, check that it is alive, put it on a domain, and back up its data. The same steps work for the rest of the catalog.
 
 ## Before you start
 

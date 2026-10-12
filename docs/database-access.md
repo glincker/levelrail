@@ -68,7 +68,7 @@ is published and to which address.
 ### Allowed sources
 
 An inbound rules editor for a published port: source IP or CIDR plus an optional
-description. Rules are applied through the same host firewall integration as the
+description. Rules are applied through the same [host firewall](/host-firewall) integration as the
 [exposure audit](/exposure-audit): tagged, idempotent, previewed first, guarded against
 locking out the platform or SSH, and removable. Drift (a rule missing from, or
 extra in, the firewall) is shown inline. Rules can only be applied on the control

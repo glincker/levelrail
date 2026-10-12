@@ -156,7 +156,7 @@ BuildKit dials the bucket itself, so the SSRF guard is applied to a custom endpo
 </Accordion>
 <Accordion title="Remote build nodes">
 
-A build dispatched to a dedicated build node does not receive bucket credentials, so it runs without the s3 cache and records a warning. Local builds on the control plane use it. Railpack builds do not use the s3 cache yet; Dockerfile builds do.
+A build dispatched to a dedicated [build node](/build-node-routing) does not receive bucket credentials, so it runs without the s3 cache and records a warning. Local builds on the control plane use it. Railpack builds do not use the s3 cache yet; Dockerfile builds do.
 
 </Accordion>
 <Accordion title="Hygiene and clearing the cache">

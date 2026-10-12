@@ -3,7 +3,7 @@ title: "Security center"
 description: The security center scores your instance from its real state, lists what to fix first with a one-click fix or a link, manages every session and device, and sets sign-in approval and API token policy.
 ---
 
-The security center is one page, **Security center** in the sidebar (`/security`), that answers three questions: how exposed is this instance right now, what should I fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the exposure audit) and never calls anything outside your servers.
+The security center is one page, **Security center** in the sidebar (`/security`), that answers three questions: how exposed is this instance right now, what should I fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the [exposure audit](/exposure-audit)) and never calls anything outside your servers.
 ## Security score and checklist
 
 `GET /api/v1/security/posture` returns a score from 0 to 100, a grade, and counts by severity. Every check that fails costs points: 25 for critical, 15 for high, 8 for medium and 3 for low. A check that could not be read shows as unknown and costs nothing, so a missing data source never makes the score look worse or better than it is.
@@ -76,7 +76,7 @@ Each account can also turn on **Require approval for new browsers on my account*
 
 When an account signs in from a browser and network it has not used before, its owner gets an email with the browser, network and time, and channels opted in to sign-in notices (the same switch as CLI login notices) get a short message. The first browser an account ever uses raises nothing, and a sign-in you approved yourself, or a session link, does not alert. At most `APP_SIGNIN_ALERTS_PER_ACCOUNT_PER_HOUR` (default 5) emails go out per account per hour. Known browsers are remembered as a hash of the browser label and network for `APP_KNOWN_BROWSER_RETENTION` (default 180 days).
 
-The email carries a **this wasn't me** link. Opening it changes nothing; the page has one button. Pressing it (`POST /api/v1/auth/sign-in-alert/disown`) signs that session out, removes every trusted browser of the account, cancels its waiting sign-ins and flags the account for a new password. The flag shows in the checklist and the attention center until the password is changed or reset. The link:
+The email carries a **this wasn't me** link. Opening it changes nothing; the page has one button. Pressing it (`POST /api/v1/auth/sign-in-alert/disown`) signs that session out, removes every trusted browser of the account, cancels its waiting sign-ins and flags the account for a new password. The flag shows in the checklist and the [attention center](/attention-center) until the password is changed or reset. The link:
 
 - is an HMAC over a random id with a key derived from the control plane's encryption key, so it cannot be forged or altered;
 - works once, recorded in the database before anything is revoked;
