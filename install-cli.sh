@@ -11,9 +11,8 @@
 # Env overrides:
 #   LEVELRAIL_VERSION        release tag to install, e.g. v0.3.0
 #   LEVELRAIL_CHANNEL        stable or beta, same meaning as install.sh
-#   LEVELRAIL_CLI_INSTALL_DIR  where the binary goes (default: $HOME/.local/bin,
-#                            no root needed; set to /usr/local/bin and run
-#                            with sudo for a system-wide install instead)
+#   LEVELRAIL_CLI_INSTALL_DIR  where the binary goes (default: /usr/local/bin
+#                            as root, otherwise $HOME/.local/bin, no root needed)
 #   LEVELRAIL_BINARY_FILE    install this local binary instead of downloading
 #   LEVELRAIL_SKIP_CHECKSUM=1  install even when checksums.txt is missing or
 #                            does not list the binary (unverified; opt-out only)
@@ -26,7 +25,12 @@ set -eu
 
 REPO="glincker/levelrail"
 BINARY_NAME="levelrail-cli"
-INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-${HOME}/.local/bin}"
+if [ "$(id -u)" -eq 0 ]; then
+	DEFAULT_INSTALL_DIR="/usr/local/bin"
+else
+	DEFAULT_INSTALL_DIR="${HOME}/.local/bin"
+fi
+INSTALL_DIR="${LEVELRAIL_CLI_INSTALL_DIR:-${DEFAULT_INSTALL_DIR}}"
 BIN_PATH="${INSTALL_DIR}/${BINARY_NAME}"
 HTTPS_ONLY="=https"
 VERIFY_MODE="${APP_INSTALL_VERIFY:-auto}"
@@ -85,7 +89,7 @@ github_api() {
 list_releases() {
 	github_api "releases?per_page=30" | awk -v asset="\"name\": \"$1\"" '
 		/"tag_name":/ {
-			if (tag != "") print tag, pre, has, created
+			if (tag != "" && index(tag, "/") == 0) print tag, pre, has, created
 			tag = $0; sub(/.*"tag_name": *"/, "", tag); sub(/".*/, "", tag)
 			pre = "false"; has = 0; created = ""
 		}
@@ -95,7 +99,7 @@ list_releases() {
 			sub(/.*"created_at": *"/, "", created); sub(/".*/, "", created)
 		}
 		index($0, asset) { has = 1 }
-		END { if (tag != "") print tag, pre, has, created }' | sort -k4,4r
+		END { if (tag != "" && index(tag, "/") == 0) print tag, pre, has, created }' | sort -k4,4r
 }
 
 resolve_version() {
