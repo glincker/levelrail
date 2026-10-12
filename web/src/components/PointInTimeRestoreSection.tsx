@@ -100,7 +100,7 @@ function PointInTimeRestoreCard({ databaseName }: { databaseName: string }) {
         {status.isLoading ? <Skeleton className="h-16 w-full" /> : null}
 
         {!status.isLoading && !status.data?.enabled ? (
-          <div className="flex flex-col gap-3 rounded-lg border border-dashed border-border px-4 py-4">
+          <div className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">
               Enable continuous WAL archiving so this database can be restored
               to any exact moment, not just to when a backup happened to run.
@@ -196,7 +196,9 @@ function EnabledPITRContent({ databaseName }: { databaseName: string }) {
       </dl>
 
       <div className="flex flex-col gap-2">
-        <h3 className="text-sm font-medium text-foreground">Base backups</h3>
+        <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
+          Base backups
+        </h3>
         <TriggerBackupRowView
           pickerId="base-backup-target-picker"
           trigger={triggerBaseBackup}
@@ -209,7 +211,7 @@ function EnabledPITRContent({ databaseName }: { databaseName: string }) {
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-foreground">
+          <h3 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             Restore to a point in time
           </h3>
           <PITRRestoreDialog

@@ -21,8 +21,8 @@ export function DetailsSection({
   conditions: ReconcileCondition[]
 }) {
   return (
-    <Collapsible className="rounded-xl border border-border">
-      <CollapsibleTrigger className="group flex items-center gap-2 px-4 py-3 text-sm font-medium">
+    <Collapsible>
+      <CollapsibleTrigger className="group flex items-center gap-2 py-1 text-sm font-medium">
         <CaretRightIcon
           className="size-3.5 transition-transform group-data-[panel-open]:rotate-90 motion-reduce:transition-none"
           aria-hidden="true"
@@ -30,7 +30,7 @@ export function DetailsSection({
         Configuration and diagnostics
       </CollapsibleTrigger>
       <CollapsiblePanel>
-        <div className="space-y-6 p-4 pt-0">
+        <div className="space-y-6 pt-4">
           <AppHealthTimeline appName={app.name} />
           <AppOverview app={app} />
           <PlacementCard

@@ -169,7 +169,7 @@ function FallbackURLRow({ url }: { url: string }) {
       <p className="text-sm text-muted-foreground">
         No domain configured. Reachable at this zero-config URL in the meantime:
       </p>
-      <div className="flex items-center gap-2 rounded-lg border border-input bg-muted/50 p-2">
+      <div className="flex items-center gap-2 rounded-md bg-muted/50 p-2">
         <a
           href={url}
           target="_blank"
@@ -239,7 +239,7 @@ function TrafficPath({
 }) {
   const fallbackHost = fallbackURL?.replace(/^https?:\/\//, '')
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 p-3">
+    <div className="flex flex-wrap items-center gap-2">
       <PathNode
         icon={GlobeIcon}
         label={domains[0] ?? fallbackHost ?? 'No domain'}
@@ -297,7 +297,7 @@ function PathNode({
     <div
       className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${
         muted
-          ? 'border-dashed border-border bg-background text-muted-foreground'
+          ? 'border-border bg-background text-muted-foreground opacity-70'
           : 'border-border bg-background text-foreground'
       }`}
     >

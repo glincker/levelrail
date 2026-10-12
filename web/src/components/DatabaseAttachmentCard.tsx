@@ -1,14 +1,12 @@
-import { cn } from '@/lib/utils'
-import { TONE } from '@/components/kit/tone'
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   DatabaseIcon,
   PlugsConnectedIcon,
-  WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -186,22 +184,17 @@ export function DatabaseAttachmentCard({ app }: { app: AppDetail }) {
                   Database
                 </FieldLabel>
                 {collidingEnvKey ? (
-                  <div
-                    className={cn(
-                      'flex items-start gap-2 rounded-lg border p-2.5',
-                      TONE.warning.soft,
-                      TONE.warning.border,
-                      TONE.warning.text,
-                    )}
-                  >
-                    <WarningIcon className="mt-0.5 size-4 shrink-0" />
-                    <p className="text-sm">
-                      This app already has an env var named{' '}
-                      <code className="font-mono">{collidingEnvKey}</code>.
-                      Attaching this database will silently override it at
-                      container start.
-                    </p>
-                  </div>
+                  <Banner
+                    variant="warning"
+                    title={
+                      <>
+                        This app already has an env var named{' '}
+                        <code className="font-mono">{collidingEnvKey}</code>.
+                        Attaching this database will silently override it at
+                        container start.
+                      </>
+                    }
+                  />
                 ) : null}
                 <div className="flex items-center gap-2">
                   <Select

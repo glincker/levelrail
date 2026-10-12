@@ -47,7 +47,9 @@ function Panel({
         <span className="[&_svg]:size-5" aria-hidden="true">
           {icon}
         </span>
-        <h2 className="text-base font-semibold">{title}</h2>
+        <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight)">
+          {title}
+        </h2>
       </div>
       {children}
     </div>

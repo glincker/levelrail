@@ -199,10 +199,7 @@ function AddStreamForm({ appName }: { appName: string }) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-wrap items-end gap-3 rounded-lg border border-border p-3"
-    >
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
       <Field className="w-32">
         <FieldLabel htmlFor="stream-host-port">
           {t('add.hostPortLabel')}

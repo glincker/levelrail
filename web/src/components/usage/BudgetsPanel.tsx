@@ -32,7 +32,7 @@ function BudgetRow({ b }: { b: UsageBudget }) {
   const remove = useDeleteUsageBudget()
   const level = b.level || 'ok'
   return (
-    <li className="space-y-2 rounded-lg border border-border p-3">
+    <li className="space-y-2 py-3 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="min-w-0 truncate text-sm font-medium">{b.name}</p>
         <div className="flex items-center gap-2">
@@ -188,7 +188,7 @@ export function BudgetsPanel() {
         {budgets.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('budgets.empty')}</p>
         ) : (
-          <ul className="space-y-3">
+          <ul className="divide-y divide-border">
             {budgets.map((b) => (
               <BudgetRow key={b.id} b={b} />
             ))}
