@@ -8,6 +8,21 @@
     "viewApp": "View app",
     "viewDatabase": "View database"
   },
+  "tableLabels": {
+    "appServices": "App services",
+    "bindMounts": "Bind mounts",
+    "modelKeys": "API keys",
+    "agentTokens": "Agent tokens",
+    "approvals": "Deploy approvals",
+    "registryCredentials": "Registry credentials",
+    "networkShares": "Network shares",
+    "deployNotifyTargets": "Deploy notification targets",
+    "statusComponents": "Status page components",
+    "alertRules": "Alert rules",
+    "alertSilences": "Alert silences",
+    "maintenanceWindows": "Maintenance windows",
+    "featureFlags": "Feature flags"
+  },
   "healthScore": {
     "title": "Health & readiness",
     "notFound": "\"{{appName}}\" couldn't be found. It may have been deleted, or belong to a different instance than the one you're signed into.",

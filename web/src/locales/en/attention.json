@@ -1,5 +1,6 @@
 {
   "deviceLogin": {
+    "tableLabel": "Pending CLI logins",
     "bannerTitle": "A CLI login is waiting for your approval",
     "bannerMore_one": "{{count}} more login is waiting.",
     "bannerMore_other": "{{count}} more logins are waiting.",

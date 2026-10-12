@@ -1,16 +1,13 @@
-import type { ReactNode } from 'react'
+import { useMemo, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   HardDrivesIcon,
   PlugsConnectedIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -72,6 +69,50 @@ export function NetworkShareTable({
   shares: NetworkShare[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('common')
+  const columns = useMemo<ResponsiveColumn<NetworkShare>[]>(
+    () => [
+      {
+        id: 'name',
+        header: 'Name',
+        primary: true,
+        cell: (s) => (
+          <span className="font-medium text-foreground">{s.name}</span>
+        ),
+      },
+      {
+        id: 'protocol',
+        header: 'Protocol',
+        priority: 2,
+        cell: (s) => (
+          <Badge variant="outline" className="uppercase">
+            {s.protocol}
+          </Badge>
+        ),
+      },
+      {
+        id: 'remote',
+        header: 'Remote',
+        cell: (s) => (
+          <span className="font-mono break-all text-muted-foreground">
+            {remoteAddress(s)}
+          </span>
+        ),
+      },
+      {
+        id: 'added',
+        header: 'Added',
+        priority: 3,
+        cell: (s) => (
+          <span className="text-muted-foreground">
+            {formatDate(s.created_at)}
+          </span>
+        ),
+      },
+    ],
+    [],
+  )
+
   if (shares.length === 0) {
     return (
       <EmptyState
@@ -85,44 +126,17 @@ export function NetworkShareTable({
   }
 
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Protocol</TableHead>
-            <TableHead>Remote</TableHead>
-            <TableHead>Added</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {shares.map((share) => (
-            <TableRow key={share.id}>
-              <TableCell className="font-medium text-foreground">
-                {share.name}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="uppercase">
-                  {share.protocol}
-                </Badge>
-              </TableCell>
-              <TableCell className="font-mono text-muted-foreground">
-                {remoteAddress(share)}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {formatDate(share.created_at)}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <TestButton share={share} />
-                  <DeleteNetworkShareDialog share={share} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={shares}
+      columns={columns}
+      getRowId={(s) => s.id}
+      ariaLabel={t('tableLabels.networkShares')}
+      renderActions={(s) => (
+        <span className="flex flex-wrap justify-end gap-2">
+          <TestButton share={s} />
+          <DeleteNetworkShareDialog share={s} />
+        </span>
+      )}
+    />
   )
 }

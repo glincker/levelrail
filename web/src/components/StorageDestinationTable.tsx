@@ -5,13 +5,10 @@ import {
   TrashIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
+import { useTranslation } from 'react-i18next'
 import {
   Dialog,
   DialogContent,
@@ -147,6 +144,7 @@ export function StorageDestinationTable({
   destinations: StorageDestination[]
   action?: ReactNode
 }) {
+  const { t } = useTranslation('settings')
   if (destinations.length === 0) {
     return (
       <EmptyState
@@ -158,59 +156,70 @@ export function StorageDestinationTable({
       />
     )
   }
+  const columns: ResponsiveColumn<StorageDestination>[] = [
+    {
+      id: 'name',
+      primary: true,
+      header: 'Name',
+      cell: (d) => (
+        <span className="font-medium text-foreground">{d.name}</span>
+      ),
+    },
+    {
+      id: 'provider',
+      header: 'Provider',
+      priority: 2,
+      cell: (d) => (
+        <Badge variant="outline" className="gap-1.5">
+          <BrandLogoBadge
+            logoId={logoIdForStoragePreset(d.preset)}
+            className="size-4 p-px"
+          />
+          {STORAGE_PRESET_LABEL[d.preset]}
+        </Badge>
+      ),
+    },
+    {
+      id: 'bucket',
+      header: 'Bucket',
+      cell: (d) => <span className="text-muted-foreground">{d.bucket}</span>,
+    },
+    {
+      id: 'location',
+      header: 'Region / endpoint',
+      priority: 3,
+      cell: (d) => (
+        <div className="flex flex-col gap-0.5 text-muted-foreground">
+          {d.region ? <span>{d.region}</span> : null}
+          {d.endpoint ? (
+            <span className="text-xs break-all">{d.endpoint}</span>
+          ) : null}
+          {!d.region && !d.endpoint ? '-' : null}
+        </div>
+      ),
+    },
+    {
+      id: 'policies',
+      header: 'Archive policies',
+      priority: 3,
+      cell: (d) => (
+        <span className="text-muted-foreground">{d.archive_policies}</span>
+      ),
+    },
+  ]
+
   return (
-    <div className="rounded-lg border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Provider</TableHead>
-            <TableHead>Bucket</TableHead>
-            <TableHead>Region / endpoint</TableHead>
-            <TableHead>Archive policies</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {destinations.map((d) => (
-            <TableRow key={d.id}>
-              <TableCell className="font-medium text-foreground">
-                {d.name}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline" className="gap-1.5">
-                  <BrandLogoBadge
-                    logoId={logoIdForStoragePreset(d.preset)}
-                    className="size-4 p-px"
-                  />
-                  {STORAGE_PRESET_LABEL[d.preset]}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {d.bucket}
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                <div className="flex flex-col gap-0.5">
-                  {d.region ? <span>{d.region}</span> : null}
-                  {d.endpoint ? (
-                    <span className="text-xs break-all">{d.endpoint}</span>
-                  ) : null}
-                  {!d.region && !d.endpoint ? '-' : null}
-                </div>
-              </TableCell>
-              <TableCell className="text-muted-foreground">
-                {d.archive_policies}
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <TestButton dest={d} />
-                  <DeleteButton dest={d} />
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+    <ResponsiveTable
+      rows={destinations}
+      columns={columns}
+      getRowId={(d) => d.id}
+      ariaLabel={t('tables.storageDestinations')}
+      renderActions={(d) => (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TestButton dest={d} />
+          <DeleteButton dest={d} />
+        </div>
+      )}
+    />
   )
 }

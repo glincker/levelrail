@@ -24,6 +24,7 @@
     "yourRole": "Your role: {{role}}"
   },
   "members": {
+    "tableLabel": "Team members",
     "title": "Members",
     "email": "Email",
     "name": "Name",
@@ -39,6 +40,8 @@
     "roleLabel": "Role for {{email}}"
   },
   "invites": {
+    "tableLabel": "Team invites",
+    "statusHeader": "Status",
     "title": "Invitations",
     "create": "Invite",
     "email": "Email (optional)",

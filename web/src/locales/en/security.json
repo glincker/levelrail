@@ -176,6 +176,7 @@
     "review_sessions": "Review sessions"
   },
   "sessions": {
+    "tableLabel": "Active sessions",
     "title": "Active sessions",
     "description": "Browsers signed in to this account. The location is the network the address belongs to, not a place.",
     "viewing": "Viewing account",
