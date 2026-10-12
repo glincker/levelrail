@@ -170,6 +170,24 @@ export function UpgradeNow() {
           </ul>
         </div>
       ) : null}
+      {planData && planData.signature_pinned === false ? (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {t('selfUpgrade.notPinned')}
+          </p>
+          <CopyCommand
+            label={t('selfUpgrade.notPinnedCommand')}
+            command={pre.cosign_command}
+          />
+        </div>
+      ) : null}
+      {planData?.signature_pinned ? (
+        <p className="text-xs text-muted-foreground">
+          {t('selfUpgrade.pinned', {
+            version: planData.signature_pinned_version ?? '',
+          })}
+        </p>
+      ) : null}
       {planData && !planData.notes_available ? (
         <p className="text-xs text-muted-foreground">
           {t('selfUpgrade.notesMissing')}

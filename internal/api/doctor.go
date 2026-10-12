@@ -150,6 +150,7 @@ func (rt *Router) runDoctorChecks(ctx context.Context) systemDoctorResponse {
 		one(func() doctorCheckResource { return rt.doctorCheckNotificationChannelSecrets(ctx) }),
 		one(doctorCheckSecretReveal),
 		one(func() doctorCheckResource { return rt.doctorCheckLegacyTokens(ctx) }),
+		one(rt.doctorCheckReleaseSignature),
 		one(rt.doctorCheckControlPlaneBackup),
 		one(func() doctorCheckResource { return rt.doctorCheckControlPlaneDR(ctx) }),
 		one(func() doctorCheckResource { return doctorCheckFirewallCtx(ctx) }),

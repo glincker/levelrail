@@ -182,6 +182,29 @@ afterEach(() => {
 })
 
 describe('UpgradeNow', () => {
+  it('warns that an unpinned install is not signature verified', async () => {
+    setup({ preflight: green, plan: { ...plan, signature_pinned: false } })
+    expect(
+      await screen.findByText(/not signature verified yet/),
+    ).toBeInTheDocument()
+    expect(screen.getByText('install-cosign')).toBeInTheDocument()
+  })
+
+  it('shows the signed-releases pin once a signature was verified', async () => {
+    setup({
+      preflight: green,
+      plan: {
+        ...plan,
+        signature_pinned: true,
+        signature_pinned_version: 'v0.9.0',
+      },
+    })
+    expect(
+      await screen.findByText(/Signed releases only, pinned since v0.9.0/),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/not signature verified yet/)).toBeNull()
+  })
+
   it('clears a stale backup blocker with Back up now and then allows the upgrade', async () => {
     const calls = setup({ preflight: staleBackup, afterBackup: green })
 

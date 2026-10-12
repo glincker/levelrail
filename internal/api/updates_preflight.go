@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
@@ -96,6 +97,14 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		LookPath:           exec.LookPath,
 	})
 	verified := checkStatus(out.Checks, "release_verifier") == upgrade.StatusOK
+	if rt.dataDir != "" {
+		_, pinned, _ := selfupgrade.ReadPin(rt.dataDir)
+		out.Checks = append(out.Checks, signaturePinCheck(signaturePinInputs{
+			Pinned: pinned, VerifierOK: verified, ReleaseKnown: known && release != nil,
+			Edge: kind == upgrade.KindEdgeImage, Assets: assets,
+			FixCommand: out.CosignCommand + " && sudo " + rt.serverBinaryName() + " self-upgrade --latest",
+		}))
+	}
 	out.UpgradeCommand = upgradeCommand(upgradeTag, verified)
 	if out.Edge != nil {
 		out.UpgradeCommand = out.Edge.RecreateCommand
