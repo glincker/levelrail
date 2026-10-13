@@ -26,6 +26,7 @@
     "tableLabel": "Upgrade targets",
     "title": "Available versions",
     "description": "Patch and minor upgrades can run from here. Major upgrades change the on-disk format and are guarded.",
+    "emptyTitle": "No upgrades available",
     "empty": "You are on the newest version the catalog knows about.",
     "columns": {
       "version": "Version",
@@ -94,6 +95,7 @@
   },
   "history": {
     "title": "Upgrade history",
+    "emptyTitle": "No upgrade history",
     "empty": "No upgrades have run for this database yet.",
     "active": "Upgrade in progress",
     "from": "{{from}} to {{to}}",

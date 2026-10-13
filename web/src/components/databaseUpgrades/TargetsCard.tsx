@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ArrowCircleUpIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -8,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import {
   ResponsiveTable,
   type ResponsiveColumn,
@@ -81,7 +83,12 @@ export function TargetsCard({
       </CardHeader>
       <CardContent>
         {targets.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('targets.empty')}</p>
+          <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
+            icon={<ArrowCircleUpIcon className="size-5" />}
+            title={t('targets.emptyTitle')}
+            description={t('targets.empty')}
+          />
         ) : (
           <ResponsiveTable
             rows={targets}
