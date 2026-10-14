@@ -24,7 +24,7 @@ const serverUsageBody = `Usage:
 Commands:
   version            print the version
   healthcheck        probe the running control plane (--ready for readiness)
-  demo               seed or serve the read-only demo instance (seed, serve)
+  demo               seed, serve or check the read-only demo instance (seed, serve, check)
   setup-token        print the first-run setup token
   recover-admin      reset an administrator account
   emergency-token    mint a short-lived emergency access token
