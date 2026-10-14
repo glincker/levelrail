@@ -23,6 +23,7 @@ export const NAMESPACES = [
   'attention',
   'setup',
   'updates',
+  'infraCanvas',
   'exposure',
   'databaseAccess',
   'databaseUpgrades',
@@ -40,6 +41,7 @@ export const NAMESPACES = [
   'compose',
   'smartDeploy',
   'dataExport',
+  'eventWebhooks',
   'deploySafety',
   'jobs',
   'network',
@@ -48,6 +50,8 @@ export const NAMESPACES = [
   'newApp',
   'getStarted',
   'usage',
+  'deployTimeline',
+  'secretRotation',
   'aiAssistant',
 ] as const
 

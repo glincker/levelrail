@@ -129,7 +129,9 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 	}
 	if err := rt.auditLog.SaveAuditEntry(ctx, entry); err != nil {
 		rt.logger.Warn("api: save audit entry failed", slog.String("error", err.Error()), slog.String("path", r.URL.Path))
+		return
 	}
+	rt.emitAuditEvent(entry)
 }
 
 // auditLogEntryResource is GET /api/v1/audit-log's wire shape, mirroring

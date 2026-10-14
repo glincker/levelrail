@@ -63,6 +63,8 @@ func TestBuildTopologyGraph(t *testing.T) {
 		{ID: "app:shop-worker", Kind: TopologyKindApp, Label: "shop-worker"},
 		{ID: "app:web", Kind: TopologyKindApp, Label: "web", Status: &healthy},
 		{ID: "database:main", Kind: TopologyKindDatabase, Label: "main", Status: &healthy},
+		{ID: "domain:admin.example.com", Kind: TopologyKindDomain, Label: "admin.example.com"},
+		{ID: "domain:shop.example.com", Kind: TopologyKindDomain, Label: "shop.example.com"},
 		{ID: "volume:app-web-uploads", Kind: TopologyKindVolume, Label: "app-web-uploads"},
 	}
 	if !reflect.DeepEqual(got.Nodes, wantNodes) {
@@ -76,6 +78,8 @@ func TestBuildTopologyGraph(t *testing.T) {
 		{From: "app:web", To: "app:shop-worker", Kind: TopologyEdgeDependsOn},
 		{From: "app:web", To: "database:main", Kind: TopologyEdgeDatabaseBinding},
 		{From: "app:web", To: "volume:app-web-uploads", Kind: TopologyEdgeVolume},
+		{From: "domain:admin.example.com", To: "app:admin", Kind: TopologyEdgeRouting},
+		{From: "domain:shop.example.com", To: "app:web", Kind: TopologyEdgeRouting},
 	}
 	if !reflect.DeepEqual(got.Edges, wantEdges) {
 		t.Fatalf("Edges = %+v, want %+v", got.Edges, wantEdges)

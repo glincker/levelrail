@@ -44,6 +44,7 @@ jobs:
       lint_dirs: ${{ steps.detect.outputs.lint_dirs }}
       tools: ${{ steps.detect.outputs.tools }}
       kit: ${{ steps.detect.outputs.kit }}
+      tfprovider: ${{ steps.detect.outputs.tfprovider }}
       web: ${{ steps.detect.outputs.web }}
       vitest: ${{ steps.detect.outputs.vitest }}
       installer: ${{ steps.detect.outputs.installer }}
@@ -611,6 +612,44 @@ jobs:
         if: env.BASE != '' && env.BASE != '0000000000000000000000000000000000000000'
         run: scripts/check-changed-file-coverage.sh kit-coverage.out "$BASE" kit/ 50
 
+  # terraform-provider/ is its own module: vet and unit tests only. The
+  # acceptance tests need a live control plane and run by hand (its README).
+  tfprovider:
+    name: Terraform provider (vet, test)
+    needs: changes
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.tfprovider == 'true') }}
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - name: Change detection passed
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::Detect changed areas: ${{ needs.changes.result }}"
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go (cached)
+        uses: ./.github/actions/setup-go-cached
+        with:
+          remote-cache-bucket: ${{ vars.GOCACHE_BUCKET }}
+          remote-cache-region: ${{ vars.GOCACHE_REGION || 'us-east-1' }}
+          remote-cache-key-id: ${{ secrets.GOCACHE_KEY_ID }}
+          remote-cache-secret: ${{ secrets.GOCACHE_SECRET }}
+          remote-cache-endpoint: ${{ vars.GOCACHE_ENDPOINT }}
+          cache-prefix: go-tfprovider
+          save: ${{ github.event_name == 'push' }}
+
+      - name: No product name in provider source
+        run: scripts/check-brand-strings.sh
+
+      - name: go vet
+        run: go -C terraform-provider vet ./...
+
+      - name: go test
+        run: go -C terraform-provider test -short -timeout=5m ./...
+
   web-check:
     name: Web (tsc, eslint)
     needs: changes
@@ -799,7 +838,7 @@ jobs:
   # failed or was cancelled. A skipped job had no work for this change.
   ci-required:
     name: CI required
-    needs: [changes, plan, build-vet, lint, kit, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh]
+    needs: [changes, plan, build-vet, lint, kit, tfprovider, test-go, test-api, test-rest, coverage-gate, web-check, web-test, install-sh]
     if: always()
     runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 3

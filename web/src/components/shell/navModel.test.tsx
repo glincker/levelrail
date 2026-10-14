@@ -16,6 +16,7 @@ const EXPECTED_GLOBAL = [
   '/status',
   '/apps',
   '/deployments',
+  '/deploy-timeline',
   '/projects',
   '/databases',
   '/backups',

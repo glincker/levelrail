@@ -91,6 +91,7 @@ Four main types, plus two Levelrail-specific categories:
 | --- | --- |
 | [observability.md](/observability) | Node-local metrics and log storage, federated queries, and the alert engine |
 | [deployments-page.md](/deployments-page) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
+| [deploy-timeline.md](/deploy-timeline) | The fleet deploy timeline: every deploy as a bar on one time axis, live, with filters and a CLI view |
 | [cost-estimate.md](/cost-estimate) | The per-app "what this would cost elsewhere" estimate: the formula, reference providers, and how to correct the rates for your own region |
 | [usage-and-cost.md](/usage-and-cost) | Cost showback per app, project, environment and team from your own prices, allocation rules, budgets and alerts, export and limits |
 | [resource-advisor.md](/resource-advisor) | The beta resource advisor: limit, idle, growth, disk and database tuning suggestions, how each rule works, thresholds and limits |
@@ -118,6 +119,7 @@ Four main types, plus two Levelrail-specific categories:
 | [migrating-from-coolify-dokploy-and-caprover.md](/migrating-from-coolify-dokploy-and-caprover) | Move apps off a live Coolify, Dokploy, or CapRover instance with `levelrail-cli migrate` |
 | [feature-flags.md](/feature-flags) | Toggle app behavior at runtime without a redeploy |
 | [platform-as-code.md](/platform-as-code) | Describe projects, environments, apps, domains and databases as YAML, then export, diff, plan and apply them from the CLI, the dashboard, MCP or CI |
+| [terraform-provider.md](/terraform-provider) | Manage projects, environments, apps, domains, databases and shared variables from Terraform or OpenTofu |
 | [templates-and-registry.md](/templates-and-registry) | Deploy curated service templates from the catalog as Compose-backed apps |
 | [ai-assistant.md](/ai-assistant) | Run `levelrail-mcp` over stdio or the network for an MCP-compatible AI assistant, and scope a token for it |
 | [ai-assistant-chat.md](/ai-assistant-chat) | The in-app dashboard/CLI chat behind the `ai-chat` experimental flag: enabling it, what it can and can't do, and the confirmation gate |

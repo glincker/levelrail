@@ -16,6 +16,7 @@ var recommendationKinds = map[string]bool{
 	KindDBSecurityUpdates: true,
 	KindDBEOL:             true,
 	KindDockerGuard:       true,
+	KindSecretRotationDue: true,
 	"update":              true,
 	"node_agent":          true,
 }

@@ -1,0 +1,54 @@
+{
+  "title": "{{name}}: Infrastructure",
+  "description": "Drag, pan and zoom how this project's apps, databases, domains and volumes connect. Positions are remembered in this browser.",
+  "canvasLabel": "Infrastructure canvas with {{count}} resources. Focus a resource and use arrow keys to move it.",
+  "empty": {
+    "title": "Nothing filed under this project yet",
+    "description": "Assign an app or database to this project to see how they relate here.",
+    "action": "Back to project"
+  },
+  "error": {
+    "title": "Could not load the infrastructure graph"
+  },
+  "kind": {
+    "app": "App",
+    "database": "Database",
+    "volume": "Volume",
+    "domain": "Domain"
+  },
+  "edge": {
+    "database_binding": "Database connection",
+    "depends_on": "Depends on",
+    "volume_attachment": "Volume attachment",
+    "egress_allow": "Egress allow-rule",
+    "routing": "Routing"
+  },
+  "status": {
+    "healthy": "Healthy",
+    "deploying": "Deploying",
+    "failed": "Failed",
+    "idle": "No status"
+  },
+  "toolbar": {
+    "label": "Canvas controls",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fit": "Fit to view",
+    "resetLayout": "Reset layout",
+    "zoomLevel": "Zoom {{percent}} percent",
+    "hidden": "{{count}} resources are offscreen and not drawn until you pan to them."
+  },
+  "panel": {
+    "label": "Details for {{name}}",
+    "close": "Close details",
+    "connections": "Connections",
+    "noConnections": "Nothing is connected to this resource yet.",
+    "actions": "Quick actions",
+    "overview": "Open overview",
+    "logs": "View logs",
+    "deploys": "Deploys and rollback",
+    "domains": "Manage domains",
+    "metrics": "View metrics"
+  },
+  "legend": "Legend"
+}

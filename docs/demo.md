@@ -69,6 +69,24 @@ levelrail-cli deploy myapp --image registry.example.com/acme/myapp:latest
   <img src="/assets/screenshots/database-overview.png" alt="Levelrail database overview" />
 </Frame>
 
+## Terminal recordings
+
+<Frame caption="Install and first deploy, from a fresh server to a live app.">
+  <img src="/assets/demos/install-deploy.gif" alt="Terminal recording: run the install script, then deploy an app that goes live" />
+</Frame>
+
+<Frame caption="Deploy with a readiness gate, then roll back in one command.">
+  <img src="/assets/demos/deploy-rollback.gif" alt="Terminal recording: deploy with readiness gating, then roll back to the previous image" />
+</Frame>
+
+<Frame caption="Create a managed database and query it without leaving the terminal.">
+  <img src="/assets/demos/db-create.gif" alt="Terminal recording: create a managed Postgres database, inspect it and run a read-only query" />
+</Frame>
+
+<Frame caption="Browse the template catalog and deploy a service.">
+  <img src="/assets/demos/templates.gif" alt="Terminal recording: browse the template catalog and deploy one" />
+</Frame>
+
 ## Frequently asked questions
 
 <AccordionGroup>

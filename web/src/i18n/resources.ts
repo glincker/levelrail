@@ -17,6 +17,7 @@ import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type setup from '../locales/en/setup.json'
 import type updates from '../locales/en/updates.json'
+import type infraCanvas from '../locales/en/infraCanvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type iam from '../locales/en/iam.json'
@@ -33,6 +34,7 @@ import type teams from '../locales/en/teams.json'
 import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
+import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
@@ -40,6 +42,8 @@ import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
+import type deployTimeline from '../locales/en/deployTimeline.json'
+import type secretRotation from '../locales/en/secretRotation.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
@@ -66,6 +70,7 @@ declare module 'i18next' {
       attention: typeof attention
       setup: typeof setup
       updates: typeof updates
+      infraCanvas: typeof infraCanvas
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       iam: typeof iam
@@ -82,6 +87,7 @@ declare module 'i18next' {
       compose: typeof compose
       smartDeploy: typeof smartDeploy
       dataExport: typeof dataExport
+      eventWebhooks: typeof eventWebhooks
       deploySafety: typeof deploySafety
       jobs: typeof jobs
       envEditor: typeof envEditor
@@ -89,6 +95,8 @@ declare module 'i18next' {
       newApp: typeof newApp
       getStarted: typeof getStarted
       usage: typeof usage
+      deployTimeline: typeof deployTimeline
+      secretRotation: typeof secretRotation
       aiAssistant: typeof aiAssistant
     }
   }

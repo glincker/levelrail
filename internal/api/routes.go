@@ -24,6 +24,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerPipelineOverviewRoutes(mux)
 	rt.registerModelRoutes(mux)
 	rt.registerDataExportRoutes(mux)
+	rt.registerEventWebhookRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)
@@ -63,6 +64,9 @@ func (rt *Router) Handler() http.Handler {
 	h = panicRecoveryMiddleware(rt.logger)(h)
 	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
 	h = requestIDMiddleware(h)
+	if rt.demo != nil {
+		h = rt.demoGate(h)
+	}
 	return h
 }
 
@@ -71,6 +75,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
 	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
+	mux.HandleFunc("GET /api/v1/demo", rt.handleDemoInfo)
+	mux.HandleFunc("POST /api/v1/demo/session", rt.handleDemoSession)
+	mux.HandleFunc("POST /api/v1/demo/cta", rt.handleDemoCTA)
 	// Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx):
 	// AbilityRead, same tier as system/status, since this is the API
 	// surface's own shape, not resource data.
@@ -547,6 +554,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deploys/failed", rt.requireAbility(AbilityRead, rt.handleListFailedDeploys))
 	mux.HandleFunc("GET /api/v1/deployments", rt.requireAbility(AbilityRead, rt.handleListDeployments))
 	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
+	mux.HandleFunc("GET /api/v1/deployments/timeline", rt.requireAbility(AbilityRead, rt.handleDeploymentsTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between

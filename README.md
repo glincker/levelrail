@@ -25,12 +25,37 @@
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg" alt="License: Apache 2.0"></a>
-  <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat" alt="GitHub stars"></a>
-  <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat-square&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
   <a href="#status-pre-release"><img src="https://img.shields.io/badge/status-pre--release-orange.svg" alt="Status: pre-release"></a>
+  <a href="https://github.com/glincker/levelrail/pkgs/container/levelrail"><img src="https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white" alt="Docker image on ghcr.io"></a>
 </p>
 
-<img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
+<p>
+  <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat" alt="GitHub stars"></a>
+  <a href="https://github.com/glincker/levelrail/commits/main"><img src="https://img.shields.io/github/last-commit/glincker/levelrail?style=flat" alt="Last commit"></a>
+  <a href="https://github.com/glincker/levelrail/issues"><img src="https://img.shields.io/github/issues/glincker/levelrail?style=flat" alt="Open issues"></a>
+  <a href="CONTRIBUTING.md"><img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg" alt="PRs welcome"></a>
+  <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
+</p>
+
+<p>
+  <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/glincker/levelrail?style=flat&logo=go&logoColor=white" alt="Go version"></a>
+  <img src="https://img.shields.io/badge/linux-amd64%20%7C%20arm64-555?style=flat&logo=linux&logoColor=white" alt="Linux amd64 and arm64">
+  <img src="https://img.shields.io/badge/single-binary-555?style=flat" alt="Single static binary">
+  <a href="https://levelrail.com"><img src="https://img.shields.io/badge/docs-levelrail.com-555?style=flat" alt="Documentation"></a>
+</p>
+
+<table>
+  <tr>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/assets/demos/install-deploy.gif" alt="Terminal recording: install Levelrail, then deploy an app that goes live over HTTPS" width="440"><br>
+      <sub><b>Install, then deploy</b></sub>
+    </td>
+    <td width="50%" valign="top" align="center">
+      <img src="docs/assets/demos/deploy-rollback.gif" alt="Terminal recording: deploy with a readiness gate, then roll back to the previous image" width="440"><br>
+      <sub><b>Gated deploy, one-step rollback</b></sub>
+    </td>
+  </tr>
+</table>
 
 </div>
 
@@ -118,6 +143,10 @@ Every image below is captured from a real, running control plane by
 containers, metrics, and logs. Click one to open the guide for that screen.
 
 ### Deploy and observe
+
+<p align="center">
+  <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="720">
+</p>
 
 <table>
   <tr>

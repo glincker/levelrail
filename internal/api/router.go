@@ -144,12 +144,13 @@ type Router struct {
 	organizations          OrganizationStore
 	environments           EnvironmentStore
 	envProtect             envProtection
-	cliConsole             *cliConsoleState   // web CLI console limits and config, see cli_console.go
-	mobile                 *mobileState       // phone pairing rate limits, see mobile.go
-	secrets                SecretSetter       // nil is valid: a control plane with no master key configured serves everything except secret-setting
-	composeSecrets         ComposeSecretStore // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
-	telemetry              TelemetryQuerier   // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	requestSummaryWindow   time.Duration      // 0 keeps defaultRequestSummaryWindow
+	cliConsole             *cliConsoleState                    // web CLI console limits and config, see cli_console.go
+	mobile                 *mobileState                        // phone pairing rate limits, see mobile.go
+	secrets                SecretSetter                        // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
+	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
+	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
+	requestSummaryWindow   time.Duration                       // 0 keeps defaultRequestSummaryWindow
 	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
 	// duration bands (request_logging.go). Zero fields mean "use the
 	// matching default", set via WithRequestLogThresholds;
@@ -272,6 +273,8 @@ type Router struct {
 	// touching the environment. See securityHeadersMiddleware and
 	// hstsDBOverrideMiddleware for where each half is applied.
 	hstsEnabled bool
+	// demo is non-nil only on the demo entrypoint (WithDemoMode).
+	demo *demoState
 	// hstsDBEnabled caches ingress_settings.hsts_enabled so the dashboard
 	// toggle takes effect on the next request, not the next restart, the
 	// same "no restart needed" expectation every other ingress setting
@@ -425,6 +428,7 @@ type Router struct {
 	storage                      *StorageDeps                    // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501
 	backupSecrets                BackupSecretsSetter             // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	dataExport                   DataExportService               // nil is valid: export routes and GET /metrics return 501
+	eventWebhooks                EventWebhookService             // nil is valid: event webhook routes return 501
 	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets    RegistryCredentialSecretsSetter // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
 	networkShares                NetworkShareStore               // always set, same "core Store interface" shape as registryCredentials above

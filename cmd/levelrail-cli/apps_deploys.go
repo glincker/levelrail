@@ -35,6 +35,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "failed":
 		return runAppsDeploysFailed(prog, args[1:], stdout, stderr, lookupEnv)
+	case "timeline":
+		return runAppsDeploysTimeline(prog, args[1:], stdout, stderr, lookupEnv)
 	case "steps":
 		return runAppsDeploysSteps(prog, args[1:], stdout, stderr, lookupEnv)
 	case "probes":
@@ -60,6 +62,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
+  %[1]s apps deploys timeline [--since 24h] [flags]               fleet-wide deploys as bars on a shared time axis
   %[1]s apps deploys steps <name> <deploy-id> [flags]             one deploy attempt's pipeline steps, live until it ends
   %[1]s apps deploys probes <name> <deploy-id> [flags]            readiness-probe attempts a deploy's cutover made
   %[1]s apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline

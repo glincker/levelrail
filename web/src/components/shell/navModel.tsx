@@ -53,6 +53,7 @@ export type GlobalTo =
   | '/status'
   | '/apps'
   | '/deployments'
+  | '/deploy-timeline'
   | '/projects'
   | '/databases'
   | '/backups'
@@ -139,6 +140,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Deployments',
         to: '/deployments',
         icon: <RocketLaunchIcon />,
+      },
+      {
+        id: 'deploy-timeline',
+        label: 'Deploy timeline',
+        to: '/deploy-timeline',
+        icon: <ClockCounterClockwiseIcon />,
       },
       {
         id: 'projects',

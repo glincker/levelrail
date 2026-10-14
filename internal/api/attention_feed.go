@@ -51,6 +51,7 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.flaggedAccountItems(r, abilities)...)
 	items = append(items, rt.dockerGuardAttentionItems(r, abilities, now)...)
 	items = append(items, rt.upgradeScheduleAttentionItems(r, abilities)...)
+	items = append(items, rt.secretRotationAttentionItems(r, abilities)...)
 	items = append(items, rt.resourceAdviceAttentionItems(r)...)
 	items = append(items, rt.backupCoverageAttentionItems(r, abilities)...)
 	return items

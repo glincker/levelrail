@@ -265,6 +265,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: WebhooksLogoIcon,
       },
       {
+        id: 'event-webhooks',
+        to: '/settings/event-webhooks',
+        icon: WebhooksLogoIcon,
+      },
+      {
         id: 'email',
         to: '/settings/email',
         icon: EnvelopeIcon,

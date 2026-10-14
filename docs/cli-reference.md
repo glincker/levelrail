@@ -978,6 +978,20 @@ levelrail-cli export destinations list|create|test|status|enable|disable|delete
 levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
 ```
 
+## Event webhooks
+
+```
+levelrail-cli event-webhooks list
+levelrail-cli event-webhooks create --name N --url U [--event apps.*,users.create] [--disabled]
+levelrail-cli event-webhooks test <id>
+levelrail-cli event-webhooks deliveries <id>
+levelrail-cli event-webhooks replay <delivery-id>
+levelrail-cli event-webhooks enable|disable <id>
+levelrail-cli event-webhooks rotate-secret <id>
+levelrail-cli event-webhooks delete <id>
+```
+Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](/event-webhooks).
+
 ## Logs
 
 See [Log archive](/log-archive).

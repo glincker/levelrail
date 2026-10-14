@@ -190,6 +190,14 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | --- | --- | --- |
 | `APP_MESH_KEY_FILE` | `levelrail-agent-mesh.key` in the same directory as the agent identity file | Path where the agent stores its WireGuard private key. Only used when `APP_MESH_ENABLED=1`. Agent. See [Network topology](/network-topology). |
 
+## Secret rotation
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_SECRET_ROTATION_INTERVAL_SECONDS` | `3600` | How often the rotation sweep runs, in seconds. Positive integer. Control plane. See [Secret rotation policies](secret-rotation.md). |
+| `APP_SECRET_ROTATION_DUE_SOON_DAYS` | `7` | A policy shows as due soon this many days before its due date. Positive integer. Control plane. |
+| `APP_SECRET_ROTATION_MAX_PER_PASS` | `10` | Most scheduled rotations one sweep starts, so restarts spread out. Positive integer. Control plane. |
+
 ## Behavior to know about
 
 - **Scheduler intervals are not range checked.** `APP_BACKUP_SCHEDULER_INTERVAL`, `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL`, `APP_UPDATE_CHECK_INTERVAL` and `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` use any value that parses as a Go duration, including zero or a negative one. Only an unparseable value falls back to the default. Use a positive duration.

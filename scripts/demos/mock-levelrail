@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Scripted stand-in for levelrail-cli so demo tapes need no server. Output
+# shapes follow docs/cli-reference.md; only timing and values are invented.
+set -u
+G=$'\033[32m'; C=$'\033[36m'; D=$'\033[2m'; Y=$'\033[33m'; R=$'\033[0m'
+nap() { sleep "${DEMO_PACE:-0.35}"; }
+say() { printf '%s\n' "$*"; nap; }
+unscripted() { echo "mock: unscripted: $*" >&2; exit 2; }
+
+install() {
+  say "${D}checking host${R}: docker ${G}ok${R}, systemd ${G}ok${R}, ports 80/443/8080 ${G}free${R}"
+  say "${D}downloading${R} levelrail 0.8.0 (linux/amd64)"
+  say "${D}installing${R} control plane as a systemd service"
+  say "${D}starting${R} levelrail.service"
+  say "${G}ok${R} dashboard ready at http://203.0.113.10:8080"
+  say "setup token: ${C}lr_setup_9f3a1c7e52b0${R}"
+}
+
+apps_deploy() {
+  name="${1:-myapp}"
+  say "deploying ${C}${name}${R}"
+  say "  pulling image ${D}registry.example.com/acme/${name}:2.4.0${R}"
+  say "  ${D}[web]${R} server listening on :3000"
+  say "  ${D}[web]${R} connected to postgres, 12 migrations applied"
+  say "  readiness probe ${Y}pending${R} (GET /healthz)"
+  say "  readiness probe ${G}passed${R}, cutting traffic"
+  say "  old container drained and stopped"
+  say "${G}ok${R} ${name} is live at https://${name}.example.com (deploy d_41)"
+}
+
+apps_rollback() {
+  name="${1:-myapp}"
+  say "rolling ${C}${name}${R} back to ${D}registry.example.com/acme/${name}:2.3.1${R}"
+  say "  previous image pinned, starting container"
+  say "  readiness probe ${G}passed${R}, cutting traffic"
+  say "${G}ok${R} ${name} is live on 2.3.1 (deploy d_42)"
+}
+
+templates_list() {
+  printf '%-14s %-24s %s\n' ID NAME CATEGORY
+  while IFS='|' read -r a b c; do
+    printf '%-14s %-24s %s\n' "$a" "$b" "$c"
+  done <<'ROWS'
+ghost|Ghost|cms
+gitea|Gitea|devtools
+grafana|Grafana|monitoring
+metabase|Metabase|analytics
+minio|MinIO|storage
+n8n|n8n|automation
+plausible|Plausible Analytics|analytics
+umami|Umami|analytics
+uptime-kuma|Uptime Kuma|monitoring
+vaultwarden|Vaultwarden|security
+ROWS
+}
+
+templates_deploy() {
+  id="${1:-plausible}"
+  say "deploying template ${C}${id}${R} as app ${C}${id}${R}"
+  say "  services: plausible, plausible-db, clickhouse"
+  say "  generated secrets: SECRET_KEY_BASE, DATABASE_PASSWORD"
+  say "  readiness probe ${G}passed${R}"
+  say "${G}ok${R} ${id} is live at https://${id}.example.com"
+}
+
+db_create() {
+  say "creating database ${C}orders-db${R} (postgres 16)"
+  say "  pulling image postgres:16"
+  say "  data volume created, 1 GiB"
+  say "  readiness ${G}passed${R}, backups scheduled daily 03:00"
+  say "${G}ok${R} orders-db is running"
+}
+
+db_get() {
+  printf '%-10s %s\n' name orders-db engine "postgres 16" status running host orders-db.internal port 5432 backups "daily, last ok 2h ago"
+  nap
+}
+
+db_query() {
+  say "${D}select * from orders limit 3${R}"
+  printf ' %-6s %-10s %s\n' id status total 1042 paid 49.00 1041 pending 12.50 1040 paid 230.00
+  nap
+  say "(3 rows, read only)"
+}
+
+case "${1:-}" in
+  __install) install ;;
+  deploy) apps_deploy "${@:2}" ;;
+  rollback) apps_rollback "${@:2}" ;;
+  apps)
+    case "${2:-}" in
+      deploy) apps_deploy "${@:3}" ;;
+      rollback) apps_rollback "${@:3}" ;;
+      *) unscripted "$@" ;;
+    esac ;;
+  templates)
+    case "${2:-}" in
+      list) templates_list ;;
+      deploy) templates_deploy "${@:3}" ;;
+      *) unscripted "$@" ;;
+    esac ;;
+  databases)
+    case "${2:-}" in
+      create) db_create ;;
+      get) db_get ;;
+      query) db_query ;;
+      *) unscripted "$@" ;;
+    esac ;;
+  *) unscripted "$@" ;;
+esac

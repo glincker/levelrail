@@ -39,6 +39,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
+	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -341,6 +342,13 @@ func main() {
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "demo" {
+		if err := runDemo(context.Background(), logger, os.Args[2:], os.Stdout); err != nil {
+			logger.Error("demo failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "recover-admin" {
 		if err := runRecoverAdmin(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("recover-admin failed", slog.String("error", err.Error()))
@@ -409,6 +417,9 @@ func main() {
 
 func run(logger *slog.Logger) error {
 	logger.Info("starting", slog.String("version", version.Version))
+	if demo.Enabled(os.Getenv) {
+		logger.Warn("ignoring " + demo.EnvDemoMode + ": demo mode only exists behind the demo subcommand")
+	}
 	if err := experimental.Validate(); err != nil {
 		logger.Warn("ignoring unknown experimental feature", slog.String("error", err.Error()))
 	}
@@ -803,6 +814,7 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetDockerGuard(guard.Controller)
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	setupDataExport(ctx, logger, b, db, telemetryDB, secretsManager, logBroadcaster, apiRouter)
+	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
@@ -1149,6 +1161,8 @@ func run(logger *slog.Logger) error {
 			logger.Error("database temporary credential sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
+
+	startSecretRotation(ctx, logger, db, apiRouter, secretsManager != nil)
 
 	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,
 		func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) }, apiRouter)
