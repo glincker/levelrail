@@ -48,6 +48,7 @@ export const NAMESPACES = [
   'newApp',
   'getStarted',
   'usage',
+  'deployTimeline',
 ] as const
 
 void i18n

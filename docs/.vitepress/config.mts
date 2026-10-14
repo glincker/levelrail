@@ -103,6 +103,7 @@ const sidebarGroups = [
           { text: 'Functions', link: '/functions' },
           { text: 'Canary deploys', link: '/canary-deploys' },
           { text: 'Deployments page', link: '/deployments-page' },
+          { text: 'Deploy timeline', link: '/deploy-timeline' },
           { text: 'Deploy previews', link: '/deploy-previews' },
           { text: 'Deploy links and badge', link: '/deploy-link' },
           { text: 'Pull request previews', link: '/previews' },
