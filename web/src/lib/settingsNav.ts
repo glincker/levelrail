@@ -19,14 +19,12 @@ import {
   GithubLogoIcon,
   GitlabLogoIcon,
   GlobeIcon,
-  HardDrivesIcon,
   HeartbeatIcon,
   WrenchIcon,
   IdentificationBadgeIcon,
   IdentificationCardIcon,
   KeyIcon,
   LockKeyIcon,
-  PackageIcon,
   PlugsConnectedIcon,
   RobotIcon,
   ShieldCheckIcon,
@@ -134,11 +132,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'oauth',
         to: '/settings/oauth',
         icon: LockKeyIcon,
-      },
-      {
-        id: 'iam-policies',
-        to: '/settings/iam-policies',
-        icon: ShieldCheckIcon,
       },
       {
         id: 'tokens',
@@ -318,16 +311,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/gitea-app',
         icon: TeaBagIcon,
       },
-      {
-        id: 'registry',
-        to: '/settings/registry',
-        icon: HardDrivesIcon,
-      },
-      {
-        id: 'registry-credentials',
-        to: '/settings/registry-credentials',
-        icon: PackageIcon,
-      },
     ],
   },
   {
@@ -353,11 +336,6 @@ export const settingsNavSections: SettingsNavSection[] = [
   {
     id: 'advanced',
     items: [
-      {
-        id: 'node-providers',
-        to: '/settings/node-providers',
-        icon: HardDrivesIcon,
-      },
       {
         id: 'containers',
         to: '/settings/containers',

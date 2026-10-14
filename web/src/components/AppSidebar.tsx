@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { SignOutIcon } from '@phosphor-icons/react/dist/ssr'
@@ -17,6 +17,7 @@ import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
 import { GlobalNav } from './shell/GlobalNav'
+import { GLOBAL_NAV_GROUPS, isGlobalItemActive } from './shell/navModel'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 
 // Lazy: exactly one of these three renders at a time (mutually exclusive
@@ -70,7 +71,23 @@ export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
   const scopedDatabaseName = pathname.match(DATABASE_SCOPE_PATTERN)?.[1]
-  const isSettingsScoped = SETTINGS_SCOPE_PATTERN.test(pathname)
+  // Pages the main nav lists (registry, node providers, IAM policies...) live
+  // under /settings but keep the main sidebar, so opening one never swaps it.
+  const ownedByGlobalNav = GLOBAL_NAV_GROUPS.some((g) =>
+    g.items.some((i) => isGlobalItemActive(pathname, i)),
+  )
+  const isSettingsScoped =
+    SETTINGS_SCOPE_PATTERN.test(pathname) && !ownedByGlobalNav
+
+  // Keep the current page's entry visible in a long sidebar.
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      document
+        .querySelector('[data-slot="sidebar-content"] [aria-current="page"]')
+        ?.scrollIntoView({ block: 'nearest' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [pathname])
 
   return (
     <Sidebar collapsible="icon" variant="floating">
