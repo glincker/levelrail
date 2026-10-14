@@ -26,6 +26,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDataExportRoutes(mux)
 	rt.registerEventWebhookRoutes(mux)
 	rt.registerScheduledMaintenanceRoutes(mux)
+	rt.registerComplianceRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)

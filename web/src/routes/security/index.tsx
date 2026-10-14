@@ -13,8 +13,15 @@ import {
 import { SessionsPanel } from '../../components/security/SessionsPanel'
 import { PolicyPanel } from '../../components/security/PolicyPanel'
 import { RotationsPanel } from '../../components/security/RotationsPanel'
+import { CompliancePanel } from '../../components/security/CompliancePanel'
 
-const TABS = ['checklist', 'sessions', 'policy', 'rotations'] as const
+const TABS = [
+  'checklist',
+  'sessions',
+  'policy',
+  'rotations',
+  'compliance',
+] as const
 type SecurityTab = (typeof TABS)[number]
 
 interface SecuritySearch {
@@ -66,6 +73,9 @@ function SecurityCenterPage() {
           <TabsTrigger value="rotations">
             {t('page.tabs.rotations')}
           </TabsTrigger>
+          <TabsTrigger value="compliance">
+            {t('page.tabs.compliance')}
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="checklist" className="space-y-6 pt-4">
           {posture.error ? (
@@ -109,6 +119,9 @@ function SecurityCenterPage() {
         </TabsContent>
         <TabsContent value="rotations" className="pt-4">
           <RotationsPanel />
+        </TabsContent>
+        <TabsContent value="compliance" className="pt-4">
+          <CompliancePanel />
         </TabsContent>
       </Tabs>
     </div>

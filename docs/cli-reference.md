@@ -978,6 +978,20 @@ levelrail-cli export destinations list|create|test|status|enable|disable|delete
 levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
 ```
 
+## Compliance
+
+```
+levelrail-cli compliance evidence create --from DATE --to DATE [--out FILE] [--no-wait]
+levelrail-cli compliance evidence list
+levelrail-cli compliance evidence download <id> [--out FILE]
+levelrail-cli compliance evidence verify <id>
+levelrail-cli compliance access-review start [--name N] [--due-days D] [--repeat-days R]
+levelrail-cli compliance access-review list
+levelrail-cli compliance access-review show <id>
+levelrail-cli compliance access-review keep|revoke <id> <item-id>...
+levelrail-cli compliance access-review complete <id>
+```
+
 ## Event webhooks
 
 ```

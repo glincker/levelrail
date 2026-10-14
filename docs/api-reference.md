@@ -1292,6 +1292,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/scheduled-maintenance | AbilityRead | handleListScheduledMaintenance |
 | POST | /api/v1/scheduled-maintenance | AbilityWriteSensitive | handleCreateScheduledMaintenance |
 | DELETE | /api/v1/scheduled-maintenance/{id} | AbilityWriteSensitive | handleDeleteScheduledMaintenance |
+| GET | /api/v1/compliance/access-reviews | AbilityRoot | handleListAccessReviews |
+| POST | /api/v1/compliance/access-reviews | AbilityRoot | handleCreateAccessReview |
+| GET | /api/v1/compliance/access-reviews/{id} | AbilityRoot | handleGetAccessReview |
+| PUT | /api/v1/compliance/access-reviews/{id}/items/{item} | AbilityRoot | handleDecideAccessReviewItem |
+| POST | /api/v1/compliance/access-reviews/{id}/complete | AbilityRoot | handleCompleteAccessReview |
+| GET | /api/v1/compliance/evidence-packs | AbilityRoot | handleListEvidencePacks |
+| POST | /api/v1/compliance/evidence-packs | AbilityRoot | handleCreateEvidencePack |
+| GET | /api/v1/compliance/evidence-packs/{id} | AbilityRoot | handleGetEvidencePack |
+| GET | /api/v1/compliance/evidence-packs/{id}/download | AbilityRoot | handleDownloadEvidencePack |
+| POST | /api/v1/compliance/evidence-packs/{id}/verify | AbilityRoot | handleVerifyEvidencePack |
 
 ## See also
 

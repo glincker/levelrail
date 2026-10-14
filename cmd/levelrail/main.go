@@ -816,6 +816,7 @@ func run(logger *slog.Logger) error {
 	setupDataExport(ctx, logger, b, db, telemetryDB, secretsManager, logBroadcaster, apiRouter)
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
+	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)

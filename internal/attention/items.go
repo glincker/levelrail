@@ -68,6 +68,7 @@ var kindInfos = map[string]kindInfo{
 	KindSecretRotationDue:   {"Secret %s is due for rotation", "Open the app environment and rotate it or set a new value", linkApps, false},
 	KindSecretRotationFail:  {"Rotation of secret %s needs attention", "Open the app environment, read the reason and retry", linkApps, false},
 	KindQuotaNearLimit:      {"A resource quota is nearly used up", "Raise the limit or free up resources", linkTeams, false},
+	KindAccessReviewOverdue: {"Access review %s is overdue", "Open the compliance tab and finish the review", linkCenter + "?tab=compliance", false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

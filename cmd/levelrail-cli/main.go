@@ -165,6 +165,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compliance":
+		return runCompliance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "event-webhooks":
 		return runEventWebhooks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "maintenance":
