@@ -144,6 +144,16 @@ func (db *DB) UpdateUserPasswordHash(ctx context.Context, id string, hash *strin
 	return rowsAffectedOrNotFound(res, ErrUserNotFound, "update user %q password", id)
 }
 
+// UpdateUserDisplayName sets a user's display name. Returns ErrUserNotFound
+// if id doesn't exist.
+func (db *DB) UpdateUserDisplayName(ctx context.Context, id, name string) error {
+	res, err := db.ExecContext(ctx, `UPDATE users SET display_name = ? WHERE id = ?`, name, id)
+	if err != nil {
+		return fmt.Errorf("store: update user %q display name: %w", id, err)
+	}
+	return rowsAffectedOrNotFound(res, ErrUserNotFound, "update user %q display name", id)
+}
+
 // UpdateUserAbilities replaces a user's Abilities wholesale, the same
 // "fixed at mint time except this one field" shape api_tokens uses for
 // LastUsedAt/RevokedAt. Validation (validateAbilities) is the caller's

@@ -1106,14 +1106,74 @@
   },
   "accountPage": {
     "title": "Account",
-    "description": "Profile and password.",
+    "description": "Your profile, sign-in security, sessions and what you can manage.",
     "profile": {
       "title": "Profile",
-      "description": "Every signed-in account has identical access on this platform: no teams or roles yet.",
+      "description": "Your own details. What you can manage is listed under My access below.",
       "email": "Email",
       "displayName": "Display name",
       "hasPassword": "This account signs in with a password.",
-      "noPassword": "This account has no password set, only OAuth sign-in."
+      "noPassword": "This account has no password set, only OAuth sign-in.",
+      "edit": "Edit display name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Display name updated"
+    },
+    "loading": "Loading...",
+    "loadError": "Could not load this section. Reload the page to retry.",
+    "sessions": {
+      "title": "Active sessions and trusted devices",
+      "description": "Where you are signed in right now. Ending a session signs that browser out.",
+      "current": "This session",
+      "lastSeen": "last seen",
+      "revoke": "Sign out",
+      "revoked": "Session ended",
+      "revokeOthers": "Sign out all other sessions",
+      "revokedOthers_one": "{{count}} other session ended",
+      "revokedOthers_other": "{{count}} other sessions ended",
+      "devices": "Trusted devices",
+      "devicesEmpty": "No trusted devices.",
+      "deviceRemove": "Remove",
+      "deviceRemoved": "Trusted device removed"
+    },
+    "providers": {
+      "title": "Linked sign-in providers",
+      "description": "Link an identity provider to sign in with it. Linking needs this live session.",
+      "none": "No sign-in providers are enabled on this instance.",
+      "linked": "Linked",
+      "link": "Link"
+    },
+    "tokens": {
+      "title": "My API tokens",
+      "description": "Tokens you created for the CLI, CI or agents.",
+      "count_one": "{{count}} active token",
+      "count_other": "{{count}} active tokens",
+      "manage": "Manage tokens"
+    },
+    "access": {
+      "title": "My access",
+      "description": "What this account can and cannot manage, and which permission is missing when it cannot.",
+      "tier": "Access level",
+      "tiers": {
+        "admin": "Administrator",
+        "operator": "Operator",
+        "developer": "Developer",
+        "viewer": "Viewer"
+      },
+      "teams": "Teams",
+      "noTeams": "Not a member of any team.",
+      "policies": "Attached IAM policies",
+      "noPolicies": "No policies attached.",
+      "missing": "Missing permission: {{ability}}",
+      "areas": {
+        "view": "View apps, services and logs",
+        "deploy": "Deploy and roll back",
+        "configure": "Change app and service configuration",
+        "secrets_read": "Reveal secrets and sensitive values",
+        "sensitive_write": "Change sensitive settings",
+        "users_and_access": "Manage users, roles and policies",
+        "platform_settings": "Change platform-wide settings"
+      }
     }
   },
   "apiExplorerPage": {

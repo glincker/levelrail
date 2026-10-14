@@ -207,6 +207,8 @@ Endpoints for:
 | GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
 | PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
 | POST | /api/v1/auth/session-links/consume | Public | handleConsumeSessionLink |
+| PATCH | /api/v1/auth/profile | Session | handleUpdateProfile |
+| GET | /api/v1/auth/my-access | Public | handleMyAccess |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

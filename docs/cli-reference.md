@@ -611,7 +611,7 @@ levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 
 ```
 levelrail-cli auth login [--device] [--profile NAME] [flags]
-levelrail-cli auth whoami [flags]
+levelrail-cli auth whoami [--access] [flags]
 levelrail-cli auth session-link [flags]
 levelrail-cli auth code [flags]
 levelrail-cli auth approve <id> --match N [flags]

@@ -1718,6 +1718,14 @@ func (c *Client) Whoami(ctx context.Context) (WhoamiResource, error) {
 	return out, err
 }
 
+// MyAccess calls GET /api/v1/auth/my-access: the caller's own tier, teams,
+// attached policies and per-area capabilities.
+func (c *Client) MyAccess(ctx context.Context) (MyAccessResource, error) {
+	var out MyAccessResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/my-access", nil, &out)
+	return out, err
+}
+
 // MintSessionLink calls POST /api/v1/auth/session-links using this
 // Client's bearer token, which must hold AbilityRoot: minting a session
 // link is root-equivalent since redeeming it establishes a session with
