@@ -1258,6 +1258,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mobile/overview | AbilityRead | handleMobileOverview |
 | GET | /api/v1/gate/check | Public | handleGateCheck |
 | GET | /gate/login | Public | handleGateLogin |
+| GET | /api/v1/deployments/timeline | AbilityRead | handleDeploymentsTimeline |
 
 ## See also
 

@@ -545,6 +545,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/deploys/failed", rt.requireAbility(AbilityRead, rt.handleListFailedDeploys))
 	mux.HandleFunc("GET /api/v1/deployments", rt.requireAbility(AbilityRead, rt.handleListDeployments))
 	mux.HandleFunc("GET /api/v1/deployments/summary", rt.requireAbility(AbilityRead, rt.handleDeploymentsSummary))
+	mux.HandleFunc("GET /api/v1/deployments/timeline", rt.requireAbility(AbilityRead, rt.handleDeploymentsTimeline))
 	mux.HandleFunc("GET /api/v1/deployments/stream", rt.requireAbility(AbilityRead, rt.withStreamReauth(deploymentsStreamResource, rt.handleDeploymentsStream)))
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
