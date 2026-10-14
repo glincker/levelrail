@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1080 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1082 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -291,6 +291,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/login-code/request", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRequestLoginCode", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/login-options", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLoginOptions", Description: "Sign in with a code and new-device approval (login_code.go, login_approval.go). Request, redeem and poll are public and bound to a browser cookie; the rest act only on the caller's own account."},
 	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/my-access", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/oauth/providers", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPublicOAuthProviders", Description: "OAuth sign-in (Google, GitHub). /providers, /start, /callback are all necessarily public; /link/start is requireAuth-gated (see its own doc comment)."},
 	{Method: "GET", Path: "/api/v1/auth/oauth/{provider}/callback", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleOAuthCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/oauth/{provider}/link/start", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleOAuthLinkStart", Description: ""},
@@ -303,6 +304,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/auth/passkeys/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/auth/passkeys/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "PUT", Path: "/api/v1/auth/password", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleChangePassword", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/auth/profile", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateProfile", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/register", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRegister", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/reset-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetPassword", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSession", Description: ""},

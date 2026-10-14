@@ -385,6 +385,7 @@ type AuthStore interface {
 	ListUsers(ctx context.Context) ([]store.User, error)
 	DeleteUser(ctx context.Context, id string) error
 	UpdateUserAbilities(ctx context.Context, id string, abilities []string) error
+	UpdateUserDisplayName(ctx context.Context, id, name string) error
 }
 
 // EmailSettingsStore is the store surface GET/PUT

@@ -1342,6 +1342,40 @@ type WhoamiResource struct {
 	ExpiresAt string   `json:"expires_at"`
 }
 
+// MyAccessResource mirrors internal/api's myAccessResponse (account_access.go).
+type MyAccessResource struct {
+	Kind            string               `json:"kind"`
+	Name            string               `json:"name"`
+	Tier            string               `json:"tier"`
+	Abilities       []string             `json:"abilities"`
+	Teams           []MyAccessTeam       `json:"teams"`
+	LinkedProviders []string             `json:"linked_providers"`
+	Policies        []MyAccessPolicy     `json:"policies"`
+	Capabilities    []MyAccessCapability `json:"capabilities"`
+}
+
+// MyAccessTeam is one team membership in MyAccessResource.
+type MyAccessTeam struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Role string `json:"role"`
+}
+
+// MyAccessPolicy is one attached IAM policy in MyAccessResource.
+type MyAccessPolicy struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// MyAccessCapability is one area the caller can or cannot manage.
+type MyAccessCapability struct {
+	Key             string `json:"key"`
+	Allowed         bool   `json:"allowed"`
+	RequiredAbility string `json:"required_ability"`
+	Reason          string `json:"reason"`
+}
+
 // SessionLinkResource mirrors internal/api's mintSessionLinkResponse
 // (internal/api/session_links.go): Token is a one-time secret, URL is
 // the same token already embedded in a ready-to-open login link.

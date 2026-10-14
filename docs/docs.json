@@ -224,6 +224,7 @@
               "emergency-access",
               "master-key-rotation",
               "secret-rotation",
+              "account",
               "access-control",
               "teams-and-roles",
               "team-and-project-quotas",

@@ -193,6 +193,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
 	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
+	mux.HandleFunc("PATCH /api/v1/auth/profile", rt.requireAuth(rt.handleUpdateProfile))
+	mux.HandleFunc("GET /api/v1/auth/my-access", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleMyAccess))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
 	// Sign in with a code and new-device approval (login_code.go,
