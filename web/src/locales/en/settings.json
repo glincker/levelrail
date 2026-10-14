@@ -676,7 +676,14 @@
       "google": "Google",
       "github": "GitHub",
       "microsoft": "Microsoft",
-      "oidc": "OIDC / SSO"
+      "oidc": "OIDC / SSO",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "discord": "Discord",
+      "slack": "Slack",
+      "linkedin": "LinkedIn",
+      "twitch": "Twitch",
+      "facebook": "Facebook"
     },
     "state": {
       "connected": "Connected",
@@ -708,6 +715,11 @@
     "issuerUrl": {
       "label": "Issuer URL",
       "hint": "Your identity provider's OIDC issuer, the address /.well-known/openid-configuration is served from."
+    },
+    "instanceUrl": {
+      "label": "Instance URL (optional)",
+      "hint": "Leave blank for gitlab.com. For a self-hosted GitLab, enter its https address.",
+      "invalid": "Instance URL must start with https://"
     },
     "displayName": {
       "label": "Display name (optional)",

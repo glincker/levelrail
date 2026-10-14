@@ -18,20 +18,8 @@ export function OAuthRail({ settings }: { settings: OAuthProviderSettings[] }) {
     (s) => connectionState(s) === 'connected',
   ).length
 
-  const label = (provider: string): string => {
-    switch (provider) {
-      case 'google':
-        return t('oauthPage.providers.google')
-      case 'github':
-        return t('oauthPage.providers.github')
-      case 'microsoft':
-        return t('oauthPage.providers.microsoft')
-      case 'oidc':
-        return t('oauthPage.providers.oidc')
-      default:
-        return provider
-    }
-  }
+  const label = (provider: string): string =>
+    t(`oauthPage.providers.${provider}`, { defaultValue: provider })
 
   const copy = (url: string) => {
     void navigator.clipboard.writeText(url).then(

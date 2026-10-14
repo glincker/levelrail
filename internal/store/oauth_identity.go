@@ -15,7 +15,26 @@ const (
 	OAuthProviderGitHub    = "github"
 	OAuthProviderOIDC      = "oidc"
 	OAuthProviderMicrosoft = "microsoft"
+	OAuthProviderGitLab    = "gitlab"
+	OAuthProviderBitbucket = "bitbucket"
+	OAuthProviderDiscord   = "discord"
+	OAuthProviderSlack     = "slack"
+	OAuthProviderLinkedIn  = "linkedin"
+	OAuthProviderTwitch    = "twitch"
+	OAuthProviderFacebook  = "facebook"
 )
+
+// IsOAuthProvider reports whether name is a sign-in provider the settings
+// table and identity table (migration 0690) accept.
+func IsOAuthProvider(name string) bool {
+	switch name {
+	case OAuthProviderGoogle, OAuthProviderGitHub, OAuthProviderOIDC, OAuthProviderMicrosoft,
+		OAuthProviderGitLab, OAuthProviderBitbucket, OAuthProviderDiscord, OAuthProviderSlack,
+		OAuthProviderLinkedIn, OAuthProviderTwitch, OAuthProviderFacebook:
+		return true
+	}
+	return false
+}
 
 // OAuthIdentity is one linked external account. Uniqueness (at most one
 // per provider per user, never linked to two users) is enforced by

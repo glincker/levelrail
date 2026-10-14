@@ -636,6 +636,13 @@ const (
 	OAuthProviderGitHub    = "github"
 	OAuthProviderOIDC      = "oidc"
 	OAuthProviderMicrosoft = "microsoft"
+	OAuthProviderGitLab    = "gitlab"
+	OAuthProviderBitbucket = "bitbucket"
+	OAuthProviderDiscord   = "discord"
+	OAuthProviderSlack     = "slack"
+	OAuthProviderLinkedIn  = "linkedin"
+	OAuthProviderTwitch    = "twitch"
+	OAuthProviderFacebook  = "facebook"
 )
 
 // Email backends accepted by EmailSettingsResource.Backend.

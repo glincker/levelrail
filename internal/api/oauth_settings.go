@@ -6,6 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -102,6 +104,16 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 	if req.Enabled && provider == store.OAuthProviderOIDC && req.IssuerURL == "" {
 		writeError(w, http.StatusBadRequest, errOIDCIssuerURLRequired.Error())
 		return
+	}
+
+	if provider == store.OAuthProviderGitLab && req.IssuerURL != "" {
+		if u, err := url.Parse(strings.TrimSpace(req.IssuerURL)); err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+			writeError(w, http.StatusBadRequest, "instance url must be an https URL without credentials, query or fragment")
+			return
+		}
+	}
+	if provider != store.OAuthProviderOIDC && provider != store.OAuthProviderGitLab {
+		req.IssuerURL = ""
 	}
 
 	hasSecret := req.ClientSecret != ""

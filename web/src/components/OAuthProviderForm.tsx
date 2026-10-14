@@ -23,6 +23,7 @@ interface SchemaMessages {
   clientId: string
   clientSecret: string
   issuerUrl: string
+  instanceUrl: string
 }
 
 function buildSchema(
@@ -57,6 +58,17 @@ function buildSchema(
           path: ['clientSecret'],
         })
       }
+      if (
+        provider === 'gitlab' &&
+        data.issuerUrl &&
+        !/^https:\/\//i.test(data.issuerUrl)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: msg.instanceUrl,
+          path: ['issuerUrl'],
+        })
+      }
       if (provider === 'oidc' && !data.issuerUrl) {
         ctx.addIssue({
           code: 'custom',
@@ -81,6 +93,7 @@ export function OAuthProviderForm({
   const { t } = useTranslation('settings')
   const updateSettings = useUpdateOAuthProviderSettings()
   const isOIDC = settings.provider === 'oidc'
+  const isGitLab = settings.provider === 'gitlab'
   const callback = callbackUrl(window.location.origin, settings.provider)
   const id = (suffix: string) => `${settings.provider}-${suffix}`
 
@@ -91,6 +104,7 @@ export function OAuthProviderForm({
           clientId: t('oauthPage.errors.clientId'),
           clientSecret: t('oauthPage.errors.clientSecret'),
           issuerUrl: t('oauthPage.errors.issuerUrl'),
+          instanceUrl: t('oauthPage.instanceUrl.invalid'),
         }),
       ),
       values: {
@@ -198,6 +212,23 @@ export function OAuthProviderForm({
               </Button>
             </div>
           </Field>
+          {isGitLab ? (
+            <Field>
+              <FieldLabel htmlFor={id('issuer-url')}>
+                {t('oauthPage.instanceUrl.label')}
+              </FieldLabel>
+              <Input
+                id={id('issuer-url')}
+                {...register('issuerUrl')}
+                placeholder="https://gitlab.example.com"
+                className="font-mono"
+              />
+              <FieldDescription>
+                {t('oauthPage.instanceUrl.hint')}
+              </FieldDescription>
+              <FieldError errors={[formState.errors.issuerUrl]} />
+            </Field>
+          ) : null}
           {isOIDC ? (
             <>
               <Field>

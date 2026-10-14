@@ -6,13 +6,22 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	theauth "github.com/glincker/theauth-go/v2"
+	bitbucketprov "github.com/glincker/theauth-go/v2/provider/bitbucket"
+	discordprov "github.com/glincker/theauth-go/v2/provider/discord"
+	facebookprov "github.com/glincker/theauth-go/v2/provider/facebook"
 	githubprov "github.com/glincker/theauth-go/v2/provider/github"
+	gitlabprov "github.com/glincker/theauth-go/v2/provider/gitlab"
 	googleprov "github.com/glincker/theauth-go/v2/provider/google"
+	linkedinprov "github.com/glincker/theauth-go/v2/provider/linkedin"
 	microsoftprov "github.com/glincker/theauth-go/v2/provider/microsoft"
 	oidcprov "github.com/glincker/theauth-go/v2/provider/oidc"
+	slackprov "github.com/glincker/theauth-go/v2/provider/slack"
+	twitchprov "github.com/glincker/theauth-go/v2/provider/twitch"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -25,6 +34,13 @@ var (
 	githubScopes    = []string{"read:user", "user:email"}
 	microsoftScopes = []string{"openid", "email", "profile", "https://graph.microsoft.com/User.Read"}
 	oidcScopes      = []string{"openid", "email", "profile"}
+	gitlabScopes    = []string{"openid", "email", "profile"}
+	bitbucketScopes = []string{"account", "email"}
+	discordScopes   = []string{"identify", "email"}
+	slackScopes     = []string{"openid", "email", "profile"}
+	linkedinScopes  = []string{"openid", "email", "profile"}
+	twitchScopes    = []string{"openid", "user:read:email"}
+	facebookScopes  = []string{"email", "public_profile"}
 )
 
 // providerResolver builds library providers from the dashboard settings on
@@ -34,11 +50,7 @@ type providerResolver struct{ rt *oauthRuntime }
 func newProviderResolver(rt *oauthRuntime) *providerResolver { return &providerResolver{rt: rt} }
 
 func validOAuthProvider(name string) bool {
-	switch name {
-	case store.OAuthProviderGoogle, store.OAuthProviderGitHub, store.OAuthProviderMicrosoft, store.OAuthProviderOIDC:
-		return true
-	}
-	return false
+	return store.IsOAuthProvider(name)
 }
 
 // Resolve returns the enabled provider for name. A settings or secret read
@@ -98,7 +110,39 @@ func (r *providerResolver) build(ctx context.Context, s store.OAuthProviderSetti
 			ClientID: s.ClientID, ClientSecret: secret, Scopes: microsoftScopes, Tenant: "common", HTTPClient: hc,
 			AuthorizeURL: ep.MicrosoftAuthorize, TokenURL: ep.MicrosoftToken,
 		}), nil
-	default:
+	case store.OAuthProviderGitLab:
+		base, err := gitlabBaseURL(s.IssuerURL, ep.AllowInsecureOIDC)
+		if err != nil {
+			return nil, err
+		}
+		return gitlabprov.New(gitlabprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: gitlabScopes, BaseURL: base, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderBitbucket:
+		return bitbucketprov.New(bitbucketprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: bitbucketScopes, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderDiscord:
+		return discordprov.New(discordprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: discordScopes, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderSlack:
+		return slackprov.New(slackprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: slackScopes, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderLinkedIn:
+		return linkedinprov.New(linkedinprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: linkedinScopes, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderTwitch:
+		return twitchprov.New(twitchprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: twitchScopes, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderFacebook:
+		return facebookprov.New(facebookprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, Scopes: facebookScopes, HTTPClient: hc,
+		}), nil
+	case store.OAuthProviderOIDC:
 		dctx, cancel := context.WithTimeout(ctx, oidcDiscoveryTimeout)
 		defer cancel()
 		p, err := oidcprov.New(dctx, oidcprov.Config{
@@ -109,5 +153,24 @@ func (r *providerResolver) build(ctx context.Context, s store.OAuthProviderSetti
 			return nil, fmt.Errorf("authengine: oidc discovery for provider %s: %w", s.Provider, err)
 		}
 		return p, nil
+	default:
+		return nil, fmt.Errorf("authengine: unknown oauth provider %q", s.Provider)
 	}
+}
+
+// gitlabBaseURL returns the self-hosted GitLab root, or "" for gitlab.com.
+// Plain http is refused unless the same insecure flag the OIDC path honours is set.
+func gitlabBaseURL(raw string, allowInsecure bool) (string, error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return "", fmt.Errorf("authengine: invalid gitlab instance url")
+	}
+	if u.Scheme != "https" && (!allowInsecure || u.Scheme != "http") {
+		return "", fmt.Errorf("authengine: gitlab instance url must use https")
+	}
+	return strings.TrimRight(u.String(), "/"), nil
 }

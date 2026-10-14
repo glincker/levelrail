@@ -7,6 +7,7 @@ import CloudflareLogo from '@thesvg/react/cloudflare'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import DragonflyLogo from '@thesvg/react/dragonfly'
+import FacebookLogo from '@thesvg/react/facebook'
 import GiteaLogo from '@thesvg/react/gitea'
 import GitHubLogo from '@thesvg/react/github'
 import GitLabLogo from '@thesvg/react/gitlab'
@@ -18,6 +19,7 @@ import KeycloakLogo from '@thesvg/react/keycloak'
 import KeydbLogo from '@thesvg/react/keydb'
 import MariadbLogo from '@thesvg/react/mariadb'
 import MattermostLogo from '@thesvg/react/mattermost'
+import LinkedInLogo from '@thesvg/react/linkedin'
 import MicrosoftLogo from '@thesvg/react/microsoft'
 import MicrosoftTeamsLogo from '@thesvg/react/microsoft-teams'
 import MongodbLogo from '@thesvg/react/mongodb'
@@ -33,6 +35,7 @@ import RedisLogo from '@thesvg/react/redis'
 import ResendLogo from '@thesvg/react/resend'
 import RocketdotchatLogo from '@thesvg/react/rocketdotchat'
 import SlackLogo from '@thesvg/react/slack'
+import TwitchLogo from '@thesvg/react/twitch'
 import TelegramLogo from '@thesvg/react/telegram'
 import WebexLogo from '@thesvg/react/webex'
 import AwsLogo from '@thesvg/react/aws'
@@ -91,6 +94,9 @@ export type BrandIconName =
   | 'microsoft'
   | 'gitea'
   | 'openid'
+  | 'facebook'
+  | 'linkedin'
+  | 'twitch'
   | 'okta'
   | 'keycloak'
   | 'auth0'
@@ -152,6 +158,9 @@ const BRAND_ICONS: Record<
   microsoft: MicrosoftLogo,
   gitea: GiteaLogo,
   openid: OpenidLogo,
+  facebook: FacebookLogo,
+  linkedin: LinkedInLogo,
+  twitch: TwitchLogo,
   okta: OktaLogo,
   keycloak: KeycloakLogo,
   auth0: Auth0Logo,
@@ -215,6 +224,9 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'microsoft',
   'gitea',
   'openid',
+  'facebook',
+  'linkedin',
+  'twitch',
   'okta',
   'keycloak',
   'auth0',
