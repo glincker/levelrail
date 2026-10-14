@@ -77,6 +77,10 @@ var communicationTemplates = []Template{
 		Compose: `services:
   ntfy:
     image: binwiederhier/ntfy:v2.11.0
+    command: ["serve"]
+    environment:
+      NTFY_LISTEN_HTTP: ":80"
+      NTFY_BEHIND_PROXY: "true"
     ports: ["80:80"]
     volumes:
       - ntfy_cache:/var/cache/ntfy
