@@ -100,7 +100,7 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: `http://localhost:${process.env.LOCAL_API_PORT ?? '8080'}`,
-        changeOrigin: true,
+        changeOrigin: false, // keep the browser Host so the API same-origin CSRF check passes in dev
       },
     },
   },
