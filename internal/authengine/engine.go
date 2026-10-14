@@ -3,6 +3,7 @@
 package authengine
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -54,6 +55,7 @@ type Config struct {
 	Sessions        SessionsHooks
 	MFA             MFAConfig
 	OAuth           *OAuthWiring
+	SAML            SAMLKeyPair
 }
 
 // ConfigFromEnv applies the env overrides on top of base and fills defaults.
@@ -103,6 +105,8 @@ type Engine struct {
 	totp        bool
 	passkeys    bool
 	oauth       *oauthRuntime
+	orgID       theauth.ULID
+	samlOn      bool
 }
 
 // New builds the engine over db. The library tables must exist already: they
@@ -164,19 +168,28 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 	applySessionsConfig(&tcfg, sess, store.ThrottleStore())
 	applyMFA(&tcfg, cfg)
 	oauthRT := applyOAuth(&tcfg, cfg, db)
+	applyEnterprise(&tcfg, cfg)
+	ctx, cancel := context.WithTimeout(context.Background(), dispatchTimeout)
+	defer cancel()
+	orgID, err := ensureDefaultOrg(ctx, store)
+	if err != nil {
+		return nil, err
+	}
 	a, err := theauth.New(tcfg)
 	if err != nil {
 		return nil, fmt.Errorf("authengine: init: %w", err)
 	}
 	bindSessions(sess, a, cfg.PathPrefix)
-	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix, sessions: sess, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil, oauth: oauthRT}, nil
+	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix,
+		sessions: sess, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil, oauth: oauthRT, orgID: orgID, samlOn: tcfg.SAML != nil}, nil
 }
 
 // Prefix is the route prefix Handler serves under.
 func (e *Engine) Prefix() string { return e.prefix }
 
-// Handler serves the library routes under Prefix.
-func (e *Engine) Handler() http.Handler { return e.auth.Handler() }
+// Handler serves the library routes under Prefix, minus the ones only the
+// platform's own guarded routes may reach.
+func (e *Engine) Handler() http.Handler { return publicHandler(e.prefix, e.auth.Handler()) }
 
 // Auth exposes the instance for guards and tests.
 func (e *Engine) Auth() *theauth.TheAuth { return e.auth }

@@ -26,12 +26,20 @@ func (rt *Router) attachAuthEngine(s Store) {
 		panic("api: the auth engine needs a *store.DB")
 	}
 	if rt.authEngine == nil {
-		eng, err := authengine.New(db.DB, authengine.Config{
+		cfg := authengine.Config{
 			BaseURL:        "http://localhost",
 			Directory:      authengine.NewDirectory(db.DB),
 			DeviceTokenTTL: DeviceTokenTTL(), DeviceCodeTTL: DeviceCodeTTL(),
 			Sessions: authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
-		})
+		}
+		if rt.oauthSecrets != nil {
+			kp, err := authengine.LoadOrCreateSAMLKeyPair(context.Background(), rt.oauthSecrets)
+			if err != nil {
+				panic(fmt.Sprintf("api: load saml keypair: %v", err))
+			}
+			cfg.SAML = kp
+		}
+		eng, err := authengine.New(db.DB, cfg)
 		if err != nil {
 			panic(fmt.Sprintf("api: build auth engine: %v", err))
 		}
