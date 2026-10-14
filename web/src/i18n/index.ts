@@ -40,6 +40,7 @@ export const NAMESPACES = [
   'compose',
   'smartDeploy',
   'dataExport',
+  'eventWebhooks',
   'deploySafety',
   'jobs',
   'network',
