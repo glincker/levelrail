@@ -19,6 +19,7 @@ var (
 	ErrChecksumMissing   = errors.New("release publishes no checksum for this binary")
 	ErrSignatureInvalid  = errors.New("release signature verification failed")
 	ErrSignatureRequired = errors.New("signature verification is required but unavailable")
+	ErrSignaturePinned   = errors.New("this host only accepts signed releases")
 	ErrBreakingNotAcked  = errors.New("breaking changes need acknowledgement")
 	ErrDowngrade         = errors.New("target release is older than the database schema")
 	ErrVersionMismatch   = errors.New("downloaded binary reports a different version than requested")
@@ -90,21 +91,43 @@ type Signer struct {
 	CosignPath     string
 	IdentityRegexp string
 	Issuer         string
+	// Pinned is set once this host has verified a release signature: from
+	// then on a missing bundle or cosign is refused unless Mode is off.
+	Pinned bool
+	// OnVerified runs after a successful verification, to write the pin.
+	OnVerified func()
 	// Run executes the verifier; nil uses os/exec. Tests inject a fake.
 	Run func(ctx context.Context, name string, args ...string) ([]byte, error)
 }
 
+// PinEscapeHint names the documented, explicit ways past a pinned refusal.
+const PinEscapeHint = "Install cosign and retry, override once with --verify off (APP_INSTALL_VERIFY=off), or clear the pin with self-upgrade --unpin-signature"
+
+// DetailOffWhilePinned is the timeline detail for an operator override.
+const DetailOffWhilePinned = "signature check disabled by the operator although this host is pinned to signed releases"
+
+func (s Signer) unavailable(reason string) (string, error) {
+	if s.Pinned {
+		return "", fmt.Errorf("%w: %s, and this host has verified a signed release before. %s", ErrSignaturePinned, reason, PinEscapeHint)
+	}
+	if s.Mode == VerifyRequire {
+		return "", fmt.Errorf("%w: %s", ErrSignatureRequired, reason)
+	}
+	return reason + ", checksum only", nil
+}
+
 // Verify returns a human detail for the timeline. A failed verification is
-// always an error. A missing cosign or bundle is an error only in require mode.
+// always an error. A missing cosign or bundle is an error in require mode
+// and once the host is pinned.
 func (s Signer) Verify(ctx context.Context, checksumsPath, bundlePath string) (string, error) {
 	if s.Mode == VerifyOff {
+		if s.Pinned {
+			return DetailOffWhilePinned, nil
+		}
 		return "signature check disabled", nil
 	}
 	if bundlePath == "" {
-		if s.Mode == VerifyRequire {
-			return "", fmt.Errorf("%w: release publishes no signature bundle", ErrSignatureRequired)
-		}
-		return "release publishes no signature, checksum only", nil
+		return s.unavailable("release publishes no signature bundle")
 	}
 	bin := s.CosignPath
 	if bin == "" {
@@ -113,10 +136,7 @@ func (s Signer) Verify(ctx context.Context, checksumsPath, bundlePath string) (s
 	run := s.Run
 	if run == nil {
 		if _, err := exec.LookPath(bin); err != nil {
-			if s.Mode == VerifyRequire {
-				return "", fmt.Errorf("%w: cosign is not installed", ErrSignatureRequired)
-			}
-			return "cosign not installed, checksum only", nil
+			return s.unavailable("cosign is not installed")
 		}
 		run = func(ctx context.Context, name string, args ...string) ([]byte, error) {
 			return exec.CommandContext(ctx, name, args...).CombinedOutput() //nolint:gosec // fixed verifier binary, argv only
@@ -127,6 +147,9 @@ func (s Signer) Verify(ctx context.Context, checksumsPath, bundlePath string) (s
 		"--certificate-oidc-issuer", s.Issuer, checksumsPath)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", ErrSignatureInvalid, strings.TrimSpace(string(out)))
+	}
+	if s.OnVerified != nil {
+		s.OnVerified()
 	}
 	return "cosign keyless signature verified", nil
 }

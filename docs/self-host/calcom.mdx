@@ -1,0 +1,56 @@
+---
+title: "Self-host Cal.com with Docker"
+sidebarTitle: "Cal.com"
+description: "Open-source scheduling infrastructure for booking meetings without the back-and-forth."
+---
+
+Open-source scheduling infrastructure for booking meetings without the back-and-forth.
+
+This page describes the Levelrail template for Cal.com (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://cal.com/docs/self-hosting/installation.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `calcom` | `calcom/cal.com:v5.0.9` | 3000 | none |
+| `db` | `postgres:16-alpine` | none | `calcom_db_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `calcom` | `CALCOM_TELEMETRY_DISABLED` | Preset in the template |
+| `calcom` | `CALENDSO_ENCRYPTION_KEY` | Generated at deploy |
+| `calcom` | `DATABASE_URL` | Generated at deploy |
+| `calcom` | `NEXTAUTH_SECRET` | Generated at deploy |
+| `calcom` | `NEXTAUTH_URL` | Preset in the template |
+| `calcom` | `NEXT_PUBLIC_WEBAPP_URL` | Preset in the template |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Cal.com with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Cal.com. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy calcom --name my-calcom
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [ConvertX](/self-host/convertx-app)
+
+All templates are listed in the [self-host gallery](/self-host).

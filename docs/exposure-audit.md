@@ -1,14 +1,11 @@
 ---
+title: "Exposure audit"
 description: Find which published container ports are reachable from the internet, why ufw does not cover them, and how to restrict one with a reversible DOCKER-USER allow-list.
 ---
 
-# Exposure audit
-
 Docker publishes a container port by adding NAT rules that send traffic straight to the container. That traffic never reaches the INPUT chain, so `ufw` and a "firewall is active" check say nothing about it. A search engine or database container published on `0.0.0.0` is reachable by anyone, even on a host with `ufw` on and a deny default.
 
-The exposure audit lists, for each node, every running container's published ports and how reachable each one is. It is read-only. Nothing is changed until you choose to restrict a port.
-
-<InlineToc default-open />
+The exposure audit lists every running container's published ports on each node and how reachable each one is. It is read-only. Nothing changes until you choose to restrict a port.
 
 ## What each state means
 
@@ -24,20 +21,20 @@ The audit never calls a port closed on a guess. A rule with an interface match, 
 
 ## Severity
 
-Severity follows what is exposed, not just that something is.
+Severity depends on what is exposed, not only that something is.
 
-- **High**: a database, key-value store, search engine, admin console or the Docker API, published publicly without an opt-in.
-- **Medium**: the same kinds when you opted in (a database with public access enabled), or an unrecognised service from an unmanaged container.
-- **Low or info**: a web port. Apps behind the ingress are expected to be reachable, ideally only through it.
+- High: a database, key-value store, search engine, admin console or the Docker API, published publicly without an opt-in.
+- Medium: the same kinds when you opted in (a database with public access enabled), or an unrecognised service from an unmanaged container.
+- Low or info: a web port. Apps behind the ingress are expected to be reachable, ideally only through it.
 
-The owner is shown too: a managed database, a managed app, or an unmanaged container. A managed database bound publicly without public access enabled is a drift worth fixing.
+The owner is shown too: a [managed database](/managing-databases), a managed app, or an unmanaged container. A managed database bound publicly without public access enabled is a drift worth fixing.
 
 ## Where it shows up
 
-- **Settings, Firewall**: the Published ports table, with an expandable plain explanation per row.
-- **Doctor and setup**: an `exposure` check group in the Network and ingress category, one finding per high or medium port.
-- **CLI**: `levelrail-cli firewall exposure`.
-- **MCP**: `get_firewall_exposure`, read-only. No MCP tool can apply or remove a rule.
+- Settings, Firewall: the Published ports table, with an expandable plain explanation per row.
+- Doctor and setup: an `exposure` check group in the Network and ingress category, one finding per high or medium port.
+- CLI: `levelrail-cli firewall exposure`.
+- MCP: `get_firewall_exposure`, read-only. No MCP tool can apply or remove a rule.
 
 ```bash
 levelrail-cli firewall exposure
@@ -67,12 +64,12 @@ For each restriction the control plane inserts, at the top of `DOCKER-USER`, one
 
 ### Safety
 
-- **Dry run first.** The preview shows the exact `iptables` commands and a sentence stating what traffic will be dropped. Applying requires explicit confirmation.
-- **Lockout guard.** A restriction is refused for the management API, the agent listener, ingress ports 80 and 443, and SSH. Known nodes that are not in your allow-list are listed as warnings.
-- **Only its own rules.** Removal and re-assertion touch only rules carrying the tag. Rules you wrote are never changed or deleted.
-- **Reversible.** One click or `unrestrict` removes the rules and forgets the restriction.
-- **Audited.** Apply and remove go through the audit log with the port in the request path, and need the root ability. The audit and preview are plain reads.
-- **Off by default.** Nothing is applied unless you ask.
+- Dry run first: the preview shows the exact `iptables` commands and a sentence stating what traffic will be dropped. Applying requires explicit confirmation.
+- Lockout guard: a restriction is refused for the management API, the agent listener, ingress ports 80 and 443, and SSH. Known nodes that are not in your allow-list are listed as warnings.
+- Only its own rules: removal and re-assertion touch only rules carrying the tag. Rules you wrote are never changed or deleted.
+- Reversible: one click or `unrestrict` removes the rules and forgets the restriction.
+- Audited: apply and remove go through the audit log with the port in the request path, and need the root ability. The audit and preview are plain reads.
+- Off by default: nothing is applied unless you ask.
 
 ### Persistence
 
@@ -83,4 +80,4 @@ Rules in DOCKER-USER live in the kernel only. The restriction is stored in the c
 - Rules can be applied only on the control plane's own host. For a remote node, copy the dry-run commands and run them there. An agent RPC for this is planned.
 - Only IPv4 sources and the iptables backend are supported. Docker's experimental nftables mode has no DOCKER-USER chain and is reported as unreadable.
 - Reading the chain needs root, the same as turning on `ufw`. Without it, wildcard-bound ports are reported as Unknown.
-- On macOS or Docker Desktop the host firewall is not visible, so publicly bound ports are Unknown.
+- On macOS or Docker Desktop the [host firewall](/host-firewall) is not visible, so publicly bound ports are Unknown.

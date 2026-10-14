@@ -1,0 +1,45 @@
+---
+title: "Self-host Redlib with Docker"
+sidebarTitle: "Redlib"
+description: "A private, lightweight front-end for browsing Reddit without tracking or ads."
+---
+
+A private, lightweight front-end for browsing Reddit without tracking or ads.
+
+This page describes the Levelrail template for Redlib (Applications). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/redlib-org/redlib.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `redlib` | `quay.io/redlib/redlib:sha-a4d36e9` | 8080 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Redlib with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Redlib. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy redlib --name my-redlib
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Applications templates
+
+- [Budibase](/self-host/budibase)
+- [Cockpit CMS](/self-host/cockpit-cms)
+- [Drupal](/self-host/drupal)
+- [EspoCRM](/self-host/espocrm)
+- [Ghost](/self-host/ghost)
+
+All templates are listed in the [self-host gallery](/self-host).

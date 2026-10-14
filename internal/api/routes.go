@@ -54,6 +54,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerMobileRoutes(mux)
 
 	var h http.Handler = mux
+	h = rt.bodyLimitMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
@@ -214,7 +215,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// unauthenticated, gated by possession of the token itself, same
 	// shape as reset-password below.
 	mux.HandleFunc("POST /api/v1/auth/session-links", rt.requireAbility(AbilityRoot, rt.handleMintSessionLink))
-	mux.HandleFunc("GET /api/v1/auth/session-links/{token}/consume", rt.handleConsumeSessionLink)
+	mux.HandleFunc("POST /api/v1/auth/session-links/consume", rt.handleConsumeSessionLink)
+	mux.HandleFunc("GET /api/v1/auth/session-links/{token}/consume", rt.handleConsumeSessionLinkGET)
 
 	// Two-factor auth (twofactor.go). /2fa/verify is necessarily public
 	// (it's step two of login, before a session exists), rate-limited by

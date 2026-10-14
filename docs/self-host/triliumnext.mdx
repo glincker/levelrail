@@ -1,0 +1,47 @@
+---
+title: "Self-host TriliumNext with Docker"
+sidebarTitle: "TriliumNext"
+description: "A hierarchical, self-hosted notebook for building a personal knowledge base, with full-text search."
+---
+
+A hierarchical, self-hosted notebook for building a personal knowledge base, with full-text search.
+
+This page describes the Levelrail template for TriliumNext (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/TriliumNext/Trilium.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `triliumnext` | `ghcr.io/triliumnext/trilium:stable` | 8080 | `triliumnext_data -&#62; /home/node/trilium-data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `triliumnext` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy TriliumNext with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select TriliumNext. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy triliumnext --name my-triliumnext
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

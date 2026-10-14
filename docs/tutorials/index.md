@@ -1,16 +1,15 @@
 ---
+title: "Tutorials"
 description: Step-by-step tutorials for self-hosting with Levelrail, from Docker deploys and Postgres to S3 backups, GitHub Actions, and built-in logs and metrics.
 ---
 
-# Tutorials
-
 Each tutorial is a complete walkthrough you can finish in 10 to 15 minutes on your own server. The commands and sample output come from a real instance, so IDs, timestamps, and digests will differ on yours. If something does not match what you see, [open an issue](https://github.com/glincker/levelrail/issues).
 
-New here? Install Levelrail with [Getting started](../getting-started.md) first, then pick any tutorial below. They build on each other lightly, but each one stands alone.
+New here? Install Levelrail with [Getting started](/getting-started) first, then pick any tutorial below. They build on each other lightly, but each one stands alone.
 
 ## Deploy and ship
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 
 <Card title="Deploy a Docker app with a custom domain and instant rollback" href="/tutorials/deploy-a-docker-app">
 
@@ -31,7 +30,7 @@ Build in CI, deploy to your own server on every push, and fail the pipeline if t
 
 ## Data and backups
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 
 <Card title="Connect an app to a managed Postgres database" href="/tutorials/connect-an-app-to-postgres">
 
@@ -47,18 +46,18 @@ Schedule backups to S3, R2, or any S3-compatible bucket, verify them, and restor
 
 ## Self-host an app
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 
 <Card title="Self-host Vaultwarden (Bitwarden-compatible)" href="/tutorials/self-host-vaultwarden">
 
-Deploy from the template catalog, add a domain, and back up the data volume.
+Deploy from the [template catalog](/templates-and-registry), add a domain, and back up the data volume.
 
 </Card>
 </CardGroup>
 
 ## Operate
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 
 <Card title="Debug an app with built-in logs and metrics" href="/tutorials/debug-an-app-with-logs-and-metrics">
 
@@ -69,4 +68,4 @@ Search logs, follow them live, read CPU and memory, and start from the health sc
 
 ## Looking for something else?
 
-The how-to guides cover one task each in more depth, and the [CLI reference](../cli-reference.md) lists every command. To compare Levelrail with other self-hosted platforms, see the [comparison](../comparison.md).
+The how-to guides cover one task each in more depth, and the [CLI reference](/cli-reference) lists every command. To compare Levelrail with other self-hosted platforms, see the [comparison](/comparison).

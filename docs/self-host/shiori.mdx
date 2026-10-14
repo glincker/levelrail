@@ -1,0 +1,45 @@
+---
+title: "Self-host Shiori with Docker"
+sidebarTitle: "Shiori"
+description: "A simple bookmark manager with offline archiving, built as a single Go binary."
+---
+
+A simple bookmark manager with offline archiving, built as a single Go binary.
+
+This page describes the Levelrail template for Shiori (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/go-shiori/shiori/tree/master/docs.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `shiori` | `ghcr.io/go-shiori/shiori:v1.7.1` | 8080 | `shiori_data -&#62; /shiori` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Shiori with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Shiori. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy shiori --name my-shiori
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

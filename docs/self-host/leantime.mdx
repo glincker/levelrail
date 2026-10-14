@@ -1,0 +1,60 @@
+---
+title: "Self-host Leantime with Docker"
+sidebarTitle: "Leantime"
+description: "A goals-focused project management tool built for people who aren't professional project managers."
+---
+
+A goals-focused project management tool built for people who aren't professional project managers.
+
+This page describes the Levelrail template for Leantime (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.leantime.io.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mysql:8.4` | none | `leantime_db_data -&#62; /var/lib/mysql` |
+| `leantime` | `leantime/leantime:3.5.6` | 8080 | `leantime_userfiles -&#62; /var/www/html/userfiles`<br />`leantime_public_userfiles -&#62; /var/www/html/public/userfiles` |
+| `redis` | `redis:7-alpine` | none | `leantime_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MYSQL_DATABASE` | Preset in the template |
+| `db` | `MYSQL_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MYSQL_USER` | Preset in the template |
+| `leantime` | `LEAN_DB_DATABASE` | Preset in the template |
+| `leantime` | `LEAN_DB_HOST` | Preset in the template |
+| `leantime` | `LEAN_DB_PASSWORD` | Generated at deploy |
+| `leantime` | `LEAN_DB_USER` | Preset in the template |
+| `leantime` | `LEAN_REDIS_HOST` | Preset in the template |
+| `leantime` | `LEAN_REDIS_PORT` | Preset in the template |
+| `leantime` | `LEAN_SESSION_PASSWORD` | Generated at deploy |
+| `leantime` | `LEAN_USE_REDIS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Leantime with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Leantime. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy leantime --name my-leantime
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

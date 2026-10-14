@@ -91,6 +91,7 @@ func TestMatchEndpoint(t *testing.T) {
 		{http.MethodGet, "/containers/abc/stats"}, {http.MethodGet, "/containers/abc/archive"},
 		{http.MethodHead, "/containers/abc/archive"}, {http.MethodPut, "/containers/abc/archive"},
 		{http.MethodPost, "/containers/abc/exec"}, {http.MethodPost, "/exec/e1/start"},
+		{http.MethodPost, "/containers/abc/pause"}, {http.MethodPost, "/containers/abc/unpause"},
 		{http.MethodPost, "/exec/e1/resize"}, {http.MethodGet, "/exec/e1/json"},
 		{http.MethodGet, "/images/json"}, {http.MethodPost, "/images/create"}, {http.MethodPost, "/images/load"},
 		{http.MethodGet, "/images/get"}, {http.MethodPost, "/images/prune"},

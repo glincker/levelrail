@@ -1,18 +1,18 @@
 ---
+title: "Platform as code"
+tag: "Experimental"
 description: Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
 ---
-
-# Platform as code
 
 Write the state you want as YAML, run `levelrail-cli apply`, and the control plane converges to it. The same files can be exported from a live control plane, reviewed in a pull request, and applied from CI.
 
 Everything goes through the ordinary REST API with your own token. If a policy denies you an app, that one item is reported as denied and nothing else is touched by it. There is no separate write path.
 
-::: warning Experimental
-Platform as code is off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and in the shell where you run the CLI or the MCP server, to enable `apply`, `diff` and `export`. See [Experimental features](experimental-features.md).
-:::
+<Warning>
+**Experimental**
 
-<InlineToc default-open />
+Platform as code is off by default. Set `APP_EXPERIMENTAL=iac` on the control plane, and in the shell where you run the CLI or the MCP server, to enable `apply`, `diff` and `export`. See [Experimental features](/experimental-features).
+</Warning>
 
 ## Quick start
 
@@ -248,7 +248,7 @@ Every document is checked against the schema and the semantic rules. If any docu
 </Step>
 <Step title="Plan">
 
-Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, load balancer, pipeline, alert rule.
+Live state is read through the API with your permissions, and a plan is computed: create, update (with a field level diff), delete (only with `--prune`) or no change. Env values are never shown, only `(hidden)`. Items are ordered by dependency: project, environment, tag, database, app, domain, [load balancer](/load-balancing), pipeline, alert rule.
 
 </Step>
 <Step title="Apply">
@@ -258,7 +258,7 @@ Each item is executed through the existing endpoint. Apply is safe to repeat and
 </Step>
 </Steps>
 
-Semantics worth knowing:
+A few rules to know:
 
 - Validation and planning are all or nothing. Execution is per item: by default the first failure stops the run and later items are reported as skipped. With `--continue-on-error` the rest proceed.
 - A plan that contains an error item (a missing project, a read you are not permitted to make) applies nothing unless `--continue-on-error` is set.
@@ -345,7 +345,7 @@ jobs:
 
 Pass placeholder values with `--var` or name them with `--allow-env`; the runner's own credentials (`GITHUB_TOKEN`, `ACTIONS_*`, cloud keys) are never read unless you name them exactly. The plan job needs the same `--var` or `--allow-env` flags as the apply job.
 
-Planning needs only a read token. Use a separate token with write ability for the apply job. The install step is yours to supply: download the `levelrail-cli` release binary for the runner, the way the bundled deploy action does. See [GitHub Actions](github-actions.md) for token setup and that action.
+Planning needs only a read token. Use a separate token with write ability for the apply job. The install step is yours to supply: download the `levelrail-cli` release binary for the runner, the way the bundled deploy action does. See [GitHub Actions](/github-actions) for token setup and that action.
 
 ## Examples
 
@@ -433,7 +433,7 @@ Git sync is a recipe, not an engine. Backup schedules, volumes, egress policies,
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="app.yaml reference" href="/app-spec-reference">
 
 The service fields an App document embeds.

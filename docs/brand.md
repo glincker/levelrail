@@ -3,8 +3,6 @@ title: Brand kit
 description: "Logos, colors and ready-made social images for Levelrail, free to use when you write about it, share it or link to it."
 ---
 
-# Brand kit
-
 Everything here is free to use when you write about Levelrail, post it, or link to it. Right-click an image to save it, or use the file links.
 
 ## Logo
@@ -13,7 +11,7 @@ The mark is three stacked rails. The wordmark is the mark plus the name in capit
 
 | Mark | Mark on dark | Wordmark (for dark) | Wordmark (for light) |
 | --- | --- | --- | --- |
-| <img src="/assets/brand/png/mark-1024.png" alt="Levelrail mark" width="96" loading="lazy"> | <img src="/assets/brand/png/mark-on-dark-1024.png" alt="Levelrail mark on a dark square" width="96" loading="lazy"> | <span style="background:#04141a;display:inline-block;padding:8px"><img src="/assets/brand/png/wordmark-for-dark.png" alt="Levelrail wordmark" width="160" loading="lazy"></span> | <img src="/assets/brand/png/wordmark-for-light.png" alt="Levelrail wordmark" width="160" loading="lazy"> |
+| <img src="/assets/brand/png/mark-1024.png" alt="Levelrail mark" width="96" loading="lazy" /> | <img src="/assets/brand/png/mark-on-dark-1024.png" alt="Levelrail mark on a dark square" width="96" loading="lazy" /> | <img src="/assets/brand/png/wordmark-for-dark.png" alt="Levelrail wordmark" width="160" loading="lazy" /> | <img src="/assets/brand/png/wordmark-for-light.png" alt="Levelrail wordmark" width="160" loading="lazy" /> |
 
 Files: [mark.svg](/assets/brand/levelrail-default.svg), [mark-1024.png](/assets/brand/png/mark-1024.png), [mark-on-dark-1024.png](/assets/brand/png/mark-on-dark-1024.png), [wordmark-for-dark.png](/assets/brand/png/wordmark-for-dark.png), [wordmark-for-light.png](/assets/brand/png/wordmark-for-light.png).
 
@@ -31,7 +29,7 @@ Keep clear space around the mark of at least a quarter of its width. Do not reco
 
 ## Social images
 
-Link preview cards are exactly 1200x630, the size every platform expects. The platform banners below are rendered at 2x so they stay sharp on high density screens, and the sizes listed are the logical size.
+Link preview cards are 1200x630, the size most platforms expect. The platform banners below are rendered at 2x so they stay sharp on high density screens. The sizes listed are the logical size.
 
 ### Headlines
 
@@ -48,7 +46,7 @@ Pick the line that fits where you are posting.
 | [Idle apps sleep. Requests wake.](/assets/og/sleep.jpg) 1200x630 | Resource and cost posts |
 | [Ask your server what broke.](/assets/og/mcp.jpg) 1200x630 | AI and MCP posts |
 
-<img src="/assets/og-home.png" alt="Levelrail social card: Your own Vercel. One binary." loading="lazy" style="width:100%;border-radius:8px">
+<img src="/assets/og-home.png" alt="Levelrail social card: Your own Vercel. One binary." loading="lazy" style="width:100%;border-radius:8px" />
 
 ### Sizes per platform
 

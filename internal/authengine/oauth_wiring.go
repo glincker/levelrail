@@ -50,6 +50,9 @@ type OAuthWiring struct {
 	Endpoints OAuthEndpoints
 	HTTP      *http.Client
 	Logger    *slog.Logger
+	// TrustedPeer says whether a request's TCP peer may set Host and X-Forwarded-Proto
+	// when no dashboard URL is configured. Nil means loopback only.
+	TrustedPeer func(r *http.Request) bool
 }
 
 type oauthRuntime struct {
@@ -57,6 +60,7 @@ type oauthRuntime struct {
 	db       *sql.DB
 	resolver *providerResolver
 	key      []byte
+	redirect OAuthRedirectResolver
 }
 
 func oauthProviderTTL() time.Duration {
@@ -79,12 +83,21 @@ func applyOAuth(tcfg *theauth.Config, cfg Config, db *sql.DB) *oauthRuntime {
 		w.Logger = slog.Default()
 	}
 	rt := &oauthRuntime{wiring: *w, db: db, key: cfg.EncryptionKey}
+	rt.redirect = OAuthRedirectResolver{
+		DashboardURL: func(ctx context.Context) string {
+			if u := LoadDashboardURL(ctx, db); u != "" {
+				return u
+			}
+			return cfg.MFA.DashboardURL
+		},
+		TrustedPeer: w.TrustedPeer,
+	}
 	rt.resolver = newProviderResolver(rt)
 	tcfg.ProviderResolver = rt.resolver
 	tcfg.ProviderResolverTTL = oauthProviderTTL()
 	tcfg.OAuth = &theauth.OAuthConfig{
 		Signup:                  theauth.OAuthSignupOpen,
-		RedirectURI:             oauthRedirectURI,
+		RedirectURI:             rt.redirect.Resolve,
 		RedirectURIAllowedHosts: oauthAllowedHosts(cfg),
 		// Fresh installs sign in over HTTP until an https dashboard URL is set, as the built-in flow allowed.
 		AllowInsecureRedirectURI: true,

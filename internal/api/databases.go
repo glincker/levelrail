@@ -542,6 +542,9 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(req.NodeID)) {
+		return
+	}
 	if req.NodeID != "" {
 		if _, err := rt.nodes.GetNode(r.Context(), req.NodeID); errors.Is(err, store.ErrNodeNotFound) {
 			writeError(w, http.StatusBadRequest, "unknown node_id")

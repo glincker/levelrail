@@ -1,12 +1,11 @@
 ---
+title: "Resilience, in short"
 description: A short answer to what survives a control plane crash, with a link to the full measured page.
 ---
 
-# Resilience, in short
+If the control plane process is killed outright, app containers that are already running keep running and keep serving traffic on their own. A node agent never takes a destructive action when it loses the connection. It retries with backoff until the control plane comes back.
 
-When the control plane process is killed outright, already-running app containers keep running and keep serving traffic on their own. A node agent never takes a destructive action on disconnect: it retries the connection with backoff until the control plane comes back.
-
-Domain-based HTTPS routing does not survive. The embedded Caddy instance runs inside the control plane process, so routing is down from the moment it exits until a new process reconciles ingress. That outage window is bounded only by how fast the control plane restarts.
+Domain-based HTTPS routing does not survive. The embedded Caddy instance runs inside the control plane process, so routing is down from the moment the process exits until a new one reconciles ingress. How long that lasts depends only on how fast the control plane restarts.
 
 ```mermaid
 flowchart LR

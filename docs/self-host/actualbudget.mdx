@@ -1,0 +1,47 @@
+---
+title: "Self-host Actual Budget with Docker"
+sidebarTitle: "Actual Budget"
+description: "A local-first personal finance and budgeting app with multi-device sync you fully own."
+---
+
+A local-first personal finance and budgeting app with multi-device sync you fully own.
+
+This page describes the Levelrail template for Actual Budget (Finance). It deploys the services below as one Docker Compose app on your own server. Project site: https://actualbudget.org/docs/install/docker.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `actual` | `actualbudget/actual-server:edge` | 5006 | `actualbudget_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `actual` | `ACTUAL_LOGIN_METHOD` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Actual Budget with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Actual Budget. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy actualbudget --name my-actualbudget
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Finance templates
+
+- [Actual Budget](/self-host/actual-budget)
+- [Budge](/self-host/budge)
+- [Dolibarr](/self-host/dolibarr)
+- [Firefly III](/self-host/firefly-iii)
+- [Ghostfolio](/self-host/ghostfolio)
+
+All templates are listed in the [self-host gallery](/self-host).

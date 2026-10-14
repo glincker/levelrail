@@ -87,7 +87,7 @@ func (f channelFanout) Notify(ctx context.Context, ids []string, text string) er
 		if !ch.Enabled || (len(want) > 0 && !want[ch.ID]) {
 			continue
 		}
-		if err := f.sender.SendNotice(ctx, ch.Kind, ch.NotifyURL, text); err != nil {
+		if err := f.sender.SendNotice(ctx, ch, text); err != nil {
 			errs = append(errs, fmt.Errorf("channel %q: %w", ch.ID, err))
 		}
 	}

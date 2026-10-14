@@ -1,0 +1,50 @@
+---
+title: "Self-host Plex with Docker"
+sidebarTitle: "Plex"
+description: "A media server that organizes your movies, TV, and music and streams them to any device."
+---
+
+A media server that organizes your movies, TV, and music and streams them to any device.
+
+This page describes the Levelrail template for Plex (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.linuxserver.io/images/docker-plex/.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `plex` | `lscr.io/linuxserver/plex:1.43.4.10903-e5521bd8c-ls327` | 32400 | `plex_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `plex` | `PGID` | Preset in the template |
+| `plex` | `PUID` | Preset in the template |
+| `plex` | `TZ` | Preset in the template |
+| `plex` | `VERSION` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Plex with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Plex. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy plex --name my-plex
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -40,8 +40,12 @@ func (rt *Router) migrationResolver() datamigrate.Resolver {
 
 // importedDomains returns one entry per domain of every imported app, with
 // whether the app is healthy here right now.
-func (rt *Router) importedDomains(ctx context.Context, only string) ([]cutoverDomain, error) {
+func (rt *Router) importedDomains(r *http.Request, only string) ([]cutoverDomain, error) {
+	ctx := r.Context()
 	svcs, err := rt.apps.ListDesiredServices(ctx)
+	if err == nil {
+		svcs, err = rt.authorizeReadableServices(r, svcs)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +117,7 @@ func (rt *Router) handleCutoverReport(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, bad)
 		return
 	}
-	doms, err := rt.importedDomains(ctx, r.URL.Query().Get("app"))
+	doms, err := rt.importedDomains(r, r.URL.Query().Get("app"))
 	if err != nil {
 		rt.internalError(w, "api: cutover report: list apps failed", err)
 		return
@@ -137,7 +141,7 @@ func (rt *Router) handleCutoverVerify(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, bad)
 		return
 	}
-	doms, err := rt.importedDomains(ctx, r.URL.Query().Get("app"))
+	doms, err := rt.importedDomains(r, r.URL.Query().Get("app"))
 	if err != nil {
 		rt.internalError(w, "api: cutover verify: list apps failed", err)
 		return
@@ -201,6 +205,9 @@ func (rt *Router) handleVolumeGuide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
+	if err == nil {
+		svcs, err = rt.authorizeReadableServices(r, svcs)
+	}
 	if err != nil {
 		rt.internalError(w, "api: volume guide: list apps failed", err)
 		return

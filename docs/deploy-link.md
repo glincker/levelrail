@@ -1,8 +1,7 @@
 ---
+title: "Deploy links and badge"
 description: Put a "Deploy with" button in your README. A visitor enters their own server once and lands on its create-app form with your image, port, env variable names and health path prefilled, never submitted automatically.
 ---
-
-# Deploy links and badge
 
 A deploy link lets a project author add a button to a README. A visitor who clicks it picks their own server (remembered in their browser) and lands on that server's create-app form with the details filled in. Nothing is created until the visitor reviews the form and presses Deploy.
 
@@ -24,7 +23,7 @@ https://<server>/apps/new?deploy=1&image=<ref>&name=<n>&port=<p>&env=KEY1,KEY2&h
 
 Rules the form enforces:
 
-- Env **values are never accepted** from a link, only the names. The visitor types each value, and it is stored as a secret.
+- Env values are never accepted from a link, only the names. The visitor types each value, and it is stored as a secret.
 - A parameter that fails validation is ignored, and a banner names every ignored parameter. Unknown parameters are ignored the same way.
 - The form shows "Prefilled from a link: review before deploying" and names the source host when `source` is valid.
 - If the link has no valid `image`, the regular new app wizard opens with the banner above it.
@@ -61,7 +60,7 @@ Percent-encode `:` `/` and `,` inside parameter values as shown. For a project t
 levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
 ```
 
-It validates the same rules as the form and prints the launcher link and the README Markdown. Add `--server https://levelrail.example.com` to also print the direct link for one specific server, or `--launcher URL` to point at a self-hosted copy of the launcher. See the [CLI reference](cli-reference.md#deploy-link).
+It validates the same rules as the form and prints the launcher link and the README Markdown. Add `--server https://levelrail.example.com` to also print the direct link for one specific server, or `--launcher URL` to point at a self-hosted copy of the launcher. See the [CLI reference](/cli-reference#deploy-link).
 
 ## Self-hosting the launcher
 

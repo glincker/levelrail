@@ -197,7 +197,7 @@ type recordingNotifier struct {
 	done  chan struct{}
 }
 
-func (n *recordingNotifier) SendNotice(_ context.Context, _ alerting.NotifyKind, _, text string) error {
+func (n *recordingNotifier) SendNotice(_ context.Context, _ alerting.NotificationChannel, text string) error {
 	n.mu.Lock()
 	defer n.mu.Unlock()
 	n.texts = append(n.texts, text)

@@ -1,0 +1,49 @@
+---
+title: "Self-host Milvus with Docker"
+sidebarTitle: "Milvus"
+description: "A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node."
+---
+
+A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node.
+
+This page describes the Levelrail template for Milvus (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://milvus.io/docs.
+
+Recommended memory: about 4096 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `milvus` | `milvusdb/milvus:v3.0.2` | 19530, 9091 | `milvus_data -&#62; /var/lib/milvus` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `milvus` | `COMMON_STORAGETYPE` | Preset in the template |
+| `milvus` | `ETCD_DATA_DIR` | Preset in the template |
+| `milvus` | `ETCD_USE_EMBED` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Milvus with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Milvus. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy milvus --name my-milvus
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

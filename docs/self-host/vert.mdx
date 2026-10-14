@@ -1,0 +1,50 @@
+---
+title: "Self-host Vert with Docker"
+sidebarTitle: "Vert"
+description: "A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload."
+---
+
+A fast file converter for images, video, audio, and documents, processed entirely without a third-party upload.
+
+This page describes the Levelrail template for Vert (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/vert-sh/vert.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `vert` | `ghcr.io/vert-sh/vert:latest` | 80 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `vert` | `PUB_ENV` | Preset in the template |
+| `vert` | `PUB_HOSTNAME` | Preset in the template |
+| `vert` | `PUB_PORT` | Preset in the template |
+| `vert` | `PUB_VERT_URL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Vert with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Vert. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy vert --name my-vert
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

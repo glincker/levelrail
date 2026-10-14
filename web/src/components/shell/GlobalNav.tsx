@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -13,6 +14,7 @@ import { CollapsibleSection } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
 import {
   chordFor,
+  defaultGroupOpen,
   isGlobalItemActive,
   linkTarget,
   resolveOpen,
@@ -85,6 +87,23 @@ function NavLinkItem({
   )
 }
 
+function groupAttention(
+  group: { items: GlobalNavItem[] },
+  counts: Record<string, number>,
+) {
+  const total = group.items.reduce(
+    (n, i) => n + (i.badge ? (counts[i.badge] ?? 0) : 0),
+    0,
+  )
+  return total > 0 ? (
+    <NavBadge
+      count={total}
+      tone="danger"
+      label={`${String(total)} need attention`}
+    />
+  ) : null
+}
+
 export function GlobalNav() {
   const { t } = useTranslation()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
@@ -94,12 +113,30 @@ export function GlobalNav() {
   const counts = useNavCounts()
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
+  const groups = visibleGlobalGroups(experimental, routeAvailable)
+
+  // Decided once on mount so navigating never flips a group the user did not touch.
+  const [initialOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      groups.map((gr) => [gr.id, defaultGroupOpen(gr, pathname)]),
+    ),
+  )
+
+  // Reveal the current page by opening its group, and keep it open.
+  useEffect(() => {
+    for (const gr of groups) {
+      const active = gr.items.some((i) => isGlobalItemActive(pathname, i))
+      if (active && stored[gr.id] !== true && !(initialOpen[gr.id] ?? false)) {
+        setOpen(gr.id, true)
+      }
+    }
+  }, [pathname, groups, stored, initialOpen, setOpen])
 
   return (
     <>
       <div className="flex flex-col gap-1 p-2">
         <GetStartedNavItem />
-        {visibleGlobalGroups(experimental, routeAvailable).map((group) => {
+        {groups.map((group) => {
           const menu = (
             <SidebarMenu>
               {group.items.map((item) =>
@@ -131,11 +168,16 @@ export function GlobalNav() {
             <CollapsibleSection
               key={group.id}
               id={`global-${group.id}`}
-              open={resolveOpen(stored, group.id, true)}
+              open={resolveOpen(
+                stored,
+                group.id,
+                initialOpen[group.id] ?? true,
+              )}
               onOpenChange={(open) => setOpen(group.id, open)}
               header={t(`shell.navGroup.${group.id}`, {
                 defaultValue: group.label,
               })}
+              hint={groupAttention(group, counts)}
             >
               {menu}
             </CollapsibleSection>

@@ -132,7 +132,8 @@ func (rt *Router) checkStandaloneConflict(w http.ResponseWriter, r *http.Request
 
 // assessStandalone normalizes d's target and options in place. msg is the
 // client-facing error, empty when the target is acceptable.
-func (rt *Router) assessStandalone(ctx context.Context, d *store.StandaloneDomain) (a standalone.Assessment, display, msg string) {
+func (rt *Router) assessStandalone(r *http.Request, d *store.StandaloneDomain) (a standalone.Assessment, display, msg string) {
+	ctx := r.Context()
 	t, err := standalone.ParseTarget(d.Target)
 	if err != nil {
 		return a, "", strings.TrimPrefix(err.Error(), "standalone: invalid target: ")
@@ -150,6 +151,13 @@ func (rt *Router) assessStandalone(ctx context.Context, d *store.StandaloneDomai
 	d.HostHeader, d.DialTimeoutSeconds, d.ReadTimeoutSeconds, d.StripPrefix = opts.HostHeader, opts.DialTimeoutSeconds, opts.ReadTimeoutSeconds, opts.StripPrefix
 	display = t.Display(opts.UpstreamTLS)
 	if t.Kind == standalone.KindApp {
+		denied, err := rt.firstDeniedRef(r, AbilityWrite, []resourceRef{appRef(t.App)})
+		if err != nil {
+			rt.logger.Warn("api: standalone target app authz failed", slog.String("app", t.App), slog.String("error", err.Error()))
+		}
+		if denied != nil || err != nil {
+			return a, display, fmt.Sprintf("app %q does not exist", t.App)
+		}
 		if _, err := rt.apps.GetDesiredService(ctx, t.App); err != nil {
 			if errors.Is(err, store.ErrServiceNotFound) {
 				return a, display, fmt.Sprintf("app %q does not exist", t.App)

@@ -57,6 +57,7 @@ COPY --from=build --chown=nonroot:nonroot /src/brand.yaml /app/brand.yaml
 COPY --from=build --chown=nonroot:nonroot /src/CHANGELOG.md /app/CHANGELOG.md
 COPY --from=build --chown=nonroot:nonroot /data/levelrail /var/lib/levelrail-data
 USER nonroot:nonroot
+ENV APP_HTTP_ADDR=:8080
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD ["/app/levelrail", "healthcheck", "--ready"]

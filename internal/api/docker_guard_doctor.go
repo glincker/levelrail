@@ -34,11 +34,19 @@ func (rt *Router) doctorCheckDockerGuard(ctx context.Context) doctorCheckResourc
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "no docker guard configured on this process", DocsPath: dockerGuardDocsPath}
 	case res.ConfigError != "":
 		return warn("configuration error, failing closed: " + res.ConfigError)
+	case !res.Running && res.StartError != "":
+		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusWarn, DocsPath: dockerGuardDocsPath,
+			Message: "the guard could not start, so Docker clients use the daemon socket directly: " + res.StartError,
+			Fix:     "Point DOCKER_HOST at a unix socket so the guard can front it, or set APP_DOCKER_GUARD=off to acknowledge running unguarded."}
 	case res.RestartRequired:
 		return warn(fmt.Sprintf("configured %s but running %s: restart the control plane to apply", res.Mode, res.Effective))
 	case res.Effective == dockerguard.ModeEnforce:
-		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: dockerGuardDocsPath,
+		out := doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, DocsPath: dockerGuardDocsPath,
 			Message: fmt.Sprintf("enforce: %d request(s) denied in the last %s", res.Denied, windowLabel(res.WindowSeconds))}
+		if res.Denied > 0 {
+			out.Fix = "If a workload you trust was blocked, relax with APP_DOCKER_GUARD=audit or `" + rt.cliName() + " docker-guard set --mode audit`."
+		}
+		return out
 	case res.Effective == dockerguard.ModeAudit && res.WouldDeny > 0:
 		return warn(fmt.Sprintf("audit: %d request(s) would have been denied in the last %s (top rule %s)", res.WouldDeny, windowLabel(res.WindowSeconds), res.Window[0].Rule))
 	case res.Effective == dockerguard.ModeAudit:

@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
 	"net/http"
 	"regexp"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -418,6 +420,9 @@ func (rt *Router) decodeUseAsSourceRequest(w http.ResponseWriter, r *http.Reques
 		return req, "", "", false
 	}
 
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusNotFound, "app not found"), appRef(req.AppName)) {
+		return req, "", "", false
+	}
 	if _, err := rt.apps.GetDesiredService(r.Context(), req.AppName); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return req, "", "", false
@@ -581,6 +586,15 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateGitSourceServices(req.Services, additionalServices); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !rt.authorizeSpecDatabaseRefs(w, r, req.Services) {
+		return
+	}
+	if !rt.authorizeServiceNames(w, r, name, specServiceNames(name, "", req.Services)) {
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusBadRequest, ""), appRefs(slices.Collect(maps.Keys(additionalServices)))...) {
 		return
 	}
 	if err := validateGitSourceDatabases(req.Databases); err != nil {

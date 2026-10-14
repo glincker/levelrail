@@ -266,7 +266,7 @@ func (db *DB) GetExportStatus(ctx context.Context, id string) (ExportStatus, err
 // order makes the cursor safe across rows sharing a timestamp.
 func (db *DB) ListAuditEntriesAfter(ctx context.Context, afterAt, afterID string, to *time.Time, limit int) ([]AuditEntry, error) {
 	query := `
-		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of
 		FROM audit_log WHERE (created_at > ? OR (created_at = ? AND id > ?))`
 	args := []any{afterAt, afterAt, afterID}
 	if to != nil {
@@ -283,7 +283,7 @@ func (db *DB) ListAuditEntriesAfter(ctx context.Context, afterAt, afterID string
 	var out []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf); err != nil {
 			return nil, fmt.Errorf("store: scan audit entry row: %w", err)
 		}
 		out = append(out, e)

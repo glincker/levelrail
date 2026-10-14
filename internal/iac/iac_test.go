@@ -357,6 +357,22 @@ func TestExportNeverWritesSecretLookingValues(t *testing.T) {
 	}
 }
 
+func TestExportRedactsWhatEnvredactMasks(t *testing.T) {
+	f := newFake()
+	dbURL := "postgres://u:" + "p@h/db"
+	jwt := "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U"
+	f.apps["web"] = map[string]any{"name": "web", "image": "x", "port": float64(80), "bind_address": "private", "strategy": "blue-green", "replicas": float64(1),
+		"env": map[string]any{"DATABASE_URL": dbURL, "SESSION": jwt, "REGION": "eu"}}
+	out, err := Export(context.Background(), f, ExportOptions{IncludeEnvValues: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	j := out.Join()
+	if strings.Contains(j, "u:p@h") || strings.Contains(j, "eyJhbGci") || !strings.Contains(j, "REGION: eu") {
+		t.Fatalf("export:\n%s", j)
+	}
+}
+
 func TestPruneOnlyTouchesManaged(t *testing.T) {
 	f := newFake()
 	applyAll(t, f, fixture, Options{Source: "git", Secrets: map[string]string{"API_KEY": "k", "DB_PASSWORD": "p"}})

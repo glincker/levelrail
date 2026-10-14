@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.3.0](https://github.com/glincker/levelrail/compare/v0.2.2...v0.3.0) (2026-10-12)
+
+
+### Features
+
+* restructure dashboard and settings sidebars, keep groups stable on navigation ([#1207](https://github.com/glincker/levelrail/issues/1207)) ([58149ec](https://github.com/glincker/levelrail/commit/58149ec0d8cd7cf0652e89166f884429348c4a01))
+
+
+### Bug Fixes
+
+* authorize resources named in request bodies and queries ([#1203](https://github.com/glincker/levelrail/issues/1203)) ([f30bb0a](https://github.com/glincker/levelrail/commit/f30bb0ac2949e363350fa990497bc68cd828235c))
+* envelope-encrypt notification channel secrets ([#1201](https://github.com/glincker/levelrail/issues/1201)) ([fb8b38f](https://github.com/glincker/levelrail/commit/fb8b38f3a64a75c8983617026775007241bcd853))
+* master key file outside the data dir, protect executable dirs and the configured data dir from bind mounts ([#1193](https://github.com/glincker/levelrail/issues/1193)) ([8ebf85f](https://github.com/glincker/levelrail/commit/8ebf85f5a3e754087d0eadc5456e4205778d0b9f))
+* pin hosts to signed releases once a signature verifies ([#1204](https://github.com/glincker/levelrail/issues/1204)) ([ab9339a](https://github.com/glincker/levelrail/commit/ab9339a5f9f334afcf8b4534c16e342a82d8b1a8))
+* remove the blue brand glow from the dashboard ([#1209](https://github.com/glincker/levelrail/issues/1209)) ([3934e87](https://github.com/glincker/levelrail/commit/3934e87a5feeb87e75fa2a9628a769bd84dd528d))
+* require agent CSRs by default, keep the Docker guard rollout, loopback dashboard when fronted ([#1197](https://github.com/glincker/levelrail/issues/1197)) ([373e0d7](https://github.com/glincker/levelrail/commit/373e0d723218bd0ca44b4dd7cb68ae3eb92fc91c))
+* run assistant tools as the sender with a per-turn token ([#1202](https://github.com/glincker/levelrail/issues/1202)) ([677d640](https://github.com/glincker/levelrail/commit/677d6405de75f5c9359c1aeead033b9ca7609856))
+* security wave 0, authorize database refs, real client IP, body caps ([#1187](https://github.com/glincker/levelrail/issues/1187)) ([1310aa3](https://github.com/glincker/levelrail/commit/1310aa3fbb6585d86580001a5af07a022b49e9a0))
+* small security hardening batch (session links, OAuth redirect, IaC export, containers, brand SVG, webhooks) ([#1200](https://github.com/glincker/levelrail/issues/1200)) ([143def8](https://github.com/glincker/levelrail/commit/143def8f18b1e9271da6f558a5e91d4df7e66a8b))
+
+
+### Documentation
+
+* advisories for the second wave of merged security fixes ([#1206](https://github.com/glincker/levelrail/issues/1206)) ([098c580](https://github.com/glincker/levelrail/commit/098c5805c667f33bbc04a7cce52e74972089feb9))
+* advisory for the release signature pin ([#1208](https://github.com/glincker/levelrail/issues/1208)) ([7b95c24](https://github.com/glincker/levelrail/commit/7b95c2419af9b78d1dfa5575c1df0716bbdccbae))
+* complete the Mintlify docs rebuild ([#1189](https://github.com/glincker/levelrail/issues/1189)) ([970fa25](https://github.com/glincker/levelrail/commit/970fa253cfb07650b775575180e6e8e0ca25891b))
+* document APP_MASTER_KEY_FILE in the security overview and threat model ([#1194](https://github.com/glincker/levelrail/issues/1194)) ([c2fbe8b](https://github.com/glincker/levelrail/commit/c2fbe8b77f1bf0bba8e7de9aef17890ebab8a3fc))
+* fix redirect loops, load logos from jsDelivr, colour the active icon ([#1199](https://github.com/glincker/levelrail/issues/1199)) ([af801af](https://github.com/glincker/levelrail/commit/af801af4af7943df635a6e81e6967cb9039e2713))
+* give Phosphor icons an explicit neutral fill so they never render black ([#1198](https://github.com/glincker/levelrail/issues/1198)) ([a5ebe70](https://github.com/glincker/levelrail/commit/a5ebe709031d4233e0587586cc2a7391b3db9775))
+* move the docs site from VitePress to Mintlify ([#1186](https://github.com/glincker/levelrail/issues/1186)) ([2b83371](https://github.com/glincker/levelrail/commit/2b833716cb32aff7cce84707545c769fbda09e5a))
+* neutral graphite dark surfaces ([#1205](https://github.com/glincker/levelrail/issues/1205)) ([97af587](https://github.com/glincker/levelrail/commit/97af5877b812b486ba4e41223d20912e37877131))
+* render landing pages on Mintlify, convert callouts, fix titles and descriptions, correct master key claim ([#1191](https://github.com/glincker/levelrail/issues/1191)) ([5c3ebff](https://github.com/glincker/levelrail/commit/5c3ebff5612e3d0bb84b6fb54a0a0faf2400e635))
+* table padding, opaque navbar, theme-aware icons ([#1196](https://github.com/glincker/levelrail/issues/1196)) ([650342f](https://github.com/glincker/levelrail/commit/650342fe0bd1837449ae8860f9902dbdbcfbcbce))
+
+## [0.2.2](https://github.com/glincker/levelrail/compare/v0.2.1...v0.2.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* add the frontmatter description the docs build requires to design tokens ([#1180](https://github.com/glincker/levelrail/issues/1180)) ([46fa0ee](https://github.com/glincker/levelrail/commit/46fa0eeec8544902cd193dc706a123c27f51cea2))
+
 ## [0.2.1](https://github.com/glincker/levelrail/compare/v0.2.0...v0.2.1) (2026-10-12)
 
 

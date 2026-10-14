@@ -1,17 +1,17 @@
 ---
+title: "Master key rotation"
 description: Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
 ---
 
-# Master key rotation
-
-All secrets (app env vars marked `secret: true`, email credentials, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
+All secrets (app env vars marked `secret: true`, email credentials, notification channel webhook URLs and keys, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
 
 ## When to rotate
 
 - You suspect the master key (the `APP_MASTER_KEY` env var, or the `master.key` file in your data directory) was exposed.
 - As routine hygiene. `levelrail-cli doctor` has a `master_key_rotation` check that reports how long it has been since the last rotation. It is a soft nudge and never fails the doctor's overall status.
 
-::: details What this does and does not require
+<Accordion title="What this does and does not require">
+
 
 Rotation runs live against the running control plane with zero downtime. The CLI calls an admin-only endpoint that re-wraps every DEK in a single database transaction. If any DEK fails to unwrap, the entire rotation aborts with no changes.
 
@@ -19,14 +19,16 @@ While a rotation is in progress, all other secret reads and writes are blocked u
 
 However, this is not a fully unattended operation due to one constraint: the control plane loads its master key at startup and never reloads it. A successful rotation immediately updates the running process's key, so it serves correctly right away. What happens on the next restart depends on where that key came from:
 
-**File-sourced** (default, no `APP_MASTER_KEY` set):
+**File-sourced** (default, no `APP_MASTER_KEY` set). The file is `<data dir>/master.key`, or the path in `APP_MASTER_KEY_FILE` if you set it. Point `APP_MASTER_KEY_FILE` at an absolute path outside the data directory (for example `/etc/levelrail/master.key`, mode `0600`) so a copy of the data directory alone cannot decrypt your secrets. A file with group or world permissions is refused at startup.
+
 Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action.
 
 **Env-sourced** (`APP_MASTER_KEY` set):
 Rotation cannot rewrite an environment variable belonging to your process supervisor. The CLI output includes an explicit warning to update `APP_MASTER_KEY` in your systemd unit or Docker Compose file before the next restart. Restarting with the old value will make every secret permanently unreadable, since all DEKs are now wrapped only under the new key.
 
 Always read the CLI's output (or the JSON response's `warning`/`persistedToFile` fields). A silently-skipped warning can cause failure at the next restart, the worst kind of problem to discover.
-:::
+
+</Accordion>
 
 ## How to rotate
 
@@ -77,17 +79,25 @@ If you keep a [key escrow bundle](/disaster-recovery#after-rotating-the-master-k
 
 ## Failure modes and what they mean
 
-::: details "rotate master key: ... unwrap DEK for ...: ..."
+<Accordion title="&quot;rotate master key: ... unwrap DEK for ...: ...&quot;">
+
 A stored DEK could not be unwrapped with the control plane's current master key. This suggests data corruption or that the running process does not hold the key you expected. Nothing was changed, so it is safe to investigate and retry.
-:::
 
-::: details `persistedToFile: false` with a warning about the key file
+</Accordion>
+
+<Accordion title="`persistedToFile: false` with a warning about the key file">
+
 The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but writing the new key to `master.key` failed. Usually a permissions or disk-space problem. Fix it and copy the new key into place manually before the control plane restarts.
-:::
 
-::: details `persistedToFile: false` with a warning about `APP_MASTER_KEY`
+</Accordion>
+
+<Accordion title="`persistedToFile: false` with a warning about `APP_MASTER_KEY`">
+
 Not a failure. This is the expected message when the master key is env-sourced (see above). It is the required follow-up step, not an error.
-:::
+
+</Accordion>
+
+Notification channel credentials are covered by the same rotation: each channel has its own DEK, re-wrapped like every other owner's, so channels keep delivering after a rotation without being edited.
 
 ## Binding secrets to their slot
 
@@ -118,7 +128,7 @@ Once `binding-status` reports `legacy: 0`, you can set `APP_SECRETS_REQUIRE_BOUN
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Disaster recovery" href="/disaster-recovery">
 
 Refresh your escrow bundle after rotating.

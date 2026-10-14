@@ -1,0 +1,65 @@
+---
+title: "Self-host Penpot with Docker"
+sidebarTitle: "Penpot"
+description: "An open-source design and prototyping platform, a self-hosted alternative to Figma."
+---
+
+An open-source design and prototyping platform, a self-hosted alternative to Figma.
+
+This page describes the Levelrail template for Penpot (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://help.penpot.app.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `backend` | `penpotapp/backend:2.11.1` | none | `penpot_assets -&#62; /opt/data/assets` |
+| `exporter` | `penpotapp/exporter:2.11.1` | none | none |
+| `frontend` | `penpotapp/frontend:2.11.1` | 8080 | none |
+| `postgres` | `postgres:15-alpine` | none | `penpot_db_data -&#62; /var/lib/postgresql/data` |
+| `valkey` | `valkey/valkey:8.1-alpine` | none | `penpot_valkey_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `backend` | `PENPOT_DATABASE_PASSWORD` | Generated at deploy |
+| `backend` | `PENPOT_DATABASE_URI` | Preset in the template |
+| `backend` | `PENPOT_DATABASE_USERNAME` | Generated at deploy |
+| `backend` | `PENPOT_FLAGS` | Preset in the template |
+| `backend` | `PENPOT_OBJECTS_STORAGE_BACKEND` | Preset in the template |
+| `backend` | `PENPOT_OBJECTS_STORAGE_FS_DIRECTORY` | Preset in the template |
+| `backend` | `PENPOT_PUBLIC_URI` | Preset in the template |
+| `backend` | `PENPOT_REDIS_URI` | Preset in the template |
+| `backend` | `PENPOT_SECRET_KEY` | Generated at deploy |
+| `exporter` | `PENPOT_PUBLIC_URI` | Preset in the template |
+| `exporter` | `PENPOT_REDIS_URI` | Preset in the template |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_INITDB_ARGS` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Penpot with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Penpot. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy penpot --name my-penpot
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

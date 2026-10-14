@@ -1,14 +1,11 @@
 ---
+title: "Access control"
 description: Roles for multi-user access, per-user environment grants, the guest role, IAM policies on apps, databases and environments, and ready-made policy templates.
 ---
 
-# Access control
-
 Give each teammate the access they need and no more. A role bundles abilities, environment grants narrow a guest down to chosen environments, and IAM policies allow or deny access to individual apps, databases and environments.
 
-<InlineToc default-open />
-
-Managing stored roles and environment grants is behind the `access-roles` experimental flag: set `APP_EXPERIMENTAL=access-roles` on the control plane (see [Experimental features](experimental-features.md)). Listing roles, IAM policies and the environment rules below are always on.
+Managing stored roles and environment grants is behind the `access-roles` experimental flag: set `APP_EXPERIMENTAL=access-roles` on the control plane (see [Experimental features](/experimental-features)). Listing roles, IAM policies and the environment rules below are always on.
 
 ## Built-in roles
 
@@ -34,9 +31,9 @@ Every user and every API token carries abilities. A role is a named set of them.
 | `deploy` | Trigger a deploy |
 | `root` | Everything. Exclusive: it cannot be combined with other abilities |
 | `signin:approve` | Tokens only: show your own sign-in codes and approve new browsers. Root does not include it, and only a signed-in session can mint it |
-| `secrets:reveal` | Tokens only: reveal secret values together with `read:sensitive`, the owner's password at request time, and `APP_SECRET_REVEAL_TOKENS=on`. Root does not include it, and only a signed-in session holding `read:sensitive` can mint it. See [Environment variables and secrets](environment-and-secrets.md#api-tokens) |
+| `secrets:reveal` | Tokens only: reveal secret values together with `read:sensitive`, the owner's password at request time, and `APP_SECRET_REVEAL_TOKENS=on`. Root does not include it, and only a signed-in session holding `read:sensitive` can mint it. See [Environment variables and secrets](/environment-and-secrets#api-tokens) |
 
-See [Identity and access](identity-and-access.md) for how abilities, sessions and tokens work.
+See [Identity and access](/identity-and-access) for how abilities, sessions and tokens work.
 
 ## Custom roles
 
@@ -77,7 +74,7 @@ A role's visibility is `all` (the default) or `granted`.
 - With `all`, a user sees every app and database their abilities allow.
 - With `granted`, a user sees only apps and databases in the environments granted to that user. A role with `granted` visibility may hold only the `read` ability.
 
-Anything a guest cannot see answers **404**, not 403, so they cannot even tell it exists. Resources with no environment are hidden from guests. API tokens follow the visibility of the user who owns them. The apps, databases, deployments and approvals lists are filtered the same way.
+Anything a guest cannot see answers 404, not 403, so they cannot even tell it exists. Resources with no environment are hidden from guests. API tokens follow the visibility of the user who owns them. The apps, databases, deployments and approvals lists are filtered the same way.
 
 ### Environment grants
 
@@ -87,7 +84,7 @@ levelrail-cli users grants get user_abc
 levelrail-cli users grants set user_abc     # no --environment: clear all grants
 ```
 
-`grants set` replaces the whole list. A user with no grants sees nothing. Grants only apply to users whose role has `granted` visibility. In the dashboard, the Users page shows an environment checklist when you change a user to such a role. See [Environments](environments.md) for the environments you can grant.
+`grants set` replaces the whole list. A user with no grants sees nothing. Grants only apply to users whose role has `granted` visibility. In the dashboard, the Users page shows an environment checklist when you change a user to such a role. See [Environments](/environments) for the environments you can grant.
 
 ## IAM policies
 
@@ -152,14 +149,14 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 
 ## Build, test and review policies
 
-Open **Settings, IAM policies** for the policy workspace. How the evaluator works is written down in [IAM design notes](iam-design.md).
+Open **Settings, IAM policies** for the policy workspace. How the evaluator works is written down in [IAM design notes](/iam-design).
 
-- **Guided builder.** Pick Allow or Deny, choose abilities from a grouped list with a plain description and a risk hint, then choose resources by picker: everything, a project (expanded to its environments), an environment, an environment kind, one app, one database or a name pattern. Each choice shows how many apps and databases it matches today. The stored JSON is shown beside the rules and is only editable behind the **Edit JSON** switch. Errors point at the field path.
-- **Templates with parameters.** Read only, guest in one environment, deployer for non-production, operator of one app, owner of one database and deployer for one project. You pick the app, database, environment or project instead of typing an ID.
-- **Simulator.** Ask whether a user or token can do an ability on a resource. The answer comes from the same evaluator that guards requests and lists the deciding statement and every statement that matched. The same check runs from the CLI and the read-only MCP tools.
-- **Who has access.** Start from a user or token: its abilities, attached policies and what it can do on every app and database. Attach or detach with a preview of the access that changes, in bulk for tokens.
-- **Analyzer.** Static checks with a severity and a one line fix: allow everything, wildcard or root abilities, sensitive abilities on every resource, a Deny that can never match, unattached policies, tokens holding root, attachments to a missing user or token, shadowed or overlapping statements and keys the evaluator ignores.
-- **Safe changes.** Every saved document is kept as a version with a rule diff. A change that would leave no operational root principal is refused.
+- Guided builder: pick Allow or Deny, choose abilities from a grouped list with a plain description and a risk hint, then choose resources by picker: everything, a project (expanded to its environments), an environment, an environment kind, one app, one database or a name pattern. Each choice shows how many apps and databases it matches today. The stored JSON is shown beside the rules and is only editable behind the **Edit JSON** switch. Errors point at the field path.
+- Templates with parameters: read only, guest in one environment, deployer for non-production, operator of one app, owner of one database and deployer for one project. You pick the app, database, environment or project instead of typing an ID.
+- Simulator: ask whether a user or token can do an ability on a resource. The answer comes from the same evaluator that guards requests and lists the deciding statement and every statement that matched. The same check runs from the CLI and the read-only MCP tools.
+- Who has access: start from a user or token: its abilities, attached policies and what it can do on every app and database. Attach or detach with a preview of the access that changes, in bulk for tokens.
+- Analyzer: static checks with a severity and a one line fix: allow everything, wildcard or root abilities, sensitive abilities on every resource, a Deny that can never match, unattached policies, tokens holding root, attachments to a missing user or token, shadowed or overlapping statements and keys the evaluator ignores.
+- Safe changes: every saved document is kept as a version with a rule diff. A change that would leave no operational root principal is refused.
 
 Conditions such as source IP, time window and MFA are not part of the evaluator yet, so the builder does not offer them. Scope by environment with resources instead.
 
@@ -198,7 +195,7 @@ Role bodies are `{"name", "description", "abilities", "visibility"}`. Grants are
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Environments" href="/environments">
 
 Instance-wide environments and protected moves.

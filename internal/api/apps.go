@@ -952,7 +952,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	// Cordon means "unschedulable for new placements," and this is a new
 	// placement even when the service already exists, since it's
 	// actively choosing to move it here.
-	if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
+	if err := rt.authorizePlacementTarget(r, req.NodeID); err != nil {
 		rt.respondPlacementValidationError(w, err, req.NodeID, "api: set app node: look up node failed")
 		return
 	}

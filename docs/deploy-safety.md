@@ -1,15 +1,15 @@
 ---
+title: "Deploy safety"
 description: What stands between a deploy being triggered and that exact content serving, a readiness gate with a stable window, a drain, pinned rollback targets, a post-deploy watch with automatic rollback, digest-truthful deploys, a stale-deploy guard and freeze windows.
 ---
 
-# Deploy safety
-
-Several guarantees sit between "a deploy was triggered" and "that exact
-content is serving": a readiness gate that a release must hold for a
-stable window, a drain of the previous release, pinned rollback targets,
-a post-deploy watch that rolls a bad release back, digest-truthful
-deploys, a stale-deploy guard, deploy freeze windows, and a short hold of
-the previous release after a cutover.
+Between "a deploy was triggered" and "that exact content is serving",
+Levelrail runs a series of checks. A release has to pass a readiness gate
+and hold it for a stable window. The previous release drains. Rollback
+targets are pinned, and a post-deploy watch rolls a bad release back. On
+top of that there are digest checks, a stale-deploy guard, freeze windows,
+and a short hold of the previous release after cutover. The diagram shows
+the order.
 
 ```mermaid
 flowchart TD
@@ -297,7 +297,7 @@ while a release is held, and `levelrail-cli apps status <name>` prints it.
 
 ## What visitors see during a deploy
 
-The ingress never serves a bare `502` or a TLS error for a domain that was recently routed. When a deploy leaves a domain without a ready container (a `recreate` deploy, a crash, a restart), the domain keeps its route and its certificate for `APP_INGRESS_HOLD_WINDOW` (default `10m`) and answers a styled `503` with `Retry-After` and a page that reloads itself. A request whose container refuses the connection is retried for `APP_INGRESS_RETRY_WINDOW` (default `2s`) first, and with two or more replicas it moves to another replica immediately. The windows that remain, with measured numbers, are listed in [resilience](resilience.md#ingress-availability-windows-measured), and every knob is in [Edge limits, client IPs and failover](domains-and-ingress.md#edge-limits-client-ips-and-failover).
+The ingress never serves a bare `502` or a TLS error for a domain that was recently routed. When a deploy leaves a domain without a ready container (a `recreate` deploy, a crash, a restart), the domain keeps its route and its certificate for `APP_INGRESS_HOLD_WINDOW` (default `10m`) and answers a styled `503` with `Retry-After` and a page that reloads itself. A request whose container refuses the connection is retried for `APP_INGRESS_RETRY_WINDOW` (default `2s`) first, and with two or more replicas it moves to another replica immediately. The windows that remain, with measured numbers, are listed in [resilience](/resilience#ingress-availability-windows-measured), and every knob is in [Edge limits, client IPs and failover](/domains-and-ingress#edge-limits-client-ips-and-failover).
 
 ## Pinned host ports
 
@@ -355,7 +355,7 @@ switch. The MCP server exposes `cancel_deploy`.
 
 ## Cleanup never touches a rollback target
 
-Pruning removes only dangling (untagged) images, and Docker itself refuses to remove an image a container still uses, even when its tag has since moved to newer content. A pinned rollback tag is never dangling, so it is never a candidate. Both properties are checked against a real daemon in `internal/docker/prune_images_live_test.go`: a pinned tag, an untagged image still backing a running container, and a truly orphaned image go in, and only the last one comes out. A rollback whose image is gone anyway answers `410` with an instruction to redeploy from source instead of a half-working deploy. See [Delete and clean up](deploying-apps.md#delete-and-clean-up) for the container, volume and certificate reaper.
+Pruning removes only dangling (untagged) images, and Docker itself refuses to remove an image a container still uses, even when its tag has since moved to newer content. A pinned rollback tag is never dangling, so it is never a candidate. Both properties are checked against a real daemon in `internal/docker/prune_images_live_test.go`: a pinned tag, an untagged image still backing a running container, and a truly orphaned image go in, and only the last one comes out. A rollback whose image is gone anyway answers `410` with an instruction to redeploy from source instead of a half-working deploy. See [Delete and clean up](/deploying-apps#delete-and-clean-up) for the container, volume and certificate reaper.
 
 ## Limits
 

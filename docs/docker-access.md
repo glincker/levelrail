@@ -1,29 +1,28 @@
 ---
+title: "Docker access and the API guard"
 description: Every Docker Engine API call Levelrail makes, why it needs it, and the guard that refuses everything else, including privileged containers and host mounts.
 ---
 
-# Docker access and the API guard
+The Docker socket is root equivalent: anything that can talk to it can start a privileged container that mounts `/` from the host. The control plane and every node agent hold that socket, so a bug or a compromise in either one gives root on the machine.
 
-The Docker socket is root equivalent: anything that can talk to it can start a privileged container that mounts `/` from the host. The control plane and every node agent hold that socket, so a bug or a compromise in either one is, by default, root on the machine.
-
-Levelrail narrows this with an in-process **Docker API guard**. Each process starts a private Unix socket proxy in front of the real daemon, and every Docker client inside the process dials the proxy instead of the daemon. The proxy forwards only the endpoints listed below, and for container create, update, exec and volume create it reads the request body and refuses configurations that would hand a container the host.
+Levelrail narrows this with an in-process Docker API guard. Each process starts a private Unix socket proxy in front of the real daemon, and every Docker client inside the process dials the proxy instead of the daemon. The proxy forwards only the endpoints listed below. For container create, update, exec and volume create it also reads the request body and refuses any configuration that would hand a container the host.
 
 ## Modes
 
 | `APP_DOCKER_GUARD` | Behavior |
 | --- | --- |
-| `audit` (default) | Everything is forwarded. A request a rule would deny is logged and written to the audit log as `docker_guard.would_deny`. |
-| `enforce` | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
+| `audit` | Everything is forwarded. A request a rule would deny is logged and written to the audit log as `docker_guard.would_deny`. |
+| `enforce` (default) | A denied request gets `403` with the rule id and never reaches Docker. Every denial is written to the audit log as `docker_guard.denied` and logged with the rule id. |
 | `off` | No proxy. Clients dial the daemon directly, as before the guard existed. |
 
-`audit` is the default so an upgrade never breaks a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
+`audit` is the default so an upgrade can't break a running deploy. After a week of audit mode with no would-be denials, the attention feed offers the switch to `enforce`. Change the mode from **Settings, Security, Docker API guard**, or with the CLI:
 
 ```
 levelrail-cli docker-guard status
 levelrail-cli docker-guard set --mode enforce
 ```
 
-The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` ability). Switching between `audit` and `enforce` applies immediately. Switching to or from `off` takes effect at the next restart; until then `off` behaves like `audit`. When `APP_DOCKER_GUARD` is set on the server it wins and the API returns `409`. An unrecognized value fails closed to `enforce`, and in `enforce` mode a guard that cannot start stops the process instead of running unguarded.
+The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` ability). Switching between `audit` and `enforce` applies immediately. Switching to or from `off` takes effect at the next restart; until then `off` behaves like `audit`. When `APP_DOCKER_GUARD` is set on the server it wins and the API returns `409`. An unrecognized value fails closed to `enforce`, and when `enforce` was chosen explicitly (the env var or the dashboard), a guard that cannot start stops the process instead of running unguarded.
 
 `levelrail-cli doctor` reports two checks: `docker_guard` (the mode and what it flagged in the summary window) and `docker_privilege` (whether the daemon is rootless or uses userns-remap, and whether the service user is root or in the `docker` group).
 
@@ -31,7 +30,7 @@ The API is `GET` and `PUT /api/v1/system/docker-guard` (`PUT` needs the `root` a
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
-| `APP_DOCKER_GUARD` | `audit` | `off`, `audit` or `enforce`. Overrides the setting saved from the dashboard. |
+| `APP_DOCKER_GUARD` | `enforce` | `off`, `audit` or `enforce`. Overrides the setting saved from the dashboard. |
 | `APP_DOCKER_GUARD_SOCKET` | `<data dir>/guard/docker-guard.sock` | Where the proxy listens. Its directory must be `0700`; the socket is `0600`. |
 | `APP_DOCKER_GUARD_ALLOW_HOST_NETWORK` | `false` | Lets a container declared with host networking through `network_host`. |
 | `APP_DOCKER_GUARD_MAX_BODY_BYTES` | `4194304` | Largest create, update, exec or volume body the guard reads. Larger is denied. |
@@ -69,7 +68,7 @@ Every rule id appears in the `403` body, the log line and the audit row (`abilit
 
 ### How declarations work
 
-`internal/docker`'s `Create` builds every app, database and sidecar container from the stored app spec. Right before the create call it registers a declaration for that container name: its bind host paths, whether it asked for a GPU, host networking, and extra capabilities. The guard looks the declaration up by the `name` query parameter and drops it when `Create` returns. A create request that did not come through `Create`, or names a container `Create` is not creating at that moment, carries no grants. In enforce mode the guard forwards a re-encoded copy of the body it validated, so unknown fields and case or duplicate key tricks never reach the daemon in a form the guard did not see.
+`internal/docker`'s `Create` builds every app, database and sidecar container from the stored [app spec](/app-spec-reference). Right before the create call it registers a declaration for that container name: its bind host paths, whether it asked for a GPU, host networking, and extra capabilities. The guard looks the declaration up by the `name` query parameter and drops it when `Create` returns. A create request that did not come through `Create`, or names a container `Create` is not creating at that moment, carries no grants. In enforce mode the guard forwards a re-encoded copy of the body it validated, so unknown fields and case or duplicate key tricks never reach the daemon in a form the guard did not see.
 
 ## The Engine API surface Levelrail uses
 
@@ -100,12 +99,12 @@ Streaming and hijacked endpoints (`events`, `logs`, `stats`, exec start, `/grpc`
 
 ## What the guard does not protect against
 
-- **A process that is already compromised at code execution level.** The guard runs inside the same process and the service user can still open the real socket. It stops bugs, injected specs, and a control plane asking an agent for something dangerous; it does not stop an attacker who can run arbitrary code as the service user. For that, run Docker rootless or with userns-remap, which `docker_privilege` reports.
-- **The node agent container.** The default agent runs as root with the host Docker socket mounted. Its guard wraps its own Docker client, but anything running as root in that container can bypass it.
-- **BuildKit build steps.** The guard sees the `/grpc` upgrade, not the BuildKit requests inside it. Builds run in BuildKit's own sandbox; insecure entitlements stay off unless the daemon itself allows them.
-- **Image contents and allowed operations.** A pulled image runs with the hardened profile, but the guard does not judge what an image does. Exec into a running container, and copying files into it, stay allowed.
-- **Symlinked bind sources on a containerized process.** When the process runs in a container it cannot see the host filesystem, so a bind source is checked by path only, not by what it resolves to on the host.
-- **Agent denials in the dashboard.** An agent's denials are logged on the node and appended to its local audit file; the control plane sees them as the failed operation's error, which names the rule, not as audit rows.
+- A process that is already compromised at code execution level. The guard runs inside the same process and the service user can still open the real socket. It stops bugs, injected specs, and a control plane asking an agent for something dangerous. It does not stop an attacker who can run arbitrary code as the service user. For that, run Docker rootless or with userns-remap, which `docker_privilege` reports.
+- The node agent container. The default agent runs as root with the host Docker socket mounted. Its guard wraps its own Docker client, but anything running as root in that container can bypass it.
+- BuildKit build steps. The guard sees the `/grpc` upgrade, not the BuildKit requests inside it. Builds run in BuildKit's own sandbox; insecure entitlements stay off unless the daemon itself allows them.
+- Image contents and allowed operations. A pulled image runs with the hardened profile, but the guard does not judge what an image does. Exec into a running container, and copying files into it, stay allowed.
+- Symlinked bind sources on a containerized process. When the process runs in a container it cannot see the host filesystem, so a bind source is checked by path only, not by what it resolves to on the host.
+- Agent denials in the dashboard. An agent's denials are logged on the node and appended to its local audit file; the control plane sees them as the failed operation's error, which names the rule, not as audit rows.
 
 ## Prior art
 

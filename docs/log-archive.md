@@ -1,10 +1,10 @@
 ---
-description: Ship node-local container logs to a connected storage destination as gzip-compressed NDJSON, on a schedule or on demand, and retrieve them by CLI or API.
+title: "Log archive"
+tag: "Beta"
+description: Ship container logs to storage as compressed NDJSON on a schedule.
 ---
 
-# Log archive
-
-Container logs are stored node-local (see [observability](/observability)) with a bounded retention window. Log archive ships them to a [storage destination](/object-storage) as gzip-compressed NDJSON, on a schedule you set per app or once for every app, so logs outlive the node-local store without needing a third-party log shipper.
+Container logs are stored node-local (see [observability](/observability)) with a bounded retention window. Log archive ships them to a [storage destination](/object-storage) as gzip-compressed NDJSON, on a schedule you set per app or once for every app, so logs outlive the node-local store and you need no third-party log shipper.
 
 A storage destination must exist first; see [object storage](/object-storage) for connecting one.
 
@@ -26,10 +26,10 @@ for example `log-archive/service/web/2026/09/24/13/1790255400000000000.ndjson.gz
 
 ## How it behaves
 
-- **Pull, not push.** A scheduler wakes once a minute (`APP_LOG_ARCHIVE_TICK`), checks which policies are due, and reads new lines from the node-local store.
-- **Idempotent and resumable.** Each policy keeps a watermark. Objects are named by their chunk start, so a retry after a failure overwrites the same key instead of duplicating lines. A failed window keeps the watermark in place and is retried on the next run.
-- **Bounded.** One archive run at a time, at most 24 hour-windows per scheduled run, and at most 200,000 lines per object (`APP_LOG_ARCHIVE_MAX_LINES_PER_OBJECT`). Lines are spooled to a temp file first so the log database is never held open during an upload. A new policy archives forward from the moment it is created; use a dump for history.
-- **Every run is tracked.** Each scheduled tick or manual dump is recorded as a run with a status (`running`, `succeeded`, `failed`), the time range it covered, and object/line/byte counts, visible via `levelrail-cli logs archive status` or `GET /api/v1/log-archive/runs`.
+- The archiver pulls, it does not push. A scheduler wakes once a minute (`APP_LOG_ARCHIVE_TICK`), checks which policies are due, and reads new lines from the node-local store.
+- Each policy keeps a watermark. Objects are named by their chunk start, so a retry after a failure overwrites the same key instead of duplicating lines. A failed window keeps the watermark in place and is retried on the next run.
+- Runs are bounded: one at a time, at most 24 hour-windows per scheduled run, and at most 200,000 lines per object (`APP_LOG_ARCHIVE_MAX_LINES_PER_OBJECT`). Lines are spooled to a temp file first so the log database is never held open during an upload. A new policy archives forward from the moment it is created; use a dump for history.
+- Each scheduled tick or manual dump is recorded as a run with a status (`running`, `succeeded`, `failed`), the time range it covered, and object/line/byte counts, visible via `levelrail-cli logs archive status` or `GET /api/v1/log-archive/runs`.
 
 ## Retention
 
@@ -37,13 +37,13 @@ Set "Keep for (days)" on a policy (0 means forever) to have the archiver delete 
 
 ## Manage policies
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Use an app's **Logs, Archive** tab for a per-app policy, or **Settings, Storage destinations** for the global policy that covers every app.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli logs archive set --target <id> --app web --interval 1h --retention-days 30
@@ -91,7 +91,7 @@ REST routes live under `/api/v1/log-archive` (see the [API reference](/api-refer
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Object storage" href="/object-storage">
 
 Connect the bucket that archived logs are written to.

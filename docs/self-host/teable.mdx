@@ -1,0 +1,59 @@
+---
+title: "Self-host Teable with Docker"
+sidebarTitle: "Teable"
+description: "A spreadsheet-style visual database backed by real PostgreSQL, an Airtable alternative."
+---
+
+A spreadsheet-style visual database backed by real PostgreSQL, an Airtable alternative.
+
+This page describes the Levelrail template for Teable (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://help.teable.io/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `teable` | `ghcr.io/teableio/teable:latest` | 3000 | `teable_data -&#62; /app/.assets` |
+| `teable-cache` | `redis:7.2.4` | none | `teable_cache_data -&#62; /data` |
+| `teable-db` | `postgres:15.4` | none | `teable_db_data -&#62; /var/lib/postgresql/data` |
+| `teable-db-migrate` | `ghcr.io/teableio/teable-db-migrate:latest` | none | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `teable` | `BACKEND_CACHE_PROVIDER` | Preset in the template |
+| `teable` | `BACKEND_CACHE_REDIS_URI` | Preset in the template |
+| `teable` | `PORT` | Preset in the template |
+| `teable` | `PRISMA_DATABASE_URL` | Generated at deploy |
+| `teable` | `PUBLIC_ORIGIN` | Preset in the template |
+| `teable` | `SECRET_KEY` | Generated at deploy |
+| `teable-db` | `POSTGRES_DB` | Preset in the template |
+| `teable-db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `teable-db` | `POSTGRES_USER` | Preset in the template |
+| `teable-db-migrate` | `PRISMA_DATABASE_URL` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Teable with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Teable. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy teable --name my-teable
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -138,7 +138,7 @@ func nodeIDKeyPresent(body []byte) bool {
 // return immediately.
 func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Request, body []byte, nodeID *string, autoPlaced *bool, hasDomains bool, logContext string) (ok bool) {
 	if nodeIDKeyPresent(body) {
-		if err := rt.validatePlacementTarget(r.Context(), *nodeID); err != nil {
+		if err := rt.authorizePlacementTarget(r, *nodeID); err != nil {
 			rt.respondPlacementValidationError(w, err, *nodeID, logContext+": validate node failed")
 			return false
 		}

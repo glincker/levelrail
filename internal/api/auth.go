@@ -436,6 +436,7 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			writeError(w, http.StatusUnauthorized, "invalid token")
 			return
 		}
+		r = rt.noteAITurnRequest(r, rec, required)
 		if rt.aiControlRejects(w, r, rec, required) {
 			return
 		}

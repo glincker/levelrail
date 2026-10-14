@@ -924,6 +924,17 @@ func WithWebhookDeliveryRetention(d time.Duration) Option {
 	return func(rt *Router) { rt.webhookDeliveryRetention = d }
 }
 
+// WithWebhookFailedDeliveryLimits sets how many unsigned webhook
+// deliveries are kept per app and how many body bytes each retains. A
+// zero value keeps the default (20 rows, 2048 bytes). cmd/levelrail/main.go
+// reads APP_WEBHOOK_FAILED_DELIVERY_KEEP and APP_WEBHOOK_FAILED_BODY_BYTES.
+func WithWebhookFailedDeliveryLimits(keep, bodyBytes int) Option {
+	return func(rt *Router) {
+		rt.webhookFailedKeep = keep
+		rt.webhookFailedBodyBytes = bodyBytes
+	}
+}
+
 // WithSecretRotationWarnAge overrides how old a secret's last-set value
 // can get before it is flagged as due for rotation (GET
 // /apps/{name}/secrets, GET .../env/all, and the doctor's stale_secrets

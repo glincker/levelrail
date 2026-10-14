@@ -1,22 +1,19 @@
 ---
+title: "Projects, organizations, and environments"
 description: Organize apps and databases into optional projects, organizations, and environments with shared configuration and deployment gates.
 ---
 
-# Projects, organizations, and environments
-
 Group your apps and databases into projects, file projects under organizations, and tag apps with an environment (staging, production, and so on) so they share config and get deployment gates. All of it is optional: add structure when you need it.
-
-<InlineToc default-open />
 
 ## The model
 
-Apps and databases are the real, running things. Projects, organizations, and environments are labels on top of them.
+Apps and databases are the things that actually run. Projects, organizations and environments are labels on top of them.
 
-- A **project** groups apps and databases.
-- An **organization** groups projects.
-- An **environment** belongs to one project and is applied to apps (not databases). It carries shared env vars and can be marked protected.
+- A project groups apps and databases.
+- An organization groups projects.
+- An environment belongs to one project and is applied to apps (not databases). It carries shared env vars and can be marked protected.
 
-An app or database can skip every level and belong to nothing, and nothing about how it runs depends on where it is filed. Deleting a project, organization, or environment never deletes or disrupts what is filed under it: members simply become unlabeled again.
+An app or database can skip every level and belong to nothing, and nothing about how it runs depends on where it is filed. Deleting a project, organization or environment never deletes or disrupts what is filed under it. The members just become unlabeled again.
 
 ```mermaid
 graph TD
@@ -26,13 +23,13 @@ graph TD
   C -->|tags| D
 ```
 
-Grouping is not an access boundary. Access is controlled by roles and IAM policies, which scope to individual resources and never to a project or organization. See [Identity and access](identity-and-access.md).
+Grouping is not an access boundary. Access is controlled by roles and IAM policies, which scope to individual resources and never to a project or organization. See [Identity and access](/identity-and-access).
 
 Environments exist for the protected-environment gate, which guards deploy, rollback and promote. Databases have no such action, so only apps can be tagged with an environment.
 
 ## How the grouping actually works
 
-Projects and organizations are addressed by ID, never by name. Project names are deliberately non-unique so there's no duplicate-name rejection (unlike `POST /apps`).
+Projects and organizations are addressed by ID, never by name. Project names are not unique on purpose, so a duplicate name is never rejected (unlike `POST /apps`).
 
 ### Moving resources between groups
 
@@ -47,7 +44,7 @@ Moving an app or database to a project, or an app to an environment, is a separa
 
 To remove a resource, pass an empty string: `"project_id": ""`.
 
-All endpoints validate the target ID first. A typo'd or deleted ID gets a 400, not a silent write. This mirrors `PUT /apps/{name}/node` for node placement and needs only the `write` ability, not `root` (organizational edit, not infrastructure change).
+All endpoints validate the target ID first, so a mistyped or deleted ID gets a 400, not a silent write. Like `PUT /apps/{name}/node` for node placement, they need only the `write` ability, not `root`, because this is an organizational edit, not an infrastructure change.
 
 ### Dashboard UX for moving
 
@@ -57,7 +54,7 @@ Moves happen from the resource's own Overview page, not from the project/environ
 - A database's Overview page has a "Move to project" action.
 - A project's detail page has a "Move to organization" action.
 
-Project and environment detail pages are read-only for membership. They list what's filed there and link back to each member's Overview page to move it.
+Project and environment detail pages are read-only for membership. They list what is filed there and link back to each member's Overview page to move it.
 
 ### Moving from the CLI
 
@@ -72,9 +69,9 @@ levelrail-cli apps set-environment my-app env_prod123
 
 ## Shared env var layering
 
-Projects, organizations, and environments can each hold shared env vars. These layer automatically into every app's effective environment. Each scope can hold a mix of plain and encrypted (secret) variables.
+Projects, organizations and environments can each hold shared env vars. These layer automatically into every app's effective environment. Each scope can hold a mix of plain and encrypted (secret) variables.
 
-They stack in a fixed order, lowest to highest. [App integrations](integrations.md) sit at the same tier as the shared layers, below the app's own env.
+They stack in a fixed order, lowest to highest. [App integrations](/integrations) sit at the same tier as the shared layers, below the app's own env.
 
 ```mermaid
 flowchart TD
@@ -100,9 +97,9 @@ An app with no project and no environment gets its own `env`/`secretEnv` (plus a
 
 ### Secret-marked shared env vars
 
-Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](./security.md#secrets-envelope-encryption)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
+Any shared env var can be marked as a secret. Secret-marked variables are encrypted at rest using the same envelope-encryption path as per-app secrets (see [Security overview](/security#secrets-envelope-encryption)). Their values are never returned in plaintext from API endpoints or the dashboard; only the key name is shown.
 
-**Creating a secret shared env var via CLI:**
+From the CLI:
 
 ```bash
 # Set at project scope
@@ -115,7 +112,7 @@ levelrail-cli shared-env set --scope organization --id org_xyz789 API_KEY secret
 levelrail-cli shared-env set --scope environment --id env_prod123 SIGNING_KEY token --secret
 ```
 
-**Via API:**
+From the API:
 
 ```bash
 # Set a secret at project scope
@@ -148,13 +145,13 @@ curl "https://control-plane/api/v1/projects/proj_abc123/environments/compare?a=e
   -H "Authorization: Bearer $TOKEN"
 ```
 
-**Via CLI:**
+From the CLI:
 
 ```bash
 levelrail-cli apps environments env-diff proj_abc123 env_staging env_prod
 ```
 
-**Dashboard:** the "Compare" action on a project's Environments panel, or on an environment's own detail page, opens a picker for two environments and shows the same diff table.
+In the dashboard, the "Compare" action on a project's Environments panel, or on an environment's own detail page, opens a picker for two environments and shows the same diff table.
 
 ## Project-wide pause, resume, and restart
 
@@ -185,7 +182,7 @@ All three endpoints attempt every member independently and never abort on one fa
 }
 ```
 
-One bad resource doesn't block the rest.
+One bad resource does not block the rest.
 
 ### Dashboard
 
@@ -212,7 +209,7 @@ Without `confirm: true`, the server rejects the request with a 409 and names the
 }
 ```
 
-The check degrades safely: apps with no environment, or tagged with unprotected environments, always pass. Stale or deleted `environment_id` references are treated as "not protected" rather than blocking.
+The check fails open: apps with no environment, or tagged with unprotected environments, always pass. Stale or deleted `environment_id` references are treated as "not protected" rather than blocking.
 
 ### CLI
 
@@ -224,25 +221,25 @@ levelrail-cli apps rollback my-app --image registry.example.com/org/app:v1 --con
 levelrail-cli apps promote my-app --to env_prod123 --confirm
 ```
 
-Omitting `--confirm` doesn't fail. The client catches the 409, prints the server message, and prompts on stdin: `Type "yes" to proceed:`. Non-interactive scripts (EOF or anything but "yes") leave the original 409 as the result.
+Leaving out `--confirm` does not fail. The client catches the 409, prints the server message and prompts on stdin: `Type "yes" to proceed:`. In a non-interactive script (EOF or anything but "yes"), the original 409 stands.
 
 ### Dashboard
 
 The deploy/rollback/promote flow shows an amber warning box. Check the checkbox "I understand and want to proceed." to enable the button (same pattern as Redis's no-auth warning).
 
-Toggle `protected` on the environment detail page, backed by `PATCH /api/v1/environments/{id}`. That's the only field that endpoint changes.
+Toggle `protected` on the environment detail page, which calls `PATCH /api/v1/environments/{id}`. That is the only field the endpoint changes.
 
 ## Promote and clone dialogs
 
-**Promote to...** on an app page loads `GET /api/v1/apps/{name}/promote/preview` and shows the plan before you confirm: the image change, replicas, resources and health differences, and the env key names that would be added, removed or differ (values are never shown). Tick "Also apply the env key changes" to send `include_env`. If the source is unhealthy or its last deploy failed, the blockers are listed and "Promote anyway" sends `force`. Promotion honors deploy freeze windows: while the target is frozen the dialog requires an override reason (`override_freeze` and `override_reason`, also `--override-freeze` and `--override-reason` on the CLI), and into a protected environment it still becomes a pending approval.
+"Promote to..." on an app page loads `GET /api/v1/apps/{name}/promote/preview` and shows the plan before you confirm: the image change, replicas, resources and health differences, and the env key names that would be added, removed or differ (values are never shown). Tick "Also apply the env key changes" to send `include_env`. If the source is unhealthy or its last deploy failed, the blockers are listed and "Promote anyway" sends `force`. Promotion honors deploy freeze windows: while the target is frozen the dialog requires an override reason (`override_freeze` and `override_reason`, also `--override-freeze` and `--override-reason` on the CLI), and into a protected environment it still becomes a pending approval.
 
-**Clone** on an app page shows what a clone copies and what it leaves behind (`GET /api/v1/apps/{name}/clone/preview`). Secret values are copied only if you tick the box, re-encrypted for the clone and never displayed (needs `read:sensitive`); domains are not copied unless you opt in to derived names. A clone never starts a deploy, so freeze windows and approvals apply when you first deploy it. Cloning does not attach or copy databases.
+"Clone" on an app page shows what a clone copies and what it leaves behind (`GET /api/v1/apps/{name}/clone/preview`). Secret values are copied only if you tick the box, re-encrypted for the clone and never displayed (needs `read:sensitive`); domains are not copied unless you opt in to derived names. A clone never starts a deploy, so freeze windows and approvals apply when you first deploy it. Cloning does not attach or copy databases.
 
 ## Cloning an environment
 
-`POST /api/v1/environments/{id}/clone` copies a whole environment: every app tagged with it, plus its own shared env vars, into a brand-new environment in the same project. This is a different operation from `POST /apps/{name}/promote`, which only ever moves one app's image tag onto an existing sibling app. Cloning creates new apps and a new environment from scratch, and actually deploys them through the normal reconcile path, the same as creating an app through the API directly.
+`POST /api/v1/environments/{id}/clone` copies a whole environment: every app tagged with it, plus its own shared env vars, into a brand-new environment in the same project. This is not the same as `POST /apps/{name}/promote`, which only moves one app's image tag onto an existing sibling app. Cloning creates new apps and a new environment from scratch and deploys them through the normal reconcile path, the same as creating an app through the API.
 
-`GET /api/v1/environments/{id}/clone/preview?new_environment_name={name}` shows what a clone would create without applying it: each tagged app's suggested new name, current image, current domains (which will **not** be copied), declared secret env var names, and scheduled task count, plus the source environment's own shared env var keys.
+`GET /api/v1/environments/{id}/clone/preview?new_environment_name={name}` shows what a clone would create without applying it: each tagged app's suggested new name, current image, current domains (which will not be copied), declared secret env var names, and scheduled task count, plus the source environment's own shared env var keys.
 
 ### What's copied, regenerated, or dropped
 
@@ -254,7 +251,7 @@ Toggle `protected` on the environment detail page, backed by `PATCH /api/v1/envi
 | Secret/vault env **declarations** (names and required flags, not values) | | Git build source and node placement |
 | Secret **values**, per-app and environment-shared alike | | Off by default; every declared secret is created with no value (same as a brand-new required secret) unless the request sets `copy_secret_values: true` |
 
-This follows the same precedent promoting an app between environments already sets: config crosses freely, secret plaintext only on explicit opt-in.
+This matches promotion between environments: config crosses freely, and secret plaintext only on explicit opt-in.
 
 ### Request shape
 
@@ -380,15 +377,15 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 
 ## Limits
 
-- **Grouping is not a permission boundary.** Roles and IAM policies scope to individual resources, never to a project or organization.
-- **No bulk move.** Move apps and databases between projects or environments one at a time.
-- **No database environment tagging.** The protected-environment gate only guards deploy, rollback and promote.
-- **No per-project or per-organization audit view.** Changes appear in the generic audit log (`GET /api/v1/audit-log`).
-- **No server-side membership listing.** There is no `GET /api/v1/projects/{id}/apps`. The dashboard filters the full `/apps`, `/databases` and `/projects` lists by each row's `project_id` or `org_id`.
+- Grouping is not a permission boundary. Roles and IAM policies scope to individual resources, never to a project or organization.
+- There is no bulk move. Move apps and databases between projects or environments one at a time.
+- Databases cannot be tagged with an environment, because the protected-environment gate only guards deploy, rollback and promote.
+- There is no per-project or per-organization audit view. Changes appear in the generic audit log (`GET /api/v1/audit-log`).
+- There is no server-side membership listing and no `GET /api/v1/projects/{id}/apps`. The dashboard filters the full `/apps`, `/databases` and `/projects` lists by each row's `project_id` or `org_id`.
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Deploying apps" href="/deploying-apps">
 
 The apps being grouped, plus promote and clone.

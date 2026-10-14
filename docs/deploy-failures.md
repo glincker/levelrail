@@ -1,8 +1,7 @@
 ---
+title: "Deploy failures"
 description: The structured failure object every failed or blocked deploy carries, and what each failure code means.
 ---
-
-# Deploy failures
 
 A deploy that fails, is held, or does not become healthy carries one structured `failure` object. The same object comes back from the API, the CLI and the MCP tools, so a person and an agent read the same explanation.
 
@@ -53,13 +52,13 @@ The first stage is a table of known classes. When none matches, the runtime caus
 The Dockerfile is invalid or a file it references is missing. Check `build.path` and `build.baseDirectory`, fix the syntax, and make sure every `COPY` source is committed and not excluded by `.dockerignore`. A repo with no Dockerfile builds with `build.type: railpack` (`--build-type railpack`), which a manual rebuild does not remember.
 
 ### dependency_install_failed
-A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the build node.
+A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the [build node](/build-node-routing).
 
 ### compile_error
 The application code failed to compile (tsc, Next.js, go build, cargo, javac). The excerpt shows the compiler line with the file and position. Fix it, confirm it builds locally, then redeploy.
 
 ### build_config_error
-The build could not tell what to build or run: a script the build calls is missing from `package.json`, or no start command was detected. Add the script or set an explicit start command or Dockerfile in the app spec.
+The build could not tell what to build or run: a script the build calls is missing from `package.json`, or no start command was detected. Add the script or set an explicit start command or Dockerfile in the [app spec](/app-spec-reference).
 
 ### build_out_of_memory
 The build was killed for memory. Give the build node more memory, lower build parallelism, or build a smaller target.

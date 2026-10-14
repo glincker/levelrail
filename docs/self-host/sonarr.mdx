@@ -1,0 +1,49 @@
+---
+title: "Self-host Sonarr with Docker"
+sidebarTitle: "Sonarr"
+description: "Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them."
+---
+
+Watches your favorite indexers for new TV episodes and automatically grabs, sorts, and renames them.
+
+This page describes the Levelrail template for Sonarr (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://wiki.servarr.com/sonarr.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `sonarr` | `lscr.io/linuxserver/sonarr:4.0.12` | 8989 | `sonarr_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `sonarr` | `PGID` | Preset in the template |
+| `sonarr` | `PUID` | Preset in the template |
+| `sonarr` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Sonarr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Sonarr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy sonarr --name my-sonarr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

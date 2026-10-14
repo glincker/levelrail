@@ -1,0 +1,57 @@
+---
+title: "Self-host Joplin Server with Docker"
+sidebarTitle: "Joplin Server"
+description: "A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds."
+---
+
+A self-hosted sync server for the Joplin note-taking app, keeping notes off third-party clouds.
+
+This page describes the Levelrail template for Joplin Server (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/laurent22/joplin/blob/dev/packages/server/README.md.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `joplin` | `joplin/server:latest` | 22300 | none |
+| `postgres` | `postgres:16` | none | `joplin_postgres_data -&#62; /var/lib/postgresql/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `joplin` | `APP_BASE_URL` | Preset in the template |
+| `joplin` | `DB_CLIENT` | Preset in the template |
+| `joplin` | `POSTGRES_DATABASE` | Preset in the template |
+| `joplin` | `POSTGRES_HOST` | Preset in the template |
+| `joplin` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `joplin` | `POSTGRES_PORT` | Preset in the template |
+| `joplin` | `POSTGRES_USER` | Preset in the template |
+| `postgres` | `POSTGRES_DB` | Preset in the template |
+| `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `postgres` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Joplin Server with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Joplin Server. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy joplin --name my-joplin
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

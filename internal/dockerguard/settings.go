@@ -169,7 +169,7 @@ func (c *Controller) Status() Status {
 		st.Effective = c.server.Guard.Mode()
 		st.SinceBoot = c.server.Guard.Stats().Snapshot()
 	}
-	st.RestartRequired = (mode == ModeOff) == st.Running
+	st.RestartRequired = (mode == ModeOff) == st.Running && (c.server != nil || c.startErr == nil)
 	return st
 }
 

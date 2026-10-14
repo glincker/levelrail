@@ -31,7 +31,7 @@
     "contact": {
       "email": "support@levelrail.com",
       "name": "Levelrail",
-      "url": "https://levelrail.com"
+      "url": "https://docs.levelrail.com"
     },
     "description": "HTTP API of a self-hosted Levelrail control plane, generated from its route registrations. It lists every route with its method, path, path parameters and required token ability. Request and response bodies are not described yet, so they are left generic. Every instance also serves a route table at GET /api/v1/openapi.json.",
     "license": {
@@ -29923,10 +29923,62 @@
         "x-required-ability": "root"
       }
     },
+    "/api/v1/auth/session-links/consume": {
+      "post": {
+        "description": "No authentication required.",
+        "operationId": "handleConsumeSessionLink",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Consume Session Link",
+        "tags": [
+          "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
+        ]
+      }
+    },
     "/api/v1/auth/session-links/{token}/consume": {
       "get": {
         "description": "No authentication required.",
-        "operationId": "handleConsumeSessionLink",
+        "operationId": "handleConsumeSessionLinkGET",
         "parameters": [
           {
             "in": "path",
@@ -29968,7 +30020,7 @@
           }
         },
         "security": [],
-        "summary": "Consume Session Link",
+        "summary": "Consume Session Link GET",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ]

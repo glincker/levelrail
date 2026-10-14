@@ -151,7 +151,7 @@ func (rt *Router) handleIaCApply(w http.ResponseWriter, r *http.Request) {
 
 func (rt *Router) handleIaCExport(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	opts := iac.ExportOptions{Project: q.Get("project"), App: q.Get("app"), IncludeEnvValues: q.Get("include_env_values") != "false"}
+	opts := iac.ExportOptions{Project: q.Get("project"), App: q.Get("app"), IncludeEnvValues: q.Get("include_env_values") != "false" && rt.callerHasAbility(r, AbilityReadSensitive)}
 	out, err := iac.Export(r.Context(), rt.iacDoer(r), opts)
 	if err != nil {
 		var se *iac.StatusError

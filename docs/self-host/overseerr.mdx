@@ -1,0 +1,47 @@
+---
+title: "Self-host Overseerr with Docker"
+sidebarTitle: "Overseerr"
+description: "Lets your Plex users request new movies and TV shows straight from a shared web UI."
+---
+
+Lets your Plex users request new movies and TV shows straight from a shared web UI.
+
+This page describes the Levelrail template for Overseerr (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.overseerr.dev.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `overseerr` | `sctx/overseerr:1.34.0` | 5055 | `overseerr_config -&#62; /app/config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `overseerr` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Overseerr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Overseerr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy overseerr --name my-overseerr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

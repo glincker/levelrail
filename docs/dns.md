@@ -1,21 +1,17 @@
 ---
+title: "DNS zones and records"
 description: Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
 ---
 
-# DNS zones and records
-
-The **DNS** page (Infrastructure, DNS) manages whole zones at the DNS provider you already connected for certificates: Cloudflare or Amazon Route53. It covers creating a zone, moving a domain's name servers to it, importing what the domain serves today, editing records, and checking that the world sees your changes. The CLI has the same surface under `levelrail-cli dns`, and the API lives under `/api/v1/dns`.
+The **DNS** page (Infrastructure, DNS) manages whole zones (a zone is all the DNS records for one domain) at the DNS provider you already connected for certificates: Cloudflare or Amazon Route53. From here you can create a zone, move a domain's name servers to it, import what the domain serves today, edit records, and check that the world sees your changes. The CLI has the same surface under `levelrail-cli dns`, and the API lives under `/api/v1/dns`.
 
 Nothing here is a DNS server of its own. Zones and records live at the provider; the control plane calls its API with the credentials stored under Domains, DNS provider.
-
-<InlineToc default-open />
-
 ## Connect a provider
 
-Zone management reuses the DNS-01 credentials from [Domains and ingress](domains-and-ingress.md#wildcard-domains-dns-01-providers). Zone level work needs a little more access than DNS-01 alone.
+Zone management reuses the DNS-01 credentials from [Domains and ingress](/domains-and-ingress#wildcard-domains-dns-01-providers). Zone level work needs a little more access than DNS-01 alone.
 
-<Tabs :items="['Cloudflare', 'Route53']">
-<Tab value="Cloudflare">
+<Tabs>
+<Tab title="Cloudflare">
 
 Create an API token (never the global API key) with:
 
@@ -32,7 +28,7 @@ levelrail-cli domains cloudflare-dns set --cf-api-token <token>
 A new zone is created in the account the token's existing zones belong to. When the token sees several accounts, pass `--account-id` to `dns zones create`.
 
 </Tab>
-<Tab value="Route53">
+<Tab title="Route53">
 
 Attach an IAM policy with these actions to the access key:
 
@@ -98,7 +94,7 @@ A resolver that returns a subset of the assigned servers counts as a match: a re
 
 ## Records
 
-The zone page lists record sets: all values of one name and type together. Search matches names, values and set identifiers; the type filter narrows to one type. Lists longer than 50 sets are virtualized.
+The zone page lists record sets: all values of one name and type together. Search matches names, values and set identifiers. The type filter narrows results to one type. Lists longer than 50 sets are virtualized.
 
 Supported types are A, AAAA, CNAME, TXT, MX, CAA, SRV and NS (for delegating a subdomain; apex NS and SOA are provider managed and read only). Each type has its own fields in the record dialog, and every value is checked twice: in the browser for instant feedback and on the server, which parses each value with `miekg/dns` before anything reaches the provider.
 
@@ -139,7 +135,7 @@ levelrail-cli dns records add example.com --name app --type A --value 198.51.100
   --routing failover --set-id standby --failover SECONDARY
 ```
 
-A name cannot mix simple and routed sets of the same type. Cloudflare has no equivalent in plain DNS (its load balancing is a separate paid product), so routing policies are refused there with a clear error.
+A name cannot mix simple and routed sets of the same type. Cloudflare has no equivalent in plain DNS (its [load balancing](/load-balancing) is a separate paid product), so routing policies are refused there with a clear error.
 
 ### Import and export
 
@@ -198,7 +194,7 @@ An app can serve every name under a domain: add `*.example.com` (or `*.apps.exam
 - When the provider manages the domain's zone, a `*` A record pointing at this server is created for you. An existing `*` record is never overwritten.
 - The domain check resolves a random name under the wildcard, so it tests the wildcard record rather than a cached exact name. The Domains table marks these domains **Wildcard**.
 
-Per environment and preview environment wildcards are not part of this yet.
+Per environment and [preview environment](/previews) wildcards are not part of this yet.
 
 ## Permissions and audit
 

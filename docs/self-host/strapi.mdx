@@ -1,0 +1,60 @@
+---
+title: "Self-host Strapi with Docker"
+sidebarTitle: "Strapi"
+description: "An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API."
+---
+
+An open-source headless CMS with a customizable admin panel and a REST/GraphQL content API.
+
+This page describes the Levelrail template for Strapi (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.strapi.io/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `strapi_db_data -&#62; /var/lib/postgresql/data` |
+| `strapi` | `elestio/strapi-production:v5.33.4` | 1337 | `strapi_uploads -&#62; /opt/app/public/uploads` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `strapi` | `ADMIN_JWT_SECRET` | Generated at deploy |
+| `strapi` | `APP_KEYS` | Generated at deploy |
+| `strapi` | `DATABASE_CLIENT` | Preset in the template |
+| `strapi` | `DATABASE_HOST` | Preset in the template |
+| `strapi` | `DATABASE_NAME` | Preset in the template |
+| `strapi` | `DATABASE_PASSWORD` | Generated at deploy |
+| `strapi` | `DATABASE_PORT` | Preset in the template |
+| `strapi` | `DATABASE_USERNAME` | Preset in the template |
+| `strapi` | `JWT_SECRET` | Generated at deploy |
+| `strapi` | `NODE_ENV` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Strapi with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Strapi. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy strapi --name my-strapi
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

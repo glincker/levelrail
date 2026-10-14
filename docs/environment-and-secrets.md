@@ -1,8 +1,9 @@
 ---
-description: How app environment variables and secrets are masked on every read surface, how a confirmed reveal works, the reveal policies, and what this protects against.
+title: "Environment variables and secrets"
+icon: "/assets/icons/key.svg"
+sidebarTitle: "Set variables and secrets"
+description: Masking, reveal policies, and protection for app environment variables and secrets.
 ---
-
-# Environment variables and secrets
 
 An app's Environment tab is one editor for every variable the app reads at start: plain values, encrypted secrets, and Vault references. Values that look like credentials are masked everywhere they are read, and reading one back needs a fresh confirmation that is written to the audit log.
 
@@ -19,7 +20,7 @@ The control plane classifies every plain variable when it is read, not when it i
 
 You can override the automatic choice per variable from the row menu: **Mark as sensitive**, **Show value to readers**, or **Use automatic detection**. Marking a value sensitive takes effect at once. Making a sensitive value visible again is treated like a reveal, so it asks you to confirm it's you.
 
-Secrets (saved with **Type: Secret**) are always sensitive. Their values are envelope encrypted at rest (see [Security overview](security.md)).
+Secrets (saved with **Type: Secret**) are always sensitive. Their values are envelope encrypted at rest (see [Security overview](/security)).
 
 ## What is masked
 
@@ -97,7 +98,7 @@ levelrail-cli apps env export web                      # sensitive keys written 
 | `disabled` | values are write-only forever; the dashboard explains why |
 | `allow` | no step-up for holders of `read:sensitive`; for single admin labs only |
 
-An unknown value turns reveal off and the doctor reports it. `allow` raises a warning in `levelrail-cli doctor` (`secret_reveal_policy`) and a high severity row in the [Security center](security-center.md) (`secret_reveal_allow`).
+An unknown value turns reveal off and the doctor reports it. `allow` raises a warning in `levelrail-cli doctor` (`secret_reveal_policy`) and a high severity row in the [Security center](/security-center) (`secret_reveal_allow`).
 
 An app owner can also make one app's secrets write-only from **Protection** on the Environment tab (`PUT /api/v1/apps/{name}/env/settings` with `{"secrets_write_only": true}`). That blocks every reveal and full export for the app. Turning it back off needs a step-up.
 

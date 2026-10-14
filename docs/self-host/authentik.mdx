@@ -1,0 +1,63 @@
+---
+title: "Self-host authentik with Docker"
+sidebarTitle: "authentik"
+description: "An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth."
+---
+
+An identity provider and SSO platform with flows, policies, and support for OIDC, SAML, LDAP, and proxy auth.
+
+This page describes the Levelrail template for authentik (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.goauthentik.io.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `authentik` | `ghcr.io/goauthentik/server:2026.8.3` | 9000 | `authentik_media -&#62; /media` |
+| `db` | `postgres:16-alpine` | none | `authentik_db_data -&#62; /var/lib/postgresql/data` |
+| `worker` | `ghcr.io/goauthentik/server:2026.8.3` | none | `authentik_media -&#62; /media` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `authentik` | `AUTHENTIK_BOOTSTRAP_EMAIL` | Preset in the template |
+| `authentik` | `AUTHENTIK_BOOTSTRAP_PASSWORD` | Generated at deploy |
+| `authentik` | `AUTHENTIK_POSTGRESQL__HOST` | Preset in the template |
+| `authentik` | `AUTHENTIK_POSTGRESQL__NAME` | Preset in the template |
+| `authentik` | `AUTHENTIK_POSTGRESQL__PASSWORD` | Generated at deploy |
+| `authentik` | `AUTHENTIK_POSTGRESQL__USER` | Preset in the template |
+| `authentik` | `AUTHENTIK_SECRET_KEY` | Generated at deploy |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `worker` | `AUTHENTIK_POSTGRESQL__HOST` | Preset in the template |
+| `worker` | `AUTHENTIK_POSTGRESQL__NAME` | Preset in the template |
+| `worker` | `AUTHENTIK_POSTGRESQL__PASSWORD` | Generated at deploy |
+| `worker` | `AUTHENTIK_POSTGRESQL__USER` | Preset in the template |
+| `worker` | `AUTHENTIK_SECRET_KEY` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy authentik with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select authentik. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy authentik --name my-authentik
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+- [Keycloak](/self-host/keycloak)
+
+All templates are listed in the [self-host gallery](/self-host).

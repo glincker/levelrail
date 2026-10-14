@@ -1,12 +1,9 @@
 ---
+title: "Data export"
 description: Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
 ---
 
-# Data export
-
 Metrics, logs and the audit log stay on the control plane and its nodes by default. Data export sends copies to the tools you already run: Grafana and Prometheus, Loki, a syslog server, a SIEM webhook, an S3 compatible bucket, or an OpenTelemetry collector. Nothing is exported until you add a destination, and a destination that is down never slows a container, a deploy or the API.
-
-<InlineToc default-open />
 
 ## What you can export
 
@@ -62,7 +59,7 @@ The prefix is the lowercase brand short name followed by an underscore, `levelra
    docker run -d --name grafana --network obs -p 3000:3000 grafana/grafana:11.3.0
    ```
 
-2. Loki on the same host or a private network is an internal address, which export refuses by default. On the control plane set `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true` and restart (see [Environment variables](environment-variables.md#data-export)). A public HTTPS Loki needs nothing.
+2. Loki on the same host or a private network is an internal address, which export refuses by default. On the control plane set `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true` and restart (see [Environment variables](/environment-variables#data-export)). A public HTTPS Loki needs nothing.
 3. Add the destination:
 
    ```bash
@@ -81,9 +78,9 @@ Loki streams carry the labels `job`, `app`, `kind` (`app` or `database`), `strea
 
 Filters apply per destination: `--app` (repeatable, empty means every app) and `--min-level` (`debug`, `info`, `warn`, `error`). Database containers are exported only by destinations with no `--app` filter.
 
-- **HTTP JSON lines.** One JSON object per line: `time`, `kind`, `app`, `stream`, `level`, `message` and `fields` for structured lines. `Content-Type: application/x-ndjson`.
-- **Loki.** An endpoint with no path gets `/loki/api/v1/push` appended.
-- **Syslog.** `tcp://host:port` or `tls://host:port`, RFC 5424 with octet counting framing, facility `local0`. TLS verifies the server certificate against the system roots.
+- HTTP JSON lines: one JSON object per line: `time`, `kind`, `app`, `stream`, `level`, `message` and `fields` for structured lines. `Content-Type: application/x-ndjson`.
+- Loki: an endpoint with no path gets `/loki/api/v1/push` appended.
+- Syslog: `tcp://host:port` or `tls://host:port`, RFC 5424 with octet counting framing, facility `local0`. TLS verifies the server certificate against the system roots.
 
 Log export reuses the log stream the live tail already reads: it adds a subscriber, never a second Docker reader.
 
@@ -107,7 +104,7 @@ def verify(key: bytes, header: str, body: bytes, tolerance=300) -> bool:
     return hmac.compare_digest(expected, parts["v1"]) and abs(time.time() - int(parts["t"])) <= tolerance
 ```
 
-`audit_s3` writes each batch to `<prefix>/<yyyy>/<mm>/<dd>/<first-created-at>-<first-id>.ndjson` in a [storage destination](object-storage.md). The key is derived from the batch's first row, so a retried batch overwrites itself.
+`audit_s3` writes each batch to `<prefix>/<yyyy>/<mm>/<dd>/<first-created-at>-<first-id>.ndjson` in a [storage destination](/object-storage). The key is derived from the batch's first row, so a retried batch overwrites itself.
 
 Tokens, bearer values, URL credentials and token-shaped strings are masked in every exported field. By default streaming starts at the moment the destination is created. `--backfill` starts at the oldest audit row instead.
 
@@ -136,13 +133,13 @@ levelrail-cli export destinations create --name otel --kind metrics_otlp \
 
 ## Reliability and safety
 
-- **Opt-in and bounded.** Every destination has an in-memory queue of `APP_EXPORT_QUEUE_LINES` entries. When it fills, the oldest entries are dropped and counted. There is no disk buffer, so a control plane restart loses queued log lines but not audit rows.
-- **Never in the hot path.** Container log lines are handed to exporters through a non-blocking subscription. A slow destination cannot slow a container, the log store, a deploy or the API.
-- **Retry with backoff.** A batch is retried with exponential backoff and jitter up to `APP_EXPORT_MAX_ATTEMPTS` times. Responses in the 4xx range other than 408 and 429 are not retried, because retrying cannot fix them.
-- **Circuit breaker.** After `APP_EXPORT_BREAKER_FAILURES` consecutive failed batches a destination backs off for `APP_EXPORT_BREAKER_COOLDOWN`, then tries one batch.
-- **SSRF guard.** Endpoints are validated when saved and again at every connection, including redirects: private, loopback and link-local addresses are refused unless `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true`. Endpoints cannot embed credentials.
-- **Write-only secrets.** Headers and signing keys are stored with envelope encryption and are never returned. The API shows header names and whether a key is set.
-- **Visible health.** Each destination shows its last success, last error, queue depth, dropped and failed counts, and breaker state, in the dashboard, with `levelrail-cli export destinations status <id>`, and as `export_*` metrics.
+- Every destination has an in-memory queue of `APP_EXPORT_QUEUE_LINES` entries. When it fills, the oldest entries are dropped and counted. There is no disk buffer, so a control plane restart loses queued log lines but not audit rows.
+- Container log lines are handed to exporters through a non-blocking subscription. A slow destination cannot slow a container, the log store, a deploy or the API.
+- A batch is retried with exponential backoff and jitter up to `APP_EXPORT_MAX_ATTEMPTS` times. Responses in the 4xx range other than 408 and 429 are not retried, because retrying cannot fix them.
+- After `APP_EXPORT_BREAKER_FAILURES` consecutive failed batches a destination backs off for `APP_EXPORT_BREAKER_COOLDOWN`, then tries one batch.
+- Endpoints are validated when saved and again at every connection, including redirects: private, loopback and link-local addresses are refused unless `APP_EXPORT_ALLOW_PRIVATE_NETWORKS=true`. Endpoints cannot embed credentials.
+- Headers and signing keys are stored with envelope encryption and are never returned. The API shows header names and whether a key is set.
+- Each destination shows its last success, last error, queue depth, dropped and failed counts, and breaker state, in the dashboard, with `levelrail-cli export destinations status <id>`, and as `export_*` metrics.
 
 ## CLI
 
@@ -158,8 +155,17 @@ levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
 
 `--header` and `--hmac-key` values end up in your shell history. Prefer a script that reads them from a secret store.
 
-## Related
+## Next steps
 
-- [Observability](observability.md) for node-local metrics and the remote read endpoint
-- [Log archive](log-archive.md) for scheduled, compressed log archives in a bucket
-- [Environment variables](environment-variables.md#data-export) for every `APP_EXPORT_*` setting
+<CardGroup cols={2}>
+<Card title="Observability" href="/observability">
+
+Node-local metrics and the remote read endpoint.
+
+</Card>
+<Card title="Log archive" href="/log-archive">
+
+Scheduled, compressed log archives in a bucket.
+
+</Card>
+</CardGroup>

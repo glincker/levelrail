@@ -1,20 +1,19 @@
 ---
+title: "Cost estimate"
 description: How Levelrail's "what this would cost elsewhere" app cost estimate is calculated, its assumptions, and the env vars that let you correct the reference rates for your own region.
 ---
 
-# Cost estimate
+An app's **Resources** tab shows what it might cost per month under three reference pricing profiles. Look for **What this would cost elsewhere**, folded at the bottom of the Optimise panel.
 
-An app's **Resources** tab shows an estimated monthly cost under three illustrative reference pricing profiles, folded under **What this would cost elsewhere** at the bottom of the Optimise panel.
-
-<Tabs :items="['CLI', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps cost NAME
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -H "Authorization: Bearer $TOKEN" https://levelrail.example.com/api/v1/apps/NAME/cost-estimate
@@ -25,7 +24,7 @@ curl -H "Authorization: Bearer $TOKEN" https://levelrail.example.com/api/v1/apps
 
 ![Levelrail Resources tab with a resource suggestion and a what-this-would-cost-elsewhere estimate](assets/screenshots/app-resources.png)
 
-**This is an estimate, not a real bill.** It never calls a live pricing API and does not reflect what your own hardware costs. It shows roughly what the same CPU and memory would cost under typical metered cloud pricing, so you can compare.
+**This is an estimate, not a real bill.** It never calls a live pricing API and does not reflect what your own hardware costs. It shows roughly what the same CPU and memory would cost under typical metered cloud pricing, so you have something to compare against.
 
 ## What it is based on
 
@@ -33,7 +32,7 @@ CPU and memory are resolved independently, in this order:
 
 1. **Declared:** the app has a memory or CPU limit in its `resources:` block (or set through the API or CLI).
 2. **Observed:** no limit, but enough usage telemetry exists. The estimate uses the p95 of CPU and memory over the last 7 days, the same window the resource recommendation feature uses.
-3. **Unavailable:** neither exists yet. The response still comes back, priced at each provider's minimum, and the basis fields say there is nothing real behind the number.
+3. **Unavailable:** neither exists yet. You still get a response, priced at each provider's minimum, and the basis fields say there is nothing real behind the number.
 
 ## The formula
 
@@ -45,11 +44,11 @@ memory_cost = memory_gib * memory_per_gib_usd
 total       = max(cpu_cost + memory_cost, minimum_usd)
 ```
 
-There are no tiered discounts, sustained-use pricing, egress or storage costs.
+The formula has no tiered discounts, sustained-use pricing, egress or storage costs.
 
 ## Reference providers
 
-Three profiles ship by default (defined in `internal/costestimate/costestimate.go`). They are round numbers, not any real provider's rate card.
+Three profiles ship by default (defined in `internal/costestimate/costestimate.go`). The numbers are round, not any real provider's rate card.
 
 | Key | Represents | $/vCPU-core/mo | $/GiB/mo | Minimum/mo |
 | --- | --- | --- | --- | --- |

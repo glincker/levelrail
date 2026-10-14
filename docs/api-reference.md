@@ -1,8 +1,7 @@
 ---
+title: "REST API Reference"
 description: Complete HTTP API reference for the control plane, organized by resource group.
 ---
-
-# REST API Reference
 
 Route inventory for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.
 
@@ -85,7 +84,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+<Accordion title="123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration">
 
 Endpoints for:
 - Authentication and session management
@@ -149,7 +148,7 @@ Endpoints for:
 | GET | /api/v1/settings/observability | AbilityRead | handleGetObservabilitySettings |
 | PUT | /api/v1/settings/observability | AbilityRoot | handleUpdateObservabilitySettings |
 | POST | /api/v1/auth/session-links | AbilityRoot | handleMintSessionLink |
-| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLink |
+| GET | /api/v1/auth/session-links/{token}/consume | Public | handleConsumeSessionLinkGET |
 | GET | /api/v1/auth/whoami | Public | handleWhoami |
 | POST | /api/v1/roles | AbilityRoot | handleCreateRole |
 | PUT | /api/v1/roles/{id} | AbilityRoot | handleUpdateRole |
@@ -207,6 +206,7 @@ Endpoints for:
 | POST | /api/v1/auth/step-up/passkey/finish | Public | handleStepUpPasskeyFinish |
 | GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
 | PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
+| POST | /api/v1/auth/session-links/consume | Public | handleConsumeSessionLink |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -221,11 +221,11 @@ Endpoints for:
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
 
-:::
+</Accordion>
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 172 endpoints for app management, deployment, lifecycle control, and diagnostics
+<Accordion title="171 endpoints for app management, deployment, lifecycle control, and diagnostics">
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -410,9 +410,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
 | GET | /api/v1/apps/{name}/secret-rotation | AbilityRead | handleListSecretRotation |
 
-:::
+</Accordion>
 
-`PUT /api/v1/apps/{name}/health` replaces only the app's health config (the body is a `ServiceHealth`: `readiness`, `liveness`, `ready_timeout`), leaving every other field alone; an empty body clears it. Probe fields and validation match [the app spec](app-spec-reference.md#probe), with durations in nanoseconds.
+`PUT /api/v1/apps/{name}/health` replaces only the app's health config (the body is a `ServiceHealth`: `readiness`, `liveness`, `ready_timeout`), leaving every other field alone; an empty body clears it. Probe fields and validation match [the app spec](/app-spec-reference#probe), with durations in nanoseconds.
 
 ## Secrets / Git Source / Webhooks / Preview Environments
 
@@ -420,7 +420,7 @@ Endpoints for:
 - Encrypted secrets management and locking
 - Git repository connections and configuration
 - Webhook delivery history and replay
-- Preview environment configuration and lifecycle
+- [Preview environment](/previews) configuration and lifecycle
 
 | Method | Path | Ability | Handler |
 | --- | --- | --- | --- |
@@ -474,7 +474,7 @@ Endpoints for:
 Endpoints for:
 - Alert rule creation and management
 - Scheduled task configuration and execution
-- Feature flag configuration and evaluation
+- [Feature flag](/feature-flags) configuration and evaluation
 - Notification channel management and delivery tracking
 
 | Method | Path | Ability | Handler |
@@ -671,7 +671,7 @@ Endpoints for:
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
-::: details 91 endpoints for TLS, domains, ingress control, and DNS/Vault integrations
+<Accordion title="91 endpoints for TLS, domains, ingress control, and DNS/Vault integrations">
 
 Endpoints for:
 - TLS certificate lifecycle and management
@@ -776,7 +776,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/domains/{domain}/auth-gate/events | AbilityReadSensitive | handleListAuthGateEvents |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions | AbilityRoot | handleRevokeAuthGateSessions |
 
-:::
+</Accordion>
 
 ## Static Sites / Backup Targets / Registry Credentials
 
@@ -936,7 +936,7 @@ Endpoints for:
 ## App Storage / Database Attach
 
 Endpoints for:
-- Object storage bucket attachment and configuration
+- [Object storage](/object-storage) bucket attachment and configuration
 - Database connectivity for applications
 
 | Method | Path | Ability | Handler |
@@ -1280,7 +1280,7 @@ Routes that do not fit an existing group.
 
 ## See also
 
-- [Feature Catalog](./feature-catalog.md) - high-level overview of platform capabilities
-- [Observability](./observability.md) - metrics, logs, alerts, and telemetry APIs
-- [Architecture](./architecture.md) - control plane design and reconciliation patterns
-- [CLI Reference](cli-reference.md) - command-line tool for all API operations
+- [Feature Catalog](/feature-catalog) - high-level overview of platform capabilities
+- [Observability](/observability) - metrics, logs, alerts, and telemetry APIs
+- [Architecture](/architecture) - control plane design and reconciliation patterns
+- [CLI Reference](/cli-reference) - command-line tool for all API operations

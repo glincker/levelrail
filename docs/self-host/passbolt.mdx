@@ -1,0 +1,57 @@
+---
+title: "Self-host Passbolt with Docker"
+sidebarTitle: "Passbolt"
+description: "An open-source password manager built for teams, compatible with the usual browser extensions."
+---
+
+An open-source password manager built for teams, compatible with the usual browser extensions.
+
+This page describes the Levelrail template for Passbolt (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.passbolt.com/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11` | none | `passbolt_db_data -&#62; /var/lib/mysql` |
+| `passbolt` | `passbolt/passbolt:5.16.0-1-ce` | 80 | `passbolt_gpg -&#62; /etc/passbolt/gpg`<br />`passbolt_jwt -&#62; /etc/passbolt/jwt` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MARIADB_DATABASE` | Preset in the template |
+| `db` | `MARIADB_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_USER` | Preset in the template |
+| `passbolt` | `APP_FULL_BASE_URL` | Preset in the template |
+| `passbolt` | `DATASOURCES_DEFAULT_DATABASE` | Preset in the template |
+| `passbolt` | `DATASOURCES_DEFAULT_HOST` | Preset in the template |
+| `passbolt` | `DATASOURCES_DEFAULT_PASSWORD` | Generated at deploy |
+| `passbolt` | `DATASOURCES_DEFAULT_USERNAME` | Preset in the template |
+| `passbolt` | `PASSBOLT_SSL_FORCE` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Passbolt with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Passbolt. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy passbolt --name my-passbolt
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+
+All templates are listed in the [self-host gallery](/self-host).

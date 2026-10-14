@@ -1,17 +1,16 @@
 ---
-description: Connect an app to one or more managed databases, read the same-node, cross-node and mesh-disabled reachability badges, and see how connections differ from the older single-attachment flow.
+title: "Connecting apps to databases"
+description: Connect apps to multiple databases and view reachability badges.
 ---
 
-# Connecting apps to databases
-
-An app can attach to exactly one database with the older `PUT /api/v1/apps/{name}/database` flow (see [Managing databases](managing-databases.md#attach-a-database-to-an-app)). Connections are the newer, more general mechanism: an app can connect to as many databases as it needs, each one landing in its own env var.
+An app can attach to exactly one database with the older `PUT /api/v1/apps/{name}/database` flow (see [Managing databases](/managing-databases#attach-a-database-to-an-app)). Connections are the newer, more general mechanism: an app can connect to as many databases as it needs, each one landing in its own env var.
 
 Both mechanisms coexist and write to different fields on the same app record, so an app can have one legacy attachment and several connections at the same time. Use connections for new work, since they are not capped at one database.
 
 ## Connect a database
 
-<Tabs :items="['CLI', 'Dashboard']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps connect your-app main-db
@@ -19,7 +18,7 @@ levelrail-cli apps connect your-app cache --field host --env-var CACHE_HOST
 ```
 
 </Tab>
-<Tab value="Dashboard">
+<Tab title="Dashboard">
 
 Open the app's detail page, find the **Connections** card, and choose **Connect a database**.
 
@@ -58,7 +57,7 @@ Disconnecting is idempotent: removing an env var that is not connected is not an
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Managing databases" href="/managing-databases">
 
 Create, back up, and restore the databases you connect to.

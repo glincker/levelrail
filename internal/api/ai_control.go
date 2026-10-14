@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -113,10 +112,4 @@ func (rt *Router) handleRevokeAgentTokens(w http.ResponseWriter, r *http.Request
 		return
 	}
 	writeJSON(w, http.StatusOK, revokeAgentTokensResponse{Revoked: n})
-}
-
-// MintAIAssistantToken mints the root token the in-app assistant calls the API with, labeled so the AI control gate and the audit log treat it as an agent.
-func MintAIAssistantToken(ctx context.Context, tokens TokenStore) (string, error) {
-	plaintext, _, err := MintAgentAPIToken(ctx, tokens, AIAssistantTokenName, []string{AbilityRoot}, nil, agentIdentity{Name: AIAssistantAgentName}, "")
-	return plaintext, err
 }

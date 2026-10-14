@@ -3,9 +3,7 @@ title: Working with AI agents
 description: Connect an AI coding agent to your instance, scope its token, and give it the instructions it needs to deploy safely.
 ---
 
-# Working with AI agents
-
-An agent talks to the platform the same way you do: through the CLI (`levelrail-cli`) or the MCP server (`levelrail-mcp`). Everything an agent does goes through the normal API with the token you give it, so its access is exactly that token's abilities, and every change lands in the audit log under the agent's name.
+An agent talks to the platform the way you do: through the CLI (`levelrail-cli`) or the MCP server (`levelrail-mcp`). Everything it does goes through the normal API with the token you give it, so its access is exactly that token's abilities, and every change lands in the audit log under the agent's name.
 
 ## Set up a project with `init`
 
@@ -36,7 +34,7 @@ Flags:
 
 ## Install the skill
 
-The repository ships an agent skill that covers the deploy, wait, diagnose and roll back loop, so an agent follows the safe path without you pasting instructions:
+The repository ships an agent skill that covers the deploy, wait, diagnose and roll back loop, so an agent follows the safe path without you pasting in instructions:
 
 ```bash
 npx skills add glincker/levelrail
@@ -55,7 +53,7 @@ The MCP server exposes a subset of its tools depending on the mode. Token counts
 | `standard` | 146 | about 61,200 | Read and mutating tools, no destructive ones. |
 | `full` | 156 | about 66,700 | Every tool, including destructive ones. |
 
-See [Agent tooling audit](agent-tooling-audit.md) for how the numbers are measured.
+See [Agent tooling audit](/agent-tooling-audit) for how the numbers are measured.
 
 ## Tokens
 
@@ -88,11 +86,11 @@ The app Logs page (Search tab) shows a chip per level (error, warn, info, debug)
 
 ## Wait for a deploy
 
-Agents should never assume a deploy worked. `wait_for_deploy` (MCP) or `levelrail-cli apps wait NAME` blocks until the deploy converges and reports success or the structured failure. On failure, read it with `levelrail-cli apps deploys show NAME DEPLOY_ID`, fix one thing, and retry. Roll back first if production is down.
+An agent should never assume a deploy worked. `wait_for_deploy` (MCP) or `levelrail-cli apps wait NAME` blocks until the deploy converges and reports success or the structured failure. On failure, read it with `levelrail-cli apps deploys show NAME DEPLOY_ID`, fix one thing, and retry. Roll back first if production is down.
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="AI assistant integration" href="/ai-assistant">
 
 Run `levelrail-mcp` over stdio or HTTP and scope its token.

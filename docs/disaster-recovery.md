@@ -1,8 +1,7 @@
 ---
+title: "Disaster recovery"
 description: Encrypted off-box backups of the control plane database, master key escrow, offline restore and scheduled restore drills, with the threat model.
 ---
-
-# Disaster recovery
 
 If the machine running the control plane dies, your apps keep running but you lose the thing that manages them: apps, domains, users, tokens, deploy history and every stored secret. Local [snapshots](/control-plane-backup) sit on the same disk, so they do not help. This page covers the off-box path: encrypted backups in an S3 compatible bucket, an escrow copy of the master key, a tested restore, and a drill that keeps proving it works.
 
@@ -181,7 +180,7 @@ The command checks, in order: the manifest, the ciphertext SHA-256 and size agai
 
 Every step above, and the failure cases (an interrupted restore, a tampered backup, a wrong key, a newer schema, a mismatched install), is exercised by a test that runs in CI against an in-memory S3 server and generated keys.
 
-::: details For contributors: which test covers which step
+<Accordion title="For contributors: which test covers which step">
 | Step | Command | Covered by |
 | --- | --- | --- |
 | Make a key pair | `control-plane-backups keys generate` | `TestCLI_ControlPlaneDR_KeysGenerateAndEscrowRoundTrip` |
@@ -194,7 +193,7 @@ Every step above, and the failure cases (an interrupted restore, a tampered back
 | Crash safety | interrupted restore | `TestRestore_CrashBetweenTempWriteAndRenameKeepsOldDatabase` |
 | Tampering and wrong key | bit flip, other identity | `TestRestore_TamperAndWrongIdentity`, `TestRestore_TamperWithMatchingManifestStillFailsDecrypt` |
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
-:::
+</Accordion>
 
 ## Runbook: the control plane machine is gone
 
@@ -272,7 +271,7 @@ Things this runbook cannot do, because they are not in the backup:
   from those backups (`backups restore-as-new`) after the control plane is up.
 - Without the escrow bundle or `APP_MASTER_KEY`, no stored secret can be read.
 - Without the agent CA files the restored control plane makes a new CA and every
-  node agent must be re-enrolled with a new join token.
+  node agent must be re-enrolled with a new [join token](/multi-node).
 
 ### Local snapshots
 
@@ -328,7 +327,7 @@ Restore is intentionally not an API call. The escrow endpoint returns the bundle
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Control plane backup" href="/control-plane-backup">
 
 Local snapshots, verification, and the offline restore commands.

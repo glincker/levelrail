@@ -1,0 +1,61 @@
+---
+title: "Self-host Documenso with Docker"
+sidebarTitle: "Documenso"
+description: "An open-source document signing platform, a self-hosted alternative to DocuSign."
+---
+
+An open-source document signing platform, a self-hosted alternative to DocuSign.
+
+This page describes the Levelrail template for Documenso (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.documenso.com/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `database` | `postgres:17` | none | `documenso_postgresql_data -&#62; /var/lib/postgresql/data` |
+| `documenso` | `documenso/documenso:v1.12.10` | 3000 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `database` | `POSTGRES_DB` | Preset in the template |
+| `database` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `database` | `POSTGRES_USER` | Preset in the template |
+| `documenso` | `CERT_VALID_DAYS` | Preset in the template |
+| `documenso` | `NEXTAUTH_SECRET` | Generated at deploy |
+| `documenso` | `NEXTAUTH_URL` | Preset in the template |
+| `documenso` | `NEXT_PRIVATE_DATABASE_URL` | Generated at deploy |
+| `documenso` | `NEXT_PRIVATE_DIRECT_DATABASE_URL` | Generated at deploy |
+| `documenso` | `NEXT_PRIVATE_ENCRYPTION_KEY` | Generated at deploy |
+| `documenso` | `NEXT_PRIVATE_ENCRYPTION_SECONDARY_KEY` | Generated at deploy |
+| `documenso` | `NEXT_PRIVATE_SIGNING_LOCAL_FILE_PASSPHRASE` | Generated at deploy |
+| `documenso` | `NEXT_PRIVATE_SIGNING_LOCAL_FILE_PATH` | Preset in the template |
+| `documenso` | `NEXT_PRIVATE_SIGNING_TRANSPORT` | Preset in the template |
+| `documenso` | `NEXT_PUBLIC_WEBAPP_URL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Documenso with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Documenso. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy documenso --name my-documenso
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

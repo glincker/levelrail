@@ -1,15 +1,18 @@
 ---
+title: "Connect an app to a managed Postgres database"
+icon: "/assets/icons/database.svg"
+sidebarTitle: "Add a database"
 description: Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
 ---
 
-# Connect an app to a managed Postgres database
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span></div>
 
 By the end of this tutorial you will have a Postgres database running next to your app, a connection string injected into the app as an environment variable, and a check that the app actually sees it. No password handling, no copy and paste of credentials.
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
-- An app to connect. This tutorial reuses the `hello` app from [Deploy a Docker app](deploy-a-docker-app.md). Any app works.
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
+- An app to connect. This tutorial reuses the `hello` app from [Deploy a Docker app](/tutorials/deploy-a-docker-app). Any app works.
 
 <Steps>
 <Step title="Create the database">
@@ -39,7 +42,7 @@ Ready  True    AlreadyRunning           2026-10-05T02:21:40Z
 
 The first start pulls the image, so allow a minute on a fresh server.
 
-![The Databases page listing a healthy Postgres 16 database](../assets/screenshots/databases-list.png)
+![The Databases page listing a healthy Postgres 16 database](/assets/screenshots/databases-list.png)
 
 </Step>
 <Step title="Connect the app">
@@ -97,7 +100,7 @@ If `apps exec` answers `app has no running container`, the new container is stil
 
 ## What the reachability badge means
 
-`apps connections list` and the dashboard's **Connections** card show whether the app and database are on the same node, on different nodes with the WireGuard mesh configured, or on different nodes with the mesh off. The last case does not connect. See [Connecting apps to databases](../connecting-apps-to-databases.md) for the full table.
+`apps connections list` and the dashboard's **Connections** card show whether the app and database are on the same node, on different nodes with the WireGuard mesh configured, or on different nodes with the mesh off. The last case does not connect. See [Connecting apps to databases](/connecting-apps-to-databases) for the full table.
 
 ## Clean up
 
@@ -110,6 +113,6 @@ Keep the database if you plan to follow the next tutorial.
 
 ## Where to go next
 
-- [Back up Postgres to S3 and test the restore](back-up-postgres-to-s3.md): protect the data you just connected.
-- [Managing databases](../managing-databases.md): resources, public access for a GUI client, and slow query tracking.
-- [Network topology](../network-topology.md): see every app-to-database connection drawn across your servers.
+- [Back up Postgres to S3 and test the restore](/tutorials/back-up-postgres-to-s3): protect the data you just connected.
+- [Managing databases](/managing-databases): resources, public access for a GUI client, and slow query tracking.
+- [Network topology](/network-topology): see every app-to-database connection drawn across your servers.

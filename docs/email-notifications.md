@@ -1,8 +1,7 @@
 ---
+title: "Email notifications"
 description: Configure SMTP, AWS SES, or Resend as the backend for alert emails and password resets, and send a test email to confirm it works.
 ---
-
-# Email notifications
 
 Levelrail sends email for alert notifications (when an alert rule with an email channel fires), password-reset links and team invites. All of them go through one backend, configured once at **Settings > Email**.
 
@@ -10,8 +9,8 @@ Credentials are stored with the control plane's envelope encryption, so a master
 
 ## Choose a backend
 
-<Tabs :items="['SMTP', 'AWS SES', 'Resend']">
-<Tab value="SMTP">
+<Tabs>
+<Tab title="SMTP">
 
 Works with any mail server or transactional provider that speaks SMTP (Gmail, Mailgun, Postmark, your own server). Needs a host, port, "from" address, and optionally a username and password.
 
@@ -25,7 +24,7 @@ levelrail-cli settings email set --backend smtp \
 You can also set `APP_SMTP_HOST`, `APP_SMTP_PORT`, `APP_SMTP_USERNAME`, `APP_SMTP_PASSWORD` and `APP_SMTP_FROM` on the control plane.
 
 </Tab>
-<Tab value="AWS SES">
+<Tab title="AWS SES">
 
 For installs already on AWS. Needs a region, access key ID, secret access key and a verified "from" address.
 
@@ -36,7 +35,7 @@ levelrail-cli settings email set --backend ses \
 ```
 
 </Tab>
-<Tab value="Resend">
+<Tab title="Resend">
 
 A dedicated transactional provider with a single API key. Needs the API key and a "from" address. Configure it in **Settings > Email** or through `PUT` on the email settings API; the CLI's `settings email set` covers SMTP and SES only.
 
@@ -51,4 +50,4 @@ After saving, use **Send test email** in **Settings > Email**. It sends one real
 
 ## Other notification channels
 
-Email is one channel among several. Slack, Discord, Telegram, PagerDuty and the rest are configured per channel at **Settings > Notification channels**. See [Observability](observability.md#notification-channels).
+Email is one channel among several. Slack, Discord, Telegram, PagerDuty and the rest are configured per channel at **Settings > Notification channels**. See [Observability](/observability#notification-channels).

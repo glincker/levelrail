@@ -1,0 +1,47 @@
+---
+title: "Self-host Homer with Docker"
+sidebarTitle: "Homer"
+description: "A dead simple static start page for your services, configured with a single YAML file."
+---
+
+A dead simple static start page for your services, configured with a single YAML file.
+
+This page describes the Levelrail template for Homer (Dashboard). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/bastienwirtz/homer/blob/main/docs/configuration.md.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `homer` | `b4bz/homer:v24.05.1` | 8080 | `homer_assets -&#62; /www/assets` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `homer` | `INIT_ASSETS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Homer with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Homer. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy homer --name my-homer
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Dashboard templates
+
+- [Dashy](/self-host/dashy)
+- [Flame](/self-host/flame)
+- [Glance](/self-host/glance)
+- [Heimdall](/self-host/heimdall)
+- [Homarr](/self-host/homarr)
+
+All templates are listed in the [self-host gallery](/self-host).

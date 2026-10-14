@@ -38,7 +38,9 @@ func mintSessionLink(t *testing.T, rt *Router, cookie *http.Cookie, bearerTok st
 
 func consumeSessionLinkRequest(t *testing.T, rt *Router, token string) *httptest.ResponseRecorder {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/session-links/"+token+"/consume", nil)
+	body, _ := json.Marshal(map[string]string{"token": token})
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/session-links/consume", strings.NewReader(string(body)))
+	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, req)
 	return rec
@@ -266,11 +268,22 @@ func TestConsumeSessionLink_NotGatedBehindAuth(t *testing.T) {
 	}
 }
 
-func TestHandleConsumeSessionLink_MissingToken404sOrBadRequest(t *testing.T) {
+func TestHandleConsumeSessionLink_MissingTokenIsBadRequest(t *testing.T) {
+	rt, _ := newTestRouter(t)
+	rec := consumeSessionLinkRequest(t, rt, "")
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("status = %d, want 400 for an empty token", rec.Code)
+	}
+}
+
+func TestConsumeSessionLink_GETIsMethodNotAllowed(t *testing.T) {
 	rt, _ := newTestRouter(t)
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/session-links//consume", nil))
-	if rec.Code == http.StatusOK {
-		t.Errorf("status = %d, want a failure for an empty token segment", rec.Code)
+	rt.Handler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/v1/auth/session-links/sometoken/consume", nil))
+	if rec.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want 405", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "POST") {
+		t.Errorf("body = %s, want a message pointing at POST", rec.Body.String())
 	}
 }

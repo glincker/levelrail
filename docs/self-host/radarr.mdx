@@ -1,0 +1,49 @@
+---
+title: "Self-host Radarr with Docker"
+sidebarTitle: "Radarr"
+description: "Watches your favorite indexers for movies and automatically grabs, sorts, and renames them."
+---
+
+Watches your favorite indexers for movies and automatically grabs, sorts, and renames them.
+
+This page describes the Levelrail template for Radarr (Media). It deploys the services below as one Docker Compose app on your own server. Project site: https://wiki.servarr.com/radarr.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `radarr` | `lscr.io/linuxserver/radarr:6.4.4` | 7878 | `radarr_config -&#62; /config` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `radarr` | `PGID` | Preset in the template |
+| `radarr` | `PUID` | Preset in the template |
+| `radarr` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Radarr with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Radarr. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy radarr --name my-radarr
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Media templates
+
+- [Audiobookshelf](/self-host/audiobookshelf)
+- [Bazarr](/self-host/bazarr)
+- [Calibre-Web](/self-host/calibre-web)
+- [Castopod](/self-host/castopod)
+- [Emby](/self-host/emby)
+
+All templates are listed in the [self-host gallery](/self-host).

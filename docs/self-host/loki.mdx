@@ -1,0 +1,45 @@
+---
+title: "Self-host Grafana Loki with Docker"
+sidebarTitle: "Grafana Loki"
+description: "A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap."
+---
+
+A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap.
+
+This page describes the Levelrail template for Grafana Loki (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://grafana.com/docs/loki/latest.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `loki` | `grafana/loki:3.7.8` | 3100 | `loki_data -&#62; /loki` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Grafana Loki with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Grafana Loki. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy loki --name my-loki
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Changedetection.io](/self-host/changedetection)
+- [Checkmate](/self-host/checkmate)
+- [Diun](/self-host/diun)
+
+All templates are listed in the [self-host gallery](/self-host).

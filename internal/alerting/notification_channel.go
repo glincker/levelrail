@@ -62,7 +62,16 @@ func NewNotificationChannelID() (string, error) {
 
 // SaveNotificationChannel creates or fully replaces a channel's
 // configuration, the same upsert shape SaveDeployTarget already uses.
+// With channel secrets configured, credentials are sealed and only their
+// masked form is written; a masked value passed back keeps the sealed one.
 func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel) error {
+	if cs := db.secretsOrNil(); cs != nil {
+		urlCol, secretCol, err := db.sealChannel(ctx, cs, c)
+		if err != nil {
+			return err
+		}
+		c.NotifyURL, c.InteractiveSecret = urlCol, secretCol
+	}
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO notification_channels (
@@ -140,6 +149,11 @@ func (db *DB) DeleteNotificationChannel(ctx context.Context, id string) error {
 	if n == 0 {
 		return ErrNotificationChannelNotFound
 	}
+	if cs := db.secretsOrNil(); cs != nil {
+		if err := cs.DeleteAll(ctx, NotificationChannelSecretsKey(id)); err != nil {
+			return fmt.Errorf("alerting: delete sealed secrets for channel %q: %w", id, err)
+		}
+	}
 	return nil
 }
 
@@ -176,6 +190,9 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 }
 
 func sendTextNotification(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, kind NotifyKind, notifyURL, testText string) error {
+	if IsMaskedNotifyTarget(notifyURL) {
+		return ErrChannelSecretNotRevealed
+	}
 	if client == nil {
 		client = netguard.NewClient()
 	}
@@ -277,8 +294,22 @@ func (d *DeployDispatcher) SendTest(ctx context.Context, kind NotifyKind, notify
 	return sendTestNotification(ctx, d.client, d.sender, d.pushSender, kind, notifyURL)
 }
 
-// SendNotice sends a plain-text notice through kind/notifyURL, using the
-// same per-kind payload logic and SSRF-guarded client as SendTest.
-func (d *DeployDispatcher) SendNotice(ctx context.Context, kind NotifyKind, notifyURL, text string) error {
-	return sendTextNotification(ctx, d.client, d.sender, d.pushSender, kind, notifyURL, text)
+// SendChannelTest fires a test notification through a saved channel,
+// decrypting its credential only for this send.
+func (d *DeployDispatcher) SendChannelTest(ctx context.Context, c NotificationChannel) error {
+	revealed, err := d.db.RevealNotificationChannel(ctx, c)
+	if err != nil {
+		return err
+	}
+	return sendTestNotification(ctx, d.client, d.sender, d.pushSender, revealed.Kind, revealed.NotifyURL)
+}
+
+// SendNotice sends a plain-text notice through channel c, using the same
+// per-kind payload logic and SSRF-guarded client as SendTest.
+func (d *DeployDispatcher) SendNotice(ctx context.Context, c NotificationChannel, text string) error {
+	revealed, err := d.db.RevealNotificationChannel(ctx, c)
+	if err != nil {
+		return err
+	}
+	return sendTextNotification(ctx, d.client, d.sender, d.pushSender, revealed.Kind, revealed.NotifyURL, text)
 }

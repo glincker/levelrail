@@ -1,0 +1,48 @@
+---
+title: "Self-host Shlink with Docker"
+sidebarTitle: "Shlink"
+description: "A self-hosted URL shortener with a full REST API for creating and tracking short links."
+---
+
+A self-hosted URL shortener with a full REST API for creating and tracking short links.
+
+This page describes the Levelrail template for Shlink (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://shlink.io/documentation/.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `shlink` | `shlinkio/shlink:stable` | 8080 | `shlink_data -&#62; /etc/shlink/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `shlink` | `DEFAULT_DOMAIN` | Preset in the template |
+| `shlink` | `IS_HTTPS_ENABLED` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Shlink with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Shlink. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy shlink --name my-shlink
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

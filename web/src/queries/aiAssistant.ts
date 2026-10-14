@@ -50,7 +50,36 @@ export async function fetchAiSession(id: string): Promise<AiChatSession> {
       await readErrorMessage(res, `fetch AI session failed: ${res.status}`),
     )
   }
-  return (await res.json()) as AiChatSession
+  return normalizeAiSession((await res.json()) as AiChatSession)
+}
+
+// The stored transcript names a tool call `name` and its outcome `status`;
+// the UI's AiToolCall uses `tool_name` and `resolution`.
+function normalizeAiSession(session: AiChatSession): AiChatSession {
+  return {
+    ...session,
+    messages: session.messages.map((message) => ({
+      ...message,
+      tool_calls:
+        message.tool_calls?.map((call) => {
+          const raw = call as AiToolCall & {
+            id?: string
+            name?: string
+            status?: string
+          }
+          const resolution =
+            raw.status === 'approved' || raw.status === 'rejected'
+              ? raw.status
+              : raw.resolution
+          return {
+            ...raw,
+            confirmation_id: raw.confirmation_id || raw.id || '',
+            tool_name: raw.tool_name || raw.name || '',
+            resolution,
+          }
+        }) ?? null,
+    })),
+  }
 }
 
 // The session list itself (unlike the live transcript above) is a plain
@@ -117,8 +146,12 @@ export type AiSseEvent =
   | {
       type: 'tool_result'
       confirmationId: string
+      toolUseId: string
+      toolName: string
       result: unknown
       isError: boolean
+      actingAs?: string
+      abilities?: string[]
     }
   | { type: 'done' }
 
@@ -173,8 +206,14 @@ function parseAiSseEvent(eventName: string, data: unknown): AiSseEvent | null {
       return {
         type: 'tool_result',
         confirmationId: readString(record.confirmation_id),
+        toolUseId: readString(record.tool_use_id),
+        toolName: readString(record.name),
         result: 'result' in record ? record.result : data,
         isError: Boolean(record.is_error),
+        actingAs: readString(record.acting_as) || undefined,
+        abilities: Array.isArray(record.abilities)
+          ? record.abilities.filter((a): a is string => typeof a === 'string')
+          : undefined,
       }
     case 'done':
       return { type: 'done' }

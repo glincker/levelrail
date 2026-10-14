@@ -1,10 +1,9 @@
 ---
+title: "Feature status"
 description: Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
 ---
 
-# Feature status
-
-This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. The e2e rows, counts, and template and MCP rows were re-checked against main on 2026-10-05. Every claim cites a path. Where evidence is absent, the page says so instead of guessing.
+This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. The e2e rows, counts, and template and MCP rows were re-checked against main on 2026-10-05. Every claim cites a path, and where evidence is missing the page says so.
 
 ## How to read the labels
 
@@ -12,16 +11,16 @@ This page labels every major feature by how much evidence backs it today. The ev
 | --- | --- |
 | **stable** | Unit tests, a doc page, and either a live end-to-end test in `test/e2e` or a documented live verification. |
 | **beta** | Works and is tested, but has no end-to-end test and no record of a run on real infrastructure. Expect rough edges. |
-| **hide-behind-flag** | Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](experimental-features.md)). |
+| **hide-behind-flag** | Hardware-dependent or outside the core single-node story, or too thinly evidenced. Off by default and enabled with `APP_EXPERIMENTAL` (see [Experimental features](/experimental-features)). |
 
 Evidence tiers used below, weakest to strongest:
 
-1. **Unit**: `*_test.go` against fakes or `httptest` servers.
-2. **Live Docker**: tests named `*_Live_*` or `*_live_test.go` that skip when no Docker daemon is reachable and run against a real local daemon (for example `internal/pipeline/live_test.go`, `internal/backup/pitr_live_test.go`). `nightly.yml` has a `docker` lane, but `test/e2e` itself is only named in the flake sweep (`.github/workflows/nightly.yml:111`).
-3. **E2E**: `test/e2e/*_test.go`, which drive the real HTTP API and a real reconciler against real containers on one machine.
-4. **Real infrastructure**: a fresh VPS, a real public domain, real vendor endpoints. **Almost no feature has this evidence in the repository**; multi-node enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. Real public ACME now has one recorded run against a live public VPS (`docs/acme-verification-runbook.md`, 2026-10-05); the e2e suite itself still "does not yet exercise a full multi-node mesh or real ACME against a live domain".
+1. Unit: `*_test.go` against fakes or `httptest` servers.
+2. Live Docker: tests named `*_Live_*` or `*_live_test.go` that skip when no Docker daemon is reachable and run against a real local daemon (for example `internal/pipeline/live_test.go`, `internal/backup/pitr_live_test.go`). `nightly.yml` has a `docker` lane, but `test/e2e` itself is only named in the flake sweep (`.github/workflows/nightly.yml:111`).
+3. E2E: `test/e2e/*_test.go`, which drive the real HTTP API and a real reconciler against real containers on one machine.
+4. Real infrastructure: a fresh VPS, a real public domain, real vendor endpoints. Almost no feature has this evidence in the repository. [Multi-node](/multi-node) enrollment is the one documented exception so far, verified locally across two real Docker daemons (see its own section below), not against a real VPS or a real WAN. Real public ACME now has one recorded run against a live public VPS (`docs/acme-verification-runbook.md`, 2026-10-05); the e2e suite itself still "does not yet exercise a full multi-node mesh or real ACME against a live domain".
 
-Because tier 4 is empty for almost every row, the "real infra" column below reads "none found" outside multi-node. The distinction that matters is tier 3 versus tiers 1 and 2.
+Because tier 4 is empty for almost every row, the "real infra" column below reads "none found" outside multi-node. What matters is the gap between tier 3 and tiers 1 and 2.
 
 ## Summary
 
@@ -57,7 +56,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - E2E: `test/e2e/ai_chat_test.go` drives create/send-message/get/list/delete over real HTTP against a real `*api.Router` and `ai.Engine`, with a fake `ai.Provider` and `ai.ToolExecutor` (no live Anthropic call). MCP server itself: none.
 - Docs: `docs/ai-assistant.md` covers `levelrail-mcp`; `docs/ai-assistant-chat.md` covers the in-app chat.
 - Real infra: none found.
-- Label: MCP server **beta** (tool registry is well tested, but the surface is large and unexercised end to end). In-app chat **hide-behind-flag** (depends on an external model provider, no evidence beyond fakes).
+- Label: MCP server beta (the tool registry is well tested, but the surface is large and unexercised end to end). In-app chat hide-behind-flag (depends on an external model provider, no evidence beyond fakes).
 
 ### AI models (GPU inference)
 
@@ -65,7 +64,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - E2E: none. No live Docker test either.
 - Docs: `docs/ai-models.md` (264 lines). It states v1 supports NVIDIA GPUs on Linux only.
 - Real infra: none found. No test touches a real GPU.
-- Label: **hide-behind-flag**. Correctness depends on driver, container toolkit and VRAM behavior that no test in the repo observes.
+- Label: hide-behind-flag. Correctness depends on driver, container toolkit and VRAM behavior that no test in the repo observes.
 
 ### Load balancer
 
@@ -73,7 +72,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - E2E: `test/e2e/loadbalancer_test.go` (`TestLoadBalancer_Live_RealTrafficAndDrain`, plus a gate-off test that expects 404). Live Docker: none beyond that.
 - Docs: `docs/load-balancing.md` (162 lines).
 - Real infra: none found.
-- Label: **hide-behind-flag**. Multi-replica routing is built on embedded Caddy and verified on one machine only.
+- Label: hide-behind-flag. Multi-replica routing is built on embedded Caddy and verified on one machine only.
 
 ### Pipelines
 
@@ -82,7 +81,7 @@ Test counts are `*_test.go` files in the named directory. "CLI" and "web" list t
 - E2E: `test/e2e/pipeline_run_test.go` (`TestPipelineRun_Live`).
 - Docs: `docs/pipelines.md` (369 lines).
 - Real infra: none found.
-- Label: **stable**.
+- Label: stable.
 
 ### Notification channels (all 18)
 
@@ -93,7 +92,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: none. Every test posts to an `httptest` server.
 - Docs: covered in `docs/integrations.md` and `docs/observability.md`. `docs/integrations.md` is 45 lines.
 - Real infra: none found. No test sends to a real Slack, PagerDuty, SMTP or other vendor.
-- Label: **beta**. Suggest a manual send-test pass per vendor before calling any of them stable.
+- Label: beta. Run a manual send test per vendor before calling any of them stable.
 
 ### Multi-node and WireGuard mesh
 
@@ -102,7 +101,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/node_placement_test.go`. Its own header says one Docker daemon cannot exercise the NodeID-to-remote-agent resolution and that it only proves each controller uses the runtime it was built with.
 - Docs: `docs/multi-node.md` (542 lines).
 - Real infra: the join flow was verified against two real agent processes, each with its own real Docker daemon (separate `docker:27-dind` containers), running against a real control plane binary. Enrollment, cordon, drain with actual container relocation between the two daemons, and explicit node-id placement pinning all behaved as documented; this also surfaced a real gap, now noted in `docs/multi-node.md`, where a control plane started without `APP_AGENT_ADVERTISE_HOST` set lets enrollment succeed but leaves the node stuck at `pending` on a TLS hostname mismatch. This was not run across a real WAN or a second physical host, and the WireGuard mesh itself is unchanged: `internal/network/device_test.go:3-11` still runs against fakes because real encryption "needs two real hosts and root", and the mesh's remote arm (`internal/network.ConfigSink`) does not span nodes yet.
-- Label: **beta**. Single node is the stable promise. Multi-node enrollment now has a real, documented verification behind it, but the mesh and cross-host remote transport remain unverified, so the area as a whole stays beta.
+- Label: beta. Single node is the stable promise. Multi-node enrollment now has a documented real verification behind it, but the mesh and cross-host remote transport are still unverified, so the area stays beta.
 
 ### Platform as code (iac)
 
@@ -110,7 +109,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/iac_apply_test.go` (`TestIaCApply_Live_ExportPlanApplyRoundTrip`, plus a gate-off test that expects 404). Live Docker: none beyond that.
 - Docs: `docs/platform-as-code.md` (419 lines), `docs/app-spec-reference.md`, `docs/schemas/`.
 - Real infra: none found.
-- Label: **hide-behind-flag**. The apply path can change many resources in one run, so it stays opt-in until it has more real-world runs.
+- Label: hide-behind-flag. The apply path can change many resources in one run, so it stays opt-in until it has more real-world runs.
 
 ### Log archive
 
@@ -118,7 +117,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/log_archive_test.go` (`TestLogArchive_Live_ContainerLogsToHTTPDownload`): a real container's real stdout through a real `telemetry.LogCollector`, a real `*api.Router` (real admin login, real storage destination created over HTTP), a real manual dump trigger (`POST /api/v1/log-archive/dump`), polled to completion, then listed and downloaded over real HTTP. The bucket itself is `objectstoretest`'s fake S3 server, the same substitution the unit test makes.
 - Docs: dedicated page `docs/log-archive.md`, linked from `docs/object-storage.md` and `docs/observability.md`, plus route rows in `docs/api-reference.md`.
 - Real infra: none found for the bucket leg. `internal/backup/uploader_live_test.go` (real S3 round trip) is env-gated by `LEVELRAIL_LIVE_S3_*` and its own comment says none of those are set in CI, so it skips there.
-- Label: **beta**.
+- Label: beta.
 
 ### PITR and database backups
 
@@ -126,8 +125,8 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - Live Docker: `pitr_live_test.go`, `dump_live_test.go`, `restore_live_test.go`, `clone_restore_live_test.go`, `volume_live_test.go`, `volume_clone_restore_live_test.go`.
 - E2E: `test/e2e/pitr_test.go` (real API, real reconciler, MinIO bucket, marker-row restore), `test/e2e/reconcile/database_test.go` (Redis reconcile only, `TestDatabase_Live_RedisReconcile`).
 - Docs: `docs/backups-and-storage.md`, `docs/managing-databases.md`, `docs/control-plane-backup.md`, `docs/disaster-recovery.md`. `docs/roadmap.md` notes PITR is "Live-Docker-verified end to end".
-- Real infra: none found. The real S3 and R2 test is skipped in CI (see log archive).
-- Label: **stable** for PITR and dump/restore/verify on Postgres. Other engines (eight are defined in `internal/store/database.go:16-23`) only have the Redis e2e, so treat them as beta until each has a live restore run.
+- Real infra: none found. The real S3 and R2 test is skipped in CI (see [log archive](/log-archive)).
+- Label: stable for PITR and dump/restore/verify on Postgres. Other engines (eight are defined in `internal/store/database.go:16-23`) only have the Redis e2e, so treat them as beta until each has a live restore run.
 
 ### Cloudflare tunnel
 
@@ -135,7 +134,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: none. Live Docker: none.
 - Docs: only in `docs/api-reference.md`, `docs/cli-reference.md`, `docs/feature-catalog.md`. No dedicated page.
 - Real infra: none found. Needs a real Cloudflare account and token to prove anything.
-- Label: **hide-behind-flag**.
+- Label: hide-behind-flag.
 
 ### Deploy approvals
 
@@ -143,7 +142,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/protected_environment_test.go` (`TestProtectedEnvironment_Live_DeployBlockedThenAllowed`): two cookie sessions, same-actor approval rejected, container untouched until a different user approves.
 - Docs: `docs/deploy-safety.md` (188 lines).
 - Real infra: none found.
-- Label: **stable**.
+- Label: stable.
 
 ### Deploy freeze
 
@@ -151,7 +150,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/deploy_freeze_test.go` (`TestDeployFreeze_Live_BlocksThenAllows`).
 - Docs: `docs/deploy-safety.md`.
 - Real infra: none found.
-- Label: **stable**.
+- Label: stable.
 
 ### Previews
 
@@ -159,7 +158,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/preview_environments_github_test.go` and `preview_environments_gitlab_bitbucket_test.go` (open, synchronize, close lifecycles through real webhook handlers).
 - Docs: `docs/deploy-previews.md` (169 lines).
 - Real infra: none found. Payloads are synthetic. Recent hardening (`13a50c33`, caps, fork approval, single comment) landed after these tests were written.
-- Label: **stable** for GitHub, **beta** for GitLab and Bitbucket.
+- Label: stable for GitHub, beta for GitLab and Bitbucket.
 
 ### Feature flags
 
@@ -167,7 +166,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: none. The `flag` hits in `test/e2e/metrics_test.go` and `live_api_helpers.go` are unrelated.
 - Docs: `docs/feature-flags.md` (109 lines). This is an app-level runtime flag system. It is not a platform-level switch for hiding unfinished features. A platform-level hide mechanism does not exist yet.
 - Real infra: none found.
-- Label: **beta**.
+- Label: beta.
 
 ### Templates
 
@@ -176,7 +175,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - Docs: `docs/templates-and-registry.md` (209 lines).
 - Real infra: none found. Only the 16 sampled templates have deploy evidence, so "works" is unverified for the rest. `docs/templates-and-registry.md` also notes GPU passthrough is not translated for GPU templates.
 - Count: 311 entries in `internal/catalog.Templates`. ADR 015 cites a 339-template goal, which is not yet the shipped catalog.
-- Label: **beta**.
+- Label: beta.
 
 ### IAM
 
@@ -184,7 +183,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/auth_lifecycle_test.go` (`TestAuthLifecycle_Live`) covers sessions. `test/e2e/iam_policy_enforcement_test.go` covers a session deny policy blocking a real action and a token allow policy scoping one.
 - Docs: `docs/identity-and-access.md` (529 lines), `docs/security.md`, `docs/threat-model.md`.
 - Real infra: none found.
-- Label: **stable**.
+- Label: stable.
 
 ### Supply chain
 
@@ -192,7 +191,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/supply_chain_test.go` (`TestSupplyChain_Live_GateBlocksAndOverrideThroughRealAPI`). Live Docker: none beyond that.
 - Docs: `docs/supply-chain.md` (94 lines). SBOM and scan are off by default.
 - Real infra: none found.
-- Label: **stable**, and off by default.
+- Label: stable, and off by default.
 
 ### Status page
 
@@ -200,7 +199,7 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - E2E: `test/e2e/status_page_test.go` (`TestStatusPage_Live_EnableAuthorAndServePublicly`).
 - Docs: `docs/status-page.md` (95 lines). Off until enabled.
 - Real infra: none found.
-- Label: **stable**.
+- Label: stable.
 
 ## Numbers quoted across the docs
 
@@ -208,11 +207,11 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 
 | Number | Value | Source |
 | --- | --- | --- |
-| MCP tools | 156 in full mode, 146 in the default standard mode, 118 in read-only mode | `go test ./internal/mcptools -run TestToolListTokenBudget -v`, and the generated [MCP tool surface](mcp-tool-surface.md) |
+| MCP tools | 156 in full mode, 146 in the default standard mode, 118 in read-only mode | `go test ./internal/mcptools -run TestToolListTokenBudget -v`, and the generated [MCP tool surface](/mcp-tool-surface) |
 | Notification channel kinds | 18 | `NotifyKind` constants in `internal/alerting/rules.go` |
 | Alert rule kinds | 14 | `Kind` constants in `internal/alerting/rules.go` |
 | Managed database engines | 8 | `internal/store/database.go` |
-| Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](template-catalog.md) |
+| Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
 | Latest release | 0.2.0-beta.18, so there is no stable release yet | `.release-please-manifest.json` |
 
-Two caveats that still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](performance.md)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](acme-verification-runbook.md), 2026-10-05); renewal and DNS-01 wildcards are still unproven.
+Two caveats still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](/performance)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](/acme-verification-runbook), 2026-10-05); renewal and DNS-01 wildcards are still unproven.

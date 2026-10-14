@@ -272,6 +272,36 @@ rc=0
 docker exec "$name" env LEVELRAIL_INSECURE_MIRROR=1 LEVELRAIL_COSIGN_URL=http://127.0.0.1:8099/cosign/missing LEVELRAIL_COSIGN_SHA256="$cosign_sha" \
 	sh /root/install.sh install-cosign >/dev/null 2>&1 || rc=$?
 [ "$rc" -ne 0 ] || { echo "install-cosign must fail loudly when asked explicitly"; exit 1; }
+echo "== signature pin: the first verified signature pins, unsigned releases are refused after"
+pin=/var/lib/levelrail-data/release-signature.pin
+# shellcheck disable=SC2016 # runs inside the container, expands there
+in_ct 'goarch=amd64; [ "$(uname -m)" = x86_64 ] || goarch=arm64
+	mkdir -p /srv/rel/v9.9.9/signed /srv/rel/v9.9.9/nosums
+	cp /srv/rel/v9.9.9/good/levelrail-linux-$goarch /srv/rel/v9.9.9/nosums/
+	cp /srv/rel/v9.9.9/good/levelrail-linux-$goarch /srv/rel/v9.9.9/good/checksums.txt /srv/rel/v9.9.9/signed/
+	echo "{}" > /srv/rel/v9.9.9/signed/checksums.txt.sigstore.json
+	rm -f /usr/local/bin/cosign'
+in_ct "rm -f $pin"
+out="$(cosign_mirror good)"
+in_ct "test ! -e $pin" || { echo "an unsigned release must not pin: $out"; exit 1; }
+out="$(cosign_mirror signed)"
+echo "$out" | grep -q "Signature verified" || { echo "signed release was not verified: $out"; exit 1; }
+in_ct "grep -q '^version=v9.9.9' $pin" || { echo "verified signature did not write the pin: $out"; exit 1; }
+[ "$(in_ct "stat -c %a $pin")" = "644" ] || { echo "pin not mode 644"; exit 1; }
+out="$(cosign_mirror good)"
+echo "$out" | grep -q "only accepts signed releases" || { echo "pinned host accepted an unsigned release: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" && { echo "pinned refusal must come before the checksum: $out"; exit 1; }
+in_ct 'rm -f /usr/local/bin/cosign'
+out="$(mirror_upgrade signed)"
+echo "$out" | grep -q "only accepts signed releases" || { echo "pinned host without cosign was not refused: $out"; exit 1; }
+echo "$out" | grep -q "APP_INSTALL_VERIFY=off" || { echo "pinned refusal must name the escape hatch: $out"; exit 1; }
+out="$(mirror_upgrade nosums LEVELRAIL_SKIP_CHECKSUM=1)"
+echo "$out" | grep -q "only accepts signed releases" || { echo "pinned host skipped the checksum: $out"; exit 1; }
+out="$(mirror_upgrade good APP_INSTALL_VERIFY=off)"
+echo "$out" | grep -q "overrides the signature pin" || { echo "off while pinned must be logged: $out"; exit 1; }
+echo "$out" | grep -q "Checksum verified" || { echo "explicit off must still install: $out"; exit 1; }
+in_ct "test -e $pin" || { echo "APP_INSTALL_VERIFY=off must not clear the pin"; exit 1; }
+
 in_ct 'sh /root/install.sh uninstall --purge' >/dev/null
 
 echo "install.sh passed on ${base_image}"

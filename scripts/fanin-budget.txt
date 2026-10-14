@@ -13,8 +13,9 @@ internal/reconcile 84
 internal/reconcile/database 26
 internal/spec 84
 internal/store 82
+internal/telemetry 22
 internal/usagecost 80
 kit/cronexpr 85
 kit/diskspace 26
-kit/netguard 31
+kit/netguard 32
 kit/probe 85

@@ -1,8 +1,7 @@
 ---
+title: "Starter kit templates"
 description: "Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends."
 ---
-
-# Starter kit templates
 
 The `Starter Kits` category of the [template catalog](/template-catalog) holds seven small multi-service templates. Unlike the rest of the catalog, where each entry deploys one open-source project, these show wiring patterns across two or three services: a web tier talking to a database, a worker pulling from a queue, a reverse proxy fanning out to backends.
 
@@ -32,13 +31,13 @@ Every template with a real dependency declares `depends_on:` on it. The reconcil
 
 ## Deploy one
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Go to **Apps**, choose **New app**, then **Browse templates**. Search for "Starter Kits", pick a template, review the pre-filled Compose body, and deploy.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```sh
 levelrail-cli templates list
@@ -51,4 +50,4 @@ levelrail-cli templates deploy node-postgres-starter --name my-app
 
 ## Caveats
 
-Each template's Compose body is checked structurally in the test suite (parse, validation, expansion into services, dependency cycles, healthcheck presence). They are reference wiring, not production-ready apps: the `web`, `api` and `worker` services run a minimal server built from their base image's own runtime (Node's `http` module, Python's `http.server`) so that nothing needs installing at start. Replace them with your own image.
+Each template's Compose body is checked structurally in the test suite (parse, validation, expansion into services, dependency cycles, health check presence). Templates are reference wiring, not production-ready apps: the `web`, `api` and `worker` services run a minimal server built from their base image's own runtime (Node's `http` module, Python's `http.server`) so that nothing needs installing at start. Replace them with your own image.

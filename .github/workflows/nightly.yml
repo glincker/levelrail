@@ -27,12 +27,12 @@ jobs:
       sweep: ${{ steps.scope.outputs.sweep }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
 
@@ -72,10 +72,10 @@ jobs:
         include: ${{ fromJSON(needs.check-activity.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: test-results-${{ matrix.lane }}
           path: test-results/
@@ -124,15 +124,45 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
 
       - name: go test (kit, race, shuffled)
         run: go -C kit test -race -shuffle=on -timeout=10m ./...
+
+  # Known-vulnerability scan of the dependency graph (reachable symbols only).
+  # Nightly, not per PR: new advisories land independent of any diff.
+  vuln-scan:
+    name: Go vulnerability scan
+    needs: check-activity
+    if: needs.check-activity.outputs.has-commits == 'true'
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+
+      # Fails on reachable findings that have a fixed version. Findings with
+      # no upstream fix are listed in the log but do not turn the job red.
+      - name: govulncheck
+        run: |
+          go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -format=json ./... > govulncheck.json
+          fixable="$(jq -s '[.[] | select(.finding) | .finding | select((.fixed_version // "") != "" and (.trace[0].function // "") != "") | .osv] | unique' govulncheck.json)"
+          unfixable="$(jq -s '[.[] | select(.finding) | .finding | select((.fixed_version // "") == "" and (.trace[0].function // "") != "") | .osv] | unique' govulncheck.json)"
+          echo "no fix available: $unfixable"
+          echo "fixable: $fixable"
+          [ "$(echo "$fixable" | jq length)" -eq 0 ]
 
   # Repeats the packages with a flake history, shuffled, with no reruns, so
   # an intermittent failure shows up here before it shows up on a PR.
@@ -148,10 +178,10 @@ jobs:
       FLAKE_SWEEP_PACKAGES: ./internal/agent/ ./internal/backup/
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -178,7 +208,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: test-results-sweep
           path: test-results/
@@ -194,10 +224,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -236,10 +266,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Download test results
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           pattern: test-results-*
           path: test-results
@@ -266,10 +296,10 @@ jobs:
         image: ['ubuntu:24.04', 'debian:12']
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version-file: go.mod
 

@@ -1,8 +1,7 @@
 ---
+title: "Database access and network"
 description: Manage database users, issue short-lived credentials, see who can reach a database, and control its network exposure, scope and TLS from the dashboard, CLI or API.
 ---
-
-# Database access and network
 
 Two tabs on every database give you the controls you would expect from a managed
 database service: **Access** (who can log in, and who can manage it) and
@@ -68,7 +67,7 @@ is published and to which address.
 ### Allowed sources
 
 An inbound rules editor for a published port: source IP or CIDR plus an optional
-description. Rules are applied through the same host firewall integration as the
+description. Rules are applied through the same [host firewall](/host-firewall) integration as the
 [exposure audit](/exposure-audit): tagged, idempotent, previewed first, guarded against
 locking out the platform or SSH, and removable. Drift (a rule missing from, or
 extra in, the firewall) is shown inline. Rules can only be applied on the control

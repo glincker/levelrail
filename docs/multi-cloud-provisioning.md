@@ -1,8 +1,9 @@
 ---
+title: "Multi-cloud provisioning quickstart"
 description: Pick a cloud provider and add a provisioned node in three commands, with the credential each provider needs. Auth modes, cost and known gaps are on the node provisioning page.
 ---
 
-# Multi-cloud provisioning quickstart
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/hetzner/default.svg" alt="Hetzner" title="Hetzner" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/digitalocean/default.svg" alt="DigitalOcean" title="DigitalOcean" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/linode/default.svg" alt="Linode" title="Linode" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/vultr/default.svg" alt="Vultr" title="Vultr" width="24" height="24" /></span></div>
 
 [Node provisioning](/node-provisioning) explains how cloud provisioning works: the join-token flow it drives, the cloud-init script, status polling and the known gaps per provider. This page is the short version: which providers are supported, what credential each needs, and the fastest path to a running node.
 
@@ -18,9 +19,11 @@ description: Pick a cloud provider and add a provisioned node in three commands,
 
 GCP has no federation mode. The reason, and the three AWS credential modes, are in [node provisioning](/node-provisioning#provider-credentials).
 
-::: warning Servers are not deleted for you
-Every provider bills by the hour while the server exists. `levelrail-cli nodes delete` removes the node record, not the VM, so delete the server at the provider too. See [cost expectations](/node-provisioning#cost).
-:::
+<Warning>
+**Servers are not deleted for you**
+
+Every provider bills by the hour while the server exists. `levelrail-cli nodes delete` removes the node record, not the VM, so delete the server at the provider too. See [Node provisioning](/node-provisioning) for cost and known gaps.
+</Warning>
 
 ## Add a node
 
@@ -55,7 +58,7 @@ levelrail-cli nodes provision --provider hetzner --region fsn1 --size cx22 --nam
 levelrail-cli nodes provisions show <id>
 ```
 
-Repeat `show` until the status is `ready`. Status moves through `creating`, `booting` and `enrolling`. Add `--role build` to make it a build node.
+Repeat `show` until the status is `ready`. Status moves through `creating`, `booting` and `enrolling`. Add `--role build` to make it a [build node](/build-node-routing).
 
 </Step>
 </Steps>
@@ -64,7 +67,7 @@ The same shape works for DigitalOcean, AWS, Azure and GCP: store the credential 
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Node provisioning" href="/node-provisioning">
 
 How it works, auth modes, cost and known gaps.

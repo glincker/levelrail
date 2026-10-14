@@ -62,7 +62,10 @@
 #                            auto (default) verifies when cosign is installed
 #                            and the release ships a signature; require fails
 #                            unless the signature verifies; off skips it. The
-#                            SHA-256 checksum is always verified.
+#                            SHA-256 checksum is always verified. Once a
+#                            signature has verified on this host, a pin under
+#                            the data dir makes auto refuse unsigned releases;
+#                            off still overrides it, with a warning.
 #   LEVELRAIL_RELEASE_BASE_URL  download release assets from this https mirror
 #                            directory instead of GitHub (LEVELRAIL_INSECURE_MIRROR=1
 #                            permits http, for tests only)
@@ -137,7 +140,7 @@ PUBLIC_HOST_PINNED=0
 [ -z "$PUBLIC_HOST" ] || PUBLIC_HOST_PINNED=1
 DROPIN_DIR="/etc/systemd/system/${SERVICE_NAME}.service.d"
 DROPIN_PATH="${DROPIN_DIR}/10-install.conf"
-PROXY_DOCS_URL="https://levelrail.com/behind-an-existing-proxy"
+PROXY_DOCS_URL="https://docs.levelrail.com/behind-an-existing-proxy"
 # The dashboard is plain HTTP until the operator configures a domain with TLS.
 DASHBOARD_SCHEME="http"
 HTTPS_ONLY="=https"
@@ -146,6 +149,8 @@ MIN_DISK_GB="${LEVELRAIL_MIN_DISK_GB:-10}"
 MIN_DOCKER_MAJOR="${LEVELRAIL_MIN_DOCKER_MAJOR:-24}"
 HEALTH_WAIT="${LEVELRAIL_HEALTH_WAIT:-60}"
 VERIFY_MODE="${APP_INSTALL_VERIFY:-auto}"
+SIGNATURE_PIN="${DATA_DIR}/release-signature.pin"
+PIN_ESCAPE="Install cosign and retry, override once with APP_INSTALL_VERIFY=off, or clear the pin with: sudo ${BINARY_NAME} self-upgrade --unpin-signature"
 COSIGN_IDENTITY_REGEXP="https://github.com/${REPO}/\\.github/workflows/release\\.yml@.*"
 COSIGN_OIDC_ISSUER="https://token.actions.githubusercontent.com"
 COSIGN_VERSION="v3.1.3"
@@ -692,7 +697,12 @@ fetch_binary() {
 		return
 	fi
 
-	[ "$NO_COSIGN" -eq 1 ] || [ "$VERIFY_MODE" = "off" ] || ensure_cosign
+	if signature_pinned && [ "$VERIFY_MODE" = "off" ]; then
+		warn "APP_INSTALL_VERIFY=off overrides the signature pin (${SIGNATURE_PIN}): this release is installed without a signature check"
+	fi
+	cosign_strictness=""
+	! signature_pinned || cosign_strictness="strict"
+	[ "$NO_COSIGN" -eq 1 ] || [ "$VERIFY_MODE" = "off" ] || ensure_cosign "$cosign_strictness"
 	resolve_version
 	asset="levelrail-linux-${GOARCH}"
 	base_url="${LEVELRAIL_RELEASE_BASE_URL:-https://github.com/${REPO}/releases/download/${VERSION}}"
@@ -796,21 +806,40 @@ cosign_unavailable() {
 	warn "$2. Continuing with SHA-256 checksum verification only (LEVELRAIL_NO_COSIGN=1 skips this step)."
 }
 
+signature_pinned() { [ -e "$SIGNATURE_PIN" ]; }
+
+# Fails closed once pinned: a stripped signature must not downgrade silently.
+signature_unavailable() {
+	! signature_pinned || fatal "$1, and this host only accepts signed releases since it verified one (${SIGNATURE_PIN}). ${PIN_ESCAPE}"
+}
+
+write_signature_pin() {
+	signature_pinned && return 0
+	mkdir -p "$DATA_DIR"
+	pin_tmp="${SIGNATURE_PIN}.tmp.$$"
+	printf 'version=%s\nverified_at=%s\n' "$VERSION" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$pin_tmp"
+	chmod 0644 "$pin_tmp"
+	mv -f "$pin_tmp" "$SIGNATURE_PIN"
+	log "This host now only accepts signed releases (${SIGNATURE_PIN})."
+}
+
 # verify_signature checks the cosign keyless bundle over checksums.txt. A
-# failed verification is always fatal; only a missing cosign or bundle is
-# tolerated, and never under APP_INSTALL_VERIFY=require.
+# failed verification is always fatal; a missing cosign or bundle is
+# tolerated only in auto mode on a host that has never verified a signature.
 verify_signature() {
 	sums="$1"
 	base_url="$2"
 	proto="$3"
 	[ "$VERIFY_MODE" != "off" ] || return 0
 	if ! command -v cosign >/dev/null 2>&1; then
+		signature_unavailable "cosign is not installed"
 		[ "$VERIFY_MODE" != "require" ] || fatal "APP_INSTALL_VERIFY=require but cosign is not installed. Install it from https://docs.sigstore.dev/cosign/system_config/installation/ or unset APP_INSTALL_VERIFY."
 		log "cosign not found: verifying the SHA-256 checksum only (install cosign to also verify the release signature)."
 		return 0
 	fi
 	bundle="${sums}.sigstore.json"
 	if ! curl -fsSL --proto "$proto" --tlsv1.2 --connect-timeout 10 --max-time 60 -o "$bundle" "${base_url}/checksums.txt.sigstore.json" 2>/dev/null; then
+		signature_unavailable "${VERSION} publishes no checksums.txt.sigstore.json"
 		[ "$VERIFY_MODE" != "require" ] || fatal "APP_INSTALL_VERIFY=require but ${VERSION} publishes no checksums.txt.sigstore.json"
 		warn "${VERSION} publishes no signature for checksums.txt, verifying the SHA-256 checksum only"
 		return 0
@@ -820,9 +849,11 @@ verify_signature() {
 		--certificate-oidc-issuer "$COSIGN_OIDC_ISSUER" "$sums" >/dev/null 2>&1 ||
 		fatal "cosign signature verification of checksums.txt failed for ${VERSION}, refusing to install"
 	log "Signature verified (cosign, keyless)."
+	write_signature_pin
 }
 
 checksum_unavailable() {
+	[ "$VERIFY_MODE" = "off" ] || signature_unavailable "$1"
 	if [ "$VERIFY_MODE" = "require" ]; then
 		fatal "$1, and APP_INSTALL_VERIFY=require does not allow an unverified install"
 	fi

@@ -1,0 +1,45 @@
+---
+title: "Self-host Gotenberg with Docker"
+sidebarTitle: "Gotenberg"
+description: "A stateless API for converting HTML, Markdown, Office, and PDF documents in the background."
+---
+
+A stateless API for converting HTML, Markdown, Office, and PDF documents in the background.
+
+This page describes the Levelrail template for Gotenberg (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://gotenberg.dev/docs/getting-started/introduction.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `gotenberg` | `gotenberg/gotenberg:8.15` | 3000 | none |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Gotenberg with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Gotenberg. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gotenberg --name my-gotenberg
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

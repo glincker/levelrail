@@ -239,7 +239,10 @@
       "start": "Start",
       "health": "Health check",
       "rollback": "Roll back"
-    }
+    },
+    "notPinned": "Warning: this install is not signature verified yet, so an upgrade still accepts a release checked by checksum only. Install cosign and upgrade once: every later upgrade then requires a valid signature.",
+    "notPinnedCommand": "Install cosign on the server, then upgrade once",
+    "pinned": "Signed releases only, pinned since {{version}}. An unsigned release is refused."
   },
   "readiness": {
     "title": "Server readiness",

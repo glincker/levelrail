@@ -262,10 +262,10 @@ func TestAuthLibSessionsGolden(t *testing.T) {
 		if err := json.Unmarshal(rec.Body.Bytes(), &minted); err != nil || minted.Token == "" {
 			t.Fatalf("mint response = %q, err %v", rec.Body.String(), err)
 		}
-		consume, linked := e.do(t, call{step: "consume", method: "GET", path: "/api/v1/auth/session-links/" + minted.Token + "/consume"})
+		consume, linked := e.do(t, call{step: "consume", method: "POST", path: "/api/v1/auth/session-links/consume", body: `{"token":"` + minted.Token + `"}`})
 		session, _ := e.do(t, call{step: "linked session", method: "GET", path: "/api/v1/auth/session", cookie: linked})
-		reuse, _ := e.do(t, call{step: "consume again", method: "GET", path: "/api/v1/auth/session-links/" + minted.Token + "/consume"})
-		unknown, _ := e.do(t, call{step: "consume unknown", method: "GET", path: "/api/v1/auth/session-links/not-a-real-token/consume"})
+		reuse, _ := e.do(t, call{step: "consume again", method: "POST", path: "/api/v1/auth/session-links/consume", body: `{"token":"` + minted.Token + `"}`})
+		unknown, _ := e.do(t, call{step: "consume unknown", method: "POST", path: "/api/v1/auth/session-links/consume", body: `{"token":"not-a-real-token"}`})
 		return []exchange{mint, consume, session, reuse, unknown}
 	})
 

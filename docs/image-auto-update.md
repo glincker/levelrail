@@ -1,12 +1,11 @@
 ---
+title: "Image auto-update"
 description: Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.
 ---
 
-# Image auto-update
-
-Opt an app into redeploying when its image tag moves to a new digest, for
-apps that track a floating tag such as `nginx:1` or `myorg/api:stable`.
-Off by default, per app.
+An app can redeploy itself when its image tag moves to a new digest (the
+hash of the image's contents). It suits apps that track a floating tag such
+as `nginx:1` or `myorg/api:stable`. It is off by default, per app.
 
 ## How it works
 

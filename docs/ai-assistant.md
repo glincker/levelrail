@@ -1,16 +1,18 @@
 ---
+title: "AI assistant integration: levelrail-mcp"
+tag: "Beta"
 description: Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
 ---
 
-# AI assistant integration: levelrail-mcp
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/anthropic/default.svg" alt="Anthropic" title="Anthropic" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/openai/default.svg" alt="OpenAI" title="OpenAI" width="24" height="24" /></span></div>
 
-`levelrail-mcp` is an MCP (Model Context Protocol) server that exposes the control plane's REST API (`/api/v1`) as MCP tools. It is a thin client like `levelrail-cli`: it authenticates with an API token and calls the same routes the CLI and dashboard do. It has no special internal access, and a token with fewer abilities than a tool needs gets the same 403 the REST API would return.
+`levelrail-mcp` is an MCP (Model Context Protocol) server that turns the control plane's REST API (`/api/v1`) into MCP tools. It is a thin client like `levelrail-cli`: it authenticates with an API token and calls the same routes the CLI and dashboard do. It has no special internal access, and a token with fewer abilities than a tool needs gets the same 403 the REST API would return.
 
 Source: `cmd/levelrail-mcp` and `internal/mcptools`.
 
 ## What it exposes
 
-Tools cover apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, feature flags, and more, one tool per REST capability. See the [API reference](api-reference.md) for the underlying routes, and [MCP tool surface](mcp-tool-surface.md) for the tool count per toolset.
+There is one tool per REST capability: apps, deploys, databases, nodes, domains, certificates, backups, templates, registry credentials, IAM, organizations, alerts, metrics, diagnostics, [feature flags](/feature-flags) and more. See the [API reference](/api-reference) for the underlying routes, and [MCP tool surface](/mcp-tool-surface) for the tool count per toolset.
 
 Notable read-oriented tools for day-2 operation:
 
@@ -25,10 +27,10 @@ Env tools:
 
 ## Two ways to run it
 
-<Tabs :items="['stdio (local client)', 'Network (remote client)']">
-<Tab value="stdio (local client)">
+<Tabs>
+<Tab title="stdio (local client)">
 
-This is the default and needs no extra flags. An MCP client that can launch local subprocesses (Claude Desktop, Claude Code, and similar tools) starts `levelrail-mcp` itself and talks to it over stdin/stdout:
+This is the default and needs no extra flags. An MCP client that can launch local subprocesses (Claude Desktop, Claude Code and similar tools) starts `levelrail-mcp` itself and talks to it over stdin/stdout:
 
 ```json
 {
@@ -50,7 +52,7 @@ If `levelrail-cli` is already configured on the same machine (`levelrail-cli aut
 No incoming authentication is required in this mode: only a local process on the same machine can spawn a stdio subprocess.
 
 </Tab>
-<Tab value="Network (remote client)">
+<Tab title="Network (remote client)">
 
 Some MCP clients cannot spawn a local subprocess, for example an AI assistant that runs as its own independently deployed service. For that case, run `levelrail-mcp` with `--transport=http` to serve the MCP Streamable HTTP transport over the network instead:
 
@@ -58,10 +60,10 @@ Some MCP clients cannot spawn a local subprocess, for example an AI assistant th
 levelrail-mcp --transport=http --listen=127.0.0.1:8090 --token '<your API token>'
 ```
 
-- **Binds to loopback by default** (`127.0.0.1:8090`). Pass `--listen` explicitly (for example `0.0.0.0:8090`, or a WireGuard-mesh address) to expose it beyond the local machine; nothing does that by default, so an operator has to opt in deliberately.
-- **Fails closed with no token.** Unlike stdio, a network listener is reachable by anything that can route to it, so `--transport=http` with no API token configured (via `--token`, `APP_API_TOKEN`, or a `levelrail-cli auth login` credentials file) refuses to start rather than listen unauthenticated.
-- **Requires the same bearer token on every incoming request.** The token this process already uses outbound, against the control plane's REST API, is the same token an MCP client must present as `Authorization: Bearer <token>` on every request against the network listener. There is no separate auth concept to configure.
-- Put a reverse proxy or the WireGuard mesh (see [Multi-node](multi-node.md)) in front of it for TLS if the client is not on the same trusted network; `levelrail-mcp` itself speaks plain HTTP.
+- Binds to loopback by default (`127.0.0.1:8090`). Pass `--listen` explicitly (for example `0.0.0.0:8090`, or a WireGuard-mesh address) to expose it beyond the local machine. You have to opt in.
+- Fails closed with no token. A network listener is reachable by anything that can route to it, so `--transport=http` with no API token configured (via `--token`, `APP_API_TOKEN`, or a `levelrail-cli auth login` credentials file) refuses to start rather than listen unauthenticated.
+- Requires the same bearer token on every incoming request. The token this process already uses against the control plane's REST API is the one an MCP client must present as `Authorization: Bearer <token>` on every request to the listener. There is no separate auth to configure.
+- Put a reverse proxy or the WireGuard mesh (see [Multi-node](/multi-node)) in front of it for TLS if the client is not on the same trusted network; `levelrail-mcp` itself speaks plain HTTP.
 
 </Tab>
 </Tabs>
@@ -78,7 +80,7 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 | `standard` (default) | read and mutating tools (deploy, restart, set, create, clone, approve, rotate) |
 | `full` | everything, including destructive tools (delete, clear, rollback, prune, sweep) |
 
-`APP_MCP_TOOL_PROFILE=agent-core` (or `--tool-profile agent-core`) additionally restricts the server to 15 tools for autonomous agents: list, status, deploy, rollback, cancel, diagnose, preflight, capped log search (`query_logs`), env (`get_app_env`, `set_app_env`, `unset_app_env`, secrets are write-only) and domains. It lists no output schemas, which brings the whole `tools/list` to about 2,600 estimated tokens against about 66,700 for `full`. See [MCP tool surface](mcp-tool-surface.md) and [Agent tooling audit](agent-tooling-audit.md).
+`APP_MCP_TOOL_PROFILE=agent-core` (or `--tool-profile agent-core`) additionally restricts the server to 15 tools for autonomous agents: list, status, deploy, rollback, cancel, diagnose, preflight, capped log search (`query_logs`), env (`get_app_env`, `set_app_env`, `unset_app_env`, secrets are write-only) and domains. It lists no output schemas, which brings the whole `tools/list` to about 2,600 estimated tokens against about 66,700 for `full`. See [MCP tool surface](/mcp-tool-surface) and [Agent tooling audit](/agent-tooling-audit).
 
 `APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iac, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
 
@@ -86,7 +88,7 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 APP_MCP_MODE=read-only APP_MCP_TOOLSETS=apps,nodes,logs,diagnostics levelrail-mcp
 ```
 
-The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement).
+The startup log line `levelrail-mcp tools` reports the mode and how many read, mutating and destructive tools are registered. A mode never widens access: the API token's abilities still bound every call, so pair `read-only` with a `read`-scoped token (defense in depth, not a replacement for the token scope).
 
 ## Reading logs without flooding the context
 
@@ -98,11 +100,21 @@ Logs, deploy output, error messages, commit messages, PR titles and similar text
 
 Limits come from `APP_UNTRUSTED_MAX_FIELD_BYTES` (per string field, default 4096) and `APP_UNTRUSTED_MAX_BLOCK_BYTES` (per wrapped block, default 65536).
 
-This is friction, not a guarantee. The real boundary is the assistant's confirmation gate, which uses each tool's MCP annotations instead of name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
+This is friction, not a guarantee. The real boundary is the assistant's confirmation gate. It goes by each tool's MCP annotations, not name prefixes: every tool that is not read-only, and every tool without annotations, pauses for a human click. Once a conversation has ingested untrusted output (it is then "tainted", derived from the stored history so it survives later turns), read tools that are outbound or touch secrets pause as well.
+
+## Whose authority the in-dashboard assistant uses
+
+The assistant built into the dashboard has no standing credential of its own. Every chat message (and every Approve click on a pending action) mints a token for that one turn: owned by the person who sent it, carrying only their abilities, their IAM policies and their team scope, labeled with the agent name `ai-assistant`, and revoked when the turn ends. It expires after 15 minutes even if the control plane dies mid-turn (`APP_AI_TURN_TOKEN_TTL`, a Go duration such as `10m`). So a prompt injection in a log line can never do more than the human who asked, and an IAM Deny on that human also binds the assistant.
+
+- The [AI control](/ai-control) mode still applies to every tool call, because the turn token is an agent token.
+- Each tool call row in the chat shows who it ran as and which abilities the API checked for that call, for example "Acting as alice@example.com with read". `levelrail-cli ai chat` and `ai sessions show` print the same.
+- Audit entries made by a turn token carry `on_behalf_of` (`user:<id>`) next to the `ai-assistant` agent name.
+- Chat sessions belong to the principal that created them. Another user or token, even one holding `root`, gets 404 for them. Sessions created before this release have no owner and are no longer listed.
+- Older releases kept a persistent `root` token for the assistant in the secrets store. The control plane deletes and revokes it at boot.
 
 ## Generating and scoping a token
 
-Use the same token machinery the CLI and dashboard already use ([Identity and access](identity-and-access.md#api-tokens)): scoped, revocable bearer credentials minted with the six-string ability vocabulary (`read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`).
+Use the same token machinery the CLI and dashboard already use ([Identity and access](/identity-and-access#api-tokens)): scoped, revocable bearer credentials minted with the six-string ability vocabulary (`read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`).
 
 ```bash
 levelrail-cli tokens create --name "ai-assistant" --abilities read,deploy
@@ -129,13 +141,13 @@ levelrail-cli audit-log --agent deploy-bot
 
 ## Running a separately licensed AI assistant
 
-`levelrail-mcp` is designed to sit in front of any MCP-compatible AI assistant, including one licensed under terms (for example AGPL) that are incompatible with this project's Apache 2.0 license, or any third-party assistant you do not want coupled to this codebase.
+`levelrail-mcp` works with any MCP-compatible AI assistant, including one licensed under terms (for example AGPL) that are incompatible with this project's Apache 2.0 license, or any third-party assistant you do not want coupled to this codebase.
 
-**That assistant must always run as its own independent, separately deployed service.** It connects to Levelrail purely as an MCP client, over stdio (if co-located and it can spawn a subprocess) or over `--transport=http` (if it runs elsewhere). Its code must never be imported, vendored, copied into, or otherwise combined with this repository, regardless of transport. This is the same brand- and dependency-neutrality this project already enforces elsewhere: an integration is a boundary, not a merge.
+That assistant must always run as its own, separately deployed service. It connects to Levelrail purely as an MCP client, over stdio (if co-located and it can spawn a subprocess) or over `--transport=http` (if it runs elsewhere). Its code must never be imported, vendored, copied into, or otherwise combined with this repository, regardless of transport. An integration is a boundary, not a merge.
 
 ## See also
 
-- [ai-assistant-chat.md](ai-assistant-chat.md): the in-app dashboard/CLI chat, a separate feature built on this same engine and confirmation gate, behind the `ai-chat` experimental flag.
-- [identity-and-access.md](identity-and-access.md): API tokens, abilities, and the audit log.
-- [api-reference.md](api-reference.md): every REST route the MCP tools wrap.
-- [cli-reference.md](cli-reference.md): `tokens create`/`list`/`revoke` and `auth login`.
+- [ai-assistant-chat.md](/ai-assistant-chat): the in-app dashboard/CLI chat, a separate feature built on this same engine and confirmation gate, behind the `ai-chat` experimental flag.
+- [identity-and-access.md](/identity-and-access): API tokens, abilities, and the audit log.
+- [api-reference.md](/api-reference): every REST route the MCP tools wrap.
+- [cli-reference.md](/cli-reference): `tokens create`/`list`/`revoke` and `auth login`.

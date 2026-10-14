@@ -1,0 +1,49 @@
+---
+title: "Self-host RedisInsight with Docker"
+sidebarTitle: "RedisInsight"
+description: "A GUI for browsing keys, running commands, and profiling performance on any Redis instance."
+---
+
+A GUI for browsing keys, running commands, and profiling performance on any Redis instance.
+
+This page describes the Levelrail template for RedisInsight (Database Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://redis.io/docs/latest/operate/redisinsight/.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `redisinsight` | `redis/redisinsight:2.70` | 5540 | `redisinsight_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `redisinsight` | `RI_APP_HOST` | Preset in the template |
+| `redisinsight` | `RI_APP_PORT` | Preset in the template |
+| `redisinsight` | `RI_ENCRYPTION_KEY` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy RedisInsight with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select RedisInsight. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy redisinsight --name my-redisinsight
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Database Tools templates
+
+- [Adminer](/self-host/adminer)
+- [Baserow](/self-host/baserow)
+- [Bytebase](/self-host/bytebase)
+- [Chroma](/self-host/chroma)
+- [ClickHouse](/self-host/clickhouse)
+
+All templates are listed in the [self-host gallery](/self-host).

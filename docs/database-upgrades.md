@@ -1,14 +1,11 @@
 ---
-description: Keep managed databases patched. See available versions with security and end-of-life status, schedule automatic patch and minor upgrades in a maintenance window, and let failed upgrades revert themselves.
+title: "Database upgrades"
+description: Schedule automatic database upgrades with security checks and automatic rollback on failure.
 ---
-
-# Database upgrades
 
 Levelrail tells you which managed databases are behind, which ones miss security fixes, and which run a release past its end of life. It can apply patch and minor releases for you inside a maintenance window. Every upgrade, automatic or started by hand, takes a fresh backup first, checks it, and reverts on its own when the new version does not come up healthy.
 
 Major upgrades are never automatic. For those, use the [guarded Postgres major upgrade](/managing-databases#postgres-major-version-upgrade) or restore a backup into a new database.
-
-<InlineToc default-open />
 
 ## What the advisor shows
 
@@ -21,16 +18,16 @@ levelrail-cli databases upgrades            # every database at a glance
 
 For each database you get:
 
-- **Current version and release line**, with its upstream end-of-life date and a status: supported, end of life soon (within `APP_DB_EOL_WARN`, default 180 days), or end of life.
-- **Available targets**, each marked `patch`, `minor` or `major`: the newest patch of your line, the newest release of each newer minor, and the newest release of each newer major line.
-- **Security flags**: a target that fixes a CVE affecting your current version is marked, with the CVE ids.
-- **Blockers**, such as a missing backup target or a database on another node.
+- The current version and release line, with its upstream end-of-life date and a status: supported, end of life soon (within `APP_DB_EOL_WARN`, default 180 days), or end of life.
+- The available targets, each marked `patch`, `minor` or `major`: the newest patch of your line, the newest release of each newer minor, and the newest release of each newer major line.
+- Security flags: a target that fixes a CVE affecting your current version is marked, with the CVE ids.
+- Blockers, such as a missing backup target or a database on another node.
 
 The data comes from a curated catalog that ships with Levelrail (`internal/dbupgrade/catalog.json`): supported versions, release lines with end-of-life dates, and CVE ids per fixed version. Nothing is fetched while you load the page. A background job also reads the image tag list from Docker Hub once a day and adds newer pinned tags it finds; when the registry is unreachable the last good list is kept. Set `APP_DB_VERSION_REFRESH_INTERVAL=0` to turn that off (for example on an offline host).
 
 A floating tag such as `16` could be any 16.x release, so it is treated as the oldest of its line, and upgrading pins it to an exact release. A pgvector variant (`17-pgvector`) and a non-numeric tag such as `latest` have no targets.
 
-The attention center shows **N databases have security updates available**, plus one item per database past end of life and per database whose last upgrade failed.
+The [attention center](/attention-center) shows **N databases have security updates available**, plus one item per database past end of life and per database whose last upgrade failed.
 
 ## Automatic upgrades
 
@@ -127,5 +124,15 @@ Upgrades run only for databases on the control plane's own node. A database plac
 
 ## Next steps
 
-- [Managing databases](/managing-databases): versions, major upgrades, backups and restores.
-- [Backups and storage](/backups-and-storage): set up the backup target every upgrade needs.
+<CardGroup cols={2}>
+<Card title="Managing databases" href="/managing-databases">
+
+Versions, major upgrades, backups and restores.
+
+</Card>
+<Card title="Backups and storage" href="/backups-and-storage">
+
+Set up the backup target every upgrade needs.
+
+</Card>
+</CardGroup>

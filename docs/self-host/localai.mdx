@@ -1,0 +1,47 @@
+---
+title: "Self-host LocalAI with Docker"
+sidebarTitle: "LocalAI"
+description: "A drop-in OpenAI-compatible API that runs language, image, and speech models on your own hardware."
+---
+
+A drop-in OpenAI-compatible API that runs language, image, and speech models on your own hardware.
+
+This page describes the Levelrail template for LocalAI (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://localai.io.
+
+Recommended memory: about 4096 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `localai` | `localai/localai:v3.7.0` | 8080 | `localai_models -&#62; /models` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `localai` | `MODELS_PATH` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy LocalAI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select LocalAI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy localai --name my-localai
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

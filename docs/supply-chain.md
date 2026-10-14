@@ -1,8 +1,7 @@
 ---
+title: "Supply chain visibility"
 description: A software bill of materials for each Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can keep a release from going live. What it costs, what it does not cover and every APP_BUILD_ATTEST, APP_SCAN and APP_SBOM setting.
 ---
-
-# Supply chain visibility
 
 A Dockerfile build can record what is inside the image, and the control plane can check that list for known vulnerabilities before the release goes live. Both are off by default.
 
@@ -24,13 +23,13 @@ Set `APP_BUILD_ATTEST=true` on the control plane and restart it. From then on ea
 </Step>
 <Step title="Turn on scanning for an app">
 
-<Tabs :items="['Dashboard', 'CLI']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Open the app, then **Deploy settings**, then **Supply chain**, and turn on scanning.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps scan enable web
@@ -52,11 +51,11 @@ Each deploy's **Supply chain** section (in the deployments drawer and on the per
 
 ## What a scan costs
 
-- **Scanner image.** The first scan pulls the scanner image (default `docker.io/aquasec/trivy:0.65.0`, or `docker.io/anchore/grype:v0.99.1` with `APP_SCANNER=grype`). Expect each image to be on the order of hundreds of MB. The image stays on the host after the scan.
-- **Vulnerability database.** The scanner downloads its database on the first scan and refreshes it later. It is cached in a Docker volume named after the brand short name with a `-scanner-cache` suffix.
-- **Per scan.** One container with `APP_SCAN_MEMORY_MB` (default 1024) of memory, `APP_SCAN_CPUS` (default 1) CPUs and a 256 process limit, all capabilities dropped, `no-new-privileges`, removed afterwards. It has network access, because the database download needs it. Only the SBOM is copied into it: no app data, secrets or Docker socket.
-- **Deploy latency.** A deploy waits for the scan before it goes live, up to `APP_SCAN_TIMEOUT` (default 5 minutes). A scanner that fails or times out never blocks a release.
-- **Build time.** Attestations add work to every build (BuildKit runs a scanner image over the build result). That cost is why `APP_BUILD_ATTEST` is off by default.
+- The first scan pulls the scanner image (default `docker.io/aquasec/trivy:0.65.0`, or `docker.io/anchore/grype:v0.99.1` with `APP_SCANNER=grype`). Expect each image to be on the order of hundreds of MB. The image stays on the host after the scan.
+- The scanner downloads its vulnerability database on the first scan and refreshes it later. It is cached in a Docker volume named after the brand short name with a `-scanner-cache` suffix.
+- Each scan runs in one container with `APP_SCAN_MEMORY_MB` (default 1024) of memory, `APP_SCAN_CPUS` (default 1) CPUs and a 256 process limit, all capabilities dropped, `no-new-privileges`, removed afterwards. It has network access, because the database download needs it. Only the SBOM is copied into it: no app data, secrets or Docker socket.
+- A deploy waits for the scan before it goes live, up to `APP_SCAN_TIMEOUT` (default 5 minutes). A scanner that fails or times out never blocks a release.
+- Attestations add work to every build (BuildKit runs a scanner image over the build result). That cost is why `APP_BUILD_ATTEST` is off by default.
 
 ## The gate
 

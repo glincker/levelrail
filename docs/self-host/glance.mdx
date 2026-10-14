@@ -1,0 +1,45 @@
+---
+title: "Self-host Glance with Docker"
+sidebarTitle: "Glance"
+description: "A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page."
+---
+
+A fast, self-hosted dashboard that pulls RSS, weather, and other widgets onto one page.
+
+This page describes the Levelrail template for Glance (Dashboard). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/glanceapp/glance/blob/main/docs/configuration.md.
+
+Recommended memory: about 128 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `glance` | `glanceapp/glance:v0.8.6` | 8080 | `glance_config -&#62; /app/config` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Glance with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Glance. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy glance --name my-glance
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Dashboard templates
+
+- [Dashy](/self-host/dashy)
+- [Flame](/self-host/flame)
+- [Heimdall](/self-host/heimdall)
+- [Homarr](/self-host/homarr)
+- [Homepage](/self-host/homepage)
+
+All templates are listed in the [self-host gallery](/self-host).

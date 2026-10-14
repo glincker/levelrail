@@ -1,10 +1,9 @@
 ---
+title: "Sign-in engine"
 description: How sign-in, API tokens, two-factor, passkeys and OAuth are served, and the settings that tune them.
 ---
 
-# Sign-in engine
-
-Sign-in, sessions, API tokens, device login, two-factor codes, passkeys and OAuth sign-in all run on one auth library embedded in the control plane. There is nothing to enable or migrate on a new install. The first account is created from the setup token, and it lands directly in the library.
+Sign-in, sessions, API tokens, device login, two-factor codes, passkeys and OAuth all run on one auth library built into the control plane. On a new install there is nothing to enable or migrate. The first account is created from the setup token and goes straight into the library.
 
 Check what is available with `levelrail-cli auth-engine status` (root only) or on Settings > Security. It reports the library version and whether two-factor, passkeys and OAuth are available.
 
@@ -51,7 +50,7 @@ All optional.
 
 ## Upgrading from a release before the auth library
 
-The auth library replaced the built-in sign-in in a release that is a breaking change for existing installs, because the platform had no production users when it landed. After upgrading from `v0.2.0-beta.18` or earlier:
+The auth library replaced the old built-in sign-in, and that change breaks existing installs (the platform had no production users when it landed). After upgrading from `v0.2.0-beta.18` or earlier:
 
 - Everyone is signed out. Sign in again with your existing username and password: accounts and password hashes carry over.
 - API tokens created before the upgrade stop working (they answer 401). Create new ones in **Settings, CLI Access**, or run `levelrail-cli auth login --device`, and update CI secrets.
@@ -65,6 +64,6 @@ Take a backup of the data directory before upgrading, as the installer's upgrade
 - A TOTP code can be used once. Repeated wrong codes lock the user out, counted across devices, and answer 429 with `Retry-After`.
 - Recovery codes look like `XXXX-XXXX-XXXX-XXXX` and are accepted with or without hyphens and in any case.
 - Sign-in is case-insensitive on the username. Usernames that are not an email address (for example `admin`) are still accepted at first-run and by invites.
-- OAuth callback URL: register `https://<your-host>/api/v1/auth/oauth/<provider>/callback` at each identity provider. Sign-in and profile linking share it, and Levelrail tells them apart by the state value. Once a dashboard URL is set, redirect hosts are limited to it and the base URL host, plus any in `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS`.
+- OAuth callback URL: register `https://<your-host>/api/v1/auth/oauth/<provider>/callback` at each identity provider. Sign-in and profile linking share it, and Levelrail tells them apart by the state value. Once a dashboard URL is set, redirect hosts are limited to it and the base URL host, plus any in `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS`. The redirect URI is always built from the dashboard URL (or `APP_DASHBOARD_URL`). With neither set, the request's `Host` and `X-Forwarded-Proto` are used only from a loopback peer or one listed in `APP_INGRESS_TRUSTED_PROXIES`; any other caller gets a `400` until a dashboard URL is set.
 - An existing account is linked on OAuth sign-in only when the provider reports the email as verified. A provider's allowed email domain gates new accounts only.
-- `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed. Locked out another way? See [Emergency access](emergency-access.md).
+- `recover-admin` sets the password through the library, which also ends that account's sessions and clears its lockout. No restart is needed. Locked out another way? See [Emergency access](/emergency-access).

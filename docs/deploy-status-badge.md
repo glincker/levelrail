@@ -1,8 +1,7 @@
 ---
+title: "Deploy status badge"
 description: An opt-in, per-app SVG badge showing an app's latest deploy status and when it happened, for embedding in your own project's README.
 ---
-
-# Deploy status badge
 
 Every app can serve a small public SVG badge showing its latest deploy status, the same idea as a GitHub Actions workflow badge or a Vercel deployment badge. It is off by default: a private app's deploy status is never exposed until you turn it on for that specific app.
 

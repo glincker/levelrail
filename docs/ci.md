@@ -1,31 +1,28 @@
 ---
+title: "CI"
 description: How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
 ---
 
-# CI
-
 How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself.
-
-<InlineToc default-open />
 
 ## The short version
 
 A PR runs only the work its diff can affect:
 
-- **Docs only** (`*.md`, `adr/`): change detection, the aggregator, the
+- Docs only (`*.md`, `adr/`): change detection, the aggregator, the
   secret scan and PR hygiene. A change under `docs/` also rebuilds the web
   bundle, since `docs/` feeds the dashboard's `/help` pages.
-- **Web only** (`web/`): the web job, with vitest limited to tests whose
+- Web only (`web/`): the web job, with vitest limited to tests whose
   module graph reaches a changed file. No Go job runs.
-- **Go**: build, vet and tests for the affected packages only (the packages
+- Go: build, vet and tests for the affected packages only (the packages
   you changed plus every package that imports them, including through test
   imports), lint for the packages you changed, reporting only issues on
   lines you touched.
-- **Workflow files only**: actionlint on the changed workflow files, inside
+- Workflow files only: actionlint on the changed workflow files, inside
   the Lint job.
 
-A store migration that only adds tables, indexes or columns no longer runs
-everything: it selects the store and the packages that mention the table.
+A store migration that only adds tables, indexes or columns doesn't run
+everything. It selects the store and the packages that mention the table.
 Whole-tree scanner tests have no import edge to what they scan, so
 `scripts/ci-guards.txt` lists them and any non-test Go change selects them.
 
@@ -36,9 +33,9 @@ SHA is missing or unresolvable. The merge queue is gone, so this is the only
 post-merge verification of the merged tree. Docs-only pushes never trigger
 `ci.yml` at all (`paths-ignore` on the `push` trigger: `**/*.md`, `adr/**`,
 `LICENSE`), and an area with no changed files skips as on a PR.
-`nightly.yml` runs the full no `-short`, shuffled sweep once a day: the safety
+`nightly.yml` runs the full no `-short`, shuffled sweep once a day, as the safety
 net for anything the scoping under-selects. It diffs against the last
-**green** nightly, so a lane that failed or timed out is retried until it
+green nightly, so a lane that failed or timed out is retried until it
 passes. `-race` runs every night on the packages that start goroutines or use
 `sync`, `atomic` or channels (`scripts/go-test-groups.sh race`), and on the api
 and docker lanes on Sundays or a manual dispatch. The `rest` packages split on
@@ -47,9 +44,9 @@ lane pre-pulls its upstream images with retries.
 
 ## How a change is scoped
 
-Two scripts decide, and both can be run locally against any diff.
+Two scripts decide, and you can run both locally against any diff.
 
-`scripts/ci-changes.sh <base> [head]` (the **Detect changed areas** job, no
+`scripts/ci-changes.sh <base> [head]` (the Detect changed areas job, no
 Go toolchain) sorts changed files into areas:
 
 | Changed path | Effect |
@@ -71,7 +68,7 @@ Go toolchain) sorts changed files into areas:
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
 | Anything else (`adr/`, `LICENSE`, other `.github/` files) | Nothing beyond the always-on checks |
 
-`scripts/ci-go-plan.sh <base> [head]` (inside **Plan Go work**) turns the Go
+`scripts/ci-go-plan.sh <base> [head]` (inside the Plan Go work job) turns the Go
 side into packages and test lanes through `scripts/affected-go-packages.sh`,
 the same dependency-graph walk the pre-push hook uses. A change only a
 package's own tests can see (`_test.go`, `testdata/`, a doc a test reads)
@@ -104,7 +101,7 @@ Every planned lane is listed in `rest_checks` or `api_checks`, which the
 `Test (everything else)` and `Test (internal/api)` aggregators wait on, and
 `scripts/test-ci-go-plan.sh` asserts that for each case, so a lane cannot be
 added without a check that fails when it fails or goes missing. Planning runs
-in its own **Plan Go work** job, so the test lanes start as soon as the plan
+in its own Plan Go work job, so the test lanes start as soon as the plan
 exists instead of waiting behind `go build` and `go vet`.
 
 `test/e2e` is split from `test/e2e/reconcile` along one dependency: only the
@@ -147,7 +144,7 @@ other `test/e2e` and `test/e2e/reconcile` test, and every unit test, runs on
 every PR the same as before.
 
 `scripts/ci-go-plan.sh` decides `live=full` or `live=smoke` for the PR, in one
-place, and prints the reason in the **Go plan** job summary:
+place, and prints the reason in the Go plan job summary:
 
 | `live` | When | What runs |
 | --- | --- | --- |
@@ -193,7 +190,7 @@ pre-push hook).
 `go test ./...`, `go vet ./...` and `golangci-lint run` from the repo root
 never reach it. It has its own lane instead:
 
-- **Kit (vet, lint, test)** runs only when a diff touches `kit/` (not `kit/*.md`),
+- The Kit (vet, lint, test) lane runs only when a diff touches `kit/` (not `kit/*.md`),
   `.golangci.yml`, or the pipeline itself. It runs `go -C kit vet`, golangci-lint
   with the root `.golangci.yml` (found by walking up from `kit/`),
   `go -C kit test -short` and `scripts/check-brand-strings.sh`.
@@ -213,7 +210,7 @@ never reach it. It has its own lane instead:
 
 ## Required checks
 
-**CI required** is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check` and `install-sh`. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
+`CI required` is the aggregator and the one check meant to gate a merge. It always runs and needs `changes`, `plan`, `build-vet`, `lint`, `kit`, the Go test jobs, `coverage-gate`, `web-check` and `install-sh`. It fails if change detection did not succeed or any job it needs failed or was cancelled, and a job that was skipped because its area had no work counts as passing. Because branch protection can name just this one context, the job set can be split or renamed without touching the ruleset. Branch protection itself is configured in GitHub, not in this repository.
 
 Seven jobs also never skip because of an upstream failure: `Plan Go work`, `Build, vet`, `Lint`, `Test (internal/api)`, `Test (everything else)`, `Coverage gate` and `Web (tsc, eslint)`. Each runs, and fails, whenever an upstream job failed or was cancelled, and is skipped only when its area has no work for the diff. GitHub reports a job skipped by its own `if` as success for a required check, so auto-merge does not wait on it.
 
@@ -303,13 +300,11 @@ applies. Live Docker lanes should keep `-count=1`.
 - Go: `~/.cache/go-build` and `~/go/pkg/mod`, one cache per job kind (build,
   lint, and each test lane group), keyed on the Go version and `go.sum` plus
   `tools/go.sum`. Pushes to `main` save one fresh cache per day, in the job's
-  post step so it holds what the job compiled (the save used to run before
-  any `go` command and stored an empty cache). All test lanes share one cache
+  post step so it holds what the job compiled. All test lanes share one cache
   (`go-test-all`, saved by the first lane). PR runs only
   restore, so they cannot churn the repository's 10 GB cache quota. Every
-  job that needs this shares `.github/actions/setup-go-cached` rather than
-  repeating setup-go plus restore/save inline (five jobs did, byte-for-byte
-  identical except the cache-key prefix).
+  job that needs this shares `.github/actions/setup-go-cached` instead of
+  repeating setup-go plus restore/save inline.
 - golangci-lint: the action's own analysis cache, saved on `main` only.
 - npm: `actions/setup-node`'s npm cache, keyed on `web/package-lock.json`.
 - tsc: `web/node_modules/.tmp` (the `tsc -b` build info), restored on PRs and
@@ -369,7 +364,7 @@ RunsOn) is a variable change, not a workflow edit.
 package and fails when one passes its budget in `scripts/fanin-budget.txt`.
 Today `internal/store` reaches ~60 packages through `internal/spec`, so most
 store edits select most of the tree. Lowering those numbers (consumer-side
-interfaces, moving shared types to leaf packages) is the durable fix for
+interfaces, moving shared types to leaf packages) is the lasting fix for
 "one edit runs 1000 tests".
 
 ## Tuning

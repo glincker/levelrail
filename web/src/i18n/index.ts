@@ -52,6 +52,7 @@ export const NAMESPACES = [
   'usage',
   'deployTimeline',
   'secretRotation',
+  'aiAssistant',
 ] as const
 
 void i18n

@@ -1,8 +1,7 @@
 ---
+title: "Deploy previews"
 description: Thumbnails of each deploy in three tiers, from free (page metadata, no browser) to a real screenshot from a short-lived browser container. What each tier costs, what it can leak, how it is cleaned up and every APP_PREVIEW_* setting.
 ---
-
-# Deploy previews
 
 When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app, and the default costs about nothing.
 
@@ -30,13 +29,13 @@ New apps start in the server's default mode, `metadata`. Nothing runs while idle
 
 ## Choose a mode
 
-<Tabs :items="['UI','CLI']">
-<Tab value="UI">
+<Tabs>
+<Tab title="UI">
 
 Open the app, then **Deploy settings**, then **Deploy previews**, and pick a mode.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli preview enable web --mode metadata
@@ -89,11 +88,11 @@ To use a different browser image, point `APP_PREVIEW_IMAGE` at it. It must expos
 
 A preview is a picture of what the app served, so treat it like the app.
 
-- **Metadata is on by default, screenshots are opt-in.** The default reads only the public head of your page and, at most, one image the page itself names. A screenshot is never taken unless you choose it for that app.
-- **Internal pages can leak.** If the path you pick shows internal data to anyone who can reach the app, the thumbnail shows it too. Pick a public page, such as `/`.
-- **No login.** The browser sends no cookies and no tokens. A 401 or 403, or a redirect to a login page, is recorded as skipped and no image is stored.
-- **Same access as the app.** The image is served only to people who can read the app, through the authenticated API. It is never public and never appears on the public status page.
-- **Not a sandbox for hostile apps.** The page is loaded by a real browser next to the app. The container limits above contain a browser bug, but only capture apps you run.
+- Metadata is on by default and screenshots are opt-in. The default reads only the public head of your page and, at most, one image the page itself names. A screenshot is never taken unless you choose it for that app.
+- Internal pages can leak. If the path you pick shows internal data to anyone who can reach the app, the thumbnail shows it too. Pick a public page, such as `/`.
+- The browser never logs in. It sends no cookies and no tokens, and a 401 or 403, or a redirect to a login page, is recorded as skipped with no image stored.
+- The image has the same access as the app. It is served only to people who can read the app, through the authenticated API. It is never public and never appears on the public [status page](/status-page).
+- This is not a sandbox for hostile apps. The page is loaded by a real browser next to the app. The container limits above contain a browser bug, but only capture apps you run.
 - The browser's debugging port is published on the host loopback interface for the length of a capture, on a random port, so other processes on the host can reach it during that window.
 
 ## What is skipped

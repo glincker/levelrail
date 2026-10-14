@@ -1,8 +1,7 @@
 ---
+title: "Scheduled jobs"
 description: Run commands on a cron schedule against your app, in a fresh container with the app's env, secrets and volumes, with run history, logs, retries and alerts.
 ---
-
-# Scheduled jobs
 
 A job runs a command on a cron schedule for one app: a database migration, a
 cache warm-up, a nightly report. Every run is recorded with its start, end,
@@ -22,7 +21,7 @@ surface.
 
 A fresh job gets no published ports and no restart policy, and only the volumes
 the app already declares. It runs as the image's user under the same Docker
-guard rules as the app itself. On a multi-node setup the job runs on the node
+guard rules as the app itself. On a [multi-node](/multi-node) setup the job runs on the node
 the app is placed on.
 
 The command is a real argv list with no shell involved. Use
@@ -209,6 +208,6 @@ levelrail-cli jobs create web weekly-report --schedule "0 8 * * 1" \
 
 ## Related
 
-- [app.yaml reference](app-spec-reference.md)
-- [Observability and alerts](observability.md)
-- [Scheduled deploys](scheduled-deploys.md)
+- [app.yaml reference](/app-spec-reference)
+- [Observability and alerts](/observability)
+- [Scheduled deploys](/scheduled-deploys)

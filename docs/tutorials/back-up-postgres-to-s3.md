@@ -1,15 +1,18 @@
 ---
+title: "Back up Postgres to S3 and test the restore"
+icon: "/assets/icons/cloud-arrow-up.svg"
+sidebarTitle: "Back up to S3"
 description: Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
 ---
 
-# Back up Postgres to S3 and test the restore
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws-amazon-simple-storage-service/default.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
 
 A backup you have never restored is a guess. In this tutorial you will connect an S3-compatible bucket, take a backup of a real Postgres database, schedule the next ones, delete data on purpose, and bring it back two ways: over the original database and into a brand-new copy.
 
 ## Before you start
 
-- A running Levelrail instance and the CLI logged in to it ([installing](../installing.md)).
-- A Postgres database. Create `main-db` as in [Connect an app to Postgres](connect-an-app-to-postgres.md), or use your own.
+- A running Levelrail instance and the CLI logged in to it ([installing](/installing)).
+- A Postgres database. Create `main-db` as in [Connect an app to Postgres](/tutorials/connect-an-app-to-postgres), or use your own.
 - A bucket and an access key pair with read and write access. AWS S3, Cloudflare R2, Backblaze B2, and MinIO all work.
 
 <Steps>
@@ -42,7 +45,7 @@ levelrail-cli backup-targets test bkt_Ra-kILVUyJaw
 backup target "bkt_Ra-kILVUyJaw" connected successfully
 ```
 
-![The Backups page, which asks for a backup target on a fresh install](../assets/screenshots/backups.png)
+![The Backups page, which asks for a backup target on a fresh install](/assets/screenshots/backups.png)
 
 </Step>
 <Step title="Take a first backup">
@@ -132,9 +135,11 @@ levelrail-cli backups clone-restores main-db
 
 Wait for the status to read `succeeded`, then query `main-db-copy`. The live database was never touched.
 
-::: tip Older releases
+<Tip>
+**Older releases**
+
 Up to `v0.2.0-beta.15`, a restore into a new database could fail with `database "..." does not exist` because it started before the new Postgres had finished initializing. It is fixed in later releases. On an older one, delete the copy with `levelrail-cli databases delete main-db-copy` and run the restore again.
-:::
+</Tip>
 
 </Step>
 </Steps>
@@ -150,6 +155,6 @@ Keep the target if you want to keep the schedule running.
 
 ## Where to go next
 
-- [Back up an app's data volumes](self-host-vaultwarden.md#back-up-the-data): the same target also protects app volumes.
-- [Backups and storage](../backups-and-storage.md): retention, instance-wide visibility, and how schedules are stored.
-- [Control plane backup](../control-plane-backup.md) and [disaster recovery](../disaster-recovery.md): protect Levelrail's own state.
+- [Back up an app's data volumes](/tutorials/self-host-vaultwarden#back-up-the-data): the same target also protects app volumes.
+- [Backups and storage](/backups-and-storage): retention, instance-wide visibility, and how schedules are stored.
+- [Control plane backup](/control-plane-backup) and [disaster recovery](/disaster-recovery): protect Levelrail's own state.

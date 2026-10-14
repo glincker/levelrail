@@ -20,6 +20,9 @@ export interface AiToolCall {
   resolution?: AiToolCallResolution
   result?: unknown
   is_error?: boolean
+  // The human the call ran as and the abilities the API checked for it.
+  acting_as?: string
+  abilities?: string[]
 }
 
 export interface AiChatMessage {

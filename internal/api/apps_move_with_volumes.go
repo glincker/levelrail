@@ -95,7 +95,7 @@ func (rt *Router) handleMoveAppWithVolumes(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := rt.validatePlacementTarget(r.Context(), req.NodeID); err != nil {
+	if err := rt.authorizePlacementTarget(r, req.NodeID); err != nil {
 		rt.respondPlacementValidationError(w, err, req.NodeID, "api: move app with volumes: look up node failed")
 		return
 	}

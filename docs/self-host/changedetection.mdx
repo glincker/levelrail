@@ -1,0 +1,45 @@
+---
+title: "Self-host Changedetection.io with Docker"
+sidebarTitle: "Changedetection.io"
+description: "Monitor any webpage for changes and get notified the moment content updates."
+---
+
+Monitor any webpage for changes and get notified the moment content updates.
+
+This page describes the Levelrail template for Changedetection.io (Monitoring). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/dgtlmoon/changedetection.io/wiki.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `changedetection` | `ghcr.io/dgtlmoon/changedetection.io:0.49.12` | 5000 | `changedetection_data -&#62; /datastore` |
+
+## Environment variables
+
+This template sets no environment variables.
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Changedetection.io with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Changedetection.io. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy changedetection --name my-changedetection
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Monitoring templates
+
+- [Beszel](/self-host/beszel)
+- [Bugsink](/self-host/bugsink)
+- [Checkmate](/self-host/checkmate)
+- [Diun](/self-host/diun)
+- [Glances](/self-host/glances)
+
+All templates are listed in the [self-host gallery](/self-host).

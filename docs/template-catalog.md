@@ -1,8 +1,7 @@
 ---
+title: "Template catalog"
 description: Every service in Levelrail's one-click template catalog, grouped by category, generated straight from the Go source
 ---
-
-# Template catalog
 
 Every entry in `internal/catalog.Templates` as of this build, grouped by category. This page exists so you can browse the full breadth of what's deployable in one click without opening the dashboard.
 
@@ -18,7 +17,7 @@ This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a templ
 - This page has no popularity counts, deployment counts, or ratings. None of that is tracked anywhere in this codebase, so there's nothing honest to show.
 - Logos for many of these are already visible in the dashboard's own template picker (**Apps → New app → Browse templates**); the table below stays text-only to keep it simple and to keep the table generator (below) the only thing that can go stale, not an icon mapping too.
 
-<!-- BEGIN GENERATED CATALOG TABLE -->
+{/* BEGIN GENERATED CATALOG TABLE */}
 
 Generated from `internal/catalog.Templates` (358 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
@@ -485,7 +484,7 @@ Generated from `internal/catalog.Templates` (358 entries as of this build). Run 
 | [Syncthing](https://docs.syncthing.net) | Continuous, peer-to-peer file synchronization between your own devices, no cloud in between. | `syncthing` |  |
 | [Zipline](https://zipline.diced.sh/docs) | A self-hosted file and screenshot host with a share-first upload flow and its own URL shortener. | `zipline` |  |
 
-<!-- END GENERATED CATALOG TABLE -->
+{/* END GENERATED CATALOG TABLE */}
 
 ## Not verified
 
@@ -496,4 +495,4 @@ Every entry here passed the same structural checks the rest of the catalog gets 
 - [Templates and registry](/templates-and-registry) - how a template deploy actually works, the API/CLI/UI surface, custom templates
 - [Starter kit templates](/templates) - the seven `Starter Kits` entries in depth
 - [Deploying apps](/deploying-apps) - using templates from the dashboard or CLI
-- [ADR 015: Service template catalog reversal](../adr/015-service-template-catalog-reversal.md) - why this catalog exists at all
+- [ADR 015: Service template catalog reversal](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md) - why this catalog exists at all

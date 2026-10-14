@@ -19,10 +19,10 @@ import (
 // row's absence is always a legitimate, queryable "not found", not a
 // "not configured" condition.
 type AIChatStore interface {
-	CreateAIChatSession(ctx context.Context, id string, now time.Time) (store.AIChatSession, error)
+	CreateAIChatSession(ctx context.Context, id, owner string, now time.Time) (store.AIChatSession, error)
 	GetAIChatSession(ctx context.Context, id string) (store.AIChatSession, error)
-	ListAIChatSessions(ctx context.Context) ([]store.AIChatSession, error)
-	DeleteAIChatSession(ctx context.Context, id string) error
+	ListAIChatSessions(ctx context.Context, owner string) ([]store.AIChatSession, error)
+	DeleteAIChatSession(ctx context.Context, id, owner string) error
 	ListAIChatMessages(ctx context.Context, sessionID string) ([]store.AIChatMessage, error)
 	GetAIChatConfirmation(ctx context.Context, id string) (store.AIChatConfirmation, error)
 }
@@ -68,15 +68,49 @@ func toAIChatMessageResource(m store.AIChatMessage) aiChatMessageResource {
 	return aiChatMessageResource{ID: m.ID, Role: m.Role, Content: m.Content, ToolCalls: m.ToolCalls, CreatedAt: m.CreatedAt}
 }
 
+// aiChatOwner names the calling principal a chat session belongs to.
+func (rt *Router) aiChatOwner(r *http.Request) (string, error) {
+	ptype, pid, _, err := rt.callerPrincipal(r)
+	if err != nil {
+		return "", err
+	}
+	return ptype + ":" + pid, nil
+}
+
+// ownedAIChatSession loads sessionID for its owner only; another principal's
+// session reads as not found so its existence never leaks.
+func (rt *Router) ownedAIChatSession(w http.ResponseWriter, r *http.Request, sessionID string) (store.AIChatSession, bool) {
+	owner, err := rt.aiChatOwner(r)
+	if err != nil {
+		rt.internalError(w, "api: ai chat: resolve caller failed", err)
+		return store.AIChatSession{}, false
+	}
+	session, err := rt.aiChat.GetAIChatSession(r.Context(), sessionID)
+	if errors.Is(err, store.ErrAIChatSessionNotFound) || (err == nil && session.Owner != owner) {
+		writeError(w, http.StatusNotFound, "session not found")
+		return store.AIChatSession{}, false
+	}
+	if err != nil {
+		rt.internalError(w, "api: ai chat: load session failed", err, slog.String("session_id", sessionID))
+		return store.AIChatSession{}, false
+	}
+	return session, true
+}
+
 // handleCreateAIChatSession handles POST /api/v1/ai/sessions.
 func (rt *Router) handleCreateAIChatSession(w http.ResponseWriter, r *http.Request) {
+	owner, err := rt.aiChatOwner(r)
+	if err != nil {
+		rt.internalError(w, "api: create ai chat session: resolve caller failed", err)
+		return
+	}
 	id, err := store.NewAIChatSessionID()
 	if err != nil {
 		rt.logger.Error("api: create ai chat session: mint id failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	session, err := rt.aiChat.CreateAIChatSession(r.Context(), id, time.Now().UTC())
+	session, err := rt.aiChat.CreateAIChatSession(r.Context(), id, owner, time.Now().UTC())
 	if err != nil {
 		rt.logger.Error("api: create ai chat session failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -89,14 +123,8 @@ func (rt *Router) handleCreateAIChatSession(w http.ResponseWriter, r *http.Reque
 // message history, oldest first.
 func (rt *Router) handleGetAIChatSession(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	session, err := rt.aiChat.GetAIChatSession(r.Context(), id)
-	if errors.Is(err, store.ErrAIChatSessionNotFound) {
-		writeError(w, http.StatusNotFound, "session not found")
-		return
-	}
-	if err != nil {
-		rt.logger.Error("api: get ai chat session failed", slog.String("error", err.Error()), slog.String("session_id", id))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	session, ok := rt.ownedAIChatSession(w, r, id)
+	if !ok {
 		return
 	}
 
@@ -114,12 +142,15 @@ func (rt *Router) handleGetAIChatSession(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, aiChatSessionResource{ID: session.ID, Messages: messages})
 }
 
-// handleListAIChatSessions handles GET /api/v1/ai/sessions: every
-// session's identity and timestamps, most recently updated first. No
-// message content, matching handleGetAIChatSession's own full transcript
-// being a separate, per-session fetch.
+// handleListAIChatSessions handles GET /api/v1/ai/sessions: the caller's
+// own sessions, most recently updated first, without message content.
 func (rt *Router) handleListAIChatSessions(w http.ResponseWriter, r *http.Request) {
-	sessions, err := rt.aiChat.ListAIChatSessions(r.Context())
+	owner, err := rt.aiChatOwner(r)
+	if err != nil {
+		rt.internalError(w, "api: list ai chat sessions: resolve caller failed", err)
+		return
+	}
+	sessions, err := rt.aiChat.ListAIChatSessions(r.Context(), owner)
 	if err != nil {
 		rt.logger.Error("api: list ai chat sessions failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -136,7 +167,12 @@ func (rt *Router) handleListAIChatSessions(w http.ResponseWriter, r *http.Reques
 // removes the session and its full message/confirmation history.
 func (rt *Router) handleDeleteAIChatSession(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	err := rt.aiChat.DeleteAIChatSession(r.Context(), id)
+	owner, err := rt.aiChatOwner(r)
+	if err != nil {
+		rt.internalError(w, "api: delete ai chat session: resolve caller failed", err)
+		return
+	}
+	err = rt.aiChat.DeleteAIChatSession(r.Context(), id, owner)
 	if errors.Is(err, store.ErrAIChatSessionNotFound) {
 		writeError(w, http.StatusNotFound, "session not found")
 		return
@@ -167,12 +203,7 @@ func (rt *Router) handleCreateAIChatMessage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if _, err := rt.aiChat.GetAIChatSession(r.Context(), sessionID); errors.Is(err, store.ErrAIChatSessionNotFound) {
-		writeError(w, http.StatusNotFound, "session not found")
-		return
-	} else if err != nil {
-		rt.logger.Error("api: create ai chat message: load session failed", slog.String("error", err.Error()), slog.String("session_id", sessionID))
-		writeError(w, http.StatusInternalServerError, "internal error")
+	if _, ok := rt.ownedAIChatSession(w, r, sessionID); !ok {
 		return
 	}
 
@@ -197,6 +228,11 @@ func (rt *Router) handleCreateAIChatMessage(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	r, endTurn, ok := rt.startAITurn(w, r)
+	if !ok {
+		return
+	}
+	defer endTurn()
 	sink, ok := rt.startAISSE(w, sessionID)
 	if !ok {
 		return
@@ -221,6 +257,9 @@ func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http
 	confirmationID := r.PathValue("confirmation_id")
 	if rt.aiEngine == nil {
 		writeError(w, http.StatusNotImplemented, "the ai assistant is not configured on this control plane (no master key set)")
+		return
+	}
+	if _, ok := rt.ownedAIChatSession(w, r, sessionID); !ok {
 		return
 	}
 
@@ -253,6 +292,11 @@ func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http
 		return
 	}
 
+	r, endTurn, ok := rt.startAITurn(w, r)
+	if !ok {
+		return
+	}
+	defer endTurn()
 	sink, ok := rt.startAISSE(w, sessionID)
 	if !ok {
 		return
@@ -322,6 +366,19 @@ func (s *aiSSESink) ToolResult(toolUseID, toolName string, result json.RawMessag
 		Result    json.RawMessage `json:"result"`
 		IsError   bool            `json:"is_error"`
 	}{aiSSEEventToolResult, toolUseID, toolName, result, isError})
+}
+
+func (s *aiSSESink) ToolResultAttributed(toolUseID, toolName string, result json.RawMessage, isError bool, attr ai.ToolAttribution) {
+	s.write(struct {
+		Type           string          `json:"type"`
+		ToolUseID      string          `json:"tool_use_id"`
+		ConfirmationID string          `json:"confirmation_id,omitempty"`
+		Name           string          `json:"name"`
+		Result         json.RawMessage `json:"result"`
+		IsError        bool            `json:"is_error"`
+		ActingAs       string          `json:"acting_as,omitempty"`
+		Abilities      []string        `json:"abilities,omitempty"`
+	}{aiSSEEventToolResult, toolUseID, attr.ConfirmationID, toolName, result, isError, attr.ActingAs, attr.Abilities})
 }
 
 func (s *aiSSESink) done() {

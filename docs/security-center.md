@@ -1,16 +1,13 @@
 ---
+title: "Security center"
 description: The security center scores your instance from its real state, lists what to fix first with a one-click fix or a link, manages every session and device, and sets sign-in approval and API token policy.
 ---
 
-# Security center
-
-The security center is one page, **Security center** in the sidebar (`/security`), that answers three questions: how exposed is this instance right now, what should I fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the exposure audit) and never calls anything outside your servers.
-
-<InlineToc default-open />
+The security center is one page, **Security center** in the sidebar (`/security`). It answers three questions: how exposed is this instance right now, what should you fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the [exposure audit](/exposure-audit)) and never calls anything outside your servers.
 
 ## Security score and checklist
 
-`GET /api/v1/security/posture` returns a score from 0 to 100, a grade, and counts by severity. Every check that fails costs points: 25 for critical, 15 for high, 8 for medium and 3 for low. A check that could not be read shows as unknown and costs nothing, so a missing data source never makes the score look worse or better than it is.
+`GET /api/v1/security/posture` returns a score from 0 to 100, a grade, and counts by severity. Each failing check costs points: 25 for critical, 15 for high, 8 for medium and 3 for low. A check that could not be read shows as unknown and costs nothing, so a missing data source never makes the score look worse or better than it is.
 
 Anyone with `read` gets the score and counts, plus a short checklist for their own account (two-factor or passkey, recovery codes, a reset flag). Admins (`root`) also get the full platform checklist with the names of the accounts, tokens, domains and nodes behind each failing check. The result is cached for `APP_SECURITY_POSTURE_CACHE_TTL` (default 30s); the exposure audit inside it, which may ask remote agents for their containers, refreshes every `APP_SECURITY_POSTURE_EXPOSURE_TTL` (default 5m). Changing the policy, revoking sessions or a "this wasn't me" report refreshes it at once.
 
@@ -63,7 +60,7 @@ An admin can pick another account in the tab, or pass `--user <user id>` (`?user
 
 ### Approval scope
 
-New browser approval (see [Identity and access](identity-and-access.md#new-browser-approval)) always applies to password sign-ins. `auth.approval_scope` decides whether it also applies to passkey and OAuth sign-ins:
+New browser approval (see [Identity and access](/identity-and-access#new-browser-approval)) always applies to password sign-ins. `auth.approval_scope` decides whether it also applies to passkey and OAuth sign-ins:
 
 | Value | Password | Passkey | OAuth / OIDC |
 | --- | --- | --- | --- |
@@ -74,13 +71,13 @@ A sign-in is only held when the account already has another live session, so the
 
 Each account can also turn on **Require approval for new browsers on my account** in the Policy tab (`PUT /api/v1/security/account`). That applies approval to every method for that account whatever the platform scope is. Turning it off needs a signed-in dashboard session; a token can only turn it on.
 
-**Break-glass.** `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane, then a restart, turns approval off for every method and every account, whatever the scope and account switches say. Use it only when nobody can approve; set it back afterwards. `recover-admin` on the server still works.
+Break-glass: `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane, then a restart, turns approval off for every method and every account, whatever the scope and account switches say. Use it only when nobody can approve, and set it back afterwards. `recover-admin` on the server still works.
 
 ### New sign-in alerts
 
 When an account signs in from a browser and network it has not used before, its owner gets an email with the browser, network and time, and channels opted in to sign-in notices (the same switch as CLI login notices) get a short message. The first browser an account ever uses raises nothing, and a sign-in you approved yourself, or a session link, does not alert. At most `APP_SIGNIN_ALERTS_PER_ACCOUNT_PER_HOUR` (default 5) emails go out per account per hour. Known browsers are remembered as a hash of the browser label and network for `APP_KNOWN_BROWSER_RETENTION` (default 180 days).
 
-The email carries a **this wasn't me** link. Opening it changes nothing; the page has one button. Pressing it (`POST /api/v1/auth/sign-in-alert/disown`) signs that session out, removes every trusted browser of the account, cancels its waiting sign-ins and flags the account for a new password. The flag shows in the checklist and the attention center until the password is changed or reset. The link:
+The email carries a **this wasn't me** link. Opening it changes nothing; the page has one button. Pressing it (`POST /api/v1/auth/sign-in-alert/disown`) signs that session out, removes every trusted browser of the account, cancels its waiting sign-ins and flags the account for a new password. The flag shows in the checklist and the [attention center](/attention-center) until the password is changed or reset. The link:
 
 - is an HMAC over a random id with a key derived from the control plane's encryption key, so it cannot be forged or altered;
 - works once, recorded in the database before anything is revoked;
@@ -115,7 +112,7 @@ levelrail-cli security policy set --max-token-lifetime-days 90 --disable-unused-
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Identity and access" href="/identity-and-access">
 
 Users, roles, tokens, sign in with a code and new browser approval.

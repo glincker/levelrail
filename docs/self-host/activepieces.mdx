@@ -1,0 +1,59 @@
+---
+title: "Self-host Activepieces with Docker"
+sidebarTitle: "Activepieces"
+description: "An open-source, no-code automation tool for connecting apps and building AI-powered workflows."
+---
+
+An open-source, no-code automation tool for connecting apps and building AI-powered workflows.
+
+This page describes the Levelrail template for Activepieces (Automation). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.activepieces.com/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `activepieces` | `ghcr.io/activepieces/activepieces:0.75.0` | 80 | none |
+| `db` | `postgres:16-alpine` | none | `activepieces_db_data -&#62; /var/lib/postgresql/data` |
+| `redis` | `redis:7-alpine` | none | `activepieces_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `activepieces` | `AP_ENCRYPTION_KEY` | Generated at deploy |
+| `activepieces` | `AP_FRONTEND_URL` | Preset in the template |
+| `activepieces` | `AP_JWT_SECRET` | Generated at deploy |
+| `activepieces` | `AP_POSTGRES_DATABASE` | Preset in the template |
+| `activepieces` | `AP_POSTGRES_HOST` | Preset in the template |
+| `activepieces` | `AP_POSTGRES_PASSWORD` | Generated at deploy |
+| `activepieces` | `AP_POSTGRES_USERNAME` | Preset in the template |
+| `activepieces` | `AP_REDIS_HOST` | Preset in the template |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Activepieces with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Activepieces. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy activepieces --name my-activepieces
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Automation templates
+
+- [autobrr](/self-host/autobrr)
+- [n8n](/self-host/n8n)
+- [n8n (Postgres)](/self-host/n8n-postgres)
+- [Node-RED](/self-host/node-red)
+- [Prefect](/self-host/prefect)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -103,3 +103,18 @@ func (db *DB) LabelUnlabeledTokensByName(ctx context.Context, name, agentName st
 	}
 	return nil
 }
+
+// RevokeSystemTokensByName revokes live owner-less tokens with that name.
+func (db *DB) RevokeSystemTokensByName(ctx context.Context, name string) (int, error) {
+	res, err := db.ExecContext(ctx, `
+		UPDATE api_tokens SET revoked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+		WHERE name = ? AND owner_user_id = '' AND revoked_at IS NULL`, name)
+	if err != nil {
+		return 0, fmt.Errorf("store: revoke system tokens %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("store: revoke system tokens %q: rows affected: %w", name, err)
+	}
+	return int(n), nil
+}

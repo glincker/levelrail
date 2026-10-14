@@ -1,0 +1,47 @@
+---
+title: "Self-host SilverBullet with Docker"
+sidebarTitle: "SilverBullet"
+description: "A programmable, Markdown-based notes app you can extend with your own scripts and queries."
+---
+
+A programmable, Markdown-based notes app you can extend with your own scripts and queries.
+
+This page describes the Levelrail template for SilverBullet (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://silverbullet.md.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `silverbullet` | `ghcr.io/silverbulletmd/silverbullet:2.11.1` | 3000 | `silverbullet_space -&#62; /space` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `silverbullet` | `SB_USER` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy SilverBullet with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select SilverBullet. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy silverbullet --name my-silverbullet
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

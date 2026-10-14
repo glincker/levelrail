@@ -1,18 +1,18 @@
 ---
-description: Configure backup targets and registry credentials for S3-compatible storage, schedule and prune database and app volume backups, and enable the built-in container registry.
+title: "Backup targets, registry credentials, and app volume backups"
+sidebarTitle: "Backups and storage"
+description: Configure backup targets, registry credentials, and automated backup schedules with retention policies.
 ---
 
-# Backup targets, registry credentials, and app volume backups
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws-amazon-simple-storage-service/default.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/minio/default.svg" alt="MinIO" title="MinIO" width="24" height="24" /></span></div>
 
 This guide covers three related resources:
 
-1. **Backup targets**: S3-compatible buckets where database and app volume backups are stored.
-2. **Registry credentials**: authentication for pulling private images from external registries.
-3. **Built-in registry**: Levelrail's own `registry:2` container for pushing and caching images locally.
+1. Backup targets: S3-compatible buckets where database and app volume backups are stored.
+2. Registry credentials: authentication for pulling private images from external registries.
+3. The built-in registry: Levelrail's own `registry:2` container for pushing and caching images locally.
 
-All three share one pattern: an external system that needs a working credential, which you test on demand instead of finding out it is broken mid-deploy or mid-backup. For the database side of backups (restore, point-in-time recovery, verification), see [Managing databases](managing-databases.md). For backing up the control plane itself, see [Control plane backup](control-plane-backup.md) and [Disaster recovery](disaster-recovery.md).
-
-<InlineToc default-open />
+All three share one pattern: an external system that needs a working credential, which you test on demand instead of finding out it is broken mid-deploy or mid-backup. For the database side of backups (restore, point-in-time recovery, verification), see [Managing databases](/managing-databases). For backing up the control plane itself, see [Control plane backup](/control-plane-backup) and [Disaster recovery](/disaster-recovery).
 
 ## Backup lifecycle at a glance
 
@@ -41,7 +41,7 @@ levelrail-cli backup-targets create \
   --secret-access-key ...
 ```
 
-The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, or MinIO, use [Object storage](object-storage.md) to connect the bucket as a storage destination: the same record shows up under backup targets.
+The response never echoes the credentials back. `--provider` accepts `aws`, `r2`, or `custom`. `--endpoint` is required for `r2` and `custom`, and `aws` must omit it (AWS resolves its own endpoint per region). For Backblaze B2, Wasabi, or MinIO, use [Object storage](/object-storage) to connect the bucket as a storage destination: the same record shows up under backup targets.
 
 </Step>
 <Step title="Test the credential">
@@ -98,8 +98,8 @@ Both resources expose a `POST .../test` endpoint that validates the credential w
 
 ![Levelrail Backups page on a fresh install, prompting you to add a backup target](assets/screenshots/backups.png)
 
-<Tabs :items="['Backup target', 'Registry credential']">
-<Tab value="Backup target">
+<Tabs>
+<Tab title="Backup target">
 
 `POST /api/v1/backup-targets/{id}/test` calls `HeadBucket` against the bucket. Nothing is uploaded or deleted.
 
@@ -109,10 +109,10 @@ Both resources expose a `POST .../test` endpoint that validates the credential w
 
 CLI: `levelrail-cli backup-targets test <id>`. Dashboard: the **Test connection** button on each row of the Backup targets table.
 
-`HeadBucket` proves the bucket exists and can be reached, but not that the key can write or delete, which backups and pruning need. A storage destination's connection test (`levelrail-cli storage test <id>`) does a full write, read, and delete round trip, see [Object storage](object-storage.md#what-the-connection-test-does).
+`HeadBucket` proves the bucket exists and can be reached, but not that the key can write or delete, which backups and pruning need. A storage destination's connection test (`levelrail-cli storage test <id>`) does a full write, read, and delete round trip, see [Object storage](/object-storage#what-the-connection-test-does).
 
 </Tab>
-<Tab value="Registry credential">
+<Tab title="Registry credential">
 
 `POST /api/v1/registry-credentials/{id}/test` authenticates the stored username and password against the registry host the same way a real image pull does. No image is pulled.
 
@@ -124,9 +124,9 @@ CLI: `levelrail-cli registry-credentials test <id>`. Dashboard: the **Test conne
 </Tab>
 </Tabs>
 
-::: tip
-Finding a stale credential here means fixing it now, not discovering it from a failed 3am backup or a failed deploy mid-pull.
-:::
+<Tip>
+Better to find a stale credential here than from a failed 3am backup or a deploy that dies mid-pull.
+</Tip>
 
 ## Database and app volume backups
 
@@ -161,7 +161,7 @@ levelrail-cli app-volume-backups restore-as-new <app> <volume> --backup ID
 
 ### Compression, encryption and consistency
 
-New app volume backups are streamed as tar, compressed with zstd and encrypted with age on the control plane before upload, so the bucket only ever holds ciphertext. Each backup records its encoding, so backups from before this feature stay restorable. The key, retention buckets, consistency hooks and size and time budgets are covered in [Prove your backups work](prove-your-backups-work.md).
+New app volume backups are streamed as tar, compressed with zstd and encrypted with age on the control plane before upload, so the bucket only ever holds ciphertext. Each backup records its encoding, so backups from before this feature stay restorable. The key, retention buckets, consistency hooks and size and time budgets are covered in [Prove your backups work](/prove-your-backups-work).
 
 Database dumps are not re-encoded: they stream straight from the dump command as before.
 
@@ -197,7 +197,7 @@ Each resource is in exactly one state:
 | Backups failing | Every attempt failed, or the last drill failed | Back up now |
 | Not protected | No schedule or no target. A backup taken by hand does not count | Protect |
 
-A resource counts as protected only when it is scheduled and has a successful backup. Preview environments and canaries are marked **Scratch** and left out of the totals.
+A resource counts as protected only when it is scheduled and has a successful backup. [Preview environments](/previews) and canaries are marked **Scratch** and left out of the totals.
 
 **Protect everything** (`POST /api/v1/backups/protect-all`) schedules every unprotected resource in one step. You pick a destination (or connect one inline from a provider preset: Cloudflare R2, Backblaze B2, Wasabi, AWS S3, MinIO, or local disk), a schedule, and how many backups to keep. The dialog previews the plan first, and nothing changes until you apply. Scratch resources are off unless you opt in. The same flow on the CLI:
 
@@ -209,9 +209,9 @@ levelrail-cli backups protect-all --target ID --apply [--schedule "0 3 * * *"] [
 
 The default schedule and retention come from `APP_BACKUP_DEFAULT_SCHEDULE` (default `0 3 * * *`), `APP_BACKUP_DEFAULT_RETAIN` (default 7) and `APP_BACKUP_DEFAULT_RETAIN_DAYS` (default 30). They are suggestions: a database without a schedule shows them on its own Backups card once a destination exists, and applies them only when you click. The dashboard also shows a recommendation when resources are not backed up.
 
-::: warning
+<Warning>
 The **Local disk** preset points at an S3 server on this machine. Backups stored on the machine they protect are lost with it. It is fine to try things out and wrong for anything you care about.
-:::
+</Warning>
 
 #### The encryption key
 
@@ -239,14 +239,14 @@ Coverage, protect-all and orphaned data are instance wide. Members of non-defaul
 
 Retention has two independent dimensions, both optional:
 
-- **`retain` (count):** keep the newest N successful backups by `started_at`.
-- **`retain_days` (age):** keep only backups less than N days old.
+- `retain` (count): keep the newest N successful backups by `started_at`.
+- `retain_days` (age): keep only backups less than N days old.
 
 They combine, so a backup is deleted when either rule would remove it. With `retain: 7` and `retain_days: 30`, you keep at most the 7 newest backups, and never anything older than 30 days. `0` disables a dimension, and `0` for both disables pruning.
 
-::: warning
-Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since a failed attempt's logs have diagnostic value.
-:::
+<Warning>
+Only succeeded backups are ever pruned. Running and failed attempts are kept regardless of age or count, since you may need a failed attempt's logs.
+</Warning>
 
 Pruning runs after every scheduled backup that succeeds, not after manual ones. A pruning failure is logged and does not fail the backup, which is already durably recorded. The dashboard's schedule form defaults a new database's "keep last N backups" to 7 and "delete backups older than (days)" to 0 (no age limit).
 
@@ -262,7 +262,7 @@ Naming the exact backup ID is the confirmation, so there is no `--confirm` flag.
 
 ## Alert on a missing or failing backup
 
-A `restore_drill_failed` rule fires while any resource's latest restore drill is failed. A `backup_missing` alert rule watches each database's and app volume's backup schedule. It fires when the last successful backup trails the expected interval by more than the rule's `for_duration` (default 6 hours). It reads the same schedule and history rows the scheduler uses, so it catches both a schedule that silently stopped running and repeated failures with no recent success. It notifies through your normal alert channels. See [Observability](observability.md#alert-rules) for the rule table and setup.
+A `restore_drill_failed` rule fires while any resource's latest restore drill is failed. A `backup_missing` alert rule watches each database's and app volume's backup schedule. It fires when the last successful backup trails the expected interval by more than the rule's `for_duration` (default 6 hours). It reads the same schedule and history rows the scheduler uses, so it catches both a schedule that silently stopped running and repeated failures with no recent success. It notifies through your normal alert channels. See [Observability](/observability#alert-rules) for the rule table and setup.
 
 ## Registry credentials
 
@@ -362,8 +362,8 @@ These ran end to end against a real S3-compatible endpoint (SeaweedFS) and real 
 Limits to know about:
 
 - A backup is a logical dump (`pg_dump`, `mysqldump`, `mongodump`, an RDB snapshot). It is consistent per database but not a physical copy. For Postgres, use point-in-time restore when you need to recover to an exact second.
-- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly. Restore drills do: they restore into a scratch resource, validate it and destroy it, automatically once a week by default. See [Prove your backups work](prove-your-backups-work.md).
-- Deleting a database keeps its data volume and your backups. See [Managing databases](managing-databases.md#stop-start-and-delete).
+- Verification catches a damaged or truncated object. It does not prove the dump restores cleanly. Restore drills do: they restore into a scratch resource, validate it and destroy it, automatically once a week by default. See [Prove your backups work](/prove-your-backups-work).
+- Deleting a database keeps its data volume and your backups. See [Managing databases](/managing-databases#stop-start-and-delete).
 - The free-space floor protects the control plane's data directory. Nothing watches the Docker host's own disk for a major upgrade's snapshot copy: a copy that runs out of space fails the upgrade before it changes anything.
 - WAL for point-in-time restore is shipped to the backup target only for databases on the control plane's own node.
 - A storage endpoint must resolve to a public address unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true` is set, which a MinIO on the same private network needs.
@@ -464,7 +464,7 @@ levelrail-cli app-volume-backups delete <app> <volume> <backup-id>
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Managing databases" href="/managing-databases">
 
 Restore, point-in-time recovery, and backup verification.

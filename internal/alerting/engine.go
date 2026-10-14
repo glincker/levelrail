@@ -692,7 +692,10 @@ func (e *Engine) attachChanges(ctx context.Context, ev *Event) {
 // returned so NoiseControl can record the outcome; it is already logged.
 func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	r := ev.Rule
-	sendErr := e.newNotifier(r).Notify(ctx, ev)
+	sendErr := e.revealRuleTarget(ctx, &r)
+	if sendErr == nil {
+		sendErr = e.newNotifier(r).Notify(ctx, ev)
+	}
 	if sendErr != nil {
 		e.logger.Error("alerting: notification failed",
 			slog.String("rule_id", r.ID), slog.String("resource_id", r.ResourceID),
@@ -705,6 +708,26 @@ func (e *Engine) sendEvent(ctx context.Context, ev Event) error {
 	}
 	recordDelivery(ctx, e.rules, e.logger, r.ChannelID, trigger, sendErr)
 	return sendErr
+}
+
+// channelTargetRevealer is the optional RuleStore surface that decrypts
+// a sealed channel's destination at send time.
+type channelTargetRevealer interface {
+	RevealChannelTarget(ctx context.Context, channelID, target string) (string, error)
+}
+
+func (e *Engine) revealRuleTarget(ctx context.Context, r *Rule) error {
+	if rv, ok := e.rules.(channelTargetRevealer); ok {
+		target, err := rv.RevealChannelTarget(ctx, r.ChannelID, r.NotifyURL)
+		if err != nil {
+			return err
+		}
+		r.NotifyURL = target
+	}
+	if IsMaskedNotifyTarget(r.NotifyURL) && r.NotifyKind != NotifyEmail {
+		return ErrChannelSecretNotRevealed
+	}
+	return nil
 }
 
 // fetchRecentLogLines returns the most recent up to crashloopLogLines

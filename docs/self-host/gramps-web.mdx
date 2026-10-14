@@ -1,0 +1,53 @@
+---
+title: "Self-host Gramps Web with Docker"
+sidebarTitle: "Gramps Web"
+description: "An online genealogy system for researching and sharing family trees."
+---
+
+An online genealogy system for researching and sharing family trees.
+
+This page describes the Levelrail template for Gramps Web (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://www.grampsweb.org/install_setup/setup/.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `grampsweb` | `ghcr.io/gramps-project/grampsweb:25.9.0` | 5000 | `gramps_users -&#62; /app/users`<br />`gramps_index -&#62; /app/indexdir`<br />`gramps_thumb_cache -&#62; /app/thumbnail_cache`<br />`gramps_cache -&#62; /app/cache`<br />`gramps_secret -&#62; /app/secret`<br />`gramps_db -&#62; /root/.gramps/grampsdb`<br />`gramps_media -&#62; /app/media`<br />`gramps_tmp -&#62; /tmp` |
+| `grampsweb_redis` | `redis:7-alpine` | none | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `grampsweb` | `GRAMPSWEB_CELERY_CONFIG__broker_url` | Preset in the template |
+| `grampsweb` | `GRAMPSWEB_CELERY_CONFIG__result_backend` | Preset in the template |
+| `grampsweb` | `GRAMPSWEB_RATELIMIT_STORAGE_URI` | Preset in the template |
+| `grampsweb` | `GRAMPSWEB_SECRET_KEY` | Generated at deploy |
+| `grampsweb` | `GRAMPSWEB_TREE` | Preset in the template |
+| `grampsweb` | `GUNICORN_NUM_WORKERS` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Gramps Web with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Gramps Web. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gramps-web --name my-gramps-web
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

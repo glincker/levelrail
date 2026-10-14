@@ -69,3 +69,70 @@ func TestSignerModes(t *testing.T) {
 		})
 	}
 }
+
+func TestSignerPinMatrix(t *testing.T) {
+	ok := func(context.Context, string, ...string) ([]byte, error) { return nil, nil }
+	bad := func(context.Context, string, ...string) ([]byte, error) {
+		return []byte("no matching signatures"), errors.New("exit 1")
+	}
+	type cosign int
+	const (
+		cosignMissing cosign = iota
+		cosignOK
+		cosignBad
+	)
+	tests := []struct {
+		name         string
+		mode         string
+		pinned       bool
+		bundle       bool
+		cosign       cosign
+		want         error
+		wantVerified bool
+	}{
+		{name: "unpinned, bundle, good signature", mode: VerifyAuto, bundle: true, cosign: cosignOK, wantVerified: true},
+		{name: "unpinned, bundle, bad signature", mode: VerifyAuto, bundle: true, cosign: cosignBad, want: ErrSignatureInvalid},
+		{name: "unpinned, bundle, no cosign", mode: VerifyAuto, bundle: true, cosign: cosignMissing},
+		{name: "unpinned, no bundle, cosign", mode: VerifyAuto, cosign: cosignOK},
+		{name: "unpinned, no bundle, no cosign", mode: VerifyAuto, cosign: cosignMissing},
+		{name: "pinned, bundle, good signature", mode: VerifyAuto, pinned: true, bundle: true, cosign: cosignOK, wantVerified: true},
+		{name: "pinned, bundle, bad signature", mode: VerifyAuto, pinned: true, bundle: true, cosign: cosignBad, want: ErrSignatureInvalid},
+		{name: "pinned, bundle, no cosign", mode: VerifyAuto, pinned: true, bundle: true, cosign: cosignMissing, want: ErrSignaturePinned},
+		{name: "pinned, unsigned release or downgrade", mode: VerifyAuto, pinned: true, cosign: cosignOK, want: ErrSignaturePinned},
+		{name: "pinned, no bundle, no cosign", mode: VerifyAuto, pinned: true, cosign: cosignMissing, want: ErrSignaturePinned},
+		{name: "pinned, require, no bundle", mode: VerifyRequire, pinned: true, cosign: cosignOK, want: ErrSignaturePinned},
+		{name: "pinned, explicit off", mode: VerifyOff, pinned: true, cosign: cosignBad},
+		{name: "require, good signature", mode: VerifyRequire, bundle: true, cosign: cosignOK, wantVerified: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			verified := 0
+			s := Signer{Mode: tt.mode, Pinned: tt.pinned, OnVerified: func() { verified++ }}
+			switch tt.cosign {
+			case cosignMissing:
+				s.CosignPath = "/nonexistent/cosign"
+			case cosignOK:
+				s.Run = ok
+			case cosignBad:
+				s.Run = bad
+			}
+			bundle := ""
+			if tt.bundle {
+				bundle = "b"
+			}
+			detail, err := s.Verify(context.Background(), "sums", bundle)
+			if !errors.Is(err, tt.want) {
+				t.Fatalf("err = %v, want %v", err, tt.want)
+			}
+			if err != nil && errors.Is(tt.want, ErrSignaturePinned) && !strings.Contains(err.Error(), "--verify off") {
+				t.Fatalf("pinned refusal must name the escape hatch: %v", err)
+			}
+			if got := verified == 1; got != tt.wantVerified {
+				t.Fatalf("OnVerified called %d times, want verified=%v (detail %q)", verified, tt.wantVerified, detail)
+			}
+			if tt.pinned && tt.mode == VerifyOff && !strings.Contains(detail, "pinned") {
+				t.Fatalf("off while pinned must say so in the timeline, got %q", detail)
+			}
+		})
+	}
+}

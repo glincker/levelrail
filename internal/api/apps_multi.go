@@ -155,6 +155,12 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !rt.authorizeSpecDatabaseRefs(w, r, req.Services) {
+		return
+	}
+	if !rt.authorizeServiceNames(w, r, name, specServiceNames(name, req.SingleServiceName, req.Services)) {
+		return
+	}
 	inlineSecrets := deploySpecInlineSecrets(req.Services)
 	if len(inlineSecrets) > 0 && rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")

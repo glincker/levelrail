@@ -164,7 +164,11 @@ func (rt *Router) libraryListTokens(ctx context.Context, callerID string, admin 
 	}
 	slices.SortStableFunc(merged, func(a, b store.APIToken) int { return b.CreatedAt.Compare(a.CreatedAt) })
 	out := make([]tokenResource, 0, len(merged))
+	now := time.Now()
 	for _, t := range merged {
+		if spentAITurnToken(t, now) {
+			continue
+		}
 		res := toTokenResource(t)
 		res.Scope = rt.tokenScopeOf(ctx, t.ID)
 		out = append(out, res)

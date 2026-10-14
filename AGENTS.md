@@ -12,7 +12,7 @@ Levelrail is a self-hosted deployment platform: one Go control plane, one Go nod
 | `cmd/levelrail-mcp` | MCP server over the same HTTP API |
 | `internal/` | Everything else: `api`, `reconcile`, `store`, `docker`, `build`, `ingress`, `agent`, `catalog`, `mcptools`, `brand` |
 | `web/` | Vite, React, TypeScript, Tailwind dashboard |
-| `docs/` | VitePress site, served at levelrail.com |
+| `docs/` | Mintlify docs (`docs/docs.json`); preview with `cd docs && npx mint dev` |
 | `adr/` | Architecture decision records. Read the relevant one before changing a locked decision |
 | `scripts/` | Hooks, test runners, generators, `screenshots/capture.sh` |
 
@@ -59,5 +59,5 @@ This section is for an agent that deploys or operates an app on a Levelrail inst
 - Run `levelrail-cli init` in a project to write `app.yaml`, an `AGENTS.md` with deploy instructions, and an `.mcp.json` for `levelrail-mcp`.
 - The skill in [skills/levelrail](skills/levelrail/SKILL.md) covers the deploy, wait, diagnose and roll back loop. Install it with `npx skills add glincker/levelrail`.
 - `levelrail-mcp` exposes tools by mode (`agent-core`, `read-only`, `standard`, `full`). Start with the smallest mode that does the job. See [docs/agents.md](docs/agents.md) and [docs/mcp-tool-surface.md](docs/mcp-tool-surface.md).
-- Documentation for models: `https://levelrail.com/llms.txt` (index) and `https://levelrail.com/llms-full.txt` (full text).
+- Documentation for models: `https://docs.levelrail.com/llms.txt` (index) and `https://docs.levelrail.com/llms-full.txt` (full text).
 - Never write an API token into a file, a commit, or a chat message. Tokens come from `APP_API_TOKEN`, and the instance URL from `APP_API_URL`.

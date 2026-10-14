@@ -1,0 +1,52 @@
+---
+title: "Self-host Planka with Docker"
+sidebarTitle: "Planka"
+description: "A Trello-style kanban board for visualizing and tracking work across a team."
+---
+
+A Trello-style kanban board for visualizing and tracking work across a team.
+
+This page describes the Levelrail template for Planka (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.planka.cloud/docs/installation/docker/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `planka_db_data -&#62; /var/lib/postgresql/data` |
+| `planka` | `ghcr.io/plankanban/planka:2.2.1` | 1337 | `planka_data -&#62; /app/data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `planka` | `BASE_URL` | Preset in the template |
+| `planka` | `DATABASE_URL` | Generated at deploy |
+| `planka` | `SECRET_KEY` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Planka with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Planka. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy planka --name my-planka
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

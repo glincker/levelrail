@@ -9,6 +9,7 @@ import (
 	"errors"
 	"net"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -143,15 +144,15 @@ func TestCertLifecycle_LegacyEnrollWithoutCSR(t *testing.T) {
 	ctx := context.Background()
 
 	for _, tt := range []struct {
-		name       string
-		requireCSR bool
-		wantCode   codes.Code
+		name     string
+		opts     []Option
+		wantCode codes.Code
 	}{
-		{"accepted by default", false, codes.OK},
-		{"refused when CSR is required", true, codes.FailedPrecondition},
+		{"refused by default", nil, codes.FailedPrecondition},
+		{"accepted when the override allows legacy agents", []Option{WithRequireCSR(false)}, codes.OK},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			ts := startCertTestServer(t, ca, db, WithRequireCSR(tt.requireCSR))
+			ts := startCertTestServer(t, ca, db, tt.opts...)
 			token := "legacy-" + tt.wantCode.String()
 			mintToken(t, db, token, store.NodeJoinTokenPurposeEnroll, "")
 			conn, err := grpc.NewClient(ts.addr, grpc.WithTransportCredentials(credentials.NewTLS(enrollTrustConfig(ca.Fingerprint()))))
@@ -162,6 +163,9 @@ func TestCertLifecycle_LegacyEnrollWithoutCSR(t *testing.T) {
 			resp, err := agentpb.NewAgentServiceClient(conn).Enroll(ctx, &agentpb.EnrollRequest{JoinToken: token, NodeName: "old-agent-" + tt.wantCode.String()})
 			if status.Code(err) != tt.wantCode {
 				t.Fatalf("Enroll() code = %v (%v), want %v", status.Code(err), err, tt.wantCode)
+			}
+			if err != nil && !strings.Contains(err.Error(), "APP_AGENT_REQUIRE_CSR=false") {
+				t.Fatalf("refusal must name the override, got %v", err)
 			}
 			if err == nil && len(resp.GetClientKeyPem()) == 0 {
 				t.Fatal("an agent that sent no CSR needs the server-generated key back")

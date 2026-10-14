@@ -1,10 +1,9 @@
 ---
+title: "Tags"
 description: Label apps with tags such as team:payments, then filter the dashboard, CLI and API by them.
 ---
 
-# Tags
-
-Tags are labels you attach to apps to organize them by team, component, lifecycle stage, or anything else. An app can carry several tags. Tags are organizational only: they do not change how an app runs, restrict access, or gate a deploy.
+Tags are labels you attach to apps so you can group them by team, component, lifecycle stage, or whatever you like. An app can carry several. Tags only organize: they do not change how an app runs, restrict access, or gate a deploy.
 
 ## Rules
 
@@ -16,8 +15,8 @@ Tags are labels you attach to apps to organize them by team, component, lifecycl
 
 ## Create and delete tags
 
-<Tabs :items="['CLI', 'API']">
-<Tab value="CLI">
+<Tabs>
+<Tab title="CLI">
 
 ```bash
 levelrail-cli tags list
@@ -27,7 +26,7 @@ levelrail-cli tags delete team:payments     # detaches it from every app first
 ```
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl -X POST https://control-plane/api/v1/tags \
@@ -48,13 +47,13 @@ Deleting a tag removes it from every app it was on.
 
 Attaching by name creates the tag if it does not exist yet, so you rarely need `tags create` first.
 
-<Tabs :items="['Dashboard', 'CLI', 'API']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 Use the tag control on an app's page to add a tag or remove one with the chip's close button.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli apps tag my-app team:payments
@@ -64,7 +63,7 @@ levelrail-cli apps untag my-app team:payments
 Both take the tag by name.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```bash
 curl https://control-plane/api/v1/apps/my-app/tags -H "Authorization: Bearer $TOKEN"
@@ -85,7 +84,7 @@ If two requests race to create the same tag name, the one that loses attaches th
 
 ## Filter by tag
 
-In the dashboard, every row on the Apps page (`/apps`) shows its tag chips. Click a chip to filter the list to apps with that tag; the filter bar shows the active filter and a clear button.
+In the dashboard, every row on the Apps page (`/apps`) shows its tag chips. Click a chip to filter the list to apps with that tag. The filter bar shows the active filter and a clear button.
 
 `GET /api/v1/apps` accepts these query parameters:
 
@@ -97,7 +96,7 @@ In the dashboard, every row on the Apps page (`/apps`) shows its tag chips. Clic
 | `q` | Substring of the app name or image |
 | `limit`, `offset` | Paging. Without `limit` the whole filtered set returns. |
 
-The `X-Total-Count` response header carries the match count before paging. `GET /api/v1/apps-summary` takes the same filters and returns running, deploying, failing and stopped counts. Tags also select targets for `levelrail-cli apps bulk`. See [Managing apps at scale](./managing-apps-at-scale.md).
+The `X-Total-Count` response header carries the match count before paging. `GET /api/v1/apps-summary` takes the same filters and returns running, deploying, failing and stopped counts. Tags also select targets for `levelrail-cli apps bulk`. See [Managing apps at scale](/managing-apps-at-scale).
 
 ## API reference
 
@@ -113,7 +112,7 @@ The `X-Total-Count` response header carries the match count before paging. `GET 
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Managing apps at scale" href="/managing-apps-at-scale">
 
 Filters, bulk actions and summaries across many apps.

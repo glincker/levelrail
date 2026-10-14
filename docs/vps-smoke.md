@@ -1,10 +1,9 @@
 ---
+title: "VPS smoke test"
 description: scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
 ---
 
-# VPS smoke test
-
-`scripts/vps-smoke.sh` checks a real install end to end on a VPS you already have. It never creates or deletes cloud resources.
+`scripts/vps-smoke.sh` checks a real install end to end on a VPS you already have (a rented Linux server). It never creates or deletes cloud resources.
 
 ## What it does
 
@@ -46,7 +45,7 @@ It prints a summary table and exits non-zero on any failure.
 ## Prerequisites
 
 - An Ubuntu VPS reachable by SSH as root or a passwordless sudo user, ports 80, 443 and 8080 open.
-- A wildcard A record for `SMOKE_DOMAIN_BASE` pointing at it.
+- A wildcard DNS A record for `SMOKE_DOMAIN_BASE` pointing at it.
 - A scratch GitHub repo and a token with contents write on it. The run pushes and deletes a `smoke/<timestamp>` branch.
 - On the runner: `ssh`, `curl`, `jq`, `openssl`, `git`, and Go (or `SMOKE_CLI` pointing at a `levelrail-cli` binary).
 

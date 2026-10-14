@@ -1,0 +1,50 @@
+---
+title: "Self-host Nginx Reverse Proxy (Multi-Backend) with Docker"
+sidebarTitle: "Nginx Reverse Proxy (Multi-Backend)"
+description: "One Nginx entrypoint routing to two independent backend services, demonstrating depends_on across three services."
+---
+
+One Nginx entrypoint routing to two independent backend services, demonstrating depends_on across three services.
+
+This page describes the Levelrail template for Nginx Reverse Proxy (Multi-Backend) (Starter Kits). It deploys the services below as one Docker Compose app on your own server. Project site: https://nginx.org/en/docs/http/ngx_http_proxy_module.html.
+
+Recommended memory: about 192 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `orders` | `node:22-alpine` | none | none |
+| `payments` | `node:22-alpine` | none | none |
+| `proxy` | `nginx:1.27-alpine` | 80 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `orders` | `NODE_ENV` | Preset in the template |
+| `payments` | `NODE_ENV` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Nginx Reverse Proxy (Multi-Backend) with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Nginx Reverse Proxy (Multi-Backend). Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy nginx-multi-backend-starter --name my-nginx-multi-backend-starter
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Starter Kits templates
+
+- [FastAPI + PostgreSQL](/self-host/fastapi-postgres-starter)
+- [Next.js + PostgreSQL](/self-host/nextjs-postgres-starter)
+- [Node.js API + PostgreSQL](/self-host/node-postgres-starter)
+- [Redis Cache Starter](/self-host/redis-cache-starter)
+- [Static Site + API Backend](/self-host/static-site-api-starter)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -138,3 +138,38 @@ func TestLoginLimiterKey_CombinesIPAndUsername(t *testing.T) {
 		t.Errorf("loginLimiterKey() = %q, want %q", got, want)
 	}
 }
+
+func TestClientIP_ForwardedFor(t *testing.T) {
+	t.Setenv(envTrustedProxies, "")
+	tests := []struct {
+		name, remote, xff, want string
+	}{
+		{"loopback peer uses last hop", "127.0.0.1:1", "203.0.113.9", "203.0.113.9"},
+		{"spoofed prefix ignored", "127.0.0.1:1", "198.51.100.1, 203.0.113.9", "203.0.113.9"},
+		{"remote peer cannot spoof", "192.0.2.1:1", "203.0.113.9", "192.0.2.1"},
+		{"loopback without header", "[::1]:1", "", "::1"},
+		{"garbage header falls back", "127.0.0.1:1", "not-an-ip", "127.0.0.1"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("GET", "/", nil)
+			req.RemoteAddr = tt.remote
+			if tt.xff != "" {
+				req.Header.Set("X-Forwarded-For", tt.xff)
+			}
+			if got := clientIP(req); got != tt.want {
+				t.Errorf("clientIP() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestClientIP_ConfiguredTrustedProxy(t *testing.T) {
+	t.Setenv(envTrustedProxies, "10.0.0.0/8")
+	req := httptest.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "10.1.2.3:1"
+	req.Header.Set("X-Forwarded-For", "203.0.113.9, 10.1.2.4")
+	if got := clientIP(req); got != "203.0.113.9" {
+		t.Errorf("clientIP() = %q, want 203.0.113.9 (right-most untrusted hop)", got)
+	}
+}

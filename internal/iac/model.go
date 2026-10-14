@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/envredact"
 )
 
 // Resource is one desired object in canonical form, ready to compare with
@@ -98,8 +100,6 @@ func normDuration(s string) (string, error) {
 }
 
 var (
-	secretKeyRe   = regexp.MustCompile(`(?i)(secret|token|passw|api_?key|private_?key|credential|access_?key)`)
-	secretValueRe = regexp.MustCompile(`(?i)^(-----BEGIN [A-Z ]*PRIVATE KEY|ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|github_pat_|sk_live_|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|xox[baprs]-|glpat-)`)
 	secretPlaceRe = regexp.MustCompile(`^\s*\$\{\{\s*secrets\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}\s*$`)
 	envPlaceRe    = regexp.MustCompile(`\$\{\{\s*env\.([A-Za-z_][A-Za-z0-9_]*)\s*\}\}`)
 )
@@ -110,7 +110,7 @@ func looksSecret(key, value string) bool {
 	case "", "true", "false", "0", "1", "yes", "no":
 		return false
 	}
-	return secretKeyRe.MatchString(key) || secretValueRe.MatchString(value)
+	return envredact.SensitiveName(key) || envredact.SensitiveValue(key, value)
 }
 
 // substituteVars replaces ${{ env.NAME }} with vars[NAME] and returns the

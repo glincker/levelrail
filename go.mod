@@ -1,6 +1,6 @@
 module github.com/GLINCKER/levelrail
 
-go 1.26.8
+go 1.26.9
 
 require (
 	filippo.io/age v1.3.2
@@ -58,7 +58,7 @@ require (
 	github.com/smallstep/certificates v0.30.2
 	github.com/tonistiigi/fsutil v0.0.0-20260819142231-83cac42c1c52
 	golang.org/x/crypto v0.57.0
-	golang.org/x/net v0.59.0
+	golang.org/x/net v0.60.0
 	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/sys v0.48.0

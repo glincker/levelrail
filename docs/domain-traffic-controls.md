@@ -1,8 +1,7 @@
 ---
+title: "Domain traffic controls"
 description: Per-domain traffic controls in the embedded ingress, covering header rules, path forwarders, country rules, response caching, redirects and raw ports, from the dashboard, CLI or API.
 ---
-
-# Domain traffic controls
 
 Every domain an app owns has its own set of traffic controls, enforced by the embedded Caddy ingress before a request reaches the container:
 
@@ -19,13 +18,13 @@ None of these needs a second proxy or a container restart. A change is stored, a
 
 ## Where to find it
 
-<Tabs :items="['Dashboard', 'CLI', 'API']">
-<Tab value="Dashboard">
+<Tabs>
+<Tab title="Dashboard">
 
 On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Cache, Redirects, Ports and Danger zone. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
 
 </Tab>
-<Tab value="CLI">
+<Tab title="CLI">
 
 ```bash
 levelrail-cli domains headers <verb> <app> <domain>
@@ -39,7 +38,7 @@ levelrail-cli domains ports <verb> <app> <domain>
 Run any of them with `-h` for its verbs and flags. Every command accepts `--json` and `-o`.
 
 </Tab>
-<Tab value="API">
+<Tab title="API">
 
 ```text
 GET    /api/v1/apps/{name}/domains/{domain}/policies           every section plus status, in one call
@@ -79,12 +78,12 @@ Maintenance mode and a whole-domain redirect still take precedence over everythi
 
 ## Headers
 
-Rules apply in the order you list them. Each rule has a side (`request` or `response`), an operation (`set`, `add` or `remove`), a name and, except for `remove`, a value.
+Rules are evaluated in order. Each rule has a side (`request` or `response`), an operation (`set`, `add` or `remove`), a name, and (except for `remove`) a value.
 
 - Request rules change what the app receives.
-- Response rules apply after the app answered, so they win over the app's own value. A later rule wins over an earlier one, and any rule wins over a preset.
+- Response rules apply after the app answers, so they override the app's own value. A later rule overrides an earlier one, and any rule overrides a preset.
 - Header names must be valid RFC 9110 tokens. Values cannot contain line breaks or control characters, and are capped by `APP_DOMAIN_POLICY_MAX_HEADER_VALUE_LEN`. Operator text is never expanded as a Caddy placeholder, so a value like `{env.SECRET}` is sent literally.
-- These names are managed by the ingress and refused: `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Keep-Alive`, `Upgrade`, `TE`, `Trailer`, `Proxy-Connection`, `Forwarded`, `X-Real-IP`, `Proxy-Authorization` and every `X-Forwarded-*` header. `X-Forwarded-Prefix` has its own option, `forwarded_prefix`. `X-Cache` and `Cache-Status` are reserved for the cache.
+- These names are reserved by the ingress and refused: `Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Keep-Alive`, `Upgrade`, `TE`, `Trailer`, `Proxy-Connection`, `Forwarded`, `X-Real-IP`, `Proxy-Authorization` and every `X-Forwarded-*` header. `X-Forwarded-Prefix` has its own option, `forwarded_prefix`. `X-Cache` and `Cache-Status` are reserved for the cache.
 
 ### Presets
 
@@ -153,7 +152,7 @@ The ingress needs a country source. Without one, geo rules are saved but inactiv
 
 | Source | How it works |
 | --- | --- |
-| Proxy header | A CDN or proxy in front adds the visitor's country, for example Cloudflare's `CF-IPCountry`. The header is honoured **only** when the connection comes from an address in `APP_INGRESS_TRUSTED_PROXIES`; anyone else could send it. Set the name with `APP_GEOIP_COUNTRY_HEADER` (default `CF-IPCountry`). |
+| Proxy header | A CDN or proxy in front adds the visitor's country, for example Cloudflare's `CF-IPCountry`. The header is honoured only when the connection comes from an address in `APP_INGRESS_TRUSTED_PROXIES`; anyone else could send it. Set the name with `APP_GEOIP_COUNTRY_HEADER` (default `CF-IPCountry`). |
 | Local database | Point `APP_GEOIP_DB` at an `.mmdb` country or city database. Nothing is downloaded by Levelrail; refresh the file yourself and restart. |
 | None | No rule is enforced. |
 
@@ -161,8 +160,8 @@ The ingress needs a country source. Without one, geo rules are saved but inactiv
 
 Two databases work out of the box:
 
-- **MaxMind GeoLite2 Country**: free, but needs a MaxMind account and licence key to download, and its EULA applies (including keeping the file updated).
-- **DB-IP IP to Country Lite**: free under CC BY 4.0, no account. Attribution is required wherever you show the data, for example "IP geolocation by DB-IP".
+- MaxMind GeoLite2 Country: free, but needs a MaxMind account and licence key to download, and its EULA applies (including keeping the file updated).
+- DB-IP IP to Country Lite: free under CC BY 4.0, no account. Attribution is required wherever you show the data, for example "IP geolocation by DB-IP".
 
 The database is read with [`oschwald/maxminddb-golang`](https://github.com/oschwald/maxminddb-golang) (ISC licence).
 
@@ -185,10 +184,10 @@ levelrail-cli domains geo set my-app shop.example.com --mode allow --countries U
 Caching is per domain and off by default. Each rule matches a path (prefix, exact or regex) and says how long to keep a response.
 
 - Only `GET` and `HEAD` are cached; a `HEAD` can be answered from a stored `GET`.
-- **Never cached**: requests with `Authorization`, requests with a `Cookie` (unless the rule sets `cache_with_cookies`), range requests, upgrades, and `Cache-Control: no-store` requests. Responses with `Set-Cookie`, `Cache-Control: private`, `no-store` or `no-cache`, `Vary: *`, a `Vary` on a header the rule does not list, a partial content range, or a status outside the rule's list (default `200`).
-- **TTL**: the app's `s-maxage`, then `max-age`, then the rule's `ttl_seconds`. With `override_upstream`, the rule's TTL always wins. A TTL of 0 means "do not store". TTLs are capped by `APP_INGRESS_CACHE_MAX_TTL`.
-- **Stale while revalidate**: after an entry expires, the first request fetches a fresh copy from the app, and requests arriving while that fetch is running get the expired copy, marked `STALE`, for up to `stale_while_revalidate_seconds`.
-- **Key**: the request host, path and query, `Accept-Encoding`, and the rule's `vary` headers. Entries from one host are never served for another.
+- Never cached: requests with `Authorization`, requests with a `Cookie` (unless the rule sets `cache_with_cookies`), range requests, upgrades, and `Cache-Control: no-store` requests. Responses with `Set-Cookie`, `Cache-Control: private`, `no-store` or `no-cache`, `Vary: *`, a `Vary` on a header the rule does not list, a partial content range, or a status outside the rule's list (default `200`).
+- TTL: the app's `s-maxage`, then `max-age`, then the rule's `ttl_seconds`. With `override_upstream`, the rule's TTL always wins. A TTL of 0 means "do not store". TTLs are capped by `APP_INGRESS_CACHE_MAX_TTL`.
+- Stale while revalidate: after an entry expires, the first request fetches a fresh copy from the app, and requests arriving while that fetch is running get the expired copy, marked `STALE`, for up to `stale_while_revalidate_seconds`.
+- Key: the request host, path and query, `Accept-Encoding`, and the rule's `vary` headers. Entries from one host are never served for another.
 - Every response on a cached path carries `X-Cache: HIT`, `MISS`, `STALE` or `BYPASS`, and a hit has an `Age` header. A hit answers `If-None-Match` with `304` when the ETag matches.
 
 The cache lives in the control plane's memory: a least recently used store capped by `APP_INGRESS_CACHE_MAX_BYTES` (default 64 MiB) across every domain, with single responses capped by `APP_INGRESS_CACHE_MAX_OBJECT_BYTES` (default 2 MiB) or the domain's own lower `max_object_bytes`. It is per instance, starts empty after a restart, and is not shared between nodes.
@@ -202,7 +201,7 @@ levelrail-cli domains cache stats my-app example.com
 
 ## Redirects
 
-Whole-domain redirects (one host to a target URL) still use [domain redirects](domains-and-ingress.md#domain-redirects); the controls here build on them.
+Whole-domain redirects (one host to a target URL) still use [domain redirects](/domains-and-ingress#domain-redirects); the controls here build on them.
 
 ### Force HTTPS
 
@@ -231,8 +230,8 @@ Pick one of the app's domains as the primary and mark others as aliases: each al
 
 ### Normalisation
 
-- **Trailing slash**: `add` (paths without a file extension get a slash), `remove`, or `off` (default). Uses `308`.
-- **Lower case host**: redirects `Example.COM` to `example.com`. Off by default.
+- Trailing slash: `add` (paths without a file extension get a slash), `remove`, or `off` (default). Uses `308`.
+- Lower case host: redirects `Example.COM` to `example.com`. Off by default.
 
 The tab walks `http://www.example.com/a?x=1`, `http://example.com/a` and `https://www.example.com/a` through your settings and shows each hop with its status code before you save.
 
@@ -245,9 +244,9 @@ levelrail-cli domains redirect set my-app example.com --preset apex-to-www
 
 ## Ports
 
-Raw TCP and UDP port forwards are app streams ([raw TCP streams](domains-and-ingress.md#raw-tcp-streams-forwarding-a-non-http-port)); the Ports tab and `domains ports show` list them for the domain's app with their target, who may reach them, and conflicts: another stream on the same port, the HTTP ingress port, or a container that already publishes the port.
+Raw TCP and UDP port forwards are app streams ([raw TCP streams](/domains-and-ingress#raw-tcp-streams-forwarding-a-non-http-port)); the Ports tab and `domains ports show` list them for the domain's app with their target, who may reach them, and conflicts: another stream on the same port, the HTTP ingress port, or a container that already publishes the port.
 
-"Open this port only to these IPs" writes [firewall rules](domains-and-ingress.md#firewall-ports-80-and-443): one allow rule per address or range, then a deny for everyone else, all labelled `domain-ports:PORT/PROTO`. Removing the restriction deletes exactly those rules.
+"Open this port only to these IPs" writes [firewall rules](/domains-and-ingress#firewall-ports-80-and-443): one allow rule per address or range, then a deny for everyone else, all labelled `domain-ports:PORT/PROTO`. Removing the restriction deletes exactly those rules.
 
 ```bash
 levelrail-cli domains ports restrict my-app example.com 5432 --source 203.0.113.10 --source 198.51.100.0/24
@@ -287,7 +286,7 @@ Every change is recorded in the audit log like any other API write.
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Domains and ingress" href="/domains-and-ingress">
 
 TLS, WAF, maintenance mode and the rest of the ingress.

@@ -1,0 +1,59 @@
+---
+title: "Self-host osTicket with Docker"
+sidebarTitle: "osTicket"
+description: "A widely used open-source support ticket system for teams handling customer requests."
+---
+
+A widely used open-source support ticket system for teams handling customer requests.
+
+This page describes the Levelrail template for osTicket (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.osticket.com/en/latest/.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `mariadb:11` | none | `osticket_db_data -&#62; /var/lib/mysql` |
+| `osticket` | `tiredofit/osticket:1.18.2` | 80 | `osticket_data -&#62; /www/osticket` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `MARIADB_DATABASE` | Preset in the template |
+| `db` | `MARIADB_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_ROOT_PASSWORD` | Generated at deploy |
+| `db` | `MARIADB_USER` | Preset in the template |
+| `osticket` | `ADMIN_EMAIL` | Preset in the template |
+| `osticket` | `ADMIN_PASS` | Generated at deploy |
+| `osticket` | `ADMIN_USER` | Generated at deploy |
+| `osticket` | `DB_HOST` | Preset in the template |
+| `osticket` | `DB_NAME` | Preset in the template |
+| `osticket` | `DB_PASS` | Generated at deploy |
+| `osticket` | `DB_USER` | Preset in the template |
+| `osticket` | `INSTALL_SECRET` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy osTicket with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select osTicket. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy osticket --name my-osticket
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

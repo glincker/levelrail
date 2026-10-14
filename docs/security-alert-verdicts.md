@@ -1,12 +1,11 @@
 ---
+title: "Security alert verdicts"
 description: Verdict, evidence, and dismissal command for each code scanning alert open when this page was written.
 ---
 
-# Security alert verdicts
+This page gives the verdict, evidence and dismissal command for each code scanning alert that was open when it was written. Earlier triage landed in #609 and #717. This covers what remained.
 
-Verdict, evidence and dismissal command for each code scanning alert that was open when this page was written. Earlier triage landed in #609 and #717; this page covers what remained.
-
-Verdicts use three labels: **fixed** (a real problem, changed in code), **false positive** (a guard exists that the analyzer cannot model, with the guard and the test that proves it), and **accepted risk** (behavior kept on purpose, with the reason).
+Verdicts use three labels. Fixed means a real problem, changed in code. False positive means a guard exists that the analyzer can't model, and the page names the guard and the test that proves it. Accepted risk means behavior kept on purpose, with the reason.
 
 | Alert | Rule | Location | Verdict |
 | --- | --- | --- | --- |
@@ -24,7 +23,7 @@ Verdicts use three labels: **fixed** (a real problem, changed in code), **false 
 
 ## 36, 35, 34, 2: request forgery (false positive)
 
-Each of these sends an HTTP request to a URL the operator supplies (an image reference, a git repository URL, an import source, an alert webhook). That is the feature, so the URL is user-controlled by design. What matters is that the client cannot reach an internal address.
+Each of these sends an HTTP request to a URL the operator supplies (an image reference, a git repository URL, an import source, an alert webhook). That is the feature, so the URL is user-controlled by design. What matters is that the client can't reach an internal address.
 
 The guard is `netguard.NewClient()` (`kit/netguard/netguard.go`). It installs a `net.Dialer.Control` hook that runs after DNS resolution on every connection, redirects included, and refuses loopback, link-local (cloud metadata), private and unspecified addresses, including IPv4-mapped IPv6 forms. It also disables proxies, since a proxy would dial on our behalf. Operators who deliberately target internal hosts can opt in with `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`.
 
@@ -41,7 +40,7 @@ Caveat for 2: a caller that passes its own non-nil client to `NewNotifier` bypas
 
 ## 32: clear-text logging in the secrets manager (false positive)
 
-The flagged call is `noteLegacy` in `internal/secrets/manager.go`, which logs a debug line when a legacy unbound ciphertext is read. It logs the scope constant and the env var **name** (`envKey`), never the value or any key material. CodeQL matched the identifier text rather than a secret flow. Decrypted plaintext is only returned to the caller and is never passed to a logger in this package.
+The flagged call is `noteLegacy` in `internal/secrets/manager.go`, which logs a debug line when a legacy unbound ciphertext is read. It logs the scope constant and the env var name (`envKey`), never the value or any key material. CodeQL matched the identifier text rather than a secret flow. Decrypted plaintext is only returned to the caller and is never passed to a logger in this package.
 
 ## 20: session cookie without an unconditional Secure flag (accepted risk)
 

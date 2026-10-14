@@ -65,6 +65,9 @@ func (rt *Router) handleModelPreflight(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(req.NodeID)) {
+		return
+	}
 	res, err := svc.Preflight(r.Context(), models.PreflightInput{
 		Repo: req.Repo, Engine: req.Engine, File: strings.TrimSpace(req.File), Quant: strings.TrimSpace(req.Quant),
 		NodeID: req.NodeID, GPUCount: req.GPUCount, Token: strings.TrimSpace(req.HFToken),

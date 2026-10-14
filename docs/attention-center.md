@@ -1,10 +1,9 @@
 ---
+title: "Attention center"
 description: How the dashboard surfaces things that wait on an operator, including CLI login approvals, expired logins, deploy approvals, expiring tokens, failed data copies, overdue backups and stalled certificate renewals.
 ---
 
-# Attention center
-
-Some states block on a person and used to be visible only if you went looking. The attention center puts them in one place: the banner and bell in the dashboard header, the Status page, `levelrail-cli attention`, and the MCP `get_attention` tool.
+Some states block on a person and used to be visible only if you went looking. The attention center puts them in one place: the banner and bell in the dashboard header, the [Status page](/status-page), `levelrail-cli attention`, and the MCP `get_attention` tool.
 
 ## What shows up
 
@@ -61,7 +60,7 @@ A background sweeper records expiry whether or not the CLI ever polls again. It 
 
 ## Sign-in codes and new browsers
 
-When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists one `login_code` or `login_approval` item for your account, with a count and the newest requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**; approving asks you to type the number the waiting browser shows. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](identity-and-access.md#sign-in-with-a-code).
+When someone asks for a sign-in code for your account, or signs in with your password from a browser you have not trusted while you are signed in here, a banner appears on every page and the attention center lists one `login_code` or `login_approval` item for your account, with a count and the newest requester's IP address, browser and time. Items and the banner never carry the code: **Show code** fetches it on demand, and each reveal is audited. Approve or deny a new browser from the banner or from **Settings > Security**; approving asks you to type the number the waiting browser shows. The same requests are available from the terminal with `levelrail-cli auth code`. See [Identity and access](/identity-and-access#sign-in-with-a-code).
 
 ## Running the CLI through a tunnel or proxy
 
@@ -108,7 +107,7 @@ You can also toggle both when editing a channel in the dashboard. A notice conta
 
 Every item has one of two classes, decided on the server. An incident is broken or about to break and needs action: failed deploys, crashloops, a real certificate that expired or whose renewal stalled, disk pressure, overdue backups, offline nodes, active sign-in threats. Only incidents appear in the dashboard's Needs attention list and in the header count.
 
-A recommendation is setup or hardening advice: control plane disaster recovery is off, the Docker API guard could move from audit to enforce, a new release is available, an agent is out of date, a database release is past end of life. These wait in the notification centre under Pending setup and hardening, where each can be snoozed for a day or dismissed. The dashboard shows them as a single line with a count.
+A recommendation is setup or hardening advice: control plane [disaster recovery](/disaster-recovery) is off, the Docker [API guard](/docker-access) could move from audit to enforce, a new release is available, an agent is out of date, a database release is past end of life. These wait in the notification centre under Pending setup and hardening, where each can be snoozed for a day or dismissed. The dashboard shows them as a single line with a count.
 
 Certificate expiry only becomes an incident for a certificate that is routed to an app or site, is not issued by the internal CA, and whose TLS is not terminated by a proxy. An auto-renewing ACME certificate counts only once it expired or its renewal stalled; an uploaded certificate counts from the start of the warning window.
 

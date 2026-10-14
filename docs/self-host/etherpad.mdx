@@ -1,0 +1,48 @@
+---
+title: "Self-host Etherpad with Docker"
+sidebarTitle: "Etherpad"
+description: "A real-time collaborative editor for documents, with plugins and a clean export story."
+---
+
+A real-time collaborative editor for documents, with plugins and a clean export story.
+
+This page describes the Levelrail template for Etherpad (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.etherpad.org.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `etherpad` | `etherpad/etherpad:2.2.4` | 9001 | `etherpad_data -&#62; /opt/etherpad-lite/var` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `etherpad` | `ADMIN_PASSWORD` | Generated at deploy |
+| `etherpad` | `DEFAULT_PAD_TEXT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Etherpad with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Etherpad. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy etherpad --name my-etherpad
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).

@@ -1,16 +1,15 @@
 ---
+title: "Levelrail CLI Reference"
 description: Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
 ---
 
-# Levelrail CLI Reference
+`levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so you need no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags you will use most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.
 
-`levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so it needs no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags that matter most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.
-
-Commands are shown as `levelrail-cli ...`. If you rename the binary, the command name follows it (the CLI reads its name from `os.Args[0]`). The server is a separate binary, `levelrail`, which also has a few maintenance commands such as `setup-token`, `restore-snapshot`, `restore-db`, `recover-admin`, `upgrade-note` (record who swapped the binary by hand), and `healthcheck`. Those are covered in [Installing](installing.md) and [Disaster recovery](/disaster-recovery).
+Commands are shown as `levelrail-cli ...`. If you rename the binary, the command name follows it (the CLI reads its name from `os.Args[0]`). The server is a separate binary, `levelrail`, which has a few maintenance commands of its own, such as `setup-token`, `restore-snapshot`, `restore-db`, `recover-admin`, `upgrade-note` (record who swapped the binary by hand), and `healthcheck`. Those are in [Installing](/installing) and [Disaster recovery](/disaster-recovery).
 
 ## Install and sign in
 
-<CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
+`curl -fsSL https://levelrail.com/install-cli.sh | sh`
 
 ```bash
 export APP_API_URL=https://console.example.com
@@ -29,9 +28,6 @@ Each command resolves its target in this order, and an explicit flag always wins
 | Profile | `--profile` | `APP_PROFILE` | `default` |
 
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
-
-<InlineToc default-open />
-
 ## Scripting: `--json` and exit codes
 
 Every command that returns data or a result supports `--json` (shorthand for `--output json`), and `--query` takes a JMESPath expression. With `--json`, stdout carries only the JSON result. The exceptions are `completion bash|zsh|fish` (a shell script) and `control-plane-backups help-dr` (a static runbook). A test walks the command tree and fails when a new command has no `--json` and is not on that exempt list.
@@ -61,7 +57,7 @@ Codes 3 and 4 are broad on purpose so existing scripts keep working; the JSON er
 
 ## Scripting: `--debug`
 
-`--debug` works anywhere on the command line (before or after the subcommand) and traces every outgoing request this invocation makes to stderr: method, URL, and the response status and timing, one line per call. It never prints request/response headers or bodies, so `Authorization` and any token value never appear, even in debug mode; a token that somehow ended up in a URL's query string is also redacted. stdout is untouched, so `--debug` composes with `--json`/`--query` for scripting.
+`--debug` works anywhere on the command line (before or after the subcommand) and traces every outgoing request this invocation makes to stderr: method, URL, and the response status and timing, one line per call. It never prints request or response headers or bodies, so `Authorization` and any token value never appear, even in debug mode; a token that somehow ended up in a URL's query string is also redacted. stdout is untouched, so `--debug` composes with `--json`/`--query` for scripting.
 
 ```
 levelrail-cli apps list --debug --api-url http://10.0.0.5:8080
@@ -73,7 +69,7 @@ DEBUG: GET http://10.0.0.5:8080/api/v1/apps -> 200 OK (42ms)
 
 ## Experimental command groups
 
-Some groups are off by default and hidden from `--help` and shell completion until the shell you run the CLI from sets `APP_EXPERIMENTAL`. This page marks them. The keys are `ai-chat` (`ai`, `settings ai-assistant`), `ai-models` (`models`), `load-balancer` (`lb`), `iac` (`apply`, `diff`, `export`) and `cloudflare-tunnel` (`cloudflare-tunnel`). See [Experimental features](experimental-features.md).
+Some groups are off by default and stay hidden from `--help` and shell completion until the shell you run the CLI from sets `APP_EXPERIMENTAL`. This page marks them. The keys are `ai-chat` (`ai`, `settings ai-assistant`), `ai-models` (`models`), `load-balancer` (`lb`), `iac` (`apply`, `diff`, `export`) and `cloudflare-tunnel` (`cloudflare-tunnel`). See [Experimental features](/experimental-features).
 
 ## Web CLI console: host diagnostics
 
@@ -112,7 +108,7 @@ levelrail-cli apps list --max-items 50 --json
 levelrail-cli apps list --max-items 50 --starting-token 50 --json
 ```
 
-Run `levelrail-cli apps <subcommand> -h` for the full flag list of any command below. Deploy lifecycle is covered in [Deploying and managing apps](deploying-apps.md).
+Run `levelrail-cli apps <subcommand> -h` for the full flag list of any command below. Deploy lifecycle is covered in [Deploying and managing apps](/deploying-apps).
 
 ### Create, inspect and list
 
@@ -131,7 +127,7 @@ levelrail-cli apps clone <name> <new-name> [flags]
 levelrail-cli apps delete <name> [flags]
 ```
 
-- `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an app spec, `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting.
+- `apps create` registers an existing image or triggers a real build from a git repository; `--file` reads an [app spec](/app-spec-reference), `--interactive` runs a step-by-step wizard. Required flags missing outside `--interactive` fail with an error instead of prompting.
 - `apps status` shows an app's current reconcile conditions; `apps overview` shows CPU, memory, traffic and errors for every app (or the names given) in one request; `apps network` shows the live traffic path (container port, host port, running).
 - `apps validate` parses and validates an app.yaml or a Docker Compose file locally, with no API call and no deploy. It prints the detected format, service count, and every non-blocking `notices` entry a real deploy would also surface.
 - `apps delete` removes an app and stops its containers; if the node is unreachable the delete is reported as pending and retried.
@@ -204,22 +200,22 @@ levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 ```
 
-- `apps deploys list` is real, row per attempt deploy history, newest first. `apps deploys show` prints one attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable. See [Deploy failures](deploy-failures.md).
+- `apps deploys list` is real, row per attempt deploy history, newest first. `apps deploys show` prints one attempt (the newest by default) with its structured failure: code, cause, failing step, redacted log excerpt, suggested fix, docs link and retryable. See [Deploy failures](/deploy-failures).
 - `apps deploys wait` blocks until one deploy is healthy, failed, canceled, superseded or blocked (a freeze window or approval) and prints the result with its failure. Exit 0 healthy, 7 failed, canceled, superseded or blocked, 6 timeout. Without a deploy id it resolves the newest deploy once and follows it by id.
 - `apps deploys compare` diffs two deploy attempts, or one against the current live state. `apps deploys logs` prints one attempt's full build and log output to stdout. `apps deploys steps` streams the pipeline steps (detecting, building, pushing, deploying) until the attempt ends and exits non-zero if a step failed; an already finished attempt replays only a short summary.
 - `apps deploys failed` lists every app's latest failed deploy in the window (default set by the server), with the image of its newest good deploy as a rollback target.
 - `apps deploys cancel` cancels a queued or in-progress deploy before it cuts traffic. `apps deploys rollback-to` redeploys a past succeeded deploy's exact image, pinned by digest or rollback pin, with that deploy's config; `--watch` follows it through the readiness gate.
-- `apps deploys gate` (alias `deploy status`) prints a release's gate timeline: readiness passes, stable window, cutover, drain, rollback pin and post-deploy watch. `--watch` follows it until the release clears its watch, fails, is rolled back or is replaced. Exit 0 healthy or in progress, 7 failed or rolled back. `apps deploy-safety` shows and overrides the per-app thresholds (`set web --stable-window 20s --auto-rollback false`, `default` clears one) and lists pinned rollback targets. See [Deploy safety](deploy-safety.md#readiness-gate).
+- `apps deploys gate` (alias `deploy status`) prints a release's gate timeline: readiness passes, stable window, cutover, drain, rollback pin and post-deploy watch. `--watch` follows it until the release clears its watch, fails, is rolled back or is replaced. Exit 0 healthy or in progress, 7 failed or rolled back. `apps deploy-safety` shows and overrides the per-app thresholds (`set web --stable-window 20s --auto-rollback false`, `default` clears one) and lists pinned rollback targets. See [Deploy safety](/deploy-safety#readiness-gate).
 - `apps timeline` shows what happened to an app, newest first: deploys, rollbacks, restarts, env, secret and config changes (key names only, never values), scaling, stop and start.
 - `apps diagnose` explains a failed deploy or crashloop and can apply a suggested fix with `--apply-fix N`. `apps preflight` runs pre-deploy checks (DNS, ports, disk, image, env).
 - `apps freeze` manages deploy freeze windows: a window starts at every match of a 5 field cron expression, evaluated in `--timezone` (default UTC), and lasts `--duration`. While one is active, webhook, pipeline and released deploys are held and run when the window ends; a manual deploy needs `apps deploy --override-freeze --override-reason TEXT`. `set` replaces the app's windows with the one given. Fleet-wide windows are under `settings deploy-freeze`.
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule.
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
-- `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](scheduled-jobs.md)). `apps scheduled-tasks` is the older exec-only form of the same resource.
-- `functions` runs an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start (see [Functions](functions.md)).
-- `apps sleep` stops an app after it has had no requests for a set time and wakes it on the next request (see [Sleep when idle](sleep-when-idle.md)).
-- `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](canary-deploys.md)).
-- `apps auto-update` redeploys an app automatically when its image tag moves to a new digest (see [Image auto-update](image-auto-update.md)).
+- `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](/scheduled-jobs)). `apps scheduled-tasks` is the older exec-only form of the same resource.
+- `functions` runs an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start (see [Functions](/functions)).
+- `apps sleep` stops an app after it has had no requests for a set time and wakes it on the next request (see [Sleep when idle](/sleep-when-idle)).
+- `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](/canary-deploys)).
+- `apps auto-update` redeploys an app automatically when its image tag moves to a new digest (see [Image auto-update](/image-auto-update)).
 - `apps auto-rollback` opts an app into or out of automatic rollback when a crashloop alert fires. `apps auto-rollback-slo-burn` sets how the app reacts when an SLO burn rate alert fires.
 
 ```
@@ -259,7 +255,7 @@ levelrail-cli apps egress clear <name> [flags]
 levelrail-cli apps exec-access enable|disable|status <name> [flags]
 ```
 
-- `apps domains add` creates the DNS record when a provider is connected (`--dns off` skips it, `--dns preview` shows it); `--wait` prints the go-live steps and exits non-zero when the domain is not live within `--timeout`. See [Add a domain and go live](domains-and-ingress.md#add-a-domain-and-go-live).
+- `apps domains add` creates the DNS record when a provider is connected (`--dns off` skips it, `--dns preview` shows it); `--wait` prints the go-live steps and exits non-zero when the domain is not live within `--timeout`. See [Add a domain and go live](/domains-and-ingress#add-a-domain-and-go-live).
 - `apps domains` shows or changes an app's domains; a domain already used by another app is refused and nothing is changed. Per-domain TLS, redirects, WAF and the like are under [Domains](#domains).
 - `apps streams` forwards a host port to one container port as raw TCP (only `tcp` is supported). A stream change takes effect on the app's next container recreation, such as an image change or `apps restart`.
 - `apps egress` restricts an app's outbound traffic to the declared `host:port` pairs; with nothing configured, egress is unrestricted. DNS and loopback traffic stay open regardless.
@@ -291,8 +287,8 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
-- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](usage-and-cost.md). `usage report --csv` prints the export.
-- `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](resource-advisor.md). `advisor apply ID` only previews; add `--yes` to apply.
+- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export.
+- `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](/resource-advisor). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
 - `apps scheduled-tasks` runs a command inside the app's running container on a cron schedule. The command is a real argv with no shell; put `--` before it when the command takes flags.
@@ -317,7 +313,7 @@ levelrail-cli apps build-cache remove <name>|--global
 
 - `apps health set` sets one probe and keeps the other. A probe is an HTTP(S) check or a command run inside the container (exit 0 is healthy). `--preset` fills path, interval, timeout and failures from a shortcut (`healthz`, `health`, `api-health`, `ping`, `status`); explicit flags win. `apps health discover` probes well-known paths and reports what each one did.
 - `apps volumes` manages named Docker volumes outside a redeploy. The name is lowercase letters, numbers and hyphens starting with a letter; the path is where it mounts in the container.
-- `apps storage set` attaches a connected bucket as object storage and injects its credentials as `S3_*` env vars at container create time. See [Object storage](object-storage.md).
+- `apps storage set` attaches a connected bucket as object storage and injects its credentials as `S3_*` env vars at container create time. See [Object storage](/object-storage).
 - `apps build-cache` configures the BuildKit remote cache on a storage destination. `--global` applies to every app without its own setting. `clear` is bounded per call; run it again while it reports more to delete. A cache problem never fails a build.
 
 ### Environment, secrets and Vault
@@ -343,7 +339,7 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 
 - `apps env import` merges a .env file into an app's plain env vars and prints which keys are new, changed or unchanged. Keys that are already secrets are skipped. It reports how many changes are pending, or restarts the app right away with `--apply`.
 - `apps env diff` compares two apps' env vars, for example staging against production. Secret values are never read: secrets are compared by key only, and the dashboard has the same comparison on an app's Environment page.
-- `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](environment-and-secrets.md).
+- `apps env export` writes env vars as .env text; sensitive and secret keys are written empty with a comment unless `--reveal` is given. `apps env get` prints one variable, masked when sensitive. `--reveal` asks for your password (and authenticator code) at the prompt, never from flags or the environment, and needs a token with `read:sensitive` and `secrets:reveal` plus `APP_SECRET_REVEAL_TOKENS=on` on the server. See [Environment variables and secrets](/environment-and-secrets).
 - `apps secrets set` sets or rotates one secret's encrypted value and declares the key as secret backed so it is injected; `--apply` restarts the app now. With `--env-file` it bulk imports every key in a .env format file as its own secret. Values are never returned: `list` shows key names and locked state only. `lock` toggles a secret's overwrite guard.
 - `apps vault-env` declares an env var resolved live from the configured external Vault (see [Vault](#vault)); only the reference is stored.
 - `apps preview-env` and `apps branch-env` override an env var for previews only. A branch override applies when the preview's own branch matches PATTERN (an exact name or a glob such as `release/*`); `--secret` stores it envelope encrypted. Neither affects the app's own running deploy.
@@ -374,7 +370,7 @@ levelrail-cli apps previews sweep [flags]
 
 - `apps git-source` connects a repo for auto deploy on push; `settings` sets push path filters and forge status reporting; `rotate-secret` mints a fresh webhook secret, shown once.
 - `apps webhook-deliveries` lists recent inbound webhook requests, verified or not. `replay` re-runs a stored delivery's payload and can trigger a real build and deploy.
-- `apps previews` manages preview environments per pull request, see [Preview environments per pull request](previews.md). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
+- `apps previews` manages preview environments per pull request, see [Preview environments per pull request](/previews). `previews` is the same command at the top level. `extend` keeps one preview past its TTL; `settings` shows or changes the lifecycle, resource, database and exposure policy. `limits` shows or changes preview caps, fork policy and TTL; `approve` deploys a held fork pull request once; `teardown` removes one PR's preview now; `sweep` tears down every stale preview across all apps now; `pr-status` toggles the PR comment and commit status per preview deploy.
 
 ### Supply chain
 
@@ -388,7 +384,7 @@ levelrail-cli apps scan gate <app> off|warn|block_on_critical [flags]
 levelrail-cli apps scan override <app> --reason TEXT [flags]
 ```
 
-`apps sbom` shows a deploy's software bill of materials (newest deploy with one by default), or prints or saves the raw SPDX or CycloneDX document. Scanning is off by default and needs `APP_BUILD_ATTEST=true` on the server so builds produce an SBOM; a server can refuse every scan with `APP_SCAN_ENABLED=false`. `gate block_on_critical` keeps the previous release serving; `override` lets the next blocked release through once, with a recorded reason. See [Supply chain](supply-chain.md).
+`apps sbom` shows a deploy's software bill of materials (newest deploy with one by default), or prints or saves the raw SPDX or CycloneDX document. Scanning is off by default and needs `APP_BUILD_ATTEST=true` on the server so builds produce an SBOM; a server can refuse every scan with `APP_SCAN_ENABLED=false`. `gate block_on_critical` keeps the previous release serving; `override` lets the next blocked release through once, with a recorded reason. See [Supply chain](/supply-chain).
 
 ### Alerts, connections and templates
 
@@ -459,7 +455,7 @@ levelrail-cli apps clear-environment <name> [flags]
 - Shared env vars layer in this order: organization, then project, then environment, then the app's own env, each overriding the one before. `env-set` replaces that scope's shared env vars. For per scope secrets see [Shared env](#shared-env).
 - A protected environment requires `--confirm` (or an interactive yes) on `apps deploy`, `apps rollback` and `apps promote` targeting an app tagged with it, and routes the deploy through [deploy approvals](#deploy-history-approvals-and-automation).
 - `apps environments clone-preview` shows what cloning would create without applying it; `env-diff` diffs two environments' resolved effective env vars.
-- `apps projects topology` prints a diagram ready graph of a project's apps, databases and volumes. See [Projects and organizations](projects-and-organizations.md).
+- `apps projects topology` prints a diagram ready graph of a project's apps, databases and volumes. See [Projects and organizations](/projects-and-organizations).
 
 ## Tags
 
@@ -498,11 +494,11 @@ levelrail-cli pipelines oidc rotate-key [--retire-after D] [flags]
 - `triggers` shows why recent git events did or did not start runs.
 - `oidc` shows whether pipeline jobs can mint OIDC tokens and the JWKS URL to wire to a cloud provider; `oidc rotate-key` rotates the signing key, and the old key stays published until it retires.
 
-See [Pipelines](pipelines.md) and [Pipeline OIDC](pipelines-oidc.md).
+See [Pipelines](/pipelines) and [Pipeline OIDC](/pipelines-oidc).
 
 ## Load balancers {#lb}
 
-Experimental: requires `APP_EXPERIMENTAL=load-balancer`. See [Load balancing](load-balancing.md).
+Experimental: requires `APP_EXPERIMENTAL=load-balancer`. See [Load balancing](/load-balancing).
 
 ```
 levelrail-cli lb list [--state balancing|degraded|none] [--search Q] [flags]
@@ -523,7 +519,7 @@ levelrail-cli lb import <app> --file app.yaml [--service S] [flags]
 
 ## Preview
 
-Deploy previews are the screenshot or metadata card captured after a deploy, not pull request previews (those are `apps previews`). See [Deploy previews](deploy-previews.md).
+Deploy previews are the screenshot or metadata card captured after a deploy, not pull request previews (those are `apps previews`). See [Deploy previews](/deploy-previews).
 
 ```
 levelrail-cli preview status <app> [flags]
@@ -572,16 +568,16 @@ levelrail-cli databases major-upgrade-discard <name> <id> [flags]
 - `status` shows a database's current reconcile conditions (useful when it exists but is not running yet).
 - `delete` stops and removes a database but keeps its data volume; `--force` is needed if apps use it.
 - `slow-queries` lists a Postgres or MySQL database's slow query log.
-- `schema` lists a SQL database's tables with row estimates and sizes; `query` runs one statement through the control plane, read-only by default. See [Database viewer](database-viewer.md). `db` is a short alias for `databases`.
+- `schema` lists a SQL database's tables with row estimates and sizes; `query` runs one statement through the control plane, read-only by default. See [Database viewer](/database-viewer). `db` is a short alias for `databases`.
 - `set-resources` applies memory and CPU limits to an already created database, replacing whatever was set before (a full replace, not a patch).
 - `public-access set` exposes a database on a host port; `--bind-address` is `private` (the default), `public`, or a literal IP.
 - `set-version` is a minor or patch image change on the same data. `major-upgrade` is a guarded Postgres major upgrade with a rollback snapshot; `major-upgrades` lists the attempts, `major-upgrade-rollback` restores the pre upgrade data, and `major-upgrade-discard` deletes a rollback snapshot to free disk.
 
-See [Managing databases](managing-databases.md).
+See [Managing databases](/managing-databases).
 
 ## AI models {#models}
 
-Experimental: requires `APP_EXPERIMENTAL=ai-models`. See [AI models](ai-models.md).
+Experimental: requires `APP_EXPERIMENTAL=ai-models`. See [AI models](/ai-models).
 
 ```
 levelrail-cli models list [flags]
@@ -630,9 +626,9 @@ levelrail-cli auth 2fa recovery-codes --code CODE [flags]
 ```
 
 - `login` authenticates and persists a new API token; with `--profile NAME` it saves under a named profile instead of overwriting `default`.
-- `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](attention-center.md).
+- `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](/attention-center).
 - `session-link` mints a short lived (about 2 minutes), single use login link that signs in as whoever minted it, meant for browser automation. It needs a token with the root ability.
-- `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows, typed in; a wrong number denies it, and the number is never printed by `code`), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code and `approve` or `deny` need `signin:approve`, which no device login, root or `write:sensitive` token carries. Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (it must expire within 30 days by default, cannot be an agent token, and is revoked when you change or reset your password or sign out your other sessions), or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](identity-and-access.md#sign-in-with-a-code).
+- `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows, typed in; a wrong number denies it, and the number is never printed by `code`), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code and `approve` or `deny` need `signin:approve`, which no device login, root or `write:sensitive` token carries. Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (it must expire within 30 days by default, cannot be an agent token, and is revoked when you change or reset your password or sign out your other sessions), or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](/identity-and-access#sign-in-with-a-code).
 - Every `2fa` subcommand needs a live session: `--username` and `--password` (prompted if omitted), never the CLI's saved bearer token. `setup` starts enrollment and returns a secret and provisioning URI; `enable` confirms it and returns recovery codes once; `recovery-codes` regenerates them and invalidates the old set.
 
 ## Auth engine
@@ -660,7 +656,7 @@ Every `tokens` subcommand requires a username and password (prompted if omitted)
 
 ## Domains
 
-Per domain settings take `<app> <domain>`, and the domain must already be one of the app's configured domains. Domain TLS and ingress behavior is covered in [Domains and ingress](domains-and-ingress.md).
+Per domain settings take `<app> <domain>`, and the domain must already be one of the app's configured domains. Domain TLS and ingress behavior is covered in [Domains and ingress](/domains-and-ingress).
 
 ```
 levelrail-cli domains list [flags]
@@ -696,7 +692,7 @@ levelrail-cli domains standalone update <domain> [--target TARGET] [flags]
 levelrail-cli domains standalone remove <domain> [flags]
 ```
 
-- `standalone` manages [standalone domains](standalone-domains.md): domains with no app that proxy to `PORT`, `HOST:PORT`, an `http(s)://` URL, `app:NAME[:PORT]` or `container:NAME:PORT`. Options are `--upstream-tls`, `--insecure-skip-verify`, `--tls-server-name`, `--host-header preserve|upstream|NAME`, `--no-websocket`, `--connect-timeout`, `--read-timeout`, `--strip-prefix` and `--description`. Loopback, private, container and control-port targets need `--confirm`. `update` sends only the flags you pass. Per-domain commands take `_standalone` as the app name, for example `domains waf set _standalone tools.example.com`.
+- `standalone` manages [standalone domains](/standalone-domains): domains with no app that proxy to `PORT`, `HOST:PORT`, an `http(s)://` URL, `app:NAME[:PORT]` or `container:NAME:PORT`. Options are `--upstream-tls`, `--insecure-skip-verify`, `--tls-server-name`, `--host-header preserve|upstream|NAME`, `--no-websocket`, `--connect-timeout`, `--read-timeout`, `--strip-prefix` and `--description`. Loopback, private, container and control-port targets need `--confirm`. `update` sends only the flags you pass. Per-domain commands take `_standalone` as the app name, for example `domains waf set _standalone tools.example.com`.
 
 - `list` shows every app's domains in one call. `check` runs a real DNS lookup and reports whether the domain reaches this control plane. `certificates` lists every certificate in certmagic storage, healthy or not.
 - `basic-auth set` takes `--username` and `--password`. `maintenance set` serves a fixed maintenance response instead of proxying, without stopping the container. `redirect set --target URL` redirects every request for the domain; maintenance mode takes precedence if both are set.
@@ -708,7 +704,7 @@ levelrail-cli domains standalone remove <domain> [flags]
 
 ## DNS
 
-See [DNS zones and records](dns.md).
+See [DNS zones and records](/dns).
 
 ```
 levelrail-cli dns zones list [--provider cloudflare|route53]
@@ -731,7 +727,7 @@ levelrail-cli dns health-checks list|create|delete
 
 ## Backups
 
-See [Backups and storage](backups-and-storage.md).
+See [Backups and storage](/backups-and-storage).
 
 ```
 levelrail-cli backups list <database> [flags]
@@ -763,7 +759,7 @@ levelrail-cli backups volumes restore <app> <volume> --backup ID [--new-volume N
 - `restore` restores in place and is destructive; `--confirm` takes the database name. `restore-as-new` restores into a brand new database and is non destructive. `restores` and `clone-restores` list the attempt history of each.
 - `verify` checks a backup is intact without a live restore; `verifications` lists past attempts.
 - `health` shows every backed up resource with its last backup and last verified restore. `protection` shows bucket object lock and versioning.
-- `drill run` restores a backup into a scratch resource, validates and destroys it, and exits non zero when it fails. See [Prove your backups work](prove-your-backups-work.md).
+- `drill run` restores a backup into a scratch resource, validates and destroys it, and exits non zero when it fails. See [Prove your backups work](/prove-your-backups-work).
 - `volumes restore` restores into a new volume only, optionally named for another app or on another node.
 
 ## App volume backups
@@ -840,7 +836,7 @@ levelrail-cli channels delete <id> [flags]
 levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
 ```
-Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](email-notifications.md).
+Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 
 ## Push subscriptions
 
@@ -848,7 +844,7 @@ Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `push
 levelrail-cli push-subscriptions list [flags]
 levelrail-cli push-subscriptions revoke <id> [flags]
 ```
-Lists or revokes the browser push subscriptions registered for the caller's own account. There is no `register` subcommand: a subscription's endpoint and keys only come from a real browser. See [Observability](observability.md).
+Lists or revokes the browser push subscriptions registered for the caller's own account. There is no `register` subcommand: a subscription's endpoint and keys only come from a real browser. See [Observability](/observability).
 
 ```
 levelrail-cli push-subscriptions list --json
@@ -857,7 +853,7 @@ levelrail-cli push-subscriptions revoke <id>
 
 ## Alerts
 
-Top-level commands for muting, scheduling and reviewing alerts. The rules themselves are managed under [`apps alerts`](#alerts-connections-and-templates). See [Observability](observability.md).
+Top-level commands for muting, scheduling and reviewing alerts. The rules themselves are managed under [`apps alerts`](#alerts-connections-and-templates). See [Observability](/observability).
 
 ```
 levelrail-cli alerts silences list [--all]
@@ -883,7 +879,7 @@ levelrail-cli alerts history --app web --outcome failed --limit 20
 
 ## Status page
 
-The opt-in public status page. It stays off until `set --enable`. Only public component names, statuses and operator written announcements are published; targets (app names, hostnames, check URLs) stay private. See [Status page](status-page.md).
+The opt-in public status page. It stays off until `set --enable`. Only public component names, statuses and operator written announcements are published; targets (app names, hostnames, check URLs) stay private. See [Status page](/status-page).
 
 ```
 levelrail-cli status-page get
@@ -910,7 +906,7 @@ levelrail-cli status-page incidents create --title "Elevated errors" --impact mi
 
 ## Shared env
 
-Environment variables shared at project, organization or environment scope, plain or secret. See [Projects and organizations](projects-and-organizations.md).
+Environment variables shared at project, organization or environment scope, plain or secret. See [Projects and organizations](/projects-and-organizations).
 
 ```
 levelrail-cli shared-env list --scope SCOPE --id ID [flags]
@@ -975,7 +971,12 @@ S3 compatible storage destinations. `providers` lists the presets (`aws`, `r2`, 
 
 ## Data export
 
-See [Data export](data-export.md).
+See [Data export](/data-export).
+
+```
+levelrail-cli export destinations list|create|test|status|enable|disable|delete
+levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
+```
 
 ## Event webhooks
 
@@ -989,16 +990,11 @@ levelrail-cli event-webhooks enable|disable <id>
 levelrail-cli event-webhooks rotate-secret <id>
 levelrail-cli event-webhooks delete <id>
 ```
-Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](event-webhooks.md).
-
-```
-levelrail-cli export destinations list|create|test|status|enable|disable|delete
-levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
-```
+Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](/event-webhooks).
 
 ## Logs
 
-See [Log archive](log-archive.md).
+See [Log archive](/log-archive).
 
 ```
 levelrail-cli logs archive set --target ID [--app NAME] [--interval 1h] [--retention-days N] [--disable]
@@ -1013,7 +1009,7 @@ levelrail-cli logs query <app> [--level LEVEL] [--since 30m] [--until T] [--depl
 
 ## Network shares
 
-NFS and CIFS network share mounts, the same shares an app's volume mount can reference by name. See [Network shares](network-shares.md).
+NFS and CIFS network share mounts, the same shares an app's volume mount can reference by name. See [Network shares](/network-shares).
 
 ```
 levelrail-cli network-shares list [flags]
@@ -1033,7 +1029,7 @@ levelrail-cli network-shares test <id>
 
 ## Firewall
 
-Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](host-firewall.md). `exposure`, `restrict` and `unrestrict` are covered in [Exposure audit](exposure-audit.md).
+Declarative host firewall rules, reconciled onto the control plane's local `ufw`. See [Host firewall](/host-firewall). `exposure`, `restrict` and `unrestrict` are covered in [Exposure audit](/exposure-audit).
 
 ```
 levelrail-cli firewall status [flags]
@@ -1057,7 +1053,7 @@ levelrail-cli firewall list
 
 ## Security center
 
-The security score, sessions and devices, and the platform security policy. See [Security center](security-center.md).
+The security score, sessions and devices, and the platform security policy. See [Security center](/security-center).
 
 ```
 levelrail-cli security posture [flags]
@@ -1083,7 +1079,7 @@ A boolean, plus an optional gradual rollout percentage, that the app's own code 
 
 ## Apply, diff and export {#apply-diff-and-export}
 
-Experimental: requires `APP_EXPERIMENTAL=iac`. See [Platform as code](platform-as-code.md) for the document format, secrets handling, prune rules and CI use.
+Experimental: requires `APP_EXPERIMENTAL=iac`. See [Platform as code](/platform-as-code) for the document format, secrets handling, prune rules and CI use.
 
 ```
 levelrail-cli apply -f file|dir|- [--dry-run] [--exit-code] [--prune --source NAME] [--project P] [--yes] [--secret K=env:VAR] [--var NAME=VALUE] [--var-file PATH] [--allow-env NAME[,NAME...]] [--no-deploy] [--continue-on-error] [flags]
@@ -1098,11 +1094,11 @@ Drift between the files and live state; exits 2 when they differ.
 ```
 levelrail-cli export [--project P] [--app A] [-o dir|-] [--include-env-values=false] [flags]
 ```
-Writes live state as stable resource files, never containing secret values. Secret looking values become <span v-pre>`${{ env.NAME }}`</span> placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`.
+Writes live state as stable resource files, never containing secret values. Secret looking values become <span v-pre>`${{ env.NAME }}`</span> placeholders; supply them at apply time with `--var`, `--var-file` or `--allow-env`. Callers without `read:sensitive` always get placeholders for every env value.
 
 ## Nodes
 
-See [Multi-node](multi-node.md).
+See [Multi-node](/multi-node).
 
 ```
 levelrail-cli nodes list [flags]
@@ -1144,7 +1140,7 @@ levelrail-cli nodes ssh-provisions list|show <id> [flags]
 - `list` shows each node's certificate state and days left (CERT) and agent version (AGENT); `get` adds expiry, last renewal, key origin, platform and commit.
 - `resource-usage` shows every node's latest CPU, memory and disk usage plus a fleet rollup; `capacity-forecast` projects disk and memory usage forward, roughly how many days until full.
 - `mesh` shows the live WireGuard mesh state and peers; `rotate-key` rotates a node's WireGuard key; `rejoin-mesh` forces an immediate resync for a stuck peer.
-- `providers` manages cloud provider credentials (Hetzner, DigitalOcean) and `provision` creates a server at a provider and enrolls it as a node; `ssh-provision` adopts a machine you already have over SSH. `provisions` and `ssh-provisions` track either through to enrollment. See [Multi-cloud provisioning](multi-cloud-provisioning.md).
+- `providers` manages cloud provider credentials (Hetzner, DigitalOcean) and `provision` creates a server at a provider and enrolls it as a node; `ssh-provision` adopts a machine you already have over SSH. `provisions` and `ssh-provisions` track either through to enrollment. See [Multi-cloud provisioning](/multi-cloud-provisioning).
 - `topology` is a whole mesh summary (nodes, apps, databases, load balancers, connections); `traffic` shows per domain ingress reachability and TLS status.
 
 ## Status
@@ -1160,7 +1156,7 @@ Shows the control plane's own configured and not configured signals, including w
 levelrail-cli upgrade [--no-backup] [flags]
 ```
 
-Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself unless you pass `--apply`. See [Installing](installing.md#check-first-then-upgrade).
+Compares the running version with the latest release, runs the preflight checks (release signature, Docker Engine, free disk, backup), takes a control plane backup and prints the command that upgrades. It never upgrades by itself unless you pass `--apply`. See [Installing](/installing#check-first-then-upgrade).
 
 ```
 levelrail-cli upgrade --plan [--version TAG]
@@ -1174,9 +1170,9 @@ levelrail-cli upgrade auto get
 levelrail-cli upgrade auto set [--mode off|patch|any] [--window-cron EXPR] [--window-duration 2h] [--timezone TZ] [--min-age-days N] [--notify ID,...] [--pause | --resume]
 ```
 
-`backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is off by default; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](upgrade-safely.md).
+`backup-now` takes a control plane backup and re-runs the preflight. `schedule` queues the upgrade for a time or the next maintenance window; the preflight re-runs at that time and nothing is applied if it fails. `auto` reads and sets the automatic upgrade policy, which is off by default; `set` changes only the flags you pass. All of these need a root token. See [Upgrade safely](/upgrade-safely).
 
-`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](upgrade-safely.md).
+`--plan` shows the breaking changes between the running version and the target (default: latest on the channel). `--apply` asks the control plane to run the safe self-update on its host: verified download, snapshot, migration dry run, swap, health check and automatic rollback. Breaking changes flagged as needing acknowledgement are refused until you list their ids with `--ack-breaking`. It follows the attempt to its outcome unless `--no-wait`, and exits non-zero when the upgrade was rolled back or failed. `--attempts` lists every attempt with its step timeline. See [Upgrade safely](/upgrade-safely).
 
 ## System restart {#system-restart}
 
@@ -1195,7 +1191,7 @@ If no process supervisor was detected, the command prints the reason and the com
 levelrail-cli readiness [--domain example.com] [flags]
 ```
 
-Checks whether the server is ready: who holds ports 80 and 443, Docker version and rootless mode, exposed Docker API, disk, memory, firewall and the DNS of the domain. Prints the recommended install mode (own ports or behind your existing proxy) and the exact next step. Exits 1 when a check fails. Before anything is installed use `install.sh --check` instead, see [Installing](installing.md#check-the-server-first).
+Checks whether the server is ready: who holds ports 80 and 443, Docker version and rootless mode, exposed Docker API, disk, memory, firewall and the DNS of the domain. Prints the recommended install mode (own ports or behind your existing proxy) and the exact next step. Exits 1 when a check fails. Before anything is installed use `install.sh --check` instead, see [Installing](/installing#check-the-server-first).
 
 ## Version
 
@@ -1209,7 +1205,7 @@ Shows the control plane's running version, and whether a newer release has been 
 ```
 levelrail-cli changelog [--limit N] [flags]
 ```
-Prints recent release notes, newest first, from the running control plane's own CHANGELOG.md. Without `--limit` the server default applies. The dashboard shows the same notes in the [What's new panel](whats-new-panel.md).
+Prints recent release notes, newest first, from the running control plane's own CHANGELOG.md. Without `--limit` the server default applies. The dashboard shows the same notes in the [What's new panel](/whats-new-panel).
 
 ```
 levelrail-cli changelog --limit 3
@@ -1232,14 +1228,14 @@ levelrail-cli init --dry-run
 levelrail-cli init --mode read-only --yes
 ```
 
-See [Agents](agents.md).
+See [Agents](/agents).
 
 ## API docs
 
 ```
 levelrail-cli api-docs [flags]
 ```
-Prints every HTTP route registered on the control plane: method, path, required ability and resource group, followed by a count of routes and how many have a worked request and response example. It is the same data as Settings, API explorer in the dashboard, without the interactive try-it. Supports `--json`, `--output` and `--query`. See [API explorer](api-explorer.md).
+Prints every HTTP route registered on the control plane: method, path, required ability and resource group, followed by a count of routes and how many have a worked request and response example. It is the same data as Settings, API explorer in the dashboard, without the interactive try-it. Supports `--json`, `--output` and `--query`. See [API explorer](/api-explorer).
 
 ```
 levelrail-cli api-docs --query "routes[?method=='GET'].path"
@@ -1250,7 +1246,7 @@ levelrail-cli api-docs --query "routes[?method=='GET'].path"
 ```
 levelrail-cli deploy-link --image REF --name NAME --port PORT [--env K1,K2] [--health /path] [--server URL] [--launcher URL] [flags]
 ```
-Prints a "Deploy with" link and the README Markdown for it, after validating the image reference, DNS label name, port range, uppercase env names and health path. Env values are never part of a link. Without `--launcher`, the launcher is `APP_BRAND_DOCS_URL` plus `/deploy.html`. `--server` also prints the direct `https://<server>/apps/new?deploy=1&...` link. Supports `--json`, `--output` and `--query`. See [Deploy links and badge](deploy-link.md).
+Prints a "Deploy with" link and the README Markdown for it, after validating the image reference, DNS label name, port range, uppercase env names and health path. Env values are never part of a link. Without `--launcher`, the launcher is `APP_BRAND_DOCS_URL` plus `/deploy.html`. `--server` also prints the direct `https://<server>/apps/new?deploy=1&...` link. Supports `--json`, `--output` and `--query`. See [Deploy links and badge](/deploy-link).
 
 ```
 levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 --health /health
@@ -1258,7 +1254,7 @@ levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 
 
 ## AI assistant
 
-Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider, model and key set with `settings ai-assistant set`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](ai-assistant-chat.md).
+Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider, model and key set with `settings ai-assistant set`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
 
 ```
 levelrail-cli ai chat "<message>" [--session ID] [flags]
@@ -1290,7 +1286,7 @@ levelrail-cli ai-control revoke-agents --yes [flags]
 - `set` changes the mode or allowed environment kinds. Agent tokens cannot approve deploy or pipeline approvals, and cannot change this setting.
 - `revoke-agents` revokes every labeled agent token.
 
-See [AI control](ai-control.md).
+See [AI control](/ai-control).
 
 ## Audit log
 
@@ -1317,7 +1313,7 @@ Lists everything that needs attention right now: failing apps, failed deploys fr
 levelrail-cli tui [--read-only] [--refresh DURATION] [flags]
 ```
 
-Opens an interactive terminal UI over the same API: live apps, databases, deploys, nodes, domains, alerts and backups, a log tail, and confirm-gated restart, deploy, rollback, stop and start. Needs a TTY. See [Terminal UI](cli-tui.md) for the key map.
+Opens an interactive terminal UI over the same API: live apps, databases, deploys, nodes, domains, alerts and backups, a log tail, and confirm-gated restart, deploy, rollback, stop and start. Needs a TTY. See [Terminal UI](/cli-tui) for the key map.
 
 ## Doctor
 
@@ -1337,7 +1333,7 @@ levelrail-cli setup undo <step> [flags]
 levelrail-cli setup reset [flags]
 ```
 
-The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](getting-started.md#the-get-started-guide). Supports `--json`, `--output json|table|text`, and `--query`.
+The dashboard's Get started checklist from a terminal. `status` prints every step with its state, time estimate and note, plus the "ready for production" percentage. `next` prints the one step to do next and where to do it. `skip` and `undo` record or clear an operator override for a step id such as `teammate`; `reset` clears every override and shows the guide again. The three writes need a root scoped token. Steps and their rules: [Getting started](/getting-started#finish-setting-up-for-real-use). Supports `--json`, `--output json|table|text`, and `--query`.
 
 ## Proxy
 
@@ -1350,7 +1346,7 @@ levelrail-cli proxy verify [--domain D] [flags]
 levelrail-cli proxy disable [flags]
 ```
 
-Without a subcommand: shows which container publishes ports 80 and 443 and the configuration to paste into that proxy, for the dashboard (`--domain`) or an app's domain (`--app`, upstream is the ingress HTTP port). `setup` detects a Traefik (Coolify's included) and, with `--confirm`, turns on `tls_terminated_upstream`, saves the detected entrypoints, certificate resolver, directory and upstream host, writes one route file per domain and verifies each over HTTPS; without `--confirm` it is a dry run. It exits with an API error and the precise gap (`detection_incomplete`, `upstream_unreachable` with the drop-in fix, `not_writable`) when it cannot proceed. `status` prints detection, per-domain state (`missing`, `written`, `stale`, `error`), certificate issuer and expiry, and the checklist. `apply` rewrites the files now, `verify` probes again, `disable` removes the files it wrote. Writes need a root scoped token. Details: [Run behind an existing proxy](behind-an-existing-proxy.md#one-step-setup-traefik-including-coolify).
+Without a subcommand: shows which container publishes ports 80 and 443 and the configuration to paste into that proxy, for the dashboard (`--domain`) or an app's domain (`--app`, upstream is the ingress HTTP port). `setup` detects a Traefik (Coolify's included) and, with `--confirm`, turns on `tls_terminated_upstream`, saves the detected entrypoints, certificate resolver, directory and upstream host, writes one route file per domain and verifies each over HTTPS; without `--confirm` it is a dry run. It exits with an API error and the precise gap (`detection_incomplete`, `upstream_unreachable` with the drop-in fix, `not_writable`) when it cannot proceed. `status` prints detection, per-domain state (`missing`, `written`, `stale`, `error`), certificate issuer and expiry, and the checklist. `apply` rewrites the files now, `verify` probes again, `disable` removes the files it wrote. Writes need a root scoped token. Details: [Run behind an existing proxy](/behind-an-existing-proxy#one-step-setup-traefik-including-coolify).
 
 ## Containers
 
@@ -1363,7 +1359,7 @@ levelrail-cli containers orphans [flags]
 levelrail-cli containers reap [--dry-run] [flags]
 ```
 
-`list` shows every container on this node, managed or not. `stop`, `remove` and `claim` only act on a container the platform does not already manage (409 otherwise); for a managed app use `apps stop`, `apps start`, `apps restart` or `apps delete`. `claim` adopts an orphaned container into a new app. `orphans` lists leftover containers, volumes and certificates that no app or database accounts for, with where each stands against its grace period. `reap` runs one removal pass now (`--dry-run` reports without removing; exit 1 if anything could not be removed). Details and the `APP_ORPHAN_*` settings are in [Delete and clean up](deploying-apps.md#delete-and-clean-up).
+`list` shows every container on this node, managed or not. `stop`, `remove` and `claim` only act on a container the platform does not already manage (409 otherwise); for a managed app use `apps stop`, `apps start`, `apps restart` or `apps delete`. `claim` adopts an orphaned container into a new app. `orphans` lists leftover containers, volumes and certificates that no app or database accounts for, with where each stands against its grace period. `reap` runs one removal pass now (`--dry-run` reports without removing; exit 1 if anything could not be removed). Details and the `APP_ORPHAN_*` settings are in [Delete and clean up](/deploying-apps#delete-and-clean-up).
 
 ## System address
 
@@ -1373,7 +1369,7 @@ levelrail-cli system address --ipv4 IP [--ipv6 IP]
 levelrail-cli system address --clear
 ```
 
-Shows this server's public IPv4 and IPv6, where they came from, and a note when the server is behind NAT or a TLS-terminating proxy. `--domain` adds the exact DNS records to create for that name. `--ipv4` and `--ipv6` set a manual override (root), `--clear` goes back to detection. See [Standalone domains](standalone-domains.md#server-address-and-dns-records).
+Shows this server's public IPv4 and IPv6, where they came from, and a note when the server is behind NAT or a TLS-terminating proxy. `--domain` adds the exact DNS records to create for that name. `--ipv4` and `--ipv6` set a manual override (root), `--clear` goes back to detection. See [Standalone domains](/standalone-domains#server-address-and-dns-records).
 
 ## System maintenance
 
@@ -1435,7 +1431,7 @@ levelrail-cli invites list [flags]
 levelrail-cli invites revoke <id> [flags]
 ```
 
-`--role` is a curated preset (`admin`, `operator`, `viewer`, `guest`, or a custom role by name; `users roles` lists the curated presets and `roles list` lists every stored role); `--abilities` is a comma separated list from `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`. `users role set` changes a user's role; `users grants` manages which environments a guest can see. `invites create` invites a teammate by email; `invites list` and `invites revoke` manage pending invites. See [Access control](access-control.md) for details.
+`--role` is a curated preset (`admin`, `operator`, `viewer`, `guest`, or a custom role by name; `users roles` lists the curated presets and `roles list` lists every stored role); `--abilities` is a comma separated list from `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`. `users role set` changes a user's role; `users grants` manages which environments a guest can see. `invites create` invites a teammate by email; `invites list` and `invites revoke` manage pending invites. See [Access control](/access-control) for details.
 
 ## Roles
 
@@ -1446,7 +1442,7 @@ levelrail-cli roles update <role> [--name N] [--abilities LIST] [--visibility V]
 levelrail-cli roles delete <role> [flags]
 ```
 
-Custom roles are presets over an ability list. Updating a role applies the new abilities to every user holding it, immediately. A role cannot be deleted if any user holds it. See [Access control](access-control.md).
+Custom roles are presets over an ability list. Updating a role applies the new abilities to every user holding it, immediately. A role cannot be deleted if any user holds it. See [Access control](/access-control).
 
 ## IAM
 
@@ -1469,7 +1465,7 @@ Resource scoped Allow and Deny policies, additive on top of `--abilities`. `DOC`
 levelrail-cli iam policies create --name read-web --document '{"Statement":[{"Effect":"Allow","Action":["read"],"Resource":["app:web"]}]}'
 ```
 
-`update` replaces the policy's name, description and document. `attachments` lists a policy's attached principals. `templates` shows built-in policy templates and `apply` instantiates one, optionally attaching it to a principal. See [Access control](access-control.md).
+`update` replaces the policy's name, description and document. `attachments` lists a policy's attached principals. `templates` shows built-in policy templates and `apply` instantiates one, optionally attaching it to a principal. See [Access control](/access-control).
 
 ## Environments
 
@@ -1482,7 +1478,7 @@ levelrail-cli apps move-env <app> <environment> [--confirm] [flags]
 levelrail-cli databases move-env <db> <environment> [--confirm] [flags]
 ```
 
-Global environments exist across the entire instance (Development, Test, UAT, Production). Kinds control which environment a resource has and what policies apply. Moving into or out of a protected environment requires confirmation and approval from another user. See [Environments](environments.md).
+Global environments exist across the entire instance (Development, Test, UAT, Production). Kinds control which environment a resource has and what policies apply. Moving into or out of a protected environment requires confirmation and approval from another user. See [Environments](/environments).
 
 ## Secrets
 
@@ -1493,7 +1489,7 @@ levelrail-cli secrets binding-status [flags]
 levelrail-cli secrets rebind [flags]
 ```
 
-`generate-master-key` writes a new master key to a file (mode 0600, never overwrites), locally, without contacting the control plane. `rotate-master-key` re-wraps every stored data encryption key under a new master key in one atomic step, live, then binds any legacy values. `binding-status` counts stored secret values not yet bound to their slot, and `rebind` binds them (safe to rerun). Read [Master key rotation](master-key-rotation.md) before running these in production.
+`generate-master-key` writes a new master key to a file (mode 0600, never overwrites), locally, without contacting the control plane. `rotate-master-key` re-wraps every stored data encryption key under a new master key in one atomic step, live, then binds any legacy values. `binding-status` counts stored secret values not yet bound to their slot, and `rebind` binds them (safe to rerun). Read [Master key rotation](/master-key-rotation) before running these in production.
 
 ## Migrate
 
@@ -1518,11 +1514,11 @@ levelrail-cli import cutover plan|run|status|rollback|confirm-dns --session ID -
 
 `import` classifies its input (a GitHub, GitLab, Gitea or Bitbucket repo URL, a `docker run` command, an image reference, a docker-compose.yml or a Dockerfile) and prints a deployment plan. Nothing is created unless `--deploy` is given. `--file -` reads from stdin. `--env KEY=VALUE` is repeatable, and a required variable with no value blocks `--deploy`.
 
-`import <repo-url> --analyze` prints what the New app wizard would suggest (stack, build, port, health path, env variable names, databases) with the evidence for each, and creates nothing. `--apply` creates the suggested databases, the app, the connections, the repository link and the first build; `--base-directory`, `--dockerfile`, `--build-type`, `--name`, `--port` and `--env` override suggestions. See [New app wizard](new-app-wizard.md).
+`import <repo-url> --analyze` prints what the New app wizard would suggest (stack, build, port, health path, env variable names, databases) with the evidence for each, and creates nothing. `--apply` creates the suggested databases, the app, the connections, the repository link and the first build; `--base-directory`, `--dockerfile`, `--build-type`, `--name`, `--port` and `--env` override suggestions. See [New app wizard](/new-app-wizard).
 
-`import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](migrating-from-coolify-dokploy-and-caprover.md).
+`import platform` reads apps, databases and settings from another platform (read only) and creates them here. Use `--dry-run` first. Databases and volumes are created empty; data is not migrated. Re-running skips what was already imported. The source token is read from `APP_IMPORT_SOURCE_TOKEN`, `--token-stdin` or `--token` (which lands in shell history). Other flags: `--only`, `--collision suffix|skip`, `--insecure-tls`, `--allow-private`, `--allow-loopback`. See [migrating from Coolify, Dokploy or CapRover](/migrating-from-coolify-dokploy-and-caprover).
 
-`import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](migrating-from-coolify-dokploy-and-caprover.md#guided-cutover-of-one-staged-app).
+`import cutover` moves one staged app's traffic in a reversible flow. `plan` prints the readiness checklist, `run --dry-run` exercises everything except the switch, `run --confirm NAME` switches and verifies (rolling back on its own if verification fails), `status` shows the timeline, and `rollback` restores the previous DNS value and stops the staged app. Other flags: `--run ID`, `--accept-warnings`, `--no-wait`, `--wait DURATION`, `--json`. See [guided cutover](/migrating-from-coolify-dokploy-and-caprover#guided-cutover-of-one-staged-app).
 
 ## Completion
 
@@ -1597,7 +1593,7 @@ levelrail-cli templates deploy <id> [--name NAME] [flags]
 levelrail-cli templates install <id> [--name NAME] [--env KEY=VALUE]... [--domain SERVICE=HOST]... [flags]
 levelrail-cli templates delete <id> [flags]
 ```
-`list` browses the curated service catalog, or `--custom` for your own saved templates. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](templates.md).
+`list` browses the curated service catalog, or `--custom` for your own saved templates. `get` shows one entry including its full compose.yaml. `deploy` deploys a template's compose.yaml as an app, and the app name defaults to the template id; pass `--name` to use another. A custom template works with every verb the same as a built-in one, except `delete`: only a custom template can be deleted (see `apps save-as-template`). See [Templates](/templates).
 
 `install` is for manifest templates (the ones `get` shows with settings): it fills each `${KEY}` setting from `--env`, a generated secret or its default, puts the listed services behind `--domain` hosts, and deploys the result as a compose app that is not a trial. See [Compose apps](/compose-apps#templates).
 
@@ -1632,7 +1628,7 @@ Lists every `build.type: static` app served directly through the embedded Caddy 
 
 ## Related
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Getting started" href="/getting-started">
 
 Install the control plane and deploy a first app.

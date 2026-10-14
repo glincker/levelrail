@@ -1,0 +1,48 @@
+---
+title: "Self-host Vault with Docker"
+sidebarTitle: "Vault"
+description: "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode."
+---
+
+HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.
+
+This page describes the Levelrail template for Vault (Security). It deploys the services below as one Docker Compose app on your own server. Project site: https://developer.hashicorp.com/vault/docs/deploy/run-container.
+
+Recommended memory: about 256 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `vault` | `hashicorp/vault:1.18` | 8200 | `vault_data -&#62; /vault/file` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `vault` | `VAULT_ADDR` | Preset in the template |
+| `vault` | `VAULT_LOCAL_CONFIG` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Vault with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Vault. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy vault --name my-vault
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Security templates
+
+- [2FAuth](/self-host/2fauth)
+- [authentik](/self-host/authentik)
+- [Cap](/self-host/cap-captcha)
+- [Cryptgeon](/self-host/cryptgeon)
+- [Infisical](/self-host/infisical)
+
+All templates are listed in the [self-host gallery](/self-host).

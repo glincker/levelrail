@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/url"
+	"sync"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
 )
@@ -20,6 +21,9 @@ import (
 // either desired-state config or metric/log ingestion.
 type DB struct {
 	*sql.DB
+
+	secretsMu      sync.RWMutex
+	channelSecrets ChannelSecrets
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies

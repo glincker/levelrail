@@ -1,10 +1,9 @@
 ---
+title: "Threat model"
 description: Trust boundaries, assets, attackers, the mitigations that exist today with file references, known gaps, and how to report a vulnerability.
 ---
 
-# Threat model
-
-This page describes what Levelrail defends, against whom, and where it does not yet. It is written for operators deciding how much to trust an install and for contributors deciding where a change needs extra care. For the user-facing configuration side, see the [Security overview](security.md).
+This page describes what Levelrail defends, against whom, and where it does not yet. It is written for operators deciding how much to trust an install and for contributors deciding where a change needs extra care. For the user-facing configuration side, see the [Security overview](/security).
 
 Levelrail is pre-1.0. Anything marked "planned" is not shipped.
 
@@ -71,7 +70,7 @@ Not considered: a fully compromised control plane host (it holds the master key 
 - Session cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` on HTTPS. `internal/api/secure_request.go`.
 - Sessions live in memory with a 24 hour default TTL, so a control plane restart signs everyone out. `internal/api/auth.go` (`defaultSessionTTL`, `sessionStore`).
 - Login, 2FA verification, password reset, invite acceptance and device login are rate limited per client. `internal/api/api_rate_limit.go` and the limiters in `internal/api/auth.go`.
-- First admin registration needs the one-time setup token. See [Security overview](security.md#sessions-and-tokens).
+- First admin registration needs the one-time setup token. See [Security overview](/security#sessions-and-tokens).
 - Two-factor (TOTP) with recovery codes: `internal/totp`, `internal/api/twofactor.go`.
 
 ### Authorization
@@ -90,8 +89,8 @@ Not considered: a fully compromised control plane host (it holds the master key 
 ### Secrets
 
 - Envelope encryption with per-owner data keys under one master key: `internal/secrets`. Secret values are write-only through the API.
-- Each ciphertext is bound to its owner and key name, so a database writer cannot swap one secret's ciphertext into another slot. Legacy unbound values are bound with `levelrail-cli secrets rebind` ([Master key rotation](master-key-rotation.md#binding-secrets-to-their-slot)).
-- Secrets are injected at container create time and never returned in a response body. Master key rotation re-wraps without exposing plaintext ([Master key rotation](master-key-rotation.md)).
+- Each ciphertext is bound to its owner and key name, so a database writer cannot swap one secret's ciphertext into another slot. Legacy unbound values are bound with `levelrail-cli secrets rebind` ([Master key rotation](/master-key-rotation#binding-secrets-to-their-slot)).
+- Secrets are injected at container create time and never returned in a response body. Master key rotation re-wraps without exposing plaintext ([Master key rotation](/master-key-rotation)).
 
 ### Process execution and shell use
 
@@ -104,7 +103,7 @@ Not considered: a fully compromised control plane host (it holds the master key 
 
 ### Network and outbound requests
 
-- The agent dials out over mutual TLS and can pin the control plane CA fingerprint during enrollment. `internal/agent/pki.go`, `internal/agent/credentials.go`, [Security overview](security.md#tls-and-network-exposure).
+- The agent dials out over mutual TLS and can pin the control plane CA fingerprint during enrollment. `internal/agent/pki.go`, `internal/agent/credentials.go`, [Security overview](/security#tls-and-network-exposure).
 - Agent client certificates are renewed by the agent itself, after two thirds of their lifetime by default, with jitter and retry. `internal/agent/renew.go`.
 - Notification and log drain URLs are checked on the dialed IP against loopback, private, link-local and reserved ranges, including redirects. `kit/netguard`.
 - Security headers and a strict Content Security Policy are set on every response. `internal/api/middleware.go`.
@@ -130,6 +129,7 @@ Stated plainly. Status says whether a gap is open, accepted, or by design.
 | --- | --- | --- |
 | Container hardening has no per-app override and read-only root filesystems are opt-in | An image that needs more than the minimal capability set must be granted it host-wide | Default is now `enforce`: all capabilities dropped except a small documented set, `no-new-privileges` and a PID limit. `APP_CONTAINER_HARDENING_CAP_ADD` widens it, `warn` opts out. Per-app policy is future work |
 | Release signing is only as good as its last verification | A broken signing step would go unnoticed until a release | Release workflow signs `checksums.txt` with cosign and attests provenance; `install.sh` verifies the signature when cosign is present, and `APP_INSTALL_VERIFY=require` refuses unsigned releases. The `v0.2.0-beta.18` signature was verified with cosign against the documented identity on 2026-10-06 |
+| The master key is stored in `<data dir>/master.key` beside the database unless `APP_MASTER_KEY` is set | A copy of the whole data directory (disk image, host backup, cloud snapshot) decrypts every secret | Open: keep the file out of host backups, or set `APP_MASTER_KEY_FILE` to a path outside the data directory, or supply it with `APP_MASTER_KEY`. The default location is unchanged |
 | Only apps, databases and models have per-resource IAM. Nodes, projects, domains, registries and settings are ability-gated only | You cannot Deny one node or project to a token that has the ability | Open |
 | Git fetches of a private-address Git server are refused by default | A LAN Gitea or GitLab needs `APP_GIT_ALLOW_PRIVATE_NETWORKS=true`, which relaxes only git fetches | Fixed: git fetches use `kit/netguard` with their own opt-in. The older shared `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS` still works for git |
 | Bind-mount path checks are lexical | A host symlink inside an allowed directory that points at a protected path is followed by Docker | Open: only operators with root on the host can create such a link |
@@ -144,22 +144,22 @@ Stated plainly. Status says whether a gap is open, accepted, or by design.
 | A ClickHouse dump interpolates table names from the target database into SQL | Only a user who already owns the database can craft a name | Accepted, low |
 | Sessions are process-local | No session listing across a restart, and no shared sessions for an HA control plane | Accepted for single control plane |
 | No SSO or SAML | Sign-in is local password, passkey or OAuth | Open |
-| No secret scanning of app source. Image vulnerability scanning is optional and off by default ([Supply chain](supply-chain.md)) | Not a boundary Levelrail enforces | Open |
+| No secret scanning of app source. Image vulnerability scanning is optional and off by default ([Supply chain](/supply-chain)) | Not a boundary Levelrail enforces | Open |
 
 ## Choosing a safer deployment
 
 - Put the dashboard behind HTTPS and set an `https://` dashboard URL so plain HTTP login is refused.
-- Give humans `write` and `deploy`, and reserve `root` for a few people. Give CI and MCP tokens the narrowest ability and attach a Deny for production apps ([Identity and access](identity-and-access.md)).
+- Give humans `write` and `deploy`, and reserve `root` for a few people. Give CI and MCP tokens the narrowest ability and attach a Deny for production apps ([Identity and access](/identity-and-access)).
 - Treat push access to a deployed branch as equivalent to code execution in that app.
 - Keep managed nodes free of inbound ports and set `APP_CA_FINGERPRINT` on agents.
-- Back up the control plane and the master key separately ([Control plane backup](control-plane-backup.md)).
+- Back up the control plane and the master key separately ([Control plane backup](/control-plane-backup)).
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Use GitHub private vulnerability reporting: [open a security advisory](https://github.com/glincker/levelrail/security/advisories/new). Include the affected component, reproduction steps and the impact you expect. There is no dedicated security team and no formal response time; reports are handled best effort and you can follow up on the same advisory. The repository's [SECURITY.md](../SECURITY.md) has the full policy.
+Do not open a public issue. Use GitHub private vulnerability reporting: [open a security advisory](https://github.com/glincker/levelrail/security/advisories/new). Include the affected component, reproduction steps and the impact you expect. There is no dedicated security team and no formal response time; reports are handled best effort and you can follow up on the same advisory. The repository's [SECURITY.md](https://github.com/glincker/levelrail/blob/main/SECURITY.md) has the full policy.
 
 ## See also
 
-- [Security overview](security.md)
-- [Identity and access](identity-and-access.md)
-- [Architecture](architecture.md)
+- [Security overview](/security)
+- [Identity and access](/identity-and-access)
+- [Architecture](/architecture)

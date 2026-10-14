@@ -1,0 +1,51 @@
+---
+title: "Self-host Stable Diffusion WebUI with Docker"
+sidebarTitle: "Stable Diffusion WebUI"
+description: "A browser interface for generating and editing images with Stable Diffusion checkpoints."
+---
+
+A browser interface for generating and editing images with Stable Diffusion checkpoints.
+
+This page describes the Levelrail template for Stable Diffusion WebUI (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki.
+
+Recommended memory: about 8192 MiB.
+
+<Warning>This template reserves an NVIDIA GPU, so it needs a node with a GPU and the NVIDIA container runtime.</Warning>
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `sd-webui` | `ghcr.io/ai-dock/stable-diffusion-webui:latest-cuda` | 7860 | `sd_webui_workspace -&#62; /workspace` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `sd-webui` | `WEB_ENABLE_AUTH` | Preset in the template |
+| `sd-webui` | `WEB_PASSWORD` | Generated at deploy |
+| `sd-webui` | `WEB_USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Stable Diffusion WebUI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Stable Diffusion WebUI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy stable-diffusion-webui --name my-stable-diffusion-webui
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

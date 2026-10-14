@@ -654,6 +654,7 @@ func run(logger *slog.Logger) error {
 		// loadSecretsManager.
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
+	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// emailSender is shared by alert-rule/deploy-outcome notifications
 	// and the password-reset flow. Always non-nil: a DynamicSender
@@ -1261,6 +1262,7 @@ func run(logger *slog.Logger) error {
 	serveErrs := make(chan error, 1)
 	go func() {
 		logger.Info("http api listening", slog.String("addr", httpServer.Addr))
+		exposedHTTPAddrWarning.warn(logger, httpServer.Addr, runningInContainer())
 		err := httpServer.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serveErrs <- err
@@ -1477,6 +1479,10 @@ const (
 	// when APP_MASTER_KEY isn't set, same data directory as the agent CA
 	// above.
 	masterKeyFilename = "master.key"
+
+	// envMasterKeyFile points at a key file outside the data directory, so a
+	// copy of the data directory alone cannot decrypt stored secrets.
+	envMasterKeyFile = "APP_MASTER_KEY_FILE"
 )
 
 // loadOrGenerateAgentCA loads a previously persisted CA from dataDir, or
@@ -1967,6 +1973,18 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 		return nil, "", fmt.Errorf("create data dir for master key: %w", err)
 	}
 	keyPath = filepath.Join(dataDir, masterKeyFilename)
+	if custom := strings.TrimSpace(os.Getenv(envMasterKeyFile)); custom != "" {
+		if !filepath.IsAbs(custom) {
+			return nil, "", fmt.Errorf("%s must be an absolute path, got %q", envMasterKeyFile, custom)
+		}
+		keyPath = custom
+		if err := os.MkdirAll(filepath.Dir(keyPath), 0o700); err != nil { //nolint:gosec // operator-set absolute path from startup config
+			return nil, "", fmt.Errorf("create directory for %s: %w", envMasterKeyFile, err)
+		}
+		if st, err := os.Stat(keyPath); err == nil && st.Mode().Perm()&0o077 != 0 { //nolint:gosec // operator-set absolute path from startup config
+			return nil, "", fmt.Errorf("%s %s has mode %o, want 0600: run chmod 600 on it", envMasterKeyFile, keyPath, st.Mode().Perm())
+		}
+	}
 
 	serialized, readErr := os.ReadFile(keyPath) //nolint:gosec // operator-controlled data directory path, not user input
 	switch {
@@ -2451,6 +2469,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
+		api.WithWebhookFailedDeliveryLimits(
+			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_DELIVERY_KEEP"),
+			positiveIntEnv(logger, "APP_WEBHOOK_FAILED_BODY_BYTES"),
+		),
 		api.WithDeployApprovalTTL(deployApprovalTTL(logger)),
 		api.WithPublicHost(publicHost()),
 		api.WithPublicHostSource(publicHostSource()),
@@ -2701,13 +2723,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			api.WithPITRRestoreRunner(pitrRunner),
 			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
-		// The AI assistant's own tool-calling engine, distinct from the
-		// BYOK key above: it needs a self-call API token to reach this
-		// instance's own REST API (see setupAIAssistantEngine's doc
-		// comment). Skipped, not fatal, if the dial address can't be
-		// determined or minting fails, matching every other optional
-		// feature in this block's own resilience posture: an operator
-		// loses the AI assistant, not the whole control plane.
+		// Optional: without a dial address or on setup failure the
+		// operator loses the assistant, not the control plane.
 		if dial := dashboardDialAddr(httpAddr()); dial != "" {
 			engine, err := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
 			if err != nil {
@@ -2828,11 +2845,7 @@ func appScheduleSchedulerInterval(logger *slog.Logger) time.Duration {
 }
 
 func httpAddr() string {
-	addr := os.Getenv("APP_HTTP_ADDR")
-	if addr == "" {
-		addr = defaultHTTPAddr
-	}
-	return addr
+	return resolveHTTPAddr(os.Getenv, runningInContainer())
 }
 
 // ingressHTTPSAddr reads APP_INGRESS_HTTPS_ADDR, defaulting to
@@ -3300,6 +3313,21 @@ func webhookDeliveryRetention(logger *slog.Logger) time.Duration {
 		return 0
 	}
 	return time.Duration(days) * 24 * time.Hour
+}
+
+// positiveIntEnv returns the env var as a positive int, or 0 (the api
+// package's signal to use its own default) when unset or invalid.
+func positiveIntEnv(logger *slog.Logger, name string) int {
+	raw := os.Getenv(name)
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		logger.Warn("invalid "+name+", using the default", slog.String("value", raw))
+		return 0
+	}
+	return n
 }
 
 // webhookDeliverySweepInterval reads APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL

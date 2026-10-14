@@ -1,9 +1,15 @@
+import type { ReactElement } from 'react'
+import { AiAssistantI18n } from '../test/aiAssistantI18n'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AiToolCallCard } from './AiToolCallCard'
 import { resolveAiToolConfirmation } from '../queries/aiAssistant'
 import type { AiToolCall } from '../types/aiAssistant'
+
+function renderWithI18n(ui: ReactElement) {
+  return render(ui, { wrapper: AiAssistantI18n })
+}
 
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
@@ -48,7 +54,7 @@ describe('AiToolCallCard', () => {
   })
 
   it('shows Approve/Reject for an unresolved mutating tool call', () => {
-    render(
+    renderWithI18n(
       <AiToolCallCard
         toolCall={mutatingToolCall()}
         onApprove={() => {}}
@@ -67,7 +73,7 @@ describe('AiToolCallCard', () => {
     const user = userEvent.setup()
     const toolCall = mutatingToolCall()
 
-    render(
+    renderWithI18n(
       <AiToolCallCard
         toolCall={toolCall}
         onApprove={() => {
@@ -107,7 +113,7 @@ describe('AiToolCallCard', () => {
     const user = userEvent.setup()
     const toolCall = mutatingToolCall()
 
-    render(
+    renderWithI18n(
       <AiToolCallCard
         toolCall={toolCall}
         onApprove={() => {
@@ -139,7 +145,7 @@ describe('AiToolCallCard', () => {
   })
 
   it('renders a lightweight note, no buttons, for an already-executed read-only tool call', () => {
-    render(
+    renderWithI18n(
       <AiToolCallCard
         toolCall={{
           confirmation_id: 'conf_2',
@@ -162,7 +168,7 @@ describe('AiToolCallCard', () => {
   })
 
   it('renders a rejected note with no buttons once resolved', () => {
-    render(
+    renderWithI18n(
       <AiToolCallCard
         toolCall={{
           confirmation_id: 'conf_3',
@@ -180,5 +186,29 @@ describe('AiToolCallCard', () => {
     expect(
       screen.queryByRole('button', { name: /approve/i }),
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('AiToolCallCard attribution', () => {
+  it('shows which human a tool call ran as and the ability it used', () => {
+    renderWithI18n(
+      <AiToolCallCard
+        toolCall={{
+          confirmation_id: 'conf_4',
+          tool_name: 'list_apps',
+          arguments: {},
+          read_only: true,
+          result: '[]',
+          acting_as: 'alice@example.com',
+          abilities: ['read'],
+        }}
+        onApprove={() => {}}
+        onReject={() => {}}
+      />,
+    )
+
+    expect(
+      screen.getByText('Acting as alice@example.com with read'),
+    ).toBeInTheDocument()
   })
 })

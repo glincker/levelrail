@@ -1,17 +1,18 @@
 ---
+title: "Migrating from Coolify, Dokploy, or CapRover"
 description: Import apps, databases, env vars, domains and volumes from Coolify, Dokploy or CapRover with a dry run first, then apply
 ---
 
-# Migrating from Coolify, Dokploy, or CapRover
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/coolify/default.svg" alt="Coolify" title="Coolify" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/dokploy/default.svg" alt="Dokploy" title="Dokploy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/caprover/default.svg" alt="CapRover" title="CapRover" width="24" height="24" /></span></div>
 
 The platform importer reads a live Coolify, Dokploy or CapRover instance through its own HTTP API and creates the matching apps and databases here. It is read-only against the source: it never stops, changes or deletes anything there, and a test asserts it issues nothing but GET requests (CapRover's one login POST aside).
 
 A migration of live apps is four steps, and the source keeps serving traffic through the first three:
 
 1. [Import](#quick-start) the apps and databases (empty).
-2. [Copy the data](#step-2-copy-database-data) in and let it verify row counts.
-3. [Copy volumes](#step-3-copy-volumes), then run the app here in parallel with the source.
-4. [Check the cutover](#step-4-cutover) and switch DNS one domain at a time.
+2. Copy the data in and verify row counts.
+3. Copy volumes, then run the app here in parallel with the source.
+4. Check the cutover and switch DNS one domain at a time.
 
 You can run it three ways, all backed by the same two API routes:
 
@@ -19,9 +20,9 @@ You can run it three ways, all backed by the same two API routes:
 - CLI: `levelrail-cli import platform coolify|dokploy|caprover --url URL`.
 - API: `POST /api/v1/imports/platform/discover` and `/apply` (ability `write:sensitive`, source token in the request body only).
 
-::: tip
+<Tip>
 Always start with a dry run. `--dry-run` (or the dashboard's Discover step) reads the source and shows exactly what would be created, per item, without creating anything.
-:::
+</Tip>
 
 ## Quick start
 
@@ -30,18 +31,18 @@ Always start with a dry run. `--dry-run` (or the dashboard's Discover step) read
 
 What the token is, per platform:
 
-<Tabs :items="['Coolify', 'Dokploy', 'CapRover']">
-<Tab value="Coolify">
+<Tabs>
+<Tab title="Coolify">
 
 An API token (Keys and tokens). Use `read:sensitive` to get real env values. It is sent as `Authorization: Bearer`.
 
 </Tab>
-<Tab value="Dokploy">
+<Tab title="Dokploy">
 
 An API key, sent in the `x-api-key` header.
 
 </Tab>
-<Tab value="CapRover">
+<Tab title="CapRover">
 
 The login password, exchanged for a session token via `POST /api/v2/login`.
 
@@ -219,7 +220,7 @@ A database whose engine or version cannot be determined is reported as unsupport
 
 ### Compose files and Dokku
 
-The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as managed databases) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
+The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as [managed databases](/managing-databases)) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
 
 ## Step 2: copy database data
 
@@ -257,22 +258,22 @@ hub under Settings, Import from another platform. It is one guided run:
 Connect, Inventory, Preflight, Copy, Verify, Cutover. The plan is stored on
 the control plane, so you can leave and come back.
 
-- **Connect**: host, port, user and password once. The password is held in
+- Connect: host, port, user and password once. The password is held in
   memory for the session (`APP_MIGRATE_HUB_PASSWORD_TTL`, default 2h) and is
   never stored or logged. Postgres, MySQL, MariaDB and MongoDB are supported.
-- **Inventory**: every database with size, table count and extensions.
+- Inventory: every database with size, table count and extensions.
   Choose which to copy and edit the name of each new managed database.
-- **Preflight**: nothing is written until it passes. It checks extensions
+- Preflight: nothing is written until it passes. It checks extensions
   against what the managed image provides (an extension no image ships blocks
   that database, it is never dropped silently), major version, free disk with a
   margin (`APP_MIGRATE_DISK_MARGIN`, default 1.5), name collisions and an
   estimated copy time (`APP_MIGRATE_ASSUMED_MBPS`).
-- **Copy**: one managed database per selected source database, copied with
+- Copy: one managed database per selected source database, copied with
   bounded concurrency (`APP_MIGRATE_HUB_CONCURRENCY`, default 2). One failure
   never stops the others and repeating a copy is safe.
-- **Verify**: exact per-table row counts. A receipt (JSON, no secrets) records
+- Verify: exact per-table row counts. A receipt (JSON, no secrets) records
   each verified database and that the source was only read.
-- **Cutover**: the connection details and environment variables each app
+- Cutover: the connection details and environment variables each app
   needs. The secret is hidden until you click reveal, which is audited.
 
 The source is only read: sessions run with `default_transaction_read_only=on`
@@ -351,7 +352,7 @@ Writes accepted by the source after the final copy and before clients move are n
 - Volume contents are only moved by running the commands from step 3. Bind mounts need the same host path on the target node and the root ability; without root they are skipped and reported.
 - Git-built apps do not build automatically. They are created with a pending image so nothing runs, and the report names the repository and branch. Connect the repository (with credentials for a private one) and run a build.
 - CapRover apps have no recoverable image, because CapRover builds locally. Connect a repository or push an image to a registry, then set it as the source.
-- Compose stacks, Coolify one-click services and Dokploy compose apps. They are multi-service and are reported as unsupported, deploy their compose file with the compose deploy command.
+- Compose stacks, Coolify one-click services and Dokploy [compose apps](/compose-apps). They are multi-service and are reported as unsupported, deploy their compose file with the compose deploy command.
 - Dokploy apps uploaded as an archive (`drop`), and file mounts. Unsupported.
 - Health checks that are shell commands, pre and post deploy commands, extra ports and raw host port mappings, Coolify preview variables. Called out as needs attention where relevant.
 - TLS certificates, DNS records, deploy history, logs and metrics. Certificates are issued here on first use. Re-point DNS only after the cutover check says `go`.
@@ -386,11 +387,11 @@ Because nothing on the source changed, no source-side rollback is needed. Keep D
 
 ## See also
 
-- [Getting started](getting-started.md): deploying your first app
-- [App spec reference](app-spec-reference.md): full app.yaml schema
-- [Backups and storage](backups-and-storage.md): dump and restore tools for engines the copy step does not cover
-- [Comparison](comparison.md): architectural differences between platforms
-- [Coolify alternative](coolify-alternative.md) and [Dokploy alternative](dokploy-alternative.md): why people switch
+- [Getting started](/getting-started): deploying your first app
+- [App spec reference](/app-spec-reference): full app.yaml schema
+- [Backups and storage](/backups-and-storage): dump and restore tools for engines the copy step does not cover
+- [Comparison](/comparison): architectural differences between platforms
+- [Coolify alternative](/coolify-alternative) and [Dokploy alternative](/dokploy-alternative): why people switch
 
 ## Guided app import from Coolify
 
@@ -446,12 +447,12 @@ Warnings do not stop a dry run. A switch needs `--accept-warnings` (the checkbox
 
 ### What a run does
 
-1. **Dry run.** Starts the app here, waits until it is healthy, then sends a request with the domain's Host header through this node's own ingress listener. It stops the app again and changes no record. Run it as often as you like.
-2. **Switch.** Needs the app name typed as confirmation. It repeats the dry run, then switches each domain by the first method that applies:
-   - **DNS provider.** With Cloudflare or Route 53 connected and a root credential, the record is replaced and the previous value is stored in the run before the write, so a rollback restores it exactly.
-   - **Managed proxy.** With proxy coexistence active, the route is written to the proxy and no DNS record changes.
-   - **Manual.** Otherwise the run pauses and prints the exact record. Set it, then press "I changed it" (or `import cutover confirm-dns`).
-3. **Verify.** The public name is checked with the domain doctor, polling until it passes or `APP_CUTOVER_VERIFY_TIMEOUT` (5 minutes) passes. If it never passes, the run rolls itself back: DNS records are restored and the staged app is stopped.
+1. Dry run. Starts the app here, waits until it is healthy, then sends a request with the domain's Host header through this node's own ingress listener. It stops the app again and changes no record. Run it as often as you like.
+2. Switch. Needs the app name typed as confirmation. It repeats the dry run, then switches each domain by the first method that applies:
+   - DNS provider: with Cloudflare or Route 53 connected and a root credential, the record is replaced and the previous value is stored in the run before the write, so a rollback restores it exactly.
+   - Managed proxy: with proxy coexistence active, the route is written to the proxy and no DNS record changes.
+   - Manual: otherwise the run pauses and prints the exact record. Set it, then press "I changed it" (or `import cutover confirm-dns`).
+3. Verify. The public name is checked with the domain doctor, polling until it passes or `APP_CUTOVER_VERIFY_TIMEOUT` (5 minutes) passes. If it never passes, the run rolls itself back: DNS records are restored and the staged app is stopped.
 
 Rollback is one click (`import cutover rollback`) at any point after the switch. It is safe to repeat after a partial failure. A run interrupted by a restart resumes within `APP_CUTOVER_RESUME_MAX_AGE` (30 minutes), or is rolled back if it is older.
 

@@ -1,44 +1,145 @@
 ---
+title: "Identity and access: users, roles, and IAM policies"
 description: Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
 ---
 
-# Identity and access: users, roles, and IAM policies
+This page covers who can sign in, what they can do once they are in, and the record of what they did. You can add a teammate with a role or invite them by email, scope a CI token down to one app, turn on two-factor auth, passkeys, OAuth or sign-in codes, and review who changed what in the audit log.
 
-Create a teammate with a curated role, scope a CI token down to one app, turn on two-factor auth, or review who changed what: this page covers who can sign in, what they can do once they're in, and a record of what they actually did.
+Start with [Common tasks](#common-tasks). The sections after it explain how each mechanism behaves.
 
-::: details For contributors: where this lives in the source
+<Accordion title="For contributors: where this lives in the source">
 - Backend: `internal/api/{auth,users,roles,abilities,iam,iam_handlers,invites,tokens,twofactor,oauth,oauth_settings,device_auth,audit,audit_retention}.go`
 - CLI: `cmd/levelrail-cli/{users,iam,invites,tokens,auth}*.go`
 - Dashboard: `web/src/routes/settings/{users,iam-policies,security,tokens,oauth,cli-access,audit-log}.tsx`
 - OAuth sign-in decision logic: `completeOAuthSignin` in `internal/api/oauth.go`
-:::
+</Accordion>
 
-<InlineToc default-open />
+## Common tasks
+
+<Steps>
+<Step title="Bootstrap the first admin">
+
+Do this once, before anyone can sign in. Without these variables the control plane prints a one-time setup token instead (see [Bootstrap](#bootstrap-exactly-one-path-to-the-first-admin)).
+
+<CodeGroup>
+```bash Environment
+export APP_ADMIN_USERNAME=admin@example.com
+export APP_ADMIN_PASSWORD='a-real-password'
+# restart the control plane
+```
+```bash Verify with curl
+curl -s -c cookies.txt -X POST https://your-control-plane/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin@example.com","password":"a-real-password"}'
+```
+</CodeGroup>
+
+</Step>
+<Step title="Create a teammate with a curated role">
+
+No hand-picked abilities needed.
+
+```bash
+levelrail-cli users create --email ops@example.com --password 'temporary-pw' --role operator
+```
+
+```json
+{ "id": "user_abc123", "email": "ops@example.com", "role": "operator", "abilities": ["read", "read:sensitive", "write", "deploy"], ... }
+```
+
+</Step>
+<Step title="Invite a teammate by email">
+
+The invitee sets their own password.
+
+```bash
+levelrail-cli invites create --email priya@example.com --role viewer
+```
+
+```json
+{ "id": "inv_1", "email": "priya@example.com", "role": "viewer", "link": "https://your-control-plane/accept-invite?token=...", "expires_at": "..." }
+```
+
+</Step>
+<Step title="Scope a CI token down to one app">
+
+Use an IAM policy, which is tighter than any flat role can express.
+
+<CodeGroup>
+```bash Create token
+levelrail-cli tokens create --name "ci-checkout" --abilities deploy
+# token tok_xyz, plaintext shown once
+```
+```bash Create policy
+levelrail-cli iam policies create --name "checkout-only" \
+  --document '{"Statement":[{"Effect":"Allow","Action":["deploy"],"Resource":["app:checkout"]}]}'
+# policy pol_abc
+```
+```bash Attach policy to token
+levelrail-cli iam policies attach pol_abc --principal-type token --principal-id tok_xyz
+```
+</CodeGroup>
+
+That token can now deploy `checkout` even without a global `deploy` ability. To block a resource a broader role would otherwise allow, write an `Effect: "Deny"` statement instead.
+
+<Tip>
+Check the result before relying on it: `levelrail-cli iam simulate --principal token:tok_xyz --action deploy --resource app:checkout` asks the platform's real evaluator and changes nothing.
+</Tip>
+
+</Step>
+<Step title="Turn on two-factor auth">
+
+Run this as the signed-in account.
+
+<CodeGroup>
+```bash Setup
+levelrail-cli auth 2fa setup
+# secret + otpauth:// provisioning URI, scan it into an authenticator app
+```
+```bash Confirm with TOTP code
+levelrail-cli auth 2fa enable --code 123456
+# 10 recovery codes, shown once, store them somewhere safe
+```
+</CodeGroup>
+
+</Step>
+<Step title="Log the CLI in with the device-code flow">
+
+Use this from a machine with no direct HTTPS access to the control plane. It works over plain HTTP.
+
+```bash
+levelrail-cli auth login --device
+# prints a user_code and a URL; approve it from
+# /settings/cli-access on a browser that already has a session
+```
+
+</Step>
+<Step title="Review who changed what">
+
+```bash
+levelrail-cli audit-log --client-kind cli --method POST
+levelrail-cli audit-log --format csv --output-file audit-export.csv
+```
+
+</Step>
+</Steps>
 
 ## Why two permission models instead of one
 
-Most self-hosted platforms pick one of two shapes and live with the downside.
+Most self-hosted platforms pick one shape and live with its downside.
 
-- **Flat roles** (admin/member/viewer): Easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else."
-- **Full IAM policy engine**: Can express that but is overkill for "give Priya everything, give the contractor read-only."
+- Flat roles (admin/member/viewer) are easy to reason about but cannot express "this CI token may deploy exactly one app and nothing else."
+- A full IAM policy engine can express that, but it is overkill for "give Priya everything, give the contractor read-only."
 
 This platform keeps both, layered:
 
-**Abilities**
+| Layer | What it is |
+| --- | --- |
+| Abilities | A flat vocabulary every user and every API token carries directly: `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`. |
+| Roles | Named presets over the same ability list: `admin`, `operator`, `viewer`, plus custom roles (see [Access control](/access-control)). A convenience for the common case, never a second storage location for permissions. |
+| IAM policies | Optional, additive documents of Allow/Deny statements scoped to one resource (`app:web`, `database:main`, or `*`). Attach to a user or token to grant or revoke access to a specific app without changing its ability list. |
 
-A flat, six-string vocabulary that every user and every API token carries directly: `read`, `read:sensitive`, `write`, `write:sensitive`, `deploy`, `root`.
-
-**Roles**
-
-Named presets over the same ability list: `admin`, `operator`, `viewer`. These are a convenience for the common case, never a second storage location.
-
-**IAM policies**
-
-Optional, additive documents of Allow/Deny statements scoped to one resource (`app:web`, `database:main`, or `*`). Attach them to a user or token to grant or revoke access to a specific app without changing the principal's ability list.
-
-**Evaluation**
-
-An explicit Deny in an attached policy always wins, even over `root`. Everything else falls back to the flat abilities exactly as if no policy existed.
+Evaluation: an explicit Deny in an attached policy always wins, even over `root`. Everything else falls back to the flat abilities exactly as if no policy existed.
 
 ## How it actually works
 
@@ -52,24 +153,28 @@ Sessions are an in-memory map keyed by an opaque token (`sessionStore`), with a 
 
 **Session cookie security**
 
-The session cookie's `Secure` flag follows the request: it is set when the request arrived over TLS, or through the embedded Caddy ingress (a loopback peer sending `X-Forwarded-Proto: https`). `X-Forwarded-Proto` from any other peer is ignored, so a remote client can't spoof it. A fresh install reached at `http://<server-ip>:8080` therefore works out of the box, and the dashboard shows a persistent "connection is not encrypted" banner until you move to HTTPS.
+The session cookie's `Secure` flag follows the request: it is set when the request arrived over TLS, or through the embedded Caddy ingress (a loopback peer sending `X-Forwarded-Proto: https`). `X-Forwarded-Proto` from any other peer is ignored, so a remote client cannot spoof it. A fresh install reached at `http://<server-ip>:8080` therefore works out of the box, and the dashboard shows a persistent "connection is not encrypted" banner until you move to HTTPS.
 
-Once you set an `https://` **dashboard URL** (Domains page, `levelrail-cli settings dashboard-url set --url https://...`, or `PUT /api/v1/settings/dashboard-url`), sign-in over plain HTTP is refused with a `403` pointing at that URL. This covers password login, 2FA verification, and invite acceptance. An `https://` URL can only be saved from a request that already arrived over HTTPS (or from the server itself), so saving it can't lock you out. If the https URL breaks later, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane and restart it to recover.
+Once you set an `https://` **dashboard URL** (Domains page, `levelrail-cli settings dashboard-url set --url https://...`, or `PUT /api/v1/settings/dashboard-url`), sign-in over plain HTTP is refused with a `403` pointing at that URL. This covers password login, 2FA verification, and invite acceptance. An `https://` URL can only be saved from a request that already arrived over HTTPS (or from the server itself), so saving it cannot lock you out.
+
+<Warning>
+If the https URL breaks later, set `APP_ALLOW_INSECURE_LOGIN=true` on the control plane and restart it to recover.
+</Warning>
 
 ### Abilities and roles
 
-```
-read            view apps, logs, metrics, deploy history
-read:sensitive  view secrets and other private config
-write           change config, restart, manage domains and env vars
-write:sensitive rotate secrets
-deploy          trigger a deploy
-root            everything, exclusive: combining root with anything
-                else is rejected at validation time
-```
+| Ability | Grants |
+| --- | --- |
+| `read` | View apps, logs, metrics, deploy history |
+| `read:sensitive` | View secrets and other private config |
+| `write` | Change config, restart, manage domains and env vars |
+| `write:sensitive` | Rotate secrets |
+| `deploy` | Trigger a deploy |
+| `root` | Everything. Exclusive: combining `root` with anything else is rejected at validation time |
 
-A curated role just sets a principal's `Abilities` to one of three fixed
-sets in one action:
+Tokens can additionally carry `signin:approve`, which is never implied by any other ability. See [The `signin:approve` ability](#sign-in-with-a-code).
+
+A built-in role sets a principal's `Abilities` to one of three fixed sets in one action:
 
 | Role | Abilities |
 | --- | --- |
@@ -77,12 +182,7 @@ sets in one action:
 | `operator` | `read`, `read:sensitive`, `write`, `deploy` |
 | `viewer` | `read` |
 
-`GET /api/v1/roles` is the only place these live; nothing about a user
-or token row remembers "I was created via the operator role." The
-dashboard and CLI both compute a `role` field for display by exact-match
-diffing a principal's abilities against the three presets
-(`roleForAbilities`); anything that doesn't match one exactly shows as
-"custom," which is expected and fine, not an error state.
+`GET /api/v1/roles` lists the roles; a user or token row does not remember "I was created via the operator role." Custom roles are managed with `levelrail-cli roles` (see [Access control](/access-control)). The dashboard and CLI show a `role` for display by matching a principal's abilities against the presets; anything that doesn't match exactly shows as "custom," which is expected, not an error state.
 
 ### IAM policies: Allow/Deny over a resource
 
@@ -97,10 +197,10 @@ A policy document uses AWS IAM's shape, hand-typed or generated:
 }
 ```
 
-**Fields**
-
-- `Action`: Ability strings or `*`
-- `Resource`: `app:<name>`, `database:<name>`, or `*`. A trailing `*` matches as a prefix (e.g., `app:*` matches every app).
+| Field | Values |
+| --- | --- |
+| `Action` | Ability strings or `*` |
+| `Resource` | `app:<name>`, `database:<name>`, `node:<id>`, `environment:<id>`, `environment-kind:<kind>`, or `*`. A trailing `*` matches as a prefix (`app:*` matches every app). |
 
 **Evaluation order** (`authorizeResource`, `internal/api/iam.go`)
 
@@ -117,43 +217,45 @@ flowchart TD
   F -->|No| H[403 Forbidden]
 ```
 
-Details:
-
-1. An explicit **Deny** matching the ability and resource, in any attached policy, always wins. Full stop, even for a `root` principal.
+1. An explicit Deny matching the ability and resource, in any attached policy, always wins, even for a `root` principal.
 2. Otherwise, the principal's own flat abilities decide, unchanged from having no policies attached.
-3. Otherwise, an explicit **Allow** in an attached policy can still grant access the principal's flat abilities don't, scoped to that one resource.
+3. Otherwise, an explicit Allow in an attached policy can still grant access the flat abilities don't, scoped to that one resource.
 
-**Attachment**
+**Attachment.** A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it is treated as if it doesn't mention the pair being checked.
 
-A policy attaches to a `user` or a `token` (`principal_type`), by that principal's id. A malformed stored document can never grant or deny anything; it's treated as if it simply doesn't mention the pair being checked.
+**Lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, and returns `403` on every `/apps/{name}/...` route.
 
-Proven end to end, not just at the handler level: `test/e2e/iam_policy_enforcement_test.go` drives a real admin session through the real HTTP API to mint a second user and a token, attach Deny and Allow policies through the real IAM endpoints, and confirm the resulting 403/200s correspond to real state changes (or their absence).
+**References in a request body or query.** The same check applies to a resource a request names outside its path: a database attached by name, a target environment or node, a promotion target, a compose or deploy-spec service name that already belongs to another app, a git source's additional services, a pipeline step that deploys another app, a standalone domain pointing at an app, or an `?app=` filter. A refused reference answers exactly like an unknown one, so the response never confirms that a hidden resource exists. Server-computed fan-outs (environment clone, protect-all, cutover reports, restore drills) skip resources the caller cannot see instead of failing. `internal/api/body_ref_authz_guard_test.go` fails the build when a handler reads such a field without one of these checks.
+
+**Test before you trust.** `iam simulate` answers "can this principal do this on this resource" with the real evaluator, `iam effective` shows everything a principal can do grouped by ability, `iam analyze` runs static checks over every policy, and `iam templates` creates ready-made policies. A newly attached Deny takes effect on the very next request.
+
+`test/e2e/iam_policy_enforcement_test.go` covers this end to end: it drives a real admin session through the real HTTP API to mint a user and a token, attach Deny and Allow policies, and confirm the resulting 403 and 200 responses.
 
 ### Bootstrap: exactly one path to the first admin
 
 On startup, `BootstrapAdmin` creates a user from `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` only if zero users exist. It is a no-op on later restarts, so a password change doesn't get silently reverted.
 
-Without those env vars and with no user yet, the control plane generates a one-time **setup token**, writes it to `<data dir>/setup-token` (mode `0600`), and logs it once. `GET /api/v1/auth/setup-status` (public) returns `{"needs_setup": true}` until the first admin exists, and the login page switches to its setup form on its own. `POST /api/v1/auth/register` requires the token in `setup_token` (constant-time compare) and deletes the file on success, so whoever reaches the dashboard first can't claim the instance without shell access to the server. `install.sh` prints the token and a `http://<ip>:8080/login?setup=<token>` link; `sudo levelrail setup-token` prints it again.
+Without those env vars and with no user yet, the control plane generates a one-time setup token, writes it to `<data dir>/setup-token` (mode `0600`), and logs it once.
 
-`POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check). A race between concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
+- `GET /api/v1/auth/setup-status` (public) returns `{"needs_setup": true}` until the first admin exists, and the login page switches to its setup form on its own.
+- `POST /api/v1/auth/register` requires the token in `setup_token` (constant-time compare) and deletes the file on success, so whoever reaches the dashboard first can't claim the instance without shell access to the server.
+- `install.sh` prints the token and a `http://<ip>:8080/login?setup=<token>` link; `sudo levelrail setup-token` prints it again.
 
-::: tip Development only
-`APP_DEV_MODE=1` seeds a fixed `dev`/`dev` admin for local development. Never use this in a real deployment.
-:::
+`POST /api/v1/auth/register` is gated at the database layer to succeed exactly once (a unique constraint, not an application check), so concurrent first-registration attempts cannot create two "first" admins. Either path grants `AbilityRoot` because no one else exists yet.
 
-**Subsequent users**
+<Tip>
+Development only: `APP_DEV_MODE=1` seeds a fixed `dev`/`dev` admin for local development. Never use it in a real deployment.
+</Tip>
 
-Every user after the first is created by an existing root user, either directly (`POST /api/v1/auth/users`) or via an accepted invite.
+**Subsequent users.** Every user after the first is created by an existing root user, either directly (`POST /api/v1/auth/users`) or via an accepted invite.
 
-**Lockout prevention**
-
-A root user cannot edit their own abilities or delete their own account. The last remaining user can never be deleted. Both are hard 400s, not soft warnings. This is the rule standing between the platform and a permanent lockout.
+<Note>
+A root user cannot edit their own abilities or delete their own account, and the last remaining user can never be deleted. Both return a hard 400, not a warning.
+</Note>
 
 ### Two-factor authentication (TOTP)
 
 Requires a master key configured on the control plane (`internal/secrets`). Without one, every 2FA route returns `501`.
-
-**Setup flow**
 
 ```mermaid
 flowchart TD
@@ -170,43 +272,36 @@ flowchart TD
   J -->|Valid| K[Session cookie granted]
 ```
 
-Details:
+1. `POST /api/v1/auth/2fa/setup`: mint a fresh TOTP secret and store it unconfirmed. Calling it again before confirming overwrites the pending secret.
+2. `POST /api/v1/auth/2fa/confirm`: validate one live code, flip `TOTPEnabled`, and return 10 recovery codes in plaintext. This is the one and only time they are shown.
+3. On login, `POST /api/v1/auth/login` returns `mfa_required: true` plus a short-lived `mfa_token` (5 minutes) instead of a session. Exchange it with a live code (or a recovery code) via `POST /api/v1/auth/2fa/verify` for the session cookie.
 
-1. `POST /api/v1/auth/2fa/setup`: Mint a fresh TOTP secret and store it unconfirmed. Calling it again before confirming overwrites the pending secret.
+**Disabling and recovery codes.** `POST /api/v1/auth/2fa/disable` re-verifies the second factor itself, not the account password, because a password-only re-check would undermine 2FA. Regenerating recovery codes invalidates the entire previous set.
 
-2. `POST /api/v1/auth/2fa/confirm`: Validate one live code against that secret, flip `TOTPEnabled`, and return 10 recovery codes in plaintext. This is the one and only time recovery codes are shown.
+**Single-use codes.** A TOTP code is accepted once. The control plane remembers the newest time step it accepted for each user (`users.totp_last_step`, migration `0350`), so a code that was just used or replayed inside its roughly 90 second validity window is refused with `invalid code`. The check is atomic, so two simultaneous logins presenting the same code cannot both pass. The step is claimed at login (`/2fa/verify`), not at `/2fa/confirm`, so the code you enrol with can still be used once to sign in. Recovery codes are single-use too.
 
-3. On login: `POST /api/v1/auth/login` returns `mfa_required: true` plus a short-lived `mfa_token` (5 minutes) instead of a session. Exchange that token plus a live code (or a recovery code) via `POST /api/v1/auth/2fa/verify` for the real session cookie.
-
-**Disabling and recovery codes**
-
-`POST /api/v1/auth/2fa/disable` re-verifies the second factor itself, not the account password. A password-only re-check would undermine 2FA's purpose.
-
-Regenerating recovery codes invalidates the entire previous set.
-
-**Single-use codes.** A TOTP code is accepted once. The control plane remembers the newest time step it accepted for each user (`users.totp_last_step`, migration `0350`), so a code that was just used, shoulder-surfed or replayed inside its roughly 90 second validity window is refused with `invalid code`. The check is atomic, so two simultaneous logins presenting the same code cannot both pass. The step is claimed at login (`/2fa/verify`), not at `/2fa/confirm`, so the code you enrol with can still be used once to sign in. Recovery codes were already single-use.
-
-**Rate limiting**
-
-Both the login-time verify step and every setup/confirm/disable call are rate limited (exponential backoff with a handful of free failures). This is separate from the password rate limiter.
+**Rate limiting.** Both the login-time verify step and every setup/confirm/disable call are rate limited (exponential backoff with a handful of free failures), separately from the password rate limiter.
 
 ### Passkeys (WebAuthn)
 
 Sign in with Touch ID, Windows Hello, or a security key instead of a password. No master key required: a credential's public key is ordinary key material, not a secret, so it never goes through `internal/secrets`.
 
-**Registering a passkey** (`POST /api/v1/auth/passkeys/register/begin` then `.../register/finish`) requires an existing session: it adds a credential to the account you're already signed in as. `GET /api/v1/auth/passkeys` lists an account's own credentials; `DELETE /api/v1/auth/passkeys/{id}` revokes one.
+| Action | Endpoints |
+| --- | --- |
+| Register (needs an existing session) | `POST /api/v1/auth/passkeys/register/begin`, then `.../register/finish` |
+| List own credentials | `GET /api/v1/auth/passkeys` |
+| Revoke | `DELETE /api/v1/auth/passkeys/{id}` |
+| Sign in | `POST /api/v1/auth/passkey-login/begin`, then `.../finish` |
 
-**Signing in with a passkey** (`POST /api/v1/auth/passkey-login/begin` then `.../finish`) is username-first, not usernameless: the operator types their username, the server looks up that account's own credentials, and the browser's passkey prompt proves possession. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled, the same shape OAuth sign-in already has.
+Passkey sign-in is username-first, not usernameless: the operator types their username, the server looks up that account's credentials, and the browser's passkey prompt proves possession. A successful passkey sign-in completes the session the same way a password does, without an additional TOTP prompt even if the account has 2FA enabled (the same shape OAuth sign-in has).
 
-Every registration and login challenge is single-use and expires in 5 minutes; the relying party ID and origin are derived from the request's own `Host` header, since there is no single fixed domain to configure on a self-hosted platform.
+Every registration and login challenge is single-use and expires in 5 minutes. The relying party ID and origin are derived from the request's own `Host` header, since there is no single fixed domain to configure on a self-hosted platform.
 
 ### OAuth sign-in
 
-Four providers are supported: `google`, `github`, `microsoft` (Azure AD, common multi-tenant endpoint), `oidc` (generic OpenID Connect, requires an issuer URL).
+Four providers are supported: `google`, `github`, `microsoft` (Azure AD, common multi-tenant endpoint), and `oidc` (generic OpenID Connect, requires an issuer URL).
 
 Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
-
-**Sign-in behavior**
 
 ```mermaid
 flowchart TD
@@ -225,62 +320,57 @@ flowchart TD
   M --> K
 ```
 
-Details:
-
-- **Already-linked identity**: Signs in as its existing owner.
-- **Brand-new email**: Auto-provisions a new user with `AbilityRead` only (least-privilege default, never `root`, since a fresh OAuth signup is never the platform's first user). An existing root user can grant more later via `PUT /api/v1/users/{id}/abilities`.
-- **Email already belonging to another account**: Refused outright. Auto-linking here would let an anonymous sign-in silently take over an unrelated account.
-- **Linking a new provider to an existing account**: Requires an existing live session. Use `GET /api/v1/auth/oauth/{provider}/link/start` to do this.
-- **Allowed email domain**: If `AllowedEmailDomain` is set on a provider, a new signup outside that domain is refused.
+| Case | Result |
+| --- | --- |
+| Already-linked identity | Signs in as its existing owner. |
+| Brand-new email | Auto-provisions a user with `AbilityRead` only (never `root`, since a fresh OAuth signup is never the first user). A root user can grant more later via `PUT /api/v1/users/{id}/abilities`. |
+| Email already belongs to another account | Refused outright. Auto-linking would let an anonymous sign-in take over an unrelated account. |
+| Linking a provider to an existing account | Needs a live session: `GET /api/v1/auth/oauth/{provider}/link/start`. |
+| `AllowedEmailDomain` set on the provider | A new signup outside that domain is refused. |
 
 ### Team invites
 
-`POST /api/v1/invites` mints a token for one named email, specifying either `--role` or `--abilities`.
+`POST /api/v1/invites` mints a token for one named email, with either `--role` or `--abilities`.
 
-**Privilege check**
+- Privilege check: The caller cannot invite someone with an ability they don't hold themselves. `AbilityWrite` gates the route, but that per-ability cap is the actual boundary.
+- Accept link: The response always includes the plaintext accept link, whether or not SMTP is configured, so a control plane with no email is still fully usable by copy and paste.
+- Acceptance: Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a normal local-password user through the same path as `POST /api/v1/auth/users`, so an invited account is indistinguishable from an admin-created one.
+- Visibility: A non-root caller only sees invites they created. A root caller sees every pending invite.
 
-The caller cannot invite someone with an ability they don't hold themselves. `AbilityWrite` gates the route, but that per-ability cap is the actual boundary.
+<Warning>
+Set the dashboard URL before inviting people by email. The link is absolute only when the control plane knows its own origin: the primary domain if one is set, otherwise the dashboard URL (Domains page, or `levelrail-cli settings dashboard-url set`). With neither, the link is a bare path (`/accept-invite?token=...`) that only works if pasted after the dashboard's address. The request's `Host` header is never used to build the link. The password reset email follows the same rule.
+</Warning>
 
-**Accept link**
-
-The response always includes the plaintext accept link, whether or not SMTP is configured. A control plane with no email capability is still fully usable by copy/pasting the link.
-
-The link is absolute when the control plane knows its own origin: the primary domain if one is set, otherwise the dashboard URL (the Domains page, or `levelrail-cli settings dashboard-url set`). With neither set, the link and the emailed link are a bare path (`/accept-invite?token=...`) that only works if pasted after the dashboard's address, so set the dashboard URL before inviting people by email. The request's `Host` header is never used to build the link. The password reset email follows the same rule.
-
-**Invitation acceptance**
-
-Default TTL is 7 days (`APP_INVITE_TTL`). `POST /api/v1/invites/accept` creates a normal local-password user through the exact same path `POST /api/v1/auth/users` uses. An invited account is never distinguishable from an admin-created one.
-
-**Visibility**
-
-A non-root caller only sees invites they created themselves. A root caller sees every pending invite.
-
-`GET /api/v1/users` follows the same idea: a `root` caller lists every account, any other caller (a `viewer`, an `operator`, a scoped token) gets only their own record, or an empty list for a token. Emails and ability sets of colleagues are not visible to read-tier callers.
-
-**IAM Deny and lists.** A Deny policy on `app:<name>` hides that app from `GET /api/v1/apps`, `apps-summary`, `apps-metrics`, deployments, certificates (including the auto-generated `sslip.io` hostname), `GET /api/v1/network/topology` (apps and databases) and the container names in `GET /api/v1/system/containers`, as well as returning `403` on every `/apps/{name}/...` route.
+`GET /api/v1/users` follows the same visibility idea: a `root` caller lists every account, any other caller (a `viewer`, an `operator`, a scoped token) gets only their own record, or an empty list for a token. Emails and ability sets of colleagues are not visible to read-tier callers.
 
 ### API tokens
 
-Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Minted with the same six-string ability vocabulary users carry, plus an optional expiry (`expires_in_days`, 0 means never). The plaintext is returned exactly once at creation; every later read (`GET /api/v1/auth/tokens`) shows only metadata. The security policy can cap the lifetime of new tokens and disable tokens that go unused, after a notice: see [API token hygiene](security-center.md#api-token-hygiene).
+Scoped, revocable bearer credentials for the CLI, CI, and MCP integrations. Minted with the same ability vocabulary users carry, plus an optional expiry (`expires_in_days`, 0 means never). The plaintext is returned exactly once at creation; every later read (`GET /api/v1/auth/tokens`) shows only metadata. The security policy can cap the lifetime of new tokens and disable tokens that go unused, after a notice: see [API token hygiene](/security-center#api-token-hygiene).
 
-**Session-only token management**
+**Session-only management.** Creating and revoking tokens is deliberately session-only, never bearer-token authenticated: a token can never mint or revoke another token. This is why the CLI's `tokens create`/`revoke` and `auth login` prompt for username and password instead of accepting `--token`. Listing metadata (`GET /api/v1/auth/tokens`) also accepts a bearer token that holds `root`.
 
-Token management (`create`/`list`/`revoke`) is deliberately session-only, never bearer-token authenticated. A token can never mint or revoke another token on its own behalf. This is why the CLI's `tokens create`/`list`/`revoke` and `auth login` prompt for username and password instead of accepting `--token`. No bearer token can ever call those routes, however broadly scoped.
-
-**Device-code flow**
-
-The device-code flow (`POST /api/v1/auth/device/start` and `/token`, `levelrail-cli auth login --device`) sidesteps the plain-HTTP session-cookie gap.
+**Device-code flow.** `POST /api/v1/auth/device/start` and `/token` (`levelrail-cli auth login --device`) sidestep the plain-HTTP session-cookie gap.
 
 - The CLI polls with a random device code.
-- An operator approves it from the dashboard's CLI Access page (`/settings/cli-access`) using their already-established session.
-- The resulting token inherits exactly that operator's abilities.
-- The CLI never picks the permissions.
+- An operator approves it from the dashboard's CLI Access page (`/settings/cli-access`) using their existing session.
+- The resulting token inherits exactly that operator's abilities. The CLI never picks the permissions.
 
 ### Session links
 
-A session link is a one-time login URL rather than a credential you type. Mint one from an already-authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window you don't want to type a password into. Opening it signs that browser in immediately, no username or password prompt.
+A session link is a one-time login URL, not a credential you type. Mint one from an authenticated context and hand the URL to whatever needs to sign in next: CI, an AI agent driving the dashboard through browser automation, or a fresh incognito window. Opening it signs that browser in immediately.
 
-`POST /api/v1/auth/session-links` mints one. Gated `root`, because the link it produces is root-equivalent: anyone who gets hold of the token before it's used can sign in as whoever minted it.
+`POST /api/v1/auth/session-links` mints one. It is gated `root`, because the link is root-equivalent: anyone who gets hold of the token before it's used can sign in as whoever minted it.
+
+<Tabs>
+<Tab title="CLI">
+
+```bash
+levelrail-cli auth session-link
+# prints the ready-to-open URL and nothing else
+```
+
+</Tab>
+<Tab title="API">
 
 ```bash
 curl -s -X POST https://your-control-plane/api/v1/auth/session-links \
@@ -291,196 +381,146 @@ curl -s -X POST https://your-control-plane/api/v1/auth/session-links \
 { "token": "st_...", "url": "https://your-control-plane/login?session_link=st_..." }
 ```
 
-Open the `url` in a browser. `/login?session_link=<token>` consumes the token automatically on page load (`GET /api/v1/auth/session-links/{token}/consume`, public, gated by possession of the token itself) and establishes a session, the same way a normal login does. No form, no click-through.
+Open the `url` in a browser. `/login?session_link=<token>` consumes the token on page load (`POST /api/v1/auth/session-links/consume` with the token in the JSON body, public, gated by possession of the token; the old `GET .../{token}/consume` form answers 405) and establishes a session, the same way a normal login does.
 
-**CLI shortcut**
-
-```bash
-levelrail-cli auth session-link
-# prints the ready-to-open URL and nothing else
-```
+</Tab>
+</Tabs>
 
 **Security model**
 
-- **Short-lived.** The token expires 2 minutes after minting, whether or not it's used.
-- **Single-use.** Consuming it is an atomic claim; if two requests race on the same token, at most one succeeds and the other gets the same "invalid or expired" error a stale token would.
-- **Can't escalate.** The resulting session carries exactly the minting identity's own abilities, snapshotted at mint time, never more. Minting one already requires `root`; it's a convenience for an identity that could already do anything, not a way to grant new access.
-- **Minting a link on behalf of an API token** (rather than a logged-in user) produces a session pinned to that token's ability snapshot, since there's no user row to attach an ordinary session to. Revoking the underlying token afterward doesn't retroactively end a session already established from it, the same way revoking a token never ends sessions a user already has open.
+- Short-lived: The token expires 2 minutes after minting (default, `APP_AUTH_ENGINE_SESSION_LINK_TTL`), whether or not it's used.
+- Single-use: Consuming it is an atomic claim; if two requests race on the same token, at most one succeeds and the other gets the same "invalid or expired" error a stale token would.
+- Can't escalate: The session carries exactly the minting identity's own abilities, snapshotted at mint time. Minting already requires `root`.
+- A link minted on behalf of an API token (rather than a logged-in user) produces a session pinned to that token's ability snapshot. Revoking the token afterward does not end a session already established from it, the same way revoking a token never ends sessions a user already has open.
 
 ### Sign in with a code
 
-The sign-in page offers **Sign in with a code instead**. You type your username or email and get a one-time code you type back in, no password.
+The sign-in page offers Sign in with a code instead. You type your username or email and get a one-time code you type back in, no password.
 
-1. `POST /api/v1/auth/login-code/request` always answers `202` with the same message and takes at least `APP_LOGIN_CODE_MIN_RESPONSE` (default 300ms), whether the account exists, may use codes, or not. An account that cannot get a code still gets a decoy challenge, so redeeming behaves the same way too.
-2. The response sets an httpOnly, `SameSite=Strict` cookie bound to that browser. The code only works together with that cookie, so a code read over someone's shoulder is useless in another browser.
-3. The code goes to the account's own open dashboard sessions (a banner on every page, the attention center, and **Settings > Security**), each showing the requester's IP address, browser and time, and to the account's email address when email is set up. Run `levelrail-cli auth code` to print it from a terminal.
-4. `POST /api/v1/auth/login-code/redeem` with the code signs the browser in. If the account has two-factor authentication on, the code replaces only the password: the response asks for the TOTP or a recovery code next, exactly like a password sign-in.
+<Steps>
+<Step title="Request">
+`POST /api/v1/auth/login-code/request` always answers `202` with the same message and takes at least `APP_LOGIN_CODE_MIN_RESPONSE` (default 300ms), whether the account exists, may use codes, or not. An account that cannot get a code still gets a decoy challenge, so redeeming behaves the same way too.
+</Step>
+<Step title="Bind to the browser">
+The response sets an httpOnly, `SameSite=Strict` cookie bound to that browser. The code only works together with that cookie, so a code read over someone's shoulder is useless in another browser.
+</Step>
+<Step title="Read the code">
+The code goes to the account's own open dashboard sessions (a banner on every page, the [attention center](/attention-center), and **Settings > Security**), each showing the requester's IP address, browser and time, and to the account's email when email is set up. Run `levelrail-cli auth code` to print it from a terminal.
+</Step>
+<Step title="Redeem">
+`POST /api/v1/auth/login-code/redeem` with the code signs the browser in. If the account has two-factor authentication on, the code replaces only the password: the response asks for the TOTP or a recovery code next, exactly like a password sign-in.
+</Step>
+</Steps>
 
-Properties:
+**Properties**
 
 - 8 characters from a 32 symbol alphabet with no lookalikes (Crockford base32), from `crypto/rand`. Dashes, spaces, lower case and `O`, `I`, `L` typed for `0`, `1`, `1` are accepted.
-- Valid for `APP_LOGIN_CODE_TTL` (default 10 minutes), single use, stored only as an HMAC keyed with a per-challenge salt and, when the control plane has its encryption key, a server secret, so a copy of the database alone cannot test guesses. Compared in constant time. The plaintext lives in control plane memory until it is used or expires; after a restart a waiting code can no longer be shown, so ask for a new one.
-- `APP_LOGIN_CODE_MAX_ATTEMPTS` (default 5) wrong tries kill the challenge. Attempts are reserved before the comparison, so parallel guesses cannot exceed the limit.
-- Rate limits per minute: `APP_LOGIN_CODE_RATE_PER_IP_PER_MINUTE` (5), `APP_LOGIN_CODE_RATE_PER_ACCOUNT_PER_MINUTE` (3, keyed by the typed name), `APP_LOGIN_CODE_RATE_GLOBAL_PER_MINUTE` (60), and `APP_LOGIN_CODE_REDEEM_RATE_PER_IP_PER_MINUTE` (10). A request spends from these budgets only when all of them have room, so requests refused by one limit never drain another. A browser that is already signed in to the account, or trusted for it, draws from its own account budget, so a stranger typing your name cannot use it up.
-- At most `APP_LOGIN_CODE_MAX_LIVE` (default 3) codes asked for by strangers wait per account; a new request past that expires the oldest of them, so nobody can hold the slots and keep the owner out. Only the first live code is emailed, and at most `APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR` (default 4) emails go out per account per hour. A request from a browser already signed in to, or trusted for, the account skips the live-code cap and is always emailed, within that hourly email budget. The attention center shows one item per account with a count, not one per request.
-- The requester's browser is shown as a short label such as "Firefox on Linux", built from a fixed list of browser and system names. The raw User-Agent text never reaches an email or the dashboard.
+- Single use, stored only as an HMAC keyed with a per-challenge salt and, when the control plane has its encryption key, a server secret, so a copy of the database alone cannot test guesses. Compared in constant time. The plaintext lives in control plane memory until used or expired; after a restart a waiting code can no longer be shown, so ask for a new one.
+- The requester's browser is shown as a short label such as "Firefox on Linux", built from a fixed list of names. The raw User-Agent text never reaches an email or the dashboard.
 - The request, redeem and poll routes accept only `Content-Type: application/json` and refuse a cross-site `Origin` or `Sec-Fetch-Site`.
-- A zero or negative value in any of these settings falls back to its default instead of switching the protection off.
-- Codes never appear in logs, the audit log, the attention feed or any list endpoint. The only route that returns one is `POST /api/v1/auth/sign-in-requests/codes/{id}/reveal`, for the account's own session or for a token owned by that user that holds `signin:approve`, and each reveal is audited.
+- Codes never appear in logs, the audit log, the attention feed or any list endpoint. The only route that returns one is `POST /api/v1/auth/sign-in-requests/codes/{id}/reveal`, for the account's own session or a token owned by that user that holds `signin:approve`, and each reveal is audited.
 
-**The `signin:approve` ability.** A code is worth a session, so showing one, and deciding a new-browser approval, needs either a signed-in session of that account or a token that holds `signin:approve`. That ability is never implied: `root`, `write:sensitive` and every device login (`levelrail-cli auth login --device`) leave it out, so a leaked CLI token cannot turn itself into a dashboard session. Mint a token with it only from a signed-in session: **Settings > API tokens > Create token > Approve my sign-ins**, or `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (which signs in with your password). Such a token must expire within `APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS` (default 30) days, cannot be an agent token, and is revoked when the account's password is changed or reset, when it signs out its other sessions, and by `recover-admin` (audited as `new_device.approver_tokens_revoked`). Users and roles can never hold it. Listing waiting requests and managing trusted browsers still accept `write:sensitive`.
+**Limits and defaults**
 
-The `auth.code_login` setting decides who may use codes: **Settings > Security**, `levelrail-cli auth code-login`, or `PUT /api/v1/settings/auth/code-login` (root). It is off for admin (root) accounts and on for everyone else until an admin saves it; `APP_AUTH_CODE_LOGIN_ADMINS` and `APP_AUTH_CODE_LOGIN_OTHERS` change those defaults.
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `APP_LOGIN_CODE_TTL` | 10 minutes | How long a code is valid |
+| `APP_LOGIN_CODE_MAX_ATTEMPTS` | 5 | Wrong tries before the challenge dies (reserved before comparison, so parallel guesses cannot exceed it) |
+| `APP_LOGIN_CODE_RATE_PER_IP_PER_MINUTE` | 5 | Requests per IP |
+| `APP_LOGIN_CODE_RATE_PER_ACCOUNT_PER_MINUTE` | 3 | Requests per account (keyed by the typed name) |
+| `APP_LOGIN_CODE_RATE_GLOBAL_PER_MINUTE` | 60 | Requests overall |
+| `APP_LOGIN_CODE_REDEEM_RATE_PER_IP_PER_MINUTE` | 10 | Redeem attempts per IP |
+| `APP_LOGIN_CODE_MAX_LIVE` | 3 | Codes asked for by strangers that wait per account |
+| `APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR` | 4 | Emails per account per hour |
+
+A zero or negative value falls back to its default instead of switching the protection off.
+
+<Accordion title="Rate-limit and live-code details">
+
+- A request spends from the rate budgets only when all of them have room, so requests refused by one limit never drain another.
+- A browser already signed in to the account, or trusted for it, draws from its own account budget, so a stranger typing your name cannot use it up.
+- Past `APP_LOGIN_CODE_MAX_LIVE`, a new stranger request expires the oldest, so nobody can hold the slots and keep the owner out. Only the first live code is emailed.
+- A request from a browser already signed in to, or trusted for, the account skips the live-code cap and is always emailed, within the hourly email budget.
+- The attention center shows one item per account with a count, not one per request.
+
+</Accordion>
+
+**The `signin:approve` ability.** A code is worth a session, so showing one, and deciding a new-browser approval, needs either a signed-in session of that account or a token that holds `signin:approve`. That ability is never implied: `root`, `write:sensitive` and every device login (`levelrail-cli auth login --device`) leave it out, so a leaked CLI token cannot turn itself into a dashboard session. Users and roles can never hold it.
+
+Mint such a token only from a signed-in session: **Settings > API tokens > Create token > Approve my sign-ins**, or:
+
+```bash
+levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30
+```
+
+Such a token must expire within `APP_SIGNIN_APPROVE_TOKEN_MAX_DAYS` (default 30) days and cannot be an agent token. It is revoked when the account's password is changed or reset, when it signs out its other sessions, and by `recover-admin` (audited as `new_device.approver_tokens_revoked`). Listing waiting requests and managing trusted browsers still accept `write:sensitive`.
+
+**Who may use codes.** The `auth.code_login` setting decides: **Settings > Security**, `levelrail-cli auth code-login`, or `PUT /api/v1/settings/auth/code-login` (root). It is off for admin (root) accounts and on for everyone else until an admin saves it; `APP_AUTH_CODE_LOGIN_ADMINS` and `APP_AUTH_CODE_LOGIN_OTHERS` change those defaults.
 
 ### New-browser approval
 
-When a password sign-in is correct but comes from a browser without a trusted-device cookie, and the account already has a live session somewhere else, the sign-in pauses. The new browser shows a waiting screen; every other session of that account sees a banner and an attention item with the requester's IP address, browser and time, and can **Approve** or **Deny**. A token owned by the user that holds `signin:approve` can decide too: `levelrail-cli auth code` lists the request, `levelrail-cli auth approve <id> --match <number>` or `auth deny <id>` decides it.
+When a password sign-in is correct but comes from a browser without a trusted-device cookie, and the account already has a live session somewhere else, the sign-in pauses. The new browser shows a waiting screen; every other session of that account sees a banner and an attention item with the requester's IP address, browser and time, and can **Approve** or **Deny**.
 
-- **Number matching.** The waiting browser shows a two digit number. Approving means typing that number (in the dashboard, or `--match NN` in the CLI); a wrong number denies the sign-in, so approving a prompt you did not expect does not let anyone in. The number never appears in a list, the attention feed or the CLI output, only in the waiting browser.
-- Only one approval waits per account: a new paused sign-in replaces the previous one (audited as `new_device.superseded`), and at most `APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR` (default 6) are created per account per hour.
-- Approval lasts `APP_AUTH_DEVICE_APPROVAL_TTL` (default 10 minutes). Once approved, the waiting browser gets its session exactly once (`POST /api/v1/auth/login-approval/poll`, bound to that browser's cookie). If the paused sign-in's session cannot be revoked, the login fails with an error and no approval is created.
-- An approved browser, or one that signed in with a code, gets a trusted-device cookie: a random token stored only as a hash, valid `APP_AUTH_TRUSTED_DEVICE_TTL` (default 90 days). Signing in again from that browser extends the same entry instead of adding one. Its next password sign-in goes straight through. Revoke it under **Settings > Security > Trusted browsers** or with `levelrail-cli auth devices revoke <id>`. Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
+A token owned by the user that holds `signin:approve` can decide too: `levelrail-cli auth code` lists the request, then `levelrail-cli auth approve <id> --match <number>` or `auth deny <id>` decides it.
+
+**Number matching.** The waiting browser shows a two digit number. Approving means typing that number (in the dashboard, or `--match NN` in the CLI); a wrong number denies the sign-in, so approving a prompt you did not expect does not let anyone in. The number never appears in a list, the attention feed or the CLI output, only in the waiting browser.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `APP_AUTH_DEVICE_APPROVAL_TTL` | 10 minutes | How long an approval waits |
+| `APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR` | 6 | Approvals created per account per hour |
+| `APP_AUTH_TRUSTED_DEVICE_TTL` | 90 days | Trusted-device cookie lifetime |
+| `APP_AUTH_APPROVAL_SCOPE` | password only | `all_methods` also pauses passkey and OAuth/OIDC sign-ins |
+| `APP_AUTH_NEW_DEVICE_APPROVAL` | on | `false` turns the pause off for everyone |
+
+**Behavior**
+
+- Only one approval waits per account: a new paused sign-in replaces the previous one (audited as `new_device.superseded`).
+- Once approved, the waiting browser gets its session exactly once (`POST /api/v1/auth/login-approval/poll`, bound to that browser's cookie). If the paused sign-in's session cannot be revoked, the login fails with an error and no approval is created.
 - Accounts with two-factor authentication on are not paused: password plus TOTP still signs in without a separate approval. Passing TOTP does not trust the browser on its own; tick **Remember this browser for N days** on the two-factor step (off by default) to trust it.
 - An account with no other live session signs in as before, so the last way in is never blocked.
-- By default only password sign-ins pause. Setting `auth.approval_scope` to `all_methods` (**Security center > Policy**, `levelrail-cli security policy set --approval-scope all_methods`, or `APP_AUTH_APPROVAL_SCOPE`) pauses passkey and OAuth/OIDC sign-ins from a new browser too, and each account can require it for itself with **Require approval for new browsers on my account**. A held OAuth sign-in returns to the sign-in page to wait. See [Security center](security-center.md#approval-scope).
-- A sign-in from a browser and network the account has not used before emails the owner a single-use **this wasn't me** link that signs that session out, drops trusted browsers and flags the account for a new password. See [New sign-in alerts](security-center.md#new-sign-in-alerts).
+- Setting `auth.approval_scope` to `all_methods` (**Security center > Policy**, `levelrail-cli security policy set --approval-scope all_methods`, or `APP_AUTH_APPROVAL_SCOPE`) pauses passkey and OAuth/OIDC sign-ins from a new browser too. A held OAuth sign-in returns to the sign-in page to wait. Each account can also require approval for itself with **Require approval for new browsers on my account**. See [Security center](/security-center#approval-scope).
+- A sign-in from a browser and network the account has not used before emails the owner a single-use **this wasn't me** link that signs that session out, drops trusted browsers and flags the account for a new password. See [New sign-in alerts](/security-center#new-sign-in-alerts).
 
-**Break-glass.** If you are stuck waiting for an approval no one can give: sign in with a code sent to your email, approve from the CLI with a `signin:approve` token, sign out the other session, or wait for it to expire. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone and for every sign-in method, whatever `auth.approval_scope` and the per-account switches say. `recover-admin` on the server still works as it always has.
+**Trusted browsers.** An approved browser, or one that signed in with a code, gets a trusted-device cookie: a random token stored only as a hash. Signing in again from that browser extends the same entry instead of adding one, and its next password sign-in goes straight through. Revoke one under **Settings > Security > Trusted browsers** or with `levelrail-cli auth devices revoke <id>`.
 
-**Audit events.** Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired`, `new_device.superseded`, `new_device.trust_revoked` and `new_device.approver_tokens_revoked`. The security center adds its own `security.*` events, listed in [Security center](security-center.md#audit-events). Requests from someone who is not signed in are recorded with the actor `Sign-in` and the target user id when the account exists.
+Every trusted browser of an account is revoked when its password is changed or reset, when it signs out its other sessions, when `recover-admin` resets it, and when the user is deleted. The same events, plus turning two-factor authentication off or removing a passkey, also cancel the account's waiting approvals (approved ones not yet collected included) and lock its live sign-in codes. Expired entries are removed by the periodic sweep.
+
+<Warning>
+Break-glass: if you are stuck waiting for an approval no one can give, sign in with a code sent to your email, approve from the CLI with a `signin:approve` token, sign out the other session, or wait for it to expire. As a last resort set `APP_AUTH_NEW_DEVICE_APPROVAL=false` on the control plane and restart it, which turns the pause off for everyone and for every sign-in method, whatever `auth.approval_scope` and the per-account switches say. `recover-admin` on the server still works.
+</Warning>
+
+<Accordion title="Sign-in audit event names">
+
+Every step writes one audit row with a stable action, never the code: `login_code.requested`, `login_code.delivered` (email at send time, dashboard or CLI at each reveal), `login_code.redeemed`, `login_code.failed`, `login_code.locked`, `login_code.expired`, `new_device.requested`, `new_device.approved`, `new_device.denied`, `new_device.expired`, `new_device.superseded`, `new_device.trust_revoked` and `new_device.approver_tokens_revoked`.
+
+The security center adds its own `security.*` events, listed in [Security center](/security-center#audit-events). Requests from someone who is not signed in are recorded with the actor `Sign-in` and the target user id when the account exists.
+
+</Accordion>
 
 ### Audit log
 
 Every request gated above `AbilityRead` (write, deploy, root-tier, and `read:sensitive`) gets one row:
 
-- Actor type and id
-- Resolved display name
-- Ability checked
-- HTTP method and path
-- Status code
-- Remote address
-- Timestamp
-- Caller surface (`cli`, `dashboard`, `mcp`, or `api`, sniffed from `User-Agent`)
+| Field | Notes |
+| --- | --- |
+| Actor | Type, id, and resolved display name |
+| Ability | The ability checked |
+| Request | HTTP method, path, and status code |
+| Remote address | Caller address |
+| Timestamp | When the request completed |
+| Caller surface | `cli`, `dashboard`, `mcp`, or `api`, sniffed from `User-Agent` |
 
 Recording is best-effort and runs after the real request completes. A failed audit write is logged and dropped, never turned into a failed request.
 
-**Query**
+**Query.** `GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](/ai-assistant#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment for compliance export. Cells that start with `=`, `+`, `-`, `@` or a tab get a leading `'` in the CSV, so a token named `=HYPERLINK(...)` is not evaluated as a formula when the export is opened in a spreadsheet.
 
-`GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](ai-assistant.md#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment instead of JSON, for compliance export. Cells that start with `=`, `+`, `-`, `@` or a tab get a leading `'` in the CSV, so a token named `=HYPERLINK(...)` is not evaluated as a formula when the export is opened in a spreadsheet.
-
-**Retention**
-
-Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
-
-## Integration walkthrough
-
-<Steps>
-<Step title="Bootstrap the first admin">
-
-Do this once, before anyone can sign in.
-
-::: code-group
-```bash [Environment]
-export APP_ADMIN_USERNAME=admin@example.com
-export APP_ADMIN_PASSWORD='a-real-password'
-# restart the control plane
-```
-```bash [Verify with curl]
-curl -s -c cookies.txt -X POST https://your-control-plane/api/v1/auth/login \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"admin@example.com","password":"a-real-password"}'
-```
-:::
-
-</Step>
-<Step title="Create a teammate with a curated role">
-
-No hand-picked abilities needed.
-
-```bash
-levelrail-cli users create --email ops@example.com --password 'temporary-pw' --role operator
-```
-
-```json
-{ "id": "user_abc123", "email": "ops@example.com", "role": "operator", "abilities": ["read", "read:sensitive", "write", "deploy"], ... }
-```
-
-</Step>
-<Step title="Scope a CI token down to one app">
-
-Use an IAM policy, which is tighter than any flat role can express.
-
-::: code-group
-```bash [Create token]
-levelrail-cli tokens create --name "ci-checkout" --abilities deploy
-# → token tok_xyz, plaintext shown once
-```
-```bash [Create policy]
-levelrail-cli iam policies create --name "checkout-only" \
-  --document '{"Statement":[{"Effect":"Allow","Action":["deploy"],"Resource":["app:checkout"]}]}'
-# → policy pol_abc
-```
-```bash [Attach policy to token]
-levelrail-cli iam policies attach pol_abc --principal-type token --principal-id tok_xyz
-```
-:::
-
-That token can now deploy `checkout` even without a global `deploy` ability. To block a resource a broader role would otherwise allow, write an `Effect: "Deny"` statement instead.
-
-</Step>
-<Step title="Turn on two-factor auth">
-
-Run this as the signed-in account.
-
-::: code-group
-```bash [Setup]
-levelrail-cli auth 2fa setup
-# → secret + otpauth:// provisioning URI, scan it into an authenticator app
-```
-```bash [Confirm with TOTP code]
-levelrail-cli auth 2fa enable --code 123456
-# → 10 recovery codes, shown once, store them somewhere safe
-```
-:::
-
-</Step>
-<Step title="Invite a teammate by email">
-
-The invitee sets their own password.
-
-```bash
-levelrail-cli invites create --email priya@example.com --role viewer
-```
-
-```json
-{ "id": "inv_1", "email": "priya@example.com", "role": "viewer", "link": "https://your-control-plane/accept-invite?token=...", "expires_at": "..." }
-```
-
-</Step>
-<Step title="Log the CLI in with the device-code flow">
-
-Use this from a machine with no direct HTTPS access to the control plane. It works over plain HTTP.
-
-```bash
-levelrail-cli auth login --device
-# → prints a user_code and a URL; approve it from
-#   /settings/cli-access on a browser that already has a session
-```
-
-</Step>
-<Step title="Review who changed what">
-
-```bash
-levelrail-cli audit-log --client-kind cli --method POST
-levelrail-cli audit-log --format csv --output-file audit-export.csv
-```
-
-</Step>
-</Steps>
+**Retention.** Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
 
 ## API reference
 
-**Sessions and account**
+<AccordionGroup>
+<Accordion title="Sessions and account">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -493,7 +533,8 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `PUT` | `/api/v1/auth/password` | session |
 | `POST` | `/api/v1/auth/sessions/revoke-others` | session |
 
-**Two-factor authentication**
+</Accordion>
+<Accordion title="Two-factor authentication">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -504,7 +545,8 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `POST` | `/api/v1/auth/2fa/recovery-codes/regenerate` | session |
 | `POST` | `/api/v1/auth/2fa/verify` | public (mfa_token required) |
 
-**Passkeys**
+</Accordion>
+<Accordion title="Passkeys">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -515,7 +557,8 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `POST` | `/api/v1/auth/passkey-login/begin` | public |
 | `POST` | `/api/v1/auth/passkey-login/finish` | public |
 
-**OAuth sign-in**
+</Accordion>
+<Accordion title="OAuth sign-in">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -526,7 +569,8 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `GET` | `/api/v1/settings/oauth` | `read` |
 | `PUT` | `/api/v1/settings/oauth/{provider}` | `root` |
 
-**Device login (CLI)**
+</Accordion>
+<Accordion title="Device login (CLI)">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -536,7 +580,25 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `POST` | `/api/v1/auth/device/{user_code}/approve` | session |
 | `POST` | `/api/v1/auth/device/{user_code}/deny` | session |
 
-**Users and roles**
+</Accordion>
+<Accordion title="Sign-in codes, approvals and trusted browsers">
+
+| Method | Path | Ability |
+| --- | --- | --- |
+| `POST` | `/api/v1/auth/login-code/request` | public |
+| `POST` | `/api/v1/auth/login-code/redeem` | public (code + cookie required) |
+| `POST` | `/api/v1/auth/login-approval/poll` | public (browser cookie required) |
+| `GET` | `/api/v1/auth/sign-in-requests` | session, or token with `write:sensitive` |
+| `POST` | `/api/v1/auth/sign-in-requests/codes/{id}/reveal` | session, or token with `signin:approve` |
+| `POST` | `/api/v1/auth/login-approvals/{id}/approve` | session, or token with `signin:approve` |
+| `POST` | `/api/v1/auth/login-approvals/{id}/deny` | session, or token with `signin:approve` |
+| `GET` | `/api/v1/auth/trusted-devices` | session, or token with `write:sensitive` |
+| `DELETE` | `/api/v1/auth/trusted-devices/{id}` | session, or token with `write:sensitive` |
+| `GET` | `/api/v1/settings/auth/code-login` | `read` |
+| `PUT` | `/api/v1/settings/auth/code-login` | `root` |
+
+</Accordion>
+<Accordion title="Users and roles">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -546,22 +608,27 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `DELETE` | `/api/v1/users/{id}` | `root` |
 | `GET` | `/api/v1/roles` | `read` |
 
-**API tokens** (all session-only, no ability tier applies)
+Custom role and environment grant routes are documented in [Access control](/access-control).
+
+</Accordion>
+<Accordion title="API tokens">
 
 | Method | Path | Ability |
 | --- | --- | --- |
 | `POST` | `/api/v1/auth/tokens` | session |
-| `GET` | `/api/v1/auth/tokens` | session |
+| `GET` | `/api/v1/auth/tokens` | session, or bearer token with `root` |
 | `DELETE` | `/api/v1/auth/tokens/{id}` | session |
 
-**Session links**
+</Accordion>
+<Accordion title="Session links">
 
 | Method | Path | Ability |
 | --- | --- | --- |
 | `POST` | `/api/v1/auth/session-links` | `root` |
-| `GET` | `/api/v1/auth/session-links/{token}/consume` | public (token required) |
+| `POST` | `/api/v1/auth/session-links/consume` | public (token required) |
 
-**Invites**
+</Accordion>
+<Accordion title="Invites">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -570,7 +637,8 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `DELETE` | `/api/v1/invites/{id}` | `write` |
 | `POST` | `/api/v1/invites/accept` | public (invite token required) |
 
-**IAM policies**
+</Accordion>
+<Accordion title="IAM policies">
 
 | Method | Path | Ability |
 | --- | --- | --- |
@@ -582,13 +650,23 @@ levelrail-cli audit-log --format csv --output-file audit-export.csv
 | `GET` | `/api/v1/iam/policies/{id}/attachments` | `read` |
 | `POST` | `/api/v1/iam/policies/{id}/attachments` | `root` |
 | `DELETE` | `/api/v1/iam/policies/{id}/attachments/{principal_type}/{principal_id}` | `root` |
+| `GET` | `/api/v1/iam/simulate` | `read` |
+| `GET` | `/api/v1/iam/analyze` | `read` |
+| `GET` | `/api/v1/iam/principals/{principal_type}/{principal_id}/effective` | `read` |
+| `GET` | `/api/v1/iam/policy-templates` | `read` |
+| `POST` | `/api/v1/iam/policy-templates/{id}/apply` | `root` |
 
-**Audit log**
+</Accordion>
+<Accordion title="Audit log">
 
 | Method | Path | Ability |
 | --- | --- | --- |
 | `GET` | `/api/v1/audit-log?limit=&before=&path=&method=&client_kind=&format=` | `root` |
+| `GET` | `/api/v1/audit-log/export` | `root` |
 | `POST` | `/api/v1/audit-log/purge` | `root` |
+
+</Accordion>
+</AccordionGroup>
 
 ## CLI
 
@@ -609,6 +687,9 @@ levelrail-cli iam policies delete <id>
 levelrail-cli iam policies attach <id> --principal-type user|token --principal-id ID
 levelrail-cli iam policies detach <id> --principal-type user|token --principal-id ID
 levelrail-cli iam policies attachments <id>
+levelrail-cli iam simulate --principal user:ID|token:ID --action ABILITY --resource RESOURCE
+levelrail-cli iam effective --principal user:ID|token:ID
+levelrail-cli iam analyze
 
 # Invites
 levelrail-cli invites create --email EMAIL (--role ROLE | --abilities LIST)
@@ -644,22 +725,17 @@ levelrail-cli audit-log [--limit N] [--before TIME] [--path PATH] [--method METH
 levelrail-cli audit-purge
 ```
 
-::: details Known limits
+<Accordion title="Known limits">
 
-- **No per-team or per-project access boundary**
-  IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
+- There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
+- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft and generic OIDC, and nothing else today.
+- Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
 
-- **No SSO/SAML and no SCIM provisioning**
-  OAuth covers Google, GitHub, Microsoft, and generic OIDC. Nothing beyond that today.
-
-- **No policy dry-run or simulation**
-  A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.
-
-:::
+</Accordion>
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Access control" href="/access-control">
 
 Custom roles, IAM policies and environment grants.

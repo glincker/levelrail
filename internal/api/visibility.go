@@ -12,6 +12,7 @@ import (
 const (
 	resourcePrefixApp      = "app:"
 	resourcePrefixDatabase = "database:"
+	resourcePrefixNode     = "node:"
 )
 
 // accessStore is the store surface environment aware authorization needs;

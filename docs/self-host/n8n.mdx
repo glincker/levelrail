@@ -1,0 +1,49 @@
+---
+title: "Self-host n8n with Docker"
+sidebarTitle: "n8n"
+description: "Build automations and connect your tools with a visual, node-based workflow editor."
+---
+
+Build automations and connect your tools with a visual, node-based workflow editor.
+
+This page describes the Levelrail template for n8n (Automation). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.n8n.io.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `n8n` | `n8nio/n8n:1.62.1` | 5678 | `n8n_data -&#62; /home/node/.n8n` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `n8n` | `N8N_ENCRYPTION_KEY` | Generated at deploy |
+| `n8n` | `N8N_HOST` | Preset in the template |
+| `n8n` | `N8N_PORT` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy n8n with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select n8n. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy n8n --name my-n8n
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Automation templates
+
+- [Activepieces](/self-host/activepieces)
+- [autobrr](/self-host/autobrr)
+- [n8n (Postgres)](/self-host/n8n-postgres)
+- [Node-RED](/self-host/node-red)
+- [Prefect](/self-host/prefect)
+
+All templates are listed in the [self-host gallery](/self-host).

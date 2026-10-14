@@ -155,6 +155,9 @@ func (rt *Router) handleCreateHubSession(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusNotImplemented, "migrating a server is not available on this control plane")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadGateway, "the target node is not currently reachable"), nodeRef(req.NodeID)) {
+		return
+	}
 	runtime, err := rt.execRuntime(req.NodeID)
 	if err != nil {
 		rt.logger.Error("api: migration hub: resolve node runtime failed", slog.String("error", err.Error()), slog.String("node_id", req.NodeID))

@@ -1,24 +1,25 @@
 ---
+title: "Running Levelrail in Docker"
 description: Run Levelrail control plane and node agent as Docker containers.
 ---
 
-# Running Levelrail in Docker
+<div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
 
 Levelrail publishes two images to GitHub Container Registry, built for `linux/amd64` and `linux/arm64`, signed with cosign:
 
 - `ghcr.io/glincker/levelrail`: the control plane
 - `ghcr.io/glincker/levelrail-agent`: the node agent
 
-See [Installing: image tags](installing.md#option-2-docker) for the `:latest`/`:beta`/`:edge` channels and how to verify a signature.
+See [Installing: image tags](/installing#option-2-docker) for the `:latest`/`:beta`/`:edge` channels and how to verify a signature.
 
-The `install.sh` one-liner (see [Installing](installing.md)) remains the default for real deployments, as it also sets up Docker and a systemd unit. Use these images if you already run everything as containers and want Levelrail to follow the same pattern.
+The `install.sh` one-liner (see [Installing](/installing)) remains the default for real deployments, as it also sets up Docker and a systemd unit. Use these images if you already run everything as containers and want Levelrail to follow the same pattern.
 
 ## Control plane
 
 The control plane image runs as a non-root user (distroless's `nonroot`, uid/gid 65532); the [agent image](#node-agent) runs as root. The `--group-add $(stat -c '%g' /var/run/docker.sock)` flag adds that user to the socket's host-side group at runtime, since the GID varies per system and cannot be baked into the image.
 
-<Tabs :items="['docker run','Compose']">
-<Tab value="docker run">
+<Tabs>
+<Tab title="docker run">
 
 ```bash
 docker run -d \
@@ -34,7 +35,7 @@ docker run -d \
 ```
 
 </Tab>
-<Tab value="Compose">
+<Tab title="Compose">
 
 A [`docker-compose.yml`](https://github.com/glincker/levelrail/blob/main/docker-compose.yml) is committed at the repo root and does the same thing. Before running it, find your host's docker group GID and export it, since the container's nonroot user needs to be added to that group to reach the socket:
 
@@ -52,13 +53,13 @@ If `DOCKER_GID` is unset, the compose file falls back to `999`, the common defau
 
 The image ships a Docker `HEALTHCHECK` (`levelrail healthcheck --ready`, a GET against its own [`/readyz`](/troubleshooting#readiness-readyz)), so `docker ps` and `docker compose ps` show a real health status without extra compose config. Distroless has no shell or `curl`/`wget`, which is why this is a dedicated subcommand on the binary itself rather than a shell one-liner.
 
-::: warning
-Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [Architecture](architecture.md)). Only run this image on a host you already trust with that level of access.
-:::
+<Warning>
+Granting access to `/var/run/docker.sock` allows this container to control every other container on the host, including starting privileged ones. This is the same trust level that `install.sh`'s systemd install already uses, because that's what's required to manage containers on your behalf (see [Architecture](/architecture)). Only run this image on a host you already trust with that level of access.
+</Warning>
 
 ## Node agent
 
-The agent dials out to the control plane (it does not accept inbound connections, see [Architecture](architecture.md)). You need to provide Docker socket access and a one-time join token for enrollment on first run.
+The agent dials out to the control plane (it does not accept inbound connections, see [Architecture](/architecture)). You need to provide Docker socket access and a one-time join token for enrollment on first run.
 
 Unlike the control plane image, the agent image runs as **root**. It needs `/var/run/docker.sock` (root-equivalent on the host regardless of the user inside the container) and, for the WireGuard mesh, `--cap-add NET_ADMIN --device /dev/net/tun -e APP_MESH_ENABLED=1`. Running as root also means a named volume or a Docker-created host directory for the identity file is writable with no `chown`. The agent additionally refuses to send its join token until it has proven it can write the identity file, so a permissions mistake never burns the token.
 
@@ -75,7 +76,7 @@ docker run -d \
   ghcr.io/glincker/levelrail-agent:beta
 ```
 
-**`APP_JOIN_TOKEN`** and **`APP_CA_FINGERPRINT`** are only needed for first enrollment (the fingerprint is printed next to the token, see [Multi-node](multi-node.md)). After that, the agent saves its mTLS identity to `APP_AGENT_IDENTITY_FILE`. Mount that path on a named volume, or the agent will have to re-enroll on every container restart.
+**`APP_JOIN_TOKEN`** and **`APP_CA_FINGERPRINT`** are only needed for first enrollment (the fingerprint is printed next to the token, see [Multi-node](/multi-node)). After that, the agent saves its mTLS identity to `APP_AGENT_IDENTITY_FILE`. Mount that path on a named volume, or the agent will have to re-enroll on every container restart.
 
 **`APP_NODE_NAME`** is optional and defaults to the container's hostname (which Docker randomizes). Set it explicitly for a recognizable name in the dashboard.
 
@@ -93,7 +94,7 @@ The service keeps its enrolled identity in `/var/lib/levelrail-agent`, and upgra
 
 ## See also
 
-- [Installing](installing.md) for `install.sh` and other installation methods
-- [Multi-node](multi-node.md) for enrolling agents and managing additional nodes
-- [Architecture](architecture.md) for how the control plane and agents communicate
-- [Getting started](getting-started.md) for building and running locally
+- [Installing](/installing) for `install.sh` and other installation methods
+- [Multi-node](/multi-node) for enrolling agents and managing additional nodes
+- [Architecture](/architecture) for how the control plane and agents communicate
+- [Getting started](/getting-started) for building and running locally

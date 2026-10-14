@@ -1,8 +1,7 @@
 ---
+title: "Sleep when idle"
 description: Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
 ---
-
-# Sleep when idle
 
 Opt an app into stopping after it has had no requests for a set time. A
 sleeping app uses no memory or CPU. The next request to its domain starts it
@@ -25,7 +24,7 @@ again. Off by default, per app.
 
 For API callers that cannot retry an error page, turn on **hold requests while
 waking** (`apps sleep enable --hold`): the request waits for the start and is
-replayed. See [Functions](functions.md).
+replayed. See [Functions](/functions).
 
 ## Limits
 
@@ -54,4 +53,4 @@ Wake now button while the app is asleep.
 
 `GET` and `PUT /api/v1/apps/{name}/sleep` and `POST /api/v1/apps/{name}/sleep/wake`.
 `PUT` and the wake route need the `deploy` ability, `GET` needs `read`. See the
-[API reference](api-reference.md).
+[API reference](/api-reference).

@@ -1,8 +1,7 @@
 ---
+title: "Standalone domains"
 description: Proxy a domain to a port on this server, an address on your network, an external URL, another app's port or a container, with no app needed, and find the server address your DNS records must point at.
 ---
-
-# Standalone domains
 
 A standalone domain is a hostname that is not linked to any app. The embedded ingress terminates TLS for it and proxies every request to a target you choose:
 
@@ -14,10 +13,7 @@ A standalone domain is a hostname that is not linked to any app. The embedded in
 | An app's port | `app:web` or `app:web:9090` | A second hostname for an app, or a port the app does not route by default |
 | A container | `container:redis-ui:8081` | A container on this server that Levelrail does not manage |
 
-Everything a normal domain has works for a standalone domain too: DNS checks, go-live and automatic DNS records, certificate issuance, the domain doctor, redirects, maintenance mode, basic auth, WAF and rate limiting, custom error pages, search visibility, and the [traffic controls](domain-traffic-controls.md) (headers, forwarders, country rules, caching).
-
-<InlineToc default-open />
-
+Standalone domains have the same features as normal app domains: DNS checks, go-live and automatic DNS records, certificate issuance, domain doctor, redirects, maintenance mode, basic auth, WAF and rate limiting, custom error pages, search visibility, and [traffic controls](/domain-traffic-controls) (headers, forwarders, country rules, caching).
 ## Add one from the dashboard
 
 Open **Domains**, click **Add domain**, and pick **Proxy to a port or URL**. Type the domain, pick the target, and check the live preview (for example `https://tools.example.com -> http://127.0.0.1:3000`). On Linux the port picker lists the ports something is listening on.
@@ -55,13 +51,13 @@ A standalone domain lets anyone on the internet reach whatever the target is, so
 - Loopback, private, mesh and container targets are allowed on purpose, but need an explicit confirmation (`confirm: true` in the API, `--confirm` in the CLI, a checkbox in the dashboard) that names the address this server will connect to. Editing other settings later does not ask again; a new target does.
 - This platform's own dashboard and agent ports need the same confirmation. The ingress admin API port can never be a target.
 - A target that resolves to this server's own public address on 80 or 443, or to a local ingress port, is refused as a loop.
-- The domain must be free: an app, environment, preview, static site, the dashboard's primary domain, the built-in registry, the status page or an AI model already using it is named in the error.
+- The domain must be free: an app, environment, preview, static site, the dashboard's primary domain, the built-in registry, the [status page](/status-page) or an AI model already using it is named in the error.
 
 Standalone domains are instance wide. Members of non-default teams cannot list or change them; the routes answer 403 for them.
 
 ## Server address and DNS records
 
-The **Server address** card on the Domains page shows this server's public IPv4 and IPv6 with copy buttons. They come from `APP_PUBLIC_HOST` or detection (`APP_PUBLIC_IP_DETECT`), and you can override them by hand when the server sits behind a load balancer or detection is wrong. The override also drives every DNS check and go-live.
+The **Server address** card on the Domains page shows this server's public IPv4 and IPv6 with copy buttons. They come from `APP_PUBLIC_HOST` or detection (`APP_PUBLIC_IP_DETECT`), and you can override them by hand when the server sits behind a [load balancer](/load-balancing) or detection is wrong. The override also drives every DNS check and go-live.
 
 The card warns when:
 
@@ -81,7 +77,7 @@ With `--domain` it prints the exact records to create: `A` and `AAAA` for the do
 
 ## Behind another proxy
 
-When a proxy such as Traefik in front owns ports 80 and 443 and [managed proxy routes](domains-and-ingress.md) are on, standalone domains get a route file in that proxy's directory like app domains do, pointing at the ingress listener.
+When a proxy such as Traefik in front owns ports 80 and 443 and [managed proxy routes](/domains-and-ingress) are on, standalone domains get a route file in that proxy's directory like app domains do, pointing at the ingress listener.
 
 ## API
 

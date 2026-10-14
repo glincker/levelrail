@@ -1,0 +1,58 @@
+---
+title: "Self-host Postiz with Docker"
+sidebarTitle: "Postiz"
+description: "Schedules and publishes posts across social platforms from one calendar, with basic analytics."
+---
+
+Schedules and publishes posts across social platforms from one calendar, with basic analytics.
+
+This page describes the Levelrail template for Postiz (Communication). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.postiz.com/installation/docker.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:17-alpine` | none | `postiz_db_data -&#62; /var/lib/postgresql/data` |
+| `postiz` | `ghcr.io/gitroomhq/postiz-app:v2.23.0` | 5000 | `postiz_uploads -&#62; /config/uploads` |
+| `redis` | `redis:7-alpine` | none | `postiz_redis_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `postiz` | `DATABASE_URL` | Generated at deploy |
+| `postiz` | `FRONTEND_URL` | Preset in the template |
+| `postiz` | `IS_GENERAL` | Preset in the template |
+| `postiz` | `JWT_SECRET` | Generated at deploy |
+| `postiz` | `MAIN_URL` | Preset in the template |
+| `postiz` | `NEXT_PUBLIC_BACKEND_URL` | Preset in the template |
+| `postiz` | `REDIS_URL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Postiz with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Postiz. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy postiz --name my-postiz
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Communication templates
+
+- [Apache Answer](/self-host/answer)
+- [Apprise API](/self-host/apprise-api)
+- [Campfire](/self-host/campfire)
+- [Chatwoot](/self-host/chatwoot)
+- [FreeScout](/self-host/freescout)
+
+All templates are listed in the [self-host gallery](/self-host).

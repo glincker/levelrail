@@ -1,0 +1,57 @@
+---
+title: "Self-host Woodpecker CI with Docker"
+sidebarTitle: "Woodpecker CI"
+description: "A simple, container-native CI engine with a server and an agent, driven by pipelines in your repo."
+---
+
+A simple, container-native CI engine with a server and an agent, driven by pipelines in your repo.
+
+This page describes the Levelrail template for Woodpecker CI (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://woodpecker-ci.org/docs.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `woodpecker-agent` | `woodpeckerci/woodpecker-agent:v3.18.1` | none | none |
+| `woodpecker-server` | `woodpeckerci/woodpecker-server:v3.18.1` | 8000 | `woodpecker_data -&#62; /var/lib/woodpecker` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `woodpecker-agent` | `WOODPECKER_AGENT_SECRET` | Generated at deploy |
+| `woodpecker-agent` | `WOODPECKER_SERVER` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_ADMIN` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_AGENT_SECRET` | Generated at deploy |
+| `woodpecker-server` | `WOODPECKER_GITEA` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_GITEA_CLIENT` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_GITEA_SECRET` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_GITEA_URL` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_HOST` | Preset in the template |
+| `woodpecker-server` | `WOODPECKER_OPEN` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Woodpecker CI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Woodpecker CI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy woodpecker --name my-woodpecker
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

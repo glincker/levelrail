@@ -1,14 +1,11 @@
 ---
+title: "Environments"
 description: Instance-wide environments (development, test, UAT, production and custom), the dashboard environment switcher, and moving apps and databases between them with approval for protected ones.
 ---
 
-# Environments
-
 An environment labels where an app or database runs: development, test, UAT, production, or one you define. Environments are instance-wide, so the same four are available to every project. Tagging resources with an environment lets you filter the dashboard, protect production, and write access rules per environment.
 
-<InlineToc default-open />
-
-Creating and renaming environments, the switcher and the database move route are behind the `global-environments` experimental flag: set `APP_EXPERIMENTAL=global-environments` on the control plane (see [Experimental features](experimental-features.md)). Existing per-project environments keep working with or without it.
+Creating and renaming environments, the switcher and the database move route are behind the `global-environments` experimental flag: set `APP_EXPERIMENTAL=global-environments` on the control plane (see [Experimental features](/experimental-features)). Existing per-project environments keep working with or without it.
 
 ## Built-in environments
 
@@ -23,7 +20,7 @@ Four environments exist on every instance and cannot be deleted.
 
 ## Kinds
 
-Every environment has a kind: `dev`, `test`, `uat`, `production`, `preview` or `custom`. Kinds are what [IAM policies](access-control.md#iam-policies) and [AI control](ai-control.md) match on, so a rule like "deny deploys on `environment-kind:production`" covers every production-kind environment, whatever its name.
+Every environment has a kind: `dev`, `test`, `uat`, `production`, `preview` or `custom`. Kinds are what [IAM policies](/access-control#iam-policies) and [AI control](/ai-control) match on, so a rule like "deny deploys on `environment-kind:production`" covers every production-kind environment, whatever its name.
 
 `preview` is reserved for the environments Levelrail creates for pull request previews. You cannot create one, and you cannot change an environment to or from that kind.
 
@@ -54,7 +51,7 @@ levelrail-cli databases move-env mydb env_dev
 
 Pass an empty id (`""`) to remove the tag. In the dashboard, use the Change button next to the environment on the app's Overview.
 
-A move **into or out of a protected environment** works differently:
+A move into or out of a protected environment works differently:
 
 1. Without `--confirm` the request is refused with 409 and nothing changes.
 2. With `--confirm` it becomes a pending approval instead of moving right away.
@@ -69,13 +66,13 @@ A move during a deploy freeze is refused with 423 unless you pass the freeze ove
 
 ## Protection
 
-Mark any environment as protected to put deploys and moves behind approval:
+Mark an environment as protected to put deploys and moves behind approval:
 
 ```bash
 levelrail-cli environments update env_abc --protected
 ```
 
-Turning protection on or off works without the experimental flag. Deploys to a protected environment already needed confirmation and approval before this release, and that is unchanged.
+Turning protection on or off works without the experimental flag. Deploys to a protected environment already needed confirmation and approval, and that has not changed.
 
 ## Switcher and filters
 
@@ -93,7 +90,7 @@ The approvals list filters by environment id only.
 
 ## Environment variables
 
-Per-environment variables and secrets work for these environments the same way they do for project environments. See [Projects and organizations](projects-and-organizations.md) if you use per-project environments too.
+Per-environment variables and secrets work for these environments the same way they do for project environments. See [Projects and organizations](/projects-and-organizations) if you use per-project environments too.
 
 ## API
 
@@ -110,7 +107,7 @@ Create takes `{"name", "kind", "protected", "sort_order"}`. A move takes `{"envi
 
 ## Next steps
 
-<CardGroup :cols="2">
+<CardGroup cols={2}>
 <Card title="Access control" href="/access-control">
 
 Roles, guest visibility and policies per environment.

@@ -1,0 +1,55 @@
+---
+title: "Self-host Gitea (Postgres) with Docker"
+sidebarTitle: "Gitea (Postgres)"
+description: "Gitea backed by Postgres instead of its default MySQL, for operators standardizing on one database engine."
+---
+
+Gitea backed by Postgres instead of its default MySQL, for operators standardizing on one database engine.
+
+This page describes the Levelrail template for Gitea (Postgres) (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.gitea.com.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `gitea_postgres_db_data -&#62; /var/lib/postgresql/data` |
+| `gitea` | `gitea/gitea:1.23.1` | 3000, 22 | `gitea_postgres_data -&#62; /data` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `gitea` | `GITEA__database__DB_TYPE` | Preset in the template |
+| `gitea` | `GITEA__database__HOST` | Preset in the template |
+| `gitea` | `GITEA__database__NAME` | Preset in the template |
+| `gitea` | `GITEA__database__PASSWD` | Generated at deploy |
+| `gitea` | `GITEA__database__USER` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Gitea (Postgres) with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Gitea (Postgres). Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy gitea-postgres --name my-gitea-postgres
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

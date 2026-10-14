@@ -1,0 +1,54 @@
+---
+title: "Self-host Easy!Appointments with Docker"
+sidebarTitle: "Easy!Appointments"
+description: "An open-source appointment scheduler for managing bookings, staff, and services."
+---
+
+An open-source appointment scheduler for managing bookings, staff, and services.
+
+This page describes the Levelrail template for Easy!Appointments (Productivity). It deploys the services below as one Docker Compose app on your own server. Project site: https://easyappointments.org/docs.html.
+
+Recommended memory: about 512 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `easyappointments` | `alextselegidis/easyappointments:1.6.0` | 80 | none |
+| `mysql` | `mysql:8.4` | none | `easyappointments_mysql_data -&#62; /var/lib/mysql` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `easyappointments` | `BASE_URL` | Preset in the template |
+| `easyappointments` | `DB_HOST` | Preset in the template |
+| `easyappointments` | `DB_NAME` | Preset in the template |
+| `easyappointments` | `DB_PASSWORD` | Generated at deploy |
+| `easyappointments` | `DB_USERNAME` | Preset in the template |
+| `mysql` | `MYSQL_DATABASE` | Preset in the template |
+| `mysql` | `MYSQL_ROOT_PASSWORD` | Generated at deploy |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Easy!Appointments with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Easy!Appointments. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy easyappointments --name my-easyappointments
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Productivity templates
+
+- [AFFiNE](/self-host/affine)
+- [AppFlowy](/self-host/appflowy)
+- [Baby Buddy](/self-host/babybuddy)
+- [BookStack](/self-host/bookstack)
+- [Cal.com](/self-host/calcom)
+
+All templates are listed in the [self-host gallery](/self-host).
