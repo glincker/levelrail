@@ -121,8 +121,9 @@ function TeamsSettingsPage() {
                 type="button"
                 role="tab"
                 aria-selected={tm.id === team.id}
-                variant={tm.id === team.id ? 'default' : 'outline'}
+                variant="outline"
                 size="sm"
+                className="aria-selected:border-foreground aria-selected:bg-muted"
                 onClick={() => {
                   setSelected(tm.id)
                 }}

@@ -64,11 +64,7 @@ export function OAuthProviderRow({
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-      <BrandTile
-        name={brandKeyFor(settings.provider)}
-        label={label}
-        muted={state !== 'connected'}
-      />
+      <BrandTile name={brandKeyFor(settings.provider)} label={label} />
       <span className="w-32 shrink-0 text-sm font-medium">{label}</span>
       <Badge variant={STATE_BADGE[state]}>
         {t(`oauthPage.state.${state}`)}

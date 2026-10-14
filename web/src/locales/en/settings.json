@@ -655,7 +655,7 @@
   "oauthPage": {
     "eyebrow": "Sign-in",
     "title": "OAuth sign-in",
-    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. Every signed-in account has identical access, there are no roles yet.",
+    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. What each person can do is set by their team role and any IAM policies.",
     "connectedCount_one": "{{count}} provider connected",
     "connectedCount_other": "{{count}} providers connected",
     "rail": {
