@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1120 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1127 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -856,6 +856,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListNodeProvisions", Description: "A top-level sibling of /api/v1/nodes/{id}/..., not nested under it: \"/api/v1/nodes/provisions/{id}\" and \"/api/v1/nodes/{id}/health\" would be two equally-specific wildcard patterns net/http's own ServeMux refuses to register together."},
 	{Method: "GET", Path: "/api/v1/node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/openapi.json", Ability: "AbilityRead", Group: "Other", Handler: "handleOpenAPISpec", Description: "Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx): AbilityRead, same tier as system/status, since this is the API surface's own shape, not resource data."},
+	{Method: "GET", Path: "/api/v1/package-registries", Ability: "AbilityRead", Group: "Other", Handler: "handleListPackageRegistries", Description: "Private package registries for builds: secrets mounted into Dockerfile builds, never returned by any route."},
+	{Method: "POST", Path: "/api/v1/package-registries", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreatePackageRegistry", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/package-registries/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeletePackageRegistry", Description: ""},
+	{Method: "POST", Path: "/api/v1/package-registries/{id}/test", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleTestPackageRegistry", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipeline-runs", Ability: "AbilityRead", Group: "Other", Handler: "handleListAllPipelineRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/filters", Ability: "AbilityRead", Group: "Other", Handler: "handlePipelineFilters", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipelines/oidc", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineOIDCInfo", Description: ""},
@@ -864,6 +868,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/pipelines/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineSummary", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/validate", Ability: "AbilityRead", Group: "Other", Handler: "handleValidatePipeline", Description: ""},
 	{Method: "POST", Path: "/api/v1/preflight", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreflightNew", Description: ""},
+	{Method: "GET", Path: "/api/v1/registry-vendors", Ability: "AbilityRead", Group: "Other", Handler: "handleListRegistryVendors", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/findings", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorFindings", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/dismiss", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
@@ -1060,12 +1065,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/domains/{domain}/activity", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDomainActivity", Description: "One domain's activity timeline: audit rows plus certificate failures, cursor paginated by ?before. Visible to callers who can see its app."},
 	{Method: "GET", Path: "/api/v1/registry-credentials", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentials", Description: "Registry credentials (registry_credentials.go): same ability tiers as backup targets just above, same reasoning (POST/PUT/DELETE handle live pull credentials)."},
 	{Method: "POST", Path: "/api/v1/registry-credentials", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleCreateRegistryCredential", Description: ""},
+	{Method: "POST", Path: "/api/v1/registry-credentials/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleProbeRegistryCredential", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleDeleteRegistryCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleGetRegistryCredential", Description: ""},
 	{Method: "PUT", Path: "/api/v1/registry-credentials/{id}", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleUpdateRegistryCredential", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/repositories", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentialRepositories", Description: "Registry credential browsing (registry_catalog.go): repository/tag lookup for a stored external credential, the same generic catalog client GET /api/v1/registry/repositories and /api/v1/registry/tags use above for the built-in registry. AbilityReadSensitive, the same tier GET /api/v1/git-providers and the github-app/gitlab-app/ bitbucket-app repo-browsing routes below use: read-only, but only works because a stored credential's secret is resolved server-side."},
 	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/tags", Ability: "AbilityReadSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListRegistryCredentialTags", Description: ""},
 	{Method: "POST", Path: "/api/v1/registry-credentials/{id}/test", Ability: "AbilityWriteSensitive", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleTestRegistryCredential", Description: ""},
+	{Method: "GET", Path: "/api/v1/registry-credentials/{id}/usage", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleRegistryCredentialUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/static-sites", Ability: "AbilityRead", Group: "Static Sites / Backup Targets / Registry Credentials", Handler: "handleListStaticSites", Description: "Static sites (build.type: static): read-only dashboard visibility for sites served directly by embedded Caddy with no container, closing the gap flagged when static-site support (migration 0015) first landed. AbilityRead, the same passive-visibility boundary as handleListCertificates above: no create/update/delete route exists yet because the backend has no mutation path for a static site beyond internal/deploy.Pipeline's own git-push-triggered write."},
 	{Method: "GET", Path: "/api/v1/brand", Ability: "Public", Group: "System", Handler: "handleBrand", Description: "Public: the frontend needs branding before a session exists (e.g. on the login screen itself)."},
 	{Method: "GET", Path: "/api/v1/dev-mode", Ability: "Public", Group: "System", Handler: "handleDevMode", Description: ""},

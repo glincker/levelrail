@@ -73,6 +73,9 @@ func (r *Router) Build(ctx context.Context, req Request, progress func(ProgressE
 		return r.local.Build(ctx, req, progress)
 	}
 
+	if len(req.Secrets) > 0 {
+		return nil, ErrRemoteSecretsUnsupported
+	}
 	if req.S3Cache != nil {
 		emitCacheWarning(progress, "build cache skipped: this build runs on a remote build node, which does not receive bucket credentials")
 	}

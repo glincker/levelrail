@@ -27,6 +27,10 @@ const (
 // because only the context is shipped to the build node.
 var ErrRemoteDockerfileOutsideContext = errors.New("build: a dispatched build's dockerfile must live inside its build context")
 
+// ErrRemoteSecretsUnsupported is returned when a build with secret mounts
+// would run on a remote build node, which does not receive secrets yet.
+var ErrRemoteSecretsUnsupported = errors.New("build: secret mounts (private package registries) are not supported on remote build nodes yet; build on the control plane or remove the package registry")
+
 // RemoteRequest is one build dispatched to another node: everything the
 // build node needs that is not the context's bytes.
 type RemoteRequest struct {

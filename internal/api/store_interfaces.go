@@ -592,6 +592,7 @@ type Store interface {
 	Route53DNSStore
 	NodeProvisionStore
 	NodeProviderConnectionStore
+	PackageRegistryStore
 	SSHNodeProvisionStore
 	VaultSettingsStore
 	SessionLinkTokenStore

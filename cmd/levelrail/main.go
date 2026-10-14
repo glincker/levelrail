@@ -55,6 +55,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/pkgregistry"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -2109,7 +2110,8 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	deployOpts = append(deployOpts, supplyChainDeployOptions(supplyChain)...)
 	deployOpts = append(deployOpts, secretScanDeployOptions(db, logger)...)
 	if secretsManager != nil {
-		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
+		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)),
+			deploy.WithBuildSecretSource(&pkgregistry.Resolver{Store: db, Secrets: secretsManager}))
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))

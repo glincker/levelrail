@@ -14,6 +14,7 @@ import { registryBrandForHost } from '../lib/providerBrands'
 import { BrowseRegistryCredentialDialog } from './BrowseRegistryCredentialDialog'
 import { DeleteRegistryCredentialDialog } from './DeleteRegistryCredentialDialog'
 import { useTestRegistryCredential } from '../queries/registryCredentials'
+import { useRegistryCredentialUsage } from '../queries/registryVendors'
 import type {
   RegistryCredential,
   RegistryCredentialExpiryStatus,
@@ -62,6 +63,27 @@ function ExpiryCell({ credential }: { credential: RegistryCredential }) {
   )
 }
 
+function UsedByCell({ credential }: { credential: RegistryCredential }) {
+  const { t } = useTranslation('settings')
+  const usage = useRegistryCredentialUsage(credential.id)
+  const services = usage.data?.services ?? []
+  if (usage.isLoading) return <span className="text-muted-foreground">...</span>
+  if (services.length === 0) {
+    return (
+      <span className="text-muted-foreground">
+        {t('registryPage.table.unused')}
+      </span>
+    )
+  }
+  return (
+    <span className="text-muted-foreground" title={services.join(', ')}>
+      {services.length <= 2
+        ? services.join(', ')
+        : t('registryPage.table.usedByMany', { count: services.length })}
+    </span>
+  )
+}
+
 function TestButton({ credential }: { credential: RegistryCredential }) {
   const { t } = useTranslation('settings')
   const testCredential = useTestRegistryCredential()
@@ -100,10 +122,7 @@ function TestButton({ credential }: { credential: RegistryCredential }) {
 }
 
 // The credential's identity plus an operator-set expiry, if any: registry
-// host, username, connected date, expiry status. No column for which
-// services reference it (GET /api/v1/registry-credentials carries none
-// of that; a service's own build.registryCredential field is where that
-// link lives).
+// host, username, connected date, which services pull with it, expiry.
 export function RegistryCredentialTable({
   credentials,
   action,
@@ -165,6 +184,12 @@ export function RegistryCredentialTable({
           {formatDate(cred.created_at)}
         </span>
       ),
+    },
+    {
+      id: 'usedBy',
+      header: t('registryPage.table.usedBy'),
+      priority: 3,
+      cell: (cred) => <UsedByCell credential={cred} />,
     },
     {
       id: 'expiry',

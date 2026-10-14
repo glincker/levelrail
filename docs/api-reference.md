@@ -832,6 +832,8 @@ Endpoints for:
 | GET | /api/v1/domains/standalone/candidates | AbilityWriteSensitive | handleStandaloneCandidates |
 | PUT | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleUpdateStandaloneDomain |
 | DELETE | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleDeleteStandaloneDomain |
+| GET | /api/v1/registry-credentials/{id}/usage | AbilityRead | handleRegistryCredentialUsage |
+| POST | /api/v1/registry-credentials/test | AbilityWriteSensitive | handleProbeRegistryCredential |
 
 ## Built-in Container Registry
 
@@ -1342,6 +1344,11 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMDeleteGroup |
 | POST | /api/v1/node-providers/{provider}/test | AbilityWriteSensitive | handleTestNodeProvider |
 | DELETE | /api/v1/node-providers/{provider} | AbilityWriteSensitive | handleDisconnectNodeProvider |
+| GET | /api/v1/registry-vendors | AbilityRead | handleListRegistryVendors |
+| GET | /api/v1/package-registries | AbilityRead | handleListPackageRegistries |
+| POST | /api/v1/package-registries | AbilityWriteSensitive | handleCreatePackageRegistry |
+| DELETE | /api/v1/package-registries/{id} | AbilityWriteSensitive | handleDeletePackageRegistry |
+| POST | /api/v1/package-registries/{id}/test | AbilityWriteSensitive | handleTestPackageRegistry |
 
 ## See also
 

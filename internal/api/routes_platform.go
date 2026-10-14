@@ -718,6 +718,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/usage", rt.requireAbility(AbilityRead, rt.handleRegistryCredentialUsage))
+	mux.HandleFunc("POST /api/v1/registry-credentials/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-vendors", rt.requireAbility(AbilityRead, rt.handleListRegistryVendors))
+	// Private package registries for builds: secrets mounted into
+	// Dockerfile builds, never returned by any route.
+	mux.HandleFunc("GET /api/v1/package-registries", rt.requireAbility(AbilityRead, rt.handleListPackageRegistries))
+	mux.HandleFunc("POST /api/v1/package-registries", rt.requireAbility(AbilityWriteSensitive, rt.handleCreatePackageRegistry))
+	mux.HandleFunc("DELETE /api/v1/package-registries/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeletePackageRegistry))
+	mux.HandleFunc("POST /api/v1/package-registries/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestPackageRegistry))
 
 	// Network shares (network_shares.go): an NFS/CIFS export mountable
 	// as a Docker local-driver volume. Same ability tiers as registry

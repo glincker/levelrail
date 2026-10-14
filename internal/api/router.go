@@ -134,6 +134,7 @@ type Router struct {
 	nodes                  NodeStore
 	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
+	packageRegistries      PackageRegistryStore        // always set, private package registry rows and registry credential usage
 	nodeProviderConns      NodeProviderConnectionStore // always set, connection metadata for node providers
 	nodeProvisions         NodeProvisionStore          // always set, same "core Store interface" shape as cloudflareDNS above
 	nodeProviderSecrets    NodeProviderSecrets         // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
@@ -805,6 +806,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		route53DNS:                  s,
 		nodeProvisions:              s,
 		nodeProviderConns:           s,
+		packageRegistries:           s,
 		sshProvisions:               s,
 		nodeProviderCatalog:         newProviderCatalogCache(),
 		templateRequiresConfig:      computeTemplateRequiresConfig(),

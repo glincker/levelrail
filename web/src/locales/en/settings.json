@@ -964,7 +964,11 @@
       "test": "Test connection",
       "testing": "Testing...",
       "testOk": "\"{{name}}\" authenticated successfully.",
-      "testFailed": "\"{{name}}\" failed to authenticate."
+      "testFailed": "\"{{name}}\" failed to authenticate.",
+      "usedBy": "Used by",
+      "unused": "Nothing yet",
+      "usedByMany_one": "{{count}} service",
+      "usedByMany_other": "{{count}} services"
     }
   },
   "backupTargetsPage": {
@@ -1384,5 +1388,93 @@
     "saving": "Saving...",
     "save": "Save",
     "empty": "No cloud providers are configured on this control plane."
+  },
+  "registryVendors": {
+    "heading": "Connect a registry",
+    "subheading": "Pick a vendor to pre-fill the host and see which token scopes the credential needs.",
+    "connect": "Connect",
+    "connectFor": "Connect {{vendor}}",
+    "dialogTitle": "Connect {{vendor}}",
+    "dialogDescription": "The password is encrypted at rest and never shown again.",
+    "name": "Name",
+    "nameHelp": "Referenced by name from app.yaml build.registryCredential.",
+    "host": "Registry host",
+    "username": "Username",
+    "password": "Password or token",
+    "neverShown": "Never shown again once saved.",
+    "expires": "Expires (optional)",
+    "shortLived": "This vendor issues tokens that last about {{hours}} hours. Re-issue and update the credential before the date shown, automatic refresh is not built.",
+    "scopesTitle": "Scopes needed",
+    "test": "Test connection",
+    "testing": "Testing...",
+    "save": "Save credential",
+    "saving": "Saving...",
+    "saved": "Registry credential \"{{name}}\" added.",
+    "auth": {
+      "dockerhub": "Use your Docker Hub username with a personal access token, not your account password.",
+      "ghcr": "Use your GitHub username with a personal access token (classic).",
+      "gitlab": "Use a deploy token or a personal access token as the password.",
+      "ecr": "The username is always AWS. The password is the output of aws ecr get-login-password, valid for 12 hours.",
+      "gar": "The username is _json_key and the password is the service account key JSON.",
+      "acr": "Use a repository scoped token or a service principal: the username is the token name or app id, the password is its secret.",
+      "harbor": "Use a robot account: the username looks like robot$name and the password is its secret.",
+      "quay": "Use a robot account: the username is org+robotname and the password is its token.",
+      "jfrog": "The username is your user and the password is an identity token, not your account password.",
+      "nexus": "Use the username and password of a user with access to the Docker repository.",
+      "generic": "Any registry that speaks the Docker Registry HTTP API v2 with basic authentication."
+    },
+    "scopes": {
+      "dockerhub": "Read-only access is enough to pull. Choose Read & Write only if builds push.",
+      "ghcr": "read:packages to pull, write:packages to push. For an SSO-enforced organization, authorize the token for SSO.",
+      "gitlab": "read_registry to pull, write_registry to push. A deploy token is scoped to one project or group.",
+      "ecr": "ecr:GetAuthorizationToken, ecr:BatchGetImage, ecr:GetDownloadUrlForLayer and ecr:BatchCheckLayerAvailability, from a key or a role.",
+      "gar": "roles/artifactregistry.reader to pull, roles/artifactregistry.writer to push.",
+      "acr": "The AcrPull role (or a token with content/read) to pull, AcrPush to push.",
+      "harbor": "Pull permission on the project the images live in.",
+      "quay": "Read permission on the repository.",
+      "jfrog": "Read permission on the Docker repository.",
+      "nexus": "nx-repository-view-docker-*-read to pull.",
+      "generic": "Pull access to the repositories you deploy."
+    }
+  },
+  "packageRegistries": {
+    "heading": "Package registries for builds",
+    "subheading": "Private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries, mounted into Dockerfile builds as secrets.",
+    "add": "Add package registry",
+    "empty": "No package registries yet. Add one so builds can install private packages.",
+    "dialogTitle": "Add a package registry",
+    "dialogDescription": "The token is encrypted and mounted into builds as a BuildKit secret.",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Go proxy",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "All builds",
+      "project": "One project",
+      "app": "One app"
+    },
+    "name": "Name",
+    "url": "Registry URL",
+    "urlHelp": "No credentials in the URL. Use the username and token fields.",
+    "username": "Username (optional)",
+    "usernameHelp": "Leave empty for a bearer token registry.",
+    "secret": "Token or password",
+    "secretHelp": "Never shown again once saved, never placed in a build arg, image layer or build log.",
+    "patterns": "GOPRIVATE patterns",
+    "scope": "Applies to",
+    "scopeRef": "Project id or app name",
+    "scopeRefPlaceholder": "Project id or app name",
+    "buildNote": "Reference the generated config in your Dockerfile with RUN --mount=type=secret,id=<secret id>, for example id=npmrc with target=/root/.npmrc. Builds on a remote build node do not receive it yet.",
+    "save": "Save registry",
+    "saving": "Saving...",
+    "saved": "Package registry \"{{name}}\" added.",
+    "test": "Test",
+    "remove": "Remove {{name}}",
+    "mountAs": "secret id {{id}}"
   }
 }
