@@ -256,7 +256,11 @@ type authzDecision func(ctx context.Context, principalType, principalID string, 
 // required. See requireAbilityDecided for the shared principal
 // resolution both this and requireAbilityForResource build on.
 func (rt *Router) requireAbility(required string, next http.HandlerFunc) http.HandlerFunc {
-	return rt.requireAbilityDecided(required, func(_ context.Context, _, _ string, abilities []string) (bool, error) {
+	return rt.requireAbilityDecided(required, func(ctx context.Context, principalType, principalID string, abilities []string) (bool, error) {
+		// Demo visitor reads of root-only routes are decided as plain reads (see demoElevates).
+		if required == AbilityRoot && rt.demoElevates(ctx, principalType, principalID) {
+			return hasAbility(abilities, AbilityRead), nil
+		}
 		return hasAbility(abilities, required), nil
 	}, next)
 }

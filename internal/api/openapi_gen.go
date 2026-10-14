@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1035 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1038 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -657,6 +657,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
+	{Method: "GET", Path: "/api/v1/demo", Ability: "Public", Group: "Other", Handler: "handleDemoInfo", Description: ""},
+	{Method: "POST", Path: "/api/v1/demo/cta", Ability: "Public", Group: "Other", Handler: "handleDemoCTA", Description: ""},
+	{Method: "POST", Path: "/api/v1/demo/session", Ability: "Public", Group: "Other", Handler: "handleDemoSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/deploy-approvals", Ability: "AbilityRead", Group: "Other", Handler: "handleListDeployApprovals", Description: "Deploy approvals (deploy_approvals.go): the real two-person gate behind a protected environment's confirm: true, replacing a same-actor confirm flag. List/get are AbilityRead; approve/reject are AbilityDeploy, the same tier the gated deploy/promote itself needs, plus loadDecidableApproval's own same-actor rejection."},
 	{Method: "GET", Path: "/api/v1/deploy-approvals/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployApproval", Description: ""},
 	{Method: "POST", Path: "/api/v1/deploy-approvals/{id}/approve", Ability: "AbilityDeploy", Group: "Other", Handler: "handleApproveDeployApproval", Description: ""},

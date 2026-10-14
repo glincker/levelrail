@@ -263,6 +263,7 @@ const sidebarGroups = [
       { text: 'MCP tool surface', link: '/mcp-tool-surface' },
       { text: 'Agent tooling audit', link: '/agent-tooling-audit' },
       { text: 'Shared Go kit', link: '/kit' },
+      { text: 'Run a read-only demo', link: '/run-a-read-only-demo' },
     ],
   },
   {

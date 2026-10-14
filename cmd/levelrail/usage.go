@@ -14,7 +14,7 @@ var serverSubcommands = map[string]bool{
 	"version": true, "retain": true, "upgrade-note": true, "rollback": true,
 	"self-upgrade": true, "migrate-check": true, "recover-admin": true,
 	"emergency-token": true, "restore-db": true, "restore-snapshot": true,
-	"restore": true, "setup-token": true, "healthcheck": true,
+	"restore": true, "setup-token": true, "healthcheck": true, "demo": true,
 }
 
 const serverUsageBody = `Usage:
@@ -24,6 +24,7 @@ const serverUsageBody = `Usage:
 Commands:
   version            print the version
   healthcheck        probe the running control plane (--ready for readiness)
+  demo               seed or serve the read-only demo instance (seed, serve)
   setup-token        print the first-run setup token
   recover-admin      reset an administrator account
   emergency-token    mint a short-lived emergency access token

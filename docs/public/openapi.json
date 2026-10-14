@@ -39871,6 +39871,151 @@
         "x-required-ability": "write:sensitive"
       }
     },
+    "/api/v1/demo": {
+      "get": {
+        "description": "No authentication required.",
+        "operationId": "handleDemoInfo",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Demo Info",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/demo/cta": {
+      "post": {
+        "description": "No authentication required.",
+        "operationId": "handleDemoCTA",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Demo CTA",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/demo/session": {
+      "post": {
+        "description": "No authentication required.",
+        "operationId": "handleDemoSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "Demo Session",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
     "/api/v1/deploy-approvals": {
       "get": {
         "description": "Deploy approvals (deploy_approvals.go): the real two-person gate behind a protected environment's confirm: true, replacing a same-actor confirm flag. List/get are AbilityRead; approve/reject are AbilityDeploy, the same tier the gated deploy/promote itself needs, plus loadDecidableApproval's own same-actor rejection.\n\nRequires the `read` ability.",
