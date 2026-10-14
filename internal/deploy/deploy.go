@@ -205,6 +205,7 @@ type Pipeline struct {
 
 	attest      bool            // request BuildKit SBOM and provenance on Dockerfile builds
 	supplyChain SupplyChainHook // nil skips SBOM storage and the scan gate
+	secretScan  SecretScanHook  // nil skips deploy-time secret scanning
 }
 
 // New builds a Pipeline.
@@ -235,6 +236,9 @@ func New(builder ImageBuilder, svcStore ServiceStore, opts ...Option) *Pipeline 
 // build.ProgressEvent and build.SlogProgress. A static deploy never
 // invokes it: there is no build step to report progress on.
 func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
+	if err := p.scanSecrets(ctx, req); err != nil {
+		return "", err
+	}
 	switch req.Service.Build.Type {
 	case spec.BuildDockerfile:
 		return p.deployDockerfile(ctx, req, progress)

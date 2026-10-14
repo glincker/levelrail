@@ -154,6 +154,7 @@
               "previews",
               "chat-deploy-approvals",
               "supply-chain",
+              "secret-scanning",
               "deploy-status-badge",
               "screenshots",
               "docker",

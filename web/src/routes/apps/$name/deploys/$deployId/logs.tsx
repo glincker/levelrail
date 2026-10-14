@@ -39,6 +39,7 @@ import { DeployGatePanel } from '../../../../../components/DeployGatePanel'
 import { ProbeAttemptsPanel } from '../../../../../components/ProbeAttemptsPanel'
 import { useProbeAttempts } from '../../../../../queries/probeAttempts'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
+import { SecretScanSection } from '../../../../../components/SecretScanSection'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
@@ -219,11 +220,14 @@ function DeployLogsPage() {
             ) : null}
 
             {tab === 'supply' ? (
-              <SupplyChainSection
-                appName={name}
-                deploymentId={deployId}
-                sbomPackages={attempt.sbom_packages}
-              />
+              <div className="space-y-6">
+                <SupplyChainSection
+                  appName={name}
+                  deploymentId={deployId}
+                  sbomPackages={attempt.sbom_packages}
+                />
+                <SecretScanSection appName={name} deploymentId={deployId} />
+              </div>
             ) : null}
           </div>
 

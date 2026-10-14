@@ -36,6 +36,8 @@ func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runSecretsBindingStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rebind":
 		return runSecretsRebind(prog, args[1:], stdout, stderr, lookupEnv)
+	case "scan":
+		return runSecretsScan(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown secrets subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))
@@ -49,6 +51,10 @@ func secretsUsage(prog string) string {
   %[1]s secrets rotate-master-key --new-key-file PATH [flags]
   %[1]s secrets binding-status [flags]
   %[1]s secrets rebind [flags]
+  %[1]s secrets scan [<app> | --path DIR] [flags]
+
+scan looks for credentials in a directory or an app's plain env values and
+sets the deploy-time secret scan policy.
 
 generate-master-key writes a new master key to a file, locally, never
 contacting the control plane. rotate-master-key re-wraps every stored data encryption key under a new

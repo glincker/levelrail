@@ -50,7 +50,14 @@ func runAppsDeploysGate(prog string, args []string, stdout, stderr io.Writer, lo
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get deploy gate %q for app %q: %w", deployID, name, err))
 	}
 	if !watch {
-		if code := writeScheduledTaskResult(stdout, stderr, of, gate, func() { printDeployGate(stdout, gate, 0) }); code != exitOK {
+		printWithScan := func() {
+			printDeployGate(stdout, gate, 0)
+			if scan, serr := client.GetDeploymentSecretScan(ctx, name, gate.DeployID); serr == nil && scan.Action != "allow" {
+				_, _ = fmt.Fprintln(stdout, "secret scan:")
+				printSecretScanRun(stdout, scan)
+			}
+		}
+		if code := writeScheduledTaskResult(stdout, stderr, of, gate, printWithScan); code != exitOK {
 			return code
 		}
 		return gateExitCode(gate)
