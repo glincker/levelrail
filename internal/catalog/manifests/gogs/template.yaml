@@ -1,0 +1,15 @@
+id: gogs
+name: Gogs
+description: A painless self-hosted Git service written in Go, light enough to run on a small VPS.
+icon: git-branch
+category: Developer Tools
+documentation_url: https://gogs.io/docs
+recommended_memory_bytes: 268435456
+domains:
+  - service: gogs
+    port: 3000
+    description: Public address of Gogs. Finish the install wizard on first visit.
+healthcheck:
+  service: gogs
+  port: 3000
+  path: /healthcheck

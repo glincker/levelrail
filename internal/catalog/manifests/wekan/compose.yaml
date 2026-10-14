@@ -1,0 +1,29 @@
+services:
+  wekan:
+    image: wekanteam/wekan:v7.80
+    ports: ["8080"]
+    environment:
+      MONGO_URL: mongodb://mongo:27017/wekan
+      ROOT_URL: ${ROOT_URL}
+      PORT: "8080"
+    volumes:
+      - uploads:/data
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8080/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+  mongo:
+    image: mongo:6
+    volumes:
+      - mongo:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s

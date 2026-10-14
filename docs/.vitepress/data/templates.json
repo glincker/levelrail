@@ -313,6 +313,28 @@
   ]
  },
  {
+  "id": "alertmanager",
+  "name": "Alertmanager",
+  "slogan": "Prometheus Alertmanager: groups, deduplicates and routes alerts to email, Slack, webhooks and on-call tools.",
+  "category": "Monitoring",
+  "docUrl": "https://prometheus.io/docs/alerting/latest/alertmanager/",
+  "memoryMiB": 128,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "alertmanager",
+    "image": "prom/alertmanager:v0.27.0",
+    "ports": [
+     9093
+    ],
+    "volumes": [
+     "data -> /alertmanager"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "answer",
   "name": "Apache Answer",
   "slogan": "A Q&A platform for building a community knowledge base, in the style of a self-hosted Stack Overflow.",
@@ -2433,6 +2455,34 @@
   ]
  },
  {
+  "id": "consul",
+  "name": "Consul",
+  "slogan": "HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store.",
+  "category": "Infrastructure",
+  "docUrl": "https://developer.hashicorp.com/consul/docs",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "consul",
+    "image": "hashicorp/consul:1.20",
+    "ports": [
+     8500
+    ],
+    "volumes": [
+     "data -> /consul/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "consul",
+    "key": "CONSUL_BIND_INTERFACE",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "convertx",
   "name": "ConvertX",
   "slogan": "A self-hosted file converter that handles well over a thousand image, document, and media formats.",
@@ -2535,6 +2585,39 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "couchdb",
+  "name": "CouchDB",
+  "slogan": "A document database with an HTTP API, built-in replication and the Fauxton admin console.",
+  "category": "Database Tools",
+  "docUrl": "https://docs.couchdb.org/",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "couchdb",
+    "image": "couchdb:3.4",
+    "ports": [
+     5984
+    ],
+    "volumes": [
+     "data -> /opt/couchdb/data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "couchdb",
+    "key": "COUCHDB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "couchdb",
+    "key": "COUCHDB_USER",
+    "kind": "preset"
+   }
+  ]
  },
  {
   "id": "cryptgeon",
@@ -3689,6 +3772,28 @@
     "kind": "generated"
    }
   ]
+ },
+ {
+  "id": "etcd",
+  "name": "etcd",
+  "slogan": "A distributed key-value store for configuration and coordination, running as a single member.",
+  "category": "Infrastructure",
+  "docUrl": "https://etcd.io/docs/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "etcd",
+    "image": "quay.io/coreos/etcd:v3.5.17",
+    "ports": [
+     2379
+    ],
+    "volumes": [
+     "etcd_data -> /etcd-data"
+    ]
+   }
+  ],
+  "env": []
  },
  {
   "id": "etherpad",
@@ -5249,6 +5354,28 @@
   "env": []
  },
  {
+  "id": "gogs",
+  "name": "Gogs",
+  "slogan": "A painless self-hosted Git service written in Go, light enough to run on a small VPS.",
+  "category": "Developer Tools",
+  "docUrl": "https://gogs.io/docs",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "gogs",
+    "image": "gogs/gogs:0.13.3",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "data -> /data"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "gotenberg",
   "name": "Gotenberg",
   "slogan": "A stateless API for converting HTML, Markdown, Office, and PDF documents in the background.",
@@ -6426,6 +6553,34 @@
    {
     "service": "jackett",
     "key": "TZ",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "jaeger",
+  "name": "Jaeger",
+  "slogan": "Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory.",
+  "category": "Monitoring",
+  "docUrl": "https://www.jaegertracing.io/docs/",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "jaeger",
+    "image": "jaegertracing/all-in-one:1.64.0",
+    "ports": [
+     16686,
+     4317,
+     4318
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "jaeger",
+    "key": "COLLECTOR_OTLP_ENABLED",
     "kind": "preset"
    }
   ]
@@ -8582,6 +8737,27 @@
   ]
  },
  {
+  "id": "mailhog",
+  "name": "MailHog",
+  "slogan": "An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox.",
+  "category": "Developer Tools",
+  "docUrl": "https://github.com/mailhog/MailHog",
+  "memoryMiB": 128,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mailhog",
+    "image": "mailhog/mailhog:v1.0.1",
+    "ports": [
+     8025,
+     1025
+    ],
+    "volumes": []
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "mailpit",
   "name": "Mailpit",
   "slogan": "A local SMTP server and web inbox for catching and inspecting outgoing email during development.",
@@ -8990,6 +9166,26 @@
   ]
  },
  {
+  "id": "memcached",
+  "name": "Memcached",
+  "slogan": "A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached.",
+  "category": "Database Tools",
+  "docUrl": "https://memcached.org/",
+  "memoryMiB": 128,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "memcached",
+    "image": "memcached:1.6-alpine",
+    "ports": [
+     11211
+    ],
+    "volumes": []
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "memos",
   "name": "Memos",
   "slogan": "A lightweight, privacy-first note-taking service for jotting down quick thoughts.",
@@ -9267,6 +9463,65 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "mongo-express",
+  "name": "Mongo Express",
+  "slogan": "A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth.",
+  "category": "Database Tools",
+  "docUrl": "https://github.com/mongo-express/mongo-express",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mongo",
+    "image": "mongo:7",
+    "ports": [],
+    "volumes": [
+     "mongo_data -> /data/db"
+    ]
+   },
+   {
+    "name": "mongo-express",
+    "image": "mongo-express:1.0.2-20-alpine3.19",
+    "ports": [
+     8081
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "mongo",
+    "key": "MONGO_INITDB_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mongo",
+    "key": "MONGO_INITDB_ROOT_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "mongo-express",
+    "key": "ME_CONFIG_BASICAUTH_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mongo-express",
+    "key": "ME_CONFIG_BASICAUTH_USERNAME",
+    "kind": "generated"
+   },
+   {
+    "service": "mongo-express",
+    "key": "ME_CONFIG_MONGODB_ENABLE_ADMIN",
+    "kind": "preset"
+   },
+   {
+    "service": "mongo-express",
+    "key": "ME_CONFIG_MONGODB_URL",
+    "kind": "generated"
+   }
+  ]
  },
  {
   "id": "moodle",
@@ -9624,6 +9879,29 @@
   ]
  },
  {
+  "id": "nats",
+  "name": "NATS",
+  "slogan": "A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled.",
+  "category": "Infrastructure",
+  "docUrl": "https://docs.nats.io/",
+  "memoryMiB": 128,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "nats",
+    "image": "nats:2.10-alpine",
+    "ports": [
+     4222,
+     8222
+    ],
+    "volumes": [
+     "nats_data -> /data"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "navidrome",
   "name": "Navidrome",
   "slogan": "Stream your own music collection from a Subsonic-compatible server to any device, anywhere.",
@@ -9654,6 +9932,35 @@
     "service": "navidrome",
     "key": "ND_SCANSCHEDULE",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "neo4j",
+  "name": "Neo4j",
+  "slogan": "A graph database with the Cypher query language, Community Edition, including the browser console.",
+  "category": "Database Tools",
+  "docUrl": "https://neo4j.com/docs/",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "neo4j",
+    "image": "neo4j:5.26-community",
+    "ports": [
+     7474,
+     7687
+    ],
+    "volumes": [
+     "data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "neo4j",
+    "key": "NEO4J_AUTH",
+    "kind": "generated"
    }
   ]
  },
@@ -11103,6 +11410,125 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "owncloud",
+  "name": "ownCloud",
+  "slogan": "The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking.",
+  "category": "Storage",
+  "docUrl": "https://doc.owncloud.com/server/",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11.2",
+    "ports": [],
+    "volumes": [
+     "db -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "owncloud",
+    "image": "owncloud/server:10.15",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "files -> /mnt/data"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_ADMIN_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_TYPE",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DB_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_DOMAIN",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_MYSQL_UTF8MB4",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_REDIS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "owncloud",
+    "key": "OWNCLOUD_TRUSTED_DOMAINS",
+    "kind": "preset"
+   }
+  ]
  },
  {
   "id": "pairdrop",
@@ -14099,6 +14525,44 @@
   ]
  },
  {
+  "id": "superset",
+  "name": "Apache Superset",
+  "slogan": "A business intelligence platform for exploring data and building dashboards, with its metadata kept in SQLite.",
+  "category": "Analytics",
+  "docUrl": "https://superset.apache.org/docs/intro",
+  "memoryMiB": 2048,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "superset",
+    "image": "apache/superset:4.1.1",
+    "ports": [
+     8088
+    ],
+    "volumes": [
+     "home -> /app/superset_home"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "superset",
+    "key": "ADMIN_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "superset",
+    "key": "ADMIN_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "superset",
+    "key": "SUPERSET_SECRET_KEY",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "supertokens",
   "name": "SuperTokens",
   "slogan": "A self-hosted authentication backend with session management, social login, and passwordless, backed by Postgres.",
@@ -15471,6 +15935,34 @@
   ]
  },
  {
+  "id": "valkey",
+  "name": "Valkey",
+  "slogan": "A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence.",
+  "category": "Database Tools",
+  "docUrl": "https://valkey.io/docs/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "valkey",
+    "image": "valkey/valkey:8.0-alpine",
+    "ports": [
+     6379
+    ],
+    "volumes": [
+     "valkey_data -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "valkey",
+    "key": "VALKEY_PASSWORD",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "vault",
   "name": "Vault",
   "slogan": "HashiCorp Vault for secrets storage, encryption as a service, and dynamic credentials, in file-storage mode.",
@@ -16072,6 +16564,52 @@
    {
     "service": "weblate",
     "key": "WEBLATE_SITE_DOMAIN",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "wekan",
+  "name": "Wekan",
+  "slogan": "An open-source kanban board with swimlanes, labels and checklists, backed by MongoDB.",
+  "category": "Productivity",
+  "docUrl": "https://github.com/wekan/wekan/wiki",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mongo",
+    "image": "mongo:6",
+    "ports": [],
+    "volumes": [
+     "mongo -> /data/db"
+    ]
+   },
+   {
+    "name": "wekan",
+    "image": "wekanteam/wekan:v7.80",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "uploads -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "wekan",
+    "key": "MONGO_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "wekan",
+    "key": "PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "wekan",
+    "key": "ROOT_URL",
     "kind": "preset"
    }
   ]

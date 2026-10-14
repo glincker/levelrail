@@ -1,0 +1,20 @@
+id: wekan
+name: Wekan
+description: An open-source kanban board with swimlanes, labels and checklists, backed by MongoDB.
+icon: kanban
+category: Productivity
+documentation_url: https://github.com/wekan/wekan/wiki
+recommended_memory_bytes: 1073741824
+env:
+  - key: ROOT_URL
+    label: Public URL
+    description: The address users open Wekan at, including the scheme. Used in links and emails.
+    default: "http://localhost:8080"
+domains:
+  - service: wekan
+    port: 8080
+    description: Public address of Wekan.
+healthcheck:
+  service: wekan
+  port: 8080
+  path: /
