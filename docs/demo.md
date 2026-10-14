@@ -61,6 +61,26 @@
     "galleryHeading": "A tour of the dashboard",
     "gallery": [
       {
+        "src": "/assets/demos/install-deploy.gif",
+        "alt": "Terminal recording: run the install script, then deploy an app that goes live",
+        "caption": "Install and first deploy, from a fresh server to a live app."
+      },
+      {
+        "src": "/assets/demos/deploy-rollback.gif",
+        "alt": "Terminal recording: deploy with readiness gating, then roll back to the previous image",
+        "caption": "Deploy with a readiness gate, then roll back in one command."
+      },
+      {
+        "src": "/assets/demos/db-create.gif",
+        "alt": "Terminal recording: create a managed Postgres database, inspect it and run a read-only query",
+        "caption": "Create a managed database and query it without leaving the terminal."
+      },
+      {
+        "src": "/assets/demos/templates.gif",
+        "alt": "Terminal recording: browse the template catalog and deploy one",
+        "caption": "Browse the template catalog and deploy a service."
+      },
+      {
         "src": "/assets/screenshots/apps-list.png",
         "alt": "Levelrail apps list",
         "caption": "Every app across every node, with status at a glance."

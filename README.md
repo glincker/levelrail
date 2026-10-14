@@ -30,6 +30,14 @@
   <a href="#status-pre-release"><img src="https://img.shields.io/badge/status-pre--release-orange.svg" alt="Status: pre-release"></a>
 </p>
 
+<img src="docs/assets/demos/install-deploy.gif" alt="Terminal recording: install Levelrail, then deploy an app that goes live over HTTPS" width="720">
+
+<br>
+
+<img src="docs/assets/demos/deploy-rollback.gif" alt="Terminal recording: deploy with a readiness gate, then roll back to the previous image" width="720">
+
+<br>
+
 <img src="docs/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" width="900">
 
 </div>
