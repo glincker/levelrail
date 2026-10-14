@@ -1052,6 +1052,26 @@
   ]
  },
  {
+  "id": "bentopdf",
+  "name": "BentoPDF",
+  "slogan": "A privacy-first PDF toolkit that merges, splits, converts and edits files entirely in the browser, with no uploads.",
+  "category": "Productivity",
+  "docUrl": "https://github.com/alam00000/bentopdf",
+  "memoryMiB": 128,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "bentopdf",
+    "image": "ghcr.io/alam00000/bentopdf:v1.16.1",
+    "ports": [
+     8080
+    ],
+    "volumes": []
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "beszel",
   "name": "Beszel",
   "slogan": "A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network.",
@@ -4282,6 +4302,28 @@
   ]
  },
  {
+  "id": "focalboard",
+  "name": "Focalboard",
+  "slogan": "An open-source project board for tasks and sprints with Kanban, table and calendar views, stored in a single SQLite file.",
+  "category": "Productivity",
+  "docUrl": "https://www.focalboard.com/docs/personal-server/",
+  "memoryMiB": 256,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "focalboard",
+    "image": "mattermost/focalboard:7.11.4",
+    "ports": [
+     8000
+    ],
+    "volumes": [
+     "data -> /opt/focalboard/data"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "forgejo",
   "name": "Forgejo",
   "slogan": "A lightweight, community-governed Git forge with issues, pull requests, and CI runners.",
@@ -5655,6 +5697,80 @@
   "env": []
  },
  {
+  "id": "hasura",
+  "name": "Hasura",
+  "slogan": "An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console.",
+  "category": "Developer Tools",
+  "docUrl": "https://hasura.io/docs/2.0/deployment/docker/",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "hasura",
+    "image": "hasura/graphql-engine:v2.51.0",
+    "ports": [
+     8080
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "hasura",
+    "key": "HASURA_GRAPHQL_ADMIN_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "hasura",
+    "key": "HASURA_GRAPHQL_DEV_MODE",
+    "kind": "preset"
+   },
+   {
+    "service": "hasura",
+    "key": "HASURA_GRAPHQL_ENABLED_LOG_TYPES",
+    "kind": "preset"
+   },
+   {
+    "service": "hasura",
+    "key": "HASURA_GRAPHQL_ENABLE_CONSOLE",
+    "kind": "preset"
+   },
+   {
+    "service": "hasura",
+    "key": "HASURA_GRAPHQL_METADATA_DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "hasura",
+    "key": "PG_DATABASE_URL",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "healthchecks",
   "name": "Healthchecks",
   "slogan": "Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in.",
@@ -5834,6 +5950,85 @@
     "service": "heimdall",
     "key": "TZ",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "heyform",
+  "name": "HeyForm",
+  "slogan": "A form builder for surveys, quizzes and lead capture, with conversational forms and a MongoDB backend.",
+  "category": "Productivity",
+  "docUrl": "https://docs.heyform.net/open-source/installation",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "heyform",
+    "image": "heyform/community-edition:v3.0.3",
+    "ports": [
+     9157
+    ],
+    "volumes": [
+     "assets -> /app/static/upload"
+    ]
+   },
+   {
+    "name": "mongo",
+    "image": "mongo:7",
+    "ports": [],
+    "volumes": [
+     "mongo -> /data/db"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "heyform",
+    "key": "APP_HOMEPAGE_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "FORM_ENCRYPTION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "heyform",
+    "key": "MONGO_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "heyform",
+    "key": "REDIS_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "heyform",
+    "key": "SESSION_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "redis",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
    }
   ]
  },
@@ -6273,6 +6468,78 @@
    {
     "service": "influxdb",
     "key": "INFLUXDB_INIT_USERNAME",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
+  "id": "inngest",
+  "name": "Inngest",
+  "slogan": "A durable workflow engine for background jobs, queues, cron and event-driven functions, backed by Postgres and Redis.",
+  "category": "Developer Tools",
+  "docUrl": "https://www.inngest.com/docs/self-hosting",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "inngest",
+    "image": "inngest/inngest:v1.27.0",
+    "ports": [
+     8288
+    ],
+    "volumes": []
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_EVENT_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_POSTGRES_URI",
+    "kind": "generated"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_REDIS_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "inngest",
+    "key": "INNGEST_SIGNING_KEY",
     "kind": "generated"
    }
   ]
@@ -7204,6 +7471,130 @@
    {
     "service": "kopia",
     "key": "KOPIA_SERVER_USERNAME",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "kutt",
+  "name": "Kutt",
+  "slogan": "A modern URL shortener with custom domains, link analytics and an API, backed by Postgres and Redis.",
+  "category": "Applications",
+  "docUrl": "https://docs.kutt.it/",
+  "memoryMiB": 384,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "kutt",
+    "image": "kutt/kutt:v3.2.6",
+    "ports": [
+     3000
+    ],
+    "volumes": [
+     "uploads -> /kutt/custom"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": [
+     "redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DB_CLIENT",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DB_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "kutt",
+    "key": "DB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DB_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DEFAULT_DOMAIN",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DISALLOW_ANONYMOUS_LINKS",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "DISALLOW_REGISTRATION",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "JWT_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "kutt",
+    "key": "REDIS_ENABLED",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "REDIS_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "kutt",
+    "key": "TRUST_PROXY",
     "kind": "preset"
    }
   ]
@@ -8582,6 +8973,44 @@
   ]
  },
  {
+  "id": "mage-ai",
+  "name": "Mage AI",
+  "slogan": "A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.mage.ai/getting-started/setup",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mage",
+    "image": "mageai/mageai:0.9.78",
+    "ports": [
+     6789
+    ],
+    "volumes": [
+     "mage_data -> /home/src"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mage",
+    "key": "ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "mage",
+    "key": "PROJECT_NAME",
+    "kind": "preset"
+   },
+   {
+    "service": "mage",
+    "key": "USER_CODE_PATH",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "mailpit",
   "name": "Mailpit",
   "slogan": "A local SMTP server and web inbox for catching and inspecting outgoing email during development.",
@@ -9040,6 +9469,100 @@
   ]
  },
  {
+  "id": "metamcp",
+  "name": "MetaMCP",
+  "slogan": "An MCP aggregator and gateway that groups many MCP servers behind one endpoint with auth, namespaces and middleware.",
+  "category": "AI",
+  "docUrl": "https://docs.metamcp.com",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "metamcp",
+    "image": "ghcr.io/metatool-ai/metamcp:2.4",
+    "ports": [
+     12008
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "BETTER_AUTH_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "metamcp",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "metamcp",
+    "key": "NEXT_PUBLIC_APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "POSTGRES_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "metamcp",
+    "key": "POSTGRES_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "metamcp",
+    "key": "TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
   "id": "metube",
   "name": "MeTube",
   "slogan": "A tidy web front end for yt-dlp: paste a link, pick a format, and download video or audio.",
@@ -9267,6 +9790,102 @@
    }
   ],
   "env": []
+ },
+ {
+  "id": "monica",
+  "name": "Monica",
+  "slogan": "A personal CRM that remembers the people in your life, with notes, reminders, activities and relationships.",
+  "category": "Productivity",
+  "docUrl": "https://github.com/monicahq/monica/blob/main/docs/installation/docker.md",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11.8",
+    "ports": [],
+    "volumes": [
+     "mariadb -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "monica",
+    "image": "monica:4.1.2-apache",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "storage -> /var/www/html/storage"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "APP_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "APP_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "monica",
+    "key": "APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "DB_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "DB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "monica",
+    "key": "DB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "monica",
+    "key": "DB_USERNAME",
+    "kind": "preset"
+   }
+  ]
  },
  {
   "id": "moodle",
@@ -10627,6 +11246,28 @@
   ]
  },
  {
+  "id": "onedev",
+  "name": "OneDev",
+  "slogan": "A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.",
+  "category": "Developer Tools",
+  "docUrl": "https://docs.onedev.io/installation-guide/run-as-docker-container",
+  "memoryMiB": 1024,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "onedev",
+    "image": "1dev/server:16.9.0",
+    "ports": [
+     6610
+    ],
+    "volumes": [
+     "data -> /opt/onedev"
+    ]
+   }
+  ],
+  "env": []
+ },
+ {
   "id": "onetimesecret",
   "name": "One-Time Secret",
   "slogan": "Share a password or API key through a link that self-destructs after the first view, backed by Redis.",
@@ -11271,6 +11912,146 @@
     "service": "passbolt",
     "key": "PASSBOLT_SSL_FORCE",
     "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "paymenter",
+  "name": "Paymenter",
+  "slogan": "Open-source billing and client management for hosting providers, with invoices, subscriptions and provisioning extensions.",
+  "category": "Finance",
+  "docUrl": "https://paymenter.org/docs/guides/docker",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mariadb",
+    "image": "mariadb:11.8",
+    "ports": [],
+    "volumes": [
+     "mariadb -> /var/lib/mysql"
+    ]
+   },
+   {
+    "name": "paymenter",
+    "image": "ghcr.io/paymenter/paymenter:v1.4.5",
+    "ports": [
+     80
+    ],
+    "volumes": [
+     "logs -> /app/storage/logs",
+     "extensions -> /app/extensions",
+     "themes -> /app/themes",
+     "storage -> /app/storage/app"
+    ]
+   },
+   {
+    "name": "redis",
+    "image": "redis:7-alpine",
+    "ports": [],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "mariadb",
+    "key": "MYSQL_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_ROOT_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "mariadb",
+    "key": "MYSQL_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "APP_ENV",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "APP_KEY",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "APP_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "CACHE_STORE",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_DATABASE",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "DB_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "QUEUE_CONNECTION",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "REDIS_HOST",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "paymenter",
+    "key": "REDIS_USERNAME",
+    "kind": "preset"
+   },
+   {
+    "service": "paymenter",
+    "key": "SESSION_DRIVER",
+    "kind": "preset"
+   },
+   {
+    "service": "redis",
+    "key": "REDIS_PASSWORD",
+    "kind": "generated"
    }
   ]
  },
@@ -12083,6 +12864,118 @@
    {
     "service": "plex",
     "key": "VERSION",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "plunk",
+  "name": "Plunk",
+  "slogan": "An email platform for transactional mail, marketing campaigns and automations that sends through your own AWS SES account.",
+  "category": "Communication",
+  "docUrl": "https://docs.useplunk.com/self-hosting/introduction",
+  "memoryMiB": 512,
+  "needsConfig": true,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "plunk",
+    "image": "driaug/plunk:1.3.6",
+    "ports": [
+     3000
+    ],
+    "volumes": []
+   },
+   {
+    "name": "redis",
+    "image": "redis:7.4-alpine",
+    "ports": [],
+    "volumes": [
+     "redis -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "API_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "APP_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_ACCESS_KEY_ID",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_REGION",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_SECRET_ACCESS_KEY",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "AWS_SES_CONFIGURATION_SET",
+    "kind": "required"
+   },
+   {
+    "service": "plunk",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "plunk",
+    "key": "DISABLE_SIGNUPS",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "JWT_SECRET",
+    "kind": "generated"
+   },
+   {
+    "service": "plunk",
+    "key": "NEXT_PUBLIC_API_URI",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "NODE_OPTIONS",
+    "kind": "preset"
+   },
+   {
+    "service": "plunk",
+    "key": "REDIS_URL",
     "kind": "preset"
    }
   ]
@@ -14835,6 +15728,70 @@
   "env": []
  },
  {
+  "id": "tianji",
+  "name": "Tianji",
+  "slogan": "An all-in-one insight hub that combines website analytics, uptime monitoring and server status in one dashboard.",
+  "category": "Analytics",
+  "docUrl": "https://tianji.dev/docs/intro",
+  "memoryMiB": 512,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "db",
+    "image": "postgres:16-alpine",
+    "ports": [],
+    "volumes": [
+     "pgdata -> /var/lib/postgresql/data"
+    ]
+   },
+   {
+    "name": "tianji",
+    "image": "moonrailgun/tianji:1.33.9",
+    "ports": [
+     12345
+    ],
+    "volumes": []
+   }
+  ],
+  "env": [
+   {
+    "service": "db",
+    "key": "POSTGRES_DB",
+    "kind": "preset"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_PASSWORD",
+    "kind": "generated"
+   },
+   {
+    "service": "db",
+    "key": "POSTGRES_USER",
+    "kind": "preset"
+   },
+   {
+    "service": "tianji",
+    "key": "ALLOW_OPENAPI",
+    "kind": "preset"
+   },
+   {
+    "service": "tianji",
+    "key": "ALLOW_REGISTER",
+    "kind": "preset"
+   },
+   {
+    "service": "tianji",
+    "key": "DATABASE_URL",
+    "kind": "generated"
+   },
+   {
+    "service": "tianji",
+    "key": "JWT_SECRET",
+    "kind": "generated"
+   }
+  ]
+ },
+ {
   "id": "tolgee",
   "name": "Tolgee",
   "slogan": "A localization management platform where developers and translators work in one shared UI.",
@@ -16072,6 +17029,52 @@
    {
     "service": "weblate",
     "key": "WEBLATE_SITE_DOMAIN",
+    "kind": "preset"
+   }
+  ]
+ },
+ {
+  "id": "wekan",
+  "name": "Wekan",
+  "slogan": "An open-source Kanban board with swimlanes, checklists and webhooks, a self-hosted alternative to Trello.",
+  "category": "Productivity",
+  "docUrl": "https://github.com/wekan/wekan/wiki",
+  "memoryMiB": 768,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "mongo",
+    "image": "mongo:7",
+    "ports": [],
+    "volumes": [
+     "mongo -> /data/db"
+    ]
+   },
+   {
+    "name": "wekan",
+    "image": "wekanteam/wekan:v12.45",
+    "ports": [
+     8080
+    ],
+    "volumes": [
+     "attachments -> /data"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "wekan",
+    "key": "MONGO_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "wekan",
+    "key": "ROOT_URL",
+    "kind": "preset"
+   },
+   {
+    "service": "wekan",
+    "key": "WRITABLE_PATH",
     "kind": "preset"
    }
   ]

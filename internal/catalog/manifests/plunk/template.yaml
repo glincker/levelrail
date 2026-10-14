@@ -1,0 +1,45 @@
+id: plunk
+name: Plunk
+description: An email platform for transactional mail, marketing campaigns and automations that sends through your own AWS SES account.
+icon: mail
+category: Communication
+documentation_url: https://docs.useplunk.com/self-hosting/introduction
+recommended_memory_bytes: 536870912
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database.
+    generate: password
+    length: 32
+    secret: true
+  - key: JWT_SECRET
+    label: JWT secret
+    description: Signs login tokens. Changing it signs every user out.
+    generate: hex
+    length: 64
+    secret: true
+  - key: AWS_REGION
+    label: AWS region
+    description: Region of the SES account used for sending, for example us-east-1.
+    required: true
+  - key: AWS_ACCESS_KEY_ID
+    label: AWS access key ID
+    description: Access key of an IAM user allowed to use SES.
+    required: true
+  - key: AWS_SECRET_ACCESS_KEY
+    label: AWS secret access key
+    description: Secret for the AWS access key.
+    required: true
+    secret: true
+  - key: AWS_SES_CONFIGURATION_SET
+    label: SES configuration set
+    description: Name of the SES configuration set that reports delivery events.
+    required: true
+domains:
+  - service: plunk
+    port: 3000
+    description: Public address of Plunk.
+healthcheck:
+  service: plunk
+  port: 3000
+  path: /api/health
