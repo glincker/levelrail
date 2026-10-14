@@ -34,7 +34,14 @@ export async function readErrorMessage(
   res: Response,
   fallback: string,
 ): Promise<string> {
-  const body = (await res.json().catch(() => null)) as { error?: string } | null
+  const body = (await res.json().catch(() => null)) as {
+    error?: string
+    message?: string
+  } | null
+  // Demo gate bodies carry a machine code in `error` and the human text in `message`.
+  if (body?.error?.startsWith('demo_') && body.message) {
+    return body.message
+  }
   return body?.error ?? fallback
 }
 
