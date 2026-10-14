@@ -1,0 +1,40 @@
+id: paymenter
+name: Paymenter
+description: Open-source billing and client management for hosting providers, with invoices, subscriptions and provisioning extensions.
+icon: credit-card
+category: Finance
+documentation_url: https://paymenter.org/docs/guides/docker
+recommended_memory_bytes: 805306368
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled MariaDB database.
+    generate: password
+    length: 32
+    secret: true
+  - key: DB_ROOT_PASSWORD
+    label: Database root password
+    description: Root password for the bundled MariaDB server.
+    generate: password
+    length: 32
+    secret: true
+  - key: REDIS_PASSWORD
+    label: Redis password
+    description: Password for the bundled Redis cache.
+    generate: password
+    length: 32
+    secret: true
+  - key: APP_KEY
+    label: Application key
+    description: Encrypts sessions and stored secrets. Changing it invalidates both.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: paymenter
+    port: 80
+    description: Public address of Paymenter.
+healthcheck:
+  service: paymenter
+  port: 80
+  path: /

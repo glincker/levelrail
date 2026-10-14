@@ -1,0 +1,15 @@
+id: onedev
+name: OneDev
+description: A self-hosted Git server with built-in CI/CD, issue tracking and code search, in one container.
+icon: git-branch
+category: Developer Tools
+documentation_url: https://docs.onedev.io/installation-guide/run-as-docker-container
+recommended_memory_bytes: 1073741824
+domains:
+  - service: onedev
+    port: 6610
+    description: Public address of OneDev.
+healthcheck:
+  service: onedev
+  port: 6610
+  path: /

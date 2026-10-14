@@ -1,0 +1,28 @@
+id: hasura
+name: Hasura
+description: An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console.
+icon: database
+category: Developer Tools
+documentation_url: https://hasura.io/docs/2.0/deployment/docker/
+recommended_memory_bytes: 536870912
+env:
+  - key: DB_PASSWORD
+    label: Database password
+    description: Password for the bundled Postgres database.
+    generate: password
+    length: 32
+    secret: true
+  - key: ADMIN_SECRET
+    label: Admin secret
+    description: Required to open the console and to call the API as admin.
+    generate: password
+    length: 48
+    secret: true
+domains:
+  - service: hasura
+    port: 8080
+    description: Public address of Hasura.
+healthcheck:
+  service: hasura
+  port: 8080
+  path: /healthz

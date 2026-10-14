@@ -1,0 +1,15 @@
+id: focalboard
+name: Focalboard
+description: An open-source project board for tasks and sprints with Kanban, table and calendar views, stored in a single SQLite file.
+icon: kanban
+category: Productivity
+documentation_url: https://www.focalboard.com/docs/personal-server/
+recommended_memory_bytes: 268435456
+domains:
+  - service: focalboard
+    port: 8000
+    description: Public address of Focalboard.
+healthcheck:
+  service: focalboard
+  port: 8000
+  path: /
