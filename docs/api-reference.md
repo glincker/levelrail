@@ -1106,10 +1106,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/model-cache/prune | AbilityRoot | handlePruneModelCache |
 | POST | /api/v1/pipelines/filters | AbilityRead | handlePipelineFilters |
 | GET | /api/v1/apps-metrics | AbilityRead | handleBatchAppMetrics |
-| GET | /api/v1/node-providers | AbilityRoot | handleListNodeProviders |
-| POST | /api/v1/node-providers | AbilityRoot | handleSetNodeProviderCredential |
-| GET | /api/v1/node-providers/{provider}/regions | AbilityRoot | handleListNodeProviderRegions |
-| GET | /api/v1/node-providers/{provider}/sizes | AbilityRoot | handleListNodeProviderSizes |
+| GET | /api/v1/node-providers | AbilityRead | handleListNodeProviders |
+| POST | /api/v1/node-providers | AbilityWriteSensitive | handleSetNodeProviderCredential |
+| GET | /api/v1/node-providers/{provider}/regions | AbilityRead | handleListNodeProviderRegions |
+| GET | /api/v1/node-providers/{provider}/sizes | AbilityRead | handleListNodeProviderSizes |
 | GET | /api/v1/node-provisions | AbilityRoot | handleListNodeProvisions |
 | GET | /api/v1/node-provisions/{id} | AbilityRoot | handleGetNodeProvision |
 | GET | /.well-known/jwks.json | Public | handleOIDCJWKS |
@@ -1340,6 +1340,8 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMReplaceGroup |
 | PATCH | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMPatchGroup |
 | DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMDeleteGroup |
+| POST | /api/v1/node-providers/{provider}/test | AbilityWriteSensitive | handleTestNodeProvider |
+| DELETE | /api/v1/node-providers/{provider} | AbilityWriteSensitive | handleDisconnectNodeProvider |
 
 ## See also
 

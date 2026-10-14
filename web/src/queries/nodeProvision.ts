@@ -5,9 +5,11 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import type {
+  NodeProviderMethod,
   NodeProviderRegionResource,
   NodeProviderResource,
   NodeProviderSizeResource,
+  NodeProviderTestResult,
   NodeProvisionResource,
 } from '../types/nodeProvision'
 import { ApiError, readErrorMessage } from '../lib/apiError'
@@ -53,8 +55,13 @@ export function useNodeProviders() {
 // alone as their single bearer API token, aws uses token as the access
 // key id paired with secretAccessKey (or useAmbientCredentials to skip
 // both and use this control plane's own AWS identity instead).
-interface SetNodeProviderCredentialInput {
+export interface SetNodeProviderCredentialInput {
   provider: string
+  method?: NodeProviderMethod
+  verify?: boolean
+  label?: string
+  location?: string
+  notes?: string
   token: string
   secret_access_key?: string
   session_token?: string
@@ -87,6 +94,65 @@ export function useSetNodeProviderCredential() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: setNodeProviderCredential,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: nodeProviderKeys.list() })
+    },
+  })
+}
+
+// POST /api/v1/node-providers/{provider}/test: with a body it tests the
+// candidate credential and stores nothing, without one the stored one.
+async function testNodeProvider(input: {
+  provider: string
+  candidate?: Omit<SetNodeProviderCredentialInput, 'provider'>
+}): Promise<NodeProviderTestResult> {
+  const res = await fetch(
+    `/api/v1/node-providers/${encodeURIComponent(input.provider)}/test`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: input.candidate ? JSON.stringify(input.candidate) : undefined,
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `test node provider failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as NodeProviderTestResult
+}
+
+export function useTestNodeProvider() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: testNodeProvider,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: nodeProviderKeys.list() })
+    },
+  })
+}
+
+async function disconnectNodeProvider(provider: string): Promise<void> {
+  const res = await fetch(
+    `/api/v1/node-providers/${encodeURIComponent(provider)}`,
+    { method: 'DELETE' },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `disconnect node provider failed: ${res.status}`,
+      ),
+    )
+  }
+}
+
+export function useDisconnectNodeProvider() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: disconnectNodeProvider,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: nodeProviderKeys.list() })
     },

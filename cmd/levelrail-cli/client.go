@@ -222,6 +222,7 @@ type (
 	rejoinMeshResponse          = apiclient.RejoinMeshResponse
 
 	nodeProviderResource             = apiclient.NodeProviderResource
+	nodeProviderTestResult           = apiclient.NodeProviderTestResult
 	nodeProviderRegionResource       = apiclient.NodeProviderRegionResource
 	nodeProviderSizeResource         = apiclient.NodeProviderSizeResource
 	nodeProvisionResource            = apiclient.NodeProvisionResource

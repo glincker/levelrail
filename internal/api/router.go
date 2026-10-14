@@ -134,13 +134,14 @@ type Router struct {
 	nodes                  NodeStore
 	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
-	nodeProvisions         NodeProvisionStore     // always set, same "core Store interface" shape as cloudflareDNS above
-	nodeProviderSecrets    NodeProviderSecrets    // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
-	nodeProviderCatalog    *providerCatalogCache  // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
-	nodeProvisionerFactory NodeProvisionerFactory // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
-	sshProvisions          SSHNodeProvisionStore  // always set, same "core Store interface" shape as nodeProvisions above
-	sshProvisioner         SSHProvisioner         // nil uses sshprovision.New(), overridable in this package's own tests
-	templateRequiresConfig map[string]bool        // always set (NewRouter computes it once, catalog.Templates is static for the process lifetime), see service_templates.go's computeTemplateRequiresConfig
+	nodeProviderConns      NodeProviderConnectionStore // always set, connection metadata for node providers
+	nodeProvisions         NodeProvisionStore          // always set, same "core Store interface" shape as cloudflareDNS above
+	nodeProviderSecrets    NodeProviderSecrets         // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
+	nodeProviderCatalog    *providerCatalogCache       // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
+	nodeProvisionerFactory NodeProvisionerFactory      // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
+	sshProvisions          SSHNodeProvisionStore       // always set, same "core Store interface" shape as nodeProvisions above
+	sshProvisioner         SSHProvisioner              // nil uses sshprovision.New(), overridable in this package's own tests
+	templateRequiresConfig map[string]bool             // always set (NewRouter computes it once, catalog.Templates is static for the process lifetime), see service_templates.go's computeTemplateRequiresConfig
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
@@ -803,6 +804,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareDNS:               s,
 		route53DNS:                  s,
 		nodeProvisions:              s,
+		nodeProviderConns:           s,
 		sshProvisions:               s,
 		nodeProviderCatalog:         newProviderCatalogCache(),
 		templateRequiresConfig:      computeTemplateRequiresConfig(),
