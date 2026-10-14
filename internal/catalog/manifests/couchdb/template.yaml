@@ -1,0 +1,26 @@
+id: couchdb
+name: CouchDB
+description: A document database with an HTTP API, built-in replication and the Fauxton admin console.
+icon: database
+category: Database Tools
+documentation_url: https://docs.couchdb.org/
+recommended_memory_bytes: 536870912
+env:
+  - key: COUCHDB_USER
+    label: Admin user
+    description: Name of the CouchDB admin account.
+    default: admin
+  - key: COUCHDB_PASSWORD
+    label: Admin password
+    description: Password for the admin account. Fauxton is served at /_utils.
+    generate: password
+    length: 32
+    secret: true
+domains:
+  - service: couchdb
+    port: 5984
+    description: Public address of the CouchDB HTTP API and Fauxton console.
+healthcheck:
+  service: couchdb
+  port: 5984
+  path: /_up

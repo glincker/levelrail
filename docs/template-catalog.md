@@ -20,27 +20,27 @@ This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a templ
 
 <!-- BEGIN GENERATED CATALOG TABLE -->
 
-Generated from `internal/catalog.Templates` (344 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (358 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
 | [AI](#ai) | 31 |
-| [Analytics](#analytics) | 7 |
+| [Analytics](#analytics) | 8 |
 | [Applications](#applications) | 19 |
 | [Automation](#automation) | 8 |
 | [Communication](#communication) | 18 |
 | [Dashboard](#dashboard) | 8 |
-| [Database Tools](#database-tools) | 18 |
-| [Developer Tools](#developer-tools) | 54 |
+| [Database Tools](#database-tools) | 23 |
+| [Developer Tools](#developer-tools) | 56 |
 | [Finance](#finance) | 10 |
-| [Infrastructure](#infrastructure) | 10 |
+| [Infrastructure](#infrastructure) | 13 |
 | [IoT](#iot) | 3 |
 | [Media](#media) | 28 |
-| [Monitoring](#monitoring) | 22 |
+| [Monitoring](#monitoring) | 24 |
 | [Productivity](#productivity) | 71 |
 | [Security](#security) | 17 |
 | [Starter Kits](#starter-kits) | 7 |
-| [Storage](#storage) | 13 |
+| [Storage](#storage) | 14 |
 
 ## AI
 
@@ -82,6 +82,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [Apache Superset](https://superset.apache.org/docs/intro) | A business intelligence platform for exploring data and building dashboards, with its metadata kept in SQLite. | `superset` |  |
 | [EmbyStat](https://github.com/mregni/EmbyStat) | Watch statistics and insight dashboards for your Emby or Jellyfin server. | `embystat` |  |
 | [GoatCounter](https://www.goatcounter.com/help) | A privacy-friendly, open-source web analytics platform that never tracks individual visitors. | `goatcounter` |  |
 | [Matomo](https://matomo.org/faq/how-to-install/install-matomo-with-docker/) | A privacy-friendly, self-hosted alternative to Google Analytics with full data ownership. | `matomo` |  |
@@ -173,9 +174,13 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | [Chroma](https://docs.trychroma.com) | A developer-friendly embedding database for AI applications, served over a simple HTTP API. | `chroma` |  |
 | [ClickHouse](https://hub.docker.com/r/clickhouse/clickhouse-server) | A columnar database built for fast analytical queries over large datasets. | `clickhouse` |  |
 | [CloudBeaver](https://dbeaver.com/docs/cloudbeaver/) | A web-based database manager for browsing and querying Postgres, MySQL, SQLite and more. | `cloudbeaver` |  |
+| [CouchDB](https://docs.couchdb.org/) | A document database with an HTTP API, built-in replication and the Fauxton admin console. | `couchdb` |  |
 | [Elasticsearch + Kibana](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-kibana-with-docker) | Elasticsearch paired with Kibana for log and document search with a visual dashboard. | `elasticsearch-kibana` |  |
 | [InfluxDB](https://docs.influxdata.com/influxdb/) | An open-source time-series database for metrics, events, and IoT analytics. | `influxdb` |  |
+| [Memcached](https://memcached.org/) | A fast in-memory cache for query results, sessions and rendered pages, reachable by other apps on host memcached. | `memcached` |  |
 | [Milvus](https://milvus.io/docs) | A cloud-native vector database built for billion-scale similarity search, run here as a single standalone node. | `milvus` |  |
+| [Mongo Express](https://github.com/mongo-express/mongo-express) | A web admin console for MongoDB, bundled with its own MongoDB 7 instance and basic auth. | `mongo-express` |  |
+| [Neo4j](https://neo4j.com/docs/) | A graph database with the Cypher query language, Community Edition, including the browser console. | `neo4j` |  |
 | [NocoDB](https://docs.nocodb.com) | Turn any database into a smart spreadsheet, with a real-time collaborative grid UI. | `nocodb` |  |
 | [PG Back Web](https://github.com/eduardolat/pgbackweb) | A web UI for scheduling, encrypting, and restoring PostgreSQL backups. | `pgbackweb` |  |
 | [pgAdmin](https://www.pgadmin.org/docs/) | A full-featured web GUI for administering and querying PostgreSQL databases. | `pgadmin` |  |
@@ -184,6 +189,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | [Qdrant](https://qdrant.tech/documentation/) | A vector similarity search engine for storing, searching, and managing embeddings. | `qdrant` |  |
 | [Redis Insight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for exploring keys, running commands, and profiling workloads on any Redis-compatible server. | `redis-insight` |  |
 | [RedisInsight](https://redis.io/docs/latest/operate/redisinsight/) | A GUI for browsing keys, running commands, and profiling performance on any Redis instance. | `redisinsight` |  |
+| [Valkey](https://valkey.io/docs/) | A Redis-compatible in-memory key-value store under the Linux Foundation, with password auth and append-only persistence. | `valkey` |  |
 | [Weaviate](https://weaviate.io/developers/weaviate) | An open-source vector database with hybrid search, built-in modules, and a GraphQL and REST API. | `weaviate` |  |
 
 ## Developer Tools
@@ -210,6 +216,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | [Gitea (Postgres)](https://docs.gitea.com) | Gitea backed by Postgres instead of its default MySQL, for operators standardizing on one database engine. | `gitea-postgres` |  |
 | [GitLab](https://docs.gitlab.com/ee/install/docker.html) | GitLab Community Edition: Git hosting, CI/CD, issues, and a container registry in one Omnibus image. | `gitlab` |  |
 | [GitLab CE](https://docs.gitlab.com/install/docker/installation/) | A complete DevOps platform for source control, code review, issues, and CI/CD in one place. | `gitlab-ce` |  |
+| [Gogs](https://gogs.io/docs) | A painless self-hosted Git service written in Go, light enough to run on a small VPS. | `gogs` |  |
 | [Gotenberg](https://gotenberg.dev/docs/getting-started/introduction) | A stateless API for converting HTML, Markdown, Office, and PDF documents in the background. | `gotenberg` |  |
 | [Hasura](https://hasura.io/docs/2.0/deployment/docker/) | An instant GraphQL and REST API on top of Postgres with permissions, subscriptions and an admin console. | `hasura` |  |
 | [Hoppscotch](https://docs.hoppscotch.io) | An open-source API development platform, a self-hosted alternative to Postman, backed by Postgres. | `hoppscotch` |  |
@@ -221,6 +228,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | [Jupyter Notebook](https://jupyter.org/) | A Jupyter Notebook server for interactive Python data work, protected by a generated access token. | `jupyter-notebook` |  |
 | [LibreTranslate](https://github.com/LibreTranslate/LibreTranslate) | A free and open machine translation API that runs entirely on your own hardware. | `libretranslate` |  |
 | [Mage AI](https://docs.mage.ai/getting-started/setup) | A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI. | `mage-ai` |  |
+| [MailHog](https://github.com/mailhog/MailHog) | An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox. | `mailhog` |  |
 | [Mailpit](https://mailpit.axllent.org/docs/) | A local SMTP server and web inbox for catching and inspecting outgoing email during development. | `mailpit` |  |
 | [marimo](https://marimo.io/) | A reactive Python notebook that is reproducible, git-friendly, and shareable as an app. | `marimo` |  |
 | [Meilisearch](https://www.meilisearch.com/docs) | A fast, typo-tolerant search engine API you can drop into any app's search bar. | `meilisearch` |  |
@@ -266,7 +274,10 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | --- | --- | --- | --- |
 | [AdGuard Home](https://github.com/AdguardTeam/AdGuardHome/wiki/Docker) | Network-wide ad and tracker blocking with a DNS server and a friendly admin dashboard. | `adguard-home` |  |
 | [Cloudflare DDNS](https://github.com/favonia/cloudflare-ddns) | Keeps Cloudflare DNS records pointed at your current public IP address. | `cloudflare-ddns` |  |
+| [Consul](https://developer.hashicorp.com/consul/docs) | HashiCorp Consul in single-server mode with the web UI: service discovery, health checks and a key-value store. | `consul` |  |
 | [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) | A distributed, RESTful search and analytics engine for full-text search and log analytics. | `elasticsearch` |  |
+| [etcd](https://etcd.io/docs/) | A distributed key-value store for configuration and coordination, running as a single member. | `etcd` |  |
+| [NATS](https://docs.nats.io/) | A lightweight messaging server for pub/sub, request/reply and durable streams, with JetStream persistence enabled. | `nats` |  |
 | [NetBox](https://github.com/netbox-community/netbox-docker) | Source-of-truth IPAM and DCIM for tracking IP space, racks, devices, and cabling. | `netbox` |  |
 | [Nginx Proxy Manager](https://nginxproxymanager.com/guide/) | A web UI for managing Nginx reverse-proxy hosts, redirects, and Let's Encrypt certificates. | `nginx-proxy-manager` |  |
 | [Pi-hole](https://docs.pi-hole.net) | Network-wide ad blocking that works as a DNS sinkhole for your whole network. | `pi-hole` |  |
@@ -320,6 +331,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 
 | Template | Slogan | ID | Notes |
 | --- | --- | --- | --- |
+| [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) | Prometheus Alertmanager: groups, deduplicates and routes alerts to email, Slack, webhooks and on-call tools. | `alertmanager` |  |
 | [Beszel](https://beszel.dev/guide/getting-started) | A lightweight server monitoring hub with historical stats for CPU, memory, disk, and network. | `beszel` |  |
 | [Bugsink](https://www.bugsink.com/docs/) | A self-hosted, lightweight error tracking server with a Sentry-compatible SDK ingestion API. | `bugsink` |  |
 | [Changedetection.io](https://github.com/dgtlmoon/changedetection.io/wiki) | Monitor any webpage for changes and get notified the moment content updates. | `changedetection` |  |
@@ -331,6 +343,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | [Grafana (Postgres)](https://grafana.com/docs/grafana/latest/) | Grafana backed by Postgres instead of its default embedded SQLite, for multi-instance or external-DB setups. | `grafana-postgres` |  |
 | [Grafana Loki](https://grafana.com/docs/loki/latest) | A horizontally scalable log aggregation system that indexes labels, not full text, to keep storage cheap. | `loki` |  |
 | [Healthchecks](https://healthchecks.io/docs/self_hosted/) | Cron job and scheduled task monitoring: get alerted the moment a periodic job stops checking in. | `healthchecks` |  |
+| [Jaeger](https://www.jaegertracing.io/docs/) | Distributed tracing with an OTLP collector and query UI in one container, storing traces in memory. | `jaeger` |  |
 | [LibreSpeed](https://github.com/librespeed/speedtest) | A lightweight, self-hosted internet speed test with no ads, tracking, or Flash required. | `librespeed` |  |
 | [Netdata](https://learn.netdata.cloud) | Per-second infrastructure metrics with zero configuration and a live dashboard out of the box. | `netdata` |  |
 | [OpenObserve](https://openobserve.ai/docs) | A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI. | `openobserve` |  |
@@ -464,6 +477,7 @@ Generated from `internal/catalog.Templates` (344 entries as of this build). Run 
 | [File Browser](https://filebrowser.org) | A simple web UI for browsing, uploading, and sharing files from your own storage. | `filebrowser` |  |
 | [Kopia](https://kopia.io/docs/installation/#quick-setup-using-docker) | Fast, incremental, encrypted backups to a repository, driven from a web UI instead of a cron script. | `kopia` |  |
 | [MinIO](https://min.io/docs/minio/linux/index.html) | S3-compatible object storage you run yourself, with a built-in web console. | `minio` |  |
+| [ownCloud](https://doc.owncloud.com/server/) | The classic self-hosted file sync and share platform, with MariaDB and Redis for metadata and locking. | `owncloud` |  |
 | [Pingvin Share](https://github.com/stonith404/pingvin-share) | A self-hosted, ad-free alternative to WeTransfer for sending files with expiring links. | `pingvin-share` |  |
 | [Seafile](https://manual.seafile.com) | Self-hosted file sync and share with real file-level versioning and client-side encryption options. | `seafile` |  |
 | [SeaweedFS](https://github.com/seaweedfs/seaweedfs/wiki) | A distributed file and object store with an S3 gateway, built for billions of small files. | `seaweedfs` |  |

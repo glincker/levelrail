@@ -1,0 +1,15 @@
+id: mailhog
+name: MailHog
+description: An SMTP test server that catches outgoing mail from your apps and shows it in a web inbox.
+icon: envelope
+category: Developer Tools
+documentation_url: https://github.com/mailhog/MailHog
+recommended_memory_bytes: 134217728
+domains:
+  - service: mailhog
+    port: 8025
+    description: Public address of the MailHog web inbox. It has no login, so restrict access.
+healthcheck:
+  service: mailhog
+  port: 8025
+  path: /
