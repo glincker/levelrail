@@ -14,8 +14,10 @@ import {
 import { SAMLConnectionList } from '@/components/settings/sso/SAMLConnectionList'
 import { SSOEnforcementCard } from '@/components/settings/sso/SSOEnforcementCard'
 import { SSOGroupMappingsCard } from '@/components/settings/sso/SSOGroupMappingsCard'
+import { SCIMCard } from '@/components/settings/sso/SCIMCard'
 import {
   samlConnectionsQueryOptions,
+  scimTokensQueryOptions,
   ssoMappingsQueryOptions,
   ssoSettingsQueryOptions,
 } from '../../queries/sso'
@@ -29,6 +31,7 @@ export const Route = createFileRoute('/settings/sso')({
       queryClient.ensureQueryData(ssoMappingsQueryOptions()),
       queryClient.ensureQueryData(ssoSettingsQueryOptions()),
       queryClient.ensureQueryData(roleListQueryOptions()),
+      queryClient.ensureQueryData(scimTokensQueryOptions()),
     ]),
   component: SSOSettingsPage,
   pendingComponent: SSOSettingsSkeleton,
@@ -50,6 +53,7 @@ function SSOSettingsPage() {
   const { data: mappings } = useSuspenseQuery(ssoMappingsQueryOptions())
   const { data: settings } = useSuspenseQuery(ssoSettingsQueryOptions())
   const { data: roles } = useSuspenseQuery(roleListQueryOptions())
+  const { data: scimTokens } = useSuspenseQuery(scimTokensQueryOptions())
   const on = connections.filter((c) => c.enabled && c.configured).length
   const blocked =
     settings.master_key_missing || Boolean(settings.base_url_error)
@@ -83,6 +87,7 @@ function SSOSettingsPage() {
         roles={roles}
       />
       <SSOEnforcementCard settings={settings} />
+      <SCIMCard settings={settings} tokens={scimTokens} roles={roles} />
       <FormSection
         title={t('spCert.title')}
         description={t('spCert.description')}

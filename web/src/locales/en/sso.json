@@ -108,5 +108,29 @@
     "title": "Service provider certificate",
     "description": "Generated on first use. Some identity providers ask for it to verify signed requests or encrypt assertions.",
     "none": "Not available until the control plane master key is configured."
+  },
+  "scim": {
+    "title": "Directory sync (SCIM)",
+    "description": "Let your identity provider create, update and deactivate accounts and groups. Deactivating someone there ends their sessions here at once.",
+    "baseUrl": "SCIM base URL",
+    "defaultRole": "Role for new directory users",
+    "defaultRoleHelp": "Used when no group mapping matches. With group mappings, directory group changes update roles right away.",
+    "roleSaved": "Directory default role saved",
+    "tokens": "Tokens",
+    "tokenName": "Token name",
+    "tokenNamePlaceholder": "okta-provisioning",
+    "create": "Create token",
+    "empty": "No SCIM token yet. Create one and paste it into your identity provider.",
+    "rotate": "Rotate",
+    "revoke": "Revoke",
+    "revoked": "Revoked",
+    "neverUsed": "Never used",
+    "lastUsed": "Last used {{date}}",
+    "revokeTitle": "Revoke {{name}}?",
+    "revokeBody": "Provisioning with this token stops immediately.",
+    "revokedToast": "Token revoked",
+    "shownOnceTitle": "Copy the token now",
+    "shownOnceBody": "It is shown once and stored only as a hash. Paste it into the SCIM settings of your identity provider.",
+    "done": "Done"
   }
 }

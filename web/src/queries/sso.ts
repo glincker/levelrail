@@ -62,6 +62,22 @@ export interface SSOSettings {
   base_url: string
   base_url_error?: string
   master_key_missing: boolean
+  scim_base_url: string
+  scim_default_role_id: string
+}
+
+export interface SCIMToken {
+  id: string
+  name: string
+  prefix: string
+  created_by: string
+  created_at: string
+  last_used_at: string | null
+  revoked_at: string | null
+}
+
+export interface SCIMTokenCreated extends SCIMToken {
+  token: string
 }
 
 export interface PublicSAMLProvider {
@@ -75,6 +91,7 @@ export const ssoKeys = {
   mappings: () => [...ssoKeys.all, 'mappings'] as const,
   settings: () => [...ssoKeys.all, 'settings'] as const,
   publicProviders: () => [...ssoKeys.all, 'public'] as const,
+  scimTokens: () => [...ssoKeys.all, 'scim-tokens'] as const,
 }
 
 export async function ssoRequest<T>(
@@ -209,4 +226,42 @@ export function connectionInput(c: SAMLConnection): SAMLConnectionInput {
     default_role_id: c.default_role_id,
     sync_roles: c.sync_roles,
   }
+}
+
+const SCIM_TOKENS = '/api/v1/sso/scim/tokens'
+
+export function scimTokensQueryOptions() {
+  return queryOptions({
+    queryKey: ssoKeys.scimTokens(),
+    queryFn: () => ssoRequest<SCIMToken[]>(SCIM_TOKENS),
+  })
+}
+
+export function useCreateSCIMToken() {
+  return useSSOMutation((name: string) =>
+    ssoRequest<SCIMTokenCreated>(SCIM_TOKENS, 'POST', { name }),
+  )
+}
+
+export function useRotateSCIMToken() {
+  return useSSOMutation((id: string) =>
+    ssoRequest<SCIMTokenCreated>(
+      `${SCIM_TOKENS}/${encodeURIComponent(id)}/rotate`,
+      'POST',
+    ),
+  )
+}
+
+export function useRevokeSCIMToken() {
+  return useSSOMutation((id: string) =>
+    ssoRequest<undefined>(`${SCIM_TOKENS}/${encodeURIComponent(id)}`, 'DELETE'),
+  )
+}
+
+export function useSetSCIMDefaultRole() {
+  return useSSOMutation((roleID: string) =>
+    ssoRequest<SSOSettings>('/api/v1/sso/settings', 'PUT', {
+      scim_default_role_id: roleID,
+    }),
+  )
 }
