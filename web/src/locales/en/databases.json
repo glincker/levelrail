@@ -393,9 +393,60 @@
       "clearSearch": "Clear search"
     }
   },
-  "createPgvector": {
-    "label": "Include pgvector",
-    "hint": "Runs the pgvector image so CREATE EXTENSION vector works. The version is stored as {{version}}."
+  "createFlavor": {
+    "label": "Postgres image",
+    "none": "Plain Postgres",
+    "hint": "Runs {{image}} so its extensions are available with CREATE EXTENSION. The version is stored as {{version}}. Changing flavor later is a guarded dump and restore, not an in-place switch.",
+    "hintNone": "The official Postgres image, no extra extensions.",
+    "options": {
+      "pgvector": "pgvector (vector similarity search)",
+      "timescaledb": "TimescaleDB (time series)",
+      "postgis": "PostGIS (geospatial)"
+    }
+  },
+  "picker": {
+    "databaseTitle": "New database",
+    "databaseDescription": "Pick an engine. Credentials, networking and backups are set up for you.",
+    "searchLabel": "Search databases",
+    "searchPlaceholder": "Search engines, for example Postgres or Redis",
+    "filterLabel": "Database family",
+    "genericTagline": "A managed {{label}} database, ready to use.",
+    "families": {
+      "all": "All",
+      "relational": "Relational",
+      "keyvalue": "Key-value and cache",
+      "document": "Document",
+      "analytics": "Analytics",
+      "vector": "Vector and search",
+      "other": "Other"
+    },
+    "taglines": {
+      "postgres": "The default choice for apps that need joins, transactions and constraints.",
+      "pgvector": "Postgres with vector similarity search for embeddings and RAG.",
+      "timescaledb": "Postgres tuned for metrics, events and other time series.",
+      "postgis": "Postgres with geospatial types, indexes and queries.",
+      "mysql": "The widely hosted relational engine behind most PHP and CMS stacks.",
+      "mariadb": "Community-driven MySQL fork with a familiar protocol and tooling.",
+      "redis": "In-memory store for caches, queues, sessions and rate limits.",
+      "valkey": "Open source Redis fork under the Linux Foundation, drop-in for Redis clients.",
+      "keydb": "Multithreaded Redis-compatible store for higher throughput on one node.",
+      "dragonfly": "Modern Redis-compatible store built for very high throughput.",
+      "mongodb": "Document database for flexible, JSON-shaped data.",
+      "clickhouse": "Column store for fast analytical queries over large event data."
+    },
+    "chips": {
+      "port": "Port {{port}}",
+      "redisCompatible": "Redis compatible",
+      "mysqlCompatible": "MySQL compatible",
+      "postgresCompatible": "Postgres compatible",
+      "backups": "Backups"
+    },
+    "empty": {
+      "title": "No database matches \"{{query}}\"",
+      "hint": "Try an engine name such as Postgres or Redis, or clear the search to see every family.",
+      "clear": "Clear search"
+    },
+    "flavorBadge": "{{flavor}} image"
   },
   "list": {
     "title": "Databases",

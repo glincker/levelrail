@@ -76,8 +76,8 @@ func (ad Advisor) Advise(engine, current string, now time.Time) Advice {
 		out.Note = "the current tag is not a numeric version, so newer releases cannot be compared; pin a version such as the engine's latest patch"
 		return out
 	}
-	if cur.suffix == "pgvector" {
-		out.Note = "the pgvector image follows a major line only; it has no pinned patch tags to move to"
+	if flavor := cur.suffix; flavor == "pgvector" || flavor == "timescaledb" || flavor == "postgis" {
+		out.Note = "the " + flavor + " image follows a major line only; it has no pinned patch tags to move to"
 		return out
 	}
 	out.Comparable = true

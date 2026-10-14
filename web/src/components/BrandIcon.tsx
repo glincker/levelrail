@@ -9,6 +9,8 @@ import DockerLogo from '@thesvg/react/docker'
 import DragonflyLogo from '@thesvg/react/dragonfly'
 import CodebergLogo from '@thesvg/react/codeberg'
 import CognitoLogo from '@thesvg/react/aws-amazon-cognito'
+import ValkeyLogo from '@thesvg/react/valkey'
+import TimescaleLogo from '@thesvg/react/timescale'
 import FacebookLogo from '@thesvg/react/facebook'
 import FigmaLogo from '@thesvg/react/figma'
 import HuggingFaceLogo from '@thesvg/react/hugging-face'
@@ -91,6 +93,8 @@ export type BrandIconName =
   | 'mariadb'
   | 'keydb'
   | 'dragonfly'
+  | 'valkey'
+  | 'timescaledb'
   | 'clickhouse'
   | 'node'
   | 'go'
@@ -175,6 +179,8 @@ const BRAND_ICONS: Record<
   mariadb: MariadbLogo,
   keydb: KeydbLogo,
   dragonfly: DragonflyLogo,
+  valkey: ValkeyLogo,
+  timescaledb: TimescaleLogo,
   clickhouse: ClickhouseLogo,
   node: NodedotjsLogo,
   go: GoLogo,
@@ -261,6 +267,8 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'mariadb',
   'keydb',
   'dragonfly',
+  'valkey',
+  'timescaledb',
   'clickhouse',
   'node',
   'go',

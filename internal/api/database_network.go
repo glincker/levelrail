@@ -349,7 +349,7 @@ func bindLabelShort(bind string) string {
 
 func (rt *Router) fillTLS(ctx context.Context, resp *databaseNetworkResponse, d *store.DesiredDatabase, s store.DatabaseAccessSettings) {
 	resp.TLS = databaseTLSResource{Supported: d.Engine == store.EnginePostgres, Enabled: rt.databaseTLSEnabled(ctx, *d), Required: s.RequireTLS}
-	if d.Engine == store.EngineRedis || d.Engine == store.EngineKeyDB || d.Engine == store.EngineDragonfly {
+	if store.IsRedisFamily(d.Engine) {
 		resp.TLS.Required = resp.TLS.Enabled
 		resp.TLS.State = dbaccess.TLSRequired
 		return

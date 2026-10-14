@@ -109,6 +109,18 @@ func engineFromImage(image string) (engine, version string) {
 		}
 		return "postgres", ""
 	}
+	if name == "timescaledb" {
+		if m := pgvectorTagPattern.FindStringSubmatch(tag); m != nil && m[1] >= "15" {
+			return "postgres", m[1] + "-timescaledb"
+		}
+		return "postgres", ""
+	}
+	if name == "postgis" {
+		if m := regexp.MustCompile(`^(1[3-9]|[2-9]\d)(?:-|$)`).FindStringSubmatch(tag); m != nil {
+			return "postgres", m[1] + "-postgis"
+		}
+		return "postgres", ""
+	}
 	switch {
 	case strings.Contains(name, "postgres"), strings.Contains(name, "postgis"):
 		engine = "postgres"
@@ -124,7 +136,9 @@ func engineFromImage(image string) (engine, version string) {
 		engine = "dragonfly"
 	case strings.Contains(name, "clickhouse"):
 		engine = "clickhouse"
-	case strings.Contains(name, "redis"), strings.Contains(name, "valkey"):
+	case strings.Contains(name, "valkey"):
+		engine = "valkey"
+	case strings.Contains(name, "redis"):
 		engine = "redis"
 	}
 	if m := regexp.MustCompile(`^v?(\d+(\.\d+)?)`).FindStringSubmatch(tag); m != nil {

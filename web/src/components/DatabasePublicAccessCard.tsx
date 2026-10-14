@@ -45,7 +45,7 @@ import type { DatabaseResource } from '../types/databaseDetail'
 // different risk than Postgres/MySQL's generated passwords, so this
 // family gets its own copy plus an explicit confirmation checkbox
 // gating the toggle; the other engines keep the single passive warning.
-const NO_AUTH_ENGINES = new Set(['redis', 'keydb', 'dragonfly'])
+const NO_AUTH_ENGINES = new Set(['redis', 'keydb', 'dragonfly', 'valkey'])
 
 // BIND_ADDRESS_MODES mirrors PortEditor's own identically-named
 // constant: internal/bindaddr's Private/Public shorthand plus a

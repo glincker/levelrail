@@ -39,7 +39,7 @@ func (rt *Router) viewerTarget(w http.ResponseWriter, r *http.Request, wantKV bo
 		dialect = dbviewer.DialectMySQL
 	case store.EngineMariaDB:
 		dialect = dbviewer.DialectMariaDB
-	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly:
+	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly, store.EngineValkey:
 		if !wantKV {
 			writeError(w, http.StatusBadRequest, "SQL console is not supported for engine "+desired.Engine)
 			return dbviewer.Target{}, desired, false

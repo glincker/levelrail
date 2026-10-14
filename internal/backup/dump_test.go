@@ -184,6 +184,13 @@ func TestContainerDumper_Dump(t *testing.T) {
 			wantCmd:     []string{"keydb-cli", "--rdb", "-"},
 		},
 		{
+			name:        "Valkey",
+			engine:      store.EngineValkey,
+			containerID: "db-cache",
+			content:     "rdb-bytes",
+			wantCmd:     redisDumpCmd,
+		},
+		{
 			name:        "Dragonfly",
 			engine:      store.EngineDragonfly,
 			containerID: "db-cache",

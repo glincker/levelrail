@@ -26,7 +26,7 @@ func (d *ContainerDumper) Dump(ctx context.Context, engine, containerName string
 		cmd = postgresDumpCmd
 	case store.EngineMySQL:
 		cmd = mysqlDumpCmd
-	case store.EngineRedis:
+	case store.EngineRedis, store.EngineValkey:
 		cmd = redisDumpCmd
 	case store.EngineMongoDB:
 		cmd = mongoDumpCmd

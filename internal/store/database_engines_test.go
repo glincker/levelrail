@@ -87,6 +87,7 @@ func TestSupportedEngines_MatchReconcilerCases(t *testing.T) {
 		EngineKeyDB:      true,
 		EngineDragonfly:  true,
 		EngineClickHouse: true,
+		EngineValkey:     true,
 	}
 
 	engines, err := SupportedDatabaseEngines()

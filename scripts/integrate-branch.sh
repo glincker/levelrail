@@ -40,7 +40,7 @@ resolve_conflicts() {
 			git checkout --ours -- "$f" 2>/dev/null
 			regen_catalog && git add "$f" || unresolved="$unresolved $f"
 			;;
-		web/src/i18n/index.ts | web/src/i18n/resources.ts)
+		web/src/components/BrandIcon.tsx | web/src/i18n/index.ts | web/src/i18n/resources.ts)
 			# Both sides only append namespace lines, keep both.
 			sed -i.bak -e '/^<<<<<<< /d' -e '/^=======$/d' -e '/^>>>>>>> /d' "$f" && rm -f "$f.bak"
 			git add "$f"

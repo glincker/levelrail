@@ -488,6 +488,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// here.
 		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
 
+	case store.EngineValkey:
+		// Same /data path, port and image defaults (RDB snapshots, no
+		// password) as Redis; the image ships redis-server and redis-cli symlinks.
+		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
+
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
 		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
@@ -846,6 +851,7 @@ var dockerImageMapping = map[string]string{
 	store.EngineMongoDB:   "mongo",
 	store.EngineKeyDB:     "eqalpha/keydb",
 	store.EngineDragonfly: "docker.dragonflydb.io/dragonflydb/dragonfly",
+	store.EngineValkey:    "valkey/valkey",
 	// ClickHouse's own registry namespace, not a Docker Official Image:
 	// clickhouse/clickhouse-server is what upstream publishes.
 	store.EngineClickHouse: "clickhouse/clickhouse-server",

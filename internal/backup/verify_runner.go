@@ -242,7 +242,7 @@ func validateFormat(engine string, header, tail []byte, totalBytes int64) (bool,
 		return false, "downloaded object is empty"
 	}
 	switch engine {
-	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly:
+	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly, store.EngineValkey:
 		if len(header) < 5 || string(header[:5]) != "REDIS" {
 			return false, "RDB header magic (\"REDIS\") not found at the start of the downloaded object"
 		}

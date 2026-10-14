@@ -309,6 +309,7 @@ const (
 	EngineKeyDB      = "keydb"
 	EngineClickHouse = "clickhouse"
 	EngineDragonfly  = "dragonfly"
+	EngineValkey     = "valkey"
 )
 
 // Database is one entry under databases:.

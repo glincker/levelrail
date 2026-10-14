@@ -21,7 +21,19 @@ const (
 	EngineKeyDB      = "keydb"
 	EngineDragonfly  = "dragonfly"
 	EngineClickHouse = "clickhouse"
+	EngineValkey     = "valkey"
 )
+
+// IsRedisFamily reports whether engine speaks the Redis wire protocol and
+// runs passwordless with an RDB dump, the shared code path for backup,
+// URLs and the key-value viewer.
+func IsRedisFamily(engine string) bool {
+	switch engine {
+	case EngineRedis, EngineKeyDB, EngineDragonfly, EngineValkey:
+		return true
+	}
+	return false
+}
 
 // DesiredDatabase is what a future database controller
 // reconciles a managed database container against. No credentials field:

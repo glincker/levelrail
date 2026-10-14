@@ -88,6 +88,9 @@ func TestPlanDatabaseCreate_ValidEngines(t *testing.T) {
 		{"orders", "mariadb", "11"},
 		{"cache", "keydb", "latest"},
 		{"hotcache", "dragonfly", "v1.27.1"},
+		{"cache", "valkey", "8"},
+		{"geo", "postgres", "17-postgis"},
+		{"metrics", "postgres", "17-timescaledb"},
 		{"analytics", "clickhouse", "24.8"},
 	}
 

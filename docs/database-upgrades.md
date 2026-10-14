@@ -25,7 +25,7 @@ For each database you get:
 
 The data comes from a curated catalog that ships with Levelrail (`internal/dbupgrade/catalog.json`): supported versions, release lines with end-of-life dates, and CVE ids per fixed version. Nothing is fetched while you load the page. A background job also reads the image tag list from Docker Hub once a day and adds newer pinned tags it finds; when the registry is unreachable the last good list is kept. Set `APP_DB_VERSION_REFRESH_INTERVAL=0` to turn that off (for example on an offline host).
 
-A floating tag such as `16` could be any 16.x release, so it is treated as the oldest of its line, and upgrading pins it to an exact release. A pgvector variant (`17-pgvector`) and a non-numeric tag such as `latest` have no targets.
+A floating tag such as `16` could be any 16.x release, so it is treated as the oldest of its line, and upgrading pins it to an exact release. A Postgres flavor (`17-pgvector`, `17-timescaledb`, `17-postgis`) and a non-numeric tag such as `latest` have no targets.
 
 The [attention center](/attention-center) shows **N databases have security updates available**, plus one item per database past end of life and per database whose last upgrade failed.
 
@@ -94,6 +94,7 @@ The snapshot volume is removed when a run succeeds or reverts. The pre-upgrade b
 | MariaDB | patch | no | Each release series (10.11, 11.4, 11.8) is its own line; moving between series needs `mariadb-upgrade` and stays manual. A failed patch reverts from the snapshot. |
 | MongoDB | patch | yes | 7.0 and 8.0 are separate majors; patches keep the featureCompatibilityVersion. |
 | ClickHouse | patch | yes | 24.8, 25.3 and 25.8 are separate majors. |
+| Valkey | patch | yes | Tags such as `8.1.10`. A newer major may write an RDB version an older server cannot load; then the snapshot is restored. |
 | Dragonfly | patch | yes | Tags such as `v1.27.1`. |
 | KeyDB | never | no | Published only as `latest` and architecture-prefixed tags, so there is no version line to follow. |
 

@@ -50,6 +50,8 @@ func ContainerPort(engine string) (int, bool) {
 		// KeyDB reuses the redis image's port, same reason
 		// controller.go's own KeyDB case reuses redisContainerPort.
 		return redisContainerPort, true
+	case store.EngineValkey:
+		return redisContainerPort, true
 	case store.EngineDragonfly:
 		// Dragonfly reuses the redis image's port, same reason
 		// controller.go's own Dragonfly case reuses redisContainerPort.
@@ -138,7 +140,7 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "username", "database":
-		if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
+		if store.IsRedisFamily(engine) {
 			return false
 		}
 		_, ok := ContainerPort(engine)
