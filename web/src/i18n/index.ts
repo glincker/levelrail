@@ -23,6 +23,7 @@ export const NAMESPACES = [
   'attention',
   'setup',
   'updates',
+  'infraCanvas',
   'exposure',
   'databaseAccess',
   'databaseUpgrades',

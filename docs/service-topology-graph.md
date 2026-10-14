@@ -10,7 +10,11 @@ The **Topology** page (`/projects/$id/topology`, linked from a project's own det
 
 ## What you see
 
-Three columns, left to right: **Apps**, **Databases**, **Volumes**. A column only appears when the project has at least one resource of that kind. Each app and database box shows the same status dot and label used everywhere else in the dashboard (`Healthy`, `Attention needed`, `Stopped`, `Reconciling`, `No status yet`), so a degraded app is just as visible here as it is on the apps list.
+An interactive canvas. Drag the background to pan, scroll to pan or hold Ctrl or Cmd while scrolling to zoom, and drag any box to rearrange it. Columns start as **Domains**, **Apps**, **Databases** and **Volumes**. Each app and database box shows the same status dot used everywhere else in the dashboard (healthy, deploying, failed, no status), refreshed every few seconds, so a deploy in flight is visible without leaving the page.
+
+Click a box to open a side panel with its connections and quick links (overview, logs, deploys and rollback, domains, metrics). Positions are remembered per project in this browser; **Reset layout** returns to the default arrangement. Large projects stay responsive because boxes and lines outside the visible area are not drawn until you pan to them.
+
+Keyboard: Tab to the canvas, arrow keys pan, plus and minus zoom. Tab to a box, then arrow keys nudge it (hold Shift for bigger steps), Enter opens its panel, Escape closes it.
 
 ## What each edge means
 
@@ -21,6 +25,7 @@ Every edge is derived from one specific field on the project's apps and database
 | Database binding | An app's `env: { FOO: { from: "db.field" } }` binding ([`EnvVar` reference](app-spec-reference.md#envvar-an-entry-under-env)), or a direct database attachment made via `levelrail-cli apps connect` ([Connecting apps to databases](connecting-apps-to-databases.md)) | `web` reads `DATABASE_URL` from database `main` |
 | Depends on | An app's `dependsOn:` list, resolved the same way the reconciler resolves it before starting a container: the dependency must be a real sibling service in the same multi-service app | `web` depends on `worker` |
 | Volume attachment | A named Docker volume an app mounts (`PUT /apps/{name}/volumes`, or `app.yaml`'s `volumes:` block). Two apps that happen to mount the same volume name render as one shared volume box, not two | `web` mounts `app-web-uploads` |
+| Routing | A domain listed in an app's `domains:`. The domain box points at the app that serves it | `shop.example.com` routes to `web` |
 | Egress allow-rule | An entry in an app's [egress policy](api-reference.md) allowlist, but only when that entry's host matches a domain another app in the same project actually owns. An allow-listed third-party host (the common case, e.g. `api.stripe.com`) has nothing to point at in this project and is left off the diagram rather than drawn as a guess | `web` is allowed to reach `admin` over its `admin.example.com` domain |
 
 Network shares (`/api/v1/network-shares`) are left off this diagram: nothing in a project's stored configuration links a share to an app, so an edge would be a guess.
@@ -31,7 +36,7 @@ Network shares (`/api/v1/network-shares`) are left off this diagram: nothing in 
 levelrail-cli apps projects topology <project-id>
 ```
 
-This prints the graph as nodes and edges; add `--json` for the raw response. The API is `GET /api/v1/projects/{id}/topology` (`read` ability). Whole-mesh data comes from `levelrail-cli nodes topology`, covered on [Network topology](network-topology.md).
+This prints the graph as nodes and edges (kinds `app`, `database`, `volume`, `domain`; edge kinds `database_binding`, `depends_on`, `volume_attachment`, `egress_allow`, `routing`); add `--json` for the raw response, the same JSON the canvas draws. The API is `GET /api/v1/projects/{id}/topology` (`read` ability). Whole-mesh data comes from `levelrail-cli nodes topology`, covered on [Network topology](network-topology.md).
 
 ## Multi-service apps
 
