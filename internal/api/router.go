@@ -612,6 +612,9 @@ type Router struct {
 	samlLimiter *apiRateLimiter
 	scim        SCIMStore
 	scimLimiter *apiRateLimiter
+	// accessPolicy enforces per-team session policy in accessPolicyMiddleware.
+	accessPolicy  AccessPolicyStore
+	policyTouches *touchCache
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
 	// real, UAPI-backed half). nil is valid: APP_MESH_ENABLED defaults
 	// off (cmd/levelrail/mesh.go's own doc comment), and the route

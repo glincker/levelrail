@@ -46,7 +46,18 @@ While you can still sign in, create a token in **Settings, CLI Access** named `b
 | --- | --- |
 | First run, no admin yet | `levelrail setup-token` prints the one-time setup token |
 | Bad upgrade | Restore the pre-migration snapshot with `levelrail restore-db` |
+| Session policy blocks your address | `levelrail access-policy-reset --yes` removes every session policy |
 | CLI already logged in | `levelrail-cli auth login --device`, approved from any signed-in session |
+
+## Locked out by a session policy
+
+An IP allowlist or a required second factor in a [session policy](session-policy.md) can lock everyone out, including holders of an emergency token. Remove every session policy from the host, then sign in again:
+
+```bash
+sudo APP_DATA_DIR=/var/lib/levelrail-data /usr/local/bin/levelrail access-policy-reset --yes
+```
+
+The reset is written to the audit log.
 
 ## Single sign-on is broken
 

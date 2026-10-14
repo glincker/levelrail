@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1067 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1071 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -355,6 +355,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/security/policy", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSecurityPolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/policy", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSecurityPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/posture", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSecurityPosture", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/session-policies", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSessionPolicies", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/security/session-policies/{team_id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteSessionPolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/security/session-policies/{team_id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSessionPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/session-policy/effective", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleEffectiveSessionPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/sessions", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSecuritySessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/security/sessions/revoke-others", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSecuritySessions", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/security/sessions/{id}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeSecuritySession", Description: ""},

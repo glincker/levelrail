@@ -241,6 +241,11 @@ func (rt *Router) finishSAMLSignIn(w http.ResponseWriter, r *http.Request, c sto
 		http.Redirect(w, r, "/login?approval="+url.QueryEscape(hold.approval.ID), http.StatusFound)
 		return
 	}
+	if sid, ok := rt.libSessions.SessionIDFor(ctx, token); ok && rt.accessPolicy != nil {
+		if err := rt.accessPolicy.SetSessionMethod(ctx, sid, user.ID, signInMethodSAML, time.Now()); err != nil {
+			rt.logger.Warn("api: saml: record session method failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
+		}
+	}
 	if err := rt.sso.TouchSAMLIdentity(ctx, c.ID, ident.NameID, time.Now()); err != nil {
 		rt.logger.Warn("api: saml: touch identity failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
 	}

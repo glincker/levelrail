@@ -55,6 +55,7 @@ func (rt *Router) Handler() http.Handler {
 
 	var h http.Handler = mux
 	h = experimentalGateMiddleware(h)
+	h = rt.accessPolicyMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	if !rt.hstsEnabled {

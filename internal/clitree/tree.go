@@ -247,6 +247,7 @@ var Tree = map[string]*Node{
 	"volumes-orphaned-cleanup": nil,
 	"users":                    {Subs: map[string]*Node{"list": nil, "create": nil, "set-abilities": nil, "delete": nil, "roles": nil, "role": {Subs: map[string]*Node{"set": nil}}, "grants": {Subs: map[string]*Node{"get": nil, "set": nil}}}},
 	"roles":                    {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
+	"session-policy":           {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil, "effective": nil}},
 	"sso": {Subs: map[string]*Node{
 		"saml":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "import-metadata": nil, "metadata": nil}},
 		"mappings": {Subs: map[string]*Node{"list": nil, "set": nil}},

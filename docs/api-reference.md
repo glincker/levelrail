@@ -85,7 +85,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 127 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 131 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -224,6 +224,10 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/security/session-policies | AbilityRoot | handleListSessionPolicies |
+| PUT | /api/v1/security/session-policies/{team_id} | AbilityRoot | handlePutSessionPolicy |
+| DELETE | /api/v1/security/session-policies/{team_id} | AbilityRoot | handleDeleteSessionPolicy |
+| GET | /api/v1/security/session-policy/effective | Public | handleEffectiveSessionPolicy |
 
 :::
 

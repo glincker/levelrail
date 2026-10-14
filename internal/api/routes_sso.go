@@ -26,6 +26,11 @@ func (rt *Router) registerSSORoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/sso/scim/tokens/{id}/rotate", rt.requireAbility(AbilityRoot, rt.handleRotateSCIMToken))
 	mux.HandleFunc("DELETE /api/v1/sso/scim/tokens/{id}", rt.requireAbility(AbilityRoot, rt.handleRevokeSCIMToken))
 
+	mux.HandleFunc("GET /api/v1/security/session-policies", rt.requireAbility(AbilityRoot, rt.handleListSessionPolicies))
+	mux.HandleFunc("PUT /api/v1/security/session-policies/{team_id}", rt.requireAbility(AbilityRoot, rt.handlePutSessionPolicy))
+	mux.HandleFunc("DELETE /api/v1/security/session-policies/{team_id}", rt.requireAbility(AbilityRoot, rt.handleDeleteSessionPolicy))
+	mux.HandleFunc("GET /api/v1/security/session-policy/effective", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleEffectiveSessionPolicy))
+
 	// SCIM 2.0: authenticated by a SCIM bearer token in requireSCIM, never by a session.
 	mux.HandleFunc("GET /api/v1/scim/v2/ServiceProviderConfig", rt.requireSCIM(rt.handleSCIMServiceProviderConfig))
 	mux.HandleFunc("GET /api/v1/scim/v2/ResourceTypes", rt.requireSCIM(rt.handleSCIMResourceTypes))

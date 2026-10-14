@@ -223,6 +223,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRoles(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sso":
 		return runSSO(prog, args[1:], stdout, stderr, lookupEnv)
+	case "session-policy":
+		return runSessionPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "teams":
 		return runTeams(prog, args[1:], stdout, stderr, lookupEnv)
 	case "members":
