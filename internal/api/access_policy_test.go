@@ -135,3 +135,61 @@ func TestSessionPolicyRequiresMFA(t *testing.T) {
 		t.Fatalf("effective policy: %d", rec.Code)
 	}
 }
+
+func TestSessionPolicyConcurrentSessionCap(t *testing.T) {
+	ctx := context.Background()
+	t.Run("evict_oldest", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		first := loginTestSession(t, rt, db)
+		if err := db.SaveSessionPolicy(ctx, store.SessionPolicy{TeamID: store.DefaultTeamID, MaxSessions: 1, UpdatedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+		second := loginTestSession(t, rt, db)
+		if rec := servePolicy(rt, authedRequest(t, second, http.MethodGet, "/api/v1/auth/session", "")); rec.Code != http.StatusOK {
+			t.Fatalf("newest session refused: %d %s", rec.Code, rec.Body)
+		}
+		rec := servePolicy(rt, authedRequest(t, first, http.MethodGet, "/api/v1/auth/session", ""))
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("oldest session survived the cap: %d %s", rec.Code, rec.Body)
+		}
+	})
+	t.Run("reject", func(t *testing.T) {
+		rt, db := newTestRouter(t)
+		first := loginTestSession(t, rt, db)
+		if err := db.SaveSessionPolicy(ctx, store.SessionPolicy{TeamID: store.DefaultTeamID, MaxSessions: 1, OnLimit: store.SessionOnLimitReject, UpdatedAt: time.Now()}); err != nil {
+			t.Fatal(err)
+		}
+		second := loginTestSession(t, rt, db)
+		rec := servePolicy(rt, authedRequest(t, second, http.MethodGet, "/api/v1/auth/session", ""))
+		if rec.Code != http.StatusConflict || policyCode(rec) != "session_limit" {
+			t.Fatalf("new session over the cap: %d %s", rec.Code, rec.Body)
+		}
+		if rec := servePolicy(rt, authedRequest(t, first, http.MethodGet, "/api/v1/auth/session", "")); rec.Code != http.StatusOK {
+			t.Fatalf("existing session lost under reject: %d %s", rec.Code, rec.Body)
+		}
+	})
+}
+
+func TestSessionPolicyCapValidation(t *testing.T) {
+	rt, db := newTestRouter(t)
+	admin := loginTestSession(t, rt, db)
+	path := "/api/v1/security/session-policies/" + store.DefaultTeamID
+	for _, tc := range []struct {
+		name, body string
+		want       int
+	}{
+		{"negative", `{"max_concurrent_sessions":-1}`, http.StatusBadRequest},
+		{"too large", `{"max_concurrent_sessions":5000}`, http.StatusBadRequest},
+		{"bad mode", `{"max_concurrent_sessions":2,"on_limit":"drop"}`, http.StatusBadRequest},
+		{"reject", `{"max_concurrent_sessions":2,"on_limit":"reject"}`, http.StatusOK},
+		{"default mode", `{"max_concurrent_sessions":3}`, http.StatusOK},
+	} {
+		if rec := servePolicy(rt, authedRequest(t, admin, http.MethodPut, path, tc.body)); rec.Code != tc.want {
+			t.Errorf("%s: %d %s", tc.name, rec.Code, rec.Body)
+		}
+	}
+	p, err := db.GetSessionPolicy(context.Background(), store.DefaultTeamID)
+	if err != nil || p.MaxSessions != 3 || p.OnLimit != store.SessionOnLimitEvictOldest {
+		t.Fatalf("stored policy = %+v, %v", p, err)
+	}
+}

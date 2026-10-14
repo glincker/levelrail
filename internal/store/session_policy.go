@@ -19,19 +19,30 @@ type SessionPolicy struct {
 	MaxLifetime time.Duration
 	IPAllowlist []string
 	RequireMFA  bool
-	UpdatedBy   string
-	UpdatedAt   time.Time
+	// MaxSessions caps concurrent full sessions per user; 0 means no cap.
+	MaxSessions int
+	// OnLimit is SessionOnLimitEvictOldest or SessionOnLimitReject.
+	OnLimit   string
+	UpdatedBy string
+	UpdatedAt time.Time
 }
 
-const sessionPolicyColumns = `p.team_id, p.idle_timeout_seconds, p.max_lifetime_seconds, p.ip_allowlist, p.require_mfa, p.updated_by, p.updated_at`
+// Session cap overflow modes (migration 0701).
+const (
+	SessionOnLimitEvictOldest = "evict_oldest"
+	SessionOnLimitReject      = "reject"
+)
+
+const sessionPolicyColumns = `p.team_id, p.idle_timeout_seconds, p.max_lifetime_seconds, p.ip_allowlist, p.require_mfa, p.max_concurrent_sessions, p.on_limit, p.updated_by, p.updated_at`
 
 func scanSessionPolicy(scan func(dest ...any) error) (SessionPolicy, error) {
 	var (
 		p               SessionPolicy
 		idle, life, mfa int64
+		maxSessions     int64
 		allowlist, upd  string
 	)
-	err := scan(&p.TeamID, &idle, &life, &allowlist, &mfa, &p.UpdatedBy, &upd)
+	err := scan(&p.TeamID, &idle, &life, &allowlist, &mfa, &maxSessions, &p.OnLimit, &p.UpdatedBy, &upd)
 	if errors.Is(err, sql.ErrNoRows) {
 		return SessionPolicy{}, ErrSessionPolicyNotFound
 	}
@@ -42,6 +53,7 @@ func scanSessionPolicy(scan func(dest ...any) error) (SessionPolicy, error) {
 		return SessionPolicy{}, fmt.Errorf("store: session policy %q allowlist: %w", p.TeamID, err)
 	}
 	p.IdleTimeout, p.MaxLifetime, p.RequireMFA = time.Duration(idle)*time.Second, time.Duration(life)*time.Second, mfa == 1
+	p.MaxSessions = int(maxSessions)
 	if p.UpdatedAt, err = time.Parse(time.RFC3339Nano, upd); err != nil {
 		return SessionPolicy{}, fmt.Errorf("store: session policy %q updated_at: %w", p.TeamID, err)
 	}
@@ -90,12 +102,16 @@ func (db *DB) SaveSessionPolicy(ctx context.Context, p SessionPolicy) error {
 	if err != nil {
 		return fmt.Errorf("store: marshal allowlist: %w", err)
 	}
-	_, err = db.ExecContext(ctx, `INSERT INTO session_policies (team_id, idle_timeout_seconds, max_lifetime_seconds, ip_allowlist, require_mfa, updated_by, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+	if p.OnLimit == "" {
+		p.OnLimit = SessionOnLimitEvictOldest
+	}
+	_, err = db.ExecContext(ctx, `INSERT INTO session_policies (team_id, idle_timeout_seconds, max_lifetime_seconds, ip_allowlist, require_mfa, max_concurrent_sessions, on_limit, updated_by, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (team_id) DO UPDATE SET idle_timeout_seconds = excluded.idle_timeout_seconds,
 			max_lifetime_seconds = excluded.max_lifetime_seconds, ip_allowlist = excluded.ip_allowlist,
-			require_mfa = excluded.require_mfa, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
-		p.TeamID, int64(p.IdleTimeout/time.Second), int64(p.MaxLifetime/time.Second), string(allowlist), boolInt(p.RequireMFA), p.UpdatedBy, formatTime(p.UpdatedAt))
+			require_mfa = excluded.require_mfa, max_concurrent_sessions = excluded.max_concurrent_sessions,
+			on_limit = excluded.on_limit, updated_by = excluded.updated_by, updated_at = excluded.updated_at`,
+		p.TeamID, int64(p.IdleTimeout/time.Second), int64(p.MaxLifetime/time.Second), string(allowlist), boolInt(p.RequireMFA), p.MaxSessions, p.OnLimit, p.UpdatedBy, formatTime(p.UpdatedAt))
 	if err != nil {
 		return fmt.Errorf("store: save session policy %q: %w", p.TeamID, err)
 	}

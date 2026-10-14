@@ -9,6 +9,8 @@ import {
 import type { ApiError } from '../lib/apiError'
 import { ssoRequest } from './sso'
 
+export type SessionOnLimit = 'evict_oldest' | 'reject'
+
 export interface SessionPolicy {
   team_id: string
   team_name: string
@@ -16,6 +18,8 @@ export interface SessionPolicy {
   max_lifetime: string
   ip_allowlist: string[]
   require_mfa: boolean
+  max_concurrent_sessions: number
+  on_limit: SessionOnLimit
   updated_by: string
   updated_at: string
 }
@@ -25,12 +29,16 @@ export interface SessionPolicyInput {
   max_lifetime: string
   ip_allowlist: string[]
   require_mfa: boolean
+  max_concurrent_sessions: number
+  on_limit: SessionOnLimit
 }
 
 export interface EffectiveSessionPolicy {
   idle_timeout: string
   max_lifetime: string
   require_mfa: boolean
+  max_concurrent_sessions: number
+  on_limit: SessionOnLimit
   allowlists: number
   your_address: string
   address_allowed: boolean

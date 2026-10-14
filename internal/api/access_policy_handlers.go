@@ -16,6 +16,7 @@ const (
 	minMaxLifetime     = 15 * time.Minute
 	maxPolicyDuration  = 90 * 24 * time.Hour
 	maxAllowlistLength = 100
+	maxSessionCap      = 1000
 )
 
 type sessionPolicyResource struct {
@@ -25,6 +26,8 @@ type sessionPolicyResource struct {
 	MaxLifetime string   `json:"max_lifetime"`
 	IPAllowlist []string `json:"ip_allowlist"`
 	RequireMFA  bool     `json:"require_mfa"`
+	MaxSessions int      `json:"max_concurrent_sessions"`
+	OnLimit     string   `json:"on_limit"`
 	UpdatedBy   string   `json:"updated_by"`
 	UpdatedAt   string   `json:"updated_at"`
 }
@@ -34,12 +37,16 @@ type sessionPolicyRequest struct {
 	MaxLifetime string   `json:"max_lifetime"`
 	IPAllowlist []string `json:"ip_allowlist"`
 	RequireMFA  bool     `json:"require_mfa"`
+	MaxSessions int      `json:"max_concurrent_sessions"`
+	OnLimit     string   `json:"on_limit"`
 }
 
 type effectivePolicyResource struct {
 	IdleTimeout string `json:"idle_timeout"`
 	MaxLifetime string `json:"max_lifetime"`
 	RequireMFA  bool   `json:"require_mfa"`
+	MaxSessions int    `json:"max_concurrent_sessions"`
+	OnLimit     string `json:"on_limit"`
 	AllowLists  int    `json:"allowlists"`
 	YourAddress string `json:"your_address"`
 	Allowed     bool   `json:"address_allowed"`
@@ -52,6 +59,13 @@ func formatPolicyDuration(d time.Duration) string {
 	return d.String()
 }
 
+func policyOnLimit(v string) string {
+	if v == store.SessionOnLimitReject {
+		return v
+	}
+	return store.SessionOnLimitEvictOldest
+}
+
 func (rt *Router) toSessionPolicyResource(r *http.Request, p store.SessionPolicy) sessionPolicyResource {
 	name := p.TeamID
 	if org, err := rt.organizations.GetOrganization(r.Context(), p.TeamID); err == nil {
@@ -59,7 +73,7 @@ func (rt *Router) toSessionPolicyResource(r *http.Request, p store.SessionPolicy
 	}
 	return sessionPolicyResource{TeamID: p.TeamID, TeamName: name, IdleTimeout: formatPolicyDuration(p.IdleTimeout),
 		MaxLifetime: formatPolicyDuration(p.MaxLifetime), IPAllowlist: nonNilStrings(p.IPAllowlist), RequireMFA: p.RequireMFA,
-		UpdatedBy: p.UpdatedBy, UpdatedAt: p.UpdatedAt.UTC().Format(time.RFC3339)}
+		MaxSessions: p.MaxSessions, OnLimit: policyOnLimit(p.OnLimit), UpdatedBy: p.UpdatedBy, UpdatedAt: p.UpdatedAt.UTC().Format(time.RFC3339)}
 }
 
 func (rt *Router) accessPolicyReady(w http.ResponseWriter) bool {
@@ -118,7 +132,18 @@ func parseSessionPolicyRequest(teamID string, req sessionPolicyRequest) (store.S
 	for _, p := range prefixes {
 		list = append(list, p.String())
 	}
-	return store.SessionPolicy{TeamID: teamID, IdleTimeout: idle, MaxLifetime: life, IPAllowlist: list, RequireMFA: req.RequireMFA}, nil
+	onLimit := strings.TrimSpace(req.OnLimit)
+	if onLimit == "" {
+		onLimit = store.SessionOnLimitEvictOldest
+	}
+	if onLimit != store.SessionOnLimitEvictOldest && onLimit != store.SessionOnLimitReject {
+		return store.SessionPolicy{}, errors.New("on_limit must be evict_oldest or reject")
+	}
+	if req.MaxSessions < 0 || req.MaxSessions > maxSessionCap {
+		return store.SessionPolicy{}, errors.New("max_concurrent_sessions must be 0 (no cap) or between 1 and 1000")
+	}
+	return store.SessionPolicy{TeamID: teamID, IdleTimeout: idle, MaxLifetime: life, IPAllowlist: list, RequireMFA: req.RequireMFA,
+		MaxSessions: req.MaxSessions, OnLimit: onLimit}, nil
 }
 
 // lockoutCheck refuses a policy that would shut out the admin saving it: the
@@ -228,6 +253,13 @@ func (rt *Router) handleEffectiveSessionPolicy(w http.ResponseWriter, r *http.Re
 	}
 	addr := policyClientAddr(r)
 	writeJSON(w, http.StatusOK, effectivePolicyResource{IdleTimeout: formatPolicyDuration(rules.IdleTimeout),
-		MaxLifetime: formatPolicyDuration(rules.MaxLifetime), RequireMFA: rules.RequireMFA, AllowLists: len(rules.AllowLists),
+		MaxLifetime: formatPolicyDuration(rules.MaxLifetime), RequireMFA: rules.RequireMFA, MaxSessions: rules.MaxSessions, OnLimit: ruleOnLimit(rules), AllowLists: len(rules.AllowLists),
 		YourAddress: addr.String(), Allowed: rules.IPAllowed(addr)})
+}
+
+func ruleOnLimit(r accesspolicy.Rules) string {
+	if r.RejectOnLimit {
+		return store.SessionOnLimitReject
+	}
+	return store.SessionOnLimitEvictOldest
 }

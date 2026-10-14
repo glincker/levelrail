@@ -60,6 +60,17 @@ function Summary({ policy }: { policy?: SessionPolicy }) {
           {t('policy.summaryMaxAge', { value: policy.max_lifetime })}
         </Badge>
       ) : null}
+      {policy.max_concurrent_sessions > 0 ? (
+        <Badge variant="outline">
+          {policy.on_limit === 'reject'
+            ? t('policy.summarySessionsReject', {
+                count: policy.max_concurrent_sessions,
+              })
+            : t('policy.summarySessionsEvict', {
+                count: policy.max_concurrent_sessions,
+              })}
+        </Badge>
+      ) : null}
       {policy.require_mfa ? (
         <Badge variant="outline">{t('policy.summaryMfa')}</Badge>
       ) : null}

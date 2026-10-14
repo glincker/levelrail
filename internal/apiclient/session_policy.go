@@ -13,6 +13,8 @@ type SessionPolicy struct {
 	MaxLifetime string   `json:"max_lifetime"`
 	IPAllowlist []string `json:"ip_allowlist"`
 	RequireMFA  bool     `json:"require_mfa"`
+	MaxSessions int      `json:"max_concurrent_sessions"`
+	OnLimit     string   `json:"on_limit"`
 	UpdatedBy   string   `json:"updated_by"`
 	UpdatedAt   string   `json:"updated_at"`
 }
@@ -23,6 +25,8 @@ type SessionPolicyRequest struct {
 	MaxLifetime string   `json:"max_lifetime"`
 	IPAllowlist []string `json:"ip_allowlist"`
 	RequireMFA  bool     `json:"require_mfa"`
+	MaxSessions int      `json:"max_concurrent_sessions"`
+	OnLimit     string   `json:"on_limit"`
 }
 
 // EffectiveSessionPolicy is the merged policy that applies to the caller.
@@ -30,6 +34,8 @@ type EffectiveSessionPolicy struct {
 	IdleTimeout string `json:"idle_timeout"`
 	MaxLifetime string `json:"max_lifetime"`
 	RequireMFA  bool   `json:"require_mfa"`
+	MaxSessions int    `json:"max_concurrent_sessions"`
+	OnLimit     string `json:"on_limit"`
 	AllowLists  int    `json:"allowlists"`
 	YourAddress string `json:"your_address"`
 	Allowed     bool   `json:"address_allowed"`

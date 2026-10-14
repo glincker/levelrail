@@ -15,6 +15,7 @@ func sessionPolicyUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s session-policy list                         show every team's session policy
   %[1]s session-policy set <team-id> [--idle 30m] [--max-age 12h] [--allow CIDR ...] [--require-mfa]
+                                                    [--max-sessions N] [--on-limit evict_oldest|reject]
                                                     replace a team's policy (omitted values turn that rule off)
   %[1]s session-policy clear <team-id>              remove a team's policy
   %[1]s session-policy effective                    show the policy that applies to you and your address
@@ -50,6 +51,8 @@ func runSessionPolicy(prog string, args []string, stdout, stderr io.Writer, look
 				fs.StringVar(&req.MaxLifetime, "max-age", "", "end sessions older than this, at least 15m (empty: off)")
 				fs.Var(&allow, "allow", "IP or CIDR allowed to use sessions and tokens, repeatable (none: any address)")
 				fs.BoolVar(&req.RequireMFA, "require-mfa", false, "require a second factor for password sign-ins")
+				fs.IntVar(&req.MaxSessions, "max-sessions", 0, "cap concurrent sessions per user, 0 for no cap")
+				fs.StringVar(&req.OnLimit, "on-limit", "", "over the cap: evict_oldest (default) or reject the new sign-in")
 			},
 			func(ctx context.Context, cl *Client, fs *flag.FlagSet) (any, func(), error) {
 				team, err := oneArg(fs, "team id")
@@ -78,8 +81,8 @@ func runSessionPolicy(prog string, args []string, stdout, stderr io.Writer, look
 			func(ctx context.Context, cl *Client, _ *flag.FlagSet) (any, func(), error) {
 				e, err := cl.EffectiveSessionPolicy(ctx)
 				return e, func() {
-					_, _ = fmt.Fprintf(c.stdout, "idle timeout:  %s\nmax lifetime:  %s\nrequire mfa:   %t\nallowlists:    %d\nyour address:  %s (allowed: %t)\n",
-						orOff(e.IdleTimeout), orOff(e.MaxLifetime), e.RequireMFA, e.AllowLists, e.YourAddress, e.Allowed)
+					_, _ = fmt.Fprintf(c.stdout, "idle timeout:  %s\nmax lifetime:  %s\nrequire mfa:   %t\nmax sessions:  %s\nallowlists:    %d\nyour address:  %s (allowed: %t)\n",
+						orOff(e.IdleTimeout), orOff(e.MaxLifetime), e.RequireMFA, sessionCapLabel(e.MaxSessions, e.OnLimit), e.AllowLists, e.YourAddress, e.Allowed)
 				}, err
 			})
 	}
@@ -97,14 +100,21 @@ func orOff(s string) string {
 func (c cliCtx) printSessionPolicies(ps ...apiclient.SessionPolicy) func() {
 	return func() {
 		tw := tabwriter.NewWriter(c.stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "TEAM\tIDLE\tMAX AGE\tMFA\tALLOWLIST")
+		_, _ = fmt.Fprintln(tw, "TEAM\tIDLE\tMAX AGE\tMFA\tSESSIONS\tALLOWLIST")
 		for _, p := range ps {
 			list := strings.Join(p.IPAllowlist, ",")
 			if list == "" {
 				list = "any"
 			}
-			_, _ = fmt.Fprintf(tw, "%s (%s)\t%s\t%s\t%t\t%s\n", p.TeamName, p.TeamID, orOff(p.IdleTimeout), orOff(p.MaxLifetime), p.RequireMFA, list)
+			_, _ = fmt.Fprintf(tw, "%s (%s)\t%s\t%s\t%t\t%s\t%s\n", p.TeamName, p.TeamID, orOff(p.IdleTimeout), orOff(p.MaxLifetime), p.RequireMFA, sessionCapLabel(p.MaxSessions, p.OnLimit), list)
 		}
 		_ = tw.Flush()
 	}
+}
+
+func sessionCapLabel(n int, onLimit string) string {
+	if n <= 0 {
+		return "off"
+	}
+	return fmt.Sprintf("%d (%s)", n, onLimit)
 }

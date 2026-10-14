@@ -146,6 +146,12 @@
     "idleHelp": "End sessions unused for this long, for example 30m. At least 5m. Empty turns it off.",
     "maxAge": "Maximum session age",
     "maxAgeHelp": "End sessions older than this, for example 12h. At least 15m. Empty turns it off.",
+    "maxSessions": "Concurrent sessions per person",
+    "maxSessionsHelp": "Most full sessions one person may hold at once, across browsers and devices. 0 turns the cap off.",
+    "onLimit": "When the cap is reached",
+    "onLimitEvict": "Sign out the oldest session",
+    "onLimitReject": "Refuse the new sign-in",
+    "onLimitHelp": "Checked on the first request after sign-in or the two-factor step, then every 30 seconds. Sessions over the cap end with a clear message.",
     "allowlist": "Allowed networks",
     "allowlistHelp": "One IP address or CIDR per line. Applies to sessions and API tokens. Empty allows any address.",
     "requireMfa": "Require two-factor sign-in",
@@ -158,6 +164,10 @@
     "summaryIdle": "idle {{value}}",
     "summaryMaxAge": "max {{value}}",
     "summaryMfa": "MFA required",
+    "summarySessionsEvict_one": "{{count}} session, oldest ends",
+    "summarySessionsEvict_other": "{{count}} sessions, oldest end",
+    "summarySessionsReject_one": "{{count}} session, then refuse",
+    "summarySessionsReject_other": "{{count}} sessions, then refuse",
     "summaryAllow_one": "{{count}} network",
     "summaryAllow_other": "{{count}} networks"
   }
