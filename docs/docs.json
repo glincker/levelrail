@@ -230,6 +230,9 @@
               "team-and-project-quotas",
               "environments",
               "identity-and-access",
+              "sso-saml",
+              "scim",
+              "session-policy",
               "projects-and-organizations"
             ],
             "icon": "/assets/icons/shield-check.svg"

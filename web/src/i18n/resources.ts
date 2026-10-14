@@ -49,6 +49,7 @@ import type secretRotation from '../locales/en/secretRotation.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
+import type sso from '../locales/en/sso.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -106,6 +107,7 @@ declare module 'i18next' {
       demo: typeof demo
       secretScan: typeof secretScan
       maintenance: typeof maintenance
+      sso: typeof sso
     }
   }
 }

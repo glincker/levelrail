@@ -727,6 +727,12 @@ levelrail-cli audit-purge
 
 <Accordion title="Known limits">
 
+- **No per-team or per-project access boundary**
+  IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
+
+- **Directory sync covers SCIM 2.0 only**
+  Sign-in covers Google, GitHub, Microsoft, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
+
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
 - There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft and generic OIDC, and nothing else today.
 - Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.

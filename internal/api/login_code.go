@@ -334,6 +334,10 @@ func (rt *Router) failLoginCode(ctx context.Context, r *http.Request, c store.Lo
 // completeFirstFactor finishes a sign-in whose first factor (a code, or an
 // approved new device) checked out. TOTP, when enabled, is still required.
 func (rt *Router) completeFirstFactor(w http.ResponseWriter, r *http.Request, user store.User) {
+	if rt.ssoBlocksLocalSignIn(r.Context(), user.ID) {
+		writeError(w, http.StatusForbidden, ssoRequiredMessage)
+		return
+	}
 	totpOn, err := rt.totpEnabled(r.Context(), user.ID)
 	if err != nil {
 		rt.internalError(w, "api: sign-in: read two-factor status failed", err, slog.String("user_id", user.ID))

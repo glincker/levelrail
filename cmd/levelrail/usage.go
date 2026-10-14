@@ -14,7 +14,7 @@ var serverSubcommands = map[string]bool{
 	"version": true, "retain": true, "upgrade-note": true, "rollback": true,
 	"self-upgrade": true, "migrate-check": true, "recover-admin": true,
 	"emergency-token": true, "restore-db": true, "restore-snapshot": true,
-	"restore": true, "setup-token": true, "healthcheck": true, "demo": true,
+	"restore": true, "setup-token": true, "healthcheck": true, "demo": true, "access-policy-reset": true,
 }
 
 const serverUsageBody = `Usage:
@@ -28,6 +28,7 @@ Commands:
   setup-token        print the first-run setup token
   recover-admin      reset an administrator account
   emergency-token    mint a short-lived emergency access token
+  access-policy-reset  remove every session policy (IP allowlist lockout recovery)
   restore-db         restore the database from a backup file
   restore-snapshot   restore a full snapshot
   restore            restore from a backup target

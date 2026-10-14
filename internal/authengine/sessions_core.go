@@ -252,6 +252,9 @@ func (s *Sessions) Lookup(ctx context.Context, token string) (SessionInfo, bool)
 	if err != nil || legacy == "" {
 		return SessionInfo{}, false
 	}
+	if disabled, err := userDisabled(ctx, s.db, legacy); err != nil || disabled {
+		return SessionInfo{}, false
+	}
 	return SessionInfo{
 		LegacyUserID: legacy,
 		EngineUserID: slot.user.ID.String(),

@@ -209,6 +209,14 @@ Endpoints for:
 | POST | /api/v1/auth/session-links/consume | Public | handleConsumeSessionLink |
 | PATCH | /api/v1/auth/profile | Session | handleUpdateProfile |
 | GET | /api/v1/auth/my-access | Public | handleMyAccess |
+| GET | /api/v1/auth/saml/providers | Public | handleListPublicSAMLProviders |
+| GET | /api/v1/auth/saml/{id}/metadata | Public | handleSAMLMetadata |
+| GET | /api/v1/auth/saml/{id}/login | Public | handleSAMLLogin |
+| POST | /api/v1/auth/saml/{id}/acs | Public | handleSAMLACS |
+| GET | /api/v1/security/session-policies | AbilityRoot | handleListSessionPolicies |
+| PUT | /api/v1/security/session-policies/{team_id} | AbilityRoot | handlePutSessionPolicy |
+| DELETE | /api/v1/security/session-policies/{team_id} | AbilityRoot | handleDeleteSessionPolicy |
+| GET | /api/v1/security/session-policy/effective | Public | handleEffectiveSessionPolicy |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -413,7 +421,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/secret-rotation | AbilityRead | handleListSecretRotation |
 | GET | /api/v1/apps/{name}/secret-scan | AbilityRead | handleGetSecretScan |
 | PUT | /api/v1/apps/{name}/secret-scan | AbilityWrite | handlePutSecretScan |
-| POST | /api/v1/apps/{name}/secret-scan/run | AbilityRead | handleRunSecretScan |
+| POST | /api/v1/apps/{name}/secret-scan/run | AbilityWrite | handleRunSecretScan |
 | POST | /api/v1/apps/{name}/secret-scan/allow | AbilityWrite | handleAllowSecretScan |
 | DELETE | /api/v1/apps/{name}/secret-scan/allow/{fingerprint} | AbilityWrite | handleUnallowSecretScan |
 | GET | /api/v1/apps/{name}/deployments/{id}/secret-scan | AbilityRead | handleGetDeploymentSecretScan |
@@ -1304,6 +1312,34 @@ Routes that do not fit an existing group.
 | GET | /api/v1/compliance/evidence-packs/{id} | AbilityRoot | handleGetEvidencePack |
 | GET | /api/v1/compliance/evidence-packs/{id}/download | AbilityRoot | handleDownloadEvidencePack |
 | POST | /api/v1/compliance/evidence-packs/{id}/verify | AbilityRoot | handleVerifyEvidencePack |
+| GET | /api/v1/sso/saml/connections | AbilityRoot | handleListSAMLConnections |
+| POST | /api/v1/sso/saml/connections | AbilityRoot | handleCreateSAMLConnection |
+| GET | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleGetSAMLConnection |
+| PUT | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleUpdateSAMLConnection |
+| DELETE | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleDeleteSAMLConnection |
+| POST | /api/v1/sso/saml/connections/{id}/metadata | AbilityRoot | handleImportSAMLMetadata |
+| GET | /api/v1/sso/group-mappings | AbilityRoot | handleListSSOGroupMappings |
+| PUT | /api/v1/sso/group-mappings | AbilityRoot | handlePutSSOGroupMappings |
+| GET | /api/v1/sso/settings | AbilityRoot | handleGetSSOSettings |
+| PUT | /api/v1/sso/settings | AbilityRoot | handlePutSSOSettings |
+| GET | /api/v1/sso/scim/tokens | AbilityRoot | handleListSCIMTokens |
+| POST | /api/v1/sso/scim/tokens | AbilityRoot | handleCreateSCIMToken |
+| POST | /api/v1/sso/scim/tokens/{id}/rotate | AbilityRoot | handleRotateSCIMToken |
+| DELETE | /api/v1/sso/scim/tokens/{id} | AbilityRoot | handleRevokeSCIMToken |
+| GET | /api/v1/scim/v2/ServiceProviderConfig | Public | handleSCIMServiceProviderConfig |
+| GET | /api/v1/scim/v2/ResourceTypes | Public | handleSCIMResourceTypes |
+| GET | /api/v1/scim/v2/Users | Public | handleSCIMListUsers |
+| POST | /api/v1/scim/v2/Users | Public | handleSCIMCreateUser |
+| GET | /api/v1/scim/v2/Users/{id} | Public | handleSCIMGetUser |
+| PUT | /api/v1/scim/v2/Users/{id} | Public | handleSCIMReplaceUser |
+| PATCH | /api/v1/scim/v2/Users/{id} | Public | handleSCIMPatchUser |
+| DELETE | /api/v1/scim/v2/Users/{id} | Public | handleSCIMDeleteUser |
+| GET | /api/v1/scim/v2/Groups | Public | handleSCIMListGroups |
+| POST | /api/v1/scim/v2/Groups | Public | handleSCIMCreateGroup |
+| GET | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMGetGroup |
+| PUT | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMReplaceGroup |
+| PATCH | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMPatchGroup |
+| DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMDeleteGroup |
 
 ## See also
 

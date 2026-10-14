@@ -23,6 +23,7 @@ import {
   HeartbeatIcon,
   WrenchIcon,
   IdentificationBadgeIcon,
+  IdentificationCardIcon,
   KeyIcon,
   LockKeyIcon,
   PackageIcon,
@@ -34,6 +35,7 @@ import {
   StackIcon,
   TeaBagIcon,
   TerminalWindowIcon,
+  TimerIcon,
   UserIcon,
   UsersIcon,
   UsersThreeIcon,
@@ -121,6 +123,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/roles',
         icon: IdentificationBadgeIcon,
         feature: 'access-roles',
+      },
+      { id: 'sso', to: '/settings/sso', icon: IdentificationCardIcon },
+      {
+        id: 'session-policy',
+        to: '/settings/session-policy',
+        icon: TimerIcon,
       },
       {
         id: 'oauth',

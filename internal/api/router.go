@@ -621,6 +621,15 @@ type Router struct {
 	aiTurns                      aiTurnRegistry           // live per-turn assistant tokens, keyed by token id
 
 	roles RoleStore
+	// sso backs SAML sign-in and group mappings; nil answers 501 (sso_saml_keys.go).
+	sso         SSOStore
+	samlKeys    *samlKeyCache
+	samlLimiter *apiRateLimiter
+	scim        SCIMStore
+	scimLimiter *apiRateLimiter
+	// accessPolicy enforces per-team session policy in accessPolicyMiddleware.
+	accessPolicy  AccessPolicyStore
+	policyTouches *touchCache
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
 	// real, UAPI-backed half). nil is valid: APP_MESH_ENABLED defaults
 	// off (cmd/levelrail/mesh.go's own doc comment), and the route
@@ -861,6 +870,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// re-read on every create() call.
 	rt.sessions = newSessionStore(rt.sessionTTL)
 	rt.attachAuthEngine(s)
+	rt.attachSSO(s)
 	rt.attachEnvProtection(s)
 	rt.cliConsole = newCLIConsoleState()
 	rt.mobile = newMobileState()

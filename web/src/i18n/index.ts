@@ -57,6 +57,7 @@ export const NAMESPACES = [
   'demo',
   'secretScan',
   'maintenance',
+  'sso',
 ] as const
 
 void i18n

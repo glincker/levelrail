@@ -44,6 +44,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDatabaseAccessRoutes(mux)
 	rt.registerIAMBuilderRoutes(mux)
 	rt.registerSecurityRoutes(mux)
+	rt.registerSSORoutes(mux)
 	rt.registerProxyIntegrationRoutes(mux)
 	rt.registerSetupGuideRoutes(mux)
 	rt.registerDNSZoneRoutes(mux)
@@ -59,6 +60,7 @@ func (rt *Router) Handler() http.Handler {
 	var h http.Handler = mux
 	h = rt.bodyLimitMiddleware(h)
 	h = experimentalGateMiddleware(h)
+	h = rt.accessPolicyMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	if !rt.hstsEnabled {
