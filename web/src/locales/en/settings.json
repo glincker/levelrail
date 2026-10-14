@@ -456,6 +456,10 @@
         "title": "OAuth sign-in",
         "description": "Let people sign in with Google or GitHub."
       },
+      "sso": {
+        "title": "Single sign-on",
+        "description": "SAML identity providers, directory sync and group roles."
+      },
       "organizations": {
         "title": "Organizations",
         "description": "Group related projects under an organization."

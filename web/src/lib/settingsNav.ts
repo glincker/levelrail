@@ -22,6 +22,7 @@ import {
   HardDrivesIcon,
   HeartbeatIcon,
   IdentificationBadgeIcon,
+  IdentificationCardIcon,
   KeyIcon,
   LockKeyIcon,
   PackageIcon,
@@ -109,6 +110,7 @@ export const settingsNavSections: SettingsNavSection[] = [
         feature: 'access-roles',
       },
       { id: 'oauth', to: '/settings/oauth', icon: LockKeyIcon },
+      { id: 'sso', to: '/settings/sso', icon: IdentificationCardIcon },
       {
         id: 'organizations',
         to: '/settings/organizations',

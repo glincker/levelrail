@@ -373,7 +373,25 @@
       "tabSetup": "Set up admin account",
       "or": "or",
       "continueWith": "Continue with {{provider}}",
-      "sso": "SSO"
+      "sso": "SSO",
+      "errors": {
+        "generic": "Sign-in failed. Try again.",
+        "provider_denied": "Sign-in was cancelled.",
+        "invalid_state": "That sign-in link expired or was already used. Try again.",
+        "exchange_failed": "Sign-in with the provider failed. Try again.",
+        "userinfo_failed": "Could not read your account details from the provider.",
+        "domain_not_allowed": "Sign-in is restricted to specific email domains, and your account does not match them.",
+        "email_in_use": "An account with this email already exists. Sign in with your password, then connect this provider from Settings.",
+        "already_linked": "That identity is already linked to a different user.",
+        "rate_limited": "Too many sign-in attempts. Wait a minute and try again.",
+        "saml_unavailable": "Single sign-on is not available right now. Ask an administrator to check the SAML connection.",
+        "saml_invalid": "Your identity provider's response could not be verified. Try again, or ask an administrator to check the SAML settings.",
+        "saml_replayed": "That sign-in response was already used. Start the sign-in again.",
+        "sso_not_provisioned": "Your account has not been set up here yet. Ask an administrator to invite you or turn on automatic account creation.",
+        "sso_no_role": "Your identity provider groups do not grant access here. Ask an administrator to map one of your groups to a role.",
+        "sso_no_email": "Your identity provider did not send an email address, so no account could be matched.",
+        "account_disabled": "This account is disabled. Ask an administrator to restore access."
+      }
     },
     "banner": {
       "dismiss": "Dismiss"
