@@ -166,6 +166,7 @@ const sidebarGroups = [
           { text: 'Pipelines', link: '/pipelines' },
           { text: 'Pipelines: OIDC federation', link: '/pipelines-oidc' },
           { text: 'Platform as code', link: '/platform-as-code' },
+          { text: 'Terraform and OpenTofu provider', link: '/terraform-provider' },
           { text: 'Git integrations', link: '/git-integrations' },
         ],
       },
