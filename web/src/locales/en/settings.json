@@ -1267,5 +1267,46 @@
       "docs": "Manifest flow docs",
       "manualHint": "No public address? Use manual setup instead."
     }
+  },
+  "nodeProviders": {
+    "names": {
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud"
+    },
+    "hints": {
+      "hetzner": "Project API token with read and write access.",
+      "digitalocean": "Personal access token with read and write scope.",
+      "aws": "Access key, or this control plane's own AWS identity.",
+      "azure": "Service principal JSON, or workload identity federation.",
+      "gcp": "Service account key JSON."
+    },
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "connect": "Connect",
+    "update": "Update",
+    "configureFor": "Configure {{provider}}",
+    "sheetTitle": "{{provider}} credentials",
+    "sheetDescription": "Used only to create and inspect servers from the Nodes page. Day to day operation never touches your cloud account.",
+    "apiToken": "API token",
+    "azureCredential": "Service principal (JSON)",
+    "gcpCredential": "Service account key (JSON)",
+    "accessKeyId": "Access key ID",
+    "secretAccessKey": "Secret access key",
+    "sessionToken": "Session token (optional)",
+    "region": "Region (optional)",
+    "roleArn": "Role ARN (optional)",
+    "roleArnHelp": "When set, assumed via STS before use: the credential above then only needs sts:AssumeRole on this role, not direct EC2 permissions.",
+    "useAmbient": "Use this control plane's own AWS identity (env vars, shared config, or an EC2 instance profile) instead of a stored key",
+    "storedReplace": "A credential is already stored. Paste a new one to replace it.",
+    "neverEchoed": "Never shown again once saved.",
+    "azureFederation": "Prefer workload identity federation over a long-lived client secret? Use a \"federated_token_file\" key instead, see",
+    "azureFederationLink": "Azure workload identity federation",
+    "saved": "{{provider}} credential saved.",
+    "saving": "Saving...",
+    "save": "Save",
+    "empty": "No cloud providers are configured on this control plane."
   }
 }
