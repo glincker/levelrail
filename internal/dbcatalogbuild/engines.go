@@ -25,6 +25,25 @@ var (
 	reMinorRC    = regexp.MustCompile(`^(\d+\.\d+)(?:\.\d+)?-(?:rc|beta|alpha)\d+$`)
 )
 
+// Source returns the links published for the spec's engine.
+func (s Spec) Source() Source {
+	src := Source{TagsURL: DockerHubBase + "/v2/" + s.Repo + "/tags/list", ReleaseNotesURL: s.ReleaseNotesURL}
+	if s.EOLSlug != "" {
+		src.EOLURL = "https://endoflife.date/" + s.EOLSlug
+	}
+	return src
+}
+
+// SpecFor finds an engine's default spec.
+func SpecFor(id string) (Spec, bool) {
+	for _, s := range DefaultSpecs() {
+		if s.ID == id {
+			return s, true
+		}
+	}
+	return Spec{}, false
+}
+
 // DefaultSpecs lists the engines the publisher covers. Engines whose images
 // are not on Docker Hub (dragonfly, keydb) are left to the embedded catalog.
 // Extending Lines is the one edit a new supported major needs.

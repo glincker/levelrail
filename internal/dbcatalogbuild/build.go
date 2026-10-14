@@ -52,12 +52,7 @@ func (b *Builder) BuildEngine(ctx context.Context, s Spec) (Engine, error) {
 			cycles[c.Cycle] = c
 		}
 	}
-	e := Engine{Source: Source{
-		TagsURL: DockerHubBase + "/v2/" + s.Repo + "/tags/list", ReleaseNotesURL: s.ReleaseNotesURL,
-	}}
-	if s.EOLSlug != "" {
-		e.Source.EOLURL = "https://endoflife.date/" + s.EOLSlug
-	}
+	e := Engine{Source: s.Source()}
 	stable := newestPerLine(tags, s.StableRe, s.Lines)
 	newestLine := ""
 	for _, line := range s.Lines {

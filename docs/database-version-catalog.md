@@ -60,7 +60,8 @@ upstream timeout is 10 seconds, and a 429 is returned with `Retry-After`.
 - `GET /api/v1/database-versions?engine=<id>` (read)
 - `POST /api/v1/database-versions/refresh?engine=<id>` (write-sensitive)
 - `GET /api/v1/database-catalog` status (read), `POST /api/v1/database-catalog/refresh` (write-sensitive)
-- `databases versions <engine> [--refresh]`, `databases catalog status|refresh`
+- `PUT /api/v1/settings/database-catalog` with `{"remote_enabled": bool}` (root)
+- `databases versions <engine> [--refresh]`, `databases catalog status|refresh|set --remote on|off`
 
 ## Published schema (version 1)
 
@@ -107,5 +108,5 @@ for an urgent security release, and operators can use the live check.
 
 1. Generate the key pair locally: `go run ./scripts/refresh-db-catalog -gen-key`.
 2. Store the private half as the repository secret `DB_CATALOG_SIGNING_KEY`. Never commit it.
-3. Paste the public half into the `PublicKey` constant in `internal/dbcatalog/key.go`.
+3. Paste the public half into the `PublicKey` constant in `internal/dbupgrade/remote_key.go`.
 4. Run the workflow once (`workflow_dispatch`) to create the `data` branch.

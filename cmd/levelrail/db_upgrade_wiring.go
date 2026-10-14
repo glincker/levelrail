@@ -56,6 +56,11 @@ func startDatabaseUpgrades(ctx context.Context, logger *slog.Logger, db *store.D
 		},
 	}
 	apiRouter.SetDatabaseUpgrader(manager)
+	versions := dbupgrade.NewRemoteCatalog(dbupgrade.RemoteConfig{
+		Catalog: catalog, DataDir: dataDirFromEnv(), PublicKey: dbupgrade.CatalogPublicKey, Logger: logger,
+	})
+	apiRouter.SetDatabaseVersionCatalog(versions)
+	go versions.Run(ctx)
 	go manager.Run(ctx, dbupgrade.DurationFromEnv(dbupgrade.EnvInterval, dbupgrade.DefaultInterval, logger))
 
 	refresher := &dbupgrade.Refresher{Catalog: catalog, Lister: dbupgrade.DockerHubLister{}, Logger: logger}
