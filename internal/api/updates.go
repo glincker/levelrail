@@ -132,6 +132,10 @@ type updateStatusResource struct {
 // update_available: there is no meaningful "newer" to compare against an
 // unreleased build.
 func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
+	if rt.demo != nil {
+		writeDemoUpdates(w)
+		return
+	}
 	channel := rt.currentUpdateChannel(r.Context())
 	resp := updateStatusResource{CurrentVersion: version.Version, ReleaseKind: upgrade.KindRelease, Channel: channel}
 

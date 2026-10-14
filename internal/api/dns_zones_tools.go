@@ -235,6 +235,10 @@ func (rt *Router) requireHealthChecker(w http.ResponseWriter, r *http.Request) (
 
 // handleListDNSHealthChecks handles GET /api/v1/dns/health-checks.
 func (rt *Router) handleListDNSHealthChecks(w http.ResponseWriter, r *http.Request) {
+	if rt.demo != nil {
+		writeDemoDNSHealthChecks(w)
+		return
+	}
 	hc, ok := rt.requireHealthChecker(w, r)
 	if !ok {
 		return
