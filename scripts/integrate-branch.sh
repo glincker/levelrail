@@ -7,6 +7,7 @@
 # Background: scripts/integrate-branch.sh feat/a >"$HOME/levelrail-local-data/integrate.log" 2>&1 &
 # Env: INTEGRATE_NO_PUSH=1 skips the push, INTEGRATE_NO_RESTART=1 skips the app restart.
 # A conflict outside the known generated files aborts that merge and moves on.
+# INTEGRATE_LOCAL=1 merges local branch refs (agent branches that are not pushed).
 # INTEGRATE_OLD_BASE (default origin/release/0.8) names a squash-merged line to strip.
 
 set -uo pipefail
@@ -60,8 +61,13 @@ merged=()
 failed=()
 for b in "$@"; do
 	echo "integrate: merging $b"
-	git fetch -q origin "$b" || { echo "integrate: cannot fetch $b" >&2; failed+=("$b"); continue; }
-	src="origin/$b"
+	if [ -n "${INTEGRATE_LOCAL:-}" ]; then
+		git rev-parse -q --verify "refs/heads/$b" >/dev/null || { echo "integrate: no local branch $b" >&2; failed+=("$b"); continue; }
+		src="refs/heads/$b"
+	else
+		git fetch -q origin "$b" || { echo "integrate: cannot fetch $b" >&2; failed+=("$b"); continue; }
+		src="origin/$b"
+	fi
 	# A branch cut from the previous release line drags that line's commits back in
 	# once it was squash merged, so replay only its own commits onto this release.
 	if git merge-base --is-ancestor "$old_base" "$src" 2>/dev/null &&
