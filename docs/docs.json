@@ -219,6 +219,7 @@
               "host-firewall",
               "exposure-audit",
               "security-center",
+              "compliance-evidence",
               "emergency-access",
               "master-key-rotation",
               "secret-rotation",

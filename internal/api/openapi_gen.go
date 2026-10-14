@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1055 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1065 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -657,6 +657,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/build-cache/stats", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCacheStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/build/detect", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDetectFramework", Description: "Framework pre-flight detection (handleDetectFramework's own doc comment): also not scoped to an existing app, same AbilityDeploy boundary as the branch listing above."},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
+	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
+	{Method: "POST", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAccessReview", Description: ""},
+	{Method: "GET", Path: "/api/v1/compliance/access-reviews/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetAccessReview", Description: ""},
+	{Method: "POST", Path: "/api/v1/compliance/access-reviews/{id}/complete", Ability: "AbilityRoot", Group: "Other", Handler: "handleCompleteAccessReview", Description: ""},
+	{Method: "PUT", Path: "/api/v1/compliance/access-reviews/{id}/items/{item}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDecideAccessReviewItem", Description: ""},
+	{Method: "GET", Path: "/api/v1/compliance/evidence-packs", Ability: "AbilityRoot", Group: "Other", Handler: "handleListEvidencePacks", Description: ""},
+	{Method: "POST", Path: "/api/v1/compliance/evidence-packs", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateEvidencePack", Description: ""},
+	{Method: "GET", Path: "/api/v1/compliance/evidence-packs/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetEvidencePack", Description: ""},
+	{Method: "GET", Path: "/api/v1/compliance/evidence-packs/{id}/download", Ability: "AbilityRoot", Group: "Other", Handler: "handleDownloadEvidencePack", Description: ""},
+	{Method: "POST", Path: "/api/v1/compliance/evidence-packs/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyEvidencePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
 	{Method: "GET", Path: "/api/v1/demo", Ability: "Public", Group: "Other", Handler: "handleDemoInfo", Description: ""},

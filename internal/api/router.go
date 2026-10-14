@@ -73,6 +73,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/compliance"
 	"log/slog"
 	"net"
 	"os/exec"
@@ -147,6 +148,7 @@ type Router struct {
 	cliConsole             *cliConsoleState                    // web CLI console limits and config, see cli_console.go
 	mobile                 *mobileState                        // phone pairing rate limits, see mobile.go
 	secrets                SecretSetter                        // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	compliance             *compliance.Service                 // nil until SetCompliance: compliance routes answer 501
 	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
 	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above

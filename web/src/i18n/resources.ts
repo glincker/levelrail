@@ -35,6 +35,7 @@ import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
+import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
@@ -88,6 +89,7 @@ declare module 'i18next' {
       smartDeploy: typeof smartDeploy
       dataExport: typeof dataExport
       eventWebhooks: typeof eventWebhooks
+      compliance: typeof compliance
       deploySafety: typeof deploySafety
       jobs: typeof jobs
       envEditor: typeof envEditor
