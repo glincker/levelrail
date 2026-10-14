@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildTargetRequest,
+  presetBrand,
   presetById,
   resolveEndpoint,
   type TargetFormValues,
@@ -60,5 +61,26 @@ describe('buildTargetRequest', () => {
   it('marks only local disk as living on the same machine', () => {
     expect(presetById('local').sameMachine).toBe(true)
     expect(presetById('minio').sameMachine).toBe(false)
+  })
+
+  it('fills region templates for the S3 compatible vendors', () => {
+    expect(resolveEndpoint(presetById('spaces'), '', 'ams3')).toBe(
+      'https://ams3.digitaloceanspaces.com',
+    )
+    expect(resolveEndpoint(presetById('hetzner'), '', '')).toBe(
+      'https://fsn1.your-objectstorage.com',
+    )
+    expect(resolveEndpoint(presetById('scaleway'), '', 'nl-ams')).toBe(
+      'https://s3.nl-ams.scw.cloud',
+    )
+    expect(resolveEndpoint(presetById('gcs'), '', '')).toBe(
+      'https://storage.googleapis.com',
+    )
+  })
+
+  it('maps every preset to a brand mark except local disk', () => {
+    expect(presetBrand('wasabi')).toBe('wasabi')
+    expect(presetBrand('gcs')).toBe('google-cloud-storage')
+    expect(presetBrand('local')).toBe('')
   })
 })

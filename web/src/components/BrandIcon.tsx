@@ -58,6 +58,11 @@ import GandiLogo from '@thesvg/react/gandi'
 import GodaddyLogo from '@thesvg/react/godaddy'
 import NamecheapLogo from '@thesvg/react/namecheap'
 import MailgunLogo from '@thesvg/react/mailgun'
+import WasabiLogo from '@thesvg/react/wasabi'
+import ScalewayLogo from '@thesvg/react/scaleway'
+import OvhcloudLogo from '@thesvg/react/ovhcloud'
+import VultrLogo from '@thesvg/react/vultr'
+import GoogleCloudStorageLogo from '@thesvg/react/google-cloud-storage'
 
 // Brand/service marks sourced from @thesvg/react, each imported from its
 // own subpath for bundle size. Distinct from @phosphor-icons (ADR 014):
@@ -122,6 +127,11 @@ export type BrandIconName =
   | 'godaddy'
   | 'namecheap'
   | 'mailgun'
+  | 'wasabi'
+  | 'scaleway'
+  | 'ovhcloud'
+  | 'vultr'
+  | 'google-cloud-storage'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -186,6 +196,11 @@ const BRAND_ICONS: Record<
   godaddy: GodaddyLogo,
   namecheap: NamecheapLogo,
   mailgun: MailgunLogo,
+  wasabi: WasabiLogo,
+  scaleway: ScalewayLogo,
+  ovhcloud: OvhcloudLogo,
+  vultr: VultrLogo,
+  'google-cloud-storage': GoogleCloudStorageLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -252,6 +267,11 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'godaddy',
   'namecheap',
   'mailgun',
+  'wasabi',
+  'scaleway',
+  'ovhcloud',
+  'vultr',
+  'google-cloud-storage',
 ]
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>
