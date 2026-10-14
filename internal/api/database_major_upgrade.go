@@ -81,13 +81,16 @@ func checkMajorUpgrade(d *store.DesiredDatabase, toVersion string) string {
 	if err := database.ValidateEngineVersion(d.Engine, toVersion); err != nil {
 		return err.Error()
 	}
-	_, fromVariant, _ := database.ParsePgvectorVersion(d.Version)
-	_, toVariant, _ := database.ParsePgvectorVersion(toVersion)
-	if fromVariant && !toVariant {
+	_, fromVariant, _ := database.ParsePostgresVariant(d.Version)
+	_, toVariant, _ := database.ParsePostgresVariant(toVersion)
+	if fromVariant == "pgvector" && toVariant == "" {
 		return "moving from the pgvector image back to plain Postgres is not supported: the dump references the vector extension"
 	}
+	if fromVariant != "" && toVariant != fromVariant {
+		return "moving from the " + fromVariant + " image to another Postgres image is not supported: the dump references its extensions"
+	}
 	switch {
-	case to == from && !fromVariant && toVariant:
+	case to == from && fromVariant == "" && toVariant != "":
 	case to == from:
 		return "the major version is unchanged: use PUT /version for a minor or patch change"
 	case to < from:

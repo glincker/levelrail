@@ -19,10 +19,10 @@ func CheckInPlaceVersionChange(engine, from, to string) error {
 	if to == from {
 		return nil
 	}
-	_, fromVariant, _ := ParsePgvectorVersion(from)
-	_, toVariant, _ := ParsePgvectorVersion(to)
+	_, fromVariant, _ := ParsePostgresVariant(from)
+	_, toVariant, _ := ParsePostgresVariant(to)
 	if fromVariant != toVariant {
-		return errors.New("switching between the plain and pgvector images in place is refused: they are built on different Debian releases, and a glibc collation change can silently corrupt indexes. Use the guarded major upgrade (dump and restore) or restore a backup into a new database")
+		return errors.New("switching between the plain and pgvector, timescaledb or postgis images in place is refused: they are built on different base images, and a libc collation change can silently corrupt indexes. Use the guarded major upgrade (dump and restore) or restore a backup into a new database")
 	}
 	fromMajor, fromOK := LeadingMajor(from)
 	toMajor, toOK := LeadingMajor(to)
@@ -30,7 +30,7 @@ func CheckInPlaceVersionChange(engine, from, to string) error {
 		return fmt.Errorf("cannot compare %q with %q: use numeric versions, or restore a backup into a new database", from, to)
 	}
 	switch engine {
-	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly:
+	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly, store.EngineValkey:
 		if toMajor < fromMajor {
 			return fmt.Errorf("downgrading %s from major %d to %d is not supported: the data files are not backward compatible", engine, fromMajor, toMajor)
 		}

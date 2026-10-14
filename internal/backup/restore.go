@@ -89,6 +89,8 @@ func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName s
 		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, redisDisableAutoSaveCmd)
 	case store.EngineKeyDB:
 		return r.restoreRedisLike(ctx, containerName, dump, keydbCLIBin, keydbDisableAutoSaveCmd)
+	case store.EngineValkey:
+		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, redisDisableAutoSaveCmd)
 	case store.EngineDragonfly:
 		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, dragonflyDisableAutoSaveCmd)
 	}

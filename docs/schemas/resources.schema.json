@@ -145,7 +145,8 @@
             "mariadb",
             "keydb",
             "clickhouse",
-            "dragonfly"
+            "dragonfly",
+            "valkey"
           ]
         },
         "ephemeralInPreviews": {

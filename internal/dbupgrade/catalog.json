@@ -91,6 +91,15 @@
       "lines": [],
       "advisories": []
     },
+    "valkey": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "A newer major can write an RDB version an older server cannot load; a failed revert by image falls back to the data snapshot.",
+      "versions": ["7.2.14", "8.0.11", "8.1.10", "9.0.6", "9.1.2"],
+      "lines": [],
+      "advisories": []
+    },
     "keydb": {
       "levels": ["major", "minor", "patch"],
       "auto_max": "none",

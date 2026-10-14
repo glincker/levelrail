@@ -1694,7 +1694,7 @@ func (c *Controller) resolveDatabasePassword(ctx context.Context, dbName, engine
 // database.SupportsTLS agrees on, so no other engine reaches either
 // branch below with tlsEnabled set.
 func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, host string, port int, tlsEnabled bool) (string, error) {
-	if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
+	if store.IsRedisFamily(engine) {
 		scheme := "redis"
 		if tlsEnabled {
 			scheme = "rediss"

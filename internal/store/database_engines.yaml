@@ -30,6 +30,9 @@ engines:
   - id: dragonfly
     label: Dragonfly
     default_version: "v1.27.1"
+  - id: valkey
+    label: Valkey
+    default_version: "8"
   - id: clickhouse
     label: ClickHouse
     default_version: "24.8"

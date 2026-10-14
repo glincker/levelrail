@@ -7,7 +7,7 @@ description: Create and manage databases with backups, point-in-time restore, an
 
 ## What this covers
 
-Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
+Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
 
 | I want to | Go to |
 | --- | --- |
@@ -67,8 +67,29 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 | MongoDB | `mongodb` | `7` | no |
 | MariaDB | `mariadb` | `11` | no |
 | KeyDB | `keydb` | `latest` | no |
+| Valkey | `valkey` | `8` | no |
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
 | ClickHouse | `clickhouse` | `24.8` | no |
+
+Valkey is a Redis-protocol fork (`valkey/valkey` image, tags such as `7`, `8`, `9`). It runs exactly like Redis here: passwordless on the private network, RDB snapshots on `/data`, the same backup, restore and verify path, the key-value viewer, and the same `redis://` connection URL for apps.
+
+### Postgres flavors
+
+Three Postgres flavors run an allowlisted extension image. The engine stays `postgres`, so backups, point-in-time restore, TLS, the database viewer, data copy, and the guarded major upgrade all behave the same. The flavor is part of the version string, `<major>-<flavor>`:
+
+| Flavor | Version | Image | Minimum Postgres |
+| --- | --- | --- | --- |
+| pgvector | `17-pgvector` | `pgvector/pgvector:pg17` | 13 |
+| TimescaleDB | `17-timescaledb` | `timescale/timescaledb:latest-pg17` | 15 |
+| PostGIS | `17-postgis` | `postgis/postgis:17-3.5` (`18-3.6` for Postgres 18) | 13 |
+
+Create the extension inside the database after it starts, for example `CREATE EXTENSION timescaledb;` or `CREATE EXTENSION postgis;`. The dashboard picker shows each flavor as its own card, and the database detail page shows the flavor next to the version.
+
+```bash
+levelrail-cli databases create --name geo --engine postgres --version 17-postgis
+```
+
+Flavors have no pinned patch tags, so the upgrade advisor offers no patch targets for them. Switching a flavor on an existing database is refused in place; use the guarded major upgrade or restore a backup into a new database. The restore and upgrade paths for TimescaleDB and PostGIS reuse the Postgres dump and restore code and have not been exercised against live data here, so rehearse a restore with the backup drill before relying on them.
 
 ### Postgres with pgvector
 
@@ -78,7 +99,7 @@ A Postgres version written `<major>-pgvector` (for example `17-pgvector`) runs t
 levelrail-cli databases create --name vec --engine postgres --version 17-pgvector
 ```
 
-The dashboard create form has an **Include pgvector** checkbox for Postgres.
+The dashboard create form has a **Postgres image** selector for Postgres, and the picker has a pgvector card.
 
 <Warning>
 The plain and pgvector images are built on different Debian releases, so a database cannot be switched between them with `set-version`: a glibc collation change can silently corrupt indexes.
@@ -86,6 +107,10 @@ The plain and pgvector images are built on different Debian releases, so a datab
 
 - Plain to pgvector: `databases major-upgrade <name> --version 17-pgvector` (dump and restore, works for the same major too), or restore a backup into a new database with `--version 17-pgvector`.
 - pgvector back to plain: refused.
+
+### Planned engines
+
+Not available yet: Qdrant, Meilisearch and CockroachDB. Each one needs a reconciler case, a backup dump, a restore path, a verify runner and viewer support before it can be offered, so they are added one at a time rather than listed ahead of that work.
 
 ## Stop, start, and delete
 
@@ -147,7 +172,7 @@ This flow attaches at most one database per app. If an app needs more than one, 
 | `env_var` | no | `DATABASE_URL` | Env var the value is injected as. |
 | `field` | no | `url` | The full connection string. Others: `host`, `port`, `username`, `password`, `database`. |
 
-Fields are validated against the engine before saving: Redis, KeyDB, and Dragonfly do not support `username` or `database`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
+Fields are validated against the engine before saving: Redis, Valkey, KeyDB, and Dragonfly do not support `username` or `database`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
 
 On the dashboard, use the **Database** card on the app's Overview page. Its "Env var / field options" disclosure covers anything past the URL default.
 
@@ -363,7 +388,7 @@ Limits of the remote copy:
 By default a managed database is reachable only from the platform's Docker network. Public access binds it to a host port so you can use pgAdmin, TablePlus, RedisInsight, or similar tools from your machine.
 
 <Warning>
-**Redis, KeyDB, and Dragonfly have no password**
+**Redis, Valkey, KeyDB, and Dragonfly have no password**
 
 These engines run passwordless, so publishing the port gives unauthenticated read and write access to the whole dataset. The dashboard gates the toggle behind an "I understand this database has no password" checkbox for them. Postgres, MySQL, MongoDB, MariaDB, and ClickHouse get generated passwords and a plain, non-blocking warning.
 </Warning>
@@ -438,7 +463,7 @@ levelrail-cli databases set-version <name> 16.4
 | Engine | What is accepted |
 | --- | --- |
 | Postgres, MySQL, MariaDB, MongoDB, ClickHouse | Only minor and patch changes. A major change would corrupt the data directory and is refused with a `409`. |
-| Redis, KeyDB, Dragonfly | A newer major is allowed, but never going back. |
+| Redis, Valkey, KeyDB, Dragonfly | A newer major is allowed, but never going back. |
 
 For a Postgres major upgrade, use the guarded flow below. For the other engines, back up, then restore into a new database on the new version with `backups restore-as-new`. To see which patch and minor releases are available, which fix CVEs, and to apply them automatically in a maintenance window with a backup first and an automatic revert, see [Database upgrades](/database-upgrades).
 

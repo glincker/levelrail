@@ -381,6 +381,23 @@ databases:
 	}
 }
 
+func TestParse_ValidValkeyDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: valkey, version: "8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if got := s.Databases["cache"]; got.Engine != EngineValkey || got.Version != "8" {
+		t.Errorf("Databases[cache] = %+v, want Engine=valkey Version=8", got)
+	}
+}
+
 func TestParse_ValidClickHouseDatabase(t *testing.T) {
 	yaml := `
 version: 1

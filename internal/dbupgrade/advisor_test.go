@@ -109,6 +109,8 @@ func TestAdvise(t *testing.T) {
 		},
 		{name: "latest is not comparable", engine: "postgres", current: "latest", support: SupportUnknown},
 		{name: "pgvector has no pinned targets", engine: "postgres", current: "17-pgvector", support: SupportUnknown},
+		{name: "timescaledb has no pinned targets", engine: "postgres", current: "17-timescaledb", support: SupportUnknown},
+		{name: "postgis has no pinned targets", engine: "postgres", current: "16-postgis", support: SupportUnknown},
 		{name: "unknown engine", engine: "cockroach", current: "23.1", support: SupportUnknown},
 	}
 	ad := testAdvisor(t)

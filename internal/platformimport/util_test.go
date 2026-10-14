@@ -14,7 +14,9 @@ func TestEngineFromImage_Pgvector(t *testing.T) {
 		{"pgvector/pgvector:latest", "postgres", ""},
 		{"postgres:16", "postgres", "16"},
 		{"postgres:16-alpine", "postgres", "16"},
-		{"postgis/postgis:17-3.5", "postgres", "17"},
+		{"postgis/postgis:17-3.5", "postgres", "17-postgis"},
+		{"timescale/timescaledb:2.17.2-pg16", "postgres", "16-timescaledb"},
+		{"valkey/valkey:8", "valkey", "8"},
 		{"redis:7", "redis", "7"},
 	}
 	for _, tc := range tests {
