@@ -73,6 +73,11 @@ export const settingsNavSections: SettingsNavSection[] = [
       { id: 'api-explorer', to: '/settings/api-explorer', icon: CodeIcon },
       { id: 'data-export', to: '/settings/data-export', icon: ExportIcon },
       {
+        id: 'event-webhooks',
+        to: '/settings/event-webhooks',
+        icon: WebhooksLogoIcon,
+      },
+      {
         id: 'import-platform',
         to: '/settings/import-platform',
         icon: DownloadSimpleIcon,

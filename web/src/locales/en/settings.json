@@ -524,6 +524,10 @@
         "title": "Data export",
         "description": "Send logs, audit events and metrics to Loki, syslog, a webhook, a bucket or an OTLP collector."
       },
+      "event-webhooks": {
+        "title": "Event webhooks",
+        "description": "Signed HTTPS callbacks for platform events, with retries and a delivery log."
+      },
       "observability": {
         "title": "Observability",
         "description": "Remote-read connection info and a link out to your own Grafana."
