@@ -22,9 +22,12 @@ import {
   ssoSettingsQueryOptions,
 } from '../../queries/sso'
 import { roleListQueryOptions } from '../../queries/roles'
+import { requireExperimental } from '../../lib/experimental'
 
 // Root only server-side: every /api/v1/sso route requires AbilityRoot.
 export const Route = createFileRoute('/settings/sso')({
+  beforeLoad: ({ context: { queryClient } }) =>
+    requireExperimental(queryClient, 'saml-scim'),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(samlConnectionsQueryOptions()),

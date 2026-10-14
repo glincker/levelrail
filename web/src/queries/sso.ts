@@ -141,8 +141,9 @@ export function ssoSettingsQueryOptions() {
 }
 
 // Public and unauthenticated: the login screen shows one button per entry.
-export function usePublicSAMLProviders() {
+export function usePublicSAMLProviders(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: ssoKeys.publicProviders(),
     queryFn: async () => {
       const body = await ssoRequest<unknown>('/api/v1/auth/saml/providers')

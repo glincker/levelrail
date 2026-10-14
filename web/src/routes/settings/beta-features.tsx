@@ -32,7 +32,8 @@ export const Route = createFileRoute('/settings/beta-features')({
 })
 
 interface BetaCard {
-  feature: 'resource-advisor' | 'ai-chat' | 'cli-console' | 'mobile-api'
+  feature:
+    'resource-advisor' | 'ai-chat' | 'cli-console' | 'mobile-api' | 'saml-scim'
   title: string
   description: string
   toggleLabel: string
@@ -69,6 +70,14 @@ function BetaFeaturesPage() {
       toggleLabel: t('settings.mobileApiToggleLabel'),
       turnedOn: t('settings.mobileApiTurnedOn'),
       turnedOff: t('settings.mobileApiTurnedOff'),
+    },
+    {
+      feature: 'saml-scim',
+      title: t('settings.samlScimTitle'),
+      description: t('settings.samlScimDescription'),
+      toggleLabel: t('settings.samlScimToggleLabel'),
+      turnedOn: t('settings.samlScimTurnedOn'),
+      turnedOff: t('settings.samlScimTurnedOff'),
     },
     {
       feature: 'resource-advisor',

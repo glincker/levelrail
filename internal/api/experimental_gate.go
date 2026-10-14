@@ -41,6 +41,8 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		return experimental.ResourceAdvisor, true
 	case strings.HasPrefix(p, mobileRoutePrefix):
 		return experimental.MobileAPI, true
+	case strings.HasPrefix(p, "/api/v1/auth/saml/"), strings.HasPrefix(p, "/api/v1/sso/"), strings.HasPrefix(p, "/api/v1/scim/"):
+		return experimental.SAMLSCIM, true
 	}
 	return "", false
 }

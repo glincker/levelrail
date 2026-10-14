@@ -4,6 +4,8 @@ description: Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0 
 
 # SAML single sign-on
 
+> **Interim implementation, off by default.** This SAML and SCIM support is hand built for now and sits behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, its routes answer `404`, the settings page and the sign-in button are hidden, and an earlier "require single sign-on" setting is not applied. It will move onto the sign-in library's native SAML and SCIM once its SQLite storage supports them.
+
 Connect one or more SAML 2.0 identity providers (IdPs). Each enabled connection adds a button to the sign-in page. Directory groups can decide each person's role, and you can require single sign-on for everyone except root users.
 
 <InlineToc default-open />
