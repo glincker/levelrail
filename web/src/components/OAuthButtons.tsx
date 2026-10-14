@@ -12,6 +12,13 @@ const PROVIDER_NAMES: Record<string, string> = {
   google: 'Google',
   github: 'GitHub',
   microsoft: 'Microsoft',
+  gitlab: 'GitLab',
+  bitbucket: 'Bitbucket',
+  discord: 'Discord',
+  slack: 'Slack',
+  linkedin: 'LinkedIn',
+  twitch: 'Twitch',
+  facebook: 'Facebook',
 }
 
 // Real top-level navigation (<a href>, not a fetch): the browser must

@@ -299,7 +299,25 @@ Every registration and login challenge is single-use and expires in 5 minutes. T
 
 ### OAuth sign-in
 
-Four providers are supported: `google`, `github`, `microsoft` (Azure AD, common multi-tenant endpoint), and `oidc` (generic OpenID Connect, requires an issuer URL).
+Eleven providers are supported. Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
+
+| Provider | Where to create the OAuth app | Scopes requested |
+| --- | --- | --- |
+| `google` | Google Cloud console, APIs and Services, Credentials, OAuth client ID (web application). | `openid email profile` |
+| `github` | GitHub, Settings, Developer settings, OAuth Apps. | `read:user user:email` |
+| `microsoft` | Microsoft Entra admin center, App registrations (common multi-tenant endpoint). | `openid email profile User.Read` |
+| `gitlab` | GitLab, User settings, Applications (set "Confidential", tick `openid`, `profile`, `email`). | `openid email profile` |
+| `bitbucket` | Bitbucket, Workspace settings, OAuth consumers (grant Account: Read and Email). | `account email` |
+| `discord` | Discord Developer Portal, Applications, OAuth2. | `identify email` |
+| `slack` | api.slack.com/apps, your app, OAuth and Permissions (Sign in with Slack). | `openid email profile` |
+| `linkedin` | LinkedIn Developer Portal, your app, Products (add "Sign In with LinkedIn using OpenID Connect"). | `openid email profile` |
+| `twitch` | Twitch Developer Console, Applications, Register Your Application (client type Confidential). | `openid user:read:email` |
+| `facebook` | Meta for Developers, your app, Facebook Login (add the callback under Valid OAuth Redirect URIs). | `email public_profile` |
+| `oidc` | Your identity provider's admin console; needs an issuer URL. | `openid email profile` |
+
+For a self-hosted GitLab, set the optional **Instance URL** on the GitLab row (the `issuer_url` field over the API). It must be an `https` address, the same rule the OIDC issuer follows, and blank means gitlab.com.
+
+Sign-in requires a verified email, so providers that cannot supply one are not offered. Apple is not supported: its client secret is a signed JWT built from a team ID, key ID and private key, which the provider settings do not hold. X is not supported: its API does not return an email address without elevated app access.
 
 Settings are per-provider rows (`GET`/`PUT /api/v1/settings/oauth[/{provider}]`), gated at `AbilityRoot` to change. Enabling a provider requires a client ID and a client secret (OIDC also requires an issuer URL). The secret is write-only over the API; `GET` only reveals `has_client_secret`.
 
@@ -731,10 +749,10 @@ levelrail-cli audit-purge
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
 - **Directory sync covers SCIM 2.0 only**
-  Sign-in covers Google, GitHub, Microsoft, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
+  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
-- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft and generic OIDC, and nothing else today.
+- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook and generic OIDC, and nothing else today.
 - Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
 
 </Accordion>

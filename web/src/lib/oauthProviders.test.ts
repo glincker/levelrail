@@ -42,6 +42,13 @@ describe('brandKeyFor', () => {
   it.each([
     ['google', 'google'],
     ['oidc', 'openid'],
+    ['gitlab', 'gitlab'],
+    ['bitbucket', 'bitbucket'],
+    ['discord', 'discord'],
+    ['slack', 'slack'],
+    ['linkedin', 'linkedin'],
+    ['twitch', 'twitch'],
+    ['facebook', 'facebook'],
     ['custom', 'custom'],
   ] as const)('%s', (p, want) => {
     expect(brandKeyFor(p)).toBe(want)

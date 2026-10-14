@@ -36,20 +36,9 @@ export function OAuthProviderRow({
   const [open, setOpen] = useState(false)
   const state = connectionState(settings)
   const callback = callbackUrl(window.location.origin, settings.provider)
-  const label = ((): string => {
-    switch (settings.provider) {
-      case 'google':
-        return t('oauthPage.providers.google')
-      case 'github':
-        return t('oauthPage.providers.github')
-      case 'microsoft':
-        return t('oauthPage.providers.microsoft')
-      case 'oidc':
-        return t('oauthPage.providers.oidc')
-      default:
-        return settings.provider
-    }
-  })()
+  const label = t(`oauthPage.providers.${settings.provider}`, {
+    defaultValue: settings.provider,
+  })
 
   const copyCallback = () => {
     void navigator.clipboard.writeText(callback).then(
