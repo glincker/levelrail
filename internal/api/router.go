@@ -431,6 +431,7 @@ type Router struct {
 	backupSecrets                BackupSecretsSetter             // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	dataExport                   DataExportService               // nil is valid: export routes and GET /metrics return 501
 	eventWebhooks                EventWebhookService             // nil is valid: event webhook routes return 501
+	scheduledMaintenance         ScheduledMaintenanceStore       // nil is valid: scheduled maintenance routes return 501
 	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets    RegistryCredentialSecretsSetter // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
 	networkShares                NetworkShareStore               // always set, same "core Store interface" shape as registryCredentials above

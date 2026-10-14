@@ -59,6 +59,7 @@ type Service struct {
 	cfg     Config
 	logger  *slog.Logger
 	now     func() time.Time
+	windows WindowSource
 
 	mu       sync.Mutex
 	current  map[string]string
@@ -301,7 +302,7 @@ func (s *Service) build(ctx context.Context) (View, error) {
 	}
 	s.mu.Unlock()
 
-	return assemble(settings, comps, daily, incidents, updates, current, now), nil
+	return s.withWindows(ctx, assemble(settings, comps, daily, incidents, updates, current, now), now), nil
 }
 
 // assemble is the pure core of build: it maps stored data to the

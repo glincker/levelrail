@@ -1289,6 +1289,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/teams/{id}/quota | AbilityRead | handleGetQuota |
 | PUT | /api/v1/teams/{id}/quota | AbilityWrite | handleSetQuota |
 | DELETE | /api/v1/teams/{id}/quota | AbilityWrite | handleDeleteQuota |
+| GET | /api/v1/scheduled-maintenance | AbilityRead | handleListScheduledMaintenance |
+| POST | /api/v1/scheduled-maintenance | AbilityWriteSensitive | handleCreateScheduledMaintenance |
+| DELETE | /api/v1/scheduled-maintenance/{id} | AbilityWriteSensitive | handleDeleteScheduledMaintenance |
 
 ## See also
 

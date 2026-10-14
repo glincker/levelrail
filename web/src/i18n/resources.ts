@@ -35,6 +35,7 @@ import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
+import type maintenance from '../locales/en/maintenance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
@@ -102,6 +103,7 @@ declare module 'i18next' {
       aiAssistant: typeof aiAssistant
       demo: typeof demo
       secretScan: typeof secretScan
+      maintenance: typeof maintenance
     }
   }
 }
