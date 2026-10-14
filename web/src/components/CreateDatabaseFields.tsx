@@ -27,6 +27,7 @@ import {
 import { ExistingVolumeError } from '../lib/apiError'
 import { useCreateDatabase } from '../queries/databases'
 import { ExistingVolumePrompt } from './ExistingVolumePrompt'
+import { DatabaseVersionPicker } from './databaseVersions/DatabaseVersionPicker'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
@@ -375,12 +376,19 @@ export function CreateDatabaseFields({
 
         <Field>
           <FieldLabel htmlFor="database-version">Version</FieldLabel>
-          <Input
+          <DatabaseVersionPicker
             id="database-version"
+            engine={watchedEngine}
+            value={watchedVersion}
             placeholder={
               engines.find((e) => e.id === watchedEngine)?.default_version
             }
-            {...register('version')}
+            onChange={(next) => {
+              setValue('version', next, {
+                shouldDirty: true,
+                shouldValidate: formState.isSubmitted,
+              })
+            }}
           />
           {DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine] ? (
             <FieldHint

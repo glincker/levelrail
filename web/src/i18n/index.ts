@@ -27,6 +27,7 @@ export const NAMESPACES = [
   'exposure',
   'databaseAccess',
   'databaseUpgrades',
+  'databaseVersions',
   'iam',
   'signIn',
   'security',
