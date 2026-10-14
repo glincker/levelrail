@@ -1261,6 +1261,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/demo | Public | handleDemoInfo |
 | POST | /api/v1/demo/session | Public | handleDemoSession |
 | POST | /api/v1/demo/cta | Public | handleDemoCTA |
+| GET | /api/v1/deployments/timeline | AbilityRead | handleDeploymentsTimeline |
 
 ## See also
 

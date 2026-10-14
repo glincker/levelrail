@@ -20,6 +20,7 @@ const PREFIX_DOCS: [string, string][] = [
   ['/databases', 'managing-databases'],
   ['/backups', 'backups-and-storage'],
   ['/deployments', 'deployments-page'],
+  ['/deploy-timeline', 'deploy-timeline'],
   ['/loadbalancers', 'load-balancing'],
   ['/domains', 'domains-and-ingress'],
   ['/nodes', 'multi-node'],
