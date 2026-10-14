@@ -1,9 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowLeftIcon,
-  ArrowsInIcon,
-  ArrowsOutIcon,
-  DatabaseIcon,
   GitBranchIcon,
   MagnifyingGlassIcon,
   PackageIcon,
@@ -20,7 +18,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { BrandIcon, BRAND_ICON_NAMES, type BrandIconName } from './BrandIcon'
+import { BrandIcon, BRAND_ICON_NAMES } from './BrandIcon'
+import { DatabasePicker } from './DatabasePicker'
+import { buildPickerEntries, type PostgresFlavor } from '@/lib/databaseCatalog'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 import { CreateAppFields } from './CreateAppFields'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
@@ -83,17 +83,6 @@ const FIXED_OPTIONS: WizardOptionDef[] = [
   },
 ]
 
-// Type guard narrowing an arbitrary engine id string to BrandIconName
-// only when a real vendored logo exists for it, so a future engine the
-// registry knows about but thesvg.org hasn't vendored a mark for yet
-// still renders a real card instead of crashing BrandIcon's exhaustive
-// lookup.
-function brandIconNameFor(engineId: string): BrandIconName | null {
-  return (BRAND_ICON_NAMES as readonly string[]).includes(engineId)
-    ? (engineId as BrandIconName)
-    : null
-}
-
 function matchesSearch(option: WizardOptionDef, query: string): boolean {
   if (!query) return true
   return (
@@ -133,18 +122,12 @@ function OptionCard({
 // Two-step creation flow: step 1 picks a starting point from a
 // categorized, searchable picker, step 2 shows the minimal config for
 // whichever was picked, reusing the exact same field sets and mutation
-// hooks CreateAppFields/CreateDatabaseFields/CreateAppFromGitFields/
-// CreateComposeFields already back (no validation or submission logic
-// is duplicated here, this component only owns which step and which
-// option is showing).
+// hooks the Create*Fields components already back (no validation or
+// submission logic is duplicated here).
 //
 // `scope` lets a caller that already declared intent (the apps or
-// databases list's own "New" button) skip the other category entirely
-// instead of just pre-filtering a switchable tab: crossing categories
-// from a page that already said which one you want is not a real use
-// case, and a still-visible "All" tab would recreate the same mixed grid
-// the scoping exists to remove. Leave it undefined for a generic entry
-// point (dashboard overview) that has no such intent yet.
+// databases list's own "New" button) skip the other category entirely.
+// Leave it undefined for a generic entry point (dashboard overview).
 export function CreateResourceWizard({
   trigger,
   scope,
@@ -161,25 +144,14 @@ export function CreateResourceWizard({
    *  deploy" button. Ignored otherwise. */
   initialTemplateId?: string
 }) {
+  const { t } = useTranslation('databases')
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<string | null>(
     initialSelected ?? null,
   )
-  // Presentation only, independent of `selected`: toggling this must
-  // never remount step 2's form (that's what `key={selected}` below is
-  // actually keyed on), so it lives as its own piece of state. Starts
-  // full screen: step 1's own options grid keeps growing (more database
-  // engines, more templates), and a small centered popup has no room to
-  // browse that comfortably, the same reason Coolify's own equivalent
-  // picker is a full page, not a modal. Collapsing back to compact stays
-  // available via the toggle for whoever prefers it once step 2's form
-  // is showing.
-  const [fullscreen, setFullscreen] = useState(true)
+  const [flavor, setFlavor] = useState<PostgresFlavor | null>(null)
   // Only meaningful while selected === 'browse-templates': the catalog
-  // grid wants the full fullscreen width to show multiple columns, but
-  // its own configure-form/results view should keep the same narrow
-  // reading width every other step 2 form uses. See BrowseTemplatesFields'
-  // onViewChange doc comment.
+  // grid wants a wider dialog than its own configure-form view.
   const [templateView, setTemplateView] = useState<'grid' | 'detail'>('grid')
   const [search, setSearch] = useState('')
   // Set once the import front door has produced a plan preview; shown in
@@ -191,8 +163,6 @@ export function CreateResourceWizard({
   const [category, setCategory] = useState<
     'all' | 'applications' | 'databases'
   >('all')
-  // A scoped wizard has nothing to switch between, so the tabs never
-  // render and the active category is just the fixed scope.
   const activeCategory = scope ?? category
   // Optional convenience, see useDatabaseEnginesOptional's own doc
   // comment: a slow/failed fetch just means step 1 shows the fixed
@@ -205,37 +175,18 @@ export function CreateResourceWizard({
     value === 'docker-compose' ||
     value === 'browse-templates'
 
-  const applicationOptions = FIXED_OPTIONS
-  const databaseOptions: WizardOptionDef[] = engines.map((engine) => {
-    const brandName = brandIconNameFor(engine.id)
-    return {
-      value: engine.id,
-      label: engine.label,
-      description: `A managed ${engine.label} database, set up and ready to use automatically.`,
-      icon: brandName ? (
-        <BrandIcon name={brandName} className="size-6" />
-      ) : (
-        <DatabaseIcon className="size-6" />
-      ),
-    }
-  })
-  const options = [...applicationOptions, ...databaseOptions]
+  const pickerEntries = buildPickerEntries(engines, BRAND_ICON_NAMES)
+  const selectedKey =
+    selected === null || isFixedOption(selected) ? null : (flavor ?? selected)
 
   const normalizedSearch = search.trim().toLowerCase()
   const filteredApplications =
     activeCategory === 'databases'
       ? []
-      : applicationOptions.filter((option) =>
+      : FIXED_OPTIONS.filter((option) =>
           matchesSearch(option, normalizedSearch),
         )
-  const filteredDatabases =
-    activeCategory === 'applications'
-      ? []
-      : databaseOptions.filter((option) =>
-          matchesSearch(option, normalizedSearch),
-        )
-  const hasResults =
-    filteredApplications.length > 0 || filteredDatabases.length > 0
+  const showDatabases = activeCategory !== 'applications'
 
   function handleOpenChange(next: boolean) {
     setOpen(next)
@@ -245,7 +196,7 @@ export function CreateResourceWizard({
       // step 2); the field components below already reset their own
       // local form state off this same `open` prop.
       setSelected(initialSelected ?? null)
-      setFullscreen(true)
+      setFlavor(null)
       setTemplateView('grid')
       setSearch('')
       setCategory('all')
@@ -257,6 +208,9 @@ export function CreateResourceWizard({
     handleOpenChange(false)
   }
 
+  const databaseLabel =
+    pickerEntries.find((e) => e.key === selectedKey)?.label ?? selected ?? ''
+
   const selectedTitle = selected
     ? isFixedOption(selected)
       ? selected === 'docker-image'
@@ -266,7 +220,7 @@ export function CreateResourceWizard({
           : selected === 'docker-compose'
             ? 'New app from Docker Compose'
             : 'New app from a template'
-      : `New ${engines.find((e) => e.id === selected)?.label ?? selected} database`
+      : `New ${databaseLabel} database`
     : ''
 
   // One-sentence, plain-language framing of what's about to happen,
@@ -289,51 +243,29 @@ export function CreateResourceWizard({
     scope === 'applications'
       ? 'New application'
       : scope === 'databases'
-        ? 'New database'
+        ? t('picker.databaseTitle')
         : 'New resource'
+  const pickerDescription =
+    scope === 'databases'
+      ? t('picker.databaseDescription')
+      : 'Pick a starting point.'
 
-  // Capped at md:grid-cols-4 to match the picker's own max-w-4xl below.
-  const gridClassName = 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4'
+  const wide =
+    selected === null ||
+    (selected === 'browse-templates' && templateView === 'grid')
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={trigger} />
       <DialogContent
-        size={fullscreen ? 'fullscreen' : 'default'}
-        // sm:max-w-lg only applies to the centered `default` popup;
-        // passing it while `fullscreen` is active would fight that
-        // variant's own `max-w-none` at the sm breakpoint and up.
-        className={fullscreen ? undefined : 'sm:max-w-lg'}
+        // sm:max-w-* overrides the default variant's sm:max-w-sm; the
+        // base variant already caps height at 85vh and scrolls inside.
+        className={wide ? 'sm:max-w-5xl' : 'sm:max-w-2xl'}
       >
-        {/* Absolutely positioned against DialogContent itself, sitting
-            left of the close button so collapsing back to compact stays
-            a distinct action from closing the wizard entirely. */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          className="absolute top-2 right-11"
-          onClick={() => {
-            setFullscreen((prev) => !prev)
-          }}
-          aria-label={
-            fullscreen ? 'Collapse to compact view' : 'Expand to fullscreen'
-          }
-        >
-          {fullscreen ? <ArrowsInIcon /> : <ArrowsOutIcon />}
-        </Button>
         {importState !== null ? (
-          <div
-            className={
-              fullscreen
-                ? 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
-                : 'contents'
-            }
-          >
+          <div className="contents">
             <DialogHeader>
-              <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
-                Deployment plan
-              </DialogTitle>
+              <DialogTitle>Deployment plan</DialogTitle>
               <DialogDescription>
                 Review what will be created. Nothing exists until you deploy.
               </DialogDescription>
@@ -348,21 +280,44 @@ export function CreateResourceWizard({
             />
           </div>
         ) : selected === null ? (
-          // Width-capped even in fullscreen: unconstrained, the search bar
-          // and 4-card grid stretched across the whole viewport.
-          <div
-            className={
-              fullscreen
-                ? 'mx-auto flex w-full max-w-4xl flex-col gap-3 py-2'
-                : 'contents'
-            }
-          >
-            <DialogHeader>
-              <DialogTitle className={fullscreen ? 'text-lg' : undefined}>
-                {pickerTitle}
-              </DialogTitle>
-              <DialogDescription>Pick a starting point.</DialogDescription>
-            </DialogHeader>
+          <div className="contents">
+            {/* Pinned while the card grid scrolls; negative margins make
+                it span the dialog's own padding. */}
+            <div className="sticky -top-4 z-10 -mx-4 -mt-4 space-y-3 border-b border-border bg-popover px-4 pt-4 pb-3">
+              <DialogHeader>
+                <DialogTitle>{pickerTitle}</DialogTitle>
+                <DialogDescription>{pickerDescription}</DialogDescription>
+              </DialogHeader>
+              <div className="relative">
+                <MagnifyingGlassIcon
+                  className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <Input
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                  }}
+                  placeholder="Search resources..."
+                  aria-label="Search resources"
+                  className="pl-8"
+                />
+              </div>
+              {scope === undefined ? (
+                <Tabs
+                  value={category}
+                  onValueChange={(value) => {
+                    setCategory(value as typeof category)
+                  }}
+                >
+                  <TabsList>
+                    <TabsTrigger value="all">All</TabsTrigger>
+                    <TabsTrigger value="applications">Applications</TabsTrigger>
+                    <TabsTrigger value="databases">Databases</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              ) : null}
+            </div>
             {scope !== 'databases' ? (
               <ImportFrontDoor
                 onPlan={(plan, request) => {
@@ -370,97 +325,64 @@ export function CreateResourceWizard({
                 }}
               />
             ) : null}
-            <div className="relative">
-              <MagnifyingGlassIcon
-                className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <Input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                }}
-                placeholder="Search resources..."
-                aria-label="Search resources"
-                className="pl-8"
-              />
-            </div>
-            {scope === undefined ? (
-              <Tabs
-                value={category}
-                onValueChange={(value) => {
-                  setCategory(value as typeof category)
-                }}
-              >
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="applications">Applications</TabsTrigger>
-                  <TabsTrigger value="databases">Databases</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            ) : null}
             {filteredApplications.length > 0 ? (
               <div className="space-y-2">
                 <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
                   Applications
                 </h3>
-                <div className={gridClassName}>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                   {filteredApplications.map((option) => (
                     <OptionCard
                       key={option.value}
                       option={option}
-                      onSelect={setSelected}
+                      onSelect={(value) => {
+                        setFlavor(null)
+                        setSelected(value)
+                      }}
                     />
                   ))}
                 </div>
               </div>
             ) : null}
-            {filteredDatabases.length > 0 ? (
+            {showDatabases ? (
               <div className="space-y-2">
-                <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                  Databases
-                </h3>
-                <div className={gridClassName}>
-                  {filteredDatabases.map((option) => (
-                    <OptionCard
-                      key={option.value}
-                      option={option}
-                      onSelect={setSelected}
-                    />
-                  ))}
-                </div>
+                {scope !== 'databases' && pickerEntries.length > 0 ? (
+                  <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    Databases
+                  </h3>
+                ) : null}
+                <DatabasePicker
+                  entries={pickerEntries}
+                  query={normalizedSearch}
+                  selectedKey={selectedKey}
+                  showEmpty={filteredApplications.length === 0}
+                  onClearQuery={() => {
+                    setSearch('')
+                  }}
+                  onSelect={(entry) => {
+                    setFlavor(entry.flavor)
+                    setSelected(entry.engineId)
+                  }}
+                />
               </div>
             ) : null}
-            {!hasResults && options.length > 0 ? (
+            {activeCategory === 'applications' &&
+            filteredApplications.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
                 No resources match &ldquo;{search}&rdquo;.
               </p>
             ) : null}
           </div>
         ) : (
-          // `display: contents` when compact makes this wrapper invisible
-          // to layout. Full screen swaps it for a real flex column that
-          // caps line length to a sane reading width, except the template
-          // catalog's own grid view, which wants the fullscreen width to
-          // show multiple columns instead of being squeezed into a form's
-          // reading width (see BrowseTemplatesFields' onViewChange).
           <div
             className={
-              fullscreen
-                ? selected === 'browse-templates' && templateView === 'grid'
-                  ? 'mx-auto flex w-full max-w-6xl flex-col gap-4 py-4'
-                  : 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-4'
-                : 'contents'
+              selected === 'browse-templates' && templateView === 'grid'
+                ? 'mx-auto flex w-full max-w-6xl flex-col gap-4 py-2'
+                : 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-2'
             }
           >
             <DialogHeader>
-              <DialogTitle
-                className={
-                  fullscreen
-                    ? 'flex items-center gap-2 text-lg'
-                    : 'flex items-center gap-2'
-                }
-              >
+              <DialogTitle className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -476,11 +398,8 @@ export function CreateResourceWizard({
               </DialogTitle>
               <DialogDescription>{selectedDescription}</DialogDescription>
             </DialogHeader>
-            {/* key={selected} forces a fresh mount (and so a blank form)
-                whenever the picked option changes, including toggling
-                between two different database engines which both render
-                CreateDatabaseFields. Toggling `fullscreen` does not
-                touch `selected`, so it never forces this remount. */}
+            {/* key forces a fresh mount (and so a blank form) whenever the
+                picked option or flavor changes. */}
             {selected === 'docker-image' ? (
               <CreateAppFields
                 key={selected}
@@ -513,10 +432,11 @@ export function CreateResourceWizard({
             ) : null}
             {!isFixedOption(selected) ? (
               <CreateDatabaseFields
-                key={selected}
+                key={selectedKey ?? selected}
                 open={open}
                 onCreated={handleCreated}
                 engine={selected}
+                flavor={flavor}
               />
             ) : null}
           </div>

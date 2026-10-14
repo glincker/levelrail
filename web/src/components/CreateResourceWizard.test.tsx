@@ -1,8 +1,12 @@
-import { render, screen } from '@testing-library/react'
+import { render as rtlRender, screen } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Button } from '@/components/ui/button'
 import { CreateResourceWizard } from './CreateResourceWizard'
+import { DatabasesI18n } from '../test/databasesI18n'
+
+const render = (ui: ReactElement) => rtlRender(ui, { wrapper: DatabasesI18n })
 
 // Step 2's real field components each carry their own mutation/network
 // setup (covered by their own test files); stubbed here to plain
@@ -38,7 +42,17 @@ vi.mock('./CreateComposeFields', () => ({
   CreateComposeFields: () => <div>create-compose-fields-stub</div>,
 }))
 vi.mock('./CreateDatabaseFields', () => ({
-  CreateDatabaseFields: () => <div>create-database-fields-stub</div>,
+  CreateDatabaseFields: ({
+    engine,
+    flavor,
+  }: {
+    engine: string
+    flavor?: string | null
+  }) => (
+    <div>
+      create-database-fields-stub {engine} {flavor ?? 'plain'}
+    </div>
+  ),
 }))
 
 vi.mock('./ImportFrontDoor', () => ({
@@ -65,9 +79,21 @@ vi.mock('./ImportPlanPreview', () => ({
   ),
 }))
 
-vi.mock('../queries/databaseEngines', () => ({
-  useDatabaseEnginesOptional: () => ({ data: [] }),
+const engineFixture = vi.hoisted(() => ({
+  data: [] as { id: string; label: string; default_version: string }[],
 }))
+
+vi.mock('../queries/databaseEngines', () => ({
+  useDatabaseEnginesOptional: () => engineFixture,
+}))
+
+const ALL_ENGINES = [
+  { id: 'postgres', label: 'Postgres', default_version: '16' },
+  { id: 'mysql', label: 'MySQL', default_version: '8' },
+  { id: 'redis', label: 'Redis', default_version: '7' },
+  { id: 'valkey', label: 'Valkey', default_version: '8' },
+  { id: 'clickhouse', label: 'ClickHouse', default_version: '24.8' },
+]
 
 describe('CreateResourceWizard', () => {
   it('opens to step 1s picker by default', async () => {
@@ -154,5 +180,84 @@ describe('CreateResourceWizard', () => {
     expect(
       screen.getByRole('heading', { name: /New app from a template/ }),
     ).toBeInTheDocument()
+  })
+
+  describe('database picker', () => {
+    async function openDatabases(user: ReturnType<typeof userEvent.setup>) {
+      render(
+        <CreateResourceWizard
+          scope="databases"
+          trigger={<Button>New database</Button>}
+        />,
+      )
+      await user.click(screen.getByRole('button', { name: 'New database' }))
+    }
+
+    it('lists engines and Postgres flavors with distinct taglines', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      expect(screen.getByTestId('engine-card-valkey')).toHaveTextContent(
+        'Redis compatible',
+      )
+      expect(screen.getByTestId('engine-card-timescaledb')).toHaveTextContent(
+        'time series',
+      )
+      expect(screen.getByTestId('engine-card-postgis')).toHaveTextContent(
+        'Postgres compatible',
+      )
+      expect(
+        screen.queryByRole('button', { name: 'Expand to fullscreen' }),
+      ).not.toBeInTheDocument()
+    })
+
+    it('filters by family', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      await user.click(
+        screen.getByRole('button', { name: 'Key-value and cache' }),
+      )
+      expect(screen.getByTestId('engine-card-redis')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('engine-card-postgres'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows real empty-search copy and clears it', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      await user.type(screen.getByLabelText('Search resources'), 'zzzz')
+      expect(screen.getByText(/No database matches "zzzz"/)).toBeInTheDocument()
+      await user.click(screen.getByRole('button', { name: 'Clear search' }))
+      expect(screen.getByTestId('engine-card-postgres')).toBeInTheDocument()
+    })
+
+    it('moves focus with arrow keys and chooses with Enter', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      screen.getByTestId('engine-card-postgres').focus()
+      await user.keyboard('{ArrowRight}')
+      expect(screen.getByTestId('engine-card-postgis')).toHaveFocus()
+      await user.keyboard('{Enter}')
+      expect(
+        screen.getByText('create-database-fields-stub postgres postgis'),
+      ).toBeInTheDocument()
+    })
+
+    it('opens a flavor card on the postgres engine with its flavor', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      await user.click(screen.getByTestId('engine-card-timescaledb'))
+      expect(
+        screen.getByRole('heading', { name: /New TimescaleDB database/ }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText('create-database-fields-stub postgres timescaledb'),
+      ).toBeInTheDocument()
+    })
   })
 })

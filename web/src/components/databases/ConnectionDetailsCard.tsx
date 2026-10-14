@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { CopyField } from '../traffic/CopyField'
+import { flavorLabel, flavorOfVersion } from '@/lib/databaseCatalog'
 import type { DatabaseResource } from '../../types/databaseDetail'
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
@@ -24,6 +25,8 @@ export function ConnectionDetailsCard({
   database: DatabaseResource
 }) {
   const { t } = useTranslation('databases')
+  const flavor =
+    database.engine === 'postgres' ? flavorOfVersion(database.version) : null
   const publicAddress =
     database.publicly_accessible && database.public_port
       ? `${window.location.hostname}:${database.public_port}`
@@ -44,6 +47,11 @@ export function ConnectionDetailsCard({
             <span className="font-mono text-muted-foreground">
               {database.version}
             </span>
+            {flavor ? (
+              <Badge variant="muted" className="ml-1">
+                {t('picker.flavorBadge', { flavor: flavorLabel(flavor) })}
+              </Badge>
+            ) : null}
           </Detail>
           <Detail label={t('connection.tls')}>
             {database.tls_enabled ? (
