@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { toast } from '@/components/ui/toast'
+import { QuotaCard } from '../../components/teams/QuotaCard'
 import { TeamEventsCard } from '../../components/teams/TeamEventsCard'
 import { TeamInvitesCard } from '../../components/teams/TeamInvitesCard'
 import { TeamMembersCard } from '../../components/teams/TeamMembersCard'
@@ -137,6 +138,7 @@ function TeamsSettingsPage() {
             </p>
           )}
           <TeamMembersCard team={team} root={root} />
+          <QuotaCard scope="team" scopeId={team.id} />
           {manager && <TeamInvitesCard team={team} root={root} />}
           {manager && <TeamEventsCard teamId={team.id} />}
         </>
