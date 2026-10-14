@@ -245,6 +245,7 @@
               "resilience-summary",
               "observability",
               "status-page",
+              "scheduled-maintenance",
               "whats-new-panel"
             ],
             "icon": "/assets/icons/chart-line-up.svg"

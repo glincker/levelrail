@@ -116,5 +116,18 @@ func CheckFreeze(ctx context.Context, fs FreezeStore, serviceName string, now ti
 	if err != nil {
 		return FreezeStatus{}, fmt.Errorf("deploy: check freeze for %q: %w", serviceName, err)
 	}
+	if mf, ok := fs.(MaintenanceFreezeStore); ok {
+		extra, err := mf.FreezeMaintenanceWindows(ctx, serviceName, now)
+		if err != nil {
+			return FreezeStatus{}, fmt.Errorf("deploy: check maintenance freeze for %q: %w", serviceName, err)
+		}
+		windows = append(windows, extra...)
+	}
 	return ActiveFreeze(windows, now), nil
+}
+
+// MaintenanceFreezeStore is the optional source of freeze-enabled
+// maintenance windows; *store.DB satisfies it.
+type MaintenanceFreezeStore interface {
+	FreezeMaintenanceWindows(ctx context.Context, serviceName string, now time.Time) ([]store.DeployFreezeWindow, error)
 }

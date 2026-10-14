@@ -59,6 +59,9 @@ type StatusPageDB interface {
 func WithStatusPage(db StatusPageDB, cfg statuspage.Config, perMinute int) Option {
 	return func(rt *Router) {
 		svc := statuspage.New(db, statusAppSource{rt}, rt, cfg, rt.logger)
+		if ws, ok := any(db).(statuspage.WindowSource); ok {
+			svc.SetWindows(ws)
+		}
 		rt.statusPage, rt.statusView, rt.statusSampler = db, svc, svc
 		rt.statusLimiter = newAPIRateLimiter(perMinute)
 	}

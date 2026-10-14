@@ -992,6 +992,15 @@ levelrail-cli event-webhooks delete <id>
 ```
 Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](/event-webhooks).
 
+## Scheduled maintenance
+
+```
+levelrail-cli maintenance list
+levelrail-cli maintenance create --title T --start TIME (--end TIME | --duration 2h) [--scope all|project|app] [--target NAME] [--freeze] [--notify-before 1h] [--message TEXT]
+levelrail-cli maintenance delete <id>
+```
+One-off planned downtime shown on the dashboard and the public status page. See [Scheduled maintenance](/scheduled-maintenance).
+
 ## Logs
 
 See [Log archive](/log-archive).

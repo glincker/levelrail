@@ -21,6 +21,7 @@ import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { RestartBanner } from '../components/RestartBanner'
+import { MaintenanceBanner } from '../components/maintenance/MaintenanceBanner'
 import { Toaster } from '../components/ui/toast'
 
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
@@ -126,6 +127,7 @@ function AppShell() {
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
         <RestartBanner />
+        <MaintenanceBanner />
         <DeviceLoginBanner />
         <SignInRequestsBanner />
         <main

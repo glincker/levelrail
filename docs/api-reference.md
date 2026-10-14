@@ -1277,6 +1277,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/event-webhooks/{id}/deliveries | AbilityRoot | handleListEventWebhookDeliveries |
 | POST | /api/v1/event-webhook-deliveries/{id}/replay | AbilityRoot | handleReplayEventWebhookDelivery |
 | GET | /api/v1/secret-rotation | AbilityRoot | handleListAllSecretRotation |
+| GET | /api/v1/scheduled-maintenance | AbilityRead | handleListScheduledMaintenance |
+| POST | /api/v1/scheduled-maintenance | AbilityWriteSensitive | handleCreateScheduledMaintenance |
+| DELETE | /api/v1/scheduled-maintenance/{id} | AbilityWriteSensitive | handleDeleteScheduledMaintenance |
 
 ## See also
 

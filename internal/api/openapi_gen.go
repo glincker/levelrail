@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1055 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1058 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -842,6 +842,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityRead", Group: "Other", Handler: "handleListScheduledMaintenance", Description: ""},
+	{Method: "POST", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateScheduledMaintenance", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/scheduled-maintenance/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteScheduledMaintenance", Description: ""},
 	{Method: "GET", Path: "/api/v1/secret-rotation", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAllSecretRotation", Description: ""},
 	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
 	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
