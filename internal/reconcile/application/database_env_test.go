@@ -539,3 +539,15 @@ func TestController_Reconcile_DatabaseEnv_SearchEngines_URLAndKey(t *testing.T) 
 		})
 	}
 }
+
+func TestController_Reconcile_DatabaseEnv_Memcached_ServerList(t *testing.T) {
+	dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+		"cache": {Name: "cache", Engine: store.EngineMemcached},
+	}}
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		DatabaseEnv: map[string]store.DatabaseEnvRef{"MEMCACHED_SERVERS": {Database: "cache", Field: "url"}},
+	}
+	c, rt := newDatabaseEnvController(desired, dbStore, nil)
+	reconcileAndAssertEnv(t, c, rt, map[string]string{"MEMCACHED_SERVERS": "db-cache:11211"})
+}

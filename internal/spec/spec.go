@@ -313,6 +313,7 @@ const (
 	EngineMeilisearch = "meilisearch"
 	EngineQdrant      = "qdrant"
 	EngineTypesense   = "typesense"
+	EngineMemcached   = "memcached"
 )
 
 // Database is one entry under databases:.

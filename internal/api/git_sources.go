@@ -259,7 +259,7 @@ func validateGitSourceDatabases(databases map[string]spec.Database) error {
 		}
 		switch d.Engine {
 		case spec.EnginePostgres, spec.EngineRedis, spec.EngineMySQL, spec.EngineMongoDB, spec.EngineMariaDB, spec.EngineKeyDB, spec.EngineClickHouse, spec.EngineDragonfly, spec.EngineValkey,
-			spec.EngineMeilisearch, spec.EngineQdrant, spec.EngineTypesense:
+			spec.EngineMeilisearch, spec.EngineQdrant, spec.EngineTypesense, spec.EngineMemcached:
 		default:
 			return fmt.Errorf("databases[%q]: engine %q is not supported", name, d.Engine)
 		}

@@ -8,6 +8,7 @@ var conventionalEnvPrefix = map[string]string{
 	store.EngineMeilisearch: "MEILISEARCH",
 	store.EngineQdrant:      "QDRANT",
 	store.EngineTypesense:   "TYPESENSE",
+	store.EngineMemcached:   "MEMCACHED",
 }
 
 // ConventionalEnvVar is the env var name an app conventionally reads field
@@ -20,6 +21,10 @@ func ConventionalEnvVar(engine, field string) string {
 	}
 	switch field {
 	case "url":
+		if engine == store.EngineMemcached {
+			// Memcached clients read a host:port server list, not a URL.
+			return prefix + "_SERVERS"
+		}
 		return prefix + "_URL"
 	case "password":
 		return prefix + "_API_KEY"

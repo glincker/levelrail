@@ -127,6 +127,15 @@
       "lines": [],
       "advisories": []
     },
+    "memcached": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "Memcached keeps no data on disk: any version change restarts it with an empty cache.",
+      "versions": ["1.6.45"],
+      "lines": [],
+      "advisories": []
+    },
     "keydb": {
       "levels": ["major", "minor", "patch"],
       "auto_max": "none",

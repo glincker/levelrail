@@ -49,6 +49,11 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			wantErr: "pinned release tag",
 		},
 		{
+			name:    "memcached refuses latest",
+			flags:   createDatabaseFlags{name: "cache", engine: "memcached", version: "latest"},
+			wantErr: "pinned release tag",
+		},
+		{
 			name:    "typesense tag has no v prefix",
 			flags:   createDatabaseFlags{name: "ts", engine: "typesense", version: "v30.2"},
 			wantErr: "pinned release tag",
@@ -107,6 +112,7 @@ func TestPlanDatabaseCreate_ValidEngines(t *testing.T) {
 		{"search", "meilisearch", "v1.55"},
 		{"vectors", "qdrant", "v1.19.2"},
 		{"catalog", "typesense", "30.2"},
+		{"sessions", "memcached", "1.6"},
 		{"geo", "postgres", "17-postgis"},
 		{"metrics", "postgres", "17-timescaledb"},
 		{"analytics", "clickhouse", "24.8"},

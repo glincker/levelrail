@@ -419,6 +419,22 @@ databases:
 	}
 }
 
+func TestParse_MemcachedRefusesBackupBlock(t *testing.T) {
+	base := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: memcached, version: "1.6"`
+	if _, err := Parse([]byte(base + " }\n")); err != nil {
+		t.Fatalf("plain memcached: %v", err)
+	}
+	_, err := Parse([]byte(base + `, backup: { schedule: "0 3 * * *", retain: 7 } }` + "\n"))
+	if err == nil || !strings.Contains(err.Error(), "no data on disk") {
+		t.Fatalf("memcached with a backup block: err = %v", err)
+	}
+}
+
 func TestParse_ValidClickHouseDatabase(t *testing.T) {
 	yaml := `
 version: 1

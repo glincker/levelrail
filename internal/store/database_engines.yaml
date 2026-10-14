@@ -45,3 +45,6 @@ engines:
   - id: typesense
     label: Typesense
     default_version: "30.2"
+  - id: memcached
+    label: Memcached
+    default_version: "1.6"

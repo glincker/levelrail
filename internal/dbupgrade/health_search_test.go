@@ -14,6 +14,7 @@ func TestHealthCommand_SearchEngines(t *testing.T) {
 		{store.EngineMeilisearch, "sh", `"$MEILI_MASTER_KEY"`, "/version"},
 		{store.EngineQdrant, "bash", `"$QDRANT__SERVICE__API_KEY"`, "get 6333 /"},
 		{store.EngineTypesense, "bash", `"$TYPESENSE_API_KEY"`, "/debug"},
+		{store.EngineMemcached, "bash", "", "STAT version"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.engine, func(t *testing.T) {

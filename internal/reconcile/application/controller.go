@@ -1701,6 +1701,10 @@ func (c *Controller) resolveDatabaseURL(ctx context.Context, dbName, engine, hos
 		}
 		return fmt.Sprintf("%s://%s:%d", scheme, host, port), nil
 	}
+	if engine == store.EngineMemcached {
+		// Memcached clients take a host:port server list, no scheme.
+		return fmt.Sprintf("%s:%d", host, port), nil
+	}
 	if store.IsSearchEngine(engine) {
 		// The API key travels in its own variable (field "password"), not the URL.
 		return fmt.Sprintf("http://%s:%d", host, port), nil

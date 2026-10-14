@@ -20,6 +20,7 @@ func TestEngineFromImage_Pgvector(t *testing.T) {
 		{"getmeili/meilisearch:v1.55.0", "meilisearch", "v1.55"},
 		{"qdrant/qdrant:v1.19.2", "qdrant", "v1.19"},
 		{"typesense/typesense:30.2", "typesense", "30.2"},
+		{"memcached:1.6-alpine", "memcached", "1.6"},
 		{"redis:7", "redis", "7"},
 	}
 	for _, tc := range tests {

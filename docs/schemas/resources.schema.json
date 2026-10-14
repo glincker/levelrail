@@ -149,7 +149,8 @@
             "valkey",
             "meilisearch",
             "qdrant",
-            "typesense"
+            "typesense",
+            "memcached"
           ]
         },
         "ephemeralInPreviews": {

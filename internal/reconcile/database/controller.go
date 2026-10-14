@@ -515,6 +515,13 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
 		return c.reconcileSearchEngine(ctx, desired)
 
+	case store.EngineMemcached:
+		if desired.PubliclyAccessible && desired.PublicBindAddress != "" && desired.PublicBindAddress != bindaddr.Private {
+			err := errors.New("memcached has no authentication, so it is only published on the host's loopback address")
+			return notReady("UnauthenticatedExposureRefused", err), nil
+		}
+		return c.reconcileEngine(ctx, desired, nil, nil, "", memcachedContainerPort, nil, memcachedSpec(desired.Resources))
+
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
 		return notReady("UnknownEngine", err), fmt.Errorf("database/%s: %w", c.dbName, err)
@@ -571,8 +578,10 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// engine) still reconciles exactly as it always has.
 	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
 
-	if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
-		return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+	if dataPath != "" {
+		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		}
 	}
 	if pitrActive {
 		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
@@ -592,6 +601,10 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		Command: command,
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
 		Labels:  map[string]string{pitrLabelKey: pitrLabelValue(pitrActive)},
+	}
+	if dataPath == "" {
+		// No persistence (Memcached): no data volume to create or mount.
+		spec.Volumes = nil
 	}
 	for _, fn := range customize {
 		fn(&spec)

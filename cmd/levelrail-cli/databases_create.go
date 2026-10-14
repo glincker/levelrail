@@ -28,6 +28,7 @@ const (
 	engineParamMeilisearch = "meilisearch"
 	engineParamQdrant      = "qdrant"
 	engineParamTypesense   = "typesense"
+	engineParamMemcached   = "memcached"
 )
 
 // pinnedVersionExample is the tag shape engines that refuse a floating
@@ -36,6 +37,7 @@ var pinnedVersionExample = map[string]string{
 	engineParamMeilisearch: "v1.55",
 	engineParamQdrant:      "v1.19",
 	engineParamTypesense:   "30.2",
+	engineParamMemcached:   "1.6",
 }
 
 // supportedEngineParams is every engineParam* above, in the order they
@@ -44,6 +46,7 @@ var supportedEngineParams = []string{
 	engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB,
 	engineParamMariaDB, engineParamKeyDB, engineParamDragonfly, engineParamClickHouse,
 	engineParamValkey, engineParamMeilisearch, engineParamQdrant, engineParamTypesense,
+	engineParamMemcached,
 }
 
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;

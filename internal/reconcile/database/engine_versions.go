@@ -14,6 +14,7 @@ var pinnedVersionPatterns = map[string]*regexp.Regexp{
 	store.EngineMeilisearch: regexp.MustCompile(`^v1\.(\d+)(\.\d+)?$`),
 	store.EngineQdrant:      regexp.MustCompile(`^v1\.(\d+)(\.\d+)?$`),
 	store.EngineTypesense:   regexp.MustCompile(`^(\d+)\.(\d+)(\.\d+)?$`),
+	store.EngineMemcached:   regexp.MustCompile(`^1\.(\d+)(\.\d+)?$`),
 }
 
 func validatePinnedVersion(engine, version string) error {
@@ -31,6 +32,7 @@ var exampleVersion = map[string]string{
 	store.EngineMeilisearch: "v1.55",
 	store.EngineQdrant:      "v1.19",
 	store.EngineTypesense:   "30.2",
+	store.EngineMemcached:   "1.6",
 }
 
 var majorMinorPattern = regexp.MustCompile(`^v?(\d+)\.(\d+)`)
@@ -52,6 +54,10 @@ func majorMinor(v string) (int, int, bool) {
 func checkSearchVersionChange(engine, from, to string) (handled bool, err error) {
 	if _, ok := pinnedVersionPatterns[engine]; !ok {
 		return false, nil
+	}
+	if engine == store.EngineMemcached {
+		// Nothing on disk to be incompatible with: any pinned version works.
+		return true, nil
 	}
 	fMaj, fMin, ok1 := majorMinor(from)
 	tMaj, tMin, ok2 := majorMinor(to)

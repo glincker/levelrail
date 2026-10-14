@@ -91,6 +91,7 @@ func TestSupportedEngines_MatchReconcilerCases(t *testing.T) {
 		EngineMeilisearch: true,
 		EngineQdrant:      true,
 		EngineTypesense:   true,
+		EngineMemcached:   true,
 	}
 
 	engines, err := SupportedDatabaseEngines()

@@ -61,6 +61,9 @@ func (s *Spec) Validate() error {
 		if !supportedSpecEngines[db.Engine] {
 			return fmt.Errorf("spec: database %q: engine %q is not supported (supports %s)", name, db.Engine, supportedSpecEngineList())
 		}
+		if db.Engine == EngineMemcached && db.Backup != nil {
+			return fmt.Errorf("spec: database %q: memcached keeps no data on disk, so it cannot have a backup block", name)
+		}
 	}
 
 	return nil
@@ -401,7 +404,7 @@ func detectDependsOnCycle(services map[string]Service) error {
 var supportedSpecEngineOrder = []string{
 	EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineMariaDB,
 	EngineKeyDB, EngineClickHouse, EngineDragonfly, EngineValkey,
-	EngineMeilisearch, EngineQdrant, EngineTypesense,
+	EngineMeilisearch, EngineQdrant, EngineTypesense, EngineMemcached,
 }
 
 var supportedSpecEngines = func() map[string]bool {

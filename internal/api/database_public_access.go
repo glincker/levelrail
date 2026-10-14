@@ -72,7 +72,8 @@ var reservedControlPlanePorts = map[int]bool{
 func (rt *Router) handleSetDatabasePublicAccess(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+	desired, err := rt.databases.GetDesiredDatabase(r.Context(), name)
+	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
@@ -106,6 +107,10 @@ func (rt *Router) handleSetDatabasePublicAccess(w http.ResponseWriter, r *http.R
 	bindAddress := req.BindAddress
 	if bindAddress == "" {
 		bindAddress = bindaddr.Default
+	}
+	if desired.Engine == store.EngineMemcached && bindAddress != bindaddr.Default {
+		writeError(w, http.StatusBadRequest, "memcached has no authentication: it can only be exposed on the host's loopback address")
+		return
 	}
 
 	port, err := rt.databases.SetDatabasePublicAccess(r.Context(), name, true, req.Port, bindAddress)

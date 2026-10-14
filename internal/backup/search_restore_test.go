@@ -260,3 +260,16 @@ func TestDrillCheckSearchContent(t *testing.T) {
 		}
 	}
 }
+
+func TestMemcached_HasNoBackupPath(t *testing.T) {
+	rt := newScriptedRuntime(func([]string) (string, error) { return "", nil })
+	if _, err := (&ContainerDumper{Runtime: rt}).Dump(context.Background(), store.EngineMemcached, "db-cache"); err == nil {
+		t.Fatal("memcached dump must be refused, not faked")
+	}
+	if err := (&ContainerRestorer{Runtime: rt}).Restore(context.Background(), store.EngineMemcached, "db-cache", strings.NewReader("x")); err == nil {
+		t.Fatal("memcached restore must be refused")
+	}
+	if len(rt.commandLog()) != 0 {
+		t.Fatalf("no command may run against memcached: %q", rt.commandLog())
+	}
+}

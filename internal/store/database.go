@@ -25,7 +25,14 @@ const (
 	EngineMeilisearch = "meilisearch"
 	EngineQdrant      = "qdrant"
 	EngineTypesense   = "typesense"
+	EngineMemcached   = "memcached"
 )
+
+// EngineSupportsBackups reports whether engine keeps data a backup can
+// capture. Memcached holds only an in-memory cache.
+func EngineSupportsBackups(engine string) bool {
+	return engine != EngineMemcached
+}
 
 // IsSearchEngine reports whether engine is an HTTP API search or vector
 // engine authenticated by one generated API key.

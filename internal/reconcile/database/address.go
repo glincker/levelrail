@@ -60,6 +60,8 @@ func ContainerPort(engine string) (int, bool) {
 		return clickhouseContainerPort, true
 	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
 		return searchLayouts[engine].Port, true
+	case store.EngineMemcached:
+		return memcachedContainerPort, true
 	default:
 		return 0, false
 	}
@@ -148,7 +150,7 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "username", "database":
-		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) {
+		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) || engine == store.EngineMemcached {
 			return false
 		}
 		_, ok := ContainerPort(engine)
