@@ -252,6 +252,7 @@ var Tree = map[string]*Node{
 	"teams": {Subs: map[string]*Node{"list": nil, "create": nil, "show": nil, "rename": nil, "delete": nil, "use": nil, "roles": nil, "transfer": nil, "events": nil,
 		"members": {Subs: map[string]*Node{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
 		"invites": {Subs: map[string]*Node{"list": nil, "create": nil, "revoke": nil, "accept": nil}}}},
+	"quota":   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"members": {Subs: map[string]*Node{"list": nil, "set-role": nil, "remove": nil, "leave": nil}},
 	"dns": {Subs: map[string]*Node{
 		"zones":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "nameservers": nil, "verify": nil}},

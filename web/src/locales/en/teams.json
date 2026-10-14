@@ -103,6 +103,35 @@
     "invalid": "This invite is invalid, expired, revoked or already used. Ask the team admin for a new one.",
     "missing": "This link has no invite token."
   },
+  "quota": {
+    "title": "Quotas",
+    "teamHint": "Limits for everything filed under this team. A change that would go past a limit is refused with the limit and current usage.",
+    "projectHint": "Limits for everything filed under this project, on top of any team limits.",
+    "resources": {
+      "apps": "Apps",
+      "databases": "Databases",
+      "memory": "Memory reserved (MB)",
+      "cpu": "CPU reserved (cores)",
+      "previews": "Preview environments"
+    },
+    "fields": {
+      "apps": "Max apps",
+      "databases": "Max databases",
+      "memory": "Max memory (MB)",
+      "cpu": "Max CPU (cores)",
+      "previews": "Max previews"
+    },
+    "usage": "{{used}} of {{limit}}",
+    "usageUnlimited": "{{used}} used, no limit",
+    "full": "At limit",
+    "nearLimit": "Near limit",
+    "editHint": "0 means unlimited. Existing resources are never stopped when a limit is lowered.",
+    "save": "Save limits",
+    "clear": "Remove all limits",
+    "saved": "Quota saved",
+    "cleared": "Quota limits removed",
+    "readOnly": "Only team admins and owners can change these limits."
+  },
   "errors": {
     "generic": "Something went wrong: {{message}}"
   }

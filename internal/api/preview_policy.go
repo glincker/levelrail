@@ -84,6 +84,11 @@ func (rt *Router) admitPreview(ctx context.Context, appName string, existing *st
 	if existing != nil && existing.Occupies() {
 		return "", nil
 	}
+	if reason, err := rt.previewQuotaReason(ctx, appName); err != nil {
+		return "", fmt.Errorf("check preview quota: %w", err)
+	} else if reason != "" {
+		return reason, nil
+	}
 	limits := rt.previewLimitsFor(settings)
 	if limits.MaxPerApp <= 0 && limits.MaxTotal <= 0 {
 		return "", nil

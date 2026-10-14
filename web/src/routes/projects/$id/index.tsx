@@ -29,6 +29,7 @@ import { PauseResumeProjectButton } from '../../../components/PauseResumeProject
 import { MoveToOrganizationDialog } from '../../../components/MoveToOrganizationDialog'
 import { RestartProjectButton } from '../../../components/RestartProjectButton'
 import { routeErrorMessage } from '../../../lib/apiError'
+import { QuotaCard } from '../../../components/teams/QuotaCard'
 import { ProjectEnvironmentsPanel } from '../../../components/ProjectEnvironmentsPanel'
 import { ProjectEnvEditor } from '../../../components/ProjectEnvEditor'
 import { SharedEnvSecretsCard } from '../../../components/SharedEnvSecretsCard'
@@ -146,6 +147,7 @@ function ProjectDetailPage() {
       </PageTemplate>
 
       <ProjectEnvironmentsPanel projectId={project.id} />
+      <QuotaCard scope="project" scopeId={project.id} />
       <ProjectEnvEditor projectId={project.id} />
       <SharedEnvSecretsCard scope="project" id={project.id} />
 

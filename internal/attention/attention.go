@@ -93,6 +93,7 @@ const (
 	KindResourceAdvice      = "resource_advice"
 	KindSecretRotationDue   = "secret_rotation_due"
 	KindSecretRotationFail  = "secret_rotation_failed"
+	KindQuotaNearLimit      = "quota_near_limit"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {
