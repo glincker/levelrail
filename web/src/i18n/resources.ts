@@ -43,6 +43,7 @@ import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
+import type secretRotation from '../locales/en/secretRotation.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -94,6 +95,7 @@ declare module 'i18next' {
       getStarted: typeof getStarted
       usage: typeof usage
       deployTimeline: typeof deployTimeline
+      secretRotation: typeof secretRotation
     }
   }
 }

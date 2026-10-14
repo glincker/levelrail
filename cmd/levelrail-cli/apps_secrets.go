@@ -34,6 +34,8 @@ func runAppsSecrets(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsSecretsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lock":
 		return runAppsSecretsLock(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rotation":
+		return runAppsSecretsRotation(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps secrets subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsSecretsUsage(prog))
@@ -48,6 +50,7 @@ func appsSecretsUsage(prog string) string {
   %[1]s apps secrets set <name> --env-file <path> [flags]           bulk-set every key in a .env-format file as a secret
   %[1]s apps secrets delete <name> <key> [--force] [flags]         delete a secret's value and stop injecting it
   %[1]s apps secrets lock <name> <key> --locked=true|false [flags]  toggle a secret's overwrite guard
+  %[1]s apps secrets rotation <list|due|set|remove|rotate> ...      scheduled rotation policies
 
 A secret you set is injected into the app's container from the next restart
 on. Pass --apply to set to restart right away.

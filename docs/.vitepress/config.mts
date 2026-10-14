@@ -183,6 +183,7 @@ const sidebarGroups = [
           { text: 'Security center', link: '/security-center' },
           { text: 'Emergency access', link: '/emergency-access' },
           { text: 'Master key rotation', link: '/master-key-rotation' },
+          { text: 'Secret rotation policies', link: '/secret-rotation' },
           { text: 'Access control', link: '/access-control' },
           { text: 'Teams and roles', link: '/teams-and-roles' },
           { text: 'Environments', link: '/environments' },

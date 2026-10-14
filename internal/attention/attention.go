@@ -91,6 +91,8 @@ const (
 	KindDockerGuard         = "docker_guard"
 	KindUpgradeBlocked      = "upgrade_blocked"
 	KindResourceAdvice      = "resource_advice"
+	KindSecretRotationDue   = "secret_rotation_due"
+	KindSecretRotationFail  = "secret_rotation_failed"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

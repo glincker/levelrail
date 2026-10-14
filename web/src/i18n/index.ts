@@ -51,6 +51,7 @@ export const NAMESPACES = [
   'getStarted',
   'usage',
   'deployTimeline',
+  'secretRotation',
 ] as const
 
 void i18n

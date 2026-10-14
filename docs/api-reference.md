@@ -225,7 +225,7 @@ Endpoints for:
 
 ## Apps CRUD / Lifecycle / Deploy
 
-::: details 171 endpoints for app management, deployment, lifecycle control, and diagnostics
+::: details 172 endpoints for app management, deployment, lifecycle control, and diagnostics
 
 Endpoints for:
 - Application creation, retrieval, update, and deletion
@@ -408,6 +408,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/settings | AbilityRead | handleGetEnvSettings |
 | PUT | /api/v1/apps/{name}/env/settings | AbilityWriteSensitive | handlePutEnvSettings |
 | POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
+| GET | /api/v1/apps/{name}/secret-rotation | AbilityRead | handleListSecretRotation |
 
 :::
 
@@ -448,6 +449,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/previews/{number}/extend | AbilityDeploy | handleExtendPreviewEnvironment |
 | GET | /api/v1/apps/{name}/git-source/commits | AbilityDeploy | handleListGitSourceCommits |
 | POST | /api/v1/apps/{name}/secrets/{key}/reveal | AbilityReadSensitive | handleRevealSecret |
+| PUT | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleSetSecretRotation |
+| DELETE | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleDeleteSecretRotation |
+| POST | /api/v1/apps/{name}/secrets/{key}/rotation/rotate | AbilityWriteSensitive | handleRotateSecretNow |
 
 ## Telemetry
 
@@ -1272,6 +1276,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/event-webhooks/{id}/rotate-secret | AbilityRoot | handleRotateEventWebhookSecret |
 | GET | /api/v1/event-webhooks/{id}/deliveries | AbilityRoot | handleListEventWebhookDeliveries |
 | POST | /api/v1/event-webhook-deliveries/{id}/replay | AbilityRoot | handleReplayEventWebhookDelivery |
+| GET | /api/v1/secret-rotation | AbilityRoot | handleListAllSecretRotation |
 
 ## See also
 

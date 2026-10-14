@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1049 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1054 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -232,6 +232,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSchedule", Description: "Scheduled deploys (app_schedule.go): a per-app cron schedule that redeploys the latest commit on a branch, checked by internal/scheduledeploy.Scheduler. Same GET=Read/PUT=WriteSensitive split as git-source just above."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/schedule", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSchedule", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/schedule/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppScheduleHistory", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/secret-rotation", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListSecretRotation", Description: "Rotation policies hold schedule and progress only, never a value."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSleep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSleep", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/wake", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleWakeApp", Description: ""},
@@ -840,6 +841,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/secret-rotation", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAllSecretRotation", Description: ""},
 	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
 	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
 	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},
@@ -964,6 +966,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/secrets/{key}", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecret", Description: "Secrets. Set-only: there is deliberately no GET, returning a value (even to its own owner over an authenticated session) is exactly the kind of exposure envelope encryption exists to avoid."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/lock", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecretLock", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/reveal", Ability: "AbilityReadSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRevealSecret", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/secrets/{key}/rotation", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeleteSecretRotation", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/secrets/{key}/rotation", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetSecretRotation", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/secrets/{key}/rotation/rotate", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateSecretNow", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/webhook-deliveries", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListWebhookDeliveries", Description: "Recent webhook deliveries (webhook_deliveries.go): real visibility into what a git provider actually sent, for the exact route above, plus a manual replay of a stored delivery. AbilityRead for the list, matching GET .../git-source; AbilityDeploy for replay, matching POST .../deploys, since a replay can trigger the same real build/deploy side effect."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/webhook-deliveries/{id}/replay", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleReplayWebhookDelivery", Description: ""},
 	{Method: "GET", Path: "/api/v1/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListAllPreviews", Description: ""},
