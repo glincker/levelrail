@@ -199,3 +199,39 @@ func clickhouseCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName 
 
 	return &database.ClickHouseCredentials{Username: dbName, Password: password}, nil
 }
+
+// apiKeyCredentialsFor mirrors postgresCredentialsFor for the search
+// engines: one generated API key per database, under the engine's own
+// storage key (database.PasswordSecretKey).
+func apiKeyCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName, engine string) (*database.APIKeyCredentials, error) {
+	if mgr == nil {
+		return nil, nil
+	}
+	envKey, ok := database.PasswordSecretKey(engine)
+	if !ok {
+		return nil, fmt.Errorf("engine %q has no api key", engine)
+	}
+
+	exists, err := mgr.Exists(ctx, dbName, envKey)
+	if err != nil {
+		return nil, fmt.Errorf("check existing %s api key for %q: %w", engine, dbName, err)
+	}
+	if !exists {
+		key, err := generateRandomPassword()
+		if err != nil {
+			return nil, fmt.Errorf("generate %s api key for %q: %w", engine, dbName, err)
+		}
+		if err := mgr.SetValue(ctx, dbName, envKey, key); err != nil {
+			return nil, fmt.Errorf("store %s api key for %q: %w", engine, dbName, err)
+		}
+	}
+
+	key, err := mgr.Resolve(ctx, dbName, envKey)
+	if err != nil {
+		return nil, fmt.Errorf("resolve %s api key for %q: %w", engine, dbName, err)
+	}
+	if key == "" {
+		return nil, errors.New("resolved api key is empty")
+	}
+	return &database.APIKeyCredentials{Key: key}, nil
+}

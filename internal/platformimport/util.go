@@ -140,9 +140,19 @@ func engineFromImage(image string) (engine, version string) {
 		engine = "valkey"
 	case strings.Contains(name, "redis"):
 		engine = "redis"
+	case strings.Contains(name, "meilisearch"):
+		engine = "meilisearch"
+	case strings.Contains(name, "qdrant"):
+		engine = "qdrant"
+	case strings.Contains(name, "typesense"):
+		engine = "typesense"
 	}
 	if m := regexp.MustCompile(`^v?(\d+(\.\d+)?)`).FindStringSubmatch(tag); m != nil {
 		version = m[1]
+		if engine == "meilisearch" || engine == "qdrant" {
+			// Their tags keep the "v" prefix.
+			version = "v" + version
+		}
 	}
 	return engine, version
 }

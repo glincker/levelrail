@@ -39,6 +39,8 @@ v=$(printf '%s\n' "$info" | sed -n 's/^dragonfly_version:df-//p')
 echo "$v"`
 	case store.EngineClickHouse:
 		script = `exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query 'SELECT version()'`
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		return searchHealthCommand(engine), nil
 	default:
 		return nil, fmt.Errorf("no health check for engine %q", engine)
 	}

@@ -719,6 +719,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// parses the same stored container log lines the routes above expose,
 	// rather than a new telemetry source.
 	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
+	// Live counts for engines with no data browser; index names can name tenants.
+	mux.HandleFunc("GET /api/v1/databases/{name}/engine-stats", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseEngineStats))
 	// Database viewer: row data and SQL are sensitive, so reads are
 	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
 	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseSchema))

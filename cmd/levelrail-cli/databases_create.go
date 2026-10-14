@@ -16,23 +16,34 @@ import (
 // client.go's own wire-shape types already keep: this binary must
 // depend on what the API accepts, not on internal/store's Go constants.
 const (
-	engineParamPostgres   = "postgres"
-	engineParamRedis      = "redis"
-	engineParamMySQL      = "mysql"
-	engineParamMongoDB    = "mongodb"
-	engineParamMariaDB    = "mariadb"
-	engineParamKeyDB      = "keydb"
-	engineParamDragonfly  = "dragonfly"
-	engineParamClickHouse = "clickhouse"
-	engineParamValkey     = "valkey"
+	engineParamPostgres    = "postgres"
+	engineParamRedis       = "redis"
+	engineParamMySQL       = "mysql"
+	engineParamMongoDB     = "mongodb"
+	engineParamMariaDB     = "mariadb"
+	engineParamKeyDB       = "keydb"
+	engineParamDragonfly   = "dragonfly"
+	engineParamClickHouse  = "clickhouse"
+	engineParamValkey      = "valkey"
+	engineParamMeilisearch = "meilisearch"
+	engineParamQdrant      = "qdrant"
+	engineParamTypesense   = "typesense"
 )
+
+// pinnedVersionExample is the tag shape engines that refuse a floating
+// "latest" expect; the server enforces the same rule.
+var pinnedVersionExample = map[string]string{
+	engineParamMeilisearch: "v1.55",
+	engineParamQdrant:      "v1.19",
+	engineParamTypesense:   "30.2",
+}
 
 // supportedEngineParams is every engineParam* above, in the order they
 // should be listed in an error or usage message.
 var supportedEngineParams = []string{
 	engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB,
 	engineParamMariaDB, engineParamKeyDB, engineParamDragonfly, engineParamClickHouse,
-	engineParamValkey,
+	engineParamValkey, engineParamMeilisearch, engineParamQdrant, engineParamTypesense,
 }
 
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
@@ -74,6 +85,11 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	}
 	if !slices.Contains(supportedEngineParams, f.engine) {
 		return databaseResource{}, newValidationError("--engine must be one of %s", strings.Join(supportedEngineParams, ", "))
+	}
+	if example, ok := pinnedVersionExample[f.engine]; ok {
+		if f.version == "latest" || strings.HasPrefix(example, "v") != strings.HasPrefix(f.version, "v") {
+			return databaseResource{}, newValidationError("--version for %s must be a pinned release tag such as %q", f.engine, example)
+		}
 	}
 	if f.existingVolume != "" && f.existingVolume != "reuse" && f.existingVolume != "discard" {
 		return databaseResource{}, newValidationError("--existing-volume must be reuse or discard")
@@ -187,7 +203,8 @@ Flags:
   --name string           database name (required)
   --engine string        database engine: %[5]s (required)
   --version string      engine version, e.g. "16" (required). postgres also takes
-                                    "<major>-pgvector", "<major>-timescaledb" or "<major>-postgis", e.g. "17-pgvector"
+                                    "<major>-pgvector", "<major>-timescaledb" or "<major>-postgis", e.g. "17-pgvector";
+                                    meilisearch and qdrant take "v"-prefixed tags, e.g. "v1.55"; typesense e.g. "30.2"
   --node-id string        node to place this database on; omitted auto-places it on the
                                     least-loaded registered node (or the local node if only one exists)
   --existing-volume string  reuse or discard the data volume a deleted database of this name

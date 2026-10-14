@@ -84,6 +84,9 @@ func (r *ContainerRestorer) waitEngineReady(ctx context.Context, engine, contain
 
 // Restore implements Restorer.
 func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName string, dump io.Reader) error {
+	if store.IsSearchEngine(engine) {
+		return r.restoreSearch(ctx, engine, containerName, dump)
+	}
 	switch engine {
 	case store.EngineRedis:
 		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, redisDisableAutoSaveCmd)

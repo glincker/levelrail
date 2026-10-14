@@ -39,6 +39,21 @@ func TestPlanDatabaseCreate(t *testing.T) {
 			wantErr: "--engine must be one of",
 		},
 		{
+			name:    "search engine refuses latest",
+			flags:   createDatabaseFlags{name: "search", engine: "meilisearch", version: "latest"},
+			wantErr: "pinned release tag",
+		},
+		{
+			name:    "qdrant tag needs its v prefix",
+			flags:   createDatabaseFlags{name: "vec", engine: "qdrant", version: "1.19"},
+			wantErr: "pinned release tag",
+		},
+		{
+			name:    "typesense tag has no v prefix",
+			flags:   createDatabaseFlags{name: "ts", engine: "typesense", version: "v30.2"},
+			wantErr: "pinned release tag",
+		},
+		{
 			name:  "node-id omitted leaves NodeID unset",
 			flags: createDatabaseFlags{name: "main", engine: "postgres", version: "16"},
 			want:  databaseResource{Name: "main", Engine: "postgres", Version: "16"},
@@ -89,6 +104,9 @@ func TestPlanDatabaseCreate_ValidEngines(t *testing.T) {
 		{"cache", "keydb", "latest"},
 		{"hotcache", "dragonfly", "v1.27.1"},
 		{"cache", "valkey", "8"},
+		{"search", "meilisearch", "v1.55"},
+		{"vectors", "qdrant", "v1.19.2"},
+		{"catalog", "typesense", "30.2"},
 		{"geo", "postgres", "17-postgis"},
 		{"metrics", "postgres", "17-timescaledb"},
 		{"analytics", "clickhouse", "24.8"},

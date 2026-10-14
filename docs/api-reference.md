@@ -591,6 +591,7 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/move | AbilityRoot | handleStartMove |
 | GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
 | PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
+| GET | /api/v1/databases/{name}/engine-stats | AbilityReadSensitive | handleGetDatabaseEngineStats |
 
 ## Projects / Organizations / Environments
 

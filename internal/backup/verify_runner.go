@@ -254,6 +254,15 @@ func validateFormat(engine string, header, tail []byte, totalBytes int64) (bool,
 		if !bytes.Contains(tail, []byte("-- Dump completed")) {
 			return false, "dump completion trailer not found at the end of the downloaded object: the dump is truncated"
 		}
+	case store.EngineMeilisearch:
+		if len(header) < 2 || header[0] != 0x1f || header[1] != 0x8b {
+			return false, "gzip header not found at the start of the downloaded object: not a Meilisearch dump"
+		}
+	case store.EngineQdrant, store.EngineTypesense:
+		// A tar archive ends with two zeroed 512-byte blocks.
+		if totalBytes%512 != 0 || len(tail) < 1024 || !bytes.Equal(tail[len(tail)-1024:], make([]byte, 1024)) {
+			return false, "tar end-of-archive blocks not found at the end of the downloaded object: the snapshot is truncated"
+		}
 	}
 	return true, ""
 }

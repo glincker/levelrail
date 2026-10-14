@@ -513,3 +513,29 @@ func TestDatabaseHost(t *testing.T) {
 		})
 	}
 }
+
+func TestController_Reconcile_DatabaseEnv_SearchEngines_URLAndKey(t *testing.T) {
+	tests := []struct {
+		engine, url, keyEnvKey string
+	}{
+		{store.EngineMeilisearch, "http://db-search:7700", "meilisearch_master_key"},
+		{store.EngineQdrant, "http://db-search:6333", "qdrant_api_key"},
+		{store.EngineTypesense, "http://db-search:8108", "typesense_api_key"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.engine, func(t *testing.T) {
+			dbStore := &fakeDatabaseStore{databases: map[string]store.DesiredDatabase{
+				"search": {Name: "search", Engine: tt.engine},
+			}}
+			desired := &store.DesiredService{
+				Name: "web", Image: "img:v1", Port: 80,
+				DatabaseEnv: map[string]store.DatabaseEnvRef{
+					"SEARCH_URL":     {Database: "search", Field: "url"},
+					"SEARCH_API_KEY": {Database: "search", Field: "password"},
+				},
+			}
+			c, rt := newDatabaseEnvController(desired, dbStore, map[string]string{"search/" + tt.keyEnvKey: "k3y"})
+			reconcileAndAssertEnv(t, c, rt, map[string]string{"SEARCH_URL": tt.url, "SEARCH_API_KEY": "k3y"})
+		})
+	}
+}

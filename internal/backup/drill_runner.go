@@ -332,7 +332,7 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 			engine, version = e, v
 		}
 	}
-	scratchable := r.Runtime != nil && r.DBRestorer != nil && r.ImageFor != nil && scratchEnv(engine, bh.DatabaseName) != nil
+	scratchable := r.Runtime != nil && r.DBRestorer != nil && r.ImageFor != nil && (scratchEnv(engine, bh.DatabaseName) != nil || store.IsSearchEngine(engine))
 
 	header := newHeaderCapture(headerCaptureBytes)
 	tail := &tailCapture{maxBytes: tailCaptureBytes}
@@ -353,7 +353,11 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	}
 
 	name := "drill-" + d.ID
-	id, err := r.Runtime.Create(ctx, docker.ContainerSpec{Name: name, Image: r.ImageFor(engine, version), Env: scratchEnv(engine, bh.DatabaseName)})
+	spec := docker.ContainerSpec{Name: name, Image: r.ImageFor(engine, version), Env: scratchEnv(engine, bh.DatabaseName)}
+	if err := scratchSearchSpec(engine, &spec); err != nil {
+		return err
+	}
+	id, err := r.Runtime.Create(ctx, spec)
 	if err != nil {
 		return fmt.Errorf("create scratch %s container: %w", engine, err)
 	}
@@ -383,6 +387,14 @@ func (r *DrillRunner) drillDatabase(ctx context.Context, d *store.BackupDrill, d
 	d.Stage = DrillStageContent
 	if ok, why := validateFormat(engine, header.bytes, tail.bytes(), hs.n); !ok {
 		return errors.New(why)
+	}
+	if store.IsSearchEngine(engine) {
+		objects, err := r.checkSearchContent(ctx, name, engine, bh.ID)
+		if err != nil {
+			return err
+		}
+		d.Files, d.Bytes, d.ContentOK = objects, hs.n, true
+		return nil
 	}
 	tables, err := r.countTables(ctx, name, engine)
 	if err != nil {

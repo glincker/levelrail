@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -123,7 +124,11 @@ func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Reque
 
 	envVar := req.EnvVar
 	if envVar == "" {
-		envVar = defaultConnectionEnvVar(req.Database, field, existingServiceEnvKeys(svc))
+		existing := existingServiceEnvKeys(svc)
+		envVar = database.ConventionalEnvVar(desiredDB.Engine, field)
+		if external || envVar == "" || existing[envVar] {
+			envVar = defaultConnectionEnvVar(req.Database, field, existing)
+		}
 	}
 
 	if err := rt.apps.SetServiceDatabaseEnvVar(r.Context(), name, envVar, &store.DatabaseEnvRef{Database: req.Database, Field: field}); errors.Is(err, store.ErrServiceNotFound) {

@@ -58,6 +58,8 @@ func ContainerPort(engine string) (int, bool) {
 		return redisContainerPort, true
 	case store.EngineClickHouse:
 		return clickhouseContainerPort, true
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		return searchLayouts[engine].Port, true
 	default:
 		return 0, false
 	}
@@ -79,6 +81,12 @@ func PasswordSecretKey(engine string) (key string, ok bool) {
 		return MariaDBPasswordEnvKey, true
 	case store.EngineClickHouse:
 		return ClickHousePasswordEnvKey, true
+	case store.EngineMeilisearch:
+		return MeilisearchAPIKeyEnvKey, true
+	case store.EngineQdrant:
+		return QdrantAPIKeyEnvKey, true
+	case store.EngineTypesense:
+		return TypesenseAPIKeyEnvKey, true
 	default:
 		return "", false
 	}
@@ -140,7 +148,7 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "username", "database":
-		if store.IsRedisFamily(engine) {
+		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) {
 			return false
 		}
 		_, ok := ContainerPort(engine)

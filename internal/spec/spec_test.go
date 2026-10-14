@@ -398,6 +398,27 @@ databases:
 	}
 }
 
+func TestParse_ValidSearchEngineDatabases(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  search: { engine: meilisearch, version: "v1.55" }
+  vectors: { engine: qdrant, version: "v1.19" }
+  catalog: { engine: typesense, version: "30.2" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	for name, engine := range map[string]string{"search": EngineMeilisearch, "vectors": EngineQdrant, "catalog": EngineTypesense} {
+		if got := s.Databases[name]; got.Engine != engine {
+			t.Errorf("Databases[%s].Engine = %q, want %q", name, got.Engine, engine)
+		}
+	}
+}
+
 func TestParse_ValidClickHouseDatabase(t *testing.T) {
 	yaml := `
 version: 1

@@ -300,16 +300,19 @@ type Resources struct {
 // MariaDB, KeyDB, ClickHouse, and Dragonfly joined once
 // internal/reconcile/database's controller grew matching engine cases.
 const (
-	EngineFake       = "" // zero value only, never valid; see Validate
-	EnginePostgres   = "postgres"
-	EngineRedis      = "redis"
-	EngineMySQL      = "mysql"
-	EngineMongoDB    = "mongodb"
-	EngineMariaDB    = "mariadb"
-	EngineKeyDB      = "keydb"
-	EngineClickHouse = "clickhouse"
-	EngineDragonfly  = "dragonfly"
-	EngineValkey     = "valkey"
+	EngineFake        = "" // zero value only, never valid; see Validate
+	EnginePostgres    = "postgres"
+	EngineRedis       = "redis"
+	EngineMySQL       = "mysql"
+	EngineMongoDB     = "mongodb"
+	EngineMariaDB     = "mariadb"
+	EngineKeyDB       = "keydb"
+	EngineClickHouse  = "clickhouse"
+	EngineDragonfly   = "dragonfly"
+	EngineValkey      = "valkey"
+	EngineMeilisearch = "meilisearch"
+	EngineQdrant      = "qdrant"
+	EngineTypesense   = "typesense"
 )
 
 // Database is one entry under databases:.

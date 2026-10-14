@@ -79,15 +79,18 @@ func TestIsSupportedEngine(t *testing.T) {
 // interface neither package otherwise needs.
 func TestSupportedEngines_MatchReconcilerCases(t *testing.T) {
 	reconcilerHandles := map[string]bool{
-		EnginePostgres:   true,
-		EngineRedis:      true,
-		EngineMySQL:      true,
-		EngineMongoDB:    true,
-		EngineMariaDB:    true,
-		EngineKeyDB:      true,
-		EngineDragonfly:  true,
-		EngineClickHouse: true,
-		EngineValkey:     true,
+		EnginePostgres:    true,
+		EngineRedis:       true,
+		EngineMySQL:       true,
+		EngineMongoDB:     true,
+		EngineMariaDB:     true,
+		EngineKeyDB:       true,
+		EngineDragonfly:   true,
+		EngineClickHouse:  true,
+		EngineValkey:      true,
+		EngineMeilisearch: true,
+		EngineQdrant:      true,
+		EngineTypesense:   true,
 	}
 
 	engines, err := SupportedDatabaseEngines()

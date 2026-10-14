@@ -24,6 +24,9 @@ func CheckInPlaceVersionChange(engine, from, to string) error {
 	if fromVariant != toVariant {
 		return errors.New("switching between the plain and pgvector, timescaledb or postgis images in place is refused: they are built on different base images, and a libc collation change can silently corrupt indexes. Use the guarded major upgrade (dump and restore) or restore a backup into a new database")
 	}
+	if handled, err := checkSearchVersionChange(engine, from, to); handled {
+		return err
+	}
 	fromMajor, fromOK := LeadingMajor(from)
 	toMajor, toOK := LeadingMajor(to)
 	if !fromOK || !toOK {

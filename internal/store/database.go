@@ -13,16 +13,29 @@ import (
 // guaranteed to match this one: Dragonfly and ClickHouse are available
 // here but not yet in internal/spec.
 const (
-	EnginePostgres   = "postgres"
-	EngineRedis      = "redis"
-	EngineMySQL      = "mysql"
-	EngineMongoDB    = "mongodb"
-	EngineMariaDB    = "mariadb"
-	EngineKeyDB      = "keydb"
-	EngineDragonfly  = "dragonfly"
-	EngineClickHouse = "clickhouse"
-	EngineValkey     = "valkey"
+	EnginePostgres    = "postgres"
+	EngineRedis       = "redis"
+	EngineMySQL       = "mysql"
+	EngineMongoDB     = "mongodb"
+	EngineMariaDB     = "mariadb"
+	EngineKeyDB       = "keydb"
+	EngineDragonfly   = "dragonfly"
+	EngineClickHouse  = "clickhouse"
+	EngineValkey      = "valkey"
+	EngineMeilisearch = "meilisearch"
+	EngineQdrant      = "qdrant"
+	EngineTypesense   = "typesense"
 )
+
+// IsSearchEngine reports whether engine is an HTTP API search or vector
+// engine authenticated by one generated API key.
+func IsSearchEngine(engine string) bool {
+	switch engine {
+	case EngineMeilisearch, EngineQdrant, EngineTypesense:
+		return true
+	}
+	return false
+}
 
 // IsRedisFamily reports whether engine speaks the Redis wire protocol and
 // runs passwordless with an RDB dump, the shared code path for backup,
