@@ -1149,6 +1149,8 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	startSecretRotation(ctx, logger, db, apiRouter, secretsManager != nil)
+
 	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,
 		func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) }, apiRouter)
 

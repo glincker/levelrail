@@ -64,6 +64,8 @@ var kindInfos = map[string]kindInfo{
 	KindDockerGuard:         {"Docker API guard needs a decision", "Review the would-be denials and switch the guard to enforce", linkSecurity, false},
 	KindUpgradeBlocked:      {"The scheduled upgrade to %s did not run", "Open Updates, fix the blocker and re-check or reschedule", linkUpdates, false},
 	KindResourceAdvice:      {"Resource advice for %s", "Open the resource advisor and review the suggestion", linkAdvisor, false},
+	KindSecretRotationDue:   {"Secret %s is due for rotation", "Open the app environment and rotate it or set a new value", linkApps, false},
+	KindSecretRotationFail:  {"Rotation of secret %s needs attention", "Open the app environment, read the reason and retry", linkApps, false},
 }
 
 // newItem builds an item with its stable id, one-line title, next action and

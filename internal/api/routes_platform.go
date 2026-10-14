@@ -21,6 +21,13 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/secrets/{key}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteSecret))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/lock", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretLock))
 
+	// Rotation policies hold schedule and progress only, never a value.
+	mux.HandleFunc("GET /api/v1/apps/{name}/secret-rotation", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListSecretRotation))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/secrets/{key}/rotation", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetSecretRotation))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/secrets/{key}/rotation", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteSecretRotation))
+	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/rotation/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateSecretNow))
+	mux.HandleFunc("GET /api/v1/secret-rotation", rt.requireAbility(AbilityRoot, rt.handleListAllSecretRotation))
+
 	// Git source (a deferred follow-up, git_sources.go):
 	// persist a repo/branch/build config per app so a git push can
 	// auto-deploy it, the multi-app evolution of internal/webhook's own
