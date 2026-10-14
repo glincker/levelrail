@@ -39,6 +39,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
+	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -341,6 +342,13 @@ func main() {
 	if len(os.Args) > 1 && runReleaseCommand(os.Args[1], os.Args[2:]) {
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "demo" {
+		if err := runDemo(context.Background(), logger, os.Args[2:], os.Stdout); err != nil {
+			logger.Error("demo failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "recover-admin" {
 		if err := runRecoverAdmin(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("recover-admin failed", slog.String("error", err.Error()))
@@ -409,6 +417,9 @@ func main() {
 
 func run(logger *slog.Logger) error {
 	logger.Info("starting", slog.String("version", version.Version))
+	if demo.Enabled(os.Getenv) {
+		logger.Warn("ignoring " + demo.EnvDemoMode + ": demo mode only exists behind the demo subcommand")
+	}
 	if err := experimental.Validate(); err != nil {
 		logger.Warn("ignoring unknown experimental feature", slog.String("error", err.Error()))
 	}
