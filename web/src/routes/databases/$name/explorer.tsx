@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DatabaseExplorerPanel } from '../../../components/dbviewer/DatabaseExplorerPanel'
+import { DemoGate } from '../../../components/demo/DemoUnavailable'
 
 export const Route = createFileRoute('/databases/$name/explorer')({
   component: ExplorerSection,
@@ -7,5 +8,9 @@ export const Route = createFileRoute('/databases/$name/explorer')({
 
 function ExplorerSection() {
   const { name } = Route.useParams()
-  return <DatabaseExplorerPanel databaseName={name} />
+  return (
+    <DemoGate reason="database">
+      <DatabaseExplorerPanel databaseName={name} />
+    </DemoGate>
+  )
 }

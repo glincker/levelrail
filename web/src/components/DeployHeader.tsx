@@ -175,6 +175,7 @@ export function DeployHeader({
             <Button
               variant="outline"
               size="sm"
+              writeAction
               onClick={() => {
                 setCancelOpen(true)
               }}
@@ -187,6 +188,7 @@ export function DeployHeader({
             <Button
               variant="outline"
               size="sm"
+              writeAction
               disabled={rollback.isPending}
               onClick={doRollback}
             >
