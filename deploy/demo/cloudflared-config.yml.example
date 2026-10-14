@@ -1,0 +1,8 @@
+# Replace the placeholders. The tunnel dials out, so no inbound port is open.
+tunnel: 00000000-0000-0000-0000-000000000000
+credentials-file: /etc/cloudflared-demo/credentials.json
+
+ingress:
+  - hostname: demo.example.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404
