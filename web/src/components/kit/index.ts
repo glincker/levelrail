@@ -30,3 +30,5 @@ export {
   WizardStepFooter,
   type WizardStepFooterProps,
 } from './WizardStepFooter'
+export { UrlDialog, type UrlDialogProps } from './UrlDialog'
+export { useUrlDialog, useDialogParam } from './useUrlDialog'

@@ -9,8 +9,26 @@ import (
 
 // NodeProviderResource mirrors internal/api's nodeProviderResource.
 type NodeProviderResource struct {
-	Provider string `json:"provider"`
-	HasToken bool   `json:"has_token"`
+	Provider       string     `json:"provider"`
+	HasToken       bool       `json:"has_token"`
+	Status         string     `json:"status,omitempty"`
+	Methods        []string   `json:"methods,omitempty"`
+	Method         string     `json:"method,omitempty"`
+	Label          string     `json:"label,omitempty"`
+	Location       string     `json:"location,omitempty"`
+	Notes          string     `json:"notes,omitempty"`
+	ConnectedBy    string     `json:"connected_by,omitempty"`
+	ConnectedAt    *time.Time `json:"connected_at,omitempty"`
+	LastTestedAt   *time.Time `json:"last_tested_at,omitempty"`
+	LastTestOK     *bool      `json:"last_test_ok,omitempty"`
+	LastTestDetail string     `json:"last_test_detail,omitempty"`
+}
+
+// NodeProviderTestResult mirrors internal/api's nodeProviderTestResult.
+type NodeProviderTestResult struct {
+	OK       bool      `json:"ok"`
+	Message  string    `json:"message"`
+	TestedAt time.Time `json:"tested_at"`
 }
 
 // NodeProviderRegionResource mirrors internal/api's
@@ -59,6 +77,11 @@ type SetNodeProviderCredentialRequest struct {
 	Region                string `json:"region,omitempty"`
 	RoleARN               string `json:"role_arn,omitempty"`
 	UseAmbientCredentials bool   `json:"use_ambient_credentials,omitempty"`
+	Method                string `json:"method,omitempty"`
+	Verify                bool   `json:"verify,omitempty"`
+	Label                 string `json:"label,omitempty"`
+	Location              string `json:"location,omitempty"`
+	Notes                 string `json:"notes,omitempty"`
 }
 
 // CreateNodeProvisionRequest is POST /api/v1/nodes/provision's body.
@@ -88,6 +111,19 @@ func (c *Client) SetNodeProviderCredential(ctx context.Context, req SetNodeProvi
 	var out NodeProviderResource
 	err := c.do(ctx, http.MethodPost, nodeProvidersPath(), req, &out)
 	return out, err
+}
+
+// TestNodeProvider calls POST /api/v1/node-providers/{provider}/test with
+// no body, testing the stored credential.
+func (c *Client) TestNodeProvider(ctx context.Context, provider string) (NodeProviderTestResult, error) {
+	var out NodeProviderTestResult
+	err := c.do(ctx, http.MethodPost, nodeProvidersPath()+"/"+PathEscape(provider)+"/test", nil, &out)
+	return out, err
+}
+
+// DisconnectNodeProvider calls DELETE /api/v1/node-providers/{provider}.
+func (c *Client) DisconnectNodeProvider(ctx context.Context, provider string) error {
+	return c.do(ctx, http.MethodDelete, nodeProvidersPath()+"/"+PathEscape(provider), nil, nil)
 }
 
 // ListNodeProviderRegions calls GET /api/v1/node-providers/{provider}/regions.

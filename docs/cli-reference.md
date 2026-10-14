@@ -943,8 +943,10 @@ levelrail-cli registry-credentials delete <id> [flags]
 levelrail-cli registry-credentials test <id> [flags]
 levelrail-cli registry-credentials repositories <id> [flags]
 levelrail-cli registry-credentials tags <id> <repository> [flags]
+levelrail-cli registry credentials list|vendors|add|test|delete [flags]
+levelrail-cli registry package-registries list|add|test|delete [flags]
 ```
-Private container registry pull credentials. `update` can rotate the password. `test` authenticates against the registry without pulling anything; `repositories` and `tags` browse the external registry.
+Private container registry pull credentials. `update` can rotate the password. `test` authenticates against the registry without pulling anything; `repositories` and `tags` browse the external registry. `registry credentials add --vendor ID` pre-fills the host and username for a vendor preset (see `registry credentials vendors`). `registry package-registries` manages private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries mounted into builds as secrets, see [private registries](/private-registries).
 
 ## Backup targets
 
@@ -1151,7 +1153,7 @@ levelrail-cli nodes rotate-key <id> [flags]
 levelrail-cli nodes rejoin-mesh <id> [flags]
 levelrail-cli nodes topology [flags]
 levelrail-cli nodes traffic [flags]
-levelrail-cli nodes providers list|set-credential [flags]
+levelrail-cli nodes providers list|connect|test|disconnect|set-credential [flags]
 levelrail-cli nodes provision --provider P --region R --size S --name NAME [flags]
 levelrail-cli nodes provisions list|show <id> [flags]
 levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --password PASS) --name NAME [--host-key-fingerprint SHA256:... | --insecure-skip-host-key-check] [flags]

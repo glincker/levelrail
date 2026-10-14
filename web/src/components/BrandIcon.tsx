@@ -70,6 +70,14 @@ import ScalewayLogo from '@thesvg/react/scaleway'
 import OvhcloudLogo from '@thesvg/react/ovhcloud'
 import VultrLogo from '@thesvg/react/vultr'
 import GoogleCloudStorageLogo from '@thesvg/react/google-cloud-storage'
+import QuayLogo from '@thesvg/react/quay'
+import AzureContainerRegistryLogo from '@thesvg/react/azure-container-registries'
+import NpmLogo from '@thesvg/react/npm'
+import PypiLogo from '@thesvg/react/pypi'
+import MavenLogo from '@thesvg/react/apache-maven'
+import NugetLogo from '@thesvg/react/nuget'
+import CargoLogo from '@thesvg/react/rust'
+import RubygemsLogo from '@thesvg/react/rubygems'
 
 // Brand/service marks sourced from @thesvg/react, each imported from its
 // own subpath for bundle size. Distinct from @phosphor-icons (ADR 014):
@@ -146,6 +154,14 @@ export type BrandIconName =
   | 'ovhcloud'
   | 'vultr'
   | 'google-cloud-storage'
+  | 'quay'
+  | 'azure-container-registry'
+  | 'npm'
+  | 'pypi'
+  | 'maven'
+  | 'nuget'
+  | 'cargo'
+  | 'rubygems'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -222,6 +238,14 @@ const BRAND_ICONS: Record<
   ovhcloud: OvhcloudLogo,
   vultr: VultrLogo,
   'google-cloud-storage': GoogleCloudStorageLogo,
+  quay: QuayLogo,
+  'azure-container-registry': AzureContainerRegistryLogo,
+  npm: NpmLogo,
+  pypi: PypiLogo,
+  maven: MavenLogo,
+  nuget: NugetLogo,
+  cargo: CargoLogo,
+  rubygems: RubygemsLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -300,6 +324,14 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'ovhcloud',
   'vultr',
   'google-cloud-storage',
+  'quay',
+  'azure-container-registry',
+  'npm',
+  'pypi',
+  'maven',
+  'nuget',
+  'cargo',
+  'rubygems',
 ]
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>

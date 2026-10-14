@@ -1,32 +1,42 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GearSixIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
 import { BrandTile } from '../BrandLogoBadge'
 import { StatusPill } from '../kit/StatusPill'
+import { UrlDialog } from '../kit/UrlDialog'
+import { useUrlDialog } from '../kit/useUrlDialog'
+import { RelativeTime } from '../kit/RelativeTime'
+import { ManualEnrollFields } from '../AddNodeDialog'
 import { nodeProviderBrand } from '../../lib/providerBrands'
 import type { NodeProviderResource } from '../../types/nodeProvision'
 import { NodeProviderForm } from './NodeProviderForm'
 
-const KNOWN_PROVIDERS = [
-  'hetzner',
-  'digitalocean',
-  'aws',
-  'azure',
-  'gcp',
-] as const
-type KnownProvider = (typeof KNOWN_PROVIDERS)[number]
+const NAME_KEYS = {
+  hetzner: 'nodeProviders.names.hetzner',
+  digitalocean: 'nodeProviders.names.digitalocean',
+  aws: 'nodeProviders.names.aws',
+  azure: 'nodeProviders.names.azure',
+  gcp: 'nodeProviders.names.gcp',
+  custom: 'nodeProviders.names.custom',
+} as const
+
+const HINT_KEYS = {
+  hetzner: 'nodeProviders.hints.hetzner',
+  digitalocean: 'nodeProviders.hints.digitalocean',
+  aws: 'nodeProviders.hints.aws',
+  azure: 'nodeProviders.hints.azure',
+  gcp: 'nodeProviders.hints.gcp',
+  custom: 'nodeProviders.hints.custom',
+} as const
+
+type KnownProvider = keyof typeof NAME_KEYS
 
 function asKnown(name: string): KnownProvider | null {
-  return KNOWN_PROVIDERS.find((k) => k === name) ?? null
+  return name in NAME_KEYS ? (name as KnownProvider) : null
 }
+
+const DIALOG_PARAMS = ['method'] as const
 
 export function NodeProviderRow({
   provider,
@@ -34,10 +44,19 @@ export function NodeProviderRow({
   provider: NodeProviderResource
 }) {
   const { t } = useTranslation('settings')
-  const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const dialog = useUrlDialog(provider.provider, 'connect', DIALOG_PARAMS)
+  const [addingNode, setAddingNode] = useState(false)
   const known = asKnown(provider.provider)
-  const label = known ? t(`nodeProviders.names.${known}`) : provider.provider
+  const label = known ? t(NAME_KEYS[known]) : provider.provider
   const connected = provider.has_token
+  const failed = provider.status === 'test_failed'
+  const detail =
+    provider.label && provider.provider === 'custom'
+      ? [provider.label, provider.location].filter(Boolean).join(', ')
+      : known
+        ? t(HINT_KEYS[known])
+        : ''
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
@@ -48,50 +67,84 @@ export function NodeProviderRow({
       />
       <div className="min-w-0 flex-1 basis-56">
         <p className="text-sm font-medium">{label}</p>
-        {known ? (
+        <p className="truncate text-xs text-muted-foreground">{detail}</p>
+        {connected && provider.connected_by ? (
           <p className="truncate text-xs text-muted-foreground">
-            {t(`nodeProviders.hints.${known}`)}
+            {t('nodeProviders.connectedBy', { name: provider.connected_by })}
+            {provider.last_tested_at ? (
+              <>
+                {' · '}
+                {t('nodeProviders.lastTested')}{' '}
+                <RelativeTime at={provider.last_tested_at} />
+              </>
+            ) : null}
           </p>
         ) : null}
       </div>
       <StatusPill
-        tone={connected ? 'success' : 'neutral'}
+        tone={failed ? 'danger' : connected ? 'success' : 'neutral'}
         label={
-          connected
-            ? t('nodeProviders.connected')
-            : t('nodeProviders.notConnected')
+          failed
+            ? t('nodeProviders.testFailed')
+            : connected
+              ? t('nodeProviders.connected')
+              : t('nodeProviders.notConnected')
         }
         size="sm"
+        title={failed ? provider.last_test_detail : undefined}
       />
       <Button
+        ref={triggerRef}
         type="button"
         variant="outline"
         size="sm"
         aria-label={t('nodeProviders.configureFor', { provider: label })}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setAddingNode(false)
+          dialog.open()
+        }}
       >
         <GearSixIcon aria-hidden="true" />
         {connected ? t('nodeProviders.update') : t('nodeProviders.connect')}
       </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent className="data-[side=right]:sm:max-w-xl">
-          <SheetHeader className="border-b border-border pr-12">
-            <SheetTitle>
-              {t('nodeProviders.sheetTitle', { provider: label })}
-            </SheetTitle>
-            <SheetDescription>
-              {t('nodeProviders.sheetDescription')}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-            <NodeProviderForm
-              provider={provider}
-              label={label}
-              onSaved={() => setOpen(false)}
+      <UrlDialog
+        value={provider.provider}
+        ownedParams={DIALOG_PARAMS}
+        returnFocusRef={triggerRef}
+        title={
+          addingNode
+            ? t('nodeProviders.addNodeTitle', { provider: label })
+            : t('nodeProviders.sheetTitle', { provider: label })
+        }
+        description={
+          addingNode
+            ? t('nodeProviders.addNodeDescription')
+            : t('nodeProviders.sheetDescription')
+        }
+      >
+        {addingNode ? (
+          <div className="space-y-3">
+            <p className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+              {t('nodeProviders.firewallGuidance')}
+            </p>
+            <ManualEnrollFields
+              onDone={() => setAddingNode(false)}
+              onBack={() => setAddingNode(false)}
             />
           </div>
-        </SheetContent>
-      </Sheet>
+        ) : (
+          <NodeProviderForm
+            provider={provider}
+            label={label}
+            onSaved={dialog.close}
+            onAddNode={
+              provider.provider === 'custom'
+                ? () => setAddingNode(true)
+                : undefined
+            }
+          />
+        )}
+      </UrlDialog>
     </li>
   )
 }

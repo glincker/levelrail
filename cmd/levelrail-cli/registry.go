@@ -35,6 +35,10 @@ func runRegistry(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runRegistryEnable(prog, args[1:], stdout, stderr, lookupEnv)
 	case "disable":
 		return runRegistryDisable(prog, args[1:], stdout, stderr, lookupEnv)
+	case "credentials":
+		return runRegistryCredentialsNamespace(prog, args[1:], stdout, stderr, lookupEnv)
+	case "package-registries":
+		return runRegistryPackageRegistries(prog, args[1:], stdout, stderr, lookupEnv)
 	case "repositories":
 		return runRegistryRepositories(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
@@ -53,6 +57,8 @@ func registryUsage(prog string) string {
   %[1]s registry disable [flags]                   disable the registry and forget its generated credentials
   %[1]s registry repositories [flags]              list every repository pushed to the built-in registry
   %[1]s registry tags --repository NAME [flags]    list every tag pushed for one repository
+  %[1]s registry credentials list|vendors|add|test|delete [flags]   external registry credentials, with vendor presets
+  %[1]s registry package-registries list|add|test|delete [flags]    private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries for builds
 
 Runs Levelrail's own built-in image registry (registry:2), so a
 multi-node deployment gets a build cache/distribution backend without

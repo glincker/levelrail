@@ -404,13 +404,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// Traffic/Proxy dashboard page. Same AbilityRead boundary as
 	// topology above, same reasoning: read-only, no key material.
 	mux.HandleFunc("GET /api/v1/network/proxy", rt.requireAbility(AbilityRead, rt.handleGetNetworkProxy))
-	// Cloud node provisioning: same AbilityRoot boundary as every other
-	// node route above, a provider credential and the ability to spin up
-	// a VM are at least as sensitive as a join token.
-	mux.HandleFunc("GET /api/v1/node-providers", rt.requireAbility(AbilityRoot, rt.handleListNodeProviders))
-	mux.HandleFunc("POST /api/v1/node-providers", rt.requireAbility(AbilityRoot, rt.handleSetNodeProviderCredential))
-	mux.HandleFunc("GET /api/v1/node-providers/{provider}/regions", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderRegions))
-	mux.HandleFunc("GET /api/v1/node-providers/{provider}/sizes", rt.requireAbility(AbilityRoot, rt.handleListNodeProviderSizes))
+	// Provider connections: seeing status and catalogs is a plain read
+	// (no credential value is ever returned); connecting, testing and
+	// disconnecting is write:sensitive so a team can be granted exactly
+	// that. Creating VMs and join tokens stays AbilityRoot below.
+	mux.HandleFunc("GET /api/v1/node-providers", rt.requireAbility(AbilityRead, rt.handleListNodeProviders))
+	mux.HandleFunc("POST /api/v1/node-providers", rt.requireAbility(AbilityWriteSensitive, rt.handleSetNodeProviderCredential))
+	mux.HandleFunc("POST /api/v1/node-providers/{provider}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestNodeProvider))
+	mux.HandleFunc("DELETE /api/v1/node-providers/{provider}", rt.requireAbility(AbilityWriteSensitive, rt.handleDisconnectNodeProvider))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/regions", rt.requireAbility(AbilityRead, rt.handleListNodeProviderRegions))
+	mux.HandleFunc("GET /api/v1/node-providers/{provider}/sizes", rt.requireAbility(AbilityRead, rt.handleListNodeProviderSizes))
 	mux.HandleFunc("POST /api/v1/nodes/provision", rt.requireAbility(AbilityRoot, rt.handleCreateNodeProvision))
 	// A top-level sibling of /api/v1/nodes/{id}/..., not nested under it:
 	// "/api/v1/nodes/provisions/{id}" and "/api/v1/nodes/{id}/health"
@@ -715,6 +718,15 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateRegistryCredential))
 	mux.HandleFunc("DELETE /api/v1/registry-credentials/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteRegistryCredential))
 	mux.HandleFunc("POST /api/v1/registry-credentials/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-credentials/{id}/usage", rt.requireAbility(AbilityRead, rt.handleRegistryCredentialUsage))
+	mux.HandleFunc("POST /api/v1/registry-credentials/test", rt.requireAbility(AbilityWriteSensitive, rt.handleProbeRegistryCredential))
+	mux.HandleFunc("GET /api/v1/registry-vendors", rt.requireAbility(AbilityRead, rt.handleListRegistryVendors))
+	// Private package registries for builds: secrets mounted into
+	// Dockerfile builds, never returned by any route.
+	mux.HandleFunc("GET /api/v1/package-registries", rt.requireAbility(AbilityRead, rt.handleListPackageRegistries))
+	mux.HandleFunc("POST /api/v1/package-registries", rt.requireAbility(AbilityWriteSensitive, rt.handleCreatePackageRegistry))
+	mux.HandleFunc("DELETE /api/v1/package-registries/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeletePackageRegistry))
+	mux.HandleFunc("POST /api/v1/package-registries/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestPackageRegistry))
 
 	// Network shares (network_shares.go): an NFS/CIFS export mountable
 	// as a Docker local-driver volume. Same ability tiers as registry

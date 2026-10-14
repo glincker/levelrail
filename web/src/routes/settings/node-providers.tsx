@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CloudIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
+import { pickStringSearch } from '../../lib/urlDialog'
 import { nodeProviderListQueryOptions } from '../../queries/nodeProvision'
 import { NodeProviderCredentialsCard } from '../../components/NodeProviderCredentialsCard'
 import {
@@ -16,6 +17,10 @@ import {
 // the Nodes page's own Add node wizard when a provider has no stored
 // token yet.
 export const Route = createFileRoute('/settings/node-providers')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { connect?: string; method?: string } =>
+    pickStringSearch(search, ['connect', 'method']),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(nodeProviderListQueryOptions()),
   component: NodeProvidersSettingsPage,

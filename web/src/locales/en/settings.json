@@ -976,7 +976,11 @@
       "test": "Test connection",
       "testing": "Testing...",
       "testOk": "\"{{name}}\" authenticated successfully.",
-      "testFailed": "\"{{name}}\" failed to authenticate."
+      "testFailed": "\"{{name}}\" failed to authenticate.",
+      "usedBy": "Used by",
+      "unused": "Nothing yet",
+      "usedByMany_one": "{{count}} service",
+      "usedByMany_other": "{{count}} services"
     }
   },
   "backupTargetsPage": {
@@ -1298,9 +1302,73 @@
       "digitalocean": "DigitalOcean",
       "aws": "AWS",
       "azure": "Azure",
-      "gcp": "Google Cloud"
+      "gcp": "Google Cloud",
+      "custom": "Custom data center"
     },
+    "methods": {
+      "api_token": {
+        "title": "API token",
+        "description": "A single bearer token from the provider's console."
+      },
+      "access_key": {
+        "title": "Access key",
+        "description": "A long-lived IAM access key id and secret."
+      },
+      "assume_role": {
+        "title": "Assume a role",
+        "description": "Assume an IAM role by ARN, so the base identity needs only sts:AssumeRole."
+      },
+      "ambient": {
+        "title": "Control plane identity",
+        "description": "Use the identity this control plane already runs as, such as an EC2 instance profile."
+      },
+      "workload_identity_federation": {
+        "title": "Workload identity federation",
+        "description": "Exchange a federated token file for a short-lived token, no client secret stored."
+      },
+      "service_account_json": {
+        "title": "Service account JSON",
+        "description": "A service principal or service account key as a JSON document."
+      },
+      "manual": {
+        "title": "Manual",
+        "description": "No cloud API: bare metal, on-prem or any VM that enrolls through a join token."
+      }
+    },
+    "permissions": {
+      "hetzner": "A project API token with Read & Write access. Hetzner has no finer scopes, so use a dedicated project.",
+      "digitalocean": "A personal access token with read and write scope, or a custom scope limited to droplet and ssh_key create, read and delete.",
+      "aws": "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:DescribeImages, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags and the security group and VPC actions used to create the node's group.",
+      "awsRole": "With a role, the base identity needs only sts:AssumeRole on that role ARN. Put the actions above on the role.",
+      "azure": "Reader on the subscription, plus Virtual Machine Contributor and Network Contributor on the target resource group.",
+      "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get and compute.instances.delete on the project.",
+      "custom": "No credential is stored. The node dials out to this control plane with a one-time join token."
+    },
+    "permissionsTitle": "Least privilege",
+    "methodLegend": "Connection method",
+    "credentialJson": "Credential (JSON)",
+    "roleArnRequired": "Role ARN",
+    "storedPlaceholder": "Stored. Paste a new value to replace it.",
+    "dcName": "Data center name",
+    "dcLocation": "Location (optional)",
+    "dcNotes": "Notes (optional)",
+    "saveManual": "Save data center",
+    "testAndConnect": "Test and connect",
+    "testConnection": "Test connection",
+    "testing": "Testing...",
+    "testStored": "Test stored connection",
+    "testFailed": "Test failed",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Confirm disconnect",
+    "disconnected": "{{provider}} disconnected.",
+    "connectedBy": "Connected by {{name}}",
+    "lastTested": "last tested",
+    "addNode": "Add a node",
+    "addNodeTitle": "Add a node to {{provider}}",
+    "addNodeDescription": "Run the install command on the machine. It dials out to this control plane, so no inbound port is needed.",
+    "firewallGuidance": "Allow outbound TCP to this control plane's agent port (9443 by default) and outbound HTTPS for image pulls. No inbound rule is required for the agent.",
     "hints": {
+      "custom": "Bare metal, on-prem or any VM with no cloud API.",
       "hetzner": "Project API token with read and write access.",
       "digitalocean": "Personal access token with read and write scope.",
       "aws": "Access key, or this control plane's own AWS identity.",
@@ -1332,5 +1400,93 @@
     "saving": "Saving...",
     "save": "Save",
     "empty": "No cloud providers are configured on this control plane."
+  },
+  "registryVendors": {
+    "heading": "Connect a registry",
+    "subheading": "Pick a vendor to pre-fill the host and see which token scopes the credential needs.",
+    "connect": "Connect",
+    "connectFor": "Connect {{vendor}}",
+    "dialogTitle": "Connect {{vendor}}",
+    "dialogDescription": "The password is encrypted at rest and never shown again.",
+    "name": "Name",
+    "nameHelp": "Referenced by name from app.yaml build.registryCredential.",
+    "host": "Registry host",
+    "username": "Username",
+    "password": "Password or token",
+    "neverShown": "Never shown again once saved.",
+    "expires": "Expires (optional)",
+    "shortLived": "This vendor issues tokens that last about {{hours}} hours. Re-issue and update the credential before the date shown, automatic refresh is not built.",
+    "scopesTitle": "Scopes needed",
+    "test": "Test connection",
+    "testing": "Testing...",
+    "save": "Save credential",
+    "saving": "Saving...",
+    "saved": "Registry credential \"{{name}}\" added.",
+    "auth": {
+      "dockerhub": "Use your Docker Hub username with a personal access token, not your account password.",
+      "ghcr": "Use your GitHub username with a personal access token (classic).",
+      "gitlab": "Use a deploy token or a personal access token as the password.",
+      "ecr": "The username is always AWS. The password is the output of aws ecr get-login-password, valid for 12 hours.",
+      "gar": "The username is _json_key and the password is the service account key JSON.",
+      "acr": "Use a repository scoped token or a service principal: the username is the token name or app id, the password is its secret.",
+      "harbor": "Use a robot account: the username looks like robot$name and the password is its secret.",
+      "quay": "Use a robot account: the username is org+robotname and the password is its token.",
+      "jfrog": "The username is your user and the password is an identity token, not your account password.",
+      "nexus": "Use the username and password of a user with access to the Docker repository.",
+      "generic": "Any registry that speaks the Docker Registry HTTP API v2 with basic authentication."
+    },
+    "scopes": {
+      "dockerhub": "Read-only access is enough to pull. Choose Read & Write only if builds push.",
+      "ghcr": "read:packages to pull, write:packages to push. For an SSO-enforced organization, authorize the token for SSO.",
+      "gitlab": "read_registry to pull, write_registry to push. A deploy token is scoped to one project or group.",
+      "ecr": "ecr:GetAuthorizationToken, ecr:BatchGetImage, ecr:GetDownloadUrlForLayer and ecr:BatchCheckLayerAvailability, from a key or a role.",
+      "gar": "roles/artifactregistry.reader to pull, roles/artifactregistry.writer to push.",
+      "acr": "The AcrPull role (or a token with content/read) to pull, AcrPush to push.",
+      "harbor": "Pull permission on the project the images live in.",
+      "quay": "Read permission on the repository.",
+      "jfrog": "Read permission on the Docker repository.",
+      "nexus": "nx-repository-view-docker-*-read to pull.",
+      "generic": "Pull access to the repositories you deploy."
+    }
+  },
+  "packageRegistries": {
+    "heading": "Package registries for builds",
+    "subheading": "Private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries, mounted into Dockerfile builds as secrets.",
+    "add": "Add package registry",
+    "empty": "No package registries yet. Add one so builds can install private packages.",
+    "dialogTitle": "Add a package registry",
+    "dialogDescription": "The token is encrypted and mounted into builds as a BuildKit secret.",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Go proxy",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "All builds",
+      "project": "One project",
+      "app": "One app"
+    },
+    "name": "Name",
+    "url": "Registry URL",
+    "urlHelp": "No credentials in the URL. Use the username and token fields.",
+    "username": "Username (optional)",
+    "usernameHelp": "Leave empty for a bearer token registry.",
+    "secret": "Token or password",
+    "secretHelp": "Never shown again once saved, never placed in a build arg, image layer or build log.",
+    "patterns": "GOPRIVATE patterns",
+    "scope": "Applies to",
+    "scopeRef": "Project id or app name",
+    "scopeRefPlaceholder": "Project id or app name",
+    "buildNote": "Reference the generated config in your Dockerfile with RUN --mount=type=secret,id=<secret id>, for example id=npmrc with target=/root/.npmrc. Builds on a remote build node do not receive it yet.",
+    "save": "Save registry",
+    "saving": "Saving...",
+    "saved": "Package registry \"{{name}}\" added.",
+    "test": "Test",
+    "remove": "Remove {{name}}",
+    "mountAs": "secret id {{id}}"
   }
 }

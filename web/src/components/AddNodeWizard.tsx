@@ -165,6 +165,7 @@ function WizardBody({ onClose }: { onClose: () => void }) {
                       No API token stored yet.{' '}
                       <Link
                         to="/settings/node-providers"
+                        search={{ connect: p }}
                         className="underline underline-offset-2"
                       >
                         Connect one

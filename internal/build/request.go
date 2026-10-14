@@ -36,6 +36,12 @@ type Request struct {
 
 	// S3Cache adds BuildKit's s3 cache backend for this build. Nil means none.
 	S3Cache *S3Cache
+
+	// Secrets are BuildKit secret mounts by id, readable in a Dockerfile
+	// with RUN --mount=type=secret,id=<id>. They never enter an image layer
+	// or the build cache key. Local builds only: a remote build node does
+	// not receive them.
+	Secrets map[string][]byte
 }
 
 // ErrContextDirRequired and ErrTagRequired are returned by Validate for

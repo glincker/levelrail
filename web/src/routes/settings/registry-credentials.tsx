@@ -9,6 +9,9 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
+import { pickStringSearch } from '../../lib/urlDialog'
+import { RegistryVendorGrid } from '../../components/registry/RegistryVendorGrid'
+import { PackageRegistriesCard } from '../../components/registry/PackageRegistriesCard'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Account-level, same reasoning settings/backup-targets.tsx's own doc
@@ -16,6 +19,10 @@ import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 // referenced by name from any app.yaml's build.registryCredential
 // field, so it lives here rather than under routes/apps/.
 export const Route = createFileRoute('/settings/registry-credentials')({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { connect?: string; ecosystem?: string } =>
+    pickStringSearch(search, ['connect', 'ecosystem']),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(registryCredentialListQueryOptions()),
   component: RegistryCredentialsPage,
@@ -69,22 +76,26 @@ function RegistryCredentialsPage() {
       actions={<CreateRegistryCredentialDialog />}
       banners={banner}
     >
-      <RegistryCredentialTable
-        credentials={credentials}
-        action={<CreateRegistryCredentialDialog />}
-      />
+      <div className="space-y-8">
+        <RegistryVendorGrid />
+        <RegistryCredentialTable
+          credentials={credentials}
+          action={<CreateRegistryCredentialDialog />}
+        />
+        <PackageRegistriesCard />
+      </div>
     </PageTemplate>
   )
 }
 
 // Route-level fallback for the loader's pending phase, matching
-// RegistryCredentialTable's own 5-column shape so the skeleton doesn't
+// RegistryCredentialTable's own 6-column shape so the skeleton doesn't
 // jump when real rows swap in.
 function RegistryCredentialsPending() {
   return (
     <div className="space-y-6">
       <SettingsPageTitle id="registry-credentials" />
-      <TableSkeleton columnCount={5} />
+      <TableSkeleton columnCount={6} />
     </div>
   )
 }
