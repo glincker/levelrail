@@ -683,7 +683,14 @@
       "slack": "Slack",
       "linkedin": "LinkedIn",
       "twitch": "Twitch",
-      "facebook": "Facebook"
+      "facebook": "Facebook",
+      "linear": "Linear",
+      "vercel": "Vercel",
+      "huggingface": "Hugging Face",
+      "figma": "Figma",
+      "salesforce": "Salesforce",
+      "codeberg": "Codeberg",
+      "cognito": "Amazon Cognito"
     },
     "state": {
       "connected": "Connected",
@@ -720,6 +727,11 @@
       "label": "Instance URL (optional)",
       "hint": "Leave blank for gitlab.com. For a self-hosted GitLab, enter its https address.",
       "invalid": "Instance URL must start with https://"
+    },
+    "userPoolId": {
+      "label": "User pool ID",
+      "hint": "Found on the Cognito user pool overview, for example us-east-1_AbC123. The region is read from it.",
+      "invalid": "User pool ID must look like us-east-1_AbC123"
     },
     "displayName": {
       "label": "Display name (optional)",

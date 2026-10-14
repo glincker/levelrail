@@ -24,6 +24,7 @@ interface SchemaMessages {
   clientSecret: string
   issuerUrl: string
   instanceUrl: string
+  userPoolId: string
 }
 
 function buildSchema(
@@ -69,6 +70,16 @@ function buildSchema(
           path: ['issuerUrl'],
         })
       }
+      if (
+        provider === 'cognito' &&
+        !/^[a-z]{2}(-[a-z]+)+-\d_[A-Za-z0-9]+$/.test(data.issuerUrl)
+      ) {
+        ctx.addIssue({
+          code: 'custom',
+          message: msg.userPoolId,
+          path: ['issuerUrl'],
+        })
+      }
       if (provider === 'oidc' && !data.issuerUrl) {
         ctx.addIssue({
           code: 'custom',
@@ -94,6 +105,7 @@ export function OAuthProviderForm({
   const updateSettings = useUpdateOAuthProviderSettings()
   const isOIDC = settings.provider === 'oidc'
   const isGitLab = settings.provider === 'gitlab'
+  const isCognito = settings.provider === 'cognito'
   const callback = callbackUrl(window.location.origin, settings.provider)
   const id = (suffix: string) => `${settings.provider}-${suffix}`
 
@@ -105,6 +117,7 @@ export function OAuthProviderForm({
           clientSecret: t('oauthPage.errors.clientSecret'),
           issuerUrl: t('oauthPage.errors.issuerUrl'),
           instanceUrl: t('oauthPage.instanceUrl.invalid'),
+          userPoolId: t('oauthPage.userPoolId.invalid'),
         }),
       ),
       values: {
@@ -225,6 +238,23 @@ export function OAuthProviderForm({
               />
               <FieldDescription>
                 {t('oauthPage.instanceUrl.hint')}
+              </FieldDescription>
+              <FieldError errors={[formState.errors.issuerUrl]} />
+            </Field>
+          ) : null}
+          {isCognito ? (
+            <Field>
+              <FieldLabel htmlFor={id('issuer-url')}>
+                {t('oauthPage.userPoolId.label')}
+              </FieldLabel>
+              <Input
+                id={id('issuer-url')}
+                {...register('issuerUrl')}
+                placeholder="us-east-1_AbC123"
+                className="font-mono"
+              />
+              <FieldDescription>
+                {t('oauthPage.userPoolId.hint')}
               </FieldDescription>
               <FieldError errors={[formState.errors.issuerUrl]} />
             </Field>

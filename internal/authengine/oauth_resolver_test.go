@@ -17,6 +17,8 @@ func TestValidOAuthProvider(t *testing.T) {
 		{"google", true}, {"github", true}, {"microsoft", true}, {"oidc", true},
 		{"gitlab", true}, {"bitbucket", true}, {"discord", true}, {"slack", true},
 		{"linkedin", true}, {"twitch", true}, {"facebook", true},
+		{"linear", true}, {"vercel", true}, {"huggingface", true}, {"figma", true},
+		{"salesforce", true}, {"codeberg", true}, {"cognito", true},
 		{"x", false}, {"apple", false}, {"", false}, {"GitHub", false}, {"../etc", false},
 	}
 	for _, tc := range tests {
@@ -44,6 +46,12 @@ func TestProviderResolverBuild(t *testing.T) {
 		{store.OAuthProviderLinkedIn, "linkedin.com", "openid"},
 		{store.OAuthProviderTwitch, "id.twitch.tv", "user%3Aread%3Aemail"},
 		{store.OAuthProviderFacebook, "facebook.com", "public_profile"},
+		{store.OAuthProviderLinear, "linear.app", "read"},
+		{store.OAuthProviderVercel, "vercel.com", "openid"},
+		{store.OAuthProviderHuggingFace, "huggingface.co", "openid"},
+		{store.OAuthProviderFigma, "figma.com", "current_user"},
+		{store.OAuthProviderSalesforce, "salesforce.com", "openid"},
+		{store.OAuthProviderCodeberg, "codeberg.org", ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.provider, func(t *testing.T) {
@@ -93,5 +101,49 @@ func TestGitLabBaseURL(t *testing.T) {
 				t.Errorf("gitlabBaseURL(%q) = %q, %v; want %q, err=%v", tc.in, got, err, tc.want, tc.wantErr)
 			}
 		})
+	}
+}
+
+func TestParseCognitoPoolID(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name       string
+		in         string
+		wantRegion string
+		wantErr    bool
+	}{
+		{"us east", "us-east-1_AbC123xyz", "us-east-1", false},
+		{"trimmed", " eu-west-2_Pool9 ", "eu-west-2", false},
+		{"gov style", "ap-southeast-4_P", "ap-southeast-4", false},
+		{"empty", "", "", true},
+		{"no underscore", "us-east-1", "", true},
+		{"bad region", "useast1_abc", "", true},
+		{"url instead", "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_abc", "", true},
+		{"path injection", "us-east-1_a/../b", "", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			region, id, err := ParseCognitoPoolID(tc.in)
+			if (err != nil) != tc.wantErr || region != tc.wantRegion {
+				t.Fatalf("ParseCognitoPoolID(%q) = %q, %q, %v", tc.in, region, id, err)
+			}
+			if !tc.wantErr && id != strings.TrimSpace(tc.in) {
+				t.Errorf("poolID = %q", id)
+			}
+		})
+	}
+}
+
+func TestEmailVerifiedByProvider(t *testing.T) {
+	t.Parallel()
+	for name, want := range map[string]bool{
+		store.OAuthProviderMicrosoft: true, store.OAuthProviderFacebook: true,
+		store.OAuthProviderLinear: true, store.OAuthProviderFigma: true, store.OAuthProviderCodeberg: true,
+		store.OAuthProviderGoogle: false, store.OAuthProviderVercel: false, store.OAuthProviderCognito: false,
+	} {
+		if got := emailVerifiedByProvider(name); got != want {
+			t.Errorf("emailVerifiedByProvider(%q) = %v, want %v", name, got, want)
+		}
 	}
 }

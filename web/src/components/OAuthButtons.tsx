@@ -19,6 +19,13 @@ const PROVIDER_NAMES: Record<string, string> = {
   linkedin: 'LinkedIn',
   twitch: 'Twitch',
   facebook: 'Facebook',
+  linear: 'Linear',
+  vercel: 'Vercel',
+  huggingface: 'Hugging Face',
+  figma: 'Figma',
+  salesforce: 'Salesforce',
+  codeberg: 'Codeberg',
+  cognito: 'Amazon Cognito',
 }
 
 // Real top-level navigation (<a href>, not a fetch): the browser must

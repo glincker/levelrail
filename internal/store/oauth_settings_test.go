@@ -62,9 +62,11 @@ func TestListOAuthProviderSettings_AllProvidersSeeded(t *testing.T) {
 		t.Fatalf("ListOAuthProviderSettings() error = %v", err)
 	}
 	want := []string{
-		OAuthProviderBitbucket, OAuthProviderDiscord, OAuthProviderFacebook, OAuthProviderGitHub,
-		OAuthProviderGitLab, OAuthProviderGoogle, OAuthProviderLinkedIn, OAuthProviderMicrosoft,
-		OAuthProviderOIDC, OAuthProviderSlack, OAuthProviderTwitch,
+		OAuthProviderBitbucket, OAuthProviderCodeberg, OAuthProviderCognito, OAuthProviderDiscord,
+		OAuthProviderFacebook, OAuthProviderFigma, OAuthProviderGitHub, OAuthProviderGitLab,
+		OAuthProviderGoogle, OAuthProviderHuggingFace, OAuthProviderLinear, OAuthProviderLinkedIn,
+		OAuthProviderMicrosoft, OAuthProviderOIDC, OAuthProviderSalesforce, OAuthProviderSlack,
+		OAuthProviderTwitch, OAuthProviderVercel,
 	}
 	if len(got) != len(want) {
 		t.Fatalf("len(ListOAuthProviderSettings()) = %d, want %d", len(got), len(want))

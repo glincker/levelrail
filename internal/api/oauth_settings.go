@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -112,7 +113,13 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 			return
 		}
 	}
-	if provider != store.OAuthProviderOIDC && provider != store.OAuthProviderGitLab {
+	if provider == store.OAuthProviderCognito && req.IssuerURL != "" {
+		if _, _, err := authengine.ParseCognitoPoolID(req.IssuerURL); err != nil {
+			writeError(w, http.StatusBadRequest, "user pool id must look like us-east-1_AbC123")
+			return
+		}
+	}
+	if provider != store.OAuthProviderOIDC && provider != store.OAuthProviderGitLab && provider != store.OAuthProviderCognito {
 		req.IssuerURL = ""
 	}
 
