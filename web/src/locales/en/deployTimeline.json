@@ -44,7 +44,8 @@
     "label": "Deploys by app over the selected time range",
     "laneLabel": "{{app}}, {{count}} deploys",
     "barLabel": "{{app}}, {{status}}, started {{when}}. Open deploy details.",
-    "axisLabel": "Time axis"
+    "axisLabel": "Time axis",
+    "alertLabel": "Alert fired: {{rule}}, {{when}}"
   },
   "card": {
     "title": "Deploy details",

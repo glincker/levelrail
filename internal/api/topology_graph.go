@@ -18,12 +18,16 @@ const (
 	TopologyKindDatabase = "database"
 	TopologyKindVolume   = "volume"
 	TopologyKindDomain   = "domain"
+	TopologyKindLB       = "load_balancer"
+	TopologyKindNode     = "node"
 
 	TopologyEdgeDatabaseBinding = "database_binding"
 	TopologyEdgeDependsOn       = "depends_on"
 	TopologyEdgeVolume          = "volume_attachment"
 	TopologyEdgeEgressAllow     = "egress_allow"
 	TopologyEdgeRouting         = "routing"
+	TopologyEdgeLoadBalances    = "load_balances"
+	TopologyEdgePlacedOn        = "placed_on"
 )
 
 // topologyNode is one box in the diagram. Status is nil for a volume
@@ -146,6 +150,46 @@ func buildTopologyGraph(services []store.DesiredService, databases []store.Desir
 
 	sortTopologyGraph(&g)
 	return g
+}
+
+func lbNodeID(service string) string  { return "load_balancer:" + service }
+func nodeNodeID(nodeID string) string { return "node:" + nodeID }
+
+// addInfraNodes adds a load balancer node per service that has one and a
+// node per fleet node a service or database is placed on. An empty
+// NodeID means the control plane's own node, like resolvePlacementNode.
+func addInfraNodes(g *topologyGraph, services []store.DesiredService, databases []store.DesiredDatabase, lbServices map[string]bool, nodes map[string]store.Node, localNodeID string) {
+	placed := make(map[string]bool)
+	place := func(from, rawNodeID string) {
+		id := rawNodeID
+		if id == "" {
+			id = localNodeID
+		}
+		n, ok := nodes[id]
+		if !ok {
+			return
+		}
+		if !placed[id] {
+			placed[id] = true
+			label := n.Name
+			if label == "" {
+				label = id
+			}
+			g.Nodes = append(g.Nodes, topologyNode{ID: nodeNodeID(id), Kind: TopologyKindNode, Label: label})
+		}
+		g.Edges = append(g.Edges, topologyEdge{From: from, To: nodeNodeID(id), Kind: TopologyEdgePlacedOn})
+	}
+	for _, s := range services {
+		if lbServices[s.Name] {
+			g.Nodes = append(g.Nodes, topologyNode{ID: lbNodeID(s.Name), Kind: TopologyKindLB, Label: s.Name})
+			g.Edges = append(g.Edges, topologyEdge{From: lbNodeID(s.Name), To: appNodeID(s.Name), Kind: TopologyEdgeLoadBalances})
+		}
+		place(appNodeID(s.Name), s.NodeID)
+	}
+	for _, d := range databases {
+		place(dbNodeID(d.Name), d.NodeID)
+	}
+	sortTopologyGraph(g)
 }
 
 // sortTopologyGraph makes output order deterministic regardless of

@@ -25,6 +25,8 @@ Every edge is derived from one specific field on the project's apps and database
 | Depends on | An app's `dependsOn:` list, resolved the same way the reconciler resolves it before starting a container: the dependency must be a real sibling service in the same multi-service app | `web` depends on `worker` |
 | Volume attachment | A named Docker volume an app mounts (`PUT /apps/{name}/volumes`, or `app.yaml`'s `volumes:` block). Two apps that happen to mount the same volume name render as one shared volume box, not two | `web` mounts `app-web-uploads` |
 | Routing | A domain listed in an app's `domains:`. The domain box points at the app that serves it | `shop.example.com` routes to `web` |
+| Load balances | An app with a [load balancer](/api-reference) configured. The load balancer box points at the app it balances | `web` has a balancer in front of it |
+| Runs on | The fleet node an app or database is placed on. The app or database box points at the node box | `main` runs on `edge-1` |
 | Egress allow-rule | An entry in an app's [egress policy](/api-reference) allowlist, but only when that entry's host matches a domain another app in the same project actually owns. An allow-listed third-party host (the common case, e.g. `api.stripe.com`) has nothing to point at in this project and is left off the diagram rather than drawn as a guess | `web` is allowed to reach `admin` over its `admin.example.com` domain |
 
 [Network shares](/network-shares) (`/api/v1/network-shares`) are left off this diagram: nothing in a project's stored configuration links a share to an app, so an edge would be a guess.
@@ -35,7 +37,7 @@ Every edge is derived from one specific field on the project's apps and database
 levelrail-cli apps projects topology <project-id>
 ```
 
-This prints the graph as nodes and edges (kinds `app`, `database`, `volume`, `domain`; edge kinds `database_binding`, `depends_on`, `volume_attachment`, `egress_allow`, `routing`); add `--json` for the raw response, the same JSON the canvas draws. The API is `GET /api/v1/projects/{id}/topology` (`read` ability). Whole-mesh data comes from `levelrail-cli nodes topology`, covered on [Network topology](/network-topology).
+This prints the graph as nodes and edges (kinds `app`, `database`, `volume`, `domain`, `load_balancer`, `node`; edge kinds `database_binding`, `depends_on`, `volume_attachment`, `egress_allow`, `routing`, `load_balances`, `placed_on`); add `--json` for the raw response, the same JSON the canvas draws. The API is `GET /api/v1/projects/{id}/topology` (`read` ability). Whole-mesh data comes from `levelrail-cli nodes topology`, covered on [Network topology](/network-topology).
 
 ## Multi-service apps
 

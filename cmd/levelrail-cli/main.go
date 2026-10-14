@@ -217,6 +217,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "budget":
+		return runUsageBudgets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
@@ -358,6 +360,7 @@ Usage:
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s budget [set|delete] [flags]                            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production

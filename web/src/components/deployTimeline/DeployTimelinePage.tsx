@@ -31,7 +31,7 @@ export function DeployTimelinePage() {
   const { t } = useTranslation('deployTimeline')
   const [filters, setFilters] = useState<Filters>(DEFAULT_TIMELINE_FILTERS)
   const [active, setActive] = useState<TimelineDeploy | null>(null)
-  const { query, items, streamState, windowStart, windowEnd } =
+  const { query, items, alerts, streamState, windowStart, windowEnd } =
     useDeployTimeline(filters)
   const projects = useProjectListOptional().data
   const nodes = useNodeListOptional().data
@@ -108,6 +108,7 @@ export function DeployTimelinePage() {
             <TimelineHoverCard deploy={active} />
             <TimelineLanes
               lanes={lanes}
+              alerts={alerts}
               zoom={filters.zoom}
               windowStart={windowStart}
               windowEnd={windowEnd}

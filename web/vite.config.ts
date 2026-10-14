@@ -99,7 +99,7 @@ export default defineConfig({
     // this pairing.
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: `http://localhost:${process.env.LOCAL_API_PORT ?? '8080'}`,
         changeOrigin: true,
       },
     },

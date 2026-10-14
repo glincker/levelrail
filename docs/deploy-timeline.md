@@ -43,4 +43,4 @@ The text view draws one row per deploy, oldest first, with a bar placed on a sha
 | `status` | One or more statuses, comma separated. |
 | `limit`, `cursor` | Page size (at most 200) and the `next_cursor` of the previous page. |
 
-The response lists `items` with the deploy id, app, status, trigger, commit, author, strategy, start, finish, duration and rollback source, plus `next_cursor` when more rows exist. See the [API reference](api-reference.md).
+The response lists `items` with the deploy id, app, status, trigger, commit, author, strategy, start, finish, duration and rollback source, plus `next_cursor` when more rows exist. The first page (no `cursor`) also carries `alerts`, up to 200 fired alerts from the alert history in the same window, drawn as markers on each app lane. Later pages leave `alerts` empty. See the [API reference](api-reference.md).

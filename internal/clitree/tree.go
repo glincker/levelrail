@@ -233,6 +233,7 @@ var Tree = map[string]*Node{
 	"attention":                nil,
 	"tui":                      nil,
 	"advisor":                  {Subs: map[string]*Node{"findings": nil, "summary": nil, "apply": nil, "dismiss": nil, "snooze": nil, "restore": nil, "enable": nil, "disable": nil}},
+	"budget":                   {Subs: map[string]*Node{"set": nil, "delete": nil}},
 	"usage":                    {Subs: map[string]*Node{"report": nil, "settings": {Subs: map[string]*Node{"set": nil}}, "budgets": {Subs: map[string]*Node{"set": nil, "delete": nil}}}},
 	"doctor":                   nil,
 	"setup":                    {Subs: map[string]*Node{"status": nil, "next": nil, "skip": nil, "undo": nil, "reset": nil}},

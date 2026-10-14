@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	beginMarker = "<!-- BEGIN GENERATED CATALOG TABLE -->"
-	endMarker   = "<!-- END GENERATED CATALOG TABLE -->"
+	beginMarker = "{/* BEGIN GENERATED CATALOG TABLE */}"
+	endMarker   = "{/* END GENERATED CATALOG TABLE */}"
 )
 
 // categoryOrder is the display order: alphabetical, not count-descending,

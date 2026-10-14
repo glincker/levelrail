@@ -8,7 +8,7 @@
     "last_month": "Last month"
   },
   "summary": {
-    "total": "Total",
+    "total": "Estimated total",
     "change": "{{value}} vs previous period",
     "noChange": "No previous period to compare",
     "forecast": "Forecast for month end",
@@ -33,7 +33,7 @@
   "table": {
     "label": "Cost ranking",
     "name": "Name",
-    "cost": "Cost",
+    "cost": "Estimated cost",
     "previous": "Previous",
     "change": "Change",
     "trend": "Trend",

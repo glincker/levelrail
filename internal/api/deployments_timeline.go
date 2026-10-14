@@ -6,10 +6,24 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-const fleetTimelineDefaultWindow = 24 * time.Hour
+const (
+	fleetTimelineDefaultWindow = 24 * time.Hour
+	fleetTimelineAlertsMax     = 200
+)
+
+// fleetTimelineAlert is one alert firing from the alert history, drawn as a
+// marker on its app's lane.
+type fleetTimelineAlert struct {
+	ID       string    `json:"id"`
+	App      string    `json:"app"`
+	RuleName string    `json:"rule_name"`
+	Severity string    `json:"severity"`
+	At       time.Time `json:"at"`
+}
 
 // fleetTimelineBar is one deploy on the fleet timeline: only what a bar and its
 // hover card need, so a window of hundreds of deploys stays small.
@@ -33,10 +47,13 @@ type fleetTimelineBar struct {
 }
 
 type fleetTimelineResponse struct {
-	Since      time.Time          `json:"since"`
-	Until      time.Time          `json:"until"`
-	Items      []fleetTimelineBar `json:"items"`
-	NextCursor string             `json:"next_cursor"`
+	Since time.Time          `json:"since"`
+	Until time.Time          `json:"until"`
+	Items []fleetTimelineBar `json:"items"`
+	// Alerts rides on the first page only (empty cursor): markers for the
+	// whole window, capped, so later pages stay deploy-only.
+	Alerts     []fleetTimelineAlert `json:"alerts"`
+	NextCursor string               `json:"next_cursor"`
 }
 
 // fleetTimelineScope resolves the app set for the project and node filters,
@@ -74,7 +91,7 @@ func (rt *Router) fleetTimelineScope(r *http.Request, q url.Values, visible []st
 
 // handleDeploymentsTimeline handles GET /api/v1/deployments/timeline:
 // deploys inside a time window, newest first, cursor paginated, narrowed by
-// app, project, node and status.
+// app, project, node and status. The first page also carries alert markers.
 func (rt *Router) handleDeploymentsTimeline(w http.ResponseWriter, r *http.Request) {
 	ds, ok := rt.deployAttempts.(deploymentStore)
 	if !ok {
@@ -108,7 +125,7 @@ func (rt *Router) handleDeploymentsTimeline(w http.ResponseWriter, r *http.Reque
 		rt.internalError(w, "api: deployments timeline: scope", err)
 		return
 	}
-	out := fleetTimelineResponse{Since: f.Since, Until: f.Until, Items: []fleetTimelineBar{}}
+	out := fleetTimelineResponse{Since: f.Since, Until: f.Until, Items: []fleetTimelineBar{}, Alerts: []fleetTimelineAlert{}}
 	if scoped {
 		if len(apps) == 0 {
 			writeJSON(w, http.StatusOK, out)
@@ -126,6 +143,9 @@ func (rt *Router) handleDeploymentsTimeline(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	out.NextCursor = next
+	if f.Cursor == "" {
+		out.Alerts = rt.fleetTimelineAlerts(r, f, apps, scoped)
+	}
 	for _, d := range rows {
 		a := d.Attempt
 		bar := fleetTimelineBar{
@@ -144,4 +164,32 @@ func (rt *Router) handleDeploymentsTimeline(w http.ResponseWriter, r *http.Reque
 		out.Items = append(out.Items, bar)
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+// fleetTimelineAlerts lists fired alerts in the window for the scoped apps.
+// History is best effort: a failure leaves the deploy bars intact.
+func (rt *Router) fleetTimelineAlerts(r *http.Request, f store.DeploymentFilter, apps []string, scoped bool) []fleetTimelineAlert {
+	out := []fleetTimelineAlert{}
+	if rt.alertNoise == nil {
+		return out
+	}
+	allowed := make(map[string]bool, len(apps))
+	for _, a := range apps {
+		allowed[a] = true
+	}
+	until := f.Until
+	rows, err := rt.alertNoise.ListHistory(r.Context(), alerting.HistoryFilter{
+		App: f.App, Event: alerting.EventFired, Since: f.Since, Before: &until, Limit: fleetTimelineAlertsMax,
+	})
+	if err != nil {
+		rt.logger.Warn("api: deployments timeline: alert history failed", "err", err)
+		return out
+	}
+	for _, e := range rows {
+		if e.App == "" || (scoped && !allowed[e.App]) {
+			continue
+		}
+		out = append(out, fleetTimelineAlert{ID: e.ID, App: e.App, RuleName: e.RuleName, Severity: e.Severity, At: e.At.UTC()})
+	}
+	return out
 }

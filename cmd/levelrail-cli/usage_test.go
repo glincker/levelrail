@@ -55,6 +55,7 @@ func TestRun_Usage(t *testing.T) {
 		{"settings set", []string{"usage", "settings", "set", "--mode", "node", "--node", "local=40:4:8", "--reprice-month"}, "mode: unit",
 			[]string{"GET /api/v1/usage/settings", "PUT /api/v1/usage/settings"}, `"monthly_price":40`},
 		{"budgets list", []string{"usage", "budgets"}, "Storefront", []string{"GET /api/v1/usage/budgets"}, ""},
+		{"budget alias", []string{"budget"}, "Storefront", []string{"GET /api/v1/usage/budgets"}, ""},
 		{"budgets set", []string{"usage", "budgets", "set", "project", "p1", "--monthly", "100"}, "bud_1", []string{"PUT /api/v1/usage/budgets"}, `"monthly":100`},
 		{"budgets delete", []string{"usage", "budgets", "delete", "bud_1"}, "deleted budget bud_1", []string{"DELETE /api/v1/usage/budgets/bud_1"}, ""},
 	}
