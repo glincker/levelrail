@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { useBrand } from '../hooks/useBrand'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { useLogout } from '../queries/auth'
+import { appScopeName, databaseScopeName } from '../lib/sidebarScope'
 import { GlobalNav } from './shell/GlobalNav'
 import { GLOBAL_NAV_GROUPS, isGlobalItemActive } from './shell/navModel'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
@@ -42,7 +43,6 @@ const SettingsScopedSidebar = lazy(() =>
 // Deliberately excludes the bare /apps list route (no trailing segment)
 // so the list page keeps the global nav, only a specific app's detail
 // tree switches to the scoped one below.
-const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
 
 // Same shape, one level over for Databases (a planned fast-follow:
 // Databases' own detail page gets the same treatment once the pattern
@@ -50,7 +50,6 @@ const APP_SCOPE_PATTERN = /^\/apps\/([^/]+)/
 // by construction, one anchors on /apps/, the other on /databases/, so a
 // pathname can never match both, and the checks below stay a simple
 // if/else-if rather than needing extra precedence handling.
-const DATABASE_SCOPE_PATTERN = /^\/databases\/([^/]+)/
 
 // Anchors on /settings itself (no captured name, unlike the two
 // patterns above), covering both the hub (/settings) and every leaf
@@ -69,8 +68,8 @@ export function AppSidebar() {
   const username = useAuthUsername()
   const logout = useLogout()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  const scopedAppName = pathname.match(APP_SCOPE_PATTERN)?.[1]
-  const scopedDatabaseName = pathname.match(DATABASE_SCOPE_PATTERN)?.[1]
+  const scopedAppName = appScopeName(pathname)
+  const scopedDatabaseName = databaseScopeName(pathname)
   // Pages the main nav lists (registry, node providers, IAM policies...) live
   // under /settings but keep the main sidebar, so opening one never swaps it.
   const ownedByGlobalNav = GLOBAL_NAV_GROUPS.some((g) =>

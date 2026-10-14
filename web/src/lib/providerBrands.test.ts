@@ -33,7 +33,7 @@ describe('providerBrands', () => {
     ['gcr.io', 'google-artifact-registry'],
     ['us-docker.pkg.dev/proj/repo', 'google-artifact-registry'],
     ['123456789012.dkr.ecr.us-east-1.amazonaws.com', 'ecr'],
-    ['myregistry.azurecr.io', 'azure'],
+    ['myregistry.azurecr.io', 'azure-container-registry'],
     ['registry.gitlab.com', 'gitlab'],
     ['harbor.example.com', 'harbor'],
     ['registry.example.com', ''],
