@@ -48,6 +48,7 @@ export const NAMESPACES = [
   'newApp',
   'getStarted',
   'usage',
+  'secretRotation',
 ] as const
 
 void i18n

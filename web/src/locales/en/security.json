@@ -5,7 +5,8 @@
     "tabs": {
       "checklist": "Checklist",
       "sessions": "Sessions and devices",
-      "policy": "Policy"
+      "policy": "Policy",
+      "rotations": "Secret rotations"
     },
     "loadError": "Could not load the security center.",
     "retry": "Try again"
