@@ -85,7 +85,7 @@ System endpoints for:
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
-::: details 123 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
+::: details 127 endpoints for authentication, two-factor auth, user management, IAM, device login, and OAuth integration
 
 Endpoints for:
 - Authentication and session management
@@ -220,6 +220,10 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/auth/saml/providers | Public | handleListPublicSAMLProviders |
+| GET | /api/v1/auth/saml/{id}/metadata | Public | handleSAMLMetadata |
+| GET | /api/v1/auth/saml/{id}/login | Public | handleSAMLLogin |
+| POST | /api/v1/auth/saml/{id}/acs | Public | handleSAMLACS |
 
 :::
 
@@ -1258,6 +1262,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mobile/overview | AbilityRead | handleMobileOverview |
 | GET | /api/v1/gate/check | Public | handleGateCheck |
 | GET | /gate/login | Public | handleGateLogin |
+| GET | /api/v1/sso/saml/connections | AbilityRoot | handleListSAMLConnections |
+| POST | /api/v1/sso/saml/connections | AbilityRoot | handleCreateSAMLConnection |
+| GET | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleGetSAMLConnection |
+| PUT | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleUpdateSAMLConnection |
+| DELETE | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleDeleteSAMLConnection |
+| POST | /api/v1/sso/saml/connections/{id}/metadata | AbilityRoot | handleImportSAMLMetadata |
+| GET | /api/v1/sso/group-mappings | AbilityRoot | handleListSSOGroupMappings |
+| PUT | /api/v1/sso/group-mappings | AbilityRoot | handlePutSSOGroupMappings |
+| GET | /api/v1/sso/settings | AbilityRoot | handleGetSSOSettings |
+| PUT | /api/v1/sso/settings | AbilityRoot | handlePutSSOSettings |
 
 ## See also
 

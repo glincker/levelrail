@@ -48,6 +48,10 @@ While you can still sign in, create a token in **Settings, CLI Access** named `b
 | Bad upgrade | Restore the pre-migration snapshot with `levelrail restore-db` |
 | CLI already logged in | `levelrail-cli auth login --device`, approved from any signed-in session |
 
+## Single sign-on is broken
+
+When [SAML single sign-on](sso-saml.md) is required, root users keep password sign-in on purpose: it is the break-glass path when the identity provider is down or misconfigured. Sign in as root with the password, fix or disable the connection, or turn off **Require SSO for non-root users**. `recover-admin` above resets that password if it is lost.
+
 ## Passkeys and HTTPS
 
 Passkeys only work on an HTTPS dashboard URL. On a fresh server without HTTPS, sign-in falls back to the password automatically. Enable HTTPS under **Domains** and passkeys become available.

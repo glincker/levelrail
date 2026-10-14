@@ -100,6 +100,13 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 	token, userID, err := rt.libSessions.Login(r.Context(), authengine.LoginInput{
 		Email: req.Email, Password: req.Password, UserAgent: r.UserAgent(), IP: clientIP(r),
 	})
+	if (err == nil || errors.Is(err, authengine.ErrSecondFactorRequired)) && rt.ssoBlocksLocalSignIn(r.Context(), userID) {
+		if token != "" {
+			rt.libSessions.Revoke(r.Context(), token)
+		}
+		writeError(w, http.StatusForbidden, ssoRequiredMessage)
+		return
+	}
 	if errors.Is(err, authengine.ErrSecondFactorRequired) {
 		pending, perr := rt.mfaPending.create(userID)
 		if perr != nil {

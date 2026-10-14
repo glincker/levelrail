@@ -143,7 +143,7 @@ Stated plainly. Status says whether a gap is open, accepted, or by design.
 | Pipeline containers share the node's Docker daemon | A malicious pipeline that reaches the daemon is root on the node | Depends on container hardening above |
 | A ClickHouse dump interpolates table names from the target database into SQL | Only a user who already owns the database can craft a name | Accepted, low |
 | Sessions are process-local | No session listing across a restart, and no shared sessions for an HA control plane | Accepted for single control plane |
-| No SSO or SAML | Sign-in is local password, passkey or OAuth | Open |
+| SAML trusts the configured IdP for identity and groups | A compromised IdP or IdP admin can sign in as any linked account, including root | By design. Restrict IdP admins, use allowed domains, keep sync off for root |
 | No secret scanning of app source. Image vulnerability scanning is optional and off by default ([Supply chain](supply-chain.md)) | Not a boundary Levelrail enforces | Open |
 
 ## Choosing a safer deployment

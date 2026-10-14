@@ -61,7 +61,7 @@ If SSO, audit logging or fine-grained roles matter to you, check each project's 
 
 ## What Levelrail does not do yet
 
-- **SAML and SCIM.** OAuth and OIDC are supported; SAML single sign-on and SCIM provisioning are not.
+- **SCIM.** OAuth, OIDC and SAML single sign-on are supported; SCIM provisioning is not.
 - **The largest template catalog.** Levelrail ships 311 one-click templates, each a Compose file the platform deploys and manages. Other projects may list more, and the end-to-end suite live-deploys a sample of Levelrail's templates, not all of them. See [Templates and registry](templates-and-registry.md).
 - **Track record.** Fewer real-world deployments and less community knowledge than projects that have existed for years.
 - **Public ACME has had one live run.** TLS defaults to an internal issuer. The public ACME issuer was verified once against Let's Encrypt on a public VPS. Renewal and DNS-01 wildcards are not yet exercised live. See the [roadmap](roadmap.md).

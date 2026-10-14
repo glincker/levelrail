@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1035 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1049 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -298,6 +298,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/auth/password", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleChangePassword", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/register", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRegister", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/reset-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetPassword", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/saml/providers", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPublicSAMLProviders", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/saml/{id}/acs", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLACS", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/saml/{id}/login", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLLogin", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/saml/{id}/metadata", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSAMLMetadata", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/session", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSession", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/session-links", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMintSessionLink", Description: "Session links (session_links.go): a short-lived, single-use, URL-embeddable token for browser automation to skip manual login. Minting is root-equivalent since the resulting session inherits the minting caller's own abilities; consuming is necessarily unauthenticated, gated by possession of the token itself, same shape as reset-password below."},
 	{Method: "GET", Path: "/api/v1/auth/session-links/{token}/consume", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConsumeSessionLink", Description: ""},
@@ -832,6 +836,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/setup/guide/visibility", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideVisibility", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSHNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSHNodeProvision", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/group-mappings", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSOGroupMappings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/sso/group-mappings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutSSOGroupMappings", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/saml/connections", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSAMLConnections", Description: ""},
+	{Method: "POST", Path: "/api/v1/sso/saml/connections", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateSAMLConnection", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteSAMLConnection", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSAMLConnection", Description: ""},
+	{Method: "PUT", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateSAMLConnection", Description: ""},
+	{Method: "POST", Path: "/api/v1/sso/saml/connections/{id}/metadata", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportSAMLMetadata", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSOSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutSSOSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},
 	{Method: "PUT", Path: "/api/v1/status-page", Ability: "AbilityWrite", Group: "Other", Handler: "handlePutStatusPage", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/components", Ability: "AbilityRead", Group: "Other", Handler: "handleListStatusComponents", Description: ""},
