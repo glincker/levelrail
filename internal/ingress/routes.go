@@ -373,6 +373,10 @@ type RoutesOptions struct {
 	// stale redirect configured from an earlier migration), so a host
 	// never reaches this field and MaintenanceRoutes at once.
 	RedirectRoutes []RedirectRoute
+
+	// RouteCheck, when set, answers a verifier's marker request on every
+	// host, ahead of every other route.
+	RouteCheck *RouteCheck
 	// TLS, if true, adds a tls app automation policy scoped to every
 	// route's Hosts, both Routes and StaticRoutes (skipped if both are
 	// empty, since automatic HTTPS needs at least one subject to issue a
@@ -497,7 +501,14 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 	}
 
 	var allHosts []string
-	routes := make([]Route, 0, len(opts.Routes)+len(opts.StaticRoutes))
+	routes := make([]Route, 0, len(opts.Routes)+len(opts.StaticRoutes)+1)
+	if opts.RouteCheck != nil {
+		check, err := opts.RouteCheck.route()
+		if err != nil {
+			return nil, fmt.Errorf("ingress: build routes config: %w", err)
+		}
+		routes = append(routes, check)
+	}
 	for i, r := range opts.RedirectRoutes {
 		if len(r.Hosts) == 0 {
 			return nil, fmt.Errorf("ingress: build routes config: redirect route %d has no hosts", i)

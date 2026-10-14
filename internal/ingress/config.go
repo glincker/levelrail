@@ -162,6 +162,7 @@ type Matcher struct {
 	Expression *ExpressionMatcher  `json:"expression,omitempty"`
 	Not        []Matcher           `json:"not,omitempty"`
 	Vars       map[string][]string `json:"vars,omitempty"`
+	Header     map[string][]string `json:"header,omitempty"`
 }
 
 // ExpressionMatcher mirrors Caddy's http.matchers.expression module: a

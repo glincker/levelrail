@@ -2,6 +2,7 @@ package proxyroutes
 
 import (
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -24,6 +25,17 @@ type ProbeTarget struct {
 	Timeout time.Duration
 	// Roots overrides the system roots, for tests.
 	Roots *x509.CertPool
+	// Marker, when set, is sent so only the built-in ingress can answer it.
+	Marker *Marker
+}
+
+// Marker is a request header only this server's ingress replies to, with a
+// reply value the app behind it cannot know.
+type Marker struct {
+	Header      string
+	Value       string
+	ReplyHeader string
+	Reply       string
 }
 
 // ProbeResult is the outcome of Probe.
@@ -35,7 +47,10 @@ type ProbeResult struct {
 	CertTrusted  bool
 	// NoRoute is true when the proxy answered with its own "no router matched" 404.
 	NoRoute bool
-	Err     string
+	// Delivered is true when the Marker reply came back: the proxy handed
+	// the request to the built-in ingress.
+	Delivered bool
+	Err       string
 }
 
 // WaitingForRoute is the pending message recorded when the proxy had not
@@ -89,6 +104,9 @@ func Probe(ctx context.Context, t ProbeTarget) ProbeResult {
 		res.Err = "invalid domain"
 		return res
 	}
+	if t.Marker != nil {
+		req.Header.Set(t.Marker.Header, t.Marker.Value)
+	}
 	resp, err := client.Do(req) //nolint:gosec // dialed address is fixed above, the URL only carries SNI and Host
 	if err != nil {
 		res.Err = "could not reach https://" + t.Domain + " through " + t.Address + ": " + err.Error()
@@ -97,6 +115,10 @@ func Probe(ctx context.Context, t ProbeTarget) ProbeResult {
 	defer func() { _ = resp.Body.Close() }()
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
 	res.StatusCode = resp.StatusCode
+	if t.Marker != nil && t.Marker.Reply != "" {
+		got := resp.Header.Get(t.Marker.ReplyHeader)
+		res.Delivered = subtle.ConstantTimeCompare([]byte(got), []byte(t.Marker.Reply)) == 1
+	}
 	switch {
 	case resp.StatusCode == http.StatusNotFound && strings.TrimSpace(string(body)) == traefikNotFound:
 		res.NoRoute = true

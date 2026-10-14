@@ -59,11 +59,20 @@ func resolveEnforcement(in enforcementInput) domainEnforcement {
 	case !in.Routed:
 		return enforcementAll(enforcementNone, false, enforcementReasonNotRouted)
 	case in.Route != nil && in.Route.Written:
+		if proxyRouteDelivers(*in.Route) {
+			return enforcementAll(enforcementProxyTraefik, true, "")
+		}
 		return enforcementAll(enforcementProxyTraefik, false, enforcementReasonRouteUnverified)
 	case in.Upstream:
 		return enforcementAll(enforcementProxyExternal, false, enforcementReasonUnmanagedProxy)
 	}
 	return enforcementAll(enforcementLevelrail, true, "")
+}
+
+// proxyRouteDelivers reports whether the last verification of the file as
+// it is now proved the proxy hands requests to the built-in ingress.
+func proxyRouteDelivers(r store.ProxyRouteStatus) bool {
+	return r.Delivered && !r.VerifiedAt.IsZero() && !r.VerifiedAt.Before(r.WrittenAt)
 }
 
 // enforcementContext is loaded once per request and answers per domain.

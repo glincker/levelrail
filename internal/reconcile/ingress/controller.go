@@ -299,6 +299,8 @@ type Controller struct {
 	// dashboard's check endpoint; empty leaves built-in gated hosts unrouted.
 	gateSecret string
 
+	routeCheck *ingress.RouteCheck
+
 	// registryDial is the built-in registry container's loopback dial
 	// address (see WithRegistryDial), reverse-proxied to whenever
 	// store.RegistrySettings.Enabled and .Host are both set. Empty means
@@ -1018,6 +1020,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Inherited:            c.inherited,
 		Hardening:            c.hardening,
 		RedirectRoutes:       redirectRoutes,
+		RouteCheck:           c.routeCheck,
 		TLS:                  true,
 		AdminListen:          c.adminListen,
 		StorageDir:           c.storageDir,
