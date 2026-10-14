@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { ShareNetworkIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   projectTopologyQueryOptions,
-  useProjectTopology,
+  useLiveProjectTopology,
 } from '../../../queries/projectTopology'
 import {
   projectDetailQueryOptions,
   useProject,
 } from '../../../queries/projects'
-import { ProjectTopologyView } from '../../../components/topology/ProjectTopologyView'
+import { InfraCanvas } from '../../../components/topology/InfraCanvas'
 import { Breadcrumbs } from '../../../components/Breadcrumbs'
 import { routeErrorMessage } from '../../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -16,12 +17,8 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
-// This project's own topology: how its apps, databases, and shared
-// volumes actually relate, derived from existing desired state (see
-// internal/api/topology_graph.go's buildTopologyGraph for exactly which
-// field backs each edge kind). Lives alongside $id/index.tsx rather than
-// a tab on it, the same standalone-route shape
-// $id/environments/$envId.tsx already uses for a project sub-page.
+// Interactive canvas over GET /api/v1/projects/{id}/topology. Same
+// standalone-route shape $id/environments/$envId.tsx uses.
 export const Route = createFileRoute('/projects/$id/topology')({
   loader: ({ context: { queryClient }, params: { id } }) =>
     Promise.all([
@@ -35,41 +32,39 @@ export const Route = createFileRoute('/projects/$id/topology')({
 
 function ProjectTopologyPage() {
   const { id } = Route.useParams()
+  const { t } = useTranslation('infraCanvas')
   const { data: project } = useProject(id)
-  const { data: graph } = useProjectTopology(id)
+  const { data: graph } = useLiveProjectTopology(id)
   const empty = graph.nodes.length === 0
 
   return (
     <PageTemplate
       breadcrumb={<Breadcrumbs projectId={id} />}
-      title={`${project.name}: Topology`}
-      description="How this project's apps, databases, and shared volumes relate, derived from their actual configuration."
+      title={t('title', { name: project.name })}
+      description={t('description')}
     >
       {empty ? (
         <EmptyState
           icon={<ShareNetworkIcon className="size-5" />}
-          title="Nothing filed under this project yet"
-          description="Assign an app or database to this project to see how they relate here."
+          title={t('empty.title')}
+          description={t('empty.description')}
           action={
             <Link
               to="/projects/$id"
               params={{ id }}
               className="text-sm font-medium text-foreground underline underline-offset-4"
             >
-              Back to project
+              {t('empty.action')}
             </Link>
           }
         />
       ) : (
-        <ProjectTopologyView graph={graph} />
+        <InfraCanvas projectId={id} graph={graph} />
       )}
     </PageTemplate>
   )
 }
 
-// The connector lines aren't worth faking, so this mirrors just the
-// outer chrome: header, then a row of column-shaped boxes, the same
-// shape routes/network/index.tsx's own NetworkPageSkeleton establishes.
 function ProjectTopologyPending() {
   return (
     <div className="space-y-4" aria-hidden="true">
@@ -77,26 +72,17 @@ function ProjectTopologyPending() {
         <Skeleton className="h-6 w-56" />
         <Skeleton className="mt-1 h-4 w-96" />
       </div>
-      <div className="flex flex-wrap gap-4">
-        {Array.from({ length: 2 }, (_, i) => (
-          <div
-            key={i}
-            className="min-w-[14rem] flex-1 space-y-3 rounded-xl border border-dashed border-border bg-muted/20 p-3"
-          >
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-12 w-full rounded-lg" />
-            <Skeleton className="h-12 w-full rounded-lg" />
-          </div>
-        ))}
-      </div>
+      <Skeleton className="h-[28rem] w-full rounded-xl" />
     </div>
   )
 }
 
 function ProjectTopologyError({ error }: { error: unknown }) {
+  const { t } = useTranslation('infraCanvas')
   return (
     <Alert variant="destructive">
       <AlertDescription>
+        <p className="font-medium">{t('error.title')}</p>
         <p>{routeErrorMessage(error)}</p>
       </AlertDescription>
     </Alert>

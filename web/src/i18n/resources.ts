@@ -17,6 +17,7 @@ import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type setup from '../locales/en/setup.json'
 import type updates from '../locales/en/updates.json'
+import type infraCanvas from '../locales/en/infraCanvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
 import type iam from '../locales/en/iam.json'
@@ -65,6 +66,7 @@ declare module 'i18next' {
       attention: typeof attention
       setup: typeof setup
       updates: typeof updates
+      infraCanvas: typeof infraCanvas
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
       iam: typeof iam

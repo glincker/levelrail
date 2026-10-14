@@ -40,6 +40,14 @@ export function projectTopologyQueryOptions(projectId: string) {
   })
 }
 
+// The canvas shows live status badges, so it re-polls on a short interval.
+export function useLiveProjectTopology(projectId: string) {
+  return useSuspenseQuery({
+    ...projectTopologyQueryOptions(projectId),
+    refetchInterval: 5000,
+  })
+}
+
 export function useProjectTopology(projectId: string) {
   return useSuspenseQuery(projectTopologyQueryOptions(projectId))
 }

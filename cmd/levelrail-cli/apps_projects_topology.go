@@ -43,7 +43,7 @@ func runAppsProjectsTopology(prog string, args []string, stdout, stderr io.Write
 
 func printProjectTopologyHuman(out io.Writer, g projectTopologyResource) {
 	if len(g.Nodes) == 0 {
-		_, _ = fmt.Fprintln(out, "no apps, databases, or volumes in this project")
+		_, _ = fmt.Fprintln(out, "no apps, databases, domains, or volumes in this project")
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
@@ -72,10 +72,10 @@ func appsProjectsTopologyUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps projects topology <id> [flags]
 
-Shows a diagram-ready graph of one project's apps, databases, and
-shared volumes: each node is an app/database/volume, each edge a real
-relationship (database binding, depends_on, volume attachment, egress
-allow), never invented.
+Shows a diagram-ready graph of one project's apps, databases, domains,
+and shared volumes: each edge is a real relationship (database binding,
+depends_on, volume attachment, egress allow, routing), never invented.
+The dashboard draws the same graph as an interactive canvas.
 
 Flags:
   --token string          API token (default: %[2]s env var, then the credentials file)

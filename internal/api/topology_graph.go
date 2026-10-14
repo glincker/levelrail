@@ -17,11 +17,13 @@ const (
 	TopologyKindApp      = "app"
 	TopologyKindDatabase = "database"
 	TopologyKindVolume   = "volume"
+	TopologyKindDomain   = "domain"
 
 	TopologyEdgeDatabaseBinding = "database_binding"
 	TopologyEdgeDependsOn       = "depends_on"
 	TopologyEdgeVolume          = "volume_attachment"
 	TopologyEdgeEgressAllow     = "egress_allow"
+	TopologyEdgeRouting         = "routing"
 )
 
 // topologyNode is one box in the diagram. Status is nil for a volume
@@ -51,6 +53,7 @@ type topologyGraph struct {
 func appNodeID(serviceName string) string   { return "app:" + serviceName }
 func dbNodeID(dbName string) string         { return "database:" + dbName }
 func volumeNodeID(volumeName string) string { return "volume:" + volumeName }
+func domainNodeID(host string) string       { return "domain:" + host }
 
 // buildTopologyGraph derives a project's topology from its own
 // project-scoped desired state: every edge traces to one real stored
@@ -91,8 +94,17 @@ func buildTopologyGraph(services []store.DesiredService, databases []store.Desir
 	}
 
 	volumeSeen := make(map[string]bool)
+	domainSeen := make(map[string]bool)
 	for _, s := range services {
 		from := appNodeID(s.Name)
+
+		for _, host := range s.Domains {
+			if !domainSeen[host] {
+				domainSeen[host] = true
+				g.Nodes = append(g.Nodes, topologyNode{ID: domainNodeID(host), Kind: TopologyKindDomain, Label: host})
+			}
+			g.Edges = append(g.Edges, topologyEdge{From: domainNodeID(host), To: from, Kind: TopologyEdgeRouting})
+		}
 
 		for _, ref := range s.DatabaseEnv {
 			if dbExists[ref.Database] {
