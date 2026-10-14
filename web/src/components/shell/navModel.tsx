@@ -559,17 +559,10 @@ export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
 }
 
-// Groups open on first visit, before the user has toggled anything: the two
-// everyday ones and the group holding the current page. Navigation never
-// closes a group; GlobalNav only ever opens the active one (see its effect).
-const ALWAYS_OPEN_GROUPS: ReadonlySet<string> = new Set(['home', 'apps'])
-
-export function defaultGroupOpen(
-  group: GlobalNavGroup,
-  pathname: string,
-): boolean {
-  if (ALWAYS_OPEN_GROUPS.has(group.id)) return true
-  return group.items.some((i) => isGlobalItemActive(pathname, i))
+// Every group starts open: a collapsed default hides most of the product on a
+// first visit. Anything the user collapses is persisted and wins from then on.
+export function defaultGroupOpen(): boolean {
+  return true
 }
 
 export function resolveOpen(

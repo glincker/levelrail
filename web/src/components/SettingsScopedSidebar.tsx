@@ -41,13 +41,11 @@ export function SettingsScopedSidebar() {
   const sections = useSettingsNav()
   const [query, setQuery] = useState('')
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    const stored = readStoredOpenGroups()
-    if (stored) return stored
-    // No stored preference yet: open every group by default so a first
-    // visit doesn't require a click per heading just to see what's inside.
-    return Object.fromEntries(sections.map((section) => [section.id, true]))
-  })
+  // Groups missing from the stored map render open, so a group that shows up
+  // later (a feature flag, a route) never starts collapsed.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(
+    () => readStoredOpenGroups() ?? {},
+  )
 
   useEffect(() => {
     try {
@@ -112,7 +110,7 @@ export function SettingsScopedSidebar() {
         // While searching, every matching group is forced open and the
         // trigger is disabled so a stray click doesn't collapse a group the
         // user will see restored once they clear the query.
-        const isOpen = isSearching ? true : (openGroups[section.id] ?? false)
+        const isOpen = isSearching ? true : (openGroups[section.id] ?? true)
 
         return (
           <SidebarGroup key={section.id}>

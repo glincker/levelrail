@@ -117,9 +117,7 @@ export function GlobalNav() {
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      groups.map((gr) => [gr.id, defaultGroupOpen(gr, pathname)]),
-    ),
+    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
   )
 
   // Reveal the current page by opening its group, and keep it open.
