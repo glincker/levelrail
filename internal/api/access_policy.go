@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -35,6 +36,12 @@ type AccessPolicyStore interface {
 type touchCache struct {
 	mu   sync.Mutex
 	last map[string]time.Time
+}
+
+func (c *touchCache) forget(sessionID string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.last, sessionID)
 }
 
 func (c *touchCache) due(sessionID string, now time.Time) bool {
@@ -91,7 +98,8 @@ func (rt *Router) effectiveRules(ctx context.Context, userID string) (accesspoli
 func toPolicies(stored []store.SessionPolicy) []accesspolicy.Policy {
 	out := make([]accesspolicy.Policy, 0, len(stored))
 	for _, p := range stored {
-		out = append(out, accesspolicy.Policy{IdleTimeout: p.IdleTimeout, MaxLifetime: p.MaxLifetime, IPAllowlist: p.IPAllowlist, RequireMFA: p.RequireMFA})
+		out = append(out, accesspolicy.Policy{IdleTimeout: p.IdleTimeout, MaxLifetime: p.MaxLifetime, IPAllowlist: p.IPAllowlist, RequireMFA: p.RequireMFA,
+			MaxSessions: p.MaxSessions, RejectOnLimit: p.OnLimit == store.SessionOnLimitReject})
 	}
 	return out
 }
@@ -201,6 +209,9 @@ func (rt *Router) checkSessionRules(w http.ResponseWriter, r *http.Request, sub 
 			rt.logger.Warn("api: touch session activity failed", slog.String("user_id", sub.userID), slog.String("error", err.Error()))
 		}
 	}
+	if !rt.enforceSessionCap(w, r, sub, rules, now) {
+		return false
+	}
 	if !rules.RequireMFA || act.Method == signInMethodSAML || mfaExempt(r) {
 		return true
 	}
@@ -215,4 +226,61 @@ func (rt *Router) checkSessionRules(w http.ResponseWriter, r *http.Request, sub 
 		return false
 	}
 	return true
+}
+
+// enforceSessionCap applies the per-user concurrent session cap. The library's
+// own cap is one global value, so per-team caps are checked here, on a
+// session's first request after sign-in or the TOTP step and then every
+// accessPolicyTouchEvery. Failing to list sessions refuses the request.
+func (rt *Router) enforceSessionCap(w http.ResponseWriter, r *http.Request, sub policySubject, rules accesspolicy.Rules, now time.Time) bool {
+	if rules.MaxSessions <= 0 || rt.libSessions == nil || !rt.policyCapChecks.due(sub.sessionID, now) {
+		return true
+	}
+	ctx := r.Context()
+	list, err := rt.libSessions.ListUserSessions(ctx, sub.userID, sub.token)
+	if err != nil {
+		rt.logger.Error("api: session cap check failed, refusing", slog.String("user_id", sub.userID), slog.String("error", err.Error()))
+		rt.policyCapChecks.forget(sub.sessionID)
+		writePolicyRefusal(w, http.StatusServiceUnavailable, "session_policy_unavailable", "the session policy could not be evaluated")
+		return false
+	}
+	sort.Slice(list, func(i, j int) bool {
+		if !list[i].CreatedAt.Equal(list[j].CreatedAt) {
+			return list[i].CreatedAt.Before(list[j].CreatedAt)
+		}
+		return list[i].ID < list[j].ID
+	})
+	rank := -1
+	for i := range list {
+		if list[i].ID == sub.sessionID {
+			rank = i
+		}
+	}
+	if rank < 0 {
+		return true
+	}
+	verdict := rules.OverCap(rank, len(list))
+	if !rules.RejectOnLimit {
+		for i := 0; i < len(list)-rules.MaxSessions; i++ {
+			if list[i].ID == sub.sessionID {
+				continue
+			}
+			if _, err := rt.libSessions.RevokeUserSession(ctx, sub.userID, list[i].ID); err != nil {
+				rt.logger.Warn("api: evict session over cap failed", slog.String("user_id", sub.userID), slog.String("error", err.Error()))
+			}
+		}
+	}
+	switch verdict {
+	case accesspolicy.Allowed:
+		return true
+	case accesspolicy.SessionEvicted:
+		rt.sessions.revoke(sub.token)
+		setSessionCookie(w, r, "", time.Time{})
+		writePolicyRefusal(w, http.StatusUnauthorized, verdict, "your session ended because a newer sign-in replaced it under the session limit: sign in again")
+	default:
+		rt.sessions.revoke(sub.token)
+		setSessionCookie(w, r, "", time.Time{})
+		writePolicyRefusal(w, http.StatusConflict, verdict, "the session limit for your account is reached: end another session, then sign in again")
+	}
+	return false
 }

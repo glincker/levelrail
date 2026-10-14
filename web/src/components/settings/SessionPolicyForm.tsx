@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TrashIcon } from '@phosphor-icons/react/dist/ssr'
-import type { SessionPolicy } from '@/queries/sessionPolicy'
+import type { SessionOnLimit, SessionPolicy } from '@/queries/sessionPolicy'
 import {
   useClearSessionPolicy,
   useSaveSessionPolicy,
@@ -14,6 +14,13 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
@@ -35,6 +42,13 @@ export function SessionPolicyForm({
   const [maxAge, setMaxAge] = useState(policy?.max_lifetime ?? '')
   const [allow, setAllow] = useState((policy?.ip_allowlist ?? []).join('\n'))
   const [mfa, setMfa] = useState(policy?.require_mfa ?? false)
+  const [maxSessions, setMaxSessions] = useState(
+    String(policy?.max_concurrent_sessions ?? 0),
+  )
+  const [onLimit, setOnLimit] = useState<SessionOnLimit>(
+    policy?.on_limit ?? 'evict_oldest',
+  )
+  const capped = Number(maxSessions) > 0
   const id = (s: string) => `policy-${teamId}-${s}`
   const error = save.error ?? clear.error
 
@@ -54,6 +68,8 @@ export function SessionPolicyForm({
                 .map((s) => s.trim())
                 .filter(Boolean),
               require_mfa: mfa,
+              max_concurrent_sessions: Math.max(0, Number(maxSessions) || 0),
+              on_limit: onLimit,
             },
           },
           {
@@ -86,6 +102,46 @@ export function SessionPolicyForm({
           />
           <FieldDescription>{t('policy.maxAgeHelp')}</FieldDescription>
         </Field>
+        <Field>
+          <FieldLabel htmlFor={id('cap')}>{t('policy.maxSessions')}</FieldLabel>
+          <Input
+            id={id('cap')}
+            type="number"
+            min={0}
+            max={1000}
+            inputMode="numeric"
+            className="font-mono"
+            value={maxSessions}
+            onChange={(e) => setMaxSessions(e.target.value)}
+          />
+          <FieldDescription>{t('policy.maxSessionsHelp')}</FieldDescription>
+        </Field>
+        {capped ? (
+          <Field>
+            <FieldLabel htmlFor={id('on-limit')}>
+              {t('policy.onLimit')}
+            </FieldLabel>
+            <Select<string>
+              value={onLimit}
+              onValueChange={(value: string | null) => {
+                setOnLimit(value === 'reject' ? 'reject' : 'evict_oldest')
+              }}
+            >
+              <SelectTrigger id={id('on-limit')} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="evict_oldest">
+                  {t('policy.onLimitEvict')}
+                </SelectItem>
+                <SelectItem value="reject">
+                  {t('policy.onLimitReject')}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <FieldDescription>{t('policy.onLimitHelp')}</FieldDescription>
+          </Field>
+        ) : null}
         <Field>
           <FieldLabel htmlFor={id('allow')}>{t('policy.allowlist')}</FieldLabel>
           <Textarea

@@ -13,6 +13,7 @@ export type ExperimentalFeature =
   | 'resource-advisor'
   | 'cli-console'
   | 'mobile-api'
+  | 'saml-scim'
 
 export function isFeatureVisible(
   feature: ExperimentalFeature | undefined,

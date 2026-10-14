@@ -90,3 +90,32 @@ func TestClientAddr(t *testing.T) {
 		}
 	}
 }
+
+func TestOverCapAndMergeCap(t *testing.T) {
+	for _, tc := range []struct {
+		name        string
+		r           Rules
+		rank, total int
+		want        Verdict
+	}{
+		{"no cap", Rules{}, 5, 9, Allowed},
+		{"within cap", Rules{MaxSessions: 2}, 0, 2, Allowed},
+		{"evict oldest", Rules{MaxSessions: 2}, 0, 3, SessionEvicted},
+		{"evict keeps middle", Rules{MaxSessions: 2}, 1, 3, Allowed},
+		{"evict newest survives", Rules{MaxSessions: 2}, 2, 3, Allowed},
+		{"reject keeps oldest", Rules{MaxSessions: 2, RejectOnLimit: true}, 1, 3, Allowed},
+		{"reject refuses newest", Rules{MaxSessions: 2, RejectOnLimit: true}, 2, 3, SessionLimit},
+	} {
+		if got := tc.r.OverCap(tc.rank, tc.total); got != tc.want {
+			t.Errorf("%s: %q want %q", tc.name, got, tc.want)
+		}
+	}
+	r, err := Merge([]Policy{{MaxSessions: 5}, {}, {MaxSessions: 3, RejectOnLimit: true}, {MaxSessions: 4}})
+	if err != nil || r.MaxSessions != 3 || !r.RejectOnLimit {
+		t.Errorf("Merge cap = %+v, %v", r, err)
+	}
+	r, _ = Merge([]Policy{{RejectOnLimit: true}})
+	if r.MaxSessions != 0 || r.RejectOnLimit {
+		t.Errorf("reject without a cap leaked: %+v", r)
+	}
+}

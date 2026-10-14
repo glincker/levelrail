@@ -299,7 +299,7 @@ Every registration and login challenge is single-use and expires in 5 minutes. T
 
 ### OAuth sign-in
 
-Eleven providers are supported. Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
+Eighteen providers are supported. Every one uses the same callback URL shape, `https://<your-dashboard-host>/api/v1/auth/oauth/<provider>/callback`, and the same flow: PKCE, single-use state, an envelope-encrypted client secret, and the link-account flow below.
 
 | Provider | Where to create the OAuth app | Scopes requested |
 | --- | --- | --- |
@@ -313,7 +313,16 @@ Eleven providers are supported. Every one uses the same callback URL shape, `htt
 | `linkedin` | LinkedIn Developer Portal, your app, Products (add "Sign In with LinkedIn using OpenID Connect"). | `openid email profile` |
 | `twitch` | Twitch Developer Console, Applications, Register Your Application (client type Confidential). | `openid user:read:email` |
 | `facebook` | Meta for Developers, your app, Facebook Login (add the callback under Valid OAuth Redirect URIs). | `email public_profile` |
+| `linear` | Linear, Settings, API, OAuth applications. | `read` |
+| `vercel` | Vercel, Team settings, Apps ("Sign in with Vercel"). | `openid email profile` |
+| `huggingface` | Hugging Face, Settings, Connected Apps, Create new OAuth app. | `openid profile email` |
+| `figma` | Figma, Developers, My apps. | `current_user:read` |
+| `salesforce` | Salesforce Setup, App Manager, New Connected App (enable OAuth, add the `openid`, `email`, `profile` scopes). | `openid email profile` |
+| `codeberg` | Codeberg, Settings, Applications, Manage OAuth2 applications (confidential client). | provider default |
+| `cognito` | AWS Cognito, your user pool, App integrations, app client (confidential, with a secret); needs the user pool ID. | `openid profile email` |
 | `oidc` | Your identity provider's admin console; needs an issuer URL. | `openid email profile` |
+
+For Amazon Cognito, put the **User pool ID** (for example `us-east-1_AbC123`) in the row's `issuer_url` field; the region is read from its prefix and the issuer is built from it.
 
 For a self-hosted GitLab, set the optional **Instance URL** on the GitLab row (the `issuer_url` field over the API). It must be an `https` address, the same rule the OIDC issuer follows, and blank means gitlab.com.
 
@@ -749,10 +758,10 @@ levelrail-cli audit-purge
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
 - **Directory sync covers SCIM 2.0 only**
-  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
+  Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
-- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook and generic OIDC, and nothing else today.
+- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito and generic OIDC, and nothing else today.
 - Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
 
 </Accordion>

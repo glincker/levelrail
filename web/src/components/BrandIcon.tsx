@@ -7,7 +7,14 @@ import CloudflareLogo from '@thesvg/react/cloudflare'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import DragonflyLogo from '@thesvg/react/dragonfly'
+import CodebergLogo from '@thesvg/react/codeberg'
+import CognitoLogo from '@thesvg/react/aws-amazon-cognito'
 import FacebookLogo from '@thesvg/react/facebook'
+import FigmaLogo from '@thesvg/react/figma'
+import HuggingFaceLogo from '@thesvg/react/hugging-face'
+import LinearLogo from '@thesvg/react/linear'
+import SalesforceLogo from '@thesvg/react/salesforce'
+import VercelLogo from '@thesvg/react/vercel'
 import GiteaLogo from '@thesvg/react/gitea'
 import GitHubLogo from '@thesvg/react/github'
 import GitLabLogo from '@thesvg/react/gitlab'
@@ -102,6 +109,13 @@ export type BrandIconName =
   | 'facebook'
   | 'linkedin'
   | 'twitch'
+  | 'linear'
+  | 'vercel'
+  | 'huggingface'
+  | 'figma'
+  | 'salesforce'
+  | 'codeberg'
+  | 'cognito'
   | 'okta'
   | 'keycloak'
   | 'auth0'
@@ -171,6 +185,13 @@ const BRAND_ICONS: Record<
   facebook: FacebookLogo,
   linkedin: LinkedInLogo,
   twitch: TwitchLogo,
+  linear: LinearLogo,
+  vercel: VercelLogo,
+  huggingface: HuggingFaceLogo,
+  figma: FigmaLogo,
+  salesforce: SalesforceLogo,
+  codeberg: CodebergLogo,
+  cognito: CognitoLogo,
   okta: OktaLogo,
   keycloak: KeycloakLogo,
   auth0: Auth0Logo,
@@ -242,6 +263,13 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'facebook',
   'linkedin',
   'twitch',
+  'linear',
+  'vercel',
+  'huggingface',
+  'figma',
+  'salesforce',
+  'codeberg',
+  'cognito',
   'okta',
   'keycloak',
   'auth0',

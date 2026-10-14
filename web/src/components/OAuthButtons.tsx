@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { BuildingsIcon } from '@phosphor-icons/react/dist/ssr'
 import type { PublicOAuthProvider } from '../queries/oauth'
 import { publicOAuthProvidersQueryOptions } from '../queries/oauth'
+import { devModeQueryOptions } from '../queries/devMode'
 import { usePublicSAMLProviders } from '../queries/sso'
+import { isFeatureVisible } from '../lib/experimental'
 import { brandKeyFor } from '../lib/oauthProviders'
 import { BrandTile } from './BrandLogoBadge'
 import { Button } from './ui/button'
@@ -19,6 +21,13 @@ const PROVIDER_NAMES: Record<string, string> = {
   linkedin: 'LinkedIn',
   twitch: 'Twitch',
   facebook: 'Facebook',
+  linear: 'Linear',
+  vercel: 'Vercel',
+  huggingface: 'Hugging Face',
+  figma: 'Figma',
+  salesforce: 'Salesforce',
+  codeberg: 'Codeberg',
+  cognito: 'Amazon Cognito',
 }
 
 // Real top-level navigation (<a href>, not a fetch): the browser must
@@ -36,9 +45,11 @@ function startSAMLURL(id: string): string {
 export function OAuthButtons() {
   const { t } = useTranslation('common')
   const { data } = useQuery(publicOAuthProvidersQueryOptions())
-  const saml = usePublicSAMLProviders()
+  const devMode = useQuery(devModeQueryOptions())
+  const samlOn = isFeatureVisible('saml-scim', devMode.data?.experimental ?? [])
+  const saml = usePublicSAMLProviders(samlOn)
   const enabled = (data ?? []).filter((p) => p.enabled)
-  const samlProviders = saml.data ?? []
+  const samlProviders = samlOn ? (saml.data ?? []) : []
   if (enabled.length === 0 && samlProviders.length === 0) {
     return null
   }

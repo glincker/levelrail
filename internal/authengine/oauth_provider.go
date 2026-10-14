@@ -106,11 +106,17 @@ func (g *gatedProvider) UserInfo(ctx context.Context, tok *theauth.ProviderToken
 	return info, nil
 }
 
-// emailVerifiedByProvider lists providers whose userinfo never carries a
-// verified flag but only returns confirmed addresses (Microsoft Graph,
-// Facebook Graph /me).
+// emailVerifiedByProvider lists providers whose userinfo carries no verified
+// flag but only returns confirmed addresses (Microsoft Graph, Facebook Graph,
+// and Linear, Figma and Codeberg, which confirm an address before it can be
+// the profile email).
 func emailVerifiedByProvider(name string) bool {
-	return name == store.OAuthProviderMicrosoft || name == store.OAuthProviderFacebook
+	switch name {
+	case store.OAuthProviderMicrosoft, store.OAuthProviderFacebook,
+		store.OAuthProviderLinear, store.OAuthProviderFigma, store.OAuthProviderCodeberg:
+		return true
+	}
+	return false
 }
 
 func (g *gatedProvider) fetch(ctx context.Context, tok *theauth.ProviderToken) (*theauth.ProviderUser, error) {

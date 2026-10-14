@@ -632,17 +632,24 @@ type RegistryTagsResource struct {
 // redeclared from internal/store.OAuthProvider* rather than imported, the
 // same reasoning as ServiceResources above.
 const (
-	OAuthProviderGoogle    = "google"
-	OAuthProviderGitHub    = "github"
-	OAuthProviderOIDC      = "oidc"
-	OAuthProviderMicrosoft = "microsoft"
-	OAuthProviderGitLab    = "gitlab"
-	OAuthProviderBitbucket = "bitbucket"
-	OAuthProviderDiscord   = "discord"
-	OAuthProviderSlack     = "slack"
-	OAuthProviderLinkedIn  = "linkedin"
-	OAuthProviderTwitch    = "twitch"
-	OAuthProviderFacebook  = "facebook"
+	OAuthProviderGoogle      = "google"
+	OAuthProviderGitHub      = "github"
+	OAuthProviderOIDC        = "oidc"
+	OAuthProviderMicrosoft   = "microsoft"
+	OAuthProviderGitLab      = "gitlab"
+	OAuthProviderBitbucket   = "bitbucket"
+	OAuthProviderDiscord     = "discord"
+	OAuthProviderSlack       = "slack"
+	OAuthProviderLinkedIn    = "linkedin"
+	OAuthProviderTwitch      = "twitch"
+	OAuthProviderFacebook    = "facebook"
+	OAuthProviderLinear      = "linear"
+	OAuthProviderVercel      = "vercel"
+	OAuthProviderHuggingFace = "huggingface"
+	OAuthProviderFigma       = "figma"
+	OAuthProviderSalesforce  = "salesforce"
+	OAuthProviderCodeberg    = "codeberg"
+	OAuthProviderCognito     = "cognito"
 )
 
 // Email backends accepted by EmailSettingsResource.Backend.

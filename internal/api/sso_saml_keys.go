@@ -65,6 +65,7 @@ func (rt *Router) attachSSO(s Store) {
 		rt.accessPolicy = db
 	}
 	rt.policyTouches = &touchCache{}
+	rt.policyCapChecks = &touchCache{}
 	rt.scimLimiter = newWindowRateLimiter(envInt(envSCIMFailuresPerIP, defaultSCIMFailuresPerIP), time.Minute)
 	rt.samlKeys = &samlKeyCache{}
 	rt.samlLimiter = newWindowRateLimiter(envInt(envSAMLRatePerMinute, defaultSAMLRatePerMinute), time.Minute)

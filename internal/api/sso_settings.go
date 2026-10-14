@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -177,13 +178,14 @@ func (rt *Router) handlePutSSOSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // ssoBlocksLocalSignIn reports whether a disabled account or SSO enforcement
-// refuses a local sign-in for this user. Root users keep password sign-in as the break-glass path. A
+// refuses a local sign-in for this user. Enforcement is ignored while SAML is
+// gated off, since the SSO sign-in it points to does not exist then. Root users keep password sign-in as the break-glass path. A
 // settings read failure refuses too: an unreadable policy must not open the door.
 func (rt *Router) ssoBlocksLocalSignIn(ctx context.Context, userID string) bool {
 	if rt.accountDisabled(ctx, userID) {
 		return true
 	}
-	if rt.sso == nil {
+	if rt.sso == nil || !experimental.Enabled(experimental.SAMLSCIM) {
 		return false
 	}
 	s, err := rt.sso.GetSSOSettings(ctx)

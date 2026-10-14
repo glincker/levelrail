@@ -122,7 +122,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: IdentificationBadgeIcon,
         feature: 'access-roles',
       },
-      { id: 'sso', to: '/settings/sso', icon: IdentificationCardIcon },
+      {
+        id: 'sso',
+        to: '/settings/sso',
+        icon: IdentificationCardIcon,
+        feature: 'saml-scim',
+      },
       {
         id: 'session-policy',
         to: '/settings/session-policy',

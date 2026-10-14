@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	bitbucketprov "github.com/glincker/theauth-go/v2/provider/bitbucket"
 	discordprov "github.com/glincker/theauth-go/v2/provider/discord"
 	facebookprov "github.com/glincker/theauth-go/v2/provider/facebook"
+	genericprov "github.com/glincker/theauth-go/v2/provider/generic"
 	githubprov "github.com/glincker/theauth-go/v2/provider/github"
 	gitlabprov "github.com/glincker/theauth-go/v2/provider/gitlab"
 	googleprov "github.com/glincker/theauth-go/v2/provider/google"
@@ -142,6 +144,25 @@ func (r *providerResolver) build(ctx context.Context, s store.OAuthProviderSetti
 		return facebookprov.New(facebookprov.Config{
 			ClientID: s.ClientID, ClientSecret: secret, Scopes: facebookScopes, HTTPClient: hc,
 		}), nil
+	case store.OAuthProviderLinear, store.OAuthProviderVercel, store.OAuthProviderHuggingFace,
+		store.OAuthProviderFigma, store.OAuthProviderSalesforce, store.OAuthProviderCodeberg:
+		return genericprov.NewByName(s.Provider, genericprov.Config{
+			ClientID: s.ClientID, ClientSecret: secret, HTTPClient: hc,
+		})
+	case store.OAuthProviderCognito:
+		region, poolID, err := ParseCognitoPoolID(s.IssuerURL)
+		if err != nil {
+			return nil, err
+		}
+		cfg := oidcprov.Cognito(region, poolID, s.ClientID, secret)
+		cfg.HTTPClient = hc
+		dctx, cancel := context.WithTimeout(ctx, oidcDiscoveryTimeout)
+		defer cancel()
+		p, err := oidcprov.New(dctx, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("authengine: oidc discovery for provider %s: %w", s.Provider, err)
+		}
+		return p, nil
 	case store.OAuthProviderOIDC:
 		dctx, cancel := context.WithTimeout(ctx, oidcDiscoveryTimeout)
 		defer cancel()
@@ -173,4 +194,18 @@ func gitlabBaseURL(raw string, allowInsecure bool) (string, error) {
 		return "", fmt.Errorf("authengine: gitlab instance url must use https")
 	}
 	return strings.TrimRight(u.String(), "/"), nil
+}
+
+var cognitoPoolIDPattern = regexp.MustCompile(`^([a-z]{2}(?:-[a-z]+)+-[0-9])_[A-Za-z0-9]+$`)
+
+// ParseCognitoPoolID splits a user pool id such as "us-east-1_AbC123" into its
+// region and the id itself. The region is the id's own prefix, so one stored
+// field carries both.
+func ParseCognitoPoolID(raw string) (region, poolID string, err error) {
+	id := strings.TrimSpace(raw)
+	m := cognitoPoolIDPattern.FindStringSubmatch(id)
+	if m == nil {
+		return "", "", fmt.Errorf("authengine: invalid cognito user pool id")
+	}
+	return m[1], id, nil
 }

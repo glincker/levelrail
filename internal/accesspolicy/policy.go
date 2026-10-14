@@ -16,6 +16,10 @@ type Policy struct {
 	MaxLifetime time.Duration
 	IPAllowlist []string
 	RequireMFA  bool
+	// MaxSessions is the per-user cap on concurrent full sessions; 0 means none.
+	MaxSessions int
+	// RejectOnLimit refuses new sessions over the cap instead of evicting the oldest.
+	RejectOnLimit bool
 }
 
 // Rules is the strictest combination of every policy that applies to a user.
@@ -25,6 +29,10 @@ type Rules struct {
 	// AllowLists holds one list per team that set one; an address must be in every list.
 	AllowLists [][]netip.Prefix
 	RequireMFA bool
+	// MaxSessions is the smallest cap any team sets; 0 means no cap.
+	MaxSessions int
+	// RejectOnLimit is true when any team that sets a cap chooses reject.
+	RejectOnLimit bool
 }
 
 // Verdict names why a session is refused; empty means allowed.
@@ -37,6 +45,8 @@ const (
 	ExpiredLifetime    Verdict = "session_max_lifetime"
 	AddressNotAllowed  Verdict = "ip_not_allowed"
 	MFAEnrollmentNeeds Verdict = "mfa_enrollment_required"
+	SessionEvicted     Verdict = "session_evicted"
+	SessionLimit       Verdict = "session_limit"
 )
 
 // ErrInvalidEntry is returned for an allowlist entry that is neither an IP nor a CIDR.
@@ -77,13 +87,19 @@ func stricter(a, b time.Duration) time.Duration {
 }
 
 // Merge combines policies: the shortest non-zero timeouts, MFA if any team
-// requires it, and every non-empty allowlist. A bad entry fails the merge.
+// requires it, the smallest session cap, and every non-empty allowlist. A bad entry fails the merge.
 func Merge(policies []Policy) (Rules, error) {
 	var r Rules
 	for _, p := range policies {
 		r.IdleTimeout = stricter(r.IdleTimeout, p.IdleTimeout)
 		r.MaxLifetime = stricter(r.MaxLifetime, p.MaxLifetime)
 		r.RequireMFA = r.RequireMFA || p.RequireMFA
+		if p.MaxSessions > 0 {
+			if r.MaxSessions == 0 || p.MaxSessions < r.MaxSessions {
+				r.MaxSessions = p.MaxSessions
+			}
+			r.RejectOnLimit = r.RejectOnLimit || p.RejectOnLimit
+		}
 		list, err := ParseAllowlist(p.IPAllowlist)
 		if err != nil {
 			return Rules{}, err
@@ -152,4 +168,24 @@ func ClientAddr(peer netip.Addr, forwardedFor string, trusted func(netip.Addr) b
 		addr = hop
 	}
 	return addr
+}
+
+// OverCap says what happens to the session at position rank (0 is the oldest)
+// among total live sessions: SessionEvicted when it is among the oldest
+// beyond the cap under evict-oldest, SessionLimit when it is a newer session
+// over the cap under reject, Allowed otherwise.
+func (r Rules) OverCap(rank, total int) Verdict {
+	if r.MaxSessions <= 0 || total <= r.MaxSessions {
+		return Allowed
+	}
+	if r.RejectOnLimit {
+		if rank >= r.MaxSessions {
+			return SessionLimit
+		}
+		return Allowed
+	}
+	if rank < total-r.MaxSessions {
+		return SessionEvicted
+	}
+	return Allowed
 }

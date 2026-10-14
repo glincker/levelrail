@@ -4,6 +4,8 @@ description: Provision and deprovision accounts and groups from Okta, Microsoft 
 
 # SCIM provisioning
 
+> **Interim implementation, off by default.** This SAML and SCIM support is hand built for now and sits behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, its routes answer `404`, the settings page and the sign-in button are hidden, and an earlier "require single sign-on" setting is not applied. It will move onto the sign-in library's native SAML and SCIM once its SQLite storage supports them.
+
 SCIM 2.0 lets your identity provider create accounts, keep their profile up to date, put them in groups and deactivate them. Group membership drives roles through the same [group to role mappings](sso-saml.md#group-to-role-mappings) SAML uses. People still sign in with [SAML](sso-saml.md), OAuth or a password.
 
 <InlineToc default-open />
