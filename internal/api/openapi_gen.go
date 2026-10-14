@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1035 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1045 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -684,6 +684,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/dns/zones/{zone}/records/export", Ability: "AbilityRead", Group: "Other", Handler: "handleExportDNSZoneRecords", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/records/import", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportDNSZoneRecords", Description: ""},
 	{Method: "POST", Path: "/api/v1/dns/zones/{zone}/templates/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyDNSTemplate", Description: ""},
+	{Method: "POST", Path: "/api/v1/event-webhook-deliveries/{id}/replay", Ability: "AbilityRoot", Group: "Other", Handler: "handleReplayEventWebhookDelivery", Description: ""},
+	{Method: "GET", Path: "/api/v1/event-webhook-types", Ability: "AbilityRoot", Group: "Other", Handler: "handleListEventWebhookTypes", Description: ""},
+	{Method: "GET", Path: "/api/v1/event-webhooks", Ability: "AbilityRoot", Group: "Other", Handler: "handleListEventWebhooks", Description: ""},
+	{Method: "POST", Path: "/api/v1/event-webhooks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateEventWebhook", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/event-webhooks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteEventWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/event-webhooks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetEventWebhook", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/event-webhooks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateEventWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/event-webhooks/{id}/deliveries", Ability: "AbilityRoot", Group: "Other", Handler: "handleListEventWebhookDeliveries", Description: ""},
+	{Method: "POST", Path: "/api/v1/event-webhooks/{id}/rotate-secret", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateEventWebhookSecret", Description: ""},
+	{Method: "POST", Path: "/api/v1/event-webhooks/{id}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestEventWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/export", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCExport", Description: ""},
 	{Method: "GET", Path: "/api/v1/export/destinations", Ability: "AbilityRoot", Group: "Other", Handler: "handleListExportDestinations", Description: ""},
 	{Method: "POST", Path: "/api/v1/export/destinations", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateExportDestination", Description: ""},

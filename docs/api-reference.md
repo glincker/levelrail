@@ -1258,6 +1258,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/mobile/overview | AbilityRead | handleMobileOverview |
 | GET | /api/v1/gate/check | Public | handleGateCheck |
 | GET | /gate/login | Public | handleGateLogin |
+| GET | /api/v1/event-webhooks | AbilityRoot | handleListEventWebhooks |
+| POST | /api/v1/event-webhooks | AbilityRoot | handleCreateEventWebhook |
+| GET | /api/v1/event-webhook-types | AbilityRoot | handleListEventWebhookTypes |
+| GET | /api/v1/event-webhooks/{id} | AbilityRoot | handleGetEventWebhook |
+| PATCH | /api/v1/event-webhooks/{id} | AbilityRoot | handleUpdateEventWebhook |
+| DELETE | /api/v1/event-webhooks/{id} | AbilityRoot | handleDeleteEventWebhook |
+| POST | /api/v1/event-webhooks/{id}/test | AbilityRoot | handleTestEventWebhook |
+| POST | /api/v1/event-webhooks/{id}/rotate-secret | AbilityRoot | handleRotateEventWebhookSecret |
+| GET | /api/v1/event-webhooks/{id}/deliveries | AbilityRoot | handleListEventWebhookDeliveries |
+| POST | /api/v1/event-webhook-deliveries/{id}/replay | AbilityRoot | handleReplayEventWebhookDelivery |
 
 ## See also
 
