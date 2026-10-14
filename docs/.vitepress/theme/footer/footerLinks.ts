@@ -75,5 +75,5 @@ export const footerLegalLinks: FooterLink[] = [
   { text: 'Terms', link: '/terms' },
   { text: 'Privacy policy', link: '/privacy-policy' },
   { text: 'Cookies', link: '/cookies' },
-  { text: 'License', link: '/license' },
+  { text: 'License', link: '/open-source-license' },
 ]

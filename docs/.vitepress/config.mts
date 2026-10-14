@@ -315,7 +315,7 @@ const sidebarGroups = [
       { text: 'Terms of use', link: '/terms' },
       { text: 'Privacy policy', link: '/privacy-policy' },
       { text: 'Cookie notice', link: '/cookies' },
-      { text: 'License and notices', link: '/license' },
+      { text: 'License and notices', link: '/open-source-license' },
     ],
   },
   {
