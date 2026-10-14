@@ -1,6 +1,10 @@
 package api
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/GLINCKER/levelrail/internal/quota"
+)
 
 // registerTeamRoutes wires teams, members and invites. Every /teams/{id}
 // route also passes the team gate (team_gate.go), so a non-member gets 404.
@@ -17,6 +21,12 @@ func (rt *Router) registerTeamRoutes(mux *http.ServeMux) {
 	// Read tier: it only ever removes the caller's own membership.
 	mux.HandleFunc("DELETE /api/v1/teams/{id}/members/me", rt.requireAbility(AbilityRead, rt.handleLeaveTeam))
 	mux.HandleFunc("POST /api/v1/teams/{id}/transfer", rt.requireAbility(AbilityWrite, rt.handleTransferTeam))
+	mux.HandleFunc("GET /api/v1/teams/{id}/quota", rt.requireAbility(AbilityRead, rt.handleGetQuota(quota.ScopeTeam)))
+	mux.HandleFunc("PUT /api/v1/teams/{id}/quota", rt.requireAbility(AbilityWrite, rt.handleSetQuota(quota.ScopeTeam)))
+	mux.HandleFunc("DELETE /api/v1/teams/{id}/quota", rt.requireAbility(AbilityWrite, rt.handleDeleteQuota(quota.ScopeTeam)))
+	mux.HandleFunc("GET /api/v1/projects/{id}/quota", rt.requireAbility(AbilityRead, rt.handleGetQuota(quota.ScopeProject)))
+	mux.HandleFunc("PUT /api/v1/projects/{id}/quota", rt.requireAbility(AbilityWrite, rt.handleSetQuota(quota.ScopeProject)))
+	mux.HandleFunc("DELETE /api/v1/projects/{id}/quota", rt.requireAbility(AbilityWrite, rt.handleDeleteQuota(quota.ScopeProject)))
 	mux.HandleFunc("GET /api/v1/teams/{id}/events", rt.requireAbility(AbilityRead, rt.handleListTeamEvents))
 	mux.HandleFunc("GET /api/v1/teams/{id}/invites", rt.requireAbility(AbilityRead, rt.handleListTeamInvites))
 	mux.HandleFunc("POST /api/v1/teams/{id}/invites", rt.requireAbility(AbilityWrite, rt.handleCreateTeamInvite))

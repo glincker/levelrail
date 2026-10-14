@@ -18,6 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -568,6 +569,14 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	appReserve := serviceReservation(req.Resources, req.Replicas)
+	quotaRelease, quotaOK := rt.admitQuotaOrWrite(w, r, req.ProjectID, store.ResourceOwner{},
+		quota.Amounts{Apps: 1, MemoryBytes: appReserve.MemoryBytes, NanoCPUs: appReserve.NanoCPUs})
+	if !quotaOK {
+		return
+	}
+	defer quotaRelease()
+
 	// Secret values are stored before SaveDesiredService, not after: the
 	// reconciler converges as soon as the desired state exists, so a
 	// required secret must already be resolvable by then rather than
@@ -854,6 +863,11 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	}
 	imageChanged := req.Image != existing.Image
 	desired := req.toDesiredService()
+	quotaRelease, quotaOK := rt.admitAppResizeQuota(w, r, *existing, desired)
+	if !quotaOK {
+		return
+	}
+	defer quotaRelease()
 	// Egress isn't in appResource.toDesiredService() (that field's own
 	// doc comment), so without this it would silently reset to nil on
 	// every save: SaveDesiredService, unlike NodeID/StorageTargetID,
@@ -1035,6 +1049,12 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+
+	quotaRelease, quotaOK := rt.admitAppMoveQuota(w, r, name, req.ProjectID)
+	if !quotaOK {
+		return
+	}
+	defer quotaRelease()
 
 	if err := rt.apps.UpdateServiceProject(r.Context(), name, req.ProjectID); errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")

@@ -224,6 +224,7 @@
               "secret-rotation",
               "access-control",
               "teams-and-roles",
+              "team-and-project-quotas",
               "environments",
               "identity-and-access",
               "projects-and-organizations"

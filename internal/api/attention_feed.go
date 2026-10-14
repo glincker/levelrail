@@ -54,6 +54,7 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.secretRotationAttentionItems(r, abilities)...)
 	items = append(items, rt.resourceAdviceAttentionItems(r)...)
 	items = append(items, rt.backupCoverageAttentionItems(r, abilities)...)
+	items = append(items, rt.quotaAttentionItems(r, abilities)...)
 	return items
 }
 

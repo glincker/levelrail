@@ -378,6 +378,7 @@ levelrail-cli apps promote <name> --to ENVIRONMENT_ID [--target NAME] [--confirm
 ## Limits
 
 - Grouping is not a permission boundary. Roles and IAM policies scope to individual resources, never to a project or organization.
+- Resource limits per team or project are covered in [Team and project quotas](/team-and-project-quotas).
 - There is no bulk move. Move apps and databases between projects or environments one at a time.
 - Databases cannot be tagged with an environment, because the protected-environment gate only guards deploy, rollback and promote.
 - There is no per-project or per-organization audit view. Changes appear in the generic audit log (`GET /api/v1/audit-log`).

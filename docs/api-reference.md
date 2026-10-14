@@ -630,6 +630,9 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 | GET | /api/v1/environments | AbilityRead | handleListAllEnvironments |
 | POST | /api/v1/environments | AbilityWrite | handleCreateGlobalEnvironment |
+| GET | /api/v1/projects/{id}/quota | AbilityRead | handleGetQuota |
+| PUT | /api/v1/projects/{id}/quota | AbilityWrite | handleSetQuota |
+| DELETE | /api/v1/projects/{id}/quota | AbilityWrite | handleDeleteQuota |
 
 ## Nodes
 
@@ -1277,6 +1280,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/event-webhooks/{id}/deliveries | AbilityRoot | handleListEventWebhookDeliveries |
 | POST | /api/v1/event-webhook-deliveries/{id}/replay | AbilityRoot | handleReplayEventWebhookDelivery |
 | GET | /api/v1/secret-rotation | AbilityRoot | handleListAllSecretRotation |
+| GET | /api/v1/teams/{id}/quota | AbilityRead | handleGetQuota |
+| PUT | /api/v1/teams/{id}/quota | AbilityWrite | handleSetQuota |
+| DELETE | /api/v1/teams/{id}/quota | AbilityWrite | handleDeleteQuota |
 
 ## See also
 

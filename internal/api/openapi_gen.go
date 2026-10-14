@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1055 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1061 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -889,6 +889,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/teams/{id}/members/me", Ability: "AbilityRead", Group: "Other", Handler: "handleLeaveTeam", Description: "Read tier: it only ever removes the caller's own membership."},
 	{Method: "DELETE", Path: "/api/v1/teams/{id}/members/{user}", Ability: "AbilityWrite", Group: "Other", Handler: "handleRemoveTeamMember", Description: ""},
 	{Method: "PUT", Path: "/api/v1/teams/{id}/members/{user}", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetTeamMemberRole", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteQuota", Description: ""},
+	{Method: "GET", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityRead", Group: "Other", Handler: "handleGetQuota", Description: ""},
+	{Method: "PUT", Path: "/api/v1/teams/{id}/quota", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetQuota", Description: ""},
 	{Method: "POST", Path: "/api/v1/teams/{id}/transfer", Ability: "AbilityWrite", Group: "Other", Handler: "handleTransferTeam", Description: ""},
 	{Method: "GET", Path: "/api/v1/templates/custom", Ability: "AbilityRead", Group: "Other", Handler: "handleListCustomTemplates", Description: "Custom templates (service_templates_custom.go): operator-defined templates captured from a running app. Deploy reuses the service-templates/{id}/deploy route above, no second deploy path."},
 	{Method: "DELETE", Path: "/api/v1/templates/custom/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteCustomTemplate", Description: ""},
@@ -945,6 +948,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/projects/{id}/environments", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleCreateEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/projects/{id}/environments/compare", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleCompareEnvironmentEnv", Description: "Cross-environment env var drift check (environment_compare.go): resolved effective env vars for two of this project's environments, secret values always redacted."},
 	{Method: "PUT", Path: "/api/v1/projects/{id}/organization", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetProjectOrganization", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleDeleteQuota", Description: ""},
+	{Method: "GET", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityRead", Group: "Projects / Organizations / Environments", Handler: "handleGetQuota", Description: ""},
+	{Method: "PUT", Path: "/api/v1/projects/{id}/quota", Ability: "AbilityWrite", Group: "Projects / Organizations / Environments", Handler: "handleSetQuota", Description: ""},
 	{Method: "POST", Path: "/api/v1/projects/{id}/restart", Ability: "AbilityDeploy", Group: "Projects / Organizations / Environments", Handler: "handleRestartProject", Description: "Bulk restart every app filed under this project (project_restart.go): AbilityDeploy, the same ability POST /api/v1/apps/{name}/restart itself uses, not AbilityWrite, since this triggers a real container recreation rather than an ordinary label edit."},
 	{Method: "POST", Path: "/api/v1/projects/{id}/start", Ability: "AbilityDeploy", Group: "Projects / Organizations / Environments", Handler: "handleStartProject", Description: ""},
 	{Method: "POST", Path: "/api/v1/projects/{id}/stop", Ability: "AbilityDeploy", Group: "Projects / Organizations / Environments", Handler: "handleStopProject", Description: "Stop/start (handleStopProject/handleStartProject's own doc comments): same AbilityDeploy tier as the per-app POST /api/v1/apps/{name}/stop and .../start routes, the same class of lifecycle action, applied to every app and database in the project at once."},

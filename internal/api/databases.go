@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/quota"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -326,6 +327,14 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		return false
 	}
 
+	dbReserve := serviceReservation(req.Resources, 1)
+	quotaRelease, quotaOK := rt.admitQuotaOrWrite(w, r, req.ProjectID, store.ResourceOwner{},
+		quota.Amounts{Databases: 1, MemoryBytes: dbReserve.MemoryBytes, NanoCPUs: dbReserve.NanoCPUs})
+	if !quotaOK {
+		return false
+	}
+	defer quotaRelease()
+
 	if !rt.resolveExistingVolume(w, r, req) {
 		return false
 	}
@@ -630,6 +639,12 @@ func (rt *Router) handleSetDatabaseProject(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	quotaRelease, quotaOK := rt.admitDatabaseMoveQuota(w, r, name, req.ProjectID)
+	if !quotaOK {
+		return
+	}
+	defer quotaRelease()
+
 	if err := rt.databases.UpdateDatabaseProject(r.Context(), name, req.ProjectID); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
@@ -679,6 +694,11 @@ func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Requ
 
 	desired := *existing
 	desired.Resources = req.Resources
+	quotaRelease, quotaOK := rt.admitDatabaseResizeQuota(w, r, *existing, req.Resources)
+	if !quotaOK {
+		return
+	}
+	defer quotaRelease()
 	if err := rt.databases.SaveDesiredDatabase(r.Context(), desired); err != nil {
 		rt.logger.Error("api: set database resources failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
