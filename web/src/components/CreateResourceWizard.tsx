@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
-  ArrowLeftIcon,
+  DatabaseIcon,
   GitBranchIcon,
   MagnifyingGlassIcon,
   PackageIcon,
@@ -15,12 +15,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { BrandIcon, BRAND_ICON_NAMES } from './BrandIcon'
 import { DatabasePicker } from './DatabasePicker'
 import { buildPickerEntries, type PostgresFlavor } from '@/lib/databaseCatalog'
+import { engineAccent } from '@/lib/engineAccents'
+import { StepHero } from './createResource/StepHero'
 import { BrowseTemplatesFields } from './BrowseTemplatesFields'
 import { CreateAppFields } from './CreateAppFields'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
@@ -239,6 +240,33 @@ export function CreateResourceWizard({
             : "We'll set this database up on your server and connect it automatically, no manual configuration needed."
     : ''
 
+  const heroEntry = pickerEntries.find((e) => e.key === selectedKey)
+  const heroMark =
+    selected === 'docker-image' ? (
+      <PackageIcon aria-hidden="true" className="size-7" />
+    ) : selected === 'dockerfile-git' ? (
+      <GitBranchIcon aria-hidden="true" className="size-7" />
+    ) : selected !== null && isFixedOption(selected) ? (
+      <StackIcon aria-hidden="true" className="size-7" />
+    ) : heroEntry?.brand ? (
+      <BrandIcon name={heroEntry.brand} className="size-8" />
+    ) : heroEntry?.flavor ? (
+      <span className="text-sm font-semibold" aria-hidden="true">
+        {heroEntry.label.slice(0, 2)}
+      </span>
+    ) : (
+      <DatabaseIcon aria-hidden="true" className="size-7" />
+    )
+  const heroChips: string[] = []
+  if (heroEntry?.port)
+    heroChips.push(t('picker.chips.port', { port: heroEntry.port }))
+  if (heroEntry?.compat === 'redis')
+    heroChips.push(t('picker.chips.redisCompatible'))
+  if (heroEntry?.compat === 'mysql')
+    heroChips.push(t('picker.chips.mysqlCompatible'))
+  if (heroEntry?.compat === 'postgres')
+    heroChips.push(t('picker.chips.postgresCompatible'))
+
   const pickerTitle =
     scope === 'applications'
       ? 'New application'
@@ -364,6 +392,29 @@ export function CreateResourceWizard({
                     setSelected(entry.engineId)
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFlavor(null)
+                    setSelected('docker-image')
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border p-3 text-left text-sm transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                >
+                  <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background">
+                    <PackageIcon
+                      aria-hidden="true"
+                      className="size-5 text-muted-foreground"
+                    />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-medium">
+                      {t('wizard.custom.title')}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">
+                      {t('wizard.custom.description')}
+                    </span>
+                  </span>
+                </button>
               </div>
             ) : null}
             {activeCategory === 'applications' &&
@@ -381,23 +432,20 @@ export function CreateResourceWizard({
                 : 'mx-auto flex w-full max-w-2xl flex-col gap-4 py-2'
             }
           >
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => {
-                    setSelected(null)
-                  }}
-                  aria-label="Back to starting points"
-                >
-                  <ArrowLeftIcon />
-                </Button>
-                {selectedTitle}
-              </DialogTitle>
-              <DialogDescription>{selectedDescription}</DialogDescription>
-            </DialogHeader>
+            <StepHero
+              mark={heroMark}
+              title={selectedTitle}
+              description={selectedDescription}
+              chips={heroChips}
+              accent={engineAccent(
+                selected !== null && isFixedOption(selected)
+                  ? null
+                  : selectedKey,
+              )}
+              onBack={() => {
+                setSelected(null)
+              }}
+            />
             {/* key forces a fresh mount (and so a blank form) whenever the
                 picked option or flavor changes. */}
             {selected === 'docker-image' ? (

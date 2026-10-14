@@ -247,6 +247,35 @@ describe('CreateResourceWizard', () => {
       ).toBeInTheDocument()
     })
 
+    it('routes a database that is not in the list to the app from image flow', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      await user.click(
+        screen.getByRole('button', {
+          name: /Not in the list\? Run any database image/,
+        }),
+      )
+      expect(
+        screen.getByRole('heading', { name: 'New app from an image' }),
+      ).toBeInTheDocument()
+    })
+
+    it('shows the picked engine in the step header and goes back to the picker', async () => {
+      engineFixture.data = ALL_ENGINES
+      const user = userEvent.setup()
+      await openDatabases(user)
+      await user.click(screen.getByTestId('engine-card-valkey'))
+      expect(
+        screen.getByRole('heading', { name: /New Valkey database/ }),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Redis compatible')).toBeInTheDocument()
+      await user.click(
+        screen.getByRole('button', { name: 'All starting points' }),
+      )
+      expect(screen.getByTestId('engine-card-valkey')).toBeInTheDocument()
+    })
+
     it('opens a flavor card on the postgres engine with its flavor', async () => {
       engineFixture.data = ALL_ENGINES
       const user = userEvent.setup()

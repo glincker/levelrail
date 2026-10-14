@@ -524,5 +524,12 @@
   "slowQueries": {
     "tableLabel": "Slow queries",
     "sortBy": "Sort by"
+  },
+  "wizard": {
+    "back": "All starting points",
+    "custom": {
+      "title": "Not in the list? Run any database image",
+      "description": "Deploy it as a regular app with a volume for its data. You get deploys, logs, metrics and rollbacks, but not the managed features of the databases above: backups with restore checks, the data browser and the database commands in the CLI."
+    }
   }
 }
