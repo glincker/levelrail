@@ -31,6 +31,7 @@ import type { DeploymentActionKind } from '../../hooks/useDeploymentActions'
 import { PromoteAppDialog } from '../PromoteAppDialog'
 import { DeployPreviewThumb } from '../DeployPreviewThumb'
 import { SupplyChainSection } from '../SupplyChainSection'
+import { SecretScanSection } from '../SecretScanSection'
 import { DrawerActions } from './DrawerActions'
 import { DeploymentNote } from './DeploymentNote'
 import { EnvPill, StatusCell } from './DeploymentRow'
@@ -235,6 +236,7 @@ function DrawerBody({
           sbomPackages={d.sbom_packages}
         />
       </Section>
+      <SecretScanSection appName={d.app} deploymentId={d.id} />
       {d.status !== 'failed' && (
         <Button
           variant="link"

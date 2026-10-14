@@ -409,6 +409,12 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/env/settings | AbilityWriteSensitive | handlePutEnvSettings |
 | POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
 | GET | /api/v1/apps/{name}/secret-rotation | AbilityRead | handleListSecretRotation |
+| GET | /api/v1/apps/{name}/secret-scan | AbilityRead | handleGetSecretScan |
+| PUT | /api/v1/apps/{name}/secret-scan | AbilityWrite | handlePutSecretScan |
+| POST | /api/v1/apps/{name}/secret-scan/run | AbilityRead | handleRunSecretScan |
+| POST | /api/v1/apps/{name}/secret-scan/allow | AbilityWrite | handleAllowSecretScan |
+| DELETE | /api/v1/apps/{name}/secret-scan/allow/{fingerprint} | AbilityWrite | handleUnallowSecretScan |
+| GET | /api/v1/apps/{name}/deployments/{id}/secret-scan | AbilityRead | handleGetDeploymentSecretScan |
 
 </Accordion>
 

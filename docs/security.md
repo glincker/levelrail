@@ -218,7 +218,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 ## What this does not cover yet
 
 - No SSO/SAML or SCIM. Sign-in is local password, passkey, or OAuth (Google, GitHub, Microsoft, generic OIDC).
-- No secret scanning of an app's own source repository.
+- [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
 - Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.

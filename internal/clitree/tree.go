@@ -277,7 +277,7 @@ var Tree = map[string]*Node{
 		"effective": nil,
 		"analyze":   nil,
 	}},
-	"secrets":        {Subs: map[string]*Node{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil}},
+	"secrets":        {Subs: map[string]*Node{"generate-master-key": nil, "rotate-master-key": nil, "binding-status": nil, "rebind": nil, "scan": nil}},
 	"migrate":        {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil, "server": nil, "db-copy": nil, "db-status": nil, "volumes": nil, "cutover": nil}},
 	"apply":          nil,
 	"diff":           nil,

@@ -884,6 +884,7 @@ func run(logger *slog.Logger) error {
 	previewManager := newPreviewManager(ctx, logger, db, client, agentDataDir, b.ShortName, previewLocalNodeID)
 	apiRouter.SetPreview(previewManager)
 	apiRouter.SetSupplyChain(supplyChainSvc)
+	apiRouter.SetSecretScan(newSecretScanService(db, logger))
 
 	orphanReaper := newOrphanReaper(db, client, agentRegistry, previewLocalNodeID, instanceID, logger)
 	apiRouter.SetOrphanReaper(orphanReaper)
@@ -2097,6 +2098,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager, guard)...)
 	deployOpts = append(deployOpts, supplyChainDeployOptions(supplyChain)...)
+	deployOpts = append(deployOpts, secretScanDeployOptions(db, logger)...)
 	if secretsManager != nil {
 		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
 	}
