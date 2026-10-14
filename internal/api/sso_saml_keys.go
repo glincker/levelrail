@@ -58,6 +58,10 @@ func (rt *Router) attachSSO(s Store) {
 	if db, ok := s.(SSOStore); ok {
 		rt.sso = db
 	}
+	if db, ok := s.(SCIMStore); ok {
+		rt.scim = db
+	}
+	rt.scimLimiter = newWindowRateLimiter(envInt(envSCIMFailuresPerIP, defaultSCIMFailuresPerIP), time.Minute)
 	rt.samlKeys = &samlKeyCache{}
 	rt.samlLimiter = newWindowRateLimiter(envInt(envSAMLRatePerMinute, defaultSAMLRatePerMinute), time.Minute)
 }

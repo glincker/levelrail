@@ -207,6 +207,10 @@ Endpoints for:
 | POST | /api/v1/auth/step-up/passkey/finish | Public | handleStepUpPasskeyFinish |
 | GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
 | PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
+| GET | /api/v1/auth/saml/providers | Public | handleListPublicSAMLProviders |
+| GET | /api/v1/auth/saml/{id}/metadata | Public | handleSAMLMetadata |
+| GET | /api/v1/auth/saml/{id}/login | Public | handleSAMLLogin |
+| POST | /api/v1/auth/saml/{id}/acs | Public | handleSAMLACS |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -220,10 +224,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/auth/saml/providers | Public | handleListPublicSAMLProviders |
-| GET | /api/v1/auth/saml/{id}/metadata | Public | handleSAMLMetadata |
-| GET | /api/v1/auth/saml/{id}/login | Public | handleSAMLLogin |
-| POST | /api/v1/auth/saml/{id}/acs | Public | handleSAMLACS |
 
 :::
 
@@ -1272,6 +1272,24 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/sso/group-mappings | AbilityRoot | handlePutSSOGroupMappings |
 | GET | /api/v1/sso/settings | AbilityRoot | handleGetSSOSettings |
 | PUT | /api/v1/sso/settings | AbilityRoot | handlePutSSOSettings |
+| GET | /api/v1/sso/scim/tokens | AbilityRoot | handleListSCIMTokens |
+| POST | /api/v1/sso/scim/tokens | AbilityRoot | handleCreateSCIMToken |
+| POST | /api/v1/sso/scim/tokens/{id}/rotate | AbilityRoot | handleRotateSCIMToken |
+| DELETE | /api/v1/sso/scim/tokens/{id} | AbilityRoot | handleRevokeSCIMToken |
+| GET | /api/v1/scim/v2/ServiceProviderConfig | Public | handleSCIMServiceProviderConfig |
+| GET | /api/v1/scim/v2/ResourceTypes | Public | handleSCIMResourceTypes |
+| GET | /api/v1/scim/v2/Users | Public | handleSCIMListUsers |
+| POST | /api/v1/scim/v2/Users | Public | handleSCIMCreateUser |
+| GET | /api/v1/scim/v2/Users/{id} | Public | handleSCIMGetUser |
+| PUT | /api/v1/scim/v2/Users/{id} | Public | handleSCIMReplaceUser |
+| PATCH | /api/v1/scim/v2/Users/{id} | Public | handleSCIMPatchUser |
+| DELETE | /api/v1/scim/v2/Users/{id} | Public | handleSCIMDeleteUser |
+| GET | /api/v1/scim/v2/Groups | Public | handleSCIMListGroups |
+| POST | /api/v1/scim/v2/Groups | Public | handleSCIMCreateGroup |
+| GET | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMGetGroup |
+| PUT | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMReplaceGroup |
+| PATCH | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMPatchGroup |
+| DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMDeleteGroup |
 
 ## See also
 

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1049 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1067 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -830,6 +830,20 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Groups", Ability: "Public", Group: "Other", Handler: "handleSCIMListGroups", Description: ""},
+	{Method: "POST", Path: "/api/v1/scim/v2/Groups", Ability: "Public", Group: "Other", Handler: "handleSCIMCreateGroup", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMDeleteGroup", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMGetGroup", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMPatchGroup", Description: ""},
+	{Method: "PUT", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMReplaceGroup", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/ResourceTypes", Ability: "Public", Group: "Other", Handler: "handleSCIMResourceTypes", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/ServiceProviderConfig", Ability: "Public", Group: "Other", Handler: "handleSCIMServiceProviderConfig", Description: "SCIM 2.0: authenticated by a SCIM bearer token in requireSCIM, never by a session."},
+	{Method: "GET", Path: "/api/v1/scim/v2/Users", Ability: "Public", Group: "Other", Handler: "handleSCIMListUsers", Description: ""},
+	{Method: "POST", Path: "/api/v1/scim/v2/Users", Ability: "Public", Group: "Other", Handler: "handleSCIMCreateUser", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMDeleteUser", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMGetUser", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMPatchUser", Description: ""},
+	{Method: "PUT", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMReplaceUser", Description: ""},
 	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
 	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
 	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},
@@ -844,6 +858,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSAMLConnection", Description: ""},
 	{Method: "PUT", Path: "/api/v1/sso/saml/connections/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateSAMLConnection", Description: ""},
 	{Method: "POST", Path: "/api/v1/sso/saml/connections/{id}/metadata", Ability: "AbilityRoot", Group: "Other", Handler: "handleImportSAMLMetadata", Description: ""},
+	{Method: "GET", Path: "/api/v1/sso/scim/tokens", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSCIMTokens", Description: ""},
+	{Method: "POST", Path: "/api/v1/sso/scim/tokens", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateSCIMToken", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/sso/scim/tokens/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRevokeSCIMToken", Description: ""},
+	{Method: "POST", Path: "/api/v1/sso/scim/tokens/{id}/rotate", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateSCIMToken", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSOSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/sso/settings", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutSSOSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStatusPage", Description: ""},

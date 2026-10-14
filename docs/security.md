@@ -193,7 +193,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 ## What this does not cover yet
 
-- No SCIM provisioning. Sign-in is local password, passkey, OAuth (Google, GitHub, Microsoft, generic OIDC) or [SAML](sso-saml.md).
+- No LDAP. Sign-in is local password, passkey, OAuth (Google, GitHub, Microsoft, generic OIDC) or [SAML](sso-saml.md), with [SCIM](scim.md) provisioning.
 - No secret scanning of an app's own source repository.
 - Notification destinations (webhook URLs, Telegram bot tokens, PagerDuty and Opsgenie keys) are stored as plain text in `alerting.db`, not envelope encrypted. Treat that file as sensitive.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.

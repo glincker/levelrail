@@ -66,6 +66,8 @@ func runSSO(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		return c.runSSOMappings(args[1:])
 	case "settings":
 		return c.runSSOSettings(args[1:])
+	case "scim":
+		return c.runSCIM(args[1:])
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown sso subcommand %q\n\n%s", prog, args[0], ssoUsage(prog))
 	return exitUsage
@@ -77,7 +79,8 @@ func ssoUsage(prog string) string {
   %[1]s sso mappings list                                     show IDP group to role mappings
   %[1]s sso mappings set --map GROUP=ROLE[:PRIORITY] ...      replace every mapping
   %[1]s sso settings get                                      show SSO settings and the SP certificate
-  %[1]s sso settings set --enforce=true|false                 require SSO for non-root sign-in
+  %[1]s sso settings set [--enforce=true|false] [--scim-default-role ROLE_ID]
+  %[1]s sso scim tokens list|create <name>|rotate <id>|revoke <id>   manage directory sync tokens
 
 Every command needs a root token. Run "%[1]s sso <area> <verb> -h" for its flags.
 `, prog)
@@ -151,7 +154,8 @@ func (c cliCtx) runSSOSettings(args []string) int {
 	}
 	show := func(s apiclient.SSOSettings) func() {
 		return func() {
-			_, _ = fmt.Fprintf(c.stdout, "enforce sso:  %t\nbase url:     %s%s\n", s.EnforceSSO, s.BaseURL, s.BaseURLError)
+			_, _ = fmt.Fprintf(c.stdout, "enforce sso:        %t\nbase url:           %s%s\nscim base url:      %s\nscim default role:  %s\n",
+				s.EnforceSSO, s.BaseURL, s.BaseURLError, s.SCIMBaseURL, s.SCIMDefaultRole)
 		}
 	}
 	switch args[0] {
@@ -163,15 +167,26 @@ func (c cliCtx) runSSOSettings(args []string) int {
 			})
 	case "set":
 		var enforce bool
-		return c.runAPI("sso settings set", "sso settings set --enforce=true|false [flags]", args[1:],
+		var role string
+		return c.runAPI("sso settings set", "sso settings set [--enforce=true|false] [--scim-default-role ROLE_ID] [flags]", args[1:],
 			func(fs *flag.FlagSet) {
 				fs.BoolVar(&enforce, "enforce", false, "require SSO for every non-root sign-in")
+				fs.StringVar(&role, "scim-default-role", "", "role id for directory users no group mapping matches")
 			},
 			func(ctx context.Context, cl *Client, fs *flag.FlagSet) (any, func(), error) {
-				if !flagWasSet(fs, "enforce") {
-					return nil, nil, newValidationError("--enforce is required")
+				if !flagWasSet(fs, "enforce") && !flagWasSet(fs, "scim-default-role") {
+					return nil, nil, newValidationError("give --enforce or --scim-default-role")
 				}
-				s, err := cl.SetSSOEnforce(ctx, enforce)
+				var s apiclient.SSOSettings
+				var err error
+				if flagWasSet(fs, "scim-default-role") {
+					if s, err = cl.SetSCIMDefaultRole(ctx, role); err != nil {
+						return nil, nil, err
+					}
+				}
+				if flagWasSet(fs, "enforce") {
+					s, err = cl.SetSSOEnforce(ctx, enforce)
+				}
 				return s, show(s), err
 			})
 	}

@@ -34,10 +34,14 @@ type ssoSettingsResource struct {
 	BaseURL          string `json:"base_url"`
 	BaseURLError     string `json:"base_url_error,omitempty"`
 	MasterKeyMissing bool   `json:"master_key_missing"`
+	SCIMBaseURL      string `json:"scim_base_url"`
+	SCIMDefaultRole  string `json:"scim_default_role_id"`
 }
 
+// ssoSettingsRequest changes only the fields it carries.
 type ssoSettingsRequest struct {
-	EnforceSSO bool `json:"enforce_sso"`
+	EnforceSSO        *bool   `json:"enforce_sso"`
+	SCIMDefaultRoleID *string `json:"scim_default_role_id"`
 }
 
 func (rt *Router) handleListSSOGroupMappings(w http.ResponseWriter, r *http.Request) {
@@ -99,7 +103,8 @@ func (rt *Router) ssoSettingsView(ctx context.Context) (ssoSettingsResource, err
 	if err != nil {
 		return ssoSettingsResource{}, err
 	}
-	res := ssoSettingsResource{EnforceSSO: s.EnforceSSO, SPCertificatePEM: s.SPCertificatePEM, MasterKeyMissing: rt.oauthSecrets == nil}
+	res := ssoSettingsResource{EnforceSSO: s.EnforceSSO, SPCertificatePEM: s.SPCertificatePEM, MasterKeyMissing: rt.oauthSecrets == nil,
+		SCIMBaseURL: rt.scimBase(ctx), SCIMDefaultRole: s.SCIMDefaultRoleID}
 	if rt.oauthSecrets != nil {
 		cert, _, err := rt.samlKeyPair(ctx)
 		if err != nil {
@@ -138,7 +143,22 @@ func (rt *Router) handlePutSSOSettings(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.EnforceSSO {
+	if req.SCIMDefaultRoleID != nil && rt.scim != nil {
+		err := rt.scim.SetSCIMDefaultRole(r.Context(), *req.SCIMDefaultRoleID, time.Now())
+		if errors.Is(err, store.ErrRoleNotFound) {
+			writeError(w, http.StatusBadRequest, "scim_default_role_id does not name a stored role")
+			return
+		}
+		if err != nil {
+			rt.internalError(w, "api: put sso settings failed", err)
+			return
+		}
+	}
+	if req.EnforceSSO == nil {
+		rt.handleGetSSOSettings(w, r)
+		return
+	}
+	if *req.EnforceSSO {
 		conns, err := rt.sso.ListSAMLConnections(r.Context())
 		if err != nil {
 			rt.internalError(w, "api: put sso settings failed", err)
@@ -149,17 +169,20 @@ func (rt *Router) handlePutSSOSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if err := rt.sso.SetSSOEnforce(r.Context(), req.EnforceSSO, time.Now()); err != nil {
+	if err := rt.sso.SetSSOEnforce(r.Context(), *req.EnforceSSO, time.Now()); err != nil {
 		rt.internalError(w, "api: put sso settings failed", err)
 		return
 	}
 	rt.handleGetSSOSettings(w, r)
 }
 
-// ssoBlocksLocalSignIn reports whether SSO enforcement refuses a password sign-in
-// for this user. Root users keep password sign-in as the break-glass path. A
+// ssoBlocksLocalSignIn reports whether a disabled account or SSO enforcement
+// refuses a local sign-in for this user. Root users keep password sign-in as the break-glass path. A
 // settings read failure refuses too: an unreadable policy must not open the door.
 func (rt *Router) ssoBlocksLocalSignIn(ctx context.Context, userID string) bool {
+	if rt.accountDisabled(ctx, userID) {
+		return true
+	}
 	if rt.sso == nil {
 		return false
 	}
@@ -178,4 +201,4 @@ func (rt *Router) ssoBlocksLocalSignIn(ctx context.Context, userID string) bool 
 	return !slices.Contains(user.Abilities, AbilityRoot)
 }
 
-const ssoRequiredMessage = "this instance requires single sign-on: use your identity provider's button on the sign-in page"
+const ssoRequiredMessage = "this account cannot sign in this way: use single sign-on from the sign-in page, or ask an administrator"

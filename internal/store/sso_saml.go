@@ -152,17 +152,18 @@ func (db *DB) DeleteSAMLConnection(ctx context.Context, id string) error {
 
 // SSOSettings is the instance-wide single sign-on row.
 type SSOSettings struct {
-	SPCertificatePEM string
-	EnforceSSO       bool
-	UpdatedAt        string
+	SPCertificatePEM  string
+	EnforceSSO        bool
+	SCIMDefaultRoleID string
+	UpdatedAt         string
 }
 
 // GetSSOSettings reads the singleton settings row.
 func (db *DB) GetSSOSettings(ctx context.Context) (SSOSettings, error) {
 	var s SSOSettings
 	var enforce int
-	err := db.QueryRowContext(ctx, `SELECT sp_cert_pem, enforce_sso, updated_at FROM sso_settings WHERE id = 1`).
-		Scan(&s.SPCertificatePEM, &enforce, &s.UpdatedAt)
+	err := db.QueryRowContext(ctx, `SELECT sp_cert_pem, enforce_sso, scim_default_role_id, updated_at FROM sso_settings WHERE id = 1`).
+		Scan(&s.SPCertificatePEM, &enforce, &s.SCIMDefaultRoleID, &s.UpdatedAt)
 	if err != nil {
 		return SSOSettings{}, fmt.Errorf("store: get sso settings: %w", err)
 	}
@@ -189,6 +190,17 @@ func (db *DB) SetSSOSPCertificate(ctx context.Context, certPEM string, now time.
 func (db *DB) SetSSOEnforce(ctx context.Context, on bool, now time.Time) error {
 	if _, err := db.ExecContext(ctx, `UPDATE sso_settings SET enforce_sso = ?, updated_at = ? WHERE id = 1`, boolInt(on), formatTime(now)); err != nil {
 		return fmt.Errorf("store: set sso enforce: %w", err)
+	}
+	return nil
+}
+
+// SetSCIMDefaultRole sets the role given to directory users no group mapping matches.
+func (db *DB) SetSCIMDefaultRole(ctx context.Context, roleID string, now time.Time) error {
+	if _, err := db.GetRole(ctx, roleID); err != nil {
+		return err
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE sso_settings SET scim_default_role_id = ?, updated_at = ? WHERE id = 1`, roleID, formatTime(now)); err != nil {
+		return fmt.Errorf("store: set scim default role: %w", err)
 	}
 	return nil
 }

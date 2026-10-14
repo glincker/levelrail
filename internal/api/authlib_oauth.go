@@ -98,6 +98,11 @@ func (rt *Router) authLibOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		redirectOAuthError(w, r, "internal_error")
 		return
 	}
+	if rt.accountDisabled(r.Context(), user.ID) {
+		rt.libSessions.Revoke(r.Context(), out.SessionCookie.Value)
+		redirectOAuthError(w, r, samlErrDisabled)
+		return
+	}
 	hold, err := rt.holdForApproval(w, r, *user, out.SessionCookie.Value, signInMethodOAuth)
 	switch {
 	case err != nil:

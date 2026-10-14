@@ -649,8 +649,8 @@ levelrail-cli audit-purge
 - **No per-team or per-project access boundary**
   IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. There is no organization- or project-level grouping in the permission model. The Organizations settings page groups projects for display and navigation only; it is unrelated to access control.
 
-- **No SCIM provisioning yet**
-  Sign-in covers Google, GitHub, Microsoft, generic OIDC and [SAML 2.0](sso-saml.md). Accounts are not yet created or removed from a directory.
+- **Directory sync covers SCIM 2.0 only**
+  Sign-in covers Google, GitHub, Microsoft, generic OIDC and [SAML 2.0](sso-saml.md); accounts and groups sync through [SCIM](scim.md). There is no LDAP sync.
 
 - **No policy dry-run or simulation**
   A newly attached Deny statement takes effect on the very next request. The only way to check its effect is to make that request and see what happens.

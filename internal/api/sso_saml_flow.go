@@ -215,6 +215,10 @@ func (rt *Router) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 		rt.samlReject(w, r, c, code, detail)
 		return
 	}
+	if rt.accountDisabled(ctx, user.ID) {
+		rt.samlReject(w, r, c, samlErrDisabled, "account disabled")
+		return
+	}
 	rt.finishSAMLSignIn(w, r, c, ident, user)
 }
 

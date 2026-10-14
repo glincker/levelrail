@@ -70,7 +70,7 @@ levelrail-cli sso mappings set --map Admins=role_admin:100 --map Engineering=rol
 levelrail-cli sso mappings list
 ```
 
-The highest priority group the person belongs to decides the role. Group names match case-insensitively. A person in no mapped group gets the connection's default role. With **Apply the mapped role on every sign-in** (`--sync-roles`), the role is re-applied at each sign-in, so a group change at the IdP takes effect at the next one. With sync on and no default role, a person in no mapped group is refused. The last root user is never demoted by a mapping, so directory drift cannot lock the instance out. The same mappings will drive directory sync groups.
+The highest priority group the person belongs to decides the role. Group names match case-insensitively. A person in no mapped group gets the connection's default role. With **Apply the mapped role on every sign-in** (`--sync-roles`), the role is re-applied at each sign-in, so a group change at the IdP takes effect at the next one. With sync on and no default role, a person in no mapped group is refused. The last root user is never demoted by a mapping, so directory drift cannot lock the instance out. The same mappings drive [SCIM provisioning](scim.md) groups.
 
 ## Require single sign-on
 

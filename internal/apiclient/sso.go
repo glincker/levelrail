@@ -88,6 +88,8 @@ type SSOSettings struct {
 	BaseURL          string `json:"base_url"`
 	BaseURLError     string `json:"base_url_error,omitempty"`
 	MasterKeyMissing bool   `json:"master_key_missing"`
+	SCIMBaseURL      string `json:"scim_base_url"`
+	SCIMDefaultRole  string `json:"scim_default_role_id"`
 }
 
 // ListSAMLConnections calls GET /api/v1/sso/saml/connections.

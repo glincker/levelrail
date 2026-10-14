@@ -129,6 +129,9 @@ type ProvisionedUser struct {
 	RoleID           string
 	SAMLConnectionID string
 	SAMLNameID       string
+	// SCIM, when set, records the directory attributes; Disabled creates the account inactive.
+	SCIM     *SCIMUser
+	Disabled bool
 }
 
 // CreateProvisionedUser inserts the user, assigns RoleID (copying its
@@ -165,6 +168,19 @@ func (db *DB) CreateProvisionedUser(ctx context.Context, p ProvisionedUser) erro
 		if _, err := tx.ExecContext(ctx, `INSERT INTO saml_identities (connection_id, name_id, user_id, created_at, last_login_at)
 			VALUES (?, ?, ?, ?, ?)`, p.SAMLConnectionID, p.SAMLNameID, u.ID, formatTime(u.CreatedAt), formatTime(u.CreatedAt)); err != nil {
 			return fmt.Errorf("store: provision user %q: link identity: %w", u.ID, err)
+		}
+	}
+	if p.SCIM != nil {
+		su := *p.SCIM
+		su.UserID = u.ID
+		if err := upsertSCIMUser(ctx, tx, su, u.CreatedAt); err != nil {
+			return err
+		}
+	}
+	if p.Disabled {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO disabled_users (user_id, reason, disabled_at) VALUES (?, ?, ?)`,
+			u.ID, DisabledReasonSCIM, formatTime(u.CreatedAt)); err != nil {
+			return fmt.Errorf("store: provision user %q: disable: %w", u.ID, err)
 		}
 	}
 	if err := tx.Commit(); err != nil {

@@ -470,7 +470,7 @@ func (rt *Router) tokenOwnerGone(ctx context.Context, rec *store.APIToken) (bool
 	if err != nil {
 		return false, fmt.Errorf("api: load token owner %q: %w", rec.OwnerUserID, err)
 	}
-	return false, nil
+	return rt.accountDisabled(ctx, rec.OwnerUserID), nil
 }
 
 // pinnedOriginUsable re-checks the API token a pinned session was minted

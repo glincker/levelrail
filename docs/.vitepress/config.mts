@@ -182,6 +182,7 @@ const sidebarGroups = [
           { text: 'Master key rotation', link: '/master-key-rotation' },
           { text: 'Access control', link: '/access-control' },
           { text: 'SAML single sign-on', link: '/sso-saml' },
+          { text: 'SCIM provisioning', link: '/scim' },
           { text: 'Teams and roles', link: '/teams-and-roles' },
           { text: 'Environments', link: '/environments' },
           { text: 'Identity and access', link: '/identity-and-access' },
