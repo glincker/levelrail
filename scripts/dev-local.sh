@@ -33,7 +33,7 @@ start() {
 		APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
 		nohup "$dir/levelrail" >"$dir/server.log" 2>&1 &)
 	if [ -z "$(listening "$web_port")" ]; then
-		(cd "$repo_root/web" && nohup npx vite --host 127.0.0.1 --port "$web_port" >"$dir/vite.log" 2>&1 &)
+		(cd "$repo_root/web" && LOCAL_API_PORT="$api_port" nohup npx vite --host 127.0.0.1 --port "$web_port" >"$dir/vite.log" 2>&1 &)
 	fi
 	local i
 	for i in $(seq 1 60); do
