@@ -691,5 +691,29 @@
     "orInstead": "or instead",
     "recordsNone": "Set a public address to see the record to create.",
     "dnsStatus": "DNS status"
+  },
+  "enforcement": {
+    "savedNotEnforced": "Saved, not enforced",
+    "proxy": {
+      "traefik": "Traefik",
+      "external": "your proxy"
+    },
+    "reason": {
+      "route_unverified": "{{proxy}} routes {{domain}}, and this server has not confirmed that {{proxy}} hands its requests to the built-in ingress. The setting is saved, but visitors may not get it. Verify the route to check again.",
+      "proxy_unmanaged": "{{proxy}} terminates TLS for {{domain}} with a configuration this server does not manage, so it cannot confirm the requests reach the built-in ingress. The setting is saved, but it is not reported as enforced.",
+      "not_routed": "{{domain}} is not routed yet, so the setting is saved but nothing is enforced."
+    },
+    "proxyPage": "Open the proxy page",
+    "docs": "Which controls work behind a proxy",
+    "flagTitle": "{{label}} (saved, not enforced)"
+  },
+  "maintenance": {
+    "on": "Maintenance mode on",
+    "off": "Not in maintenance",
+    "enable": "Enable maintenance mode",
+    "enabling": "Enabling...",
+    "end": "End maintenance",
+    "ending": "Ending...",
+    "activeHint": "Visitors to {{domain}} see a fixed maintenance page. The container keeps running; nothing here stops or restarts it."
   }
 }

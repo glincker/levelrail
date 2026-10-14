@@ -4,6 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainRedirectControl } from './DomainRedirectControl'
 
+// Enforcement is covered by DomainMaintenanceControl.test.tsx; here the
+// control's own states are under test, so the domain counts as enforced.
+vi.mock('./domains/EnforcementGate', () => ({
+  EnforcedBadge: ({ children }: { children: React.ReactNode }) => children,
+  EnforcementNote: () => null,
+}))
+
 function requestUrlOf(input: RequestInfo | URL): string {
   if (typeof input === 'string') return input
   if (input instanceof URL) return input.toString()

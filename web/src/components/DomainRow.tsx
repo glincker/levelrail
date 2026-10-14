@@ -48,6 +48,8 @@ import {
 } from '../queries/domainSearchVisibility'
 import type { Domain } from '../queries/domains'
 import { domainScope, isStandaloneDomain } from '../lib/standaloneDomain'
+import { isEnforced } from '../lib/domainEnforcement'
+import type { TrafficControl } from '../lib/domainEnforcement'
 import { DomainDnsRecordDialog } from './DomainDnsRecordDialog'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import {
@@ -60,6 +62,7 @@ const FLAGS: {
     Domain,
     'waf_enabled' | 'has_redirect' | 'maintenance_enabled' | 'has_basic_auth'
   >
+  control: TrafficControl
   icon: Icon
   label:
     | 'page.flag.waf'
@@ -67,14 +70,30 @@ const FLAGS: {
     | 'page.flag.maintenance'
     | 'page.flag.basicAuth'
 }[] = [
-  { key: 'waf_enabled', icon: ShieldCheckIcon, label: 'page.flag.waf' },
-  { key: 'has_redirect', icon: SignpostIcon, label: 'page.flag.redirect' },
+  {
+    key: 'waf_enabled',
+    control: 'waf',
+    icon: ShieldCheckIcon,
+    label: 'page.flag.waf',
+  },
+  {
+    key: 'has_redirect',
+    control: 'redirect',
+    icon: SignpostIcon,
+    label: 'page.flag.redirect',
+  },
   {
     key: 'maintenance_enabled',
+    control: 'maintenance',
     icon: WrenchIcon,
     label: 'page.flag.maintenance',
   },
-  { key: 'has_basic_auth', icon: LockKeyIcon, label: 'page.flag.basicAuth' },
+  {
+    key: 'has_basic_auth',
+    control: 'basic_auth',
+    icon: LockKeyIcon,
+    label: 'page.flag.basicAuth',
+  },
 ]
 
 // First problem wins, so a row carries at most one inline warning.
@@ -316,16 +335,26 @@ export function DomainNameCell({
             {t('page.row.wildcard')}
           </Badge>
         ) : null}
-        {flags.map((flag) => (
-          <span
-            key={flag.key}
-            className="shrink-0 text-muted-foreground"
-            title={t(flag.label)}
-          >
-            <flag.icon className="size-3.5" aria-hidden="true" />
-            <span className="sr-only">{t(flag.label)}</span>
-          </span>
-        ))}
+        {flags.map((flag) => {
+          const enforced = isEnforced(domain.enforcement, flag.control)
+          const label = enforced
+            ? t(flag.label)
+            : t('enforcement.flagTitle', { label: t(flag.label) })
+          return (
+            <span
+              key={flag.key}
+              className={
+                enforced
+                  ? 'shrink-0 text-muted-foreground'
+                  : 'shrink-0 text-tone-warning'
+              }
+              title={label}
+            >
+              <flag.icon className="size-3.5" aria-hidden="true" />
+              <span className="sr-only">{label}</span>
+            </span>
+          )
+        })}
       </div>
       {warning ? (
         <p

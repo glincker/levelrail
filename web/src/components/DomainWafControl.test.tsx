@@ -5,6 +5,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainWafControl } from './DomainWafControl'
 import type { Brand } from '../types/brand'
 
+// Enforcement is covered by DomainMaintenanceControl.test.tsx; here the
+// control's own states are under test, so the domain counts as enforced.
+vi.mock('./domains/EnforcementGate', () => ({
+  EnforcedBadge: ({ children }: { children: React.ReactNode }) => children,
+  EnforcementNote: () => null,
+}))
+
 // DomainWafControl now renders a HelpLink, which reads brand.DocsURL via
 // useBrand; mocked the same way CreateRegistryCredentialDialog.test.tsx
 // mocks it for its own brand.DocsURL-dependent rendering.

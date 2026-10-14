@@ -24,6 +24,7 @@ import type {
   ProxyCertificate,
   TlsOwner,
 } from './domainCheck'
+import type { DomainEnforcement } from '../lib/domainEnforcement'
 
 export const domainKeys = {
   all: ['domains'] as const,
@@ -51,6 +52,8 @@ export interface Domain {
   // where it proxies and service_name is empty.
   kind?: 'app' | 'standalone'
   target?: string
+  // enforcement says which saved traffic controls visitors really get.
+  enforcement?: DomainEnforcement
 }
 
 export async function fetchDomains(): Promise<Domain[]> {

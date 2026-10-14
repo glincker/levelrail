@@ -39,6 +39,8 @@ type appEnvironmentDomainsResource struct {
 	Environments        []environmentDomainSetResource `json:"environments"`
 	// Reachability maps each domain to its reachable_url or reachable_reason.
 	Reachability map[string]domainReachability `json:"reachability,omitempty"`
+	// Enforcement maps each domain to which saved traffic controls apply.
+	Enforcement map[string]domainEnforcement `json:"enforcement,omitempty"`
 }
 
 // resolveDomainEnvironment accepts an environment ID, name, or kind.
@@ -211,5 +213,6 @@ func (rt *Router) handleGetAppEnvironmentDomains(w http.ResponseWriter, r *http.
 		all = append(all, set...)
 	}
 	out.Reachability = rt.appDomainReachability(r.Context(), name, out.RoutedDomains, all)
+	out.Enforcement = rt.appDomainEnforcement(r.Context(), out.RoutedDomains, all)
 	writeJSON(w, http.StatusOK, out)
 }

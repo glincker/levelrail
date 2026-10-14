@@ -175,6 +175,51 @@ this server stored earlier is shown or alerted on:
 If the proxy certificate has not been seen yet, run **Verify** on the proxy
 page (or `levelrail-cli proxy --verify`).
 
+## Traffic controls behind a proxy
+
+Maintenance mode, basic auth, the auth gate, the WAF and rate limit, redirects
+and custom error pages are all applied by the built-in ingress. Behind a proxy
+they work only when the proxy really hands the domain's requests to that
+ingress. A route file being written is not enough: another router on the same
+proxy (for example a container label left over from Coolify) can win the match
+and send visitors straight to an old container.
+
+Every domain in `GET /api/v1/domains` (and every entry of `enforcement` in
+`GET /api/v1/apps/{name}/environment-domains`) carries an `enforcement` block:
+
+```json
+"enforcement": {
+  "mode": "proxy:traefik",
+  "maintenance": false, "basic_auth": false, "auth_gate": false,
+  "waf": false, "redirect": false, "error_pages": false,
+  "reason": "route_unverified"
+}
+```
+
+| Mode | When | Maintenance | Basic auth | Auth gate | WAF and rate limit | Redirect | Error pages |
+|---|---|---|---|---|---|---|---|
+| `levelrail` | The built-in ingress serves the domain directly | yes | yes | yes | yes | yes | yes |
+| `proxy:traefik` | A managed route file exists and the last **Verify** proved the requests reach the built-in ingress | yes | yes | yes | yes | yes | yes |
+| `proxy:traefik` | A managed route file exists but delivery is not proven (`reason: route_unverified`) | no | no | no | no | no | no |
+| `proxy:external` | TLS is terminated by a proxy this server does not manage (nginx, Caddy, a hand written Traefik file) (`reason: proxy_unmanaged`) | no | no | no | no | no | no |
+| `none` | The domain is not routed yet (`reason: not_routed`) | no | no | no | no | no | no |
+
+"no" means the platform cannot confirm it, so the dashboard shows the saved
+setting as **Saved, not enforced** with the reason, never as active. The
+setting itself is kept and starts working as soon as delivery is proven.
+
+To get a managed Traefik route to `yes`, open the proxy page and run
+**Verify** (or `levelrail-cli proxy --verify`). Verification sends a request
+through the proxy that only the built-in ingress answers; when it comes back,
+the route is proven. Managed routers are written with a high priority so they
+win over label routers for the same host. If verification still fails, look
+for another router on the proxy that claims the host with an even higher
+priority.
+
+For nginx or Caddy in front, point the site at the ingress HTTP listener as
+shown in the generated snippet. The controls then apply, but the platform
+cannot verify it and keeps reporting them as not enforced.
+
 ## Links and the public HTTPS port
 
 When a proxy owns 80 and 443 and forwards to this ingress on its own ports
