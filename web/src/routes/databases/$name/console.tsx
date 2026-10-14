@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DatabaseConsolePanel } from '../../../components/dbviewer/DatabaseConsolePanel'
+import { DemoGate } from '../../../components/demo/DemoUnavailable'
 
 export const Route = createFileRoute('/databases/$name/console')({
   validateSearch: (search: Record<string, unknown>): { sql?: string } => ({
@@ -11,5 +12,9 @@ export const Route = createFileRoute('/databases/$name/console')({
 function ConsoleSection() {
   const { name } = Route.useParams()
   const { sql } = Route.useSearch()
-  return <DatabaseConsolePanel databaseName={name} initialSql={sql} />
+  return (
+    <DemoGate reason="database">
+      <DatabaseConsolePanel databaseName={name} initialSql={sql} />
+    </DemoGate>
+  )
 }

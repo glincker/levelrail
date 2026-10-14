@@ -19,6 +19,7 @@ import { Card, CardContent } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
+import { DemoLoginEntry } from './demo/DemoLoginEntry'
 import { RegisterForm } from './RegisterForm'
 import { OAuthButtons } from './OAuthButtons'
 import { OAuthErrorBanner } from './OAuthErrorBanner'
@@ -208,6 +209,7 @@ export function LoginScreen({
               <div className="space-y-3">{signInContent}</div>
             )}
             <OAuthButtons />
+            <DemoLoginEntry />
           </div>
 
           {devMode.data?.enabled ? (

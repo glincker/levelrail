@@ -116,6 +116,7 @@ export function ConfirmDialog({
           <Button
             type="button"
             variant={tone === 'destructive' ? 'destructive' : 'default'}
+            writeAction
             disabled={pending || !matches}
             onClick={onConfirm}
           >

@@ -11,7 +11,13 @@ export function RedeployAppButton({
 }) {
   const { redeploy, isPending } = useRedeployApp(name, image)
   return (
-    <Button variant="outline" size="sm" disabled={isPending} onClick={redeploy}>
+    <Button
+      variant="outline"
+      size="sm"
+      writeAction
+      disabled={isPending}
+      onClick={redeploy}
+    >
       <RocketLaunchIcon className="size-3.5" aria-hidden="true" />
       {isPending ? 'Redeploying...' : 'Redeploy'}
     </Button>

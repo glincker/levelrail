@@ -257,6 +257,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
               <Button
                 type="button"
                 size="sm"
+                writeAction
                 disabled={restartApp.isPending}
                 onClick={() => {
                   restartApp.mutate(app.name, {
