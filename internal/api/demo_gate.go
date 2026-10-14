@@ -97,9 +97,7 @@ var demoReadDenylist = []string{
 	"/api/v1/auth/session-links/{token}/consume",
 	"/api/v1/team-invites/{token}",
 	// Live probes that dial the host or the internet.
-	"/api/v1/system/doctor",
 	"/api/v1/system/server-address",
-	"/api/v1/updates",
 	"/api/v1/updates/releases",
 	"/api/v1/updates/preflight",
 	"/api/v1/updates/history",
@@ -112,7 +110,6 @@ var demoReadDenylist = []string{
 	"/api/v1/settings/ingress/check",
 	"/api/v1/ingress/connectivity",
 	"/api/v1/dns/check",
-	"/api/v1/dns/health-checks",
 	"/api/v1/dns/zones/{zone}/discover",
 	"/api/v1/apps/{name}/domains/{domain}/check",
 	"/api/v1/apps/{name}/domains/{domain}/search-visibility",
@@ -128,7 +125,6 @@ var demoReadDenylist = []string{
 	"/api/v1/external-databases/candidates",
 	"/api/v1/external-databases/{name}/password",
 	"/api/v1/mesh/connectivity",
-	"/api/v1/nodes/{id}/patch-status",
 	"/api/v1/storage/providers",
 	"/api/v1/storage/orphans",
 	// AI chat: costs money and takes free text.
