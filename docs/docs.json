@@ -329,6 +329,169 @@
         "icon": "/assets/icons/code.svg"
       },
       {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": [
+              "integrations/index"
+            ]
+          },
+          {
+            "group": "Backup destinations",
+            "pages": [
+              "integrations/backup-destinations/index",
+              "integrations/backup-destinations/r2",
+              "integrations/backup-destinations/b2",
+              "integrations/backup-destinations/wasabi",
+              "integrations/backup-destinations/aws",
+              "integrations/backup-destinations/gcs",
+              "integrations/backup-destinations/spaces",
+              "integrations/backup-destinations/hetzner",
+              "integrations/backup-destinations/scaleway",
+              "integrations/backup-destinations/ovh",
+              "integrations/backup-destinations/vultr",
+              "integrations/backup-destinations/minio",
+              "integrations/backup-destinations/local"
+            ]
+          },
+          {
+            "group": "Container registries",
+            "pages": [
+              "integrations/container-registries/index",
+              "integrations/container-registries/dockerhub",
+              "integrations/container-registries/ghcr",
+              "integrations/container-registries/gitlab",
+              "integrations/container-registries/ecr",
+              "integrations/container-registries/gar",
+              "integrations/container-registries/acr",
+              "integrations/container-registries/harbor",
+              "integrations/container-registries/quay",
+              "integrations/container-registries/jfrog",
+              "integrations/container-registries/nexus",
+              "integrations/container-registries/generic"
+            ]
+          },
+          {
+            "group": "Package registries",
+            "pages": [
+              "integrations/package-registries/index",
+              "integrations/package-registries/npm",
+              "integrations/package-registries/pypi",
+              "integrations/package-registries/maven",
+              "integrations/package-registries/nuget",
+              "integrations/package-registries/cargo",
+              "integrations/package-registries/go",
+              "integrations/package-registries/rubygems"
+            ]
+          },
+          {
+            "group": "Cloud node providers",
+            "pages": [
+              "integrations/cloud-providers/index",
+              "integrations/cloud-providers/hetzner",
+              "integrations/cloud-providers/digitalocean",
+              "integrations/cloud-providers/aws",
+              "integrations/cloud-providers/azure",
+              "integrations/cloud-providers/gcp",
+              "integrations/cloud-providers/custom"
+            ]
+          },
+          {
+            "group": "Sign-in providers",
+            "pages": [
+              "integrations/sign-in/index",
+              "integrations/sign-in/google",
+              "integrations/sign-in/github",
+              "integrations/sign-in/microsoft",
+              "integrations/sign-in/gitlab",
+              "integrations/sign-in/bitbucket",
+              "integrations/sign-in/discord",
+              "integrations/sign-in/slack",
+              "integrations/sign-in/linkedin",
+              "integrations/sign-in/twitch",
+              "integrations/sign-in/facebook",
+              "integrations/sign-in/linear",
+              "integrations/sign-in/vercel",
+              "integrations/sign-in/huggingface",
+              "integrations/sign-in/figma",
+              "integrations/sign-in/salesforce",
+              "integrations/sign-in/codeberg",
+              "integrations/sign-in/cognito",
+              "integrations/sign-in/oidc",
+              "integrations/sign-in/saml",
+              "integrations/sign-in/scim"
+            ]
+          },
+          {
+            "group": "Databases",
+            "pages": [
+              "integrations/databases/index",
+              "integrations/databases/postgres",
+              "integrations/databases/mysql",
+              "integrations/databases/mariadb",
+              "integrations/databases/mongodb",
+              "integrations/databases/redis",
+              "integrations/databases/keydb",
+              "integrations/databases/dragonfly",
+              "integrations/databases/clickhouse"
+            ]
+          },
+          {
+            "group": "Notification channels",
+            "pages": [
+              "integrations/notifications/index",
+              "integrations/notifications/generic",
+              "integrations/notifications/slack",
+              "integrations/notifications/discord",
+              "integrations/notifications/telegram",
+              "integrations/notifications/email",
+              "integrations/notifications/pushover",
+              "integrations/notifications/pagerduty",
+              "integrations/notifications/teams",
+              "integrations/notifications/resend",
+              "integrations/notifications/ntfy",
+              "integrations/notifications/gotify",
+              "integrations/notifications/mattermost",
+              "integrations/notifications/lark",
+              "integrations/notifications/rocketchat",
+              "integrations/notifications/opsgenie",
+              "integrations/notifications/webex",
+              "integrations/notifications/googlechat",
+              "integrations/notifications/webpush"
+            ]
+          },
+          {
+            "group": "Git providers",
+            "pages": [
+              "integrations/git-providers/index",
+              "integrations/git-providers/github",
+              "integrations/git-providers/gitlab",
+              "integrations/git-providers/bitbucket",
+              "integrations/git-providers/gitea"
+            ]
+          },
+          {
+            "group": "App integrations",
+            "pages": [
+              "integrations/app-integrations/index",
+              "integrations/app-integrations/sentry",
+              "integrations/app-integrations/glitchtip",
+              "integrations/app-integrations/posthog",
+              "integrations/app-integrations/oneuptime",
+              "integrations/app-integrations/plausible",
+              "integrations/app-integrations/datadog",
+              "integrations/app-integrations/axiom",
+              "integrations/app-integrations/betterstack",
+              "integrations/app-integrations/logsnag",
+              "integrations/app-integrations/bugsnag",
+              "integrations/app-integrations/newrelic"
+            ]
+          }
+        ],
+        "icon": "/assets/icons/tree-structure.svg"
+      },
+      {
         "tab": "Concepts",
         "groups": [
           {

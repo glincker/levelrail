@@ -27,6 +27,7 @@ regen_catalog() {
 	go run ./scripts/gen-template-catalog-docs >/dev/null 2>&1 &&
 		go run ./scripts/gen-template-gallery >/dev/null 2>&1
 }
+regen_integrations() { go run ./scripts/gen-integration-docs >/dev/null 2>&1; }
 
 resolve_conflicts() {
 	local f unresolved=""
@@ -39,6 +40,10 @@ resolve_conflicts() {
 		docs/template-catalog.md | docs/.vitepress/data/templates.json)
 			git checkout --ours -- "$f" 2>/dev/null
 			regen_catalog && git add "$f" || unresolved="$unresolved $f"
+			;;
+		docs/integrations/index.md | docs/integrations/*/*.md)
+			git checkout --ours -- "$f" 2>/dev/null
+			regen_integrations && git add "$f" || unresolved="$unresolved $f"
 			;;
 		web/src/i18n/index.ts | web/src/i18n/resources.ts)
 			# Both sides only append namespace lines, keep both.

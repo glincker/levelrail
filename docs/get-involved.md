@@ -52,6 +52,17 @@ Levelrail is open source and moving fast. The most valuable contributions right 
   </Step>
 </Steps>
 
+## Adding an integration
+
+Per-vendor pages under `docs/integrations/` are generated. To add a backup destination, registry, provider, sign-in method or notification channel, add one entry to `docs/integrations/catalog.json` with facts taken from the code, then run:
+
+```bash
+go run ./scripts/gen-integration-docs
+go run ./scripts/gen-integration-docs -check
+```
+
+The generator writes the pages, the Integrations tab in `docs/docs.json` and the Integrations section of `docs/public/llms.txt`. Do not edit those outputs by hand.
+
 ## Frequently asked questions
 
 <AccordionGroup>

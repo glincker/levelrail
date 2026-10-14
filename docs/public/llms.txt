@@ -161,6 +161,137 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Cookie notice](https://docs.levelrail.com/cookies): the site sets no cookies of its own.
 - [License and notices](https://levelrail.com/license): Apache 2.0 in plain language.
 
+<!-- integrations:begin -->
+## Integrations
+
+- [Integrations overview](https://docs.levelrail.com/integrations/index): every backup destination, registry, provider, sign-in method, database engine, notification channel and git host, with setup steps.
+
+### Backup destinations
+
+- [Cloudflare R2](https://docs.levelrail.com/integrations/backup-destinations/r2): store database and app volume backups on Cloudflare R2.
+- [Backblaze B2](https://docs.levelrail.com/integrations/backup-destinations/b2): store database and app volume backups on Backblaze B2.
+- [Wasabi](https://docs.levelrail.com/integrations/backup-destinations/wasabi): store database and app volume backups on Wasabi.
+- [Amazon S3](https://docs.levelrail.com/integrations/backup-destinations/aws): store database and app volume backups on Amazon S3.
+- [Google Cloud Storage](https://docs.levelrail.com/integrations/backup-destinations/gcs): store database and app volume backups on Google Cloud Storage.
+- [DigitalOcean Spaces](https://docs.levelrail.com/integrations/backup-destinations/spaces): store database and app volume backups on DigitalOcean Spaces.
+- [Hetzner Object Storage](https://docs.levelrail.com/integrations/backup-destinations/hetzner): store database and app volume backups on Hetzner Object Storage.
+- [Scaleway Object Storage](https://docs.levelrail.com/integrations/backup-destinations/scaleway): store database and app volume backups on Scaleway Object Storage.
+- [OVHcloud Object Storage](https://docs.levelrail.com/integrations/backup-destinations/ovh): store database and app volume backups on OVHcloud Object Storage.
+- [Vultr Object Storage](https://docs.levelrail.com/integrations/backup-destinations/vultr): store database and app volume backups on Vultr Object Storage.
+- [MinIO](https://docs.levelrail.com/integrations/backup-destinations/minio): store database and app volume backups on MinIO.
+- [Local MinIO (same machine)](https://docs.levelrail.com/integrations/backup-destinations/local): store database and app volume backups on Local MinIO (same machine).
+
+### Container registries
+
+- [Docker Hub](https://docs.levelrail.com/integrations/container-registries/dockerhub): pull private images from Docker Hub.
+- [GitHub Container Registry](https://docs.levelrail.com/integrations/container-registries/ghcr): pull private images from GitHub Container Registry.
+- [GitLab Container Registry](https://docs.levelrail.com/integrations/container-registries/gitlab): pull private images from GitLab Container Registry.
+- [AWS ECR](https://docs.levelrail.com/integrations/container-registries/ecr): pull private images from AWS ECR.
+- [Google Artifact Registry](https://docs.levelrail.com/integrations/container-registries/gar): pull private images from Google Artifact Registry.
+- [Azure Container Registry](https://docs.levelrail.com/integrations/container-registries/acr): pull private images from Azure Container Registry.
+- [Harbor](https://docs.levelrail.com/integrations/container-registries/harbor): pull private images from Harbor.
+- [Quay](https://docs.levelrail.com/integrations/container-registries/quay): pull private images from Quay.
+- [JFrog Artifactory](https://docs.levelrail.com/integrations/container-registries/jfrog): pull private images from JFrog Artifactory.
+- [Sonatype Nexus](https://docs.levelrail.com/integrations/container-registries/nexus): pull private images from Sonatype Nexus.
+- [Docker v2 registry](https://docs.levelrail.com/integrations/container-registries/generic): pull private images from Docker v2 registry.
+
+### Package registries
+
+- [npm](https://docs.levelrail.com/integrations/package-registries/npm): install private npm dependencies in Docker builds.
+- [PyPI](https://docs.levelrail.com/integrations/package-registries/pypi): install private PyPI dependencies in Docker builds.
+- [Maven](https://docs.levelrail.com/integrations/package-registries/maven): install private Maven dependencies in Docker builds.
+- [NuGet](https://docs.levelrail.com/integrations/package-registries/nuget): install private NuGet dependencies in Docker builds.
+- [Cargo](https://docs.levelrail.com/integrations/package-registries/cargo): install private Cargo dependencies in Docker builds.
+- [Go modules](https://docs.levelrail.com/integrations/package-registries/go): install private Go modules dependencies in Docker builds.
+- [RubyGems](https://docs.levelrail.com/integrations/package-registries/rubygems): install private RubyGems dependencies in Docker builds.
+
+### Cloud node providers
+
+- [Hetzner Cloud](https://docs.levelrail.com/integrations/cloud-providers/hetzner): create servers and enroll them as nodes.
+- [DigitalOcean](https://docs.levelrail.com/integrations/cloud-providers/digitalocean): create servers and enroll them as nodes.
+- [AWS EC2](https://docs.levelrail.com/integrations/cloud-providers/aws): create servers and enroll them as nodes.
+- [Microsoft Azure](https://docs.levelrail.com/integrations/cloud-providers/azure): create servers and enroll them as nodes.
+- [Google Cloud](https://docs.levelrail.com/integrations/cloud-providers/gcp): create servers and enroll them as nodes.
+- [Custom data center](https://docs.levelrail.com/integrations/cloud-providers/custom): enroll bare metal or any VM as a node.
+
+### Sign-in providers
+
+- [Google](https://docs.levelrail.com/integrations/sign-in/google): let people sign in to the dashboard with Google.
+- [GitHub](https://docs.levelrail.com/integrations/sign-in/github): let people sign in to the dashboard with GitHub.
+- [Microsoft Entra ID](https://docs.levelrail.com/integrations/sign-in/microsoft): let people sign in to the dashboard with Microsoft Entra ID.
+- [GitLab](https://docs.levelrail.com/integrations/sign-in/gitlab): let people sign in to the dashboard with GitLab.
+- [Bitbucket](https://docs.levelrail.com/integrations/sign-in/bitbucket): let people sign in to the dashboard with Bitbucket.
+- [Discord](https://docs.levelrail.com/integrations/sign-in/discord): let people sign in to the dashboard with Discord.
+- [Slack](https://docs.levelrail.com/integrations/sign-in/slack): let people sign in to the dashboard with Slack.
+- [LinkedIn](https://docs.levelrail.com/integrations/sign-in/linkedin): let people sign in to the dashboard with LinkedIn.
+- [Twitch](https://docs.levelrail.com/integrations/sign-in/twitch): let people sign in to the dashboard with Twitch.
+- [Facebook](https://docs.levelrail.com/integrations/sign-in/facebook): let people sign in to the dashboard with Facebook.
+- [Linear](https://docs.levelrail.com/integrations/sign-in/linear): let people sign in to the dashboard with Linear.
+- [Vercel](https://docs.levelrail.com/integrations/sign-in/vercel): let people sign in to the dashboard with Vercel.
+- [Hugging Face](https://docs.levelrail.com/integrations/sign-in/huggingface): let people sign in to the dashboard with Hugging Face.
+- [Figma](https://docs.levelrail.com/integrations/sign-in/figma): let people sign in to the dashboard with Figma.
+- [Salesforce](https://docs.levelrail.com/integrations/sign-in/salesforce): let people sign in to the dashboard with Salesforce.
+- [Codeberg](https://docs.levelrail.com/integrations/sign-in/codeberg): let people sign in to the dashboard with Codeberg.
+- [Amazon Cognito](https://docs.levelrail.com/integrations/sign-in/cognito): let people sign in to the dashboard with Amazon Cognito.
+- [Generic OpenID Connect](https://docs.levelrail.com/integrations/sign-in/oidc): let people sign in to the dashboard with Generic OpenID Connect.
+- [SAML 2.0](https://docs.levelrail.com/integrations/sign-in/saml): single sign-on with Okta, Entra ID, Keycloak or any SAML identity provider.
+- [SCIM 2.0](https://docs.levelrail.com/integrations/sign-in/scim): provision and deprovision users and groups from your identity provider.
+
+### Databases
+
+- [PostgreSQL](https://docs.levelrail.com/integrations/databases/postgres): run and back up managed PostgreSQL databases.
+- [MySQL](https://docs.levelrail.com/integrations/databases/mysql): run and back up managed MySQL databases.
+- [MariaDB](https://docs.levelrail.com/integrations/databases/mariadb): run and back up managed MariaDB databases.
+- [MongoDB](https://docs.levelrail.com/integrations/databases/mongodb): run and back up managed MongoDB databases.
+- [Redis](https://docs.levelrail.com/integrations/databases/redis): run and back up managed Redis databases.
+- [KeyDB](https://docs.levelrail.com/integrations/databases/keydb): run and back up managed KeyDB databases.
+- [Dragonfly](https://docs.levelrail.com/integrations/databases/dragonfly): run and back up managed Dragonfly databases.
+- [ClickHouse](https://docs.levelrail.com/integrations/databases/clickhouse): run and back up managed ClickHouse databases.
+
+### Notification channels
+
+- [Generic webhook](https://docs.levelrail.com/integrations/notifications/generic): send alerts and deploy notices to Generic webhook.
+- [Slack](https://docs.levelrail.com/integrations/notifications/slack): send alerts and deploy notices to Slack.
+- [Discord](https://docs.levelrail.com/integrations/notifications/discord): send alerts and deploy notices to Discord.
+- [Telegram](https://docs.levelrail.com/integrations/notifications/telegram): send alerts and deploy notices to Telegram.
+- [Email](https://docs.levelrail.com/integrations/notifications/email): send alerts and deploy notices to Email.
+- [Pushover](https://docs.levelrail.com/integrations/notifications/pushover): send alerts and deploy notices to Pushover.
+- [PagerDuty](https://docs.levelrail.com/integrations/notifications/pagerduty): send alerts and deploy notices to PagerDuty.
+- [Microsoft Teams](https://docs.levelrail.com/integrations/notifications/teams): send alerts and deploy notices to Microsoft Teams.
+- [Resend](https://docs.levelrail.com/integrations/notifications/resend): send alerts and deploy notices to Resend.
+- [ntfy](https://docs.levelrail.com/integrations/notifications/ntfy): send alerts and deploy notices to ntfy.
+- [Gotify](https://docs.levelrail.com/integrations/notifications/gotify): send alerts and deploy notices to Gotify.
+- [Mattermost](https://docs.levelrail.com/integrations/notifications/mattermost): send alerts and deploy notices to Mattermost.
+- [Lark](https://docs.levelrail.com/integrations/notifications/lark): send alerts and deploy notices to Lark.
+- [Rocket.Chat](https://docs.levelrail.com/integrations/notifications/rocketchat): send alerts and deploy notices to Rocket.Chat.
+- [Opsgenie](https://docs.levelrail.com/integrations/notifications/opsgenie): send alerts and deploy notices to Opsgenie.
+- [Webex](https://docs.levelrail.com/integrations/notifications/webex): send alerts and deploy notices to Webex.
+- [Google Chat](https://docs.levelrail.com/integrations/notifications/googlechat): send alerts and deploy notices to Google Chat.
+- [Browser push](https://docs.levelrail.com/integrations/notifications/webpush): send alerts as browser push notifications.
+
+### Git providers
+
+- [GitHub](https://docs.levelrail.com/integrations/git-providers/github): deploy from GitHub pushes and pull requests.
+- [GitLab](https://docs.levelrail.com/integrations/git-providers/gitlab): deploy from GitLab pushes and pull requests.
+- [Bitbucket Cloud](https://docs.levelrail.com/integrations/git-providers/bitbucket): deploy from Bitbucket Cloud pushes and pull requests.
+- [Gitea](https://docs.levelrail.com/integrations/git-providers/gitea): deploy from Gitea pushes and pull requests.
+
+### App integrations
+
+- [Sentry](https://docs.levelrail.com/integrations/app-integrations/sentry): send app errors to Sentry with an injected DSN.
+- [GlitchTip](https://docs.levelrail.com/integrations/app-integrations/glitchtip): send app errors to GlitchTip through the Sentry SDK variable.
+- [PostHog](https://docs.levelrail.com/integrations/app-integrations/posthog): inject PostHog analytics keys into an app.
+- [OneUptime](https://docs.levelrail.com/integrations/app-integrations/oneuptime): export OpenTelemetry data from an app to OneUptime.
+- [Plausible](https://docs.levelrail.com/integrations/app-integrations/plausible): inject Plausible web analytics settings into an app.
+- [Datadog](https://docs.levelrail.com/integrations/app-integrations/datadog): inject a Datadog API key and site into an app.
+- [Axiom](https://docs.levelrail.com/integrations/app-integrations/axiom): inject Axiom token and dataset into an app.
+- [Better Stack](https://docs.levelrail.com/integrations/app-integrations/betterstack): inject a Better Stack log source token into an app.
+- [LogSnag](https://docs.levelrail.com/integrations/app-integrations/logsnag): inject LogSnag token and project into an app.
+- [BugSnag](https://docs.levelrail.com/integrations/app-integrations/bugsnag): inject a BugSnag API key into an app.
+- [New Relic](https://docs.levelrail.com/integrations/app-integrations/newrelic): inject a New Relic license key into an app.
+
+<!-- integrations:end -->
+
 ## Optional
 
 - [Roadmap](https://docs.levelrail.com/roadmap): phased build plan and current status.
