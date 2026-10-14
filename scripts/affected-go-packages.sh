@@ -49,7 +49,7 @@ module_path="$(head -n1 go.mod | awk '{print $2}')"
 declare -A SEED_DIRS=() TEST_SEED_DIRS=() KIT_IMPORTS=()
 add_seed() { # dir [test]
 	case "$1" in
-	tools | tools/*) return ;; # separate module, see ci.yml's Build, vet
+	tools | tools/* | terraform-provider | terraform-provider/*) return ;; # separate modules, see ci.yml
 	kit | kit/*)
 		# Nested module: go list from the root can't resolve its dirs, but root
 		# packages import it, so the import path still seeds the dependents walk.
@@ -152,7 +152,7 @@ done
 if [ "$SEEDS_ONLY" = false ] && [ -f "$GUARDS_FILE" ]; then
 	for f in "${CHANGED_FILES[@]}"; do
 		case "$f" in
-		*_test.go | tools/* | kit/* | web/*) continue ;;
+		*_test.go | tools/* | kit/* | terraform-provider/* | web/*) continue ;;
 		*.go)
 			while read -r guard _; do
 				case "$guard" in '' | '#'*) continue ;; esac
