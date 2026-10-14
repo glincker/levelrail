@@ -62,6 +62,9 @@ func (rt *Router) Handler() http.Handler {
 	h = panicRecoveryMiddleware(rt.logger)(h)
 	h = requestLoggingMiddleware(rt.logger, rt.requestLogThresholds)(h)
 	h = requestIDMiddleware(h)
+	if rt.demo != nil {
+		h = rt.demoGate(h)
+	}
 	return h
 }
 
@@ -70,6 +73,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// on the login screen itself).
 	mux.HandleFunc("GET /api/v1/brand", rt.handleBrand)
 	mux.HandleFunc("GET /api/v1/dev-mode", rt.handleDevMode)
+	mux.HandleFunc("GET /api/v1/demo", rt.handleDemoInfo)
+	mux.HandleFunc("POST /api/v1/demo/session", rt.handleDemoSession)
+	mux.HandleFunc("POST /api/v1/demo/cta", rt.handleDemoCTA)
 	// Route metadata for the in-app API explorer (web/src/routes/settings/api-explorer.tsx):
 	// AbilityRead, same tier as system/status, since this is the API
 	// surface's own shape, not resource data.

@@ -272,6 +272,8 @@ type Router struct {
 	// touching the environment. See securityHeadersMiddleware and
 	// hstsDBOverrideMiddleware for where each half is applied.
 	hstsEnabled bool
+	// demo is non-nil only on the demo entrypoint (WithDemoMode).
+	demo *demoState
 	// hstsDBEnabled caches ingress_settings.hsts_enabled so the dashboard
 	// toggle takes effect on the next request, not the next restart, the
 	// same "no restart needed" expectation every other ingress setting
