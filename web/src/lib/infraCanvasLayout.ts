@@ -36,9 +36,11 @@ const ROW_GAP = 28
 const ROWS_PER_COLUMN = 12
 const COLUMN_ORDER: ProjectTopologyNodeKind[] = [
   'domain',
+  'load_balancer',
   'app',
   'database',
   'volume',
+  'node',
 ]
 
 // Stacks each kind into columns of at most ROWS_PER_COLUMN so a 200 node

@@ -12,6 +12,8 @@ const DASH: Record<ProjectTopologyEdge['kind'], string | undefined> = {
   volume_attachment: '2 4',
   egress_allow: '3 3',
   routing: undefined,
+  load_balances: '8 3 2 3',
+  placed_on: '1 5',
 }
 
 const STROKE: Record<ProjectTopologyEdge['kind'], string> = {
@@ -20,6 +22,8 @@ const STROKE: Record<ProjectTopologyEdge['kind'], string> = {
   volume_attachment: 'stroke-muted-foreground/70',
   egress_allow: 'stroke-muted-foreground/70',
   routing: 'stroke-ring',
+  load_balances: 'stroke-ring',
+  placed_on: 'stroke-muted-foreground/50',
 }
 
 interface Props {

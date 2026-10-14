@@ -95,3 +95,28 @@ func TestBuildTopologyGraph_Empty(t *testing.T) {
 		t.Fatalf("got = %+v, want empty graph", got)
 	}
 }
+
+func TestAddInfraNodes(t *testing.T) {
+	g := topologyGraph{}
+	services := []store.DesiredService{{Name: "web"}, {Name: "api", NodeID: "n2"}}
+	databases := []store.DesiredDatabase{{Name: "main", NodeID: "missing"}}
+	nodes := map[string]store.Node{"n1": {ID: "n1", Name: "local"}, "n2": {ID: "n2", Name: "edge"}}
+
+	addInfraNodes(&g, services, databases, map[string]bool{"web": true}, nodes, "n1")
+
+	ids := map[string]string{}
+	for _, n := range g.Nodes {
+		ids[n.ID] = n.Kind
+	}
+	want := map[string]string{
+		"load_balancer:web": TopologyKindLB,
+		"node:n1":           TopologyKindNode,
+		"node:n2":           TopologyKindNode,
+	}
+	if !reflect.DeepEqual(ids, want) {
+		t.Fatalf("nodes = %v, want %v", ids, want)
+	}
+	if len(g.Edges) != 3 {
+		t.Fatalf("edges = %d, want 3 (lb and 2 placements, unknown node skipped)", len(g.Edges))
+	}
+}

@@ -9,7 +9,8 @@
 // volume attachments, and egress allow-rules that resolve to another
 // app in the same project.
 
-export type ProjectTopologyNodeKind = 'app' | 'database' | 'volume' | 'domain'
+export type ProjectTopologyNodeKind =
+  'app' | 'database' | 'volume' | 'domain' | 'load_balancer' | 'node'
 
 export type ProjectTopologyEdgeKind =
   | 'database_binding'
@@ -17,6 +18,8 @@ export type ProjectTopologyEdgeKind =
   | 'volume_attachment'
   | 'egress_allow'
   | 'routing'
+  | 'load_balances'
+  | 'placed_on'
 
 // Mirrors internal/api/app_status.go's appStatusSummary exactly, the
 // same wire shape GET /api/v1/apps and GET /api/v1/databases already

@@ -2,6 +2,8 @@ import { memo, useRef } from 'react'
 import type { KeyboardEvent, PointerEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  ArrowsSplitIcon,
+  CpuIcon,
   DatabaseIcon,
   GlobeIcon,
   HardDrivesIcon,
@@ -21,7 +23,15 @@ const KIND_ICON = {
   database: DatabaseIcon,
   volume: HardDrivesIcon,
   domain: GlobeIcon,
+  load_balancer: ArrowsSplitIcon,
+  node: CpuIcon,
 } as const
+
+// Shape and icon carry the kind too, so it never relies on color alone.
+const KIND_CLASS: Partial<Record<ProjectTopologyNode['kind'], string>> = {
+  load_balancer: 'border-l-4 border-l-ring',
+  node: 'border-dashed bg-muted/40',
+}
 
 const HEALTH_DOT: Record<CanvasHealth, string> = {
   healthy: 'bg-green-500 dark:bg-green-400',
@@ -139,6 +149,7 @@ function InfraCanvasNodeBase({
         'absolute left-0 top-0 flex touch-none cursor-grab select-none items-center gap-2 rounded-lg border bg-card px-3 text-left text-sm active:cursor-grabbing',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         selected ? 'border-ring' : 'border-border hover:border-ring',
+        KIND_CLASS[node.kind],
       )}
     >
       <Icon
