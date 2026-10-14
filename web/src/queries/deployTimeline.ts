@@ -9,6 +9,7 @@ import {
   applyStreamedDeploy,
   toQuery,
   ZOOM_MS,
+  type TimelineAlert,
   type TimelineDeploy,
   type TimelineFilters,
   type TimelinePage,
@@ -124,5 +125,10 @@ export function useDeployTimeline(filters: TimelineFilters) {
     return rows
   }, [fetched, events, filters, windowStart])
 
-  return { query, items, streamState: state, windowStart, windowEnd }
+  const alerts = useMemo<TimelineAlert[]>(
+    () => fetched?.pages[0]?.alerts ?? [],
+    [fetched],
+  )
+
+  return { query, items, alerts, streamState: state, windowStart, windowEnd }
 }

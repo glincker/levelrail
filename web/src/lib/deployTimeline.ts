@@ -30,10 +30,19 @@ export interface TimelineDeploy {
   is_live: boolean
 }
 
+export interface TimelineAlert {
+  id: string
+  app: string
+  rule_name: string
+  severity: string
+  at: string
+}
+
 export interface TimelinePage {
   since: string
   until: string
   items: TimelineDeploy[]
+  alerts?: TimelineAlert[]
   next_cursor: string
 }
 

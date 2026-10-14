@@ -2,7 +2,11 @@ import { useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useTranslation } from 'react-i18next'
-import { ArrowUUpLeftIcon, XCircleIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  ArrowUUpLeftIcon,
+  BellRingingIcon,
+  XCircleIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/lib/utils'
 import { deployLogsPath } from '../../queries/deployments'
 import {
@@ -12,6 +16,7 @@ import {
   barTone,
   isInFlight,
   type Lane,
+  type TimelineAlert,
   type TimelineDeploy,
   type TimelineZoom,
 } from '../../lib/deployTimeline'
@@ -28,6 +33,7 @@ function tickLabel(at: number, zoom: TimelineZoom): string {
 
 interface Props {
   lanes: Lane[]
+  alerts: TimelineAlert[]
   zoom: TimelineZoom
   windowStart: number
   windowEnd: number
@@ -37,6 +43,7 @@ interface Props {
 
 export function TimelineLanes({
   lanes,
+  alerts,
   zoom,
   windowStart,
   windowEnd,
@@ -52,6 +59,12 @@ export function TimelineLanes({
     overscan: OVERSCAN,
   })
   const ticks = axisTicks(windowStart, windowEnd)
+  const alertsByApp = new Map<string, TimelineAlert[]>()
+  for (const a of alerts) {
+    const list = alertsByApp.get(a.app)
+    if (list) list.push(a)
+    else alertsByApp.set(a.app, [a])
+  }
 
   return (
     <div
@@ -118,6 +131,14 @@ export function TimelineLanes({
                       windowEnd={windowEnd}
                       active={d.id === activeId}
                       onActive={onActive}
+                    />
+                  ))}
+                  {(alertsByApp.get(lane.app) ?? []).map((a) => (
+                    <TimelineAlertMarker
+                      key={a.id}
+                      alert={a}
+                      windowStart={windowStart}
+                      windowEnd={windowEnd}
                     />
                   ))}
                 </div>
@@ -200,5 +221,35 @@ function TimelineBarLink({
         />
       ) : null}
     </>
+  )
+}
+
+function TimelineAlertMarker({
+  alert,
+  windowStart,
+  windowEnd,
+}: {
+  alert: TimelineAlert
+  windowStart: number
+  windowEnd: number
+}) {
+  const { t } = useTranslation('deployTimeline')
+  const at = new Date(alert.at).getTime()
+  if (at < windowStart || at > windowEnd) return null
+  const left = ((at - windowStart) / (windowEnd - windowStart)) * 100
+  const label = t('chart.alertLabel', {
+    rule: alert.rule_name,
+    when: new Date(alert.at).toLocaleString(),
+  })
+  return (
+    <span
+      role="img"
+      aria-label={label}
+      title={label}
+      className="absolute bottom-0.5 -translate-x-1/2 text-tone-warning"
+      style={{ left: `${String(left)}%` }}
+    >
+      <BellRingingIcon aria-hidden="true" weight="fill" className="size-3" />
+    </span>
   )
 }
