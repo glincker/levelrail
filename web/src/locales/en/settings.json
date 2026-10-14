@@ -460,6 +460,10 @@
         "title": "Single sign-on",
         "description": "SAML identity providers, directory sync and group roles."
       },
+      "session-policy": {
+        "title": "Session policy",
+        "description": "Idle timeout, session age, allowed networks and required MFA per team."
+      },
       "organizations": {
         "title": "Organizations",
         "description": "Group related projects under an organization."

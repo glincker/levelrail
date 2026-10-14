@@ -34,6 +34,7 @@ import {
   StackIcon,
   TeaBagIcon,
   TerminalWindowIcon,
+  TimerIcon,
   UserIcon,
   UsersIcon,
   UsersThreeIcon,
@@ -111,6 +112,11 @@ export const settingsNavSections: SettingsNavSection[] = [
       },
       { id: 'oauth', to: '/settings/oauth', icon: LockKeyIcon },
       { id: 'sso', to: '/settings/sso', icon: IdentificationCardIcon },
+      {
+        id: 'session-policy',
+        to: '/settings/session-policy',
+        icon: TimerIcon,
+      },
       {
         id: 'organizations',
         to: '/settings/organizations',

@@ -132,5 +132,33 @@
     "shownOnceTitle": "Copy the token now",
     "shownOnceBody": "It is shown once and stored only as a hash. Paste it into the SCIM settings of your identity provider.",
     "done": "Done"
+  },
+  "policy": {
+    "eyebrow": "Security",
+    "title": "Session policy",
+    "description": "Per-team rules every request is checked against: idle timeout, maximum session age, allowed networks and required two-factor sign-in. People in several teams get the strictest combination.",
+    "yourAddress": "Your address: {{address}}",
+    "recoveryTitle": "Locked out?",
+    "recoveryBody": "On the host, run levelrail access-policy-reset --yes to remove every session policy, then sign in again. Saving a policy that would block your own address is refused.",
+    "noPolicy": "No policy",
+    "edit": "Edit policy",
+    "idle": "Idle timeout",
+    "idleHelp": "End sessions unused for this long, for example 30m. At least 5m. Empty turns it off.",
+    "maxAge": "Maximum session age",
+    "maxAgeHelp": "End sessions older than this, for example 12h. At least 15m. Empty turns it off.",
+    "allowlist": "Allowed networks",
+    "allowlistHelp": "One IP address or CIDR per line. Applies to sessions and API tokens. Empty allows any address.",
+    "requireMfa": "Require two-factor sign-in",
+    "requireMfaHelp": "People without an authenticator app or passkey can only enroll one until they do. SAML sign-ins count, since the identity provider handles MFA.",
+    "save": "Save policy",
+    "saved": "Session policy saved",
+    "clear": "Remove policy",
+    "cleared": "Session policy removed",
+    "sheetTitle": "Session policy for {{team}}",
+    "summaryIdle": "idle {{value}}",
+    "summaryMaxAge": "max {{value}}",
+    "summaryMfa": "MFA required",
+    "summaryAllow_one": "{{count}} network",
+    "summaryAllow_other": "{{count}} networks"
   }
 }
