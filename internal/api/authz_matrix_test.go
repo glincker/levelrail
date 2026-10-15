@@ -101,6 +101,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/iam/policies/validate":                         "validates a submitted policy document, persists nothing",
 	"POST /api/v1/iam/preview":                                   "computes a before and after of a hypothetical policy change, persists nothing",
 	"POST /api/v1/iam/policy-templates/{id}/render":              "expands template parameters into a document, persists nothing",
+	"POST /api/v1/deploy-policies/check":                         "dry run of the rules against current apps, persists nothing",
 	"POST /api/v1/apps/{name}/validate-spec":                     "validates submitted app.yaml, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/policies/preview": "explains a draft traffic policy, persists nothing",
 	"POST /api/v1/apps/{name}/domains/{domain}/doctor":           "runs read-only diagnostics against this server and public DNS, persists nothing",
