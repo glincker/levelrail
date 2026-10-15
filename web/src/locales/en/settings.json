@@ -1399,7 +1399,16 @@
     "saved": "{{provider}} credential saved.",
     "saving": "Saving...",
     "save": "Save",
-    "empty": "No cloud providers are configured on this control plane."
+    "empty": "No cloud providers are configured on this control plane.",
+    "addNodeDialog": {
+      "cloud": "Create a server at a cloud provider",
+      "own": "Use a machine you already have",
+      "connectFirst": "Connect {{provider}} to create servers there.",
+      "sshTitle": "Connect over SSH",
+      "sshHint": "A VPS, home server or Raspberry Pi. We install the agent for you.",
+      "manualTitle": "Enroll with a join token",
+      "manualHint": "Run one command on the machine yourself. Nothing inbound is opened."
+    }
   },
   "registryVendors": {
     "heading": "Connect a registry",

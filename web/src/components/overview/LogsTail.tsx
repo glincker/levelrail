@@ -6,6 +6,7 @@ import { useLogStream } from '../../hooks/useLogStream'
 import { LEVEL_DOT, levelOf } from './logLevels'
 import { stripAnsiCodes } from '../../lib/ansi'
 import { buildLiveLogStreamUrl } from '../../queries/liveLogs'
+import { LOG_EMPTY_MESSAGE } from '../../lib/logMessages'
 
 const TAIL_LINES = 6
 
@@ -19,7 +20,7 @@ function TailBody({ appName }: { appName: string }) {
       <p className="px-3 py-2 text-xs text-muted-foreground">
         {connectionState === 'error'
           ? 'Log stream unavailable.'
-          : 'Waiting for log output...'}
+          : LOG_EMPTY_MESSAGE}
       </p>
     )
   }

@@ -5,6 +5,7 @@ import { buildLiveDatabaseLogStreamUrl } from '../queries/liveDatabaseLogs'
 import type { ReconcileCondition } from '../types/deploy'
 import { LogConnectionBadge } from './LogConnectionBadge'
 import { LogTerminal } from './LogTerminal'
+import { LOG_EMPTY_MESSAGE } from '../lib/logMessages'
 
 // Live-tailing terminal view for one managed database's container
 // output: GET /api/v1/databases/{name}/logs/stream
@@ -38,7 +39,7 @@ export function LiveDatabaseLogViewer({
         <p className="text-xs text-muted-foreground">
           {lines.length > 0
             ? `${lines.length.toLocaleString()} lines (recent context, then live)`
-            : 'Waiting for log output...'}
+            : LOG_EMPTY_MESSAGE}
         </p>
         <LogConnectionBadge state={connectionState} />
       </div>

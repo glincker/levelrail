@@ -5,6 +5,7 @@ import { buildLiveLogStreamUrl } from '../queries/liveLogs'
 import type { ReconcileCondition } from '../types/deploy'
 import { LogConnectionBadge } from './LogConnectionBadge'
 import { LogTerminal } from './LogTerminal'
+import { LOG_EMPTY_MESSAGE } from '../lib/logMessages'
 
 // Live-tailing terminal view for one app's running container output:
 // GET /api/v1/apps/{name}/logs/stream (internal/api/live_logs.go), which
@@ -52,7 +53,7 @@ export function LiveLogViewer({
         <p className="text-xs text-muted-foreground">
           {lines.length > 0
             ? `${lines.length.toLocaleString()} lines (recent context, then live)`
-            : 'Waiting for log output...'}
+            : LOG_EMPTY_MESSAGE}
         </p>
         <LogConnectionBadge state={connectionState} />
       </div>

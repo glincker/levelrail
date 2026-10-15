@@ -17,6 +17,7 @@ import {
 import { LogRow, LOG_ROW_HEIGHT_PX as ROW_HEIGHT_PX } from './LogRow'
 import { LogToolbar } from './LogToolbar'
 import { Dialog, DialogContent, DialogTitle } from './ui/dialog'
+import { LOG_EMPTY_MESSAGE } from '../lib/logMessages'
 
 // How close to the bottom (px) still counts as "at the bottom" for
 // auto-scroll purposes. scrollHeight/clientHeight are subject to
@@ -46,7 +47,7 @@ export function LogTerminal({
   pause,
   resume,
   heightClassName = 'h-[65vh]',
-  emptyStateMessage = 'Waiting for log output...',
+  emptyStateMessage = LOG_EMPTY_MESSAGE,
   emptyStatePulse = true,
   isFinished = false,
 }: {

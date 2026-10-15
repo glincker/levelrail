@@ -50,6 +50,27 @@ import { Skeleton } from '@/components/ui/skeleton'
 const NO_BUILD_STEP_MESSAGE =
   'This deployment used a pre-built Docker image, so there is no build output.'
 
+// A finished deploy that produced no build lines will never produce any, so
+// say that instead of implying output is still on its way.
+const NO_OUTPUT_RECORDED_MESSAGE =
+  'No build output was recorded for this deployment.'
+
+// Sources whose deploy pulls an image as is: no build runs.
+const IMAGE_ONLY_SOURCES: ReadonlySet<string> = new Set([
+  'image',
+  'compose',
+  'promote',
+  'clone',
+  'auto_rollback',
+])
+
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
+  'succeeded',
+  'failed',
+  'superseded',
+  'canceled',
+])
+
 // The deploy detail page: a real metadata summary (DeployMetaCard) above
 // the two real pipeline stages (DeploySection, one per lib/deployStages.ts
 // entry) each collapsed to a status and a one-line summary by default,
@@ -87,7 +108,11 @@ function DeployLogsPage() {
     deployId,
     attempt?.status === 'running',
   )
-  const noBuildStep = attempt?.source === 'image'
+  const noBuildStep =
+    attempt?.source !== undefined && IMAGE_ONLY_SOURCES.has(attempt.source)
+  const attemptFinished =
+    attempt !== undefined && TERMINAL_STATUSES.has(attempt.status)
+  const noOutputWillCome = noBuildStep || attemptFinished
   const isLatestAttempt = attempts[0]?.id === deployId
   const stages = attempt
     ? computeDeployStages(attempt, conditions, isLatestAttempt)
@@ -191,9 +216,13 @@ function DeployLogsPage() {
                   resume={resume}
                   heightClassName="h-[calc(100dvh-24rem)] min-h-80"
                   emptyStateMessage={
-                    noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
+                    noBuildStep
+                      ? NO_BUILD_STEP_MESSAGE
+                      : attemptFinished
+                        ? NO_OUTPUT_RECORDED_MESSAGE
+                        : undefined
                   }
-                  emptyStatePulse={!noBuildStep}
+                  emptyStatePulse={!noOutputWillCome}
                   isFinished={attempt.status !== 'running'}
                 />
               </div>

@@ -11,6 +11,7 @@ import i18next from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import nodesEn from '../locales/en/nodes.json'
+import settingsEn from '../locales/en/settings.json'
 import { AddNodeWizard } from './AddNodeWizard'
 import type { Brand } from '../types/brand'
 import type {
@@ -27,9 +28,9 @@ import type {
 void i18next.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['nodes'],
+  ns: ['nodes', 'settings'],
   defaultNS: 'nodes',
-  resources: { en: { nodes: nodesEn } },
+  resources: { en: { nodes: nodesEn, settings: settingsEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -210,25 +211,20 @@ describe('AddNodeWizard', () => {
     navigateMock.mockReset()
   })
 
-  it('opens on the method step, disabling a provider with no stored token', () => {
+  it('opens on the method step, offering a connect action for a provider with no stored token', () => {
     render(<AddNodeWizard />)
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
 
-    expect(screen.getByText('Hetzner')).toBeVisible()
-    const digitalOceanCard = screen.getByText('DigitalOcean').closest('button')
-    expect(digitalOceanCard).toBeDisabled()
+    const hetzner = screen.getByRole('button', { name: /Hetzner/ })
+    expect(hetzner).toBeEnabled()
+    expect(within(hetzner).getByText('Connected')).toBeVisible()
+    expect(screen.queryByRole('button', { name: /DigitalOcean/ })).toBeNull()
+    expect(screen.getAllByRole('link', { name: 'Connect' })).toHaveLength(3)
     expect(
-      digitalOceanCard
-        ? within(digitalOceanCard).getByText('Connect one')
-        : null,
-    ).toBeVisible()
-    const azureCard = screen.getByText('Azure').closest('button')
-    expect(azureCard).toBeDisabled()
+      screen.getByRole('button', { name: /Enroll with a join token/ }),
+    ).toBeEnabled()
     expect(
-      azureCard ? within(azureCard).getByText('Connect one') : null,
-    ).toBeVisible()
-    expect(
-      screen.getByRole('button', { name: /I already have a server/ }),
+      screen.getByRole('button', { name: /Connect over SSH/ }),
     ).toBeEnabled()
   })
 
@@ -236,7 +232,7 @@ describe('AddNodeWizard', () => {
     render(<AddNodeWizard />)
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
     fireEvent.click(
-      screen.getByRole('button', { name: /I already have a server/ }),
+      screen.getByRole('button', { name: /Enroll with a join token/ }),
     )
 
     expect(
@@ -268,7 +264,7 @@ describe('AddNodeWizard', () => {
 
     render(<AddNodeWizard />)
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
-    fireEvent.click(screen.getByText('Hetzner'))
+    fireEvent.click(screen.getByRole('button', { name: /Hetzner/ }))
 
     // Region step.
     expect(screen.getByText('Choose a region')).toBeVisible()
@@ -313,7 +309,7 @@ describe('AddNodeWizard', () => {
     const user = userEvent.setup()
     render(<AddNodeWizard />)
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
-    fireEvent.click(screen.getByText('Hetzner'))
+    fireEvent.click(screen.getByRole('button', { name: /Hetzner/ }))
     await pickOption(
       user,
       document.querySelector('[data-slot="select-trigger"]') as Element,
@@ -333,7 +329,7 @@ describe('AddNodeWizard', () => {
 
     render(<AddNodeWizard />)
     fireEvent.click(screen.getByRole('button', { name: /Add node/ }))
-    fireEvent.click(screen.getByText('AWS'))
+    fireEvent.click(screen.getByRole('button', { name: /AWS/ }))
     await pickOption(
       user,
       document.querySelector('[data-slot="select-trigger"]') as Element,
