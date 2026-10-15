@@ -1097,7 +1097,23 @@
       "you": "You",
       "custom": "Custom",
       "editAbilities": "Edit abilities",
-      "selfEditHint": "You cannot edit your own abilities"
+      "selfEditHint": "You cannot edit your own abilities",
+      "disabled": "Disabled",
+      "mustChangePassword": "Password change required"
+    },
+    "passwordChange": {
+      "require": "Require password change",
+      "clear": "Clear password requirement",
+      "requireTitle": "Require {{email}} to change their password?",
+      "requireBody": "Their sessions end now. Every sign-in is refused until they set a new password with forgot password on the sign-in page.",
+      "clearTitle": "Clear the password requirement for {{email}}?",
+      "clearBody": "They can sign in with their current password again.",
+      "cancel": "Cancel",
+      "confirmRequire": "Require change",
+      "confirmClear": "Clear requirement",
+      "saving": "Saving...",
+      "required": "{{email}} must change their password.",
+      "cleared": "{{email}} can sign in with their current password."
     }
   },
   "cliAccessPage": {

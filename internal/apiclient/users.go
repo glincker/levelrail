@@ -19,6 +19,16 @@ type UserResource struct {
 	IsFirstUser bool       `json:"is_first_user"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
+	Disabled    bool       `json:"disabled"`
+	// MustChangePassword: sign-in is refused until a password reset completes.
+	MustChangePassword bool `json:"must_change_password"`
+}
+
+// SetPasswordChangeRequired calls PUT /api/v1/users/{id}/password-change-required.
+func (c *Client) SetPasswordChangeRequired(ctx context.Context, id string, required bool) (UserResource, error) {
+	var out UserResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/users/"+PathEscape(id)+"/password-change-required", map[string]bool{"required": required}, &out)
+	return out, err
 }
 
 // CreateUserRequest mirrors internal/api's createUserRequest. Role, when
