@@ -29,7 +29,7 @@ func TestNewClientUsesGuardedHTTP(t *testing.T) {
 
 	_, err = c.HTTP.Do(req)
 	if !errors.Is(err, netguard.ErrBlockedAddress) {
-		t.Fatalf("expected ErrBlockedAddress, got %v", err)
+		t.Fatalf("expected ErrBlockedAddress on loopback, got %v", err)
 	}
 }
 
