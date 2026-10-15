@@ -48,6 +48,10 @@ The list omits Compose bodies to stay small; `GET /api/v1/service-templates/{id}
 
 A Compose document becomes one app with one service per Compose service, each reconciled independently.
 
+### Keep a trial deployment
+
+An app started with the one-click **Deploy now** route is a trial: its pages show a banner offering **Stop & delete**. To keep it instead, choose **Keep this app** in that banner. The dialog says what changes (the app stops being flagged as throwaway and shows like any other app, with every service of the same app; nothing restarts) and lists what a permanent app should have, each with its current status and a link: a custom domain, a backup schedule for its volumes, an alert rule, and a project and environment. From the CLI, `levelrail-cli apps keep <name>`; from the API, `POST /api/v1/apps/{name}/keep` (`write` ability, audited). Keeping an app twice answers the same result; an app that never was a trial answers `409`.
+
 ## How templates are defined
 
 The built-in catalog is compiled into the control plane binary and served from memory: there is no catalog table and no admin screen. Adding or changing a built-in template means shipping a new control plane build. Each entry has an ID, name, slogan, category, documentation link, a Compose body, and two optional hints:

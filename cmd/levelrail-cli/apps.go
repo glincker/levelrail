@@ -79,6 +79,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScale(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "keep":
+		return runAppsKeep(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
 		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "delete":
@@ -237,6 +239,7 @@ func appsUsage(prog string) string {
   %[1]s apps streams create <name> --host-port N --container-port N [--protocol tcp] [flags]   forward a host port to one container port
   %[1]s apps streams delete <name> <id> [flags]                                              remove a stream
   %[1]s apps stop <name> [flags]        stop an app's running container
+  %[1]s apps keep <name> [flags]        keep a one-click trial deployment as a permanent app
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps scale <name> --replicas N [--strategy S] [flags]   change replica count and/or deploy strategy
   %[1]s apps delete <name> [flags]      remove an app and stop its containers

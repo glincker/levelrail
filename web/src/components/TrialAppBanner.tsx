@@ -1,44 +1,94 @@
 import { useState } from 'react'
-import { FlaskIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import {
+  FlaskIcon,
+  PushPinIcon,
+  TrashIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { toast } from '@/components/ui/toast'
+import { useKeepTrialApp } from '../queries/trialApp'
+import type { AppDetail } from '../types/appDetail'
 import { DeleteAppDialog } from './DeleteAppDialog'
+import { KeepTrialChecklist } from './trial/KeepTrialChecklist'
 
-// Surfaced at the top of every section of a service deployed through
-// the template catalog's one-click "Deploy now" path
-// (store.DesiredService.IsTrial, internal/api/service_templates.go's
-// handleDeployServiceTemplateNow): makes it obvious this instance is
-// throwaway, not a real deploy an operator forgot about. "Stop & delete"
-// reuses DeleteAppDialog as-is, the same full teardown (desired state,
-// containers, orphaned app row) any other app delete already performs:
-// this is not a second, lighter-weight delete path, only a more
-// prominent entry point into the existing one.
-export function TrialAppBanner({ name }: { name: string }) {
+type TrialApp = Pick<
+  AppDetail,
+  'name' | 'domains' | 'volumes' | 'project_id' | 'environment_id'
+>
+
+// Shown on every section of a one-click trial deployment
+// (store.DesiredService.IsTrial). "Stop & delete" reuses DeleteAppDialog;
+// "Keep this app" makes it permanent through POST /apps/{name}/keep.
+export function TrialAppBanner({ app }: { app: TrialApp }) {
+  const { t } = useTranslation('trialApp')
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [keepOpen, setKeepOpen] = useState(false)
+  const keep = useKeepTrialApp()
+
+  const confirmKeep = () => {
+    keep.mutate(app.name, {
+      onSuccess: (res) => {
+        setKeepOpen(false)
+        toast.add({
+          title: t(res.already_kept ? 'toast.alreadyKept' : 'toast.kept', {
+            name: app.name,
+          }),
+          type: 'success',
+        })
+      },
+    })
+  }
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-violet-200 bg-violet-50 p-3 text-violet-900 sm:flex-row sm:items-center sm:justify-between dark:border-violet-900/50 dark:bg-violet-900/20 dark:text-violet-200">
+    <div className="flex flex-col gap-2 rounded-lg border border-tone-accent-border bg-tone-accent-soft p-3 text-tone-accent sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-start gap-2">
         <FlaskIcon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         <div className="text-sm">
-          <p className="font-medium">Trial deployment</p>
-          <p className="text-violet-800/90 dark:text-violet-200/80">
-            Deployed to try the template. Stop and delete it once you&apos;re
-            done, or it keeps running like any other app.
-          </p>
+          <p className="font-medium">{t('banner.title')}</p>
+          <p className="text-foreground/80">{t('banner.body')}</p>
         </div>
       </div>
-      <Button
-        type="button"
-        size="sm"
-        variant="destructive"
-        className="shrink-0"
-        onClick={() => setDeleteOpen(true)}
+      <div className="flex shrink-0 gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            keep.reset()
+            setKeepOpen(true)
+          }}
+        >
+          <PushPinIcon className="size-3.5" aria-hidden="true" />
+          {t('banner.keep')}
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          onClick={() => setDeleteOpen(true)}
+        >
+          <TrashIcon className="size-3.5" aria-hidden="true" />
+          {t('banner.delete')}
+        </Button>
+      </div>
+      <ConfirmDialog
+        open={keepOpen}
+        onOpenChange={setKeepOpen}
+        title={t('dialog.title', { name: app.name })}
+        description={t('dialog.description')}
+        confirmLabel={t('dialog.confirm')}
+        pendingLabel={t('dialog.keeping')}
+        cancelLabel={t('dialog.cancel')}
+        pending={keep.isPending}
+        error={keep.error ? keep.error.message || t('toast.failed') : null}
+        onConfirm={confirmKeep}
       >
-        <TrashIcon className="size-3.5" aria-hidden="true" />
-        Stop & delete
-      </Button>
+        {keepOpen ? <KeepTrialChecklist app={app} /> : null}
+      </ConfirmDialog>
       <DeleteAppDialog
-        name={name}
+        name={app.name}
         control={{
           open: deleteOpen,
           onOpenChange: setDeleteOpen,

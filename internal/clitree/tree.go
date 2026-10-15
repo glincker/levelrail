@@ -44,6 +44,7 @@ var Tree = map[string]*Node{
 		"restart":                 nil,
 		"scale":                   nil,
 		"stop":                    nil,
+		"keep":                    nil,
 		"start":                   nil,
 		"delete":                  nil,
 		"status":                  nil,

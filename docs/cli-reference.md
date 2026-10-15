@@ -145,6 +145,7 @@ levelrail-cli apps wait <name> [--attempt-id ID] [--timeout 5m] [--poll-interval
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps apply <name> [flags]
 levelrail-cli apps stop <name> [flags]
+levelrail-cli apps keep <name> [flags]
 levelrail-cli apps start <name> [flags]
 levelrail-cli apps scale <name> --replicas N [--strategy rolling|recreate|blue-green] [flags]
 levelrail-cli apps group <name> [flags]
@@ -156,6 +157,7 @@ levelrail-cli apps moves list <name> [flags]
 levelrail-cli apps moves get <name> <id> [flags]
 ```
 
+- `apps keep` turns a one-click trial deployment into a permanent app: it stops being flagged as throwaway, with every service of the same app. Repeating it is harmless; an app that never was a trial answers 409.
 - `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`.
 - `apps deploy-spec` fans an app.yaml's `services:` map out into independent builds under one app; `apps group` shows a service's siblings under the same multi-service app.
 - `apps builds trigger` builds an image from a git source and deploys it to an existing app.
