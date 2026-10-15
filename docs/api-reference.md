@@ -218,6 +218,7 @@ Endpoints for:
 | DELETE | /api/v1/security/session-policies/{team_id} | AbilityRoot | handleDeleteSessionPolicy |
 | GET | /api/v1/security/session-policy/effective | Public | handleEffectiveSessionPolicy |
 | PUT | /api/v1/settings/database-catalog | AbilityRoot | handlePutDatabaseCatalogSettings |
+| PUT | /api/v1/users/{id}/password-change-required | AbilityRoot | handleSetPasswordChangeRequired |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -231,7 +232,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| PUT | /api/v1/users/{id}/password-change-required | AbilityRoot | handleSetPasswordChangeRequired |
 
 </Accordion>
 
