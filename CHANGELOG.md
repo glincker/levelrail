@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0](https://github.com/glincker/levelrail/compare/v0.3.0...v0.4.0) (2026-10-15)
+
+
+### Features
+
+* 0.8 demo mode, infra canvas, deploy timeline, webhooks, secret rotation ([#1216](https://github.com/glincker/levelrail/issues/1216)) ([63adae1](https://github.com/glincker/levelrail/commit/63adae190d8d84d7493f0df3b9ab0eaccb3aca1d))
+* default the dashboard theme to dark instead of following the OS ([#1211](https://github.com/glincker/levelrail/issues/1211)) ([cceb614](https://github.com/glincker/levelrail/commit/cceb614416b01d450db7bb9de29e109e71b6810e))
+* marketing site moves to site/ with a Pages deploy, docs links and redirects point at docs.levelrail.com ([#1213](https://github.com/glincker/levelrail/issues/1213)) ([3bf2011](https://github.com/glincker/levelrail/commit/3bf2011a355ca7cd1069651fe2ac98ac2c00b38a))
+* sleep when idle, sign-in recovery, key wrapping, deploy guardrails and a clearer Help ([#1217](https://github.com/glincker/levelrail/issues/1217)) ([125f733](https://github.com/glincker/levelrail/commit/125f733ee1e6a05d588c022d2699193e64d49502))
+
+
+### Bug Fixes
+
+* git forges dial through the SSRF guard, plus accessibility fixes and dependency bumps ([#1221](https://github.com/glincker/levelrail/issues/1221)) ([bbdfb7a](https://github.com/glincker/levelrail/commit/bbdfb7a3c560ad4bf00dd9027a106e3951231694))
+
 ## [0.3.0](https://github.com/glincker/levelrail/compare/v0.2.2...v0.3.0) (2026-10-12)
 
 
