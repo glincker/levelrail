@@ -987,7 +987,6 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleSetAppLogDrain |
 | DELETE | /api/v1/apps/{name}/log-drain | AbilityWriteSensitive | handleClearAppLogDrain |
 | GET | /api/v1/audit-log/export | AbilityRoot | handleExportAuditLog |
-| GET | /api/v1/audit-log/verify | AbilityRoot | handleVerifyAuditChain |
 
 `GET /api/v1/audit-log` accepts optional query params: `limit`, `before` (RFC3339 cursor), `path`, `method`, `client_kind` (exact match), `q` (case-insensitive substring across actor name, ability, method, path and remote address), `status=failed` (only `status_code >= 400`), and `format=csv`. All filters combine with AND and the CSV export honors them.
 
@@ -1363,13 +1362,6 @@ Routes that do not fit an existing group.
 | GET | /api/v1/scim/v2/Schemas | Public | handleSCIM |
 | GET | /api/v1/scim/v2/Schemas/{id} | Public | handleSCIM |
 | GET | /api/v1/sleep | AbilityRead | handleSleepFleet |
-| GET | /api/v1/audit-sinks | AbilityRoot | handleListAuditSinks |
-| POST | /api/v1/audit-sinks | AbilityRoot | handleCreateAuditSink |
-| PATCH | /api/v1/audit-sinks/{id} | AbilityRoot | handleUpdateAuditSink |
-| DELETE | /api/v1/audit-sinks/{id} | AbilityRoot | handleDeleteAuditSink |
-| POST | /api/v1/audit-sinks/{id}/test | AbilityRoot | handleTestAuditSink |
-| POST | /api/v1/audit-sinks/{id}/rotate-secret | AbilityRoot | handleRotateAuditSinkSecret |
-| GET | /api/v1/audit-sinks/{id}/deliveries | AbilityRoot | handleListAuditSinkDeliveries |
 | GET | /api/v1/deploy-policies | AbilityRead | handleListDeployPolicies |
 | POST | /api/v1/deploy-policies/check | AbilityRead | handleCheckDeployPolicy |
 | PUT | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleSetDeployPolicy |

@@ -552,33 +552,6 @@ Recording is best-effort and runs after the real request completes. A failed aud
 
 **Retention.** Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
 
-#### Tamper evidence
-
-Every new audit entry carries a sequence number, the hash of the previous entry and its own hash (SHA-256 over every recorded field). Editing, removing or inserting a row breaks the chain. Entries written before chaining was enabled are reported as unchained and are never rewritten. Retention removes only the oldest entries, so the oldest retained row anchors verification.
-
-`GET /api/v1/audit-log/verify`, `levelrail-cli audit-verify` and the badge on the audit log page walk the chain and report the first broken link (`entry_hash_mismatch`, `prev_hash_mismatch`, `seq_gap` or `tail_truncated`). The CLI exits non-zero when the chain is broken. A database owner who rewrites every later row can still forge a chain, so keep an off-box copy with a streaming sink.
-
-#### Streaming sinks
-
-Sinks ship each new entry, with its chain hashes, to an external system. Delivery is at least once: a durable per-sink cursor advances only after the destination acknowledges a batch, a failed batch is retried with exponential backoff, and every attempt is recorded in the sink's delivery history. A new sink streams only new entries unless you pass `backfill`.
-
-| Kind | Destination | Notes |
-| --- | --- | --- |
-| `syslog` | `host:port` over TCP or TLS | RFC 5424 lines, JSON message, newline framed |
-| `webhook` | HTTPS URL | JSON batch, signature header `t=<unix>,v1=<hmac>` over `<unix>.<body>`, batch range header for dedupe |
-| `s3` | S3-compatible bucket | One NDJSON object per batch, key `<prefix>/YYYY/MM/DD/<from>-<to>.ndjson`, overwritten on retry |
-
-Webhook signing secrets and S3 credentials are envelope-encrypted with the master key and never returned after creation (the signing secret is shown once, on create and rotate). Tune with `APP_AUDIT_STREAM_BATCH_SIZE`, `APP_AUDIT_STREAM_TICK`, `APP_AUDIT_STREAM_BACKOFF_BASE`, `APP_AUDIT_STREAM_BACKOFF_MAX`, `APP_AUDIT_STREAM_TIMEOUT` and `APP_AUDIT_STREAM_HISTORY_RETENTION`.
-
-```bash
-levelrail-cli audit-sinks create --name siem --kind webhook --url https://siem.example.com/audit
-levelrail-cli audit-sinks create --name archive --kind s3 --bucket audit --prefix levelrail \
-  --access-key-id AKIA... --secret-access-key ...
-levelrail-cli audit-sinks list
-levelrail-cli audit-sinks deliveries <id>
-levelrail-cli audit-verify
-```
-
 ## API reference
 
 <AccordionGroup>
@@ -727,12 +700,6 @@ Custom role and environment grant routes are documented in [Access control](/acc
 | `GET` | `/api/v1/audit-log?limit=&before=&path=&method=&client_kind=&format=` | `root` |
 | `GET` | `/api/v1/audit-log/export` | `root` |
 | `POST` | `/api/v1/audit-log/purge` | `root` |
-| `GET` | `/api/v1/audit-log/verify` | `root` |
-| `GET` / `POST` | `/api/v1/audit-sinks` | `root` |
-| `PATCH` / `DELETE` | `/api/v1/audit-sinks/{id}` | `root` |
-| `POST` | `/api/v1/audit-sinks/{id}/test` | `root` |
-| `POST` | `/api/v1/audit-sinks/{id}/rotate-secret` | `root` |
-| `GET` | `/api/v1/audit-sinks/{id}/deliveries` | `root` |
 
 </Accordion>
 </AccordionGroup>

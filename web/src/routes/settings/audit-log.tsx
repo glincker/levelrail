@@ -34,8 +34,6 @@ import { collectAgentNames } from '../../lib/agentNames'
 import { tokenListQueryOptions } from '../../queries/tokens'
 import { domainsQueryOptions } from '../../queries/domains'
 import { EmptyState } from '../../components/ui/empty-state'
-import { AuditChainBadge } from '../../components/auditStream/AuditChainBadge'
-import { AuditSinksPanel } from '../../components/auditStream/AuditSinksPanel'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
@@ -288,7 +286,6 @@ function AuditLogSettingsPage() {
         </>
       }
     >
-      <AuditChainBadge />
       <div className="flex flex-wrap items-center gap-2">
         <Input
           value={search}
@@ -378,8 +375,6 @@ function AuditLogSettingsPage() {
           {loadingMore ? 'Loading...' : 'Load older entries'}
         </Button>
       ) : null}
-
-      <AuditSinksPanel />
     </PageTemplate>
   )
 }

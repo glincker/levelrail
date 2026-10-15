@@ -39,11 +39,6 @@ type AuditEntry struct {
 	Action string
 	// OnBehalfOf is the human principal ("user:<id>") an AI turn token acted for.
 	OnBehalfOf string
-	// Seq, PrevHash and EntryHash are the tamper evidence chain, assigned on
-	// insert. Seq 0 means the row predates the chain and is unchained.
-	Seq       int64
-	PrevHash  string
-	EntryHash string
 }
 
 // auditTimeLayout formats a CreatedAt value with a fixed 9-digit
@@ -84,18 +79,7 @@ func NewAuditEntryID() (string, error) {
 // ID would only ever indicate a caller bug, left to fail on the primary
 // key constraint rather than silently overwriting history.
 func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("store: begin audit entry %q: %w", e.ID, err)
-	}
-	defer func() { _ = tx.Rollback() }()
-	if err := insertAuditEntry(ctx, tx, e); err != nil {
-		return err
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("store: commit audit entry %q: %w", e.ID, err)
-	}
-	return nil
+	return insertAuditEntry(ctx, db, e)
 }
 
 // SaveAuditEntryTx is SaveAuditEntry inside the caller's transaction.
@@ -111,29 +95,13 @@ const AuditActionLegacyTokenMigrated = "api_token.legacy_migrated"
 
 type auditExecer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
-// insertAuditEntry chains and inserts e. Bumping the head row first makes
-// the write lock the first statement, so concurrent writers serialize and
-// each reads the head the previous one left.
 func insertAuditEntry(ctx context.Context, x auditExecer, e AuditEntry) error {
-	if _, err := x.ExecContext(ctx, `UPDATE audit_chain_head SET seq = seq + 1 WHERE id = 1`); err != nil {
-		return fmt.Errorf("store: advance audit chain for %q: %w", e.ID, err)
-	}
-	var prevHash string
-	if err := x.QueryRowContext(ctx, `SELECT seq, hash FROM audit_chain_head WHERE id = 1`).Scan(&e.Seq, &prevHash); err != nil {
-		return fmt.Errorf("store: read audit chain head for %q: %w", e.ID, err)
-	}
-	e.PrevHash = prevHash
-	e.EntryHash = AuditEntryHash(e)
-	if _, err := x.ExecContext(ctx, `UPDATE audit_chain_head SET hash = ? WHERE id = 1`, e.EntryHash); err != nil {
-		return fmt.Errorf("store: update audit chain head for %q: %w", e.ID, err)
-	}
 	_, err := x.ExecContext(ctx, `
-		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, seq, prev_hash, entry_hash)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient, e.Action, e.OnBehalfOf, e.Seq, e.PrevHash, e.EntryHash)
+		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient, e.Action, e.OnBehalfOf)
 	if err != nil {
 		return fmt.Errorf("store: save audit entry %q: %w", e.ID, err)
 	}
@@ -181,7 +149,7 @@ var auditLikeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 // exact path and/or method match.
 func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter AuditEntryFilter) ([]AuditEntry, error) {
 	query := `
-		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, seq, prev_hash, entry_hash
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of
 		FROM audit_log
 	`
 	var (
@@ -237,7 +205,7 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	var out []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf, &e.Seq, &e.PrevHash, &e.EntryHash); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf); err != nil {
 			return nil, fmt.Errorf("store: scan audit entry row: %w", err)
 		}
 		out = append(out, e)

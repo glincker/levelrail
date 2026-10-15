@@ -193,10 +193,6 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAuditLog(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-purge":
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
-	case "audit-verify":
-		return runAuditVerify(prog, args[1:], stdout, stderr, lookupEnv)
-	case "audit-sinks":
-		return runAuditSinks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
 		return runAttention(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tui":
@@ -375,8 +371,6 @@ Usage:
   %[1]s docker-guard status|set [flags]                       the Docker API allowlist proxy: off, audit, enforce
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
   %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
-  %[1]s audit-verify [flags]                                  check the audit log hash chain, reports the first broken link
-  %[1]s audit-sinks list|create|test|deliveries|enable|disable|rotate-secret|delete   stream the audit log to syslog, a webhook or S3
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
