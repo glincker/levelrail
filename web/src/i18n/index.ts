@@ -51,6 +51,7 @@ export const NAMESPACES = [
   'resourceAdvisor',
   'help',
   'traces',
+  'edgeAccess',
   'betaFeatures',
   'newApp',
   'getStarted',

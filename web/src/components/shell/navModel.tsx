@@ -37,6 +37,7 @@ import {
   SquaresFourIcon,
   StackIcon,
   TerminalIcon,
+  ListMagnifyingGlassIcon,
   TreeStructureIcon,
   ClockCounterClockwiseIcon,
   EyeIcon,
@@ -394,6 +395,7 @@ export type AppTo =
   | '/apps/$name/metrics'
   | '/apps/$name/logs'
   | '/apps/$name/traces'
+  | '/apps/$name/requests'
   | '/apps/$name/alerts'
   | '/apps/$name/exec'
 
@@ -521,6 +523,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     items: [
       item('metrics', 'Metrics', '/apps/$name/metrics', <PulseIcon />),
       item('logs', 'Logs', '/apps/$name/logs', <ScrollIcon />),
+      item(
+        'requests',
+        'Requests',
+        '/apps/$name/requests',
+        <ListMagnifyingGlassIcon />,
+      ),
       item('traces', 'Traces', '/apps/$name/traces', <TreeStructureIcon />),
       item('alerts', 'Alerts', '/apps/$name/alerts', <BellIcon />),
     ],

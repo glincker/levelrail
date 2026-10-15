@@ -72,3 +72,24 @@ The endpoint only accepts OTLP over HTTP with protobuf or JSON. Set `OTEL_EXPORT
 ### Traces list is empty
 
 Widen the window, check the app is sending (`OTEL_EXPORTER_OTLP_ENDPOINT` is set and the container was redeployed), and check the exporter is not failing on a network name the container cannot resolve.
+
+## Edge requests and correlation ids
+
+Every request through the edge gets an `X-Request-Id` and a W3C `traceparent`
+header before it reaches your app. A value the client already sent is kept, so
+an upstream proxy or browser SDK stays in the same trace. The request id is
+also returned on the response.
+
+The control plane keeps the most recent requests per app in memory (default
+1000 per route, `APP_ACCESS_LOG_SIZE`, `0` turns it off). A restart clears
+them. Query strings and client addresses are never recorded.
+
+```sh
+levelrail-cli apps access web --slow-ms 500
+levelrail-cli apps access web --min-status 500 --path /api
+```
+
+The same list is under **Requests** in the app's Observe menu and at
+`GET /api/v1/apps/{name}/access` (`min_ms`, `min_status`, `path`, `since`,
+`limit`). Each row carries the request id and trace id, so a slow request can
+be matched to the span tree on the Traces page.

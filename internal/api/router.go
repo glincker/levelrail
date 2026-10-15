@@ -158,6 +158,7 @@ type Router struct {
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	traces                 TraceStore                          // nil is valid: trace routes answer 501
 	traceKeys              traceKeyCache
+	access                 AccessSource  // nil is valid: the access route answers 501
 	requestSummaryWindow   time.Duration // 0 keeps defaultRequestSummaryWindow
 	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
 	// duration bands (request_logging.go). Zero fields mean "use the

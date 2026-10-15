@@ -22,7 +22,7 @@ func init() {
 // RequestStatsHandler is the wire shape of the request_stats handler
 // (http.handlers.request_stats): it times the rest of the route and records
 // status class, latency bucket and byte counts under Key, the route's first
-// configured host. Paths, query strings and client addresses are never read.
+// configured host. Query strings and client addresses are never read.
 type RequestStatsHandler struct {
 	Handler string `json:"handler"`
 	Key     string `json:"key"`
@@ -46,6 +46,8 @@ func (requestStatsModule) CaddyModule() caddy.ModuleInfo {
 
 func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 	start := time.Now()
+	requestID, traceID := ensureCorrelationHeaders(r)
+	w.Header().Set(headerRequestID, requestID)
 	rec := &statusRecorder{ResponseWriterWrapper: &caddyhttp.ResponseWriterWrapper{ResponseWriter: w}}
 	err := next.ServeHTTP(rec, r)
 
@@ -69,7 +71,13 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 	if in < 0 {
 		in = 0
 	}
-	DefaultRequestStats().ObservePath(m.Key, r.URL.Path, status, time.Since(start), in, rec.bytes, upstreamErr)
+	elapsed := time.Since(start)
+	DefaultRequestStats().ObservePath(m.Key, r.URL.Path, status, elapsed, in, rec.bytes, upstreamErr)
+	DefaultAccessLog().Record(m.Key, AccessRecord{
+		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
+		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
+		RequestID: requestID, TraceID: traceID, Upstream: upstreamErr,
+	})
 	return err
 }
 

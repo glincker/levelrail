@@ -49,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sleep":
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
+	case "access":
+		return runAppsAccess(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traces":
 		return runAppsTraces(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tracing":
@@ -228,6 +230,7 @@ func appsUsage(prog string) string {
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
   %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
+  %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
   %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
   %[1]s apps tracing enable|status|disable <name> [flags]   the app's OTLP ingest key and the env to set
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it

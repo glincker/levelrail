@@ -1,0 +1,14 @@
+{
+  "title": "Requests",
+  "subtitle": "The most recent requests through the edge for this app, newest first. Kept in memory, so a restart clears them.",
+  "filters": {
+    "minMs": "Slower than (ms)",
+    "path": "Path starts with",
+    "errorsOnly": "Server errors only"
+  },
+  "list": {
+    "empty": "No matching requests yet. Send traffic to one of this app's domains and they appear here within seconds.",
+    "loadError": "Could not load requests: {{message}}",
+    "upstream": "Upstream error"
+  }
+}
