@@ -279,6 +279,21 @@ func (rt *Router) handleCheckDeployPolicy(w http.ResponseWriter, r *http.Request
 			return
 		}
 	}
+	refs := []resourceRef{}
+	if body.App != "" {
+		refs = append(refs, appRef(body.App))
+	}
+	if body.Rules != nil && body.Scope == policy.ScopeEnvironment {
+		refs = append(refs, environmentRef(body.ScopeID))
+	}
+	if len(refs) > 0 && !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "not found"), refs...) {
+		return
+	}
+	canRead, _, err := rt.callerAppVisibility(r)
+	if err != nil {
+		rt.internalError(w, "api: deploy policy: resolve caller", err)
+		return
+	}
 	svcs, err := rt.apps.ListDesiredServices(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: deploy policy: list apps", err)
@@ -298,7 +313,7 @@ func (rt *Router) handleCheckDeployPolicy(w http.ResponseWriter, r *http.Request
 	}
 	res := policyCheckResult{Apps: []policyCheckApp{}}
 	for _, svc := range svcs {
-		if body.App != "" && svc.Name != body.App {
+		if body.App != "" && svc.Name != body.App || !canRead(svc.Name) {
 			continue
 		}
 		res.Checked++
