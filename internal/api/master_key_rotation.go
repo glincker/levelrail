@@ -67,9 +67,17 @@ func (rt *Router) handleRotateMasterKey(w http.ResponseWriter, r *http.Request) 
 	}
 
 	resp := rotateMasterKeyResponse{RotatedAt: rotatedAt}
-	if rt.masterKeyFilePath == "" {
+	toPersist := newKey
+	var wrapErr error
+	if rt.masterKeyWrapper != nil {
+		toPersist, wrapErr = secrets.WrapMasterKey(r.Context(), newKey, rt.masterKeyWrapper)
+	}
+	if wrapErr != nil {
+		rt.logger.Error("api: wrap rotated master key failed", slog.String("error", wrapErr.Error()))
+		resp.Warning = "the master key was rotated successfully but could not be wrapped by the external key service, so it was not written: wrap and store the new key by hand before this control plane is next restarted, or it will fail to decrypt every stored secret on startup"
+	} else if rt.masterKeyFilePath == "" {
 		resp.Warning = "the master key is sourced from APP_MASTER_KEY: update that environment variable to the new value before this control plane is next restarted, or it will fail to decrypt every stored secret on startup"
-	} else if err := secrets.PersistMasterKeyFile(rt.masterKeyFilePath, newKey); err != nil {
+	} else if err := secrets.PersistMasterKeyFile(rt.masterKeyFilePath, toPersist); err != nil {
 		rt.logger.Error("api: persist rotated master key file failed", slog.String("error", err.Error()), slog.String("path", rt.masterKeyFilePath))
 		resp.Warning = "the master key was rotated successfully but could not be written to " + rt.masterKeyFilePath + ": update that file by hand with the new key before this control plane is next restarted, or it will fail to decrypt every stored secret on startup"
 	} else {
