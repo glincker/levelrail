@@ -10,6 +10,17 @@ import DragonflyLogo from '@thesvg/react/dragonfly'
 import CodebergLogo from '@thesvg/react/codeberg'
 import CognitoLogo from '@thesvg/react/aws-amazon-cognito'
 import ValkeyLogo from '@thesvg/react/valkey'
+import ChromeLogo from '@thesvg/react/google-chrome'
+import FirefoxLogo from '@thesvg/react/firefox'
+import SafariLogo from '@thesvg/react/safari'
+import EdgeLogo from '@thesvg/react/microsoft-edge'
+import OperaLogo from '@thesvg/react/opera'
+import BraveLogo from '@thesvg/react/brave'
+import AppleLogo from '@thesvg/react/apple'
+import WindowsLogo from '@thesvg/react/windows'
+import LinuxLogo from '@thesvg/react/linux'
+import AndroidLogo from '@thesvg/react/android'
+import CurlLogo from '@thesvg/react/curl'
 import MeilisearchLogo from '@thesvg/react/meilisearch'
 import QdrantLogo from '@thesvg/react/qdrant'
 import TypesenseLogo from '@thesvg/react/typesense'
@@ -174,6 +185,17 @@ export type BrandIconName =
   | 'nuget'
   | 'cargo'
   | 'rubygems'
+  | 'chrome'
+  | 'firefox'
+  | 'safari'
+  | 'edge'
+  | 'opera'
+  | 'brave'
+  | 'apple'
+  | 'windows'
+  | 'linux'
+  | 'android'
+  | 'curl'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -264,6 +286,17 @@ const BRAND_ICONS: Record<
   nuget: NugetLogo,
   cargo: CargoLogo,
   rubygems: RubygemsLogo,
+  chrome: ChromeLogo,
+  firefox: FirefoxLogo,
+  safari: SafariLogo,
+  edge: EdgeLogo,
+  opera: OperaLogo,
+  brave: BraveLogo,
+  apple: AppleLogo,
+  windows: WindowsLogo,
+  linux: LinuxLogo,
+  android: AndroidLogo,
+  curl: CurlLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -356,6 +389,17 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'nuget',
   'cargo',
   'rubygems',
+  'chrome',
+  'firefox',
+  'safari',
+  'edge',
+  'opera',
+  'brave',
+  'apple',
+  'windows',
+  'linux',
+  'android',
+  'curl',
 ]
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>

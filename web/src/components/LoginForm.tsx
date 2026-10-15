@@ -37,11 +37,15 @@ export function LoginForm({
   onUsernameChange,
   showUsernameField = true,
   onUseCode,
+  onApproval,
 }: {
   username: string
   onUsernameChange: (value: string) => void
   showUsernameField?: boolean
   onUseCode?: () => void
+  // When set, the parent owns the approval screen so nothing else of the
+  // sign-in step renders beside it.
+  onApproval?: (approval: ApprovalRequiredResponse) => void
 }) {
   const login = useLogin()
   const [mfaToken, setMfaToken] = useState<string | null>(null)
@@ -98,7 +102,11 @@ export function LoginForm({
           if ('mfa_required' in result && result.mfa_required) {
             setMfaToken(result.mfa_token)
           } else if (isApprovalRequired(result)) {
-            setApproval(result)
+            if (onApproval) {
+              onApproval(result)
+            } else {
+              setApproval(result)
+            }
           }
         },
         onError: (error) => {

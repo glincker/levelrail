@@ -79,6 +79,8 @@ export interface SessionEntry {
   last_seen_at: string
   expires_at: string
   current: boolean
+  // Used recently enough to approve a new browser.
+  can_approve: boolean
 }
 
 export interface SessionToken {

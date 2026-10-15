@@ -31,6 +31,7 @@ const (
 	envDeviceApprovalTTL             = "APP_AUTH_DEVICE_APPROVAL_TTL"
 	envTrustedDeviceTTL              = "APP_AUTH_TRUSTED_DEVICE_TTL"
 	envNewDeviceApproval             = "APP_AUTH_NEW_DEVICE_APPROVAL"
+	envApproverSessionFreshness      = "APP_AUTH_APPROVER_SESSION_FRESH_FOR"
 	envLoginCodeMaxLive              = "APP_LOGIN_CODE_MAX_LIVE"
 	envLoginCodeEmailRate            = "APP_LOGIN_CODE_EMAILS_PER_ACCOUNT_PER_HOUR"
 	envDeviceApprovalRate            = "APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR"
@@ -47,6 +48,7 @@ const (
 	defaultLoginCodeRedeem           = 10
 	defaultLoginCodeMinResp          = 300 * time.Millisecond
 	defaultDeviceApprovalTTL         = 10 * time.Minute
+	defaultApproverFreshness         = 30 * time.Minute
 	defaultTrustedDeviceTTL          = 90 * 24 * time.Hour
 
 	loginCodeLength    = 8
@@ -114,15 +116,18 @@ type codeLoginState struct {
 	maxLive     int
 	minResponse time.Duration
 	approvalTTL time.Duration
-	trustTTL    time.Duration
-	byIP        *apiRateLimiter
-	byAccount   *apiRateLimiter
-	byOwner     *apiRateLimiter
-	global      *apiRateLimiter
-	redeemByIP  *apiRateLimiter
-	emailByUser *apiRateLimiter
-	approvals   *apiRateLimiter
-	pepper      []byte
+	// approverFreshness is how recently another session must have been used to
+	// count as someone who can approve a new browser.
+	approverFreshness time.Duration
+	trustTTL          time.Duration
+	byIP              *apiRateLimiter
+	byAccount         *apiRateLimiter
+	byOwner           *apiRateLimiter
+	global            *apiRateLimiter
+	redeemByIP        *apiRateLimiter
+	emailByUser       *apiRateLimiter
+	approvals         *apiRateLimiter
+	pepper            []byte
 
 	mu    sync.Mutex
 	plain map[string]pendingPlainCode
@@ -131,20 +136,21 @@ type codeLoginState struct {
 func newCodeLoginState() *codeLoginState {
 	accountRate := envInt(envLoginCodeAccountRate, defaultLoginCodeAcctRate)
 	return &codeLoginState{
-		ttl:         envDuration(envLoginCodeTTL, defaultLoginCodeTTL),
-		maxAttempts: envInt(envLoginCodeMaxAttempts, defaultLoginCodeAttempts),
-		maxLive:     envInt(envLoginCodeMaxLive, defaultLoginCodeMaxLive),
-		minResponse: envDuration(envLoginCodeMinResponse, defaultLoginCodeMinResp),
-		approvalTTL: envDuration(envDeviceApprovalTTL, defaultDeviceApprovalTTL),
-		trustTTL:    envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL),
-		byIP:        newAPIRateLimiter(envInt(envLoginCodeIPRate, defaultLoginCodeIPRate)),
-		byAccount:   newAPIRateLimiter(accountRate),
-		byOwner:     newAPIRateLimiter(accountRate),
-		global:      newAPIRateLimiter(envInt(envLoginCodeGlobalRate, defaultLoginCodeGlobal)),
-		redeemByIP:  newAPIRateLimiter(envInt(envLoginCodeRedeemRate, defaultLoginCodeRedeem)),
-		emailByUser: newWindowRateLimiter(envInt(envLoginCodeEmailRate, defaultLoginCodeEmails), time.Hour),
-		approvals:   newWindowRateLimiter(envInt(envDeviceApprovalRate, defaultApprovalRate), time.Hour),
-		plain:       make(map[string]pendingPlainCode),
+		ttl:               envDuration(envLoginCodeTTL, defaultLoginCodeTTL),
+		maxAttempts:       envInt(envLoginCodeMaxAttempts, defaultLoginCodeAttempts),
+		maxLive:           envInt(envLoginCodeMaxLive, defaultLoginCodeMaxLive),
+		minResponse:       envDuration(envLoginCodeMinResponse, defaultLoginCodeMinResp),
+		approvalTTL:       envDuration(envDeviceApprovalTTL, defaultDeviceApprovalTTL),
+		approverFreshness: envDuration(envApproverSessionFreshness, defaultApproverFreshness),
+		trustTTL:          envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL),
+		byIP:              newAPIRateLimiter(envInt(envLoginCodeIPRate, defaultLoginCodeIPRate)),
+		byAccount:         newAPIRateLimiter(accountRate),
+		byOwner:           newAPIRateLimiter(accountRate),
+		global:            newAPIRateLimiter(envInt(envLoginCodeGlobalRate, defaultLoginCodeGlobal)),
+		redeemByIP:        newAPIRateLimiter(envInt(envLoginCodeRedeemRate, defaultLoginCodeRedeem)),
+		emailByUser:       newWindowRateLimiter(envInt(envLoginCodeEmailRate, defaultLoginCodeEmails), time.Hour),
+		approvals:         newWindowRateLimiter(envInt(envDeviceApprovalRate, defaultApprovalRate), time.Hour),
+		plain:             make(map[string]pendingPlainCode),
 	}
 }
 

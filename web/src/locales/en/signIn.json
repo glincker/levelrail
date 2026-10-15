@@ -30,7 +30,10 @@
     "alternative": "No other device at hand? Sign in with a code sent to your email instead.",
     "back": "Back to sign in",
     "matchAria": "Match number {{number}}",
-    "countdown": "Expires in {{time}}"
+    "countdown": "Expires in {{time}}",
+    "hostTitle": "No other signed-in device? Approve from the server",
+    "hostHint": "Run this on the machine that runs the control plane, as the user that owns its data directory. No email or other session is needed.",
+    "alternativeNoEmail": "This server has no email set up. A code is shown only in a dashboard where you are already signed in; otherwise approve from the server above."
   },
   "twoFactor": {
     "codeLabel": "Authenticator code",

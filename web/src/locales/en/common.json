@@ -485,5 +485,26 @@
       "consequence1": "Any app still calling the evaluate endpoint for it starts getting a 404.",
       "consequence2": "This cannot be undone."
     }
+  },
+  "lockedOut": {
+    "link": "Locked out?",
+    "title": "Get back in from the server",
+    "description": "These run on the machine that hosts the control plane, as a user that can read its data directory. Nothing here needs email or another signed-in browser.",
+    "copy": "Copy command",
+    "footer": "If the data directory is not the default, set APP_DATA_DIR in front of the command.",
+    "routes": {
+      "password": {
+        "title": "Reset the admin password",
+        "body": "Prints a new password once, signs that account out everywhere and clears the lockout."
+      },
+      "token": {
+        "title": "Get a short lived root token",
+        "body": "For fixing settings from the CLI when the dashboard cannot be used. It expires on its own."
+      },
+      "approve": {
+        "title": "Approve a waiting sign-in",
+        "body": "Use the request id and the number shown on the new browser's approval screen."
+      }
+    }
   }
 }

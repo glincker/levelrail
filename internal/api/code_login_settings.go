@@ -23,6 +23,9 @@ type codeLoginSettingsRequest struct {
 type loginOptionsResponse struct {
 	CodeLogin         bool `json:"code_login"`
 	TrustedDeviceDays int  `json:"trusted_device_days"`
+	// EmailConfigured is whether this server can send email at all, so the
+	// sign-in page can say so instead of promising a code that cannot arrive.
+	EmailConfigured bool `json:"email_configured"`
 }
 
 // handleGetCodeLoginSettings handles GET /api/v1/settings/auth/code-login,
@@ -77,7 +80,7 @@ func (rt *Router) handleLoginOptions(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: login options failed", err)
 		return
 	}
-	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others}
+	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others, EmailConfigured: rt.emailSender != nil}
 	if rt.newDeviceApproval {
 		out.TrustedDeviceDays = max(1, int(rt.codeLogin.trustTTL.Hours()/24))
 	}

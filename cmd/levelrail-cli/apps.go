@@ -222,7 +222,8 @@ func appsUsage(prog string) string {
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
-  %[1]s apps sleep enable|disable|status|wake <name> [flags]   stop an idle app and wake it on the next request
+  %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
+  %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
