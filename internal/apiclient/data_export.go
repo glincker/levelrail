@@ -16,6 +16,7 @@ type ExportOptions struct {
 	Region          string            `json:"region,omitempty"`
 	Site            string            `json:"site,omitempty"`
 	Dataset         string            `json:"dataset,omitempty"`
+	Username        string            `json:"username,omitempty"`
 }
 
 // ExportStatus is a destination's delivery state.

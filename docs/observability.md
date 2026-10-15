@@ -819,6 +819,7 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 | `GET` | `/api/v1/apps/{name}/investigate?from=...&to=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/failure-context` | `read` |
 | `POST` | `/api/v1/prometheus/read` (Prometheus remote read) | `read` |
+| `GET` | `/api/v1/loki/query_range` (Loki-compatible log read, see [Loki API](loki-api)) | `read` |
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1150 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1155 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -92,6 +92,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetApp", Description: "Resource-scoped (iam.go): a policy can Deny or narrowly Allow write/delete on one specific app by name, e.g. a token whose flat abilities grant write everywhere except an app: prod-web Deny policy attached to it. Every other per-app and per-database mutating route in this file and routes_platform.go is now on the same requireAbilityForResource gate; only POST /apps (creation, no existing resource to scope to) and GET .../terminal (websocket upgrade, not touched in this pass) remain on plain requireAbility."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateApp", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppAccess", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/alert-history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppAlertHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/apply-pending", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyPending", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/auto-rollback", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAutoRollback", Description: ""},
@@ -189,6 +190,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/loadbalancer/import", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleImportLoadBalancer", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/loadbalancer/status", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleLoadBalancerStatus", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/loadbalancer/upstreams/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLoadBalancerUpstream", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLogPipeline", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLogPipeline", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLogPipeline", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/log-pipeline/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewLogPipeline", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/move", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartMove", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/move-with-volumes", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleMoveAppWithVolumes", Description: "move-with-volumes: the same AbilityRoot tier as the plain node move above, since this both changes placement and does an in-place, full-overwrite restore of every named volume onto the destination node (the same risk class POST .../volumes/{volume}/restore already sits behind). The two GETs are AbilityRead, matching every other history listing in this file."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/moves", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppVolumeMoves", Description: ""},

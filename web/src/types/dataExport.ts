@@ -13,6 +13,7 @@ export type DataExportKind =
   | 'audit_webhook'
   | 'audit_s3'
   | 'metrics_otlp'
+  | 'metrics_remote_write'
 
 export interface DataExportOptions {
   storage_target_id?: string
@@ -23,6 +24,7 @@ export interface DataExportOptions {
   region?: string
   site?: string
   dataset?: string
+  username?: string
 }
 
 export interface DataExportStatus {

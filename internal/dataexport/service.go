@@ -158,6 +158,10 @@ func isLogKind(k store.ExportKind) bool {
 	return k == store.ExportKindLogsHTTP || k == store.ExportKindLogsSyslog || k == store.ExportKindLogsLoki || k == store.ExportKindLogsOTLP || IsVendorLogKind(k)
 }
 
+func isMetricsKind(k store.ExportKind) bool {
+	return k == store.ExportKindMetricsOTLP || k == store.ExportKindMetricsRemoteWrite
+}
+
 func isAuditKind(k store.ExportKind) bool {
 	return k == store.ExportKindAuditWebhook || k == store.ExportKindAuditS3
 }
@@ -167,7 +171,7 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 		return invalid("name is required and at most 64 characters")
 	}
 	switch in.Kind {
-	case store.ExportKindLogsHTTP, store.ExportKindLogsLoki, store.ExportKindLogsOTLP, store.ExportKindAuditWebhook, store.ExportKindMetricsOTLP:
+	case store.ExportKindLogsHTTP, store.ExportKindLogsLoki, store.ExportKindLogsOTLP, store.ExportKindAuditWebhook, store.ExportKindMetricsOTLP, store.ExportKindMetricsRemoteWrite:
 		if err := ValidateHTTPEndpoint(ctx, in.Endpoint); err != nil {
 			return invalid("%v", err)
 		}
@@ -199,8 +203,8 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 	if !isLogKind(in.Kind) && in.MinLevel != "" {
 		return invalid("min_level applies to log destinations only")
 	}
-	if !isLogKind(in.Kind) && in.Kind != store.ExportKindMetricsOTLP && len(in.Apps) > 0 {
-		return invalid("apps applies to log and metrics_otlp destinations only")
+	if !isLogKind(in.Kind) && !isMetricsKind(in.Kind) && len(in.Apps) > 0 {
+		return invalid("apps applies to log and metrics destinations only")
 	}
 	if !ValidLevel(in.MinLevel) {
 		return invalid("min_level must be one of debug, info, warn, error")
@@ -228,6 +232,14 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 		}
 		if len(v) > 2048 || strings.ContainsAny(v, "\r\n") {
 			return invalid("header %q has an invalid value", k)
+		}
+	}
+	if in.Options.Username != "" {
+		if in.Kind != store.ExportKindMetricsRemoteWrite {
+			return invalid("username applies to metrics_remote_write only")
+		}
+		if err := validateRemoteWriteAuth(in.Options.Username); err != nil {
+			return invalid("%v", err)
 		}
 	}
 	if in.HMACKey != "" {
@@ -298,6 +310,9 @@ func (s *Service) Create(ctx context.Context, in Input) (store.ExportDestination
 	in.Name = strings.TrimSpace(in.Name)
 	if IsVendorLogKind(in.Kind) && in.APIKey != "" {
 		in.Headers = mergeHeaders(in.Headers, vendorKeyHeaders(in.Kind, in.APIKey))
+	}
+	if in.Kind == store.ExportKindMetricsRemoteWrite && in.APIKey != "" {
+		in.Headers = mergeHeaders(in.Headers, remoteWriteAuthHeaders(in.Options.Username, in.APIKey))
 	}
 	if err := s.validate(ctx, in); err != nil {
 		return store.ExportDestination{}, err
@@ -374,6 +389,10 @@ func (s *Service) Update(ctx context.Context, id string, p Patch) (store.ExportD
 				d.Endpoint = ep
 			}
 		}
+	}
+	if d.Kind == store.ExportKindMetricsRemoteWrite && p.APIKey != nil && *p.APIKey != "" {
+		blob.Headers = mergeHeaders(blob.Headers, remoteWriteAuthHeaders(d.Options.Username, *p.APIKey))
+		p.Headers = &blob.Headers
 	}
 	if p.HMACKey != nil {
 		blob.HMACKey = *p.HMACKey

@@ -107,7 +107,9 @@ type sender struct {
 	logs    func(context.Context, []LogRecord) error
 	audit   auditSender
 	metrics func(context.Context, []byte) error
-	close   func()
+	// encodeMetrics defaults to OTLP JSON when nil.
+	encodeMetrics func([]Series, time.Time) ([]byte, error)
+	close         func()
 }
 
 func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender, error) {
@@ -150,6 +152,16 @@ func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender,
 		return sender{metrics: func(ctx context.Context, body []byte) error {
 			return postBody(ctx, s.client, url, "application/json", blob.Headers, body, "otlp metrics")
 		}}, nil
+	case store.ExportKindMetricsRemoteWrite:
+		url := RemoteWriteURL(d.Endpoint)
+		return sender{
+			metrics: func(ctx context.Context, body []byte) error {
+				return postRemoteWrite(ctx, s.client, url, blob.Headers, body)
+			},
+			encodeMetrics: func(series []Series, now time.Time) ([]byte, error) {
+				return EncodeRemoteWrite(series, now), nil
+			},
+		}, nil
 	}
 	return sender{}, fmt.Errorf("unknown destination kind %q", d.Kind)
 }
@@ -182,7 +194,7 @@ func (s *Service) startWorker(parent context.Context, d store.ExportDestination)
 	case snd.audit != nil:
 		spawn(func() { s.runAudit(ctx, d, snd.audit, dv) })
 	case snd.metrics != nil:
-		spawn(func() { s.runMetricsPush(ctx, d, snd.metrics, dv) })
+		spawn(func() { s.runMetricsPush(ctx, d, snd.metrics, snd.encodeMetrics, dv) })
 	}
 	spawn(func() { s.persistLoop(ctx, d.ID, dv) })
 	go func() {
@@ -311,7 +323,11 @@ func (s *Service) runAudit(ctx context.Context, d store.ExportDestination, snd a
 	}
 }
 
-func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination, post func(context.Context, []byte) error, dv *deliverer) {
+func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination, post func(context.Context, []byte) error, encode func([]Series, time.Time) ([]byte, error), dv *deliverer) {
+	if encode == nil {
+		name := s.prefix[:len(s.prefix)-1]
+		encode = func(series []Series, now time.Time) ([]byte, error) { return EncodeOTLP(series, name, now) }
+	}
 	interval := s.d.Config.MetricsInterval
 	if d.Options.IntervalSeconds > 0 {
 		interval = time.Duration(d.Options.IntervalSeconds) * time.Second
@@ -342,7 +358,7 @@ func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination,
 		if len(series) == 0 {
 			continue
 		}
-		body, err := EncodeOTLP(series, s.prefix[:len(s.prefix)-1], s.d.Now())
+		body, err := encode(series, s.d.Now())
 		if err != nil {
 			continue
 		}
@@ -450,7 +466,13 @@ func (s *Service) Test(ctx context.Context, id string) error {
 		if len(series) == 0 {
 			series = []Series{{Name: s.prefix + "export_test", Help: "Export destination test.", Value: 1, Time: now}}
 		}
-		body, err := EncodeOTLP(series, s.prefix[:len(s.prefix)-1], now)
+		var body []byte
+		var err error
+		if snd.encodeMetrics != nil {
+			body, err = snd.encodeMetrics(series, now)
+		} else {
+			body, err = EncodeOTLP(series, s.prefix[:len(s.prefix)-1], now)
+		}
 		if err != nil {
 			return err
 		}

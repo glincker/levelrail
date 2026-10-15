@@ -434,6 +434,11 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/tracing | AbilityWriteSensitive | handleDisableTracing |
 | GET | /api/v1/apps/{name}/traces | AbilityRead | handleListTraces |
 | GET | /api/v1/apps/{name}/traces/{id} | AbilityRead | handleGetTrace |
+| GET | /api/v1/apps/{name}/log-pipeline | AbilityRead | handleGetLogPipeline |
+| PUT | /api/v1/apps/{name}/log-pipeline | AbilityWriteSensitive | handleSetLogPipeline |
+| DELETE | /api/v1/apps/{name}/log-pipeline | AbilityWriteSensitive | handleDeleteLogPipeline |
+| POST | /api/v1/apps/{name}/log-pipeline/preview | AbilityRead | handlePreviewLogPipeline |
+| GET | /api/v1/apps/{name}/access | AbilityRead | handleAppAccess |
 
 </Accordion>
 

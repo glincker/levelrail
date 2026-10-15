@@ -41,6 +41,7 @@ const KIND_KEYS = {
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
   metrics_otlp: 'kinds.metrics_otlp',
+  metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
 
 function Stat({ label, value }: { label: string; value: string }) {

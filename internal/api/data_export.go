@@ -59,6 +59,7 @@ type exportOptionsResource struct {
 	Region          string            `json:"region,omitempty"`
 	Site            string            `json:"site,omitempty"`
 	Dataset         string            `json:"dataset,omitempty"`
+	Username        string            `json:"username,omitempty"`
 }
 
 // exportDestinationResource never carries header values or the signing
@@ -82,11 +83,11 @@ type exportDestinationResource struct {
 }
 
 func toExportOptions(o store.ExportOptions) exportOptionsResource {
-	return exportOptionsResource{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset}
+	return exportOptionsResource{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset, Username: o.Username}
 }
 
 func (o exportOptionsResource) toStore() store.ExportOptions {
-	return store.ExportOptions{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset}
+	return store.ExportOptions{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset, Username: o.Username}
 }
 
 func toExportDestinationResource(d store.ExportDestination, st store.ExportStatus) exportDestinationResource {
@@ -100,7 +101,7 @@ func toExportDestinationResource(d store.ExportDestination, st store.ExportStatu
 	return exportDestinationResource{
 		ID: d.ID, Name: d.Name, Kind: d.Kind, Endpoint: d.Endpoint, Enabled: d.Enabled, Apps: apps, MinLevel: d.MinLevel,
 		Options: toExportOptions(d.Options), HeaderNames: names, HasHMACKey: d.Options.HasHMACKey,
-		HasAPIKey: dataexport.IsVendorLogKind(d.Kind) && len(names) > 0,
+		HasAPIKey: (dataexport.IsVendorLogKind(d.Kind) || d.Kind == store.ExportKindMetricsRemoteWrite) && len(names) > 0,
 		Status: exportStatusResource{
 			LastSuccessAt: st.LastSuccessAt, LastError: st.LastError, LastErrorAt: st.LastErrorAt, SentTotal: st.SentTotal,
 			DroppedTotal: st.DroppedTotal, FailuresTotal: st.FailuresTotal, QueueDepth: st.QueueDepth,

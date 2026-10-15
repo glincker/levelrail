@@ -11,6 +11,7 @@ Metrics, logs and the audit log stay on the control plane and its nodes by defau
 | --- | --- | --- |
 | Metrics | Prometheus scrape | You pull `GET /metrics` |
 | Metrics | `metrics_otlp` | Pushed as OTLP/HTTP JSON on an interval |
+| Metrics | `metrics_remote_write` | Pushed as Prometheus remote write on an interval |
 | Logs | `logs_loki` | Loki push API, batched |
 | Logs | `logs_otlp` | OTLP/HTTP JSON logs, batched |
 | Logs | `logs_http` | JSON lines (NDJSON) over HTTP POST, batched |
@@ -156,6 +157,18 @@ levelrail-cli export destinations create --name otel --kind metrics_otlp \
 ```
 
 A `metrics_otlp` destination also accepts `--app` (repeatable) to export only those apps' container series. Platform series are always included.
+
+### Prometheus remote write
+
+A `metrics_remote_write` destination pushes the same series as the scrape endpoint using Prometheus remote write 1.0 (snappy compressed protobuf), so Grafana Cloud, Mimir, VictoriaMetrics and Prometheus started with `--web.enable-remote-write-receiver` can ingest it. The endpoint is used as given, because the path differs per receiver (for example `/api/v1/write`, `/api/v1/push`, `/api/prom/push`). Series names and labels match the scrape endpoint, and the interval works like `metrics_otlp`.
+
+Pass `--username` with `--api-key-env` for basic auth (Grafana Cloud uses the instance id and an access policy token). Without a username the key is sent as a bearer token. `--header` can set any other auth header. Secrets are stored encrypted and never returned. `--app` limits the container series to those apps.
+
+```sh
+GRAFANA_TOKEN=glc_xxx levelrail-cli export destinations create --name grafana --kind metrics_remote_write \
+  --endpoint https://prometheus-prod-01.grafana.net/api/prom/push \
+  --username 123456 --api-key-env GRAFANA_TOKEN
+```
 
 ### Platform self metrics
 

@@ -46,6 +46,7 @@ const KINDS: DataExportKind[] = [
   'audit_webhook',
   'audit_s3',
   'metrics_otlp',
+  'metrics_remote_write',
 ]
 
 const KIND_KEYS = {
@@ -60,6 +61,7 @@ const KIND_KEYS = {
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
   metrics_otlp: 'kinds.metrics_otlp',
+  metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
 
 const LEVELS = ['any', 'debug', 'info', 'warn', 'error'] as const
@@ -78,7 +80,8 @@ const isVendorKind = (k: DataExportKind) =>
   k === 'logs_datadog' ||
   k === 'logs_axiom' ||
   k === 'logs_betterstack'
-const hasAppFilter = (k: DataExportKind) => isLogKind(k) || k === 'metrics_otlp'
+const isMetricsKind = (k: DataExportKind) => k.startsWith('metrics_')
+const hasAppFilter = (k: DataExportKind) => isLogKind(k) || isMetricsKind(k)
 
 function parseHeaders(raw: string): Record<string, string> {
   const out: Record<string, string> = {}
@@ -112,6 +115,7 @@ export function CreateDataExportDestinationDialog() {
   const [region, setRegion] = useState('us')
   const [site, setSite] = useState('')
   const [dataset, setDataset] = useState('')
+  const [username, setUsername] = useState('')
 
   function reset() {
     setName('')
@@ -125,6 +129,7 @@ export function CreateDataExportDestinationDialog() {
     setInterval('')
     setBackfill(false)
     setApiKey('')
+    setUsername('')
     setRegion('us')
     setSite('')
     setDataset('')
@@ -141,7 +146,11 @@ export function CreateDataExportDestinationDialog() {
     if (kind !== 'audit_s3' && endpoint.trim() !== '') {
       req.endpoint = endpoint.trim()
     }
-    if (isVendorKind(kind)) req.api_key = apiKey.trim()
+    if (
+      isVendorKind(kind) ||
+      (kind === 'metrics_remote_write' && apiKey.trim())
+    )
+      req.api_key = apiKey.trim()
     if (hasAppFilter(kind)) {
       const list = apps
         .split(',')
@@ -161,7 +170,10 @@ export function CreateDataExportDestinationDialog() {
       options.storage_target_id = target
       if (prefix.trim()) options.prefix = prefix.trim()
     }
-    if (kind === 'metrics_otlp' && interval) {
+    if (kind === 'metrics_remote_write' && username.trim()) {
+      options.username = username.trim()
+    }
+    if (isMetricsKind(kind) && interval) {
       options.interval_seconds = Number(interval)
     }
     if ((kind === 'audit_s3' || kind === 'audit_webhook') && backfill) {
@@ -198,6 +210,7 @@ export function CreateDataExportDestinationDialog() {
     audit_webhook: t('form.endpointHttp'),
     audit_s3: '',
     metrics_otlp: t('form.endpointOtlp'),
+    metrics_remote_write: t('form.endpointRemoteWrite'),
   }[kind]
 
   const targets = storage.data ?? []
@@ -418,7 +431,42 @@ export function CreateDataExportDestinationDialog() {
             </Field>
           ) : null}
 
-          {kind === 'metrics_otlp' ? (
+          {kind === 'metrics_remote_write' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="export-rw-user">
+                  {t('form.username')}
+                </FieldLabel>
+                <Input
+                  id="export-rw-user"
+                  autoComplete="off"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                  }}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="export-rw-key">
+                  {t('form.remoteWriteKey')}
+                </FieldLabel>
+                <Input
+                  id="export-rw-key"
+                  type="password"
+                  autoComplete="off"
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value)
+                  }}
+                />
+                <FieldDescription>
+                  {t('form.remoteWriteKeyHint')}
+                </FieldDescription>
+              </Field>
+            </>
+          ) : null}
+
+          {isMetricsKind(kind) ? (
             <Field>
               <FieldLabel htmlFor="export-interval">
                 {t('form.interval')}

@@ -55,7 +55,7 @@ func exportDestinationsUsage(prog string) string {
   %[1]s export audit [--from T] [--to T] [--format ndjson|csv] [flags]   download the audit log
 
 Kinds: logs_http, logs_loki, logs_otlp, logs_syslog, logs_newrelic, logs_datadog, logs_axiom,
-logs_betterstack, audit_webhook, audit_s3, metrics_otlp.
+logs_betterstack, audit_webhook, audit_s3, metrics_otlp, metrics_remote_write.
 Run "%[1]s export destinations create -h" for the create flags.
 `, prog)
 }
@@ -92,7 +92,7 @@ func printExportTable(out io.Writer, dests []apiclient.ExportDestinationResource
 
 func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var name, kind, endpoint, minLevel, target, prefix, hmacKey string
-	var apiKeyEnv, region, site, dataset string
+	var apiKeyEnv, region, site, dataset, username string
 	var interval int
 	var backfill, disabled bool
 	var apps csvListFlag
@@ -104,20 +104,21 @@ func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, l
 Flags:
   --name string          destination name (required)
   --kind string          logs_http, logs_loki, logs_otlp, logs_syslog, logs_newrelic, logs_datadog, logs_axiom,
-                         logs_betterstack, audit_webhook, audit_s3 or metrics_otlp (required)
+                         logs_betterstack, audit_webhook, audit_s3, metrics_otlp or metrics_remote_write (required)
   --endpoint string      http(s) URL, or tcp://host:port or tls://host:port for syslog; optional for vendor kinds
-  --api-key-env NAME     environment variable holding a vendor key (logs_newrelic, logs_datadog, logs_axiom, logs_betterstack)
+  --api-key-env NAME     environment variable holding a vendor key, or the remote write password or token
+  --username string      basic auth user for metrics_remote_write (with --api-key-env; without it the key is sent as a bearer token)
   --region us|eu         New Relic and Axiom region
   --site HOST            Datadog site, for example datadoghq.eu
   --dataset NAME         Axiom dataset
-  --app string           only these apps (comma separated or repeated), log kinds and metrics_otlp
+  --app string           only these apps (comma separated or repeated), log and metrics kinds
   --min-level string     debug, info, warn or error, log kinds only
   --header KEY=VALUE     request header sent with every delivery, stored encrypted (repeatable)
   --hmac-key string      signing key for audit_webhook, at least 16 characters, stored encrypted
   --storage-target ID    storage destination id for audit_s3
   --prefix string        object key prefix for audit_s3 (default audit-log)
   --label KEY=VALUE      static Loki label or OTLP resource attribute (repeatable)
-  --interval int         metrics_otlp push interval in seconds (10 to 3600)
+  --interval int         metrics push interval in seconds (10 to 3600)
   --backfill             audit kinds: start from the oldest audit row instead of now
   --disabled             create the destination paused
 %[2]s`, prog, commonFlagsHelp)
@@ -136,6 +137,7 @@ Flags:
 		fs.StringVar(&region, "region", "", "vendor region, us or eu")
 		fs.StringVar(&site, "site", "", "Datadog site")
 		fs.StringVar(&dataset, "dataset", "", "Axiom dataset")
+		fs.StringVar(&username, "username", "", "remote write basic auth user")
 		fs.IntVar(&interval, "interval", 0, "metrics push interval in seconds")
 		fs.BoolVar(&backfill, "backfill", false, "start audit export from the oldest row")
 		fs.BoolVar(&disabled, "disabled", false, "create paused")
@@ -149,7 +151,7 @@ Flags:
 	enabled := !disabled
 	req := apiclient.CreateExportDestinationRequest{
 		Name: name, Kind: kind, Endpoint: endpoint, Enabled: &enabled, Apps: apps, MinLevel: minLevel, HMACKey: hmacKey,
-		Options: apiclient.ExportOptions{StorageTargetID: target, Prefix: prefix, IntervalSeconds: interval, Backfill: backfill, Region: region, Site: site, Dataset: dataset},
+		Options: apiclient.ExportOptions{StorageTargetID: target, Prefix: prefix, IntervalSeconds: interval, Backfill: backfill, Region: region, Site: site, Dataset: dataset, Username: username},
 	}
 	if apiKeyEnv != "" {
 		v, found := lookupEnv(apiKeyEnv)

@@ -220,6 +220,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// does for every JSON route, this isn't a special case.
 	mux.HandleFunc("POST /api/v1/prometheus/read", rt.requireAbility(AbilityRead, rt.handlePrometheusRead))
 
+	// Loki-compatible read API over the node-local log store (loki.go),
+	// same AbilityRead gate; Basic auth password is accepted as the token.
+	rt.registerLokiRoutes(mux)
+
 	// Projects (projects.go): a lightweight, non-auth organizational
 	// grouping, explicitly not the deferred Phase 4 teams/RBAC work (see
 	// that file's own package doc comment). AbilityRead/AbilityWrite,

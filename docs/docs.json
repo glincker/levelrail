@@ -194,6 +194,7 @@
               "network-shares",
               "log-explorer",
               "tracing",
+              "loki-api",
               "log-pipelines",
               "data-export",
               "control-plane-backup",
