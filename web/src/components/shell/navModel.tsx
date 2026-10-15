@@ -43,6 +43,7 @@ import {
   EyeIcon,
   TrafficSignalIcon,
   WrenchIcon,
+  FunnelIcon,
   LightbulbIcon,
   CoinsIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -394,6 +395,7 @@ export type AppTo =
   | '/apps/$name/integrations'
   | '/apps/$name/metrics'
   | '/apps/$name/logs'
+  | '/apps/$name/log-pipeline'
   | '/apps/$name/traces'
   | '/apps/$name/requests'
   | '/apps/$name/alerts'
@@ -523,6 +525,12 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     items: [
       item('metrics', 'Metrics', '/apps/$name/metrics', <PulseIcon />),
       item('logs', 'Logs', '/apps/$name/logs', <ScrollIcon />),
+      item(
+        'log-pipeline',
+        'Pipeline',
+        '/apps/$name/log-pipeline',
+        <FunnelIcon />,
+      ),
       item(
         'requests',
         'Requests',

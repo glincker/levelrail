@@ -34,6 +34,7 @@ var Tree = map[string]*Node{
 		"sleep":                   {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "wake": nil, "now": nil, "list": nil}},
 		"access":                  nil,
 		"traces":                  {Subs: map[string]*Node{"list": nil, "get": nil}},
+		"log-pipeline":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "preview": nil}},
 		"tracing":                 {Subs: map[string]*Node{"enable": nil, "status": nil, "disable": nil}},
 		"canary":                  {Subs: map[string]*Node{"start": nil, "status": nil, "weight": nil, "promote": nil, "abort": nil}},
 		"auto-update":             {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "check": nil, "webhook": nil}},

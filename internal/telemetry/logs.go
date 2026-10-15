@@ -320,6 +320,8 @@ type LogCollector struct {
 
 	cursorMu sync.Mutex
 	cursors  map[string]time.Time
+
+	pipelines pipelineCache
 }
 
 // resumePoint is where a (re)subscription to containerID's log stream must
@@ -401,15 +403,43 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 		batch = batch[:0]
 	}
 
+	var pending *LogEntry
+	var pendingSince time.Time
+	// emit runs the app's pipeline, then publishes and batches the record.
+	emit := func(entry LogEntry) {
+		p := lc.pipelines.get(ctx, lc.store, target.ResourceID)
+		msg, fields, keep := p.apply(entry.Message)
+		if !keep {
+			return
+		}
+		entry.Message = msg
+		entry.Structured, entry.FieldsJSON = classifyLine(msg)
+		if fields != nil && !entry.Structured {
+			if raw, err := json.Marshal(fields); err == nil {
+				entry.Structured, entry.FieldsJSON = true, string(raw)
+			}
+		}
+		if lc.broadcaster != nil {
+			lc.broadcaster.Publish(entry)
+		}
+		batch = append(batch, entry)
+		if len(batch) >= logBatchMaxLines {
+			flush(ctx)
+		}
+	}
+	flushPending := func() {
+		if pending != nil {
+			emit(*pending)
+			pending = nil
+		}
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
-			// ctx is already cancelled here, so the shutdown flush uses a
-			// short-lived detached context instead of ctx itself:
-			// WriteLogBatch's BeginTx/ExecContext calls would otherwise
-			// fail immediately against an already-Done context, silently
-			// dropping whatever was buffered right when a clean shutdown
-			// is exactly when it matters most not to lose it.
+			// Detached context: ctx is already cancelled, and a clean
+			// shutdown is exactly when buffered lines must not be lost.
+			flushPending()
 			flushCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			flush(flushCtx)
 			cancel()
@@ -425,28 +455,31 @@ func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
 			}
 		case line, ok := <-lines:
 			if !ok {
+				flushPending()
 				flush(ctx)
 				return nil // the stream ended on its own, e.g. the container stopped
 			}
 			entry := toLogEntry(target.ResourceID, target.ContainerID, line)
 			lc.advanceCursor(target.ContainerID, entry.Timestamp)
-			// Published before it's ever added to the batch below: a
-			// live subscriber must see this line the instant it arrives,
-			// not delayed behind logBatchMaxLines/logBatchMaxWait, which
-			// exist purely to bound SQLite write frequency and have
-			// nothing to do with how fresh a live view needs to be. This
-			// is the exact same "published immediately, synchronously,
-			// never buffered or batched" choice internal/deploylog.
-			// Recorder.Progress makes for build output, applied here to
-			// container logs.
-			if lc.broadcaster != nil {
-				lc.broadcaster.Publish(entry)
+			p := lc.pipelines.get(ctx, lc.store, target.ResourceID)
+			if p == nil || p.multiline == nil {
+				flushPending()
+				emit(entry)
+				continue
 			}
-			batch = append(batch, entry)
-			if len(batch) >= logBatchMaxLines {
-				flush(ctx)
+			switch {
+			case pending == nil:
+				pending, pendingSince = &entry, time.Now()
+			case p.multiline.MatchString(entry.Message):
+				flushPending()
+				pending, pendingSince = &entry, time.Now()
+			case len(pending.Message) < maxMultilineBytes:
+				pending.Message += "\n" + entry.Message
 			}
 		case <-ticker.C:
+			if pending != nil && time.Since(pendingSince) >= logBatchMaxWait {
+				flushPending()
+			}
 			flush(ctx)
 		}
 	}

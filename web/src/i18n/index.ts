@@ -17,6 +17,7 @@ export const NAMESPACES = [
   'https',
   'nodes',
   'access',
+  'logPipeline',
   'environments',
   'migration',
   'domains',

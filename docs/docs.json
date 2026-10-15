@@ -194,6 +194,7 @@
               "network-shares",
               "log-explorer",
               "tracing",
+              "log-pipelines",
               "data-export",
               "control-plane-backup",
               "disaster-recovery",

@@ -2441,6 +2441,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithTraceStore(telemetryDB),
+		api.WithLogPipelineStore(telemetryDB),
 		api.WithAccessSource(api.EdgeAccess{Stats: ingressdriver.DefaultRequestStats(), Log: ingressdriver.DefaultAccessLog()}),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),

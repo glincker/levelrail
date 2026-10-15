@@ -157,6 +157,7 @@ type Router struct {
 	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	traces                 TraceStore                          // nil is valid: trace routes answer 501
+	logPipelines           LogPipelineStore                    // nil is valid: log pipeline routes answer 501
 	traceKeys              traceKeyCache
 	access                 AccessSource  // nil is valid: the access route answers 501
 	requestSummaryWindow   time.Duration // 0 keeps defaultRequestSummaryWindow

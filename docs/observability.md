@@ -1034,6 +1034,8 @@ Still stuck: See [Alert rules](/observability#alert-rules) for flap configuratio
 
 ## See also
 
+To transform logs before storage or export, see [Log pipelines](/log-pipelines) for rules that redact secrets, drop noise, parse JSON fields and handle multiline records.
+
 <CardGroup cols={2}>
   <Card title="Public status page" href="/status-page">
     Opt-in read-only page with component status, uptime bars and incidents.
