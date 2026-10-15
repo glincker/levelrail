@@ -156,7 +156,16 @@
     "badgeAsleep": "Asleep",
     "fleetTitle": "Sleeping apps",
     "fleetSummary": "{{sleeping}} of {{enabled}} apps asleep",
-    "fleetReclaimed": "About {{size}} of memory not in use",
-    "fleetEmpty": "No app sleeps when idle yet. Turn it on from an app's Deploys tab to free its memory while nobody visits."
+    "fleetEmpty": "No app sleeps when idle yet. Turn it on from an app's Deploys tab to free its memory while nobody visits.",
+    "blocked": {
+      "pinned_port": "This app has a pinned host port. Traffic on that port would not wake it, so it cannot sleep."
+    },
+    "sleepNow": "Sleep now",
+    "sleepNowHelp": "Stop the app now instead of waiting for the idle time. The next request starts it.",
+    "fleetEmptyShort": "Nothing sleeps yet",
+    "fleetReclaimedLabel": "memory not in use",
+    "fleetBrowseApps": "Choose apps",
+    "fleetAllAwake": "Every app with sleep on is awake right now.",
+    "fleetMore": "and {{count}} more asleep"
   }
 }

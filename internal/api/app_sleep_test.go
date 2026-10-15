@@ -26,7 +26,7 @@ func TestAppSleepSettingAndWake(t *testing.T) {
 	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
 	rt.wakeToken = "tok"
 	ctx := context.Background()
-	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80}); err != nil {
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80, Domains: []string{"web.example.com"}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -207,5 +207,53 @@ func TestWakeHookHoldTimesOutWithoutReady(t *testing.T) {
 
 	if rec := wakeHook(rt, "fn", "/run"); rec.Code != http.StatusNoContent {
 		t.Fatalf("never ready = %d, want 204 (the waking-up page), not a redirect loop", rec.Code)
+	}
+}
+
+func TestAppSleepRefusesPinnedHostPort(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	ctx := context.Background()
+	port := 8080
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80, HostPort: &port}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := sleepPut(t, rt.handleSetAppSleep, `{"idle_minutes":30}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("enable with a pinned host port = %d, want 400", rec.Code)
+	}
+	if a, _ := db.GetAppSleep(ctx, "web"); a.IdleMinutes != 0 {
+		t.Error("a refused request still stored a sleep setting")
+	}
+}
+
+func TestAppSleepNow(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80, Domains: []string{"web.example.com"}}); err != nil {
+		t.Fatal(err)
+	}
+	now := func() int {
+		req := httptest.NewRequest(http.MethodPost, "/api/v1/apps/web/sleep/now", nil)
+		req.SetPathValue("name", "web")
+		rec := httptest.NewRecorder()
+		rt.handleSleepAppNow(rec, req)
+		return rec.Code
+	}
+	if got := now(); got != http.StatusConflict {
+		t.Fatalf("sleep now with sleeping off = %d, want 409", got)
+	}
+	if rec := sleepPut(t, rt.handleSetAppSleep, `{"idle_minutes":30}`); rec.Code != http.StatusOK {
+		t.Fatalf("enable = %d", rec.Code)
+	}
+	if got := now(); got != http.StatusOK {
+		t.Fatalf("sleep now = %d, want 200", got)
+	}
+	if svc, _ := db.GetDesiredService(ctx, "web"); !svc.Suspended {
+		t.Error("app still running after sleep now")
+	}
+	if a, _ := db.GetAppSleep(ctx, "web"); !a.Sleeping {
+		t.Error("sleeping flag not set")
+	}
+	if got := now(); got != http.StatusConflict {
+		t.Errorf("second sleep now = %d, want 409", got)
 	}
 }

@@ -66,3 +66,10 @@ func (c *Client) ListSleepFleet(ctx context.Context) (SleepFleet, error) {
 	err := c.do(ctx, http.MethodGet, "/api/v1/sleep", nil, &out)
 	return out, err
 }
+
+// SleepAppNow calls POST /api/v1/apps/{name}/sleep/now.
+func (c *Client) SleepAppNow(ctx context.Context, appName string) (AppSleepResource, error) {
+	var out AppSleepResource
+	err := c.do(ctx, http.MethodPost, sleepPath(appName)+"/now", nil, &out)
+	return out, err
+}

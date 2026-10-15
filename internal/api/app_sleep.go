@@ -42,6 +42,8 @@ type appSleepResource struct {
 	Sleeping    bool `json:"sleeping"`
 	// HoldRequests is function mode: a request that wakes the app waits for it.
 	HoldRequests bool `json:"hold_requests"`
+	// BlockedReason is why the app cannot sleep (appsleep.Blocked*), empty when it can.
+	BlockedReason string `json:"blocked_reason,omitempty"`
 }
 
 type appSleepRequest struct {
@@ -60,7 +62,11 @@ func (rt *Router) handleGetAppSleep(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get app sleep", err, slog.String("name", name))
 		return
 	}
-	writeJSON(w, http.StatusOK, toAppSleepResource(a))
+	res := toAppSleepResource(a)
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		res.BlockedReason = appsleep.Blocker(svc)
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 // handleSetAppSleep enables sleeping after idle_minutes without requests, or
@@ -76,12 +82,20 @@ func (rt *Router) handleSetAppSleep(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "idle_minutes must be 0 (off) or between 5 and 10080")
 		return
 	}
-	if _, err := rt.apps.GetDesiredService(r.Context(), name); errors.Is(err, store.ErrServiceNotFound) {
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: set app sleep: load app", err, slog.String("name", name))
 		return
+	}
+	if req.IdleMinutes > 0 {
+		switch appsleep.Blocker(svc) {
+		case appsleep.BlockedPinnedPort:
+			writeError(w, http.StatusBadRequest, "an app with a pinned host port cannot sleep: traffic on that port would not wake it")
+			return
+		}
 	}
 	if req.IdleMinutes == 0 {
 		if _, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now()); err != nil {
@@ -207,4 +221,41 @@ func wakeRedirectURL(r *http.Request) string {
 		scheme = "http"
 	}
 	return scheme + "://" + r.Host + uri
+}
+
+// handleSleepAppNow puts an app with sleep-when-idle on to sleep without
+// waiting for the idle time.
+func (rt *Router) handleSleepAppNow(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: sleep app now: load app", err, slog.String("name", name))
+		return
+	}
+	a, err := rt.appSleep.GetAppSleep(r.Context(), name)
+	if err != nil {
+		rt.internalError(w, "api: sleep app now: load setting", err, slog.String("name", name))
+		return
+	}
+	if a.IdleMinutes == 0 {
+		writeError(w, http.StatusConflict, "turn on sleep when idle for this app first")
+		return
+	}
+	if reason := appsleep.Blocker(svc); reason != "" {
+		writeError(w, http.StatusBadRequest, "this app cannot sleep: "+reason)
+		return
+	}
+	if svc.Suspended {
+		writeError(w, http.StatusConflict, "the app is already stopped")
+		return
+	}
+	if err := appsleep.Sleep(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now()); err != nil {
+		rt.internalError(w, "api: sleep app now", err, slog.String("name", name))
+		return
+	}
+	a, _ = rt.appSleep.GetAppSleep(r.Context(), name)
+	writeJSON(w, http.StatusOK, toAppSleepResource(a))
 }

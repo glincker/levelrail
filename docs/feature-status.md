@@ -37,6 +37,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Templates | beta | 311 catalog entries. Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
 | Supply chain | stable | Live e2e proves the gate blocks and an override works through the real API (`test/e2e/supply_chain_test.go`). SBOM and scan stay off by default (`docs/supply-chain.md`). |
+| Sleep when idle | stable | Unit tests across scheduler, API, CLI and web, and a documented live run against a real Docker daemon and the real ingress (`scripts/verify-sleep-live.sh`, 10 checks: idle stop, wake on request, hold mode, manual wake, fleet counts). Per app and off by default (`docs/sleep-when-idle.md`). |
 | Status page | stable | Live e2e enables, authors and serves it publicly (`test/e2e/status_page_test.go`). Off until enabled. |
 | Multi-node and WireGuard | beta | Join flow verified locally across two real Docker daemons (enrollment, cordon, drain with real container relocation); the WireGuard mesh itself and cross-host remote transport are still unverified. |
 | AI assistant (MCP server) | beta | 156 tools in full mode (146 in the default standard mode, 118 read-only), 31 test files in `internal/mcptools`, no e2e. |
@@ -192,6 +193,15 @@ Kinds, from `internal/alerting/rules.go:87-104`: generic, slack, discord, telegr
 - Docs: `docs/supply-chain.md` (94 lines). SBOM and scan are off by default.
 - Real infra: none found.
 - Label: stable, and off by default.
+
+### Sleep when idle
+
+- Unit: `internal/appsleep/appsleep_test.go` (idle, busy, fresh, hand-stopped, hand-started and pinned-port apps), `internal/api/app_sleep_test.go` and `app_sleep_fleet_test.go` (settings, wake hook token, sleep now, pinned-port refusal, fleet counts), `cmd/levelrail-cli/apps_sleep_test.go`, `web/src/components/AppSleepCard.test.tsx`.
+- Live: `scripts/verify-sleep-live.sh` builds the control plane, runs it against a real Docker daemon with the embedded ingress, and asserts container state with `docker ps` at every step: request through the ingress, sleep now stops the container, the first request returns the waking page and starts it, hold mode answers with one redirect then 200, wake now restarts it, turning sleep off clears the fleet view. Run on macOS with Docker Desktop (2026-10-14).
+- Docs: `docs/sleep-when-idle.md`, including the limits below.
+- Real infra: none found. Not run on a Linux VPS or against a real public domain.
+- Known limits, all documented: activity is seen only through the built-in ingress (TCP streams, pinned host ports and app-to-app traffic do not count, and an app with a pinned host port is refused); background jobs do not count; the first visitor waits for the cold start.
+- Label: stable.
 
 ### Status page
 

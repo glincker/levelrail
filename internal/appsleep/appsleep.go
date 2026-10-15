@@ -16,6 +16,18 @@ import (
 // DefaultInterval is how often idle apps are looked for.
 const DefaultInterval = time.Minute
 
+// BlockedPinnedPort marks an app whose pinned host port bypasses the ingress,
+// so nothing could wake it and its activity could not be seen.
+const BlockedPinnedPort = "pinned_port"
+
+// Blocker returns why svc must not sleep, or "" when it can.
+func Blocker(svc *store.DesiredService) string {
+	if svc.HostPort != nil && *svc.HostPort != 0 {
+		return BlockedPinnedPort
+	}
+	return ""
+}
+
 // SleepStore is the sleep settings table.
 type SleepStore interface {
 	ListAppSleep(ctx context.Context) ([]store.AppSleep, error)
@@ -88,6 +100,10 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		if svc.Suspended {
 			continue
 		}
+		if reason := Blocker(svc); reason != "" {
+			s.Logger.Debug("appsleep: app cannot sleep", slog.String("app", a.ServiceName), slog.String("reason", reason))
+			continue
+		}
 		idleSince := a.Since
 		if t := lastRequest["service:"+a.ServiceName]; t.After(idleSince) {
 			idleSince = t
@@ -103,17 +119,27 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 }
 
 func (s *Scheduler) sleep(ctx context.Context, name string, now time.Time) error {
-	if err := s.Sleep.SetAppSleeping(ctx, name, true, now); err != nil {
+	if err := Sleep(ctx, s.Sleep, s.Apps, s.Nudger, name, now); err != nil {
 		return err
 	}
-	if err := s.Apps.UpdateServiceSuspended(ctx, name, true); err != nil {
-		_ = s.Sleep.SetAppSleeping(ctx, name, false, now)
+	s.Logger.Info("appsleep: app idle, stopped", slog.String("app", name))
+	return nil
+}
+
+// Sleep stops name now and marks it asleep, rolling the flag back if the stop fails.
+func Sleep(ctx context.Context, sleep interface {
+	SetAppSleeping(ctx context.Context, serviceName string, sleeping bool, now time.Time) error
+}, apps Apps, nudger Nudger, name string, now time.Time) error {
+	if err := sleep.SetAppSleeping(ctx, name, true, now); err != nil {
+		return err
+	}
+	if err := apps.UpdateServiceSuspended(ctx, name, true); err != nil {
+		_ = sleep.SetAppSleeping(ctx, name, false, now)
 		return fmt.Errorf("stop idle app: %w", err)
 	}
-	if s.Nudger != nil {
-		s.Nudger.Nudge()
+	if nudger != nil {
+		nudger.Nudge()
 	}
-	s.Logger.Info("appsleep: app idle, stopped", slog.String("app", name))
 	return nil
 }
 

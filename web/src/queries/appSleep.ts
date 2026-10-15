@@ -15,6 +15,8 @@ export interface AppSleep {
   idle_minutes: number
   sleeping: boolean
   hold_requests: boolean
+  // Why the app cannot sleep.
+  blocked_reason?: 'pinned_port'
 }
 
 export const appSleepKeys = {
@@ -76,5 +78,9 @@ export function useAppSleepActions(appName: string) {
     mutationFn: () => request(appName, 'POST', '/wake'),
     onSuccess,
   })
-  return { setIdle, wake }
+  const sleepNow = useMutation<AppSleep, ApiError, void>({
+    mutationFn: () => request(appName, 'POST', '/now'),
+    onSuccess,
+  })
+  return { setIdle, wake, sleepNow }
 }
