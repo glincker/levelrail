@@ -62,3 +62,33 @@ If the app does not become ready within 30 seconds, the caller gets the
 Run on a real control plane with Docker and embedded Caddy: with the function
 asleep, a GET and a POST with a body (query string kept) both returned 200 in
 about 0.7 seconds through `curl -L`, with the POST body arriving intact.
+
+## Troubleshooting
+
+### First request hangs for a long time, then times out
+
+**Likely cause:** The function image is large or the container startup is slow. The 30 second wake timeout was exceeded.
+
+**How to confirm:** Make a request to a sleeping function with a tool that shows timing, such as `curl -w "@curl-format.txt" -o /dev/null -s <function-url>`.
+
+**Fix:** Keep function images small and startup fast. If the function genuinely needs more than 30 seconds to start, it is not a good candidate for sleeping mode. Disable sleep and keep it running, or optimize the startup.
+
+### Caller receives 503 instead of the response
+
+**Likely cause:** The client did not follow the 307 redirect that wakes the function. Or the function did not become ready within the hold timeout.
+
+**How to confirm:** Check the HTTP response code and headers. If it is 503 "Waking up", the client did not follow the redirect or waking timed out.
+
+**Fix:** Use a client that follows redirects (curl -L, fetch, requests, etc.). If the function is slow to start, increase its readiness timeout. If waking consistently times out (30s), consider keeping the function running instead.
+
+### Function crashes or becomes unhealthy after waking
+
+**Likely cause:** The function image has a startup or initialization issue, or the readiness probe is flaky.
+
+**How to confirm:** Check the function's logs immediately after a failed wake: `levelrail-cli apps logs <function-name> -f`.
+
+**Fix:** Fix the startup issue in the image or fix the readiness probe configuration. Test the image locally to ensure it starts and becomes ready quickly and reliably.
+
+### Still stuck
+
+For help troubleshooting functions, check the logs and metrics as described above, or refer to [Sleep when idle](sleep-when-idle.md) since functions use the same sleep and hold mechanism.

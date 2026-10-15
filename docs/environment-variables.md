@@ -203,3 +203,33 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 - **Scheduler intervals are not range checked.** `APP_BACKUP_SCHEDULER_INTERVAL`, `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL`, `APP_UPDATE_CHECK_INTERVAL` and `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` use any value that parses as a Go duration, including zero or a negative one. Only an unparseable value falls back to the default. Use a positive duration.
 - **Ingress variables fail closed.** Unlike most settings on this page, an invalid `APP_INGRESS_*` hardening value is returned as an error at startup rather than ignored.
+
+## Troubleshooting
+
+### Variable change did not take effect
+
+**Likely cause:** The process was not restarted after the variable was set.
+
+**How to confirm:** Check the current setting in the dashboard or via the CLI. Run `systemctl status levelrail` to confirm the service is running.
+
+**Fix:** Restart the service or process: `sudo systemctl restart levelrail` on the control plane, or `docker restart <container-name>` if running in Docker.
+
+### Invalid value for a duration variable
+
+**Likely cause:** The duration syntax is incorrect. Go duration syntax requires a unit: `30s`, `5m`, `1h30m`.
+
+**How to confirm:** Check the control plane logs for a startup error mentioning the variable: `journalctl -u levelrail` or `docker logs <container-name>`.
+
+**Fix:** Use valid Go duration syntax with units (s, m, h). For example, `APP_BACKUP_SCHEDULER_INTERVAL=30m` instead of `APP_BACKUP_SCHEDULER_INTERVAL=30`.
+
+### Ingress variable causes startup failure
+
+**Likely cause:** An invalid `APP_INGRESS_*` variable was set. Ingress variables fail closed and refuse to start if the value is invalid.
+
+**How to confirm:** Check the control plane logs. The error will mention which ingress variable is invalid.
+
+**Fix:** Review the variable value and correct the syntax. Restart the service once the variable is fixed.
+
+### Still stuck
+
+For help with specific variables, refer to the table for that variable's scope (Control plane, Agent, or CLI) and component. Variables are only read at startup, so restart the relevant service after making changes.

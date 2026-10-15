@@ -114,3 +114,41 @@ When required variables have no value and no terminal is attached, `--deploy` fa
 
 </Tab>
 </Tabs>
+
+## Troubleshooting
+
+### Plan shows the wrong build method or is missing settings
+
+**Likely cause:** The detection algorithm looked at the wrong files, or the repository structure does not match a known provider pattern.
+
+**How to confirm:** Check the plan's "detected as" reason. Look at the files listed in the plan and verify they match what you expected.
+
+**Fix:** If the detection is wrong, you can override the build method before deploying. For a git repo, switch to the dashboard or CLI and use `--build-type dockerfile`, `--build-type railpack`, or `--build-type static` to override the auto-detected method.
+
+### Repository could not be read
+
+**Likely cause:** The repository is private and the control plane has no credentials for it. Or the repository URL is invalid, or the host is unreachable.
+
+**How to confirm:** The plan will fail with a message about the repository being unreachable or private.
+
+**Fix:** For private repositories, connect the git provider in Settings > Git integrations first, then paste the repository URL again. The control plane will read the repo through the authenticated provider. For public repositories, verify the URL and git host are correct and reachable.
+
+### Missing or invalid required environment variables
+
+**Likely cause:** A required setting was not filled in, or the value is invalid.
+
+**How to confirm:** The plan shows which variables are required (marked with an indicator) and which have no value.
+
+**Fix:** Fill in all required variables before deploying. Secret variables will be stored encrypted. Non-secret values are stored as config.
+
+### Docker run command is not parsed correctly
+
+**Likely cause:** The command has unsupported flags, or the syntax is incorrect.
+
+**How to confirm:** The plan shows warnings for unsupported flags and lists which ones were ignored.
+
+**Fix:** Remove unsupported flags from the command (they are listed in the plan). You can add them manually after the app is created in the dashboard or via the API.
+
+### Still stuck
+
+For help with imports, check what was detected and why in the plan preview. If the detection is consistently wrong, you can also start from a known build type (git, image, or compose) instead of importing.

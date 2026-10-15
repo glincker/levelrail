@@ -234,6 +234,50 @@ Only the service account JSON key is supported. See the GCP tab above.
 </Accordion>
 </AccordionGroup>
 
+## Troubleshooting
+
+### Provision fails with "creating" status stuck
+
+The cloud provider API call succeeded but the server has not started yet.
+
+Likely cause: the provider is slow to launch the server, or there is a quota or billing issue preventing VM creation.
+
+How to confirm: go to the provider's console (Hetzner, DigitalOcean, AWS, etc.) and check whether a server with the expected name exists. Check `levelrail-cli nodes provisions show <provision-id>` to see the exact status and any error messages.
+
+Fix: wait a few more minutes and re-check. If the server never appears in the provider console, the API call failed even though the response looked successful; delete the provision in Levelrail and check your provider account for quota limits, billing issues, or API token permissions.
+
+### Provision fails with "enrolling" status stuck
+
+The server was created and cloud-init started, but the agent never connected.
+
+Likely cause: Docker is taking a long time to install, cloud-init failed to start the agent, or the agent cannot reach the control plane.
+
+How to confirm: access the server's console or SSH into it (if the provider gives you access) and check `/var/log/cloud-init-output.log` for errors. Also check the agent logs with `docker ps | grep levelrail` and `docker logs` if the container is running.
+
+Fix: if cloud-init failed, the log will name the error (permission denied, network failure, etc.). If Docker installation timed out, wait longer and re-check. If the agent started but could not connect, check that APP_AGENT_ADVERTISE_HOST is set correctly on the control plane (should be the control plane's public hostname or IP, not 127.0.0.1). The provision will timeout after `APP_NODE_PROVISION_TIMEOUT` (default 20 minutes) and report failed with the last known status.
+
+### The provider credential was rejected
+
+The control plane cannot authenticate with the cloud provider.
+
+Likely cause: the credential (API token, access key, or service account key) is invalid, expired, or has insufficient permissions.
+
+How to confirm: go to Settings > Cloud node providers and re-enter the credential to see if a validation error appears. Try to create a provision and check the error message.
+
+Fix: verify the credential matches what [Provider credentials](/node-provisioning#provider-credentials) requires. For API tokens, confirm they have not expired. For IAM access keys, check that they have Compute permissions. Regenerate a new credential at the provider if the old one is invalid, and update it in Levelrail.
+
+### Provision succeeds but the node stays "pending"
+
+The server was created and the agent started, but the control plane did not receive a heartbeat.
+
+Likely cause: APP_AGENT_ADVERTISE_HOST is wrong, or the new node cannot reach the control plane.
+
+How to confirm: SSH into the provisioned node (via the provider's console) and check the agent logs with `docker logs levelrail-agent` or `journalctl -u levelrail-agent`. Look for TLS or connection errors.
+
+Fix: see the [Multi-node troubleshooting](/multi-node#troubleshooting) section under "A node stays in pending status". The root cause is usually APP_AGENT_ADVERTISE_HOST. Set it to the control plane's public hostname or IP (the one the nodes can reach from outside), restart the control plane, and reenroll the node with a new join token.
+
+Still stuck? Check your provider's VM console for cloud-init logs, or run `levelrail-cli nodes provisions show <provision-id>` and attach the output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## What was not tested
 
 This feature was built without real cloud accounts. The provider clients in `internal/provision` are tested against fake HTTP servers for Hetzner, DigitalOcean, Azure and GCP, and against a hand-written fake of the narrow EC2 interface for AWS. Azure and GCP were never run against a real subscription or project, so their full resource chains are unverified end to end. AWS default-VPC lookup, image resolution, security group handling, and the STS and ambient-credential paths are only as correct as their fakes.

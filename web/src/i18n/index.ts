@@ -49,6 +49,7 @@ export const NAMESPACES = [
   'network',
   'envEditor',
   'resourceAdvisor',
+  'help',
   'betaFeatures',
   'newApp',
   'getStarted',

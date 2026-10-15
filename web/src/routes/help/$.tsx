@@ -3,6 +3,7 @@ import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageSpinner } from '@/components/ui/page-spinner'
 import { DocsRenderer } from '../../components/DocsRenderer'
 import { DocsPageToolbar } from '../../components/DocsPageToolbar'
+import { OfflineDocsNotice } from '../../components/OfflineDocsNotice'
 import { loadDocContent } from '../../lib/docsContent'
 import { loadDocsManifest } from '../../lib/docsManifestLoader'
 import { useBrand } from '../../hooks/useBrand'
@@ -46,10 +47,12 @@ function HelpDocPage() {
 
   return (
     <>
+      <OfflineDocsNotice routePath={routePath} />
       <DocsPageToolbar
         markdown={content}
         file={page.file}
         routePath={routePath}
+        pageTitle={page.title}
       />
       <DocsRenderer
         markdown={content}

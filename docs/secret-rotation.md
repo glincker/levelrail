@@ -65,3 +65,65 @@ levelrail-cli apps secrets rotation remove web JWT_SECRET
 - Database role passwords keep their own [rotation path](database-access.md). A policy does not rotate them, because nothing would receive the new password.
 - Generated values are random hex strings. A secret that must follow a specific format should not be auto-rotated.
 - Apps that read `<KEY>_PREVIOUS` get a grace window. Apps that do not simply move to the new value at the restart.
+
+## Troubleshooting
+
+### Rotation status shows "overdue" but was never set to rotate
+
+Likely cause: The rotation policy is set to a very short interval (for example, 1 day), and the last rotation was more than that interval ago.
+
+How to confirm: Check the policy details: `levelrail-cli apps secrets rotation list <app>` shows the interval and next due date. Compare the next due date to today.
+
+Fix: Rotate the secret manually: `levelrail-cli apps secrets rotation rotate <app> <key> --yes`. Then adjust the interval if needed: `levelrail-cli apps secrets rotation set <app> <key> --interval-days 30`.
+
+Still stuck: Check when the secret was last written: `levelrail-cli audit-log --resource <app> | grep <key> | tail -5`.
+
+### Rotation fails with "restart_failed"
+
+Likely cause: The app failed to come up healthy after the new secret was applied.
+
+How to confirm: Check the app status: `levelrail-cli apps status <app>` shows the current state. Check recent logs: `levelrail-cli apps logs <app> --since 5m` for errors related to the secret.
+
+Fix: The new secret value has already been applied. Verify the secret is correct in your app configuration, then retry the restart: `levelrail-cli apps secrets rotation rotate <app> <key> --yes`. Or manually inspect and correct the issue, then restart the app: `levelrail-cli apps restart <app>`.
+
+Still stuck: Check if the app is expecting a specific secret format or has the secret hardcoded somewhere (which would break after rotation).
+
+### Grace window value (`<KEY>_PREVIOUS`) not available in the app
+
+Likely cause: The grace window is set to 0 (disabled), or the restart happened before the app could read the previous value.
+
+How to confirm: Check the policy: `levelrail-cli apps secrets rotation list <app>` shows the grace window duration. If it is 0, the previous value is not kept. Check how long the grace window is: after a rotation, `<KEY>_PREVIOUS` should be available for that many hours.
+
+Fix: To enable the grace window, set it: `levelrail-cli apps secrets rotation set <app> <key> --grace-hours 24`. For the next rotation, the previous value will be available. To use the previous value now, you must manually set it back (since rotation has already happened).
+
+Still stuck: See [What a rotation does](/secret-rotation#what-a-rotation-does) for the grace window behavior.
+
+### Auto-rotate generated a value in wrong format
+
+Likely cause: The auto-generated random hex string does not match the format the third-party service expects.
+
+How to confirm: Check what the app is expecting (check the docs or the service provider). Auto-generated values are 64 random hex characters. If the service expects something different (for example, a URL-safe base64 string or a specific format), auto-rotate will not work.
+
+Fix: Turn off auto-rotate for this secret: first remove the current policy (`levelrail-cli apps secrets rotation remove <app> <key>`), then recreate it without `--auto`: `levelrail-cli apps secrets rotation set <app> <key> --interval-days 30`. Manual rotation allows you to generate the value in the correct format from the third-party service and provide it.
+
+Still stuck: See [Limits](/secret-rotation#limits) for details on auto-generated value format.
+
+### Secret is locked and cannot be rotated
+
+Likely cause: Another operation is currently writing to this secret (for example, a deploy in progress).
+
+How to confirm: Check the secret status: `levelrail-cli apps secrets get <app> <key> --json | jq .locked` should return true if locked. Wait for any in-flight deploys to complete: `levelrail-cli apps status <app>` should show no pending state.
+
+Fix: Wait for the lock to clear (usually takes 1-2 minutes as the current operation finishes). Then retry the rotation: `levelrail-cli apps secrets rotation rotate <app> <key> --yes`. If the lock persists after 10 minutes, restart the control plane or check logs for errors.
+
+Still stuck: Check control plane logs for secret lock errors: `levelrail logs --since 30m | grep "secret.*lock"`.
+
+### Policy removed but `<KEY>_PREVIOUS` still exists
+
+Likely cause: The grace window had not expired yet when the policy was deleted, so the previous value is still present.
+
+How to confirm: Check if the env variable still exists: `levelrail-cli apps env <app> | grep PREVIOUS`. If it is there, wait for the grace window to expire and the app to be restarted, or manually delete it.
+
+Fix: The `<KEY>_PREVIOUS` will be automatically deleted when the grace window expires and the app is next restarted. To remove it immediately, delete the env variable manually: `levelrail-cli apps secrets unset <app> <KEY>_PREVIOUS`.
+
+Still stuck: See [Dashboard](/secret-rotation#dashboard) or [Environment](/environment-and-secrets) to delete env variables manually.

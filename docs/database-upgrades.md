@@ -123,6 +123,58 @@ Upgrades run only for databases on the control plane's own node. A database plac
 | `APP_DB_EOL_WARN` | `4320h` (180 days) | When a line counts as end of life soon. |
 | `APP_DB_VERSION_REFRESH_INTERVAL` | `24h` | Docker Hub tag refresh; `0` turns it off. |
 
+## Troubleshooting
+
+### Upgrade blocked with "Database has no backup target"
+
+Likely cause: No backup schedule is configured for the database, and upgrades cannot run without a backup target.
+
+How to confirm: Run `levelrail-cli databases status <name>` and look for the status condition. Check if a backup target is set: `levelrail-cli backups list <database>` shows the target. If empty, no target is configured.
+
+Fix: Set a backup target and schedule: `levelrail-cli backups schedule set <database> --target <target-id> --cron "0 3 * * *" --retain 7`. Then the upgrade can proceed on the next attempt.
+
+Still stuck: See [Backups and storage](/backups-and-storage) to set up a backup target first.
+
+### Upgrade failed and database reverted to old version
+
+Likely cause: The health check after the upgrade failed (the database did not come up healthy, or the version mismatch detected).
+
+How to confirm: Check the upgrade run details: `levelrail-cli databases upgrades <name>` shows past runs with their status and revert path. Dashboard: Databases > <database> > Upgrades tab.
+
+Fix: Investigate why the database failed to come up. Check the control plane logs after the upgrade attempt: `levelrail logs --since 1h | grep "upgrade\|database"`. Try the upgrade again once you know why it failed, or wait for a newer patch release if it is a compatibility issue with your data.
+
+Still stuck: See [Upgrade now](/database-upgrades#upgrade-now) and check control plane logs with `levelrail logs database <name>` for specific errors.
+
+### Automatic upgrade not running, missed maintenance window
+
+Likely cause: No upgrade policy is set, the window has passed, or there is not enough time left in the window to start an upgrade.
+
+How to confirm: Check the policy: `levelrail-cli databases upgrade-policy <name>` should show a policy with "auto" set to "patch" or "minor". Check the maintenance window: the next run must have at least `APP_DB_UPGRADE_MIN_WINDOW_REMAINING` (default 30 minutes) left. If your window is only 1 hour and the check runs near the end, it will skip that cycle.
+
+Fix: Set a policy if one does not exist: `levelrail-cli databases upgrade-policy <name> --auto patch --window "0 3 * * 0" --duration 2h`. For a missed window, either wait for the next window, or trigger the upgrade manually: `levelrail-cli databases upgrade-now <name> <version> --confirm <name>`.
+
+Still stuck: See [Automatic upgrades](/database-upgrades#automatic-upgrades) for policy syntax and window tuning.
+
+### Upgrade target not found, "image not found"
+
+Likely cause: The target version is not available in the Docker registry (for example, a typo in the version, or the image was removed from Docker Hub).
+
+How to confirm: Try pulling the image manually on the node: `docker pull <image>:<version>`. If it fails, the version does not exist. Check the available versions: `levelrail-cli databases upgrades <name>` lists valid targets.
+
+Fix: Choose a different target version from the list of available targets. Use `levelrail-cli databases upgrade-now <name> <valid-version>` with a version from the advisor.
+
+Still stuck: Check the image catalog with `levelrail-cli databases upgrades <name>` and pick from the listed targets.
+
+### Database stuck upgrading or in "backing_up" state
+
+Likely cause: The upgrade run was interrupted (control plane crashed or restarted during the backup or upgrade step), or the step is genuinely stuck.
+
+How to confirm: Check the run state: `levelrail-cli databases upgrades <name>` shows the current run and its step. If it says "backing_up" or "upgrading" but has not changed in 10 minutes, something is stuck.
+
+Fix: Wait a moment and check again (the step might just be slow). If it is truly stuck after 15 minutes, restart the control plane. It will resume the run from where it stopped. If the resume hangs indefinitely, check control plane logs for errors: `levelrail logs --since 30m database | tail -50`.
+
+Still stuck: Check the snapshot and backup stored for this run (shown in the reason field) and restore manually if needed.
+
 ## Next steps
 
 <CardGroup cols={2}>

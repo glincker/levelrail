@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "pinned": "Pinned",
+    "recentlyViewed": "Recently viewed",
+    "troubleshooting": "Troubleshooting",
+    "allPages": "All pages",
+    "docsSite": "Docs site"
+  },
+  "pin": {
+    "label": "Pin page",
+    "tooltip": "Pin this page to your favorites"
+  },
+  "unpin": {
+    "label": "Unpin page",
+    "tooltip": "Remove this page from your favorites"
+  },
+  "filter": {
+    "troubleshootingOnly": "Troubleshooting"
+  },
+  "toolbar": {
+    "export": "Export",
+    "copyMarkdown": "Copy page as Markdown",
+    "viewSourceGitHub": "View source on GitHub",
+    "openDocsSite": "Open on docs site",
+    "copied": "Copied"
+  },
+  "offlineNotice": {
+    "title": "Offline copy",
+    "description": "This is the offline copy built into your server, for when you cannot reach the internet. The latest version of this page is on the docs site.",
+    "dismiss": "Dismiss"
+  }
+}

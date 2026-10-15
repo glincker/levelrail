@@ -220,6 +220,50 @@ Self-upgrade (`--apply`, and the dashboard Upgrade button) only ever applies a r
 
 `LEVELRAIL_RELEASE_BASE_URL` points the download at an https mirror laid out like GitHub release downloads (`<base>/<tag>/<asset>`). `LEVELRAIL_INSECURE_MIRROR=1` allows plain http for a local test mirror. Use `--skip-notes-check` when GitHub's API is unreachable.
 
+## Troubleshooting
+
+### Upgrade fails and rolls back automatically
+
+The new release was downloaded and started, but did not become healthy within the timeout window.
+
+Likely cause: a schema migration failed, the new release has a bug, or the timeout is too short for the system's speed.
+
+How to confirm: check Settings > Updates > Upgrade attempts to see the exact step that failed and any error output. Also check `sudo journalctl -u levelrail -n 100` to see startup logs and any database errors.
+
+Fix: if the error is a database issue (migration failure), a backup was taken and can be restored. If it is a code bug, wait for a fixed release and try again. If the timeout is insufficient (slow disk, large database), increase `--timeout` when running the self-upgrade and try again.
+
+### A schema migration blocks the upgrade
+
+The preflight check is blocking because a breaking change requires manual action before upgrading.
+
+Likely cause: the new release contains a database schema change that needs acknowledgement or preparation.
+
+How to confirm: open Settings > Updates and scroll to the Version card. It lists all breaking changes that need acknowledgement by clicking the checkbox next to each one. Or run `levelrail-cli upgrade --plan` to see the list.
+
+Fix: read each breaking change description in the card (or CLI output) to understand what it means, then acknowledge it by checking the checkbox or passing `--ack-breaking <id>` to the CLI. The change tells you any pre-upgrade steps needed (e.g., backing up certain data). Once all are acknowledged, the upgrade proceeds.
+
+### The old binary refuses to start after a failed upgrade
+
+The control plane exited with status 78 and printed that the database is newer than the binary.
+
+Likely cause: a migration ran in the new version but that version crashed, and now the rolled-back old binary cannot read the migrated schema.
+
+How to confirm: check `sudo systemctl status levelrail` and `sudo journalctl -u levelrail -n 20`. The output names the version that last ran successfully and the current version.
+
+Fix: there is no going back. Install the new release again with `curl -fsSL https://levelrail.com/install.sh | sudo LEVELRAIL_VERSION=<new_version> sh`, which will be the only binary that can read the current database, or restore a backup from before the failed upgrade with `levelrail restore-snapshot <timestamp>` (and keep the old binary for the old schema). See [Rolling back](/installing#rolling-back).
+
+### The control plane does not restart after an upgrade
+
+The service is enabled but stopped, and refuses to start.
+
+Likely cause: the new binary cannot read the database schema (status 78, as above), or there is a permission or configuration error.
+
+How to confirm: run `sudo systemctl status levelrail` and check the last few lines of `sudo journalctl -u levelrail -n 50`. If you see "binary older than database", see the previous troubleshooting entry.
+
+Fix: if there is a permission error, check that `APP_DATA_DIR` is readable and writable by the user running the service. If the service file was corrupted during upgrade, run the installer again to rebuild it: `curl -fsSL https://levelrail.com/install.sh | sudo sh -s upgrade`. Then restart with `sudo systemctl restart levelrail`.
+
+Still stuck? Check [Disaster recovery](/disaster-recovery) for how to restore from a backup, or attach `sudo journalctl -u levelrail` (last 100 lines) to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## Next steps
 
 <CardGroup cols={2}>

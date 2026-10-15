@@ -62,9 +62,25 @@ When the mesh is on, an app or database with no mesh address shows a "No mesh ad
 
 `levelrail-cli nodes topology` prints the same summary as a table, and `--json` prints the raw response. The API is `GET /api/v1/network/topology` (`read` ability), documented in the [API reference](/api-reference).
 
-## See also
+## Troubleshooting
 
-- [Connecting apps to databases](/connecting-apps-to-databases) - the connections this view shows, and what the reachability badges mean
-- [Multi-node](/multi-node) - enrolling nodes and setting up the WireGuard mesh
-- [Project topology graph](/service-topology-graph) - the project-scoped, kind-grouped counterpart to this page, with depends_on, volume, and egress edges too
-- [API reference](/api-reference) - `GET /api/v1/network/topology`'s full response shape
+### Apps show "No mesh address" even though the mesh is enabled
+
+The mesh is on but the app hasn't been assigned an internal DNS name yet.
+
+Likely cause: the mesh reconciler hasn't run since the app was deployed, or the WireGuard device is not healthy on some nodes.
+
+How to confirm: open the Infrastructure > Network page and look for the "No mesh address" warning. Also run `levelrail-cli network mesh status` to check if the mesh is healthy.
+
+Fix: wait a minute for the reconciler to run. If the warning persists, check mesh status with `levelrail-cli network mesh status` and look for any failure reasons. If the mesh shows failures, restart the control plane with `levelrail-cli system restart --wait` and give the mesh a moment to establish peer connections.
+
+### Apps on different nodes cannot reach each other
+
+An app on one node cannot connect to an app or database on another node by internal DNS name.
+
+Likely cause: the mesh is off, or there is a network partition between the nodes.
+
+How to confirm: open Infrastructure > Network and check if the mesh is on (the Mesh networking card should show "On"). Also run `levelrail-cli nodes connectivity` to see which node pairs can reach each other.
+
+Fix: if the mesh is off, enable it with Infrastructure > Network > **Enable mesh** or `levelrail-cli network mesh enable`. If connectivity is broken between specific nodes, check that UDP 51820 is open between them (or the configured mesh port), and that all nodes have the WireGuard device (`ip link show wg0` on the node). If WireGuard is missing, install it and restart the agent.
+

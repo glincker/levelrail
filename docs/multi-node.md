@@ -764,6 +764,60 @@ levelrail-cli nodes patch-status <id>
 
 The dashboard renders this as a single status badge, not a chart, since it is one current fact.
 
+## Troubleshooting
+
+### A node stays in "pending" status and never becomes "online"
+
+The node has enrolled but the control plane and agent have not successfully established a heartbeat yet.
+
+Likely cause: the agent cannot reach the control plane at the address in APP_CONTROL_PLANE_ADDR, or TLS verification is failing (e.g., the CA fingerprint does not match).
+
+How to confirm: run `levelrail-cli nodes health <node-id>` to see the condition reason. Also check the agent logs on the node with `docker logs levelrail-agent` (if running as a container) or `journalctl -u levelrail-agent -n 50` (if running as a service).
+
+Fix: verify that the agent can reach the control plane address from the node (try `ping` or `nc -zv` to the host and port in APP_CONTROL_PLANE_ADDR). If the address is wrong, reenroll the agent with a correct token using `levelrail-cli nodes reenroll-token <id>`. If the CA fingerprint was provided and does not match, the error will be explicit in the agent logs; regenerate a new enrollment token.
+
+### A node shows "heartbeat stale" and is marked offline
+
+The control plane has not received a heartbeat from the node in the expected interval.
+
+Likely cause: the agent has crashed, lost network connectivity, or the connection was idle long enough to be dropped by a firewall or NAT.
+
+How to confirm: run `levelrail-cli nodes health <node-id>` to see how long ago the last heartbeat was received. Check if the agent process is running on the node (docker ps, systemctl status, or ps aux) and review its logs.
+
+Fix: restart the agent. If it crashes repeatedly, check the logs for errors (permission denied, Docker socket not found, etc.). If it was a network blip, restarting usually recovers it. For chronic reconnection issues, increase the heartbeat timeout with `APP_NODE_HEARTBEAT_TIMEOUT` on the control plane (default 2 minutes) or improve the node's network stability.
+
+### Apps or databases cannot be placed on the new node
+
+The node is online and healthy but placement or moves are failing.
+
+Likely cause: the node is cordoned (temporarily blocked from accepting new workloads), or does not have the workload type enabled (e.g., app placement is disabled when only builds are allowed).
+
+How to confirm: run `levelrail-cli nodes get <node-id>` and check the `state` and `workload_config` fields. Also try `levelrail-cli apps get <app-name>` and check its placement constraints.
+
+Fix: if the node is cordoned, uncordon it with `levelrail-cli nodes uncordon <node-id>`. If the workload type is disabled, enable it with `levelrail-cli nodes workloads <node-id> --accepts-app=true --accepts-build=true`. For placement constraints, check that any labels or selectors on the app match labels on the node.
+
+### The mesh is offline or nodes cannot reach each other
+
+The WireGuard mesh is not connecting nodes.
+
+Likely cause: the mesh was not enabled during enrollment, WireGuard is not available on the node, or a firewall is blocking UDP 51820 (or the configured mesh port).
+
+How to confirm: run `levelrail-cli nodes connectivity` to see mesh status for each node, or check `levelrail-cli nodes mesh` to view the mesh config. On the node, check if the WireGuard device exists with `ip link show wg0` (or the configured device name).
+
+Fix: if the mesh was not enabled on enrollment, reenroll the node with mesh enabled or update the mesh config on the node. Ensure UDP traffic on the mesh port (default 51820) is open between all nodes, including the control plane. If WireGuard is not installed, the agent logs will say so; install it with `sudo apt-get install wireguard` (Ubuntu/Debian) or `sudo dnf install wireguard-tools` (RHEL/Fedora) and restart the agent.
+
+### A node move or drain is stuck or failed
+
+Moving an app or database to another node is not completing.
+
+Likely cause: the target node is unhealthy or not accepting workloads, the app or database is too large to move quickly, or a network partition interrupted the operation.
+
+How to confirm: run `levelrail-cli nodes moves` to list all ongoing moves and their status. Check the target node's health with `levelrail-cli nodes health <target-node-id>`, and check if volumes are being synchronized (check the node's disk usage with `levelrail-cli nodes resource-usage`).
+
+Fix: if the target node is unhealthy, fix its health issue first. If the move is hung, you can drain the node with a different target node using `levelrail-cli nodes drain <source-node> --target <other-node>`. Large moves with big volumes can take a long time; monitor progress with `levelrail-cli nodes resource-usage` or the dashboard.
+
+Still stuck? Run `levelrail-cli nodes list` and `levelrail-cli nodes health <node-id>` and attach their output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## API reference
 
 Node routes require the `root` ability, not `read` or `write`, because node management is control-plane administration.
