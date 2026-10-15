@@ -51,5 +51,15 @@
     "badRange": "The end must be after the start.",
     "cancel": "Cancel",
     "submit": "Schedule"
+  },
+  "domainBanner": {
+    "title": "Maintenance mode is on for {{domain}}",
+    "body": "Visitors see the maintenance page. The app keeps running and nothing was stopped.",
+    "manage": "Manage",
+    "end": "End maintenance",
+    "ending": "Ending...",
+    "ended": "Maintenance ended for {{domain}}",
+    "more_one": "{{count}} more domain is in maintenance mode.",
+    "more_other": "{{count}} more domains are in maintenance mode."
   }
 }
