@@ -92,6 +92,30 @@ The reconciler reports one of these outcomes as the firewall controller's status
 
 `ufw` does not cover ports Docker publishes: they skip the INPUT chain. The [Exposure audit](/exposure-audit) lists which of your containers are reachable from outside and can restrict them with DOCKER-USER rules.
 
+## Troubleshooting
+
+### Ports 80 or 443 report as "blocked" in the preflight check
+
+The installer could not reach the ports from outside the network during the preflight readiness check.
+
+Likely cause: the cloud provider's firewall, the host firewall, or a NAT/hairpin configuration is blocking the ports.
+
+How to confirm: run `levelrail-cli readiness [--domain <domain>]` or check Settings > Updates > Server readiness in the dashboard to see which ports are unreachable. Also try `curl -v http://localhost:80` and `curl -v https://localhost:443` on the server itself to confirm the control plane is listening.
+
+Fix: open ports 80 and 443 (both TCP; 443 also UDP for HTTP/3) in your cloud provider's firewall, and in the host firewall with `sudo ufw allow 80,443/tcp` or `sudo ufw allow 443/udp`. If the server is behind a NAT or hairpin NAT is not available, test from outside the network instead. Then re-run the readiness check.
+
+### A container port is not reachable from outside
+
+A container published a port but external traffic cannot reach it.
+
+Likely cause: ufw is blocking the port (it does not affect Docker's DOCKER-USER chain by default), or the container was not actually published.
+
+How to confirm: run `docker ps` and check if the container has a port mapping (e.g., `0.0.0.0:8000->8000/tcp`). Also try connecting from the server itself (localhost) vs from outside to narrow down whether it is a local or network firewall issue.
+
+Fix: if ufw is blocking it, add the port with `sudo ufw allow <port>/tcp` (or `udp`). If Docker is not publishing the port, check the container's run config or deployment spec. Verify with `ss -tlnp | grep <port>` to see what is listening and who owns it.
+
+Still stuck? Run `levelrail-cli readiness` and attach its output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## Related
 
 <CardGroup cols={2}>

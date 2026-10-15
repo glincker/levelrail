@@ -79,6 +79,50 @@ With `--domain` it prints the exact records to create: `A` and `AAAA` for the do
 
 When a proxy such as Traefik in front owns ports 80 and 443 and [managed proxy routes](/domains-and-ingress) are on, standalone domains get a route file in that proxy's directory like app domains do, pointing at the ingress listener.
 
+## Troubleshooting
+
+### The target is unreachable even though the domain resolves
+
+The domain points to the server, but requests are not reaching the target.
+
+Likely cause: the target address is wrong, the service is not listening on that port, or a firewall is blocking it.
+
+How to confirm: verify the target with `levelrail-cli domains standalone list` or the Domains page. Also try connecting to the target directly from the server: `curl -v http://127.0.0.1:3000` (or whatever the target is).
+
+Fix: if the service is not running, start it. If the port is wrong, update the standalone domain's target with `levelrail-cli domains standalone update <domain> --target <correct-target>`. If a firewall is blocking it, open the port (for internal addresses on the mesh, ensure the mesh is on and working).
+
+### Adding a private network target is rejected with an error
+
+The API rejected the target because it is a cloud metadata or link-local address.
+
+Likely cause: cloud metadata addresses (like AWS `169.254.169.254`) and link-local addresses cannot be proxied for security reasons.
+
+How to confirm: check the error message when adding the domain. It will name which address category was blocked.
+
+Fix: use a different target. For cloud metadata, access it directly on the service instead. For link-local addresses, use a mesh address or a hostname that resolves to a non-link-local IP.
+
+### A loopback or private address target requires confirmation but I already confirmed once
+
+Confirmation was needed when the target was first created, but editing other settings later asks again.
+
+Likely cause: you changed the target address. Every new target to a sensitive address needs confirmation.
+
+How to confirm: try updating the domain with a new target, and an error appears asking for confirmation.
+
+Fix: pass `--confirm` or include `"confirm": true` in the API request to acknowledge the new target address.
+
+### The domain tries to proxy to itself and returns a loop error
+
+The target resolves to this server's public address on ports 80 or 443, creating an infinite loop.
+
+Likely cause: the target address is the same as this server's public IP, which would cause traffic to loop back.
+
+How to confirm: check what the target resolves to with `nslookup` or `dig`, and compare it with the server address shown on the Domains page.
+
+Fix: change the target to an address that is not this server's public IP. If you want to proxy to a local service, use `127.0.0.1:<port>` instead of the public address. If you need the target to be external, use a different hostname.
+
+Still stuck? Run `levelrail-cli domains standalone list --json` and attach its output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## API
 
 | Method and path | Ability | What it does |

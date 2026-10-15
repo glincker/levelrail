@@ -15,7 +15,7 @@ const DEFAULT_IDLE_MINUTES = 30
 export function AppSleepCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
   const { data: sleep } = useAppSleep(appName)
-  const { setIdle, wake } = useAppSleepActions(appName)
+  const { setIdle, wake, sleepNow } = useAppSleepActions(appName)
   const [minutes, setMinutes] = useState(
     String(sleep.enabled ? sleep.idle_minutes : DEFAULT_IDLE_MINUTES),
   )
@@ -47,13 +47,20 @@ export function AppSleepCard({ appName }: { appName: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        {sleep.blocked_reason ? (
+          <p className="text-xs text-muted-foreground" role="note">
+            {t(`appSleep.blocked.${sleep.blocked_reason}`)}
+          </p>
+        ) : null}
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm font-medium text-foreground">
             {t('appSleep.enabledLabel')}
           </p>
           <Switch
             checked={sleep.enabled}
-            disabled={setIdle.isPending}
+            disabled={
+              setIdle.isPending || (!sleep.enabled && !!sleep.blocked_reason)
+            }
             aria-label={t('appSleep.switchAriaLabel')}
             onCheckedChange={(next) =>
               save(
@@ -107,6 +114,31 @@ export function AppSleepCard({ appName }: { appName: string }) {
                 save(sleep.idle_minutes, t('appSleep.toast.holdUpdated'), next)
               }
             />
+          </div>
+        ) : null}
+        {sleep.enabled && !sleep.sleeping && !sleep.blocked_reason ? (
+          <div className="flex items-center justify-between gap-4 border-t border-border pt-3">
+            <p className="text-xs text-muted-foreground">
+              {t('appSleep.sleepNowHelp')}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={sleepNow.isPending}
+              onClick={() =>
+                sleepNow.mutate(undefined, {
+                  onError: (error) =>
+                    toast.add({
+                      title: t('appSleep.toast.errorTitle'),
+                      description: error.message,
+                      type: 'error',
+                    }),
+                })
+              }
+            >
+              {t('appSleep.sleepNow')}
+            </Button>
           </div>
         ) : null}
         {sleep.sleeping ? (

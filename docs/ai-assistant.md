@@ -145,6 +145,58 @@ levelrail-cli audit-log --agent deploy-bot
 
 That assistant must always run as its own, separately deployed service. It connects to Levelrail purely as an MCP client, over stdio (if co-located and it can spawn a subprocess) or over `--transport=http` (if it runs elsewhere). Its code must never be imported, vendored, copied into, or otherwise combined with this repository, regardless of transport. An integration is a boundary, not a merge.
 
+## Troubleshooting
+
+### MCP server fails to start with "cannot read credentials"
+
+Likely cause: No API token is configured, or the token file is missing.
+
+How to confirm: Check if credentials exist: `test -f ~/.config/levelrail-cli/credentials && echo found || echo missing`. Check the environment: `echo $APP_API_TOKEN` to see if a token is set there.
+
+Fix: Either set the `APP_API_TOKEN` env var to your token, or run `levelrail-cli auth login --device` on the control plane machine to create a credentials file. The MCP server will pick it up on the next start.
+
+Still stuck: See [API tokens](/identity-and-access#api-tokens) to create and manage tokens.
+
+### MCP HTTP transport listening fails with "bind: permission denied"
+
+Likely cause: You are trying to bind to a port below 1024 (which requires root), or the port is already in use.
+
+How to confirm: Check what is using the port: `lsof -i :<port>` or `ss -tlnp | grep <port>`. Try a port above 1024: `levelrail-mcp --transport=http --listen=127.0.0.1:8090`.
+
+Fix: Either use a port above 1024 (recommended), or run the command with `sudo`. If the port is already in use, pick a different port.
+
+Still stuck: Run the server on localhost (127.0.0.1) instead of 0.0.0.0 to avoid needing high ports.
+
+### MCP client cannot connect to remote server, "connection refused"
+
+Likely cause: The MCP server is not running, or it is not listening on the address the client is using.
+
+How to confirm: Check if the server is running: `curl http://<server-address>:<port>` should fail gracefully (not connection refused). Verify the listening address: look at the startup logs for `levelrail-mcp listening on` or check with `ss -tlnp | grep 8090`.
+
+Fix: Start the MCP server if it is not running: `levelrail-mcp --transport=http --listen=0.0.0.0:8090` (or use a specific IP). Verify the client is using the same address and port. If the server is behind a firewall, ensure the port is open from the client's network.
+
+Still stuck: Use `--listen=0.0.0.0:<port>` to listen on all interfaces (if secure), or put the server behind a reverse proxy with TLS.
+
+### Tool execution returns untrusted output warning and no results
+
+Likely cause: The tool's output contains untrusted data (logs, error messages, etc.), and the MCP server wrapped it with a safety notice.
+
+How to confirm: The output will start with something like `<untrusted_data id="...">` and contain a warning. The structured data under `_meta["levelrail/untrusted-output"]` is also sanitized.
+
+Fix: This is intentional: the assistant must confirm it has read untrusted output before acting on it. The data is safe to read, only flagged as coming from an untrusted source (user logs, deployment output, etc.). The assistant's confirmation gate will pause before executing any action based on this data.
+
+Still stuck: Pass a read-only token to the MCP server to prevent tool calls that might act on tainted data.
+
+### Agent identity not appearing in audit log
+
+Likely cause: The token was not created with the `--agent` flag, or the server is not using that token.
+
+How to confirm: Check the token's agent field: `levelrail-cli tokens list | grep <token-id> | awk '{print $NF}'` should show the agent name. Check the audit log: `levelrail-cli audit-log --limit 10 | grep agent` should show entries with agent_name.
+
+Fix: Create a new token with agent identity: `levelrail-cli tokens create --name my-bot --agent bot-name --abilities read,deploy`. Use that token in the MCP server.
+
+Still stuck: See [Agent identity](/ai-assistant#agent-identity) for the token creation syntax.
+
 ## See also
 
 - [ai-assistant-chat.md](/ai-assistant-chat): the in-app dashboard/CLI chat, a separate feature built on this same engine and confirmation gate, behind the `ai-chat` experimental flag.

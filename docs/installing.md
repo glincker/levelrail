@@ -605,33 +605,45 @@ docker volume rm levelrail-data
 
 Uninstalling does not touch Docker itself or any containers, images, or volumes Levelrail created for your deployed apps, and `install.sh uninstall` leaves `levelrail-cli` in place. Remove those separately if needed.
 
-## Getting help
+## Troubleshooting
 
-- Ran into a specific error? Check [Troubleshooting](/troubleshooting) first.
-- Bugs, questions, feature requests: open an issue on [GitHub](https://github.com/glincker/levelrail/issues).
-- Everything else: email [support@levelrail.com](mailto:support@levelrail.com).
+### Preflight checks fail and you cannot proceed
 
-## Next steps
+Preflight checks block the install when they find conflicting software or missing resources. See which one failed in the error output.
 
-<CardGroup cols={2}>
-<Card title="Getting started" href="/getting-started">
+Likely cause: the server does not meet the minimum requirements (Docker 24 or newer, ports 80/443 free, at least 1 GB RAM and 10 GB free disk).
 
-Sign in and deploy your first app.
+How to confirm: run `curl -fsSL https://levelrail.com/install.sh | sh -s -- --check` (no root needed), which is read-only and gives detailed output for each check.
 
-</Card>
-<Card title="Docker" href="/docker">
+Fix: address the failed check (update Docker, free disk space, stop the process holding the port) and re-run the installer. To skip a check anyway, pass `--force` or set `LEVELRAIL_COEXIST=1` if ports are already taken.
 
-Run the control plane and agent as containers.
+### The control plane starts but does not answer on the port
 
-</Card>
-<Card title="Upgrade safely" href="/upgrade-safely">
+The healthz endpoint may be unreachable even though the process is running.
 
-Preflight checks, scheduled upgrades and automatic rollback.
+Likely cause: the port is in use by another process, or the process failed to bind.
 
-</Card>
-<Card title="Behind an existing proxy" href="/behind-an-existing-proxy">
+How to confirm: run `sudo systemctl status levelrail` and `sudo journalctl -u levelrail -n 50` to see the startup error. Also check `ss -tlnp | grep 8080` (or whatever port you set with `LEVELRAIL_DASHBOARD_PORT`).
 
-Run next to Coolify, Traefik, nginx or Caddy.
+Fix: if another process owns the port, either stop it or run the installer again with `LEVELRAIL_DASHBOARD_PORT=<free_port>`. If the unit failed to start, the journal output names the cause (permission denied, address already in use, etc.). Restart with `sudo systemctl restart levelrail` once fixed.
 
-</Card>
-</CardGroup>
+### The dashboard or CLI says Docker is unreachable
+
+The control plane cannot connect to the Docker daemon.
+
+Likely cause: Docker is not running, the socket has wrong permissions, or the socket path is not at the default `/var/run/docker.sock`.
+
+How to confirm: run `sudo docker ps` to confirm Docker itself works, or check Settings > General > Docker status in the dashboard. Also try `levelrail-cli status --json` to see the full error.
+
+Fix: start Docker with `sudo systemctl start docker`, fix socket permissions with `sudo chmod 666 /var/run/docker.sock`, or set `DOCKER_HOST` if the socket is at a non-standard path and re-run the control plane.
+
+### The setup link does not work or the token expired
+
+The one-time token for the initial admin setup is either missing or no longer valid.
+
+Likely cause: the token is single-use and valid for 15 minutes, or the dashboard port changed since install.
+
+How to confirm: check the original install output for the full URL, or check Settings > Updates > Server readiness to see the current dashboard address.
+
+Fix: on the server, run `sudo APP_DATA_DIR=/var/lib/levelrail-data levelrail setup-token` to print a new token, then visit `http://<server>:<port>/login?setup=<token>` with the fresh token.
+

@@ -181,4 +181,50 @@ describe('AppSleepCard', () => {
       expect(screen.queryByText('This app is asleep.')).not.toBeInTheDocument()
     })
   })
+  it('sleeps an enabled app now', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          json({
+            enabled: true,
+            idle_minutes: 30,
+            sleeping: init?.method === 'POST',
+            hold_requests: false,
+          }),
+        ),
+    )
+
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(await screen.findByRole('button', { name: 'Sleep now' }))
+
+    expect(await screen.findByText('This app is asleep.')).toBeTruthy()
+    const post = fetchMock.mock.calls.find(
+      ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
+    )
+    expect(String(post?.[0])).toBe('/api/v1/apps/demo-app/sleep/now')
+  })
+
+  it('explains why an app with a pinned host port cannot sleep', async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        enabled: false,
+        idle_minutes: 0,
+        sleeping: false,
+        hold_requests: false,
+        blocked_reason: 'pinned_port',
+      }),
+    )
+
+    renderCard()
+    expect(await screen.findByText(/pinned host port/)).toBeTruthy()
+    const toggle = await screen.findByRole('switch', {
+      name: 'Sleep when idle enabled',
+    })
+    expect(
+      toggle.hasAttribute('disabled') ||
+        toggle.getAttribute('aria-disabled') === 'true' ||
+        toggle.hasAttribute('data-disabled'),
+    ).toBe(true)
+  })
 })

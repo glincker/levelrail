@@ -693,6 +693,44 @@ levelrail-cli deploy-approvals list | get | approve | reject
 - **Compose and `deploy-spec` are synchronous.** Neither streams build progress the way a single-service build does, so a large multi-service spec is a slow HTTP request.
 - **Scheduled task history is last run only**, and `replace` cancellation is best effort.
 
+## Troubleshooting
+
+### Deploy is stuck waiting for readiness
+
+**Likely cause:** The readiness probe is failing, the app is not binding to the configured port, or the container crashed during startup.
+
+**How to confirm:** In the dashboard, open the app and go to Deploys. Click the active deployment and view the Timeline tab to see probe attempts and container status. Alternatively, run `levelrail-cli apps timeline <name>`.
+
+**Fix:** Check the app's logs with `levelrail-cli apps logs <name> -f`. If the port is wrong, update it in the app settings and redeploy. If the readiness path is wrong, update the app spec. If the container is crashing, check logs for errors and fix the code before redeploying.
+
+### Build fails with insufficient disk space
+
+**Likely cause:** The build node has less than `APP_MIN_BUILD_DISK_MB` (default 1000 MB) free space.
+
+**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code will be `disk_full` with bytes required and available.
+
+**Fix:** On the control plane, run `docker image prune -a --force` and `docker builder prune`. If more space is needed, either increase available disk or lower `APP_MIN_BUILD_DISK_MB` on the control plane restart.
+
+### Image pull fails
+
+**Likely cause:** Image name or tag is incorrect, registry requires authentication, or registry is unreachable.
+
+**How to confirm:** Run `levelrail-cli apps deploys show <name>`. Failure code will be `image_pull_failed` with the reason in the excerpt.
+
+**Fix:** Verify the image name and tag. If authentication is needed, add the credential in Settings > Registries. If the registry is private, ensure it is reachable from the control plane.
+
+### Container does not listen on the configured port
+
+**Likely cause:** Application is binding to a different port, or the process fails to start.
+
+**How to confirm:** Check `levelrail-cli apps logs <name> -f` for bind errors or startup failures. Verify the port in the app settings matches what the application is listening on.
+
+**Fix:** Update the port in the app settings if the app is listening on a different port. If the app is not starting, fix the code or configuration and redeploy.
+
+### Still stuck
+
+For a structured list of all failure codes, visit [Deploy failures](deploy-failures.md). Run `levelrail-cli apps diagnose <name>` to gather system information and include it in a support request.
+
 ## See also
 
 <CardGroup cols={2}>

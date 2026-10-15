@@ -107,3 +107,33 @@ The rollback image was garbage collected. Redeploy from source and raise the ret
 
 ### unknown
 No known class matched. The excerpt and the full deploy log (`apps deploys logs <name> <deploy-id>`) are the source of truth.
+
+## Troubleshooting
+
+### Failure is not listed above or unclear from the code
+
+**Likely cause:** The failure is either `unknown` (no classifier matched), or it is a transient issue that resolved itself.
+
+**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code will be listed, and the excerpt will show the last relevant log lines.
+
+**Fix:** Read the excerpt for context, then run `levelrail-cli apps deploys logs <name> <deploy-id>` to see the full log. The log contains the source of truth for what went wrong.
+
+### Failure is transient and can be retried
+
+**Likely cause:** The app has a failure code marked as retryable, such as `build_timeout` or `docker_unreachable`.
+
+**How to confirm:** Check the structured failure object returned by the API or CLI. The `retryable` field will be true.
+
+**Fix:** Redeploy the app. For `build_timeout`, enable the remote build cache or split slow build stages. For `docker_unreachable`, wait for the Docker daemon to be ready.
+
+### Rollback target is gone
+
+**Likely cause:** The rollback image was garbage collected, or older than the retained images.
+
+**How to confirm:** The failure code will be `rollback_target_gone`.
+
+**Fix:** Redeploy from source (git push or `apps builds trigger`). To keep more rollback images in the future, increase `APP_DEPLOY_ROLLBACK_PINS` on the control plane.
+
+### Still stuck
+
+For the structured failure object with all fields, check the API response: `GET /api/v1/apps/{name}/deploys/{deployId}`. Read the failure's `suggested_fix` field for specific guidance. If the issue persists, run `levelrail-cli apps diagnose <name>` for system information.

@@ -88,6 +88,58 @@ The Search tab virtualizes the list, colours by level and has a Wrap toggle. Cli
 - Samples in alerts, signature reports and downloads mask `password=`, `token=`, `api_key=`, bearer tokens, URL passwords and common key shapes. The live viewer shows lines as stored.
 - Rule and signature reads are capped by the variables above, so a noisy app cannot make a rule slow the control plane.
 
+## Troubleshooting
+
+### Saved query not appearing or deleted unexpectedly
+
+Likely cause: The query is private to another user, or you lost write access to the app.
+
+How to confirm: Check if the query still exists: `levelrail-cli logs saved list --app <app> | grep <query-name>`. If it is missing, it was deleted. If it was shared, only the owner and root can modify it.
+
+Fix: If it was deleted by mistake, recreate it: `levelrail-cli logs saved create "<name>" --app <app> --q "<search>" --range 1h`. Make sure you have write access to the app to create or modify queries.
+
+Still stuck: Check the audit log for deletion events: `levelrail-cli audit-log --resource <app> | grep "saved.*delete"`.
+
+### Log alert rule firing too often or not at all
+
+Likely cause: The window or threshold is wrong, or the log stream is delayed.
+
+How to confirm: Test the rule manually: `levelrail-cli apps logs <app> --since 10m --q "<pattern>"` and count the lines. Compare to the rule's `count` or `per_minute` threshold. Check when the rule was last evaluated: `levelrail-cli logs alert-from <app> --id <rule-id> --json | jq .last_fired_at`.
+
+Fix: Adjust the threshold or window: delete and recreate the rule with better parameters. For a pattern rule firing too often, increase the `count` threshold. For a rate rule, increase `per_minute`. To reduce noise from oscillating alerts, increase the cooldown: `--cooldown 30m`.
+
+Still stuck: Check control plane logs for rule evaluation errors: `levelrail logs --since 1h | grep "alert\|log.*rule"`.
+
+### Cannot find error signature for a specific error message
+
+Likely cause: The error is not being logged at the required level, or it has very high variance (many unique identifiers).
+
+How to confirm: Query the logs directly: `levelrail-cli apps logs <app> --q "<error text>" --level error --since 1h`. If it does not appear, the log line exists but is at a different level (check with lower level like `--level warn`). If it appears but with many different variations (different IDs or timestamps), the signature algorithm groups them separately.
+
+Fix: If the error is at the wrong level, adjust the application to log it as an error. If the signature has too much variance, use an alert rule with a regex pattern instead: `levelrail-cli logs alert-from <app> --name "my error" --regex '<pattern>' --count 1`.
+
+Still stuck: See [Error signatures](/log-explorer#error-signatures) for how the grouping algorithm works.
+
+### Log search returning no results
+
+Likely cause: The time range is outside the retention window, or the search text does not match any logs.
+
+How to confirm: Try a broader search: `levelrail-cli apps logs <app> --since 24h` with no filters. If it returns logs, the issue is with your search text. If it returns nothing, logs may not exist in that range.
+
+Fix: Verify the app is generating logs (run `levelrail-cli apps status <app>` to confirm it is running). Adjust the time range to a more recent window: `--since 1h`. Simplify the search text: try short keywords instead of exact phrases.
+
+Still stuck: Check if logs are being stored: `levelrail logs <app> --level debug --since 1h | wc -l` to see the total count.
+
+### Download logs showing "encrypted" or "masked" secrets
+
+Likely cause: Sensitive data like passwords or API keys appear in the logs, and the system is masking them.
+
+How to confirm: Check the downloaded file for lines like `password=***` or `token=***`. This is intentional security masking applied to exported logs.
+
+Fix: Logs are automatically masked for common key shapes (password, api_key, token, bearer tokens). If a secret is still exposed, that pattern is not recognized. Update your application to log less sensitive information, or use environment variables and avoid printing them.
+
+Still stuck: Report the pattern that should be masked (open a discussion on GitHub), and review the app's logging to avoid printing secrets.
+
 ## Next steps
 
 <CardGroup cols={2}>

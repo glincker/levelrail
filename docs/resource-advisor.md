@@ -137,3 +137,36 @@ The analysis runs on request and is cached for the TTL. The one Docker call (rec
 | PUT | `/api/v1/settings/beta-features/{feature}` | root, body `{"enabled": true}` |
 
 Findings carry `kind`, `severity` (`info`, `suggest`, `warn`), `resource`, `title`, `why`, `evidence` (window, sample count, p50, p95, p99, peak, limit and, when filtered to one resource, an hourly series), `impact` (estimated saving, exhaustion time, risk) and `action`. Finding ids are stable (`kind:resource`), so a dismissal survives refreshes.
+
+## Troubleshooting
+
+### Advisor page shows "Not enabled" or no findings appear
+
+Likely cause: The resource advisor beta feature is turned off.
+
+How to confirm: Check Settings > Beta features to see if "Resource advisor" is enabled. Or run `levelrail-cli advisor enable --json | grep enabled`.
+
+Fix: Enable it: `levelrail-cli advisor enable` or in the Settings page, toggle Resource advisor on. The page will refresh and load findings within a minute.
+
+Still stuck: If you see "Not enough data yet", the resource does not have 24 hours of history. Wait a day for the advisor to collect enough data.
+
+### A finding suggests a limit that seems too high or too low
+
+Likely cause: The suggestion is based on the last 7 days of history, which may not represent your actual peak load.
+
+How to confirm: Check the evidence in the finding: the p95 and p99 values show what usage was measured. The peak and hourly series show spikes. If the suggestion looks wrong, verify the resource's actual usage: `levelrail-cli apps metrics <app> --metric memory_bytes --since 7d --step 1h`.
+
+Fix: The suggestion is a starting point. If you know your app will be busier next week, increase the limit by hand. If a finding is consistently off (always too generous, always too tight), adjust the control plane's thresholds (for example, `APP_RESOURCE_ADVISOR_MEMORY_HEADROOM`).
+
+Still stuck: Read the "What this does not know" section above: the advisor uses historical data, not future predictions.
+
+### Memory limit increase did not help, app still crashing
+
+Likely cause: The app has a memory leak, or the growth is faster than the suggestion accounted for.
+
+How to confirm: Check the container restarts: `levelrail-cli apps status <app> | grep restarts`. Check recent metrics: `levelrail-cli apps metrics <app> --metric memory_bytes --since 24h`. If memory climbs steadily even after a restart, there is likely a leak.
+
+Fix: Investigate the app for memory leaks (check logs with `levelrail-cli apps logs <app> --level warn --since 1h`). Increase the limit further as a temporary fix while debugging. Once fixed, the advisor's next run will suggest a smaller limit.
+
+Still stuck: See [Investigating a spike](/observability#investigating-a-spike) for debugging approaches.
+

@@ -827,3 +827,46 @@ Browse schemas and rows, or run read-only SQL.
 
 </Card>
 </CardGroup>
+
+## Troubleshooting
+
+### Database creation fails with "Error: database already exists"
+
+Likely cause: A database with that name already exists, either running or stopped.
+
+How to confirm: Run `levelrail-cli databases list` and check if the name is in the list. Dashboard: go to Databases page and search for the name.
+
+Fix: Choose a different name, or delete the existing database first with `levelrail-cli databases delete <existing-name> --confirm <existing-name>` if you no longer need it.
+
+Still stuck: See [Deleting databases](/managing-databases#stop-start-and-delete) for the full delete process.
+
+### Database creation hangs or stays in "pending" state
+
+Likely cause: The reconciler has not processed the database resource yet, or Docker ran out of disk space on the node where it is being placed.
+
+How to confirm: Check the database status with `levelrail-cli databases status <name>`. If it shows a condition, read the reason. On the dashboard, go to Databases > your database > Overview, and look at the status card. If status shows "pending" for more than 2 minutes, check the control plane logs for errors: `levelrail logs --since 5m | grep database`.
+
+Fix: Wait a minute for the next reconcile pass (which runs every 15 seconds). If it is still pending after 3 minutes, check node disk space with `levelrail-cli nodes list` and look for "Free" under the relevant node. If a node is running out of disk, delete old containers or images with `docker system prune` on that node.
+
+Still stuck: Check the reconciler logs with `levelrail logs database <name>` or read the full resource status: `levelrail-cli databases get <name> --output json | jq '.status'`.
+
+### Cannot connect to database from an app, "Connection refused" or "Host not found"
+
+Likely cause: The database and app are on different nodes, or internal DNS is not resolving the database hostname.
+
+How to confirm: Check where the database is running: `levelrail-cli databases status <name>` shows the node. Check where the app is running: `levelrail-cli apps status <web-app>` shows "Nodes". If they differ, the network may need to be configured. Try pinging from inside the app container: `levelrail-cli apps exec web -- ping <database-name>`.
+
+Fix: Ensure both app and database are on the same node (use `levelrail-cli databases set-node <name> <node-id>`), or verify that WireGuard mesh networking is enabled and working between nodes. For single-node setups, they should both run on the local node by default.
+
+Still stuck: See [Connecting apps to databases](/connecting-apps-to-databases) and [Network topology](/network-topology) for cross-node reachability.
+
+### Database volume failed to mount or "permission denied" on data files
+
+Likely cause: The host running the database lost access to its data volume, or the volume is corrupted.
+
+How to confirm: SSH to the node and check if the volume exists: `docker volume ls | grep <database-name>`. Check disk status: `df -h | grep levelrail` or `docker system df`.
+
+Fix: If the volume exists but is unmounted, try restarting the database: `levelrail-cli databases stop <name> && levelrail-cli databases start <name>`. If the volume is missing or corrupted, restore from a backup: `levelrail-cli backups list <name>`, then `levelrail-cli backups restore <name> --backup <id>`.
+
+Still stuck: See [Backup recovery](/backups-and-storage) for full recovery procedures.
+

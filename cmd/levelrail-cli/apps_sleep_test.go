@@ -32,6 +32,7 @@ func TestRun_AppsSleep(t *testing.T) {
 		{[]string{"disable", "web"}, http.MethodPut, "/api/v1/apps/web/sleep", `{"idle_minutes":0}`},
 		{[]string{"status", "web"}, http.MethodGet, "/api/v1/apps/web/sleep", ""},
 		{[]string{"wake", "web"}, http.MethodPost, "/api/v1/apps/web/sleep/wake", ""},
+		{[]string{"now", "web"}, http.MethodPost, "/api/v1/apps/web/sleep/now", ""},
 		{[]string{"list"}, http.MethodGet, "/api/v1/sleep", ""},
 	} {
 		var stdout, stderr bytes.Buffer

@@ -180,6 +180,40 @@ Formats: `terraform` (AWS ALB, target group, listener), `cdk` (AWS CDK TypeScrip
 - A separate balancer node in front of the control plane. The control plane's ingress is the balancer.
 - Autoscaling. Replica count is still yours to set.
 
+## Troubleshooting
+
+### Requests are not being distributed to all replicas
+
+Traffic is going to only one or a subset of replicas instead of being load balanced.
+
+Likely cause: the load balancer algorithm is not configured, or the health checks are failing for some replicas.
+
+How to confirm: open the app's Load Balancer tab and check whether an algorithm is selected (e.g., round robin, least connections). Also check the app's Status section to see if all replicas show as healthy, or run `levelrail-cli apps status <app>` to see the readiness probe results.
+
+Fix: if no algorithm is selected, choose one from the dropdown on the Load Balancer tab (e.g., round robin for even distribution). If replicas are unhealthy, fix the app's health check configuration or the app itself. Once all replicas are healthy and an algorithm is chosen, traffic should distribute automatically.
+
+### Backend replica is not responding but still receives traffic
+
+A replica container has crashed or is hung, but the load balancer is still sending requests to it.
+
+Likely cause: the passive health checks are not detecting the failure, or the health check interval is too slow.
+
+How to confirm: open the app's Load Balancer tab and check the passive health settings. Also run `docker ps` on the node to see if the replica container is actually running, and check the logs with `docker logs <container>`.
+
+Fix: if the replica crashed, restart it (the reconciler should have restarted it automatically, but if not, restart the app with `levelrail-cli apps restart <app>`). To make failure detection faster, lower the passive health check threshold (how many consecutive errors before marking unhealthy) or reduce the maximum consecutive errors allowed. Readiness checks also influence balancing: ensure the app's `/healthz` endpoint is returning 200 OK when the app is healthy.
+
+### Import or export fails with format error
+
+The export to Terraform, CloudFormation, or another format has validation errors.
+
+Likely cause: some load balancer settings are not compatible with the target format (e.g., AWS ALB does not support IP-based hashing).
+
+How to confirm: run `levelrail-cli lb export <app> --format <format>` and check the error message. Formats like Terraform print warnings about unsupported settings.
+
+Fix: simplify the load balancer configuration to use only features the target format supports. For AWS formats, stick to basic algorithms (round robin, least connections) and standard health checks. Or, use the Caddyfile format which has no restrictions.
+
+Still stuck? Run `levelrail-cli lb show <app> --json` and attach its output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## See also
 
 - [Domains and ingress](/domains-and-ingress): the embedded Caddy that does the balancing, and how a backend outage is handled.

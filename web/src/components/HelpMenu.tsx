@@ -2,6 +2,7 @@ import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   BookOpenIcon,
+  BookmarkIcon,
   ChatCircleTextIcon,
   GithubLogoIcon,
   HeartbeatIcon,
@@ -28,6 +29,7 @@ import { helpDocForPath } from './shell/contextHelp'
 export function HelpMenu() {
   const brand = useBrand()
   const { t } = useTranslation()
+  const { t: tHelp } = useTranslation('help')
   const contextDoc = useRouterState({
     select: (st) => helpDocForPath(st.location.pathname),
   })
@@ -69,8 +71,18 @@ export function HelpMenu() {
           <HeartbeatIcon />
           {t('shell.help.systemStatus')}
         </DropdownMenuItem>
-        {brand.SupportURL || brand.DiscussionsURL ? (
+        {brand.DocsURL || brand.SupportURL || brand.DiscussionsURL ? (
           <DropdownMenuSeparator />
+        ) : null}
+        {brand.DocsURL ? (
+          <DropdownMenuLinkItem
+            href={brand.DocsURL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <BookmarkIcon />
+            {tHelp('nav.docsSite')}
+          </DropdownMenuLinkItem>
         ) : null}
         {brand.SupportURL ? (
           <DropdownMenuLinkItem

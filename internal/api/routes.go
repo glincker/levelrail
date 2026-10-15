@@ -503,6 +503,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
 	mux.HandleFunc("GET /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSleep))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppSleep))
+	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/now", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSleepAppNow))
 	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/wake", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleWakeApp))
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
 

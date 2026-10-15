@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1139 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1140 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -242,6 +242,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/secret-scan/run", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunSecretScan", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSleep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSleep", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/now", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSleepAppNow", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/wake", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleWakeApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/slo-preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSLOPreview", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/start", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartApp", Description: ""},

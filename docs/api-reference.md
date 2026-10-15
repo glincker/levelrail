@@ -428,6 +428,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/secret-scan/allow/{fingerprint} | AbilityWrite | handleUnallowSecretScan |
 | GET | /api/v1/apps/{name}/deployments/{id}/secret-scan | AbilityRead | handleGetDeploymentSecretScan |
 | POST | /api/v1/apps/{name}/keep | AbilityWrite | handleKeepTrialApp |
+| POST | /api/v1/apps/{name}/sleep/now | AbilityDeploy | handleSleepAppNow |
 
 </Accordion>
 

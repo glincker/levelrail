@@ -18,7 +18,7 @@ func runAppsSleep(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitOK
 	case "list":
 		return runAppsSleepList(prog, args[1:], stdout, stderr, lookupEnv)
-	case "enable", "disable", "status", "wake":
+	case "enable", "disable", "status", "wake", "now":
 		return runAppsSleepVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps sleep subcommand %q\n\n", prog, args[0])
@@ -33,6 +33,7 @@ func appsSleepUsage(prog string) string {
   %[1]s apps sleep disable <app-name>                never sleep (wakes the app first if it is asleep)
   %[1]s apps sleep list                              every app with sleep on, which are asleep, and the memory freed
   %[1]s apps sleep status <app-name>                 show the setting and whether the app is asleep
+  %[1]s apps sleep now <app-name>                    put the app to sleep now instead of waiting for the idle time
   %[1]s apps sleep wake <app-name>                   start a sleeping app now
 
 A sleeping app uses no memory or CPU. The next request to its domain starts it
@@ -75,6 +76,8 @@ func runAppsSleepVerb(prog, verb string, args []string, stdout, stderr io.Writer
 		result, err = client.SetAppSleep(ctx, appName, 0)
 	case "wake":
 		result, err = client.WakeApp(ctx, appName)
+	case "now":
+		result, err = client.SleepAppNow(ctx, appName)
 	default:
 		result, err = client.GetAppSleep(ctx, appName)
 	}

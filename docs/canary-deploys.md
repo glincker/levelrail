@@ -61,3 +61,33 @@ Run on a real control plane with Docker and embedded Caddy: weights of 30 and
 sent everything to the stable release, and promote left only the new image
 serving. A weight change reaches ingress within seconds. A new canary takes up
 to about 30 seconds to start its container.
+
+## Troubleshooting
+
+### Cannot start a canary on this app
+
+**Likely cause:** The app is built from source, has multiple replicas, a pinned host port, is stopped, or is under a deploy freeze.
+
+**How to confirm:** Run `levelrail-cli apps canary start <name> --image <image>`. The error will state which limitation applies.
+
+**Fix:** Canaries work only with prebuilt image apps. If the app is built from source, deploy the new image manually first (push to a registry, then deploy by tag). If it has multiple replicas, scale it to one. If it has a pinned host port, remove it first.
+
+### Canary is not receiving traffic
+
+**Likely cause:** The canary container is not running or failed its readiness check, or the weight is set to 0.
+
+**How to confirm:** Run `levelrail-cli apps canary status <name>` and check the canary app's container status in the dashboard (it is named `<app>--canary` but not listed in the apps view).
+
+**Fix:** Check the canary app's logs with `levelrail-cli apps logs <app>--canary -f` for startup errors. If the image is bad, abort the canary and start a new one with a different image. If the weight is 0, increase it with `levelrail-cli apps canary weight <name> --weight 10`.
+
+### Promote gets stuck or times out
+
+**Likely cause:** The canary image does not pass the readiness gate (same as a normal deploy), or there is a deploy freeze blocking it.
+
+**How to confirm:** Run `levelrail-cli apps deploys show <name>` and check the failure details. Look for a deploy freeze in Settings > Deploy safety.
+
+**Fix:** Check the canary image logs and fix any startup issues. If there is a deploy freeze, promote after the freeze window ends, or override it with a reason.
+
+### Still stuck
+
+For help with a stuck canary deploy, check [Deploy failures](deploy-failures.md) for the failure code, or run `levelrail-cli apps diagnose <name>` and share its output.

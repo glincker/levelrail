@@ -275,6 +275,40 @@ http:
 Instance A runs with `APP_INGRESS_HTTP_ADDR=:8088`, instance B with
 `APP_INGRESS_HTTP_ADDR=:8089`. Forward to the HTTP port: TLS ends at the proxy.
 
+## Troubleshooting
+
+### Domains served by the proxy are not routing correctly
+
+Requests to the domain arrive at the proxy but do not reach the right Levelrail app.
+
+Likely cause: the proxy's route rule does not match the Host header, or Levelrail is not listening on the port the proxy is forwarding to.
+
+How to confirm: check the proxy configuration (Traefik, nginx, Caddy) and verify it has a route for the domain pointing to the correct Levelrail port (e.g., 8088). Also check that Levelrail is actually listening on that port with `sudo ss -tlnp | grep 8088`.
+
+Fix: verify Levelrail is running and listening on the correct port (set with `APP_INGRESS_HTTP_ADDR` or via the installer). Then add or update the proxy's route to forward the domain to that port. Refer to [Example proxy configs](/behind-an-existing-proxy#example-proxy-configs) above for the correct syntax for your proxy.
+
+### The dashboard shows mixed HTTP/HTTPS content
+
+The browser blocks some resources because they are loaded over HTTP while the page came over HTTPS.
+
+Likely cause: APP_INGRESS_TRUSTED_PROXIES is not set, so Levelrail does not trust the `X-Forwarded-Proto` header from the proxy and thinks requests are coming over HTTP.
+
+How to confirm: open the browser's developer console (F12) and check the Network tab for mixed content warnings.
+
+Fix: on the control plane, set `APP_INGRESS_TRUSTED_PROXIES` to the IP range or address of your proxy. For example, `APP_INGRESS_TRUSTED_PROXIES=10.0.0.0/8` for a private network, or the proxy's specific IP if it is static. After setting it, restart Levelrail: `sudo systemctl restart levelrail`. Once Levelrail trusts the proxy's `X-Forwarded-Proto` header, it will serve links over HTTPS.
+
+### The dashboard is unreachable from outside but works on the server
+
+The proxy is not forwarding the dashboard address to Levelrail, or Levelrail is not listening on the right address.
+
+Likely cause: the proxy's configuration does not include the dashboard domain, or Levelrail's dashboard port (default 8080) is only listening on localhost.
+
+How to confirm: check the proxy's route configuration to see if the dashboard domain is included. Also check Levelrail's systemd unit with `systemctl cat levelrail` and look for `APP_HTTP_ADDR` (should not be `127.0.0.1` when running behind a proxy).
+
+Fix: add a proxy route for the dashboard domain pointing to Levelrail's dashboard port (8080 by default, or the port set with `APP_HTTP_ADDR` or `LEVELRAIL_DASHBOARD_PORT` during install). Set `APP_HTTP_ADDR=127.0.0.1:8080` (local only, since the proxy is the external listener) if it is not already. The installer normally handles this for coexist mode; if you set up the proxy afterward, manually add the route.
+
+Still stuck? Check the [Installing behind an existing proxy](/installing#server-already-runs-a-proxy) section or attach your proxy config to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## API
 
 `GET /api/v1/system/reverse-proxy?domain=D&proxy=traefik&verify=true`, or

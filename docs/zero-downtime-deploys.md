@@ -58,3 +58,7 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
 Read the deploy safety guide or try it on a spare server.
 
 [Read deploy safety](/deploy-safety) | [View on GitHub](https://github.com/glincker/levelrail)
+
+## Troubleshooting
+
+For issues with zero-downtime deploys, readiness gates, or rollbacks, see [Deploy safety](deploy-safety.md) for safety mechanisms and [Deploying apps](deploying-apps.md) for deploy troubleshooting. Check [Deploy failures](deploy-failures.md) for structured failure codes and what each one means.

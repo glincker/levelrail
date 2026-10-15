@@ -160,11 +160,35 @@ Five templates ship in this format today: Uptime Kuma, Wiki.js, Redmine, One-Tim
 
 `go run ./scripts/validate-templates` checks every manifest. Add `-compose-dir <dir>` to also check a directory of plain compose files against the same rules a real deploy uses. Use this to triage a large catalog before converting entries to manifests. It prints one line per file with the first reason it was rejected. Add `-json` for machine-readable output and `-strict` to fail on any rejected file.
 
-### Running templates for real
+## Troubleshooting
 
-`go run ./scripts/template-smoke` starts catalog templates under the local Docker daemon, waits `-settle` (default `20s`), and reports per template whether every service stays running, which one exited and with what code and last lines, whether a healthcheck fails, or whether an image could not be pulled. It always tears down what it started, and never binds host ports. `-only id1,id2` and `-category` pick templates, `-parallel` runs several at once, `-pull` allows pulling missing images (otherwise those templates are skipped), `-max-image-gb` skips anything larger, `-plan` lists which images are already local, and `-json` / `-md` write the report. A service that exits with code 0 counts as a failure: a deployed service is expected to keep running. The `Template smoke` workflow runs the whole catalog weekly in shards and on demand; it is informational, not a required check.
+### Compose file was rejected as invalid
 
-## API
+**Likely cause:** The compose file uses keys that are not allowed (privileged, cap_add, host networking, bind mounts of docker.sock, etc.), or it has syntax errors.
+
+**How to confirm:** Run `levelrail-cli compose preview -f compose.yaml`. The preview will show which keys are rejected and why.
+
+**Fix:** Remove the rejected keys from the compose file. Common issues: privileged mode, cap_add, bind mounts to /var/run/docker.sock, and host networking are all refused for security. Update the file and try again.
+
+### Service is not starting or is stuck waiting
+
+**Likely cause:** A dependency is not healthy, or the service itself has a startup issue.
+
+**How to confirm:** Run `levelrail-cli compose status <app>` and look for the per-service status. Check `depends_on` and `service_healthy` conditions in the compose file.
+
+**Fix:** Check the service logs with `levelrail-cli compose logs <app> --service <service> -f`. If a dependency is not healthy, fix that service first (check its health check). If the service itself is failing, check logs for startup errors.
+
+### Generated secret value is wrong or missing
+
+**Likely cause:** The template is missing the setting definition, or the setting is not used in the compose file with the correct variable name.
+
+**How to confirm:** Run `levelrail-cli templates get <id>` and check the `template.yaml` for the setting definition. Look for the `${KEY}` placeholder in the compose file.
+
+**Fix:** Make sure the setting is defined in `template.yaml` and the variable name in the compose file exactly matches the `key` field. Generated values are stored per app and reused on redeploy, so environment changes to the setting do not affect existing apps.
+
+### Still stuck
+
+For help with compose files, run `levelrail-cli compose preview <name> -f compose.yaml` to see the full validation report. Check the app and service logs with `levelrail-cli compose logs <name> [--service <service>]`.
 
 | Method | Path | Ability |
 | --- | --- | --- |
