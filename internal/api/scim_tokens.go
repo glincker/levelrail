@@ -1,21 +1,21 @@
 package api
 
 import (
-	"crypto/rand"
-	"encoding/base64"
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
 	maxSCIMTokenName  = 64
-	scimTokenShownLen = 10
+	scimTokenShownLen = 6
 )
 
 type scimTokenResource struct {
@@ -34,7 +34,7 @@ type scimTokenCreated struct {
 	Token string `json:"token"`
 }
 
-func toSCIMTokenResource(t store.SCIMToken) scimTokenResource {
+func toSCIMTokenResource(t authengine.SCIMToken, m store.SCIMTokenMeta) scimTokenResource {
 	fmtPtr := func(v *time.Time) *string {
 		if v == nil {
 			return nil
@@ -42,67 +42,56 @@ func toSCIMTokenResource(t store.SCIMToken) scimTokenResource {
 		s := v.UTC().Format(time.RFC3339)
 		return &s
 	}
-	return scimTokenResource{ID: t.ID, Name: t.Name, Prefix: t.Prefix, CreatedBy: t.CreatedBy,
+	return scimTokenResource{ID: t.ID, Name: t.Name, Prefix: m.Prefix, CreatedBy: m.CreatedBy,
 		CreatedAt: t.CreatedAt.UTC().Format(time.RFC3339), LastUsedAt: fmtPtr(t.LastUsedAt), RevokedAt: fmtPtr(t.RevokedAt)}
 }
 
-func newSCIMSecret() (string, error) {
-	buf := make([]byte, 32)
-	if _, err := rand.Read(buf); err != nil {
-		return "", fmt.Errorf("api: generate scim token: %w", err)
-	}
-	return scimTokenPrefix + base64.RawURLEncoding.EncodeToString(buf), nil
-}
-
-func (rt *Router) mintSCIMToken(r *http.Request, name string) (store.SCIMToken, string, error) {
-	secret, err := newSCIMSecret()
+// mintSCIMToken creates a library token and records who made it.
+func (rt *Router) mintSCIMToken(r *http.Request, name string) (scimTokenCreated, error) {
+	secret, tok, err := rt.authEngine.CreateSCIMToken(r.Context(), name)
 	if err != nil {
-		return store.SCIMToken{}, "", err
-	}
-	id, err := randomOpaqueID("scimtok_")
-	if err != nil {
-		return store.SCIMToken{}, "", err
+		return scimTokenCreated{}, err
 	}
 	_, actorID, actor, _ := rt.currentActor(r)
 	if actor == "" {
 		actor = actorID
 	}
-	return store.SCIMToken{ID: id, Name: name, TokenHash: hashToken(secret), Prefix: secret[:scimTokenShownLen],
-		CreatedBy: actor, CreatedAt: time.Now()}, secret, nil
-}
-
-func (rt *Router) scimAdminReady(w http.ResponseWriter) bool {
-	if rt.scim == nil {
-		writeError(w, http.StatusNotImplemented, errSSOUnavailable.Error())
-		return false
+	meta := store.SCIMTokenMeta{Prefix: secret[:scimTokenShownLen], CreatedBy: actor}
+	if err := rt.sso.SaveSCIMTokenMeta(r.Context(), tok.ID, meta); err != nil {
+		rt.logger.Warn("api: save scim token label failed", slog.String("token_id", tok.ID), slog.String("error", err.Error()))
 	}
-	return true
+	return scimTokenCreated{scimTokenResource: toSCIMTokenResource(tok, meta), Token: secret}, nil
 }
 
 func (rt *Router) handleListSCIMTokens(w http.ResponseWriter, r *http.Request) {
-	if !rt.scimAdminReady(w) {
+	if !rt.ssoReady(w) {
 		return
 	}
-	toks, err := rt.scim.ListSCIMTokens(r.Context())
+	toks, err := rt.authEngine.ListSCIMTokens(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: list scim tokens failed", err)
+		return
+	}
+	metas, err := rt.sso.SCIMTokenMetas(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list scim tokens failed", err)
 		return
 	}
 	out := make([]scimTokenResource, 0, len(toks))
 	for _, t := range toks {
-		out = append(out, toSCIMTokenResource(t))
+		out = append(out, toSCIMTokenResource(t, metas[t.ID]))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
 func (rt *Router) handleCreateSCIMToken(w http.ResponseWriter, r *http.Request) {
-	if !rt.scimAdminReady(w) {
+	if !rt.ssoReady(w) {
 		return
 	}
 	var req struct {
 		Name string `json:"name"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -111,25 +100,23 @@ func (rt *Router) handleCreateSCIMToken(w http.ResponseWriter, r *http.Request) 
 		writeError(w, http.StatusBadRequest, "name is required and at most 64 characters")
 		return
 	}
-	tok, secret, err := rt.mintSCIMToken(r, name)
+	created, err := rt.mintSCIMToken(r, name)
 	if err != nil {
 		rt.internalError(w, "api: create scim token failed", err)
 		return
 	}
-	if err := rt.scim.CreateSCIMToken(r.Context(), tok); err != nil {
-		rt.internalError(w, "api: create scim token failed", err)
-		return
-	}
-	writeJSON(w, http.StatusCreated, scimTokenCreated{scimTokenResource: toSCIMTokenResource(tok), Token: secret})
+	writeJSON(w, http.StatusCreated, created)
 }
 
-// handleRotateSCIMToken swaps a token for a new one with the same name; the old one stops working at once.
+// handleRotateSCIMToken mints a replacement with the same name, then revokes
+// the old one. If the old one cannot be revoked the new one is revoked too,
+// so a failed rotation never leaves two live tokens.
 func (rt *Router) handleRotateSCIMToken(w http.ResponseWriter, r *http.Request) {
-	if !rt.scimAdminReady(w) {
+	if !rt.ssoReady(w) {
 		return
 	}
-	old, err := rt.scim.GetSCIMToken(r.Context(), r.PathValue("id"))
-	if errors.Is(err, store.ErrSCIMTokenNotFound) || (err == nil && old.RevokedAt != nil) {
+	old, err := rt.authEngine.SCIMTokenByID(r.Context(), r.PathValue("id"))
+	if errors.Is(err, authengine.ErrSCIMTokenNotFound) || (err == nil && old.RevokedAt != nil) {
 		writeError(w, http.StatusNotFound, "active scim token not found")
 		return
 	}
@@ -137,31 +124,35 @@ func (rt *Router) handleRotateSCIMToken(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: rotate scim token failed", err)
 		return
 	}
-	next, secret, err := rt.mintSCIMToken(r, old.Name)
+	next, err := rt.mintSCIMToken(r, old.Name)
 	if err != nil {
 		rt.internalError(w, "api: rotate scim token failed", err)
 		return
 	}
-	if err := rt.scim.RotateSCIMToken(r.Context(), old.ID, next); err != nil {
-		if errors.Is(err, store.ErrSCIMTokenNotFound) {
-			writeError(w, http.StatusNotFound, "active scim token not found")
-			return
+	if err := rt.authEngine.RevokeSCIMToken(r.Context(), old.ID); err != nil {
+		if rerr := rt.authEngine.RevokeSCIMToken(context.WithoutCancel(r.Context()), next.ID); rerr != nil {
+			rt.logger.Error("api: rotate scim token: revoking the replacement failed too", slog.String("token_id", next.ID), slog.String("error", rerr.Error()))
 		}
 		rt.internalError(w, "api: rotate scim token failed", err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, scimTokenCreated{scimTokenResource: toSCIMTokenResource(next), Token: secret})
+	writeJSON(w, http.StatusCreated, next)
 }
 
 func (rt *Router) handleRevokeSCIMToken(w http.ResponseWriter, r *http.Request) {
-	if !rt.scimAdminReady(w) {
+	if !rt.ssoReady(w) {
 		return
 	}
-	if err := rt.scim.RevokeSCIMToken(r.Context(), r.PathValue("id"), time.Now()); err != nil {
-		if errors.Is(err, store.ErrSCIMTokenNotFound) {
-			writeError(w, http.StatusNotFound, "active scim token not found")
-			return
-		}
+	tok, err := rt.authEngine.SCIMTokenByID(r.Context(), r.PathValue("id"))
+	if errors.Is(err, authengine.ErrSCIMTokenNotFound) || (err == nil && tok.RevokedAt != nil) {
+		writeError(w, http.StatusNotFound, "active scim token not found")
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: revoke scim token failed", err)
+		return
+	}
+	if err := rt.authEngine.RevokeSCIMToken(r.Context(), tok.ID); err != nil {
 		rt.internalError(w, "api: revoke scim token failed", err)
 		return
 	}

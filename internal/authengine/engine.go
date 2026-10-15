@@ -4,6 +4,8 @@ package authengine
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -107,6 +109,9 @@ type Engine struct {
 	oauth       *oauthRuntime
 	orgID       theauth.ULID
 	samlOn      bool
+	samlCert    *x509.Certificate
+	samlKey     *rsa.PrivateKey
+	baseURL     string
 }
 
 // New builds the engine over db. The library tables must exist already: they
@@ -169,6 +174,13 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 	applyMFA(&tcfg, cfg)
 	oauthRT := applyOAuth(&tcfg, cfg, db)
 	applyEnterprise(&tcfg, cfg)
+	var samlCert *x509.Certificate
+	var samlKey *rsa.PrivateKey
+	if tcfg.SAML != nil {
+		if samlCert, samlKey, err = parseSAMLKeyPair(cfg.SAML); err != nil {
+			return nil, err
+		}
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), dispatchTimeout)
 	defer cancel()
 	orgID, err := ensureDefaultOrg(ctx, store)
@@ -181,7 +193,8 @@ func New(db *sql.DB, cfg Config) (*Engine, error) {
 	}
 	bindSessions(sess, a, cfg.PathPrefix)
 	return &Engine{auth: a, prefix: cfg.PathPrefix, store: store, db: db, dir: cfg.Directory, tokenPrefix: tcfg.APITokens.Prefix,
-		sessions: sess, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil, oauth: oauthRT, orgID: orgID, samlOn: tcfg.SAML != nil}, nil
+		sessions: sess, totp: tcfg.TOTP != nil, passkeys: tcfg.WebAuthn != nil, oauth: oauthRT, orgID: orgID,
+		samlOn: tcfg.SAML != nil, samlCert: samlCert, samlKey: samlKey, baseURL: base}, nil
 }
 
 // Prefix is the route prefix Handler serves under.

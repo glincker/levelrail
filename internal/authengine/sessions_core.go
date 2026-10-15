@@ -123,6 +123,8 @@ const (
 	CodeSetupTokenInvalid  = theauth.CodeSetupTokenInvalid
 	CodeResetInvalid       = theauth.CodePasswordResetInvalid
 	CodeResetExpired       = theauth.CodePasswordResetExpired
+	CodeAccountDisabled    = theauth.CodeAccountDisabled
+	CodeMustChangePassword = theauth.CodePasswordChangeRequired
 )
 
 type callOpts struct {

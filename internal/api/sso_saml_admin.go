@@ -1,22 +1,22 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/samlsso"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
-	envSAMLRatePerMinute     = "APP_SAML_RATE_PER_MINUTE"
-	defaultSAMLRatePerMinute = 30
-	maxSAMLNameLen           = 64
-	maxSAMLAttributeLen      = 256
+	maxSAMLNameLen      = 64
+	maxSAMLAttributeLen = 256
 )
 
 var samlDomainRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$`)
@@ -71,33 +71,40 @@ type samlMetadataImportRequest struct {
 	XML string `json:"xml"`
 }
 
-func (rt *Router) samlResource(r *http.Request, c store.SAMLConnection) samlConnectionResource {
+// samlBinding is the IdP side of a connection, from the library or the draft.
+func (rt *Router) samlBinding(ctx context.Context, c store.SSOConnection) (store.SSODraft, error) {
+	if c.LibraryID == "" {
+		return c.Draft, nil
+	}
+	lib, err := rt.authEngine.SAMLConnection(ctx, c.LibraryID)
+	if err != nil {
+		return store.SSODraft{}, err
+	}
+	return store.SSODraft{IDPEntityID: lib.IDPEntityID, IDPSSOURL: lib.IDPSSOURL, IDPCertificate: lib.IDPCertPEM,
+		EmailAttribute: lib.Attributes.Email, NameAttribute: lib.Attributes.Name, GroupsAttribute: lib.Attributes.Groups}, nil
+}
+
+func (rt *Router) samlResource(ctx context.Context, c store.SSOConnection) (samlConnectionResource, error) {
+	b, err := rt.samlBinding(ctx, c)
+	if err != nil {
+		return samlConnectionResource{}, err
+	}
 	res := samlConnectionResource{
-		ID: c.ID, Name: c.Name, Enabled: c.Enabled, Configured: samlConfigured(c),
-		IDPEntityID: c.IDPEntityID, IDPSSOURL: c.IDPSSOURL, IDPCertificates: c.IDPCertificates, IDPMetadataURL: c.IDPMetadataURL,
-		Certificates: []samlCertificateInfo{}, EmailAttribute: c.EmailAttribute, NameAttribute: c.NameAttribute,
-		GroupsAttribute: c.GroupsAttribute, AllowedDomains: nonNilStrings(c.AllowedDomains), JITProvisioning: c.JITProvisioning,
+		ID: c.ID, Name: c.Name, Enabled: c.Enabled, Configured: c.LibraryID != "",
+		IDPEntityID: b.IDPEntityID, IDPSSOURL: b.IDPSSOURL, IDPCertificates: b.IDPCertificate, IDPMetadataURL: c.IDPMetadataURL,
+		Certificates: []samlCertificateInfo{}, EmailAttribute: b.EmailAttribute, NameAttribute: b.NameAttribute,
+		GroupsAttribute: b.GroupsAttribute, AllowedDomains: nonNilStrings(c.AllowedDomains), JITProvisioning: c.JITProvisioning,
 		DefaultRoleID: c.DefaultRoleID, SyncRoles: c.SyncRoles,
 		CreatedAt: c.CreatedAt.UTC().Format(time.RFC3339), UpdatedAt: c.UpdatedAt.UTC().Format(time.RFC3339),
 	}
-	if certs, err := samlsso.ParseCertificates(c.IDPCertificates); err == nil {
-		for _, cert := range certs {
-			res.Certificates = append(res.Certificates, samlCertificateInfo{Subject: cert.Subject.String(), NotAfter: cert.NotAfter.UTC().Format(time.RFC3339)})
-		}
+	if subject, notAfter, ok := authengine.IDPCertificateInfo(b.IDPCertificate); ok {
+		res.Certificates = append(res.Certificates, samlCertificateInfo{Subject: subject, NotAfter: notAfter.UTC().Format(time.RFC3339)})
 	}
-	if base, err := rt.samlBaseURL(r.Context()); err == nil {
+	if base, err := rt.samlBaseURL(ctx); err == nil {
 		res.SPEntityID, res.SPACSURL = samlEndpoints(base, c.ID)
 		res.SPMetadataURL = res.SPEntityID
 	}
-	return res
-}
-
-func (rt *Router) ssoReady(w http.ResponseWriter) bool {
-	if rt.sso == nil {
-		writeError(w, http.StatusNotImplemented, errSSOUnavailable.Error())
-		return false
-	}
-	return true
+	return res, nil
 }
 
 func normalizeSAMLDomains(in []string) ([]string, error) {
@@ -115,97 +122,196 @@ func normalizeSAMLDomains(in []string) ([]string, error) {
 	return out, nil
 }
 
-// applySAMLRequest validates req onto c. Enabling demands a complete IDP and
-// an https dashboard URL, so a half-configured connection never reaches sign-in.
-func (rt *Router) applySAMLRequest(r *http.Request, c *store.SAMLConnection, req samlConnectionRequest) (int, error) {
+// applySAMLRequest validates req onto c's platform fields and returns the
+// IdP binding it asks for.
+func (rt *Router) applySAMLRequest(ctx context.Context, c *store.SSOConnection, req samlConnectionRequest) (store.SSODraft, int, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" || len(name) > maxSAMLNameLen {
-		return http.StatusBadRequest, errors.New("name is required and at most 64 characters")
+		return store.SSODraft{}, http.StatusBadRequest, errors.New("name is required and at most 64 characters")
 	}
 	for _, a := range []string{req.EmailAttribute, req.NameAttribute, req.GroupsAttribute} {
 		if len(a) > maxSAMLAttributeLen {
-			return http.StatusBadRequest, errors.New("attribute names are at most 256 characters")
+			return store.SSODraft{}, http.StatusBadRequest, errors.New("attribute names are at most 256 characters")
 		}
 	}
 	domains, err := normalizeSAMLDomains(req.AllowedDomains)
 	if err != nil {
-		return http.StatusBadRequest, err
+		return store.SSODraft{}, http.StatusBadRequest, err
 	}
-	idp := samlsso.IDP{EntityID: strings.TrimSpace(req.IDPEntityID), SSOURL: strings.TrimSpace(req.IDPSSOURL), CertificatesPEM: strings.TrimSpace(req.IDPCertificates)}
-	if idp.CertificatesPEM != "" {
-		certs, err := samlsso.ParseCertificates(idp.CertificatesPEM)
+	b := store.SSODraft{IDPEntityID: strings.TrimSpace(req.IDPEntityID), IDPSSOURL: strings.TrimSpace(req.IDPSSOURL),
+		IDPCertificate: strings.TrimSpace(req.IDPCertificates), EmailAttribute: strings.TrimSpace(req.EmailAttribute),
+		NameAttribute: strings.TrimSpace(req.NameAttribute), GroupsAttribute: strings.TrimSpace(req.GroupsAttribute)}
+	if b.IDPCertificate != "" {
+		pemCert, err := authengine.NormalizeIDPCertificate(b.IDPCertificate)
 		if err != nil {
-			return http.StatusBadRequest, errors.New("idp_certificates: " + err.Error())
+			return store.SSODraft{}, http.StatusBadRequest, errors.New("idp_certificates: " + err.Error())
 		}
-		idp.CertificatesPEM = samlsso.EncodeCertificates(certs)
-	}
-	if req.Enabled {
-		if err := idp.Check(); err != nil {
-			return http.StatusBadRequest, errors.New("cannot enable an incomplete connection: " + err.Error())
-		}
-		if _, err := rt.samlBaseURL(r.Context()); err != nil {
-			return http.StatusConflict, err
-		}
+		b.IDPCertificate = pemCert
 	}
 	if req.IDPMetadataURL != "" && !strings.HasPrefix(req.IDPMetadataURL, "https://") {
-		return http.StatusBadRequest, errors.New("idp_metadata_url must use https")
+		return store.SSODraft{}, http.StatusBadRequest, errors.New("idp_metadata_url must use https")
 	}
 	if req.DefaultRoleID != "" {
-		if _, err := rt.roles.GetRole(r.Context(), req.DefaultRoleID); err != nil {
-			return http.StatusBadRequest, errors.New("default_role_id does not name a stored role")
+		if _, err := rt.roles.GetRole(ctx, req.DefaultRoleID); err != nil {
+			return store.SSODraft{}, http.StatusBadRequest, errors.New("default_role_id does not name a stored role")
 		}
 	}
-	c.Name, c.Enabled = name, req.Enabled
-	c.IDPEntityID, c.IDPSSOURL, c.IDPCertificates, c.IDPMetadataURL = idp.EntityID, idp.SSOURL, idp.CertificatesPEM, strings.TrimSpace(req.IDPMetadataURL)
-	c.EmailAttribute, c.NameAttribute, c.GroupsAttribute = strings.TrimSpace(req.EmailAttribute), strings.TrimSpace(req.NameAttribute), strings.TrimSpace(req.GroupsAttribute)
+	c.Name, c.Enabled, c.IDPMetadataURL = name, req.Enabled, strings.TrimSpace(req.IDPMetadataURL)
 	c.AllowedDomains, c.JITProvisioning, c.DefaultRoleID, c.SyncRoles = domains, req.JITProvisioning, req.DefaultRoleID, req.SyncRoles
-	return 0, nil
+	return b, 0, nil
+}
+
+// placeSAMLBinding writes b to the library when it is complete, else keeps it
+// as a draft. A connection already in the library cannot fall back to a
+// draft, and only a library-backed connection may be enabled.
+func (rt *Router) placeSAMLBinding(ctx context.Context, c *store.SSOConnection, b store.SSODraft) (createdLib string, status int, err error) {
+	idp := authengine.SAMLIdP{EntityID: b.IDPEntityID, SSOURL: b.IDPSSOURL, CertPEM: b.IDPCertificate}
+	idpErr := idp.Check()
+	base, baseErr := rt.samlBaseURL(ctx)
+	if c.LibraryID != "" && idpErr != nil {
+		return "", http.StatusBadRequest, errors.New("the identity provider settings of a configured connection cannot be cleared: " + idpErr.Error())
+	}
+	if idpErr != nil || baseErr != nil {
+		if c.Enabled {
+			if idpErr != nil {
+				return "", http.StatusBadRequest, errors.New("cannot enable an incomplete connection: " + idpErr.Error())
+			}
+			return "", http.StatusConflict, baseErr
+		}
+		if c.LibraryID == "" {
+			c.Draft = b
+			return "", 0, nil
+		}
+		return "", http.StatusConflict, baseErr
+	}
+	entityID, acs := samlEndpoints(base, c.ID)
+	lc := authengine.SAMLConnection{ID: c.LibraryID, IDPEntityID: idp.EntityID, IDPSSOURL: idp.SSOURL, IDPCertPEM: idp.CertPEM,
+		SPEntityID: entityID, SPACSURL: acs,
+		Attributes: authengine.SAMLAttributes{Email: b.EmailAttribute, Name: b.NameAttribute, Groups: b.GroupsAttribute}}
+	if c.LibraryID != "" {
+		return "", 0, rt.authEngine.UpdateSAMLConnection(ctx, lc)
+	}
+	id, err := rt.authEngine.CreateSAMLConnection(ctx, lc)
+	if err != nil {
+		return "", 0, err
+	}
+	c.LibraryID, c.Draft = id, store.SSODraft{}
+	return id, 0, nil
+}
+
+// saveSAMLConnection places the binding, then stores the platform row; if the
+// row cannot be stored, a library connection made by this call is removed again.
+func (rt *Router) saveSAMLConnection(w http.ResponseWriter, r *http.Request, c store.SSOConnection, b store.SSODraft, create bool) {
+	ctx := r.Context()
+	createdLib, status, err := rt.placeSAMLBinding(ctx, &c, b)
+	if status != 0 {
+		writeError(w, status, err.Error())
+		return
+	}
+	if err != nil {
+		rt.internalError(w, "api: save saml connection in library failed", err)
+		return
+	}
+	now := time.Now()
+	if err := rt.sso.SaveSSOConnection(ctx, c, create, now); err != nil {
+		if createdLib != "" {
+			if derr := rt.authEngine.DeleteSAMLConnection(context.WithoutCancel(ctx), createdLib); derr != nil {
+				rt.logger.Error("api: roll back library saml connection failed", slog.String("connection_id", c.ID), slog.String("error", derr.Error()))
+			}
+		}
+		rt.writeSAMLStoreError(w, "save", err)
+		return
+	}
+	if create {
+		c.CreatedAt = now
+	}
+	c.UpdatedAt = now
+	res, err := rt.samlResource(ctx, c)
+	if err != nil {
+		rt.internalError(w, "api: render saml connection failed", err)
+		return
+	}
+	status = http.StatusOK
+	if create {
+		status = http.StatusCreated
+	}
+	writeJSON(w, status, res)
+}
+
+// syncSAMLEndpoints rewrites the library's SP URLs when the dashboard URL moved.
+func (rt *Router) syncSAMLEndpoints(ctx context.Context, c store.SSOConnection) error {
+	base, err := rt.samlBaseURL(ctx)
+	if err != nil {
+		return err
+	}
+	lib, err := rt.authEngine.SAMLConnection(ctx, c.LibraryID)
+	if err != nil {
+		return err
+	}
+	entityID, acs := samlEndpoints(base, c.ID)
+	if lib.SPEntityID == entityID && lib.SPACSURL == acs {
+		return nil
+	}
+	lib.SPEntityID, lib.SPACSURL = entityID, acs
+	return rt.authEngine.UpdateSAMLConnection(ctx, lib)
 }
 
 func (rt *Router) handleListSAMLConnections(w http.ResponseWriter, r *http.Request) {
-	if !rt.ssoReady(w) {
+	if !rt.samlReady(w) {
 		return
 	}
-	conns, err := rt.sso.ListSAMLConnections(r.Context())
+	conns, err := rt.sso.ListSSOConnections(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list saml connections failed", err)
 		return
 	}
 	out := make([]samlConnectionResource, 0, len(conns))
 	for _, c := range conns {
-		out = append(out, rt.samlResource(r, c))
+		res, err := rt.samlResource(r.Context(), c)
+		if err != nil {
+			rt.internalError(w, "api: render saml connection failed", err)
+			return
+		}
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-func (rt *Router) handleGetSAMLConnection(w http.ResponseWriter, r *http.Request) {
-	if c, ok := rt.loadSAMLConnection(w, r); ok {
-		writeJSON(w, http.StatusOK, rt.samlResource(r, c))
+func (rt *Router) loadSAMLConnection(w http.ResponseWriter, r *http.Request) (store.SSOConnection, bool) {
+	if !rt.samlReady(w) {
+		return store.SSOConnection{}, false
 	}
-}
-
-func (rt *Router) loadSAMLConnection(w http.ResponseWriter, r *http.Request) (store.SAMLConnection, bool) {
-	if !rt.ssoReady(w) {
-		return store.SAMLConnection{}, false
-	}
-	c, err := rt.sso.GetSAMLConnection(r.Context(), r.PathValue("id"))
-	if errors.Is(err, store.ErrSAMLConnectionNotFound) {
+	c, err := rt.sso.GetSSOConnection(r.Context(), r.PathValue("id"))
+	if errors.Is(err, store.ErrSSOConnectionNotFound) {
 		writeError(w, http.StatusNotFound, "saml connection not found")
-		return store.SAMLConnection{}, false
+		return store.SSOConnection{}, false
 	}
 	if err != nil {
 		rt.internalError(w, "api: get saml connection failed", err)
-		return store.SAMLConnection{}, false
+		return store.SSOConnection{}, false
 	}
 	return c, true
 }
 
+func (rt *Router) handleGetSAMLConnection(w http.ResponseWriter, r *http.Request) {
+	c, ok := rt.loadSAMLConnection(w, r)
+	if !ok {
+		return
+	}
+	res, err := rt.samlResource(r.Context(), c)
+	if err != nil {
+		rt.internalError(w, "api: render saml connection failed", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
 func (rt *Router) handleCreateSAMLConnection(w http.ResponseWriter, r *http.Request) {
-	if !rt.ssoReady(w) {
+	if !rt.samlReady(w) {
 		return
 	}
 	var req samlConnectionRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, samlsso.MaxMetadataBytes)).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, authengine.MaxSAMLMetadataBytes)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -214,18 +320,13 @@ func (rt *Router) handleCreateSAMLConnection(w http.ResponseWriter, r *http.Requ
 		rt.internalError(w, "api: create saml connection id failed", err)
 		return
 	}
-	c := store.SAMLConnection{ID: id}
-	if status, err := rt.applySAMLRequest(r, &c, req); err != nil {
+	c := store.SSOConnection{ID: id}
+	b, status, err := rt.applySAMLRequest(r.Context(), &c, req)
+	if err != nil {
 		writeError(w, status, err.Error())
 		return
 	}
-	now := time.Now()
-	if err := rt.sso.CreateSAMLConnection(r.Context(), c, now); err != nil {
-		rt.writeSAMLStoreError(w, "create", err)
-		return
-	}
-	c.CreatedAt, c.UpdatedAt = now, now
-	writeJSON(w, http.StatusCreated, rt.samlResource(r, c))
+	rt.saveSAMLConnection(w, r, c, b, true)
 }
 
 func (rt *Router) handleUpdateSAMLConnection(w http.ResponseWriter, r *http.Request) {
@@ -234,34 +335,39 @@ func (rt *Router) handleUpdateSAMLConnection(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	var req samlConnectionRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, samlsso.MaxMetadataBytes)).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, authengine.MaxSAMLMetadataBytes)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if status, err := rt.applySAMLRequest(r, &c, req); err != nil {
+	b, status, err := rt.applySAMLRequest(r.Context(), &c, req)
+	if err != nil {
 		writeError(w, status, err.Error())
 		return
 	}
-	c.UpdatedAt = time.Now()
-	if err := rt.sso.UpdateSAMLConnection(r.Context(), c, c.UpdatedAt); err != nil {
-		rt.writeSAMLStoreError(w, "update", err)
-		return
-	}
-	writeJSON(w, http.StatusOK, rt.samlResource(r, c))
+	rt.saveSAMLConnection(w, r, c, b, false)
 }
 
+// handleDeleteSAMLConnection removes the library connection (and the
+// identities linked through it) first, so no half-deleted connection can sign anyone in.
 func (rt *Router) handleDeleteSAMLConnection(w http.ResponseWriter, r *http.Request) {
-	if !rt.ssoReady(w) {
+	c, ok := rt.loadSAMLConnection(w, r)
+	if !ok {
 		return
 	}
-	if err := rt.sso.DeleteSAMLConnection(r.Context(), r.PathValue("id")); err != nil {
+	if c.LibraryID != "" {
+		if err := rt.authEngine.DeleteSAMLConnection(r.Context(), c.LibraryID); err != nil && !errors.Is(err, authengine.ErrSAMLConnectionNotFound) {
+			rt.internalError(w, "api: delete library saml connection failed", err)
+			return
+		}
+	}
+	if err := rt.sso.DeleteSSOConnection(r.Context(), c.ID); err != nil {
 		rt.writeSAMLStoreError(w, "delete", err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// handleImportSAMLMetadata fills the IDP fields from metadata given as XML or
+// handleImportSAMLMetadata fills the IdP fields from metadata given as XML or
 // fetched from an https URL. It never enables the connection by itself.
 func (rt *Router) handleImportSAMLMetadata(w http.ResponseWriter, r *http.Request) {
 	c, ok := rt.loadSAMLConnection(w, r)
@@ -269,7 +375,7 @@ func (rt *Router) handleImportSAMLMetadata(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	var req samlMetadataImportRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2*samlsso.MaxMetadataBytes)).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 2*authengine.MaxSAMLMetadataBytes)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
@@ -279,35 +385,35 @@ func (rt *Router) handleImportSAMLMetadata(w http.ResponseWriter, r *http.Reques
 	}
 	raw := []byte(req.XML)
 	if req.URL != "" {
-		body, err := samlsso.FetchIDPMetadata(r.Context(), nil, req.URL)
+		body, err := authengine.FetchSAMLIdPMetadata(r.Context(), nil, req.URL)
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
 			return
 		}
 		raw = body
 	}
-	idp, err := samlsso.ParseIDPMetadata(raw)
+	idp, err := authengine.ParseSAMLIdPMetadata(raw, time.Now())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	c.IDPEntityID, c.IDPSSOURL, c.IDPCertificates = idp.EntityID, idp.SSOURL, idp.CertificatesPEM
+	b, err := rt.samlBinding(r.Context(), c)
+	if err != nil {
+		rt.internalError(w, "api: load saml binding failed", err)
+		return
+	}
+	b.IDPEntityID, b.IDPSSOURL, b.IDPCertificate = idp.EntityID, idp.SSOURL, idp.CertPEM
 	if req.URL != "" {
 		c.IDPMetadataURL = req.URL
 	}
-	c.UpdatedAt = time.Now()
-	if err := rt.sso.UpdateSAMLConnection(r.Context(), c, c.UpdatedAt); err != nil {
-		rt.writeSAMLStoreError(w, "import metadata", err)
-		return
-	}
-	writeJSON(w, http.StatusOK, rt.samlResource(r, c))
+	rt.saveSAMLConnection(w, r, c, b, false)
 }
 
 func (rt *Router) writeSAMLStoreError(w http.ResponseWriter, op string, err error) {
 	switch {
-	case errors.Is(err, store.ErrSAMLConnectionNotFound):
+	case errors.Is(err, store.ErrSSOConnectionNotFound):
 		writeError(w, http.StatusNotFound, "saml connection not found")
-	case errors.Is(err, store.ErrSAMLConnectionNameTaken):
+	case errors.Is(err, store.ErrSSOConnectionNameTaken):
 		writeError(w, http.StatusConflict, "a saml connection with that name already exists")
 	default:
 		rt.internalError(w, "api: "+op+" saml connection failed", err)

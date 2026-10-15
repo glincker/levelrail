@@ -88,6 +88,10 @@ func (rt *Router) writeLibAuthError(w http.ResponseWriter, context string, err e
 		}
 		w.Header().Set("Retry-After", strconv.Itoa(secs))
 		writeError(w, http.StatusTooManyRequests, "too many failed attempts, try again later")
+	case authengine.CodeAccountDisabled:
+		writeError(w, http.StatusForbidden, ssoRequiredMessage)
+	case authengine.CodeMustChangePassword:
+		writeError(w, http.StatusForbidden, passwordChangeRequiredMessage)
 	default:
 		rt.internalError(w, context, err)
 	}

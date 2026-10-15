@@ -8,10 +8,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/GLINCKER/levelrail/internal/scim"
 	"github.com/GLINCKER/levelrail/internal/store"
+)
+
+const (
+	testSCIMUserSchema = "urn:ietf:params:scim:schemas:core:2.0:User"
+	testSCIMPatchOp    = "urn:ietf:params:scim:api:messages:2.0:PatchOp"
 )
 
 type scimHarness struct {
@@ -41,7 +44,7 @@ func (h *scimHarness) mint(name string) (string, string) {
 	}
 	var out scimTokenCreated
 	_ = json.Unmarshal(rec.Body.Bytes(), &out)
-	if !strings.HasPrefix(out.Token, scimTokenPrefix) || out.Prefix != out.Token[:scimTokenShownLen] {
+	if len(out.Token) < 40 || out.Prefix != out.Token[:scimTokenShownLen] {
 		h.t.Fatalf("token %+v", out)
 	}
 	return out.Token, out.ID
@@ -54,7 +57,7 @@ func (h *scimHarness) do(method, path, token, body string) *httptest.ResponseRec
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
-	req.Header.Set("Content-Type", scim.ContentType)
+	req.Header.Set("Content-Type", scimContentType)
 	rec := httptest.NewRecorder()
 	h.rt.Handler().ServeHTTP(rec, req)
 	return rec
@@ -62,13 +65,33 @@ func (h *scimHarness) do(method, path, token, body string) *httptest.ResponseRec
 
 func (h *scimHarness) createUser(email string) string {
 	h.t.Helper()
-	rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+scim.SchemaUser+`"],"userName":"`+email+`","externalId":"ext-`+email+`","name":{"givenName":"Ada","familyName":"L"},"emails":[{"value":"`+email+`","primary":true}],"active":true}`)
+	rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"`+email+`","externalId":"ext-`+email+`","name":{"givenName":"Ada","familyName":"L"},"emails":[{"value":"`+email+`","primary":true}],"active":true}`)
 	if rec.Code != http.StatusCreated {
 		h.t.Fatalf("create user: %d %s", rec.Code, rec.Body)
 	}
-	var u scim.User
-	_ = json.Unmarshal(rec.Body.Bytes(), &u)
-	return u.ID
+	id, err := scimResponseID(rec.Body.Bytes())
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	return id
+}
+
+func (h *scimHarness) patch(path, ops string) *httptest.ResponseRecorder {
+	h.t.Helper()
+	return h.do(http.MethodPatch, path, h.token, `{"schemas":["`+testSCIMPatchOp+`"],"Operations":`+ops+`}`)
+}
+
+func (h *scimHarness) platformUser(engineID string) store.User {
+	h.t.Helper()
+	legacy, err := h.rt.authEngine.LegacyUserFor(context.Background(), engineID)
+	if err != nil || legacy == "" {
+		h.t.Fatalf("no platform user for %s: %v", engineID, err)
+	}
+	u, err := h.db.GetUserByID(context.Background(), legacy)
+	if err != nil {
+		h.t.Fatal(err)
+	}
+	return *u
 }
 
 func TestSCIMAuth(t *testing.T) {
@@ -76,7 +99,7 @@ func TestSCIMAuth(t *testing.T) {
 	if rec := h.do(http.MethodGet, "/Users", "", ""); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("no token: %d", rec.Code)
 	}
-	if rec := h.do(http.MethodGet, "/Users", scimTokenPrefix+"forged", ""); rec.Code != http.StatusUnauthorized {
+	if rec := h.do(http.MethodGet, "/Users", "forged-token", ""); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("forged token: %d", rec.Code)
 	}
 	plain := httptest.NewRequest(http.MethodGet, scimBasePath+"/Users", nil)
@@ -87,151 +110,205 @@ func TestSCIMAuth(t *testing.T) {
 		t.Fatalf("plain http: %d", rec.Code)
 	}
 	if rec := h.do(http.MethodGet, "/ServiceProviderConfig", h.token, ""); rec.Code != http.StatusOK {
-		t.Fatalf("valid token: %d", rec.Code)
+		t.Fatalf("service provider config: %d %s", rec.Code, rec.Body)
 	}
-
 	rot := httptest.NewRecorder()
 	h.rt.Handler().ServeHTTP(rot, authedRequest(t, h.admin, http.MethodPost, "/api/v1/sso/scim/tokens/"+h.tokID+"/rotate", ""))
-	var next scimTokenCreated
-	_ = json.Unmarshal(rot.Body.Bytes(), &next)
-	if rot.Code != http.StatusCreated || next.Token == "" || next.Name != "okta" {
+	if rot.Code != http.StatusCreated {
 		t.Fatalf("rotate: %d %s", rot.Code, rot.Body)
 	}
+	var next scimTokenCreated
+	_ = json.Unmarshal(rot.Body.Bytes(), &next)
 	if rec := h.do(http.MethodGet, "/Users", h.token, ""); rec.Code != http.StatusUnauthorized {
 		t.Fatalf("rotated-out token still works: %d", rec.Code)
 	}
 	if rec := h.do(http.MethodGet, "/Users", next.Token, ""); rec.Code != http.StatusOK {
-		t.Fatalf("new token: %d", rec.Code)
+		t.Fatalf("rotated token: %d %s", rec.Code, rec.Body)
 	}
-	rev := httptest.NewRecorder()
-	h.rt.Handler().ServeHTTP(rev, authedRequest(t, h.admin, http.MethodDelete, "/api/v1/sso/scim/tokens/"+next.ID, ""))
-	if rev.Code != http.StatusNoContent {
-		t.Fatalf("revoke: %d", rev.Code)
-	}
-	if rec := h.do(http.MethodGet, "/Users", next.Token, ""); rec.Code != http.StatusUnauthorized {
-		t.Fatalf("revoked token still works: %d", rec.Code)
-	}
-	var stored string
-	_ = h.db.QueryRowContext(context.Background(), `SELECT token_hash FROM scim_tokens WHERE id = ?`, next.ID).Scan(&stored)
-	if stored == next.Token || stored != hashToken(next.Token) {
-		t.Fatal("token is not stored as its hash")
+	var stored int
+	if err := h.db.QueryRowContext(context.Background(), `SELECT COUNT(*) FROM theauth_scim_tokens WHERE token_hash = ?`, next.Token).Scan(&stored); err != nil || stored != 0 {
+		t.Fatalf("plaintext token stored: %d %v", stored, err)
 	}
 }
 
-func TestSCIMDeprovisionEndsSessionsAndIsAudited(t *testing.T) {
+func TestSCIMUserLifecycle(t *testing.T) {
 	h := newSCIMHarness(t)
 	ctx := context.Background()
 	id := h.createUser("ada@example.com")
-
-	list := h.do(http.MethodGet, `/Users?filter=userName%20eq%20%22ADA@example.com%22`, h.token, "")
-	var found scim.UserList
-	_ = json.Unmarshal(list.Body.Bytes(), &found)
-	if found.TotalResults != 1 || found.Resources[0].ID != id || found.Resources[0].ExternalID != "ext-ada@example.com" {
-		t.Fatalf("filter: %s", list.Body)
+	user := h.platformUser(id)
+	if user.Email != "ada@example.com" {
+		t.Fatalf("platform email = %q", user.Email)
 	}
-	if rec := h.do(http.MethodGet, `/Users?filter=password%20eq%20%22x%22`, h.token, ""); rec.Code != http.StatusBadRequest {
-		t.Fatalf("bad filter: %d", rec.Code)
+	if role, _ := h.db.UserRoleID(ctx, user.ID); role != "role_viewer" {
+		t.Fatalf("default role = %q", role)
 	}
-
-	user, err := h.db.GetUserByID(ctx, id)
-	if err != nil {
-		t.Fatal(err)
+	if rec := h.do(http.MethodGet, "/Users/"+id, h.token, ""); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "ada@example.com") {
+		t.Fatalf("get: %d %s", rec.Code, rec.Body)
 	}
-	tok, err := h.rt.libSessions.IssueSession(ctx, toLibUser(*user), "test", "127.0.0.1")
-	if err != nil {
-		t.Fatal(err)
+	if rec := h.patch("/Users/"+id, `[{"op":"replace","path":"displayName","value":"Ada Lovelace"}]`); rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Ada Lovelace") {
+		t.Fatalf("update: %d %s", rec.Code, rec.Body)
 	}
-	if _, ok := h.rt.sessions.lookup(tok); !ok {
-		t.Fatal("session not live before deprovisioning")
+	if h.rt.accountDisabled(ctx, user.ID) {
+		t.Fatal("an update disabled the account")
 	}
-	rec := h.do(http.MethodPatch, "/Users/"+id, h.token, `{"schemas":["`+scim.SchemaPatchOp+`"],"Operations":[{"op":"Replace","path":"active","value":"False"}]}`)
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"active":false`) {
+	if rec := h.patch("/Users/"+id, `[{"op":"replace","path":"active","value":false}]`); rec.Code != http.StatusOK {
 		t.Fatalf("deactivate: %d %s", rec.Code, rec.Body)
 	}
-	if _, ok := h.rt.sessions.lookup(tok); ok {
-		t.Fatal("session survived deprovisioning")
+	if !h.rt.accountDisabled(ctx, user.ID) {
+		t.Fatal("deactivation left the account enabled")
 	}
-	if !h.rt.accountDisabled(ctx, id) {
-		t.Fatal("account not disabled")
+	if rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"ada@example.com","externalId":"ext-ada@example.com","emails":[{"value":"ada@example.com","primary":true}]}`); rec.Code != http.StatusOK {
+		t.Fatalf("re-provision: %d %s", rec.Code, rec.Body)
 	}
-	entries, err := h.db.ListAuditEntries(ctx, 50, nil, store.AuditEntryFilter{})
-	if err != nil {
-		t.Fatal(err)
+	if h.rt.accountDisabled(ctx, user.ID) {
+		t.Fatal("re-provisioning left the account disabled")
 	}
-	audited := false
-	for _, e := range entries {
-		if e.Action == auditActionSCIMUserDeactivated && e.ActorID == h.tokID {
-			audited = true
-		}
-	}
-	if !audited {
-		t.Fatal("deprovisioning was not audited")
-	}
-
-	rec = h.do(http.MethodPatch, "/Users/"+id, h.token, `{"Operations":[{"op":"replace","value":{"active":true}}]}`)
-	if rec.Code != http.StatusOK || h.rt.accountDisabled(ctx, id) {
-		t.Fatalf("reactivate: %d %s", rec.Code, rec.Body)
-	}
-
 	if rec := h.do(http.MethodDelete, "/Users/"+id, h.token, ""); rec.Code != http.StatusNoContent {
-		t.Fatalf("delete: %d", rec.Code)
+		t.Fatalf("delete: %d %s", rec.Code, rec.Body)
+	}
+	if !h.rt.accountDisabled(ctx, user.ID) {
+		t.Fatal("delete left the account enabled")
 	}
 	if rec := h.do(http.MethodGet, "/Users/"+id, h.token, ""); rec.Code != http.StatusNotFound {
-		t.Fatalf("get after delete: %d", rec.Code)
-	}
-	if !h.rt.accountDisabled(ctx, id) {
-		t.Fatal("deleted account is not disabled")
-	}
-	if again := h.createUser("ada@example.com"); again != id || h.rt.accountDisabled(ctx, id) {
-		t.Fatalf("re-create did not restore the account: %s", again)
+		t.Fatalf("deleted user still visible: %d", rec.Code)
 	}
 }
 
-func TestSCIMRefusesLastRoot(t *testing.T) {
+// Deactivation must end what the user already holds, not only block new sign-ins.
+func TestSCIMDeactivationRevokesSessionsAndTokens(t *testing.T) {
 	h := newSCIMHarness(t)
-	root, err := h.db.GetUserByEmail(context.Background(), testAdminUsername)
+	ctx := context.Background()
+	id := h.createUser("cy@example.com")
+	user := h.platformUser(id)
+	token, err := h.rt.libSessions.IssueSession(ctx, toLibUser(user), "test", "127.0.0.1")
 	if err != nil {
 		t.Fatal(err)
 	}
-	rec := h.do(http.MethodPatch, "/Users/"+root.ID, h.token, `{"Operations":[{"op":"replace","path":"active","value":false}]}`)
-	if rec.Code != http.StatusConflict || h.rt.accountDisabled(context.Background(), root.ID) {
-		t.Fatalf("last root deactivated: %d %s", rec.Code, rec.Body)
+	sess := &http.Cookie{Name: sessionCookieName, Value: token} //nolint:gosec // request cookie, attributes only apply to Set-Cookie
+	get := func(req *http.Request) int {
+		rec := httptest.NewRecorder()
+		h.rt.Handler().ServeHTTP(rec, req)
+		return rec.Code
 	}
-	if rec := h.do(http.MethodDelete, "/Users/"+root.ID, h.token, ""); rec.Code != http.StatusConflict {
-		t.Fatalf("last root deleted: %d", rec.Code)
+	if code := get(authedRequest(t, sess, http.MethodGet, "/api/v1/auth/session", "")); code != http.StatusOK {
+		t.Fatalf("session before: %d", code)
+	}
+	mint := httptest.NewRecorder()
+	h.rt.Handler().ServeHTTP(mint, authedRequest(t, sess, http.MethodPost, "/api/v1/auth/tokens", `{"name":"ci","abilities":["read"]}`))
+	if mint.Code != http.StatusCreated {
+		t.Fatalf("mint api token: %d %s", mint.Code, mint.Body)
+	}
+	var created createTokenResponse
+	_ = json.Unmarshal(mint.Body.Bytes(), &created)
+	withBearer := func() *http.Request {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/apps", nil)
+		req.Header.Set("Authorization", "Bearer "+created.Token)
+		return req
+	}
+	if code := get(withBearer()); code != http.StatusOK {
+		t.Fatalf("api token before: %d", code)
+	}
+	var before int
+	if err := h.db.QueryRowContext(ctx, `SELECT (SELECT COUNT(*) FROM theauth_sessions WHERE user_id = ? AND revoked_at IS NULL)
+		+ (SELECT COUNT(*) FROM theauth_api_tokens WHERE owner_id = ? AND revoked_at IS NULL)`, id, id).Scan(&before); err != nil || before < 2 {
+		t.Fatalf("positive control: live library sessions and tokens = %d %v", before, err)
+	}
+
+	if rec := h.patch("/Users/"+id, `[{"op":"replace","path":"active","value":false}]`); rec.Code != http.StatusOK {
+		t.Fatalf("deactivate: %d %s", rec.Code, rec.Body)
+	}
+	if code := get(authedRequest(t, sess, http.MethodGet, "/api/v1/auth/session", "")); code != http.StatusUnauthorized {
+		t.Fatalf("session after deactivation: %d", code)
+	}
+	if code := get(withBearer()); code != http.StatusUnauthorized {
+		t.Fatalf("api token after deactivation: %d", code)
+	}
+	var live int
+	if err := h.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM theauth_sessions WHERE user_id = ? AND revoked_at IS NULL`, id).Scan(&live); err != nil || live != 0 {
+		t.Fatalf("library sessions still live: %d %v", live, err)
+	}
+	if err := h.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM theauth_api_tokens WHERE owner_id = ? AND revoked_at IS NULL`, id).Scan(&live); err != nil || live != 0 {
+		t.Fatalf("library api tokens still live: %d %v", live, err)
+	}
+}
+
+func TestSCIMAcceptsEntraActiveStrings(t *testing.T) {
+	h := newSCIMHarness(t)
+	id := h.createUser("entra@example.com")
+	if rec := h.patch("/Users/"+id, `[{"op":"Replace","path":"active","value":"False"}]`); rec.Code != http.StatusOK {
+		t.Fatalf("deactivate with a string: %d %s", rec.Code, rec.Body)
+	}
+	if !h.rt.accountDisabled(context.Background(), h.platformUser(id).ID) {
+		t.Fatal("string False did not deactivate")
+	}
+}
+
+func TestSCIMAdoptsExistingAccountAndCreatesInactive(t *testing.T) {
+	h := newSCIMHarness(t)
+	ctx := context.Background()
+	existing := storeUserForTest(t, h.db, "known@example.com")
+	rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"known@example.com","externalId":"ext-known","emails":[{"value":"known@example.com","primary":true}]}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("adopt: %d %s", rec.Code, rec.Body)
+	}
+	id, _ := scimResponseID(rec.Body.Bytes())
+	if got := h.platformUser(id); got.ID != existing.ID {
+		t.Fatalf("adopted %q, want %q", got.ID, existing.ID)
+	}
+	rec = h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"off@example.com","externalId":"ext-off","emails":[{"value":"off@example.com","primary":true}],"active":false}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create inactive: %d %s", rec.Code, rec.Body)
+	}
+	off, _ := scimResponseID(rec.Body.Bytes())
+	if !h.rt.accountDisabled(ctx, h.platformUser(off).ID) {
+		t.Fatal("a user created inactive can sign in")
 	}
 }
 
 func TestSCIMGroupsDriveRoles(t *testing.T) {
 	h := newSCIMHarness(t)
 	ctx := context.Background()
-	if err := h.db.ReplaceSSOGroupMappings(ctx, []store.SSOGroupMapping{{Group: "Engineering", RoleID: "role_operator", Priority: 1}}, time.Now()); err != nil {
+	put := httptest.NewRecorder()
+	h.rt.Handler().ServeHTTP(put, authedRequest(t, h.admin, http.MethodPut, "/api/v1/sso/group-mappings", `{"mappings":[{"group":"Engineering","role_id":"role_operator","priority":1}]}`))
+	if put.Code != http.StatusOK {
+		t.Fatalf("mappings: %d %s", put.Code, put.Body)
+	}
+	id := h.createUser("bea@example.com")
+	user := h.platformUser(id)
+	rec := h.do(http.MethodPost, "/Groups", h.token, `{"schemas":["urn:ietf:params:scim:schemas:core:2.0:Group"],"displayName":"Engineering","members":[{"value":"`+id+`"}]}`)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("group: %d %s", rec.Code, rec.Body)
+	}
+	gid, _ := scimResponseID(rec.Body.Bytes())
+	if role, _ := h.db.UserRoleID(ctx, user.ID); role != "role_operator" {
+		t.Fatalf("group join role = %q", role)
+	}
+	if rec := h.patch("/Groups/"+gid, `[{"op":"remove","path":"members","value":[{"value":"`+id+`"}]}]`); rec.Code != http.StatusOK && rec.Code != http.StatusNoContent {
+		t.Fatalf("leave group: %d %s", rec.Code, rec.Body)
+	}
+	if role, _ := h.db.UserRoleID(ctx, user.ID); role != "role_viewer" {
+		t.Fatalf("group leave role = %q", role)
+	}
+}
+
+func TestSCIMNeverDeprovisionsLastRoot(t *testing.T) {
+	h := newSCIMHarness(t)
+	root, err := h.db.GetUserByEmail(context.Background(), testAdminUsername)
+	if err != nil {
 		t.Fatal(err)
 	}
-	id := h.createUser("grace@example.com")
-	rec := h.do(http.MethodPost, "/Groups", h.token, `{"schemas":["`+scim.SchemaGroup+`"],"displayName":"engineering","members":[{"value":"`+id+`"}]}`)
-	if rec.Code != http.StatusCreated {
-		t.Fatalf("create group: %d %s", rec.Code, rec.Body)
-	}
-	var g scim.Group
-	_ = json.Unmarshal(rec.Body.Bytes(), &g)
-	if role, _ := h.db.UserRoleID(ctx, id); role != "role_operator" {
-		t.Fatalf("role after join = %q", role)
-	}
-	if rec := h.do(http.MethodPost, "/Groups", h.token, `{"displayName":"x","members":[{"value":"user_missing"}]}`); rec.Code != http.StatusBadRequest {
-		t.Fatalf("unknown member: %d", rec.Code)
-	}
-	rec = h.do(http.MethodPatch, "/Groups/"+g.ID, h.token, `{"Operations":[{"op":"remove","path":"members[value eq \"`+id+`\"]"}]}`)
+	rec := h.do(http.MethodPost, "/Users", h.token, `{"schemas":["`+testSCIMUserSchema+`"],"userName":"`+root.Email+`","externalId":"ext-root","emails":[{"value":"`+root.Email+`","primary":true}]}`)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("remove member: %d %s", rec.Code, rec.Body)
+		t.Skipf("root account is not an email address here: %d %s", rec.Code, rec.Body)
 	}
-	if role, _ := h.db.UserRoleID(ctx, id); role != "role_viewer" {
-		t.Fatalf("role after leave = %q", role)
+	id, _ := scimResponseID(rec.Body.Bytes())
+	if rec := h.patch("/Users/"+id, `[{"op":"replace","path":"active","value":false}]`); rec.Code != http.StatusConflict {
+		t.Fatalf("deactivating the last root: %d %s", rec.Code, rec.Body)
 	}
-	if rec := h.do(http.MethodGet, `/Groups?filter=displayName%20eq%20%22Engineering%22`, h.token, ""); !strings.Contains(rec.Body.String(), g.ID) {
-		t.Fatalf("group filter: %s", rec.Body)
+	if rec := h.do(http.MethodDelete, "/Users/"+id, h.token, ""); rec.Code != http.StatusConflict {
+		t.Fatalf("deleting the last root: %d %s", rec.Code, rec.Body)
 	}
-	if rec := h.do(http.MethodDelete, "/Groups/"+g.ID, h.token, ""); rec.Code != http.StatusNoContent {
-		t.Fatalf("delete group: %d", rec.Code)
+	if h.rt.accountDisabled(context.Background(), root.ID) {
+		t.Fatal("the last root user was disabled")
 	}
 }

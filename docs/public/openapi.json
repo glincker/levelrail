@@ -71011,7 +71011,7 @@
     "/api/v1/scim/v2/Groups": {
       "get": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMListGroups",
+        "operationId": "handleSCIM",
         "responses": {
           "200": {
             "content": {
@@ -71043,14 +71043,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM List Groups",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "post": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMCreateGroup",
+        "operationId": "SCIMPostapiv1scimv2Groups",
         "requestBody": {
           "content": {
             "application/json": {
@@ -71093,7 +71093,7 @@
           }
         },
         "security": [],
-        "summary": "SCIM Create Group",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
@@ -71102,7 +71102,7 @@
     "/api/v1/scim/v2/Groups/{id}": {
       "delete": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMDeleteGroup",
+        "operationId": "SCIMDeleteapiv1scimv2Groupsid",
         "parameters": [
           {
             "in": "path",
@@ -71144,14 +71144,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM Delete Group",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "get": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMGetGroup",
+        "operationId": "SCIMGetapiv1scimv2Groupsid",
         "parameters": [
           {
             "in": "path",
@@ -71193,14 +71193,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM Get Group",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "patch": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMPatchGroup",
+        "operationId": "SCIMPatchapiv1scimv2Groupsid",
         "parameters": [
           {
             "in": "path",
@@ -71253,14 +71253,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM Patch Group",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "put": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMReplaceGroup",
+        "operationId": "SCIMPutapiv1scimv2Groupsid",
         "parameters": [
           {
             "in": "path",
@@ -71313,7 +71313,7 @@
           }
         },
         "security": [],
-        "summary": "SCIM Replace Group",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
@@ -71322,7 +71322,7 @@
     "/api/v1/scim/v2/ResourceTypes": {
       "get": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMResourceTypes",
+        "operationId": "SCIMGetapiv1scimv2ResourceTypes",
         "responses": {
           "200": {
             "content": {
@@ -71354,7 +71354,150 @@
           }
         },
         "security": [],
-        "summary": "SCIM Resource Types",
+        "summary": "SCIM",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/scim/v2/ResourceTypes/{id}": {
+      "get": {
+        "description": "No authentication required.",
+        "operationId": "SCIMGetapiv1scimv2ResourceTypesid",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "SCIM",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/scim/v2/Schemas": {
+      "get": {
+        "description": "No authentication required.",
+        "operationId": "SCIMGetapiv1scimv2Schemas",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "SCIM",
+        "tags": [
+          "Other"
+        ]
+      }
+    },
+    "/api/v1/scim/v2/Schemas/{id}": {
+      "get": {
+        "description": "No authentication required.",
+        "operationId": "SCIMGetapiv1scimv2Schemasid",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [],
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
@@ -71362,8 +71505,8 @@
     },
     "/api/v1/scim/v2/ServiceProviderConfig": {
       "get": {
-        "description": "SCIM 2.0: authenticated by a SCIM bearer token in requireSCIM, never by a session.\n\nNo authentication required.",
-        "operationId": "handleSCIMServiceProviderConfig",
+        "description": "SCIM 2.0, served by the auth library behind handleSCIM: authenticated by a SCIM bearer token, never by a session.\n\nNo authentication required.",
+        "operationId": "SCIMGetapiv1scimv2ServiceProviderConfig",
         "responses": {
           "200": {
             "content": {
@@ -71395,7 +71538,7 @@
           }
         },
         "security": [],
-        "summary": "SCIM 2.0: authenticated by a SCIM bearer token in requireSCIM, never by a session.",
+        "summary": "SCIM 2.0, served by the auth library behind handleSCIM: authenticated by a SCIM bearer token, never by a session.",
         "tags": [
           "Other"
         ]
@@ -71404,7 +71547,7 @@
     "/api/v1/scim/v2/Users": {
       "get": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMListUsers",
+        "operationId": "SCIMGetapiv1scimv2Users",
         "responses": {
           "200": {
             "content": {
@@ -71436,14 +71579,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM List Users",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "post": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMCreateUser",
+        "operationId": "SCIMPostapiv1scimv2Users",
         "requestBody": {
           "content": {
             "application/json": {
@@ -71486,7 +71629,7 @@
           }
         },
         "security": [],
-        "summary": "SCIM Create User",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
@@ -71495,7 +71638,7 @@
     "/api/v1/scim/v2/Users/{id}": {
       "delete": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMDeleteUser",
+        "operationId": "SCIMDeleteapiv1scimv2Usersid",
         "parameters": [
           {
             "in": "path",
@@ -71537,14 +71680,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM Delete User",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "get": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMGetUser",
+        "operationId": "SCIMGetapiv1scimv2Usersid",
         "parameters": [
           {
             "in": "path",
@@ -71586,14 +71729,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM Get User",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "patch": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMPatchUser",
+        "operationId": "SCIMPatchapiv1scimv2Usersid",
         "parameters": [
           {
             "in": "path",
@@ -71646,14 +71789,14 @@
           }
         },
         "security": [],
-        "summary": "SCIM Patch User",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]
       },
       "put": {
         "description": "No authentication required.",
-        "operationId": "handleSCIMReplaceUser",
+        "operationId": "SCIMPutapiv1scimv2Usersid",
         "parameters": [
           {
             "in": "path",
@@ -71706,7 +71849,7 @@
           }
         },
         "security": [],
-        "summary": "SCIM Replace User",
+        "summary": "SCIM",
         "tags": [
           "Other"
         ]

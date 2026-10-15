@@ -2,6 +2,7 @@ package authengine
 
 import (
 	"context"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -26,6 +27,7 @@ const (
 func applyEnterprise(tcfg *theauth.Config, cfg Config) {
 	tcfg.Organizations = &theauth.OrganizationsConfig{}
 	tcfg.RBAC = &theauth.RBACConfig{}
+	tcfg.AccountState = true
 	// The platform enforces https for SCIM itself, with its trusted-proxy rules.
 	tcfg.SCIM = &theauth.SCIMConfig{RequireHTTPS: false, MaxPageSize: scimMaxPage}
 	if len(cfg.SAML.CertPEM) > 0 && len(cfg.SAML.KeyPEM) > 0 {
@@ -63,6 +65,14 @@ func (e *Engine) OrganizationID() string { return e.orgID.String() }
 
 // SAMLEnabled reports whether the engine runs with an SP keypair.
 func (e *Engine) SAMLEnabled() bool { return e.samlOn }
+
+// SAMLCertificatePEM is the SP signing certificate, or "" without SAML.
+func (e *Engine) SAMLCertificatePEM() string {
+	if e.samlCert == nil {
+		return ""
+	}
+	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: e.samlCert.Raw}))
+}
 
 // publicHandler hides the library's own organization and SAML routes: the
 // platform serves SAML through its own guarded routes and has no

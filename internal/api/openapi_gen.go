@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1127 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1130 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -878,20 +878,23 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityRead", Group: "Other", Handler: "handleListScheduledMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateScheduledMaintenance", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/scheduled-maintenance/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteScheduledMaintenance", Description: ""},
-	{Method: "GET", Path: "/api/v1/scim/v2/Groups", Ability: "Public", Group: "Other", Handler: "handleSCIMListGroups", Description: ""},
-	{Method: "POST", Path: "/api/v1/scim/v2/Groups", Ability: "Public", Group: "Other", Handler: "handleSCIMCreateGroup", Description: ""},
-	{Method: "DELETE", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMDeleteGroup", Description: ""},
-	{Method: "GET", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMGetGroup", Description: ""},
-	{Method: "PATCH", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMPatchGroup", Description: ""},
-	{Method: "PUT", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMReplaceGroup", Description: ""},
-	{Method: "GET", Path: "/api/v1/scim/v2/ResourceTypes", Ability: "Public", Group: "Other", Handler: "handleSCIMResourceTypes", Description: ""},
-	{Method: "GET", Path: "/api/v1/scim/v2/ServiceProviderConfig", Ability: "Public", Group: "Other", Handler: "handleSCIMServiceProviderConfig", Description: "SCIM 2.0: authenticated by a SCIM bearer token in requireSCIM, never by a session."},
-	{Method: "GET", Path: "/api/v1/scim/v2/Users", Ability: "Public", Group: "Other", Handler: "handleSCIMListUsers", Description: ""},
-	{Method: "POST", Path: "/api/v1/scim/v2/Users", Ability: "Public", Group: "Other", Handler: "handleSCIMCreateUser", Description: ""},
-	{Method: "DELETE", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMDeleteUser", Description: ""},
-	{Method: "GET", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMGetUser", Description: ""},
-	{Method: "PATCH", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMPatchUser", Description: ""},
-	{Method: "PUT", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIMReplaceUser", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Groups", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "POST", Path: "/api/v1/scim/v2/Groups", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "PUT", Path: "/api/v1/scim/v2/Groups/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/ResourceTypes", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/ResourceTypes/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Schemas", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Schemas/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/ServiceProviderConfig", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: "SCIM 2.0, served by the auth library behind handleSCIM: authenticated by a SCIM bearer token, never by a session."},
+	{Method: "GET", Path: "/api/v1/scim/v2/Users", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "POST", Path: "/api/v1/scim/v2/Users", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "PUT", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
 	{Method: "GET", Path: "/api/v1/secret-rotation", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAllSecretRotation", Description: ""},
 	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
 	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},

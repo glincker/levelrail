@@ -76,6 +76,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"log/slog"
 	"net"
+	"net/http"
 	"os/exec"
 	"sync"
 	"sync/atomic"
@@ -623,11 +624,11 @@ type Router struct {
 	aiTurns                      aiTurnRegistry           // live per-turn assistant tokens, keyed by token id
 
 	roles RoleStore
-	// sso backs SAML sign-in and group mappings; nil answers 501 (sso_saml_keys.go).
+	// sso is the platform side of SAML and SCIM; nil answers 501 (sso_glue.go).
 	sso         SSOStore
-	samlKeys    *samlKeyCache
+	samlFlows   *samlFlowStore
+	scimLib     http.Handler
 	samlLimiter *apiRateLimiter
-	scim        SCIMStore
 	scimLimiter *apiRateLimiter
 	// accessPolicy enforces per-team session policy in accessPolicyMiddleware.
 	accessPolicy  AccessPolicyStore

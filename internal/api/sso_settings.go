@@ -104,15 +104,8 @@ func (rt *Router) ssoSettingsView(ctx context.Context) (ssoSettingsResource, err
 	if err != nil {
 		return ssoSettingsResource{}, err
 	}
-	res := ssoSettingsResource{EnforceSSO: s.EnforceSSO, SPCertificatePEM: s.SPCertificatePEM, MasterKeyMissing: rt.oauthSecrets == nil,
-		SCIMBaseURL: rt.scimBase(ctx), SCIMDefaultRole: s.SCIMDefaultRoleID}
-	if rt.oauthSecrets != nil {
-		cert, _, err := rt.samlKeyPair(ctx)
-		if err != nil {
-			return ssoSettingsResource{}, err
-		}
-		res.SPCertificatePEM = cert
-	}
+	res := ssoSettingsResource{EnforceSSO: s.EnforceSSO, SPCertificatePEM: rt.authEngine.SAMLCertificatePEM(),
+		MasterKeyMissing: !rt.authEngine.SAMLEnabled(), SCIMBaseURL: rt.scimBase(ctx), SCIMDefaultRole: s.SCIMDefaultRoleID}
 	if base, err := rt.samlBaseURL(ctx); err != nil {
 		res.BaseURLError = err.Error()
 	} else {
@@ -133,19 +126,20 @@ func (rt *Router) handleGetSSOSettings(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, res)
 }
 
-// handlePutSSOSettings toggles SSO enforcement. Turning it on needs at least
-// one enabled connection, so nobody but root is ever left with no way in.
+// handlePutSSOSettings toggles SSO enforcement and the SCIM default role.
+// Turning enforcement on needs at least one usable connection, so nobody but
+// root is ever left with no way in.
 func (rt *Router) handlePutSSOSettings(w http.ResponseWriter, r *http.Request) {
 	if !rt.ssoReady(w) {
 		return
 	}
 	var req ssoSettingsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.SCIMDefaultRoleID != nil && rt.scim != nil {
-		err := rt.scim.SetSCIMDefaultRole(r.Context(), *req.SCIMDefaultRoleID, time.Now())
+	if req.SCIMDefaultRoleID != nil {
+		err := rt.sso.SetSCIMDefaultRole(r.Context(), *req.SCIMDefaultRoleID, time.Now())
 		if errors.Is(err, store.ErrRoleNotFound) {
 			writeError(w, http.StatusBadRequest, "scim_default_role_id does not name a stored role")
 			return
@@ -160,12 +154,12 @@ func (rt *Router) handlePutSSOSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if *req.EnforceSSO {
-		conns, err := rt.sso.ListSAMLConnections(r.Context())
+		conns, err := rt.sso.ListSSOConnections(r.Context())
 		if err != nil {
 			rt.internalError(w, "api: put sso settings failed", err)
 			return
 		}
-		if !slices.ContainsFunc(conns, func(c store.SAMLConnection) bool { return c.Enabled && samlConfigured(c) }) {
+		if !rt.authEngine.SAMLEnabled() || !slices.ContainsFunc(conns, samlUsable) {
 			writeError(w, http.StatusConflict, "enable a SAML connection before requiring single sign-on")
 			return
 		}
@@ -178,9 +172,8 @@ func (rt *Router) handlePutSSOSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 // ssoBlocksLocalSignIn reports whether a disabled account or SSO enforcement
-// refuses a local sign-in for this user. Enforcement is ignored while SAML is
-// gated off, since the SSO sign-in it points to does not exist then. Root users keep password sign-in as the break-glass path. A
-// settings read failure refuses too: an unreadable policy must not open the door.
+// refuses a local sign-in. Root keeps password sign-in as the break-glass path;
+// an unreadable policy refuses, and enforcement is ignored while SAML is gated off.
 func (rt *Router) ssoBlocksLocalSignIn(ctx context.Context, userID string) bool {
 	if rt.accountDisabled(ctx, userID) {
 		return true
@@ -204,3 +197,5 @@ func (rt *Router) ssoBlocksLocalSignIn(ctx context.Context, userID string) bool 
 }
 
 const ssoRequiredMessage = "this account cannot sign in this way: use single sign-on from the sign-in page, or ask an administrator"
+
+const passwordChangeRequiredMessage = "a password change is required: use forgot password on the sign-in page to set a new one"
