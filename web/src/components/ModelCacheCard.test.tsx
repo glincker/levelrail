@@ -2,6 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import i18next from 'i18next'
+import { I18nextProvider, initReactI18next } from 'react-i18next'
+import modelsEn from '../locales/en/models.json'
 import { ModelCacheCard } from './ModelCacheCard'
 import type {
   CacheEntry,
@@ -78,14 +81,26 @@ function stubApi(
   return prunes
 }
 
+const testI18n = i18next.createInstance()
+void testI18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['models'],
+  defaultNS: 'models',
+  resources: { en: { models: modelsEn } },
+  interpolation: { escapeValue: false },
+})
+
 function renderCard() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   render(
-    <QueryClientProvider client={client}>
-      <ModelCacheCard />
-    </QueryClientProvider>,
+    <I18nextProvider i18n={testI18n}>
+      <QueryClientProvider client={client}>
+        <ModelCacheCard />
+      </QueryClientProvider>
+    </I18nextProvider>,
   )
 }
 
@@ -184,8 +199,6 @@ describe('ModelCacheCard', () => {
   it('shows an empty state when the host caches nothing', async () => {
     stubApi(report([]))
     renderCard()
-    expect(
-      await screen.findByText('No cached model weights'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Nothing cached yet')).toBeInTheDocument()
   })
 })
