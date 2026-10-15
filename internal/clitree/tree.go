@@ -306,6 +306,7 @@ var Tree = map[string]*Node{
 		"updates":           {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"deploy-freeze":     {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 		"domain-automation": {Subs: map[string]*Node{"get": nil, "set": nil}},
+		"beta-features":     {Subs: map[string]*Node{"list": nil, "enable": nil, "disable": nil}},
 	}},
 	"git-providers": nil,
 	"github-app": {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil, "register-url": nil, "installations": {Subs: map[string]*Node{
