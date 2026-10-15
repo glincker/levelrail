@@ -391,6 +391,33 @@
       "noMatches": "No table matches \"{{query}}\".",
       "noMatchesNote": "The database has tables. Only your search filtered them out.",
       "clearSearch": "Clear search"
+    },
+    "engineStats": {
+      "title": "No data browser for {{engine}}",
+      "description": "There is no table or key browser for {{engine}}: read and write it through its HTTP API from a connected app. Live counts from the engine are below.",
+      "descriptionCache": "Memcached cannot list its keys, so there is nothing to browse. Live server stats are below.",
+      "objectsTitle": "Indexes and collections",
+      "cacheTitle": "Cache stats",
+      "colName": "Name",
+      "colDocuments": "Documents",
+      "colPoints": "Points",
+      "emptyObjects": "No indexes or collections yet. They appear here once an app creates one.",
+      "more_one": "and {{count}} more",
+      "more_other": "and {{count}} more",
+      "total_one": "{{count}} item in total",
+      "total_other": "{{count}} items in total",
+      "loading": "Reading live stats",
+      "errorTitle": "Could not read live stats",
+      "errorBody": "The engine did not answer. Check that the database is running, then try again.",
+      "retry": "Try again",
+      "items": "Items",
+      "memory": "Memory",
+      "memoryValue": "{{used}} of {{limit}}",
+      "hitRate": "Hit rate",
+      "hitRateValue": "{{percent}}%",
+      "noLookups": "No lookups yet",
+      "evictions": "Evictions",
+      "connections": "Connections"
     }
   },
   "createFlavor": {
@@ -417,7 +444,7 @@
       "keyvalue": "Key-value and cache",
       "document": "Document",
       "analytics": "Analytics",
-      "vector": "Vector and search",
+      "search": "Search and vector",
       "other": "Other"
     },
     "taglines": {
@@ -432,14 +459,21 @@
       "keydb": "Multithreaded Redis-compatible store for higher throughput on one node.",
       "dragonfly": "Modern Redis-compatible store built for very high throughput.",
       "mongodb": "Document database for flexible, JSON-shaped data.",
-      "clickhouse": "Column store for fast analytical queries over large event data."
+      "clickhouse": "Column store for fast analytical queries over large event data.",
+      "meilisearch": "Typo-tolerant full-text search with instant results over an HTTP API.",
+      "qdrant": "Vector database for embeddings, semantic search and RAG retrieval.",
+      "typesense": "Fast, typo-tolerant search engine with faceting and geo search.",
+      "memcached": "Plain in-memory cache for sessions and query results. Nothing is kept on disk."
     },
     "chips": {
       "port": "Port {{port}}",
       "redisCompatible": "Redis compatible",
       "mysqlCompatible": "MySQL compatible",
       "postgresCompatible": "Postgres compatible",
-      "backups": "Backups"
+      "backups": "Backups",
+      "snapshots": "Snapshots",
+      "httpApi": "HTTP API",
+      "noPersistence": "No persistence"
     },
     "empty": {
       "title": "No database matches \"{{query}}\"",
@@ -524,5 +558,10 @@
   "slowQueries": {
     "tableLabel": "Slow queries",
     "sortBy": "Sort by"
+  },
+  "noBackups": {
+    "title": "Backups",
+    "body": "Backups are not available for {{engine}}: it keeps everything in memory and nothing on disk, so there is no data to back up.",
+    "hint": "A restart, upgrade or move starts it with an empty cache. Keep anything you cannot lose in a database that has backups."
   }
 }

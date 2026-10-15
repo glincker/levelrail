@@ -7,7 +7,7 @@ description: Create and manage databases with backups, point-in-time restore, an
 
 ## What this covers
 
-Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
+Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense, or Memcached database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
 
 | I want to | Go to |
 | --- | --- |
@@ -70,6 +70,10 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 | Valkey | `valkey` | `8` | no |
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
 | ClickHouse | `clickhouse` | `24.8` | no |
+| Meilisearch | `meilisearch` | `v1.55` | no |
+| Qdrant | `qdrant` | `v1.19` | no |
+| Typesense | `typesense` | `30.2` | no |
+| Memcached | `memcached` | `1.6` | no |
 
 Valkey is a Redis-protocol fork (`valkey/valkey` image, tags such as `7`, `8`, `9`). It runs exactly like Redis here: passwordless on the private network, RDB snapshots on `/data`, the same backup, restore and verify path, the key-value viewer, and the same `redis://` connection URL for apps.
 
@@ -108,9 +112,57 @@ The plain and pgvector images are built on different Debian releases, so a datab
 - Plain to pgvector: `databases major-upgrade <name> --version 17-pgvector` (dump and restore, works for the same major too), or restore a backup into a new database with `--version 17-pgvector`.
 - pgvector back to plain: refused.
 
+### Search, vector and cache engines
+
+<Warning>
+Not yet live-verified. Meilisearch, Qdrant, Typesense and Memcached were built and tested without a Docker daemon: the reconciler, backup, restore and drill paths ran against a fake Docker client, and the restore boot script ran for real under `/bin/sh` against a temporary directory. Image facts (ports, paths, env names, CLI flags, bundled tools) were read from the published images' manifests and binaries, not from a running container. Run a backup and a backup drill against a scratch database before relying on them.
+</Warning>
+
+Meilisearch, Qdrant and Typesense are HTTP API engines. Each gets one generated API key, stored with the same envelope encryption as every other database credential, and the key is never placed in a command line: in-container calls read it from the container's own environment.
+
+| Engine | Image | Port | Data volume | API key variable | Health |
+| --- | --- | --- | --- | --- | --- |
+| Meilisearch | `getmeili/meilisearch` | 7700 | `/meili_data` (data in `data.ms`) | `MEILI_MASTER_KEY`, with `MEILI_ENV=production` | `GET /health` |
+| Qdrant | `qdrant/qdrant` | 6333 (REST), 6334 (gRPC, private network only) | `/qdrant/storage` (data in `data`) | `QDRANT__SERVICE__API_KEY` | `GET /readyz` |
+| Typesense | `typesense/typesense` | 8108 | `/data` (data in `db`) | `TYPESENSE_API_KEY` | `GET /health` |
+| Memcached | `memcached` | 11211 | none | none | `stats` over TCP |
+
+Versions must be a pinned release tag; `latest` is refused. Meilisearch and Qdrant tags keep their `v` prefix (`v1.55`, `v1.19.2`), Typesense tags do not (`30.2`). In-place version changes follow each engine's own upgrade rules: Meilisearch stays within one minor line (move to a new minor by restoring a dump into a new database), Qdrant moves up one minor at a time, Typesense moves forward only, and none of them can be downgraded.
+
+Connected apps get these variable names by default when you leave `env_var` blank (a second connection to the same field falls back to the usual `<DATABASE>_...` name):
+
+| Engine | `url` | `password` (the API key) | `host` / `port` |
+| --- | --- | --- | --- |
+| Meilisearch | `MEILISEARCH_URL` (`http://<host>:7700`) | `MEILISEARCH_API_KEY` | `MEILISEARCH_HOST` / `MEILISEARCH_PORT` |
+| Qdrant | `QDRANT_URL` (`http://<host>:6333`) | `QDRANT_API_KEY` | `QDRANT_HOST` / `QDRANT_PORT` |
+| Typesense | `TYPESENSE_URL` (`http://<host>:8108`) | `TYPESENSE_API_KEY` | `TYPESENSE_HOST` / `TYPESENSE_PORT` |
+| Memcached | `MEMCACHED_SERVERS` (`<host>:11211`) | none | `MEMCACHED_HOST` / `MEMCACHED_PORT` |
+
+`username` and `database` are not supported for any of these engines.
+
+**Backups.** Each search engine is backed up through its own API, then the artifact's size and SHA-256 are measured on disk and checked again while it streams to your backup target. A snapshot task that fails or does not finish within 30 minutes, or a file that comes up short or altered, fails the backup and nothing is marked complete.
+
+- Meilisearch: `POST /dumps`, poll `GET /tasks/{uid}`, then copy the `.dump` file. A dump includes the instance's API keys.
+- Qdrant: `POST /snapshots` (a full storage snapshot), copy it, then delete it from the engine.
+- Typesense: `POST /operations/snapshot` into the data volume, then copy it as a tar archive.
+
+**Restores** upload the artifact next to the data, check it is a readable archive, and restart the container. The boot script moves the current data aside and loads the snapshot (Meilisearch `--import-dump`, Qdrant `--storage-snapshot`, Typesense starts on the snapshot directory as its data directory). The restore is confirmed only when the engine is healthy on the same boot that loaded it. If it crashes, restarts or never becomes healthy, the previous data is put back and the restore is reported as failed. While a restore is pending, the volume briefly holds the snapshot, the restored data and the previous data, so leave room for three copies.
+
+**Verification and drills.** Verify checks the download's checksum, size and format (a gzip header for Meilisearch, intact tar end-of-archive blocks for Qdrant and Typesense). A backup drill restores into a scratch container with a throwaway key and reads the index or collection counts. When the counts did not change while the backup was taken, they are recorded with the backup, and the drill fails unless the restored counts match exactly (documents per Meilisearch index, exact points per Qdrant collection, documents per Typesense collection).
+
+**Memcached** is a plain in-memory cache. It keeps nothing on disk, so backups are not available: the dashboard shows that instead of a backup card, and the backup, schedule and restore endpoints answer `400`. Its item memory (`-m`) is three quarters of the container's memory limit (64 MB without a limit), and UDP is off. Memcached has no practical authentication here (SASL needs a server config file and binary-protocol clients that many libraries lack), so it is reachable only on the private network and public access can bind only to the host's loopback address. A restart, upgrade or move starts with an empty cache.
+
+The database viewer has no table or key browser for these engines. Its Explorer tab says so and shows live counts from the engine instead (`GET /api/v1/databases/{name}/engine-stats`): documents per index or collection, or Memcached's items, memory, hit rate, evictions and connections.
+
+```bash
+levelrail-cli databases create --name search --engine meilisearch --version v1.55
+levelrail-cli databases create --name vectors --engine qdrant --version v1.19
+levelrail-cli databases create --name cache --engine memcached --version 1.6
+```
+
 ### Planned engines
 
-Not available yet: Qdrant, Meilisearch and CockroachDB. Each one needs a reconciler case, a backup dump, a restore path, a verify runner and viewer support before it can be offered, so they are added one at a time rather than listed ahead of that work.
+Not available yet: CockroachDB. It needs a reconciler case, a backup dump, a restore path, a verify runner and viewer support before it can be offered.
 
 ## Stop, start, and delete
 
@@ -172,7 +224,7 @@ This flow attaches at most one database per app. If an app needs more than one, 
 | `env_var` | no | `DATABASE_URL` | Env var the value is injected as. |
 | `field` | no | `url` | The full connection string. Others: `host`, `port`, `username`, `password`, `database`. |
 
-Fields are validated against the engine before saving: Redis, Valkey, KeyDB, and Dragonfly do not support `username` or `database`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
+Fields are validated against the engine before saving: Redis, Valkey, KeyDB, Dragonfly, Meilisearch, Qdrant, Typesense, and Memcached do not support `username` or `database`, and Memcached has no `password`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
 
 On the dashboard, use the **Database** card on the app's Overview page. Its "Env var / field options" disclosure covers anything past the URL default.
 

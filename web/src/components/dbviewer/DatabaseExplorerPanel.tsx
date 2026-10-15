@@ -3,7 +3,8 @@ import { useDatabase } from '../../queries/databases'
 import { BetaBadge } from '../BetaBadge'
 import { RedisKeyBrowser } from './RedisKeyBrowser'
 import { SchemaExplorer } from './SchemaExplorer'
-import { KV_ENGINES, SQL_ENGINES } from './engines'
+import { EngineStatsPanel } from './EngineStatsPanel'
+import { KV_ENGINES, SQL_ENGINES, STATS_ENGINES } from './engines'
 import { UnsupportedEngine } from './UnsupportedEngine'
 
 // Explorer tab: schema browser and table data for SQL engines, key
@@ -29,6 +30,8 @@ export function DatabaseExplorerPanel({
         <SchemaExplorer databaseName={databaseName} />
       ) : KV_ENGINES.has(engine) ? (
         <RedisKeyBrowser databaseName={databaseName} />
+      ) : STATS_ENGINES.has(engine) ? (
+        <EngineStatsPanel databaseName={databaseName} engine={engine} />
       ) : (
         <UnsupportedEngine engine={engine} />
       )}
