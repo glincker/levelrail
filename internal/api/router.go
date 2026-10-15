@@ -74,6 +74,7 @@ package api
 import (
 	"context"
 	"github.com/GLINCKER/levelrail/internal/compliance"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"net"
 	"net/http"
@@ -233,6 +234,7 @@ type Router struct {
 	// automatically; the env-var case has no such path and the rotation
 	// response warns instead. Set via WithMasterKeyRotation.
 	masterKeyFilePath string
+	masterKeyWrapper  secrets.KeyWrapper
 	// doctorMasterKeyRotationWarnAge overrides
 	// defaultDoctorMasterKeyRotationWarnAge for the doctor's
 	// master_key_rotation check. 0 means "use the default", set via

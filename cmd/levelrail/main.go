@@ -378,6 +378,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "wrap-master-key" {
+		if err := runWrapMasterKey(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout, os.Getenv); err != nil {
+			logger.Error("wrap-master-key failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "restore-snapshot" {
 		if err := runRestoreSnapshot(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdin, os.Stdout); err != nil {
 			logger.Error("restore-snapshot failed", slog.String("error", err.Error()))
@@ -1967,7 +1974,11 @@ func devFixturesFile() string {
 // is "" for an env-sourced key, so rotation knows it cannot persist it.
 func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOption) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
 	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
-		mk, err := secrets.LoadMasterKey(serialized)
+		plain, err := openMasterKeyMaterial(context.Background(), serialized, os.Getenv)
+		if err != nil {
+			return nil, "", fmt.Errorf("open master key from APP_MASTER_KEY: %w", err)
+		}
+		mk, err := secrets.LoadMasterKey(plain)
 		if err != nil {
 			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
@@ -2004,7 +2015,11 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 	serialized, readErr := os.ReadFile(keyPath) //nolint:gosec // operator-controlled data directory path, not user input
 	switch {
 	case readErr == nil:
-		mk, err := secrets.LoadMasterKey(string(serialized))
+		plain, err := openMasterKeyMaterial(context.Background(), string(serialized), os.Getenv)
+		if err != nil {
+			return nil, "", fmt.Errorf("open persisted master key: %w", err)
+		}
+		mk, err := secrets.LoadMasterKey(plain)
 		if err != nil {
 			return nil, "", fmt.Errorf("load persisted master key: %w", err)
 		}
@@ -2022,7 +2037,11 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 	if err != nil {
 		return nil, "", fmt.Errorf("generate master key: %w", err)
 	}
-	if err := os.WriteFile(keyPath, []byte(mk.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
+	sealed, err := sealMasterKeyMaterial(context.Background(), mk.String(), os.Getenv)
+	if err != nil {
+		return nil, "", fmt.Errorf("wrap new master key: %w", err)
+	}
+	if err := os.WriteFile(keyPath, []byte(sealed), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
 		return nil, "", fmt.Errorf("persist master key: %w", err)
 	}
 	return mk, keyPath, nil
@@ -2521,6 +2540,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
+		if w, werr := keyWrapperFromEnv(os.Getenv); werr == nil && w != nil {
+			opts = append(opts, api.WithMasterKeyWrapper(w))
+		}
 		opts = append(opts, api.WithSecretBinding(secretsManager))
 		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
 		// The stale_secrets doctor check counts secret-marked rows across
