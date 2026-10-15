@@ -41,7 +41,7 @@ export function tagsQueryOptions() {
   return queryOptions({ queryKey: tagKeys.list(), queryFn: fetchTags })
 }
 
-// Non-suspense: both TagsControl (app detail) and TagFilter (apps list)
+// Non-suspense: both TagChips (app overview) and TagFilter (apps list)
 // render fine with an empty tag list while this is still loading,
 // mirroring useAppListOptional's own "degrade, don't block" reasoning.
 export function useTags() {
@@ -82,8 +82,7 @@ export function useAttachAppTag(appName: string) {
 }
 
 // DELETE /api/v1/apps/{name}/tags/{id} (handleDetachAppTag): id is the
-// tag's ID, not its name (see TagsControl's own doc comment for how a
-// chip resolves the name it renders back to an ID).
+// tag's ID, not its name (TagChips resolves the rendered name back to an ID).
 export async function detachAppTag(
   appName: string,
   tagId: string,
