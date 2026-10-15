@@ -184,7 +184,8 @@ levelrail-cli otel destinations list
 
 ## Reliability and safety
 
-- Every destination has an in-memory queue of `APP_EXPORT_QUEUE_LINES` entries. When it fills, the oldest entries are dropped and counted. There is no disk buffer, so a control plane restart loses queued log lines but not audit rows.
+- Every log destination has a queue of `APP_EXPORT_QUEUE_LINES` entries. When it fills, the oldest entries are dropped and counted.
+- The queue is mirrored on disk under `APP_EXPORT_SPOOL_DIR` (default `<data dir>/export-spool`), so lines a down receiver has not accepted survive a control plane restart and are sent after it. A batch that fails after its retries stays queued and is tried again, instead of being dropped. A crash between a send and its record of success can deliver that batch twice, so delivery is at least once. Set `APP_EXPORT_SPOOL=false` to keep the backlog in memory only. Audit rows never needed this: they are read from the audit log by cursor.
 - Container log lines are handed to exporters through a non-blocking subscription. A slow destination cannot slow a container, the log store, a deploy or the API.
 - A batch is retried with exponential backoff and jitter up to `APP_EXPORT_MAX_ATTEMPTS` times. Responses in the 4xx range other than 408 and 429 are not retried, because retrying cannot fix them.
 - After `APP_EXPORT_BREAKER_FAILURES` consecutive failed batches a destination backs off for `APP_EXPORT_BREAKER_COOLDOWN`, then tries one batch.

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -39,14 +41,17 @@ type Secrets interface {
 // Deps wires a Service. Logs, Metrics, AppCount and Objects are optional:
 // a destination kind that needs a missing one reports a clear error.
 type Deps struct {
-	Store      Store
-	Secrets    Secrets
-	Logs       *telemetry.LogBroadcaster
-	Metrics    MetricSource
-	AppCount   func(ctx context.Context) (int, error)
-	Platform   PlatformSource
-	Objects    ObjectPutter
-	Config     Config
+	Store    Store
+	Secrets  Secrets
+	Logs     *telemetry.LogBroadcaster
+	Metrics  MetricSource
+	AppCount func(ctx context.Context) (int, error)
+	Platform PlatformSource
+	Objects  ObjectPutter
+	Config   Config
+	// SpoolDir, when set, keeps each log destination's backlog on disk so it
+	// survives a restart. Empty keeps the backlog in memory only.
+	SpoolDir   string
 	Brand      string
 	Logger     *slog.Logger
 	HTTPClient *http.Client
@@ -397,6 +402,11 @@ func (s *Service) Update(ctx context.Context, id string, p Patch) (store.ExportD
 func (s *Service) Delete(ctx context.Context, id string) error {
 	if err := s.d.Store.DeleteExportDestination(ctx, id); err != nil {
 		return fmt.Errorf("dataexport: %w", err)
+	}
+	if s.d.SpoolDir != "" {
+		name := spoolFileName(id)
+		_ = os.Remove(filepath.Join(s.d.SpoolDir, name+".spool"))
+		_ = os.Remove(filepath.Join(s.d.SpoolDir, name+".ack"))
 	}
 	if s.d.Secrets != nil {
 		if err := s.d.Secrets.DeleteAll(ctx, store.ExportDestinationSecretsKey(id)); err != nil {

@@ -195,9 +195,29 @@ func (s *Service) startWorker(parent context.Context, d store.ExportDestination)
 	return w, nil
 }
 
+// spoolFlushEvery is how often buffered spool lines reach the file.
+const spoolFlushEvery = 250 * time.Millisecond
+
 func (s *Service) startLogs(ctx context.Context, d store.ExportDestination, snd sender, dv *deliverer, spawn func(func())) {
 	q := newQueue[LogRecord](s.d.Config.QueueLines)
 	dv.st.depth = q.len
+	var sp *spool
+	if s.d.SpoolDir != "" {
+		var pending []LogRecord
+		var err error
+		if sp, pending, err = openSpool(s.d.SpoolDir, d.ID); err != nil {
+			s.d.Logger.Warn("dataexport: disk spool unavailable, using memory only",
+				slog.String("destination_id", d.ID), slog.String("error", err.Error()))
+			sp = nil
+		} else {
+			for _, r := range pending {
+				if n := q.push(r); n > 0 {
+					dv.st.dropped.Add(int64(n))
+					sp.ack(n)
+				}
+			}
+		}
+	}
 	apps := map[string]struct{}{}
 	for _, a := range d.Apps {
 		apps[a] = struct{}{}
@@ -215,14 +235,36 @@ func (s *Service) startLogs(ctx context.Context, d store.ExportDestination, snd 
 				}
 				r := NewLogRecord(e)
 				if r.matches(apps, d.MinLevel) {
+					if sp != nil {
+						sp.append(r)
+					}
 					if n := q.push(r); n > 0 {
 						dv.st.dropped.Add(int64(n))
+						if sp != nil {
+							sp.ack(n)
+						}
 					}
 				}
 			}
 		}
 	})
 	b := &batcher[LogRecord]{q: q, d: dv, send: snd.logs, size: LogRecord.size}
+	if sp != nil {
+		b.done = sp.ack
+		spawn(func() {
+			defer sp.close()
+			t := time.NewTicker(spoolFlushEvery)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					sp.flush()
+				}
+			}
+		})
+	}
 	spawn(func() { b.run(ctx) })
 }
 
