@@ -156,7 +156,9 @@ type Router struct {
 	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
 	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	requestSummaryWindow   time.Duration                       // 0 keeps defaultRequestSummaryWindow
+	traces                 TraceStore                          // nil is valid: trace routes answer 501
+	traceKeys              traceKeyCache
+	requestSummaryWindow   time.Duration // 0 keeps defaultRequestSummaryWindow
 	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
 	// duration bands (request_logging.go). Zero fields mean "use the
 	// matching default", set via WithRequestLogThresholds;

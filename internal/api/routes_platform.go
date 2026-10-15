@@ -1117,6 +1117,12 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// node-local store. AbilityWriteSensitive for write/clear, the same
 	// tier as storage above (both configure where data leaves this
 	// control plane to); AbilityRead for the GET.
+	mux.HandleFunc("POST /api/v1/otlp/v1/traces", rt.handleOTLPTraces)
+	mux.HandleFunc("GET /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTracing))
+	mux.HandleFunc("POST /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleEnableTracing))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDisableTracing))
+	mux.HandleFunc("GET /api/v1/apps/{name}/traces", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListTraces))
+	mux.HandleFunc("GET /api/v1/apps/{name}/traces/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTrace))
 	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppLogDrain))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppLogDrain))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppLogDrain))

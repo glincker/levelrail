@@ -50,6 +50,7 @@ export const NAMESPACES = [
   'envEditor',
   'resourceAdvisor',
   'help',
+  'traces',
   'betaFeatures',
   'newApp',
   'getStarted',

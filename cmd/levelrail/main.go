@@ -1814,6 +1814,12 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.L
 		if deleted > 0 {
 			logger.Info("logs retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
 		}
+		// Traces age out on the same window as logs.
+		if n, serr := db.RetainSpans(ctx, cutoff); serr != nil {
+			logger.Error("trace retention sweep failed", slog.String("error", serr.Error()))
+		} else if n > 0 {
+			logger.Info("trace retention sweep", slog.Int64("deleted", n), slog.Time("cutoff", cutoff))
+		}
 	}
 
 	for {
@@ -2434,6 +2440,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithTraceStore(telemetryDB),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithAlertNoise(alertingDB),

@@ -65,6 +65,7 @@ const EXPECTED_APP = [
   'integrations',
   'metrics',
   'logs',
+  'traces',
   'alerts',
   'exec',
 ]

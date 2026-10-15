@@ -1,0 +1,49 @@
+{
+  "title": "Traces",
+  "subtitle": "Spans your app sends over OpenTelemetry, stored on this node for the logs retention window.",
+  "setup": {
+    "title": "Send traces from this app",
+    "off": "Tracing is off. Turn it on to get an ingest key and the environment variables for your OpenTelemetry SDK.",
+    "on": "Tracing is on. Point your SDK's OTLP/HTTP exporter at this control plane.",
+    "enable": "Turn on tracing",
+    "enabling": "Turning on...",
+    "rotate": "Rotate key",
+    "disable": "Turn off",
+    "copy": "Copy",
+    "copied": "Copied",
+    "keyOnce": "This key is shown once. Set these on the app and redeploy. Rotating makes the old key stop working.",
+    "env": "Environment",
+    "endpoint": "Endpoint",
+    "protocolNote": "Use OTLP over HTTP, protobuf or JSON. gRPC is not accepted here.",
+    "enabledToast": "Tracing is on.",
+    "disabledToast": "Tracing is off. The app's exporter will get 401 responses.",
+    "failed": "Could not change tracing."
+  },
+  "filters": {
+    "window": "Window",
+    "last15": "Last 15 minutes",
+    "last60": "Last hour",
+    "last360": "Last 6 hours",
+    "last1440": "Last 24 hours",
+    "errorsOnly": "Errors only",
+    "minMs": "Slower than (ms)"
+  },
+  "list": {
+    "empty": "No traces in this window yet. Send a request through the app, or widen the window.",
+    "loadError": "Could not load traces: {{message}}",
+    "root": "Request",
+    "started": "Started",
+    "duration": "Duration",
+    "spans": "Spans",
+    "errors": "Errors"
+  },
+  "detail": {
+    "title": "Trace {{id}}",
+    "loading": "Loading trace...",
+    "close": "Close",
+    "ofTotal": "of {{total}}",
+    "error": "Error",
+    "attributes": "Attributes",
+    "none": "No attributes."
+  }
+}

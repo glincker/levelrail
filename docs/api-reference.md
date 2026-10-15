@@ -429,6 +429,11 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deployments/{id}/secret-scan | AbilityRead | handleGetDeploymentSecretScan |
 | POST | /api/v1/apps/{name}/keep | AbilityWrite | handleKeepTrialApp |
 | POST | /api/v1/apps/{name}/sleep/now | AbilityDeploy | handleSleepAppNow |
+| GET | /api/v1/apps/{name}/tracing | AbilityRead | handleGetTracing |
+| POST | /api/v1/apps/{name}/tracing | AbilityWriteSensitive | handleEnableTracing |
+| DELETE | /api/v1/apps/{name}/tracing | AbilityWriteSensitive | handleDisableTracing |
+| GET | /api/v1/apps/{name}/traces | AbilityRead | handleListTraces |
+| GET | /api/v1/apps/{name}/traces/{id} | AbilityRead | handleGetTrace |
 
 </Accordion>
 
@@ -1366,6 +1371,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/deploy-policies/check | AbilityRead | handleCheckDeployPolicy |
 | PUT | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleSetDeployPolicy |
 | DELETE | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleDeleteDeployPolicy |
+| POST | /api/v1/otlp/v1/traces | Public | handleOTLPTraces |
 
 ## See also
 

@@ -193,6 +193,7 @@
               "object-storage",
               "network-shares",
               "log-explorer",
+              "tracing",
               "data-export",
               "control-plane-backup",
               "disaster-recovery",

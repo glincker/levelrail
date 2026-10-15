@@ -45,6 +45,7 @@ import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type help from '../locales/en/help.json'
+import type traces from '../locales/en/traces.json'
 import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
@@ -107,6 +108,7 @@ declare module 'i18next' {
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       help: typeof help
+      traces: typeof traces
       betaFeatures: typeof betaFeatures
       newApp: typeof newApp
       getStarted: typeof getStarted

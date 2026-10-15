@@ -49,6 +49,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sleep":
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
+	case "traces":
+		return runAppsTraces(prog, args[1:], stdout, stderr, lookupEnv)
+	case "tracing":
+		return runAppsTracing(prog, args[1:], stdout, stderr, lookupEnv)
 	case "canary":
 		return runAppsCanary(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback-slo-burn":
@@ -224,6 +228,8 @@ func appsUsage(prog string) string {
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
   %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
+  %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
+  %[1]s apps tracing enable|status|disable <name> [flags]   the app's OTLP ingest key and the env to set
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human

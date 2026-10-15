@@ -393,6 +393,7 @@ export type AppTo =
   | '/apps/$name/integrations'
   | '/apps/$name/metrics'
   | '/apps/$name/logs'
+  | '/apps/$name/traces'
   | '/apps/$name/alerts'
   | '/apps/$name/exec'
 
@@ -520,6 +521,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     items: [
       item('metrics', 'Metrics', '/apps/$name/metrics', <PulseIcon />),
       item('logs', 'Logs', '/apps/$name/logs', <ScrollIcon />),
+      item('traces', 'Traces', '/apps/$name/traces', <TreeStructureIcon />),
       item('alerts', 'Alerts', '/apps/$name/alerts', <BellIcon />),
     ],
   },
