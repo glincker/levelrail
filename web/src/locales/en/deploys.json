@@ -152,6 +152,11 @@
     },
     "holdLabel": "Hold requests while waking (function mode)",
     "holdHelp": "A request that arrives while the app is asleep waits for it to start and is then replayed, instead of showing a waking-up page. Use for API callers.",
-    "holdAriaLabel": "Hold requests while waking"
+    "holdAriaLabel": "Hold requests while waking",
+    "badgeAsleep": "Asleep",
+    "fleetTitle": "Sleeping apps",
+    "fleetSummary": "{{sleeping}} of {{enabled}} apps asleep",
+    "fleetReclaimed": "About {{size}} of memory not in use",
+    "fleetEmpty": "No app sleeps when idle yet. Turn it on from an app's Deploys tab to free its memory while nobody visits."
   }
 }

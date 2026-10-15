@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import {
   FlaskIcon,
   GlobeIcon,
+  MoonIcon,
   PackageIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +23,7 @@ export function AppLogo({ image }: { image: string }) {
 }
 
 export function AppMetaChips({ app }: { app: AppListEntry }) {
+  const { t } = useTranslation('deploys')
   const domain = app.domains?.[0]
   const extra = (app.domains?.length ?? 0) - 1
   return (
@@ -29,6 +32,12 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
         <Badge variant="accent" className="gap-1 px-1.5 py-0">
           <FlaskIcon className="size-3 shrink-0" aria-hidden="true" />
           Trial
+        </Badge>
+      ) : null}
+      {app.sleep?.sleeping ? (
+        <Badge variant="muted" className="gap-1 px-1.5 py-0">
+          <MoonIcon className="size-3 shrink-0" aria-hidden="true" />
+          {t('appSleep.badgeAsleep')}
         </Badge>
       ) : null}
       {app.environment_name ? (

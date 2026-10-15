@@ -1360,6 +1360,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/scim/v2/ResourceTypes/{id} | Public | handleSCIM |
 | GET | /api/v1/scim/v2/Schemas | Public | handleSCIM |
 | GET | /api/v1/scim/v2/Schemas/{id} | Public | handleSCIM |
+| GET | /api/v1/sleep | AbilityRead | handleSleepFleet |
 
 ## See also
 
