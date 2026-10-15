@@ -90,6 +90,8 @@ The reconciler reports one of these outcomes as the firewall controller's status
 
 ## Published container ports
 
+To publish an app on a host port and open it here in one step, see [App ports and exposure](/app-exposure).
+
 `ufw` does not cover ports Docker publishes: they skip the INPUT chain. The [Exposure audit](/exposure-audit) lists which of your containers are reachable from outside and can restrict them with DOCKER-USER rules.
 
 ## Troubleshooting

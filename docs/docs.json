@@ -87,6 +87,7 @@
             "group": "Add to your setup",
             "pages": [
               "domains-and-ingress",
+              "app-exposure",
               "tutorials/connect-an-app-to-postgres",
               "tutorials/deploy-from-github-actions",
               "environment-and-secrets",

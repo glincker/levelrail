@@ -448,6 +448,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/log-budget | AbilityRead | handleGetLogBudget |
 | PUT | /api/v1/apps/{name}/log-budget | AbilityWriteSensitive | handleSetLogBudget |
 | DELETE | /api/v1/apps/{name}/log-budget | AbilityWriteSensitive | handleDeleteLogBudget |
+| GET | /api/v1/apps/{name}/exposure | AbilityRead | handleGetAppExposure |
+| POST | /api/v1/apps/{name}/exposure/preview | AbilityRead | handlePreviewAppExposure |
+| PUT | /api/v1/apps/{name}/exposure | AbilityWriteSensitive | handleSetAppExposure |
+| POST | /api/v1/apps/{name}/exposure/check | AbilityRead | handleCheckAppExposure |
 
 </Accordion>
 

@@ -686,6 +686,12 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// current Docker-assigned host port Caddy is actually proxying to, for
 	// the dashboard's Network tab. AbilityRead, same tier as images above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/network", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppNetwork))
+	// Exposure: port, direct host port and its tagged firewall rule. The write
+	// opens a host port, so it is AbilityWriteSensitive like firewall rules.
+	mux.HandleFunc("GET /api/v1/apps/{name}/exposure", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppExposure))
+	mux.HandleFunc("POST /api/v1/apps/{name}/exposure/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreviewAppExposure))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/exposure", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppExposure))
+	mux.HandleFunc("POST /api/v1/apps/{name}/exposure/check", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCheckAppExposure))
 
 	// Databases CRUD, the database-kind counterpart to apps CRUD above.
 	// No PUT (full-replace update) yet: unlike a service's image/port/

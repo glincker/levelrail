@@ -98,6 +98,8 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
 	"POST /api/v1/pipelines/filters":                             "rewrites submitted YAML with path filters, persists nothing",
 	"POST /api/v1/apps/{name}/log-pipeline/preview":              "runs submitted rules over submitted sample lines, persists nothing",
+	"POST /api/v1/apps/{name}/exposure/preview":                  "computes the changes an exposure edit would make, persists nothing",
+	"POST /api/v1/apps/{name}/exposure/check":                    "probes reachability from the control plane host, persists nothing",
 	"POST /api/v1/apps/{name}/preflight":                         "read-only probes of the stored app config, persists nothing",
 	"POST /api/v1/models/preflight":                              "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
 	"POST /api/v1/models/fit":                                    "estimates VRAM fit from submitted specs and node facts, persists nothing",

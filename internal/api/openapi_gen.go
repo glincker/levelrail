@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1169 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1173 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -171,6 +171,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/exec", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExecApp", Description: "One-off exec (handleExecApp's own doc comment): AbilityRoot, not AbilityDeploy. Secrets are injected as plaintext env vars into a container at create time and this package deliberately never decrypts one back into a response body anywhere else, see the secrets route above: \"never decrypts a value for a response body.\" Exec is the one route that can read them anyway, by running `env` inside the container, so it must sit behind the same tier that boundary already implies it needs, not the deploy tier. AbilityRoot is this project's existing \"breaks an assumption other tiers rely on\" boundary (see restore's own reasoning below)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetExecAccess", Description: "Exec access opt-out (exec.go's requireExecAccess): a second, independent gate the two routes just above both check before attempting to reach a container, on top of (not instead of) their own AbilityRoot check. GET is AbilityRead, matching every other passive per-app setting view (e.g. GET .../auto-rollback above). PUT is AbilityRoot, the same tier exec/terminal themselves sit behind: flipping this back on hands back a root-tier capability, so re-enabling it needs the same tier as using it, an explicit, auditable, two-step action even for an already-root token."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetExecAccess", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/exposure", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppExposure", Description: "Exposure: port, direct host port and its tagged firewall rule. The write opens a host port, so it is AbilityWriteSensitive like firewall rules."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/exposure", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppExposure", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckAppExposure", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewAppExposure", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/failure-context", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFailureContext", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/group", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGroup", Description: "Stage 1 of multi-service apps (migrations/0039_apps.sql, apps_group.go): a service plus its siblings under the same store.App, with a worst-condition-wins rollup status. Additive, read-only; GET /api/v1/apps/{name} above is unchanged."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},

@@ -27,6 +27,7 @@ export const NAMESPACES = [
   'updates',
   'infraCanvas',
   'exposure',
+  'appExposure',
   'databaseAccess',
   'databaseUpgrades',
   'databaseVersions',
