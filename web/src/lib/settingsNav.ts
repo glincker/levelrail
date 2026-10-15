@@ -39,7 +39,7 @@ import {
   UsersThreeIcon,
   WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { filterByFeature, type ExperimentalFeature } from './experimental'
+import type { ExperimentalFeature } from './experimental'
 
 import type settingsEn from '../locales/en/settings.json'
 
@@ -366,10 +366,7 @@ export const settingsNavSections: SettingsNavSection[] = [
   },
 ]
 
-export function visibleSettingsSections(
-  enabled: readonly string[],
-): SettingsNavSection[] {
+// Gated pages stay listed; useSettingsNav marks the switched-off ones locked.
+export function visibleSettingsSections(): SettingsNavSection[] {
   return settingsNavSections
-    .map((s) => ({ ...s, items: filterByFeature(s.items, enabled) }))
-    .filter((s) => s.items.length > 0)
 }

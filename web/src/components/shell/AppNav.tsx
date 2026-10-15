@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   SidebarGroup,
@@ -8,6 +9,12 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import {
+  BETA_FEATURES_PATH,
+  isFeatureLocked,
+  lockedSearch,
+} from '@/lib/experimental'
+import { LockedFeatureMark } from './LockedFeatureMark'
 import { AppNavHeader } from './AppNavHeader'
 import { CollapsibleSection } from './CollapsibleSection'
 import {
@@ -29,13 +36,38 @@ function ItemLink({
   activeId,
   label,
   sub,
+  experimental,
 }: {
   name: string
   item: AppNavItem
   activeId: string | undefined
   label?: string
   sub?: boolean
+  experimental: readonly string[]
 }) {
+  const describedBy = useId()
+  if (isFeatureLocked(item.feature, experimental)) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          render={
+            <Link
+              to={BETA_FEATURES_PATH}
+              search={lockedSearch(item.feature)}
+              aria-describedby={describedBy}
+            />
+          }
+          tooltip={label ?? item.label}
+          data-locked="true"
+          className={cn('text-muted-foreground', sub && 'h-7 pl-6 text-[13px]')}
+        >
+          {item.icon}
+          <span>{item.label}</span>
+          <LockedFeatureMark id={describedBy} />
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    )
+  }
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -55,12 +87,16 @@ function SectionRail({
   name,
   section,
   activeSectionId,
+  experimental,
 }: {
   name: string
   section: AppNavSection
   activeSectionId: string | undefined
+  experimental: readonly string[]
 }) {
-  const first = section.items[0]
+  const first =
+    section.items.find((i) => !isFeatureLocked(i.feature, experimental)) ??
+    section.items[0]
   if (!first) return null
   return (
     <SidebarMenuItem>
@@ -90,7 +126,7 @@ export function AppNav({ name }: { name: string }) {
       <SidebarGroup>
         <SidebarGroupContent>
           <SidebarMenu>
-            {visibleAppSections(experimental).map((section) => {
+            {visibleAppSections().map((section) => {
               const only = section.items[0]
               if (only && isSingleSection(section) && !rail) {
                 return (
@@ -99,6 +135,7 @@ export function AppNav({ name }: { name: string }) {
                     name={name}
                     item={only}
                     activeId={active?.item.id}
+                    experimental={experimental}
                   />
                 )
               }
@@ -109,6 +146,7 @@ export function AppNav({ name }: { name: string }) {
                     name={name}
                     section={section}
                     activeSectionId={active?.section.id}
+                    experimental={experimental}
                   />
                 )
               }
@@ -139,6 +177,7 @@ export function AppNav({ name }: { name: string }) {
                           item={item}
                           activeId={active?.item.id}
                           sub
+                          experimental={experimental}
                         />
                       ))}
                     </SidebarMenu>

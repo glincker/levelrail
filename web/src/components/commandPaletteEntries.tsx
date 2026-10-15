@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { LockSimpleIcon } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/lib/utils'
 import { fuzzyMatchIndices } from '@/lib/fuzzy'
 import type { PaletteItem } from './commandPaletteData'
@@ -74,9 +75,20 @@ export function ResultRow({
       <span className="flex size-4 shrink-0 items-center justify-center text-muted-foreground [&_svg]:size-4">
         {item.icon}
       </span>
-      <span className="truncate">
+      <span className="min-w-0 truncate">
         <Highlighted text={item.label} query={query} />
+        {item.subtitle ? (
+          <span className="ml-2 text-xs text-muted-foreground">
+            {item.subtitle}
+          </span>
+        ) : null}
       </span>
+      {item.locked ? (
+        <LockSimpleIcon
+          className="size-3.5 shrink-0 text-muted-foreground"
+          aria-hidden="true"
+        />
+      ) : null}
       {item.badge ? (
         <span className="ml-auto shrink-0">{item.badge}</span>
       ) : null}

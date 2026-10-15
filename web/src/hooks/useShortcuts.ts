@@ -67,7 +67,11 @@ export function useShortcuts({
       if (action) {
         if (action.type === 'go') {
           e.preventDefault()
-          void navigate({ to: action.to })
+          void navigate(
+            action.search
+              ? { to: action.to, search: action.search }
+              : { to: action.to },
+          )
         } else {
           const field = findSearchField()
           if (field) {

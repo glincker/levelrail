@@ -46,7 +46,7 @@ import {
   CoinsIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
-import { filterByFeature, type ExperimentalFeature } from '@/lib/experimental'
+import type { ExperimentalFeature } from '@/lib/experimental'
 
 export type GlobalTo =
   | '/'
@@ -330,31 +330,23 @@ export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
   { id: 'help', label: 'Help', to: '/help', icon: <BookOpenIcon /> },
 ]
 
+// Gated items stay in place; the renderer shows them locked (see
+// isFeatureLocked) so a switched-off feature is discoverable, not hidden.
 export function visibleGlobalGroups(
-  enabled: readonly string[],
   routeAvailable: (to: string) => boolean = () => true,
 ): GlobalNavGroup[] {
   return GLOBAL_NAV_GROUPS.map((g) => ({
     ...g,
-    items: filterByFeature(g.items, enabled).filter(
-      (i) => !i.requiresRoute || routeAvailable(i.to),
-    ),
+    items: g.items.filter((i) => !i.requiresRoute || routeAvailable(i.to)),
   })).filter((g) => g.items.length > 0)
 }
 
-export function visibleGlobalFooter(
-  enabled: readonly string[],
-): GlobalNavItem[] {
-  return filterByFeature(GLOBAL_NAV_FOOTER, enabled)
+export function visibleGlobalFooter(): GlobalNavItem[] {
+  return GLOBAL_NAV_FOOTER
 }
 
-export function visibleAppSections(
-  enabled: readonly string[],
-): AppNavSection[] {
-  return APP_NAV_SECTIONS.map((s) => ({
-    ...s,
-    items: filterByFeature(s.items, enabled),
-  })).filter((s) => s.items.length > 0)
+export function visibleAppSections(): AppNavSection[] {
+  return APP_NAV_SECTIONS
 }
 
 export function allGlobalItems(): GlobalNavItem[] {

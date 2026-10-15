@@ -5,7 +5,15 @@ import {
   visibleGlobalGroups,
 } from '../components/shell/navModel'
 import { visibleSettingsSections } from './settingsNav'
-import { isFeatureVisible } from './experimental'
+import { isRedirect } from '@tanstack/react-router'
+import { QueryClient } from '@tanstack/react-query'
+import { devModeQueryOptions } from '../queries/devMode'
+import {
+  isFeatureLocked,
+  isFeatureVisible,
+  lockedSearch,
+  requireExperimental,
+} from './experimental'
 
 const gatedGlobal = [
   ['/loadbalancers', 'load-balancer'],
@@ -25,43 +33,94 @@ describe('isFeatureVisible', () => {
 })
 
 describe('experimental navigation', () => {
-  const tos = () =>
-    [
-      ...visibleGlobalGroups([]).flatMap((g) => g.items),
-      ...visibleGlobalFooter([]),
-    ].map((i) => i.to)
+  const allItems = () => [
+    ...visibleGlobalGroups().flatMap((g) => g.items),
+    ...visibleGlobalFooter(),
+  ]
 
-  it.each(gatedGlobal)('hides %s by default and shows it when on', (to, f) => {
-    expect(tos()).not.toContain(to)
-    const on = [
-      ...visibleGlobalGroups([f]).flatMap((g) => g.items),
-      ...visibleGlobalFooter([f]),
-    ].map((i) => i.to)
-    expect(on).toContain(to)
+  it.each(gatedGlobal)('keeps %s listed and locked until %s is on', (to, f) => {
+    const item = allItems().find((i) => i.to === to)
+    expect(item?.feature).toBe(f)
+    expect(isFeatureLocked(item?.feature, [])).toBe(true)
+    expect(isFeatureLocked(item?.feature, [f])).toBe(false)
   })
 
-  it('hides the AI group entirely when no AI feature is on', () => {
-    expect(visibleGlobalGroups([]).map((g) => g.id)).not.toContain('ai')
+  it('keeps the AI group so its locked entries stay discoverable', () => {
+    expect(visibleGlobalGroups().map((g) => g.id)).toContain('ai')
   })
 
-  it('hides the per-app load balancer entry by default', () => {
-    const slugs = (e: string[]) =>
-      visibleAppSections(e).flatMap((s) => s.items.map((i) => i.slug))
-    expect(slugs([])).not.toContain('loadbalancer')
-    expect(slugs(['load-balancer'])).toContain('loadbalancer')
+  it('lists the per-app load balancer entry for the renderer to lock', () => {
+    const lb = visibleAppSections()
+      .flatMap((s) => s.items)
+      .find((i) => i.slug === 'loadbalancer')
+    expect(lb?.feature).toBe('load-balancer')
   })
 
-  it('gates the settings pages', () => {
-    const tos = (e: string[]) =>
-      visibleSettingsSections(e).flatMap((s) => s.items.map((i) => i.to))
+  it('lists gated settings pages with their feature', () => {
+    const items = visibleSettingsSections().flatMap((s) => s.items)
     const cases: [string, string][] = [
       ['/settings/cloudflare-tunnel', 'cloudflare-tunnel'],
       ['/settings/ai-assistant', 'ai-chat'],
       ['/settings/infrastructure', 'iac'],
     ]
     for (const [to, f] of cases) {
-      expect(tos([])).not.toContain(to)
-      expect(tos([f])).toContain(to)
+      expect(items.find((i) => i.to === to)?.feature).toBe(f)
     }
+  })
+})
+
+describe('locked destination targets', () => {
+  it.each([
+    [
+      'load-balancer',
+      '/loadbalancers',
+      { feature: 'load-balancer', from: '/loadbalancers' },
+    ],
+    ['iac', undefined, { feature: 'iac' }],
+    ['iac', '//evil.example', { feature: 'iac' }],
+    ['iac', 'https://evil.example', { feature: 'iac' }],
+    [
+      'ai-chat',
+      '/apps/web?tab=1',
+      { feature: 'ai-chat', from: '/apps/web?tab=1' },
+    ],
+  ] as const)('%s from %s', (feature, from, want) => {
+    expect(lockedSearch(feature, from)).toEqual(want)
+  })
+})
+
+describe('requireExperimental', () => {
+  const clientWith = (experimental: string[]) => {
+    const client = new QueryClient()
+    client.setQueryData(devModeQueryOptions().queryKey, {
+      enabled: false,
+      experimental,
+    })
+    return client
+  }
+
+  it('passes when the feature is on', async () => {
+    await expect(
+      requireExperimental(
+        clientWith(['iac']),
+        'iac',
+        '/settings/infrastructure',
+      ),
+    ).resolves.toBeUndefined()
+  })
+
+  it('redirects to Beta features carrying the feature and return path', async () => {
+    const err: unknown = await requireExperimental(
+      clientWith([]),
+      'load-balancer',
+      '/loadbalancers',
+    ).catch((e: unknown) => e)
+    expect(isRedirect(err)).toBe(true)
+    expect(err).toMatchObject({
+      options: {
+        to: '/settings/beta-features',
+        search: { feature: 'load-balancer', from: '/loadbalancers' },
+      },
+    })
   })
 })

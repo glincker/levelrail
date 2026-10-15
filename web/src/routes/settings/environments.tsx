@@ -12,8 +12,8 @@ import { EnvironmentsTable } from '../../components/environments/EnvironmentsTab
 import { EnvironmentFormDialog } from '../../components/environments/EnvironmentFormDialog'
 
 export const Route = createFileRoute('/settings/environments')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'global-environments'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'global-environments', location.href),
   component: EnvironmentsSettingsPage,
 })
 

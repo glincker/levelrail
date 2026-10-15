@@ -40,6 +40,8 @@ func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runSettingsDeployFreeze(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domain-automation":
 		return runSettingsDomainAutomation(prog, args[1:], stdout, stderr, lookupEnv)
+	case "beta-features":
+		return runSettingsBetaFeatures(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsUsage(prog))
@@ -63,7 +65,8 @@ func settingsUsage(prog string) string {
   %[1]s settings updates get [flags]                      show the current release channel and auto-update-check setting
   %[1]s settings updates set --channel CHANNEL [--auto-update] [flags]   configure the release channel and auto-update checking
   %[1]s settings domain-automation get|set [flags]        the add-a-domain-and-go-live policy
-  %[1]s settings deploy-freeze show [flags]               show the fleet-wide deploy freeze windows
+  %[1]s settings beta-features list|enable|disable [feature]   gated features and how to turn them on
+  %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows
 

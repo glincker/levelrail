@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import {
   ArrowLeftIcon,
@@ -20,7 +20,13 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { useTranslation } from 'react-i18next'
-import { filterSettingsNav, useSettingsNav } from '../hooks/useSettingsNav'
+import {
+  filterSettingsNav,
+  useSettingsNav,
+  type LabelledSettingsItem,
+} from '../hooks/useSettingsNav'
+import { BETA_FEATURES_PATH, lockedSearch } from '../lib/experimental'
+import { LockedFeatureMark } from './shell/LockedFeatureMark'
 
 const OPEN_GROUPS_STORAGE_KEY = 'settings-sidebar-open-groups'
 
@@ -31,6 +37,50 @@ function readStoredOpenGroups(): Record<string, boolean> | null {
   } catch {
     return null
   }
+}
+
+function SettingsNavLink({
+  item,
+  pathname,
+}: {
+  item: LabelledSettingsItem
+  pathname: string
+}) {
+  const describedBy = useId()
+  if (item.locked && item.feature) {
+    return (
+      <SidebarMenuItem>
+        <SidebarMenuButton
+          render={
+            <Link
+              to={BETA_FEATURES_PATH}
+              search={lockedSearch(item.feature)}
+              aria-describedby={describedBy}
+            />
+          }
+          tooltip={item.title}
+          data-locked="true"
+          className="text-muted-foreground"
+        >
+          <item.icon />
+          <span>{item.title}</span>
+          <LockedFeatureMark id={describedBy} />
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    )
+  }
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        render={<Link to={item.to} />}
+        isActive={pathname === item.to}
+        tooltip={item.title}
+      >
+        <item.icon />
+        <span>{item.title}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
 }
 
 // Renders straight from settingsNavSections so this sidebar and the
@@ -132,16 +182,11 @@ export function SettingsScopedSidebar() {
                 <SidebarGroupContent>
                   <SidebarMenu>
                     {section.items.map((item) => (
-                      <SidebarMenuItem key={item.to}>
-                        <SidebarMenuButton
-                          render={<Link to={item.to} />}
-                          isActive={pathname === item.to}
-                          tooltip={item.title}
-                        >
-                          <item.icon />
-                          <span>{item.title}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                      <SettingsNavLink
+                        key={item.to}
+                        item={item}
+                        pathname={pathname}
+                      />
                     ))}
                   </SidebarMenu>
                 </SidebarGroupContent>

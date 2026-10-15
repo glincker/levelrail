@@ -13,8 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/ai-assistant')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'ai-chat'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'ai-chat', location.href),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantPage,

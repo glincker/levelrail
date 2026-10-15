@@ -20,8 +20,8 @@ import { PageHeader } from '@/components/shell/PageHeader'
 // dashboard, out of scope here (see the backend package doc comment,
 // internal/reconcile/cloudflaretunnel).
 export const Route = createFileRoute('/settings/cloudflare-tunnel')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'cloudflare-tunnel'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'cloudflare-tunnel', location.href),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(cloudflareTunnelSettingsQueryOptions()),
   component: CloudflareTunnelSettingsPage,

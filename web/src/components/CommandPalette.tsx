@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
 import { useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
@@ -40,13 +41,13 @@ import {
   DEFAULT_QUICK_ACTION_KEYS,
   GROUP_ORDER,
   ROUTE_ENTRIES,
+  routeEntryItem,
   THEME_ACTION,
   type PaletteItem,
 } from './commandPaletteData'
 import { PaletteFooter, ResultRow } from './commandPaletteEntries'
 import { domainFromPath, useTrafficPaletteItems } from './trafficPaletteItems'
-import { chordFor } from './shell/navModel'
-import { filterByFeature, isFeatureVisible } from '../lib/experimental'
+import { isFeatureVisible } from '../lib/experimental'
 import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { buildPaletteSuggestions } from './shell/paletteSuggestions'
 
@@ -61,7 +62,6 @@ const CAPPED_SEARCH_GROUPS: readonly (readonly [string, number])[] = [
   ['Domains', MAX_DOMAIN_MATCHES],
   ['DNS records', MAX_DNS_RECORD_MATCHES],
 ]
-const NO_HINT_KEYS = new Set(['action-create-app', 'action-templates'])
 const NEXT_THEME: Record<Theme, Theme> = {
   light: 'dark',
   dark: 'system',
@@ -95,6 +95,7 @@ export function CommandPalette({
   const [recentKeys, setRecentKeys] = React.useState<string[]>(loadRecentKeys)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
   const { restartApp, redeployApp } = usePaletteAppActions()
   const pageActions = usePageActions()
@@ -165,17 +166,9 @@ export function CommandPalette({
       ) =>
       () =>
         void navigate(search ? { to, params, search } : { to, params })
-    const items: PaletteItem[] = filterByFeature(
-      ROUTE_ENTRIES,
-      experimental,
-    ).map((e) => ({
-      key: e.key,
-      label: e.label,
-      group: e.group,
-      icon: e.icon,
-      run: go(e.to, undefined, e.search),
-      hint: NO_HINT_KEYS.has(e.key) ? undefined : chordFor(e.to),
-    }))
+    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) =>
+      routeEntryItem(e, experimental, go, t('shell.locked.paletteSubtitle')),
+    )
     for (const a of pageActions) {
       items.push({ ...a, group: 'Actions' })
     }
@@ -243,6 +236,7 @@ export function CommandPalette({
     onShowShortcuts,
     pageActions,
     experimental,
+    t,
   ])
 
   const groups = React.useMemo(() => {

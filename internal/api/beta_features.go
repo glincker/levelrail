@@ -6,22 +6,30 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
-// Where a beta feature's state comes from.
+// Where a feature's on state comes from.
 const (
 	betaSourceEnv      = "env"
-	betaSourceSettings = "settings"
-	betaSourceOff      = "off"
+	betaSourceSettings = "setting"
+	betaSourceOff      = "none"
 )
 
 type betaFeatureResource struct {
-	Feature string `json:"feature"`
-	Enabled bool   `json:"enabled"`
-	Source  string `json:"source"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Summary         string `json:"summary"`
+	Enabled         bool   `json:"enabled"`
+	EnabledBy       string `json:"enabled_by"`
+	Toggleable      bool   `json:"toggleable"`
+	RequiresRestart bool   `json:"requires_restart"`
+	EnvHint         string `json:"env_hint"`
+	DocsPath        string `json:"docs_path"`
+	Maturity        string `json:"maturity"`
 	// Locked is true when APP_EXPERIMENTAL turns it on, so Settings cannot turn it off.
 	Locked bool `json:"locked"`
 }
@@ -48,20 +56,25 @@ func LoadBetaFeatures(ctx context.Context, s BetaFeatureStore) error {
 }
 
 func betaFeatureState(f experimental.Feature) betaFeatureResource {
-	out := betaFeatureResource{Feature: string(f), Enabled: experimental.Enabled(f), Source: betaSourceOff}
+	info := experimental.Describe(f)
+	out := betaFeatureResource{
+		ID: string(f), Name: info.Name, Summary: info.Summary, Enabled: experimental.Enabled(f),
+		EnabledBy: betaSourceOff, Toggleable: experimental.Toggleable(f), RequiresRestart: info.RestartRequired,
+		EnvHint: experimental.EnvHint(f), DocsPath: info.DocsPath, Maturity: info.Maturity,
+	}
 	switch {
 	case experimental.EnabledByEnv(f):
-		out.Source, out.Locked = betaSourceEnv, true
+		out.EnabledBy, out.Locked = betaSourceEnv, true
 	case out.Enabled:
-		out.Source = betaSourceSettings
+		out.EnabledBy = betaSourceSettings
 	}
 	return out
 }
 
-// handleListBetaFeatures serves GET /api/v1/settings/beta-features.
+// handleListBetaFeatures serves GET /api/v1/settings/beta-features, every gated feature.
 func (rt *Router) handleListBetaFeatures(w http.ResponseWriter, _ *http.Request) {
 	out := []betaFeatureResource{}
-	for _, f := range experimental.ToggleableList() {
+	for _, f := range experimental.All() {
 		out = append(out, betaFeatureState(f))
 	}
 	writeJSON(w, http.StatusOK, out)
@@ -70,8 +83,12 @@ func (rt *Router) handleListBetaFeatures(w http.ResponseWriter, _ *http.Request)
 // handleSetBetaFeature serves PUT /api/v1/settings/beta-features/{feature}.
 func (rt *Router) handleSetBetaFeature(w http.ResponseWriter, r *http.Request) {
 	f := experimental.Feature(r.PathValue("feature"))
+	if !slices.Contains(experimental.All(), f) {
+		writeError(w, http.StatusNotFound, "no gated feature named "+string(f))
+		return
+	}
 	if !experimental.Toggleable(f) {
-		writeError(w, http.StatusNotFound, "no beta feature named "+string(f))
+		writeError(w, http.StatusConflict, string(f)+" is wired at startup and cannot be switched at runtime. "+experimental.EnvHint(f))
 		return
 	}
 	var req betaFeatureRequest

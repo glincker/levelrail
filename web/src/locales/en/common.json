@@ -108,6 +108,11 @@
     "emergencyDocs": "Emergency access"
   },
   "shell": {
+    "locked": {
+      "badge": "Beta",
+      "description": "This is a beta feature and it is turned off. Open it to go to Beta features and turn it on.",
+      "paletteSubtitle": "Locked beta feature. Enable it in Beta features"
+    },
     "skipToContent": "Skip to content",
     "topBar": "Top bar",
     "toggleSidebar": "Toggle sidebar",
