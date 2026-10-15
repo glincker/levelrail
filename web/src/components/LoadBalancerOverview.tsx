@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
 import { HelpLink } from './HelpLink'
+import { GhostPreview } from './GhostPreview'
 import { ConfigureLoadBalancerDialog } from './ConfigureLoadBalancerDialog'
 import {
   LoadBalancerOverviewHeader,
@@ -16,7 +17,73 @@ import {
   OVERVIEW_PAGE_LIMIT,
   useLoadBalancerList,
   type LoadBalancerOverviewState,
+  type LoadBalancerSummary,
 } from '../queries/loadBalancers'
+
+// Sample rows for the empty state's faded preview; never sent anywhere.
+const SAMPLE_ITEMS: LoadBalancerSummary[] = [
+  {
+    app: 'storefront-web',
+    service: 'web',
+    algorithm: 'round_robin',
+    state: 'balancing',
+    upstreams_total: 3,
+    upstreams_healthy: 3,
+    config_updated_at: '2026-01-01T00:00:00Z',
+    active_health_check: true,
+  },
+  {
+    app: 'checkout-api',
+    service: 'api',
+    algorithm: 'least_conn',
+    state: 'degraded',
+    upstreams_total: 4,
+    upstreams_healthy: 3,
+    reason: 'one upstream failing its health check',
+    config_updated_at: '2026-01-01T00:00:00Z',
+    active_health_check: true,
+  },
+  {
+    app: 'docs-site',
+    service: 'static',
+    algorithm: 'round_robin',
+    state: 'balancing',
+    upstreams_total: 2,
+    upstreams_healthy: 2,
+    config_updated_at: '2026-01-01T00:00:00Z',
+    active_health_check: false,
+  },
+  {
+    app: 'worker-queue',
+    service: 'worker',
+    algorithm: 'least_conn',
+    state: 'balancing',
+    upstreams_total: 5,
+    upstreams_healthy: 5,
+    config_updated_at: '2026-01-01T00:00:00Z',
+    active_health_check: true,
+  },
+  {
+    app: 'billing-service',
+    service: 'api',
+    algorithm: 'round_robin',
+    state: 'balancing',
+    upstreams_total: 3,
+    upstreams_healthy: 3,
+    config_updated_at: '2026-01-01T00:00:00Z',
+    active_health_check: true,
+  },
+  {
+    app: 'search-gateway',
+    service: 'gateway',
+    algorithm: 'least_conn',
+    state: 'balancing',
+    upstreams_total: 2,
+    upstreams_healthy: 2,
+    config_updated_at: '2026-01-01T00:00:00Z',
+    active_health_check: true,
+  },
+]
 
 const STATE_FILTERS: (LoadBalancerOverviewState | '')[] = [
   '',
@@ -96,23 +163,34 @@ export function LoadBalancerOverview() {
     )
   } else if (items.length === 0 && !filtered) {
     content = (
-      <EmptyState
-        icon={<ArrowsSplitIcon className="size-5" />}
-        title="No load balancers yet"
-        description="A load balancer spreads an app's traffic across its replicas, with health checks, retries and graceful cutovers. Turn one on per app and it shows up here with live upstream health."
-        action={
-          <Button
-            size="sm"
-            onClick={() => {
-              setPickerOpen(true)
-            }}
-          >
-            Configure a load balancer
-          </Button>
+      <GhostPreview
+        sample={
+          <div>
+            <LoadBalancerOverviewHeader />
+            {SAMPLE_ITEMS.map((item) => (
+              <LoadBalancerOverviewRow key={item.app} item={item} />
+            ))}
+          </div>
         }
-        helpPath="/load-balancing"
-        helpLabel="Load balancing guide"
-      />
+      >
+        <EmptyState
+          icon={<ArrowsSplitIcon className="size-5" />}
+          title="No load balancers yet"
+          description="A load balancer spreads an app's traffic across its replicas, with health checks, retries and graceful cutovers. Turn one on per app and it shows up here with live upstream health."
+          action={
+            <Button
+              size="sm"
+              onClick={() => {
+                setPickerOpen(true)
+              }}
+            >
+              Configure a load balancer
+            </Button>
+          }
+          helpPath="/load-balancing"
+          helpLabel="Load balancing guide"
+        />
+      </GhostPreview>
     )
   } else if (items.length === 0) {
     content = (
