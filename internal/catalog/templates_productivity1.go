@@ -28,6 +28,9 @@ var productivity1Templates = []Template{
       # "permission denied" (verified live): same fixed-uid problem as
       # above, and this platform has no per-service user override yet.
       - vikunja_data:/app/vikunja/files
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3456/api/v1/info || exit 1"]
       interval: 30s
@@ -41,6 +44,11 @@ var productivity1Templates = []Template{
       POSTGRES_DB: vikunja
     volumes:
       - vikunja_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vikunja -d vikunja"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 `,
 	},
 	{
@@ -123,6 +131,9 @@ var productivity1Templates = []Template{
       RUN_MIGRATIONS: "1"
       ADMIN_USERNAME: $SERVICE_USER_ADMIN
       ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/healthcheck || exit 1"]
       interval: 30s
@@ -136,6 +147,11 @@ var productivity1Templates = []Template{
       POSTGRES_DB: miniflux
     volumes:
       - miniflux_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U miniflux -d miniflux"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 `,
 	},
 	{

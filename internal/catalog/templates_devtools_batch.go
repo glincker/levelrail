@@ -505,7 +505,9 @@ var devtoolsBatchTemplates = []Template{
       GF_DATABASE_PASSWORD: $SERVICE_PASSWORD_DB
     volumes:
       - grafana_postgres_data:/var/lib/grafana
-    depends_on: [db]
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/health || exit 1"]
       interval: 15s
