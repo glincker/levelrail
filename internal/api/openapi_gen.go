@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1127 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1132 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -382,6 +382,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/auth/code-login", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutCodeLoginSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/beta-features", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListBetaFeatures", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/beta-features/{feature}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetBetaFeature", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/database-catalog", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutDatabaseCatalogSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPlatformUpgradePolicy", Description: "The platform default reaches every database, so writing it is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutPlatformUpgradePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
@@ -685,6 +686,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/compliance/evidence-packs/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyEvidencePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
+	{Method: "GET", Path: "/api/v1/database-catalog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDatabaseCatalogStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/database-catalog/refresh", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRefreshDatabaseCatalog", Description: ""},
+	{Method: "GET", Path: "/api/v1/database-versions", Ability: "AbilityRead", Group: "Other", Handler: "handleListDatabaseVersions", Description: ""},
+	{Method: "POST", Path: "/api/v1/database-versions/refresh", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRefreshDatabaseVersions", Description: "Live lookups call third parties and rewrite the cache, so they are not a plain read."},
 	{Method: "GET", Path: "/api/v1/demo", Ability: "Public", Group: "Other", Handler: "handleDemoInfo", Description: ""},
 	{Method: "POST", Path: "/api/v1/demo/cta", Ability: "Public", Group: "Other", Handler: "handleDemoCTA", Description: ""},
 	{Method: "POST", Path: "/api/v1/demo/session", Ability: "Public", Group: "Other", Handler: "handleDemoSession", Description: ""},

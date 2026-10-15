@@ -65,6 +65,7 @@ function OverviewSection() {
                 {database.version}
                 <ChangeDatabaseVersionDialog
                   name={database.name}
+                  engine={database.engine}
                   currentVersion={database.version}
                 />
               </dd>

@@ -217,6 +217,7 @@ Endpoints for:
 | PUT | /api/v1/security/session-policies/{team_id} | AbilityRoot | handlePutSessionPolicy |
 | DELETE | /api/v1/security/session-policies/{team_id} | AbilityRoot | handleDeleteSessionPolicy |
 | GET | /api/v1/security/session-policy/effective | Public | handleEffectiveSessionPolicy |
+| PUT | /api/v1/settings/database-catalog | AbilityRoot | handlePutDatabaseCatalogSettings |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -1349,6 +1350,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/package-registries | AbilityWriteSensitive | handleCreatePackageRegistry |
 | DELETE | /api/v1/package-registries/{id} | AbilityWriteSensitive | handleDeletePackageRegistry |
 | POST | /api/v1/package-registries/{id}/test | AbilityWriteSensitive | handleTestPackageRegistry |
+| GET | /api/v1/database-versions | AbilityRead | handleListDatabaseVersions |
+| POST | /api/v1/database-versions/refresh | AbilityWriteSensitive | handleRefreshDatabaseVersions |
+| GET | /api/v1/database-catalog | AbilityRead | handleGetDatabaseCatalogStatus |
+| POST | /api/v1/database-catalog/refresh | AbilityWriteSensitive | handleRefreshDatabaseCatalog |
 
 ## See also
 

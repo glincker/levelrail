@@ -85,6 +85,10 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesMajorUpgradeDiscard(prog, rest, stdout, stderr, lookupEnv)
 	case "upgrades":
 		return runDatabasesUpgrades(prog, rest, stdout, stderr, lookupEnv)
+	case "versions":
+		return runDatabasesVersions(prog, rest, stdout, stderr, lookupEnv)
+	case "catalog":
+		return runDatabasesCatalog(prog, rest, stdout, stderr, lookupEnv)
 	case "upgrade-policy":
 		return runDatabasesUpgradePolicy(prog, rest, stdout, stderr, lookupEnv)
 	case "upgrade-now":
@@ -132,6 +136,8 @@ func databasesUsage(prog string) string {
   %[1]s databases major-upgrade-rollback <name> <id> [flags]  restore the pre-upgrade data
   %[1]s databases major-upgrade-discard <name> <id> [flags]  delete a rollback snapshot to free disk
   %[1]s databases upgrades [<name>] [flags]  available versions, security and end-of-life status, upgrade history
+  %[1]s databases versions <engine> [--refresh]  versions with channel and end-of-life date, live lookup
+  %[1]s databases catalog status|refresh|set  where the version catalog comes from and how fresh it is
   %[1]s databases upgrade-policy <name>|--platform [flags]  automatic patch/minor upgrades in a maintenance window
   %[1]s databases upgrade-now <name> <version> [flags]  backup, upgrade, health check, revert on failure, now
 

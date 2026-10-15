@@ -20,6 +20,7 @@ import type updates from '../locales/en/updates.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
+import type databaseVersions from '../locales/en/databaseVersions.json'
 import type iam from '../locales/en/iam.json'
 import type signIn from '../locales/en/signIn.json'
 import type security from '../locales/en/security.json'
@@ -78,6 +79,7 @@ declare module 'i18next' {
       infraCanvas: typeof infraCanvas
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
+      databaseVersions: typeof databaseVersions
       iam: typeof iam
       signIn: typeof signIn
       security: typeof security
