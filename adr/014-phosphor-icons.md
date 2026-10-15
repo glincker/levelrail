@@ -126,3 +126,20 @@ broken imports.
 - No product-name strings were introduced by this change (this repo's own
   brand-indirection rule, section 3, is unaffected, this is a pure
   icon-library swap).
+
+## Amendment: brand marks and enforcement
+
+Two kinds of glyph, two sources, no exceptions:
+
+- **UI icons** (actions, navigation, status, empty states) are Phosphor only,
+  imported from `@phosphor-icons/react/dist/ssr`. Type-only imports of `Icon`
+  from the package root are fine.
+- **Brand, vendor and product marks** (cloud providers, registries, databases,
+  sign-in providers, notification channels, catalog templates) are
+  `@thesvg/react` only, rendered through `BrandIcon` / `BrandTile`, or
+  `lib/templateLogos.ts` for the template catalog. Components never import
+  `@thesvg/react` directly, never draw a vendor SVG by hand and never ship a
+  raster logo. A vendor with no mark falls back to the monogram tile and is
+  recorded as a missing slug for the thesvg project.
+
+`scripts/check-icon-rules.sh` enforces this in the pre-commit hook.
