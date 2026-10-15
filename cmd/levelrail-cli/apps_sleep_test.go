@@ -16,6 +16,10 @@ func TestRun_AppsSleep(t *testing.T) {
 		var b bytes.Buffer
 		_, _ = b.ReadFrom(r.Body)
 		gotBody = b.String()
+		if r.URL.Path == "/api/v1/sleep" {
+			_, _ = w.Write([]byte(`{"enabled":1,"sleeping":1,"reclaimed_bytes":268435456,"apps":[{"name":"web","idle_minutes":45,"sleeping":true,"memory_limit_bytes":268435456}]}`))
+			return
+		}
 		_ = json.NewEncoder(w).Encode(appSleepResource{Enabled: true, IdleMinutes: 45})
 	}))
 	t.Cleanup(srv.Close)
@@ -28,6 +32,7 @@ func TestRun_AppsSleep(t *testing.T) {
 		{[]string{"disable", "web"}, http.MethodPut, "/api/v1/apps/web/sleep", `{"idle_minutes":0}`},
 		{[]string{"status", "web"}, http.MethodGet, "/api/v1/apps/web/sleep", ""},
 		{[]string{"wake", "web"}, http.MethodPost, "/api/v1/apps/web/sleep/wake", ""},
+		{[]string{"list"}, http.MethodGet, "/api/v1/sleep", ""},
 	} {
 		var stdout, stderr bytes.Buffer
 		args := append([]string{"apps", "sleep"}, tc.args...)

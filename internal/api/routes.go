@@ -500,6 +500,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/canary/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteCanary))
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
 	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
+	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
 	mux.HandleFunc("GET /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSleep))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppSleep))
 	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/wake", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleWakeApp))

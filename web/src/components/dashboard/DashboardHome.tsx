@@ -24,6 +24,7 @@ import { RecommendationsLine } from './RecommendationsLine'
 import { ReservedUsageCard } from './ReservedUsageCard'
 import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
 import { StorageUsageCard } from './StorageUsageCard'
+import { SleepFleetCard } from './SleepFleetCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
 
 const RecentAlertsCard = lazy(() =>
@@ -56,6 +57,7 @@ function UsageDetails({ apps }: { apps: AppListEntry[] }) {
           <TopResourceConsumers apps={apps} />
           <ReservedUsageCard apps={apps} />
           <StorageUsageCard />
+          <SleepFleetCard />
         </div>
       ) : null}
     </section>

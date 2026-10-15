@@ -26,6 +26,21 @@ For API callers that cannot retry an error page, turn on **hold requests while
 waking** (`apps sleep enable --hold`): the request waits for the start and is
 replayed. See [Functions](/functions).
 
+## Running many apps on a small server
+
+Memory is the limit on a small VPS, and most side projects are idle most of
+the time. With sleep on, an app that nobody visits holds no memory, so the
+box only needs room for the apps in use at once, plus the platform itself.
+
+- Give each app a **memory limit** (App, Settings). The dashboard counts a
+  sleeping app's limit as memory it is not using.
+- Start with 30 minutes. Shorter saves more memory but makes more visitors
+  wait for a cold start.
+- Turn on **hold requests while waking** for apps that other services call.
+- The dashboard's Usage details shows how many apps are asleep and how much
+  memory that frees. The apps list marks each sleeping app with an Asleep
+  badge.
+
 ## Limits
 
 - Needs request traffic through the built-in ingress. An app that is only
@@ -40,6 +55,7 @@ replayed. See [Functions](/functions).
 ```
 levelrail-cli apps sleep enable web --after 30m
 levelrail-cli apps sleep status web
+levelrail-cli apps sleep list
 levelrail-cli apps sleep wake web
 levelrail-cli apps sleep disable web
 ```
@@ -47,7 +63,8 @@ levelrail-cli apps sleep disable web
 ## Dashboard
 
 App, Deploys: the Sleep when idle card has the switch, the idle minutes, and a
-Wake now button while the app is asleep.
+Wake now button while the app is asleep. Sleeping apps carry an Asleep badge in
+the apps list, and the dashboard's Usage details has a Sleeping apps card.
 
 ## API
 
