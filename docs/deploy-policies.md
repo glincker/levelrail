@@ -54,7 +54,7 @@ levelrail-cli policy check --fail
 - `DELETE /api/v1/deploy-policies/{scope}/{id}`
 - `POST /api/v1/deploy-policies/check`
 
-The MCP tool `list_deploy_policies` is read only.
+There is no MCP tool for policies yet: the tool list is at its token budget, so it returns once heavier tool descriptions are trimmed.
 
 ## Not covered yet
 
