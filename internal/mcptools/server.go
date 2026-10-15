@@ -31,6 +31,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 
 	registerAppTools(server, client)
 	registerDeployFreezeTools(server, client)
+	registerDeployPolicyTools(server, client)
 	registerAppScheduleTools(server, client)
 	registerDeployCancelTools(server, client)
 	registerAppTimelineTools(server, client)

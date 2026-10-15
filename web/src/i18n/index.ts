@@ -65,6 +65,7 @@ export const NAMESPACES = [
   'models',
   'templates',
   'trialApp',
+  'deployPolicies',
 ] as const
 
 void i18n

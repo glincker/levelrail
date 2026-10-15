@@ -291,6 +291,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/maintenance',
         icon: WrenchIcon,
       },
+      {
+        id: 'deploy-policies',
+        to: '/settings/deploy-policies',
+        icon: ShieldCheckIcon,
+      },
     ],
   },
   {

@@ -504,6 +504,10 @@
         "title": "Notification channels",
         "description": "Slack, Discord, Telegram, webhook, and email alerts."
       },
+      "deploy-policies": {
+        "title": "Deploy policies",
+        "description": "Guardrails checked before every deploy: registries, probes, limits, mounts, labels."
+      },
       "maintenance": {
         "title": "Scheduled maintenance",
         "description": "Plan downtime, show it on the dashboard and status page, and hold deploys."

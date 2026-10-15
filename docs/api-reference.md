@@ -1370,6 +1370,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/audit-sinks/{id}/test | AbilityRoot | handleTestAuditSink |
 | POST | /api/v1/audit-sinks/{id}/rotate-secret | AbilityRoot | handleRotateAuditSinkSecret |
 | GET | /api/v1/audit-sinks/{id}/deliveries | AbilityRoot | handleListAuditSinkDeliveries |
+| GET | /api/v1/deploy-policies | AbilityRead | handleListDeployPolicies |
+| POST | /api/v1/deploy-policies/check | AbilityRead | handleCheckDeployPolicy |
+| PUT | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleSetDeployPolicy |
+| DELETE | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleDeleteDeployPolicy |
 
 ## See also
 

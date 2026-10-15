@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1148 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1152 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -709,6 +709,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/deploy-approvals/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDeployApproval", Description: ""},
 	{Method: "POST", Path: "/api/v1/deploy-approvals/{id}/approve", Ability: "AbilityDeploy", Group: "Other", Handler: "handleApproveDeployApproval", Description: ""},
 	{Method: "POST", Path: "/api/v1/deploy-approvals/{id}/reject", Ability: "AbilityDeploy", Group: "Other", Handler: "handleRejectDeployApproval", Description: ""},
+	{Method: "GET", Path: "/api/v1/deploy-policies", Ability: "AbilityRead", Group: "Other", Handler: "handleListDeployPolicies", Description: ""},
+	{Method: "POST", Path: "/api/v1/deploy-policies/check", Ability: "AbilityRead", Group: "Other", Handler: "handleCheckDeployPolicy", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/deploy-policies/{scope}/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteDeployPolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/deploy-policies/{scope}/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetDeployPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments", Ability: "AbilityRead", Group: "Other", Handler: "handleListDeployments", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/stream", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsStream", Description: ""},
 	{Method: "GET", Path: "/api/v1/deployments/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleDeploymentsSummary", Description: ""},

@@ -39,6 +39,7 @@ import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type auditStream from '../locales/en/auditStream.json'
 import type maintenance from '../locales/en/maintenance.json'
+import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
@@ -122,6 +123,7 @@ declare module 'i18next' {
       maintenance: typeof maintenance
       sso: typeof sso
       trialApp: typeof trialApp
+      deployPolicies: typeof deployPolicies
     }
   }
 }

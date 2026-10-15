@@ -173,6 +173,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runEventWebhooks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "maintenance":
 		return runMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
+	case "policy":
+		return runPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -353,7 +355,8 @@ Usage:
   %[1]s export destinations list|create|test|status|enable|disable|delete, export audit   send logs, audit events and metrics to your own tools
   %[1]s otel destinations list|add|test|remove                 OTLP/HTTP metric and log export to your own collector
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
-  %[1]s maintenance list|create|delete [flags]                 scheduled maintenance windows with banner, status page and optional deploy freeze
+  %[1]s policy list|set|check [flags]                           deploy guardrails: registries, probes, limits, mounts, labels, replicas
+  %[1]s maintenance list|create|delete [flags]               scheduled maintenance windows with banner, status page and optional deploy freeze
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes
