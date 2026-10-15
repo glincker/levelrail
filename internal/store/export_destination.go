@@ -24,6 +24,7 @@ const (
 	ExportKindAuditWebhook ExportKind = "audit_webhook"
 	ExportKindAuditS3      ExportKind = "audit_s3"
 	ExportKindMetricsOTLP  ExportKind = "metrics_otlp"
+	ExportKindLogsOTLP     ExportKind = "logs_otlp"
 )
 
 // ErrExportDestinationNotFound is returned when no destination has the given id.

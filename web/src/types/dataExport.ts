@@ -4,6 +4,7 @@
 export type DataExportKind =
   | 'logs_http'
   | 'logs_loki'
+  | 'logs_otlp'
   | 'logs_syslog'
   | 'audit_webhook'
   | 'audit_s3'

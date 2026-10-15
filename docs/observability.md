@@ -245,6 +245,10 @@ The threshold is control-plane-wide, not per database: `APP_DATABASE_SLOW_QUERY_
 MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a container (it fails with `Could not use /dev/stderr for logging`), so there is no working Docker-log-stream source for this engine. The handler uses the same `docker.Runtime.Exec` primitive backups already use to run `pg_dump` and `mysqldump`. Redis's SLOWLOG is a live-server command against an in-memory ring buffer, not something that appears in log output, so it is not planned for this endpoint.
 </Accordion>
 
+## Exporting to OpenTelemetry
+
+Metrics and logs can be pushed to an OTLP/HTTP collector, opt-in per destination. Pull-based, node-local collection stays the default and nothing leaves the node until you add a destination. The export set includes per-app container metrics, platform self metrics (reconcile lag, deploy duration and queue depth, agent connections) and container logs. See [Data export](/data-export#otlp-logs) and `levelrail-cli otel destinations`.
+
 ## External log drains
 
 `PUT /api/v1/apps/{name}/log-drain` forwards an app's container log stream to an external HTTP endpoint or syslog target. The drain is in addition to, never instead of, the node-local store: it taps the same `LogBroadcaster` a live SSE viewer subscribes to.

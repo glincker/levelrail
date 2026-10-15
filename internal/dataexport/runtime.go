@@ -122,6 +122,9 @@ func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender,
 	case store.ExportKindLogsLoki:
 		l := &lokiSender{url: LokiPushURL(d.Endpoint), client: s.client, headers: blob.Headers, static: d.Options.Labels, job: s.prefix[:len(s.prefix)-1]}
 		return sender{logs: l.send}, nil
+	case store.ExportKindLogsOTLP:
+		o := &otlpLogSender{url: OTLPLogsURL(d.Endpoint), client: s.client, headers: blob.Headers, static: d.Options.Labels, scope: s.prefix[:len(s.prefix)-1]}
+		return sender{logs: o.send}, nil
 	case store.ExportKindLogsSyslog:
 		sl, err := newSyslogSender(d.Endpoint, s.prefix[:len(s.prefix)-1])
 		if err != nil {
@@ -268,6 +271,17 @@ func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination,
 	if d.Options.IntervalSeconds > 0 {
 		interval = time.Duration(d.Options.IntervalSeconds) * time.Second
 	}
+	var allow ResourceFilter
+	if len(d.Apps) > 0 {
+		wanted := make(map[string]struct{}, len(d.Apps))
+		for _, a := range d.Apps {
+			wanted[a] = struct{}{}
+		}
+		allow = func(kind, name string) bool {
+			_, ok := wanted[name]
+			return kind == "app" && ok
+		}
+	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -276,7 +290,7 @@ func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination,
 			return
 		case <-ticker.C:
 		}
-		series, err := s.Series(ctx, nil)
+		series, err := s.Series(ctx, allow)
 		if err != nil {
 			s.d.Logger.Warn("dataexport: collect metrics failed", slog.String("destination_id", d.ID), slog.String("error", err.Error()))
 		}
@@ -412,6 +426,14 @@ func (s *Service) Series(ctx context.Context, allow ResourceFilter) ([]Series, e
 	if s.d.AppCount != nil {
 		if n, err := s.d.AppCount(ctx); err == nil {
 			out = append(out, Series{Name: s.prefix + "apps", Help: "Number of apps.", Value: float64(n)})
+		}
+	}
+	if s.d.Platform != nil {
+		now := s.d.Now()
+		if st, err := s.d.Platform.ReadPlatformStats(ctx, now, platformDeployWindow); err == nil {
+			out = append(out, PlatformSeries(s.prefix, st, now)...)
+		} else if firstErr == nil {
+			firstErr = err
 		}
 	}
 	return append(out, s.selfSeries(ctx)...), firstErr

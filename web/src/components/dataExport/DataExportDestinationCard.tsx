@@ -32,6 +32,7 @@ import type {
 const KIND_KEYS = {
   logs_http: 'kinds.logs_http',
   logs_loki: 'kinds.logs_loki',
+  logs_otlp: 'kinds.logs_otlp',
   logs_syslog: 'kinds.logs_syslog',
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',

@@ -998,6 +998,17 @@ levelrail-cli compliance access-review keep|revoke <id> <item-id>...
 levelrail-cli compliance access-review complete <id>
 ```
 
+## OpenTelemetry export
+
+```
+levelrail-cli otel destinations list
+levelrail-cli otel destinations add --name N --endpoint URL [--signal metrics|logs] [--app A] [--header K=V] [--label K=V] [--interval S] [--min-level L]
+levelrail-cli otel destinations test <id>
+levelrail-cli otel destinations remove <id>
+```
+
+OTLP/HTTP export of metrics and logs to your own collector. A signal-first view of the OTLP kinds of [Data export](/data-export#otlp-logs); header values are stored encrypted.
+
 ## Event webhooks
 
 ```

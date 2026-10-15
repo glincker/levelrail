@@ -33,6 +33,7 @@ import type {
 
 const KINDS: DataExportKind[] = [
   'logs_loki',
+  'logs_otlp',
   'logs_http',
   'logs_syslog',
   'audit_webhook',
@@ -43,6 +44,7 @@ const KINDS: DataExportKind[] = [
 const KIND_KEYS = {
   logs_http: 'kinds.logs_http',
   logs_loki: 'kinds.logs_loki',
+  logs_otlp: 'kinds.logs_otlp',
   logs_syslog: 'kinds.logs_syslog',
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
@@ -60,6 +62,7 @@ const LEVEL_KEYS = {
 } as const
 
 const isLogKind = (k: DataExportKind) => k.startsWith('logs_')
+const hasAppFilter = (k: DataExportKind) => isLogKind(k) || k === 'metrics_otlp'
 
 function parseHeaders(raw: string): Record<string, string> {
   const out: Record<string, string> = {}
@@ -112,14 +115,14 @@ export function CreateDataExportDestinationDialog() {
       enabled: true,
     }
     if (kind !== 'audit_s3') req.endpoint = endpoint.trim()
-    if (isLogKind(kind)) {
+    if (hasAppFilter(kind)) {
       const list = apps
         .split(',')
         .map((a) => a.trim())
         .filter(Boolean)
       if (list.length > 0) req.apps = list
-      if (level !== 'any') req.min_level = level
     }
+    if (isLogKind(kind) && level !== 'any') req.min_level = level
     const parsed = parseHeaders(headers)
     if (Object.keys(parsed).length > 0 && kind !== 'logs_syslog') {
       req.headers = parsed
@@ -154,6 +157,7 @@ export function CreateDataExportDestinationDialog() {
   const endpointPlaceholder = {
     logs_http: t('form.endpointHttp'),
     logs_loki: t('form.endpointLoki'),
+    logs_otlp: t('form.endpointOtlp'),
     logs_syslog: t('form.endpointSyslog'),
     audit_webhook: t('form.endpointHttp'),
     audit_s3: '',
@@ -276,19 +280,22 @@ export function CreateDataExportDestinationDialog() {
             </Field>
           )}
 
+          {hasAppFilter(kind) ? (
+            <Field>
+              <FieldLabel htmlFor="export-apps">{t('form.apps')}</FieldLabel>
+              <Input
+                id="export-apps"
+                value={apps}
+                placeholder="web, api"
+                onChange={(e) => {
+                  setApps(e.target.value)
+                }}
+              />
+            </Field>
+          ) : null}
+
           {isLogKind(kind) ? (
             <>
-              <Field>
-                <FieldLabel htmlFor="export-apps">{t('form.apps')}</FieldLabel>
-                <Input
-                  id="export-apps"
-                  value={apps}
-                  placeholder="web, api"
-                  onChange={(e) => {
-                    setApps(e.target.value)
-                  }}
-                />
-              </Field>
               <Field>
                 <FieldLabel htmlFor="export-level">
                   {t('form.minLevel')}

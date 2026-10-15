@@ -53,12 +53,14 @@ func (rt *Router) handleScrapeMetrics(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 
+var resourceLabels = map[string]bool{"app": true, "database": true, "node": true}
+
 // dropPlatformSeries removes series that carry no resource label (platform
 // gauges and exporter self metrics), which a restricted caller must not see.
 func dropPlatformSeries(in []dataexport.Series) []dataexport.Series {
 	out := in[:0:0]
 	for _, s := range in {
-		if len(s.Labels) == 1 && s.Labels[0].Name != "destination" {
+		if len(s.Labels) == 1 && resourceLabels[s.Labels[0].Name] {
 			out = append(out, s)
 		}
 	}
