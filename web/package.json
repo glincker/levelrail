@@ -30,7 +30,7 @@
     "@tanstack/react-query": "^5.104.0",
     "@tanstack/react-router": "^1.170.40",
     "@tanstack/react-virtual": "^3.14.13",
-    "@thesvg/react": "^3.3.9",
+    "@thesvg/react": "^3.4.0",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "class-variance-authority": "^0.7.1",
