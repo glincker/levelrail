@@ -43,3 +43,33 @@ func (c *Client) SetAppSleepHold(ctx context.Context, appName string, idleMinute
 	err := c.do(ctx, http.MethodPut, sleepPath(appName), map[string]any{"idle_minutes": idleMinutes, "hold_requests": hold}, &out)
 	return out, err
 }
+
+// SleepFleetApp mirrors internal/api's sleepFleetApp.
+type SleepFleetApp struct {
+	Name             string `json:"name"`
+	IdleMinutes      int    `json:"idle_minutes"`
+	Sleeping         bool   `json:"sleeping"`
+	MemoryLimitBytes int64  `json:"memory_limit_bytes"`
+}
+
+// SleepFleet mirrors internal/api's sleepFleetResource.
+type SleepFleet struct {
+	Enabled        int             `json:"enabled"`
+	Sleeping       int             `json:"sleeping"`
+	ReclaimedBytes int64           `json:"reclaimed_bytes"`
+	Apps           []SleepFleetApp `json:"apps"`
+}
+
+// ListSleepFleet calls GET /api/v1/sleep.
+func (c *Client) ListSleepFleet(ctx context.Context) (SleepFleet, error) {
+	var out SleepFleet
+	err := c.do(ctx, http.MethodGet, "/api/v1/sleep", nil, &out)
+	return out, err
+}
+
+// SleepAppNow calls POST /api/v1/apps/{name}/sleep/now.
+func (c *Client) SleepAppNow(ctx context.Context, appName string) (AppSleepResource, error) {
+	var out AppSleepResource
+	err := c.do(ctx, http.MethodPost, sleepPath(appName)+"/now", nil, &out)
+	return out, err
+}

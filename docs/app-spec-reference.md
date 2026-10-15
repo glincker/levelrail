@@ -56,7 +56,7 @@ services:
     dependsOn: [worker]     # start order across sibling services
 databases:
   main:
-    engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly
+    engine: postgres          # postgres | redis | mysql | mongodb | mariadb | keydb | clickhouse | dragonfly | valkey
     version: "16"
     backup: { schedule: "0 3 * * *", retain: 7 }
     ephemeralInPreviews: true # opt in to a disposable per-pull-request instance, see below
@@ -291,7 +291,7 @@ If Vault is unreachable, not configured, or the secret/field doesn't exist, the 
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`. |
+| `engine` | string | yes | none | One of `postgres`, `redis`, `mysql`, `mongodb`, `mariadb`, `keydb`, `clickhouse`, `dragonfly`, `valkey`. |
 | `version` | string | no | none | For example `"16"`. |
 | `backup` | `Backup` | no | none | Backup schedule. |
 | `ephemeralInPreviews` | boolean | no | `false` | Provision a full, disposable database of its own for every pull-request preview, destroyed with the preview and with no restore path. Only meaningful once the app's git source has preview environments enabled; see [Git integrations](/git-integrations) and [Deploy previews](/deploy-previews). |

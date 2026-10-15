@@ -187,15 +187,17 @@ describe('NewAppWizard', () => {
   it('shows a connect call to action when no provider is connected', async () => {
     mockApi({ providers: [] })
     renderWizard()
-    await userEvent.click(
-      await screen.findByRole('tab', { name: 'Your repositories' }),
-    )
     expect(
-      await screen.findByText('No git provider is connected yet'),
+      await screen.findByText('Connect a git provider'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', { name: /Connect GitHub/ }),
-    ).toHaveAttribute('href', '/settings/github-app')
+    const links = screen.getAllByRole('link', { name: 'Connect' })
+    expect(links.map((l) => l.getAttribute('href'))).toEqual([
+      '/settings/github-app',
+      '/settings/gitlab-app',
+      '/settings/bitbucket-app',
+      '/settings/gitea-app',
+    ])
+    expect(screen.getByLabelText('Repository URL')).toBeInTheDocument()
   })
 
   it('filters the repository list by search', async () => {
@@ -221,9 +223,8 @@ describe('NewAppWizard', () => {
       analyzeStatus: 422,
     })
     renderWizard()
-    await user.click(await screen.findByRole('tab', { name: 'Git URL' }))
     await user.type(
-      screen.getByLabelText('Repository URL'),
+      await screen.findByLabelText('Repository URL'),
       'https://github.com/acme/private',
     )
     await user.click(screen.getByRole('button', { name: 'Analyze repository' }))

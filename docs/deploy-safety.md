@@ -61,6 +61,19 @@ never stops serving: ingress keeps routing to it because the new release
 never reports ready. The next reconcile retries the new release under the
 crash restart backoff.
 
+Any exit counts, code 0 included: a service container that stops is not
+serving, whatever its exit code says. A container that exits while its
+readiness probe is still being waited on is noticed within a second, not at
+the probe's own interval. The condition, the deploy history and the gate
+timeline then say exactly what happened, for example
+`Container exited with code 0 after 2s, before it became ready`, and the
+last 200 lines the container printed are captured with the failed deploy and
+shown on the deploy page, the app overview and the logs page. With the
+stable window set to `0` for an app that also has nothing to probe, the
+release must still keep running for `APP_DEPLOY_STARTUP_WATCH` (default `3s`,
+`0` disables it). Scheduled tasks and job runs are one-shot containers and
+are not gated: for them exit 0 is success.
+
 Multi-replica releases are gated replica by replica. With blue-green,
 nothing from the old release is retired until every new replica passed its
 own gate, so a release where replica 0 passes and replica 1 is OOM-killed
@@ -373,3 +386,33 @@ Pruning removes only dangling (untagged) images, and Docker itself refuses to re
   registry needs a registry credential on the app.
 - Apps created or edited through the plain app create/update and compose
   paths keep the image reference exactly as given until their next deploy.
+
+## Troubleshooting
+
+### Deployment was held by a freeze window
+
+**Likely cause:** A freeze window is active on the app, blocking automated deploys.
+
+**How to confirm:** Check the deployment status in the dashboard or run `levelrail-cli apps deploys show <name>`. The status will show it is held.
+
+**Fix:** Wait for the freeze window to end, or override it with a reason: `levelrail-cli apps deploys override <name> <deploy-id> "reason"`.
+
+### Automatic rollback was triggered
+
+**Likely cause:** The deployed image crashed within the post-deploy watch window (default 5 minutes), exceeded its memory limit, or had a high error rate.
+
+**How to confirm:** In the dashboard, open the app and go to Deploys. A rolled-back deploy shows the reason in the timeline.
+
+**Fix:** Fix the issue in the code and redeploy. Check the app logs with `levelrail-cli apps logs <name>` for crash messages.
+
+### Cannot roll back to the target image
+
+**Likely cause:** The image was garbage collected or is no longer in the registry.
+
+**How to confirm:** Run `levelrail-cli apps deploys show <name>`. The failure code will be `rollback_target_gone`.
+
+**Fix:** Redeploy from source (git push or `apps builds trigger`), or deploy a newer image tag. To keep more rollback images, increase `APP_DEPLOY_ROLLBACK_PINS` (default 3).
+
+### Still stuck
+
+For all failure codes and their meanings, see [Deploy failures](deploy-failures.md). Run `levelrail-cli apps diagnose <name>` for system details.

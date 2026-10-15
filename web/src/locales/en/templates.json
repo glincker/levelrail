@@ -1,0 +1,46 @@
+{
+  "detail": {
+    "back": "Back to templates",
+    "ramRecommended": "~{{size}} RAM recommended",
+    "needsGpu": "Needs NVIDIA GPU",
+    "facts": {
+      "title": "Facts",
+      "images": "Docker images",
+      "docs": "Official documentation",
+      "docsLink": "Open documentation",
+      "memory": "Recommended memory",
+      "ports": "Exposed ports",
+      "volumes": "Volumes",
+      "registryLink": "{{image}} on {{registry}}"
+    },
+    "deployed": {
+      "title": "What gets deployed",
+      "description": "Each service below is created from the template's compose file.",
+      "image": "Image",
+      "port": "Port {{port}}",
+      "roleMain": "Main service",
+      "roleSupport": "Supporting service",
+      "dependsOn": "Starts after {{names}}",
+      "loading": "Reading the template",
+      "unavailable": "The service breakdown is not available for this template right now. Deploying it still works."
+    },
+    "env": {
+      "title": "Environment variables",
+      "description": "Names only. Values are set when you deploy.",
+      "required": "You provide",
+      "generated": "Generated for you",
+      "optional": "Optional, has a default"
+    },
+    "related": {
+      "title": "More in {{category}}"
+    },
+    "deploy": {
+      "title": "Deploy this template",
+      "now": "Deploy now",
+      "deploying": "Deploying...",
+      "configure": "Configure and deploy",
+      "trial": "Deploys as a trial instance you can stop and delete anytime from its own page.",
+      "configureHint": "This template needs a few values from you before it can start."
+    }
+  }
+}

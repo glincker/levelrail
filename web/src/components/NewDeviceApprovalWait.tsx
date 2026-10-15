@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { HourglassIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  HourglassIcon,
+  ShieldCheckIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
 import { useFinishSignIn } from '../queries/auth'
-import { pollLoginApproval, type ApprovalPollStatus } from '../queries/signIn'
+import { useQuery } from '@tanstack/react-query'
+import {
+  loginOptionsQueryOptions,
+  pollLoginApproval,
+  type ApprovalPollStatus,
+} from '../queries/signIn'
 import { useBrand } from '../hooks/useBrand'
 import { cliCommand } from '../lib/cliCommand'
 import { Alert, AlertDescription } from './ui/alert'
@@ -29,9 +38,18 @@ export function NewDeviceApprovalWait({
   const { t } = useTranslation('signIn')
   const brand = useBrand()
   const finish = useFinishSignIn()
+  const options = useQuery(loginOptionsQueryOptions())
+  const emailConfigured = options.data?.email_configured ?? true
+  const hostCommand = `${brand.BinaryName || 'levelrail'} approve-signin ${approvalId} --match ${matchNumber}`
   const [status, setStatus] = useState<ApprovalPollStatus>('pending')
   const [mfaToken, setMfaToken] = useState<string | null>(null)
   const [now, setNow] = useState(() => Date.now())
+  const [totalSeconds] = useState(() =>
+    Math.max(
+      1,
+      Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000),
+    ),
+  )
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -81,8 +99,11 @@ export function NewDeviceApprovalWait({
       {effective === 'pending' || effective === 'approved' ? (
         <section
           aria-labelledby="approval-title"
-          className="space-y-4 rounded-lg border border-border bg-card p-4 text-center"
+          className="space-y-3 rounded-lg border border-border bg-card p-4 text-center"
         >
+          <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+            <ShieldCheckIcon className="size-5" aria-hidden="true" />
+          </span>
           <h2 id="approval-title" className="text-sm font-medium">
             {t('approval.waitingTitle')}
           </h2>
@@ -97,7 +118,7 @@ export function NewDeviceApprovalWait({
                 {t('approval.matchLabel')}
               </p>
               <p
-                className="font-mono text-5xl font-semibold tracking-widest text-foreground tabular-nums"
+                className="font-mono text-4xl font-semibold tracking-widest text-foreground tabular-nums"
                 data-testid="approval-match"
                 aria-label={t('approval.matchAria', { number: matchNumber })}
               >
@@ -111,6 +132,12 @@ export function NewDeviceApprovalWait({
               {t('approval.countdown', { time: formatRemaining(remaining) })}
             </span>
           </p>
+          <progress
+            aria-hidden="true"
+            value={remaining}
+            max={totalSeconds}
+            className="mx-auto block h-1 w-full max-w-48 overflow-hidden rounded-full [&::-moz-progress-bar]:bg-emerald-500 [&::-webkit-progress-bar]:bg-muted [&::-webkit-progress-value]:bg-emerald-500"
+          />
           <p className="sr-only" role="status" aria-live="polite">
             {t('approval.countdown', { time: formatRemaining(announced) })}
           </p>
@@ -128,8 +155,23 @@ export function NewDeviceApprovalWait({
           </AlertDescription>
         </Alert>
       )}
+      {effective === 'pending' ? (
+        <details className="rounded-lg border border-border bg-card p-3 text-left">
+          <summary className="cursor-pointer text-sm font-medium text-foreground">
+            {t('approval.hostTitle')}
+          </summary>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('approval.hostHint')}
+          </p>
+          <code className="mt-2 block overflow-x-auto rounded-md bg-muted px-3 py-2 font-mono text-xs text-foreground">
+            {hostCommand}
+          </code>
+        </details>
+      ) : null}
       <p className="text-xs text-muted-foreground">
-        {t('approval.alternative')}
+        {emailConfigured
+          ? t('approval.alternative')
+          : t('approval.alternativeNoEmail')}
       </p>
       <Button
         type="button"

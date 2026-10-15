@@ -84,3 +84,73 @@ func TestPostgresNeedsPGDATA_Variant(t *testing.T) {
 		t.Fatal("PGDATA pin must follow the major of a pgvector version")
 	}
 }
+
+func TestImageRef_PostgresFlavors(t *testing.T) {
+	tests := []struct {
+		name, version, want string
+	}{
+		{"timescaledb 17", "17-timescaledb", "timescale/timescaledb:latest-pg17"},
+		{"timescaledb 18", "18-timescaledb", "timescale/timescaledb:latest-pg18"},
+		{"postgis 17", "17-postgis", "postgis/postgis:17-3.5"},
+		{"postgis 16", "16-postgis", "postgis/postgis:16-3.5"},
+		{"postgis 18", "18-postgis", "postgis/postgis:18-3.6"},
+		{"pgvector unchanged", "17-pgvector", "pgvector/pgvector:pg17"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := ImageRef("postgres", tc.version); got != tc.want {
+				t.Fatalf("ImageRef(postgres, %q) = %q, want %q", tc.version, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestParsePostgresVariant(t *testing.T) {
+	tests := []struct {
+		version string
+		major   int
+		variant string
+		wantErr bool
+	}{
+		{"17-timescaledb", 17, "timescaledb", false},
+		{"15-timescaledb", 15, "timescaledb", false},
+		{"14-timescaledb", 0, "timescaledb", true},
+		{"16-postgis", 16, "postgis", false},
+		{"12-postgis", 0, "postgis", true},
+		{"17.4-postgis", 0, "17.4-postgis", true},
+		{"17-postgis-x", 0, "17-postgis-x", true},
+		{"16", 0, "", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.version, func(t *testing.T) {
+			major, variant, err := ParsePostgresVariant(tc.version)
+			if (err != nil) != tc.wantErr || variant != tc.variant || major != tc.major {
+				t.Fatalf("ParsePostgresVariant(%q) = %d, %q, %v", tc.version, major, variant, err)
+			}
+		})
+	}
+}
+
+func TestValidateEngineVersion_FlavorOnlyOnPostgres(t *testing.T) {
+	if err := ValidateEngineVersion("redis", "8-postgis"); err == nil {
+		t.Fatal("postgis variant on redis must be refused")
+	}
+	if err := ValidateEngineVersion("postgres", "17-timescaledb"); err != nil {
+		t.Fatalf("timescaledb variant on postgres: %v", err)
+	}
+}
+
+func TestCheckInPlaceVersionChange_FlavorSwitchRefused(t *testing.T) {
+	if err := CheckInPlaceVersionChange("postgres", "17", "17-timescaledb"); err == nil {
+		t.Fatal("plain to timescaledb in place must be refused")
+	}
+	if err := CheckInPlaceVersionChange("postgres", "17-postgis", "17-timescaledb"); err == nil {
+		t.Fatal("postgis to timescaledb in place must be refused")
+	}
+	if err := CheckInPlaceVersionChange("valkey", "8.0.11", "8.1.10"); err != nil {
+		t.Fatalf("valkey minor upgrade: %v", err)
+	}
+	if err := CheckInPlaceVersionChange("valkey", "9.0.6", "8.1.10"); err == nil {
+		t.Fatal("valkey downgrade must be refused")
+	}
+}

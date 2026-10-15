@@ -14,6 +14,7 @@ const (
 	enginePostgres = "postgres"
 	engineRedis    = "redis"
 	engineKeyDB    = "keydb"
+	engineValkey   = "valkey"
 	engineMySQL    = "mysql"
 	engineMariaDB  = "mariadb"
 )
@@ -86,7 +87,7 @@ func tuningFinding(r Resource, th Thresholds, now time.Time) (Finding, bool) {
 			f.Params["pgvector"] = "true"
 		}
 		how = "Run ALTER SYSTEM SET <name> = '<value>'; for each, then SELECT pg_reload_conf(); shared_buffers and max_connections take effect after a restart. Compare with SHOW <name>; first: the advisor cannot read the current values and assumes image defaults (shared_buffers 128MB, max_connections 100)."
-	case engineRedis, engineKeyDB:
+	case engineRedis, engineKeyDB, engineValkey:
 		settings["maxmemory"] = rightsizing.FormatMemory(basis * 3 / 4)
 		settings["maxmemory-policy"] = "allkeys-lru (cache) or noeviction (queues, primary data)"
 		why = fmt.Sprintf("Without maxmemory, Redis grows until the container limit kills it. Three quarters of %s (%s) leaves room for fork during persistence.", basisLabel, rightsizing.FormatMemory(basis))

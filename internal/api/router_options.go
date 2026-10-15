@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -577,6 +578,11 @@ func WithMasterKeyRotation(r MasterKeyRotator, masterKeyFilePath string) Option 
 		rt.masterKeyRotator = r
 		rt.masterKeyFilePath = masterKeyFilePath
 	}
+}
+
+// WithMasterKeyWrapper makes rotation persist the new key wrapped by the external key service.
+func WithMasterKeyWrapper(w secrets.KeyWrapper) Option {
+	return func(rt *Router) { rt.masterKeyWrapper = w }
 }
 
 // WithDoctorMasterKeyRotationWarnAge overrides the age GET

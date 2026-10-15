@@ -7,6 +7,31 @@ import CloudflareLogo from '@thesvg/react/cloudflare'
 import DiscordLogo from '@thesvg/react/discord'
 import DockerLogo from '@thesvg/react/docker'
 import DragonflyLogo from '@thesvg/react/dragonfly'
+import CodebergLogo from '@thesvg/react/codeberg'
+import CognitoLogo from '@thesvg/react/aws-amazon-cognito'
+import ValkeyLogo from '@thesvg/react/valkey'
+import ChromeLogo from '@thesvg/react/google-chrome'
+import FirefoxLogo from '@thesvg/react/firefox'
+import SafariLogo from '@thesvg/react/safari'
+import EdgeLogo from '@thesvg/react/microsoft-edge'
+import OperaLogo from '@thesvg/react/opera'
+import BraveLogo from '@thesvg/react/brave'
+import AppleLogo from '@thesvg/react/apple'
+import WindowsLogo from '@thesvg/react/windows'
+import LinuxLogo from '@thesvg/react/linux'
+import AndroidLogo from '@thesvg/react/android'
+import CurlLogo from '@thesvg/react/curl'
+import MeilisearchLogo from '@thesvg/react/meilisearch'
+import QdrantLogo from '@thesvg/react/qdrant'
+import TypesenseLogo from '@thesvg/react/typesense'
+import MemcachedLogo from '@thesvg/react/memcached'
+import TimescaleLogo from '@thesvg/react/timescale'
+import FacebookLogo from '@thesvg/react/facebook'
+import FigmaLogo from '@thesvg/react/figma'
+import HuggingFaceLogo from '@thesvg/react/hugging-face'
+import LinearLogo from '@thesvg/react/linear'
+import SalesforceLogo from '@thesvg/react/salesforce'
+import VercelLogo from '@thesvg/react/vercel'
 import GiteaLogo from '@thesvg/react/gitea'
 import GitHubLogo from '@thesvg/react/github'
 import GitLabLogo from '@thesvg/react/gitlab'
@@ -18,6 +43,7 @@ import KeycloakLogo from '@thesvg/react/keycloak'
 import KeydbLogo from '@thesvg/react/keydb'
 import MariadbLogo from '@thesvg/react/mariadb'
 import MattermostLogo from '@thesvg/react/mattermost'
+import LinkedInLogo from '@thesvg/react/linkedin'
 import MicrosoftLogo from '@thesvg/react/microsoft'
 import MicrosoftTeamsLogo from '@thesvg/react/microsoft-teams'
 import MongodbLogo from '@thesvg/react/mongodb'
@@ -33,6 +59,7 @@ import RedisLogo from '@thesvg/react/redis'
 import ResendLogo from '@thesvg/react/resend'
 import RocketdotchatLogo from '@thesvg/react/rocketdotchat'
 import SlackLogo from '@thesvg/react/slack'
+import TwitchLogo from '@thesvg/react/twitch'
 import TelegramLogo from '@thesvg/react/telegram'
 import WebexLogo from '@thesvg/react/webex'
 import AwsLogo from '@thesvg/react/aws'
@@ -55,6 +82,19 @@ import GandiLogo from '@thesvg/react/gandi'
 import GodaddyLogo from '@thesvg/react/godaddy'
 import NamecheapLogo from '@thesvg/react/namecheap'
 import MailgunLogo from '@thesvg/react/mailgun'
+import WasabiLogo from '@thesvg/react/wasabi'
+import ScalewayLogo from '@thesvg/react/scaleway'
+import OvhcloudLogo from '@thesvg/react/ovhcloud'
+import VultrLogo from '@thesvg/react/vultr'
+import GoogleCloudStorageLogo from '@thesvg/react/google-cloud-storage'
+import QuayLogo from '@thesvg/react/quay'
+import AzureContainerRegistryLogo from '@thesvg/react/azure-container-registries'
+import NpmLogo from '@thesvg/react/npm'
+import PypiLogo from '@thesvg/react/pypi'
+import MavenLogo from '@thesvg/react/apache-maven'
+import NugetLogo from '@thesvg/react/nuget'
+import CargoLogo from '@thesvg/react/rust'
+import RubygemsLogo from '@thesvg/react/rubygems'
 
 // Brand/service marks sourced from @thesvg/react, each imported from its
 // own subpath for bundle size. Distinct from @phosphor-icons (ADR 014):
@@ -68,7 +108,13 @@ export type BrandIconName =
   | 'mariadb'
   | 'keydb'
   | 'dragonfly'
+  | 'valkey'
+  | 'timescaledb'
   | 'clickhouse'
+  | 'meilisearch'
+  | 'qdrant'
+  | 'typesense'
+  | 'memcached'
   | 'node'
   | 'go'
   | 'java'
@@ -91,6 +137,16 @@ export type BrandIconName =
   | 'microsoft'
   | 'gitea'
   | 'openid'
+  | 'facebook'
+  | 'linkedin'
+  | 'twitch'
+  | 'linear'
+  | 'vercel'
+  | 'huggingface'
+  | 'figma'
+  | 'salesforce'
+  | 'codeberg'
+  | 'cognito'
   | 'okta'
   | 'keycloak'
   | 'auth0'
@@ -116,6 +172,30 @@ export type BrandIconName =
   | 'godaddy'
   | 'namecheap'
   | 'mailgun'
+  | 'wasabi'
+  | 'scaleway'
+  | 'ovhcloud'
+  | 'vultr'
+  | 'google-cloud-storage'
+  | 'quay'
+  | 'azure-container-registry'
+  | 'npm'
+  | 'pypi'
+  | 'maven'
+  | 'nuget'
+  | 'cargo'
+  | 'rubygems'
+  | 'chrome'
+  | 'firefox'
+  | 'safari'
+  | 'edge'
+  | 'opera'
+  | 'brave'
+  | 'apple'
+  | 'windows'
+  | 'linux'
+  | 'android'
+  | 'curl'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -129,7 +209,13 @@ const BRAND_ICONS: Record<
   mariadb: MariadbLogo,
   keydb: KeydbLogo,
   dragonfly: DragonflyLogo,
+  valkey: ValkeyLogo,
+  timescaledb: TimescaleLogo,
   clickhouse: ClickhouseLogo,
+  meilisearch: MeilisearchLogo,
+  qdrant: QdrantLogo,
+  typesense: TypesenseLogo,
+  memcached: MemcachedLogo,
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
@@ -152,6 +238,16 @@ const BRAND_ICONS: Record<
   microsoft: MicrosoftLogo,
   gitea: GiteaLogo,
   openid: OpenidLogo,
+  facebook: FacebookLogo,
+  linkedin: LinkedInLogo,
+  twitch: TwitchLogo,
+  linear: LinearLogo,
+  vercel: VercelLogo,
+  huggingface: HuggingFaceLogo,
+  figma: FigmaLogo,
+  salesforce: SalesforceLogo,
+  codeberg: CodebergLogo,
+  cognito: CognitoLogo,
   okta: OktaLogo,
   keycloak: KeycloakLogo,
   auth0: Auth0Logo,
@@ -177,6 +273,30 @@ const BRAND_ICONS: Record<
   godaddy: GodaddyLogo,
   namecheap: NamecheapLogo,
   mailgun: MailgunLogo,
+  wasabi: WasabiLogo,
+  scaleway: ScalewayLogo,
+  ovhcloud: OvhcloudLogo,
+  vultr: VultrLogo,
+  'google-cloud-storage': GoogleCloudStorageLogo,
+  quay: QuayLogo,
+  'azure-container-registry': AzureContainerRegistryLogo,
+  npm: NpmLogo,
+  pypi: PypiLogo,
+  maven: MavenLogo,
+  nuget: NugetLogo,
+  cargo: CargoLogo,
+  rubygems: RubygemsLogo,
+  chrome: ChromeLogo,
+  firefox: FirefoxLogo,
+  safari: SafariLogo,
+  edge: EdgeLogo,
+  opera: OperaLogo,
+  brave: BraveLogo,
+  apple: AppleLogo,
+  windows: WindowsLogo,
+  linux: LinuxLogo,
+  android: AndroidLogo,
+  curl: CurlLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -192,7 +312,13 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'mariadb',
   'keydb',
   'dragonfly',
+  'valkey',
+  'timescaledb',
   'clickhouse',
+  'meilisearch',
+  'qdrant',
+  'typesense',
+  'memcached',
   'node',
   'go',
   'java',
@@ -215,6 +341,16 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'microsoft',
   'gitea',
   'openid',
+  'facebook',
+  'linkedin',
+  'twitch',
+  'linear',
+  'vercel',
+  'huggingface',
+  'figma',
+  'salesforce',
+  'codeberg',
+  'cognito',
   'okta',
   'keycloak',
   'auth0',
@@ -240,6 +376,30 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'godaddy',
   'namecheap',
   'mailgun',
+  'wasabi',
+  'scaleway',
+  'ovhcloud',
+  'vultr',
+  'google-cloud-storage',
+  'quay',
+  'azure-container-registry',
+  'npm',
+  'pypi',
+  'maven',
+  'nuget',
+  'cargo',
+  'rubygems',
+  'chrome',
+  'firefox',
+  'safari',
+  'edge',
+  'opera',
+  'brave',
+  'apple',
+  'windows',
+  'linux',
+  'android',
+  'curl',
 ]
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>
@@ -311,6 +471,25 @@ export function BrandIcon({
   if (name === 'go') {
     return (
       <GoLogo variant="mono" aria-hidden={ariaHidden ?? 'true'} {...props} />
+    )
+  }
+  // White-only default variants vanish on the white tile.
+  if (name === 'cargo') {
+    return (
+      <CargoLogo
+        variant="light"
+        aria-hidden={ariaHidden ?? 'true'}
+        {...props}
+      />
+    )
+  }
+  if (name === 'mattermost') {
+    return (
+      <MattermostLogo
+        variant="light"
+        aria-hidden={ariaHidden ?? 'true'}
+        {...props}
+      />
     )
   }
   const Logo = BRAND_ICONS[name]

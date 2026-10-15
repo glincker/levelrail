@@ -17,6 +17,7 @@ import { PromoteAppDialog } from '../PromoteAppDialog'
 import { useOverviewActions } from '../overview/useOverviewActions'
 import type { DeployTab } from '../overview/DeploySheet'
 import type { AppDetail } from '../../types/appDetail'
+import { useAppAsleep, useAppSleepActions } from '../../queries/appSleep'
 
 // One primary action, Restart beside it, everything else behind the overflow
 // menu so Delete never carries the same visual weight as Deploy.
@@ -29,6 +30,8 @@ export function AppActionBar({
 }) {
   const { t } = useTranslation('common')
   const actions = useOverviewActions(app, null)
+  const asleep = useAppAsleep(app.name)
+  const { wake } = useAppSleepActions(app.name)
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
@@ -79,12 +82,14 @@ export function AppActionBar({
           },
           {
             id: 'toggle',
-            label: app.suspended
-              ? t('appActions.start', { defaultValue: 'Start' })
-              : t('appActions.stop', { defaultValue: 'Stop' }),
+            label: asleep
+              ? t('appActions.wake', { defaultValue: 'Wake now' })
+              : app.suspended
+                ? t('appActions.start', { defaultValue: 'Start' })
+                : t('appActions.stop', { defaultValue: 'Stop' }),
             icon: app.suspended ? <PlayIcon /> : <PauseIcon />,
-            disabled: actions.togglingRunning,
-            onSelect: actions.toggleRunning,
+            disabled: asleep ? wake.isPending : actions.togglingRunning,
+            onSelect: asleep ? () => wake.mutate() : actions.toggleRunning,
           },
           {
             id: 'promote',

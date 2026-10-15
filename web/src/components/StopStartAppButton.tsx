@@ -2,6 +2,7 @@ import { PauseIcon, PlayIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useStartApp, useStopApp } from '../queries/apps'
+import { useAppSleepActions } from '../queries/appSleep'
 
 // One app's stop/start toggle, split out of routes/apps/$name.tsx's
 // header the same way RestartAppButton is. Unlike delete, stop is not
@@ -12,12 +13,38 @@ import { useStartApp, useStopApp } from '../queries/apps'
 export function StopStartAppButton({
   name,
   suspended,
+  asleep = false,
 }: {
   name: string
   suspended: boolean
+  asleep?: boolean
 }) {
   const stopApp = useStopApp()
   const startApp = useStartApp()
+  const { wake } = useAppSleepActions(name)
+
+  if (asleep) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={wake.isPending}
+        onClick={() => {
+          wake.mutate(undefined, {
+            onSuccess: () => {
+              toast.add({ title: `Waking "${name}".`, type: 'success' })
+            },
+            onError: (error) => {
+              toast.add({ title: error.message, type: 'error' })
+            },
+          })
+        }}
+      >
+        <PlayIcon className="size-3.5" aria-hidden="true" />
+        {wake.isPending ? 'Waking...' : 'Wake now'}
+      </Button>
+    )
+  }
 
   if (suspended) {
     return (

@@ -101,12 +101,19 @@ func (c *Client) SetAdvisorFindingState(ctx context.Context, id, verb, duration 
 	return out, err
 }
 
-// BetaFeature is one Settings-switchable beta feature.
+// BetaFeature is one gated feature as the API describes it.
 type BetaFeature struct {
-	Feature string `json:"feature"`
-	Enabled bool   `json:"enabled"`
-	Source  string `json:"source"`
-	Locked  bool   `json:"locked"`
+	ID              string `json:"id"`
+	Name            string `json:"name"`
+	Summary         string `json:"summary"`
+	Enabled         bool   `json:"enabled"`
+	EnabledBy       string `json:"enabled_by"`
+	Toggleable      bool   `json:"toggleable"`
+	RequiresRestart bool   `json:"requires_restart"`
+	EnvHint         string `json:"env_hint"`
+	DocsPath        string `json:"docs_path"`
+	Maturity        string `json:"maturity"`
+	Locked          bool   `json:"locked"`
 }
 
 // ListBetaFeatures calls GET /api/v1/settings/beta-features.

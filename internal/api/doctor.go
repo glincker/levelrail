@@ -97,6 +97,9 @@ func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 // doctorReport runs the checks once per dashboard cache ttl. The report
 // does not depend on the caller, so one entry serves every viewer.
 func (rt *Router) doctorReport(ctx context.Context) (systemDoctorResponse, error) {
+	if rt.demo != nil {
+		return demoDoctorReport(), nil
+	}
 	defer timePhase(ctx, "doctor_checks")()
 	if rt.dash.ttl <= 0 {
 		return rt.runDoctorChecks(ctx), nil

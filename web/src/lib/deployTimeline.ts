@@ -30,10 +30,19 @@ export interface TimelineDeploy {
   is_live: boolean
 }
 
+export interface TimelineAlert {
+  id: string
+  app: string
+  rule_name: string
+  severity: string
+  at: string
+}
+
 export interface TimelinePage {
   since: string
   until: string
   items: TimelineDeploy[]
+  alerts?: TimelineAlert[]
   next_cursor: string
 }
 
@@ -197,19 +206,4 @@ export function toQuery(f: TimelineFilters, cursor: string): string {
   if (f.status) q.set('status', f.status)
   if (cursor) q.set('cursor', cursor)
   return q.toString()
-}
-
-export interface AxisTick {
-  at: number
-  left: number
-}
-
-const TICK_COUNT = 5
-
-export function axisTicks(start: number, end: number): AxisTick[] {
-  const span = end - start
-  return Array.from({ length: TICK_COUNT + 1 }, (_, i) => ({
-    at: start + (span * i) / TICK_COUNT,
-    left: (i / TICK_COUNT) * 100,
-  }))
 }

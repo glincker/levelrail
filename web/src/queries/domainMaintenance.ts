@@ -19,6 +19,24 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 export interface DomainMaintenance {
   domain: string
   enabled: boolean
+  title?: string
+  message?: string
+  retry_after_seconds?: number
+  // until is RFC 3339; set when a linked scheduled window ends it.
+  until?: string
+  window_id?: string
+  bypass?: string[]
+  bypass_health_check?: boolean
+}
+
+// SetDomainMaintenanceRequest is PUT's optional body; omit it for defaults.
+export interface SetDomainMaintenanceRequest {
+  title?: string
+  message?: string
+  retry_after_seconds?: number
+  until?: string
+  bypass?: string[]
+  bypass_health_check?: boolean
 }
 
 export const domainMaintenanceKeys = {
@@ -63,8 +81,18 @@ export function useDomainMaintenance(appName: string, domain: string) {
 async function setDomainMaintenance(
   appName: string,
   domain: string,
+  body?: SetDomainMaintenanceRequest,
 ): Promise<DomainMaintenance> {
-  const res = await fetch(maintenancePath(appName, domain), { method: 'PUT' })
+  const res = await fetch(
+    maintenancePath(appName, domain),
+    body
+      ? {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }
+      : { method: 'PUT' },
+  )
   if (!res.ok) {
     throw new ApiError(
       res.status,
@@ -79,8 +107,12 @@ async function setDomainMaintenance(
 
 export function useSetDomainMaintenance(appName: string, domain: string) {
   const queryClient = useQueryClient()
-  return useMutation<DomainMaintenance, ApiError, void>({
-    mutationFn: () => setDomainMaintenance(appName, domain),
+  return useMutation<
+    DomainMaintenance,
+    ApiError,
+    SetDomainMaintenanceRequest | undefined
+  >({
+    mutationFn: (body) => setDomainMaintenance(appName, domain, body),
     onSuccess: (updated) => {
       queryClient.setQueryData(
         domainMaintenanceKeys.detail(appName, domain),

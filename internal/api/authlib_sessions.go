@@ -26,12 +26,20 @@ func (rt *Router) attachAuthEngine(s Store) {
 		panic("api: the auth engine needs a *store.DB")
 	}
 	if rt.authEngine == nil {
-		eng, err := authengine.New(db.DB, authengine.Config{
+		cfg := authengine.Config{
 			BaseURL:        "http://localhost",
 			Directory:      authengine.NewDirectory(db.DB),
 			DeviceTokenTTL: DeviceTokenTTL(), DeviceCodeTTL: DeviceCodeTTL(),
 			Sessions: authengine.SessionsHooks{Mail: &authengine.MailRelay{}},
-		})
+		}
+		if rt.oauthSecrets != nil {
+			kp, err := authengine.LoadOrCreateSAMLKeyPair(context.Background(), rt.oauthSecrets)
+			if err != nil {
+				panic(fmt.Sprintf("api: load saml keypair: %v", err))
+			}
+			cfg.SAML = kp
+		}
+		eng, err := authengine.New(db.DB, cfg)
 		if err != nil {
 			panic(fmt.Sprintf("api: build auth engine: %v", err))
 		}
@@ -80,6 +88,10 @@ func (rt *Router) writeLibAuthError(w http.ResponseWriter, context string, err e
 		}
 		w.Header().Set("Retry-After", strconv.Itoa(secs))
 		writeError(w, http.StatusTooManyRequests, "too many failed attempts, try again later")
+	case authengine.CodeAccountDisabled:
+		writeError(w, http.StatusForbidden, ssoRequiredMessage)
+	case authengine.CodeMustChangePassword:
+		writeError(w, http.StatusForbidden, passwordChangeRequiredMessage)
 	default:
 		rt.internalError(w, context, err)
 	}
@@ -100,6 +112,13 @@ func (rt *Router) handleLibLogin(w http.ResponseWriter, r *http.Request) {
 	token, userID, err := rt.libSessions.Login(r.Context(), authengine.LoginInput{
 		Email: req.Email, Password: req.Password, UserAgent: r.UserAgent(), IP: clientIP(r),
 	})
+	if (err == nil || errors.Is(err, authengine.ErrSecondFactorRequired)) && rt.ssoBlocksLocalSignIn(r.Context(), userID) {
+		if token != "" {
+			rt.libSessions.Revoke(r.Context(), token)
+		}
+		writeError(w, http.StatusForbidden, ssoRequiredMessage)
+		return
+	}
 	if errors.Is(err, authengine.ErrSecondFactorRequired) {
 		pending, perr := rt.mfaPending.create(userID)
 		if perr != nil {

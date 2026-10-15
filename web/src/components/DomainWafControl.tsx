@@ -25,6 +25,7 @@ import {
   useSetDomainWaf,
   type SetDomainWafRequest,
 } from '../queries/domainWaf'
+import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // Opt-in Web Application Firewall (OWASP Coraza) and rate limiting for
 // one already-saved domain, enforced by the embedded Caddy ingress on
@@ -87,10 +88,12 @@ export function DomainWafControl({
           className="flex items-center gap-1.5 text-left"
         >
           {active ? (
-            <Badge variant="success" className="shrink-0">
-              <ShieldCheckIcon className="size-3" />
-              WAF/rate limit on
-            </Badge>
+            <EnforcedBadge domain={domain} control="waf">
+              <Badge variant="success" className="shrink-0">
+                <ShieldCheckIcon className="size-3" />
+                WAF/rate limit on
+              </Badge>
+            </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
               <ShieldIcon className="size-3" />
@@ -114,6 +117,7 @@ export function DomainWafControl({
           </Button>
         </div>
       </div>
+      <EnforcementNote domain={domain} control="waf" active={active} />
 
       {open ? (
         <form

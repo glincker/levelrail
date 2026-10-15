@@ -66,7 +66,9 @@ func (d *Directory) OwnerActive(ctx context.Context, ownerID theauth.ULID) (bool
 	var n int
 	err := d.db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM authengine_user_map m
-		JOIN users u ON u.id = m.legacy_id WHERE m.engine_id = ?`, ownerID.String()).Scan(&n)
+		JOIN users u ON u.id = m.legacy_id
+		WHERE m.engine_id = ? AND NOT EXISTS (
+			SELECT 1 FROM theauth_account_states s WHERE s.user_id = m.engine_id AND s.disabled_at IS NOT NULL)`, ownerID.String()).Scan(&n)
 	if err != nil {
 		return false, fmt.Errorf("authengine: owner lookup: %w", err)
 	}

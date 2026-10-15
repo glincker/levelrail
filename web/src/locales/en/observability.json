@@ -131,6 +131,31 @@
     "showing": "Showing the last {{shown}} of {{total}} lines.",
     "linesLabel": "Last log lines of the failing container"
   },
+  "containerExit": {
+    "exitedAt": "The container exited with code {{code}} at {{time}}",
+    "exited": "The container exited with code {{code}}",
+    "oomAt": "The container was killed for exceeding its memory limit at {{time}}",
+    "oom": "The container was killed for exceeding its memory limit",
+    "deployTitle": "Why this release stopped",
+    "deploySummary": "Container {{container}} stopped before it could serve. These are the last lines it printed.",
+    "noLines": "The container printed nothing before it stopped.",
+    "showing": "Last {{count}} lines",
+    "linesLabel": "Last lines the container printed",
+    "hint": "An image whose entrypoint needs a subcommand (for example serve) prints its help and exits 0 when none is given: set the command and redeploy."
+  },
+  "liveLogs": {
+    "lineCount": "{{count}} lines (recent context, then live)",
+    "lastOutput": "{{count}} lines: the last output of the stopped container",
+    "waiting": "Waiting for log output...",
+    "noContainer": "No container is running to produce logs: {{reason}}",
+    "viewDeploys": "View deploy history to troubleshoot"
+  },
+  "connection": {
+    "connecting": "Connecting...",
+    "open": "Live",
+    "error": "Reconnecting...",
+    "notRunning": "Not running"
+  },
   "budgetThreshold": {
     "hint": "Fires while any project or team budget (Usage and cost) has reached its warning level, gone over its limit, or is forecast to overrun this month. It notifies again only when a new level is crossed."
   },

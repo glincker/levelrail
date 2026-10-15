@@ -11,11 +11,39 @@ import (
 // OAuth provider names the migrations/0035_users.sql and 0052's CHECK
 // constraints accept.
 const (
-	OAuthProviderGoogle    = "google"
-	OAuthProviderGitHub    = "github"
-	OAuthProviderOIDC      = "oidc"
-	OAuthProviderMicrosoft = "microsoft"
+	OAuthProviderGoogle      = "google"
+	OAuthProviderGitHub      = "github"
+	OAuthProviderOIDC        = "oidc"
+	OAuthProviderMicrosoft   = "microsoft"
+	OAuthProviderGitLab      = "gitlab"
+	OAuthProviderBitbucket   = "bitbucket"
+	OAuthProviderDiscord     = "discord"
+	OAuthProviderSlack       = "slack"
+	OAuthProviderLinkedIn    = "linkedin"
+	OAuthProviderTwitch      = "twitch"
+	OAuthProviderFacebook    = "facebook"
+	OAuthProviderLinear      = "linear"
+	OAuthProviderVercel      = "vercel"
+	OAuthProviderHuggingFace = "huggingface"
+	OAuthProviderFigma       = "figma"
+	OAuthProviderSalesforce  = "salesforce"
+	OAuthProviderCodeberg    = "codeberg"
+	OAuthProviderCognito     = "cognito"
 )
+
+// IsOAuthProvider reports whether name is a sign-in provider the settings
+// table and identity table (migrations 0690, 0700) accept.
+func IsOAuthProvider(name string) bool {
+	switch name {
+	case OAuthProviderGoogle, OAuthProviderGitHub, OAuthProviderOIDC, OAuthProviderMicrosoft,
+		OAuthProviderGitLab, OAuthProviderBitbucket, OAuthProviderDiscord, OAuthProviderSlack,
+		OAuthProviderLinkedIn, OAuthProviderTwitch, OAuthProviderFacebook,
+		OAuthProviderLinear, OAuthProviderVercel, OAuthProviderHuggingFace, OAuthProviderFigma,
+		OAuthProviderSalesforce, OAuthProviderCodeberg, OAuthProviderCognito:
+		return true
+	}
+	return false
+}
 
 // OAuthIdentity is one linked external account. Uniqueness (at most one
 // per provider per user, never linked to two users) is enforced by

@@ -79,6 +79,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScale(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "stop":
 		return runAppsStop(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "keep":
+		return runAppsKeep(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "start":
 		return runAppsStart(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "delete":
@@ -220,7 +222,8 @@ func appsUsage(prog string) string {
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
-  %[1]s apps sleep enable|disable|status|wake <name> [flags]   stop an idle app and wake it on the next request
+  %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
+  %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
@@ -237,6 +240,7 @@ func appsUsage(prog string) string {
   %[1]s apps streams create <name> --host-port N --container-port N [--protocol tcp] [flags]   forward a host port to one container port
   %[1]s apps streams delete <name> <id> [flags]                                              remove a stream
   %[1]s apps stop <name> [flags]        stop an app's running container
+  %[1]s apps keep <name> [flags]        keep a one-click trial deployment as a permanent app
   %[1]s apps start <name> [flags]       start an app previously stopped
   %[1]s apps scale <name> --replicas N [--strategy S] [flags]   change replica count and/or deploy strategy
   %[1]s apps delete <name> [flags]      remove an app and stop its containers

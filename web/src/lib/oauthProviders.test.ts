@@ -42,6 +42,20 @@ describe('brandKeyFor', () => {
   it.each([
     ['google', 'google'],
     ['oidc', 'openid'],
+    ['gitlab', 'gitlab'],
+    ['bitbucket', 'bitbucket'],
+    ['discord', 'discord'],
+    ['slack', 'slack'],
+    ['linkedin', 'linkedin'],
+    ['twitch', 'twitch'],
+    ['facebook', 'facebook'],
+    ['linear', 'linear'],
+    ['vercel', 'vercel'],
+    ['huggingface', 'huggingface'],
+    ['figma', 'figma'],
+    ['salesforce', 'salesforce'],
+    ['codeberg', 'codeberg'],
+    ['cognito', 'cognito'],
     ['custom', 'custom'],
   ] as const)('%s', (p, want) => {
     expect(brandKeyFor(p)).toBe(want)

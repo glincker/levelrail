@@ -84,11 +84,19 @@ func (r *ContainerRestorer) waitEngineReady(ctx context.Context, engine, contain
 
 // Restore implements Restorer.
 func (r *ContainerRestorer) Restore(ctx context.Context, engine, containerName string, dump io.Reader) error {
+	if store.IsSearchEngine(engine) {
+		return r.restoreSearch(ctx, engine, containerName, dump)
+	}
+	if !store.EngineSupportsBackups(engine) {
+		return fmt.Errorf("backup: restore: %s keeps no data on disk, so it has no backups", engine)
+	}
 	switch engine {
 	case store.EngineRedis:
 		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, redisDisableAutoSaveCmd)
 	case store.EngineKeyDB:
 		return r.restoreRedisLike(ctx, containerName, dump, keydbCLIBin, keydbDisableAutoSaveCmd)
+	case store.EngineValkey:
+		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, redisDisableAutoSaveCmd)
 	case store.EngineDragonfly:
 		return r.restoreRedisLike(ctx, containerName, dump, redisCLIBin, dragonflyDisableAutoSaveCmd)
 	}

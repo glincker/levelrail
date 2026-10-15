@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
@@ -10,6 +10,13 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { Kbd } from '@/components/kit'
+import {
+  BETA_FEATURES_PATH,
+  isFeatureLocked,
+  lockedSearch,
+  type ExperimentalFeature,
+} from '@/lib/experimental'
+import { LockedFeatureMark } from './LockedFeatureMark'
 import { CollapsibleSection } from './CollapsibleSection'
 import { NavBadge } from './NavBadge'
 import {
@@ -37,18 +44,55 @@ const TRAFFIC_BADGE_KEYS = {
   'proxy-attention': 'nav.proxyAttention',
 } as const
 
+function LockedNavLinkItem({
+  item,
+  feature,
+}: {
+  item: GlobalNavItem
+  feature: ExperimentalFeature
+}) {
+  const { t: tc } = useTranslation()
+  const describedBy = useId()
+  const label = tc(`shell.nav.${item.id}`, { defaultValue: item.label })
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        render={
+          <Link
+            to={BETA_FEATURES_PATH}
+            search={lockedSearch(feature)}
+            aria-describedby={describedBy}
+          />
+        }
+        tooltip={label}
+        className="text-muted-foreground"
+        data-locked="true"
+      >
+        {item.icon}
+        <span>{label}</span>
+        <LockedFeatureMark id={describedBy} />
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  )
+}
+
 function NavLinkItem({
   item,
   pathname,
   counts,
+  experimental,
 }: {
   item: GlobalNavItem
   pathname: string
   counts: Record<string, number>
+  experimental: readonly string[]
 }) {
   const { t } = useTranslation('traffic')
   const { t: tc } = useTranslation()
   const label = tc(`shell.nav.${item.id}`, { defaultValue: item.label })
+  if (isFeatureLocked(item.feature, experimental)) {
+    return <LockedNavLinkItem item={item} feature={item.feature} />
+  }
   const chord = chordFor(item.to)
   const count = item.badge ? (counts[item.badge] ?? 0) : 0
   const trafficKey =
@@ -113,13 +157,11 @@ export function GlobalNav() {
   const counts = useNavCounts()
   const experimental = useExperimentalFeatures()
   const routeAvailable = useRouteAvailable()
-  const groups = visibleGlobalGroups(experimental, routeAvailable)
+  const groups = visibleGlobalGroups(routeAvailable)
 
   // Decided once on mount so navigating never flips a group the user did not touch.
   const [initialOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      groups.map((gr) => [gr.id, defaultGroupOpen(gr, pathname)]),
-    ),
+    Object.fromEntries(groups.map((gr) => [gr.id, defaultGroupOpen()])),
   )
 
   // Reveal the current page by opening its group, and keep it open.
@@ -152,6 +194,7 @@ export function GlobalNav() {
                     item={item}
                     pathname={pathname}
                     counts={counts}
+                    experimental={experimental}
                   />
                 ),
               )}
@@ -187,12 +230,13 @@ export function GlobalNav() {
       <SidebarGroup className="mt-auto">
         <SidebarGroupContent>
           <SidebarMenu>
-            {visibleGlobalFooter(experimental).map((item) => (
+            {visibleGlobalFooter().map((item) => (
               <NavLinkItem
                 key={item.id}
                 item={item}
                 pathname={pathname}
                 counts={counts}
+                experimental={experimental}
               />
             ))}
           </SidebarMenu>

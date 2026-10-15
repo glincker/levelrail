@@ -6,6 +6,7 @@ import {
   type MouseEvent,
 } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { renderDocsMarkdown } from '../lib/renderDocsMarkdown'
 import { renderMermaidDiagrams } from '../lib/renderMermaidDiagrams'
 import type { DocsManifest } from '../types/docs'
@@ -28,6 +29,9 @@ export function DocsRenderer({
   docsBaseUrl: string
 }) {
   const navigate = useNavigate()
+  const { t } = useTranslation('help')
+  const copyLabel = t('code.copy')
+  const copiedLabel = t('code.copied')
   const containerRef = useRef<HTMLDivElement>(null)
   const html = useMemo(
     () => renderDocsMarkdown(markdown, currentFile, manifest, docsBaseUrl),
@@ -65,6 +69,43 @@ export function DocsRenderer({
       observer.disconnect()
     }
   }, [html])
+
+  // Every code block gets a copy button: the page is the offline emergency
+  // copy, where commands are pasted into a terminal.
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const timers: number[] = []
+    for (const pre of container.querySelectorAll('pre')) {
+      if (pre.querySelector('[data-docs-copy]')) continue
+      pre.classList.add('relative')
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.dataset.docsCopy = 'true'
+      btn.textContent = copyLabel
+      btn.className =
+        'absolute right-2 top-2 rounded border border-border bg-background px-1.5 py-0.5 text-[11px] text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100'
+      pre.classList.add('group')
+      btn.addEventListener('click', () => {
+        const code = pre.querySelector('code')?.textContent ?? pre.textContent
+        void navigator.clipboard
+          .writeText((code ?? '').trim())
+          .then(() => {
+            btn.textContent = copiedLabel
+            timers.push(
+              window.setTimeout(() => {
+                btn.textContent = copyLabel
+              }, 1500),
+            )
+          })
+          .catch(() => undefined)
+      })
+      pre.appendChild(btn)
+    }
+    return () => {
+      for (const id of timers) window.clearTimeout(id)
+    }
+  }, [html, copyLabel, copiedLabel])
 
   // The rendered anchors are real <a> elements, so keyboard activation
   // (Enter) already reaches them natively; this delegates both a click

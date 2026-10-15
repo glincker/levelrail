@@ -6,7 +6,8 @@
       "checklist": "Checklist",
       "sessions": "Sessions and devices",
       "policy": "Policy",
-      "rotations": "Secret rotations"
+      "rotations": "Secret rotations",
+      "compliance": "Compliance"
     },
     "loadError": "Could not load the security center.",
     "retry": "Try again"

@@ -35,6 +35,11 @@ func authEngineOptions(ctx context.Context, logger *slog.Logger, b *brand.Brand,
 		} else {
 			cfg.EncryptionKey = key
 		}
+		if kp, err := authengine.LoadOrCreateSAMLKeyPair(ctx, mgr); err != nil {
+			logger.Error("auth engine: SAML keypair unavailable, SAML sign-in stays off", slog.String("error", err.Error()))
+		} else {
+			cfg.SAML = kp
+		}
 		sdb := &store.DB{DB: db}
 		cfg.OAuth = &authengine.OAuthWiring{Settings: sdb, Secrets: mgr, Users: sdb, Logger: logger, TrustedPeer: api.PeerIsTrustedProxy}
 	}

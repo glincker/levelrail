@@ -63,3 +63,33 @@ after the chosen backup is lost. Your current database is kept beside it as
 
 Settings > Updates > Verify runs the control plane's own health checks and
 shows a pass or fail result with the failing checks listed.
+
+## Troubleshooting
+
+### Rollback command fails with "version not available locally"
+
+**Likely cause:** The control plane does not have the target release cached locally. Only the last three releases it ran are kept.
+
+**How to confirm:** Run `levelrail-cli upgrade --list` and check which versions are marked as available locally.
+
+**Fix:** Use the curl command shown in the "Applying on the server" section to download and verify the release first, then run the rollback command again.
+
+### Rollback times out waiting for health
+
+**Likely cause:** The older release does not become healthy within the timeout (default 90 seconds), possibly due to slow disk or database checks.
+
+**How to confirm:** Run the command and watch for a timeout message, or check the service logs with `journalctl -u levelrail -f`.
+
+**Fix:** Rerun with `--timeout 300` for a longer wait, or check the logs for errors in the service startup. If the release is genuinely incompatible, the automatic rollback will put the previous version back in place.
+
+### Database requires a restore but backups are missing
+
+**Likely cause:** No local backups exist, or they are older than the database schema change.
+
+**How to confirm:** Run `sudo levelrail rollback --to <version> --dry-run` to see the plan. It will list available backups or state that none are available.
+
+**Fix:** If backups exist but are from before the schema change, restore from an S3 or other backup target using `levelrail-cli backups restore`. If no backups are available, upgrading again is safer than a forced restore.
+
+### Still stuck
+
+Check the audit log in Settings > Audit Log for details of the last rollback attempt, including any error messages. Or run `journalctl -u levelrail -n 100` on the server to see the service startup logs.

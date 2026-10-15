@@ -111,7 +111,7 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 		return fmt.Errorf("backup: start history %q: %w", historyID, err)
 	}
 
-	size, checksum, runErr := r.runDumpAndUpload(ctx, databaseName, engine, containerName, targetID, objectKey)
+	size, checksum, summary, runErr := r.runDumpAndUpload(ctx, databaseName, engine, containerName, targetID, objectKey)
 
 	status := store.BackupStatusSucceeded
 	errMsg := ""
@@ -123,7 +123,21 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt); err != nil {
 		return fmt.Errorf("backup: finish history %q: %w", historyID, err)
 	}
+	if setter, ok := r.Store.(contentSummaryStore); ok && runErr == nil && summary != "" {
+		// Best effort: without a summary a drill restores but skips the count comparison.
+		_ = setter.SetBackupContentSummary(ctx, historyID, summary)
+	}
 	return runErr
+}
+
+// contentSummaryStore records a backup's stable object counts.
+type contentSummaryStore interface {
+	SetBackupContentSummary(ctx context.Context, backupHistoryID, summary string) error
+}
+
+// contentSummarizer is a dump stream that knows its source's object counts.
+type contentSummarizer interface {
+	ContentSummary() string
 }
 
 // runDumpAndUpload is RunBackup's actual work, split out so RunBackup's
@@ -134,15 +148,15 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 // second pass over the object: countingReader already sits between the
 // dump and the uploader to track size, so hashing there too costs nothing
 // extra in I/O, only a running hash.Hash.
-func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string) (size int64, checksum string, err error) {
+func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, containerName, targetID, objectKey string) (size int64, checksum, summary string, err error) {
 	dest, err := r.ResolveDestination(ctx, targetID)
 	if err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
 
 	dump, err := r.Dumper.Dump(ctx, engine, containerName)
 	if err != nil {
-		return 0, "", fmt.Errorf("dump database %q: %w", databaseName, err)
+		return 0, "", "", fmt.Errorf("dump database %q: %w", databaseName, err)
 	}
 	defer func() {
 		_ = dump.Close()
@@ -150,9 +164,12 @@ func (r *Runner) runDumpAndUpload(ctx context.Context, databaseName, engine, con
 
 	counted := &countingReader{r: dump, hash: sha256.New()}
 	if err := r.Uploader.Upload(ctx, dest, objectKey, counted, -1); err != nil {
-		return counted.n, "", fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
+		return counted.n, "", "", fmt.Errorf("upload backup for %q to target %q: %w", databaseName, targetID, err)
 	}
-	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), nil
+	if cs, ok := dump.(contentSummarizer); ok {
+		summary = cs.ContentSummary()
+	}
+	return counted.n, hex.EncodeToString(counted.hash.Sum(nil)), summary, nil
 }
 
 // RunVolumeBackup archives dockerVolumeName (serviceName's Docker volume

@@ -66,9 +66,8 @@ function writeDismissed(): void {
 // (internal/api/alerts.go's handleCreateAlertRule requires the named app
 // to exist), so there is nothing to attach it to before "deploy your
 // first app" has already happened. Dismissal persists in
-// window.localStorage rather than DockerHealthBanner's own
-// React.useState, since an operator who dismisses this should not see it
-// again next session either.
+// window.localStorage rather than React.useState, since an operator who
+// dismisses this should not see it again next session either.
 export function AlertingQuickSetupPrompt({
   carrierAppName,
 }: {

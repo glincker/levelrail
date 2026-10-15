@@ -123,6 +123,8 @@ const (
 	CodeSetupTokenInvalid  = theauth.CodeSetupTokenInvalid
 	CodeResetInvalid       = theauth.CodePasswordResetInvalid
 	CodeResetExpired       = theauth.CodePasswordResetExpired
+	CodeAccountDisabled    = theauth.CodeAccountDisabled
+	CodeMustChangePassword = theauth.CodePasswordChangeRequired
 )
 
 type callOpts struct {
@@ -250,6 +252,9 @@ func (s *Sessions) Lookup(ctx context.Context, token string) (SessionInfo, bool)
 	}
 	legacy, err := s.legacyID(ctx, slot.user.ID.String())
 	if err != nil || legacy == "" {
+		return SessionInfo{}, false
+	}
+	if disabled, err := userDisabled(ctx, s.db, legacy); err != nil || disabled {
 		return SessionInfo{}, false
 	}
 	return SessionInfo{

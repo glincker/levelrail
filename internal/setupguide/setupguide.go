@@ -10,6 +10,7 @@ type StepID string
 // Step identifiers, in presentation order.
 const (
 	StepSecureAdmin    StepID = "secure_admin"
+	StepSignInRecovery StepID = "sign_in_recovery"
 	StepPublicAddress  StepID = "public_address"
 	StepGitProvider    StepID = "git_provider"
 	StepFirstApp       StepID = "first_app"
@@ -62,7 +63,12 @@ type DomainTLS struct {
 
 // Input is everything Derive needs. Zero values mean "nothing set up yet".
 type Input struct {
-	SecuredAdmin         bool
+	SecuredAdmin bool
+	// EmailConfigured and SignInApprover say a new browser can be approved
+	// without a dashboard that is already open: email can be sent, or a CLI
+	// token holds signin:approve.
+	EmailConfigured      bool
+	SignInApprover       bool
 	DashboardURL         string
 	ServerAddress        string
 	BehindProxy          bool
@@ -130,6 +136,7 @@ type stepMeta struct {
 
 var catalog = []stepMeta{
 	{id: StepSecureAdmin, title: "Secure the admin account", minutes: 2, href: "/settings/security"},
+	{id: StepSignInRecovery, title: "Set up a way back in", minutes: 3, href: "/settings/security"},
 	{id: StepPublicAddress, title: "Set the public dashboard address", minutes: 3, href: "/settings/general"},
 	{id: StepGitProvider, title: "Connect a Git provider", optional: true, minutes: 3, href: "/settings/github-app"},
 	{id: StepFirstApp, title: "Deploy your first app", minutes: 5, href: "/apps"},
@@ -173,6 +180,8 @@ func derive(id StepID, in Input) verdict {
 	switch id {
 	case StepSecureAdmin:
 		return flag(in.SecuredAdmin)
+	case StepSignInRecovery:
+		return flag(in.EmailConfigured || in.SignInApprover)
 	case StepPublicAddress:
 		switch {
 		case strings.HasPrefix(in.DashboardURL, "https://"):

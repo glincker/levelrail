@@ -13,8 +13,8 @@ import { roleListQueryOptions } from '../../queries/roles'
 import { userListQueryOptions } from '../../queries/users'
 
 export const Route = createFileRoute('/settings/roles')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'access-roles'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'access-roles', location.href),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(roleListQueryOptions()),

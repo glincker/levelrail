@@ -23,8 +23,8 @@ import {
 } from '../components/resourceAdvisor/FindingList'
 
 export const Route = createFileRoute('/resource-advisor')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'resource-advisor'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'resource-advisor', location.href),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(advisorFindingsQueryOptions()),
   component: ResourceAdvisorPage,

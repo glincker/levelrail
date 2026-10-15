@@ -8,10 +8,16 @@ import { TONE } from '@/components/kit/tone'
 // AppScopedSidebar.tsx (sidebar app-info block): both render the same
 // one-line status rollup from the same conditions array, so the logic
 // lives here once instead of being copy-pasted at both call sites.
-export function summarizeAppStatus(conditions: ReconcileCondition[]): {
+export function summarizeAppStatus(
+  conditions: ReconcileCondition[],
+  asleep = false,
+): {
   label: string
   variant: VariantProps<typeof badgeVariants>['variant']
 } {
+  if (asleep) {
+    return { label: 'Asleep', variant: 'muted' }
+  }
   if (conditions.length === 0) {
     return { label: 'No status yet', variant: 'muted' }
   }

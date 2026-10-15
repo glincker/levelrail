@@ -2,11 +2,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { requireExperimental } from '../lib/experimental'
 import { CliConsole } from '../components/cliConsole/CliConsole'
+import { DemoGate } from '@/components/demo/DemoUnavailable'
 import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/terminal')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'cli-console'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'cli-console', location.href),
   component: TerminalPage,
 })
 
@@ -18,7 +19,9 @@ function TerminalPage() {
         title={t('cliConsole.title')}
         description={t('cliConsole.description')}
       />
-      <CliConsole className="flex-1" />
+      <DemoGate reason="terminal">
+        <CliConsole className="flex-1" />
+      </DemoGate>
     </div>
   )
 }

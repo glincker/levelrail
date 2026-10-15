@@ -19,6 +19,7 @@ import { Card, CardContent } from './ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Button } from './ui/button'
 import { Alert, AlertDescription } from './ui/alert'
+import { DemoLoginEntry } from './demo/DemoLoginEntry'
 import { RegisterForm } from './RegisterForm'
 import { OAuthButtons } from './OAuthButtons'
 import { OAuthErrorBanner } from './OAuthErrorBanner'
@@ -27,6 +28,7 @@ import { InsecureConnectionBanner } from './InsecureConnectionBanner'
 import { ThemeToggle } from './ThemeToggle'
 import { BrandMarkGlyph } from './BrandMarkGlyph'
 import { LoginBrandPanel } from './LoginBrandPanel'
+import { LockedOutDialog } from './LockedOutDialog'
 import { LoginAttribution } from './LoginAttribution'
 import { Display, Eyebrow, Lede } from './ui/typography'
 
@@ -155,7 +157,7 @@ export function LoginScreen({
           <ThemeToggle />
         </header>
 
-        <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-5 py-10">
+        <main className="relative z-10 mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-4 py-6">
           <InsecureConnectionBanner />
           <OAuthErrorBanner />
           {sessionEnded ? (
@@ -208,6 +210,7 @@ export function LoginScreen({
               <div className="space-y-3">{signInContent}</div>
             )}
             <OAuthButtons />
+            <DemoLoginEntry />
           </div>
 
           {devMode.data?.enabled ? (
@@ -251,24 +254,8 @@ export function LoginScreen({
         </main>
 
         {isRegister ? null : (
-          <footer className="relative z-10 mx-auto w-full max-w-sm text-xs text-muted-foreground">
-            {t('loginHelp.lockedOut')}{' '}
-            <code className="break-all rounded bg-muted px-1 py-0.5 font-mono">
-              {brand.BinaryName ? `sudo ${brand.BinaryName} ` : ''}recover-admin
-            </code>
-            {brand.DocsURL ? (
-              <>
-                {' '}
-                <a
-                  href={`${brand.DocsURL}/emergency-access`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline"
-                >
-                  {t('loginHelp.emergencyDocs')}
-                </a>
-              </>
-            ) : null}
+          <footer className="relative z-10 mx-auto w-full max-w-sm">
+            <LockedOutDialog />
           </footer>
         )}
         <div className="mx-auto w-full max-w-sm">

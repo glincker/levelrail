@@ -5,6 +5,7 @@ import {
   queryOptions,
   useMutation,
   useQueryClient,
+  useQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { appKeys } from './apps'
@@ -15,6 +16,8 @@ export interface AppSleep {
   idle_minutes: number
   sleeping: boolean
   hold_requests: boolean
+  // Why the app cannot sleep.
+  blocked_reason?: 'pinned_port'
 }
 
 export const appSleepKeys = {
@@ -76,5 +79,19 @@ export function useAppSleepActions(appName: string) {
     mutationFn: () => request(appName, 'POST', '/wake'),
     onSuccess,
   })
-  return { setIdle, wake }
+  const sleepNow = useMutation<AppSleep, ApiError, void>({
+    mutationFn: () => request(appName, 'POST', '/now'),
+    onSuccess,
+  })
+  return { setIdle, wake, sleepNow }
+}
+
+/** useAppAsleep reports whether the app is asleep, without suspending or failing the page. */
+export function useAppAsleep(appName: string): boolean {
+  const { data } = useQuery({
+    ...appSleepQueryOptions(appName),
+    staleTime: 15_000,
+    retry: false,
+  })
+  return data?.sleeping ?? false
 }

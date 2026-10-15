@@ -139,6 +139,45 @@ GCP has no workload identity federation mode. Google's `external_account` creden
 </Tab>
 </Tabs>
 
+## Connection methods
+
+Each provider offers only the methods the control plane can use today. Pick one in the connect dialog, or deep link to it: `/settings/node-providers?connect=aws&method=role`. Closing the dialog removes both parameters from the URL.
+
+| Method | Providers | What it stores | Least privilege |
+| --- | --- | --- | --- |
+| `api_token` | Hetzner, DigitalOcean | One bearer token | Hetzner: Read & Write on a dedicated project. DigitalOcean: droplet and ssh_key create, read, delete |
+| `access_key` | AWS | Access key id and secret | `ec2:DescribeRegions`, `DescribeInstanceTypes`, `DescribeInstances`, `DescribeImages`, `RunInstances`, `TerminateInstances`, `CreateTags` and the security group and VPC actions |
+| `assume_role` | AWS | Role ARN, plus a base key or the control plane identity | Base identity: `sts:AssumeRole` on the role only. The role carries the EC2 actions above |
+| `ambient` | AWS | Nothing | The control plane's own identity (instance profile) needs the EC2 actions |
+| `service_account_json` | Azure, GCP | Service principal or service account JSON | Azure: Reader on the subscription, Virtual Machine Contributor and Network Contributor on the resource group. GCP: `compute.regions.list`, `compute.machineTypes.list`, `compute.instances.create`, `get`, `delete` |
+| `workload_identity_federation` | Azure | JSON with `federated_token_file`, no client secret | Same Azure roles as above |
+| `manual` | Custom data center | Name, location and notes only | None, no cloud API is called |
+
+GCP external account JSON and Azure managed identity are not wired into the provisioners yet, so they are not offered. Linode, Vultr and Scaleway are planned: each needs one `provision.Provisioner` implementation (regions, sizes, create, get, delete) plus its entry in `nodeProviderNames`.
+
+## Test connection and disconnect
+
+**Test connection** makes one read-only call (list regions). With a credential typed into the dialog it tests that candidate and stores nothing. **Test and connect** runs the same test first and refuses to store the credential when it fails, with the missing permissions in plain language. **Test stored connection** re-tests what is saved and records the time. The credential value is never returned by any endpoint or written to the audit log.
+
+```bash
+levelrail-cli nodes providers list
+levelrail-cli nodes providers connect --provider aws --method assume_role --role-arn arn:aws:iam::123456789012:role/example --use-ambient-credentials
+levelrail-cli nodes providers test --provider aws
+levelrail-cli nodes providers disconnect --provider aws
+```
+
+`connect` tests before storing unless `--verify=false`. Every command takes `--json`.
+
+Access is split in two: seeing status, regions and sizes needs `read`; connecting, testing and disconnecting need `write:sensitive`; creating servers and join tokens stays `root`. Grant the middle tier to a team to let it manage provider connections without making it an admin. Connect, test and disconnect appear in the audit log with the actor. There is no automatic rotation reminder yet: the card shows who connected and when it was last tested, so rotate on your own schedule and re-test.
+
+## Custom data center
+
+Choose **Custom data center** for bare metal, on-prem or any VM with no cloud API. Connecting records a name, a location label and notes. **Add a node** then mints the same one-time join token and install command as the [manual enrollment flow](/multi-node). The agent dials out, so the firewall only needs outbound TCP to the control plane's agent port (9443 by default) and outbound HTTPS for image pulls.
+
+```bash
+levelrail-cli nodes providers connect --provider custom --label "Rack 4" --location Frankfurt
+```
+
 ## How it works
 
 1. `POST /api/v1/nodes/provision` (or `nodes provision`, or the Nodes page's **Add node** wizard) mints a join token through the same code path as `POST /api/v1/nodes/join-tokens`, then asks the provider to create a server with a cloud-init script as user-data.
@@ -194,6 +233,50 @@ Only the service account JSON key is supported. See the GCP tab above.
 
 </Accordion>
 </AccordionGroup>
+
+## Troubleshooting
+
+### Provision fails with "creating" status stuck
+
+The cloud provider API call succeeded but the server has not started yet.
+
+Likely cause: the provider is slow to launch the server, or there is a quota or billing issue preventing VM creation.
+
+How to confirm: go to the provider's console (Hetzner, DigitalOcean, AWS, etc.) and check whether a server with the expected name exists. Check `levelrail-cli nodes provisions show <provision-id>` to see the exact status and any error messages.
+
+Fix: wait a few more minutes and re-check. If the server never appears in the provider console, the API call failed even though the response looked successful; delete the provision in Levelrail and check your provider account for quota limits, billing issues, or API token permissions.
+
+### Provision fails with "enrolling" status stuck
+
+The server was created and cloud-init started, but the agent never connected.
+
+Likely cause: Docker is taking a long time to install, cloud-init failed to start the agent, or the agent cannot reach the control plane.
+
+How to confirm: access the server's console or SSH into it (if the provider gives you access) and check `/var/log/cloud-init-output.log` for errors. Also check the agent logs with `docker ps | grep levelrail` and `docker logs` if the container is running.
+
+Fix: if cloud-init failed, the log will name the error (permission denied, network failure, etc.). If Docker installation timed out, wait longer and re-check. If the agent started but could not connect, check that APP_AGENT_ADVERTISE_HOST is set correctly on the control plane (should be the control plane's public hostname or IP, not 127.0.0.1). The provision will timeout after `APP_NODE_PROVISION_TIMEOUT` (default 20 minutes) and report failed with the last known status.
+
+### The provider credential was rejected
+
+The control plane cannot authenticate with the cloud provider.
+
+Likely cause: the credential (API token, access key, or service account key) is invalid, expired, or has insufficient permissions.
+
+How to confirm: go to Settings > Cloud node providers and re-enter the credential to see if a validation error appears. Try to create a provision and check the error message.
+
+Fix: verify the credential matches what [Provider credentials](/node-provisioning#provider-credentials) requires. For API tokens, confirm they have not expired. For IAM access keys, check that they have Compute permissions. Regenerate a new credential at the provider if the old one is invalid, and update it in Levelrail.
+
+### Provision succeeds but the node stays "pending"
+
+The server was created and the agent started, but the control plane did not receive a heartbeat.
+
+Likely cause: APP_AGENT_ADVERTISE_HOST is wrong, or the new node cannot reach the control plane.
+
+How to confirm: SSH into the provisioned node (via the provider's console) and check the agent logs with `docker logs levelrail-agent` or `journalctl -u levelrail-agent`. Look for TLS or connection errors.
+
+Fix: see the [Multi-node troubleshooting](/multi-node#troubleshooting) section under "A node stays in pending status". The root cause is usually APP_AGENT_ADVERTISE_HOST. Set it to the control plane's public hostname or IP (the one the nodes can reach from outside), restart the control plane, and reenroll the node with a new join token.
+
+Still stuck? Check your provider's VM console for cloud-init logs, or run `levelrail-cli nodes provisions show <provision-id>` and attach the output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 
 ## What was not tested
 

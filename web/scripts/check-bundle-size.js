@@ -16,7 +16,8 @@ const distAssets = path.join(distDir, 'assets')
 // environment switcher in the app shell and AI control: the new pages are
 // route-split, the growth is the shell, route table and registrations.
 const DEFAULT_BUDGET_BYTES = 720_000
-const budgetBytes = Number(process.env.BUNDLE_SIZE_BUDGET_BYTES) || DEFAULT_BUDGET_BYTES
+const budgetBytes =
+  Number(process.env.BUNDLE_SIZE_BUDGET_BYTES) || DEFAULT_BUDGET_BYTES
 
 function toKb(bytes) {
   return (bytes / 1000).toFixed(1)
@@ -38,7 +39,9 @@ const EXEMPT_MODULE_RE =
 function loadExemptFiles() {
   let manifest
   try {
-    manifest = JSON.parse(readFileSync(path.join(distDir, '.vite', 'manifest.json'), 'utf8'))
+    manifest = JSON.parse(
+      readFileSync(path.join(distDir, '.vite', 'manifest.json'), 'utf8'),
+    )
   } catch {
     return new Set()
   }
@@ -58,7 +61,10 @@ function loadExemptFiles() {
       if (exemptKeys.has(key)) continue
       const importers = keys.filter((k) => {
         const entry = manifest[k]
-        return (entry.imports || []).includes(key) || (entry.dynamicImports || []).includes(key)
+        return (
+          (entry.imports || []).includes(key) ||
+          (entry.dynamicImports || []).includes(key)
+        )
       })
       if (importers.length > 0 && importers.every((k) => exemptKeys.has(k))) {
         exemptKeys.add(key)
@@ -79,8 +85,25 @@ let entries
 try {
   entries = readdirSync(distAssets)
 } catch {
-  console.error(`[check-bundle-size] no build output at ${distAssets}, run \`npm run build\` first`)
+  console.error(
+    `[check-bundle-size] no build output at ${distAssets}, run \`npm run build\` first`,
+  )
   process.exit(1)
+}
+
+// Everything index.html pulls before first paint, which the per-chunk budget cannot see.
+const FIRST_LOAD_BUDGET_BYTES =
+  Number(process.env.FIRST_LOAD_BUDGET_BYTES) || 1_800_000
+
+function firstLoadBytes() {
+  const html = readFileSync(path.join(distDir, 'index.html'), 'utf8')
+  const refs = [
+    ...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.(?:js|css))"/g),
+  ].map((m) => m[1])
+  return refs.reduce(
+    (sum, ref) => sum + statSync(path.join(distDir, ref)).size,
+    0,
+  )
 }
 
 const jsFiles = entries.filter((name) => name.endsWith('.js')).sort()
@@ -104,6 +127,14 @@ for (const name of jsFiles) {
   }
 }
 
+const firstLoad = firstLoadBytes()
+if (firstLoad > FIRST_LOAD_BUDGET_BYTES) {
+  failed = true
+  console.error(
+    `[check-bundle-size] FAIL first load ${toKb(firstLoad)} kB exceeds budget of ${toKb(FIRST_LOAD_BUDGET_BYTES)} kB`,
+  )
+}
+
 if (failed) {
   console.error(
     '[check-bundle-size] one or more chunks exceed the size budget. Split large routes with dynamic import() and see web/vite.config.ts.',
@@ -111,5 +142,10 @@ if (failed) {
   process.exit(1)
 }
 
-const exemptNote = exemptFiles.size > 0 ? ` (${exemptFiles.size} exempt lazy dependency chunks skipped)` : ''
-console.log(`[check-bundle-size] all ${checked} chunks within ${toKb(budgetBytes)} kB budget${exemptNote}`)
+const exemptNote =
+  exemptFiles.size > 0
+    ? ` (${exemptFiles.size} exempt lazy dependency chunks skipped)`
+    : ''
+console.log(
+  `[check-bundle-size] all ${checked} chunks within ${toKb(budgetBytes)} kB budget, first load ${toKb(firstLoad)} kB of ${toKb(FIRST_LOAD_BUDGET_BYTES)} kB${exemptNote}`,
+)

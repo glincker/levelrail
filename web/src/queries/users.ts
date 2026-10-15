@@ -26,6 +26,49 @@ export interface UserResource {
   is_first_user: boolean
   created_at: string
   last_login_at?: string
+  disabled: boolean
+  // Sign-in is refused until the user completes a password reset.
+  must_change_password: boolean
+}
+
+export interface SetPasswordChangeRequiredRequest {
+  id: string
+  required: boolean
+}
+
+// PUT /api/v1/users/{id}/password-change-required: root only, never for
+// the caller's own account. Requiring it ends the user's sessions.
+export async function setPasswordChangeRequired(
+  req: SetPasswordChangeRequiredRequest,
+): Promise<UserResource> {
+  const res = await fetch(
+    `/api/v1/users/${encodeURIComponent(req.id)}/password-change-required`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ required: req.required }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(
+        res,
+        `update password requirement failed: ${res.status}`,
+      ),
+    )
+  }
+  return (await res.json()) as UserResource
+}
+
+export function useSetPasswordChangeRequired() {
+  const queryClient = useQueryClient()
+  return useMutation<UserResource, ApiError, SetPasswordChangeRequiredRequest>({
+    mutationFn: setPasswordChangeRequired,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: userKeys.list() })
+    },
+  })
 }
 
 // CreateUserRequest's abilities/role are mutually exclusive: role, when

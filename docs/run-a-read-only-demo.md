@@ -53,3 +53,22 @@ Visitors sign in as a read-only account, either through the one-click demo sessi
 
 - It does not run the reconciler, collectors, builds, backups, ingress or the self-updater.
 - It does not simulate deploys or rollbacks. Those buttons return `demo_readonly`.
+
+## Host it on a small box
+
+The `deploy/demo/` directory holds a hardened, generic layout. The demo binary listens on loopback only and a tunnel such as `cloudflared` dials out to it, so no inbound port is open and no reverse proxy is needed.
+
+```sh
+deploy/demo/build-demo.sh amd64        # builds dist/demo/levelrail-demo-linux-amd64.tar.gz
+# copy and unpack on a fresh Debian or Ubuntu box, then as root:
+./levelrail-demo/install.sh            # idempotent
+```
+
+What gets installed:
+
+- A `levelrail-demo` system user, the binary under `/opt/levelrail-demo`, state under `/var/lib/levelrail-demo` and an env file at `/etc/levelrail-demo/env`.
+- `levelrail-demo.service`, which allows only loopback traffic (`IPAddressDeny=any`), drops all capabilities, mounts the system read-only and caps memory, CPU and tasks.
+- `levelrail-demo-reseed.timer`, a nightly re-seed that re-anchors the 14 days of history. It seeds into a new directory and swaps it in.
+- `levelrail-demo-tripwire.timer`, hourly. It re-seeds if the apps, databases or users tables differ from the seed, or if a non-GET request succeeded outside the allowlist in the unit's journal.
+
+Copy `cloudflared-config.yml.example` and `cloudflared-demo.service.example` for the tunnel, and replace the placeholder hostname. To take the demo down, `systemctl stop levelrail-demo`.

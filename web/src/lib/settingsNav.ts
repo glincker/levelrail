@@ -19,12 +19,12 @@ import {
   GithubLogoIcon,
   GitlabLogoIcon,
   GlobeIcon,
-  HardDrivesIcon,
   HeartbeatIcon,
+  WrenchIcon,
   IdentificationBadgeIcon,
+  IdentificationCardIcon,
   KeyIcon,
   LockKeyIcon,
-  PackageIcon,
   PlugsConnectedIcon,
   RobotIcon,
   ShieldCheckIcon,
@@ -33,12 +33,13 @@ import {
   StackIcon,
   TeaBagIcon,
   TerminalWindowIcon,
+  TimerIcon,
   UserIcon,
   UsersIcon,
   UsersThreeIcon,
   WebhooksLogoIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import { filterByFeature, type ExperimentalFeature } from './experimental'
+import type { ExperimentalFeature } from './experimental'
 
 import type settingsEn from '../locales/en/settings.json'
 
@@ -122,14 +123,20 @@ export const settingsNavSections: SettingsNavSection[] = [
         feature: 'access-roles',
       },
       {
+        id: 'sso',
+        to: '/settings/sso',
+        icon: IdentificationCardIcon,
+        feature: 'saml-scim',
+      },
+      {
+        id: 'session-policy',
+        to: '/settings/session-policy',
+        icon: TimerIcon,
+      },
+      {
         id: 'oauth',
         to: '/settings/oauth',
         icon: LockKeyIcon,
-      },
-      {
-        id: 'iam-policies',
-        to: '/settings/iam-policies',
-        icon: ShieldCheckIcon,
       },
       {
         id: 'tokens',
@@ -279,6 +286,16 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/status-page',
         icon: HeartbeatIcon,
       },
+      {
+        id: 'maintenance',
+        to: '/settings/maintenance',
+        icon: WrenchIcon,
+      },
+      {
+        id: 'deploy-policies',
+        to: '/settings/deploy-policies',
+        icon: ShieldCheckIcon,
+      },
     ],
   },
   {
@@ -303,16 +320,6 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'gitea-app',
         to: '/settings/gitea-app',
         icon: TeaBagIcon,
-      },
-      {
-        id: 'registry',
-        to: '/settings/registry',
-        icon: HardDrivesIcon,
-      },
-      {
-        id: 'registry-credentials',
-        to: '/settings/registry-credentials',
-        icon: PackageIcon,
       },
     ],
   },
@@ -340,11 +347,6 @@ export const settingsNavSections: SettingsNavSection[] = [
     id: 'advanced',
     items: [
       {
-        id: 'node-providers',
-        to: '/settings/node-providers',
-        icon: HardDrivesIcon,
-      },
-      {
         id: 'containers',
         to: '/settings/containers',
         icon: StackIcon,
@@ -369,10 +371,7 @@ export const settingsNavSections: SettingsNavSection[] = [
   },
 ]
 
-export function visibleSettingsSections(
-  enabled: readonly string[],
-): SettingsNavSection[] {
+// Gated pages stay listed; useSettingsNav marks the switched-off ones locked.
+export function visibleSettingsSections(): SettingsNavSection[] {
   return settingsNavSections
-    .map((s) => ({ ...s, items: filterByFeature(s.items, enabled) }))
-    .filter((s) => s.items.length > 0)
 }

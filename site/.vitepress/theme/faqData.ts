@@ -16,6 +16,10 @@ export const faqItems: FaqItem[] = [
     a: "Most self-hosted platforms in this category, Coolify included, manage remote servers by SSHing in and running docker CLI commands, then parsing the text output. Levelrail's agent dials out over mTLS and talks to the Docker Engine API directly, nothing shells out to the docker CLI, and a level-triggered reconciler replaces polling loops. Railway is a managed cloud you don't control, while Levelrail runs on servers you own. The comparison page covers where the other projects are the better choice.",
   },
   {
+    q: 'Can idle apps stop and start again on demand?',
+    a: 'Yes, per app. Sleep when idle stops an app that has had no requests for a time you choose, from 5 minutes to 7 days, so it uses no memory or CPU. The next request through the built-in ingress starts it. By default the visitor sees a short waking-up page; with hold mode the request is answered once the app is ready. Only requests through the built-in ingress count as activity, so apps reached over TCP or a pinned host port should leave it off.',
+  },
+  {
     q: 'Do I need to know Kubernetes?',
     a: 'No. Levelrail is not a Kubernetes alternative: there is no scheduler with bin-packing or autoscaling, no CRDs, and nothing to learn beyond apps, domains, and databases. It is built for running 3 to 50 services on 1 to 10 machines without operating a cluster.',
   },

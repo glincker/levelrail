@@ -10,8 +10,6 @@ import { DialogFooter } from '@/components/ui/dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import { useTranslation } from 'react-i18next'
 import {
   Field,
   FieldError,
@@ -29,6 +27,7 @@ import {
 import { ExistingVolumeError } from '../lib/apiError'
 import { useCreateDatabase } from '../queries/databases'
 import { ExistingVolumePrompt } from './ExistingVolumePrompt'
+import { DatabaseVersionPicker } from './databaseVersions/DatabaseVersionPicker'
 import { useDatabaseEnginesOptional } from '../queries/databaseEngines'
 import { useNodeListOptional } from '../queries/nodes'
 import { useProjectListOptional } from '../queries/projects'
@@ -40,6 +39,8 @@ import {
   resolveSubmittedProjectId,
 } from '../lib/createResourcePlacement'
 import { CreateFormShell } from './CreateFormShell'
+import { PostgresFlavorField } from './PostgresFlavorField'
+import { withFlavor, type PostgresFlavor } from '@/lib/databaseCatalog'
 import {
   LOCAL_NODE_VALUE,
   NO_PROJECT_VALUE,
@@ -81,21 +82,6 @@ const DOCKER_HUB_OFFICIAL_IMAGE: Record<string, string> = {
   redis: 'redis',
   mongodb: 'mongo',
   mariadb: 'mariadb',
-}
-
-const PGVECTOR_SUFFIX = '-pgvector'
-
-// The API accepts only "<major>-pgvector", so toggling keeps the leading
-// major digits and drops any minor part.
-function togglePgvector(version: string, on: boolean): string {
-  const trimmed = version.trim()
-  if (!on) {
-    return trimmed.endsWith(PGVECTOR_SUFFIX)
-      ? trimmed.slice(0, -PGVECTOR_SUFFIX.length)
-      : trimmed
-  }
-  const major = /^\d+/.exec(trimmed)?.[0] ?? '17'
-  return major + PGVECTOR_SUFFIX
 }
 
 // Matches validateDatabaseResource (internal/api/databases.go): name/
@@ -148,6 +134,7 @@ export function CreateDatabaseFields({
   open,
   onCreated,
   engine,
+  flavor,
 }: {
   /** The owning dialog's own open state, used only to reset this
    *  form's local state on close. See CreateAppFields's identical prop
@@ -166,8 +153,10 @@ export function CreateDatabaseFields({
    *  it always was, letting the one dialog cover every registered
    *  engine. */
   engine?: string
+  /** Pre-selects a Postgres extension image (version "<major>-<flavor>")
+   *  when the wizard's picker card was a flavor card. */
+  flavor?: PostgresFlavor | null
 }) {
-  const { t } = useTranslation('databases')
   const navigate = useNavigate()
   const createDatabase = useCreateDatabase()
   // Optional convenience only, see useNodeListOptional's own doc
@@ -244,7 +233,7 @@ export function CreateDatabaseFields({
       (e) => e.id === watchedEngine,
     )?.default_version
     if (fallback) {
-      setValue('version', fallback)
+      setValue('version', flavor ? withFlavor(fallback, flavor) : fallback)
     }
     // Only reacting to the engine changing or the engine registry
     // arriving, not to formState/getValues/setValue identity churn.
@@ -266,7 +255,7 @@ export function CreateDatabaseFields({
   // generated server-side, never collected here.
   const { restoredFromDraft, discardDraft, dismissDraftNotice, clearDraft } =
     useFormDraft({
-      storageKey: `app-create-database-draft:${engine ?? (watchedEngine || 'unspecified')}`,
+      storageKey: `app-create-database-draft:${engine ?? (watchedEngine || 'unspecified')}${flavor ? `:${flavor}` : ''}`,
       open,
       watch,
       reset,
@@ -387,12 +376,19 @@ export function CreateDatabaseFields({
 
         <Field>
           <FieldLabel htmlFor="database-version">Version</FieldLabel>
-          <Input
+          <DatabaseVersionPicker
             id="database-version"
+            engine={watchedEngine}
+            value={watchedVersion}
             placeholder={
               engines.find((e) => e.id === watchedEngine)?.default_version
             }
-            {...register('version')}
+            onChange={(next) => {
+              setValue('version', next, {
+                shouldDirty: true,
+                shouldValidate: formState.isSubmitted,
+              })
+            }}
           />
           {DOCKER_HUB_OFFICIAL_IMAGE[watchedEngine] ? (
             <FieldHint
@@ -407,28 +403,12 @@ export function CreateDatabaseFields({
         </Field>
 
         {watchedEngine === 'postgres' ? (
-          <Field>
-            <label
-              htmlFor="database-pgvector"
-              className="flex items-start gap-2 text-sm font-medium"
-            >
-              <Checkbox
-                id="database-pgvector"
-                checked={watchedVersion.trim().endsWith(PGVECTOR_SUFFIX)}
-                onCheckedChange={(checked) => {
-                  setValue('version', togglePgvector(watchedVersion, checked), {
-                    shouldDirty: true,
-                  })
-                }}
-              />
-              <span>{t('createPgvector.label')}</span>
-            </label>
-            <FieldHint>
-              {t('createPgvector.hint', {
-                version: togglePgvector(watchedVersion, true),
-              })}
-            </FieldHint>
-          </Field>
+          <PostgresFlavorField
+            version={watchedVersion}
+            onVersionChange={(next) => {
+              setValue('version', next, { shouldDirty: true })
+            }}
+          />
         ) : null}
       </div>
 

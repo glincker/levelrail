@@ -12,6 +12,16 @@ export const homeFeatures: LandingCard[] = [
     ],
   },
   {
+    title: 'Sleep idle apps, wake on request',
+    icon: 'moon',
+    body: 'Turn on Sleep when idle per app and one that gets no requests stops, using no memory or CPU. The next request through the built-in ingress starts it again. Useful for running many side projects on one small server.',
+    visual: [
+      { k: 'cmd', t: 'levelrail-cli apps sleep enable web --after 30m' },
+      { k: 'out', t: 'no requests for 30m: stopped, 0 MiB in use' },
+      { k: 'ok', t: 'next request: woken, replayed with --hold' },
+    ],
+  },
+  {
     title: 'Observability built in',
     icon: 'chart',
     body: 'Node-local metrics at 15s resolution and full-text log search, with 15 days of retention by default and no separate Grafana or Loki install. Deploy markers overlay on metric charts.',

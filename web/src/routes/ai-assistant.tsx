@@ -6,14 +6,15 @@ import {
   useAiAssistantSettings,
 } from '../queries/aiAssistantSettings'
 import { AiChatPanel } from '../components/AiChatPanel'
+import { DemoGate } from '@/components/demo/DemoUnavailable'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/ai-assistant')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'ai-chat'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'ai-chat', location.href),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantPage,
@@ -30,22 +31,24 @@ function AiAssistantPage() {
         description="Reads logs, metrics, and deploy history automatically. Always asks before deploying, rolling back, or restarting anything."
       />
 
-      {settings.configured ? (
-        <AiChatPanel />
-      ) : (
-        <EmptyState
-          icon={<RobotIcon className="size-5" />}
-          title="No AI provider configured"
-          description="Add a BYOK API key in Settings to start chatting."
-          action={
-            <Button size="sm" render={<Link to="/settings/ai-assistant" />}>
-              <GearIcon />
-              Configure AI Assistant
-            </Button>
-          }
-          className="flex-1"
-        />
-      )}
+      <DemoGate reason="generic">
+        {settings.configured ? (
+          <AiChatPanel />
+        ) : (
+          <EmptyState
+            icon={<RobotIcon className="size-5" />}
+            title="No AI provider configured"
+            description="Add a BYOK API key in Settings to start chatting."
+            action={
+              <Button size="sm" render={<Link to="/settings/ai-assistant" />}>
+                <GearIcon />
+                Configure AI Assistant
+              </Button>
+            }
+            className="flex-1"
+          />
+        )}
+      </DemoGate>
     </div>
   )
 }

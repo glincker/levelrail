@@ -1,0 +1,99 @@
+{
+  "deploy": {
+    "trigger": "Deploy model",
+    "title": "Deploy a model",
+    "description": "Runs an inference engine on a GPU node and exposes an OpenAI-compatible endpoint protected by an API key.",
+    "sections": {
+      "basics": "What to run",
+      "placement": "Where to run it",
+      "advanced": "Advanced options",
+      "advancedHint": "GPUs, context length, residency, swap group and domain. The defaults suit most models."
+    },
+    "fields": {
+      "name": "Name",
+      "nameHint": "Lowercase letters, digits and hyphens. Used in the endpoint URL.",
+      "namePlaceholder": "chat",
+      "engine": "Engine",
+      "model": "Model",
+      "modelHint": "A reference the engine can pull. Pick a suggestion or paste your own.",
+      "modelSuggestions": "Suggestions for this engine",
+      "node": "Node",
+      "localNode": "This host",
+      "gpus": "GPUs",
+      "gpusHint": "How many GPUs the engine may use. \"all\" leaves it to the engine.",
+      "gpusPlaceholder": "all",
+      "context": "Context length",
+      "contextHint": "Maximum tokens per request. Leave empty to use the engine default.",
+      "contextPlaceholder": "engine default",
+      "quantization": "Quantization",
+      "quantizationHint": "Optional. For example awq, gptq or fp8.",
+      "residency": "Residency",
+      "residencyAlways": "Always loaded",
+      "residencyOnDemand": "On demand",
+      "residencyHint": "On demand stops the engine when idle and starts it on the first request.",
+      "idleMinutes": "Idle minutes",
+      "idleMinutesHint": "How long the engine stays loaded without requests.",
+      "idlePlaceholder": "platform default",
+      "swapGroup": "Swap group",
+      "swapGroupHint": "Models sharing a name on the same GPU take turns: waking one stops the resident one to free VRAM.",
+      "swapGroupPlaceholder": "none",
+      "domain": "Domain",
+      "domainHint": "Serve the endpoint on your own hostname.",
+      "domainPlaceholder": "llm.example.com",
+      "hfToken": "HuggingFace token",
+      "hfTokenHint": "Only needed for gated models. Stored encrypted, never shown again."
+    },
+    "nodeOption": {
+      "freeVram": "{{free}} free of {{total}}",
+      "noGpu": "No GPU reported",
+      "gpuCount_one": "{{count}} GPU",
+      "gpuCount_other": "{{count}} GPUs"
+    },
+    "summary": {
+      "ready": "Creates {{name}}: {{engine}} serving {{model}} on {{node}}.",
+      "incomplete": "Name the model and choose what to run to see what will be created."
+    },
+    "errors": {
+      "name": "Use lowercase letters, digits or hyphens.",
+      "model": "Choose or enter a model reference.",
+      "gpus": "Enter \"all\" or a positive number.",
+      "context": "Enter a positive number of tokens.",
+      "idle": "Enter a positive number of minutes.",
+      "swapGroup": "Use lowercase letters, digits or hyphens."
+    },
+    "actions": {
+      "cancel": "Cancel",
+      "deploy": "Deploy",
+      "deploying": "Deploying..."
+    },
+    "toast": {
+      "title": "Deploying \"{{name}}\".",
+      "description": "The engine is downloading and loading the model."
+    }
+  },
+  "empty": {
+    "gpus": {
+      "title": "No GPU node has reported in yet",
+      "description": "Nodes with an NVIDIA GPU and driver show up here with their VRAM. Install the NVIDIA driver and nvidia-container-toolkit on an Ubuntu node and it appears within a minute."
+    },
+    "models": {
+      "title": "No models deployed yet",
+      "description": "Deploy Ollama, vLLM or llama.cpp on a GPU node and get an OpenAI-compatible endpoint with its own API key."
+    },
+    "cache": {
+      "title": "Nothing cached yet",
+      "description": "Downloaded model weights are kept here so a redeploy starts fast. Deploy a model to fill it."
+    },
+    "sample": {
+      "modelName": "chat",
+      "engine": "Ollama",
+      "placement": "This host",
+      "status": "Ready",
+      "gpuName": "NVIDIA GPU",
+      "vram": "24 GiB VRAM",
+      "gpuLabel": "GPU node",
+      "modelLabel": "Model",
+      "cacheLabel": "Cached weights"
+    }
+  }
+}

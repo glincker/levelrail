@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -16,17 +17,27 @@ import (
 // exposed anywhere reachable.
 type ContainerDumper struct {
 	Runtime docker.Runtime
+	// SearchTaskTimeout/SearchPollInterval override the snapshot wait for
+	// the HTTP API search engines.
+	SearchTaskTimeout  time.Duration
+	SearchPollInterval time.Duration
 }
 
 // Dump implements Dumper.
 func (d *ContainerDumper) Dump(ctx context.Context, engine, containerName string) (io.ReadCloser, error) {
+	if store.IsSearchEngine(engine) {
+		return d.dumpSearch(ctx, engine, containerName)
+	}
+	if !store.EngineSupportsBackups(engine) {
+		return nil, fmt.Errorf("backup: dump: %s keeps no data on disk, so it has no backups", engine)
+	}
 	var cmd []string
 	switch engine {
 	case store.EnginePostgres:
 		cmd = postgresDumpCmd
 	case store.EngineMySQL:
 		cmd = mysqlDumpCmd
-	case store.EngineRedis:
+	case store.EngineRedis, store.EngineValkey:
 		cmd = redisDumpCmd
 	case store.EngineMongoDB:
 		cmd = mongoDumpCmd

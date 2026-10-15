@@ -1,0 +1,10 @@
+[Unit]
+Description=Levelrail demo tripwire (re-seed on drift or a successful write)
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/levelrail-demo/reseed.sh tripwire
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes

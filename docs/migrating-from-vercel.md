@@ -111,7 +111,7 @@ Plan for these before you commit to moving.
 | Web Analytics and Speed Insights (real-user Core Web Vitals) | No browser-side analytics. Server-side request metrics exist (rate, 4xx and 5xx, p50, p95, p99 per app). The [integrations](/integrations) page lists third-party options such as PostHog. |
 | Blob, KV, Edge Config | No drop-in equivalents. Managed Redis exists, but you rewrite the client code. |
 | Per-branch preview URLs | Previews are per pull request only. |
-| Serverless scale to zero and autoscaling | Long-running containers with fixed replicas. There is no autoscaling. |
+| Serverless scale to zero and autoscaling | Scale to zero exists per app as [Sleep when idle](/sleep-when-idle): an app with no requests stops and the next request starts it, with a cold start of a few seconds. There is no autoscaling, and replicas stay fixed. |
 | Vercel Cron calling HTTP routes | Scheduled tasks exec a command in the container instead. |
 | Build-time env for Railpack | None. Use a committed `.env.production`, see the build-time section in 2. |
 

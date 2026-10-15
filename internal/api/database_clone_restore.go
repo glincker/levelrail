@@ -104,7 +104,7 @@ func (rt *Router) handleCloneRestore(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	sourceDB, ok := rt.loadDatabaseForRunner(w, r, name, "api: clone restore: load source database failed")
-	if !ok {
+	if !ok || refuseNoBackups(w, sourceDB.Engine) {
 		return
 	}
 

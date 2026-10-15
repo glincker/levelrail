@@ -1,15 +1,20 @@
 import { useState } from 'react'
-import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { CaretDownIcon, PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { Field, FieldHint, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import {
@@ -20,30 +25,37 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/toast'
-import { MODEL_ENGINES } from '../lib/models'
+import { MODEL_ENGINES, formatMiB, nodeGpuFacts } from '../lib/models'
 import {
   INITIAL_DEPLOY_FORM,
   LOCAL_NODE,
   buildCreateRequest,
-  validateDeployForm,
+  deployFieldErrors,
   type DeployFormState,
 } from '../lib/modelDeployForm'
 import { useCreateModel, useGpuNodes } from '../queries/models'
 import { ModelPreflightPanel } from './ModelPreflightPanel'
 import { ModelFitPanel } from './models/ModelFitPanel'
-import type { CreateModelResponse } from '../types/models'
+import { DeployAdvancedFields } from './models/DeployAdvancedFields'
+import { DeployEngineCards } from './models/DeployEngineCards'
+import type { CreateModelResponse, GpuNode } from '../types/models'
 
 export function DeployModelDialog({
   onDeployed,
 }: {
   onDeployed: (created: CreateModelResponse) => void
 }) {
+  const { t } = useTranslation('models')
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<DeployFormState>(INITIAL_DEPLOY_FORM)
-  const [problem, setProblem] = useState<string | null>(null)
+  const [submitted, setSubmitted] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const create = useCreateModel()
   const gpuNodes = useGpuNodes()
   const engine = MODEL_ENGINES.find((e) => e.id === form.engine)
+  const errors = deployFieldErrors(form)
+  const hasErrors = Object.keys(errors).length > 0
+  const shown = submitted ? errors : {}
 
   function set<K extends keyof DeployFormState>(
     key: K,
@@ -56,20 +68,27 @@ export function DeployModelDialog({
     setOpen(next)
     if (!next) {
       setForm(INITIAL_DEPLOY_FORM)
-      setProblem(null)
+      setSubmitted(false)
+      setAdvancedOpen(false)
       create.reset()
     }
   }
 
   function submit() {
-    const invalid = validateDeployForm(form)
-    setProblem(invalid)
-    if (invalid) return
+    setSubmitted(true)
+    if (hasErrors) {
+      const advancedOnly =
+        !errors.name &&
+        !errors.model &&
+        (errors.gpus || errors.context || errors.idle || errors.swapGroup)
+      if (advancedOnly) setAdvancedOpen(true)
+      return
+    }
     create.mutate(buildCreateRequest(form), {
       onSuccess: (created) => {
         toast.add({
-          title: `Deploying "${created.name}".`,
-          description: 'The engine is downloading and loading the model.',
+          title: t('deploy.toast.title', { name: created.name }),
+          description: t('deploy.toast.description'),
           type: 'success',
         })
         handleOpenChange(false)
@@ -78,253 +97,239 @@ export function DeployModelDialog({
     })
   }
 
+  function nodeOptionText(node: GpuNode): string {
+    if (node.devices.length === 0) {
+      return `${node.name}, ${t('deploy.nodeOption.noGpu')}`
+    }
+    const facts = nodeGpuFacts(node)
+    const free = t('deploy.nodeOption.freeVram', {
+      free: formatMiB(facts.freeMib),
+      total: formatMiB(facts.totalMib),
+    })
+    return `${node.name}, ${facts.gpuNames}, ${free}`
+  }
+
   const usableNodes = (gpuNodes.data ?? []).filter((n) => n.present)
-  const errorText = problem ?? (create.isError ? create.error.message : null)
+  const selectedNode = usableNodes.find((n) => n.node_id === form.node)
+  const nodeText =
+    form.node === LOCAL_NODE || !selectedNode
+      ? t('deploy.fields.localNode')
+      : selectedNode.name
+  const summary =
+    errors.name || errors.model
+      ? t('deploy.summary.incomplete')
+      : t('deploy.summary.ready', {
+          name: form.name,
+          engine: engine?.label ?? form.engine,
+          model: form.model.trim(),
+          node: nodeText,
+        })
+  const apiError = create.isError ? create.error.message : null
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button size="sm" />}>
         <PlusIcon aria-hidden="true" />
-        Deploy model
+        {t('deploy.trigger')}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>Deploy a model</DialogTitle>
-          <DialogDescription>
-            Runs an inference engine on a GPU node and exposes an
-            OpenAI-compatible endpoint protected by an API key.
-          </DialogDescription>
+          <DialogTitle>{t('deploy.title')}</DialogTitle>
+          <DialogDescription>{t('deploy.description')}</DialogDescription>
         </DialogHeader>
         <form
-          className="space-y-3"
+          noValidate
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault()
             submit()
           }}
         >
-          <Field>
-            <FieldLabel htmlFor="model-name">Name</FieldLabel>
-            <Input
-              id="model-name"
-              value={form.name}
-              onChange={(e) => {
-                set('name', e.target.value)
-              }}
-              placeholder="chat"
-              autoComplete="off"
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field>
-              <FieldLabel htmlFor="model-engine">Engine</FieldLabel>
-              <Select
-                value={form.engine}
-                onValueChange={(v) => {
-                  if (v) set('engine', v)
-                }}
-              >
-                <SelectTrigger id="model-engine" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODEL_ENGINES.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="model-node">Node</FieldLabel>
-              <Select
-                value={form.node}
-                onValueChange={(v) => {
-                  if (v) set('node', v)
-                }}
-              >
-                <SelectTrigger id="model-node" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={LOCAL_NODE}>This host</SelectItem>
-                  {usableNodes
-                    .filter((n) => !n.is_local)
-                    .map((n) => (
-                      <SelectItem key={n.node_id} value={n.node_id}>
-                        {n.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </Field>
-          </div>
-          <Field>
-            <FieldLabel htmlFor="model-ref">Model</FieldLabel>
-            <Input
-              id="model-ref"
-              value={form.model}
-              onChange={(e) => {
-                set('model', e.target.value)
-              }}
-              placeholder={engine?.refHint}
-              autoComplete="off"
-              className="font-mono"
-            />
-          </Field>
-          <ModelPreflightPanel
-            engine={form.engine}
-            model={form.model}
-            node={form.node}
-            hfToken={form.hfToken}
-            gpus={form.gpus}
-            onPickModel={(m) => {
-              set('model', m)
-            }}
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Field>
-              <FieldLabel htmlFor="model-gpus">GPUs</FieldLabel>
-              <Input
-                id="model-gpus"
-                value={form.gpus}
-                onChange={(e) => {
-                  set('gpus', e.target.value)
-                }}
-                placeholder="all"
-              />
-              <FieldHint>&ldquo;all&rdquo; or a number.</FieldHint>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="model-context">Context length</FieldLabel>
-              <Input
-                id="model-context"
-                value={form.context}
-                onChange={(e) => {
-                  set('context', e.target.value)
-                }}
-                placeholder="engine default"
-                inputMode="numeric"
-              />
-            </Field>
-          </div>
-          {form.engine === 'vllm' ? (
-            <Field>
-              <FieldLabel htmlFor="model-quant">Quantization</FieldLabel>
-              <Input
-                id="model-quant"
-                value={form.quantization}
-                onChange={(e) => {
-                  set('quantization', e.target.value)
-                }}
-                placeholder="awq, gptq, fp8 (optional)"
-              />
-            </Field>
-          ) : null}
-          <ModelFitPanel form={form} />
-          <div className="grid grid-cols-2 gap-3">
-            <Field>
-              <FieldLabel htmlFor="model-residency">Residency</FieldLabel>
-              <Select
-                value={form.residency}
-                onValueChange={(v) => {
-                  if (v === 'always' || v === 'on_demand') set('residency', v)
-                }}
-              >
-                <SelectTrigger id="model-residency" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="always">Always loaded</SelectItem>
-                  <SelectItem value="on_demand">On demand</SelectItem>
-                </SelectContent>
-              </Select>
-              <FieldHint>
-                On demand stops the engine when idle and starts it on the first
-                request.
-              </FieldHint>
-            </Field>
-            {form.residency === 'on_demand' ? (
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                {t('deploy.sections.basics')}
+              </h3>
               <Field>
-                <FieldLabel htmlFor="model-idle">Idle minutes</FieldLabel>
+                <FieldLabel htmlFor="model-name">
+                  {t('deploy.fields.name')}
+                </FieldLabel>
                 <Input
-                  id="model-idle"
-                  value={form.idleMinutes}
+                  id="model-name"
+                  value={form.name}
                   onChange={(e) => {
-                    set('idleMinutes', e.target.value)
+                    set('name', e.target.value)
                   }}
-                  placeholder="platform default"
-                  inputMode="numeric"
+                  placeholder={t('deploy.fields.namePlaceholder')}
+                  autoComplete="off"
+                  aria-invalid={shown.name === true}
+                  aria-describedby="model-name-hint"
                 />
+                {shown.name ? (
+                  <p
+                    id="model-name-hint"
+                    role="alert"
+                    className="text-xs text-destructive"
+                  >
+                    {t('deploy.errors.name')}
+                  </p>
+                ) : (
+                  <FieldHint id="model-name-hint">
+                    {t('deploy.fields.nameHint')}
+                  </FieldHint>
+                )}
               </Field>
-            ) : null}
-          </div>
-          <Field>
-            <FieldLabel htmlFor="model-swap-group">Swap group</FieldLabel>
-            <Input
-              id="model-swap-group"
-              value={form.swapGroup}
-              onChange={(e) => {
-                set('swapGroup', e.target.value)
-              }}
-              placeholder="none (optional)"
-              autoComplete="off"
-            />
-            <FieldHint>
-              Models sharing this name on the same node/GPU cannot both be
-              resident: waking one stops the group's current resident model
-              first to free VRAM.
-            </FieldHint>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="model-domain">Domain</FieldLabel>
-            <Input
-              id="model-domain"
-              value={form.domain}
-              onChange={(e) => {
-                set('domain', e.target.value)
-              }}
-              placeholder="llm.example.com (optional)"
-              autoComplete="off"
-            />
-          </Field>
-          {form.engine !== 'ollama' ? (
-            <Field>
-              <FieldLabel htmlFor="model-hf-token">
-                HuggingFace token
-              </FieldLabel>
-              <Input
-                id="model-hf-token"
-                type="password"
-                value={form.hfToken}
-                onChange={(e) => {
-                  set('hfToken', e.target.value)
+              <DeployEngineCards
+                legend={t('deploy.fields.engine')}
+                value={form.engine}
+                onChange={(next) => {
+                  set('engine', next)
                 }}
-                placeholder="hf_... (only for gated models)"
-                autoComplete="off"
               />
-              <FieldHint>Stored encrypted, never shown again.</FieldHint>
-            </Field>
-          ) : null}
-          {errorText ? (
+              <Field>
+                <FieldLabel htmlFor="model-ref">
+                  {t('deploy.fields.model')}
+                </FieldLabel>
+                <Input
+                  id="model-ref"
+                  list="model-ref-suggestions"
+                  value={form.model}
+                  onChange={(e) => {
+                    set('model', e.target.value)
+                  }}
+                  placeholder={engine?.refHint}
+                  autoComplete="off"
+                  className="font-mono"
+                  aria-invalid={shown.model === true}
+                  aria-describedby="model-ref-hint"
+                />
+                <datalist id="model-ref-suggestions">
+                  {(engine?.suggestions ?? []).map((s) => (
+                    <option key={s} value={s} />
+                  ))}
+                </datalist>
+                {shown.model ? (
+                  <p
+                    id="model-ref-hint"
+                    role="alert"
+                    className="text-xs text-destructive"
+                  >
+                    {t('deploy.errors.model')}
+                  </p>
+                ) : (
+                  <FieldHint id="model-ref-hint">
+                    {t('deploy.fields.modelHint')}
+                  </FieldHint>
+                )}
+                <div
+                  role="group"
+                  aria-label={t('deploy.fields.modelSuggestions')}
+                  className="flex flex-wrap gap-1.5 pt-1"
+                >
+                  {(engine?.suggestions ?? []).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => {
+                        set('model', s)
+                      }}
+                      className="rounded-md border border-border bg-muted/40 px-2 py-0.5 font-mono text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+            </div>
+            <div className="space-y-3">
+              <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                {t('deploy.sections.placement')}
+              </h3>
+              <Field>
+                <FieldLabel htmlFor="model-node">
+                  {t('deploy.fields.node')}
+                </FieldLabel>
+                <Select
+                  value={form.node}
+                  onValueChange={(v) => {
+                    if (v) set('node', v)
+                  }}
+                >
+                  <SelectTrigger id="model-node" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={LOCAL_NODE}>
+                      {t('deploy.fields.localNode')}
+                    </SelectItem>
+                    {usableNodes
+                      .filter((n) => !n.is_local)
+                      .map((n) => (
+                        <SelectItem key={n.node_id} value={n.node_id}>
+                          {nodeOptionText(n)}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              <ModelPreflightPanel
+                engine={form.engine}
+                model={form.model}
+                node={form.node}
+                hfToken={form.hfToken}
+                gpus={form.gpus}
+                onPickModel={(m) => {
+                  set('model', m)
+                }}
+              />
+              <ModelFitPanel form={form} />
+            </div>
+          </div>
+          <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+            <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none">
+              <span>
+                {t('deploy.sections.advanced')}
+                <span className="block text-xs font-normal text-muted-foreground">
+                  {t('deploy.sections.advancedHint')}
+                </span>
+              </span>
+              <CaretDownIcon
+                className={`size-4 shrink-0 text-muted-foreground transition-transform ${advancedOpen ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+              />
+            </CollapsibleTrigger>
+            <CollapsiblePanel>
+              <div className="pt-3">
+                <DeployAdvancedFields form={form} errors={shown} set={set} />
+              </div>
+            </CollapsiblePanel>
+          </Collapsible>
+          {apiError ? (
             <p role="alert" className="text-sm text-destructive">
-              {errorText}
+              {apiError}
             </p>
           ) : null}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                handleOpenChange(false)
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? 'Deploying...' : 'Deploy'}
-            </Button>
-          </DialogFooter>
+          <div className="sticky bottom-0 -mx-4 -mb-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-popover px-4 py-3">
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">
+              {summary}
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  handleOpenChange(false)
+                }}
+              >
+                {t('deploy.actions.cancel')}
+              </Button>
+              <Button type="submit" disabled={create.isPending}>
+                {create.isPending
+                  ? t('deploy.actions.deploying')
+                  : t('deploy.actions.deploy')}
+              </Button>
+            </div>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

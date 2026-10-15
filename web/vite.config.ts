@@ -54,11 +54,6 @@ export default defineConfig({
               priority: 25,
             },
             {
-              name: 'icons-lazy',
-              test: /node_modules[\\/]@phosphor-icons[\\/]/,
-              priority: 25,
-            },
-            {
               name: 'vendor',
               test: /node_modules[\\/]/,
               tags: ['$initial'],
@@ -68,11 +63,6 @@ export default defineConfig({
               name: 'ui-kit',
               test: /src[\\/]components[\\/]ui[\\/]/,
               priority: 12,
-            },
-            {
-              name: 'data',
-              test: /src[\\/](queries|hooks)[\\/]/,
-              priority: 11,
             },
             {
               name: 'shell',
@@ -99,8 +89,8 @@ export default defineConfig({
     // this pairing.
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
+        target: `http://localhost:${process.env.LOCAL_API_PORT ?? '8080'}`,
+        changeOrigin: false, // keep the browser Host so the API same-origin CSRF check passes in dev
       },
     },
   },

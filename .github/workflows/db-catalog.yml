@@ -1,0 +1,48 @@
+name: Database version catalog
+
+on:
+  schedule:
+    - cron: "17 4 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: db-catalog
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Fetch the previous catalog for the shrink check
+        run: |
+          mkdir -p catalog
+          git fetch --depth=1 origin data || true
+          git show origin/data:catalog/databases.v1.json > catalog/databases.v1.json 2>/dev/null || rm -f catalog/databases.v1.json
+      - name: Build and sign
+        env:
+          DB_CATALOG_SIGNING_KEY: ${{ secrets.DB_CATALOG_SIGNING_KEY }}
+        run: go run ./scripts/refresh-db-catalog -out catalog -sign-key-env DB_CATALOG_SIGNING_KEY
+      - name: Force-update the data branch
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          mkdir -p "$tmp/catalog"
+          cp catalog/databases.v1.json catalog/databases.v1.json.sig "$tmp/catalog/"
+          cd "$tmp"
+          git init -q -b data
+          git config user.name "catalog-bot"
+          git config user.email "catalog-bot@users.noreply.github.com"
+          git add catalog
+          git commit -q -m "chore: refresh database version catalog"
+          git push -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

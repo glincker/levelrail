@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { AppRunStatus } from '../types/containerExit'
 
 // Generic SSE log-tailing hook, shared by two real backends behind the
 // same wire contract: GET /api/v1/apps/{name}/deploys/{deployId}/logs
@@ -29,10 +30,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 // useful for highlighting failed build steps or a crashing app alike.
 // `parseEventPayload` below tries JSON.parse first and falls back to
 // treating the whole payload as a bare line, so this hook does not
-// hard-fail against either shape. Named SSE events are not used (no
-// `event:` field expected), everything arrives as the default `message`
-// event, since that is the simplest contract to hand-implement
-// server-side with Go's net/http.
+// hard-fail against either shape. Log lines arrive as the default
+// `message` event; the live app-log stream also sends a named `status`
+// event (running, or how the container exited), exposed as runStatus.
 //
 // EventSource reconnects on its own after a dropped connection (this
 // clean reconnection behavior, plus being simpler through proxies, is
@@ -73,6 +73,9 @@ export interface UseLogStreamResult {
    *  auto-scrolling); this hook keeps appending lines regardless. */
   pause: () => void
   resume: () => void
+  /** Latest `event: status` from the live app-log stream: null until one
+   *  arrives, and always null for the deploy-log stream, which sends none. */
+  runStatus: AppRunStatus | null
 }
 
 // Ring buffer sized to the last 5,000-10,000 lines; full history stays
@@ -102,6 +105,23 @@ function isRawLogEventPayload(value: unknown): value is RawLogEventPayload {
     'line' in value &&
     typeof value.line === 'string'
   )
+}
+
+export function parseRunStatus(raw: string): AppRunStatus | null {
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      'running' in parsed &&
+      typeof parsed.running === 'boolean'
+    ) {
+      return parsed as AppRunStatus
+    }
+  } catch {
+    // A malformed status event is ignored rather than breaking the stream.
+  }
+  return null
 }
 
 function parseEventPayload(raw: string): ParsedLogEvent {
@@ -140,6 +160,7 @@ export function useLogStream(url: string): UseLogStreamResult {
   const [connectionState, setConnectionState] =
     useState<LogStreamConnectionState>('connecting')
   const [isPaused, setIsPaused] = useState(false)
+  const [runStatus, setRunStatus] = useState<AppRunStatus | null>(null)
   const nextIdRef = useRef(0)
   // Tracks the URL the state above was reset for, so a URL change (a
   // navigation to a different app/deploy) can reset the buffer and
@@ -155,6 +176,7 @@ export function useLogStream(url: string): UseLogStreamResult {
     setLines([])
     setConnectionState('connecting')
     setIsPaused(false)
+    setRunStatus(null)
   }
 
   useEffect(() => {
@@ -233,6 +255,11 @@ export function useLogStream(url: string): UseLogStreamResult {
       })
     }
 
+    source.addEventListener('status', (event: MessageEvent<string>) => {
+      const status = parseRunStatus(event.data)
+      if (status) setRunStatus(status)
+    })
+
     return () => {
       source.close()
     }
@@ -246,5 +273,5 @@ export function useLogStream(url: string): UseLogStreamResult {
     setIsPaused(false)
   }, [])
 
-  return { lines, connectionState, isPaused, pause, resume }
+  return { lines, connectionState, isPaused, pause, resume, runStatus }
 }

@@ -89,6 +89,7 @@ export function ReviewChangesDialog({
           </Button>
           <Button
             type="button"
+            writeAction
             disabled={saving || changes.length === 0}
             onClick={onConfirm}
           >

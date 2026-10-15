@@ -145,7 +145,12 @@
             "mariadb",
             "keydb",
             "clickhouse",
-            "dragonfly"
+            "dragonfly",
+            "valkey",
+            "meilisearch",
+            "qdrant",
+            "typesense",
+            "memcached"
           ]
         },
         "ephemeralInPreviews": {

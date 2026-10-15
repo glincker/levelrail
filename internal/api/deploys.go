@@ -33,6 +33,7 @@ type deployTriggerRequest struct {
 	// deploying a cached image when the registry is unreachable.
 	Pull bool `json:"pull,omitempty"`
 	freezeOverride
+	policyOverride
 }
 
 // deployTriggerResult is POST .../deploys and POST .../promote's shared
@@ -100,6 +101,18 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 	note, ok := rt.freezeGate(w, r, name, req.freezeOverride)
 	if !ok {
 		return
+	}
+	// Rollbacks skip guardrails: restoring a known state must never be blocked.
+	if rollbackTo == "" {
+		candidate := existing
+		if req.Image != "" {
+			candidate.Image = req.Image
+		}
+		policyNote, pok := rt.policyGate(w, r, candidate, req.policyOverride)
+		if !pok {
+			return
+		}
+		note = strings.TrimSpace(note + " " + policyNote)
 	}
 	if rollbackTo != "" {
 		note = strings.TrimSpace(note + " RollbackTo: " + rollbackTo)

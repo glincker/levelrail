@@ -546,6 +546,32 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 
 </Accordion>
 
+## Maintenance mode
+
+While a domain is in maintenance, the ingress answers `503` with a small page instead of proxying to the app. The container keeps running.
+
+| Setting | Meaning |
+| --- | --- |
+| `title`, `message` | Page text, plain text only (HTML is shown as written), up to 120 and 2000 characters. Empty uses the default page. The page follows the visitor's light or dark preference. |
+| `retry_after_seconds` | Sent as `Retry-After`, 1 to 86400. Default 300. |
+| `until` | RFC 3339 end time. Creates a linked [scheduled maintenance](/scheduled-maintenance) window (app scope, no deploy freeze), so the dashboard banner and the public status page show it. When the window ends, or is cancelled, maintenance ends on its own within a minute and an audit entry `domain_maintenance.ended` is written. |
+| `bypass` | Up to 32 IP addresses or CIDRs whose clients still reach the app, for example your office, so you can check the site while it is down. Matched on the client address after trusted proxy headers. `0.0.0.0/0` is refused. |
+| `bypass_health_check` | Default on. When the app has an HTTP readiness path, requests to exactly that path still reach the app, so uptime probes are not answered with `503`. |
+
+Bypassed requests go through the domain's normal route, so basic auth, the auth gate and the WAF still apply to them. When the app has no running container, every request gets the page.
+
+```bash
+levelrail-cli domains maintenance set web app.example.com \
+  --title "Upgrading the database" --message "Back in about 30 minutes." \
+  --for 45m --retry-after 10m --bypass 203.0.113.7,10.0.0.0/8
+levelrail-cli domains maintenance get web app.example.com
+levelrail-cli domains maintenance clear web app.example.com   # also cancels the linked window
+```
+
+The API is `PUT /api/v1/apps/{name}/domains/{domain}/maintenance` with an optional JSON body of the fields above; an empty body keeps the default page. Running `set` again replaces the settings. On the dashboard, open the app's **Domains** tab and choose **Page and schedule** next to the maintenance toggle.
+
+Behind another reverse proxy, maintenance applies only when that proxy is proven to forward to the ingress; otherwise the dashboard shows it as **Saved, not enforced**. See [traffic controls behind a proxy](/behind-an-existing-proxy#traffic-controls-behind-a-proxy).
+
 ## Domain redirects
 
 For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](/domain-traffic-controls).
@@ -958,6 +984,60 @@ The dashboard builds its **Open site** button from this field only, so it never 
 ### Activity
 
 `GET /api/v1/domains/{domain}/activity` (`read` ability, limited to domains whose app you can see) returns the domain's recent changes from the audit log plus certificate issuance, renewals and the CA's last failure, newest first, as `{events: [{id, at, kind, title, detail, failed, action, actor: {type, name}, object: {type, id, href}}], next_cursor}`. Pass `next_cursor` back as `?before=` for the next page; `?limit=` and `?actions=` work as on the audit log. `levelrail-cli domains activity <domain>` prints it.
+
+## Troubleshooting
+
+### Browser shows a security warning about the certificate
+
+Browsers warn when the certificate is self-signed or expired, or when the domain name in the certificate does not match the one you visited.
+
+Likely cause: ACME TLS is not enabled, or the certificate is still being issued after you added the domain.
+
+How to confirm: visit the domain in a browser and check the certificate details (usually by clicking the lock icon), or run `levelrail-cli domains doctor <app> <domain>` to see the certificate status.
+
+Fix: enable ACME on the Domains page (Settings > Domains > Enable HTTPS) and follow the [ACME verification runbook](/acme-verification-runbook) to issue a real Let's Encrypt certificate. Certificates take a few seconds to issue.
+
+### The domain is added but requests get connection refused
+
+The domain resolves to the server, but incoming traffic does not reach the control plane.
+
+Likely cause: ports 80 and/or 443 are blocked by a firewall, or something else on the server is already using those ports.
+
+How to confirm: run `levelrail-cli domains doctor <app> <domain>` to check port reachability, or try `curl -v http://<domain>` from outside the network to see the actual error. Also check `sudo ss -tlnp | grep -E ':80 |:443 '` to see what owns the ports.
+
+Fix: open ports 80 and 443 in your cloud firewall, or in the host firewall with `sudo ufw allow 80,443/tcp`. If another process already owns them, either stop it or run `install.sh upgrade --coexist` to move ingress to different ports and keep it behind your existing proxy.
+
+### Requests time out or return 502 gateway errors
+
+Traffic reaches the control plane but the app container is not responding.
+
+Likely cause: the app is not running, the container is not healthy, or it is not listening on the port declared in the app spec.
+
+How to confirm: open the app's dashboard page (Apps > <app>) and check the Status section. If it shows Running, run `levelrail-cli apps status <app>` to see the container status and any readiness or liveness probe failures. Also check the app's logs (Apps > <app> > Logs).
+
+Fix: if the app is not running, deploy it again. If it is running but unhealthy, check the logs for startup errors, then fix the app code or configuration and redeploy. Verify that the app actually listens on the port specified in `app.yaml` (default 3000).
+
+### A domain shows status "waiting" and does not answer
+
+DNS is not resolving the domain to this server yet.
+
+Likely cause: the DNS A record has not been created or propagated, or it points to the wrong IP address.
+
+How to confirm: run `levelrail-cli domains check <app> <domain>` to see what the domain resolves to, or `dig <domain>` to inspect the DNS records directly.
+
+Fix: create or update the A record at your registrar or DNS provider to point at the control plane's public IP address (shown in Settings > General > Public IP, or run `levelrail-cli status --json | jq .public_host`). DNS changes can take up to a few hours to propagate globally. Once it resolves, the domain status changes automatically.
+
+### Wildcard domain rules do not work
+
+A wildcard domain added to the app is not routing subdomains correctly.
+
+Likely cause: the wildcard domain needs DNS-01 ACME, which requires DNS provider credentials. The system cannot issue a wildcard cert with HTTP-01.
+
+How to confirm: go to Settings > Domains > DNS provider and check whether a provider is configured. Also see the domain's status on the Domains page to check if the certificate is issued.
+
+Fix: connect a DNS provider (Cloudflare or Route53) on the Domains page and enable DNS-01 for wildcard domains. Then open the domain on the Domains page and check the certificate status.
+
+Still stuck? Run `levelrail-cli domains doctor <app> <domain>` and attach its full JSON output to an issue on [GitHub](https://github.com/glincker/levelrail/issues), or check the [ACME verification runbook](/acme-verification-runbook).
 
 ## Next steps
 

@@ -99,21 +99,13 @@ describe('global nav model', () => {
     }
   })
 
-  it('opens everyday groups and the active group by default, nothing else', () => {
-    const find = (id: string) => {
-      const g = GLOBAL_NAV_GROUPS.find((x) => x.id === id)
-      if (!g) throw new Error(id)
-      return g
-    }
-    expect(defaultGroupOpen(find('apps'), '/nodes')).toBe(true)
-    expect(defaultGroupOpen(find('infrastructure'), '/')).toBe(false)
-    expect(defaultGroupOpen(find('infrastructure'), '/nodes')).toBe(true)
-    expect(defaultGroupOpen(find('automation'), '/')).toBe(false)
+  it('opens every group by default', () => {
+    expect(defaultGroupOpen()).toBe(true)
   })
 
   it('hides route-gated items until the router has the route', () => {
     const labels = (has: boolean) =>
-      visibleGlobalGroups(['load-balancer'], () => has)
+      visibleGlobalGroups(() => has)
         .flatMap((g) => g.items)
         .map((i) => i.label)
     expect(labels(false)).not.toContain('DNS')

@@ -29,7 +29,7 @@ printf '%s\n' "$out" | sed -n 1p`
 		script = `exec mariadb -uroot -p"$MARIADB_ROOT_PASSWORD" -N -B -e 'SELECT VERSION(); SELECT 1'`
 	case store.EngineMongoDB:
 		script = `exec mongosh --quiet --host 127.0.0.1 --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --eval 'if (db.adminCommand({ping: 1}).ok !== 1) { quit(1) }; print(db.version())'`
-	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly:
+	case store.EngineRedis, store.EngineKeyDB, store.EngineDragonfly, store.EngineValkey:
 		script = redisTLS + `info=$(redis-cli $RTLS INFO | tr -d '\r') || exit 1
 [ "$(redis-cli $RTLS PING | tr -d '\r')" = "PONG" ] || { echo "PING failed"; exit 1; }
 role=$(printf '%s\n' "$info" | sed -n 's/^role://p')
@@ -39,6 +39,15 @@ v=$(printf '%s\n' "$info" | sed -n 's/^dragonfly_version:df-//p')
 echo "$v"`
 	case store.EngineClickHouse:
 		script = `exec clickhouse-client --user "$CLICKHOUSE_USER" --password "$CLICKHOUSE_PASSWORD" --query 'SELECT version()'`
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		return searchHealthCommand(engine), nil
+	case store.EngineMemcached:
+		return []string{"bash", "-c", `exec 3<>/dev/tcp/127.0.0.1/11211 || exit 1
+printf 'stats\r\nquit\r\n' >&3
+out=$(cat <&3 | tr -d '\r')
+v=$(printf '%s\n' "$out" | sed -n 's/^STAT version //p')
+[ -n "$v" ] || { echo "no version in stats"; exit 1; }
+echo "$v"`}, nil
 	default:
 		return nil, fmt.Errorf("no health check for engine %q", engine)
 	}

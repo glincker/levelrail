@@ -13,15 +13,47 @@ import (
 // guaranteed to match this one: Dragonfly and ClickHouse are available
 // here but not yet in internal/spec.
 const (
-	EnginePostgres   = "postgres"
-	EngineRedis      = "redis"
-	EngineMySQL      = "mysql"
-	EngineMongoDB    = "mongodb"
-	EngineMariaDB    = "mariadb"
-	EngineKeyDB      = "keydb"
-	EngineDragonfly  = "dragonfly"
-	EngineClickHouse = "clickhouse"
+	EnginePostgres    = "postgres"
+	EngineRedis       = "redis"
+	EngineMySQL       = "mysql"
+	EngineMongoDB     = "mongodb"
+	EngineMariaDB     = "mariadb"
+	EngineKeyDB       = "keydb"
+	EngineDragonfly   = "dragonfly"
+	EngineClickHouse  = "clickhouse"
+	EngineValkey      = "valkey"
+	EngineMeilisearch = "meilisearch"
+	EngineQdrant      = "qdrant"
+	EngineTypesense   = "typesense"
+	EngineMemcached   = "memcached"
 )
+
+// EngineSupportsBackups reports whether engine keeps data a backup can
+// capture. Memcached holds only an in-memory cache.
+func EngineSupportsBackups(engine string) bool {
+	return engine != EngineMemcached
+}
+
+// IsSearchEngine reports whether engine is an HTTP API search or vector
+// engine authenticated by one generated API key.
+func IsSearchEngine(engine string) bool {
+	switch engine {
+	case EngineMeilisearch, EngineQdrant, EngineTypesense:
+		return true
+	}
+	return false
+}
+
+// IsRedisFamily reports whether engine speaks the Redis wire protocol and
+// runs passwordless with an RDB dump, the shared code path for backup,
+// URLs and the key-value viewer.
+func IsRedisFamily(engine string) bool {
+	switch engine {
+	case EngineRedis, EngineKeyDB, EngineDragonfly, EngineValkey:
+		return true
+	}
+	return false
+}
 
 // DesiredDatabase is what a future database controller
 // reconciles a managed database container against. No credentials field:

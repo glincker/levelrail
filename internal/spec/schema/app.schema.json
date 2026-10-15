@@ -306,7 +306,7 @@
       "required": ["engine"],
       "additionalProperties": false,
       "properties": {
-        "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb", "clickhouse", "dragonfly"] },
+        "engine": { "enum": ["postgres", "redis", "mysql", "mongodb", "mariadb", "keydb", "clickhouse", "dragonfly", "valkey", "meilisearch", "qdrant", "typesense", "memcached"] },
         "version": { "type": "string", "minLength": 1 },
         "backup": { "$ref": "#/$defs/backup" },
         "ephemeralInPreviews": { "type": "boolean" },

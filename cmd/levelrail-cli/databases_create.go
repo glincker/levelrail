@@ -16,21 +16,37 @@ import (
 // client.go's own wire-shape types already keep: this binary must
 // depend on what the API accepts, not on internal/store's Go constants.
 const (
-	engineParamPostgres   = "postgres"
-	engineParamRedis      = "redis"
-	engineParamMySQL      = "mysql"
-	engineParamMongoDB    = "mongodb"
-	engineParamMariaDB    = "mariadb"
-	engineParamKeyDB      = "keydb"
-	engineParamDragonfly  = "dragonfly"
-	engineParamClickHouse = "clickhouse"
+	engineParamPostgres    = "postgres"
+	engineParamRedis       = "redis"
+	engineParamMySQL       = "mysql"
+	engineParamMongoDB     = "mongodb"
+	engineParamMariaDB     = "mariadb"
+	engineParamKeyDB       = "keydb"
+	engineParamDragonfly   = "dragonfly"
+	engineParamClickHouse  = "clickhouse"
+	engineParamValkey      = "valkey"
+	engineParamMeilisearch = "meilisearch"
+	engineParamQdrant      = "qdrant"
+	engineParamTypesense   = "typesense"
+	engineParamMemcached   = "memcached"
 )
+
+// pinnedVersionExample is the tag shape engines that refuse a floating
+// "latest" expect; the server enforces the same rule.
+var pinnedVersionExample = map[string]string{
+	engineParamMeilisearch: "v1.55",
+	engineParamQdrant:      "v1.19",
+	engineParamTypesense:   "30.2",
+	engineParamMemcached:   "1.6",
+}
 
 // supportedEngineParams is every engineParam* above, in the order they
 // should be listed in an error or usage message.
 var supportedEngineParams = []string{
 	engineParamPostgres, engineParamRedis, engineParamMySQL, engineParamMongoDB,
 	engineParamMariaDB, engineParamKeyDB, engineParamDragonfly, engineParamClickHouse,
+	engineParamValkey, engineParamMeilisearch, engineParamQdrant, engineParamTypesense,
+	engineParamMemcached,
 }
 
 // createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
@@ -73,6 +89,11 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	if !slices.Contains(supportedEngineParams, f.engine) {
 		return databaseResource{}, newValidationError("--engine must be one of %s", strings.Join(supportedEngineParams, ", "))
 	}
+	if example, ok := pinnedVersionExample[f.engine]; ok {
+		if f.version == "latest" || strings.HasPrefix(example, "v") != strings.HasPrefix(f.version, "v") {
+			return databaseResource{}, newValidationError("--version for %s must be a pinned release tag such as %q", f.engine, example)
+		}
+	}
 	if f.existingVolume != "" && f.existingVolume != "reuse" && f.existingVolume != "discard" {
 		return databaseResource{}, newValidationError("--existing-volume must be reuse or discard")
 	}
@@ -105,7 +126,7 @@ func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lo
 	var jsonOut, interactive bool
 	fs.StringVar(&name, "name", "", "database name (required)")
 	fs.StringVar(&engine, "engine", "", "database engine: "+strings.Join(supportedEngineParams, ", ")+" (required)")
-	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\"; postgres also takes \"<major>-pgvector\", e.g. \"17-pgvector\" (required)")
+	fs.StringVar(&version, "version", "", "engine version, e.g. \"16\"; postgres also takes \"<major>-pgvector\", \"<major>-timescaledb\" or \"<major>-postgis\", e.g. \"17-timescaledb\" (required)")
 	fs.StringVar(&nodeID, "node-id", "", "node to place this database on (default: auto-placed on the least-loaded registered node, or the local node if only one exists)")
 	fs.StringVar(&existingVolume, "existing-volume", "", "when a deleted database of this name left its data volume behind: reuse (attach the old data) or discard (delete it, start empty); required if one exists")
 	fs.StringVar(&tokenFlag, "token", "", "API token (overrides "+envAPIToken+" and the credentials file)")
@@ -185,7 +206,8 @@ Flags:
   --name string           database name (required)
   --engine string        database engine: %[5]s (required)
   --version string      engine version, e.g. "16" (required). postgres also takes
-                                    "<major>-pgvector", e.g. "17-pgvector", to run with the pgvector extension
+                                    "<major>-pgvector", "<major>-timescaledb" or "<major>-postgis", e.g. "17-pgvector";
+                                    meilisearch and qdrant take "v"-prefixed tags, e.g. "v1.55"; typesense e.g. "30.2"
   --node-id string        node to place this database on; omitted auto-places it on the
                                     least-loaded registered node (or the local node if only one exists)
   --existing-volume string  reuse or discard the data volume a deleted database of this name

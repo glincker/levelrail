@@ -462,6 +462,58 @@ levelrail-cli app-volume-backups schedule clear <app> <volume>
 levelrail-cli app-volume-backups delete <app> <volume> <backup-id>
 ```
 
+## Troubleshooting
+
+### Scheduled backup not running or missing
+
+Likely cause: The backup schedule is not set, the backup target is not reachable, or the reconciler has not processed the backup task yet.
+
+How to confirm: Check if a schedule is configured: `levelrail-cli backups schedule <database>` or check the database's Backups tab in the dashboard. If a schedule exists, check the target: `levelrail-cli backup-targets test <target-id>` should report success. For recent backups, check the list: `levelrail-cli backups list <database> --limit 10`.
+
+Fix: Set a backup schedule if one does not exist: `levelrail-cli backups schedule set <database> --target <target-id> --cron "0 3 * * *" --retain 7`. If the target fails the test, fix the credentials or connectivity to the backup storage and try again. Wait a few minutes for the next reconcile pass to trigger the next backup.
+
+Still stuck: See [Backup targets](/backups-and-storage#backup-targets) for target setup, or check control plane logs for backup errors with `levelrail logs --since 1h | grep backup`.
+
+### Backup target test fails with "connection refused" or "access denied"
+
+Likely cause: The network path to the backup storage is blocked, or the credentials (access key, secret, or bucket name) are incorrect.
+
+How to confirm: From the node running the control plane, test the connection manually. For S3: `aws s3 ls s3://<bucket> --endpoint <endpoint> --region <region>` with the stored credentials. Check the exact error message: `levelrail-cli backup-targets test <target-id>` shows the failure reason.
+
+Fix: Verify the credentials match your storage provider (check in your provider's console). Verify the bucket name is correct and exists. If using a custom endpoint, ensure the URL is reachable from the control plane network. Update the target if needed: `levelrail-cli backup-targets update <target-id> --access-key-id <id> --secret-access-key <secret>`, then test again.
+
+Still stuck: See [Backup targets](/backups-and-storage#backup-targets) for each provider's setup steps.
+
+### Backup is old, "Health: 1 missing backup" warning
+
+Likely cause: A scheduled backup failed or is delayed. The most recent backup is older than expected based on the schedule.
+
+How to confirm: Check the backup history: `levelrail-cli backups list <database> --limit 5` and note the timestamp on the most recent backup. Compare it to the cron schedule set on the database. Check for backup health: `levelrail-cli backups health` shows overall status. If health is not OK, check the Backups page in the dashboard for individual backup statuses and errors.
+
+Fix: Wait for the next scheduled backup to run (the reconciler checks every 15 seconds). If the backup is still not running after the scheduled time passes, trigger a manual backup: `levelrail-cli backups trigger <database> --target <target-id>`. If the trigger fails, check the backup target connectivity as described above.
+
+Still stuck: Check control plane logs for the backup reconciler: `levelrail logs --since 1h backup | tail -30`.
+
+### Restore fails or restored data is wrong
+
+Likely cause: The backup file is corrupted, the restore target has incompatible schema, or the backup verification drill never ran.
+
+How to confirm: List available backups: `levelrail-cli backups list <database> --limit 5`. Check the backup status: each backup should show "completed". Run a restore drill to verify: `levelrail-cli backups drill run --backup <backup-id>`. A drill that fails means the backup may not restore cleanly.
+
+Fix: Use a different backup from the list (backups older than the failed one are usually safer). Run a drill first to catch issues before attempting a real restore. For a real restore: `levelrail-cli backups restore <database> --backup <backup-id> --confirm <database-name>`. This creates a new database instance from the backup, and you can switch traffic after verifying.
+
+Still stuck: See [Point-in-time restore](/database-upgrades) and [Restore drills](/backups-and-storage) for detailed recovery procedures.
+
+### Registry credentials test fails with "authentication failed"
+
+Likely cause: The username, password, or registry host does not match what the provider has on file, or the token has expired.
+
+How to confirm: Check the credentials are correct: `levelrail-cli registry-credentials get <id>` shows the registry host and username (password is never returned). Test manually from the control plane: `docker login <host> --username <user> --password <password>` should succeed.
+
+Fix: Update the credentials: `levelrail-cli registry-credentials update <id> --username <user> --password <password>`. If the token has an expiry, rotate it at your registry provider first, then update here. Test again: `levelrail-cli registry-credentials test <id>`.
+
+Still stuck: See [Registry credentials](/backups-and-storage#registry-credentials) for setup per provider.
+
 ## Next steps
 
 <CardGroup cols={2}>

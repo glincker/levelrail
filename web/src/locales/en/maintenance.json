@@ -1,0 +1,67 @@
+{
+  "title": "Scheduled maintenance",
+  "description": "Announce planned downtime on the dashboard and the public status page, and optionally hold automatic deploys during it.",
+  "notConfigured": "Scheduled maintenance is not available on this control plane.",
+  "schedule": "Schedule maintenance",
+  "cancel": "Cancel window",
+  "until": "until",
+  "freezeBadge": "Deploys held",
+  "empty": {
+    "title": "No maintenance planned",
+    "description": "Schedule a window before you take something offline so users see it ahead of time."
+  },
+  "state": {
+    "scheduled": "Scheduled",
+    "active": "In progress",
+    "ended": "Ended"
+  },
+  "scope": {
+    "all": "Affects everything",
+    "project": "Affects project {{target}}",
+    "app": "Affects app {{target}}"
+  },
+  "scopeName": {
+    "all": "Everything",
+    "project": "One project",
+    "app": "One app"
+  },
+  "banner": {
+    "active": "Maintenance in progress: {{title}}, until {{end}}.",
+    "upcoming": "Planned maintenance: {{title}}, {{start}} to {{end}}.",
+    "freeze": "Automatic deploys are held during the window.",
+    "more": "{{count}} more maintenance windows are planned."
+  },
+  "form": {
+    "title": "Schedule maintenance",
+    "description": "Times are in your browser time zone ({{zone}}).",
+    "name": "Title",
+    "namePlaceholder": "Database storage upgrade",
+    "message": "Message (optional)",
+    "start": "Starts",
+    "end": "Ends",
+    "scope": "Scope",
+    "target": "Target",
+    "targetPlaceholder": {
+      "project": "Project id",
+      "app": "App name"
+    },
+    "lead": "Announce before start (minutes)",
+    "leadHint": "Sent through your notification channels once. Use 0 for no announcement.",
+    "freeze": "Hold automatic deploys during the window",
+    "badRange": "The end must be after the start.",
+    "cancel": "Cancel",
+    "submit": "Schedule"
+  },
+  "domainBanner": {
+    "title": "Maintenance mode is on for {{domain}}",
+    "titleNotEnforced": "Maintenance is saved for {{domain}} but not enforced",
+    "body": "Visitors see the maintenance page. The app keeps running and nothing was stopped.",
+    "bodyNotEnforced": "Visitors may still reach the app: the proxy in front of this domain is not proven to send its traffic to the built-in ingress. Open Manage for details.",
+    "manage": "Manage",
+    "end": "End maintenance",
+    "ending": "Ending...",
+    "ended": "Maintenance ended for {{domain}}",
+    "more_one": "{{count}} more domain is in maintenance mode.",
+    "more_other": "{{count}} more domains are in maintenance mode."
+  }
+}

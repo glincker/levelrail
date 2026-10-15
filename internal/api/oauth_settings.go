@@ -6,7 +6,10 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -102,6 +105,22 @@ func (rt *Router) handleUpdateOAuthProviderSettings(w http.ResponseWriter, r *ht
 	if req.Enabled && provider == store.OAuthProviderOIDC && req.IssuerURL == "" {
 		writeError(w, http.StatusBadRequest, errOIDCIssuerURLRequired.Error())
 		return
+	}
+
+	if provider == store.OAuthProviderGitLab && req.IssuerURL != "" {
+		if u, err := url.Parse(strings.TrimSpace(req.IssuerURL)); err != nil || u.Scheme != "https" || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+			writeError(w, http.StatusBadRequest, "instance url must be an https URL without credentials, query or fragment")
+			return
+		}
+	}
+	if provider == store.OAuthProviderCognito && req.IssuerURL != "" {
+		if _, _, err := authengine.ParseCognitoPoolID(req.IssuerURL); err != nil {
+			writeError(w, http.StatusBadRequest, "user pool id must look like us-east-1_AbC123")
+			return
+		}
+	}
+	if provider != store.OAuthProviderOIDC && provider != store.OAuthProviderGitLab && provider != store.OAuthProviderCognito {
+		req.IssuerURL = ""
 	}
 
 	hasSecret := req.ClientSecret != ""

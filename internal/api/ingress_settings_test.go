@@ -607,7 +607,7 @@ func TestHandleListDomains(t *testing.T) {
 		t.Fatalf("GET /domains = %+v, want %+v", got, want)
 	}
 	for i := range want {
-		if got[i] != want[i] {
+		if stripLevelrailEnforcement(t, got[i]) != want[i] {
 			t.Errorf("GET /domains[%d] = %+v, want %+v", i, got[i], want[i])
 		}
 	}
@@ -667,7 +667,7 @@ func TestHandleListDomains_StatusFlags(t *testing.T) {
 		t.Fatalf("GET /domains = %+v, want %d rows", got, len(want))
 	}
 	for _, row := range got {
-		if row != want[row.Domain] {
+		if stripLevelrailEnforcement(t, row) != want[row.Domain] {
 			t.Errorf("GET /domains[%q] = %+v, want %+v", row.Domain, row, want[row.Domain])
 		}
 	}

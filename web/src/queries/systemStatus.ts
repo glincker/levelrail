@@ -91,9 +91,8 @@ export function useSystemStatusOptional() {
 // Same cadence as queries/activity.ts's ACTIVITY_POLL_INTERVAL_MS (that
 // module's own comment: frequent enough to notice on the next glance,
 // not frequent enough to read as always-on polling per section 4.8).
-// This lives in routes/__root.tsx (DockerHealthBanner), mounted for
-// every authenticated route, so an outage clears itself without a
-// manual refresh once Docker comes back.
+// Shell banners (platformIssues) share this poll, so an outage clears
+// itself without a manual refresh once Docker comes back.
 const DOCKER_HEALTH_POLL_INTERVAL_MS = 30_000
 
 export function useDockerHealthPoll() {

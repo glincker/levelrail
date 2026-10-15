@@ -10,6 +10,8 @@ import {
 } from '../../../components/PlacementLabel'
 import { MoveToProjectDialog } from '../../../components/MoveToProjectDialog'
 import { BackupsSection } from '../../../components/BackupsSection'
+import { NoBackupsCard } from '../../../components/databases/NoBackupsCard'
+import { engineHasBackups } from '@/lib/databaseCatalog'
 import { PointInTimeRestoreSection } from '../../../components/PointInTimeRestoreSection'
 import { MajorUpgradeCard } from '../../../components/MajorUpgradeCard'
 import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAccessCard'
@@ -65,6 +67,7 @@ function OverviewSection() {
                 {database.version}
                 <ChangeDatabaseVersionDialog
                   name={database.name}
+                  engine={database.engine}
                   currentVersion={database.version}
                 />
               </dd>
@@ -116,9 +119,14 @@ function OverviewSection() {
       <DatabasePublicAccessCard database={database} />
 
       <div id="backups" className="scroll-mt-20 space-y-6">
-        <BackupsSection database={database} />
-
-        <PointInTimeRestoreSection database={database} />
+        {engineHasBackups(database.engine) ? (
+          <>
+            <BackupsSection database={database} />
+            <PointInTimeRestoreSection database={database} />
+          </>
+        ) : (
+          <NoBackupsCard engine={database.engine} />
+        )}
       </div>
 
       <PlacementCard

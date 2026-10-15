@@ -468,6 +468,14 @@
         "title": "OAuth sign-in",
         "description": "Let people sign in with Google or GitHub."
       },
+      "sso": {
+        "title": "Single sign-on",
+        "description": "SAML identity providers, directory sync and group roles."
+      },
+      "session-policy": {
+        "title": "Session policy",
+        "description": "Idle timeout, session age, allowed networks and required MFA per team."
+      },
       "organizations": {
         "title": "Organizations",
         "description": "Group related projects under an organization."
@@ -495,6 +503,14 @@
       "notification-channels": {
         "title": "Notification channels",
         "description": "Slack, Discord, Telegram, webhook, and email alerts."
+      },
+      "deploy-policies": {
+        "title": "Deploy policies",
+        "description": "Guardrails checked before every deploy: registries, probes, limits, mounts, labels."
+      },
+      "maintenance": {
+        "title": "Scheduled maintenance",
+        "description": "Plan downtime, show it on the dashboard and status page, and hold deploys."
       },
       "status-page": {
         "title": "Status page",
@@ -643,7 +659,7 @@
   "oauthPage": {
     "eyebrow": "Sign-in",
     "title": "OAuth sign-in",
-    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. Every signed-in account has identical access, there are no roles yet.",
+    "description": "Let people sign in with Google, GitHub, Microsoft, or a self-hosted identity provider instead of a password. What each person can do is set by their team role and any IAM policies.",
     "connectedCount_one": "{{count}} provider connected",
     "connectedCount_other": "{{count}} providers connected",
     "rail": {
@@ -664,7 +680,21 @@
       "google": "Google",
       "github": "GitHub",
       "microsoft": "Microsoft",
-      "oidc": "OIDC / SSO"
+      "oidc": "OIDC / SSO",
+      "gitlab": "GitLab",
+      "bitbucket": "Bitbucket",
+      "discord": "Discord",
+      "slack": "Slack",
+      "linkedin": "LinkedIn",
+      "twitch": "Twitch",
+      "facebook": "Facebook",
+      "linear": "Linear",
+      "vercel": "Vercel",
+      "huggingface": "Hugging Face",
+      "figma": "Figma",
+      "salesforce": "Salesforce",
+      "codeberg": "Codeberg",
+      "cognito": "Amazon Cognito"
     },
     "state": {
       "connected": "Connected",
@@ -696,6 +726,16 @@
     "issuerUrl": {
       "label": "Issuer URL",
       "hint": "Your identity provider's OIDC issuer, the address /.well-known/openid-configuration is served from."
+    },
+    "instanceUrl": {
+      "label": "Instance URL (optional)",
+      "hint": "Leave blank for gitlab.com. For a self-hosted GitLab, enter its https address.",
+      "invalid": "Instance URL must start with https://"
+    },
+    "userPoolId": {
+      "label": "User pool ID",
+      "hint": "Found on the Cognito user pool overview, for example us-east-1_AbC123. The region is read from it.",
+      "invalid": "User pool ID must look like us-east-1_AbC123"
     },
     "displayName": {
       "label": "Display name (optional)",
@@ -940,7 +980,11 @@
       "test": "Test connection",
       "testing": "Testing...",
       "testOk": "\"{{name}}\" authenticated successfully.",
-      "testFailed": "\"{{name}}\" failed to authenticate."
+      "testFailed": "\"{{name}}\" failed to authenticate.",
+      "usedBy": "Used by",
+      "unused": "Nothing yet",
+      "usedByMany_one": "{{count}} service",
+      "usedByMany_other": "{{count}} services"
     }
   },
   "backupTargetsPage": {
@@ -1057,7 +1101,23 @@
       "you": "You",
       "custom": "Custom",
       "editAbilities": "Edit abilities",
-      "selfEditHint": "You cannot edit your own abilities"
+      "selfEditHint": "You cannot edit your own abilities",
+      "disabled": "Disabled",
+      "mustChangePassword": "Password change required"
+    },
+    "passwordChange": {
+      "require": "Require password change",
+      "clear": "Clear password requirement",
+      "requireTitle": "Require {{email}} to change their password?",
+      "requireBody": "Their sessions end now. Every sign-in is refused until they set a new password with forgot password on the sign-in page.",
+      "clearTitle": "Clear the password requirement for {{email}}?",
+      "clearBody": "They can sign in with their current password again.",
+      "cancel": "Cancel",
+      "confirmRequire": "Require change",
+      "confirmClear": "Clear requirement",
+      "saving": "Saving...",
+      "required": "{{email}} must change their password.",
+      "cleared": "{{email}} can sign in with their current password."
     }
   },
   "cliAccessPage": {
@@ -1102,14 +1162,83 @@
   },
   "accountPage": {
     "title": "Account",
-    "description": "Profile and password.",
+    "description": "Your profile, sign-in security, sessions and what you can manage.",
     "profile": {
       "title": "Profile",
-      "description": "Every signed-in account has identical access on this platform: no teams or roles yet.",
+      "description": "Your own details. What you can manage is listed under My access below.",
       "email": "Email",
       "displayName": "Display name",
       "hasPassword": "This account signs in with a password.",
-      "noPassword": "This account has no password set, only OAuth sign-in."
+      "noPassword": "This account has no password set, only OAuth sign-in.",
+      "edit": "Edit display name",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Display name updated"
+    },
+    "loading": "Loading...",
+    "loadError": "Could not load this section. Reload the page to retry.",
+    "sessions": {
+      "title": "Active sessions and trusted devices",
+      "description": "Where you are signed in right now. Ending a session signs that browser out.",
+      "current": "This session",
+      "lastSeen": "last seen",
+      "revoke": "Sign out",
+      "revoked": "Session ended",
+      "revokeOthers": "Sign out all other sessions",
+      "revokedOthers_one": "{{count}} other session ended",
+      "revokedOthers_other": "{{count}} other sessions ended",
+      "devices": "Trusted devices",
+      "devicesEmpty": "No trusted devices.",
+      "deviceRemove": "Remove",
+      "deviceRemoved": "Trusted device removed",
+      "canApprove": "Can approve sign-ins",
+      "signedInAt": "Signed in {{when}}",
+      "networks_one": "{{count}} network",
+      "networks_other": "{{count}} networks",
+      "tone": {
+        "live": "Active now",
+        "recent": "Active in the last hour",
+        "idle": "Idle"
+      }
+    },
+    "providers": {
+      "title": "Linked sign-in providers",
+      "description": "Link an identity provider to sign in with it. Linking needs this live session.",
+      "none": "No sign-in providers are enabled on this instance.",
+      "linked": "Linked",
+      "link": "Link"
+    },
+    "tokens": {
+      "title": "My API tokens",
+      "description": "Tokens you created for the CLI, CI or agents.",
+      "count_one": "{{count}} active token",
+      "count_other": "{{count}} active tokens",
+      "manage": "Manage tokens"
+    },
+    "access": {
+      "title": "My access",
+      "description": "What this account can and cannot manage, and which permission is missing when it cannot.",
+      "tier": "Access level",
+      "tiers": {
+        "admin": "Administrator",
+        "operator": "Operator",
+        "developer": "Developer",
+        "viewer": "Viewer"
+      },
+      "teams": "Teams",
+      "noTeams": "Not a member of any team.",
+      "policies": "Attached IAM policies",
+      "noPolicies": "No policies attached.",
+      "missing": "Missing permission: {{ability}}",
+      "areas": {
+        "view": "View apps, services and logs",
+        "deploy": "Deploy and roll back",
+        "configure": "Change app and service configuration",
+        "secrets_read": "Reveal secrets and sensitive values",
+        "sensitive_write": "Change sensitive settings",
+        "users_and_access": "Manage users, roles and policies",
+        "platform_settings": "Change platform-wide settings"
+      }
     }
   },
   "apiExplorerPage": {
@@ -1195,5 +1324,207 @@
       "docs": "Manifest flow docs",
       "manualHint": "No public address? Use manual setup instead."
     }
+  },
+  "nodeProviders": {
+    "names": {
+      "hetzner": "Hetzner",
+      "digitalocean": "DigitalOcean",
+      "aws": "AWS",
+      "azure": "Azure",
+      "gcp": "Google Cloud",
+      "custom": "Custom data center"
+    },
+    "methods": {
+      "api_token": {
+        "title": "API token",
+        "description": "A single bearer token from the provider's console."
+      },
+      "access_key": {
+        "title": "Access key",
+        "description": "A long-lived IAM access key id and secret."
+      },
+      "assume_role": {
+        "title": "Assume a role",
+        "description": "Assume an IAM role by ARN, so the base identity needs only sts:AssumeRole."
+      },
+      "ambient": {
+        "title": "Control plane identity",
+        "description": "Use the identity this control plane already runs as, such as an EC2 instance profile."
+      },
+      "workload_identity_federation": {
+        "title": "Workload identity federation",
+        "description": "Exchange a federated token file for a short-lived token, no client secret stored."
+      },
+      "service_account_json": {
+        "title": "Service account JSON",
+        "description": "A service principal or service account key as a JSON document."
+      },
+      "manual": {
+        "title": "Manual",
+        "description": "No cloud API: bare metal, on-prem or any VM that enrolls through a join token."
+      }
+    },
+    "permissions": {
+      "hetzner": "A project API token with Read & Write access. Hetzner has no finer scopes, so use a dedicated project.",
+      "digitalocean": "A personal access token with read and write scope, or a custom scope limited to droplet and ssh_key create, read and delete.",
+      "aws": "ec2:DescribeRegions, ec2:DescribeInstanceTypes, ec2:DescribeInstances, ec2:DescribeImages, ec2:RunInstances, ec2:TerminateInstances, ec2:CreateTags and the security group and VPC actions used to create the node's group.",
+      "awsRole": "With a role, the base identity needs only sts:AssumeRole on that role ARN. Put the actions above on the role.",
+      "azure": "Reader on the subscription, plus Virtual Machine Contributor and Network Contributor on the target resource group.",
+      "gcp": "compute.regions.list, compute.machineTypes.list, compute.instances.create, compute.instances.get and compute.instances.delete on the project.",
+      "custom": "No credential is stored. The node dials out to this control plane with a one-time join token."
+    },
+    "permissionsTitle": "Least privilege",
+    "methodLegend": "Connection method",
+    "credentialJson": "Credential (JSON)",
+    "roleArnRequired": "Role ARN",
+    "storedPlaceholder": "Stored. Paste a new value to replace it.",
+    "dcName": "Data center name",
+    "dcLocation": "Location (optional)",
+    "dcNotes": "Notes (optional)",
+    "saveManual": "Save data center",
+    "testAndConnect": "Test and connect",
+    "testConnection": "Test connection",
+    "testing": "Testing...",
+    "testStored": "Test stored connection",
+    "testFailed": "Test failed",
+    "disconnect": "Disconnect",
+    "confirmDisconnect": "Confirm disconnect",
+    "disconnected": "{{provider}} disconnected.",
+    "connectedBy": "Connected by {{name}}",
+    "lastTested": "last tested",
+    "addNode": "Add a node",
+    "addNodeTitle": "Add a node to {{provider}}",
+    "addNodeDescription": "Run the install command on the machine. It dials out to this control plane, so no inbound port is needed.",
+    "firewallGuidance": "Allow outbound TCP to this control plane's agent port (9443 by default) and outbound HTTPS for image pulls. No inbound rule is required for the agent.",
+    "hints": {
+      "custom": "Bare metal, on-prem or any VM with no cloud API.",
+      "hetzner": "Project API token with read and write access.",
+      "digitalocean": "Personal access token with read and write scope.",
+      "aws": "Access key, or this control plane's own AWS identity.",
+      "azure": "Service principal JSON, or workload identity federation.",
+      "gcp": "Service account key JSON."
+    },
+    "connected": "Connected",
+    "notConnected": "Not connected",
+    "connect": "Connect",
+    "update": "Update",
+    "configureFor": "Configure {{provider}}",
+    "sheetTitle": "{{provider}} credentials",
+    "sheetDescription": "Used only to create and inspect servers from the Nodes page. Day to day operation never touches your cloud account.",
+    "apiToken": "API token",
+    "azureCredential": "Service principal (JSON)",
+    "gcpCredential": "Service account key (JSON)",
+    "accessKeyId": "Access key ID",
+    "secretAccessKey": "Secret access key",
+    "sessionToken": "Session token (optional)",
+    "region": "Region (optional)",
+    "roleArn": "Role ARN (optional)",
+    "roleArnHelp": "When set, assumed via STS before use: the credential above then only needs sts:AssumeRole on this role, not direct EC2 permissions.",
+    "useAmbient": "Use this control plane's own AWS identity (env vars, shared config, or an EC2 instance profile) instead of a stored key",
+    "storedReplace": "A credential is already stored. Paste a new one to replace it.",
+    "neverEchoed": "Never shown again once saved.",
+    "azureFederation": "Prefer workload identity federation over a long-lived client secret? Use a \"federated_token_file\" key instead, see",
+    "azureFederationLink": "Azure workload identity federation",
+    "saved": "{{provider}} credential saved.",
+    "saving": "Saving...",
+    "save": "Save",
+    "empty": "No cloud providers are configured on this control plane.",
+    "addNodeDialog": {
+      "cloud": "Create a server at a cloud provider",
+      "own": "Use a machine you already have",
+      "connectFirst": "Connect {{provider}} to create servers there.",
+      "sshTitle": "Connect over SSH",
+      "sshHint": "A VPS, home server or Raspberry Pi. We install the agent for you.",
+      "manualTitle": "Enroll with a join token",
+      "manualHint": "Run one command on the machine yourself. Nothing inbound is opened."
+    }
+  },
+  "registryVendors": {
+    "heading": "Connect a registry",
+    "subheading": "Pick a vendor to pre-fill the host and see which token scopes the credential needs.",
+    "connect": "Connect",
+    "connectFor": "Connect {{vendor}}",
+    "dialogTitle": "Connect {{vendor}}",
+    "dialogDescription": "The password is encrypted at rest and never shown again.",
+    "name": "Name",
+    "nameHelp": "Referenced by name from app.yaml build.registryCredential.",
+    "host": "Registry host",
+    "username": "Username",
+    "password": "Password or token",
+    "neverShown": "Never shown again once saved.",
+    "expires": "Expires (optional)",
+    "shortLived": "This vendor issues tokens that last about {{hours}} hours. Re-issue and update the credential before the date shown, automatic refresh is not built.",
+    "scopesTitle": "Scopes needed",
+    "test": "Test connection",
+    "testing": "Testing...",
+    "save": "Save credential",
+    "saving": "Saving...",
+    "saved": "Registry credential \"{{name}}\" added.",
+    "auth": {
+      "dockerhub": "Use your Docker Hub username with a personal access token, not your account password.",
+      "ghcr": "Use your GitHub username with a personal access token (classic).",
+      "gitlab": "Use a deploy token or a personal access token as the password.",
+      "ecr": "The username is always AWS. The password is the output of aws ecr get-login-password, valid for 12 hours.",
+      "gar": "The username is _json_key and the password is the service account key JSON.",
+      "acr": "Use a repository scoped token or a service principal: the username is the token name or app id, the password is its secret.",
+      "harbor": "Use a robot account: the username looks like robot$name and the password is its secret.",
+      "quay": "Use a robot account: the username is org+robotname and the password is its token.",
+      "jfrog": "The username is your user and the password is an identity token, not your account password.",
+      "nexus": "Use the username and password of a user with access to the Docker repository.",
+      "generic": "Any registry that speaks the Docker Registry HTTP API v2 with basic authentication."
+    },
+    "scopes": {
+      "dockerhub": "Read-only access is enough to pull. Choose Read & Write only if builds push.",
+      "ghcr": "read:packages to pull, write:packages to push. For an SSO-enforced organization, authorize the token for SSO.",
+      "gitlab": "read_registry to pull, write_registry to push. A deploy token is scoped to one project or group.",
+      "ecr": "ecr:GetAuthorizationToken, ecr:BatchGetImage, ecr:GetDownloadUrlForLayer and ecr:BatchCheckLayerAvailability, from a key or a role.",
+      "gar": "roles/artifactregistry.reader to pull, roles/artifactregistry.writer to push.",
+      "acr": "The AcrPull role (or a token with content/read) to pull, AcrPush to push.",
+      "harbor": "Pull permission on the project the images live in.",
+      "quay": "Read permission on the repository.",
+      "jfrog": "Read permission on the Docker repository.",
+      "nexus": "nx-repository-view-docker-*-read to pull.",
+      "generic": "Pull access to the repositories you deploy."
+    }
+  },
+  "packageRegistries": {
+    "heading": "Package registries for builds",
+    "subheading": "Private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries, mounted into Dockerfile builds as secrets.",
+    "add": "Add package registry",
+    "empty": "No package registries yet. Add one so builds can install private packages.",
+    "dialogTitle": "Add a package registry",
+    "dialogDescription": "The token is encrypted and mounted into builds as a BuildKit secret.",
+    "ecosystems": {
+      "npm": "npm",
+      "pypi": "PyPI",
+      "maven": "Maven",
+      "nuget": "NuGet",
+      "cargo": "Cargo",
+      "go": "Go proxy",
+      "rubygems": "RubyGems"
+    },
+    "scopes": {
+      "instance": "All builds",
+      "project": "One project",
+      "app": "One app"
+    },
+    "name": "Name",
+    "url": "Registry URL",
+    "urlHelp": "No credentials in the URL. Use the username and token fields.",
+    "username": "Username (optional)",
+    "usernameHelp": "Leave empty for a bearer token registry.",
+    "secret": "Token or password",
+    "secretHelp": "Never shown again once saved, never placed in a build arg, image layer or build log.",
+    "patterns": "GOPRIVATE patterns",
+    "scope": "Applies to",
+    "scopeRef": "Project id or app name",
+    "scopeRefPlaceholder": "Project id or app name",
+    "buildNote": "Reference the generated config in your Dockerfile with RUN --mount=type=secret,id=<secret id>, for example id=npmrc with target=/root/.npmrc. Builds on a remote build node do not receive it yet.",
+    "save": "Save registry",
+    "saving": "Saving...",
+    "saved": "Package registry \"{{name}}\" added.",
+    "test": "Test",
+    "remove": "Remove {{name}}",
+    "mountAs": "secret id {{id}}"
   }
 }

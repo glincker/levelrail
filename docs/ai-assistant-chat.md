@@ -10,6 +10,32 @@ This is separate from `levelrail-mcp`. To point an external MCP client (Claude D
 
 Source: `internal/ai`, `internal/api/ai_chat.go`, `internal/api/ai_settings.go`, `web/src/components/AiChatPanel.tsx`, `cmd/levelrail-cli/ai.go`.
 
+## Quick start in 3 steps
+
+<Steps>
+<Step title="Set the experimental flag">
+
+```bash
+APP_EXPERIMENTAL=ai-chat
+```
+
+Restart the control plane. The **AI assistant** page now appears in the dashboard.
+
+</Step>
+<Step title="Add your API key">
+
+CLI: `levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-...`
+
+Dashboard: Settings > AI assistant, fill in the form.
+
+</Step>
+<Step title="Open the AI assistant page and start chatting">
+
+Dashboard: **AI assistant** in the nav. Ask "why did my last deploy fail?" or "show me the errors in logs today". Approve actions if prompted.
+
+</Step>
+</Steps>
+
 ## Enabling it
 
 Two things are required.
@@ -95,6 +121,58 @@ levelrail-cli ai sessions delete aisess_abc123
 - Single admin user, no per-user session isolation beyond the root-only gate: anyone who can authenticate as root can see and act on any session.
 - One provider: Anthropic only, with no model routing or fallback.
 - Not yet covered by real-infrastructure testing: `test/e2e/ai_chat_test.go` proves the full session lifecycle (create, send a message with an auto-executed read tool call, get, list, delete, and the flag-off 404) over real HTTP against a real router and a real `ai.Engine`, but with a scripted fake `ai.Provider`, never a live call to Anthropic's API. See [Feature status](/feature-status) for the current evidence tier.
+
+## Troubleshooting
+
+### AI assistant page not showing or returns 404
+
+Likely cause: The `APP_EXPERIMENTAL=ai-chat` flag is not set, or the control plane was not restarted after setting it.
+
+How to confirm: Check the flag: `ps aux | grep levelrail | grep -i experimental` shows environment variables. Or try the API: `curl https://<control-plane>/api/v1/ai/sessions` should return a list (not 404).
+
+Fix: Set `APP_EXPERIMENTAL=ai-chat` on the control plane and restart. Wait 10 seconds for the restart, then reload the dashboard page.
+
+Still stuck: Check control plane logs for startup errors: `levelrail logs --since 1m | grep -i "ai\|experimental"`.
+
+### "API key not configured" error when starting chat
+
+Likely cause: No API key has been set, or the key was not saved correctly.
+
+How to confirm: Check if a key is configured: `levelrail-cli settings ai-assistant get` returns "Key: configured" or "Key: not configured". Try setting the key again.
+
+Fix: Add your API key: `levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-<your-key>`. Wait a moment, then refresh the AI assistant page and try again.
+
+Still stuck: Verify the key format starts with `sk-ant-`. Keys are never returned by the API, only whether one exists, so there is no way to check if it is correct without trying it.
+
+### Chat returning errors or models unavailable
+
+Likely cause: The API key is invalid, your Anthropic account is out of credits, or the model name is wrong.
+
+How to confirm: Try the chat: `levelrail-cli ai chat "hello" --session test --json 2>&1 | grep -i error`. The error message will indicate if it is auth, quota or model mismatch.
+
+Fix: Verify your API key is active in your Anthropic account. Check your credits. If the model was recently renamed (for example, `claude-opus-4-1` became `claude-opus-5`), update it: `levelrail-cli settings ai-assistant set --model claude-opus-5 --api-key sk-ant-...`.
+
+Still stuck: Log into your Anthropic dashboard to verify the key and account status.
+
+### Pending confirmation never resolves or takes too long
+
+Likely cause: The confirmation request timed out, or the network connection was interrupted.
+
+How to confirm: Check the session state: `levelrail-cli ai sessions get <session-id> --json | jq .state` should show "pending_confirmation". Look for a recent approval/rejection: `levelrail-cli ai sessions get <session-id> --json | jq .confirmations[-1]`.
+
+Fix: Either approve or reject the pending action: `levelrail-cli ai sessions resolve <session-id> <confirmation-id> --approve` or `--reject`. If the session appears stuck, create a new session and chat again: `levelrail-cli ai chat "what happened?" --session <new-id>`.
+
+Still stuck: Check control plane logs for AI session errors: `levelrail logs --since 30m ai`.
+
+### Chat works but tool results are wrong or missing
+
+Likely cause: The AI assistant does not have permission to read the resource, or the tool call failed and the model retried with a workaround.
+
+How to confirm: Check the session transcript: `levelrail-cli ai sessions get <session-id> --json | jq '.messages[] | select(.role == "assistant") | .content'` shows tool calls and results. Look for "tool_error" or "permission_denied" in the results.
+
+Fix: Verify the token you are using has `root` ability (required for all AI assistant routes and tools). If the tool call failed (for example, "app not found"), the input is wrong; try the query again or ask the model to try a different search.
+
+Still stuck: See [AI assistant integration](/ai-assistant#untrusted-text-and-the-assistants-confirmation-gate) for the tool permissions model.
 
 ## See also
 

@@ -162,6 +162,8 @@ type Matcher struct {
 	Expression *ExpressionMatcher  `json:"expression,omitempty"`
 	Not        []Matcher           `json:"not,omitempty"`
 	Vars       map[string][]string `json:"vars,omitempty"`
+	Header     map[string][]string `json:"header,omitempty"`
+	ClientIP   *ClientIPMatcher    `json:"client_ip,omitempty"`
 }
 
 // ExpressionMatcher mirrors Caddy's http.matchers.expression module: a
@@ -324,35 +326,6 @@ type StaticResponseHandler struct {
 	StatusCode int                 `json:"status_code,omitempty"`
 	Body       string              `json:"body,omitempty"`
 	Headers    map[string][]string `json:"headers,omitempty"`
-}
-
-// maintenanceResponseBody is the fixed page served for a domain in
-// maintenance mode: minimal, self-contained (no external assets, so it
-// renders even if a visitor's connection to anything else is bad), and
-// distinctive enough that a live test can assert on it, the same
-// reasoning test/fixtures/hello-e2e's own body comment gives.
-const maintenanceResponseBody = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Maintenance</title></head>
-<body style="font-family:sans-serif;text-align:center;padding:4rem 1rem">
-<h1>Down for maintenance</h1>
-<p>This site is temporarily unavailable. Please check back soon.</p>
-</body>
-</html>
-`
-
-// NewMaintenanceResponseHandler builds the fixed maintenance-mode
-// response: 503 Service Unavailable, the correct status for "this
-// exists but is deliberately not accepting requests right now, try
-// later" (as opposed to 404, which would say the route doesn't exist
-// at all).
-func NewMaintenanceResponseHandler() StaticResponseHandler {
-	return StaticResponseHandler{
-		Handler:    "static_response",
-		StatusCode: 503,
-		Body:       maintenanceResponseBody,
-		Headers:    map[string][]string{"Content-Type": {"text/html; charset=utf-8"}},
-	}
 }
 
 // NewRedirectResponseHandler builds a fixed HTTP redirect: the same

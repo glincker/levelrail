@@ -158,7 +158,7 @@ Open **Settings, IAM policies** for the policy workspace. How the evaluator work
 - Analyzer: static checks with a severity and a one line fix: allow everything, wildcard or root abilities, sensitive abilities on every resource, a Deny that can never match, unattached policies, tokens holding root, attachments to a missing user or token, shadowed or overlapping statements and keys the evaluator ignores.
 - Safe changes: every saved document is kept as a version with a rule diff. A change that would leave no operational root principal is refused.
 
-Conditions such as source IP, time window and MFA are not part of the evaluator yet, so the builder does not offer them. Scope by environment with resources instead.
+Conditions such as source IP, time window and MFA are not part of the evaluator, so the builder does not offer them. Scope by environment with resources instead, and use a [session policy](session-policy.md) for allowed networks and required MFA.
 
 ```bash
 levelrail-cli iam simulate --principal token:TOKEN_ID --action deploy --resource app:web

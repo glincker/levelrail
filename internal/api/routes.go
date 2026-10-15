@@ -25,6 +25,9 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerModelRoutes(mux)
 	rt.registerDataExportRoutes(mux)
 	rt.registerEventWebhookRoutes(mux)
+	rt.registerScheduledMaintenanceRoutes(mux)
+	rt.registerDeployPolicyRoutes(mux)
+	rt.registerComplianceRoutes(mux)
 	rt.registerLoadBalancerRoutes(mux)
 	rt.registerPlatformImportRoutes(mux)
 	rt.registerAppImportRoutes(mux)
@@ -37,10 +40,12 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerUsageCostRoutes(mux)
 	rt.registerPreviewRoutes(mux)
 	rt.registerSupplyChainRoutes(mux)
+	rt.registerSecretScanRoutes(mux)
 	rt.registerIAMTemplateRoutes(mux)
 	rt.registerDatabaseAccessRoutes(mux)
 	rt.registerIAMBuilderRoutes(mux)
 	rt.registerSecurityRoutes(mux)
+	rt.registerSSORoutes(mux)
 	rt.registerProxyIntegrationRoutes(mux)
 	rt.registerSetupGuideRoutes(mux)
 	rt.registerDNSZoneRoutes(mux)
@@ -56,6 +61,7 @@ func (rt *Router) Handler() http.Handler {
 	var h http.Handler = mux
 	h = rt.bodyLimitMiddleware(h)
 	h = experimentalGateMiddleware(h)
+	h = rt.accessPolicyMiddleware(h)
 	h = csrfOriginMiddleware(h)
 	h = securityHeadersMiddleware(rt.hstsEnabled)(h)
 	if !rt.hstsEnabled {
@@ -190,6 +196,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/auth/password", rt.requireAuth(rt.handleChangePassword))
 	mux.HandleFunc("GET /api/v1/auth/session", rt.requireAuth(rt.handleGetSession))
 	mux.HandleFunc("GET /api/v1/auth/whoami", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleWhoami))
+	mux.HandleFunc("PATCH /api/v1/auth/profile", rt.requireAuth(rt.handleUpdateProfile))
+	mux.HandleFunc("GET /api/v1/auth/my-access", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleMyAccess))
 	mux.HandleFunc("POST /api/v1/auth/sessions/revoke-others", rt.requireAuth(rt.handleRevokeOtherSessions))
 
 	// Sign in with a code and new-device approval (login_code.go,
@@ -274,6 +282,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/roles/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateRole))
 	mux.HandleFunc("DELETE /api/v1/roles/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteRole))
 	mux.HandleFunc("PUT /api/v1/users/{id}/role", rt.requireAbility(AbilityRoot, rt.handleSetUserRole))
+	mux.HandleFunc("PUT /api/v1/users/{id}/password-change-required", rt.requireAbility(AbilityRoot, rt.handleSetPasswordChangeRequired))
 	mux.HandleFunc("GET /api/v1/users/{id}/environment-grants", rt.requireAbility(AbilityRoot, rt.handleGetEnvironmentGrants))
 	mux.HandleFunc("PUT /api/v1/users/{id}/environment-grants", rt.requireAbility(AbilityRoot, rt.handlePutEnvironmentGrants))
 
@@ -375,6 +384,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// existing resource to scope to) and GET .../terminal (websocket
 	// upgrade, not touched in this pass) remain on plain requireAbility.
 	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/keep", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleKeepTrialApp))
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteApp))
 
@@ -491,8 +501,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/canary/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteCanary))
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
 	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
+	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
 	mux.HandleFunc("GET /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSleep))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppSleep))
+	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/now", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSleepAppNow))
 	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/wake", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleWakeApp))
 	mux.HandleFunc("POST /api/v1/apps/{name}/restart", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRestartApp))
 
@@ -712,6 +724,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// parses the same stored container log lines the routes above expose,
 	// rather than a new telemetry source.
 	mux.HandleFunc("GET /api/v1/databases/{name}/slow-queries", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleQueryDatabaseSlowQueries))
+	// Live counts for engines with no data browser; index names can name tenants.
+	mux.HandleFunc("GET /api/v1/databases/{name}/engine-stats", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseEngineStats))
 	// Database viewer: row data and SQL are sensitive, so reads are
 	// AbilityReadSensitive; the write console is AbilityRoot (admin only).
 	mux.HandleFunc("GET /api/v1/databases/{name}/schema", rt.requireAbilityForResource(AbilityReadSensitive, databaseResourceFromPath, rt.handleGetDatabaseSchema))

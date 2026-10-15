@@ -145,6 +145,7 @@ levelrail-cli apps wait <name> [--attempt-id ID] [--timeout 5m] [--poll-interval
 levelrail-cli apps restart <name> [flags]
 levelrail-cli apps apply <name> [flags]
 levelrail-cli apps stop <name> [flags]
+levelrail-cli apps keep <name> [flags]
 levelrail-cli apps start <name> [flags]
 levelrail-cli apps scale <name> --replicas N [--strategy rolling|recreate|blue-green] [flags]
 levelrail-cli apps group <name> [flags]
@@ -156,6 +157,7 @@ levelrail-cli apps moves list <name> [flags]
 levelrail-cli apps moves get <name> <id> [flags]
 ```
 
+- `apps keep` turns a one-click trial deployment into a permanent app: it stops being flagged as throwaway, with every service of the same app. Repeating it is harmless; an app that never was a trial answers 409.
 - `apps wait` polls until a deploy attempt converges and exits 0 on success, 5 if it converged as a failure, 6 on timeout. On success it says what happened: `rolled out`, `already up to date` (the deploy changed nothing) or `restarted`; `--json` carries the same as `outcome`.
 - `apps deploy-spec` fans an app.yaml's `services:` map out into independent builds under one app; `apps group` shows a service's siblings under the same multi-service app.
 - `apps builds trigger` builds an image from a git source and deploys it to an existing app.
@@ -194,6 +196,7 @@ levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli functions deploy|list|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
 levelrail-cli apps sleep enable|disable|status|wake <app-name> [flags]
+levelrail-cli apps sleep list [flags]
 levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
@@ -287,7 +290,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
-- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export.
+- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget` is an alias for `usage budgets`.
 - `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](/resource-advisor). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
@@ -611,7 +614,7 @@ levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 
 ```
 levelrail-cli auth login [--device] [--profile NAME] [flags]
-levelrail-cli auth whoami [flags]
+levelrail-cli auth whoami [--access] [flags]
 levelrail-cli auth session-link [flags]
 levelrail-cli auth code [flags]
 levelrail-cli auth approve <id> --match N [flags]
@@ -666,7 +669,8 @@ levelrail-cli domains summary [--json]
 levelrail-cli domains activity <domain> [--limit N] [--before CURSOR] [--actions PREFIXES] [--json]
 levelrail-cli domains certificates [flags]
 levelrail-cli domains basic-auth get|set|clear <app> <domain> [flags]
-levelrail-cli domains maintenance get|set|clear <app> <domain> [flags]
+levelrail-cli domains maintenance get|clear <app> <domain> [flags]
+levelrail-cli domains maintenance set <app> <domain> [--title T] [--message M] [--until TIME | --for DUR] [--retry-after DUR] [--bypass IPS] [--no-health-bypass] [flags]
 levelrail-cli domains redirect get|set|clear <app> <domain> [--target URL] [flags]
 levelrail-cli domains tls-cert get <app> <domain> [flags]
 levelrail-cli domains tls-cert set <app> <domain> --cert-file FILE --key-file FILE [flags]
@@ -943,8 +947,10 @@ levelrail-cli registry-credentials delete <id> [flags]
 levelrail-cli registry-credentials test <id> [flags]
 levelrail-cli registry-credentials repositories <id> [flags]
 levelrail-cli registry-credentials tags <id> <repository> [flags]
+levelrail-cli registry credentials list|vendors|add|test|delete [flags]
+levelrail-cli registry package-registries list|add|test|delete [flags]
 ```
-Private container registry pull credentials. `update` can rotate the password. `test` authenticates against the registry without pulling anything; `repositories` and `tags` browse the external registry.
+Private container registry pull credentials. `update` can rotate the password. `test` authenticates against the registry without pulling anything; `repositories` and `tags` browse the external registry. `registry credentials add --vendor ID` pre-fills the host and username for a vendor preset (see `registry credentials vendors`). `registry package-registries` manages private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems registries mounted into builds as secrets, see [private registries](/private-registries).
 
 ## Backup targets
 
@@ -978,6 +984,31 @@ levelrail-cli export destinations list|create|test|status|enable|disable|delete
 levelrail-cli export audit [--from T] [--to T] [--format ndjson|csv]
 ```
 
+## Compliance
+
+```
+levelrail-cli compliance evidence create --from DATE --to DATE [--out FILE] [--no-wait]
+levelrail-cli compliance evidence list
+levelrail-cli compliance evidence download <id> [--out FILE]
+levelrail-cli compliance evidence verify <id>
+levelrail-cli compliance access-review start [--name N] [--due-days D] [--repeat-days R]
+levelrail-cli compliance access-review list
+levelrail-cli compliance access-review show <id>
+levelrail-cli compliance access-review keep|revoke <id> <item-id>...
+levelrail-cli compliance access-review complete <id>
+```
+
+## OpenTelemetry export
+
+```
+levelrail-cli otel destinations list
+levelrail-cli otel destinations add --name N --endpoint URL [--signal metrics|logs] [--app A] [--header K=V] [--label K=V] [--interval S] [--min-level L]
+levelrail-cli otel destinations test <id>
+levelrail-cli otel destinations remove <id>
+```
+
+OTLP/HTTP export of metrics and logs to your own collector. A signal-first view of the OTLP kinds of [Data export](/data-export#otlp-logs); header values are stored encrypted.
+
 ## Event webhooks
 
 ```
@@ -991,6 +1022,15 @@ levelrail-cli event-webhooks rotate-secret <id>
 levelrail-cli event-webhooks delete <id>
 ```
 Signed outbound event webhooks with a delivery log. `create` and `rotate-secret` print the signing secret once. See [Event webhooks](/event-webhooks).
+
+## Scheduled maintenance
+
+```
+levelrail-cli maintenance list
+levelrail-cli maintenance create --title T --start TIME (--end TIME | --duration 2h) [--scope all|project|app] [--target NAME] [--freeze] [--notify-before 1h] [--message TEXT]
+levelrail-cli maintenance delete <id>
+```
+One-off planned downtime shown on the dashboard and the public status page. See [Scheduled maintenance](/scheduled-maintenance).
 
 ## Logs
 
@@ -1128,7 +1168,7 @@ levelrail-cli nodes rotate-key <id> [flags]
 levelrail-cli nodes rejoin-mesh <id> [flags]
 levelrail-cli nodes topology [flags]
 levelrail-cli nodes traffic [flags]
-levelrail-cli nodes providers list|set-credential [flags]
+levelrail-cli nodes providers list|connect|test|disconnect|set-credential [flags]
 levelrail-cli nodes provision --provider P --region R --size S --name NAME [flags]
 levelrail-cli nodes provisions list|show <id> [flags]
 levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --password PASS) --name NAME [--host-key-fingerprint SHA256:... | --insecure-skip-host-key-check] [flags]

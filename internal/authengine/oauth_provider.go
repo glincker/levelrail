@@ -89,7 +89,7 @@ func (g *gatedProvider) UserInfo(ctx context.Context, tok *theauth.ProviderToken
 		flow.fail(OAuthErrUserInfoFailed)
 		return nil, errUserInfoIncomplete
 	}
-	if !info.EmailVerified && g.Name() != store.OAuthProviderMicrosoft {
+	if !info.EmailVerified && !emailVerifiedByProvider(g.Name()) {
 		flow.fail(OAuthErrUserInfoFailed)
 		return nil, fmt.Errorf("authengine: %s email is not verified", g.Name())
 	}
@@ -104,6 +104,19 @@ func (g *gatedProvider) UserInfo(ctx context.Context, tok *theauth.ProviderToken
 	}
 	flow.identify(g.Name(), info.ID)
 	return info, nil
+}
+
+// emailVerifiedByProvider lists providers whose userinfo carries no verified
+// flag but only returns confirmed addresses (Microsoft Graph, Facebook Graph,
+// and Linear, Figma and Codeberg, which confirm an address before it can be
+// the profile email).
+func emailVerifiedByProvider(name string) bool {
+	switch name {
+	case store.OAuthProviderMicrosoft, store.OAuthProviderFacebook,
+		store.OAuthProviderLinear, store.OAuthProviderFigma, store.OAuthProviderCodeberg:
+		return true
+	}
+	return false
 }
 
 func (g *gatedProvider) fetch(ctx context.Context, tok *theauth.ProviderToken) (*theauth.ProviderUser, error) {

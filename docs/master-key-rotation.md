@@ -126,6 +126,68 @@ Once `binding-status` reports `legacy: 0`, you can set `APP_SECRETS_REQUIRE_BOUN
 
 `POST /api/v1/system/secrets/rebind` requires the `root` ability, like rotation. `GET /api/v1/system/secrets/binding` only needs `read`. Neither ever returns a secret value.
 
+## Troubleshooting
+
+### Rotation fails with "unwrap DEK" error
+
+Likely cause: The control plane is not running with the correct current master key, or a data corruption occurred.
+
+How to confirm: Check which key the process is using: `ps aux | grep levelrail | grep APP_MASTER_KEY` shows the env var if set, or `ls -la /var/lib/levelrail-data/master.key` shows the file location. Try decrypting a secret: `levelrail-cli apps env <app> | head -1` should work if the key is correct.
+
+Fix: Verify you are using the correct current master key (the one the control plane is already running with). Do not try to rotate with a new key if the current key is wrong. If a DEK is corrupted, restore the control plane database from a backup before the corruption occurred.
+
+Still stuck: Check control plane logs for key loading errors: `levelrail logs --since 1h | grep -i "master.*key\|unwrap"`.
+
+### Rotation succeeded but process crashed before writing new key to file
+
+Likely cause: A disk or permissions issue prevented the new key from being written, but the rotation in memory succeeded.
+
+How to confirm: Check the CLI output: it says `persistedToFile: false` with a specific error. Check disk space: `df -h / | grep -v Use` shows available space. Check file permissions: `ls -la /var/lib/levelrail-data/master.key` should be readable/writable by the control plane user.
+
+Fix: The rotation is done; secrets are now wrapped under the new key in the database. Manually copy the new key to the correct location with the right permissions: `cp /path/to/new.key /var/lib/levelrail-data/master.key && chmod 600 /var/lib/levelrail-data/master.key`. On next restart, the control plane will pick up the new key.
+
+Still stuck: Do not restart the control plane until the file is in place, or all secrets will become unreadable.
+
+### "APP_MASTER_KEY environment variable not updated" warning after rotation
+
+Likely cause: The master key is env-sourced (set via `APP_MASTER_KEY` variable), and the rotation succeeded, but you have not yet updated the env var in your systemd unit or Docker config.
+
+How to confirm: Check how the key is configured: `ps aux | grep levelrail | grep APP_MASTER_KEY` shows the env var if set. If set, the rotation requires manual follow-up.
+
+Fix: Before the next restart, update `APP_MASTER_KEY` in your systemd unit (`/etc/systemd/system/levelrail.service`) or Docker Compose file (`docker-compose.yml`). Replace the old key value with the new one. You can find the new key in the output of the `rotate-master-key` command or read it from the temporary file you created. After updating, reload and restart: `systemctl daemon-reload && systemctl restart levelrail` (or `docker-compose restart`).
+
+Still stuck: If you restart with the old key, all secrets will become unreadable. Stop and restore from a backup, then update the key before starting again.
+
+### Rebind is taking a long time or appears stuck
+
+Likely cause: Many secrets exist and the rebind is still in progress, or a disk write is slow.
+
+How to confirm: Check the rebind status: `levelrail-cli secrets binding-status` shows progress. Check control plane logs: `levelrail logs --since 5m | grep rebind` shows how many values have been processed.
+
+Fix: No action needed; rebind is safe to interrupt. If you need to stop it, restart the control plane (it will resume where it left off on the next rotation). Rebind is idempotent, so running it multiple times is safe.
+
+Still stuck: If rebind seems truly stuck (no log updates for 10 minutes), check if the control plane is responding: `curl -s http://localhost:8080/api/v1/brand` should return brand info. If not responding, restart the control plane.
+
+### Cannot create new master key, "invalid key format" error
+
+Likely cause: You are trying to use an age key in the wrong format (plain `age-keygen` instead of the post-quantum version).
+
+How to confirm: Check the key: `head -1 /path/to/key.txt` should start with `AGE-SECRET-KEY-PQ-`. If it starts with `AGE-SECRET-KEY-1-`, it is a plain age key, not the post-quantum format needed.
+
+Fix: Generate a new key with the correct command: `levelrail-cli secrets generate-master-key --out /path/to/new.key`. This creates a post-quantum hybrid key in the correct format.
+
+Still stuck: Never create an age key by hand; always use `levelrail-cli secrets generate-master-key`.
+
+### After rotation, a specific secret returns "bound to a different slot" error
+
+Likely cause: That secret is a legacy value (written before slot binding existed), and it was copied to the wrong slot in the database, or data corruption occurred.
+
+How to confirm: Check the binding status: `levelrail-cli secrets binding-status` shows how many legacy values remain. If it is zero, all secrets are bound and none should have this error. Check the specific resource: `levelrail-cli apps env <app> | grep <key>` should work for a correctly bound secret.
+
+Fix: Set the secret again: this creates a new bound value: `levelrail-cli apps secrets set <app> <key> <value>`. Or run rebind to fix legacy values: `levelrail-cli secrets rebind`. If the error persists, the secret may be corrupted; restore from a backup before the corruption occurred.
+
+Still stuck: Check control plane logs for slot errors: `levelrail logs --since 1h | grep "bound to a different slot"`.
+
 ## Next steps
 
 <CardGroup cols={2}>

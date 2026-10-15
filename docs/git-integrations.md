@@ -593,7 +593,35 @@ Disconnecting deletes the local connection and its secrets. It never revokes the
 </Accordion>
 </AccordionGroup>
 
-## Next steps
+## Troubleshooting
+
+### Webhook is not triggering deploys
+
+**Likely cause:** The provider connection is not set up, the webhook is not registered on the repository, or the webhook is pointing to the wrong URL.
+
+**How to confirm:** In the dashboard, go to Settings > Git integrations. Check that the provider is connected. Then open the app's git source settings and verify the webhook secret is present and the status shows "registered".
+
+**Fix:** Reconnect the provider if needed. Make sure the app's git source has a valid webhook secret. If the webhook URL changed (for example, domain migration), re-register it by disabling and re-enabling the git source.
+
+### Build does not start after a push
+
+**Likely cause:** The webhook is not configured, the app is not listening for webhooks, or the branch does not match the configured trigger branch.
+
+**How to confirm:** Check the app's git source in the dashboard (App > Source). Verify the branch matches the pushed branch. Check webhook history in the dashboard if available.
+
+**Fix:** Verify the trigger branch matches where you are pushing. If the webhook is registered but not triggering, check the provider's webhook delivery logs (on GitHub, GitLab, etc.). The control plane logs may also show webhook errors: `journalctl -u levelrail | grep webhook`.
+
+### Repository credentials are wrong
+
+**Likely cause:** The provider credential was revoked, expired, or was never authorized to access the repository.
+
+**How to confirm:** Try to list repositories in the dashboard or CLI. If it fails with a 401 or 403, the credential is invalid.
+
+**Fix:** Disconnect and reconnect the provider, authorizing the new credential with access to the required repositories. For GitHub, you may need to approve the app on an organization, or check if app permissions changed.
+
+### Still stuck
+
+For help with git integrations, check the webhook history in the dashboard (if available) or provider's webhook delivery logs. Run `levelrail-cli github-app repos` (or the equivalent for other providers) to verify the connection is working.
 
 <CardGroup cols={2}>
 <Card title="Deploying and managing apps" href="/deploying-apps">

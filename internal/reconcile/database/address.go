@@ -50,12 +50,18 @@ func ContainerPort(engine string) (int, bool) {
 		// KeyDB reuses the redis image's port, same reason
 		// controller.go's own KeyDB case reuses redisContainerPort.
 		return redisContainerPort, true
+	case store.EngineValkey:
+		return redisContainerPort, true
 	case store.EngineDragonfly:
 		// Dragonfly reuses the redis image's port, same reason
 		// controller.go's own Dragonfly case reuses redisContainerPort.
 		return redisContainerPort, true
 	case store.EngineClickHouse:
 		return clickhouseContainerPort, true
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		return searchLayouts[engine].Port, true
+	case store.EngineMemcached:
+		return memcachedContainerPort, true
 	default:
 		return 0, false
 	}
@@ -77,6 +83,12 @@ func PasswordSecretKey(engine string) (key string, ok bool) {
 		return MariaDBPasswordEnvKey, true
 	case store.EngineClickHouse:
 		return ClickHousePasswordEnvKey, true
+	case store.EngineMeilisearch:
+		return MeilisearchAPIKeyEnvKey, true
+	case store.EngineQdrant:
+		return QdrantAPIKeyEnvKey, true
+	case store.EngineTypesense:
+		return TypesenseAPIKeyEnvKey, true
 	default:
 		return "", false
 	}
@@ -138,7 +150,7 @@ func SupportsField(engine, field string) bool {
 		_, ok := ContainerPort(engine)
 		return ok
 	case "username", "database":
-		if engine == store.EngineRedis || engine == store.EngineKeyDB || engine == store.EngineDragonfly {
+		if store.IsRedisFamily(engine) || store.IsSearchEngine(engine) || engine == store.EngineMemcached {
 			return false
 		}
 		_, ok := ContainerPort(engine)

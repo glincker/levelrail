@@ -8,6 +8,8 @@ import {
 import { getStoredUsername } from '../lib/authStore'
 import { useAuthUsername } from '../hooks/useAuthUsername'
 import { brandQueryOptions } from '../queries/brand'
+import { demoQueryOptions } from '../queries/demo'
+import { DemoChrome } from '../components/demo/DemoChrome'
 import { BrandProvider } from '../components/BrandProvider'
 import { AppSidebar } from '../components/AppSidebar'
 import { CommandPalette } from '../components/CommandPalette'
@@ -21,6 +23,8 @@ import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
 import { RestartBanner } from '../components/RestartBanner'
+import { MaintenanceBanner } from '../components/maintenance/MaintenanceBanner'
+import { DomainMaintenanceBanner } from '../components/maintenance/DomainMaintenanceBanner'
 import { Toaster } from '../components/ui/toast'
 
 const DockPanel = React.lazy(() => import('../components/dock/DockPanel'))
@@ -68,8 +72,14 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   // layout wraps, public and needed before a session exists (the login
   // screen itself). BrandProvider below reads the same cache entry via
   // useSuspenseQuery, so this is the one network call, not two.
-  loader: ({ context: { queryClient } }) =>
-    queryClient.ensureQueryData(brandQueryOptions()),
+  loader: async ({ context: { queryClient } }) => {
+    // demo probe never throws; awaiting it makes the demo store ready before first paint.
+    const [brand] = await Promise.all([
+      queryClient.ensureQueryData(brandQueryOptions()),
+      queryClient.ensureQueryData(demoQueryOptions()),
+    ])
+    return brand
+  },
   component: RootLayout,
 })
 
@@ -123,9 +133,12 @@ function AppShell() {
         onOpenChange={setStageOverlayOpen}
       />
       <SidebarInset>
+        <DemoChrome />
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
         <RestartBanner />
+        <MaintenanceBanner />
+        <DomainMaintenanceBanner />
         <DeviceLoginBanner />
         <SignInRequestsBanner />
         <main

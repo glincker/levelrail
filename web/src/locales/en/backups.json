@@ -209,6 +209,30 @@
         "name": "AWS S3",
         "hint": "Region and keys"
       },
+      "gcs": {
+        "name": "Google Cloud Storage",
+        "hint": "S3 interoperability, HMAC keys"
+      },
+      "spaces": {
+        "name": "DigitalOcean Spaces",
+        "hint": "Simple S3 with a CDN"
+      },
+      "hetzner": {
+        "name": "Hetzner Object Storage",
+        "hint": "EU hosted, low cost"
+      },
+      "scaleway": {
+        "name": "Scaleway",
+        "hint": "EU object storage"
+      },
+      "ovh": {
+        "name": "OVHcloud",
+        "hint": "S3 compatible, EU regions"
+      },
+      "vultr": {
+        "name": "Vultr Object Storage",
+        "hint": "Global regions"
+      },
       "minio": {
         "name": "MinIO",
         "hint": "Your own S3 server"

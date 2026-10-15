@@ -5,8 +5,8 @@ import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export const Route = createFileRoute('/loadbalancers/')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'load-balancer'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'load-balancer', location.href),
   component: LoadBalancerOverview,
   pendingComponent: LoadBalancerOverviewSkeleton,
 })

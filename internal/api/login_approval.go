@@ -43,7 +43,7 @@ type loginApprovalDecision struct {
 // approvalSessions is the slice of the session engine the pause needs; a
 // test swaps it to make a revoke fail.
 type approvalSessions interface {
-	OtherSessionCount(ctx context.Context, userID, exceptToken string) (int, error)
+	OtherSessionCount(ctx context.Context, userID, exceptToken string, within time.Duration) (int, error)
 	RevokeChecked(ctx context.Context, token string) error
 }
 
@@ -53,6 +53,9 @@ func (rt *Router) approvalSessionEngine() approvalSessions {
 	}
 	return rt.libSessions
 }
+
+// ApprovalMatch is the two digit number a waiting browser shows for its sign-in.
+func ApprovalMatch(browserHash string) int { return approvalMatch(browserHash) }
 
 // approvalMatch derives the two digit number the waiting browser shows, and
 // the approver must type, from the browser binding nobody else holds.
@@ -69,8 +72,9 @@ type approvalHold struct {
 }
 
 // holdForApproval stops a correct sign-in from an untrusted browser while
-// another session of the account is live; with none it lets the sign-in
-// through so nobody is locked out. A nil hold and nil error mean "let it
+// another session of the account was used recently enough that someone can
+// still approve from it; with none it lets the sign-in through so nobody is
+// locked out by sessions they can no longer reach. A nil hold and nil error mean "let it
 // through". token, when set, is the already issued session; it is revoked
 // whenever the sign-in is held or the check fails.
 func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user store.User, token, method string) (*approvalHold, error) {
@@ -79,7 +83,7 @@ func (rt *Router) holdForApproval(w http.ResponseWriter, r *http.Request, user s
 	}
 	ctx := r.Context()
 	sessions := rt.approvalSessionEngine()
-	others, err := sessions.OtherSessionCount(ctx, user.ID, token)
+	others, err := sessions.OtherSessionCount(ctx, user.ID, token, rt.codeLogin.approverFreshness)
 	if err != nil {
 		if rerr := sessions.RevokeChecked(ctx, token); rerr != nil {
 			rt.logger.Error("api: login: revoke unapproved session failed", slog.String("user_id", user.ID), slog.String("error", rerr.Error()))

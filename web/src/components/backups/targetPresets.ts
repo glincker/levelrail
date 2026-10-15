@@ -3,7 +3,39 @@ import type {
   CreateBackupTargetRequest,
 } from '../../types/backupTarget'
 
-export type PresetId = 'r2' | 'b2' | 'wasabi' | 'aws' | 'minio' | 'local'
+export type PresetId =
+  | 'r2'
+  | 'b2'
+  | 'wasabi'
+  | 'aws'
+  | 'gcs'
+  | 'spaces'
+  | 'hetzner'
+  | 'scaleway'
+  | 'ovh'
+  | 'vultr'
+  | 'minio'
+  | 'local'
+
+const PRESET_BRAND: Record<PresetId, string> = {
+  r2: 'cloudflare',
+  b2: 'backblaze',
+  wasabi: 'wasabi',
+  aws: 's3',
+  gcs: 'google-cloud-storage',
+  spaces: 'digitalocean',
+  hetzner: 'hetzner',
+  scaleway: 'scaleway',
+  ovh: 'ovhcloud',
+  vultr: 'vultr',
+  minio: 'minio',
+  local: '',
+}
+
+/** presetBrand is the brand mark key for a preset; empty means no vendor mark. */
+export function presetBrand(id: PresetId): string {
+  return PRESET_BRAND[id]
+}
 
 export interface TargetPreset {
   id: PresetId
@@ -47,6 +79,54 @@ export const TARGET_PRESETS: TargetPreset[] = [
     provider: 'aws',
     endpoint: '',
     region: 'us-east-1',
+    endpointRequired: false,
+    sameMachine: false,
+  },
+  {
+    id: 'gcs',
+    provider: 'custom',
+    endpoint: 'https://storage.googleapis.com',
+    region: 'auto',
+    endpointRequired: false,
+    sameMachine: false,
+  },
+  {
+    id: 'spaces',
+    provider: 'custom',
+    endpoint: 'https://{region}.digitaloceanspaces.com',
+    region: 'nyc3',
+    endpointRequired: false,
+    sameMachine: false,
+  },
+  {
+    id: 'hetzner',
+    provider: 'custom',
+    endpoint: 'https://{region}.your-objectstorage.com',
+    region: 'fsn1',
+    endpointRequired: false,
+    sameMachine: false,
+  },
+  {
+    id: 'scaleway',
+    provider: 'custom',
+    endpoint: 'https://s3.{region}.scw.cloud',
+    region: 'fr-par',
+    endpointRequired: false,
+    sameMachine: false,
+  },
+  {
+    id: 'ovh',
+    provider: 'custom',
+    endpoint: 'https://s3.{region}.io.cloud.ovh.net',
+    region: 'gra',
+    endpointRequired: false,
+    sameMachine: false,
+  },
+  {
+    id: 'vultr',
+    provider: 'custom',
+    endpoint: 'https://{region}.vultrobjects.com',
+    region: 'ewr1',
     endpointRequired: false,
     sameMachine: false,
   },

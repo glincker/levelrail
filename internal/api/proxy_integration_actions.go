@@ -20,6 +20,10 @@ import (
 // given no timeout (cmd/levelrail reads APP_PROXY_VERIFY_TIMEOUT).
 const defaultProxyVerifyTimeout = 8 * time.Second
 
+// proxyNotDeliveredMessage explains a route that answers without reaching the
+// built-in ingress, which is what a competing router on the proxy looks like.
+const proxyNotDeliveredMessage = "the proxy answers for this domain, but not through this server's ingress: another router on the proxy probably claims the same host with a higher priority, so traffic controls are not enforced"
+
 // listenerProbeTimeout bounds the local dial that explains a 5xx from the proxy.
 const listenerProbeTimeout = time.Second
 
@@ -255,6 +259,13 @@ func (rt *Router) verifyProxyRoute(ctx context.Context, deps *proxyIntegrationDe
 	st := store.ProxyRouteStatus{
 		Domain: it.Domain, ProxyLoaded: store.ProxyLoadedUnknown, Reachable: res.Reachable, StatusCode: res.StatusCode,
 		CertIssuer: res.CertIssuer, CertNotAfter: res.CertNotAfter, CertTrusted: res.CertTrusted, LastError: res.Err, VerifiedAt: time.Now(),
+	}
+	if res.Reachable && it.Kind != proxyroutes.TargetDashboard && deps.marker != nil {
+		marked := target
+		marked.Marker = deps.marker
+		if st.Delivered = deps.probe(ctx, marked).Delivered; !st.Delivered && st.LastError == "" {
+			st.LastError = proxyNotDeliveredMessage
+		}
 	}
 	if res.Reachable && det.APIPort > 0 {
 		base := "http://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(det.APIPort))

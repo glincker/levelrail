@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/policy"
 )
 
 // Status is one check's outcome.
@@ -29,6 +31,8 @@ type Check struct {
 	Status Status `json:"status"`
 	Reason string `json:"reason"`
 	Fix    string `json:"fix,omitempty"`
+	// Code is a stable machine readable id, set by policy checks.
+	Code string `json:"code,omitempty"`
 }
 
 // Report is every check's result plus the worst status among them.
@@ -63,6 +67,12 @@ type Request struct {
 	GPU         bool
 	GitURL      string
 	GitBranch   string
+	// The fields below feed deploy policy rules only.
+	NanoCPUs     int64
+	Replicas     int
+	HasReadiness bool
+	Privileged   bool
+	Labels       map[string]string
 }
 
 // Env holds the probes a Run uses. A nil probe skips its check, so a
@@ -77,6 +87,8 @@ type Env struct {
 	Git            GitChecker
 	GPUFit         func(ctx context.Context, nodeID string) error
 	Limits         Limits
+	// Policy is the effective guardrail rule set; empty skips the check.
+	Policy policy.Set
 }
 
 // Limits are the tunable thresholds, all overridable by environment.
@@ -166,6 +178,7 @@ func Run(ctx context.Context, req Request, env Env) Report {
 		func(_ context.Context) []Check { return checkEnv(req) },
 		func(_ context.Context) []Check { return checkMounts(req) },
 		func(c context.Context) []Check { return checkGPU(c, req, env) },
+		func(_ context.Context) []Check { return checkPolicy(req, env) },
 	}
 	results := make([][]Check, len(fns))
 	var wg sync.WaitGroup

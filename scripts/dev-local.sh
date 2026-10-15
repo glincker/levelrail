@@ -28,12 +28,15 @@ stop() {
 start() {
 	[ -z "$(listening "$api_port")" ] || { echo "dev-local: port $api_port already in use, run restart" >&2; return 1; }
 	(cd "$repo_root" && go build -o "$dir/levelrail" ./cmd/levelrail) || return 1
-	(cd "$repo_root" && APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/dev-fixtures.yml" \
+	# Env-gated experimental features are not on the Beta features page; turn them
+	# on locally so work in progress is visible. LOCAL_EXPERIMENTAL overrides.
+	(cd "$repo_root" && APP_EXPERIMENTAL="${LOCAL_EXPERIMENTAL:-load-balancer,ai-models,iac,cloudflare-tunnel,access-roles,global-environments,ai-control}" \
+		APP_DEV_MODE=1 APP_DEV_FIXTURES_FILE="$repo_root/dev-fixtures.yml" \
 		APP_DATA_DIR="$dir/data" APP_HTTP_ADDR="127.0.0.1:$api_port" APP_AGENT_ADDR="127.0.0.1:0" \
 		APP_INGRESS_HTTP_ADDR="127.0.0.1:0" APP_INGRESS_HTTPS_ADDR="127.0.0.1:0" \
 		nohup "$dir/levelrail" >"$dir/server.log" 2>&1 &)
 	if [ -z "$(listening "$web_port")" ]; then
-		(cd "$repo_root/web" && nohup npx vite --host 127.0.0.1 --port "$web_port" >"$dir/vite.log" 2>&1 &)
+		(cd "$repo_root/web" && LOCAL_API_PORT="$api_port" nohup npx vite --host 127.0.0.1 --port "$web_port" >"$dir/vite.log" 2>&1 &)
 	fi
 	local i
 	for i in $(seq 1 60); do

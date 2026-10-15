@@ -165,8 +165,16 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	case "export":
 		return runExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "compliance":
+		return runCompliance(prog, args[1:], stdout, stderr, lookupEnv)
+	case "otel":
+		return runOtel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "event-webhooks":
 		return runEventWebhooks(prog, args[1:], stdout, stderr, lookupEnv)
+	case "maintenance":
+		return runMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
+	case "policy":
+		return runPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "nodes":
 		return runNodes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status":
@@ -217,14 +225,22 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "budget":
+		return runUsageBudgets(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
 		return runVolumesOrphanedCleanup(prog, args[1:], stdout, stderr, lookupEnv)
 	case "roles":
 		return runRoles(prog, args[1:], stdout, stderr, lookupEnv)
+	case "sso":
+		return runSSO(prog, args[1:], stdout, stderr, lookupEnv)
+	case "session-policy":
+		return runSessionPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "teams":
 		return runTeams(prog, args[1:], stdout, stderr, lookupEnv)
+	case "quota":
+		return runQuota(prog, args[1:], stdout, stderr, lookupEnv)
 	case "members":
 		return runMembers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "users":
@@ -333,7 +349,10 @@ Usage:
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
   %[1]s export [--project P] [--app A] [-o dir|-] [flags]      write live state as stable resource files
   %[1]s export destinations list|create|test|status|enable|disable|delete, export audit   send logs, audit events and metrics to your own tools
+  %[1]s otel destinations list|add|test|remove                 OTLP/HTTP metric and log export to your own collector
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
+  %[1]s policy list|set|check [flags]                           deploy guardrails: registries, probes, limits, mounts, labels, replicas
+  %[1]s maintenance list|create|delete [flags]               scheduled maintenance windows with banner, status page and optional deploy freeze
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes
@@ -356,6 +375,7 @@ Usage:
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s budget [set|delete] [flags]                            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
@@ -375,6 +395,7 @@ Usage:
   %[1]s users grants get|set <user> [--environment ID ...]     the environments a guest user can see
   %[1]s invites create|list|revoke [flags]                     invite a teammate by email, list or revoke pending invites
   %[1]s teams list|create|show|rename|delete|use|roles|transfer|events|members|invites   teams, their members, roles and invitations
+  %[1]s quota show|set|clear <team|project> <id> [flags]       per-team and per-project limits on apps, databases, memory, CPU and previews
   %[1]s members list|set-role|remove|leave <team> ...          shortcut for "teams members"
   %[1]s --team ID [--project ID] <command> ...                 narrow any command to one team or project (also APP_TEAM, APP_PROJECT, "teams use")
   %[1]s iam policies create|list|get|update|delete|attach|detach|attachments [flags]   resource-scoped Allow/Deny policies, additive on top of --abilities

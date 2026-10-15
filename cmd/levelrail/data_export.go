@@ -32,11 +32,12 @@ func (p storagePutter) PutObject(ctx context.Context, targetID, key string, body
 // saved, but unauthenticated ones and the scrape endpoint still work.
 func setupDataExport(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, logs *telemetry.LogBroadcaster, router *api.Router) {
 	deps := dataexport.Deps{
-		Store:  db,
-		Logs:   logs,
-		Config: dataexport.ConfigFromEnv(os.LookupEnv),
-		Brand:  b.ShortName,
-		Logger: logger,
+		Store:    db,
+		Platform: db,
+		Logs:     logs,
+		Config:   dataexport.ConfigFromEnv(os.LookupEnv),
+		Brand:    b.ShortName,
+		Logger:   logger,
 		AppCount: func(ctx context.Context) (int, error) {
 			svcs, err := db.ListDesiredServices(ctx)
 			return len(svcs), err

@@ -20,6 +20,7 @@ import type updates from '../locales/en/updates.json'
 import type infraCanvas from '../locales/en/infraCanvas.json'
 import type databaseAccess from '../locales/en/databaseAccess.json'
 import type databaseUpgrades from '../locales/en/databaseUpgrades.json'
+import type databaseVersions from '../locales/en/databaseVersions.json'
 import type iam from '../locales/en/iam.json'
 import type signIn from '../locales/en/signIn.json'
 import type security from '../locales/en/security.json'
@@ -27,6 +28,7 @@ import type traffic from '../locales/en/traffic.json'
 import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
+import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
 import type gitBuild from '../locales/en/gitBuild.json'
@@ -35,16 +37,26 @@ import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
+import type maintenance from '../locales/en/maintenance.json'
+import type deployPolicies from '../locales/en/deployPolicies.json'
+import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
+import type help from '../locales/en/help.json'
+import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type secretRotation from '../locales/en/secretRotation.json'
+import type templates from '../locales/en/templates.json'
+import type models from '../locales/en/models.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
+import type demo from '../locales/en/demo.json'
+import type secretScan from '../locales/en/secretScan.json'
+import type sso from '../locales/en/sso.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -73,6 +85,7 @@ declare module 'i18next' {
       infraCanvas: typeof infraCanvas
       databaseAccess: typeof databaseAccess
       databaseUpgrades: typeof databaseUpgrades
+      databaseVersions: typeof databaseVersions
       iam: typeof iam
       signIn: typeof signIn
       security: typeof security
@@ -88,16 +101,27 @@ declare module 'i18next' {
       smartDeploy: typeof smartDeploy
       dataExport: typeof dataExport
       eventWebhooks: typeof eventWebhooks
+      compliance: typeof compliance
       deploySafety: typeof deploySafety
       jobs: typeof jobs
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
+      help: typeof help
+      betaFeatures: typeof betaFeatures
       newApp: typeof newApp
       getStarted: typeof getStarted
       usage: typeof usage
       deployTimeline: typeof deployTimeline
       secretRotation: typeof secretRotation
+      models: typeof models
+      templates: typeof templates
       aiAssistant: typeof aiAssistant
+      demo: typeof demo
+      secretScan: typeof secretScan
+      maintenance: typeof maintenance
+      sso: typeof sso
+      trialApp: typeof trialApp
+      deployPolicies: typeof deployPolicies
     }
   }
 }

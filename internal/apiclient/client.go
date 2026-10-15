@@ -1156,6 +1156,15 @@ func (c *Client) SetDomainMaintenance(ctx context.Context, name, domain string) 
 	return out, err
 }
 
+// SetDomainMaintenanceOptions calls PUT
+// /api/v1/apps/{name}/domains/{domain}/maintenance with page copy, an end
+// time and bypass rules.
+func (c *Client) SetDomainMaintenanceOptions(ctx context.Context, name, domain string, req SetDomainMaintenanceRequest) (DomainMaintenanceResource, error) {
+	var out DomainMaintenanceResource
+	err := c.do(ctx, http.MethodPut, domainMaintenancePath(name, domain), req, &out)
+	return out, err
+}
+
 // ClearDomainMaintenance calls DELETE
 // /api/v1/apps/{name}/domains/{domain}/maintenance: disables
 // maintenance mode on domain.
@@ -1715,6 +1724,14 @@ func (c *Client) GetSession(ctx context.Context) (SessionInfoResource, error) {
 func (c *Client) Whoami(ctx context.Context) (WhoamiResource, error) {
 	var out WhoamiResource
 	err := c.do(ctx, http.MethodGet, "/api/v1/auth/whoami", nil, &out)
+	return out, err
+}
+
+// MyAccess calls GET /api/v1/auth/my-access: the caller's own tier, teams,
+// attached policies and per-area capabilities.
+func (c *Client) MyAccess(ctx context.Context) (MyAccessResource, error) {
+	var out MyAccessResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/auth/my-access", nil, &out)
 	return out, err
 }
 

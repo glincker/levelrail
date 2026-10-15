@@ -50,6 +50,28 @@ Sensitive plain variables and secrets are masked on every read surface, and read
 
 Credentials for backup targets and registry integrations follow the same write-only pattern described in [Backups and storage](/backups-and-storage#credentials-are-write-only): once saved, the plaintext is never returned by the API again, only a masked placeholder.
 
+### Wrap the master key with Vault or OpenBao
+
+By default the master key sits in `<data dir>/master.key` (or `APP_MASTER_KEY`). To make a copy of the data directory useless on its own, wrap it with a Transit key from HashiCorp Vault or OpenBao. The control plane asks Vault to unwrap it once at startup and holds it only in memory.
+
+| Variable | Meaning |
+| --- | --- |
+| `APP_KMS_PROVIDER` | `vault-transit` |
+| `APP_VAULT_ADDR` | Vault URL. HTTPS is required, plain HTTP is allowed only to localhost. |
+| `APP_VAULT_TOKEN` or `APP_VAULT_TOKEN_FILE` | Token allowed to `encrypt` and `decrypt` with the key |
+| `APP_VAULT_TRANSIT_KEY` | Transit key name |
+| `APP_VAULT_TRANSIT_MOUNT` | Mount path, default `transit` |
+| `APP_VAULT_NAMESPACE` | Namespace, if you use one |
+
+```sh
+levelrail wrap-master-key           # seals master.key, verifies the round trip first
+levelrail wrap-master-key --unwrap  # writes the plain key back
+```
+
+A wrapped key never falls back: if Vault is unreachable or the settings are missing, the control plane refuses to start and tells you why, instead of generating a new key. Rotating the master key re-wraps the new key automatically. A new install with these variables set is wrapped from the first start. Master key escrow in [disaster recovery](disaster-recovery.md) unwraps the key first, so the escrow bundle still holds a key you can use offline.
+
+The Vault token is the new thing to protect: anyone holding it and the data directory can unwrap the key.
+
 ### Notification channel secrets
 
 A notification channel's credential (its webhook URL, Telegram bot token, PagerDuty routing key, Opsgenie or Resend key, and a Slack signing secret or Discord public key for interactive approvals) is envelope encrypted like any other secret, under the channel's own slot. `alerting.db` keeps only a masked placeholder such as `https://hooks.slack.com/(hidden)`, and the API returns that placeholder to every caller, `admin` included. The value is decrypted only at the moment a notification, test message or approval request is sent, or an interactive button click is verified. An `email` channel's recipient address is not a credential and stays readable.
@@ -217,8 +239,8 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 ## What this does not cover yet
 
-- No SSO/SAML or SCIM. Sign-in is local password, passkey, or OAuth (Google, GitHub, Microsoft, generic OIDC).
-- No secret scanning of an app's own source repository.
+- No LDAP. Sign-in is local password, passkey, OAuth (Google, GitHub, Microsoft, generic OIDC) or experimental [SAML](/sso-saml), with experimental [SCIM](/scim) provisioning. SAML and SCIM run on the sign-in library behind Levelrail's own response and token checks and have not been verified against a live identity provider yet.
+- [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.
 - Container hardening is on by default but has no per-app override yet, and read-only root filesystems stay opt-in.

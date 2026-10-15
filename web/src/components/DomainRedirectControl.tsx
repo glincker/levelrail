@@ -19,6 +19,7 @@ import {
   useSetDomainRedirect,
   type SetDomainRedirectRequest,
 } from '../queries/domainRedirect'
+import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // Redirect one already-saved domain to a target URL, enforced by the
 // embedded Caddy ingress on the next reconcile pass
@@ -78,10 +79,12 @@ export function DomainRedirectControl({
           className="flex items-center gap-1.5 text-left"
         >
           {active ? (
-            <Badge variant="success" className="shrink-0">
-              <SignpostIcon className="size-3" />
-              Redirecting to {redirect?.target_url}
-            </Badge>
+            <EnforcedBadge domain={domain} control="redirect">
+              <Badge variant="success" className="shrink-0">
+                <SignpostIcon className="size-3" />
+                Redirecting to {redirect?.target_url}
+              </Badge>
+            </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
               <SignpostIcon className="size-3" />
@@ -99,6 +102,7 @@ export function DomainRedirectControl({
           {open ? 'Hide' : active ? 'Manage' : 'Add redirect'}
         </Button>
       </div>
+      <EnforcementNote domain={domain} control="redirect" active={active} />
 
       {open ? (
         <form

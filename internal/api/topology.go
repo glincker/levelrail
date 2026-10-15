@@ -62,5 +62,31 @@ func (rt *Router) handleGetProjectTopology(w http.ResponseWriter, r *http.Reques
 		dbStatus[d.Name] = summarizeAppConditions(conditionsByController[databaseControllerName(d.Name)])
 	}
 
-	writeJSON(w, http.StatusOK, buildTopologyGraph(services, databases, appStatus, dbStatus))
+	graph := buildTopologyGraph(services, databases, appStatus, dbStatus)
+
+	lbServices := make(map[string]bool)
+	if rt.lb.store != nil {
+		rows, err := rt.lb.store.ListLoadBalancerRows(r.Context())
+		if err != nil {
+			rt.internalError(w, "api: get project topology: list load balancers failed", err, slog.String("id", id))
+			return
+		}
+		for _, row := range rows {
+			lbServices[row.Service] = true
+		}
+	}
+	nodesByID := make(map[string]store.Node)
+	if rt.nodes != nil {
+		nodes, err := rt.nodes.ListNodes(r.Context())
+		if err != nil {
+			rt.internalError(w, "api: get project topology: list nodes failed", err, slog.String("id", id))
+			return
+		}
+		for _, n := range nodes {
+			nodesByID[n.ID] = n
+		}
+	}
+	addInfraNodes(&graph, services, databases, lbServices, nodesByID, rt.localNodeID)
+
+	writeJSON(w, http.StatusOK, graph)
 }

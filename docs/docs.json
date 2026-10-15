@@ -154,6 +154,7 @@
               "previews",
               "chat-deploy-approvals",
               "supply-chain",
+              "secret-scanning",
               "deploy-status-badge",
               "screenshots",
               "docker",
@@ -219,13 +220,19 @@
               "host-firewall",
               "exposure-audit",
               "security-center",
+              "compliance-evidence",
               "emergency-access",
               "master-key-rotation",
               "secret-rotation",
+              "account",
               "access-control",
               "teams-and-roles",
+              "team-and-project-quotas",
               "environments",
               "identity-and-access",
+              "sso-saml",
+              "scim",
+              "session-policy",
               "projects-and-organizations"
             ],
             "icon": "/assets/icons/shield-check.svg"
@@ -245,6 +252,8 @@
               "resilience-summary",
               "observability",
               "status-page",
+              "scheduled-maintenance",
+              "deploy-policies",
               "whats-new-panel"
             ],
             "icon": "/assets/icons/chart-line-up.svg"
@@ -261,6 +270,7 @@
             "group": "Templates and catalog",
             "pages": [
               "templates-and-registry",
+              "private-registries",
               "template-catalog",
               "templates"
             ],

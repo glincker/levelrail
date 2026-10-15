@@ -91,6 +91,51 @@
       "lines": [],
       "advisories": []
     },
+    "valkey": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "A newer major can write an RDB version an older server cannot load; a failed revert by image falls back to the data snapshot.",
+      "versions": ["7.2.14", "8.0.11", "8.1.10", "9.0.6", "9.1.2"],
+      "lines": [],
+      "advisories": []
+    },
+    "meilisearch": {
+      "levels": ["major", "major", "patch"],
+      "auto_max": "patch",
+      "image_revert": false,
+      "notes": "Meilisearch data is tied to its minor release line: a newer minor refuses to open it in place, so move between minors by restoring a dump into a new database.",
+      "versions": ["v1.53.3", "v1.54.3", "v1.55.0"],
+      "lines": [],
+      "advisories": []
+    },
+    "qdrant": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "patch",
+      "image_revert": false,
+      "notes": "Qdrant upgrades one minor version at a time and does not support a downgrade.",
+      "versions": ["v1.17.1", "v1.18.3", "v1.19.2"],
+      "lines": [],
+      "advisories": []
+    },
+    "typesense": {
+      "levels": ["major", "minor"],
+      "auto_max": "minor",
+      "image_revert": false,
+      "notes": "Typesense upgrades in place to a newer release; a downgrade is not supported.",
+      "versions": ["28.0", "29.1", "30.2"],
+      "lines": [],
+      "advisories": []
+    },
+    "memcached": {
+      "levels": ["major", "minor", "patch"],
+      "auto_max": "patch",
+      "image_revert": true,
+      "notes": "Memcached keeps no data on disk: any version change restarts it with an empty cache.",
+      "versions": ["1.6.45"],
+      "lines": [],
+      "advisories": []
+    },
     "keydb": {
       "levels": ["major", "minor", "patch"],
       "auto_max": "none",

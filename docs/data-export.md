@@ -12,6 +12,7 @@ Metrics, logs and the audit log stay on the control plane and its nodes by defau
 | Metrics | Prometheus scrape | You pull `GET /metrics` |
 | Metrics | `metrics_otlp` | Pushed as OTLP/HTTP JSON on an interval |
 | Logs | `logs_loki` | Loki push API, batched |
+| Logs | `logs_otlp` | OTLP/HTTP JSON logs, batched |
 | Logs | `logs_http` | JSON lines (NDJSON) over HTTP POST, batched |
 | Logs | `logs_syslog` | RFC 5424 over TCP or TLS |
 | Audit log | `audit_webhook` | NDJSON batches over HTTP POST, optional HMAC signature |
@@ -130,6 +131,33 @@ A `metrics_otlp` destination pushes the same series as the scrape endpoint as OT
 levelrail-cli export destinations create --name otel --kind metrics_otlp \
   --endpoint https://otel.example.com:4318 --header "Authorization=Bearer <token>"
 ```
+
+A `metrics_otlp` destination also accepts `--app` (repeatable) to export only those apps' container series. Platform series are always included.
+
+### Platform self metrics
+
+Besides per-app container metrics, the scrape endpoint and every `metrics_otlp` destination carry a fixed set of control plane gauges (prefix is the brand short name, `levelrail_` on a stock install). Restricted tokens never see them.
+
+| Metric | Meaning |
+| --- | --- |
+| `<prefix>reconcile_lag_seconds` | Age of the stalest reconcile status. A growing value means a controller stopped converging |
+| `<prefix>deploy_queue_depth`, `<prefix>deploys_running` | Deploys waiting and in flight |
+| `<prefix>deploy_last_duration_seconds`, `<prefix>deploy_avg_duration_seconds` | Duration of the newest and the mean of deploys finished in the last hour |
+| `<prefix>deploys_finished{status}` | Deploys finished in the last hour by `succeeded` or `failed` |
+| `<prefix>agent_connections` | Nodes whose agent is online |
+
+## OTLP logs
+
+A `logs_otlp` destination pushes container log lines as OTLP/HTTP JSON (`/v1/logs` is appended when the endpoint has no path). Each app is one resource with `service.name` set to the app name, `kind`, and your `--label` pairs as resource attributes. Records carry the severity, the stream and, for JSON lines, the parsed fields. `--app` and `--min-level` filter as for the other log kinds.
+
+```bash
+levelrail-cli otel destinations add --name otel-logs --signal logs \
+  --endpoint https://otel.example.com:4318 --header "Authorization=Bearer <token>" --app web
+levelrail-cli otel destinations test <id>
+levelrail-cli otel destinations list
+```
+
+`levelrail-cli otel destinations` is a signal-first view of the same destinations: `add --signal metrics|logs` creates a `metrics_otlp` or `logs_otlp` kind, and `remove` deletes one. Delivery state (last success, last error, queue depth, dropped) is the same as for every other destination, in **Settings, Data export**.
 
 ## Reliability and safety
 

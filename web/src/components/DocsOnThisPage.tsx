@@ -54,12 +54,13 @@ export function DocsOnThisPage({ headings, className }: DocsOnThisPageProps) {
               visibleIds.current.delete(entry.target.id)
             }
           }
-          // The topmost currently-visible heading wins, matching reading
-          // order rather than intersection-observer callback order.
           const firstVisible = headings.find((h) =>
             visibleIds.current.has(h.id),
           )
-          if (firstVisible) setActiveId(firstVisible.id)
+          if (firstVisible) {
+            setActiveId(firstVisible.id)
+            window.history.replaceState(null, '', `#${firstVisible.id}`)
+          }
         },
         { rootMargin: '-80px 0px -70% 0px', threshold: 0 },
       )
@@ -79,6 +80,14 @@ export function DocsOnThisPage({ headings, className }: DocsOnThisPageProps) {
 
   if (headings.length === 0) return null
 
+  const handleHeadingClick = (headingId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    const element = document.getElementById(headingId)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
   return (
     <ul className={cn('space-y-0.5 border-l border-border', className)}>
       {headings.map((heading) => {
@@ -87,6 +96,7 @@ export function DocsOnThisPage({ headings, className }: DocsOnThisPageProps) {
           <li key={heading.id}>
             <a
               href={`#${heading.id}`}
+              onClick={(e) => handleHeadingClick(heading.id, e)}
               className={cn(
                 'block -ml-px border-l px-3 py-1 text-xs transition-colors',
                 heading.level === 3 && 'pl-6',

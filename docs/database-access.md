@@ -133,3 +133,55 @@ statement logged by the server carries no plaintext.
 | `APP_DB_TEMP_TTL_MAX_MINUTES` | 1440 | Longest temporary credential lifetime |
 | `APP_DB_TEMP_TTL_DEFAULT_MINUTES` | 60 | Lifetime when none is requested |
 | `APP_DB_TEMP_SWEEP_SECONDS` | 30 | How often expired credentials are removed |
+
+## Troubleshooting
+
+### User creation fails with "role already exists" or "invalid role name"
+
+Likely cause: The username is already in use, or it conflicts with a PostgreSQL system role.
+
+How to confirm: List existing users: `levelrail-cli databases users list <database>`. Check if the name appears. System roles (like "postgres", "pg_*") cannot be created through this interface.
+
+Fix: Choose a different username that does not exist and does not match a PostgreSQL system role. You can also rotate an existing user's password instead of creating a new one: `levelrail-cli databases users rotate <database> <existing-name>`.
+
+Still stuck: See [Database access](/database-access#database-users) for user creation syntax.
+
+### Temporary credentials expired or cannot log in
+
+Likely cause: The temporary credential has expired (lifetime is 15 minutes to 24 hours), or the role was already removed by the sweeper.
+
+How to confirm: Temporary credentials are valid from the moment of issue until the expiry time. Check when it was issued and what lifetime you requested: `levelrail-cli databases access temp <database>` shows the expiry. If it is in the past, the credential is no longer valid.
+
+Fix: Issue a new temporary credential: `levelrail-cli databases access temp <database> --preset read_only --minutes 60`. Each credential is single-use: issue a new one each time you need access.
+
+Still stuck: See [Temporary credentials](/database-access#temporary-credentials) for the full process.
+
+### "Permission denied" when using a read-only user account
+
+Likely cause: The account role has write restrictions, or the user is attempting a schema change (which read-only users cannot do).
+
+How to confirm: Check the user preset: `levelrail-cli databases users list <database>` shows the role. If it is "read_only", the user can only SELECT, not INSERT, UPDATE, DELETE or schema changes. Check the SQL command that failed: read-only preset refuses any DML.
+
+Fix: Either use a "read_write" user for writes (if the user needs write access), or use an application account with full permissions for your app. Create a new user with the correct preset: `levelrail-cli databases users create <database> <new-name> --preset read_write`.
+
+Still stuck: See [Database users](/database-access#database-users) for preset permissions.
+
+### App lost database reachability after network scope change
+
+Likely cause: The database scope was changed to "project only" or "environment only", and the app is in a different project or environment.
+
+How to confirm: Check the database scope: Dashboard > Databases > <database> > Network > Network scope. Check the app's project and environment: Dashboard > Apps > <app> > Settings. If the scope does not include the app's project or environment, the app cannot reach the database.
+
+Fix: Either change the database scope back to "Whole platform", or move the app to the same project or environment as the database: `levelrail-cli apps set-project <app> <project-id>`.
+
+Still stuck: See [Network scope](/database-access#network-scope) for the full scoping rules and reachability impact check.
+
+### TLS required but client refuses to use TLS
+
+Likely cause: The database has "Require TLS" enabled, but the client (app or external connection) is configured with `sslmode=disable` or `--no-tls`.
+
+How to confirm: On the database's Network tab, check if "Require TLS" is enabled. Check the client connection string: it should include `?sslmode=require` (PostgreSQL) or equivalent for other databases.
+
+Fix: Remove the `--no-tls` flag or change the connection string to use TLS. For PostgreSQL, the default connection string from the platform includes `?sslmode=require`. Apps attached to the database get this automatically. If using a temporary credential or custom connection, include TLS: `psql "postgresql://user:password@host:5432/dbname?sslmode=require"`.
+
+Still stuck: See [Require TLS](/database-access#require-tls) for TLS settings per database engine.

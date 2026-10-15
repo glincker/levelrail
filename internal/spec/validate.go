@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -57,8 +58,11 @@ func (s *Spec) Validate() error {
 		if !nameLike.MatchString(name) {
 			return fmt.Errorf("spec: database %q: name must be lowercase alphanumeric and hyphens, starting with a letter", name)
 		}
-		if db.Engine != EnginePostgres && db.Engine != EngineRedis && db.Engine != EngineMySQL && db.Engine != EngineMongoDB && db.Engine != EngineMariaDB && db.Engine != EngineKeyDB && db.Engine != EngineClickHouse && db.Engine != EngineDragonfly {
-			return fmt.Errorf("spec: database %q: engine %q is not supported (supports %q, %q, %q, %q, %q, %q, %q, and %q)", name, db.Engine, EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineMariaDB, EngineKeyDB, EngineClickHouse, EngineDragonfly)
+		if !supportedSpecEngines[db.Engine] {
+			return fmt.Errorf("spec: database %q: engine %q is not supported (supports %s)", name, db.Engine, supportedSpecEngineList())
+		}
+		if db.Engine == EngineMemcached && db.Backup != nil {
+			return fmt.Errorf("spec: database %q: memcached keeps no data on disk, so it cannot have a backup block", name)
 		}
 	}
 
@@ -395,4 +399,26 @@ func detectDependsOnCycle(services map[string]Service) error {
 		}
 	}
 	return nil
+}
+
+var supportedSpecEngineOrder = []string{
+	EnginePostgres, EngineRedis, EngineMySQL, EngineMongoDB, EngineMariaDB,
+	EngineKeyDB, EngineClickHouse, EngineDragonfly, EngineValkey,
+	EngineMeilisearch, EngineQdrant, EngineTypesense, EngineMemcached,
+}
+
+var supportedSpecEngines = func() map[string]bool {
+	m := make(map[string]bool, len(supportedSpecEngineOrder))
+	for _, e := range supportedSpecEngineOrder {
+		m[e] = true
+	}
+	return m
+}()
+
+func supportedSpecEngineList() string {
+	quoted := make([]string, len(supportedSpecEngineOrder))
+	for i, e := range supportedSpecEngineOrder {
+		quoted[i] = strconv.Quote(e)
+	}
+	return strings.Join(quoted[:len(quoted)-1], ", ") + ", and " + quoted[len(quoted)-1]
 }

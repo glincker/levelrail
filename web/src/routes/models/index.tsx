@@ -2,6 +2,7 @@ import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { CpuIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import { DeployModelDialog } from '../../components/DeployModelDialog'
 import { GpuNodeCard } from '../../components/GpuNodeCard'
@@ -12,18 +13,40 @@ import {
   ModelRow,
   ModelRowSkeleton,
 } from '../../components/ModelRow'
+import { GhostPreview } from '../../components/GhostPreview'
 import { EmptyState } from '../../components/ui/empty-state'
 import { PageHeader } from '../../components/shell/PageHeader'
 import { useGpuNodes, useModels } from '../../queries/models'
 import type { CreateModelResponse } from '../../types/models'
 
 export const Route = createFileRoute('/models/')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'ai-models'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'ai-models', location.href),
   component: ModelsPage,
 })
 
 const ROW_HEIGHT = 64
+
+function SampleRows() {
+  const { t } = useTranslation('models')
+  return (
+    <div>
+      <ListHeader />
+      <div
+        className={`${MODEL_LIST_GRID} items-center border-b border-border px-4 py-3 text-sm`}
+      >
+        <span className="font-medium text-foreground">
+          {t('empty.sample.modelName')}
+        </span>
+        <span>{t('empty.sample.engine')}</span>
+        <span>{t('empty.sample.placement')}</span>
+        <span className="text-foreground">{t('empty.sample.status')}</span>
+        <span className="text-muted-foreground">{t('empty.sample.vram')}</span>
+        <span aria-hidden="true" className="w-24" />
+      </div>
+    </div>
+  )
+}
 
 function ListHeader() {
   return (
@@ -41,14 +64,15 @@ function ListHeader() {
 }
 
 function GpuSection() {
+  const { t } = useTranslation('models')
   const gpus = useGpuNodes()
   const nodes = (gpus.data ?? []).filter((n) => n.present)
   if (nodes.length === 0) {
     return (
       <EmptyState
         icon={<CpuIcon className="size-5" />}
-        title="No GPU node reported yet"
-        description="Nodes with an NVIDIA GPU and driver appear here with their VRAM. Install the NVIDIA driver and the nvidia-container-toolkit on an Ubuntu node, then wait a minute for it to report."
+        title={t('empty.gpus.title')}
+        description={t('empty.gpus.description')}
         helpPath="/ai-models#gpu-nodes"
         className="py-8"
       />
@@ -63,7 +87,12 @@ function GpuSection() {
   )
 }
 
-function ModelList() {
+function ModelList({
+  onDeployed,
+}: {
+  onDeployed: (created: CreateModelResponse) => void
+}) {
+  const { t } = useTranslation('models')
   const { data, isPending, isError, error } = useModels()
   const parentRef = useRef<HTMLDivElement>(null)
   const models = data ?? []
@@ -94,11 +123,15 @@ function ModelList() {
   }
   if (models.length === 0) {
     return (
-      <EmptyState
-        icon={<RobotIcon className="size-5" />}
-        title="No models deployed"
-        description="Deploy Ollama, vLLM or llama.cpp on a GPU node and get an OpenAI-compatible endpoint with an API key."
-      />
+      <GhostPreview sample={<SampleRows />} className="min-h-72">
+        <EmptyState
+          icon={<RobotIcon className="size-5" />}
+          title={t('empty.models.title')}
+          description={t('empty.models.description')}
+          action={<DeployModelDialog onDeployed={onDeployed} />}
+          helpPath="/ai-models"
+        />
+      </GhostPreview>
     )
   }
   return (
@@ -154,7 +187,7 @@ function ModelsPage() {
         <h2 id="models-heading" className="text-sm font-medium text-foreground">
           Models
         </h2>
-        <ModelList />
+        <ModelList onDeployed={setCreated} />
       </section>
       <section aria-labelledby="model-cache-heading" className="space-y-3">
         <h2

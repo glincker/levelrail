@@ -118,3 +118,55 @@ already running.
 - The key browser and SQL console for MongoDB and Redis.
 - Adopting from a remote agent node lists containers but not their Docker
   networks, so enter the network by hand there.
+
+## Troubleshooting
+
+### Test connection fails with "unreachable" or "connection refused"
+
+Likely cause: The host and port are wrong, the database is not running, or a firewall is blocking the path.
+
+How to confirm: Try connecting manually from the control plane node: `psql -h <host> -p <port> -U <user> <database>` for Postgres, or `mysql -h <host> -p <port> -u <user> -e "SELECT 1" <database>`. If it hangs or refuses, the network path is blocked.
+
+Fix: Verify the host IP or hostname is correct. Check that the database is running on the remote machine. If behind a firewall, ensure the port is open from the control plane node to the database host. Run the test again: `levelrail-cli databases probe <name>` or Dashboard > Databases > <database> > Check now.
+
+Still stuck: Run `curl -v <host>:<port>` from the control plane to diagnose network connectivity.
+
+### Test connection fails with "auth_failed" or "permission denied"
+
+Likely cause: The username or password is wrong, or the database server has access control rules that deny the connection.
+
+How to confirm: Test manually with the given credentials: `psql -h <host> -p <port> -U <user> -d <database> -c "SELECT 1"` and provide the password. If it fails, the credentials are wrong. For Postgres, check the server's `pg_hba.conf` file to see what auth is required.
+
+Fix: Verify the username and password match what is configured on the database server. For Postgres, ensure `pg_hba.conf` allows connections from the control plane IP for that user and database. Run the test again once the credentials are corrected.
+
+Still stuck: See the database server logs (Postgres: `psql ... -c "SELECT pg_read_file('postgresql.log')"`) for authentication errors.
+
+### Health check shows "slow" or times out
+
+Likely cause: The network is congested, the database is overloaded, or the `APP_EXTERNAL_DB_SLOW_MS` threshold is too strict.
+
+How to confirm: Check the response time when running the health probe manually: `levelrail-cli databases probe <name> --json` shows the query latency. Run it a few times to see if it is consistent. Check the database and network load on both the control plane and database sides.
+
+Fix: If the database is genuinely slow due to load or queries, consider optimizing queries or adding resources. If the probe threshold is too strict, increase `APP_EXTERNAL_DB_SLOW_MS` (default 1500 ms) on the control plane. Apps using the database are not affected by slow health checks, only monitoring.
+
+Still stuck: Monitor the database performance and connection pool to identify bottlenecks.
+
+### Adopted container not reachable after restart
+
+Likely cause: The container was recreated with a different network or IP, or moved to a different node.
+
+How to confirm: Check the container's current network: `docker container inspect <container> | grep NetworkID`. Compare it to what Levelrail has on file: `levelrail-cli databases get <name> --json | jq .docker_network`. If they differ, the container moved or the network changed.
+
+Fix: The record follows the container when recreated on the same node, because it uses the container name. If the container moved to a different node or network, re-adopt it: `levelrail-cli databases adopt --container <new-container> --name <same-name>` (the name must match to avoid duplicates). Or update the external database manually: `levelrail-cli databases connect --name <name> --host <new-host> --test --password-stdin`.
+
+Still stuck: See [Adopt a running container](/external-databases#adopt-a-running-container).
+
+### Cannot write to external database, only read works
+
+Likely cause: The external database record uses a read-only user, or write access is not granted to that user role.
+
+How to confirm: Check what user is configured: `levelrail-cli databases get <name> --json | jq .user`. Try a write manually: `psql -h <host> -U <user> -c "INSERT INTO test VALUES (1)"`. If it fails with permission denied, the user lacks write permissions.
+
+Fix: Either create a new external database record with a write-enabled user, or grant the user write permissions on the database server. For Postgres: `ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT INSERT, UPDATE, DELETE ON TABLES TO <user>`.
+
+Still stuck: Use the database viewer (Databases > <database> > Editor) with an admin user instead, or reconfigure the external database with a different user role that has write access.

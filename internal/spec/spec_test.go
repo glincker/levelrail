@@ -381,6 +381,60 @@ databases:
 	}
 }
 
+func TestParse_ValidValkeyDatabase(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: valkey, version: "8" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	if got := s.Databases["cache"]; got.Engine != EngineValkey || got.Version != "8" {
+		t.Errorf("Databases[cache] = %+v, want Engine=valkey Version=8", got)
+	}
+}
+
+func TestParse_ValidSearchEngineDatabases(t *testing.T) {
+	yaml := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  search: { engine: meilisearch, version: "v1.55" }
+  vectors: { engine: qdrant, version: "v1.19" }
+  catalog: { engine: typesense, version: "30.2" }
+`
+	s, err := Parse([]byte(yaml))
+	if err != nil {
+		t.Fatalf("Parse() error = %v", err)
+	}
+	for name, engine := range map[string]string{"search": EngineMeilisearch, "vectors": EngineQdrant, "catalog": EngineTypesense} {
+		if got := s.Databases[name]; got.Engine != engine {
+			t.Errorf("Databases[%s].Engine = %q, want %q", name, got.Engine, engine)
+		}
+	}
+}
+
+func TestParse_MemcachedRefusesBackupBlock(t *testing.T) {
+	base := `
+version: 1
+services:
+  web: { build: { type: dockerfile }, port: 8080 }
+databases:
+  cache: { engine: memcached, version: "1.6"`
+	if _, err := Parse([]byte(base + " }\n")); err != nil {
+		t.Fatalf("plain memcached: %v", err)
+	}
+	_, err := Parse([]byte(base + `, backup: { schedule: "0 3 * * *", retain: 7 } }` + "\n"))
+	if err == nil || !strings.Contains(err.Error(), "no data on disk") {
+		t.Fatalf("memcached with a backup block: err = %v", err)
+	}
+}
+
 func TestParse_ValidClickHouseDatabase(t *testing.T) {
 	yaml := `
 version: 1

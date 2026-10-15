@@ -46,7 +46,7 @@ import {
   CoinsIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
-import { filterByFeature, type ExperimentalFeature } from '@/lib/experimental'
+import type { ExperimentalFeature } from '@/lib/experimental'
 
 export type GlobalTo =
   | '/'
@@ -330,31 +330,23 @@ export const GLOBAL_NAV_FOOTER: GlobalNavItem[] = [
   { id: 'help', label: 'Help', to: '/help', icon: <BookOpenIcon /> },
 ]
 
+// Gated items stay in place; the renderer shows them locked (see
+// isFeatureLocked) so a switched-off feature is discoverable, not hidden.
 export function visibleGlobalGroups(
-  enabled: readonly string[],
   routeAvailable: (to: string) => boolean = () => true,
 ): GlobalNavGroup[] {
   return GLOBAL_NAV_GROUPS.map((g) => ({
     ...g,
-    items: filterByFeature(g.items, enabled).filter(
-      (i) => !i.requiresRoute || routeAvailable(i.to),
-    ),
+    items: g.items.filter((i) => !i.requiresRoute || routeAvailable(i.to)),
   })).filter((g) => g.items.length > 0)
 }
 
-export function visibleGlobalFooter(
-  enabled: readonly string[],
-): GlobalNavItem[] {
-  return filterByFeature(GLOBAL_NAV_FOOTER, enabled)
+export function visibleGlobalFooter(): GlobalNavItem[] {
+  return GLOBAL_NAV_FOOTER
 }
 
-export function visibleAppSections(
-  enabled: readonly string[],
-): AppNavSection[] {
-  return APP_NAV_SECTIONS.map((s) => ({
-    ...s,
-    items: filterByFeature(s.items, enabled),
-  })).filter((s) => s.items.length > 0)
+export function visibleAppSections(): AppNavSection[] {
+  return APP_NAV_SECTIONS
 }
 
 export function allGlobalItems(): GlobalNavItem[] {
@@ -559,17 +551,10 @@ export function isSingleSection(section: AppNavSection): boolean {
   return section.items.length === 1
 }
 
-// Groups open on first visit, before the user has toggled anything: the two
-// everyday ones and the group holding the current page. Navigation never
-// closes a group; GlobalNav only ever opens the active one (see its effect).
-const ALWAYS_OPEN_GROUPS: ReadonlySet<string> = new Set(['home', 'apps'])
-
-export function defaultGroupOpen(
-  group: GlobalNavGroup,
-  pathname: string,
-): boolean {
-  if (ALWAYS_OPEN_GROUPS.has(group.id)) return true
-  return group.items.some((i) => isGlobalItemActive(pathname, i))
+// Every group starts open: a collapsed default hides most of the product on a
+// first visit. Anything the user collapses is persisted and wins from then on.
+export function defaultGroupOpen(): boolean {
+  return true
 }
 
 export function resolveOpen(

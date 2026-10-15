@@ -74,10 +74,10 @@ func readMasterKey(masterKeyFilePath string, getenv func(string) string) (string
 		if err != nil {
 			return "", fmt.Errorf("read master key file: %w", err)
 		}
-		return strings.TrimSpace(string(data)), nil
+		return openMasterKeyMaterial(context.Background(), strings.TrimSpace(string(data)), getenv)
 	}
 	if v := strings.TrimSpace(getenv("APP_MASTER_KEY")); v != "" {
-		return v, nil
+		return openMasterKeyMaterial(context.Background(), v, getenv)
 	}
 	return "", errors.New("no master key source is configured")
 }

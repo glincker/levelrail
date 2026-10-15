@@ -37,18 +37,29 @@
   },
   "legend": {
     "label": "Legend",
-    "failed": "Failure",
-    "rolledBack": "Rollback"
+    "ready": "Ready",
+    "building": "In progress",
+    "failed": "Failed",
+    "rolledBack": "Rolled back",
+    "canceled": "Canceled",
+    "alert": "Alert fired",
+    "now": "Now"
   },
   "chart": {
     "label": "Deploys by app over the selected time range",
     "laneLabel": "{{app}}, {{count}} deploys",
-    "barLabel": "{{app}}, {{status}}, started {{when}}. Open deploy details.",
-    "axisLabel": "Time axis"
+    "barLabel": "{{app}}, {{status}}, started {{when}}, {{duration}}. Open deploy details.",
+    "axisLabel": "Time axis",
+    "alertLabel": "Alert fired: {{rule}}, {{when}}",
+    "clusterLabel": "{{count}} deploys close together in {{app}}. Show each deploy.",
+    "clusterChip": "+{{count}}",
+    "collapse": "Collapse grouped deploys",
+    "now": "Now",
+    "latest": "Latest deploy: {{status}}",
+    "unknownProject": "No project"
   },
   "card": {
     "title": "Deploy details",
-    "hint": "Hover or focus a bar to see its commit, author, duration and strategy.",
     "commit": "Commit",
     "noCommit": "No commit",
     "actor": "Actor",
@@ -65,7 +76,8 @@
   "empty": {
     "title": "No deploys in this range",
     "body": "Nothing deployed in the last {{range}} with these filters. Try a longer range or clear the filters.",
-    "action": "Show 7 days"
+    "action": "Show 7 days",
+    "sampleLabel": "Sample timeline"
   },
   "error": {
     "title": "Could not load the deploy timeline",

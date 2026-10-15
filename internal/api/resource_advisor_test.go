@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -321,18 +322,18 @@ func TestBetaFeatures_ToggleFromSettings(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/settings/beta-features/iac", nil)
 	req.AddCookie(cookie)
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/beta-features/iac", `{"enabled":true}`))
-	if rec.Code != http.StatusNotFound {
-		t.Fatalf("non toggleable feature = %d", rec.Code)
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "APP_EXPERIMENTAL=iac") {
+		t.Fatalf("non toggleable feature = %d %s", rec.Code, rec.Body.String())
 	}
 	rec = httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/beta-features", ""))
 	var list []betaFeatureResource
-	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list) != len(experimental.ToggleableList()) {
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list) != len(experimental.All()) {
 		t.Fatalf("list = %s", rec.Body.String())
 	}
 	for _, f := range list {
-		if f.Source != betaSourceOff {
-			t.Fatalf("%s source = %s, want off", f.Feature, f.Source)
+		if f.EnabledBy != betaSourceOff {
+			t.Fatalf("%s source = %s, want off", f.ID, f.EnabledBy)
 		}
 	}
 }

@@ -98,7 +98,7 @@ func TestCreateValidationAndWriteOnlySecrets(t *testing.T) {
 		{Name: "a", Kind: "nope", Endpoint: "http://x"},
 		{Name: "a", Kind: store.ExportKindLogsLoki, Endpoint: "ftp://x"},
 		{Name: "a", Kind: store.ExportKindLogsLoki, Endpoint: "http://x", MinLevel: "loud"},
-		{Name: "a", Kind: store.ExportKindMetricsOTLP, Endpoint: "http://x", Apps: []string{"web"}},
+		{Name: "a", Kind: store.ExportKindAuditWebhook, Endpoint: "http://x", Apps: []string{"web"}},
 		{Name: "a", Kind: store.ExportKindAuditS3},
 		{Name: "a", Kind: store.ExportKindLogsHTTP, Endpoint: "http://x", Headers: map[string]string{"Host": "evil"}},
 		{Name: "a", Kind: store.ExportKindLogsHTTP, Endpoint: "http://x", HMACKey: "0123456789abcdef"},

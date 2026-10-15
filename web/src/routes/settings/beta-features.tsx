@@ -1,18 +1,18 @@
-import { useId } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { useEffect } from 'react'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { FlaskIcon } from '@phosphor-icons/react/dist/ssr'
 import { Banner } from '@/components/ui/banner'
+import { Button } from '@/components/ui/button'
 import { PageTemplate } from '@/components/shell/PageTemplate'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { BetaFeatureCard } from '@/components/settings/BetaFeatureCard'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
 } from '../../components/settings/SettingsSkeletons'
+import { bannerFor, groupByMaturity } from '../../lib/betaFeatures'
+import { safeReturnPath, type BetaFeaturesSearch } from '../../lib/experimental'
 import {
   betaFeaturesQueryOptions,
   useBetaFeatures,
@@ -20,6 +20,10 @@ import {
 } from '../../queries/resourceAdvisor'
 
 export const Route = createFileRoute('/settings/beta-features')({
+  validateSearch: (search: Record<string, unknown>): BetaFeaturesSearch => ({
+    feature: typeof search.feature === 'string' ? search.feature : undefined,
+    from: typeof search.from === 'string' ? search.from : undefined,
+  }),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(betaFeaturesQueryOptions()),
   component: BetaFeaturesPage,
@@ -31,118 +35,128 @@ export const Route = createFileRoute('/settings/beta-features')({
   ),
 })
 
-interface BetaCard {
-  feature: 'resource-advisor' | 'ai-chat' | 'cli-console' | 'mobile-api'
-  title: string
-  description: string
-  toggleLabel: string
-  turnedOn: string
-  turnedOff: string
+// Longer operator notes (resourceAdvisor namespace) shown instead of the API summary.
+type DetailKey =
+  | 'settings.aiChatDescription'
+  | 'settings.cliConsoleDescription'
+  | 'settings.mobileApiDescription'
+  | 'settings.samlScimDescription'
+  | 'settings.advisorDescription'
+
+const DETAIL_KEYS: Partial<Record<string, DetailKey>> = {
+  'ai-chat': 'settings.aiChatDescription',
+  'cli-console': 'settings.cliConsoleDescription',
+  'mobile-api': 'settings.mobileApiDescription',
+  'saml-scim': 'settings.samlScimDescription',
+  'resource-advisor': 'settings.advisorDescription',
 }
 
 function BetaFeaturesPage() {
-  const { t } = useTranslation('resourceAdvisor')
-  const { data: features } = useBetaFeatures()
+  const { t } = useTranslation('betaFeatures')
+  const { t: tAdvisor } = useTranslation('resourceAdvisor')
+  const router = useRouter()
+  const { feature: focus, from } = Route.useSearch()
+  const { data: features = [] } = useBetaFeatures()
   const setFeature = useSetBetaFeature()
-  const idPrefix = useId()
-  const cards: BetaCard[] = [
-    {
-      feature: 'ai-chat',
-      title: t('settings.aiChatTitle'),
-      description: t('settings.aiChatDescription'),
-      toggleLabel: t('settings.aiChatToggleLabel'),
-      turnedOn: t('settings.aiChatTurnedOn'),
-      turnedOff: t('settings.aiChatTurnedOff'),
-    },
-    {
-      feature: 'cli-console',
-      title: t('settings.cliConsoleTitle'),
-      description: t('settings.cliConsoleDescription'),
-      toggleLabel: t('settings.cliConsoleToggleLabel'),
-      turnedOn: t('settings.cliConsoleTurnedOn'),
-      turnedOff: t('settings.cliConsoleTurnedOff'),
-    },
-    {
-      feature: 'mobile-api',
-      title: t('settings.mobileApiTitle'),
-      description: t('settings.mobileApiDescription'),
-      toggleLabel: t('settings.mobileApiToggleLabel'),
-      turnedOn: t('settings.mobileApiTurnedOn'),
-      turnedOff: t('settings.mobileApiTurnedOff'),
-    },
-    {
-      feature: 'resource-advisor',
-      title: t('settings.advisorTitle'),
-      description: t('settings.advisorDescription'),
-      toggleLabel: t('settings.toggleLabel'),
-      turnedOn: t('settings.turnedOn'),
-      turnedOff: t('settings.turnedOff'),
-    },
-  ]
+  const banner = bannerFor(features, focus)
+  const back = safeReturnPath(from)
 
-  function toggle(card: BetaCard, enabled: boolean) {
+  useEffect(() => {
+    if (!focus) return
+    document
+      .getElementById(`feature-${focus}`)
+      ?.scrollIntoView?.({ block: 'center', behavior: 'smooth' })
+  }, [focus, features.length])
+
+  function toggle(id: string, name: string, enabled: boolean) {
     setFeature.mutate(
-      { feature: card.feature, enabled },
+      { feature: id, enabled },
       {
         onSuccess: (res) =>
           toast.add({
             type: 'success',
-            title: res.enabled ? card.turnedOn : card.turnedOff,
+            title: t(res.enabled ? 'toggle.on' : 'toggle.off', { name }),
           }),
         onError: (err) =>
           toast.add({
             type: 'error',
-            title: t('settings.error', { message: err.message }),
+            title: t('toggle.error', { name, message: err.message }),
           }),
       },
     )
   }
 
+  const takeMeThere = back ? (
+    <Button
+      type="button"
+      size="sm"
+      onClick={() => {
+        router.history.push(back)
+      }}
+    >
+      {t('banner.takeMeThere')}
+    </Button>
+  ) : undefined
+
   return (
     <PageTemplate
       icon={<FlaskIcon />}
-      title={t('settings.title')}
-      description={t('settings.description')}
+      title={t('title')}
+      description={t('description')}
       banners={
-        <Banner variant="info" title={t('beta.label')}>
-          {t('beta.hint')}
-        </Banner>
+        <>
+          {banner.kind === 'locked' && back ? (
+            <Banner
+              variant="warning"
+              title={t('banner.title', { name: banner.feature.name })}
+            >
+              {banner.feature.toggleable
+                ? t('banner.body')
+                : t('banner.bodyRestart')}
+            </Banner>
+          ) : null}
+          {banner.kind === 'ready' && back ? (
+            <Banner
+              variant="success"
+              title={t('banner.ready', { name: banner.feature.name })}
+              action={takeMeThere}
+            />
+          ) : null}
+          {banner.kind === 'unknown' ? (
+            <Banner variant="info" title={t('banner.unknown')} />
+          ) : null}
+        </>
       }
     >
-      {cards.map((card) => {
-        const state = features?.find((f) => f.feature === card.feature)
-        if (!state) return null
-        const id = `${idPrefix}-${card.feature}`
-        return (
-          <Card key={card.feature}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {card.title}
-                <Badge variant="outline">{t('beta.label')}</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                {card.description}
-              </p>
-              <div className="flex items-center gap-3">
-                <Switch
-                  id={id}
-                  checked={state.enabled}
-                  disabled={state.locked || setFeature.isPending}
-                  onCheckedChange={(v) => toggle(card, v)}
-                />
-                <Label htmlFor={id}>{card.toggleLabel}</Label>
-              </div>
-              {state.locked ? (
-                <p className="text-xs text-muted-foreground">
-                  {t('settings.locked')}
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        )
-      })}
+      {groupByMaturity(features).map((group) => (
+        <section
+          key={group.maturity}
+          aria-labelledby={`beta-group-${group.maturity}`}
+          className="space-y-3"
+        >
+          <h2
+            id={`beta-group-${group.maturity}`}
+            className="text-sm font-medium text-foreground"
+          >
+            {t(`groups.${group.maturity}`)}
+          </h2>
+          {group.items.map((f) => {
+            const detailKey = DETAIL_KEYS[f.id]
+            return (
+              <BetaFeatureCard
+                key={f.id}
+                feature={f}
+                highlighted={f.id === focus}
+                pending={setFeature.isPending}
+                onToggle={(enabled) => {
+                  toggle(f.id, f.name, enabled)
+                }}
+                detail={detailKey ? tAdvisor(detailKey) : undefined}
+              />
+            )
+          })}
+        </section>
+      ))}
     </PageTemplate>
   )
 }

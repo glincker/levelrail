@@ -1,6 +1,6 @@
 {
   "title": "{{name}}: Infrastructure",
-  "description": "Drag, pan and zoom how this project's apps, databases, domains and volumes connect. Positions are remembered in this browser.",
+  "description": "Drag, pan and zoom how this project's apps, databases, domains, load balancers, volumes and nodes connect. Positions are remembered in this browser.",
   "canvasLabel": "Infrastructure canvas with {{count}} resources. Focus a resource and use arrow keys to move it.",
   "empty": {
     "title": "Nothing filed under this project yet",
@@ -14,14 +14,18 @@
     "app": "App",
     "database": "Database",
     "volume": "Volume",
-    "domain": "Domain"
+    "domain": "Domain",
+    "load_balancer": "Load balancer",
+    "node": "Node"
   },
   "edge": {
     "database_binding": "Database connection",
     "depends_on": "Depends on",
     "volume_attachment": "Volume attachment",
     "egress_allow": "Egress allow-rule",
-    "routing": "Routing"
+    "routing": "Routing",
+    "load_balances": "Balances traffic to",
+    "placed_on": "Runs on"
   },
   "status": {
     "healthy": "Healthy",

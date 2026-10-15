@@ -201,7 +201,7 @@ fi
 # literal string it's searching for.
 echo "pre-commit: lucide-react sweep (this repo is Phosphor-only, ADR 014)"
 # Lockfiles list transitive dependencies (e.g. @glinui/ui pulls lucide-react); the rule is about our own imports.
-staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v -e '^scripts/git-hooks/pre-commit$' -e 'package-lock\.json$')
+staged_all_files=$(git diff --cached --name-only --diff-filter=ACM | grep -v -e '^scripts/git-hooks/pre-commit$' -e '^scripts/check-icon-rules\.sh$' -e '^adr/014-phosphor-icons\.md$' -e 'package-lock\.json$')
 lucide_hits=""
 for f in $staged_all_files; do
 	[ -f "$f" ] || continue
@@ -213,6 +213,17 @@ if [ -n "$lucide_hits" ]; then
 	echo "lucide-react import found in:$lucide_hits"
 	echo "This repo is Phosphor-icons only (@phosphor-icons/react/dist/ssr, ADR 014)."
 	fail=1
+fi
+
+# Icon and logo rules: brand marks from @thesvg/react through BrandIcon, UI
+# icons from Phosphor only (scripts/check-icon-rules.sh, ADR 014).
+echo "pre-commit: icon and logo rules"
+staged_web_src=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^web/src/.*\.(ts|tsx)$')
+if [ -n "$staged_web_src" ]; then
+	# shellcheck disable=SC2086
+	if ! scripts/check-icon-rules.sh $staged_web_src; then
+		fail=1
+	fi
 fi
 
 # The installer CI job runs this exact shellcheck command and fails on info-level

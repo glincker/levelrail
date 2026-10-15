@@ -1,18 +1,20 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { HardDrivesIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/toast'
 import { cn } from '@/lib/utils'
+import { BrandTile } from '../BrandLogoBadge'
 import { backupCoverageKeys } from '../../queries/backupCoverage'
 import { useCreateBackupTarget } from '../../queries/backupTargets'
 import type { BackupTarget } from '../../types/backupTarget'
 import {
   buildTargetRequest,
+  presetBrand,
   presetById,
   resolveEndpoint,
   TARGET_PRESETS,
@@ -94,17 +96,27 @@ export function TargetSetupForm({
               setValues((prev) => ({ ...prev, region: '', endpoint: '' }))
             }}
             className={cn(
-              'rounded-md border px-3 py-2 text-left text-sm transition-colors',
+              'flex items-center gap-3 rounded-lg border px-3 py-3 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
               p.id === presetId
-                ? 'border-primary bg-primary/5'
+                ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
                 : 'border-border hover:bg-muted',
             )}
           >
-            <span className="block font-medium">
-              {t(`target.preset.${p.id}.name`)}
-            </span>
-            <span className="block text-xs text-muted-foreground">
-              {t(`target.preset.${p.id}.hint`)}
+            <BrandTile
+              name={presetBrand(p.id)}
+              label={t(`target.preset.${p.id}.name`)}
+            >
+              {p.id === 'local' ? (
+                <HardDrivesIcon aria-hidden="true" className="size-5" />
+              ) : undefined}
+            </BrandTile>
+            <span className="min-w-0">
+              <span className="block truncate font-medium">
+                {t(`target.preset.${p.id}.name`)}
+              </span>
+              <span className="block truncate text-xs text-muted-foreground">
+                {t(`target.preset.${p.id}.hint`)}
+              </span>
             </span>
           </button>
         ))}

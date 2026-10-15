@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import {
-  CloudIcon,
   HardDrivesIcon,
   PlusIcon,
-  TerminalIcon,
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
@@ -29,9 +27,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SkeletonList } from './kit/Skeleton'
-import { InfoTip } from './kit/InfoTip'
 import { ManualEnrollFields } from './AddNodeDialog'
 import { SSHEnrollFields } from './AddNodeWizardSSH'
+import { AddNodeMethodList } from './addNode/AddNodeMethodList'
 import { ProvisionProgress, StepShell } from './AddNodeWizardSteps'
 import {
   useCreateNodeProvision,
@@ -138,75 +136,26 @@ function WizardBody({ onClose }: { onClose: () => void }) {
             connect a machine you already have.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          {(
-            ['hetzner', 'digitalocean', 'aws', 'azure', 'gcp'] as ProviderId[]
-          ).map((p) => {
-            const info = providers.data?.find((x) => x.provider === p)
-            const hasToken = info?.has_token ?? false
-            return (
-              <button
-                key={p}
-                type="button"
-                disabled={providers.isLoading || !hasToken}
-                onClick={() => {
-                  setProvider(p)
-                  setStep('region')
-                }}
-                className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <CloudIcon className="size-5 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-foreground">
-                    {PROVIDER_LABELS[p]}
-                  </div>
-                  {!providers.isLoading && !hasToken ? (
-                    <div className="text-xs text-muted-foreground">
-                      No API token stored yet.{' '}
-                      <Link
-                        to="/settings/node-providers"
-                        className="underline underline-offset-2"
-                      >
-                        Connect one
-                      </Link>
-                    </div>
-                  ) : null}
-                </div>
-                <InfoTip label={`About ${PROVIDER_LABELS[p]} provisioning`}>
-                  We only use the provider API to create the VM; day to day
-                  operation never touches SSH, matching how the rest of
-                  Levelrail&apos;s multi-node works.
-                </InfoTip>
-              </button>
+        <AddNodeMethodList
+          connected={
+            new Set(
+              (providers.data ?? [])
+                .filter((x) => x.has_token)
+                .map((x) => x.provider),
             )
-          })}
-          <button
-            type="button"
-            onClick={() => setStep('ssh')}
-            className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50"
-          >
-            <TerminalIcon className="size-5 shrink-0 text-muted-foreground" />
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-foreground">
-                Connect over SSH
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Adopt a machine you already have: a VPS, home server, or
-                Raspberry Pi.
-              </div>
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setStep('manual')}
-            className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:bg-muted/50"
-          >
-            <HardDrivesIcon className="size-5 shrink-0 text-muted-foreground" />
-            <div className="text-sm font-medium text-foreground">
-              I already have a server
-            </div>
-          </button>
-        </div>
+          }
+          loading={providers.isLoading}
+          onPickProvider={(p) => {
+            setProvider(p)
+            setStep('region')
+          }}
+          onSSH={() => {
+            setStep('ssh')
+          }}
+          onManual={() => {
+            setStep('manual')
+          }}
+        />
       </>
     )
   }

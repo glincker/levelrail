@@ -34,15 +34,17 @@ const (
 // entrypoint on purpose: the ordinary run() path never reads APP_DEMO_MODE.
 func runDemo(ctx context.Context, logger *slog.Logger, args []string, stdout io.Writer) error {
 	if len(args) == 0 {
-		return errors.New("usage: demo <seed|serve>")
+		return errors.New("usage: demo <seed|serve|check>")
 	}
 	switch args[0] {
 	case "seed":
 		return runDemoSeed(ctx, logger, args[1:], stdout)
 	case "serve":
 		return runDemoServe(ctx, logger)
+	case "check":
+		return runDemoCheck(ctx, stdout)
 	default:
-		return fmt.Errorf("unknown demo command %q (want seed or serve)", args[0])
+		return fmt.Errorf("unknown demo command %q (want seed, serve or check)", args[0])
 	}
 }
 
@@ -60,7 +62,7 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	anchor := time.Now().UTC().Truncate(time.Hour)
+	anchor := time.Now().UTC().Truncate(time.Minute)
 	if *anchorRaw != "now" {
 		t, err := time.Parse(time.RFC3339, *anchorRaw)
 		if err != nil {
@@ -81,7 +83,18 @@ func runDemoSeed(ctx context.Context, logger *slog.Logger, args []string, stdout
 			logger.Error("closing store", slog.String("error", cerr.Error()))
 		}
 	}()
-	m, err := demo.Seed(ctx, db, demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b)})
+	telemetryDB, err := openTelemetryStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = telemetryDB.Close() }()
+	alertingDB, err := openAlertingStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = alertingDB.Close() }()
+	m, err := demo.SeedAll(ctx, demo.Stores{DB: db, Telemetry: telemetryDB, Alerting: alertingDB},
+		demo.Options{Seed: *seed, Anchor: anchor, DomainSuffix: demoDomainSuffix(b)})
 	if err != nil {
 		return err
 	}
@@ -210,4 +223,40 @@ func nextDemoReset() time.Time {
 		next = next.AddDate(0, 0, 1)
 	}
 	return next
+}
+
+// runDemoCheck lints the seeded data dir and fails when any record is
+// dangling, secret-looking, off the example domains or in the future.
+func runDemoCheck(ctx context.Context, stdout io.Writer) error {
+	b, err := loadBrand()
+	if err != nil {
+		return err
+	}
+	db, err := openStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+	telemetryDB, err := openTelemetryStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = telemetryDB.Close() }()
+	alertingDB, err := openAlertingStore(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = alertingDB.Close() }()
+	findings, err := demo.Lint(ctx, demo.Stores{DB: db, Telemetry: telemetryDB, Alerting: alertingDB}, demo.LintOptions{DomainSuffix: demoDomainSuffix(b)})
+	if err != nil {
+		return err
+	}
+	for _, f := range findings {
+		_, _ = fmt.Fprintln(stdout, f.String())
+	}
+	if len(findings) > 0 {
+		return fmt.Errorf("demo check: %d findings", len(findings))
+	}
+	_, _ = fmt.Fprintln(stdout, "demo check: seed data is clean")
+	return nil
 }

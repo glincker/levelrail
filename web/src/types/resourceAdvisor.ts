@@ -100,9 +100,18 @@ export interface AdvisorApplyResult {
   applied_live: boolean
 }
 
+export type BetaMaturity = 'beta' | 'experimental'
+
 export interface BetaFeature {
-  feature: string
+  id: string
+  name: string
+  summary: string
   enabled: boolean
-  source: 'env' | 'settings' | 'off'
+  enabled_by: 'env' | 'setting' | 'none'
+  toggleable: boolean
+  requires_restart: boolean
+  env_hint: string
+  docs_path: string
+  maturity: BetaMaturity
   locked: boolean
 }

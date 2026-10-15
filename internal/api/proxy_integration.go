@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -35,6 +36,20 @@ type proxyIntegrationDeps struct {
 	routeRetryInterval time.Duration
 	// setupMu makes setup one at a time so two clicks cannot interleave.
 	setupMu sync.Mutex
+	// marker proves delivery to the built-in ingress; nil proves nothing.
+	marker *proxyroutes.Marker
+}
+
+// SetProxyRouteCheck lets verification prove that a proxy route reaches the
+// built-in ingress. Call after SetProxyIntegration.
+func (rt *Router) SetProxyRouteCheck(rc ingress.RouteCheck) {
+	if rt.proxyIntegration == nil || !rc.Valid() {
+		return
+	}
+	rt.proxyIntegration.marker = &proxyroutes.Marker{
+		Header: ingress.RouteCheckHeader, Value: rc.Token,
+		ReplyHeader: ingress.RouteCheckReplyHeader, Reply: rc.Reply,
+	}
 }
 
 // SetProxyIntegration enables the managed proxy routes API. syncer must be
@@ -80,6 +95,8 @@ type proxyDomainResource struct {
 	Certificate *proxyCertificateResource `json:"certificate"`
 	LastError   string                    `json:"last_error"`
 	CheckedAt   string                    `json:"checked_at"`
+	// Delivered is true once verification proved requests reach the ingress.
+	Delivered bool `json:"delivered"`
 }
 
 type proxyStepResource struct {
@@ -187,6 +204,7 @@ func proxyDomain(plan proxyroutes.Plan, it proxyroutes.Item, st store.ProxyRoute
 	}
 	d.CheckedAt = st.VerifiedAt.UTC().Format(time.RFC3339)
 	d.Reachable = st.Reachable
+	d.Delivered = proxyRouteDelivers(st)
 	switch st.ProxyLoaded {
 	case store.ProxyLoadedYes, store.ProxyLoadedNo:
 		loaded := st.ProxyLoaded == store.ProxyLoadedYes

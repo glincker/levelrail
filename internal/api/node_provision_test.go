@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,6 +46,15 @@ func (f *fakeNodeProviderSecrets) Resolve(_ context.Context, serviceName, envKey
 		return "", errNodeProviderSecretNotFound
 	}
 	return v, nil
+}
+
+func (f *fakeNodeProviderSecrets) DeleteAll(_ context.Context, serviceName string) error {
+	for k := range f.values {
+		if strings.HasPrefix(k, serviceName+"/") {
+			delete(f.values, k)
+		}
+	}
+	return nil
 }
 
 var errNodeProviderSecretNotFound = context.DeadlineExceeded // any distinct sentinel error, unwrapped by callers here
@@ -121,8 +131,8 @@ func TestHandleListNodeProviders(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&out); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(out) != len(nodeProviderNames) {
-		t.Fatalf("providers = %+v, want %d", out, len(nodeProviderNames))
+	if len(out) != len(nodeProviderNames)+1 {
+		t.Fatalf("providers = %+v, want %d plus custom", out, len(nodeProviderNames))
 	}
 	for _, p := range out {
 		if p.Provider == "hetzner" && !p.HasToken {

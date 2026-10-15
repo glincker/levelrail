@@ -30,6 +30,7 @@ import {
   type StageTab,
 } from '../../../../../components/DeployStageTabs'
 import { DeployFailureSummaryCard } from '../../../../../components/DeployFailureSummaryCard'
+import { DeployExitCard } from '../../../../../components/DeployExitCard'
 import { deployStageAnchorId } from '../../../../../lib/deployFailureSummary'
 import { DeployNewErrorTypes } from '../../../../../components/DeployNewErrorTypes'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
@@ -39,6 +40,7 @@ import { DeployGatePanel } from '../../../../../components/DeployGatePanel'
 import { ProbeAttemptsPanel } from '../../../../../components/ProbeAttemptsPanel'
 import { useProbeAttempts } from '../../../../../queries/probeAttempts'
 import { SupplyChainSection } from '../../../../../components/SupplyChainSection'
+import { SecretScanSection } from '../../../../../components/SecretScanSection'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // 'image' attempts (a bare image-tag redeploy/rollback) have no build
@@ -48,6 +50,27 @@ import { Skeleton } from '@/components/ui/skeleton'
 // explain why.
 const NO_BUILD_STEP_MESSAGE =
   'This deployment used a pre-built Docker image, so there is no build output.'
+
+// A finished deploy that produced no build lines will never produce any, so
+// say that instead of implying output is still on its way.
+const NO_OUTPUT_RECORDED_MESSAGE =
+  'No build output was recorded for this deployment.'
+
+// Sources whose deploy pulls an image as is: no build runs.
+const IMAGE_ONLY_SOURCES: ReadonlySet<string> = new Set([
+  'image',
+  'compose',
+  'promote',
+  'clone',
+  'auto_rollback',
+])
+
+const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
+  'succeeded',
+  'failed',
+  'superseded',
+  'canceled',
+])
 
 // The deploy detail page: a real metadata summary (DeployMetaCard) above
 // the two real pipeline stages (DeploySection, one per lib/deployStages.ts
@@ -86,7 +109,11 @@ function DeployLogsPage() {
     deployId,
     attempt?.status === 'running',
   )
-  const noBuildStep = attempt?.source === 'image'
+  const noBuildStep =
+    attempt?.source !== undefined && IMAGE_ONLY_SOURCES.has(attempt.source)
+  const attemptFinished =
+    attempt !== undefined && TERMINAL_STATUSES.has(attempt.status)
+  const noOutputWillCome = noBuildStep || attemptFinished
   const isLatestAttempt = attempts[0]?.id === deployId
   const stages = attempt
     ? computeDeployStages(attempt, conditions, isLatestAttempt)
@@ -141,6 +168,11 @@ function DeployLogsPage() {
             conditions={conditions}
             lines={lines}
           />
+          <DeployExitCard
+            appName={name}
+            deployId={deployId}
+            failed={attempt.status === 'failed'}
+          />
 
           <div className="flex min-h-0 flex-1 flex-col gap-3">
             <div className="flex flex-wrap items-end justify-between gap-2">
@@ -190,9 +222,13 @@ function DeployLogsPage() {
                   resume={resume}
                   heightClassName="h-[calc(100dvh-24rem)] min-h-80"
                   emptyStateMessage={
-                    noBuildStep ? NO_BUILD_STEP_MESSAGE : undefined
+                    noBuildStep
+                      ? NO_BUILD_STEP_MESSAGE
+                      : attemptFinished
+                        ? NO_OUTPUT_RECORDED_MESSAGE
+                        : undefined
                   }
-                  emptyStatePulse={!noBuildStep}
+                  emptyStatePulse={!noOutputWillCome}
                   isFinished={attempt.status !== 'running'}
                 />
               </div>
@@ -219,11 +255,14 @@ function DeployLogsPage() {
             ) : null}
 
             {tab === 'supply' ? (
-              <SupplyChainSection
-                appName={name}
-                deploymentId={deployId}
-                sbomPackages={attempt.sbom_packages}
-              />
+              <div className="space-y-6">
+                <SupplyChainSection
+                  appName={name}
+                  deploymentId={deployId}
+                  sbomPackages={attempt.sbom_packages}
+                />
+                <SecretScanSection appName={name} deploymentId={deployId} />
+              </div>
             ) : null}
           </div>
 

@@ -77,6 +77,11 @@ var devtools1Templates = []Template{
       SECRET_KEY_BASE: $SERVICE_BASE64_64_SECRETKEYBASE
       DATABASE_URL: postgres://plausible:$SERVICE_PASSWORD_DB@db:5432/plausible
       CLICKHOUSE_DATABASE_URL: http://clickhouse:8123/plausible
+    depends_on:
+      db:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8000/api/health || exit 1"]
       interval: 30s
@@ -90,12 +95,22 @@ var devtools1Templates = []Template{
       POSTGRES_DB: plausible
     volumes:
       - plausible_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plausible -d plausible"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   clickhouse:
     image: clickhouse/clickhouse-server:24.12-alpine
     environment:
       CLICKHOUSE_SKIP_USER_SETUP: "1"
     volumes:
       - plausible_clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 `,
 	},
 	{

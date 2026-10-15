@@ -11,7 +11,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { DatabaseVersionPicker } from './databaseVersions/DatabaseVersionPicker'
 import { toast } from '@/components/ui/toast'
 import { useSetDatabaseVersion } from '../queries/databases'
 
@@ -19,9 +19,11 @@ import { useSetDatabaseVersion } from '../queries/databases'
 // a 409 whose message is shown inline.
 export function ChangeDatabaseVersionDialog({
   name,
+  engine,
   currentVersion,
 }: {
   name: string
+  engine: string
   currentVersion: string
 }) {
   const { t } = useTranslation('databases')
@@ -53,13 +55,11 @@ export function ChangeDatabaseVersionDialog({
         </DialogHeader>
         <label className="space-y-1 text-sm font-medium">
           {t('version.label')}
-          <Input
+          <DatabaseVersionPicker
+            engine={engine}
             value={version}
             placeholder={t('version.placeholder')}
-            onChange={(e) => {
-              setVersion(e.target.value)
-            }}
-            className="font-mono"
+            onChange={setVersion}
           />
         </label>
         <p className="text-xs text-muted-foreground">

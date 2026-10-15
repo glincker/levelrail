@@ -6,6 +6,7 @@ import { useApp } from '../../queries/apps'
 import { useDeployStatus } from '../../queries/deploys'
 import { useRequestRateSpark } from './useRequestRateSpark'
 import { summarizeAppStatus } from '../../lib/appStatus'
+import { useAppAsleep } from '../../queries/appSleep'
 
 function toneFor(variant: string | null | undefined): Tone {
   if (variant === 'destructive') return 'danger'
@@ -18,7 +19,7 @@ export function AppNavHeader({ name }: { name: string }) {
   const { data: app } = useApp(name)
   const { data: conditions } = useDeployStatus(name)
   const { state } = useSidebar()
-  const status = summarizeAppStatus(conditions)
+  const status = summarizeAppStatus(conditions, useAppAsleep(name))
   const spark = useRequestRateSpark(name)
   const rail = state === 'collapsed'
 

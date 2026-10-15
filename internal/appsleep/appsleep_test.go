@@ -38,7 +38,12 @@ func (f *fakeApps) GetDesiredService(_ context.Context, n string) (*store.Desire
 	if !ok {
 		return nil, store.ErrServiceNotFound
 	}
-	return &store.DesiredService{Name: n, Suspended: s}, nil
+	svc := &store.DesiredService{Name: n, Suspended: s, Domains: []string{n + ".example.com"}}
+	if n == "pinned" {
+		port := 8080
+		svc.HostPort = &port
+	}
+	return svc, nil
 }
 func (f *fakeApps) UpdateServiceSuspended(_ context.Context, n string, s bool) error {
 	f.suspended[n] = s
@@ -65,8 +70,9 @@ func TestTick(t *testing.T) {
 		"stopped":   {ServiceName: "stopped", IdleMinutes: 30, Since: old},
 		"restarted": {ServiceName: "restarted", IdleMinutes: 30, Sleeping: true, Since: old},
 		"gone":      {ServiceName: "gone", IdleMinutes: 30, Since: old},
+		"pinned":    {ServiceName: "pinned", IdleMinutes: 30, Since: old},
 	}}
-	apps := &fakeApps{suspended: map[string]bool{"idle": false, "busy": false, "fresh": false, "stopped": true, "restarted": false}}
+	apps := &fakeApps{suspended: map[string]bool{"idle": false, "busy": false, "fresh": false, "stopped": true, "restarted": false, "pinned": false}}
 	s := &Scheduler{
 		Sleep: sleep, Apps: apps, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: func() time.Time { return now },
 		Traffic: fakeTraffic{last: map[string]time.Time{"service:busy": now.Add(-time.Minute)}},
@@ -77,7 +83,7 @@ func TestTick(t *testing.T) {
 	if !apps.suspended["idle"] || !sleep.rows["idle"].Sleeping {
 		t.Error("idle app was not put to sleep")
 	}
-	for _, n := range []string{"busy", "fresh"} {
+	for _, n := range []string{"busy", "fresh", "pinned"} {
 		if apps.suspended[n] || sleep.rows[n].Sleeping {
 			t.Errorf("%s must keep running", n)
 		}

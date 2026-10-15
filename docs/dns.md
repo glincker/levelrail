@@ -209,6 +209,60 @@ Deleting a zone requires typing its name, and a zone that still has records beyo
 - Route53 private hosted zones are listed but have no delegation to verify.
 - Each change is applied as it is planned, one record set at a time; a provider error part way through an import stops it and reports how many changes landed.
 
+## Troubleshooting
+
+### The DNS provider credential is rejected
+
+The control plane cannot authenticate with the DNS provider.
+
+Likely cause: the token or access key is invalid, expired, or has insufficient permissions.
+
+How to confirm: go to Settings > Domains > DNS provider and check which provider is listed. Try to perform any DNS action (list zones, check propagation) from the CLI or dashboard and look for a permission or authentication error.
+
+Fix: verify the token's permissions match what the [Connect a provider](/dns#connect-a-provider) section requires. For Cloudflare, confirm the token is an API token (not the global API key) and has Zone.Zone.Read and Zone.DNS.Edit. For Route53, check that the IAM access key has the required actions. If the token is correct but still fails, regenerate a new one at your provider and update the credential.
+
+### Zone delegation shows "not delegated" or "partially delegated"
+
+Name servers have not been updated at the registrar yet, or they are wrong.
+
+Likely cause: the name servers set at your registrar do not match what the DNS provider assigned, or the change is still propagating through DNS caches worldwide.
+
+How to confirm: run `levelrail-cli dns zones verify example.com`, or open the domain on the DNS page and check the Propagation tab. The output shows what resolvers are returning and what the zone assignment was.
+
+Fix: copy the exact name servers from step 2 of the Add zone wizard (`levelrail-cli dns zones nameservers example.com`) and update them at your registrar. Name server changes can take up to 2 hours to propagate globally, but typically appear within 15 minutes. Re-check with `levelrail-cli dns zones verify example.com` after the propagation completes.
+
+### A DNS record was added but the propagation tab shows old values
+
+DNS caches worldwide are still serving the old answer before the TTL expires.
+
+Likely cause: the DNS record was recently changed, and resolvers have cached the old value until the TTL expires.
+
+How to confirm: run `levelrail-cli dns check <name> --type <type>` and check the TTL column. The remaining TTL is how long resolvers will keep serving the old answer.
+
+Fix: wait for the TTL to expire. If you need the new record immediately, reduce the TTL before making the change next time (minimum 30 seconds), or use a resolver that does not cache (ask 8.8.8.8 directly with `dig @8.8.8.8 <name>`). The system resolver on the control plane may also be caching; restart the resolver service or wait for its cache to expire.
+
+### Import or export fails with an error about conflicting records
+
+The import plan detected records that would break DNS rules.
+
+Likely cause: the zone file being imported has records that conflict with existing ones, such as two values for a CNAME, or a CNAME sharing a name with another record type.
+
+How to confirm: run `levelrail-cli dns records import example.com --file file.zone` (without `--apply`) to see the plan and any conflicts listed.
+
+Fix: edit the zone file to remove the conflicting records, or review the plan and skip importing the conflicting sets. CNAME records cannot share a name with any other record type, and each CNAME name can have only one value.
+
+### A wildcard domain route is not matching requests
+
+Requests to subdomains of the wildcard domain are not reaching the app.
+
+Likely cause: a wildcard certificate is needed, which requires DNS-01 ACME. Wildcards cannot use HTTP-01. Or, an exact domain record is taking precedence over the wildcard.
+
+How to confirm: go to Settings > Domains > DNS provider to check if Cloudflare or Route53 is connected. Open the domain on the Domains page and check if the certificate is issued. Also check whether an exact subdomain is defined for the same domain.
+
+Fix: connect a DNS provider if you have not already, then enable DNS-01 for the wildcard domain. If an exact domain is already configured (e.g., `api.example.com`) and you want requests for other subdomains to go to the wildcard app, remove the exact domain from the wildcard-serving app, or assign the exact domain to a different app.
+
+Still stuck? Run `levelrail-cli dns check <domain>` and attach its output to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
+
 ## Roadmap
 
 How the Route53 feature set maps onto this page:

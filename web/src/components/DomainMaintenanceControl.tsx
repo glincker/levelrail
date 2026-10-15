@@ -1,22 +1,44 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { WarningIcon, WrenchIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { toast } from '@/components/ui/toast'
 import {
   useClearDomainMaintenance,
   useDomainMaintenance,
   useSetDomainMaintenance,
 } from '../queries/domainMaintenance'
+import type { DomainMaintenance } from '../queries/domainMaintenance'
+import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
+import { DomainMaintenanceForm } from './domains/DomainMaintenanceForm'
+import { useDomainEnforcement } from '../hooks/useDomainEnforcement'
+import { isEnforced } from '../lib/domainEnforcement'
 
-// Maintenance mode for one already-saved domain: while enabled, the
-// embedded Caddy ingress serves a fixed "down for maintenance" response
-// instead of proxying to the container, without stopping it
-// (internal/reconcile/ingress). Unlike DomainBasicAuthControl, there is
-// no credential to collect, so this is a direct toggle, not an
-// expand-to-form control: the action is instantly reversible (flip it
-// back off any time, no data lost), so it doesn't need
-// RotateMasterKeyDialog-level confirmation friction either.
+function MaintenanceSummary({ m }: { m: DomainMaintenance }) {
+  const { t, i18n } = useTranslation('domains')
+  const bypass = m.bypass?.length ?? 0
+  return (
+    <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+      {m.until ? (
+        <li>
+          {t('maintenance.ends', {
+            date: new Date(m.until).toLocaleString(i18n.language),
+          })}
+        </li>
+      ) : null}
+      {bypass > 0 ? (
+        <li>{t('maintenance.bypassCount', { count: bypass })}</li>
+      ) : null}
+      {m.bypass_health_check ? <li>{t('maintenance.healthOpen')}</li> : null}
+    </ul>
+  )
+}
+
+// Maintenance mode for one saved domain. The "on" state is only shown when
+// the ingress that visitors reach really serves the maintenance page.
 export function DomainMaintenanceControl({
   appName,
   domain,
@@ -24,9 +46,12 @@ export function DomainMaintenanceControl({
   appName: string
   domain: string
 }) {
+  const { t } = useTranslation('domains')
   const { data: maintenance, isLoading } = useDomainMaintenance(appName, domain)
   const setMaintenance = useSetDomainMaintenance(appName, domain)
   const clearMaintenance = useClearDomainMaintenance(appName, domain)
+  const enforcement = useDomainEnforcement(domain)
+  const [open, setOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -50,51 +75,84 @@ export function DomainMaintenanceControl({
 
   return (
     <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         {enabled ? (
-          <Badge variant="warning" className="shrink-0">
-            <WrenchIcon className="size-3" />
-            Maintenance mode on
-          </Badge>
+          <EnforcedBadge domain={domain} control="maintenance">
+            <Badge variant="warning" className="shrink-0">
+              <WrenchIcon className="size-3" />
+              {t('maintenance.on')}
+            </Badge>
+          </EnforcedBadge>
         ) : (
           <Badge variant="muted" className="shrink-0">
             <WrenchIcon className="size-3" />
-            Not in maintenance
+            {t('maintenance.off')}
           </Badge>
         )}
-        {enabled ? (
+        <div className="flex items-center gap-1">
           <Button
             type="button"
             size="sm"
-            variant="outline"
-            disabled={pending}
-            onClick={() => {
-              clearMaintenance.mutate()
-            }}
+            variant="ghost"
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
           >
-            {clearMaintenance.isPending ? 'Ending...' : 'End maintenance'}
+            {open ? t('maintenance.hideOptions') : t('maintenance.options')}
           </Button>
-        ) : (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            disabled={pending}
-            onClick={() => {
-              setMaintenance.mutate()
-            }}
-          >
-            {setMaintenance.isPending
-              ? 'Enabling...'
-              : 'Enable maintenance mode'}
-          </Button>
-        )}
+          {enabled ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                clearMaintenance.mutate()
+              }}
+            >
+              {clearMaintenance.isPending
+                ? t('maintenance.ending')
+                : t('maintenance.end')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => {
+                setMaintenance.mutate(undefined)
+              }}
+            >
+              {setMaintenance.isPending
+                ? t('maintenance.enabling')
+                : t('maintenance.enable')}
+            </Button>
+          )}
+        </div>
       </div>
-      {enabled ? (
+      {enabled && maintenance ? <MaintenanceSummary m={maintenance} /> : null}
+      {enabled && isEnforced(enforcement, 'maintenance') ? (
         <p className="mt-2 text-xs text-muted-foreground">
-          Visitors to {domain} see a fixed maintenance page. The container keeps
-          running; nothing here stops or restarts it.
+          {t('maintenance.activeHint', { domain })}
         </p>
+      ) : null}
+      <EnforcementNote domain={domain} control="maintenance" active={enabled} />
+      {open ? (
+        <DomainMaintenanceForm
+          key={maintenance?.window_id ?? String(enabled)}
+          domain={domain}
+          current={maintenance}
+          enabled={enabled}
+          pending={pending}
+          onSubmit={(req) => {
+            setMaintenance.mutate(req, {
+              onSuccess: () => {
+                setOpen(false)
+                toast.add({ title: t('maintenance.saved'), type: 'success' })
+              },
+            })
+          }}
+        />
       ) : null}
       {error ? (
         <Alert variant="destructive" className="mt-2">

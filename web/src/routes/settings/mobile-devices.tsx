@@ -36,8 +36,8 @@ import {
 } from '../../queries/mobileDevices'
 
 export const Route = createFileRoute('/settings/mobile-devices')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'mobile-api'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'mobile-api', location.href),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(mobileDevicesQueryOptions()),
   component: MobileDevicesPage,

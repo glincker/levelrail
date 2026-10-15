@@ -245,6 +245,10 @@ The threshold is control-plane-wide, not per database: `APP_DATABASE_SLOW_QUERY_
 MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a container (it fails with `Could not use /dev/stderr for logging`), so there is no working Docker-log-stream source for this engine. The handler uses the same `docker.Runtime.Exec` primitive backups already use to run `pg_dump` and `mysqldump`. Redis's SLOWLOG is a live-server command against an in-memory ring buffer, not something that appears in log output, so it is not planned for this endpoint.
 </Accordion>
 
+## Exporting to OpenTelemetry
+
+Metrics and logs can be pushed to an OTLP/HTTP collector, opt-in per destination. Pull-based, node-local collection stays the default and nothing leaves the node until you add a destination. The export set includes per-app container metrics, platform self metrics (reconcile lag, deploy duration and queue depth, agent connections) and container logs. See [Data export](/data-export#otlp-logs) and `levelrail-cli otel destinations`.
+
 ## External log drains
 
 `PUT /api/v1/apps/{name}/log-drain` forwards an app's container log stream to an external HTTP endpoint or syslog target. The drain is in addition to, never instead of, the node-local store: it taps the same `LogBroadcaster` a live SSE viewer subscribes to.
@@ -961,6 +965,68 @@ levelrail-cli push-subscriptions revoke <id>
 - Silences and history are global, not scoped by IAM policy on individual apps: any principal with the base `read` or `write` ability can list or create them for any app.
 </Accordion>
 </AccordionGroup>
+
+## Troubleshooting
+
+### Metrics missing or incomplete for an app
+
+Likely cause: The app was just created and metrics have not been collected yet (first sample takes up to 15 seconds), or the app has no traffic.
+
+How to confirm: Check the app status: `levelrail-cli apps status <app>` should show it is running. Try generating some traffic: `curl https://<app-domain>` or run a load test. Wait 30 seconds and query metrics again: `levelrail-cli apps metrics <app> --metric cpu_percent`.
+
+Fix: No action needed for a just-created app; wait for the first sample. For an idle app, generate traffic to see metrics. If an app is running but metrics are still missing after 2 minutes, check if the app is actually receiving traffic.
+
+Still stuck: Check the control plane logs for telemetry errors: `levelrail logs --since 5m | grep telemetry`.
+
+### Alert not firing even though threshold is exceeded
+
+Likely cause: The rule is disabled, silenced, in a flapping state, or the metric is not being collected.
+
+How to confirm: Check the rule: `levelrail-cli apps alerts list <app>` shows enabled/disabled status. Check if it is silenced: `levelrail-cli alerts silences list` shows active silences. Run the metric query manually: `levelrail-cli apps metrics <app> --metric <metric-name>` to confirm the metric is above the threshold.
+
+Fix: Enable the rule if it is disabled: `levelrail-cli apps alerts update <app> <rule-id>`. Remove any silence: `levelrail-cli alerts silences delete <silence-id>`. If the metric is not being collected, ensure the app is running and has traffic.
+
+Still stuck: Check rule details with `levelrail-cli apps alerts get <app> <rule-id> --json | jq`.
+
+### Notification channel test fails
+
+Likely cause: The URL is invalid, the service is unreachable, or the credentials are wrong.
+
+How to confirm: Test the channel: `levelrail-cli channels test <channel-id>`. Check the delivery history: `levelrail-cli channels deliveries <channel-id>` shows recent send attempts and any errors.
+
+Fix: Verify the webhook URL is correct and the service is reachable. For Slack, regenerate the webhook URL if it has expired. For email, ensure the email address is correct. Update the channel: `levelrail-cli channels update <channel-id> --notify-url <new-url>`, then test again.
+
+Still stuck: See [Notification channels](/observability#notification-channels) for setup per provider.
+
+### Logs not showing up in the explorer
+
+Likely cause: The app was just created (first logs take a moment), or the app is not generating any logs.
+
+How to confirm: Check if the app is running: `levelrail-cli apps status <app>`. Verify it is actually writing logs: check the source code to ensure logs are being emitted. Query the logs: `levelrail-cli apps logs <app> --since 5m`.
+
+Fix: Wait a moment for logs to be collected and indexed. If the app is not emitting logs, that is expected (silence from a healthy app is normal). Generate some activity: make a request to the app, or check application logs in the source (container stdout/stderr).
+
+Still stuck: Check if logs exist at all: `levelrail-cli apps logs <app> --since 24h | head -20`.
+
+### Slow query analysis not showing top queries
+
+Likely cause: The database is new and has not had slow queries yet, or the slow query threshold is too high.
+
+How to confirm: Check if slow queries are being logged: `levelrail-cli databases slow-queries <name> --limit 5` returns nothing or a short list. For Postgres, check the `log_min_duration_statement` setting on the database.
+
+Fix: Lower the slow query threshold if it is too high: on the control plane, set `APP_DATABASE_SLOW_QUERY_THRESHOLD_MS` to a lower value (default is 1000 ms). Run a slow query intentionally to test: `psql ... -c "SELECT COUNT(*) FROM <large-table>"`. Wait for the next sample interval (15 seconds) and check again.
+
+Still stuck: See [Slow queries](/observability#slow-queries-database-logs) for per-database configuration.
+
+### Alert history shows many flapping alerts
+
+Likely cause: The metric is oscillating around the threshold, causing the alert to fire and resolve repeatedly.
+
+How to confirm: Check the alert history: `levelrail-cli alerts history --app <app> --rule <rule-id>` shows fire and resolve events. Look for rapid alternation. Check the metric graph: `levelrail-cli apps metrics <app> --metric <metric-name>` shows the value oscillating.
+
+Fix: Adjust the rule's flap threshold or flap window to require more consecutive violations before firing: `levelrail-cli apps alerts update <app> <rule-id> --flap-threshold 3 --flap-window 5m`. This prevents noise while keeping the alert useful.
+
+Still stuck: See [Alert rules](/observability#alert-rules) for flap configuration details.
 
 ## See also
 

@@ -23,6 +23,9 @@ type sessionResource struct {
 	LastSeenAt time.Time `json:"last_seen_at"`
 	ExpiresAt  time.Time `json:"expires_at"`
 	Current    bool      `json:"current"`
+	// CanApprove is whether this session was used recently enough to count as
+	// someone who can approve a new browser (APP_AUTH_APPROVER_SESSION_FRESH_FOR).
+	CanApprove bool `json:"can_approve"`
 }
 
 type securitySessionsResponse struct {
@@ -93,7 +96,8 @@ func (rt *Router) handleListSecuritySessions(w http.ResponseWriter, r *http.Requ
 	out := securitySessionsResponse{UserID: target, Self: self, Sessions: []sessionResource{}, TrustedDevices: []trustedDeviceResource{}, Tokens: []tokenResource{}}
 	for _, v := range views {
 		out.Sessions = append(out.Sessions, sessionResource{ID: v.ID, Browser: browserLabel(v.UserAgent), IP: safeSignInIP(v.IP), Network: ipNetworkPrefix(v.IP),
-			CreatedAt: v.CreatedAt, LastSeenAt: v.LastSeenAt, ExpiresAt: v.ExpiresAt, Current: v.Current})
+			CreatedAt: v.CreatedAt, LastSeenAt: v.LastSeenAt, ExpiresAt: v.ExpiresAt, Current: v.Current,
+			CanApprove: rt.codeLogin.approverFreshness <= 0 || now.Sub(v.LastSeenAt) <= rt.codeLogin.approverFreshness})
 	}
 	devices, err := rt.loginCodes.ListTrustedDevices(ctx, target, now)
 	if err != nil {

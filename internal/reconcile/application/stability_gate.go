@@ -128,6 +128,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 	c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusStarted, "",
 		fmt.Sprintf("waiting for %d consecutive readiness passes and %s running without a restart", cfg.SuccessThreshold, cfg.StableWindow))
 
+	var lastExit docker.ExitState
 	for {
 		obs := deploysafety.GateObservation{
 			Running: true, BaselineRestartCount: baseline.RestartCount, BaselineStartedAt: baseline.StartedAt,
@@ -142,6 +143,7 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			default:
 				obs.Running, obs.OOMKilled, obs.ExitCode = es.Running, es.OOMKilled, es.ExitCode
 				obs.RestartCount, obs.StartedAt = es.RestartCount, es.StartedAt
+				lastExit = *es
 			}
 		} else if cs, err := c.runtime.InspectByName(ctx, state.Name); err == nil {
 			obs.Running = cs != nil && cs.Running
@@ -166,6 +168,9 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			return nil
 		case deploysafety.VerdictFail:
 			msg := gateFailureMessage(state.Name, reason, obs, cfg)
+			if !obs.Running {
+				msg = c.captureGateExit(ctx, state, desired, readiness == nil, reason, lastExit, obs)
+			}
 			c.recordGate(ctx, desired, state.Name, deploysafety.PhaseStability, deploysafety.StatusFailed, reason, msg)
 			if obs.Running {
 				_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)

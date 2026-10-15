@@ -54,7 +54,7 @@ func exportDestinationsUsage(prog string) string {
   %[1]s export destinations delete <id> [flags]          remove a destination and its stored secrets
   %[1]s export audit [--from T] [--to T] [--format ndjson|csv] [flags]   download the audit log
 
-Kinds: logs_http, logs_loki, logs_syslog, audit_webhook, audit_s3, metrics_otlp.
+Kinds: logs_http, logs_loki, logs_otlp, logs_syslog, audit_webhook, audit_s3, metrics_otlp.
 Run "%[1]s export destinations create -h" for the create flags.
 `, prog)
 }
@@ -101,15 +101,15 @@ func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, l
 
 Flags:
   --name string          destination name (required)
-  --kind string          logs_http, logs_loki, logs_syslog, audit_webhook, audit_s3 or metrics_otlp (required)
+  --kind string          logs_http, logs_loki, logs_otlp, logs_syslog, audit_webhook, audit_s3 or metrics_otlp (required)
   --endpoint string      http(s) URL, or tcp://host:port or tls://host:port for syslog
-  --app string           only these apps (comma separated or repeated), log kinds only
+  --app string           only these apps (comma separated or repeated), log kinds and metrics_otlp
   --min-level string     debug, info, warn or error, log kinds only
   --header KEY=VALUE     request header sent with every delivery, stored encrypted (repeatable)
   --hmac-key string      signing key for audit_webhook, at least 16 characters, stored encrypted
   --storage-target ID    storage destination id for audit_s3
   --prefix string        object key prefix for audit_s3 (default audit-log)
-  --label KEY=VALUE      static Loki label (repeatable)
+  --label KEY=VALUE      static Loki label or OTLP resource attribute (repeatable)
   --interval int         metrics_otlp push interval in seconds (10 to 3600)
   --backfill             audit kinds: start from the oldest audit row instead of now
   --disabled             create the destination paused

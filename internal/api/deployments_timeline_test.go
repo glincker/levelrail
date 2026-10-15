@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -61,5 +62,30 @@ func TestDeploymentsTimelineWindowAndFilters(t *testing.T) {
 				t.Fatalf("items = %d, want %d", len(out.Items), tt.wantApps)
 			}
 		})
+	}
+}
+
+func TestDeploymentsTimelineAlertMarkers(t *testing.T) {
+	rt, db, adb, cookie := newNoiseRouter(t)
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "web:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	fired := []alerting.HistoryEntry{
+		{ID: "h1", At: time.Now().UTC().Add(-time.Hour), RuleID: "r", RuleName: "High CPU", App: "web", Severity: "warning", Event: alerting.EventFired, Outcome: alerting.OutcomeSent},
+		{ID: "h2", At: time.Now().UTC().Add(-time.Hour), RuleID: "r", RuleName: "High CPU", App: "web", Severity: "warning", Event: alerting.EventResolved, Outcome: alerting.OutcomeSent},
+	}
+	for _, e := range fired {
+		if err := adb.RecordHistory(ctx, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	rec := apiDo(t, rt, cookie, http.MethodGet, "/api/v1/deployments/timeline", "")
+	var out fleetTimelineResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Alerts) != 1 || out.Alerts[0].App != "web" || out.Alerts[0].RuleName != "High CPU" {
+		t.Fatalf("alerts = %+v, want one fired marker for web", out.Alerts)
 	}
 }

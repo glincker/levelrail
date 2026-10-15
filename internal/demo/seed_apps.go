@@ -186,28 +186,3 @@ func (s *seeder) saveAttempts(a appSpec, list []attempt) error {
 	}
 	return nil
 }
-
-func (s *seeder) audit() error {
-	paths := []struct{ ability, method, path, action string }{
-		{"deploy", "POST", "/api/v1/apps/%s/deploys", "app.deploy"},
-		{"write", "PUT", "/api/v1/apps/%s/env", "app.env.update"},
-		{"deploy", "POST", "/api/v1/apps/%s/deploys/rollback", "app.rollback"},
-		{"write", "PUT", "/api/v1/apps/%s/placement", "app.placement.update"},
-	}
-	for i := 0; i < 120; i++ {
-		u := userSpecs[s.rng.intn(3)]
-		p := paths[s.rng.intn(len(paths))]
-		app := appSpecs[s.rng.intn(len(appSpecs))].name
-		at := s.opts.Anchor.Add(-time.Duration(i) * time.Duration(historyDays*24*60/120) * time.Minute)
-		e := store.AuditEntry{
-			ID: fmt.Sprintf("audit_demo_%04d", i+1), ActorType: "session", ActorID: u.id, ActorName: u.name,
-			Ability: p.ability, Method: p.method, Path: fmt.Sprintf(p.path, app), StatusCode: 200,
-			RemoteAddr: fmt.Sprintf("198.51.100.%d", 10+s.rng.intn(200)), CreatedAt: store.FormatAuditTime(at),
-			ClientKind: "dashboard", Action: p.action,
-		}
-		if err := s.db.SaveAuditEntry(s.ctx, e); err != nil {
-			return fmt.Errorf("demo: save audit entry: %w", err)
-		}
-	}
-	return nil
-}

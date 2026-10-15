@@ -23,6 +23,9 @@ var communicationTemplates = []Template{
       LISTMONK_db__user: listmonk
       LISTMONK_db__password: $SERVICE_PASSWORD_DB
       LISTMONK_db__database: listmonk
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:9000/health || exit 1"]
       interval: 30s
@@ -36,6 +39,11 @@ var communicationTemplates = []Template{
       POSTGRES_DB: listmonk
     volumes:
       - listmonk_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U listmonk -d listmonk"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 `,
 	},
 	{
@@ -71,12 +79,15 @@ var communicationTemplates = []Template{
 		Category:               "Communication",
 		DocumentationURL:       "https://docs.ntfy.sh",
 		RecommendedMemoryBytes: 134217728, // 128Mi
-		// Tag not verified against a live registry in this environment;
-		// the image repository is correct. No command: override needed:
-		// the upstream image's own default CMD is already "serve".
+		// The image's entrypoint is ntfy with no default CMD: without
+		// serve it prints help and exits 0.
 		Compose: `services:
   ntfy:
     image: binwiederhier/ntfy:v2.11.0
+    command: ["serve"]
+    environment:
+      NTFY_LISTEN_HTTP: ":80"
+      NTFY_BEHIND_PROXY: "true"
     ports: ["80:80"]
     volumes:
       - ntfy_cache:/var/cache/ntfy

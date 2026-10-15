@@ -220,7 +220,7 @@ func (s *Sessions) RevokeAllExcept(ctx context.Context, legacyUserID, keepToken 
 
 // OtherSessionCount counts a platform user's live, fully signed-in sessions
 // other than the one exceptToken names (which may be empty).
-func (s *Sessions) OtherSessionCount(ctx context.Context, legacyUserID, exceptToken string) (int, error) {
+func (s *Sessions) OtherSessionCount(ctx context.Context, legacyUserID, exceptToken string, within time.Duration) (int, error) {
 	engine, err := s.engineID(ctx, legacyUserID)
 	if err != nil {
 		return 0, err
@@ -244,10 +244,15 @@ func (s *Sessions) OtherSessionCount(ctx context.Context, legacyUserID, exceptTo
 		return 0, fmt.Errorf("authengine: list sessions: %w", err)
 	}
 	n := 0
+	now := time.Now()
 	for _, si := range list {
-		if !si.Current {
-			n++
+		if si.Current {
+			continue
 		}
+		if within > 0 && !si.LastSeenAt.IsZero() && now.Sub(si.LastSeenAt) > within {
+			continue
+		}
+		n++
 	}
 	return n, nil
 }

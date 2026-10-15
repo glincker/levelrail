@@ -6,6 +6,7 @@ import {
   execAccessQueryOptions,
   useExecAccess,
 } from '../../../queries/execAccess'
+import { DemoGate } from '../../../components/demo/DemoUnavailable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -33,11 +34,13 @@ function ExecSection() {
   const enabled = execAccess.data.enabled
 
   return (
-    <div className="space-y-4">
-      <ExecAccessCard appName={name} />
-      <AppTerminal name={name} execEnabled={enabled} />
-      <ExecPanel name={name} execEnabled={enabled} />
-    </div>
+    <DemoGate reason="terminal">
+      <div className="space-y-4">
+        <ExecAccessCard appName={name} />
+        <AppTerminal name={name} execEnabled={enabled} />
+        <ExecPanel name={name} execEnabled={enabled} />
+      </div>
+    </DemoGate>
   )
 }
 

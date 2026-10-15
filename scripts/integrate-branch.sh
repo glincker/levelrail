@@ -7,6 +7,8 @@
 # Background: scripts/integrate-branch.sh feat/a >"$HOME/levelrail-local-data/integrate.log" 2>&1 &
 # Env: INTEGRATE_NO_PUSH=1 skips the push, INTEGRATE_NO_RESTART=1 skips the app restart.
 # A conflict outside the known generated files aborts that merge and moves on.
+# INTEGRATE_LOCAL=1 merges local branch refs (agent branches that are not pushed).
+# INTEGRATE_OLD_BASE (default origin/release/0.8) names a squash-merged line to strip.
 
 set -uo pipefail
 
@@ -38,7 +40,7 @@ resolve_conflicts() {
 			git checkout --ours -- "$f" 2>/dev/null
 			regen_catalog && git add "$f" || unresolved="$unresolved $f"
 			;;
-		web/src/i18n/index.ts | web/src/i18n/resources.ts)
+		web/src/components/BrandIcon.tsx | web/src/i18n/index.ts | web/src/i18n/resources.ts)
 			# Both sides only append namespace lines, keep both.
 			sed -i.bak -e '/^<<<<<<< /d' -e '/^=======$/d' -e '/^>>>>>>> /d' "$f" && rm -f "$f.bak"
 			git add "$f"
@@ -54,12 +56,36 @@ worktree_for_branch() {
 		/^worktree /{p=$2} /^branch /{if ($2==b) print p}'
 }
 
+old_base="${INTEGRATE_OLD_BASE:-origin/release/0.8}"
 merged=()
 failed=()
 for b in "$@"; do
 	echo "integrate: merging $b"
-	git fetch -q origin "$b" || { echo "integrate: cannot fetch $b" >&2; failed+=("$b"); continue; }
-	if git merge --no-ff -q "origin/$b" -m "chore: merge $b into release ${release#release/}" >/dev/null 2>&1; then
+	if [ -n "${INTEGRATE_LOCAL:-}" ]; then
+		git rev-parse -q --verify "refs/heads/$b" >/dev/null || { echo "integrate: no local branch $b" >&2; failed+=("$b"); continue; }
+		src="refs/heads/$b"
+	else
+		git fetch -q origin "$b" || { echo "integrate: cannot fetch $b" >&2; failed+=("$b"); continue; }
+		src="origin/$b"
+	fi
+	# A branch cut from the previous release line drags that line's commits back in
+	# once it was squash merged, so replay only its own commits onto this release.
+	if git merge-base --is-ancestor "$old_base" "$src" 2>/dev/null &&
+		! git merge-base --is-ancestor "$old_base" HEAD 2>/dev/null; then
+		tmp="integrate-tmp-$$"
+		git checkout -q -b "$tmp" HEAD &&
+			git cherry-pick $(git rev-list --reverse --no-merges "$old_base..$src") >/dev/null 2>&1
+		if [ $? -ne 0 ]; then
+			git cherry-pick --abort 2>/dev/null
+			git checkout -q "$release" && git branch -D -q "$tmp"
+			echo "integrate: could not replay $b onto $release" >&2
+			failed+=("$b")
+			continue
+		fi
+		git checkout -q "$release"
+		src="$tmp"
+	fi
+	if git merge --no-ff -q "$src" -m "chore: merge $b into release ${release#release/}" >/dev/null 2>&1; then
 		merged+=("$b")
 		continue
 	fi
@@ -69,6 +95,7 @@ for b in "$@"; do
 		git merge --abort 2>/dev/null
 		failed+=("$b")
 	fi
+	git branch -D -q "integrate-tmp-$$" 2>/dev/null
 done
 
 [ ${#merged[@]} -gt 0 ] || { echo "integrate: nothing merged, failed: ${failed[*]}" >&2; exit 1; }

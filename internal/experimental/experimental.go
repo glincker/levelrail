@@ -35,6 +35,8 @@ const (
 	CLIConsole Feature = "cli-console"
 	// MobileAPI is phone pairing, device tokens and the mobile overview endpoint.
 	MobileAPI Feature = "mobile-api"
+	// SAMLSCIM is the interim hand-built SAML sign-in and SCIM provisioning, off until it moves onto the library's native implementation.
+	SAMLSCIM Feature = "saml-scim"
 )
 
 // EnvVar names the env var holding the comma separated enabled features.
@@ -42,7 +44,7 @@ const EnvVar = "APP_EXPERIMENTAL"
 
 // All returns every gated feature, sorted.
 func All() []Feature {
-	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI}
+	fs := []Feature{AIChat, AIModels, LoadBalancer, IaC, CloudflareTunnel, AccessRoles, GlobalEnvironments, AIControl, ResourceAdvisor, CLIConsole, MobileAPI, SAMLSCIM}
 	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
 	return fs
 }

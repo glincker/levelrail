@@ -207,6 +207,18 @@ Endpoints for:
 | GET | /api/v1/settings/beta-features | AbilityRead | handleListBetaFeatures |
 | PUT | /api/v1/settings/beta-features/{feature} | AbilityRoot | handleSetBetaFeature |
 | POST | /api/v1/auth/session-links/consume | Public | handleConsumeSessionLink |
+| PATCH | /api/v1/auth/profile | Session | handleUpdateProfile |
+| GET | /api/v1/auth/my-access | Public | handleMyAccess |
+| GET | /api/v1/auth/saml/providers | Public | handleListPublicSAMLProviders |
+| GET | /api/v1/auth/saml/{id}/metadata | Public | handleSAMLMetadata |
+| GET | /api/v1/auth/saml/{id}/login | Public | handleSAMLLogin |
+| POST | /api/v1/auth/saml/{id}/acs | Public | handleSAMLACS |
+| GET | /api/v1/security/session-policies | AbilityRoot | handleListSessionPolicies |
+| PUT | /api/v1/security/session-policies/{team_id} | AbilityRoot | handlePutSessionPolicy |
+| DELETE | /api/v1/security/session-policies/{team_id} | AbilityRoot | handleDeleteSessionPolicy |
+| GET | /api/v1/security/session-policy/effective | Public | handleEffectiveSessionPolicy |
+| PUT | /api/v1/settings/database-catalog | AbilityRoot | handlePutDatabaseCatalogSettings |
+| PUT | /api/v1/users/{id}/password-change-required | AbilityRoot | handleSetPasswordChangeRequired |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -409,6 +421,14 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/env/settings | AbilityWriteSensitive | handlePutEnvSettings |
 | POST | /api/v1/apps/{name}/env/{key}/convert-to-secret | AbilityWriteSensitive | handleConvertEnvToSecret |
 | GET | /api/v1/apps/{name}/secret-rotation | AbilityRead | handleListSecretRotation |
+| GET | /api/v1/apps/{name}/secret-scan | AbilityRead | handleGetSecretScan |
+| PUT | /api/v1/apps/{name}/secret-scan | AbilityWrite | handlePutSecretScan |
+| POST | /api/v1/apps/{name}/secret-scan/run | AbilityWrite | handleRunSecretScan |
+| POST | /api/v1/apps/{name}/secret-scan/allow | AbilityWrite | handleAllowSecretScan |
+| DELETE | /api/v1/apps/{name}/secret-scan/allow/{fingerprint} | AbilityWrite | handleUnallowSecretScan |
+| GET | /api/v1/apps/{name}/deployments/{id}/secret-scan | AbilityRead | handleGetDeploymentSecretScan |
+| POST | /api/v1/apps/{name}/keep | AbilityWrite | handleKeepTrialApp |
+| POST | /api/v1/apps/{name}/sleep/now | AbilityDeploy | handleSleepAppNow |
 
 </Accordion>
 
@@ -575,6 +595,7 @@ Endpoints for:
 | POST | /api/v1/databases/{name}/move | AbilityRoot | handleStartMove |
 | GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
 | PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
+| GET | /api/v1/databases/{name}/engine-stats | AbilityReadSensitive | handleGetDatabaseEngineStats |
 
 ## Projects / Organizations / Environments
 
@@ -630,6 +651,9 @@ Endpoints for:
 | GET | /api/v1/projects/{id}/topology | AbilityRead | handleGetProjectTopology |
 | GET | /api/v1/environments | AbilityRead | handleListAllEnvironments |
 | POST | /api/v1/environments | AbilityWrite | handleCreateGlobalEnvironment |
+| GET | /api/v1/projects/{id}/quota | AbilityRead | handleGetQuota |
+| PUT | /api/v1/projects/{id}/quota | AbilityWrite | handleSetQuota |
+| DELETE | /api/v1/projects/{id}/quota | AbilityWrite | handleDeleteQuota |
 
 ## Nodes
 
@@ -813,6 +837,8 @@ Endpoints for:
 | GET | /api/v1/domains/standalone/candidates | AbilityWriteSensitive | handleStandaloneCandidates |
 | PUT | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleUpdateStandaloneDomain |
 | DELETE | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleDeleteStandaloneDomain |
+| GET | /api/v1/registry-credentials/{id}/usage | AbilityRead | handleRegistryCredentialUsage |
+| POST | /api/v1/registry-credentials/test | AbilityWriteSensitive | handleProbeRegistryCredential |
 
 ## Built-in Container Registry
 
@@ -1087,10 +1113,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/model-cache/prune | AbilityRoot | handlePruneModelCache |
 | POST | /api/v1/pipelines/filters | AbilityRead | handlePipelineFilters |
 | GET | /api/v1/apps-metrics | AbilityRead | handleBatchAppMetrics |
-| GET | /api/v1/node-providers | AbilityRoot | handleListNodeProviders |
-| POST | /api/v1/node-providers | AbilityRoot | handleSetNodeProviderCredential |
-| GET | /api/v1/node-providers/{provider}/regions | AbilityRoot | handleListNodeProviderRegions |
-| GET | /api/v1/node-providers/{provider}/sizes | AbilityRoot | handleListNodeProviderSizes |
+| GET | /api/v1/node-providers | AbilityRead | handleListNodeProviders |
+| POST | /api/v1/node-providers | AbilityWriteSensitive | handleSetNodeProviderCredential |
+| GET | /api/v1/node-providers/{provider}/regions | AbilityRead | handleListNodeProviderRegions |
+| GET | /api/v1/node-providers/{provider}/sizes | AbilityRead | handleListNodeProviderSizes |
 | GET | /api/v1/node-provisions | AbilityRoot | handleListNodeProvisions |
 | GET | /api/v1/node-provisions/{id} | AbilityRoot | handleGetNodeProvision |
 | GET | /.well-known/jwks.json | Public | handleOIDCJWKS |
@@ -1277,6 +1303,69 @@ Routes that do not fit an existing group.
 | GET | /api/v1/event-webhooks/{id}/deliveries | AbilityRoot | handleListEventWebhookDeliveries |
 | POST | /api/v1/event-webhook-deliveries/{id}/replay | AbilityRoot | handleReplayEventWebhookDelivery |
 | GET | /api/v1/secret-rotation | AbilityRoot | handleListAllSecretRotation |
+| GET | /api/v1/teams/{id}/quota | AbilityRead | handleGetQuota |
+| PUT | /api/v1/teams/{id}/quota | AbilityWrite | handleSetQuota |
+| DELETE | /api/v1/teams/{id}/quota | AbilityWrite | handleDeleteQuota |
+| GET | /api/v1/scheduled-maintenance | AbilityRead | handleListScheduledMaintenance |
+| POST | /api/v1/scheduled-maintenance | AbilityWriteSensitive | handleCreateScheduledMaintenance |
+| DELETE | /api/v1/scheduled-maintenance/{id} | AbilityWriteSensitive | handleDeleteScheduledMaintenance |
+| GET | /api/v1/compliance/access-reviews | AbilityRoot | handleListAccessReviews |
+| POST | /api/v1/compliance/access-reviews | AbilityRoot | handleCreateAccessReview |
+| GET | /api/v1/compliance/access-reviews/{id} | AbilityRoot | handleGetAccessReview |
+| PUT | /api/v1/compliance/access-reviews/{id}/items/{item} | AbilityRoot | handleDecideAccessReviewItem |
+| POST | /api/v1/compliance/access-reviews/{id}/complete | AbilityRoot | handleCompleteAccessReview |
+| GET | /api/v1/compliance/evidence-packs | AbilityRoot | handleListEvidencePacks |
+| POST | /api/v1/compliance/evidence-packs | AbilityRoot | handleCreateEvidencePack |
+| GET | /api/v1/compliance/evidence-packs/{id} | AbilityRoot | handleGetEvidencePack |
+| GET | /api/v1/compliance/evidence-packs/{id}/download | AbilityRoot | handleDownloadEvidencePack |
+| POST | /api/v1/compliance/evidence-packs/{id}/verify | AbilityRoot | handleVerifyEvidencePack |
+| GET | /api/v1/sso/saml/connections | AbilityRoot | handleListSAMLConnections |
+| POST | /api/v1/sso/saml/connections | AbilityRoot | handleCreateSAMLConnection |
+| GET | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleGetSAMLConnection |
+| PUT | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleUpdateSAMLConnection |
+| DELETE | /api/v1/sso/saml/connections/{id} | AbilityRoot | handleDeleteSAMLConnection |
+| POST | /api/v1/sso/saml/connections/{id}/metadata | AbilityRoot | handleImportSAMLMetadata |
+| GET | /api/v1/sso/group-mappings | AbilityRoot | handleListSSOGroupMappings |
+| PUT | /api/v1/sso/group-mappings | AbilityRoot | handlePutSSOGroupMappings |
+| GET | /api/v1/sso/settings | AbilityRoot | handleGetSSOSettings |
+| PUT | /api/v1/sso/settings | AbilityRoot | handlePutSSOSettings |
+| GET | /api/v1/sso/scim/tokens | AbilityRoot | handleListSCIMTokens |
+| POST | /api/v1/sso/scim/tokens | AbilityRoot | handleCreateSCIMToken |
+| POST | /api/v1/sso/scim/tokens/{id}/rotate | AbilityRoot | handleRotateSCIMToken |
+| DELETE | /api/v1/sso/scim/tokens/{id} | AbilityRoot | handleRevokeSCIMToken |
+| GET | /api/v1/scim/v2/ServiceProviderConfig | Public | handleSCIM |
+| GET | /api/v1/scim/v2/ResourceTypes | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Users | Public | handleSCIM |
+| POST | /api/v1/scim/v2/Users | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| PUT | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| PATCH | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| DELETE | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Groups | Public | handleSCIM |
+| POST | /api/v1/scim/v2/Groups | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| PUT | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| PATCH | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| POST | /api/v1/node-providers/{provider}/test | AbilityWriteSensitive | handleTestNodeProvider |
+| DELETE | /api/v1/node-providers/{provider} | AbilityWriteSensitive | handleDisconnectNodeProvider |
+| GET | /api/v1/registry-vendors | AbilityRead | handleListRegistryVendors |
+| GET | /api/v1/package-registries | AbilityRead | handleListPackageRegistries |
+| POST | /api/v1/package-registries | AbilityWriteSensitive | handleCreatePackageRegistry |
+| DELETE | /api/v1/package-registries/{id} | AbilityWriteSensitive | handleDeletePackageRegistry |
+| POST | /api/v1/package-registries/{id}/test | AbilityWriteSensitive | handleTestPackageRegistry |
+| GET | /api/v1/database-versions | AbilityRead | handleListDatabaseVersions |
+| POST | /api/v1/database-versions/refresh | AbilityWriteSensitive | handleRefreshDatabaseVersions |
+| GET | /api/v1/database-catalog | AbilityRead | handleGetDatabaseCatalogStatus |
+| POST | /api/v1/database-catalog/refresh | AbilityWriteSensitive | handleRefreshDatabaseCatalog |
+| GET | /api/v1/scim/v2/ResourceTypes/{id} | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Schemas | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Schemas/{id} | Public | handleSCIM |
+| GET | /api/v1/sleep | AbilityRead | handleSleepFleet |
+| GET | /api/v1/deploy-policies | AbilityRead | handleListDeployPolicies |
+| POST | /api/v1/deploy-policies/check | AbilityRead | handleCheckDeployPolicy |
+| PUT | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleSetDeployPolicy |
+| DELETE | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleDeleteDeployPolicy |
 
 ## See also
 

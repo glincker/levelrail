@@ -7,7 +7,7 @@ description: Create and manage databases with backups, point-in-time restore, an
 
 ## What this covers
 
-Create a Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, or ClickHouse database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
+Create a Postgres, Redis, Valkey, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, ClickHouse, Meilisearch, Qdrant, Typesense, or Memcached database from the dashboard, the CLI, or the API. Levelrail runs it, generates its credentials, and can back it up on a schedule. A database is managed like an app, minus the build step and domain routing. It has its own data volume that survives redeploys and its own lifecycle (stop, start, upgrade, restore).
 
 | I want to | Go to |
 | --- | --- |
@@ -67,8 +67,33 @@ Omit `node_id` at creation to let the control plane pick a node, or pass it to c
 | MongoDB | `mongodb` | `7` | no |
 | MariaDB | `mariadb` | `11` | no |
 | KeyDB | `keydb` | `latest` | no |
+| Valkey | `valkey` | `8` | no |
 | Dragonfly | `dragonfly` | `v1.27.1` | no |
 | ClickHouse | `clickhouse` | `24.8` | no |
+| Meilisearch | `meilisearch` | `v1.55` | no |
+| Qdrant | `qdrant` | `v1.19` | no |
+| Typesense | `typesense` | `30.2` | no |
+| Memcached | `memcached` | `1.6` | no |
+
+Valkey is a Redis-protocol fork (`valkey/valkey` image, tags such as `7`, `8`, `9`). It runs exactly like Redis here: passwordless on the private network, RDB snapshots on `/data`, the same backup, restore and verify path, the key-value viewer, and the same `redis://` connection URL for apps.
+
+### Postgres flavors
+
+Three Postgres flavors run an allowlisted extension image. The engine stays `postgres`, so backups, point-in-time restore, TLS, the database viewer, data copy, and the guarded major upgrade all behave the same. The flavor is part of the version string, `<major>-<flavor>`:
+
+| Flavor | Version | Image | Minimum Postgres |
+| --- | --- | --- | --- |
+| pgvector | `17-pgvector` | `pgvector/pgvector:pg17` | 13 |
+| TimescaleDB | `17-timescaledb` | `timescale/timescaledb:latest-pg17` | 15 |
+| PostGIS | `17-postgis` | `postgis/postgis:17-3.5` (`18-3.6` for Postgres 18) | 13 |
+
+Create the extension inside the database after it starts, for example `CREATE EXTENSION timescaledb;` or `CREATE EXTENSION postgis;`. The dashboard picker shows each flavor as its own card, and the database detail page shows the flavor next to the version.
+
+```bash
+levelrail-cli databases create --name geo --engine postgres --version 17-postgis
+```
+
+Flavors have no pinned patch tags, so the upgrade advisor offers no patch targets for them. Switching a flavor on an existing database is refused in place; use the guarded major upgrade or restore a backup into a new database. The restore and upgrade paths for TimescaleDB and PostGIS reuse the Postgres dump and restore code and have not been exercised against live data here, so rehearse a restore with the backup drill before relying on them.
 
 ### Postgres with pgvector
 
@@ -78,7 +103,7 @@ A Postgres version written `<major>-pgvector` (for example `17-pgvector`) runs t
 levelrail-cli databases create --name vec --engine postgres --version 17-pgvector
 ```
 
-The dashboard create form has an **Include pgvector** checkbox for Postgres.
+The dashboard create form has a **Postgres image** selector for Postgres, and the picker has a pgvector card.
 
 <Warning>
 The plain and pgvector images are built on different Debian releases, so a database cannot be switched between them with `set-version`: a glibc collation change can silently corrupt indexes.
@@ -86,6 +111,58 @@ The plain and pgvector images are built on different Debian releases, so a datab
 
 - Plain to pgvector: `databases major-upgrade <name> --version 17-pgvector` (dump and restore, works for the same major too), or restore a backup into a new database with `--version 17-pgvector`.
 - pgvector back to plain: refused.
+
+### Search, vector and cache engines
+
+<Warning>
+Not yet live-verified. Meilisearch, Qdrant, Typesense and Memcached were built and tested without a Docker daemon: the reconciler, backup, restore and drill paths ran against a fake Docker client, and the restore boot script ran for real under `/bin/sh` against a temporary directory. Image facts (ports, paths, env names, CLI flags, bundled tools) were read from the published images' manifests and binaries, not from a running container. Run a backup and a backup drill against a scratch database before relying on them.
+</Warning>
+
+Meilisearch, Qdrant and Typesense are HTTP API engines. Each gets one generated API key, stored with the same envelope encryption as every other database credential, and the key is never placed in a command line: in-container calls read it from the container's own environment.
+
+| Engine | Image | Port | Data volume | API key variable | Health |
+| --- | --- | --- | --- | --- | --- |
+| Meilisearch | `getmeili/meilisearch` | 7700 | `/meili_data` (data in `data.ms`) | `MEILI_MASTER_KEY`, with `MEILI_ENV=production` | `GET /health` |
+| Qdrant | `qdrant/qdrant` | 6333 (REST), 6334 (gRPC, private network only) | `/qdrant/storage` (data in `data`) | `QDRANT__SERVICE__API_KEY` | `GET /readyz` |
+| Typesense | `typesense/typesense` | 8108 | `/data` (data in `db`) | `TYPESENSE_API_KEY` | `GET /health` |
+| Memcached | `memcached` | 11211 | none | none | `stats` over TCP |
+
+Versions must be a pinned release tag; `latest` is refused. Meilisearch and Qdrant tags keep their `v` prefix (`v1.55`, `v1.19.2`), Typesense tags do not (`30.2`). In-place version changes follow each engine's own upgrade rules: Meilisearch stays within one minor line (move to a new minor by restoring a dump into a new database), Qdrant moves up one minor at a time, Typesense moves forward only, and none of them can be downgraded.
+
+Connected apps get these variable names by default when you leave `env_var` blank (a second connection to the same field falls back to the usual `<DATABASE>_...` name):
+
+| Engine | `url` | `password` (the API key) | `host` / `port` |
+| --- | --- | --- | --- |
+| Meilisearch | `MEILISEARCH_URL` (`http://<host>:7700`) | `MEILISEARCH_API_KEY` | `MEILISEARCH_HOST` / `MEILISEARCH_PORT` |
+| Qdrant | `QDRANT_URL` (`http://<host>:6333`) | `QDRANT_API_KEY` | `QDRANT_HOST` / `QDRANT_PORT` |
+| Typesense | `TYPESENSE_URL` (`http://<host>:8108`) | `TYPESENSE_API_KEY` | `TYPESENSE_HOST` / `TYPESENSE_PORT` |
+| Memcached | `MEMCACHED_SERVERS` (`<host>:11211`) | none | `MEMCACHED_HOST` / `MEMCACHED_PORT` |
+
+`username` and `database` are not supported for any of these engines.
+
+**Backups.** Each search engine is backed up through its own API, then the artifact's size and SHA-256 are measured on disk and checked again while it streams to your backup target. A snapshot task that fails or does not finish within 30 minutes, or a file that comes up short or altered, fails the backup and nothing is marked complete.
+
+- Meilisearch: `POST /dumps`, poll `GET /tasks/{uid}`, then copy the `.dump` file. A dump includes the instance's API keys.
+- Qdrant: `POST /snapshots` (a full storage snapshot), copy it, then delete it from the engine.
+- Typesense: `POST /operations/snapshot` into the data volume, then copy it as a tar archive.
+
+**Restores** upload the artifact next to the data, check it is a readable archive, and restart the container. The boot script moves the current data aside and loads the snapshot (Meilisearch `--import-dump`, Qdrant `--storage-snapshot`, Typesense starts on the snapshot directory as its data directory). The restore is confirmed only when the engine is healthy on the same boot that loaded it. If it crashes, restarts or never becomes healthy, the previous data is put back and the restore is reported as failed. While a restore is pending, the volume briefly holds the snapshot, the restored data and the previous data, so leave room for three copies.
+
+**Verification and drills.** Verify checks the download's checksum, size and format (a gzip header for Meilisearch, intact tar end-of-archive blocks for Qdrant and Typesense). A backup drill restores into a scratch container with a throwaway key and reads the index or collection counts. When the counts did not change while the backup was taken, they are recorded with the backup, and the drill fails unless the restored counts match exactly (documents per Meilisearch index, exact points per Qdrant collection, documents per Typesense collection).
+
+**Memcached** is a plain in-memory cache. It keeps nothing on disk, so backups are not available: the dashboard shows that instead of a backup card, and the backup, schedule and restore endpoints answer `400`. Its item memory (`-m`) is three quarters of the container's memory limit (64 MB without a limit), and UDP is off. Memcached has no practical authentication here (SASL needs a server config file and binary-protocol clients that many libraries lack), so it is reachable only on the private network and public access can bind only to the host's loopback address. A restart, upgrade or move starts with an empty cache.
+
+The database viewer has no table or key browser for these engines. Its Explorer tab says so and shows live counts from the engine instead (`GET /api/v1/databases/{name}/engine-stats`): documents per index or collection, or Memcached's items, memory, hit rate, evictions and connections.
+
+```bash
+levelrail-cli databases create --name search --engine meilisearch --version v1.55
+levelrail-cli databases create --name vectors --engine qdrant --version v1.19
+levelrail-cli databases create --name cache --engine memcached --version 1.6
+```
+
+### Planned engines
+
+Not available yet: CockroachDB. It needs a reconciler case, a backup dump, a restore path, a verify runner and viewer support before it can be offered.
 
 ## Stop, start, and delete
 
@@ -147,7 +224,7 @@ This flow attaches at most one database per app. If an app needs more than one, 
 | `env_var` | no | `DATABASE_URL` | Env var the value is injected as. |
 | `field` | no | `url` | The full connection string. Others: `host`, `port`, `username`, `password`, `database`. |
 
-Fields are validated against the engine before saving: Redis, KeyDB, and Dragonfly do not support `username` or `database`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
+Fields are validated against the engine before saving: Redis, Valkey, KeyDB, Dragonfly, Meilisearch, Qdrant, Typesense, and Memcached do not support `username` or `database`, and Memcached has no `password`. `DELETE /api/v1/apps/{name}/database` stops injecting the env var into newly created containers and does not touch containers already running.
 
 On the dashboard, use the **Database** card on the app's Overview page. Its "Env var / field options" disclosure covers anything past the URL default.
 
@@ -363,7 +440,7 @@ Limits of the remote copy:
 By default a managed database is reachable only from the platform's Docker network. Public access binds it to a host port so you can use pgAdmin, TablePlus, RedisInsight, or similar tools from your machine.
 
 <Warning>
-**Redis, KeyDB, and Dragonfly have no password**
+**Redis, Valkey, KeyDB, and Dragonfly have no password**
 
 These engines run passwordless, so publishing the port gives unauthenticated read and write access to the whole dataset. The dashboard gates the toggle behind an "I understand this database has no password" checkbox for them. Postgres, MySQL, MongoDB, MariaDB, and ClickHouse get generated passwords and a plain, non-blocking warning.
 </Warning>
@@ -438,7 +515,7 @@ levelrail-cli databases set-version <name> 16.4
 | Engine | What is accepted |
 | --- | --- |
 | Postgres, MySQL, MariaDB, MongoDB, ClickHouse | Only minor and patch changes. A major change would corrupt the data directory and is refused with a `409`. |
-| Redis, KeyDB, Dragonfly | A newer major is allowed, but never going back. |
+| Redis, Valkey, KeyDB, Dragonfly | A newer major is allowed, but never going back. |
 
 For a Postgres major upgrade, use the guarded flow below. For the other engines, back up, then restore into a new database on the new version with `backups restore-as-new`. To see which patch and minor releases are available, which fix CVEs, and to apply them automatically in a maintenance window with a backup first and an automatic revert, see [Database upgrades](/database-upgrades).
 
@@ -750,3 +827,46 @@ Browse schemas and rows, or run read-only SQL.
 
 </Card>
 </CardGroup>
+
+## Troubleshooting
+
+### Database creation fails with "Error: database already exists"
+
+Likely cause: A database with that name already exists, either running or stopped.
+
+How to confirm: Run `levelrail-cli databases list` and check if the name is in the list. Dashboard: go to Databases page and search for the name.
+
+Fix: Choose a different name, or delete the existing database first with `levelrail-cli databases delete <existing-name> --confirm <existing-name>` if you no longer need it.
+
+Still stuck: See [Deleting databases](/managing-databases#stop-start-and-delete) for the full delete process.
+
+### Database creation hangs or stays in "pending" state
+
+Likely cause: The reconciler has not processed the database resource yet, or Docker ran out of disk space on the node where it is being placed.
+
+How to confirm: Check the database status with `levelrail-cli databases status <name>`. If it shows a condition, read the reason. On the dashboard, go to Databases > your database > Overview, and look at the status card. If status shows "pending" for more than 2 minutes, check the control plane logs for errors: `levelrail logs --since 5m | grep database`.
+
+Fix: Wait a minute for the next reconcile pass (which runs every 15 seconds). If it is still pending after 3 minutes, check node disk space with `levelrail-cli nodes list` and look for "Free" under the relevant node. If a node is running out of disk, delete old containers or images with `docker system prune` on that node.
+
+Still stuck: Check the reconciler logs with `levelrail logs database <name>` or read the full resource status: `levelrail-cli databases get <name> --output json | jq '.status'`.
+
+### Cannot connect to database from an app, "Connection refused" or "Host not found"
+
+Likely cause: The database and app are on different nodes, or internal DNS is not resolving the database hostname.
+
+How to confirm: Check where the database is running: `levelrail-cli databases status <name>` shows the node. Check where the app is running: `levelrail-cli apps status <web-app>` shows "Nodes". If they differ, the network may need to be configured. Try pinging from inside the app container: `levelrail-cli apps exec web -- ping <database-name>`.
+
+Fix: Ensure both app and database are on the same node (use `levelrail-cli databases set-node <name> <node-id>`), or verify that WireGuard mesh networking is enabled and working between nodes. For single-node setups, they should both run on the local node by default.
+
+Still stuck: See [Connecting apps to databases](/connecting-apps-to-databases) and [Network topology](/network-topology) for cross-node reachability.
+
+### Database volume failed to mount or "permission denied" on data files
+
+Likely cause: The host running the database lost access to its data volume, or the volume is corrupted.
+
+How to confirm: SSH to the node and check if the volume exists: `docker volume ls | grep <database-name>`. Check disk status: `df -h | grep levelrail` or `docker system df`.
+
+Fix: If the volume exists but is unmounted, try restarting the database: `levelrail-cli databases stop <name> && levelrail-cli databases start <name>`. If the volume is missing or corrupted, restore from a backup: `levelrail-cli backups list <name>`, then `levelrail-cli backups restore <name> --backup <id>`.
+
+Still stuck: See [Backup recovery](/backups-and-storage) for full recovery procedures.
+

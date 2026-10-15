@@ -255,6 +255,7 @@ type Controller struct {
 	mongoCreds      *MongoDBCredentials
 	mariadbCreds    *MariaDBCredentials
 	clickhouseCreds *ClickHouseCredentials
+	apiKeyCreds     *APIKeyCredentials
 	tls             *TLSMaterial
 	meshDNSAddr     string // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
 	meshEndpoints   meshEndpointResolver
@@ -488,6 +489,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// here.
 		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
 
+	case store.EngineValkey:
+		// Same /data path, port and image defaults (RDB snapshots, no
+		// password) as Redis; the image ships redis-server and redis-cli symlinks.
+		return c.reconcileEngine(ctx, desired, nil, nil, redisDataPath, redisContainerPort, nil)
+
 	case store.EngineDragonfly:
 		// dragonflyCommand pins dbfilename so restoreRedisLike's
 		// /data/dump.rdb write actually gets loaded on restart; Dragonfly's
@@ -505,6 +511,16 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			"CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT": "1",
 		}
 		return c.reconcileEngine(ctx, desired, env, nil, clickhouseDataPath, clickhouseContainerPort, nil)
+
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		return c.reconcileSearchEngine(ctx, desired)
+
+	case store.EngineMemcached:
+		if desired.PubliclyAccessible && desired.PublicBindAddress != "" && desired.PublicBindAddress != bindaddr.Private {
+			err := errors.New("memcached has no authentication, so it is only published on the host's loopback address")
+			return notReady("UnauthenticatedExposureRefused", err), nil
+		}
+		return c.reconcileEngine(ctx, desired, nil, nil, "", memcachedContainerPort, nil, memcachedSpec(desired.Resources))
 
 	default:
 		err := fmt.Errorf("unrecognized engine %q", desired.Engine)
@@ -551,7 +567,7 @@ func (c *Controller) Teardown(ctx context.Context) error {
 // and that SupportsTLS (Postgres, Redis today): reconcileEngine mounts
 // it read-only at certsMountPath and, on a brand new container, writes
 // it into that volume first (see the state == nil case below).
-func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int, tlsMaterial *TLSMaterial) (reconcile.Result, error) {
+func (c *Controller) reconcileEngine(ctx context.Context, desired *store.DesiredDatabase, env map[string]string, command []string, dataPath string, containerPort int, tlsMaterial *TLSMaterial, customize ...func(*docker.ContainerSpec)) (reconcile.Result, error) {
 	image := ImageRef(desired.Engine, desired.Version)
 	target := containerName(c.dbName)
 	volName := dataVolumeName(c.dbName)
@@ -562,8 +578,10 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 	// engine) still reconciles exactly as it always has.
 	pitrActive := desired.Engine == store.EnginePostgres && desired.PITREnabled
 
-	if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
-		return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+	if dataPath != "" {
+		if err := c.runtime.EnsureVolume(ctx, volName); err != nil {
+			return notReady("VolumeFailed", err), fmt.Errorf("database/%s: ensure volume %q: %w", c.dbName, volName, err)
+		}
 	}
 	if pitrActive {
 		if err := c.runtime.EnsureVolume(ctx, walArchiveVolumeName(c.dbName)); err != nil {
@@ -583,6 +601,13 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		Command: command,
 		Volumes: []docker.VolumeMount{{Name: volName, ContainerPath: dataPath}},
 		Labels:  map[string]string{pitrLabelKey: pitrLabelValue(pitrActive)},
+	}
+	if dataPath == "" {
+		// No persistence (Memcached): no data volume to create or mount.
+		spec.Volumes = nil
+	}
+	for _, fn := range customize {
+		fn(&spec)
 	}
 	if tlsMaterial != nil {
 		spec.Labels[tlsCertLabelKey] = tlsCertLabelValue
@@ -687,6 +712,14 @@ func (c *Controller) reconcileEngine(ctx context.Context, desired *store.Desired
 		// the wal-archive volume mounted (or unmounted) and its command
 		// rebuilt with (or without) archive_mode, neither of which can be
 		// applied to a running container in place.
+		if err := c.replaceContainer(ctx, state, spec); err != nil {
+			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
+		}
+		justDeployed = true
+
+	case spec.Labels[engineConfigLabelKey] != "" && state.Labels[engineConfigLabelKey] != spec.Labels[engineConfigLabelKey]:
+		// Start command or env layout changed (boot script, memory flag):
+		// neither can be applied to a running container in place.
 		if err := c.replaceContainer(ctx, state, spec); err != nil {
 			return notReady("ReplaceFailed", err), fmt.Errorf("database/%s: %w", c.dbName, err)
 		}
@@ -843,9 +876,13 @@ func normalizedPortSet(ports []docker.PortBinding) map[docker.PortBinding]bool {
 // database_engines.yaml) doesn't match its Docker image name; any id
 // absent here is used as its own image name.
 var dockerImageMapping = map[string]string{
-	store.EngineMongoDB:   "mongo",
-	store.EngineKeyDB:     "eqalpha/keydb",
-	store.EngineDragonfly: "docker.dragonflydb.io/dragonflydb/dragonfly",
+	store.EngineMongoDB:     "mongo",
+	store.EngineKeyDB:       "eqalpha/keydb",
+	store.EngineDragonfly:   "docker.dragonflydb.io/dragonflydb/dragonfly",
+	store.EngineValkey:      "valkey/valkey",
+	store.EngineMeilisearch: "getmeili/meilisearch",
+	store.EngineQdrant:      "qdrant/qdrant",
+	store.EngineTypesense:   "typesense/typesense",
 	// ClickHouse's own registry namespace, not a Docker Official Image:
 	// clickhouse/clickhouse-server is what upstream publishes.
 	store.EngineClickHouse: "clickhouse/clickhouse-server",

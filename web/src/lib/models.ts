@@ -4,17 +4,33 @@ export const MODEL_ENGINES: {
   id: ModelEngine
   label: string
   refHint: string
+  /** Well-known references that match each engine's own ref format. */
+  suggestions: string[]
 }[] = [
-  { id: 'ollama', label: 'Ollama', refHint: 'llama3.1:8b' },
+  {
+    id: 'ollama',
+    label: 'Ollama',
+    refHint: 'llama3.1:8b',
+    suggestions: ['llama3.1:8b', 'qwen2.5:7b', 'mistral:7b', 'phi3:mini'],
+  },
   {
     id: 'vllm',
     label: 'vLLM',
     refHint: 'meta-llama/Llama-3.1-8B-Instruct',
+    suggestions: [
+      'meta-llama/Llama-3.1-8B-Instruct',
+      'Qwen/Qwen2.5-7B-Instruct',
+      'mistralai/Mistral-7B-Instruct-v0.3',
+    ],
   },
   {
     id: 'llamacpp',
     label: 'llama.cpp',
     refHint: 'bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M',
+    suggestions: [
+      'bartowski/Llama-3.2-3B-Instruct-GGUF:Q4_K_M',
+      'bartowski/Qwen2.5-7B-Instruct-GGUF:Q4_K_M',
+    ],
   },
 ]
 
@@ -66,4 +82,24 @@ export function gpuSummary(model: ModelResource): string {
     return `GPU ${model.gpu_device_ids.join(', ')}`
   }
   return model.gpu_count < 0 ? 'all GPUs' : `${model.gpu_count} GPU`
+}
+
+export interface NodeGpuFacts {
+  gpuNames: string
+  freeMib: number
+  totalMib: number
+}
+
+// Distinct GPU names plus free VRAM, for the deploy dialog node picker.
+export function nodeGpuFacts(node: {
+  devices: { name: string }[]
+  total_vram_mib: number
+  used_vram_mib: number
+}): NodeGpuFacts {
+  const names = Array.from(new Set(node.devices.map((d) => d.name)))
+  return {
+    gpuNames: names.join(', '),
+    freeMib: Math.max(0, node.total_vram_mib - node.used_vram_mib),
+    totalMib: node.total_vram_mib,
+  }
 }

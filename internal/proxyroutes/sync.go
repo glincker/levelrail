@@ -100,8 +100,10 @@ type Syncer struct {
 	Ingress   Listener
 	Dashboard Listener
 	// Unit is the systemd unit named in upstream drop-in fixes.
-	Unit   string
-	Logger *slog.Logger
+	Unit string
+	// RouterPriority 0 means DefaultRouterPriority.
+	RouterPriority int
+	Logger         *slog.Logger
 
 	// mu serialises passes from the reconciler and the API on one directory.
 	mu sync.Mutex
@@ -221,7 +223,7 @@ func (s *Syncer) render(settings store.ProxyIntegrationSettings, path UpstreamPa
 	}
 	it.Content, it.Err = s.NS.Render(Route{
 		Domain: t.Domain, EntrypointHTTP: settings.EntrypointHTTP, EntrypointHTTPS: settings.EntrypointHTTPS,
-		CertResolver: settings.CertResolver, Upstream: it.Upstream,
+		CertResolver: settings.CertResolver, Upstream: it.Upstream, Priority: s.RouterPriority,
 	})
 	return it
 }

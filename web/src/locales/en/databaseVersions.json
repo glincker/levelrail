@@ -1,0 +1,39 @@
+{
+  "listLabel": "Available versions",
+  "toggle": "Show available versions",
+  "group": {
+    "recommended": "Recommended",
+    "stable": "Stable",
+    "lts": "Long-term support",
+    "prerelease": "Pre-release",
+    "eol": "End of life"
+  },
+  "badge": {
+    "stable": "Stable",
+    "lts": "LTS",
+    "rc": "RC",
+    "beta": "Beta",
+    "eolSoon": "EOL soon",
+    "eol": "EOL"
+  },
+  "eolOn": "ended {{date}}",
+  "eolSoonOn": "ends {{date}}",
+  "showPrerelease": "Show pre-release",
+  "sourceLabel": "Source:",
+  "origin": {
+    "live": "Live data, checked {{when}}",
+    "published": "Published catalog, updated {{when}}",
+    "direct": "Built from the registries, updated {{when}}",
+    "embedded": "Built-in catalog, updated {{when}}"
+  },
+  "unknownAge": "at an unknown time",
+  "freshness": {
+    "aging": "Catalog is getting old, check now",
+    "stale": "This catalog is out of date. Check for new versions."
+  },
+  "check": "Check for new versions",
+  "checking": "Checking...",
+  "checkedJustNow": "Checked just now.",
+  "checkFailed": "Could not check for new versions: {{error}} The previous list is still shown.",
+  "checkDone": "Version list updated."
+}

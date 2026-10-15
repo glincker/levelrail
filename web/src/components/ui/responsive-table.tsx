@@ -302,7 +302,11 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
               </TableHead>
             ))}
             {hasActions ? (
-              <TableHead className="w-12">
+              <TableHead
+                className={
+                  props.renderActions ? 'w-px whitespace-nowrap pr-4' : 'w-12'
+                }
+              >
                 <span className="sr-only">Actions</span>
               </TableHead>
             ) : null}
@@ -339,7 +343,7 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
                   <TableCell
                     key={c.id}
                     className={cn(
-                      'py-3 whitespace-normal',
+                      'py-3 break-words whitespace-normal',
                       c.align === 'end' && 'text-right',
                       priorityClass(c.priority),
                     )}
@@ -348,7 +352,12 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
                   </TableCell>
                 ))}
                 {hasActions ? (
-                  <TableCell className="text-right">
+                  <TableCell
+                    className={cn(
+                      'text-right',
+                      props.renderActions && 'whitespace-nowrap pr-4',
+                    )}
+                  >
                     <RowActions
                       row={row}
                       actions={props.actions}

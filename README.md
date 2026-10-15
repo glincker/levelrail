@@ -129,6 +129,7 @@ Images for `linux/amd64` and `linux/arm64` are published as `:beta` (use this un
 - **Safe deploys.** Rolling, recreate, or blue-green, gated on real readiness probes. Prior images are pinned, so rollback is always one click and garbage collection cannot remove the target.
 - **Observability built in.** Node-local metrics at 15 second resolution and full-text log search, with deploy markers drawn on the charts so "which deploy caused this" is visible at a glance.
 - **Databases that verify their own backups.** Postgres, Redis, MySQL, MongoDB, MariaDB, KeyDB, Dragonfly, and ClickHouse, with scheduled backups, restore, and an automatic re-download and checksum after every backup.
+- **Sleep when idle.** An app with no requests for a time you choose stops and uses no memory or CPU, then starts on the next request. Useful for running many side projects on one small server. See [Sleep when idle](docs/sleep-when-idle.md).
 - **Many servers, no open ports.** Add nodes with a one-time token. Agents dial out over mTLS, with WireGuard mesh networking, internal DNS, cordon, and drain.
 - **Git-native.** GitHub, GitLab, Bitbucket, and Gitea webhooks, preview environments per pull request, and an import box that accepts a repo URL, an image, a `docker run` command, or a compose file.
 - **311 one-click templates** for self-hosted services, each a compose file the platform deploys and manages.

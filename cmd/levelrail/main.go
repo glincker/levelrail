@@ -55,6 +55,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/orphans"
+	"github.com/GLINCKER/levelrail/internal/pkgregistry"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -356,6 +357,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "approve-signin" {
+		if err := runApproveSignIn(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
+			logger.Error("approve-signin failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "emergency-token" {
 		if err := runEmergencyToken(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("emergency-token failed", slog.String("error", err.Error()))
@@ -363,9 +371,23 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "access-policy-reset" {
+		if err := runAccessPolicyReset(context.Background(), os.Args[2:], os.Stdout, openStore); err != nil {
+			logger.Error("access-policy-reset failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "restore-db" {
 		if err := runRestoreDB(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout); err != nil {
 			logger.Error("restore-db failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "wrap-master-key" {
+		if err := runWrapMasterKey(context.Background(), os.Args[2:], dataDirFromEnv(), os.Stdout, os.Getenv); err != nil {
+			logger.Error("wrap-master-key failed", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 		return
@@ -815,6 +837,8 @@ func run(logger *slog.Logger) error {
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	setupDataExport(ctx, logger, b, db, telemetryDB, secretsManager, logBroadcaster, apiRouter)
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
+	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
+	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
@@ -884,6 +908,7 @@ func run(logger *slog.Logger) error {
 	previewManager := newPreviewManager(ctx, logger, db, client, agentDataDir, b.ShortName, previewLocalNodeID)
 	apiRouter.SetPreview(previewManager)
 	apiRouter.SetSupplyChain(supplyChainSvc)
+	apiRouter.SetSecretScan(newSecretScanService(db, logger))
 
 	orphanReaper := newOrphanReaper(db, client, agentRegistry, previewLocalNodeID, instanceID, logger)
 	apiRouter.SetOrphanReaper(orphanReaper)
@@ -895,6 +920,8 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
 	proxySyncer := newProxySyncer(b, db, logger)
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
+	routeCheck := newRouteCheck(logger)
+	apiRouter.SetProxyRouteCheck(routeCheck)
 	apiRouter.ResumeCutoverRuns(ctx)
 
 	engine.SetStore(db)
@@ -916,6 +943,7 @@ func run(logger *slog.Logger) error {
 		databaseSlowQueryThresholdMs: databaseSlowQueryThresholdMs(logger),
 		dashboardDial:                dashboardDialAddr(httpAddr()),
 		gateSecret:                   gateSecret,
+		routeCheck:                   routeCheck,
 		networkPrefix:                b.ShortName,
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
@@ -1952,7 +1980,11 @@ func devFixturesFile() string {
 // is "" for an env-sourced key, so rotation knows it cannot persist it.
 func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOption) (mgr *secrets.Manager, masterKeyFilePath string, err error) {
 	if serialized := os.Getenv("APP_MASTER_KEY"); serialized != "" {
-		mk, err := secrets.LoadMasterKey(serialized)
+		plain, err := openMasterKeyMaterial(context.Background(), serialized, os.Getenv)
+		if err != nil {
+			return nil, "", fmt.Errorf("open master key from APP_MASTER_KEY: %w", err)
+		}
+		mk, err := secrets.LoadMasterKey(plain)
 		if err != nil {
 			return nil, "", fmt.Errorf("load master key from APP_MASTER_KEY: %w", err)
 		}
@@ -1989,7 +2021,11 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 	serialized, readErr := os.ReadFile(keyPath) //nolint:gosec // operator-controlled data directory path, not user input
 	switch {
 	case readErr == nil:
-		mk, err := secrets.LoadMasterKey(string(serialized))
+		plain, err := openMasterKeyMaterial(context.Background(), string(serialized), os.Getenv)
+		if err != nil {
+			return nil, "", fmt.Errorf("open persisted master key: %w", err)
+		}
+		mk, err := secrets.LoadMasterKey(plain)
 		if err != nil {
 			return nil, "", fmt.Errorf("load persisted master key: %w", err)
 		}
@@ -2007,7 +2043,11 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 	if err != nil {
 		return nil, "", fmt.Errorf("generate master key: %w", err)
 	}
-	if err := os.WriteFile(keyPath, []byte(mk.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
+	sealed, err := sealMasterKeyMaterial(context.Background(), mk.String(), os.Getenv)
+	if err != nil {
+		return nil, "", fmt.Errorf("wrap new master key: %w", err)
+	}
+	if err := os.WriteFile(keyPath, []byte(sealed), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
 		return nil, "", fmt.Errorf("persist master key: %w", err)
 	}
 	return mk, keyPath, nil
@@ -2097,8 +2137,10 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 	deployOpts = append(deployOpts, digestResolverOptions(logger, db, secretsManager, guard)...)
 	deployOpts = append(deployOpts, supplyChainDeployOptions(supplyChain)...)
+	deployOpts = append(deployOpts, secretScanDeployOptions(db, logger)...)
 	if secretsManager != nil {
-		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)))
+		deployOpts = append(deployOpts, deploy.WithSecretChecker(secretsManager), deploy.WithBuildCache(newBuildCache(logger, db, secretsManager)),
+			deploy.WithBuildSecretSource(&pkgregistry.Resolver{Store: db, Secrets: secretsManager}))
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
@@ -2504,6 +2546,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	if secretsManager != nil {
 		opts = append(opts, api.WithSecretSetter(secretsManager))
 		opts = append(opts, api.WithMasterKeyRotation(secretsManager, masterKeyFilePath))
+		if w, werr := keyWrapperFromEnv(os.Getenv); werr == nil && w != nil {
+			opts = append(opts, api.WithMasterKeyWrapper(w))
+		}
 		opts = append(opts, api.WithSecretBinding(secretsManager))
 		opts = append(opts, api.WithDoctorMasterKeyRotationWarnAge(doctorMasterKeyRotationWarnAge(logger)))
 		// The stale_secrets doctor check counts secret-marked rows across
@@ -3690,6 +3735,7 @@ type dynamicSourceDeps struct {
 	meshDNSAddr        string
 	dashboardDial      string
 	gateSecret         string
+	routeCheck         ingressdriver.RouteCheck
 	networkPrefix      string
 	firewallRulePrefix string
 	// databaseSlowQueryThresholdMs is 0 (databaseSlowQueryThresholdMs's own
@@ -3767,6 +3813,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
 			ingressreconcile.WithRequestStats(),
+			ingressreconcile.WithRouteCheck(deps.routeCheck),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 			// Routes remote apps to their node's mesh address.
@@ -3922,6 +3969,8 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithPinnedPortRetry(pinnedPortRetry(deps.logger)),
+		application.WithStartupWatch(startupWatch(deps.logger)),
+		application.WithExitRecorder(deps.db),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),
@@ -4042,6 +4091,14 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 				slog.String("database", desired.Name), slog.String("error", err.Error()))
 		} else if creds != nil {
 			opts = append(opts, database.WithClickHouseCredentials(creds))
+		}
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		creds, err := apiKeyCredentialsFor(ctx, deps.secretsManager, desired.Name, desired.Engine)
+		if err != nil {
+			deps.logger.Warn("skipping api key for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("engine", desired.Engine), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithAPIKeyCredentials(creds))
 		}
 	}
 	return opts

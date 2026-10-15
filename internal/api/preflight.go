@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/policy"
 	"github.com/GLINCKER/levelrail/internal/preflight"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -52,6 +53,15 @@ type preflightRequestBody struct {
 	GPU         bool     `json:"gpu"`
 	GitURL      string   `json:"git_url"`
 	GitBranch   string   `json:"git_branch"`
+	// The fields below feed deploy policy rules; ProjectID and EnvironmentID
+	// pick which scopes' rules apply.
+	ProjectID     string            `json:"project_id"`
+	EnvironmentID string            `json:"environment_id"`
+	NanoCPUs      int64             `json:"nano_cpus"`
+	Replicas      int               `json:"replicas"`
+	HasReadiness  bool              `json:"has_readiness"`
+	Privileged    bool              `json:"privileged"`
+	Labels        map[string]string `json:"labels"`
 }
 
 // handlePreflightNew handles POST /api/v1/preflight: checks for an app that
@@ -70,9 +80,13 @@ func (rt *Router) handlePreflightNew(w http.ResponseWriter, r *http.Request) {
 		Domains: body.Domains, MemoryBytes: body.MemoryBytes, RequiredEnv: body.RequiredEnv, EnvKeys: body.EnvKeys,
 		BindMounts: body.BindMounts, VolumePaths: body.VolumePaths, GPU: body.GPU, GitURL: body.GitURL, GitBranch: body.GitBranch,
 		IsLocalNode: rt.isLocalNode(body.NodeID),
+		NanoCPUs:    body.NanoCPUs, Replicas: body.Replicas, HasReadiness: body.HasReadiness,
+		Privileged: body.Privileged, Labels: body.Labels,
 	}
 	req.MeshUsable, req.MeshReason = rt.preflightMesh(r.Context(), body.NodeID)
-	writeJSON(w, http.StatusOK, preflight.Run(r.Context(), req, rt.preflightEnv(req, false)))
+	env := rt.preflightEnv(req, false)
+	env.Policy = rt.policyForPreflight(r.Context(), body.ProjectID, body.EnvironmentID)
+	writeJSON(w, http.StatusOK, preflight.Run(r.Context(), req, env))
 }
 
 // handlePreflightApp handles POST /api/v1/apps/{name}/preflight: checks an
@@ -101,7 +115,20 @@ func (rt *Router) handlePreflightApp(w http.ResponseWriter, r *http.Request) {
 	}
 	req := rt.preflightRequestFor(ctx, svc)
 	req.RequiredEnv = append(req.RequiredEnv, body.RequiredEnv...)
-	writeJSON(w, http.StatusOK, preflight.Run(ctx, req, rt.preflightEnv(req, true)))
+	env := rt.preflightEnv(req, true)
+	env.Policy = rt.policyForPreflight(ctx, svc.ProjectID, svc.EnvironmentID)
+	writeJSON(w, http.StatusOK, preflight.Run(ctx, req, env))
+}
+
+// policyForPreflight loads the effective guardrails. A load failure leaves
+// the policy checks out rather than failing the whole preflight report.
+func (rt *Router) policyForPreflight(ctx context.Context, projectID, environmentID string) policy.Set {
+	set, err := rt.effectivePolicy(ctx, projectID, environmentID)
+	if err != nil {
+		rt.logger.Error("api: preflight: load deploy policy failed", slog.String("error", err.Error()))
+		return nil
+	}
+	return set
 }
 
 func (rt *Router) preflightRequestFor(ctx context.Context, svc *store.DesiredService) preflight.Request {
@@ -109,7 +136,9 @@ func (rt *Router) preflightRequestFor(ctx context.Context, svc *store.DesiredSer
 		Name: svc.Name, NodeID: svc.NodeID, Image: svc.Image, Port: svc.Port,
 		Domains: svc.Domains, EnvKeys: configuredEnvKeys(svc),
 		IsLocalNode: rt.isLocalNode(svc.NodeID),
+		Replicas:    svc.Replicas, Labels: svc.Labels,
 	}
+	req.HasReadiness = svc.Health != nil && svc.Health.Readiness != nil
 	req.MeshUsable, req.MeshReason = rt.preflightMesh(ctx, svc.NodeID)
 	if svc.HostPort != nil {
 		req.HostPort = *svc.HostPort
@@ -121,6 +150,7 @@ func (rt *Router) preflightRequestFor(ctx context.Context, svc *store.DesiredSer
 	}
 	if svc.Resources != nil {
 		req.MemoryBytes = svc.Resources.MemoryBytes
+		req.NanoCPUs = svc.Resources.NanoCPUs
 		req.GPU = svc.Resources.GPU != nil
 	}
 	for _, bm := range svc.BindMounts {

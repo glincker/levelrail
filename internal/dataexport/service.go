@@ -44,6 +44,7 @@ type Deps struct {
 	Logs       *telemetry.LogBroadcaster
 	Metrics    MetricSource
 	AppCount   func(ctx context.Context) (int, error)
+	Platform   PlatformSource
 	Objects    ObjectPutter
 	Config     Config
 	Brand      string
@@ -144,7 +145,7 @@ var (
 )
 
 func isLogKind(k store.ExportKind) bool {
-	return k == store.ExportKindLogsHTTP || k == store.ExportKindLogsSyslog || k == store.ExportKindLogsLoki
+	return k == store.ExportKindLogsHTTP || k == store.ExportKindLogsSyslog || k == store.ExportKindLogsLoki || k == store.ExportKindLogsOTLP
 }
 
 func isAuditKind(k store.ExportKind) bool {
@@ -156,7 +157,7 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 		return invalid("name is required and at most 64 characters")
 	}
 	switch in.Kind {
-	case store.ExportKindLogsHTTP, store.ExportKindLogsLoki, store.ExportKindAuditWebhook, store.ExportKindMetricsOTLP:
+	case store.ExportKindLogsHTTP, store.ExportKindLogsLoki, store.ExportKindLogsOTLP, store.ExportKindAuditWebhook, store.ExportKindMetricsOTLP:
 		if err := ValidateHTTPEndpoint(ctx, in.Endpoint); err != nil {
 			return invalid("%v", err)
 		}
@@ -171,8 +172,11 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 	default:
 		return invalid("unknown kind %q", in.Kind)
 	}
-	if !isLogKind(in.Kind) && (len(in.Apps) > 0 || in.MinLevel != "") {
-		return invalid("apps and min_level apply to log destinations only")
+	if !isLogKind(in.Kind) && in.MinLevel != "" {
+		return invalid("min_level applies to log destinations only")
+	}
+	if !isLogKind(in.Kind) && in.Kind != store.ExportKindMetricsOTLP && len(in.Apps) > 0 {
+		return invalid("apps applies to log and metrics_otlp destinations only")
 	}
 	if !ValidLevel(in.MinLevel) {
 		return invalid("min_level must be one of debug, info, warn, error")

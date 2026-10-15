@@ -166,6 +166,7 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | `APP_DOCTOR_DISK_WARNING_BYTES` | `1073741824` (1 GiB) | Free disk space below which the `disk_space` check warns. Integer bytes. Control plane. |
 | `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `365` | Age of the master key, in whole days, after which doctor suggests rotating it. See [Master key rotation](/master-key-rotation). Control plane. |
 | `APP_DOCTOR_NETWORK_TIMEOUT` | `5s` | Shared time limit for the network checks in the doctor endpoint. Control plane. |
+| `APP_PROXY_ROUTER_PRIORITY` | `100000` | Traefik router priority written into managed route files, 1 to 1000000000. High so the managed router wins over label routers (for example ones left over from Coolify) for the same host. Changing it rewrites every managed file, so run **Verify** again afterwards. Control plane. |
 | `APP_PROXY_VERIFY_TIMEOUT` | `8s` | Time limit for each managed proxy route check (TLS handshake and request through the proxy) and for the DNS checks of the proxy setup checklist. Control plane. |
 | `APP_DOCTOR_PUBLIC_IP_ENDPOINT` | `https://api.ipify.org` | URL that returns the caller's public IP as plain text, used by the `public_ip` doctor check and by deploy preflight. Control plane. |
 | `APP_DIAGNOSE_PROBE_TIMEOUT` | `4s` | Time limit for each live probe (container state and container logs) when diagnosing an app. Zero or invalid values use the default. Control plane. |
@@ -202,3 +203,33 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 
 - **Scheduler intervals are not range checked.** `APP_BACKUP_SCHEDULER_INTERVAL`, `APP_SCHEDULED_TASK_SCHEDULER_INTERVAL`, `APP_UPDATE_CHECK_INTERVAL` and `APP_DEPLOY_APPROVAL_SWEEP_INTERVAL` use any value that parses as a Go duration, including zero or a negative one. Only an unparseable value falls back to the default. Use a positive duration.
 - **Ingress variables fail closed.** Unlike most settings on this page, an invalid `APP_INGRESS_*` hardening value is returned as an error at startup rather than ignored.
+
+## Troubleshooting
+
+### Variable change did not take effect
+
+**Likely cause:** The process was not restarted after the variable was set.
+
+**How to confirm:** Check the current setting in the dashboard or via the CLI. Run `systemctl status levelrail` to confirm the service is running.
+
+**Fix:** Restart the service or process: `sudo systemctl restart levelrail` on the control plane, or `docker restart <container-name>` if running in Docker.
+
+### Invalid value for a duration variable
+
+**Likely cause:** The duration syntax is incorrect. Go duration syntax requires a unit: `30s`, `5m`, `1h30m`.
+
+**How to confirm:** Check the control plane logs for a startup error mentioning the variable: `journalctl -u levelrail` or `docker logs <container-name>`.
+
+**Fix:** Use valid Go duration syntax with units (s, m, h). For example, `APP_BACKUP_SCHEDULER_INTERVAL=30m` instead of `APP_BACKUP_SCHEDULER_INTERVAL=30`.
+
+### Ingress variable causes startup failure
+
+**Likely cause:** An invalid `APP_INGRESS_*` variable was set. Ingress variables fail closed and refuse to start if the value is invalid.
+
+**How to confirm:** Check the control plane logs. The error will mention which ingress variable is invalid.
+
+**Fix:** Review the variable value and correct the syntax. Restart the service once the variable is fixed.
+
+### Still stuck
+
+For help with specific variables, refer to the table for that variable's scope (Control plane, Agent, or CLI) and component. Variables are only read at startup, so restart the relevant service after making changes.

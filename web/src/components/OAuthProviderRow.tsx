@@ -36,20 +36,9 @@ export function OAuthProviderRow({
   const [open, setOpen] = useState(false)
   const state = connectionState(settings)
   const callback = callbackUrl(window.location.origin, settings.provider)
-  const label = ((): string => {
-    switch (settings.provider) {
-      case 'google':
-        return t('oauthPage.providers.google')
-      case 'github':
-        return t('oauthPage.providers.github')
-      case 'microsoft':
-        return t('oauthPage.providers.microsoft')
-      case 'oidc':
-        return t('oauthPage.providers.oidc')
-      default:
-        return settings.provider
-    }
-  })()
+  const label = t(`oauthPage.providers.${settings.provider}`, {
+    defaultValue: settings.provider,
+  })
 
   const copyCallback = () => {
     void navigator.clipboard.writeText(callback).then(
@@ -64,11 +53,7 @@ export function OAuthProviderRow({
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-      <BrandTile
-        name={brandKeyFor(settings.provider)}
-        label={label}
-        muted={state !== 'connected'}
-      />
+      <BrandTile name={brandKeyFor(settings.provider)} label={label} />
       <span className="w-32 shrink-0 text-sm font-medium">{label}</span>
       <Badge variant={STATE_BADGE[state]}>
         {t(`oauthPage.state.${state}`)}

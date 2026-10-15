@@ -25,6 +25,7 @@ func TestContainerPort(t *testing.T) {
 		{engine: store.EngineMariaDB, want: 3306, wantOK: true},
 		{engine: store.EngineKeyDB, want: 6379, wantOK: true},
 		{engine: store.EngineDragonfly, want: 6379, wantOK: true},
+		{engine: store.EngineValkey, want: 6379, wantOK: true},
 		{engine: "not-a-real-engine", want: 0, wantOK: false},
 	}
 	for _, tt := range tests {
@@ -50,6 +51,7 @@ func TestPasswordSecretKey(t *testing.T) {
 		{engine: store.EngineRedis, want: "", wantOK: false},
 		{engine: store.EngineKeyDB, want: "", wantOK: false},
 		{engine: store.EngineDragonfly, want: "", wantOK: false},
+		{engine: store.EngineValkey, want: "", wantOK: false},
 		{engine: "not-a-real-engine", want: "", wantOK: false},
 	}
 	for _, tt := range tests {
@@ -94,6 +96,10 @@ func TestSupportsField(t *testing.T) {
 		{engine: store.EngineKeyDB, field: "password", want: false},
 		{engine: store.EngineKeyDB, field: "database", want: false},
 
+		{engine: store.EngineValkey, field: "url", want: true},
+		{engine: store.EngineValkey, field: "port", want: true},
+		{engine: store.EngineValkey, field: "username", want: false},
+		{engine: store.EngineValkey, field: "password", want: false},
 		{engine: store.EngineDragonfly, field: "url", want: true},
 		{engine: store.EngineDragonfly, field: "host", want: true},
 		{engine: store.EngineDragonfly, field: "port", want: true},

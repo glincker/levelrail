@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -76,10 +77,6 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "database_name is required")
 		return
 	}
-	envVar := req.EnvVar
-	if envVar == "" {
-		envVar = defaultDatabaseAttachmentEnvVar
-	}
 	field := req.Field
 	if field == "" {
 		field = defaultDatabaseAttachmentField
@@ -100,6 +97,14 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 	if !databaseFieldSupported(external, desiredDB.Engine, field) {
 		writeError(w, http.StatusBadRequest, "field \""+field+"\" is not supported for "+desiredDB.Engine+" databases")
 		return
+	}
+
+	envVar := req.EnvVar
+	if envVar == "" {
+		envVar = defaultDatabaseAttachmentEnvVar
+		if conv := database.ConventionalEnvVar(desiredDB.Engine, field); conv != "" && !external {
+			envVar = conv
+		}
 	}
 
 	att := &store.DatabaseAttachment{DatabaseName: req.DatabaseName, EnvVar: envVar, Field: field}

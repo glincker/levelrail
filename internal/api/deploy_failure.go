@@ -134,6 +134,13 @@ func (rt *Router) handleGetDeploy(w http.ResponseWriter, r *http.Request) {
 	if f, ok := rt.classifyAttempt(ctx, a, conds, idx == 0); ok {
 		res.Failure = f
 	}
+	if rt.deployExits != nil {
+		if e, err := rt.deployExits.GetDeployExit(ctx, name, a.ID); err != nil {
+			rt.logger.Warn("api: get deploy: load exit capture failed", slog.String("error", err.Error()), slog.String("deploy_id", a.ID))
+		} else {
+			res.Exit = toDeployExitResource(e)
+		}
+	}
 	writeJSON(w, http.StatusOK, res)
 }
 

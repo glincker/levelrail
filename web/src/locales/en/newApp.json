@@ -14,12 +14,6 @@
   "source": {
     "analyzing": "Reading the repository...",
     "analyze": "Analyze repository",
-    "tabs": {
-      "repos": "Your repositories",
-      "url": "Git URL",
-      "other": "Image, compose or docker run",
-      "template": "Template"
-    },
     "repos": {
       "search": "Search repositories or languages",
       "listLabel": "Connected repositories",
@@ -39,9 +33,36 @@
       "token": "Access token",
       "tokenHint": "Used once to read files and to build. Leave empty for a public repository."
     },
-    "template": {
-      "body": "Templates are ready-made services such as databases, CMSs and dashboards with sane defaults.",
-      "browse": "Browse templates"
+    "git": {
+      "title": "Import from Git",
+      "description": "Pick a repository and its files are read through the provider API. Nothing is cloned or created until you deploy.",
+      "connectTitle": "Connect a git provider",
+      "connectBody": "Connect an account to choose from your repositories, or paste a repository URL below.",
+      "connect": "Connect",
+      "connectLabel": "Connect {{provider}}",
+      "connected": "Connected",
+      "pickTitle": "Your repositories",
+      "urlTitle": "Paste a repository URL"
+    },
+    "templates": {
+      "title": "Start from a template",
+      "description": "Ready-made services with sane defaults. Open one to see what it deploys.",
+      "seeAll": "See all {{count}} templates",
+      "browse": "Browse the template catalog",
+      "loading": "Loading templates",
+      "unavailable": "The template list is not available right now. The full catalog is one click away.",
+      "gridLabel": "Featured templates"
+    },
+    "other": {
+      "title": "Other ways to start",
+      "description": "Bring a container image, a compose file or a docker run command.",
+      "image": "Container image",
+      "imageHint": "Deploy a prebuilt image from a registry.",
+      "compose": "Docker Compose",
+      "composeHint": "Paste or upload a compose file.",
+      "run": "docker run command",
+      "runHint": "Turn a command into a managed app.",
+      "hide": "Hide"
     }
   },
   "findings": {

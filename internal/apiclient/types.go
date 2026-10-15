@@ -632,10 +632,24 @@ type RegistryTagsResource struct {
 // redeclared from internal/store.OAuthProvider* rather than imported, the
 // same reasoning as ServiceResources above.
 const (
-	OAuthProviderGoogle    = "google"
-	OAuthProviderGitHub    = "github"
-	OAuthProviderOIDC      = "oidc"
-	OAuthProviderMicrosoft = "microsoft"
+	OAuthProviderGoogle      = "google"
+	OAuthProviderGitHub      = "github"
+	OAuthProviderOIDC        = "oidc"
+	OAuthProviderMicrosoft   = "microsoft"
+	OAuthProviderGitLab      = "gitlab"
+	OAuthProviderBitbucket   = "bitbucket"
+	OAuthProviderDiscord     = "discord"
+	OAuthProviderSlack       = "slack"
+	OAuthProviderLinkedIn    = "linkedin"
+	OAuthProviderTwitch      = "twitch"
+	OAuthProviderFacebook    = "facebook"
+	OAuthProviderLinear      = "linear"
+	OAuthProviderVercel      = "vercel"
+	OAuthProviderHuggingFace = "huggingface"
+	OAuthProviderFigma       = "figma"
+	OAuthProviderSalesforce  = "salesforce"
+	OAuthProviderCodeberg    = "codeberg"
+	OAuthProviderCognito     = "cognito"
 )
 
 // Email backends accepted by EmailSettingsResource.Backend.
@@ -667,8 +681,25 @@ type SetDomainBasicAuthRequest struct {
 // domainMaintenanceResource: GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/maintenance's wire shape.
 type DomainMaintenanceResource struct {
-	Domain  string `json:"domain"`
-	Enabled bool   `json:"enabled"`
+	Domain            string   `json:"domain"`
+	Enabled           bool     `json:"enabled"`
+	Title             string   `json:"title,omitempty"`
+	Message           string   `json:"message,omitempty"`
+	RetryAfterSeconds int      `json:"retry_after_seconds,omitempty"`
+	Until             string   `json:"until,omitempty"`
+	WindowID          string   `json:"window_id,omitempty"`
+	Bypass            []string `json:"bypass,omitempty"`
+	BypassHealthCheck bool     `json:"bypass_health_check"`
+}
+
+// SetDomainMaintenanceRequest is PUT .../maintenance's optional body.
+type SetDomainMaintenanceRequest struct {
+	Title             string   `json:"title,omitempty"`
+	Message           string   `json:"message,omitempty"`
+	RetryAfterSeconds int      `json:"retry_after_seconds,omitempty"`
+	Until             string   `json:"until,omitempty"`
+	Bypass            []string `json:"bypass,omitempty"`
+	BypassHealthCheck *bool    `json:"bypass_health_check,omitempty"`
 }
 
 // DomainTLSCertResource mirrors internal/api's domainTLSCertResource
@@ -1340,6 +1371,40 @@ type WhoamiResource struct {
 	Name      string   `json:"name"`
 	Abilities []string `json:"abilities"`
 	ExpiresAt string   `json:"expires_at"`
+}
+
+// MyAccessResource mirrors internal/api's myAccessResponse (account_access.go).
+type MyAccessResource struct {
+	Kind            string               `json:"kind"`
+	Name            string               `json:"name"`
+	Tier            string               `json:"tier"`
+	Abilities       []string             `json:"abilities"`
+	Teams           []MyAccessTeam       `json:"teams"`
+	LinkedProviders []string             `json:"linked_providers"`
+	Policies        []MyAccessPolicy     `json:"policies"`
+	Capabilities    []MyAccessCapability `json:"capabilities"`
+}
+
+// MyAccessTeam is one team membership in MyAccessResource.
+type MyAccessTeam struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Role string `json:"role"`
+}
+
+// MyAccessPolicy is one attached IAM policy in MyAccessResource.
+type MyAccessPolicy struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+// MyAccessCapability is one area the caller can or cannot manage.
+type MyAccessCapability struct {
+	Key             string `json:"key"`
+	Allowed         bool   `json:"allowed"`
+	RequiredAbility string `json:"required_ability"`
+	Reason          string `json:"reason"`
 }
 
 // SessionLinkResource mirrors internal/api's mintSessionLinkResponse

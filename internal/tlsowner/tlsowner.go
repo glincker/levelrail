@@ -110,6 +110,12 @@ func (s Snapshot) Owner(domain string) Owner {
 // ProxyManaged reports whether a proxy owns domain's certificate.
 func (s Snapshot) ProxyManaged(domain string) bool { return s.Owner(domain) == Proxy }
 
+// Route returns the managed proxy route row for domain, if one is tracked.
+func (s Snapshot) Route(domain string) (store.ProxyRouteStatus, bool) {
+	r, ok := s.routes[strings.ToLower(domain)]
+	return r, ok
+}
+
 // ProxyCert returns the trusted certificate the proxy serves for domain.
 func (s Snapshot) ProxyCert(domain string) (ProxyCert, bool) {
 	r, ok := s.routes[strings.ToLower(domain)]

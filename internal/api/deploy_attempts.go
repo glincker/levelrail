@@ -223,6 +223,9 @@ type deployAttemptResource struct {
 	// Outcome is set by the single-deploy endpoint only: in_progress, healthy,
 	// failed, canceled, superseded or blocked.
 	Outcome string `json:"outcome,omitempty"`
+	// Exit is set by the single-deploy endpoint when the release's container
+	// stopped before it could serve: how, and its last output.
+	Exit *deployExitResource `json:"exit,omitempty"`
 }
 
 // applyWait fills the queue and wait fields of res for attempt a.

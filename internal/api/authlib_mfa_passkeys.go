@@ -247,6 +247,10 @@ func (l *authLibMFA) finishLogin(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: passkey login finish: load user failed", err)
 		return
 	}
+	if rt.ssoBlocksLocalSignIn(r.Context(), user.ID) {
+		writeError(w, http.StatusForbidden, ssoRequiredMessage)
+		return
+	}
 	if rt.pauseForDeviceApproval(w, r, *user, "", signInMethodPasskey) {
 		return
 	}

@@ -143,7 +143,10 @@ Stated plainly. Status says whether a gap is open, accepted, or by design.
 | Pipeline containers share the node's Docker daemon | A malicious pipeline that reaches the daemon is root on the node | Depends on container hardening above |
 | A ClickHouse dump interpolates table names from the target database into SQL | Only a user who already owns the database can craft a name | Accepted, low |
 | Sessions are process-local | No session listing across a restart, and no shared sessions for an HA control plane | Accepted for single control plane |
-| No SSO or SAML | Sign-in is local password, passkey or OAuth | Open |
+| SAML trusts the configured IdP for identity and groups | A compromised IdP or IdP admin can sign in as any account with a matching email or linked subject, including root | By design. Restrict IdP admins, use allowed domains, keep sync off for root |
+| The sign-in library's SAML service provider accepts IdP-initiated responses and does not check `InResponseTo` | Used directly, a captured or unsolicited assertion could be replayed until it expires | Mitigated: Levelrail never exposes the library's SAML routes and checks every response first against a single-use, browser-bound request ID, a bearer confirmation for it and an explicit audience |
+| A SCIM token can create, change and deactivate accounts, adopt an existing account by email and set roles through mappings | A leaked token lets its holder provision or take over accounts with the mapped roles | Tokens are hashed in the library, https only, revocable and rotatable; the last root user cannot be deprovisioned |
+| SCIM deactivation in the library removes membership but does not itself revoke sessions | A deactivated user would keep working sessions and API tokens | Mitigated: Levelrail disables the account through the library after every deactivation or delete, which revokes sessions, API tokens and remembered devices in one call |
 | No secret scanning of app source. Image vulnerability scanning is optional and off by default ([Supply chain](/supply-chain)) | Not a boundary Levelrail enforces | Open |
 
 ## Choosing a safer deployment

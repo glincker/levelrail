@@ -110,7 +110,11 @@ export function TopResourceConsumers({ apps }: { apps: AppListEntry[] }) {
                 {formatValue(usage, rankBy)}
               </span>
               {app ? (
-                <StopStartAppButton name={app.name} suspended={app.suspended} />
+                <StopStartAppButton
+                  name={app.name}
+                  suspended={app.suspended}
+                  asleep={app.sleep?.sleeping ?? false}
+                />
               ) : null}
             </div>
           )

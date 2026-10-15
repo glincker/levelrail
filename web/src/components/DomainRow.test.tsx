@@ -91,12 +91,43 @@ describe('DomainsTable rows', () => {
         has_redirect: true,
         maintenance_enabled: true,
         has_basic_auth: true,
+        enforcement: {
+          mode: 'levelrail',
+          maintenance: true,
+          basic_auth: true,
+          auth_gate: true,
+          waf: true,
+          redirect: true,
+          error_pages: true,
+        },
       }),
     )
     expect(screen.getByTitle('WAF enabled')).toBeInTheDocument()
     expect(screen.getByTitle('Redirect configured')).toBeInTheDocument()
     expect(screen.getByTitle('Maintenance mode on')).toBeInTheDocument()
     expect(screen.getByTitle('Basic auth configured')).toBeInTheDocument()
+  })
+
+  it('marks a saved flag the proxy path does not enforce', () => {
+    renderRow(
+      makeDomain({
+        maintenance_enabled: true,
+        enforcement: {
+          mode: 'proxy:traefik',
+          maintenance: false,
+          basic_auth: false,
+          auth_gate: false,
+          waf: false,
+          redirect: false,
+          error_pages: false,
+          reason: 'route_unverified',
+        },
+      }),
+    )
+    expect(screen.queryByTitle('Maintenance mode on')).not.toBeInTheDocument()
+    expect(
+      screen.getByTitle('Maintenance mode on (saved, not enforced)'),
+    ).toBeInTheDocument()
   })
 
   it('shows an unlinked standalone domain with its target and scoped calls', () => {

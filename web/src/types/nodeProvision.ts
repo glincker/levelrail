@@ -2,9 +2,37 @@
 // /api/v1/node-providers[/...] and /api/v1/nodes/provision,
 // /api/v1/node-provisions[/...] (internal/api/node_provision.go).
 
+export type NodeProviderMethod =
+  | 'api_token'
+  | 'access_key'
+  | 'assume_role'
+  | 'ambient'
+  | 'workload_identity_federation'
+  | 'service_account_json'
+  | 'manual'
+
+export type NodeProviderStatus = 'connected' | 'not_connected' | 'test_failed'
+
 export interface NodeProviderResource {
   provider: string
   has_token: boolean
+  status?: NodeProviderStatus
+  methods?: NodeProviderMethod[]
+  method?: NodeProviderMethod
+  label?: string
+  location?: string
+  notes?: string
+  connected_by?: string
+  connected_at?: string
+  last_tested_at?: string
+  last_test_ok?: boolean
+  last_test_detail?: string
+}
+
+export interface NodeProviderTestResult {
+  ok: boolean
+  message: string
+  tested_at: string
 }
 
 export interface NodeProviderRegionResource {

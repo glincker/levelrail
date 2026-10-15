@@ -73,8 +73,11 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/compliance"
+	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
 	"net"
+	"net/http"
 	"os/exec"
 	"sync"
 	"sync/atomic"
@@ -133,13 +136,15 @@ type Router struct {
 	nodes                  NodeStore
 	agentCAFingerprint     string // empty: join tokens are returned without a CA pin
 	nodeCerts              nodeCertConfig
-	nodeProvisions         NodeProvisionStore     // always set, same "core Store interface" shape as cloudflareDNS above
-	nodeProviderSecrets    NodeProviderSecrets    // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
-	nodeProviderCatalog    *providerCatalogCache  // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
-	nodeProvisionerFactory NodeProvisionerFactory // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
-	sshProvisions          SSHNodeProvisionStore  // always set, same "core Store interface" shape as nodeProvisions above
-	sshProvisioner         SSHProvisioner         // nil uses sshprovision.New(), overridable in this package's own tests
-	templateRequiresConfig map[string]bool        // always set (NewRouter computes it once, catalog.Templates is static for the process lifetime), see service_templates.go's computeTemplateRequiresConfig
+	packageRegistries      PackageRegistryStore        // always set, private package registry rows and registry credential usage
+	nodeProviderConns      NodeProviderConnectionStore // always set, connection metadata for node providers
+	nodeProvisions         NodeProvisionStore          // always set, same "core Store interface" shape as cloudflareDNS above
+	nodeProviderSecrets    NodeProviderSecrets         // nil is valid: POST /api/v1/node-providers and every node-providers/{provider}/... route return 501, same shape as cloudflareDNSSecrets above
+	nodeProviderCatalog    *providerCatalogCache       // always set (NewRouter constructs one unconditionally); purely in-memory, brief cache, see its own doc comment
+	nodeProvisionerFactory NodeProvisionerFactory      // nil uses defaultNodeProvisionerFactory, overridable in this package's own tests
+	sshProvisions          SSHNodeProvisionStore       // always set, same "core Store interface" shape as nodeProvisions above
+	sshProvisioner         SSHProvisioner              // nil uses sshprovision.New(), overridable in this package's own tests
+	templateRequiresConfig map[string]bool             // always set (NewRouter computes it once, catalog.Templates is static for the process lifetime), see service_templates.go's computeTemplateRequiresConfig
 	projects               ProjectStore
 	organizations          OrganizationStore
 	environments           EnvironmentStore
@@ -147,6 +152,7 @@ type Router struct {
 	cliConsole             *cliConsoleState                    // web CLI console limits and config, see cli_console.go
 	mobile                 *mobileState                        // phone pairing rate limits, see mobile.go
 	secrets                SecretSetter                        // nil is valid: a control plane with no master key configured serves everything except secret-setting
+	compliance             *compliance.Service                 // nil until SetCompliance: compliance routes answer 501
 	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
 	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
@@ -228,6 +234,7 @@ type Router struct {
 	// automatically; the env-var case has no such path and the rotation
 	// response warns instead. Set via WithMasterKeyRotation.
 	masterKeyFilePath string
+	masterKeyWrapper  secrets.KeyWrapper
 	// doctorMasterKeyRotationWarnAge overrides
 	// defaultDoctorMasterKeyRotationWarnAge for the doctor's
 	// master_key_rotation check. 0 means "use the default", set via
@@ -377,6 +384,8 @@ type Router struct {
 	// previewAdmitMu serializes the check-evict-save section that enforces it.
 	previewLimits  PreviewLimits
 	previewAdmitMu sync.Mutex
+	// quotaMu makes a quota check and the create it guards one atomic step.
+	quotaMu sync.Mutex
 	// previewDeploys tracks approval-triggered background deploys.
 	previewDeploys sync.WaitGroup
 	// previewStuckAfter is how long a preview may sit in deploying before the
@@ -429,6 +438,7 @@ type Router struct {
 	backupSecrets                BackupSecretsSetter             // nil is valid: POST /api/v1/backup-targets returns 501, same shape as secrets above
 	dataExport                   DataExportService               // nil is valid: export routes and GET /metrics return 501
 	eventWebhooks                EventWebhookService             // nil is valid: event webhook routes return 501
+	scheduledMaintenance         ScheduledMaintenanceStore       // nil is valid: scheduled maintenance routes return 501
 	registryCredentials          RegistryCredentialStore         // always set, same "core Store interface" shape as backupTargets above
 	registryCredentialSecrets    RegistryCredentialSecretsSetter // nil is valid: POST /api/v1/registry-credentials returns 501, same shape as backupSecrets above
 	networkShares                NetworkShareStore               // always set, same "core Store interface" shape as registryCredentials above
@@ -458,6 +468,7 @@ type Router struct {
 	baseBackupRunner             BaseBackupRunner                                      // nil is valid: POST /api/v1/databases/{name}/base-backups returns 501, same shape as backupRunner above
 	majorUpgrader                MajorUpgrader                                         // nil is valid: the major upgrade routes return 501
 	dbUpgrader                   DatabaseUpgrader                                      // nil is valid: the database upgrade routes return 501
+	dbVersions                   DatabaseVersionCatalog                                // nil is valid: the database version routes return 501
 	majorUpgrades                MajorUpgradeStore                                     // always set, same "core Store interface" shape as pitrRestoreHistory
 	pitrRestoreHistory           PITRRestoreHistoryStore                               // always set, same "core Store interface" shape as restoreHistory above
 	walShipStatus                WALShipStatusSource                                   // nil is valid: "pitr status" omits wal_ship
@@ -477,6 +488,8 @@ type Router struct {
 	startingDeploys              map[string]int                                        // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
 	deployMaxConcurrent          int                                                   // 0 means unlimited, set via WithDeployMaxConcurrent
 	deployLogStore               DeployLogQuerier                                      // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployExits                  DeployExitStore                                       // nil is valid: exits are reported without their captured output
+	trialKeeper                  TrialKeeper                                           // nil is valid: POST /apps/{name}/keep returns 501
 	deployRecorder               *deploylog.Recorder                                   // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 	logBroadcaster               *telemetry.LogBroadcaster                             // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
 	deployNotifyTargets          DeployNotifyTargets                                   // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
@@ -563,6 +576,7 @@ type Router struct {
 	scheduledTaskRunner          ScheduledTaskRunner          // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 	preview                      PreviewService               // nil is valid: preview routes return 501 (SetPreview)
 	supplyChain                  SupplyChainService           // nil is valid: supply chain routes return 501 (SetSupplyChain)
+	secretScan                   SecretScanService            // nil is valid: secret scan routes return 501 (SetSecretScan)
 	pipelineStore                PipelineStore                // nil is valid: pipeline routes return 501 (WithPipelines)
 	pipelineRunner               PipelineRunner               // nil is valid: run/cancel/rerun return 501
 	pipelineEvents               PipelineEvents               // nil is valid: git events start no pipelines
@@ -615,6 +629,17 @@ type Router struct {
 	aiTurns                      aiTurnRegistry           // live per-turn assistant tokens, keyed by token id
 
 	roles RoleStore
+	// sso is the platform side of SAML and SCIM; nil answers 501 (sso_glue.go).
+	sso         SSOStore
+	samlFlows   *samlFlowStore
+	scimLib     http.Handler
+	samlLimiter *apiRateLimiter
+	scimLimiter *apiRateLimiter
+	// accessPolicy enforces per-team session policy in accessPolicyMiddleware.
+	accessPolicy  AccessPolicyStore
+	policyTouches *touchCache
+	// policyCapChecks throttles the per-user session cap check per session.
+	policyCapChecks *touchCache
 	// mesh is this node's live network.Mesh handle (GET /api/v1/mesh's
 	// real, UAPI-backed half). nil is valid: APP_MESH_ENABLED defaults
 	// off (cmd/levelrail/mesh.go's own doc comment), and the route
@@ -788,6 +813,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		cloudflareDNS:               s,
 		route53DNS:                  s,
 		nodeProvisions:              s,
+		nodeProviderConns:           s,
+		packageRegistries:           s,
 		sshProvisions:               s,
 		nodeProviderCatalog:         newProviderCatalogCache(),
 		templateRequiresConfig:      computeTemplateRequiresConfig(),
@@ -842,6 +869,12 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	if g, ok := any(s).(GateStore); ok {
 		rt.gate = g
 	}
+	if e, ok := any(s).(DeployExitStore); ok {
+		rt.deployExits = e
+	}
+	if k, ok := any(s).(TrialKeeper); ok {
+		rt.trialKeeper = k
+	}
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 
 	rt.dash = newDashboardCache(0, 0)
@@ -855,6 +888,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// re-read on every create() call.
 	rt.sessions = newSessionStore(rt.sessionTTL)
 	rt.attachAuthEngine(s)
+	rt.attachSSO(s)
 	rt.attachEnvProtection(s)
 	rt.cliConsole = newCLIConsoleState()
 	rt.mobile = newMobileState()

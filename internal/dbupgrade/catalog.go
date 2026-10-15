@@ -51,6 +51,7 @@ type Catalog struct {
 	updated    string
 	engines    map[string]EngineCatalog
 	discovered map[string][]string
+	remote     map[string]remoteEngine
 }
 
 // LoadCatalog parses the embedded catalog.
@@ -87,6 +88,7 @@ func (c *Catalog) Engine(id string) (EngineCatalog, bool) {
 	if !ok {
 		return EngineCatalog{}, false
 	}
+	e = c.withRemote(id, e)
 	extra := c.discovered[id]
 	if len(extra) == 0 {
 		return e, true

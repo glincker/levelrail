@@ -114,6 +114,11 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	envNames := rt.environmentNames(r.Context(), svcs)
 	envSettings, envSettingsOK := rt.appOverridesForList(r.Context())
 
+	var sleepRows map[string]appListSleep
+	if rows, err := rt.appSleep.ListAppSleep(r.Context()); err == nil {
+		sleepRows = sleepByApp(rows)
+	}
+
 	placement := rt.placementResolver(r.Context())
 	out := make([]appListResource, 0, len(svcs))
 	for _, s := range svcs {
@@ -125,11 +130,15 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		if cond := rt.crossNodeIngressAppCondition(r.Context(), s); cond != nil {
 			conditions = append(conditions, *cond)
 		}
-		out = append(out, appListResource{
+		item := appListResource{
 			appResource:     resource,
 			Status:          summarizeAppConditions(conditions),
 			EnvironmentName: envNames[s.EnvironmentID],
-		})
+		}
+		if sl, ok := sleepRows[s.Name]; ok {
+			item.Sleep = &sl
+		}
+		out = append(out, item)
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))
 	writeJSON(w, http.StatusOK, out)

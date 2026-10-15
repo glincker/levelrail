@@ -16,6 +16,7 @@
   "kinds": {
     "logs_http": "Logs over HTTP (JSON lines)",
     "logs_loki": "Logs to Loki",
+    "logs_otlp": "Logs over OTLP/HTTP",
     "logs_syslog": "Logs to syslog (RFC 5424)",
     "audit_webhook": "Audit log webhook",
     "audit_s3": "Audit log to a storage bucket",

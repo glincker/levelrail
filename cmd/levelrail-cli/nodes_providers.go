@@ -30,7 +30,13 @@ func runNodesProviders(prog string, args []string, stdout, stderr io.Writer, loo
 	case "list":
 		return runNodesProvidersList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set-credential":
-		return runNodesProvidersSetCredential(prog, args[1:], stdout, stderr, lookupEnv)
+		return runNodesProvidersSetCredential(prog, args[1:], stdout, stderr, lookupEnv, false)
+	case "connect":
+		return runNodesProvidersSetCredential(prog, args[1:], stdout, stderr, lookupEnv, true)
+	case "test":
+		return runNodesProvidersTest(prog, args[1:], stdout, stderr, lookupEnv)
+	case "disconnect":
+		return runNodesProvidersDisconnect(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes providers subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, nodesProvidersUsage(prog))
@@ -41,9 +47,14 @@ func runNodesProviders(prog string, args []string, stdout, stderr io.Writer, loo
 func nodesProvidersUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes providers list [flags]                                          list known cloud providers and whether each has a stored credential
-  %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token
+  %[1]s nodes providers connect --provider NAME [--method METHOD] [flags]   connect a provider (tests it first unless --verify=false)
+  %[1]s nodes providers test --provider NAME [flags]                          run a read-only connection test against the stored credential
+  %[1]s nodes providers disconnect --provider NAME [flags]                    remove the stored credential
+  %[1]s nodes providers set-credential --provider NAME --provider-token TOKEN [flags]   store (or replace) a provider's API token without testing
 
-NAME must be "hetzner", "digitalocean", "aws", "azure" or "gcp".
+NAME must be "hetzner", "digitalocean", "aws", "azure", "gcp" or "custom".
+METHOD is api_token, access_key, assume_role, ambient, service_account_json,
+workload_identity_federation or manual; omit it to infer one.
 
 Run "%[1]s nodes providers <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -96,18 +107,33 @@ func printNodeProvidersTable(out io.Writer, providers []nodeProviderResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "PROVIDER\tHAS TOKEN")
+	_, _ = fmt.Fprintln(tw, "PROVIDER\tSTATUS\tMETHOD\tMETHODS\tCONNECTED BY\tLAST TESTED")
 	for _, p := range providers {
-		_, _ = fmt.Fprintf(tw, "%s\t%t\n", p.Provider, p.HasToken)
+		status := p.Status
+		if status == "" {
+			status = fmt.Sprintf("has_token=%t", p.HasToken)
+		}
+		tested := "never"
+		if p.LastTestedAt != nil {
+			tested = p.LastTestedAt.Format("2006-01-02 15:04")
+		}
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", p.Provider, status, p.Method, strings.Join(p.Methods, ","), p.ConnectedBy, tested)
 	}
 	_ = tw.Flush()
 }
 
-func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers set-credential", "print the updated provider as JSON to stdout and nothing else", stderr)
+func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), verifyDefault bool) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers connect", "print the updated provider as JSON to stdout and nothing else", stderr)
 	var provider, providerToken, secretAccessKey, sessionToken, region, roleARN string
 	var useAmbient bool
-	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure or gcp (required)")
+	var method, label, location, notes string
+	verify := verifyDefault
+	fs.StringVar(&method, "method", "", "connection method: api_token, access_key, assume_role, ambient, service_account_json, workload_identity_federation or manual (default: inferred)")
+	fs.StringVar(&label, "label", "", "custom only: a name for the data center (required for custom)")
+	fs.StringVar(&location, "location", "", "custom only: a location label")
+	fs.StringVar(&notes, "notes", "", "custom only: free-form notes")
+	fs.BoolVar(&verify, "verify", verifyDefault, "run a read-only connection test first and store nothing when it fails")
+	fs.StringVar(&provider, "provider", "", "hetzner, digitalocean, aws, azure, gcp or custom (required)")
 	fs.StringVar(&providerToken, "provider-token", "", "the provider's credential (an API token for hetzner/digitalocean, the AWS access key id for aws, a single-line JSON object for azure, a service account JSON key for gcp); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&secretAccessKey, "secret-access-key", "", "aws only: the secret access key matching --provider-token's access key id (required unless --use-ambient-credentials); prefer piping it on stdin or the interactive prompt instead, a flag value is visible in shell history and the process list")
 	fs.StringVar(&sessionToken, "session-token", "", "aws only: a session token, for temporary credentials (optional)")
@@ -123,7 +149,14 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	if provider == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
 	}
+	if method == "ambient" {
+		useAmbient = true
+	}
 	switch {
+	case provider == "custom":
+		if label == "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--label is required for custom: a name for this data center"))
+		}
 	case provider == "aws" && useAmbient:
 		// Nothing further to collect: the control plane resolves its own
 		// ambient AWS identity, optionally narrowed by --role-arn.
@@ -160,7 +193,10 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	req := setNodeProviderCredentialRequest{Provider: provider, Token: providerToken}
+	req := setNodeProviderCredentialRequest{
+		Provider: provider, Token: providerToken, Method: method, Verify: verify && provider != "custom",
+		Label: label, Location: location, Notes: notes,
+	}
 	if provider == "aws" {
 		req.SecretAccessKey, req.SessionToken, req.Region, req.RoleARN, req.UseAmbientCredentials = secretAccessKey, sessionToken, region, roleARN, useAmbient
 	}
@@ -170,7 +206,7 @@ func runNodesProvidersSetCredential(prog string, args []string, stdout, stderr i
 	}
 
 	if err := renderResult(stdout, of.Format, of.Query, updated, func() {
-		_, _ = fmt.Fprintf(stdout, "provider %q credential stored\n", updated.Provider)
+		_, _ = fmt.Fprintf(stdout, "provider %q connected\n", updated.Provider)
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)
@@ -271,4 +307,57 @@ func readNodeProviderProtectedValue(stderr io.Writer, prompt, label string) (str
 		return "", newValidationError("read %s: %v", label, err)
 	}
 	return strings.TrimSpace(string(b)), nil
+}
+
+func runNodesProvidersTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers test", "print the test result as JSON to stdout and nothing else", stderr)
+	var provider string
+	fs.StringVar(&provider, "provider", "", "provider to test (required)")
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	if provider == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.TestNodeProvider(context.Background(), provider)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("test provider %q: %w", provider, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, res, func() {
+		_, _ = fmt.Fprintln(stdout, res.Message)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	if !res.OK {
+		return exitAPIError
+	}
+	return exitOK
+}
+
+func runNodesProvidersDisconnect(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes providers disconnect", "print the result as JSON to stdout and nothing else", stderr)
+	var provider string
+	fs.StringVar(&provider, "provider", "", "provider to disconnect (required)")
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	if provider == "" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--provider is required"))
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	if err := client.DisconnectNodeProvider(context.Background(), provider); err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("disconnect provider %q: %w", provider, err))
+	}
+	result := map[string]string{"provider": provider, "status": "disconnected"}
+	if err := renderResult(stdout, of.Format, of.Query, result, func() {
+		_, _ = fmt.Fprintf(stdout, "provider %q disconnected\n", provider)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
 }

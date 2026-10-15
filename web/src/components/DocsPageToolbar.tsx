@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
-  ArrowSquareOutIcon,
   CheckIcon,
   CopyIcon,
   DownloadSimpleIcon,
   GithubLogoIcon,
+  PushPinIcon,
+  PushPinSlashIcon,
+  BookmarkIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   DropdownMenu,
@@ -13,9 +16,11 @@ import {
   DropdownMenuLinkItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { buttonVariants } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useBrand } from '@/hooks/useBrand'
+import { usePinnedPages } from '@/hooks/usePinnedPages'
+import { routePathToDocsSiteUrl, routePathWithHash } from '@/lib/docsPathMapper'
 import { cn } from '@/lib/utils'
 
 interface DocsPageToolbarProps {
@@ -25,37 +30,81 @@ interface DocsPageToolbarProps {
   file: string
   /** In-app route path, e.g. "/getting-started". */
   routePath: string
+  /** Page title for pinning. */
+  pageTitle: string
 }
 
-async function copyMarkdown(markdown: string, onDone: () => void) {
-  try {
-    await navigator.clipboard.writeText(markdown)
-    onDone()
-    toast.add({ title: 'Copied page as Markdown', type: 'success' })
-  } catch {
-    toast.add({ title: 'Could not copy to clipboard', type: 'error' })
-  }
-}
-
-// Page-level "export" menu: copy the raw source, or jump to the same page
-// on GitHub or this instance's hosted docs site. brand.RepoURL and
-// brand.DocsURL are both optional (empty means don't render that item),
-// the same convention HelpLink already follows.
 export function DocsPageToolbar({
   markdown,
   file,
   routePath,
+  pageTitle,
 }: DocsPageToolbarProps) {
+  const { t } = useTranslation('help')
   const brand = useBrand()
   const [copied, setCopied] = useState(false)
+  const { isPinned, toggle } = usePinnedPages()
 
   const githubHref = brand.RepoURL
     ? `${brand.RepoURL}/blob/main/docs/${file}`
     : null
-  const hostedHref = brand.DocsURL ? `${brand.DocsURL}${routePath}` : null
+  const currentHash = typeof window !== 'undefined' ? window.location.hash : ''
+  const docsHref = brand.DocsURL
+    ? routePathToDocsSiteUrl(
+        routePathWithHash(routePath, currentHash.slice(1)),
+        brand.DocsURL,
+      )
+    : null
+
+  const pinned = isPinned(routePath)
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard
+      .writeText(markdown)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        toast.add({
+          title: t('toolbar.copyMarkdown'),
+          type: 'success',
+        })
+      })
+      .catch(() => {
+        toast.add({
+          title: 'Could not copy to clipboard',
+          type: 'error',
+        })
+      })
+  }, [markdown, t])
 
   return (
-    <div className="mb-4 flex justify-end">
+    <div className="mb-4 flex justify-end gap-2 flex-wrap">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => toggle(routePath, pageTitle)}
+        title={pinned ? t('unpin.tooltip') : t('pin.tooltip')}
+        className="gap-1.5 text-muted-foreground"
+      >
+        {pinned ? (
+          <PushPinSlashIcon className="size-3.5" />
+        ) : (
+          <PushPinIcon className="size-3.5" />
+        )}
+        {pinned ? t('unpin.label') : t('pin.label')}
+      </Button>
+      {docsHref && (
+        <a
+          href={docsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(buttonVariants({ size: 'sm' }), 'gap-1.5')}
+        >
+          <BookmarkIcon className="size-3.5" />
+          {t('toolbar.openDocsSite')}
+        </a>
+      )}
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
@@ -67,21 +116,14 @@ export function DocsPageToolbar({
               )}
             >
               <DownloadSimpleIcon className="size-3.5" />
-              Export
+              {t('toolbar.export')}
             </button>
           }
         />
         <DropdownMenuContent>
-          <DropdownMenuItem
-            onClick={() => {
-              void copyMarkdown(markdown, () => {
-                setCopied(true)
-                setTimeout(() => setCopied(false), 2000)
-              })
-            }}
-          >
+          <DropdownMenuItem onClick={handleCopy}>
             {copied ? <CheckIcon /> : <CopyIcon />}
-            Copy page as Markdown
+            {t('toolbar.copyMarkdown')}
           </DropdownMenuItem>
           {githubHref ? (
             <DropdownMenuLinkItem
@@ -90,17 +132,7 @@ export function DocsPageToolbar({
               rel="noreferrer"
             >
               <GithubLogoIcon />
-              View source on GitHub
-            </DropdownMenuLinkItem>
-          ) : null}
-          {hostedHref ? (
-            <DropdownMenuLinkItem
-              href={hostedHref}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <ArrowSquareOutIcon />
-              Open on {brand.Name} docs
+              {t('toolbar.viewSourceGitHub')}
             </DropdownMenuLinkItem>
           ) : null}
         </DropdownMenuContent>

@@ -16,6 +16,7 @@ import { toast } from '@/components/ui/toast'
 import { useTriggerBackup } from '../../queries/backupHistory'
 import { useStartDatabase, useStopDatabase } from '../../queries/databases'
 import type { DatabaseResource } from '../../types/databaseDetail'
+import { engineHasBackups } from '@/lib/databaseCatalog'
 import { DeleteDatabaseDialog } from '../DeleteDatabaseDialog'
 
 // One primary action (Start when stopped, otherwise Back up now), the rest in
@@ -91,7 +92,7 @@ export function DatabaseActionBar({
           <PlayIcon aria-hidden="true" />
           {t('detail.start')}
         </Button>
-      ) : targetId ? (
+      ) : !engineHasBackups(database.engine) ? null : targetId ? (
         <Button size="sm" disabled={backup.isPending} onClick={runBackup}>
           <CloudArrowUpIcon aria-hidden="true" />
           {backup.isPending

@@ -38,6 +38,17 @@ func (d *DynamicSender) Send(ctx context.Context, to, subject, body string) erro
 	return sender.Send(ctx, to, subject, body)
 }
 
+// Configured reports whether the current settings name a backend that can
+// send, so callers can tell "no mail server set up" from a failed send.
+func (d *DynamicSender) Configured(ctx context.Context) bool {
+	cfg, err := d.load(ctx)
+	if err != nil {
+		return false
+	}
+	_, err = NewSender(cfg)
+	return err == nil
+}
+
 // rejectHeaderInjection reports an error if to or subject carries a CR
 // or LF.
 func rejectHeaderInjection(to, subject string) error {

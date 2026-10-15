@@ -19,6 +19,7 @@ import {
   useDomainErrorPages,
   useSetDomainErrorPage,
 } from '../queries/domainErrorPages'
+import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // Replace Caddy's bare default error text (or whatever the backend
 // itself returned) with an operator's own HTML for one of a fixed set
@@ -83,10 +84,12 @@ export function DomainErrorPagesControl({
           className="flex items-center gap-1.5 text-left"
         >
           {active ? (
-            <Badge variant="success" className="shrink-0">
-              <FileHtmlIcon className="size-3" />
-              {pages.length} custom error page{pages.length === 1 ? '' : 's'}
-            </Badge>
+            <EnforcedBadge domain={domain} control="error_pages">
+              <Badge variant="success" className="shrink-0">
+                <FileHtmlIcon className="size-3" />
+                {pages.length} custom error page{pages.length === 1 ? '' : 's'}
+              </Badge>
+            </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
               <FileHtmlIcon className="size-3" />
@@ -104,6 +107,7 @@ export function DomainErrorPagesControl({
           {open ? 'Hide' : active ? 'Manage' : 'Add error page'}
         </Button>
       </div>
+      <EnforcementNote domain={domain} control="error_pages" active={active} />
 
       {open ? (
         <div className="mt-3 space-y-3">
