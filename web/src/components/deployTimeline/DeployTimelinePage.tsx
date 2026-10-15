@@ -1,9 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  ClockCounterClockwiseIcon,
-  WarningCircleIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { StatusPill, SkeletonList } from '@/components/kit'
@@ -14,12 +11,12 @@ import { useNodeListOptional } from '../../queries/nodes'
 import {
   DEFAULT_TIMELINE_FILTERS,
   groupLanes,
-  type TimelineDeploy,
   type TimelineFilters as Filters,
 } from '../../lib/deployTimeline'
+import { TimelineEmpty } from './TimelineEmpty'
 import { TimelineFilters } from './TimelineFilters'
-import { TimelineHoverCard } from './TimelineHoverCard'
 import { TimelineLanes } from './TimelineLanes'
+import { TimelineLegend } from './TimelineLegend'
 
 const STREAM_TONE = {
   connecting: 'neutral',
@@ -30,12 +27,15 @@ const STREAM_TONE = {
 export function DeployTimelinePage() {
   const { t } = useTranslation('deployTimeline')
   const [filters, setFilters] = useState<Filters>(DEFAULT_TIMELINE_FILTERS)
-  const [active, setActive] = useState<TimelineDeploy | null>(null)
   const { query, items, alerts, streamState, windowStart, windowEnd } =
     useDeployTimeline(filters)
   const projects = useProjectListOptional().data
   const nodes = useNodeListOptional().data
 
+  const projectNames = useMemo(
+    () => new Map((projects ?? []).map((p) => [p.id, p.name])),
+    [projects],
+  )
   const lanes = useMemo(() => groupLanes(items), [items])
   const appNames = useMemo(() => {
     const names = new Set(items.map((d) => d.app))
@@ -85,35 +85,28 @@ export function DeployTimelinePage() {
             }
           />
         ) : lanes.length === 0 ? (
-          <EmptyState
-            icon={<ClockCounterClockwiseIcon />}
-            title={t('empty.title')}
-            description={t('empty.body', { range: t(`zoom.${filters.zoom}`) })}
-            action={
-              filters.zoom !== '7d' ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
+          <TimelineEmpty
+            zoom={filters.zoom}
+            windowStart={windowStart}
+            windowEnd={windowEnd}
+            onShowWeek={
+              filters.zoom !== '7d'
+                ? () => {
                     setFilters({ ...filters, zoom: '7d' })
-                  }}
-                >
-                  {t('empty.action')}
-                </Button>
-              ) : undefined
+                  }
+                : null
             }
           />
         ) : (
           <>
-            <TimelineHoverCard deploy={active} />
+            <TimelineLegend />
             <TimelineLanes
               lanes={lanes}
               alerts={alerts}
               zoom={filters.zoom}
               windowStart={windowStart}
               windowEnd={windowEnd}
-              activeId={active?.id ?? null}
-              onActive={setActive}
+              projectNames={projectNames}
             />
             <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>
