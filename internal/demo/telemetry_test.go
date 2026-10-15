@@ -51,7 +51,9 @@ func seedStores(t *testing.T, anchor time.Time) seededStores {
 }
 
 func TestSeedLintClean(t *testing.T) {
-	s := seedStores(t, liveAnchor)
+	// A fresh anchor, not liveAnchor: migrations stamp rows with the wall
+	// clock, and on a loaded CI runner the package-init anchor is minutes old.
+	s := seedStores(t, time.Now().UTC().Truncate(time.Minute))
 	findings, err := Lint(context.Background(), s.Stores, LintOptions{})
 	if err != nil {
 		t.Fatalf("Lint() error = %v", err)

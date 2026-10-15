@@ -54,11 +54,11 @@ func (rt *Router) approvalSessionEngine() approvalSessions {
 	return rt.libSessions
 }
 
-// approvalMatch derives the two digit number the waiting browser shows, and
-// the approver must type, from the browser binding nobody else holds.
 // ApprovalMatch is the two digit number a waiting browser shows for its sign-in.
 func ApprovalMatch(browserHash string) int { return approvalMatch(browserHash) }
 
+// approvalMatch derives the two digit number the waiting browser shows, and
+// the approver must type, from the browser binding nobody else holds.
 func approvalMatch(browserHash string) int {
 	sum := sha256.Sum256([]byte("approval-match\x00" + browserHash))
 	return 10 + int(binary.BigEndian.Uint16(sum[0:2]))%90
