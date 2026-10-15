@@ -413,6 +413,25 @@ export function BrandIcon({
       <GoLogo variant="mono" aria-hidden={ariaHidden ?? 'true'} {...props} />
     )
   }
+  // White-only default variants vanish on the white tile.
+  if (name === 'cargo') {
+    return (
+      <CargoLogo
+        variant="light"
+        aria-hidden={ariaHidden ?? 'true'}
+        {...props}
+      />
+    )
+  }
+  if (name === 'mattermost') {
+    return (
+      <MattermostLogo
+        variant="light"
+        aria-hidden={ariaHidden ?? 'true'}
+        {...props}
+      />
+    )
+  }
   const Logo = BRAND_ICONS[name]
   return <Logo aria-hidden={ariaHidden ?? 'true'} {...props} />
 }

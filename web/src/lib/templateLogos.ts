@@ -205,4 +205,123 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   postmark: () => import('@thesvg/react/postmark'),
   brevo: () => import('@thesvg/react/brevo'),
   mailtrap: () => import('@thesvg/react/mailtrap'),
+  // Templates whose mark ships under another thesvg slug, or that are a
+  // variant of a product that already has one.
+  actualbudget: () => import('@thesvg/react/actual-budget'),
+  appwrite: () => import('@thesvg/react/appwrite'),
+  budibase: () => import('@thesvg/react/budibase'),
+  consul: () => import('@thesvg/react/consul'),
+  couchdb: () => import('@thesvg/react/couchdb'),
+  'docker-registry': () => import('@thesvg/react/docker'),
+  'docker-registry-auth': () => import('@thesvg/react/docker'),
+  documenso: () => import('@thesvg/react/documenso'),
+  drawio: () => import('@thesvg/react/diagramsdotnet'),
+  'elasticsearch-kibana': () => import('@thesvg/react/elasticsearch'),
+  emby: () => import('@thesvg/react/emby'),
+  etcd: () => import('@thesvg/react/etcd'),
+  'firefox-browser': () => import('@thesvg/react/firefox-browser'),
+  flipt: () => import('@thesvg/react/flipt'),
+  'forgejo-postgres': () => import('@thesvg/react/forgejo'),
+  'gitea-postgres': () => import('@thesvg/react/gitea'),
+  gitlab: () => import('@thesvg/react/gitlab'),
+  goatcounter: () => import('@thesvg/react/goatcounter-badge'),
+  'grafana-postgres': () => import('@thesvg/react/grafana'),
+  hasura: () => import('@thesvg/react/hasura'),
+  hoppscotch: () => import('@thesvg/react/hoppscotch'),
+  inngest: () => import('@thesvg/react/inngest'),
+  jaeger: () => import('@thesvg/react/jaeger'),
+  joplin: () => import('@thesvg/react/joplin'),
+  'jupyter-notebook': () => import('@thesvg/react/jupyter'),
+  'jupyter-notebook-python': () => import('@thesvg/react/jupyter'),
+  'keycloak-postgres': () => import('@thesvg/react/keycloak'),
+  libreoffice: () => import('@thesvg/react/libreoffice'),
+  limesurvey: () => import('@thesvg/react/limesurvey'),
+  'matrix-synapse': () => import('@thesvg/react/matrix-org'),
+  'matrix-synapse-postgres': () => import('@thesvg/react/matrix-org'),
+  memcached: () => import('@thesvg/react/memcached'),
+  monica: () => import('@thesvg/react/monica'),
+  moodle: () => import('@thesvg/react/moodle'),
+  mosquitto: () => import('@thesvg/react/eclipse-mosquitto'),
+  'n8n-postgres': () => import('@thesvg/react/n8n'),
+  nats: () => import('@thesvg/react/nats'),
+  neo4j: () => import('@thesvg/react/neo4j'),
+  'new-api': () => import('@thesvg/react/new-api'),
+  nodebb: () => import('@thesvg/react/nodebb'),
+  'ollama-open-webui': () => import('@thesvg/react/open-webui'),
+  openobserve: () => import('@thesvg/react/openobserve'),
+  owncloud: () => import('@thesvg/react/owncloud'),
+  phpmyadmin: () => import('@thesvg/react/phpmyadmin'),
+  plane: () => import('@thesvg/react/plane'),
+  plex: () => import('@thesvg/react/plex'),
+  'redis-insight': () => import('@thesvg/react/redis'),
+  redisinsight: () => import('@thesvg/react/redis'),
+  redmine: () => import('@thesvg/react/redmine'),
+  registry: () => import('@thesvg/react/docker'),
+  seafile: () => import('@thesvg/react/seafile'),
+  siyuan: () => import('@thesvg/react/siyuan'),
+  snapdrop: () => import('@thesvg/react/snapdrop'),
+  strapi: () => import('@thesvg/react/strapi'),
+  superset: () => import('@thesvg/react/apache-superset'),
+  supertokens: () => import('@thesvg/react/supertokens'),
+  traccar: () => import('@thesvg/react/traccar'),
+  triliumnext: () => import('@thesvg/react/trilium'),
+  twenty: () => import('@thesvg/react/twenty'),
+  unstructured: () => import('@thesvg/react/unstructured'),
+  'uptime-kuma-mariadb': () => import('@thesvg/react/uptime-kuma'),
+  valkey: () => import('@thesvg/react/valkey'),
+  vault: () => import('@thesvg/react/vault'),
+}
+
+export type LogoSurface = 'light' | 'dark'
+type LogoVariant = 'light' | 'dark' | 'mono'
+type VariantLogo = ComponentType<
+  SVGProps<SVGSVGElement> & { variant?: LogoVariant }
+>
+
+// Marks whose default variant is white-only and vanishes on the white
+// BrandTile; they render their 'light' (black) variant there instead.
+const LIGHT_SURFACE_VARIANTS: Record<string, LogoVariant> = {
+  ollama: 'light',
+  'ollama-deepseek': 'light',
+  'ollama-llama3': 'light',
+  'ollama-mistral': 'light',
+  'ollama-phi': 'light',
+  'ollama-qwen': 'light',
+  axiom: 'light',
+  flask: 'light',
+  mattermost: 'light',
+  qdrant: 'light',
+  rust: 'light',
+}
+
+// Dark-surface hook: add an id here to pick a thesvg variant when its tile
+// is rendered with surface="dark". The tile stays white until a caller opts in.
+export const DARK_SURFACE_VARIANTS: Record<string, LogoVariant> = {
+  ollama: 'dark',
+  'ollama-deepseek': 'dark',
+  'ollama-llama3': 'dark',
+  'ollama-mistral': 'dark',
+  'ollama-phi': 'dark',
+  'ollama-qwen': 'dark',
+  axiom: 'dark',
+  flask: 'dark',
+  mattermost: 'dark',
+  qdrant: 'dark',
+  rust: 'dark',
+}
+
+export function logoLoaderFor(
+  id: string,
+  surface: LogoSurface = 'light',
+): (() => Promise<{ default: LogoComponent }>) | undefined {
+  const base = TEMPLATE_LOGO_LOADERS[id]
+  if (!base) return undefined
+  const variant =
+    surface === 'dark' ? DARK_SURFACE_VARIANTS[id] : LIGHT_SURFACE_VARIANTS[id]
+  if (!variant) return base
+  return () =>
+    base().then((m) => ({
+      default: (props: SVGProps<SVGSVGElement>) =>
+        createElement(m.default as VariantLogo, { ...props, variant }),
+    }))
 }
