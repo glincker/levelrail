@@ -56,6 +56,9 @@ type exportOptionsResource struct {
 	Labels          map[string]string `json:"labels,omitempty"`
 	IntervalSeconds int               `json:"interval_seconds,omitempty"`
 	Backfill        bool              `json:"backfill,omitempty"`
+	Region          string            `json:"region,omitempty"`
+	Site            string            `json:"site,omitempty"`
+	Dataset         string            `json:"dataset,omitempty"`
 }
 
 // exportDestinationResource never carries header values or the signing
@@ -71,17 +74,19 @@ type exportDestinationResource struct {
 	Options     exportOptionsResource `json:"options"`
 	HeaderNames []string              `json:"header_names"`
 	HasHMACKey  bool                  `json:"has_hmac_key"`
-	Status      exportStatusResource  `json:"status"`
-	CreatedAt   string                `json:"created_at"`
-	UpdatedAt   string                `json:"updated_at"`
+	// HasAPIKey is true for a vendor destination that has its key stored.
+	HasAPIKey bool                 `json:"has_api_key"`
+	Status    exportStatusResource `json:"status"`
+	CreatedAt string               `json:"created_at"`
+	UpdatedAt string               `json:"updated_at"`
 }
 
 func toExportOptions(o store.ExportOptions) exportOptionsResource {
-	return exportOptionsResource{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill}
+	return exportOptionsResource{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset}
 }
 
 func (o exportOptionsResource) toStore() store.ExportOptions {
-	return store.ExportOptions{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill}
+	return store.ExportOptions{StorageTargetID: o.StorageTargetID, Prefix: o.Prefix, Labels: o.Labels, IntervalSeconds: o.IntervalSeconds, Backfill: o.Backfill, Region: o.Region, Site: o.Site, Dataset: o.Dataset}
 }
 
 func toExportDestinationResource(d store.ExportDestination, st store.ExportStatus) exportDestinationResource {
@@ -95,6 +100,7 @@ func toExportDestinationResource(d store.ExportDestination, st store.ExportStatu
 	return exportDestinationResource{
 		ID: d.ID, Name: d.Name, Kind: d.Kind, Endpoint: d.Endpoint, Enabled: d.Enabled, Apps: apps, MinLevel: d.MinLevel,
 		Options: toExportOptions(d.Options), HeaderNames: names, HasHMACKey: d.Options.HasHMACKey,
+		HasAPIKey: dataexport.IsVendorLogKind(d.Kind) && len(names) > 0,
 		Status: exportStatusResource{
 			LastSuccessAt: st.LastSuccessAt, LastError: st.LastError, LastErrorAt: st.LastErrorAt, SentTotal: st.SentTotal,
 			DroppedTotal: st.DroppedTotal, FailuresTotal: st.FailuresTotal, QueueDepth: st.QueueDepth,
@@ -114,6 +120,7 @@ type createExportDestinationRequest struct {
 	Options  exportOptionsResource `json:"options"`
 	Headers  map[string]string     `json:"headers"`
 	HMACKey  string                `json:"hmac_key"`
+	APIKey   string                `json:"api_key"`
 }
 
 type updateExportDestinationRequest struct {
@@ -125,6 +132,7 @@ type updateExportDestinationRequest struct {
 	Options  *exportOptionsResource `json:"options"`
 	Headers  *map[string]string     `json:"headers"`
 	HMACKey  *string                `json:"hmac_key"`
+	APIKey   *string                `json:"api_key"`
 }
 
 func (rt *Router) writeExportError(w http.ResponseWriter, op string, err error) {
@@ -198,7 +206,7 @@ func (rt *Router) handleCreateExportDestination(w http.ResponseWriter, r *http.R
 	}
 	d, err := svc.Create(r.Context(), dataexport.Input{
 		Name: req.Name, Kind: req.Kind, Endpoint: req.Endpoint, Enabled: enabled, Apps: req.Apps,
-		MinLevel: req.MinLevel, Options: req.Options.toStore(), Headers: req.Headers, HMACKey: req.HMACKey,
+		MinLevel: req.MinLevel, Options: req.Options.toStore(), Headers: req.Headers, HMACKey: req.HMACKey, APIKey: req.APIKey,
 	})
 	if err != nil {
 		rt.writeExportError(w, "create export destination", err)
@@ -222,7 +230,7 @@ func (rt *Router) handleUpdateExportDestination(w http.ResponseWriter, r *http.R
 	}
 	p := dataexport.Patch{
 		Name: req.Name, Endpoint: req.Endpoint, Enabled: req.Enabled, Apps: req.Apps, MinLevel: req.MinLevel,
-		Headers: req.Headers, HMACKey: req.HMACKey,
+		Headers: req.Headers, HMACKey: req.HMACKey, APIKey: req.APIKey,
 	}
 	if req.Options != nil {
 		o := req.Options.toStore()

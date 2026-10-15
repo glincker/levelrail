@@ -15,6 +15,7 @@ Metrics, logs and the audit log stay on the control plane and its nodes by defau
 | Logs | `logs_otlp` | OTLP/HTTP JSON logs, batched |
 | Logs | `logs_http` | JSON lines (NDJSON) over HTTP POST, batched |
 | Logs | `logs_syslog` | RFC 5424 over TCP or TLS |
+| Logs | `logs_newrelic`, `logs_datadog`, `logs_axiom`, `logs_betterstack` | The vendor's own ingest API, you supply only a key |
 | Audit log | `audit_webhook` | NDJSON batches over HTTP POST, optional HMAC signature |
 | Audit log | `audit_s3` | NDJSON objects in a connected storage destination |
 | Audit log | download | `GET /api/v1/audit-log/export`, NDJSON or CSV |
@@ -84,6 +85,28 @@ Filters apply per destination: `--app` (repeatable, empty means every app) and `
 - Syslog: `tcp://host:port` or `tls://host:port`, RFC 5424 with octet counting framing, facility `local0`. TLS verifies the server certificate against the system roots.
 
 Log export reuses the log stream the live tail already reads: it adds a subscriber, never a second Docker reader.
+
+## Vendor destinations
+
+Four vendors have a destination kind of their own, so you paste a key and pick a region instead of working out an endpoint and a header. They use the same queue, retries, circuit breaker, filters, status and test as every other log destination.
+
+| Kind | Endpoint it uses | Key header | Options |
+| --- | --- | --- | --- |
+| `logs_newrelic` | `https://log-api.newrelic.com/log/v1`, or `log-api.eu.newrelic.com` | `Api-Key` | `region` us or eu |
+| `logs_datadog` | `https://http-intake.logs.<site>/api/v2/logs` | `DD-API-KEY` | `site`, default `datadoghq.com` |
+| `logs_axiom` | `https://api.axiom.co/v1/datasets/<dataset>/ingest`, or `api.eu.axiom.co` | `Authorization: Bearer` | `dataset` (required), `region` |
+| `logs_betterstack` | `https://in.logs.betterstack.com` | `Authorization: Bearer` | none; use `--endpoint` for a source specific host |
+
+The key is stored encrypted like any export header and never returned; a destination shows `has_api_key` instead. An explicit `--endpoint` overrides the preset, for a proxy or a regional host. Changing `region`, `site` or `dataset` on a preset destination moves its endpoint with it.
+
+```bash
+export NR_KEY=...
+levelrail-cli export destinations create --name new-relic --kind logs_newrelic \
+  --api-key-env NR_KEY --region eu --app web --min-level info
+levelrail-cli export destinations test <id>
+```
+
+Each line is sent with the app name as the service, its stream and its level. For structured lines the parsed fields are included (New Relic as `fields`, Axiom flattened into the record).
 
 ## Audit log export
 
@@ -173,7 +196,7 @@ levelrail-cli otel destinations list
 
 ```
 levelrail-cli export destinations list
-levelrail-cli export destinations create --name N --kind K [--endpoint URL] [--app A] [--min-level L] [--header K=V] [--hmac-key KEY] [--storage-target ID] [--label K=V] [--interval S] [--backfill] [--disabled]
+levelrail-cli export destinations create --name N --kind K [--endpoint URL] [--api-key-env VAR] [--region us|eu] [--site HOST] [--dataset NAME] [--app A] [--min-level L] [--header K=V] [--hmac-key KEY] [--storage-target ID] [--label K=V] [--interval S] [--backfill] [--disabled]
 levelrail-cli export destinations test <id>
 levelrail-cli export destinations status <id>
 levelrail-cli export destinations enable|disable <id>

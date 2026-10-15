@@ -13,6 +13,9 @@ type ExportOptions struct {
 	Labels          map[string]string `json:"labels,omitempty"`
 	IntervalSeconds int               `json:"interval_seconds,omitempty"`
 	Backfill        bool              `json:"backfill,omitempty"`
+	Region          string            `json:"region,omitempty"`
+	Site            string            `json:"site,omitempty"`
+	Dataset         string            `json:"dataset,omitempty"`
 }
 
 // ExportStatus is a destination's delivery state.
@@ -41,6 +44,7 @@ type ExportDestinationResource struct {
 	Options     ExportOptions `json:"options"`
 	HeaderNames []string      `json:"header_names"`
 	HasHMACKey  bool          `json:"has_hmac_key"`
+	HasAPIKey   bool          `json:"has_api_key"`
 	Status      ExportStatus  `json:"status"`
 	CreatedAt   string        `json:"created_at"`
 	UpdatedAt   string        `json:"updated_at"`
@@ -57,6 +61,7 @@ type CreateExportDestinationRequest struct {
 	Options  ExportOptions     `json:"options"`
 	Headers  map[string]string `json:"headers,omitempty"`
 	HMACKey  string            `json:"hmac_key,omitempty"`
+	APIKey   string            `json:"api_key,omitempty"`
 }
 
 // UpdateExportDestinationRequest is a partial update; nil fields are kept.

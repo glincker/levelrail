@@ -10,6 +10,12 @@ import DragonflyLogo from '@thesvg/react/dragonfly'
 import CodebergLogo from '@thesvg/react/codeberg'
 import CognitoLogo from '@thesvg/react/aws-amazon-cognito'
 import ValkeyLogo from '@thesvg/react/valkey'
+import NewRelicLogo from '@thesvg/react/new-relic'
+import DatadogLogo from '@thesvg/react/datadog'
+import Axiom2Logo from '@thesvg/react/axiom'
+import BetterStackLogo from '@thesvg/react/better-stack'
+import GrafanaLogo from '@thesvg/react/grafana'
+import OpenTelemetryLogo from '@thesvg/react/opentelemetry'
 import ChromeLogo from '@thesvg/react/google-chrome'
 import FirefoxLogo from '@thesvg/react/firefox'
 import SafariLogo from '@thesvg/react/safari'
@@ -185,6 +191,12 @@ export type BrandIconName =
   | 'nuget'
   | 'cargo'
   | 'rubygems'
+  | 'newrelic'
+  | 'datadog'
+  | 'axiom'
+  | 'betterstack'
+  | 'grafana'
+  | 'opentelemetry'
   | 'chrome'
   | 'firefox'
   | 'safari'
@@ -286,6 +298,12 @@ const BRAND_ICONS: Record<
   nuget: NugetLogo,
   cargo: CargoLogo,
   rubygems: RubygemsLogo,
+  newrelic: NewRelicLogo,
+  datadog: DatadogLogo,
+  axiom: Axiom2Logo,
+  betterstack: BetterStackLogo,
+  grafana: GrafanaLogo,
+  opentelemetry: OpenTelemetryLogo,
   chrome: ChromeLogo,
   firefox: FirefoxLogo,
   safari: SafariLogo,
@@ -389,6 +407,12 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'nuget',
   'cargo',
   'rubygems',
+  'newrelic',
+  'datadog',
+  'axiom',
+  'betterstack',
+  'grafana',
+  'opentelemetry',
   'chrome',
   'firefox',
   'safari',

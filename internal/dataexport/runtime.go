@@ -125,6 +125,9 @@ func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender,
 	case store.ExportKindLogsOTLP:
 		o := &otlpLogSender{url: OTLPLogsURL(d.Endpoint), client: s.client, headers: blob.Headers, static: d.Options.Labels, scope: s.prefix[:len(s.prefix)-1]}
 		return sender{logs: o.send}, nil
+	case store.ExportKindLogsNewRelic, store.ExportKindLogsDatadog, store.ExportKindLogsAxiom, store.ExportKindLogsBetterStack:
+		v := newVendorLogSender(d, s.client, blob.Headers, s.prefix[:len(s.prefix)-1])
+		return sender{logs: v.send}, nil
 	case store.ExportKindLogsSyslog:
 		sl, err := newSyslogSender(d.Endpoint, s.prefix[:len(s.prefix)-1])
 		if err != nil {

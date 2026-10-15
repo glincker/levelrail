@@ -131,3 +131,35 @@ func TestRun_ExportAuditPassesRange(t *testing.T) {
 		t.Fatalf("path = %q", calls[0].path)
 	}
 }
+
+func TestRun_ExportDestinationsCreateVendorReadsKeyFromEnv(t *testing.T) {
+	var got apiclient.CreateExportDestinationRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_ = json.NewEncoder(w).Encode(apiclient.ExportDestinationResource{ID: "exp_1", Name: got.Name, Kind: got.Kind, HasAPIKey: true})
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	env := envMap()
+	code := run("levelrail-cli-test", []string{
+		"export", "destinations", "create", "--name", "nr", "--kind", "logs_newrelic",
+		"--api-key-env", "NR_KEY", "--region", "eu", "--api-url", srv.URL,
+	}, &stdout, &stderr, func(k string) (string, bool) {
+		if k == "NR_KEY" {
+			return "license-key", true
+		}
+		return env(k)
+	})
+	if code != exitOK {
+		t.Fatalf("exit = %d stderr=%q", code, stderr.String())
+	}
+	if got.APIKey != "license-key" || got.Options.Region != "eu" || got.Kind != "logs_newrelic" {
+		t.Errorf("request = %+v", got)
+	}
+	if strings.Contains(stdout.String(), "license-key") {
+		t.Errorf("the key was echoed: %q", stdout.String())
+	}
+}

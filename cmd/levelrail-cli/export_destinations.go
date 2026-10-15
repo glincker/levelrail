@@ -54,7 +54,8 @@ func exportDestinationsUsage(prog string) string {
   %[1]s export destinations delete <id> [flags]          remove a destination and its stored secrets
   %[1]s export audit [--from T] [--to T] [--format ndjson|csv] [flags]   download the audit log
 
-Kinds: logs_http, logs_loki, logs_otlp, logs_syslog, audit_webhook, audit_s3, metrics_otlp.
+Kinds: logs_http, logs_loki, logs_otlp, logs_syslog, logs_newrelic, logs_datadog, logs_axiom,
+logs_betterstack, audit_webhook, audit_s3, metrics_otlp.
 Run "%[1]s export destinations create -h" for the create flags.
 `, prog)
 }
@@ -91,6 +92,7 @@ func printExportTable(out io.Writer, dests []apiclient.ExportDestinationResource
 
 func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var name, kind, endpoint, minLevel, target, prefix, hmacKey string
+	var apiKeyEnv, region, site, dataset string
 	var interval int
 	var backfill, disabled bool
 	var apps csvListFlag
@@ -101,8 +103,13 @@ func runExportDestCreate(prog string, args []string, stdout, stderr io.Writer, l
 
 Flags:
   --name string          destination name (required)
-  --kind string          logs_http, logs_loki, logs_otlp, logs_syslog, audit_webhook, audit_s3 or metrics_otlp (required)
-  --endpoint string      http(s) URL, or tcp://host:port or tls://host:port for syslog
+  --kind string          logs_http, logs_loki, logs_otlp, logs_syslog, logs_newrelic, logs_datadog, logs_axiom,
+                         logs_betterstack, audit_webhook, audit_s3 or metrics_otlp (required)
+  --endpoint string      http(s) URL, or tcp://host:port or tls://host:port for syslog; optional for vendor kinds
+  --api-key-env NAME     environment variable holding a vendor key (logs_newrelic, logs_datadog, logs_axiom, logs_betterstack)
+  --region us|eu         New Relic and Axiom region
+  --site HOST            Datadog site, for example datadoghq.eu
+  --dataset NAME         Axiom dataset
   --app string           only these apps (comma separated or repeated), log kinds and metrics_otlp
   --min-level string     debug, info, warn or error, log kinds only
   --header KEY=VALUE     request header sent with every delivery, stored encrypted (repeatable)
@@ -125,6 +132,10 @@ Flags:
 		fs.StringVar(&target, "storage-target", "", "storage destination id")
 		fs.StringVar(&prefix, "prefix", "", "object key prefix")
 		fs.Var(labels, "label", "static Loki label KEY=VALUE")
+		fs.StringVar(&apiKeyEnv, "api-key-env", "", "environment variable holding a vendor key")
+		fs.StringVar(&region, "region", "", "vendor region, us or eu")
+		fs.StringVar(&site, "site", "", "Datadog site")
+		fs.StringVar(&dataset, "dataset", "", "Axiom dataset")
 		fs.IntVar(&interval, "interval", 0, "metrics push interval in seconds")
 		fs.BoolVar(&backfill, "backfill", false, "start audit export from the oldest row")
 		fs.BoolVar(&disabled, "disabled", false, "create paused")
@@ -138,7 +149,14 @@ Flags:
 	enabled := !disabled
 	req := apiclient.CreateExportDestinationRequest{
 		Name: name, Kind: kind, Endpoint: endpoint, Enabled: &enabled, Apps: apps, MinLevel: minLevel, HMACKey: hmacKey,
-		Options: apiclient.ExportOptions{StorageTargetID: target, Prefix: prefix, IntervalSeconds: interval, Backfill: backfill},
+		Options: apiclient.ExportOptions{StorageTargetID: target, Prefix: prefix, IntervalSeconds: interval, Backfill: backfill, Region: region, Site: site, Dataset: dataset},
+	}
+	if apiKeyEnv != "" {
+		v, found := lookupEnv(apiKeyEnv)
+		if !found || v == "" {
+			return c.invalid("environment variable %s is not set", apiKeyEnv)
+		}
+		req.APIKey = v
 	}
 	if len(headers) > 0 {
 		req.Headers = headers

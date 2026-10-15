@@ -116,6 +116,9 @@ type Input struct {
 	Options  store.ExportOptions
 	Headers  map[string]string
 	HMACKey  string
+	// APIKey is the vendor key for the vendor kinds; it is stored as the
+	// header that vendor reads and is never returned.
+	APIKey string
 }
 
 // Patch is a partial update; nil fields are left unchanged.
@@ -130,6 +133,8 @@ type Patch struct {
 	Headers *map[string]string
 	// HMACKey replaces the signing key (an empty string clears it).
 	HMACKey *string
+	// APIKey replaces a vendor destination's key.
+	APIKey *string
 }
 
 type secretBlob struct {
@@ -145,7 +150,7 @@ var (
 )
 
 func isLogKind(k store.ExportKind) bool {
-	return k == store.ExportKindLogsHTTP || k == store.ExportKindLogsSyslog || k == store.ExportKindLogsLoki || k == store.ExportKindLogsOTLP
+	return k == store.ExportKindLogsHTTP || k == store.ExportKindLogsSyslog || k == store.ExportKindLogsLoki || k == store.ExportKindLogsOTLP || IsVendorLogKind(k)
 }
 
 func isAuditKind(k store.ExportKind) bool {
@@ -164,6 +169,20 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 	case store.ExportKindLogsSyslog:
 		if err := ValidateSyslogEndpoint(ctx, in.Endpoint); err != nil {
 			return invalid("%v", err)
+		}
+	case store.ExportKindLogsNewRelic, store.ExportKindLogsDatadog, store.ExportKindLogsAxiom, store.ExportKindLogsBetterStack:
+		ep := in.Endpoint
+		if ep == "" {
+			var err error
+			if ep, err = VendorEndpoint(in.Kind, in.Options); err != nil {
+				return invalid("%v", err)
+			}
+		}
+		if err := ValidateHTTPEndpoint(ctx, ep); err != nil {
+			return invalid("%v", err)
+		}
+		if len(in.Headers) == 0 && in.APIKey == "" {
+			return invalid("%s needs an API key", in.Kind)
 		}
 	case store.ExportKindAuditS3:
 		if in.Options.StorageTargetID == "" {
@@ -217,6 +236,17 @@ func (s *Service) validate(ctx context.Context, in Input) error {
 	return nil
 }
 
+func mergeHeaders(a, b map[string]string) map[string]string {
+	out := make(map[string]string, len(a)+len(b))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		out[k] = v
+	}
+	return out
+}
+
 func headerNames(h map[string]string) []string {
 	names := make([]string, 0, len(h))
 	for k := range h {
@@ -261,8 +291,18 @@ func (s *Service) readSecrets(ctx context.Context, d store.ExportDestination) (s
 // Create validates and stores a destination, then nudges the workers.
 func (s *Service) Create(ctx context.Context, in Input) (store.ExportDestination, error) {
 	in.Name = strings.TrimSpace(in.Name)
+	if IsVendorLogKind(in.Kind) && in.APIKey != "" {
+		in.Headers = mergeHeaders(in.Headers, vendorKeyHeaders(in.Kind, in.APIKey))
+	}
 	if err := s.validate(ctx, in); err != nil {
 		return store.ExportDestination{}, err
+	}
+	if IsVendorLogKind(in.Kind) && in.Endpoint == "" {
+		ep, err := VendorEndpoint(in.Kind, in.Options)
+		if err != nil {
+			return store.ExportDestination{}, invalid("%v", err)
+		}
+		in.Endpoint = ep
 	}
 	id, err := store.NewExportDestinationID()
 	if err != nil {
@@ -317,6 +357,18 @@ func (s *Service) Update(ctx context.Context, id string, p Patch) (store.ExportD
 	}
 	if p.Headers != nil {
 		blob.Headers = *p.Headers
+	}
+	if IsVendorLogKind(d.Kind) {
+		if p.APIKey != nil && *p.APIKey != "" {
+			blob.Headers = mergeHeaders(blob.Headers, vendorKeyHeaders(d.Kind, *p.APIKey))
+			p.Headers = &blob.Headers
+		}
+		// A region, site or dataset change moves a preset endpoint with it.
+		if p.Options != nil && p.Endpoint == nil {
+			if ep, err := VendorEndpoint(d.Kind, d.Options); err == nil {
+				d.Endpoint = ep
+			}
+		}
 	}
 	if p.HMACKey != nil {
 		blob.HMACKey = *p.HMACKey

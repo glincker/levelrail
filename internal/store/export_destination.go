@@ -25,6 +25,12 @@ const (
 	ExportKindAuditS3      ExportKind = "audit_s3"
 	ExportKindMetricsOTLP  ExportKind = "metrics_otlp"
 	ExportKindLogsOTLP     ExportKind = "logs_otlp"
+
+	// Vendor destinations: the vendor's own ingest API with a key header.
+	ExportKindLogsNewRelic    ExportKind = "logs_newrelic"
+	ExportKindLogsDatadog     ExportKind = "logs_datadog"
+	ExportKindLogsAxiom       ExportKind = "logs_axiom"
+	ExportKindLogsBetterStack ExportKind = "logs_betterstack"
 )
 
 // ErrExportDestinationNotFound is returned when no destination has the given id.
@@ -41,6 +47,12 @@ type ExportOptions struct {
 	Prefix string `json:"prefix,omitempty"`
 	// Labels are static Loki stream labels.
 	Labels map[string]string `json:"labels,omitempty"`
+	// Region is us (default) or eu for New Relic and Axiom.
+	Region string `json:"region,omitempty"`
+	// Site is the Datadog site, for example datadoghq.eu.
+	Site string `json:"site,omitempty"`
+	// Dataset is the Axiom dataset.
+	Dataset string `json:"dataset,omitempty"`
 	// IntervalSeconds is the OTLP push interval.
 	IntervalSeconds int `json:"interval_seconds,omitempty"`
 	// Backfill makes an audit export start from the oldest row instead of now.

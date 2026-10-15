@@ -20,7 +20,11 @@
     "logs_syslog": "Logs to syslog (RFC 5424)",
     "audit_webhook": "Audit log webhook",
     "audit_s3": "Audit log to a storage bucket",
-    "metrics_otlp": "Metrics over OTLP/HTTP"
+    "metrics_otlp": "Metrics over OTLP/HTTP",
+    "logs_newrelic": "Logs to New Relic",
+    "logs_datadog": "Logs to Datadog",
+    "logs_axiom": "Logs to Axiom",
+    "logs_betterstack": "Logs to Better Stack"
   },
   "levels": {
     "any": "Every level",
@@ -79,6 +83,14 @@
     "submit": "Create destination",
     "submitting": "Creating",
     "cancel": "Cancel",
-    "created": "Export destination {{name}} created."
+    "created": "Export destination {{name}} created.",
+    "apiKey": "API key",
+    "apiKeyHint": "Stored encrypted and never shown again. Create a key that can only ingest logs.",
+    "region": "Region",
+    "regionUs": "United States",
+    "regionEu": "Europe",
+    "site": "Datadog site",
+    "dataset": "Axiom dataset",
+    "endpointOverride": "Leave blank to use the vendor endpoint"
   }
 }
