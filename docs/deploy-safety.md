@@ -61,6 +61,19 @@ never stops serving: ingress keeps routing to it because the new release
 never reports ready. The next reconcile retries the new release under the
 crash restart backoff.
 
+Any exit counts, code 0 included: a service container that stops is not
+serving, whatever its exit code says. A container that exits while its
+readiness probe is still being waited on is noticed within a second, not at
+the probe's own interval. The condition, the deploy history and the gate
+timeline then say exactly what happened, for example
+`Container exited with code 0 after 2s, before it became ready`, and the
+last 200 lines the container printed are captured with the failed deploy and
+shown on the deploy page, the app overview and the logs page. With the
+stable window set to `0` for an app that also has nothing to probe, the
+release must still keep running for `APP_DEPLOY_STARTUP_WATCH` (default `3s`,
+`0` disables it). Scheduled tasks and job runs are one-shot containers and
+are not gated: for them exit 0 is success.
+
 Multi-replica releases are gated replica by replica. With blue-green,
 nothing from the old release is retired until every new replica passed its
 own gate, so a release where replica 0 passes and replica 1 is OOM-killed

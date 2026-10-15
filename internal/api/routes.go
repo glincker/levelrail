@@ -382,6 +382,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// existing resource to scope to) and GET .../terminal (websocket
 	// upgrade, not touched in this pass) remain on plain requireAbility.
 	mux.HandleFunc("GET /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetApp))
+	mux.HandleFunc("POST /api/v1/apps/{name}/keep", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleKeepTrialApp))
 	mux.HandleFunc("PUT /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateApp))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteApp))
 

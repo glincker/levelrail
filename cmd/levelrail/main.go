@@ -3940,6 +3940,8 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithAppliedConfigRecorder(deps.db),
 		application.WithPreviousReleaseHold(previousReleaseHold(deps.logger)),
 		application.WithPinnedPortRetry(pinnedPortRetry(deps.logger)),
+		application.WithStartupWatch(startupWatch(deps.logger)),
+		application.WithExitRecorder(deps.db),
 		application.WithProbeLimits(probe.LimitsFromEnv(os.LookupEnv)),
 		application.WithNodeGPU(modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}),
 		application.WithMeshPaths(newMeshPathResolver(deps.meshCfg, deps.db)),

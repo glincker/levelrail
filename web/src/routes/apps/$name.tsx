@@ -105,7 +105,7 @@ function AppDetailLayout() {
   )
   const banners = (
     <>
-      {app.is_trial ? <TrialAppBanner name={app.name} /> : null}
+      {app.is_trial ? <TrialAppBanner app={app} /> : null}
       <PendingDeployApprovalBanner appName={app.name} />
     </>
   )

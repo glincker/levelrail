@@ -1519,6 +1519,9 @@ func (db *DB) DeleteDesiredService(ctx context.Context, name string) error {
 	if err := db.DeleteAppTimelineData(ctx, name); err != nil {
 		return fmt.Errorf("store: delete desired service %q: %w", name, err)
 	}
+	if err := db.DeleteDeployExits(ctx, name); err != nil {
+		return fmt.Errorf("store: delete desired service %q: %w", name, err)
+	}
 	return nil
 }
 

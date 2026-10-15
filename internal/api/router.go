@@ -485,6 +485,8 @@ type Router struct {
 	startingDeploys              map[string]int                                        // guarded by buildStartMu: apps whose webhook deploy is fetching before its attempt row exists
 	deployMaxConcurrent          int                                                   // 0 means unlimited, set via WithDeployMaxConcurrent
 	deployLogStore               DeployLogQuerier                                      // nil is valid: a finished attempt's log route returns 501, same shape as secrets/telemetry/alertRules above
+	deployExits                  DeployExitStore                                       // nil is valid: exits are reported without their captured output
+	trialKeeper                  TrialKeeper                                           // nil is valid: POST /apps/{name}/keep returns 501
 	deployRecorder               *deploylog.Recorder                                   // nil is valid: an in-progress attempt's live tail returns 501, and handleTriggerBuild falls back to build.SlogProgress with no persisted log, same "not configured" shape as builder/telemetry above
 	logBroadcaster               *telemetry.LogBroadcaster                             // nil is valid: GET /apps/{name}/logs/stream returns 501, same "not configured" shape as deployRecorder above
 	deployNotifyTargets          DeployNotifyTargets                                   // nil is valid: deploy-notify-target routes return 501, same shape as alertRules above
@@ -863,6 +865,12 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	}
 	if g, ok := any(s).(GateStore); ok {
 		rt.gate = g
+	}
+	if e, ok := any(s).(DeployExitStore); ok {
+		rt.deployExits = e
+	}
+	if k, ok := any(s).(TrialKeeper); ok {
+		rt.trialKeeper = k
 	}
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 

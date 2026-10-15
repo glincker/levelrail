@@ -10,6 +10,7 @@ import { useFailureContext } from '../queries/investigate'
 import { failureLinesToText } from '../lib/observabilityFormat'
 import type { FailureContext } from '../types/investigate'
 import { Button, buttonVariants } from './ui/button'
+import { ContainerExitBanner } from './ContainerExitBanner'
 
 function FailureBody({
   appName,
@@ -93,6 +94,18 @@ function FailureBody({
           </Link>
         </div>
       </div>
+      {ctx.exit ? (
+        <div className="mt-3">
+          <ContainerExitBanner
+            exitCode={ctx.exit.exit_code}
+            oomKilled={ctx.exit.oom_killed}
+            finishedAt={ctx.exit.finished_at ?? ctx.exit.captured_at}
+            message={ctx.exit.message}
+            reason={ctx.exit.reason}
+            showHint
+          />
+        </div>
+      ) : null}
       {ctx.lines.length === 0 ? (
         <p className="mt-3 text-sm text-muted-foreground">
           {t('failure.noLines')}

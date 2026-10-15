@@ -62,6 +62,7 @@ export const NAMESPACES = [
   'sso',
   'models',
   'templates',
+  'trialApp',
 ] as const
 
 void i18n

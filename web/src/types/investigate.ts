@@ -1,6 +1,8 @@
 // Wire types for GET /api/v1/apps/{name}/investigate and
 // GET /api/v1/apps/{name}/failure-context.
 
+import type { ContainerExit } from './containerExit'
+
 export interface InvestigateSummary {
   has_traffic: boolean
   requests: number
@@ -96,4 +98,7 @@ export interface FailureContext {
   }
   lines: FailureLogLine[]
   total_lines: number
+  lines_source?: 'build' | 'runtime' | 'exit'
+  /** How the newest release container stopped, when it was captured. */
+  exit?: ContainerExit
 }

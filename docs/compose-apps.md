@@ -160,6 +160,10 @@ Five templates ship in this format today: Uptime Kuma, Wiki.js, Redmine, One-Tim
 
 `go run ./scripts/validate-templates` checks every manifest. Add `-compose-dir <dir>` to also check a directory of plain compose files against the same rules a real deploy uses. Use this to triage a large catalog before converting entries to manifests. It prints one line per file with the first reason it was rejected. Add `-json` for machine-readable output and `-strict` to fail on any rejected file.
 
+### Running templates for real
+
+`go run ./scripts/template-smoke` starts catalog templates under the local Docker daemon, waits `-settle` (default `20s`), and reports per template whether every service stays running, which one exited and with what code and last lines, whether a healthcheck fails, or whether an image could not be pulled. It always tears down what it started, and never binds host ports. `-only id1,id2` and `-category` pick templates, `-parallel` runs several at once, `-pull` allows pulling missing images (otherwise those templates are skipped), `-max-image-gb` skips anything larger, `-plan` lists which images are already local, and `-json` / `-md` write the report. A service that exits with code 0 counts as a failure: a deployed service is expected to keep running. The `Template smoke` workflow runs the whole catalog weekly in shards and on demand; it is informational, not a required check.
+
 ## API
 
 | Method | Path | Ability |

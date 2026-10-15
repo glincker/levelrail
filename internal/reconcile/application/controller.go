@@ -269,6 +269,8 @@ type Controller struct {
 	gateTick            time.Duration
 	drain               *DrainTracker
 	pinner              RollbackPinner
+	exitRecorder        ExitRecorder  // nil is valid: exits are only reported, not captured
+	startupWatch        time.Duration // see WithStartupWatch
 }
 
 // Option configures optional Controller behavior.
@@ -1032,6 +1034,10 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 
 	if err := c.waitReady(ctx, state, desired); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonReadinessFailed)
+		var crash *readinessCrashError
+		if errors.As(err, &crash) {
+			c.captureExit(ctx, desired, target, crash.exit, crash.verdict())
+		}
 		c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusFailed, reason, err.Error())
 		c.recordRolloutFailure(ctx, desired, err)
 		c.markGateFailure(ctx, desired, reason)
@@ -1078,10 +1084,7 @@ func (c *Controller) imageOutcome(ctx context.Context, state *docker.ContainerSt
 func readinessReason(err error, fallback string) string {
 	var crash *readinessCrashError
 	if errors.As(err, &crash) {
-		if crash.oomKilled {
-			return deploysafety.ReasonOOMKilledDuringReadiness
-		}
-		return deploysafety.ReasonExitedDuringReadiness
+		return crash.verdict().Reason
 	}
 	var gate *gateError
 	if errors.As(err, &gate) {
@@ -1966,34 +1969,35 @@ func (b *cappedBuffer) String() string {
 	return string(b.buf)
 }
 
-// readinessCrashError is waitReady's signal that the container being
-// waited on exited or was OOM-killed before its readiness probe ever
-// succeeded, distinct from probe.WaitReady's own plain timeout error:
-// ensureReplicaRunning uses errors.As to give this a specific,
-// actionable reconcile condition reason (OOMKilledDuringReadiness /
-// ExitedDuringReadiness) instead of the generic ReadinessFailed a
-// connection-refused-until-timeout would otherwise get, the exact
-// "boring problem" this project's own CLAUDE.md names as its main risk:
-// a deploy that fails, but without ever surfacing why.
+// readinessCrashError is waitReady's signal that the container exited or
+// was OOM-killed before its readiness probe ever succeeded, so the
+// condition names the exit instead of a generic probe timeout.
 type readinessCrashError struct {
 	containerName string
-	oomKilled     bool
-	exitCode      int
+	exit          docker.ExitState
+	observedAt    time.Time
 }
 
-func (e *readinessCrashError) Error() string {
-	if e.oomKilled {
-		return fmt.Sprintf("container %s was OOM-killed before becoming ready", e.containerName)
+func newCrashError(name string, es docker.ExitState) *readinessCrashError {
+	return &readinessCrashError{containerName: name, exit: es, observedAt: time.Now()}
+}
+
+func (e *readinessCrashError) verdict() deploysafety.ExitVerdict {
+	return deploysafety.ClassifyExit(deploysafety.WorkloadService, deploysafety.ExitPhaseReadiness, exitObservation(e.exit, e.observedAt))
+}
+
+func (e *readinessCrashError) Error() string { return e.verdict().Message }
+
+func exitObservation(es docker.ExitState, observedAt time.Time) deploysafety.ExitObservation {
+	return deploysafety.ExitObservation{
+		Running: es.Running, OOMKilled: es.OOMKilled, ExitCode: es.ExitCode,
+		StartedAt: es.StartedAt, FinishedAt: es.FinishedAt, ObservedAt: observedAt,
 	}
-	return fmt.Sprintf("container %s exited (code %d) before becoming ready", e.containerName, e.exitCode)
 }
 
-// defaultCrashCheckInterval mirrors probe package's own unexported
-// default (probe.WaitReady applies the same 2s when cfg.Interval is
-// unset): watchForCrash polls at the same cadence a service's own
-// configured (or defaulted) readiness Interval already implies, rather
-// than inventing a second, independently-tuned timing knob.
-const defaultCrashCheckInterval = 2 * time.Second
+// maxCrashCheckInterval caps how long a container can be dead before
+// waitReady notices, whatever the readiness probe's own interval is.
+const maxCrashCheckInterval = time.Second
 
 // effectiveReadyBudget returns desired's own per-service override
 // (store.ServiceHealth.ReadyTimeout, app.yaml's health.readyTimeout)
@@ -2017,7 +2021,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	readiness := c.deployReadinessProbeFor(desired)
 	c.noteImplicitReadiness(ctx, state.Name, desired, readiness)
 	if readiness == nil {
-		return nil
+		return c.watchStartup(ctx, state.Name, desired)
 	}
 
 	target, err := probeTarget(state, *readiness)
@@ -2108,18 +2112,19 @@ func (c *Controller) exitedCrash(ctx context.Context, name string) *readinessCra
 	if err != nil || state == nil || state.Running {
 		return nil
 	}
-	return &readinessCrashError{containerName: name, oomKilled: state.OOMKilled, exitCode: state.ExitCode}
+	return newCrashError(name, *state)
 }
 
 // watchForCrash polls name's live exit state on interval (defaulted per
-// defaultCrashCheckInterval) until ctx is done or the container has
+// maxCrashCheckInterval) until ctx is done or the container has
 // stopped running, in which case it sends a *readinessCrashError
 // describing why and returns. out is buffered by 1, so this goroutine
 // never blocks or leaks if waitReady's own select already returned via
 // the readiness probe branch first.
 func watchForCrash(ctx context.Context, inspector docker.ExitStateInspector, name string, interval time.Duration, out chan<- error) {
-	if interval <= 0 {
-		interval = defaultCrashCheckInterval
+	// Inspect is cheap; a 30s probe interval must not mean a 30s blind spot.
+	if interval <= 0 || interval > maxCrashCheckInterval {
+		interval = maxCrashCheckInterval
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -2132,7 +2137,7 @@ func watchForCrash(ctx context.Context, inspector docker.ExitStateInspector, nam
 			if err != nil || state == nil || state.Running {
 				continue
 			}
-			out <- &readinessCrashError{containerName: name, oomKilled: state.OOMKilled, exitCode: state.ExitCode}
+			out <- newCrashError(name, *state)
 			return
 		}
 	}

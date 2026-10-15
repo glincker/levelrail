@@ -67,8 +67,12 @@ const liveLogBackfillMaxLines = 200
 // streamResourceLogs for the shared implementation and the
 // backfill-to-live handoff this depends on.
 func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
-	rt.streamResourceLogs(w, r, rt.lookupAppResource, rt.currentAppContainerIDs, "live log stream", "app")
+	rt.streamResourceLogsWithStatus(w, r, rt.lookupAppResource, rt.currentAppContainerIDs, rt.appRunState, "live log stream", "app")
 }
+
+// liveLogStatusInterval is how often an open app log stream re-checks
+// whether its container is running, sending event: status on a change.
+const liveLogStatusInterval = 5 * time.Second
 
 // streamResourceLogs is the shared body behind handleLiveLogStream and
 // handleLiveDatabaseLogStream (database_logs.go). 501 if either
@@ -104,6 +108,13 @@ func (rt *Router) handleLiveLogStream(w http.ResponseWriter, r *http.Request) {
 // concern, and is called out here rather than either quietly ignored or
 // overclaimed as fully solved.
 func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, lookup resourceLookup, currentLookup currentContainerLookup, opName, noun string) {
+	rt.streamResourceLogsWithStatus(w, r, lookup, currentLookup, nil, opName, noun)
+}
+
+// streamResourceLogsWithStatus is streamResourceLogs plus, when runState is
+// set, an event: status up front and on every change, and the stopped
+// container's last output when nothing else is there to show.
+func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Request, lookup resourceLookup, currentLookup currentContainerLookup, runState runStateLookup, opName, noun string) {
 	if rt.telemetry == nil || rt.logBroadcaster == nil {
 		writeError(w, http.StatusNotImplemented, "live log streaming is not configured on this control plane")
 		return
@@ -167,6 +178,14 @@ func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, loo
 	_, _ = fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 
+	var status appRunStatus
+	statusKnown := false
+	if runState != nil {
+		if status, statusKnown = runState(r.Context(), r.PathValue("name")); statusKnown {
+			writeSSEStatus(w, status)
+		}
+	}
+	shown := 0
 	for _, e := range trimBackfill(entries, subscribeTime, liveLogBackfillMaxLines) {
 		// Backfill entries are processed through the same filter, in
 		// timestamp order, as the live loop below: see
@@ -178,13 +197,31 @@ func (rt *Router) streamResourceLogs(w http.ResponseWriter, r *http.Request, loo
 			continue
 		}
 		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+		shown++
+	}
+	if shown == 0 && statusKnown && !status.Running {
+		for _, l := range rt.lastOutputLines(r.Context(), r.PathValue("name"), status) {
+			writeSSEEvent(w, sseLogEvent{Line: l.Message, Stream: l.Stream})
+		}
 	}
 	flusher.Flush()
 
+	var statusTick <-chan time.Time
+	if runState != nil {
+		ticker := time.NewTicker(liveLogStatusInterval)
+		defer ticker.Stop()
+		statusTick = ticker.C
+	}
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-statusTick:
+			if next, ok := runState(r.Context(), r.PathValue("name")); ok && (!statusKnown || !next.equal(status)) {
+				status, statusKnown = next, true
+				writeSSEStatus(w, status)
+				flusher.Flush()
+			}
 		case entry, chOpen := <-live:
 			if !chOpen {
 				// LogBroadcaster never closes a subscriber channel on its

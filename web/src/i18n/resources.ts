@@ -28,6 +28,7 @@ import type traffic from '../locales/en/traffic.json'
 import type dns from '../locales/en/dns.json'
 import type domainPolicies from '../locales/en/domainPolicies.json'
 import type observability from '../locales/en/observability.json'
+import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
 import type gitBuild from '../locales/en/gitBuild.json'
@@ -116,6 +117,7 @@ declare module 'i18next' {
       secretScan: typeof secretScan
       maintenance: typeof maintenance
       sso: typeof sso
+      trialApp: typeof trialApp
     }
   }
 }

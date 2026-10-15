@@ -324,6 +324,9 @@ type ExitState struct {
 	// them (the remote agent protocol does not carry them yet).
 	RestartCount int
 	StartedAt    time.Time
+	// FinishedAt is when the container last stopped; zero while running or
+	// when the transport cannot report it.
+	FinishedAt time.Time
 }
 
 // ExitStateInspector is an optional Runtime capability, checked via a

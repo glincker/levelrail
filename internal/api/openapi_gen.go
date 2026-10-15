@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1133 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1134 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -178,6 +178,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/integrations/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppIntegration", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/investigate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleInvestigate", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/job-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListScheduledTaskRuns", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/keep", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleKeepTrialApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/listening-ports", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppListeningPorts", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLoadBalancer", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/loadbalancer", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLoadBalancer", Description: ""},

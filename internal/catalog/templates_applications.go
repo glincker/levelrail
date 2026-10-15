@@ -117,6 +117,9 @@ var applicationsTemplates = []Template{
       url: ${SERVICE_FQDN_GHOST:-http://localhost:2368}
     volumes:
       - ghost_data:/var/lib/ghost/content
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2368/ghost/api/admin/site/"]
       interval: 10s
@@ -132,6 +135,11 @@ var applicationsTemplates = []Template{
       MYSQL_ROOT_PASSWORD: $SERVICE_PASSWORD_MYSQLROOT
     volumes:
       - ghost_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 `,
 	},
 	{
