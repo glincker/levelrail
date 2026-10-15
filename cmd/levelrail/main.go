@@ -1814,11 +1814,23 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.L
 		if deleted > 0 {
 			logger.Info("logs retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
 		}
+		if trims, berr := db.EnforceLogBudgets(ctx, telemetry.DefaultLogBudgetBytes()); berr != nil {
+			logger.Error("log budget sweep failed", slog.String("error", berr.Error()))
+		} else {
+			for _, t := range trims {
+				logger.Info("log budget trim", slog.String("resource", t.ResourceID), slog.Int64("lines", t.Lines), slog.Int64("bytes", t.Bytes))
+			}
+		}
 		// Traces age out on the same window as logs.
 		if n, serr := db.RetainSpans(ctx, cutoff); serr != nil {
 			logger.Error("trace retention sweep failed", slog.String("error", serr.Error()))
 		} else if n > 0 {
 			logger.Info("trace retention sweep", slog.Int64("deleted", n), slog.Time("cutoff", cutoff))
+		}
+		if n, eerr := db.RetainErrors(ctx, cutoff); eerr != nil {
+			logger.Error("error tracking retention sweep failed", slog.String("error", eerr.Error()))
+		} else if n > 0 {
+			logger.Info("error tracking retention sweep", slog.Int64("deleted", n), slog.Time("cutoff", cutoff))
 		}
 	}
 
@@ -2441,7 +2453,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
 		api.WithTraceStore(telemetryDB),
+		api.WithErrorStore(telemetryDB),
 		api.WithLogPipelineStore(telemetryDB),
+		api.WithLogBudgetStore(telemetryDB),
 		api.WithAccessSource(api.EdgeAccess{Stats: ingressdriver.DefaultRequestStats(), Log: ingressdriver.DefaultAccessLog()}),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),

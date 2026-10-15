@@ -15,6 +15,7 @@ import (
 
 func logsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
+  %[1]s logs usage                             stored log volume per app, noisiest first, with budget and forecast
   %[1]s logs archive set --target ID [--app NAME] [--interval 1h] [--retention-days N] [--disable]
   %[1]s logs archive status                    show every archive policy and its last run
   %[1]s logs archive remove [--app NAME]       stop archiving (all apps when --app is omitted)
@@ -43,6 +44,8 @@ func runLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, logsUsage(prog))
 		return exitOK
+	case "usage":
+		return runLogsUsage(prog, rest, stdout, stderr, lookupEnv)
 	case "archive":
 		return runLogsArchive(prog, rest, stdout, stderr, lookupEnv)
 	case "dump":

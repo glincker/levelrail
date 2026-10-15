@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1155 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1169 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -162,6 +162,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutEnvSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/{key}/convert-to-secret", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleConvertEnvToSecret", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/environment-domains", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEnvironmentDomains", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/error-tracking", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDisableErrorTracking", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/error-tracking", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetErrorTracking", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/error-tracking", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleEnableErrorTracking", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/errors", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListErrors", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/errors/{fingerprint}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetError", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/apps/{name}/errors/{fingerprint}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePatchError", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/exec", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExecApp", Description: "One-off exec (handleExecApp's own doc comment): AbilityRoot, not AbilityDeploy. Secrets are injected as plaintext env vars into a container at create time and this package deliberately never decrypts one back into a response body anywhere else, see the secrets route above: \"never decrypts a value for a response body.\" Exec is the one route that can read them anyway, by running `env` inside the container, so it must sit behind the same tier that boundary already implies it needs, not the deploy tier. AbilityRoot is this project's existing \"breaks an assumption other tiers rely on\" boundary (see restore's own reasoning below)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetExecAccess", Description: "Exec access opt-out (exec.go's requireExecAccess): a second, independent gate the two routes just above both check before attempting to reach a container, on top of (not instead of) their own AbilityRoot check. GET is AbilityRead, matching every other passive per-app setting view (e.g. GET .../auto-rollback above). PUT is AbilityRoot, the same tier exec/terminal themselves sit behind: flipping this back on hands back a root-tier capability, so re-enabling it needs the same tier as using it, an explicit, auditable, two-step action even for an already-root token."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/exec-access", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetExecAccess", Description: ""},
@@ -190,6 +196,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/loadbalancer/import", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleImportLoadBalancer", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/loadbalancer/status", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleLoadBalancerStatus", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/loadbalancer/upstreams/{id}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLoadBalancerUpstream", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/log-budget", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLogBudget", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/log-budget", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLogBudget", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/log-budget", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLogBudget", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLogPipeline", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLogPipeline", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLogPipeline", Description: ""},
@@ -808,6 +817,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/logs/queries", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateSavedLogQuery", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
 	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
+	{Method: "GET", Path: "/api/v1/logs/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleLogUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -920,6 +930,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PATCH", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
 	{Method: "PUT", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
 	{Method: "GET", Path: "/api/v1/secret-rotation", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAllSecretRotation", Description: ""},
+	{Method: "OPTIONS", Path: "/api/v1/sentry/api/{project}/envelope/", Ability: "Public", Group: "Other", Handler: "handleSentryPreflight", Description: ""},
+	{Method: "POST", Path: "/api/v1/sentry/api/{project}/envelope/", Ability: "Public", Group: "Other", Handler: "handleSentryEnvelope", Description: ""},
+	{Method: "OPTIONS", Path: "/api/v1/sentry/api/{project}/store/", Ability: "Public", Group: "Other", Handler: "handleSentryPreflight", Description: ""},
+	{Method: "POST", Path: "/api/v1/sentry/api/{project}/store/", Ability: "Public", Group: "Other", Handler: "handleSentryStore", Description: ""},
 	{Method: "GET", Path: "/api/v1/setup/guide", Ability: "AbilityRead", Group: "Other", Handler: "handleGetSetupGuide", Description: ""},
 	{Method: "POST", Path: "/api/v1/setup/guide/reset", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetSetupGuide", Description: ""},
 	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},

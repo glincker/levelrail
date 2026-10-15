@@ -1,0 +1,61 @@
+{
+  "title": "Errors",
+  "subtitle": "Errors your app reports through any Sentry SDK, grouped into issues and tied to the deploy that produced them.",
+  "setup": {
+    "title": "Send errors from this app",
+    "off": "Error tracking is off. Turn it on to get a DSN for your Sentry SDK.",
+    "on": "Error tracking is on. Set SENTRY_DSN to the DSN you were given, or rotate it for a new one.",
+    "enable": "Turn on error tracking",
+    "enabling": "Turning on...",
+    "rotate": "Rotate DSN",
+    "disable": "Turn off",
+    "copy": "Copy",
+    "dsnOnce": "This DSN is shown once. Set it on the app and redeploy. Rotating makes the old DSN stop working.",
+    "endpoint": "Endpoint",
+    "enabledToast": "Error tracking is on.",
+    "disabledToast": "Error tracking is off. The app's SDK will get 401 responses.",
+    "failed": "Could not change error tracking."
+  },
+  "filters": {
+    "status": "Status",
+    "all": "All",
+    "open": "Open",
+    "resolved": "Resolved",
+    "ignored": "Ignored",
+    "window": "Window",
+    "last1": "Last hour",
+    "last24": "Last 24 hours",
+    "last168": "Last 7 days",
+    "last720": "Last 30 days"
+  },
+  "list": {
+    "empty": "No errors in this window. Once your SDK reports one it shows up here.",
+    "loadError": "Could not load errors: {{message}}",
+    "count": "{{count}} events",
+    "firstSeen": "First seen",
+    "lastSeen": "Last seen",
+    "regressed": "Regression",
+    "release": "Release {{release}}",
+    "deploy": "Deploy {{id}}"
+  },
+  "level": {
+    "fatal": "Fatal",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "debug": "Debug"
+  },
+  "detail": {
+    "loading": "Loading issue...",
+    "stack": "Stack trace",
+    "noStack": "This event carried no stack trace.",
+    "latest": "Latest event",
+    "samples": "{{count}} stored events",
+    "environment": "Environment {{environment}}",
+    "resolve": "Resolve",
+    "ignore": "Ignore",
+    "reopen": "Reopen",
+    "updated": "Issue updated.",
+    "updateFailed": "Could not update the issue."
+  }
+}

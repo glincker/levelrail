@@ -158,7 +158,10 @@ type Router struct {
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
 	traces                 TraceStore                          // nil is valid: trace routes answer 501
 	logPipelines           LogPipelineStore                    // nil is valid: log pipeline routes answer 501
+	logBudgets             LogBudgetStore                      // nil is valid: log budget routes answer 501
+	logUsageCache          logUsageCache
 	traceKeys              traceKeyCache
+	errTrack               errorTrackingState
 	access                 AccessSource  // nil is valid: the access route answers 501
 	requestSummaryWindow   time.Duration // 0 keeps defaultRequestSummaryWindow
 	// requestLogThresholds are requestLoggingMiddleware's Warn/Error

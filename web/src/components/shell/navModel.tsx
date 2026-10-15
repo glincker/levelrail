@@ -4,6 +4,7 @@ import {
   BellIcon,
   BookOpenIcon,
   BracketsCurlyIcon,
+  BugIcon,
   ClockCountdownIcon,
   CloudArrowUpIcon,
   CloudIcon,
@@ -397,6 +398,7 @@ export type AppTo =
   | '/apps/$name/logs'
   | '/apps/$name/log-pipeline'
   | '/apps/$name/traces'
+  | '/apps/$name/errors'
   | '/apps/$name/requests'
   | '/apps/$name/alerts'
   | '/apps/$name/exec'
@@ -538,6 +540,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         <ListMagnifyingGlassIcon />,
       ),
       item('traces', 'Traces', '/apps/$name/traces', <TreeStructureIcon />),
+      item('errors', 'Errors', '/apps/$name/errors', <BugIcon />),
       item('alerts', 'Alerts', '/apps/$name/alerts', <BellIcon />),
     ],
   },

@@ -439,6 +439,15 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/log-pipeline | AbilityWriteSensitive | handleDeleteLogPipeline |
 | POST | /api/v1/apps/{name}/log-pipeline/preview | AbilityRead | handlePreviewLogPipeline |
 | GET | /api/v1/apps/{name}/access | AbilityRead | handleAppAccess |
+| GET | /api/v1/apps/{name}/error-tracking | AbilityRead | handleGetErrorTracking |
+| POST | /api/v1/apps/{name}/error-tracking | AbilityWriteSensitive | handleEnableErrorTracking |
+| DELETE | /api/v1/apps/{name}/error-tracking | AbilityWriteSensitive | handleDisableErrorTracking |
+| GET | /api/v1/apps/{name}/errors | AbilityRead | handleListErrors |
+| GET | /api/v1/apps/{name}/errors/{fingerprint} | AbilityRead | handleGetError |
+| PATCH | /api/v1/apps/{name}/errors/{fingerprint} | AbilityWriteSensitive | handlePatchError |
+| GET | /api/v1/apps/{name}/log-budget | AbilityRead | handleGetLogBudget |
+| PUT | /api/v1/apps/{name}/log-budget | AbilityWriteSensitive | handleSetLogBudget |
+| DELETE | /api/v1/apps/{name}/log-budget | AbilityWriteSensitive | handleDeleteLogBudget |
 
 </Accordion>
 
@@ -1377,6 +1386,11 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleSetDeployPolicy |
 | DELETE | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleDeleteDeployPolicy |
 | POST | /api/v1/otlp/v1/traces | Public | handleOTLPTraces |
+| POST | /api/v1/sentry/api/{project}/envelope/ | Public | handleSentryEnvelope |
+| POST | /api/v1/sentry/api/{project}/store/ | Public | handleSentryStore |
+| OPTIONS | /api/v1/sentry/api/{project}/envelope/ | Public | handleSentryPreflight |
+| OPTIONS | /api/v1/sentry/api/{project}/store/ | Public | handleSentryPreflight |
+| GET | /api/v1/logs/usage | AbilityRead | handleLogUsage |
 
 ## See also
 

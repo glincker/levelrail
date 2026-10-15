@@ -11,6 +11,7 @@ import type https from '../locales/en/https.json'
 import type nodes from '../locales/en/nodes.json'
 import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
+import type logBudgets from '../locales/en/logBudgets.json'
 import type environments from '../locales/en/environments.json'
 import type exposure from '../locales/en/exposure.json'
 import type migration from '../locales/en/migration.json'
@@ -47,6 +48,7 @@ import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type help from '../locales/en/help.json'
 import type traces from '../locales/en/traces.json'
+import type errors from '../locales/en/errors.json'
 import type edgeAccess from '../locales/en/edgeAccess.json'
 import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
@@ -79,6 +81,7 @@ declare module 'i18next' {
       nodes: typeof nodes
       access: typeof access
       logPipeline: typeof logPipeline
+      logBudgets: typeof logBudgets
       environments: typeof environments
       exposure: typeof exposure
       migration: typeof migration
@@ -112,6 +115,7 @@ declare module 'i18next' {
       resourceAdvisor: typeof resourceAdvisor
       help: typeof help
       traces: typeof traces
+      errors: typeof errors
       edgeAccess: typeof edgeAccess
       betaFeatures: typeof betaFeatures
       newApp: typeof newApp

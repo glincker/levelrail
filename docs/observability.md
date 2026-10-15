@@ -249,6 +249,8 @@ MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a contain
 
 Apps can send OpenTelemetry traces to the control plane and read them as waterfalls on the app's Traces page. See [Tracing](/tracing).
 
+Apps can also report errors with any Sentry SDK and read them as grouped issues tied to deploys. See [Error tracking](/error-tracking).
+
 ## Exporting to OpenTelemetry
 
 Metrics and logs can be pushed to an OTLP/HTTP collector, opt-in per destination. Pull-based, node-local collection stays the default and nothing leaves the node until you add a destination. The export set includes per-app container metrics, platform self metrics (reconcile lag, deploy duration and queue depth, agent connections) and container logs. See [Data export](/data-export#otlp-logs) and `levelrail-cli otel destinations`.
@@ -1035,7 +1037,7 @@ Still stuck: See [Alert rules](/observability#alert-rules) for flap configuratio
 
 ## See also
 
-To transform logs before storage or export, see [Log pipelines](/log-pipelines) for rules that redact secrets, drop noise, parse JSON fields and handle multiline records.
+To transform logs before storage or export, see [Log pipelines](/log-pipelines) for rules that redact secrets, drop noise, parse JSON fields and handle multiline records. To cap how much one app can store and find the noisiest apps, see [Log volume budgets](/log-budgets).
 
 <CardGroup cols={2}>
   <Card title="Public status page" href="/status-page">

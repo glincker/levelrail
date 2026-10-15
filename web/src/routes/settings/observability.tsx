@@ -13,6 +13,7 @@ import {
 } from '../../components/settings/SettingsSkeletons'
 import { useTranslation } from 'react-i18next'
 import { ChartLineIcon } from '@phosphor-icons/react/dist/ssr'
+import { LogVolumeCard } from '../../components/logBudgets/LogVolumeCard'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
 export const Route = createFileRoute('/settings/observability')({
@@ -44,6 +45,7 @@ function ObservabilitySettingsPage() {
     >
       <RemoteReadConnectionCard settings={settings} />
       <ObservabilitySettingsCard settings={settings} />
+      <LogVolumeCard />
     </PageTemplate>
   )
 }
