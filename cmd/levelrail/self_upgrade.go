@@ -106,17 +106,23 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 		return fmt.Errorf("an earlier upgrade (%s, %s to %s) did not finish. Run: sudo %s self-upgrade --recover", running[0].ID, running[0].FromVersion, running[0].ToVersion, name)
 	}
 
+	fail := func(target string, err error) error {
+		if !f.dryRun {
+			recordEarlyFailure(ctx, journal, live, logger, f.initiator, target, err)
+		}
+		return err
+	}
 	repo, base, err := releaseSource(f)
 	if err != nil {
-		return err
+		return fail(f.to, err)
 	}
 	target, err := resolveTarget(ctx, f, repo)
 	if err != nil {
-		return err
+		return fail(f.to, err)
 	}
 	breaking, notesErr := breakingFor(ctx, repo, version.Version, target)
 	if notesErr != nil && !f.skipNotes {
-		return fmt.Errorf("could not read release notes to check for breaking changes: %w. Re-run with --skip-notes-check to continue without that check", notesErr)
+		return fail(target, fmt.Errorf("could not read release notes to check for breaking changes: %w. Re-run with --skip-notes-check to continue without that check", notesErr))
 	}
 	plan := selfUpgradePlan{Current: version.Version, Target: target, Breaking: breaking}
 	if f.dryRun {
@@ -125,7 +131,7 @@ func runSelfUpgrade(ctx context.Context, args []string, dataDir string, stdin io
 	acked := splitIDs(f.ack)
 	if missing := selfupgrade.MissingAcks(breaking, acked); len(missing) > 0 {
 		_ = printSelfUpgradePlan(stdout, plan, f.asJSON)
-		return selfupgrade.AckError(missing)
+		return fail(target, selfupgrade.AckError(missing))
 	}
 	if !f.yes {
 		_, _ = fmt.Fprintf(stdout, "Upgrading %s to %s. Type %s to confirm: ", version.Version, target, target)
@@ -414,6 +420,24 @@ func importSelfUpgradeJournal(ctx context.Context, db *store.DB, logger *slog.Lo
 
 // recordAttempt copies the journal into the database. It is best effort: the
 // control plane imports it again at its next boot.
+// recordEarlyFailure journals a run that stopped before Apply, so the
+// dashboard shows why instead of silently offering the same upgrade again.
+func recordEarlyFailure(ctx context.Context, journal *selfupgrade.Journal, live string, logger *slog.Logger, initiator, target string, cause error) {
+	now := time.Now()
+	a := selfupgrade.Attempt{
+		ID: newAttemptID(), FromVersion: version.Version, ToVersion: target, Initiator: initiator,
+		Outcome: selfupgrade.OutcomeRefused, FailedStep: selfupgrade.StepGuard, Error: cause.Error(),
+		FromSchema: -1, ToSchema: -1, StartedAt: now, FinishedAt: now,
+		Steps: []selfupgrade.StepRecord{{Name: selfupgrade.StepGuard, Status: selfupgrade.StatusFailed, Detail: cause.Error(), At: now}},
+	}
+	a.AddLog(now, selfupgrade.StepGuard, "failed: "+cause.Error())
+	if err := journal.Save(a); err != nil {
+		logger.Warn("early upgrade failure not journaled", slog.String("error", err.Error()))
+		return
+	}
+	recordAttempt(ctx, live, journal, logger)
+}
+
 func recordAttempt(ctx context.Context, live string, journal *selfupgrade.Journal, logger *slog.Logger) {
 	db, err := store.Open(ctx, live)
 	if err != nil {

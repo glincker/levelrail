@@ -501,6 +501,12 @@ Settings > Updates > **Upgrade to vX.Y.Z now** (or **Schedule upgrade**) and `le
 
 If the new release is not healthy within `--timeout` (90 seconds by default), the previous binary and, when the schema changed, the pre-upgrade database snapshot come back automatically. Every attempt, with its step timeline, is kept on the Updates page.
 
+### Watching an upgrade
+
+After you confirm, the Updates page switches to a live progress view: the ordered steps (check, download, verify checksum, verify signature, probe, back up, migration dry run, stop, swap, start, health check) with a spinner on the running one, elapsed time and an expandable log. The run is journaled on the server's disk, so reloading the page or the control plane restarting mid-upgrade (up to a couple of minutes of "Reconnecting") picks the same run back up. It ends with the new version and a release notes link, or with the step that failed, the error, and whether the previous release was restored.
+
+`levelrail-cli upgrade --apply` streams the same log lines to stderr while it waits, and `levelrail-cli upgrade --attempts` shows finished runs. If the host command cannot even start (for example the release repository cannot be resolved), the run is recorded as refused with the error text instead of silently disappearing.
+
 ```bash
 levelrail-cli upgrade --plan                    # breaking changes between here and the latest release
 levelrail-cli upgrade --apply --ack-breaking ID # acknowledge flagged ones, then upgrade

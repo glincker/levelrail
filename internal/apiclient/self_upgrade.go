@@ -35,22 +35,31 @@ type SelfUpgradeStep struct {
 	DurationMS int64  `json:"duration_ms"`
 }
 
+// SelfUpgradeLogLine is one event of an attempt's live log.
+type SelfUpgradeLogLine struct {
+	At   string `json:"at"`
+	Step string `json:"step"`
+	Line string `json:"line"`
+}
+
 // SelfUpgradeAttempt is one recorded upgrade attempt.
 type SelfUpgradeAttempt struct {
-	ID          string            `json:"id"`
-	FromVersion string            `json:"from_version"`
-	ToVersion   string            `json:"to_version"`
-	FromSchema  int               `json:"from_schema"`
-	ToSchema    int               `json:"to_schema"`
-	Initiator   string            `json:"initiator"`
-	Outcome     string            `json:"outcome"`
-	FailedStep  string            `json:"failed_step"`
-	Error       string            `json:"error"`
-	BackupName  string            `json:"backup_name"`
-	Acked       []string          `json:"acked"`
-	Steps       []SelfUpgradeStep `json:"steps"`
-	StartedAt   string            `json:"started_at"`
-	FinishedAt  string            `json:"finished_at"`
+	ID          string               `json:"id"`
+	FromVersion string               `json:"from_version"`
+	ToVersion   string               `json:"to_version"`
+	FromSchema  int                  `json:"from_schema"`
+	ToSchema    int                  `json:"to_schema"`
+	Initiator   string               `json:"initiator"`
+	Outcome     string               `json:"outcome"`
+	FailedStep  string               `json:"failed_step"`
+	Error       string               `json:"error"`
+	BackupName  string               `json:"backup_name"`
+	Acked       []string             `json:"acked"`
+	Steps       []SelfUpgradeStep    `json:"steps"`
+	CurrentStep string               `json:"current_step"`
+	Log         []SelfUpgradeLogLine `json:"log"`
+	StartedAt   string               `json:"started_at"`
+	FinishedAt  string               `json:"finished_at"`
 }
 
 // SelfUpgradeAttempts is GET /api/v1/updates/self-upgrade/attempts' response.

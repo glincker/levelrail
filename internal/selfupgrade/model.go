@@ -49,6 +49,24 @@ type StepRecord struct {
 	DurationMS int64     `json:"duration_ms"`
 }
 
+// MaxLogLines bounds Attempt.Log; the oldest lines are dropped first.
+const MaxLogLines = 300
+
+// LogLine is one event in an attempt's live log.
+type LogLine struct {
+	At   time.Time `json:"at"`
+	Step string    `json:"step,omitempty"`
+	Line string    `json:"line"`
+}
+
+// AddLog appends a line, dropping the oldest beyond MaxLogLines.
+func (a *Attempt) AddLog(at time.Time, step, line string) {
+	a.Log = append(a.Log, LogLine{At: at, Step: step, Line: line})
+	if over := len(a.Log) - MaxLogLines; over > 0 {
+		a.Log = append([]LogLine(nil), a.Log[over:]...)
+	}
+}
+
 // Attempt is one upgrade run. The unexported-to-the-database fields at the end
 // (paths) only live in the journal so a restart in the middle can recover.
 type Attempt struct {
@@ -64,8 +82,12 @@ type Attempt struct {
 	BackupName  string       `json:"backup_name,omitempty"`
 	Acked       []string     `json:"acked,omitempty"`
 	Steps       []StepRecord `json:"steps"`
-	StartedAt   time.Time    `json:"started_at"`
-	FinishedAt  time.Time    `json:"finished_at,omitempty"`
+	// Current is the step in flight, so a watcher sees it before it ends.
+	Current string `json:"current_step,omitempty"`
+	// Log is a bounded stream of step events for the live progress view.
+	Log        []LogLine `json:"log,omitempty"`
+	StartedAt  time.Time `json:"started_at"`
+	FinishedAt time.Time `json:"finished_at,omitempty"`
 
 	PrevBinary    string `json:"prev_binary,omitempty"`
 	SnapshotPath  string `json:"snapshot_path,omitempty"`

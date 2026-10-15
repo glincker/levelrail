@@ -49,6 +49,12 @@ func runUpgradeApply(ctx context.Context, client *Client, opts upgradeApplyOptio
 	if missing := unackedBreaking(plan.Breaking, acked); len(missing) > 0 {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("breaking changes need acknowledgement: re-run with --ack-breaking %s", strings.Join(missing, ",")))
 	}
+	before := map[string]bool{}
+	if prior, lerr := client.ListSelfUpgradeAttempts(ctx); lerr == nil {
+		for _, a := range prior.Attempts {
+			before[a.ID] = true
+		}
+	}
 	if _, err := client.StartSelfUpgrade(ctx, plan.TargetVersion, acked); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("start upgrade: %w", err))
 	}
@@ -61,12 +67,14 @@ func runUpgradeApply(ctx context.Context, client *Client, opts upgradeApplyOptio
 		}
 		return exitOK
 	}
-	return watchUpgrade(ctx, client, plan.TargetVersion, jsonOut, of, stdout, stderr)
+	return watchUpgrade(ctx, client, plan.TargetVersion, before, jsonOut, of, stdout, stderr)
 }
 
-func watchUpgrade(ctx context.Context, client *Client, target string, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
+// watchUpgrade follows the run this command started (attempts that existed
+// before the start are ignored) and prints each live log line once.
+func watchUpgrade(ctx context.Context, client *Client, target string, before map[string]bool, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
 	deadline := time.Now().Add(upgradeWatchTimeout)
-	var last *apiclient.SelfUpgradeAttempt
+	printed := 0
 	for time.Now().Before(deadline) {
 		select {
 		case <-ctx.Done():
@@ -78,13 +86,23 @@ func watchUpgrade(ctx context.Context, client *Client, target string, jsonOut bo
 		if err != nil {
 			continue
 		}
+		var last *apiclient.SelfUpgradeAttempt
 		for i := range list.Attempts {
-			if list.Attempts[i].ToVersion == target {
+			if list.Attempts[i].ToVersion == target && !before[list.Attempts[i].ID] {
 				last = &list.Attempts[i]
 				break
 			}
 		}
-		if last == nil || last.Outcome == "running" {
+		if last == nil {
+			continue
+		}
+		if !jsonOut {
+			for ; printed < len(last.Log); printed++ {
+				l := last.Log[printed]
+				_, _ = fmt.Fprintf(stderr, "%s  %-16s %s\n", l.At, l.Step, l.Line)
+			}
+		}
+		if last.Outcome == "running" {
 			continue
 		}
 		if err := renderResult(stdout, of.Format, of.Query, *last, func() { printUpgradeAttempt(stdout, *last) }); err != nil {

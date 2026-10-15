@@ -119,8 +119,8 @@ type AttemptStore interface {
 	UpsertSelfUpgradeAttempt(ctx context.Context, a store.SelfUpgradeAttempt) error
 }
 
-// ImportJournal copies every journaled attempt into the database and removes
-// the files of finished ones. Running attempts stay on disk so a recovery can
+// ImportJournal copies every journaled attempt into the database and prunes
+// all but the newest finished files. Running attempts stay on disk so a recovery can
 // still read their paths. It returns how many rows were written.
 func ImportJournal(ctx context.Context, j *Journal, db AttemptStore) (int, error) {
 	all, err := j.List()
@@ -133,11 +133,25 @@ func ImportJournal(ctx context.Context, j *Journal, db AttemptStore) (int, error
 			return n, err
 		}
 		n++
+	}
+	j.pruneFinished(all)
+	return n, nil
+}
+
+// KeepFinished is how many finished attempt files stay on disk so the
+// progress view can still show a just-finished run's live log.
+const KeepFinished = 5
+
+func (j *Journal) pruneFinished(all []Attempt) {
+	var finished []Attempt
+	for _, a := range all {
 		if a.Outcome != OutcomeRunning {
-			j.Remove(a.ID)
+			finished = append(finished, a)
 		}
 	}
-	return n, nil
+	for i := 0; i < len(finished)-KeepFinished; i++ {
+		j.Remove(finished[i].ID)
+	}
 }
 
 // ToStore converts an attempt to its database row.
