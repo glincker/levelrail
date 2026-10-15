@@ -6,8 +6,8 @@ import { DemoGate } from '@/components/demo/DemoUnavailable'
 import { PageHeader } from '@/components/shell/PageHeader'
 
 export const Route = createFileRoute('/terminal')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'cli-console'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'cli-console', location.href),
   component: TerminalPage,
 })
 

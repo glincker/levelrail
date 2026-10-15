@@ -2,7 +2,13 @@ import { useMemo, useState } from 'react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
-import { filterSettingsNav, useSettingsNav } from '../../hooks/useSettingsNav'
+import {
+  filterSettingsNav,
+  useSettingsNav,
+  type LabelledSettingsItem,
+} from '../../hooks/useSettingsNav'
+import { Badge } from '@/components/ui/badge'
+import { BETA_FEATURES_PATH, lockedSearch } from '../../lib/experimental'
 import { PageHeader } from '../../components/shell/PageHeader'
 import { EmptyState } from '../../components/ui/empty-state'
 import { Input } from '../../components/ui/input'
@@ -16,6 +22,41 @@ import {
 export const Route = createFileRoute('/settings/')({
   component: SettingsHubPage,
 })
+
+function HubCardLink({ item }: { item: LabelledSettingsItem }) {
+  const { t } = useTranslation()
+  const card = (
+    <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <item.icon className="size-4" />
+          {item.title}
+          {item.locked ? (
+            <Badge variant="muted">{t('shell.locked.badge')}</Badge>
+          ) : null}
+        </CardTitle>
+        <CardDescription>{item.description}</CardDescription>
+      </CardHeader>
+    </Card>
+  )
+  if (item.locked && item.feature) {
+    return (
+      <Link
+        to={BETA_FEATURES_PATH}
+        search={lockedSearch(item.feature)}
+        className="block"
+        data-locked="true"
+      >
+        {card}
+      </Link>
+    )
+  }
+  return (
+    <Link to={item.to} className="block">
+      {card}
+    </Link>
+  )
+}
 
 function SettingsHubPage() {
   const { t } = useTranslation('settings')
@@ -88,17 +129,7 @@ function SettingsHubPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {section.items.map((item) => (
-              <Link key={item.to} to={item.to} className="block">
-                <Card className="h-full rounded-[var(--glinui-radius-lg)] transition-colors hover:ring-foreground/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <item.icon className="size-4" />
-                      {item.title}
-                    </CardTitle>
-                    <CardDescription>{item.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </Link>
+              <HubCardLink key={item.to} item={item} />
             ))}
           </div>
         </section>

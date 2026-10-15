@@ -150,8 +150,24 @@ describe('stepChord experimental gate', () => {
     return stepChord(first.state, { ...base, key }, 1, enabled).action
   }
   it.each([
-    ['m', [], null],
-    ['l', [], null],
+    [
+      'm',
+      [],
+      {
+        type: 'go',
+        to: '/settings/beta-features',
+        search: { feature: 'ai-models' },
+      },
+    ],
+    [
+      'l',
+      [],
+      {
+        type: 'go',
+        to: '/settings/beta-features',
+        search: { feature: 'load-balancer' },
+      },
+    ],
     ['m', ['ai-models'], { type: 'go', to: '/models' }],
     ['l', ['load-balancer'], { type: 'go', to: '/loadbalancers' }],
     ['a', [], { type: 'go', to: '/apps' }],

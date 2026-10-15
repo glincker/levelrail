@@ -4,9 +4,11 @@ import {
   type SettingsAreaId,
   type SettingsNavItem,
 } from '../lib/settingsNav'
+import { isFeatureLocked } from '../lib/experimental'
 import { useExperimentalFeatures } from './useExperimental'
 
 export interface LabelledSettingsItem extends SettingsNavItem {
+  locked: boolean
   title: string
   description: string
 }
@@ -22,12 +24,13 @@ export interface LabelledSettingsSection {
 export function useSettingsNav(): LabelledSettingsSection[] {
   const { t } = useTranslation('settings')
   const experimental = useExperimentalFeatures()
-  return visibleSettingsSections(experimental).map((section) => ({
+  return visibleSettingsSections().map((section) => ({
     id: section.id,
     title: t(`nav.areas.${section.id}.title`),
     description: t(`nav.areas.${section.id}.description`),
     items: section.items.map((item) => ({
       ...item,
+      locked: isFeatureLocked(item.feature, experimental),
       title: t(`nav.items.${item.id}.title`),
       description: t(`nav.items.${item.id}.description`),
     })),

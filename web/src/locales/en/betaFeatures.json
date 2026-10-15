@@ -1,0 +1,43 @@
+{
+  "title": "Beta features",
+  "description": "Every feature that is still being proven. Turn one on here, or see the exact setting to change when it needs a restart.",
+  "groups": {
+    "beta": "Beta",
+    "experimental": "Experimental"
+  },
+  "banner": {
+    "title": "{{name}} is a beta feature",
+    "body": "Turn it on to continue.",
+    "bodyRestart": "It needs a setting and a restart on the server, shown below.",
+    "ready": "{{name}} is on.",
+    "takeMeThere": "Take me there",
+    "unknown": "That feature is not known to this server."
+  },
+  "state": {
+    "on": "On",
+    "off": "Off",
+    "onByEnv": "On through the server setting",
+    "onBySetting": "On from Settings"
+  },
+  "toggle": {
+    "label": "Turn on {{name}}",
+    "on": "{{name}} turned on",
+    "off": "{{name}} turned off",
+    "error": "Could not change {{name}}: {{message}}",
+    "lockedByEnv": "Turned on by APP_EXPERIMENTAL on the server. Remove it there to switch it off."
+  },
+  "env": {
+    "heading": "Turn it on from the server",
+    "restart": "This feature is wired when the server starts, so it needs a restart after you change the setting.",
+    "copy": "Copy setting",
+    "copied": "Copied",
+    "line": "Setting line",
+    "systemd": "systemd",
+    "docker": "Docker",
+    "systemdHow": "Add Environment={{line}} to the control plane unit, then run daemon-reload and restart it.",
+    "dockerHow": "Add -e {{line}} (or the compose environment entry) and recreate the container."
+  },
+  "docs": "Read the docs",
+  "error": "Could not load beta features: {{message}}",
+  "readOnly": "Only an administrator can switch beta features."
+}

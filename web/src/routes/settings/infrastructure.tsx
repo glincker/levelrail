@@ -32,8 +32,8 @@ import type { IacFile, IacPlan, IacRequest } from '../../queries/iac'
 // files, review the plan, then apply. Every change inside an apply goes
 // through the ordinary API with the signed-in user's own permissions.
 export const Route = createFileRoute('/settings/infrastructure')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'iac'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'iac', location.href),
   component: InfrastructureSettingsPage,
 })
 
@@ -134,7 +134,10 @@ function InfrastructureSettingsPage() {
             />
           </Field>
           <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor="iac-upload" className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground">
+            <label
+              htmlFor="iac-upload"
+              className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground"
+            >
               <UploadSimpleIcon className="size-4" />
               <span>Upload files</span>
               <input
@@ -176,7 +179,10 @@ function InfrastructureSettingsPage() {
             </Field>
           </div>
           <div className="space-y-2">
-            <label htmlFor="iac-prune" className="flex items-center gap-2 text-sm text-foreground">
+            <label
+              htmlFor="iac-prune"
+              className="flex items-center gap-2 text-sm text-foreground"
+            >
               <Checkbox
                 id="iac-prune"
                 checked={prune}
@@ -190,7 +196,10 @@ function InfrastructureSettingsPage() {
                 Prune needs a source name.
               </p>
             ) : null}
-            <label htmlFor="iac-no-deploy" className="flex items-center gap-2 text-sm text-foreground">
+            <label
+              htmlFor="iac-no-deploy"
+              className="flex items-center gap-2 text-sm text-foreground"
+            >
               <Checkbox
                 id="iac-no-deploy"
                 checked={noDeploy}

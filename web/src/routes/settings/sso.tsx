@@ -26,8 +26,8 @@ import { requireExperimental } from '../../lib/experimental'
 
 // Root only server-side: every /api/v1/sso route requires AbilityRoot.
 export const Route = createFileRoute('/settings/sso')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'saml-scim'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'saml-scim', location.href),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(samlConnectionsQueryOptions()),

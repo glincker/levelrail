@@ -105,7 +105,7 @@ describe('global nav model', () => {
 
   it('hides route-gated items until the router has the route', () => {
     const labels = (has: boolean) =>
-      visibleGlobalGroups(['load-balancer'], () => has)
+      visibleGlobalGroups(() => has)
         .flatMap((g) => g.items)
         .map((i) => i.label)
     expect(labels(false)).not.toContain('DNS')

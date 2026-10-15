@@ -19,8 +19,8 @@ import { PageTemplate } from '@/components/shell/PageTemplate'
 import { StatusBadge } from '@/components/ui/status-badge'
 
 export const Route = createFileRoute('/settings/ai-assistant')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'ai-chat'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'ai-chat', location.href),
   loader: ({ context: { queryClient } }) =>
     queryClient.ensureQueryData(aiAssistantSettingsQueryOptions()),
   component: AiAssistantSettingsPage,

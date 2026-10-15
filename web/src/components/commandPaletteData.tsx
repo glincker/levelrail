@@ -35,7 +35,13 @@ import {
   TerminalWindowIcon,
   BellIcon,
 } from '@phosphor-icons/react/dist/ssr'
-import type { ExperimentalFeature } from '../lib/experimental'
+import {
+  BETA_FEATURES_PATH,
+  isFeatureLocked,
+  lockedSearch,
+  type ExperimentalFeature,
+} from '../lib/experimental'
+import { chordFor } from './shell/navModel'
 
 export interface PaletteItem {
   key: string
@@ -48,6 +54,10 @@ export interface PaletteItem {
   keywords?: string
   /** Trailing status chip, e.g. a domain's status. */
   badge?: React.ReactNode
+  /** Muted second line, e.g. why an entry is locked. */
+  subtitle?: string
+  /** True for a gated destination that is switched off. */
+  locked?: boolean
 }
 
 export interface RouteEntry {
@@ -292,3 +302,34 @@ export const THEME_ACTION = {
   group: 'Actions',
   icon: <CircleHalfIcon />,
 } as const
+
+const NO_HINT_KEYS = new Set(['action-create-app', 'action-templates'])
+
+// A gated destination that is switched off stays searchable and opens Beta
+// features for that feature instead of its own (guarded) page.
+export function routeEntryItem(
+  e: RouteEntry,
+  enabled: readonly string[],
+  go: (
+    to: string,
+    params?: Record<string, string>,
+    search?: Record<string, string>,
+  ) => () => void,
+  lockedSubtitle: string,
+): PaletteItem {
+  const base = { key: e.key, label: e.label, group: e.group, icon: e.icon }
+  if (isFeatureLocked(e.feature, enabled)) {
+    return {
+      ...base,
+      run: go(BETA_FEATURES_PATH, undefined, { ...lockedSearch(e.feature) }),
+      subtitle: lockedSubtitle,
+      keywords: 'beta locked',
+      locked: true,
+    }
+  }
+  return {
+    ...base,
+    run: go(e.to, undefined, e.search),
+    hint: NO_HINT_KEYS.has(e.key) ? undefined : chordFor(e.to),
+  }
+}

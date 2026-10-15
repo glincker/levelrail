@@ -18,8 +18,8 @@ import { useGpuNodes, useModels } from '../../queries/models'
 import type { CreateModelResponse } from '../../types/models'
 
 export const Route = createFileRoute('/models/')({
-  beforeLoad: ({ context: { queryClient } }) =>
-    requireExperimental(queryClient, 'ai-models'),
+  beforeLoad: ({ context: { queryClient }, location }) =>
+    requireExperimental(queryClient, 'ai-models', location.href),
   component: ModelsPage,
 })
 

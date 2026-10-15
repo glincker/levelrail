@@ -24,6 +24,14 @@ vi.mock('@tanstack/react-router', () => ({
     select: (s: { location: { pathname: string } }) => unknown
   }) => select({ location: { pathname: '/' } }),
 }))
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) =>
+      key === 'shell.locked.paletteSubtitle'
+        ? 'Locked beta feature. Enable it in Beta features'
+        : key,
+  }),
+}))
 vi.mock('../hooks/useExperimental', () => ({
   useExperimentalFeatures: () => experimentalOn,
 }))
@@ -237,18 +245,33 @@ describe('CommandPalette', () => {
     expect(screen.getByText('No results.')).toBeInTheDocument()
   })
 
-  it('hides gated destinations and the assistant suggestion while off', () => {
+  it('lists gated destinations as locked and hides the assistant suggestion while off', () => {
     experimentalOn = []
     renderPalette()
-    expect(screen.queryByRole('option', { name: /Load balancers/ })).toBeNull()
-    expect(screen.queryByRole('option', { name: /AI models/ })).toBeNull()
-    expect(screen.queryByRole('option', { name: /AI assistant/ })).toBeNull()
+    const lb = screen.getByRole('option', { name: /Load balancers/ })
+    expect(lb).toHaveTextContent(/Locked beta feature/)
+    expect(screen.getByRole('option', { name: /AI models/ })).toHaveTextContent(
+      /Locked beta feature/,
+    )
     expect(
       screen.queryByRole('option', { name: /Ask the assistant/ }),
     ).toBeNull()
     expect(
       screen.getByRole('option', { name: /Databases/ }),
-    ).toBeInTheDocument()
+    ).not.toHaveTextContent(/Locked beta feature/)
+  })
+
+  it('opens Beta features for a locked destination on Enter', async () => {
+    experimentalOn = []
+    const user = userEvent.setup()
+    renderPalette()
+    await user.type(screen.getByRole('combobox'), 'load balancers')
+    await user.keyboard('{Enter}')
+    expect(navigate).toHaveBeenCalledWith({
+      to: '/settings/beta-features',
+      params: undefined,
+      search: { feature: 'load-balancer' },
+    })
   })
 
   it('shows static quick-action CTAs with no recents and no app data', () => {
@@ -266,10 +289,10 @@ describe('CommandPalette', () => {
     renderPalette()
     expect(
       screen.getByRole('option', { name: /Load balancers/ }),
-    ).toBeInTheDocument()
+    ).not.toHaveTextContent(/Locked beta feature/)
     expect(
       screen.getByRole('option', { name: /AI models/ }),
-    ).toBeInTheDocument()
+    ).not.toHaveTextContent(/Locked beta feature/)
     expect(
       screen.getByRole('option', { name: /AI assistant/ }),
     ).toBeInTheDocument()

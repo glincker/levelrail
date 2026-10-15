@@ -1,4 +1,10 @@
-import { isFeatureVisible, type ExperimentalFeature } from './experimental'
+import {
+  BETA_FEATURES_PATH,
+  isFeatureLocked,
+  lockedSearch,
+  type BetaFeaturesSearch,
+  type ExperimentalFeature,
+} from './experimental'
 
 export const CHORD_TIMEOUT_MS = 1500
 
@@ -62,7 +68,9 @@ export interface KeyInput {
 }
 
 export type ShortcutAction =
-  { type: 'go'; to: string } | { type: 'focus-search' } | null
+  | { type: 'go'; to: string; search?: BetaFeaturesSearch }
+  | { type: 'focus-search' }
+  | null
 
 export const INITIAL_CHORD: ChordState = { pending: false, startedAt: 0 }
 
@@ -88,11 +96,18 @@ export function stepChord(
   const live = state.pending && now - state.startedAt <= CHORD_TIMEOUT_MS
   if (live) {
     const target = GO_TARGETS[input.key]
-    if (
-      target &&
-      isFeatureVisible(target.feature, enabled) &&
-      (!target.requiresRoute || routeAvailable(target.to))
-    ) {
+    if (target && (!target.requiresRoute || routeAvailable(target.to))) {
+      // A switched-off feature leads to Beta features instead of a dead key.
+      if (isFeatureLocked(target.feature, enabled)) {
+        return {
+          state: INITIAL_CHORD,
+          action: {
+            type: 'go',
+            to: BETA_FEATURES_PATH,
+            search: lockedSearch(target.feature),
+          },
+        }
+      }
       return { state: INITIAL_CHORD, action: { type: 'go', to: target.to } }
     }
   }
