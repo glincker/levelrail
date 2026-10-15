@@ -30,6 +30,7 @@ import {
   type StageTab,
 } from '../../../../../components/DeployStageTabs'
 import { DeployFailureSummaryCard } from '../../../../../components/DeployFailureSummaryCard'
+import { DeployExitCard } from '../../../../../components/DeployExitCard'
 import { deployStageAnchorId } from '../../../../../lib/deployFailureSummary'
 import { DeployNewErrorTypes } from '../../../../../components/DeployNewErrorTypes'
 import { DeployQuickLinks } from '../../../../../components/DeployQuickLinks'
@@ -141,6 +142,11 @@ function DeployLogsPage() {
             stages={stages}
             conditions={conditions}
             lines={lines}
+          />
+          <DeployExitCard
+            appName={name}
+            deployId={deployId}
+            failed={attempt.status === 'failed'}
           />
 
           <div className="flex min-h-0 flex-1 flex-col gap-3">

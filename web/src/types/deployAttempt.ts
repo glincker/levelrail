@@ -1,3 +1,4 @@
+import type { ContainerExit } from './containerExit'
 import type { DeployFailure } from './deployFailure'
 import type { VulnCounts } from './supplyChain'
 
@@ -84,4 +85,6 @@ export interface DeployAttempt {
   vuln_counts?: VulnCounts
   /** Why the deploy failed or is held; absent otherwise. */
   failure?: DeployFailure
+  /** Single-deploy endpoint only: how the release container stopped. */
+  exit?: ContainerExit
 }

@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
@@ -556,12 +557,10 @@ func (r *Runner) attemptFresh(execCtx, runCtx context.Context, task store.Schedu
 	}
 	code := out.ExitCode
 	res.exitCode = &code
-	switch {
-	case out.OOMKilled:
-		res.status, res.message = store.ScheduledTaskStatusFailed, "container was killed for exceeding its memory limit"
-	case code != 0:
-		res.status, res.message = store.ScheduledTaskStatusFailed, "exited with code "+strconv.Itoa(code)
-	default:
+	// A job is a one-shot workload: exit 0 is success, unlike a service.
+	if v := deploysafety.ClassifyExit(deploysafety.WorkloadJob, "", deploysafety.ExitObservation{OOMKilled: out.OOMKilled, ExitCode: code}); v.Failed {
+		res.status, res.message = store.ScheduledTaskStatusFailed, v.Message
+	} else {
 		res.status = store.ScheduledTaskStatusSuccess
 	}
 	return res

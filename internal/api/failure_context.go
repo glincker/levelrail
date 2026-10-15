@@ -55,6 +55,8 @@ type failureContextResponse struct {
 	LinesSource     string                `json:"lines_source,omitempty"`
 	RestartsToTrip  int                   `json:"restarts_threshold"`
 	LogsUnavailable bool                  `json:"logs_unavailable,omitempty"`
+	// Exit is how the newest release container stopped, when it was captured.
+	Exit *deployExitResource `json:"exit,omitempty"`
 }
 
 // handleFailureContext handles GET /api/v1/apps/{name}/failure-context: when
@@ -123,6 +125,10 @@ func (rt *Router) handleFailureContext(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	exit := rt.latestExit(ctx, name)
+	if exit != nil {
+		resp.Exit = toDeployExitResource(exit)
+	}
 	switch {
 	case resp.State == failureStateDeployFailed && attemptFailedDuringBuild(failed) && rt.deployLogStore != nil:
 		rt.fillBuildLines(r, &resp, failed.ID, maxLines)
@@ -131,7 +137,28 @@ func (rt *Router) handleFailureContext(w http.ResponseWriter, r *http.Request) {
 	default:
 		resp.LogsUnavailable = true
 	}
+	if len(resp.Lines) == 0 && resp.Exit != nil && len(resp.Exit.Lines) > 0 {
+		fillExitLines(&resp, maxLines)
+	}
+	if resp.Exit != nil {
+		resp.Exit.Lines = []failureContextLine{}
+	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// fillExitLines uses the exit capture when the log store has nothing: the
+// collector only streams running containers, so one that exits at start
+// leaves no stored lines.
+func fillExitLines(resp *failureContextResponse, maxLines int) {
+	lines := resp.Exit.Lines
+	resp.TotalLines = len(lines)
+	if len(lines) > maxLines {
+		lines = lines[len(lines)-maxLines:]
+	}
+	resp.Lines = lines
+	resp.LinesSource = "exit"
+	resp.LogsUnavailable = false
+	resp.ContainerID = resp.Exit.Container
 }
 
 func (rt *Router) fillBuildLines(r *http.Request, resp *failureContextResponse, attemptID string, maxLines int) {

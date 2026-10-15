@@ -25,6 +25,8 @@ const (
 	deployMaxConcurrentEnv      = "APP_DEPLOY_MAX_CONCURRENT"
 	pinnedPortRetryEnv          = "APP_DEPLOY_PINNED_PORT_RETRY"
 	defaultPinnedPortRetry      = 5 * time.Minute
+	startWatchEnv               = "APP_DEPLOY_STARTUP_WATCH"
+	defaultStartWatch           = 3 * time.Second
 )
 
 const implicitLoadBalancingEnv = "APP_INGRESS_IMPLICIT_LB"
@@ -85,6 +87,12 @@ func envDurationOr(logger *slog.Logger, name string, def time.Duration) time.Dur
 // previous release running after a cutover; 0 disables the hold.
 func previousReleaseHold(logger *slog.Logger) time.Duration {
 	return envDurationOr(logger, previousReleaseHoldEnv, defaultPreviousReleaseHold)
+}
+
+// startupWatch is how long a release with nothing to probe must keep
+// running before it takes traffic; 0 disables the watch.
+func startupWatch(logger *slog.Logger) time.Duration {
+	return envDurationOr(logger, startWatchEnv, defaultStartWatch)
 }
 
 // startHeldDeployReleaser replays deploys held by freeze windows once the

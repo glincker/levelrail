@@ -25,6 +25,10 @@ class StubEventSource {
     // no-op: nothing to assert on close for these tests
   }
 
+  addEventListener(): void {
+    // named status events are covered by LiveLogViewer.test.tsx
+  }
+
   emitOpen(): void {
     this.onopen?.()
   }
@@ -34,7 +38,10 @@ class StubEventSource {
   }
 }
 
-function logEvent(line: string, stream: 'stdout' | 'stderr' = 'stdout'): string {
+function logEvent(
+  line: string,
+  stream: 'stdout' | 'stderr' = 'stdout',
+): string {
   return JSON.stringify({ line, stream })
 }
 
