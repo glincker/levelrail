@@ -81,6 +81,9 @@ type ProxyRoute struct {
 	// Upstream, if non-nil, shapes a standalone domain's single backend.
 	// Ignored when LB is set.
 	Upstream *UpstreamOptions
+	// Maintenance, if non-nil, serves the maintenance page to every request
+	// outside its bypass list, ahead of every other control.
+	Maintenance *MaintenanceGate
 }
 
 // ErrorPage is one status-code-to-body mapping for a domain
@@ -266,6 +269,7 @@ type MaintenanceRoute struct {
 	// a valid certificate, an operator flips this on and off far more
 	// often than they'd want to also manage TLS for.
 	Hosts []string
+	Page  MaintenancePage
 }
 
 // RedirectRoute is one domain currently configured to redirect to an
@@ -605,6 +609,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		// Traffic controls, front side: redirects, geo and headers run first.
 		handle = r.Policy.wrapFront(handle)
+		if r.Maintenance != nil {
+			handle = r.Maintenance.wrap(handle)
+		}
 		if opts.RequestStats {
 			handle = append([]any{NewRequestStatsHandler(r.Hosts[0])}, handle...)
 		}
@@ -637,7 +644,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: []any{NewMaintenanceResponseHandler()},
+			Handle: []any{NewMaintenancePageHandler(r.Page)},
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

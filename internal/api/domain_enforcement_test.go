@@ -113,3 +113,14 @@ func TestListDomains_EmbeddedIngressEnforcesEverything(t *testing.T) {
 		}
 	}
 }
+
+// stripLevelrailEnforcement checks an embedded-ingress row reports every
+// control enforced, then drops the block so older struct comparisons hold.
+func stripLevelrailEnforcement(t *testing.T, row domainResource) domainResource {
+	t.Helper()
+	if row.Enforcement == nil || row.Enforcement.Mode != enforcementLevelrail || !row.Enforcement.Maintenance {
+		t.Errorf("%s enforcement = %+v, want levelrail", row.Domain, row.Enforcement)
+	}
+	row.Enforcement = nil
+	return row
+}

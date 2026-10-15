@@ -67,4 +67,5 @@ levelrail-cli maintenance delete mw_0123456789abcdef
 
 - The banner is shown to everyone who can open the dashboard, labelled with its scope. It is not filtered per user.
 - A cancelled window is removed, not kept in history.
+- Putting a domain into [maintenance mode](/domains-and-ingress#maintenance-mode) with an end time creates a window for it. The domain stays in maintenance exactly as long as that window: when it ends, or you cancel it here, the domain's maintenance page goes away too.
 - The lead-time notice is sent once. If no channel accepts it, it is retried every minute until the window ends.

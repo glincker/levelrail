@@ -54,7 +54,9 @@
   },
   "domainBanner": {
     "title": "Maintenance mode is on for {{domain}}",
+    "titleNotEnforced": "Maintenance is saved for {{domain}} but not enforced",
     "body": "Visitors see the maintenance page. The app keeps running and nothing was stopped.",
+    "bodyNotEnforced": "Visitors may still reach the app: the proxy in front of this domain is not proven to send its traffic to the built-in ingress. Open Manage for details.",
     "manage": "Manage",
     "end": "End maintenance",
     "ending": "Ending...",

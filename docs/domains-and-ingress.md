@@ -546,6 +546,32 @@ GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/waf
 
 </Accordion>
 
+## Maintenance mode
+
+While a domain is in maintenance, the ingress answers `503` with a small page instead of proxying to the app. The container keeps running.
+
+| Setting | Meaning |
+| --- | --- |
+| `title`, `message` | Page text, plain text only (HTML is shown as written), up to 120 and 2000 characters. Empty uses the default page. The page follows the visitor's light or dark preference. |
+| `retry_after_seconds` | Sent as `Retry-After`, 1 to 86400. Default 300. |
+| `until` | RFC 3339 end time. Creates a linked [scheduled maintenance](/scheduled-maintenance) window (app scope, no deploy freeze), so the dashboard banner and the public status page show it. When the window ends, or is cancelled, maintenance ends on its own within a minute and an audit entry `domain_maintenance.ended` is written. |
+| `bypass` | Up to 32 IP addresses or CIDRs whose clients still reach the app, for example your office, so you can check the site while it is down. Matched on the client address after trusted proxy headers. `0.0.0.0/0` is refused. |
+| `bypass_health_check` | Default on. When the app has an HTTP readiness path, requests to exactly that path still reach the app, so uptime probes are not answered with `503`. |
+
+Bypassed requests go through the domain's normal route, so basic auth, the auth gate and the WAF still apply to them. When the app has no running container, every request gets the page.
+
+```bash
+levelrail-cli domains maintenance set web app.example.com \
+  --title "Upgrading the database" --message "Back in about 30 minutes." \
+  --for 45m --retry-after 10m --bypass 203.0.113.7,10.0.0.0/8
+levelrail-cli domains maintenance get web app.example.com
+levelrail-cli domains maintenance clear web app.example.com   # also cancels the linked window
+```
+
+The API is `PUT /api/v1/apps/{name}/domains/{domain}/maintenance` with an optional JSON body of the fields above; an empty body keeps the default page. Running `set` again replaces the settings. On the dashboard, open the app's **Domains** tab and choose **Page and schedule** next to the maintenance toggle.
+
+Behind another reverse proxy, maintenance applies only when that proxy is proven to forward to the ingress; otherwise the dashboard shows it as **Saved, not enforced**. See [traffic controls behind a proxy](/behind-an-existing-proxy#traffic-controls-behind-a-proxy).
+
 ## Domain redirects
 
 For force HTTPS, www and apex presets, aliases and other per-domain controls (headers, path forwarders, country rules, caching), see [Domain traffic controls](/domain-traffic-controls).

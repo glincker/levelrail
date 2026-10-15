@@ -691,6 +691,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain maintenance: %w", err)
 	}
+	maintenanceSettings, err := c.domainMaintenanceSettings(ctx, time.Now())
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: list domain maintenance settings: %w", err)
+	}
 	tlsCertOverrides, err := c.domainTLSCertOverrides(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain tls certs: %w", err)
@@ -799,12 +803,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		// real backend to dial. Only the remaining, non-maintenance
 		// hosts still go through the ordinary dial-required path below.
 		maintenanceHosts, remainingHosts := splitMaintenanceHosts(hosts, maintenanceByDomain)
-		if len(maintenanceHosts) > 0 {
-			for _, host := range maintenanceHosts {
-				claimedHosts[host] = svc.Name
-			}
-			maintenanceRoutes = append(maintenanceRoutes, ingress.MaintenanceRoute{Hosts: maintenanceHosts})
+		plainMaintenance, gatedMaintenance := splitMaintenanceBypass(svc, maintenanceHosts, maintenanceSettings)
+		for _, host := range maintenanceHosts {
+			claimedHosts[host] = svc.Name
 		}
+		maintenanceRoutes = append(maintenanceRoutes, maintenancePages(plainMaintenance, maintenanceSettings)...)
 
 		// A redirect, like maintenance mode, needs no running backend:
 		// checked second, after maintenance, so a domain with both
@@ -828,15 +831,18 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			})
 		}
 		activeHosts := excludeRedirectedHosts(remainingHosts, redirectByDomain)
-		if len(activeHosts) == 0 {
+		if len(activeHosts) == 0 && len(gatedMaintenance) == 0 {
 			continue
 		}
 
 		if sleeping[svc.Name] && svc.Suspended {
-			for _, host := range activeHosts {
-				claimedHosts[host] = svc.Name
+			maintenanceRoutes = append(maintenanceRoutes, maintenancePages(gatedMaintenance, maintenanceSettings)...)
+			if len(activeHosts) > 0 {
+				for _, host := range activeHosts {
+					claimedHosts[host] = svc.Name
+				}
+				wakeRoutes = append(wakeRoutes, c.wakeRoute(svc.Name, activeHosts))
 			}
-			wakeRoutes = append(wakeRoutes, c.wakeRoute(svc.Name, activeHosts))
 			continue
 		}
 
@@ -858,6 +864,8 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			dial, ok = c.dialForService(ctx, svc, readyByService[svc.Name])
 		}
 		if !ok {
+			// No backend to bypass to: the gated hosts still get the page.
+			maintenanceRoutes = append(maintenanceRoutes, maintenancePages(gatedMaintenance, maintenanceSettings)...)
 			if len(configuredHosts) > 0 {
 				var held []string
 				for _, host := range activeHosts {
@@ -880,6 +888,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 			c.holds.Routed(host, now)
 		}
 		svcRoutes := c.routesForService(ctx, activeHosts, dial, authByDomain, wafByDomain, errorPagesByDomain, hiddenByDomain)
+		gatedRoutes, fallback := c.gatedMaintenanceRoutes(ctx, svc, gatedMaintenance, dial, maintenanceSettings, domainFeatures{
+			auth: authByDomain, waf: wafByDomain, errorPages: errorPagesByDomain, hidden: hiddenByDomain,
+		})
+		maintenanceRoutes = append(maintenanceRoutes, maintenancePages(fallback, maintenanceSettings)...)
+		svcRoutes = append(svcRoutes, gatedRoutes...)
 		for i := range svcRoutes {
 			svcRoutes[i].LB = lb
 		}
@@ -889,6 +902,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	standalonePlan, err := c.standaloneRoutes(ctx, services, readyByService, claimedHosts, domainFeatures{
 		auth: authByDomain, maintenance: maintenanceByDomain, redirects: redirectByDomain,
 		waf: wafByDomain, errorPages: errorPagesByDomain, hidden: hiddenByDomain,
+		maintenanceSettings: maintenanceSettings,
 	})
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list standalone domains: %w", err)
