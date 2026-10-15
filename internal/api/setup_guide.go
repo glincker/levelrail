@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -162,6 +163,7 @@ func (rt *Router) collectSetupGuideInput(r *http.Request) setupguide.Input {
 	}
 
 	rt.collectSetupGuideSecurity(r, &in, unavailable)
+	rt.collectSetupGuideSignInRecovery(r.Context(), &in)
 	rt.collectSetupGuideSource(ctx, &in)
 	rt.collectSetupGuideTraffic(ctx, &in, fail)
 	rt.collectSetupGuideOps(ctx, &in, fail, unavailable)
@@ -185,6 +187,27 @@ func (rt *Router) collectSetupGuideSecurity(r *http.Request, in *setupguide.Inpu
 	for _, id := range candidates {
 		if rt.userHasSecondFactor(ctx, id) {
 			in.SecuredAdmin = true
+			return
+		}
+	}
+}
+
+// collectSetupGuideSignInRecovery marks the sign-in recovery step satisfied
+// when the server can send email or a live token can approve a new browser.
+func (rt *Router) collectSetupGuideSignInRecovery(ctx context.Context, in *setupguide.Input) {
+	in.EmailConfigured = rt.emailSender != nil
+	tokens, err := rt.tokens.ListAPITokens(ctx)
+	if err != nil {
+		rt.logger.Warn("api: setup guide: list tokens failed", slog.String("error", err.Error()))
+		return
+	}
+	now := time.Now()
+	for _, t := range tokens {
+		if t.RevokedAt != nil || (t.ExpiresAt != nil && t.ExpiresAt.Before(now)) {
+			continue
+		}
+		if slices.Contains(t.Abilities, AbilitySignInApprove) {
+			in.SignInApprover = true
 			return
 		}
 	}

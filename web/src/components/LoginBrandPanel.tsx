@@ -378,15 +378,19 @@ export function LoginBrandPanel({ name }: { name: string }) {
                   />
                   {slide.eyebrow}
                 </p>
-                <Display as="h2" size="page" className="max-w-lg text-white">
+                <Display
+                  as="h2"
+                  size="page"
+                  className="max-w-xl text-[clamp(2.25rem,3.6vw,3.5rem)] leading-[1.05] font-light tracking-[-0.025em] text-white"
+                >
                   {slide.headline}
                 </Display>
               </div>
-              <ul className="max-w-md space-y-3">
+              <ul className="max-w-md space-y-2.5">
                 {slide.points.map((point) => (
                   <li
                     key={point}
-                    className="grid grid-cols-[1rem_1fr] gap-3 text-sm"
+                    className="grid grid-cols-[1rem_1fr] gap-3 text-base"
                   >
                     <CheckIcon
                       weight="bold"

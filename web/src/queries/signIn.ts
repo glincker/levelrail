@@ -100,10 +100,11 @@ export function loginOptionsQueryOptions() {
   return queryOptions({
     queryKey: signInKeys.options,
     queryFn: () =>
-      send<{ code_login: boolean; trusted_device_days: number }>(
-        'GET',
-        '/api/v1/auth/login-options',
-      ),
+      send<{
+        code_login: boolean
+        trusted_device_days: number
+        email_configured: boolean
+      }>('GET', '/api/v1/auth/login-options'),
     staleTime: 60_000,
   })
 }

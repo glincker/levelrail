@@ -76,7 +76,7 @@ func TestDeriveBlockingAndNext(t *testing.T) {
 	}
 
 	g = Derive(Input{
-		SecuredAdmin: true, DashboardURL: "https://d.example.com", Apps: 1,
+		SecuredAdmin: true, EmailConfigured: true, DashboardURL: "https://d.example.com", Apps: 1,
 		Domains: []DomainTLS{{Name: "a.example.com", CertHealthy: true}}, ACMEEnabled: true,
 		BackupTargets: 1, ControlPlaneBackups: 1,
 	})
@@ -96,21 +96,21 @@ func TestDeriveReadyPercent(t *testing.T) {
 		wantComplete bool
 	}{
 		{"fresh", Input{}, 0, false},
-		{"proxy mode drops tls from the denominator", Input{BehindProxy: true, SecuredAdmin: true}, 12, false},
+		{"proxy mode drops tls from the denominator", Input{BehindProxy: true, SecuredAdmin: true}, 11, false},
 		{"all required done, optional todo", Input{
-			SecuredAdmin: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
+			SecuredAdmin: true, EmailConfigured: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
 			Domains:       []DomainTLS{{Name: "a.example.com", CertHealthy: true}},
 			BackupTargets: 1, ControlPlaneBackups: 1, VerifiedBackups: 1, Channels: 1, AlertRules: 1,
 		}, 100, false},
 		{"everything resolved", Input{
-			SecuredAdmin: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
+			SecuredAdmin: true, SignInApprover: true, DashboardURL: "https://d.example.com", Apps: 1, ACMEEnabled: true,
 			Domains:       []DomainTLS{{Name: "a.example.com", CertHealthy: true}},
 			BackupTargets: 1, ControlPlaneBackups: 1, VerifiedBackups: 1, Channels: 1, AlertRules: 1,
 			GitConnected: true, DNSProviderConnected: true, Users: 2, AutomaticUpgrades: true,
 		}, 100, true},
 		{"skipped required step does not count as ready", Input{
 			SecuredAdmin: true, Overrides: map[StepID]string{StepFirstApp: OverrideSkipped},
-		}, 11, false},
+		}, 10, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -130,5 +130,24 @@ func TestValidStepCoversCatalog(t *testing.T) {
 	}
 	if ValidStep("nope") {
 		t.Fatal("ValidStep(nope) = true")
+	}
+}
+
+func TestDeriveSignInRecovery(t *testing.T) {
+	tests := []struct {
+		name string
+		in   Input
+		want State
+	}{
+		{"nothing set up", Input{}, StateTodo},
+		{"email can be sent", Input{EmailConfigured: true}, StateDone},
+		{"a token can approve", Input{SignInApprover: true}, StateDone},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := stateOf(t, Derive(tt.in), StepSignInRecovery).State; got != tt.want {
+				t.Fatalf("state = %s, want %s", got, tt.want)
+			}
+		})
 	}
 }

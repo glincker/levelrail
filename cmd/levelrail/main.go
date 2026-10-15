@@ -357,6 +357,13 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "approve-signin" {
+		if err := runApproveSignIn(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
+			logger.Error("approve-signin failed", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "emergency-token" {
 		if err := runEmergencyToken(context.Background(), logger, os.Args[2:], os.Stdout, openStore); err != nil {
 			logger.Error("emergency-token failed", slog.String("error", err.Error()))

@@ -1186,7 +1186,16 @@
       "devices": "Trusted devices",
       "devicesEmpty": "No trusted devices.",
       "deviceRemove": "Remove",
-      "deviceRemoved": "Trusted device removed"
+      "deviceRemoved": "Trusted device removed",
+      "canApprove": "Can approve sign-ins",
+      "signedInAt": "Signed in {{when}}",
+      "networks_one": "{{count}} network",
+      "networks_other": "{{count}} networks",
+      "tone": {
+        "live": "Active now",
+        "recent": "Active in the last hour",
+        "idle": "Idle"
+      }
     },
     "providers": {
       "title": "Linked sign-in providers",

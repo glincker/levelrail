@@ -231,6 +231,14 @@ export function SignInFlow({
         onUseCode={() => {
           setStep({ kind: 'code' })
         }}
+        onApproval={(a) => {
+          setStep({
+            kind: 'approval',
+            id: a.approval_id,
+            expiresAt: a.approval_expires_at,
+            match: a.approval_match,
+          })
+        }}
       />
       {codeLink}
       <Button

@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Brand } from '../types/brand'
@@ -138,7 +139,15 @@ describe('LoginScreen', () => {
     mockFetch(false)
     renderScreen()
     expect(await findTitle('Sign in')).toBeInTheDocument()
-    expect(screen.getByText('sudo testbin recover-admin')).toBeInTheDocument()
+    expect(screen.queryByText(/recover-admin/)).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', { name: /Locked out\?|lockedOut\.link/ }),
+    )
+    expect(
+      await screen.findByText(
+        'sudo testbin recover-admin --username <your username>',
+      ),
+    ).toBeInTheDocument()
     const link = screen.getByRole('link', {
       name: /Emergency access|emergencyDocs/,
     })
