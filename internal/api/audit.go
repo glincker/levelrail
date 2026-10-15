@@ -157,6 +157,11 @@ type auditLogEntryResource struct {
 	Action string `json:"action,omitempty"`
 	// OnBehalfOf is the human principal an AI assistant turn acted for.
 	OnBehalfOf string `json:"on_behalf_of,omitempty"`
+	// Seq and EntryHash are the hash chain position, absent for rows
+	// written before the chain existed.
+	Seq       int64  `json:"seq,omitempty"`
+	PrevHash  string `json:"prev_hash,omitempty"`
+	EntryHash string `json:"entry_hash,omitempty"`
 }
 
 func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
@@ -173,6 +178,7 @@ func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
 		CreatedAt:  e.CreatedAt,
 		ClientKind: e.ClientKind,
 		AgentName:  e.AgentName, AgentClient: e.AgentClient, Action: e.Action, OnBehalfOf: e.OnBehalfOf,
+		Seq: e.Seq, PrevHash: e.PrevHash, EntryHash: e.EntryHash,
 	}
 }
 

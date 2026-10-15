@@ -823,6 +823,7 @@ func run(logger *slog.Logger) error {
 	setupLogArchive(ctx, logger, db, telemetryDB, secretsManager, apiRouter)
 	setupDataExport(ctx, logger, b, db, telemetryDB, secretsManager, logBroadcaster, apiRouter)
 	setupEventWebhooks(ctx, logger, b, db, secretsManager, apiRouter)
+	setupAuditStream(ctx, logger, b, db, secretsManager, apiRouter)
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)

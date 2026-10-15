@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1140 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1148 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -271,6 +271,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/audit-log", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleListAuditLog", Description: "Audit log (audit.go): who did what, across every session and API token, docs/comparison.md's own \"no audit log exists anywhere in the codebase\" gap. AbilityRoot, the same tier as the node and GitHub App routes above: this is operational data about every other identity on this control plane, not an ordinary per-app read."},
 	{Method: "GET", Path: "/api/v1/audit-log/export", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleExportAuditLog", Description: ""},
 	{Method: "POST", Path: "/api/v1/audit-log/purge", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handlePurgeAuditLog", Description: "Manual retention purge (audit_retention.go): runs the same operator-configured retention window PurgeOldAuditEntries' own periodic sweep uses, on demand instead of waiting for its next tick. AbilityRoot, matching the read route above: clearing audit history is at least as sensitive as reading it."},
+	{Method: "GET", Path: "/api/v1/audit-log/verify", Ability: "AbilityRoot", Group: "Audit Log / Log Drain", Handler: "handleVerifyAuditChain", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/2fa", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: "Two-factor auth (twofactor.go). /2fa/verify is necessarily public (it's step two of login, before a session exists), rate-limited by rt.mfaVerify instead of a session/ability check. Every other route here acts on the caller's own account, so requireAuth (session-only, matching handleChangePassword's own reasoning)."},
 	{Method: "POST", Path: "/api/v1/auth/2fa/confirm", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/2fa/disable", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
@@ -671,6 +672,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps-summary", Ability: "AbilityRead", Group: "Other", Handler: "handleAppsSummary", Description: ""},
 	{Method: "POST", Path: "/api/v1/attention/dismiss", Ability: "Session", Group: "Other", Handler: "handleAttentionDismiss", Description: ""},
 	{Method: "GET", Path: "/api/v1/attention/feed", Ability: "AbilityRead", Group: "Other", Handler: "handleAttentionFeed", Description: ""},
+	{Method: "GET", Path: "/api/v1/audit-sinks", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAuditSinks", Description: ""},
+	{Method: "POST", Path: "/api/v1/audit-sinks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAuditSink", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/audit-sinks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteAuditSink", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/audit-sinks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateAuditSink", Description: ""},
+	{Method: "GET", Path: "/api/v1/audit-sinks/{id}/deliveries", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAuditSinkDeliveries", Description: ""},
+	{Method: "POST", Path: "/api/v1/audit-sinks/{id}/rotate-secret", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotateAuditSinkSecret", Description: ""},
+	{Method: "POST", Path: "/api/v1/audit-sinks/{id}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestAuditSink", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/build-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuildCache", Description: ""},
 	{Method: "PUT", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetBuildCache", Description: ""},
