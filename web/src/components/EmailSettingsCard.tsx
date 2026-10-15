@@ -3,7 +3,6 @@ import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
-import { z } from 'zod'
 import {
   EnvelopeIcon,
   PaperPlaneTiltIcon,
@@ -80,119 +79,13 @@ const SMTP_PRESETS = [
 ] as const
 
 // Mirrors validateEmailSettingsRequest (internal/api/email_settings.go):
-// structural fields required per backend, credentials always optional
-// (blank means "leave whatever is stored alone").
-const emailSettingsSchema = z
-  .object({
-    backend: z.enum(['', 'smtp', 'ses', 'resend']),
-    smtpHost: z.string().trim(),
-    smtpPort: z.coerce.number().int().min(0).max(65535),
-    smtpUsername: z.string().trim(),
-    smtpFrom: z.string().trim(),
-    smtpPassword: z.string(),
-    sesRegion: z.string().trim(),
-    sesAccessKeyId: z.string().trim(),
-    sesFrom: z.string().trim(),
-    sesSecretAccessKey: z.string(),
-    resendFrom: z.string().trim(),
-    resendApiKey: z.string(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.backend === 'smtp') {
-      if (!data.smtpHost) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Host is required',
-          path: ['smtpHost'],
-        })
-      }
-      if (!data.smtpFrom) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'From address is required',
-          path: ['smtpFrom'],
-        })
-      }
-      if (!data.smtpPort) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Port is required',
-          path: ['smtpPort'],
-        })
-      }
-    }
-    if (data.backend === 'ses') {
-      if (!data.sesRegion) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Region is required',
-          path: ['sesRegion'],
-        })
-      }
-      if (!data.sesFrom) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'From address is required',
-          path: ['sesFrom'],
-        })
-      }
-      if (!data.sesAccessKeyId) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Access key ID is required',
-          path: ['sesAccessKeyId'],
-        })
-      }
-    }
-    if (data.backend === 'resend' && !data.resendFrom) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'From address is required',
-        path: ['resendFrom'],
-      })
-    }
-  })
-
-// z.coerce.number() (smtpPort) has a wider input type than output type,
-// so the field-value type and post-validation submit type are declared
-// separately, the same split CreateAlertRuleDialog's own comment
-// explains for its threshold field.
-type EmailSettingsFormInput = z.input<typeof emailSettingsSchema>
-type EmailSettingsFormOutput = z.output<typeof emailSettingsSchema>
-
-function toFieldValues(s: EmailSettings): EmailSettingsFormInput {
-  return {
-    backend: s.backend,
-    smtpHost: s.smtp_host ?? '',
-    smtpPort: s.smtp_port ?? 0,
-    smtpUsername: s.smtp_username ?? '',
-    smtpFrom: s.smtp_from ?? '',
-    smtpPassword: '',
-    sesRegion: s.ses_region ?? '',
-    sesAccessKeyId: s.ses_access_key_id ?? '',
-    sesFrom: s.ses_from ?? '',
-    sesSecretAccessKey: '',
-    resendFrom: s.resend_from ?? '',
-    resendApiKey: '',
-  }
-}
-
-function toEmailSettings(v: EmailSettingsFormOutput): EmailSettings {
-  return {
-    backend: v.backend,
-    smtp_host: v.smtpHost,
-    smtp_port: v.smtpPort,
-    smtp_username: v.smtpUsername,
-    smtp_from: v.smtpFrom,
-    smtp_password: v.smtpPassword,
-    ses_region: v.sesRegion,
-    ses_access_key_id: v.sesAccessKeyId,
-    ses_from: v.sesFrom,
-    ses_secret_access_key: v.sesSecretAccessKey,
-    resend_from: v.resendFrom,
-    resend_api_key: v.resendApiKey,
-  }
-}
+import {
+  emailSettingsSchema,
+  toEmailSettings,
+  toFieldValues,
+  type EmailSettingsFormInput,
+  type EmailSettingsFormOutput,
+} from './EmailSettingsSchema'
 
 // Platform-wide email backend (SMTP, AWS SES, or Resend): GET/PUT
 // /api/v1/settings/email. Used by both internal/alerting's
@@ -327,7 +220,11 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.smtpHost ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="smtp-host">
                           {t('email.smtp.host')}
                         </FieldLabel>
@@ -335,10 +232,15 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="smtp-host"
                           {...register('smtpHost')}
                           placeholder="smtp.example.com"
+                          aria-invalid={!!formState.errors.smtpHost}
                         />
                         <FieldError errors={[formState.errors.smtpHost]} />
                       </Field>
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.smtpPort ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="smtp-port">
                           {t('email.smtp.port')}
                         </FieldLabel>
@@ -347,19 +249,29 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           type="number"
                           {...register('smtpPort')}
                           placeholder="587"
+                          aria-invalid={!!formState.errors.smtpPort}
                         />
                         <FieldError errors={[formState.errors.smtpPort]} />
                       </Field>
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.smtpUsername ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="smtp-username">
                           {t('email.smtp.username')}
                         </FieldLabel>
                         <Input
                           id="smtp-username"
                           {...register('smtpUsername')}
+                          aria-invalid={!!formState.errors.smtpUsername}
                         />
                       </Field>
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.smtpFrom ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="smtp-from">
                           {t('email.smtp.from')}
                         </FieldLabel>
@@ -367,11 +279,16 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="smtp-from"
                           {...register('smtpFrom')}
                           placeholder="no-reply@example.com"
+                          aria-invalid={!!formState.errors.smtpFrom}
                         />
                         <FieldError errors={[formState.errors.smtpFrom]} />
                       </Field>
                     </div>
-                    <Field>
+                    <Field
+                      data-invalid={
+                        formState.errors.smtpPassword ? true : undefined
+                      }
+                    >
                       <FieldLabel htmlFor="smtp-password">
                         {t('email.smtp.password')}
                       </FieldLabel>
@@ -379,6 +296,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                         id="smtp-password"
                         type="password"
                         {...register('smtpPassword')}
+                        aria-invalid={!!formState.errors.smtpPassword}
                       />
                       <FieldDescription>
                         {settings.smtp_password_set
@@ -394,7 +312,11 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       {t('email.ses.label')}
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.sesRegion ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="ses-region">
                           {t('email.ses.region')}
                         </FieldLabel>
@@ -402,22 +324,32 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="ses-region"
                           {...register('sesRegion')}
                           placeholder="us-east-1"
+                          aria-invalid={!!formState.errors.sesRegion}
                         />
                         <FieldError errors={[formState.errors.sesRegion]} />
                       </Field>
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.sesAccessKeyId ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="ses-access-key-id">
                           {t('email.ses.accessKeyId')}
                         </FieldLabel>
                         <Input
                           id="ses-access-key-id"
                           {...register('sesAccessKeyId')}
+                          aria-invalid={!!formState.errors.sesAccessKeyId}
                         />
                         <FieldError
                           errors={[formState.errors.sesAccessKeyId]}
                         />
                       </Field>
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.sesFrom ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="ses-from">
                           {t('email.ses.from')}
                         </FieldLabel>
@@ -425,11 +357,16 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="ses-from"
                           {...register('sesFrom')}
                           placeholder="no-reply@example.com"
+                          aria-invalid={!!formState.errors.sesFrom}
                         />
                         <FieldError errors={[formState.errors.sesFrom]} />
                       </Field>
                     </div>
-                    <Field>
+                    <Field
+                      data-invalid={
+                        formState.errors.sesSecretAccessKey ? true : undefined
+                      }
+                    >
                       <FieldLabel htmlFor="ses-secret-access-key">
                         {t('email.ses.secretAccessKey')}
                       </FieldLabel>
@@ -437,6 +374,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                         id="ses-secret-access-key"
                         type="password"
                         {...register('sesSecretAccessKey')}
+                        aria-invalid={!!formState.errors.sesSecretAccessKey}
                       />
                       <FieldDescription>
                         {settings.ses_secret_access_key_set
@@ -452,7 +390,11 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                       {t('email.resend.label')}
                     </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.resendFrom ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="resend-from">
                           {t('email.resend.from')}
                         </FieldLabel>
@@ -460,10 +402,15 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="resend-from"
                           {...register('resendFrom')}
                           placeholder="no-reply@example.com"
+                          aria-invalid={!!formState.errors.resendFrom}
                         />
                         <FieldError errors={[formState.errors.resendFrom]} />
                       </Field>
-                      <Field>
+                      <Field
+                        data-invalid={
+                          formState.errors.resendApiKey ? true : undefined
+                        }
+                      >
                         <FieldLabel htmlFor="resend-api-key">
                           {t('email.resend.apiKey')}
                         </FieldLabel>
@@ -471,6 +418,7 @@ export function EmailSettingsCard({ settings }: { settings: EmailSettings }) {
                           id="resend-api-key"
                           type="password"
                           {...register('resendApiKey')}
+                          aria-invalid={!!formState.errors.resendApiKey}
                         />
                         <FieldDescription>
                           {settings.resend_api_key_set

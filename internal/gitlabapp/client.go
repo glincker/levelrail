@@ -30,7 +30,10 @@ type Client struct {
 // NewClient returns a Client with a bounded per-request timeout, the
 // same reasoning internal/githubapp.NewClient's own doc comment gives.
 func NewClient() *Client {
-	return &Client{HTTP: &http.Client{Timeout: 20 * time.Second}}
+	// Use an SSRF-guarded client to ensure user-supplied instance URLs
+	// cannot be used to dial internal services or cloud metadata.
+	client := gitprovider.NewGuardedClient()
+	return &Client{HTTP: client}
 }
 
 // apiError is gitlabapp's own name for the shared gitprovider.APIError,
