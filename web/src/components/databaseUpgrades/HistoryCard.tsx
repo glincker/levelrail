@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { ClockCounterClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import {
   Card,
@@ -7,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import type { UpgradeRun } from '../../types/databaseUpgrades'
 import { RUN_STEPS, kindVariant, stateVariant } from './upgradeHelpers'
 
@@ -116,7 +118,12 @@ export function HistoryCard({
       <CardContent className="space-y-4">
         {active ? <ActiveRun run={active} /> : null}
         {past.length === 0 && !active ? (
-          <p className="text-sm text-muted-foreground">{t('history.empty')}</p>
+          <EmptyState
+            className="gap-2 border-0 bg-transparent py-4"
+            icon={<ClockCounterClockwiseIcon className="size-5" />}
+            title={t('history.emptyTitle')}
+            description={t('history.empty')}
+          />
         ) : (
           <ul className="divide-y">
             {past.map((run) => (

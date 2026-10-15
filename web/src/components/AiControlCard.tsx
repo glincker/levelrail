@@ -140,16 +140,20 @@ export function AiControlCard({ settings }: { settings: AiControlSettings }) {
             {t('aiControl.envKindsDescription')}
           </p>
           <div className="flex flex-wrap gap-4">
-            {settings.env_kinds.map((kind) => (
-              <label key={kind} className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={kinds.includes(kind)}
-                  onCheckedChange={(checked) => toggleKind(kind, checked)}
-                  disabled={!kindsApply}
-                />
-                {kindLabels[kind] ?? kind}
-              </label>
-            ))}
+            {settings.env_kinds.map((kind) => {
+              const id = `ai-control-kind-${kind}`
+              return (
+                <div key={kind} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    id={id}
+                    checked={kinds.includes(kind)}
+                    onCheckedChange={(checked) => toggleKind(kind, checked)}
+                    disabled={!kindsApply}
+                  />
+                  <label htmlFor={id}>{kindLabels[kind] ?? kind}</label>
+                </div>
+              )
+            })}
           </div>
         </fieldset>
 
