@@ -28,5 +28,12 @@
     "title": "Offline copy",
     "description": "This is the offline copy built into your server, for when you cannot reach the internet. The latest version of this page is on the docs site.",
     "dismiss": "Dismiss"
+  },
+  "toc": {
+    "title": "On this page"
+  },
+  "code": {
+    "copy": "Copy",
+    "copied": "Copied"
   }
 }

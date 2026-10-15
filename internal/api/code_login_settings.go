@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -71,6 +72,18 @@ func (rt *Router) handlePutCodeLoginSettings(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, codeLoginSettingsResource{Admins: s.Admins, Others: s.Others, Saved: true, NewDeviceApproval: rt.newDeviceApproval})
 }
 
+// emailReady is whether this server can really send email now, not just
+// whether a sender object was wired.
+func (rt *Router) emailReady(ctx context.Context) bool {
+	if rt.emailSender == nil {
+		return false
+	}
+	if c, ok := rt.emailSender.(interface{ Configured(context.Context) bool }); ok {
+		return c.Configured(ctx)
+	}
+	return true
+}
+
 // handleLoginOptions handles GET /api/v1/auth/login-options: public, so the
 // sign-in page knows whether to offer codes at all. It says nothing about
 // any one account.
@@ -80,7 +93,7 @@ func (rt *Router) handleLoginOptions(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: login options failed", err)
 		return
 	}
-	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others, EmailConfigured: rt.emailSender != nil}
+	out := loginOptionsResponse{CodeLogin: s.Admins || s.Others, EmailConfigured: rt.emailReady(r.Context())}
 	if rt.newDeviceApproval {
 		out.TrustedDeviceDays = max(1, int(rt.codeLogin.trustTTL.Hours()/24))
 	}

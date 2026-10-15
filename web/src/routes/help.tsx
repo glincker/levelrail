@@ -10,6 +10,7 @@ import {
   QuestionIcon,
   CaretUpIcon,
   CaretDownIcon,
+  ListBulletsIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { HelpSearchBox } from '../components/HelpSearchBox'
 import { DocsOnThisPage } from '../components/DocsOnThisPage'
@@ -86,7 +87,7 @@ function HelpLayout() {
           <DocsOnThisPage
             key={pathname}
             headings={currentPage.headings}
-            className="mt-1 mb-1 ml-2"
+            className="mt-1 mb-1 ml-2 xl:hidden"
           />
         ) : null}
       </li>
@@ -151,7 +152,7 @@ function HelpLayout() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_200px]">
         <nav className="flex flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto">
           <HelpSearchBox manifest={manifest} />
 
@@ -207,6 +208,22 @@ function HelpLayout() {
         <div className="min-w-0 rounded-lg border border-border bg-card p-4 sm:p-6">
           <Outlet />
         </div>
+        {currentPage && currentPage.headings.length > 0 ? (
+          <aside
+            aria-label={tHelp('toc.title')}
+            className="sticky top-4 hidden max-h-[calc(100vh-2rem)] self-start overflow-y-auto xl:block"
+          >
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              <ListBulletsIcon className="size-3.5" aria-hidden="true" />
+              {tHelp('toc.title')}
+            </p>
+            <DocsOnThisPage
+              key={`rail-${pathname}`}
+              headings={currentPage.headings}
+              className="border-l border-border pl-3"
+            />
+          </aside>
+        ) : null}
       </div>
     </div>
   )

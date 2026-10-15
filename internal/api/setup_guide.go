@@ -195,7 +195,7 @@ func (rt *Router) collectSetupGuideSecurity(r *http.Request, in *setupguide.Inpu
 // collectSetupGuideSignInRecovery marks the sign-in recovery step satisfied
 // when the server can send email or a live token can approve a new browser.
 func (rt *Router) collectSetupGuideSignInRecovery(ctx context.Context, in *setupguide.Input) {
-	in.EmailConfigured = rt.emailSender != nil
+	in.EmailConfigured = rt.emailReady(ctx)
 	tokens, err := rt.tokens.ListAPITokens(ctx)
 	if err != nil {
 		rt.logger.Warn("api: setup guide: list tokens failed", slog.String("error", err.Error()))
