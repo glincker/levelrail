@@ -343,7 +343,7 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
                   <TableCell
                     key={c.id}
                     className={cn(
-                      'py-3 whitespace-normal',
+                      'py-3 break-words whitespace-normal',
                       c.align === 'end' && 'text-right',
                       priorityClass(c.priority),
                     )}

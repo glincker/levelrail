@@ -350,7 +350,7 @@ export function DomainTargetCell({ domain }: { domain: Domain }) {
     <Link
       to="/apps/$name"
       params={{ name: domain.service_name }}
-      className="min-w-0 truncate text-sm text-muted-foreground hover:text-foreground hover:underline"
+      className="block min-w-0 truncate text-sm text-muted-foreground hover:text-foreground hover:underline"
     >
       {domain.service_name}
     </Link>
