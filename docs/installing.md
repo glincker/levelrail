@@ -273,6 +273,8 @@ Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control 
 
 **Signed releases only, once verified.** The first time a release signature verifies on a host (by `install.sh`, `levelrail self-upgrade`, or the dashboard upgrade), a root-owned marker is written to `<data dir>/release-signature.pin`. From then on `auto` behaves like `require`: a release with no signature bundle, or a host with no cosign, is refused instead of falling back to checksum only. This closes the downgrade where an attacker who controls a release strips its signature, since `checksums.txt` comes from the same release as the binary. A fresh install, or an install of a release cut before signing, behaves as before until the first signature verifies.
 
+`levelrail self-upgrade` and the dashboard upgrade verify the signature in process and need no `cosign` binary. Only `install.sh` still uses `cosign`. The Sigstore trust metadata is cached under `<data dir>/sigstore-tuf`, and a host that cannot reach it falls back to checksum only until it is pinned.
+
 Until the pin exists, `levelrail-cli doctor` and Settings > Updates show **not signature verified** as a warning. To fix it, install cosign and upgrade once:
 
 ```bash

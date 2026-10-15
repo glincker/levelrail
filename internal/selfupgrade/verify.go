@@ -96,7 +96,10 @@ type Signer struct {
 	Pinned bool
 	// OnVerified runs after a successful verification, to write the pin.
 	OnVerified func()
-	// Run executes the verifier; nil uses os/exec. Tests inject a fake.
+	// TUFCacheDir keeps Sigstore trust metadata between runs; empty uses the default.
+	TUFCacheDir string
+	// Run executes an external cosign; when it and CosignPath are both unset
+	// the signature is verified in process.
 	Run func(ctx context.Context, name string, args ...string) ([]byte, error)
 }
 
@@ -129,6 +132,9 @@ func (s Signer) Verify(ctx context.Context, checksumsPath, bundlePath string) (s
 	if bundlePath == "" {
 		return s.unavailable("release publishes no signature bundle")
 	}
+	if s.Run == nil && s.CosignPath == "" {
+		return s.verifyInProcess(checksumsPath, bundlePath)
+	}
 	bin := s.CosignPath
 	if bin == "" {
 		bin = "cosign"
@@ -152,4 +158,18 @@ func (s Signer) Verify(ctx context.Context, checksumsPath, bundlePath string) (s
 		s.OnVerified()
 	}
 	return "cosign keyless signature verified", nil
+}
+
+func (s Signer) verifyInProcess(checksumsPath, bundlePath string) (string, error) {
+	err := verifyBundle(checksumsPath, bundlePath, s.IdentityRegexp, s.Issuer, s.TUFCacheDir)
+	switch {
+	case errors.Is(err, errTrustRoot):
+		return s.unavailable("the Sigstore trust root could not be loaded")
+	case err != nil:
+		return "", fmt.Errorf("%w: %s", ErrSignatureInvalid, err)
+	}
+	if s.OnVerified != nil {
+		s.OnVerified()
+	}
+	return "sigstore keyless signature verified", nil
 }
