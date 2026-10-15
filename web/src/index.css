@@ -452,3 +452,18 @@ body {
   --glinr-section-pad: var(--glinr-section-pad-comfortable);
   --glinr-banner-pad: var(--glinr-banner-pad-comfortable);
 }
+
+/* Page width: PageTemplate reads these two tokens, so one attribute retunes every page. */
+:root,
+:root[data-width='comfortable'] {
+  --glinr-content-max: 72rem;
+  --glinr-content-max-wide: 96rem;
+}
+:root[data-width='wide'] {
+  --glinr-content-max: 80rem;
+  --glinr-content-max-wide: 120rem;
+}
+:root[data-width='full'] {
+  --glinr-content-max: none;
+  --glinr-content-max-wide: none;
+}

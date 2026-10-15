@@ -529,7 +529,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
       item('logs', 'Logs', '/apps/$name/logs', <ScrollIcon />),
       item(
         'log-pipeline',
-        'Pipeline',
+        'Log pipeline',
         '/apps/$name/log-pipeline',
         <FunnelIcon />,
       ),

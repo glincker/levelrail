@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { PencilSimpleIcon, ScrollIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +11,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { Progress } from '@/components/ui/progress'
 import {
   Table,
@@ -129,6 +131,7 @@ export function LogVolumeCard() {
             <AlertDescription>{t('loadError')}</AlertDescription>
           </Alert>
         )}
+        {usage.isPending && <TableSkeleton columnCount={7} rowCount={3} />}
         {usage.data && (
           <p className="text-sm text-muted-foreground">
             {usage.data.default_budget_bytes > 0
@@ -139,9 +142,12 @@ export function LogVolumeCard() {
           </p>
         )}
         {usage.data && apps.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            {t('emptyTitle')}. {t('emptyDescription')}
-          </p>
+          <EmptyState
+            compact
+            icon={<ScrollIcon className="size-4" />}
+            title={t('emptyTitle')}
+            description={t('emptyDescription')}
+          />
         )}
         {apps.length > 0 && (
           <Table>

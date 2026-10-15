@@ -206,7 +206,12 @@
     "quickNav": {
       "label": "Quick navigation (hold L)"
     },
-    "newApp": "New app"
+    "newApp": "New app",
+    "pageWidth": {
+      "comfortable": "Comfortable width",
+      "wide": "Wide",
+      "full": "Full width"
+    }
   },
   "cliConsole": {
     "title": "Console",

@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import {
@@ -105,7 +106,9 @@ export function LogPipelinePanel({ app }: { app: string }) {
           <CardTitle>{t('rules.title')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {rules.length === 0 ? (
+          {pipeline.isPending ? (
+            <ListSkeleton rows={2} />
+          ) : rules.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('rules.empty')}</p>
           ) : (
             <ol className="space-y-3">

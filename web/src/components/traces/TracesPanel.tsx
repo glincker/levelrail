@@ -1,9 +1,13 @@
 import { useState } from 'react'
+import { TreeStructureIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Switch } from '@/components/ui/switch'
 import {
   Select,
@@ -14,10 +18,11 @@ import {
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { formatDuration } from '../../lib/traceTree'
-import { useTraces } from '../../queries/traces'
+import { useTraces, useTracing } from '../../queries/traces'
 import { TraceWaterfall } from './TraceWaterfall'
 import { TracingSetupCard } from './TracingSetupCard'
 
+const SETUP_ID = 'tracing-setup'
 const WINDOWS = ['15', '60', '360', '1440'] as const
 
 /** TracesPanel is the app's Traces section: setup, filters, list, waterfall. */
@@ -27,6 +32,8 @@ export function TracesPanel({ app }: { app: string }) {
   const [errorsOnly, setErrorsOnly] = useState(false)
   const [minMs, setMinMs] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
+  const tracing = useTracing(app)
+  const tracingOff = tracing.data ? !tracing.data.enabled : false
   const list = useTraces(app, {
     errorsOnly,
     minMs: Number(minMs) > 0 ? Number(minMs) : 0,
@@ -36,7 +43,9 @@ export function TracesPanel({ app }: { app: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      <TracingSetupCard app={app} />
+      <div id={SETUP_ID}>
+        <TracingSetupCard app={app} />
+      </div>
 
       <Card>
         <CardHeader className="gap-3">
@@ -88,8 +97,30 @@ export function TracesPanel({ app }: { app: string }) {
               </AlertDescription>
             </Alert>
           ) : null}
+          {list.isPending ? <ListSkeleton rows={5} /> : null}
           {list.data && list.data.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('list.empty')}</p>
+            <EmptyState
+              compact
+              icon={<TreeStructureIcon className="size-4" />}
+              title={t('list.emptyTitle')}
+              description={tracingOff ? t('list.emptyOff') : t('list.empty')}
+              action={
+                tracingOff ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      document
+                        .getElementById(SETUP_ID)
+                        ?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                  >
+                    {t('list.emptyAction')}
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : null}
           {list.data && list.data.length > 0 ? (
             <ul className="divide-y divide-border">
@@ -104,7 +135,7 @@ export function TracesPanel({ app }: { app: string }) {
                     }}
                     aria-expanded={selected === tr.trace_id}
                     className={cn(
-                      'grid w-full grid-cols-[minmax(0,1fr)_auto_auto_auto] items-center gap-4 px-2 py-2 text-left text-sm hover:bg-muted/60',
+                      'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-2 py-2 text-left text-sm outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]',
                       selected === tr.trace_id && 'bg-muted/60',
                     )}
                   >
@@ -130,7 +161,10 @@ export function TracesPanel({ app }: { app: string }) {
                         {t('detail.error')} {tr.errors}
                       </Badge>
                     ) : (
-                      <span aria-hidden="true" className="w-12" />
+                      <span
+                        aria-hidden="true"
+                        className="hidden w-12 sm:block"
+                      />
                     )}
                   </button>
                   {selected === tr.trace_id ? (

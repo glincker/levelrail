@@ -208,7 +208,9 @@ function HelpLayout() {
         <div className="min-w-0 rounded-lg border border-border bg-card p-4 sm:p-6">
           <Outlet />
         </div>
-        {currentPage && currentPage.headings.length > 0 ? (
+        {currentPage &&
+        currentRoutePath !== '/' &&
+        currentPage.headings.length > 0 ? (
           <aside
             aria-label={tHelp('toc.title')}
             className="sticky top-4 hidden max-h-[calc(100vh-2rem)] self-start overflow-y-auto xl:block"

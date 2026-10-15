@@ -35,7 +35,10 @@
     "started": "Started",
     "duration": "Duration",
     "spans": "Spans",
-    "errors": "Errors"
+    "errors": "Errors",
+    "emptyTitle": "No traces yet",
+    "emptyOff": "Tracing is off for this app, so nothing is collected. Turn it on to get an ingest key.",
+    "emptyAction": "Set up tracing"
   },
   "detail": {
     "title": "Trace {{id}}",

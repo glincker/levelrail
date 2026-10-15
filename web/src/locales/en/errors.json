@@ -36,7 +36,10 @@
     "lastSeen": "Last seen",
     "regressed": "Regression",
     "release": "Release {{release}}",
-    "deploy": "Deploy {{id}}"
+    "deploy": "Deploy {{id}}",
+    "emptyTitle": "No errors",
+    "emptyOff": "Error tracking is off for this app, so nothing is collected. Turn it on to get a DSN.",
+    "emptyAction": "Set up error tracking"
   },
   "level": {
     "fatal": "Fatal",

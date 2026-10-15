@@ -1,9 +1,13 @@
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import { ListMagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Input } from '@/components/ui/input'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Switch } from '@/components/ui/switch'
 import { useEdgeAccess } from '../../queries/edgeAccess'
 
@@ -63,15 +67,30 @@ export function EdgeAccessPanel({ app }: { app: string }) {
               </AlertDescription>
             </Alert>
           ) : null}
+          {list.isPending ? <ListSkeleton rows={5} /> : null}
           {list.data && list.data.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('list.empty')}</p>
+            <EmptyState
+              compact
+              icon={<ListMagnifyingGlassIcon className="size-4" />}
+              title={t('list.emptyTitle')}
+              description={t('list.empty')}
+              action={
+                <Link
+                  to="/apps/$name/domains"
+                  params={{ name: app }}
+                  className="text-sm underline underline-offset-4"
+                >
+                  {t('list.emptyAction')}
+                </Link>
+              }
+            />
           ) : null}
           {list.data && list.data.length > 0 ? (
             <ul className="divide-y divide-border">
               {list.data.map((r) => (
                 <li
                   key={`${r.time}-${r.request_id}`}
-                  className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-4 px-2 py-2 text-sm"
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 px-2 py-2 text-sm sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]"
                 >
                   <Badge variant={r.status >= 500 ? 'destructive' : 'muted'}>
                     {r.status}
@@ -92,9 +111,14 @@ export function EdgeAccessPanel({ app }: { app: string }) {
                     {Math.round(r.duration_ms)} ms
                   </span>
                   {r.upstream_error ? (
-                    <Badge variant="destructive">{t('list.upstream')}</Badge>
+                    <Badge
+                      variant="destructive"
+                      className="col-span-3 justify-self-start sm:col-span-1"
+                    >
+                      {t('list.upstream')}
+                    </Badge>
                   ) : (
-                    <span aria-hidden="true" className="w-12" />
+                    <span aria-hidden="true" className="hidden w-12 sm:block" />
                   )}
                 </li>
               ))}

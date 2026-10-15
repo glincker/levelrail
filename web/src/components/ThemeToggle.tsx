@@ -11,9 +11,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu'
 import { useTheme, type Theme } from './ThemeProvider'
+import { PAGE_WIDTHS, setPageWidth, usePageWidth } from '@/lib/pageWidth'
 
 const THEMES: { value: Theme; icon: Icon }[] = [
   { value: 'light', icon: SunIcon },
@@ -24,6 +26,7 @@ const THEMES: { value: Theme; icon: Icon }[] = [
 export function ThemeToggle() {
   const { t } = useTranslation()
   const { theme, setTheme } = useTheme()
+  const pageWidth = usePageWidth()
   const Current = THEMES.find((o) => o.value === theme)?.icon ?? MonitorIcon
   const currentLabel = t(`shell.theme.${theme}`)
 
@@ -48,6 +51,13 @@ export function ThemeToggle() {
             <ItemIcon />
             <span className="flex-1">{t(`shell.theme.${value}`)}</span>
             {value === theme ? <CheckIcon aria-hidden="true" /> : null}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        {PAGE_WIDTHS.map((w) => (
+          <DropdownMenuItem key={w} onClick={() => setPageWidth(w)}>
+            <span className="flex-1">{t(`shell.pageWidth.${w}`)}</span>
+            {w === pageWidth ? <CheckIcon aria-hidden="true" /> : null}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

@@ -38,7 +38,7 @@ export function LogRuleRow({
         {t('rules.kind')}
         <select
           value={rule.kind}
-          className="block h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm text-foreground"
+          className="block h-8 w-full rounded-lg border border-input bg-transparent px-2 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring"
           onChange={(e) => {
             onChange({ ...rule, kind: e.target.value as LogRuleKind })
           }}

@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { BugIcon } from '@phosphor-icons/react/dist/ssr'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ListSkeleton } from '@/components/ui/list-skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
@@ -11,12 +15,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { useErrorIssues } from '../../queries/errorTracking'
+import { useErrorIssues, useErrorTracking } from '../../queries/errorTracking'
 import type { ErrorFilters } from '../../queries/errorTracking'
 import type { ErrorStatus } from '../../types/errorTracking'
 import { ErrorIssueDetail } from './ErrorIssueDetail'
 import { ErrorTrackingSetupCard } from './ErrorTrackingSetupCard'
 
+const SETUP_ID = 'error-tracking-setup'
 const STATUSES = ['all', 'open', 'resolved', 'ignored'] as const
 const WINDOWS = ['1', '24', '168', '720'] as const
 
@@ -45,6 +50,8 @@ export function ErrorsPanel({ app }: { app: string }) {
   const [status, setStatus] = useState<ErrorFilters['status']>('open')
   const [windowHours, setWindowHours] = useState<string>('24')
   const [selected, setSelected] = useState<string | null>(null)
+  const tracking = useErrorTracking(app)
+  const trackingOff = tracking.data ? !tracking.data.enabled : false
   const list = useErrorIssues(app, {
     status,
     sinceHours: Number(windowHours),
@@ -53,7 +60,9 @@ export function ErrorsPanel({ app }: { app: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      <ErrorTrackingSetupCard app={app} />
+      <div id={SETUP_ID}>
+        <ErrorTrackingSetupCard app={app} />
+      </div>
 
       <Card>
         <CardHeader className="gap-3">
@@ -111,8 +120,30 @@ export function ErrorsPanel({ app }: { app: string }) {
               </AlertDescription>
             </Alert>
           ) : null}
+          {list.isPending ? <ListSkeleton rows={5} /> : null}
           {list.data && list.data.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t('list.empty')}</p>
+            <EmptyState
+              compact
+              icon={<BugIcon className="size-4" />}
+              title={t('list.emptyTitle')}
+              description={trackingOff ? t('list.emptyOff') : t('list.empty')}
+              action={
+                trackingOff ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      document
+                        .getElementById(SETUP_ID)
+                        ?.scrollIntoView({ behavior: 'smooth' })
+                    }}
+                  >
+                    {t('list.emptyAction')}
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : null}
           {list.data && list.data.length > 0 ? (
             <ul className="divide-y divide-border">
@@ -127,7 +158,7 @@ export function ErrorsPanel({ app }: { app: string }) {
                     }}
                     aria-expanded={selected === issue.fingerprint}
                     className={cn(
-                      'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-4 px-2 py-2 text-left text-sm hover:bg-muted/60',
+                      'grid w-full grid-cols-1 items-center gap-2 px-2 py-2 text-left text-sm outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_auto] sm:gap-4',
                       selected === issue.fingerprint && 'bg-muted/60',
                     )}
                   >
@@ -146,7 +177,7 @@ export function ErrorsPanel({ app }: { app: string }) {
                           : ''}
                       </span>
                     </span>
-                    <span className="flex flex-wrap items-center justify-end gap-2">
+                    <span className="flex flex-wrap items-center gap-2 sm:justify-end">
                       <span className="text-xs tabular-nums text-muted-foreground">
                         {t('list.count', { count: issue.count })}
                       </span>

@@ -20,9 +20,17 @@ import { ScheduledUpgradeBanner } from './ScheduledUpgradeBanner'
 import { UpgradeCheckRow } from './UpgradeCheckRow'
 import { UpgradeConfirmDialog } from './UpgradeConfirmDialog'
 import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
-import { AttemptRow } from './UpgradeAttempts'
+import { UpgradeProgress } from './UpgradeProgress'
 
 const POLL_MS = 3_000
+const RECENT_MS = 15 * 60_000
+const RELOAD_DELAY_MS = 5_000
+
+function isRecentFinished(a: SelfUpgradeAttempt): boolean {
+  if (a.outcome === 'running') return false
+  const at = Date.parse(a.finished_at || a.started_at)
+  return Date.now() - at < RECENT_MS
+}
 
 function findFinished(
   list: SelfUpgradeAttempt[],
@@ -50,6 +58,7 @@ export function UpgradeNow() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [dismissed, setDismissed] = useState('')
 
   const attempts = useQuery({
     ...selfUpgradeAttemptsQueryOptions(false),
@@ -81,8 +90,17 @@ export function UpgradeNow() {
       title: t('upgradeNow.done', { version: target }),
       type: 'success',
     })
-    window.location.reload()
+    const id = window.setTimeout(
+      () => window.location.reload(),
+      RELOAD_DELAY_MS,
+    )
+    return () => window.clearTimeout(id)
   }, [finishedVersion, target, t])
+  const recent = (attempts.data ?? []).find(
+    (a) => a.id !== dismissed && isRecentFinished(a),
+  )
+  const planSteps = plan.data?.steps ?? []
+  const reconnecting = attempts.isError || status.isError
 
   if (preflight.isPending || plan.isPending) {
     return (
@@ -93,23 +111,31 @@ export function UpgradeNow() {
   }
   const pre = preflight.data
   const hostBinaryEdge = pre?.edge?.installable === false
-  if (!pre || (!pre.update_available && !hostBinaryEdge)) return null
+  if (!pre || (!pre.update_available && !hostBinaryEdge)) {
+    if (!recent) return null
+    return (
+      <UpgradeProgress
+        target={recent.to_version}
+        plannedSteps={planSteps}
+        attempt={recent}
+        startedAt={null}
+        reconnecting={false}
+        releaseUrl={pre?.release_url}
+        onDismiss={() => setDismissed(recent.id)}
+      />
+    )
+  }
 
   if (active) {
     return (
-      <div className="space-y-3" role="status">
-        <p className="text-sm font-medium">
-          {t('upgradeNow.progressTitle', { version: target })}
-        </p>
-        {running ? (
-          <ul>
-            <AttemptRow attempt={running} />
-          </ul>
-        ) : null}
-        <p className="text-xs text-muted-foreground">
-          {t('upgradeNow.reconnect')}
-        </p>
-      </div>
+      <UpgradeProgress
+        target={running?.to_version ?? target}
+        plannedSteps={planSteps}
+        attempt={running}
+        startedAt={startedAt}
+        reconnecting={reconnecting}
+        releaseUrl={pre.release_url}
+      />
     )
   }
 
@@ -140,10 +166,20 @@ export function UpgradeNow() {
 
   return (
     <div className="space-y-4">
-      {finishedAttempt ? (
-        <ul>
-          <AttemptRow attempt={finishedAttempt} />
-        </ul>
+      {(finishedAttempt ?? recent) ? (
+        <UpgradeProgress
+          target={(finishedAttempt ?? recent)?.to_version ?? target}
+          plannedSteps={planSteps}
+          attempt={finishedAttempt ?? recent}
+          startedAt={null}
+          reconnecting={false}
+          releaseUrl={pre.release_url}
+          onDismiss={() => {
+            const a = finishedAttempt ?? recent
+            if (a) setDismissed(a.id)
+            setStartedAt(null)
+          }}
+        />
       ) : null}
       {activeSchedule ? (
         <ScheduledUpgradeBanner
@@ -206,9 +242,10 @@ export function UpgradeNow() {
           />
         </div>
       ) : null}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         <Button
           type="button"
+          className="w-full sm:w-auto"
           disabled={pre.blocked || !canApply || start.isPending}
           onClick={() => setConfirmOpen(true)}
         >
@@ -217,6 +254,7 @@ export function UpgradeNow() {
         <Button
           type="button"
           variant="outline"
+          className="w-full sm:w-auto"
           disabled={!canApply || schedule.data?.available === false}
           onClick={() => setScheduleOpen(true)}
         >

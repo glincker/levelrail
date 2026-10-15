@@ -9,6 +9,8 @@
   "list": {
     "empty": "No matching requests yet. Send traffic to one of this app's domains and they appear here within seconds.",
     "loadError": "Could not load requests: {{message}}",
-    "upstream": "Upstream error"
+    "upstream": "Upstream error",
+    "emptyTitle": "No requests yet",
+    "emptyAction": "Check domains"
   }
 }

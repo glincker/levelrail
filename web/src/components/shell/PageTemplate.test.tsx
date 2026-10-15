@@ -69,3 +69,14 @@ describe('PageTemplate aside slot', () => {
     expect(screen.queryByRole('complementary')).toBeNull()
   })
 })
+
+describe('PageTemplate width classes', () => {
+  it.each([
+    ['default', undefined, 'max-w-(--glinr-content-max)'],
+    ['wide', 'wide' as const, 'max-w-(--glinr-content-max-wide)'],
+    ['full', 'full' as const, 'max-w-none'],
+  ])('%s keeps its token class', (_n, width, cls) => {
+    const { container } = render(<PageTemplate title="T" width={width} />)
+    expect(container.firstElementChild?.className).toContain(cls)
+  })
+})

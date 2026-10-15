@@ -284,6 +284,26 @@
     "reconnect": "The control plane restarts during the upgrade. This page keeps checking and reloads once the new release answers.",
     "done": "Upgraded to {{version}}"
   },
+  "progress": {
+    "running": "Upgrading to {{version}}",
+    "elapsed": "Elapsed {{time}}",
+    "waiting": "Starting the upgrade on the host...",
+    "reconnecting": "The control plane is restarting. Reconnecting, this can take up to two minutes.",
+    "log": "Live log",
+    "successBody": "This server now runs {{version}}.",
+    "releaseNotes": "Read the release notes",
+    "failedAt": "Stopped at: {{step}}",
+    "rolledBack": "The previous release {{version}} is running again and its data was restored.",
+    "untouched": "Nothing was changed: {{version}} is still running.",
+    "nextAction": "Fix the cause above, then upgrade again from this page, or run the command shown on the host.",
+    "dismiss": "Dismiss",
+    "end": {
+      "succeeded": "Upgraded to {{version}}",
+      "rolled_back": "Upgrade to {{version}} was rolled back",
+      "refused": "Upgrade to {{version}} was refused",
+      "failed": "Upgrade to {{version}} failed"
+    }
+  },
   "schedule": {
     "button": "Schedule upgrade",
     "dialogTitle": "Schedule the upgrade to {{version}}",
@@ -397,6 +417,53 @@
   },
   "page": {
     "title": "Updates",
-    "description": "Current version, release channel, and available releases."
+    "description": "Current version, release channel, and available releases.",
+    "errorTitle": "Could not load update settings",
+    "errorBody": "The updates page could not load: {{message}}. Your server keeps running. Try again in a moment.",
+    "retry": "Try again",
+    "sourceNote": "Compared against the published releases on GitHub."
+  },
+  "status": {
+    "state": {
+      "upToDate": "Up to date",
+      "available": "Update available",
+      "scheduled": "Upgrade scheduled",
+      "inProgress": "Upgrade in progress",
+      "checkFailed": "Check failed",
+      "noReleases": "No releases",
+      "hostBinary": "Not followable"
+    },
+    "runningVersion": "Running version",
+    "lastChecked": "Last checked {{time}}",
+    "neverChecked": "Not checked yet",
+    "checkNow": "Check now",
+    "checking": "Checking...",
+    "checked": "Checked for updates.",
+    "checkFailedTitle": "Could not check for updates",
+    "checkFailedBody": "The release source could not be reached: {{message}}. Your server is unaffected. Check that this host can reach github.com, then try again.",
+    "viewNotes": "View release notes",
+    "delta": "{{from}} to {{to}}",
+    "inProgressBody": "The upgrade is running. This page reloads when the new release answers.",
+    "githubRepo": "Open the GitHub repository",
+    "bannerAlt": "Brand banner"
+  },
+  "changes": {
+    "title": "What changes if you upgrade",
+    "versionLabel": "Version",
+    "releasedLabel": "Released",
+    "releasedUnknown": "Date not published",
+    "notesToggle": "Release notes",
+    "notesEmpty": "Release notes are not available yet.",
+    "safetyTitle": "What happens"
+  },
+  "settings": {
+    "channelDescription": "Which release stream this server follows.",
+    "channelActive": "Saved channel",
+    "backgroundTitle": "Background checks",
+    "backgroundDescription": "Look for new releases on a schedule and show a notice.",
+    "backgroundLabel": "Check for updates in the background",
+    "save": "Save",
+    "saved": "Update settings saved.",
+    "unsaved": "You have unsaved changes."
   }
 }
