@@ -4056,6 +4056,14 @@ func databaseCredentialOpts(ctx context.Context, deps dynamicSourceDeps, desired
 		} else if creds != nil {
 			opts = append(opts, database.WithClickHouseCredentials(creds))
 		}
+	case store.EngineMeilisearch, store.EngineQdrant, store.EngineTypesense:
+		creds, err := apiKeyCredentialsFor(ctx, deps.secretsManager, desired.Name, desired.Engine)
+		if err != nil {
+			deps.logger.Warn("skipping api key for this reconcile pass",
+				slog.String("database", desired.Name), slog.String("engine", desired.Engine), slog.String("error", err.Error()))
+		} else if creds != nil {
+			opts = append(opts, database.WithAPIKeyCredentials(creds))
+		}
 	}
 	return opts
 }

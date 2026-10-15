@@ -17,6 +17,10 @@ func TestEngineFromImage_Pgvector(t *testing.T) {
 		{"postgis/postgis:17-3.5", "postgres", "17-postgis"},
 		{"timescale/timescaledb:2.17.2-pg16", "postgres", "16-timescaledb"},
 		{"valkey/valkey:8", "valkey", "8"},
+		{"getmeili/meilisearch:v1.55.0", "meilisearch", "v1.55"},
+		{"qdrant/qdrant:v1.19.2", "qdrant", "v1.19"},
+		{"typesense/typesense:30.2", "typesense", "30.2"},
+		{"memcached:1.6-alpine", "memcached", "1.6"},
 		{"redis:7", "redis", "7"},
 	}
 	for _, tc := range tests {

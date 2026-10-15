@@ -107,7 +107,7 @@ func ValidateEngineVersion(engine, version string) error {
 	if variant != "" && engine != store.EnginePostgres {
 		return fmt.Errorf("the %s variant is only available for the postgres engine, not %q", variant, engine)
 	}
-	return nil
+	return validatePinnedVersion(engine, version)
 }
 
 func lookupVariant(engine, version string) (PostgresVariant, int, bool) {

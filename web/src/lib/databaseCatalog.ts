@@ -1,16 +1,20 @@
 import type { BrandIconName } from '@/components/BrandIcon'
 
 export type DatabaseFamily =
-  'relational' | 'keyvalue' | 'document' | 'analytics' | 'vector' | 'other'
+  'relational' | 'keyvalue' | 'document' | 'analytics' | 'search' | 'other'
 
 export const DATABASE_FAMILIES: readonly DatabaseFamily[] = [
   'relational',
   'keyvalue',
   'document',
   'analytics',
-  'vector',
+  'search',
   'other',
 ]
+
+/** How an engine's data is backed up: a dump file, an engine snapshot, or
+ *  nothing at all for a cache that keeps no data on disk. */
+export type BackupKind = 'dump' | 'snapshot' | 'none'
 
 export type PostgresFlavor = 'pgvector' | 'timescaledb' | 'postgis'
 
@@ -65,12 +69,16 @@ export interface PickerEntry {
   compat: 'redis' | 'mysql' | 'postgres' | null
   /** The label shown on the card: the registry label, or the flavor's. */
   label: string
+  backup: BackupKind
+  httpApi: boolean
 }
 
 interface EngineTraits {
   family: DatabaseFamily
   port: number
   compat: PickerEntry['compat']
+  backup?: BackupKind
+  httpApi?: boolean
 }
 
 const ENGINE_TRAITS: Record<string, EngineTraits> = {
@@ -83,6 +91,33 @@ const ENGINE_TRAITS: Record<string, EngineTraits> = {
   dragonfly: { family: 'keyvalue', port: 6379, compat: 'redis' },
   mongodb: { family: 'document', port: 27017, compat: null },
   clickhouse: { family: 'analytics', port: 8123, compat: null },
+  memcached: { family: 'keyvalue', port: 11211, compat: null, backup: 'none' },
+  meilisearch: {
+    family: 'search',
+    port: 7700,
+    compat: null,
+    backup: 'snapshot',
+    httpApi: true,
+  },
+  qdrant: {
+    family: 'search',
+    port: 6333,
+    compat: null,
+    backup: 'snapshot',
+    httpApi: true,
+  },
+  typesense: {
+    family: 'search',
+    port: 8108,
+    compat: null,
+    backup: 'snapshot',
+    httpApi: true,
+  },
+}
+
+/** Whether engine keeps data a backup can capture (Memcached does not). */
+export function engineHasBackups(engineId: string): boolean {
+  return ENGINE_TRAITS[engineId]?.backup !== 'none'
 }
 
 interface FlavorTraits {
@@ -92,7 +127,7 @@ interface FlavorTraits {
 }
 
 const FLAVOR_TRAITS: Record<PostgresFlavor, FlavorTraits> = {
-  pgvector: { family: 'vector', brand: null, label: 'pgvector' },
+  pgvector: { family: 'search', brand: null, label: 'pgvector' },
   timescaledb: {
     family: 'analytics',
     brand: 'timescaledb',
@@ -126,6 +161,8 @@ export function buildPickerEntries(
       port: traits?.port ?? null,
       compat: traits?.compat ?? null,
       label: engine.label,
+      backup: traits?.backup ?? 'dump',
+      httpApi: traits?.httpApi ?? false,
     })
     if (engine.id === 'postgres') {
       for (const flavor of POSTGRES_FLAVORS) {
@@ -139,6 +176,8 @@ export function buildPickerEntries(
           port: 5432,
           compat: 'postgres',
           label: f.label,
+          backup: 'dump',
+          httpApi: false,
         })
       }
     }

@@ -104,7 +104,7 @@ func (rt *Router) handleTriggerRestore(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger restore: load database failed")
-	if !ok {
+	if !ok || refuseNoBackups(w, db.Engine) {
 		return
 	}
 

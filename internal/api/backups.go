@@ -35,6 +35,16 @@ func databaseContainerName(dbName string) string {
 // loadDatabaseForRunner looks up name and writes the 404/500 response
 // itself on failure, the shared shape handleTriggerBackup and
 // handleTriggerRestore both need before starting a runner.
+// refuseNoBackups answers 400 for an engine with nothing to back up, so
+// no fake backup is ever offered or recorded. Reports whether it refused.
+func refuseNoBackups(w http.ResponseWriter, engine string) bool {
+	if store.EngineSupportsBackups(engine) {
+		return false
+	}
+	writeError(w, http.StatusBadRequest, "backups are not available for "+engine+" databases: it keeps no data on disk")
+	return true
+}
+
 func (rt *Router) loadDatabaseForRunner(w http.ResponseWriter, r *http.Request, name, logContext string) (*store.DesiredDatabase, bool) {
 	db, err := rt.databases.GetDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
@@ -247,7 +257,7 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger backup: load database failed")
-	if !ok {
+	if !ok || refuseNoBackups(w, db.Engine) {
 		return
 	}
 
@@ -395,12 +405,14 @@ type setBackupScheduleRequest struct {
 func (rt *Router) handleSetBackupSchedule(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	if _, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
+	if d, err := rt.databases.GetDesiredDatabase(r.Context(), name); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
 		return
 	} else if err != nil {
 		rt.logger.Error("api: set backup schedule: load database failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	} else if refuseNoBackups(w, d.Engine) {
 		return
 	}
 

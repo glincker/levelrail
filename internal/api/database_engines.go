@@ -15,6 +15,8 @@ type databaseEngineResource struct {
 	ID             string `json:"id"`
 	Label          string `json:"label"`
 	DefaultVersion string `json:"default_version"`
+	// BackupsSupported is false for an engine with nothing on disk to back up.
+	BackupsSupported bool `json:"backups_supported"`
 }
 
 // handleListDatabaseEngines handles GET /api/v1/database-engines: every
@@ -37,9 +39,10 @@ func (rt *Router) handleListDatabaseEngines(w http.ResponseWriter, _ *http.Reque
 	out := make([]databaseEngineResource, 0, len(engines))
 	for _, e := range engines {
 		out = append(out, databaseEngineResource{
-			ID:             e.ID,
-			Label:          e.Label,
-			DefaultVersion: e.DefaultVersion,
+			ID:               e.ID,
+			Label:            e.Label,
+			DefaultVersion:   e.DefaultVersion,
+			BackupsSupported: store.EngineSupportsBackups(e.ID),
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

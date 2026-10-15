@@ -10,6 +10,10 @@ import DragonflyLogo from '@thesvg/react/dragonfly'
 import CodebergLogo from '@thesvg/react/codeberg'
 import CognitoLogo from '@thesvg/react/aws-amazon-cognito'
 import ValkeyLogo from '@thesvg/react/valkey'
+import MeilisearchLogo from '@thesvg/react/meilisearch'
+import QdrantLogo from '@thesvg/react/qdrant'
+import TypesenseLogo from '@thesvg/react/typesense'
+import MemcachedLogo from '@thesvg/react/memcached'
 import TimescaleLogo from '@thesvg/react/timescale'
 import FacebookLogo from '@thesvg/react/facebook'
 import FigmaLogo from '@thesvg/react/figma'
@@ -96,6 +100,10 @@ export type BrandIconName =
   | 'valkey'
   | 'timescaledb'
   | 'clickhouse'
+  | 'meilisearch'
+  | 'qdrant'
+  | 'typesense'
+  | 'memcached'
   | 'node'
   | 'go'
   | 'java'
@@ -182,6 +190,10 @@ const BRAND_ICONS: Record<
   valkey: ValkeyLogo,
   timescaledb: TimescaleLogo,
   clickhouse: ClickhouseLogo,
+  meilisearch: MeilisearchLogo,
+  qdrant: QdrantLogo,
+  typesense: TypesenseLogo,
+  memcached: MemcachedLogo,
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
@@ -270,6 +282,10 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'valkey',
   'timescaledb',
   'clickhouse',
+  'meilisearch',
+  'qdrant',
+  'typesense',
+  'memcached',
   'node',
   'go',
   'java',

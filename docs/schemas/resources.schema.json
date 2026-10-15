@@ -146,7 +146,11 @@
             "keydb",
             "clickhouse",
             "dragonfly",
-            "valkey"
+            "valkey",
+            "meilisearch",
+            "qdrant",
+            "typesense",
+            "memcached"
           ]
         },
         "ephemeralInPreviews": {

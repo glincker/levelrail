@@ -36,3 +36,15 @@ engines:
   - id: clickhouse
     label: ClickHouse
     default_version: "24.8"
+  - id: meilisearch
+    label: Meilisearch
+    default_version: "v1.55"
+  - id: qdrant
+    label: Qdrant
+    default_version: "v1.19"
+  - id: typesense
+    label: Typesense
+    default_version: "30.2"
+  - id: memcached
+    label: Memcached
+    default_version: "1.6"

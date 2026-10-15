@@ -30,6 +30,10 @@ const TAGLINE_KEYS = {
   dragonfly: 'picker.taglines.dragonfly',
   mongodb: 'picker.taglines.mongodb',
   clickhouse: 'picker.taglines.clickhouse',
+  meilisearch: 'picker.taglines.meilisearch',
+  qdrant: 'picker.taglines.qdrant',
+  typesense: 'picker.taglines.typesense',
+  memcached: 'picker.taglines.memcached',
 } as const
 
 const FAMILY_KEYS = {
@@ -38,7 +42,7 @@ const FAMILY_KEYS = {
   keyvalue: 'picker.families.keyvalue',
   document: 'picker.families.document',
   analytics: 'picker.families.analytics',
-  vector: 'picker.families.vector',
+  search: 'picker.families.search',
   other: 'picker.families.other',
 } as const
 
@@ -112,7 +116,10 @@ export function DatabasePicker({
     if (entry.compat === 'mysql') chips.push(t('picker.chips.mysqlCompatible'))
     if (entry.compat === 'postgres')
       chips.push(t('picker.chips.postgresCompatible'))
-    chips.push(t('picker.chips.backups'))
+    if (entry.httpApi) chips.push(t('picker.chips.httpApi'))
+    if (entry.backup === 'dump') chips.push(t('picker.chips.backups'))
+    if (entry.backup === 'snapshot') chips.push(t('picker.chips.snapshots'))
+    if (entry.backup === 'none') chips.push(t('picker.chips.noPersistence'))
     return chips
   }
 
