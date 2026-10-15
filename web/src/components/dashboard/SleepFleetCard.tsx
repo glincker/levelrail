@@ -66,7 +66,7 @@ export function SleepFleetCard() {
   const sleeping = data.apps.filter((a) => a.sleeping)
 
   return (
-    <Card className="overflow-hidden">
+    <Card id="sleeping-apps-card" className="overflow-hidden">
       <CardContent className="space-y-4 p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export function SleepFleetCard() {
               </p>
             </div>
           </div>
-          {data.enabled > 0 ? (
+          {data.reclaimed_bytes > 0 ? (
             <div className="text-right">
               <p className="text-2xl font-semibold tabular-nums text-foreground">
                 {formatSize(data.reclaimed_bytes)}
@@ -115,6 +115,12 @@ export function SleepFleetCard() {
               />
             ))}
           </div>
+        ) : null}
+
+        {data.sleeping > 0 && data.reclaimed_bytes === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            {t('appSleep.fleetNoLimits')}
+          </p>
         ) : null}
 
         {data.enabled === 0 ? (

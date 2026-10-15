@@ -82,7 +82,8 @@
     "stop": "Stop",
     "promote": "Promote...",
     "clone": "Clone...",
-    "delete": "Delete..."
+    "delete": "Delete...",
+    "wake": "Wake now"
   },
   "confirmDialog": {
     "cancel": "Cancel",

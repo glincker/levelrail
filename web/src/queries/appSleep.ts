@@ -5,6 +5,7 @@ import {
   queryOptions,
   useMutation,
   useQueryClient,
+  useQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query'
 import { appKeys } from './apps'
@@ -83,4 +84,14 @@ export function useAppSleepActions(appName: string) {
     onSuccess,
   })
   return { setIdle, wake, sleepNow }
+}
+
+/** useAppAsleep reports whether the app is asleep, without suspending or failing the page. */
+export function useAppAsleep(appName: string): boolean {
+  const { data } = useQuery({
+    ...appSleepQueryOptions(appName),
+    staleTime: 15_000,
+    retry: false,
+  })
+  return data?.sleeping ?? false
 }

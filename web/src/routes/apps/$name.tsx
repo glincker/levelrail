@@ -11,6 +11,7 @@ import {
   useDeployStatus,
 } from '../../queries/deploys'
 import { summarizeAppStatus } from '../../lib/appStatus'
+import { useAppAsleep } from '../../queries/appSleep'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { AppActionBar } from '../../components/apps/AppActionBar'
@@ -70,7 +71,8 @@ function AppDetailLayout() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
   const { data: conditions } = useDeployStatus(name)
-  const status = summarizeAppStatus(conditions)
+  const asleep = useAppAsleep(name)
+  const status = summarizeAppStatus(conditions, asleep)
 
   // /apps/$name/deploys/$deployId/logs is a real, distinct nested route
   // (a sibling of the 8 section routes, one directory deeper). It renders

@@ -166,6 +166,7 @@
     "fleetReclaimedLabel": "memory not in use",
     "fleetBrowseApps": "Choose apps",
     "fleetAllAwake": "Every app with sleep on is awake right now.",
-    "fleetMore": "and {{count}} more asleep"
+    "fleetMore": "and {{count}} more asleep",
+    "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here."
   }
 }

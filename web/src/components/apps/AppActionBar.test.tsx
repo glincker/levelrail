@@ -19,6 +19,14 @@ vi.mock('../overview/useOverviewActions', () => ({
     goToDeploys: vi.fn(),
   }),
 }))
+const wakeMutate = vi.fn()
+const sleepState = { asleep: false }
+vi.mock('../../queries/appSleep', () => ({
+  useAppAsleep: () => sleepState.asleep,
+  useAppSleepActions: () => ({
+    wake: { mutate: wakeMutate, isPending: false },
+  }),
+}))
 vi.mock('../PromoteAppDialog', () => ({ PromoteAppDialog: () => null }))
 vi.mock('../CloneAppDialog', () => ({ CloneAppDialog: () => null }))
 vi.mock('../DeleteAppDialog', () => ({ DeleteAppDialog: () => null }))
@@ -50,5 +58,14 @@ describe('AppActionBar', () => {
     for (const name of ['Stop', 'Clone...', 'Delete...']) {
       expect(await screen.findByText(name)).toBeInTheDocument()
     }
+  })
+
+  it('offers Wake now instead of Start or Stop for a sleeping app', async () => {
+    sleepState.asleep = true
+    render(<AppActionBar app={app} onDeploy={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: 'More actions' }))
+    await userEvent.click(await screen.findByText('Wake now'))
+    expect(wakeMutate).toHaveBeenCalled()
+    sleepState.asleep = false
   })
 })
