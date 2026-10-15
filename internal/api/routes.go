@@ -281,6 +281,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/roles/{id}", rt.requireAbility(AbilityRoot, rt.handleUpdateRole))
 	mux.HandleFunc("DELETE /api/v1/roles/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteRole))
 	mux.HandleFunc("PUT /api/v1/users/{id}/role", rt.requireAbility(AbilityRoot, rt.handleSetUserRole))
+	mux.HandleFunc("PUT /api/v1/users/{id}/password-change-required", rt.requireAbility(AbilityRoot, rt.handleSetPasswordChangeRequired))
 	mux.HandleFunc("GET /api/v1/users/{id}/environment-grants", rt.requireAbility(AbilityRoot, rt.handleGetEnvironmentGrants))
 	mux.HandleFunc("PUT /api/v1/users/{id}/environment-grants", rt.requireAbility(AbilityRoot, rt.handlePutEnvironmentGrants))
 

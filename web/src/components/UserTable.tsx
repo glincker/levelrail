@@ -5,6 +5,7 @@ import { Button } from './ui/button'
 import { EmptyState } from './ui/empty-state'
 import { ResponsiveTable, type ResponsiveColumn } from './ui/responsive-table'
 import { RemoveUserDialog } from './RemoveUserDialog'
+import { RequirePasswordChangeDialog } from './RequirePasswordChangeDialog'
 import { EditUserAbilitiesDialog } from './EditUserAbilitiesDialog'
 import { UserRoleDialog } from './access/UserRoleDialog'
 import { useExperimentalFeatures } from '../hooks/useExperimental'
@@ -61,6 +62,16 @@ export function UserTable({ users }: { users: UserResource[] }) {
           {ownEmail !== null && ownEmail === user.email ? (
             <Badge variant="muted" className="ml-2">
               {t('usersPage.table.you')}
+            </Badge>
+          ) : null}
+          {user.disabled ? (
+            <Badge variant="destructive" className="ml-2">
+              {t('usersPage.table.disabled')}
+            </Badge>
+          ) : null}
+          {user.must_change_password ? (
+            <Badge variant="outline" className="ml-2">
+              {t('usersPage.table.mustChangePassword')}
             </Badge>
           ) : null}
         </span>
@@ -139,6 +150,9 @@ export function UserTable({ users }: { users: UserResource[] }) {
               <>
                 {canAssignRoles ? <UserRoleDialog user={user} /> : null}
                 <EditUserAbilitiesDialog user={user} />
+                {isRoot && (user.has_password || user.must_change_password) ? (
+                  <RequirePasswordChangeDialog user={user} />
+                ) : null}
               </>
             )}
             <RemoveUserDialog user={user} />

@@ -1,6 +1,4 @@
-// Package samltest is a minimal SAML identity provider for tests: it signs
-// responses with its own key so validation can be exercised end to end.
-package samltest
+package api
 
 import (
 	"crypto/rand"
@@ -20,17 +18,16 @@ import (
 	"github.com/crewjam/saml"
 )
 
-const bearerMethod = "urn:oasis:names:tc:SAML:2.0:cm:bearer" //nolint:gosec // SAML confirmation method URI, not a credential
+const testBearerMethod = "urn:oasis:names:tc:SAML:2.0:cm:bearer" //nolint:gosec // SAML confirmation method URI, not a credential
 
-// IDP signs assertions as EntityID.
-type IDP struct {
+// testIDP is a minimal SAML identity provider that signs with its own key.
+type testIDP struct {
 	EntityID string
 	Key      *rsa.PrivateKey
 	Cert     *x509.Certificate
 }
 
-// NewIDP makes an IDP with a fresh self-signed RSA key.
-func NewIDP(t testing.TB, entityID string) *IDP {
+func newTestIDP(t testing.TB, entityID string) *testIDP {
 	t.Helper()
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -46,35 +43,30 @@ func NewIDP(t testing.TB, entityID string) *IDP {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &IDP{EntityID: entityID, Key: key, Cert: cert}
+	return &testIDP{EntityID: entityID, Key: key, Cert: cert}
 }
 
-// CertPEM is the signing certificate in PEM form.
-func (i *IDP) CertPEM() string {
+func (i *testIDP) CertPEM() string {
 	return string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: i.Cert.Raw}))
 }
 
-// MetadataXML is an IDP EntityDescriptor pointing at ssoURL.
-func (i *IDP) MetadataXML(ssoURL string) string {
+func (i *testIDP) MetadataXML(ssoURL string) string {
 	return fmt.Sprintf(`<?xml version="1.0"?>
 <md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="%s">
   <md:IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
     <md:KeyDescriptor use="signing"><ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:X509Data><ds:X509Certificate>%s</ds:X509Certificate></ds:X509Data></ds:KeyInfo></md:KeyDescriptor>
-    <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="%s/post"/>
     <md:SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="%s"/>
   </md:IDPSSODescriptor>
-</md:EntityDescriptor>`, i.EntityID, base64.StdEncoding.EncodeToString(i.Cert.Raw), ssoURL, ssoURL)
+</md:EntityDescriptor>`, i.EntityID, base64.StdEncoding.EncodeToString(i.Cert.Raw), ssoURL)
 }
 
-// Target names the SP and request an assertion answers.
-type Target struct {
+type idpTarget struct {
 	SPEntityID string
 	ACSURL     string
 	RequestID  string
 }
 
-// Assertion is a valid assertion for target about nameID with the given attributes.
-func (i *IDP) Assertion(target Target, nameID string, attrs map[string][]string, now time.Time) *saml.Assertion {
+func (i *testIDP) Assertion(target idpTarget, nameID string, attrs map[string][]string, now time.Time) *saml.Assertion {
 	var list []saml.Attribute
 	for name, vals := range attrs {
 		a := saml.Attribute{Name: name}
@@ -84,12 +76,12 @@ func (i *IDP) Assertion(target Target, nameID string, attrs map[string][]string,
 		list = append(list, a)
 	}
 	return &saml.Assertion{
-		ID: "id-" + randHex(), IssueInstant: now, Version: "2.0",
+		ID: "id-" + idpRandHex(), IssueInstant: now, Version: "2.0",
 		Issuer: saml.Issuer{Format: "urn:oasis:names:tc:SAML:2.0:nameid-format:entity", Value: i.EntityID},
 		Subject: &saml.Subject{
 			NameID: &saml.NameID{Format: string(saml.UnspecifiedNameIDFormat), Value: nameID},
 			SubjectConfirmations: []saml.SubjectConfirmation{{
-				Method: bearerMethod,
+				Method: testBearerMethod,
 				SubjectConfirmationData: &saml.SubjectConfirmationData{
 					InResponseTo: target.RequestID, NotOnOrAfter: now.Add(5 * time.Minute), Recipient: target.ACSURL,
 				},
@@ -104,24 +96,20 @@ func (i *IDP) Assertion(target Target, nameID string, attrs map[string][]string,
 	}
 }
 
-// Options shape the Response wrapper around an assertion.
-type Options struct {
+type idpOptions struct {
 	Destination  string
 	InResponseTo string
 	Issuer       string
-	Status       string
 	SignResponse bool
 	SignAssert   bool
 }
 
-// DefaultOptions signs both levels and answers target.
-func (i *IDP) DefaultOptions(target Target) Options {
-	return Options{Destination: target.ACSURL, InResponseTo: target.RequestID, Issuer: i.EntityID,
-		Status: saml.StatusSuccess, SignResponse: true, SignAssert: true}
+func (i *testIDP) DefaultOptions(target idpTarget) idpOptions {
+	return idpOptions{Destination: target.ACSURL, InResponseTo: target.RequestID, Issuer: i.EntityID, SignResponse: true, SignAssert: true}
 }
 
-// Respond renders a base64 SAMLResponse carrying a.
-func (i *IDP) Respond(t testing.TB, a *saml.Assertion, o Options) string {
+// Respond renders a base64 SAMLResponse carrying a, signed as o asks.
+func (i *testIDP) Respond(t testing.TB, a *saml.Assertion, o idpOptions) string {
 	t.Helper()
 	md, err := url.Parse(o.Issuer)
 	if err != nil {
@@ -145,7 +133,7 @@ func (i *IDP) Respond(t testing.TB, a *saml.Assertion, o Options) string {
 		assertionEl = req.AssertionEl
 	}
 	var root *etree.Element
-	if o.SignResponse && o.Status == saml.StatusSuccess {
+	if o.SignResponse {
 		req.AssertionEl = assertionEl
 		if err := req.MakeResponse(); err != nil {
 			t.Fatal(err)
@@ -153,9 +141,9 @@ func (i *IDP) Respond(t testing.TB, a *saml.Assertion, o Options) string {
 		root = req.ResponseEl
 	} else {
 		resp := &saml.Response{
-			Destination: o.Destination, ID: "id-" + randHex(), InResponseTo: o.InResponseTo,
+			Destination: o.Destination, ID: "id-" + idpRandHex(), InResponseTo: o.InResponseTo,
 			IssueInstant: a.IssueInstant, Version: "2.0", Issuer: &saml.Issuer{Value: o.Issuer},
-			Status: saml.Status{StatusCode: saml.StatusCode{Value: o.Status}},
+			Status: saml.Status{StatusCode: saml.StatusCode{Value: saml.StatusSuccess}},
 		}
 		root = resp.Element()
 		root.AddChild(assertionEl)
@@ -169,19 +157,7 @@ func (i *IDP) Respond(t testing.TB, a *saml.Assertion, o Options) string {
 	return base64.StdEncoding.EncodeToString(buf)
 }
 
-// ElementString serializes an unsigned assertion, for injection tests.
-func ElementString(t testing.TB, a *saml.Assertion) string {
-	t.Helper()
-	doc := etree.NewDocument()
-	doc.SetRoot(a.Element())
-	s, err := doc.WriteToString()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return s
-}
-
-func randHex() string {
+func idpRandHex() string {
 	b := make([]byte, 10)
 	_, _ = rand.Read(b)
 	return fmt.Sprintf("%x", b)

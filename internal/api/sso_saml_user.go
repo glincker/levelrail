@@ -5,138 +5,137 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"slices"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/samlsso"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// ssoDesiredRole is the role the group mappings give, else the fallback role.
-func (rt *Router) ssoDesiredRole(ctx context.Context, groups []string, fallback string) (string, error) {
-	mappings, err := rt.sso.ListSSOGroupMappings(ctx)
-	if err != nil {
-		return "", err
-	}
-	rules := make([]samlsso.GroupRole, 0, len(mappings))
-	for _, m := range mappings {
-		rules = append(rules, samlsso.GroupRole{Group: m.Group, RoleID: m.RoleID, Priority: m.Priority})
-	}
-	if role, ok := samlsso.ResolveRole(groups, rules); ok {
-		return role, nil
-	}
-	return fallback, nil
+// samlPlan is what the platform decided before the library runs: which
+// library user must end up owning the session, and whether this sign-in
+// created the platform user (and so must remove it if anything fails).
+type samlPlan struct {
+	expectEngine string
+	legacyID     string
+	desiredRole  string
+	created      bool
 }
 
-// samlResolveUser maps a validated identity onto a user: the linked subject
-// first, then an existing account with the same email, then JIT creation when
-// the connection allows it. A non-empty code means the sign-in is refused.
-func (rt *Router) samlResolveUser(ctx context.Context, c store.SAMLConnection, ident samlsso.Identity) (store.User, string, error) {
-	if len(c.AllowedDomains) > 0 && (ident.Email == "" || !samlsso.EmailDomainAllowed(ident.Email, c.AllowedDomains)) {
-		return store.User{}, samlErrDomain, nil
+// samlPlanSignIn applies the platform policy to a verified assertion: domain
+// allowlist, disabled accounts, and JIT. The account the library will find is
+// prepared here, so the library only ever links, never creates.
+func (rt *Router) samlPlanSignIn(ctx context.Context, c store.SSOConnection, ident authengine.SAMLAssertion) (samlPlan, string, error) {
+	if ident.Email == "" {
+		return samlPlan{}, samlErrNoEmail, nil
 	}
-	desired, err := rt.ssoDesiredRole(ctx, ident.Groups, c.DefaultRoleID)
+	if !emailDomainAllowed(ident.Email, c.AllowedDomains) {
+		return samlPlan{}, samlErrDomain, nil
+	}
+	mappings, err := rt.sso.ListSSOGroupMappings(ctx)
 	if err != nil {
-		return store.User{}, samlErrInternal, err
+		return samlPlan{}, samlErrInternal, err
 	}
-	now := time.Now()
-	uid, err := rt.sso.SAMLIdentityUser(ctx, c.ID, ident.NameID)
+	desired, ok := resolveSSORole(ident.Groups, mappings)
+	if !ok {
+		desired = c.DefaultRoleID
+	}
+	linked, err := rt.authEngine.SAMLIdentityUser(ctx, c.LibraryID, ident.NameID)
+	if err != nil {
+		return samlPlan{}, samlErrInternal, err
+	}
+	if linked != "" {
+		legacy, err := rt.authEngine.LegacyUserFor(ctx, linked)
+		if err != nil {
+			return samlPlan{}, samlErrInternal, err
+		}
+		if legacy == "" {
+			return samlPlan{}, samlErrNotProvisioned, errors.New("linked library user has no platform account")
+		}
+		if rt.accountDisabled(ctx, legacy) {
+			return samlPlan{}, samlErrDisabled, nil
+		}
+		return samlPlan{expectEngine: linked, legacyID: legacy, desiredRole: desired}, "", nil
+	}
+	existing, err := rt.auth.GetUserByEmail(ctx, ident.Email)
 	switch {
 	case err == nil:
-	case !errors.Is(err, store.ErrSAMLIdentityNotFound):
-		return store.User{}, samlErrInternal, err
-	case ident.Email == "":
-		return store.User{}, samlErrNoEmail, nil
-	default:
-		existing, gerr := rt.auth.GetUserByEmail(ctx, ident.Email)
-		if errors.Is(gerr, store.ErrUserNotFound) {
-			return rt.samlProvision(ctx, c, ident, desired, now)
+		if rt.accountDisabled(ctx, existing.ID) {
+			return samlPlan{}, samlErrDisabled, nil
 		}
-		if gerr != nil {
-			return store.User{}, samlErrInternal, gerr
+		engine, err := rt.libSessions.SyncUser(ctx, toLibUser(*existing))
+		if err != nil {
+			return samlPlan{}, samlErrInternal, err
 		}
-		if lerr := rt.sso.LinkSAMLIdentity(ctx, c.ID, ident.NameID, existing.ID, now); lerr != nil {
-			if errors.Is(lerr, store.ErrOAuthIdentityAlreadyLinked) {
-				return store.User{}, samlErrLinked, nil
-			}
-			return store.User{}, samlErrInternal, lerr
-		}
-		uid = existing.ID
+		return samlPlan{expectEngine: engine, legacyID: existing.ID, desiredRole: desired}, "", nil
+	case !errors.Is(err, store.ErrUserNotFound):
+		return samlPlan{}, samlErrInternal, err
 	}
-	user, err := rt.auth.GetUserByID(ctx, uid)
+	return rt.samlProvision(ctx, c, ident, desired)
+}
+
+func (rt *Router) samlProvision(ctx context.Context, c store.SSOConnection, ident authengine.SAMLAssertion, roleID string) (samlPlan, string, error) {
+	if !c.JITProvisioning {
+		return samlPlan{}, samlErrNotProvisioned, nil
+	}
+	if roleID == "" {
+		return samlPlan{}, samlErrNoRole, nil
+	}
+	id, err := randomOpaqueID("user_")
+	if err != nil {
+		return samlPlan{}, samlErrInternal, err
+	}
+	name := ident.DisplayName
+	if name == "" {
+		name = ident.Email
+	}
+	u := store.User{ID: id, Email: ident.Email, DisplayName: name, CreatedAt: time.Now()}
+	if err := rt.sso.CreateProvisionedUser(ctx, u, roleID); err != nil {
+		return samlPlan{}, samlErrInternal, fmt.Errorf("provision saml user: %w", err)
+	}
+	plan := samlPlan{legacyID: id, desiredRole: roleID, created: true}
+	engine, err := rt.libSessions.SyncUser(ctx, toLibUser(u))
+	if err != nil {
+		rt.samlRollback(ctx, plan)
+		return samlPlan{}, samlErrInternal, err
+	}
+	plan.expectEngine = engine
+	rt.logger.Info("api: saml: provisioned user", slog.String("user_id", id), slog.String("connection_id", c.ID), slog.String("role_id", roleID))
+	return plan, "", nil
+}
+
+// samlSettleUser checks the library issued the session to the account the
+// plan prepared, then applies role sync.
+func (rt *Router) samlSettleUser(ctx context.Context, c store.SSOConnection, plan samlPlan, engineUser string) (store.User, string, error) {
+	if engineUser != plan.expectEngine {
+		return store.User{}, samlErrInternal, errors.New("library signed in a different user than planned")
+	}
+	user, err := rt.auth.GetUserByID(ctx, plan.legacyID)
 	if err != nil {
 		return store.User{}, samlErrInternal, err
 	}
-	if !c.SyncRoles {
+	if rt.accountDisabled(ctx, user.ID) {
+		return store.User{}, samlErrDisabled, nil
+	}
+	if !c.SyncRoles || plan.created {
 		return *user, "", nil
 	}
-	if desired == "" {
+	if plan.desiredRole == "" {
 		return store.User{}, samlErrNoRole, nil
 	}
-	synced, err := rt.applySSORole(ctx, *user, desired)
+	synced, err := rt.applySSORole(ctx, *user, plan.desiredRole)
 	if err != nil {
 		return store.User{}, samlErrInternal, err
 	}
 	return synced, "", nil
 }
 
-func (rt *Router) samlProvision(ctx context.Context, c store.SAMLConnection, ident samlsso.Identity, roleID string, now time.Time) (store.User, string, error) {
-	if !c.JITProvisioning {
-		return store.User{}, samlErrNotProvisioned, nil
+// samlRollback removes a platform user this sign-in created; the library side
+// (user, identity, membership) goes with it.
+func (rt *Router) samlRollback(ctx context.Context, plan samlPlan) {
+	if !plan.created {
+		return
 	}
-	if roleID == "" {
-		return store.User{}, samlErrNoRole, nil
+	if err := rt.auth.DeleteUser(context.WithoutCancel(ctx), plan.legacyID); err != nil {
+		rt.logger.Error("api: saml: roll back provisioned user failed", slog.String("user_id", plan.legacyID), slog.String("error", err.Error()))
 	}
-	id, err := randomOpaqueID("user_")
-	if err != nil {
-		return store.User{}, samlErrInternal, err
-	}
-	name := ident.DisplayName
-	if name == "" {
-		name = ident.Email
-	}
-	u := store.User{ID: id, Email: ident.Email, DisplayName: name, CreatedAt: now}
-	if err := rt.sso.CreateProvisionedUser(ctx, store.ProvisionedUser{User: u, RoleID: roleID, SAMLConnectionID: c.ID, SAMLNameID: ident.NameID}); err != nil {
-		return store.User{}, samlErrInternal, fmt.Errorf("provision saml user: %w", err)
-	}
-	created, err := rt.auth.GetUserByID(ctx, id)
-	if err != nil {
-		return store.User{}, samlErrInternal, err
-	}
-	rt.logger.Info("api: saml: provisioned user", slog.String("user_id", id), slog.String("connection_id", c.ID), slog.String("role_id", roleID))
-	return *created, "", nil
-}
-
-// applySSORole moves a user to roleID unless that would strip root from the
-// last root user, which is kept so directory drift can never lock out the instance.
-func (rt *Router) applySSORole(ctx context.Context, user store.User, roleID string) (store.User, error) {
-	current, err := rt.roles.UserRoleID(ctx, user.ID)
-	if err != nil {
-		return store.User{}, err
-	}
-	if current == roleID {
-		return user, nil
-	}
-	role, err := rt.roles.GetRole(ctx, roleID)
-	if err != nil {
-		return store.User{}, fmt.Errorf("sso role %q: %w", roleID, err)
-	}
-	if slices.Contains(user.Abilities, AbilityRoot) && !slices.Contains(role.Abilities, AbilityRoot) {
-		others, err := rt.roles.CountRootUsersExcept(ctx, user.ID)
-		if err != nil {
-			return store.User{}, err
-		}
-		if others == 0 {
-			rt.logger.Warn("api: sso: kept root on the last root user", slog.String("user_id", user.ID), slog.String("role_id", roleID))
-			return user, nil
-		}
-	}
-	if err := rt.roles.SetUserRole(ctx, user.ID, roleID); err != nil {
-		return store.User{}, err
-	}
-	updated, err := rt.auth.GetUserByID(ctx, user.ID)
-	if err != nil {
-		return store.User{}, err
-	}
-	return *updated, nil
 }

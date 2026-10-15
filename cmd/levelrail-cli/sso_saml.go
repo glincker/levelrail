@@ -22,7 +22,7 @@ type samlFlags struct {
 func (f *samlFlags) register(fs *flag.FlagSet) {
 	fs.StringVar(&f.entityID, "idp-entity-id", "", "IDP entity ID (issuer)")
 	fs.StringVar(&f.ssoURL, "idp-sso-url", "", "IDP single sign-on URL (https)")
-	fs.StringVar(&f.certFile, "idp-cert-file", "", "file holding the IDP signing certificate(s), PEM or base64")
+	fs.StringVar(&f.certFile, "idp-cert-file", "", "file holding the one IDP signing certificate, PEM or base64")
 	fs.StringVar(&f.metadataURL, "idp-metadata-url", "", "IDP metadata URL kept for reference (https)")
 	fs.StringVar(&f.emailAttr, "email-attribute", "", "assertion attribute holding the email (default: common names)")
 	fs.StringVar(&f.nameAttr, "name-attribute", "", "assertion attribute holding the display name")

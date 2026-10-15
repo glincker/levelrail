@@ -40,6 +40,8 @@ const users: UserResource[] = [
     role_id: 'role_guest',
     is_first_user: false,
     created_at: '2026-10-01T00:00:00Z',
+    disabled: false,
+    must_change_password: false,
   },
 ]
 

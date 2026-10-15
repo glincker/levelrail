@@ -44,7 +44,7 @@
     },
     "import": {
       "title": "Import IdP metadata",
-      "description": "Paste the metadata URL or XML from your identity provider. This fills the entity ID, sign-in URL and certificates.",
+      "description": "Paste the metadata URL or XML from your identity provider. This fills the entity ID, sign-in URL and signing certificate, taking the newest one valid today when the metadata lists several.",
       "url": "Metadata URL",
       "xml": "Metadata XML",
       "button": "Import metadata",
@@ -52,11 +52,11 @@
     },
     "idp": {
       "title": "Identity provider",
-      "description": "Filled by the import, or enter them by hand. Responses must be signed by one of these certificates.",
+      "description": "Filled by the import, or enter them by hand. Responses must be signed by this certificate.",
       "entityId": "IdP entity ID (issuer)",
       "ssoUrl": "IdP sign-in URL",
-      "certificates": "Signing certificates (PEM)",
-      "certificatesHelp": "Keep the current and the next certificate during a rotation."
+      "certificates": "Signing certificate (PEM)",
+      "certificatesHelp": "One certificate. When the identity provider rotates its key, paste or import the new certificate at the switch."
     },
     "access": {
       "title": "Accounts and roles",

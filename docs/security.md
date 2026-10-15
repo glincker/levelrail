@@ -217,7 +217,7 @@ Levelrail does not yet have a dedicated security disclosure address. Until one e
 
 ## What this does not cover yet
 
-- No LDAP. Sign-in is local password, passkey, OAuth (Google, GitHub, Microsoft, generic OIDC) or [SAML](/sso-saml), with [SCIM](/scim) provisioning.
+- No LDAP. Sign-in is local password, passkey, OAuth (Google, GitHub, Microsoft, generic OIDC) or experimental [SAML](/sso-saml), with experimental [SCIM](/scim) provisioning. SAML and SCIM run on the sign-in library behind Levelrail's own response and token checks and have not been verified against a live identity provider yet.
 - [Secret scanning](/secret-scanning) checks the checked-out tree and plain env values at deploy time, but not git history or image layers.
 - Sessions live in memory, so every control plane restart (including an upgrade) signs everyone out. API tokens are unaffected.
 - `GET /api/v1/system/containers` lists containers Levelrail does not manage only to `root` callers. Other callers with `read` see managed containers only.

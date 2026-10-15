@@ -22,7 +22,7 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 | `load-balancer` | Load balancer across an app's replicas |
 | `iac` | Platform as code: `apply`, `diff`, `export` |
 | `cloudflare-tunnel` | Cloudflare Tunnel |
-| `saml-scim` | Interim SAML single sign-on and SCIM provisioning ([SAML](/sso-saml), [SCIM](/scim)), beta |
+| `saml-scim` | SAML single sign-on and SCIM provisioning on the sign-in library ([SAML](/sso-saml), [SCIM](/scim)), beta, not yet verified against a live identity provider |
 | `resource-advisor` | [Resource advisor](/resource-advisor) (beta): limit, idle and tuning suggestions |
 
 Beta features can also be switched on without a restart from Settings, Beta features, or with `levelrail-cli settings beta-features enable <feature>`. That covers `ai-chat`, `resource-advisor`, `cli-console`, `mobile-api` and `saml-scim`. The rest are wired at startup and need `APP_EXPERIMENTAL` plus a restart. A feature listed in `APP_EXPERIMENTAL` stays on regardless of Settings.

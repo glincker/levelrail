@@ -5,29 +5,29 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/samlsso"
+	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
 	samlFlowCookie       = "saml_flow"
 	samlRequestTTL       = 10 * time.Minute
-	signInMethodSAML     = "saml"
+	samlMaxInFlight      = 10000
+	samlMaxFormBytes     = 300 << 10
 	samlCompleteRedirect = "/oauth/complete"
 
 	samlErrUnavailable    = "saml_unavailable"
 	samlErrInvalidState   = "invalid_state"
 	samlErrInvalid        = "saml_invalid"
-	samlErrReplayed       = "saml_replayed"
 	samlErrRateLimited    = "rate_limited"
 	samlErrInternal       = "internal_error"
 	samlErrNotProvisioned = "sso_not_provisioned"
 	samlErrDomain         = "domain_not_allowed"
 	samlErrNoRole         = "sso_no_role"
 	samlErrNoEmail        = "sso_no_email"
-	samlErrLinked         = "already_linked"
 	samlErrDisabled       = "account_disabled"
 
 	auditActionSAMLSignIn   = "sso.saml.signed_in"
@@ -35,43 +35,99 @@ const (
 	auditActorTypeSession   = "session"
 )
 
+// samlFlowStore holds outstanding AuthnRequest IDs bound to a browser secret.
+// Each one is consumed once, which is what refuses a replayed response.
+type samlFlowStore struct {
+	mu      sync.Mutex
+	pending map[string]samlFlow
+}
+
+type samlFlow struct {
+	connectionID string
+	requestID    string
+	expires      time.Time
+}
+
+func newSAMLFlowStore() *samlFlowStore { return &samlFlowStore{pending: map[string]samlFlow{}} }
+
+func (s *samlFlowStore) put(browserHash string, f samlFlow, now time.Time) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.pending) >= samlMaxInFlight {
+		for k, v := range s.pending {
+			if now.After(v.expires) {
+				delete(s.pending, k)
+			}
+		}
+		if len(s.pending) >= samlMaxInFlight {
+			return false
+		}
+	}
+	s.pending[browserHash] = f
+	return true
+}
+
+func (s *samlFlowStore) consume(browserHash, connectionID string, now time.Time) (string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	f, ok := s.pending[browserHash]
+	delete(s.pending, browserHash)
+	if !ok || f.connectionID != connectionID || now.After(f.expires) {
+		return "", false
+	}
+	return f.requestID, true
+}
+
 type publicSAMLProvider struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
+func samlUsable(c store.SSOConnection) bool { return c.Enabled && c.LibraryID != "" }
+
 // handleListPublicSAMLProviders lists enabled, fully configured connections for the login screen.
 func (rt *Router) handleListPublicSAMLProviders(w http.ResponseWriter, r *http.Request) {
 	out := []publicSAMLProvider{}
-	if rt.sso == nil {
+	if rt.sso == nil || rt.authEngine == nil || !rt.authEngine.SAMLEnabled() {
 		writeJSON(w, http.StatusOK, out)
 		return
 	}
-	conns, err := rt.sso.ListSAMLConnections(r.Context())
+	conns, err := rt.sso.ListSSOConnections(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: list public saml providers failed", err)
 		return
 	}
 	for _, c := range conns {
-		if c.Enabled && samlConfigured(c) {
+		if samlUsable(c) {
 			out = append(out, publicSAMLProvider{ID: c.ID, Name: c.Name})
 		}
 	}
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleSAMLMetadata serves the SP metadata IDP administrators import.
+// handleSAMLMetadata serves the library's SP metadata for one connection.
 func (rt *Router) handleSAMLMetadata(w http.ResponseWriter, r *http.Request) {
-	c, ok := rt.loadSAMLConnection(w, r)
-	if !ok {
+	if !rt.samlReady(w) {
 		return
 	}
-	sp, err := rt.samlSPFor(r.Context(), c)
+	c, err := rt.sso.GetSSOConnection(r.Context(), r.PathValue("id"))
+	if errors.Is(err, store.ErrSSOConnectionNotFound) || (err == nil && c.LibraryID == "") {
+		writeError(w, http.StatusNotFound, "saml connection not found or not configured")
+		return
+	}
 	if err != nil {
-		rt.writeSAMLSetupError(w, err)
+		rt.internalError(w, "api: saml metadata: load connection failed", err)
 		return
 	}
-	md, err := sp.MetadataXML()
+	if err := rt.syncSAMLEndpoints(r.Context(), c); err != nil {
+		if errors.Is(err, errSAMLNeedsHTTPS) {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
+		rt.internalError(w, "api: saml metadata: sync endpoints failed", err, slog.String("connection_id", c.ID))
+		return
+	}
+	md, err := rt.authEngine.SAMLMetadata(r.Context(), c.LibraryID)
 	if err != nil {
 		rt.internalError(w, "api: render saml metadata failed", err, slog.String("connection_id", c.ID))
 		return
@@ -80,61 +136,44 @@ func (rt *Router) handleSAMLMetadata(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(md)
 }
 
-func (rt *Router) writeSAMLSetupError(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, errSAMLNeedsHTTPS):
-		writeError(w, http.StatusConflict, err.Error())
-	case errors.Is(err, errSAMLNoMasterKey):
-		writeError(w, http.StatusNotImplemented, err.Error())
-	default:
-		rt.internalError(w, "api: saml service provider setup failed", err)
-	}
-}
-
 func redirectSAMLError(w http.ResponseWriter, r *http.Request, code string) {
 	http.Redirect(w, r, "/login?oauth_error="+url.QueryEscape(code), http.StatusFound)
 }
 
-func (rt *Router) samlRateLimited(r *http.Request) bool {
-	ok, _ := rt.samlLimiter.allow(clientIP(r))
-	return !ok
-}
-
 // samlFlowConnection loads an enabled, configured connection for the public
 // flow, answering with a login-screen redirect when it cannot be used.
-func (rt *Router) samlFlowConnection(w http.ResponseWriter, r *http.Request) (store.SAMLConnection, bool) {
-	if rt.samlRateLimited(r) {
+func (rt *Router) samlFlowConnection(w http.ResponseWriter, r *http.Request) (store.SSOConnection, bool) {
+	if ok, _ := rt.samlLimiter.allow(clientIP(r)); !ok {
 		redirectSAMLError(w, r, samlErrRateLimited)
-		return store.SAMLConnection{}, false
+		return store.SSOConnection{}, false
 	}
-	if rt.sso == nil || !requestIsHTTPS(r) {
+	if rt.sso == nil || rt.authEngine == nil || !rt.authEngine.SAMLEnabled() || !requestIsHTTPS(r) {
 		redirectSAMLError(w, r, samlErrUnavailable)
-		return store.SAMLConnection{}, false
+		return store.SSOConnection{}, false
 	}
-	c, err := rt.sso.GetSAMLConnection(r.Context(), r.PathValue("id"))
-	if err != nil || !c.Enabled || !samlConfigured(c) {
+	c, err := rt.sso.GetSSOConnection(r.Context(), r.PathValue("id"))
+	if err != nil || !samlUsable(c) {
 		redirectSAMLError(w, r, samlErrUnavailable)
-		return store.SAMLConnection{}, false
+		return store.SSOConnection{}, false
+	}
+	if err := rt.syncSAMLEndpoints(r.Context(), c); err != nil {
+		rt.logger.Error("api: saml: sync endpoints failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
+		redirectSAMLError(w, r, samlErrUnavailable)
+		return store.SSOConnection{}, false
 	}
 	return c, true
 }
 
-// handleSAMLLogin starts SP-initiated sign-in. The AuthnRequest ID is stored
-// against a hash of a fresh browser secret, so only this browser can finish it.
+// handleSAMLLogin starts SP-initiated sign-in through the library and binds
+// the AuthnRequest ID to a fresh browser secret, so only this browser can finish it.
 func (rt *Router) handleSAMLLogin(w http.ResponseWriter, r *http.Request) {
 	c, ok := rt.samlFlowConnection(w, r)
 	if !ok {
 		return
 	}
-	sp, err := rt.samlSPFor(r.Context(), c)
+	redirect, requestID, err := rt.authEngine.BeginSAMLLogin(r.Context(), c.LibraryID)
 	if err != nil {
-		rt.logger.Error("api: saml login: service provider unavailable", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
-		redirectSAMLError(w, r, samlErrUnavailable)
-		return
-	}
-	redirect, requestID, err := sp.BeginLogin()
-	if err != nil {
-		rt.logger.Error("api: saml login: build request failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
+		rt.logger.Error("api: saml login: begin failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
 		redirectSAMLError(w, r, samlErrInternal)
 		return
 	}
@@ -144,16 +183,15 @@ func (rt *Router) handleSAMLLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	now := time.Now()
-	if err := rt.sso.SaveSAMLAuthnRequest(r.Context(), requestID, c.ID, hashToken(secret), now.Add(samlRequestTTL), now); err != nil {
-		rt.logger.Error("api: saml login: save request failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
-		redirectSAMLError(w, r, samlErrInternal)
+	if !rt.samlFlows.put(hashToken(secret), samlFlow{connectionID: c.ID, requestID: requestID, expires: now.Add(samlRequestTTL)}, now) {
+		redirectSAMLError(w, r, samlErrRateLimited)
 		return
 	}
 	setSAMLFlowCookie(w, c.ID, secret, int(samlRequestTTL/time.Second))
 	http.Redirect(w, r, redirect, http.StatusFound)
 }
 
-// SameSite=None because the IDP posts the response cross-site; Secure is
+// SameSite=None because the IdP posts the response cross-site; Secure is
 // mandatory with it, which is why the flow refuses plain HTTP.
 func setSAMLFlowCookie(w http.ResponseWriter, connectionID, value string, maxAge int) {
 	c := &http.Cookie{ //nolint:gosec // SameSite=None is required for the IdP cross-site POST; Secure and HttpOnly are set
@@ -166,15 +204,16 @@ func setSAMLFlowCookie(w http.ResponseWriter, connectionID, value string, maxAge
 	http.SetCookie(w, c)
 }
 
-// handleSAMLACS consumes the browser-bound request, validates the response,
-// refuses a replayed assertion, resolves the user and only then issues a session.
+// handleSAMLACS consumes the browser-bound request, runs the strict gate,
+// settles the platform user, and only then lets the library link the
+// identity and issue the session.
 func (rt *Router) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 	c, ok := rt.samlFlowConnection(w, r)
 	if !ok {
 		return
 	}
 	ctx := r.Context()
-	r.Body = http.MaxBytesReader(w, r.Body, samlsso.MaxResponseBytes+4096)
+	r.Body = http.MaxBytesReader(w, r.Body, samlMaxFormBytes)
 	samlResponse := r.PostFormValue("SAMLResponse")
 	cookie, cerr := r.Cookie(samlFlowCookie)
 	setSAMLFlowCookie(w, c.ID, "", 0)
@@ -182,31 +221,17 @@ func (rt *Router) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 		rt.samlReject(w, r, c, samlErrInvalidState, "no flow cookie")
 		return
 	}
-	now := time.Now()
-	requestID, err := rt.sso.ConsumeSAMLAuthnRequest(ctx, c.ID, hashToken(cookie.Value), now)
-	if err != nil {
-		rt.samlReject(w, r, c, samlErrInvalidState, err.Error())
+	requestID, ok := rt.samlFlows.consume(hashToken(cookie.Value), c.ID, time.Now())
+	if !ok {
+		rt.samlReject(w, r, c, samlErrInvalidState, "no outstanding request for this browser")
 		return
 	}
-	sp, err := rt.samlSPFor(ctx, c)
-	if err != nil {
-		rt.samlReject(w, r, c, samlErrUnavailable, err.Error())
-		return
-	}
-	ident, err := sp.Validate(samlResponse, requestID, samlsso.Attributes{Email: c.EmailAttribute, Name: c.NameAttribute, Groups: c.GroupsAttribute})
+	ident, err := rt.authEngine.VerifySAMLResponse(ctx, c.LibraryID, samlResponse, requestID)
 	if err != nil {
 		rt.samlReject(w, r, c, samlErrInvalid, err.Error())
 		return
 	}
-	if err := rt.sso.RecordSAMLAssertion(ctx, c.ID, ident.AssertionID, ident.ReplayUntil, now); err != nil {
-		code := samlErrInternal
-		if errors.Is(err, store.ErrSAMLAssertionReplayed) {
-			code = samlErrReplayed
-		}
-		rt.samlReject(w, r, c, code, err.Error())
-		return
-	}
-	user, code, err := rt.samlResolveUser(ctx, c, ident)
+	plan, code, err := rt.samlPlanSignIn(ctx, c, ident)
 	if code != "" {
 		detail := code
 		if err != nil {
@@ -215,23 +240,36 @@ func (rt *Router) handleSAMLACS(w http.ResponseWriter, r *http.Request) {
 		rt.samlReject(w, r, c, code, detail)
 		return
 	}
-	if rt.accountDisabled(ctx, user.ID) {
-		rt.samlReject(w, r, c, samlErrDisabled, "account disabled")
+	token, engineUser, err := rt.authEngine.FinishSAMLLogin(ctx, c.LibraryID, samlResponse, r.UserAgent(), clientIP(r))
+	if err != nil {
+		rt.samlRollback(ctx, plan)
+		code := samlErrInvalid
+		if authengine.IsCode(err, authengine.CodeAccountDisabled) {
+			code = samlErrDisabled
+		}
+		rt.samlReject(w, r, c, code, err.Error())
 		return
 	}
-	rt.finishSAMLSignIn(w, r, c, ident, user)
+	user, code, err := rt.samlSettleUser(ctx, c, plan, engineUser)
+	if code != "" {
+		rt.libSessions.Revoke(ctx, token)
+		rt.samlRollback(ctx, plan)
+		detail := code
+		if err != nil {
+			detail = err.Error()
+		}
+		rt.samlReject(w, r, c, code, detail)
+		return
+	}
+	rt.finishSAMLSignIn(w, r, c, user, token)
 }
 
-func (rt *Router) finishSAMLSignIn(w http.ResponseWriter, r *http.Request, c store.SAMLConnection, ident samlsso.Identity, user store.User) {
+func (rt *Router) finishSAMLSignIn(w http.ResponseWriter, r *http.Request, c store.SSOConnection, user store.User, token string) {
 	ctx := r.Context()
-	token, err := rt.libSessions.IssueSession(ctx, toLibUser(user), r.UserAgent(), clientIP(r))
-	if err != nil {
-		rt.samlReject(w, r, c, samlErrInternal, err.Error())
-		return
-	}
 	hold, err := rt.holdForApproval(w, r, user, token, signInMethodSAML)
 	switch {
 	case err != nil:
+		rt.libSessions.Revoke(ctx, token)
 		rt.samlReject(w, r, c, samlErrInternal, err.Error())
 		return
 	case hold != nil && hold.limited:
@@ -246,9 +284,6 @@ func (rt *Router) finishSAMLSignIn(w http.ResponseWriter, r *http.Request, c sto
 			rt.logger.Warn("api: saml: record session method failed", slog.String("user_id", user.ID), slog.String("error", err.Error()))
 		}
 	}
-	if err := rt.sso.TouchSAMLIdentity(ctx, c.ID, ident.NameID, time.Now()); err != nil {
-		rt.logger.Warn("api: saml: touch identity failed", slog.String("connection_id", c.ID), slog.String("error", err.Error()))
-	}
 	rt.finishLibSession(w, r, user, token)
 	rt.auditSignIn(ctx, r, signInActor{kind: auditActorTypeSession, id: user.ID, name: user.Email}, auditActionSAMLSignIn, samlPathPrefix+c.ID+"/acs", http.StatusFound)
 	http.Redirect(w, r, samlCompleteRedirect, http.StatusFound)
@@ -256,7 +291,7 @@ func (rt *Router) finishSAMLSignIn(w http.ResponseWriter, r *http.Request, c sto
 
 // samlReject audits a refused sign-in with its internal reason, then sends the
 // browser to the login screen with only the short public code.
-func (rt *Router) samlReject(w http.ResponseWriter, r *http.Request, c store.SAMLConnection, code, detail string) {
+func (rt *Router) samlReject(w http.ResponseWriter, r *http.Request, c store.SSOConnection, code, detail string) {
 	rt.logger.Warn("api: saml sign-in refused", slog.String("connection_id", c.ID), slog.String("code", code), slog.String("detail", detail))
 	rt.auditSignIn(r.Context(), r, anonymousSignIn(""), auditActionSAMLRejected, samlPathPrefix+c.ID+"/acs?code="+code, http.StatusForbidden)
 	redirectSAMLError(w, r, code)

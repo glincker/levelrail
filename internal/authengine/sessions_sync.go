@@ -119,6 +119,9 @@ func (s *Sessions) SyncPassword(ctx context.Context, legacyUserID, hash string) 
 		}
 	} else if err := upsertPassword(ctx, tx, engine, hash); err != nil {
 		return "", err
+	} else if _, err := tx.ExecContext(ctx, `UPDATE theauth_account_states SET must_change_password = 0 WHERE user_id = ?`, engine); err != nil {
+		// A new password set on the platform side satisfies a forced change, as a library reset does.
+		return "", fmt.Errorf("authengine: clear forced password change: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return "", fmt.Errorf("authengine: commit password sync: %w", err)
@@ -126,35 +129,27 @@ func (s *Sessions) SyncPassword(ctx context.Context, legacyUserID, hash string) 
 	return engine, nil
 }
 
-// DeleteUser removes a user's library side: sessions, tokens and the user
-// itself. Call it after the platform user is deleted: the id-map cascade has
-// already made every library session of that user unresolvable.
+// DeleteUser removes a user's library side through the library's own account
+// deletion, which cascades over sessions, tokens, passkeys, TOTP, linked
+// identities, memberships and lifecycle state in one transaction. Call it
+// after the platform user is deleted: the id-map cascade has already made
+// every library session of that user unresolvable.
 func (s *Sessions) DeleteUser(ctx context.Context, engineID string) error {
 	if engineID == "" {
 		return nil
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	id, err := parseULID(engineID)
 	if err != nil {
-		return fmt.Errorf("authengine: begin user delete: %w", err)
+		return err
 	}
-	defer func() { _ = tx.Rollback() }()
-	now := time.Now().UTC().UnixMicro()
-	stmts := []struct {
-		q    string
-		args []any
-	}{
-		{`UPDATE theauth_api_tokens SET revoked_at = ? WHERE owner_id = ? AND revoked_at IS NULL`, []any{now, engineID}},
-		{`DELETE FROM theauth_sessions WHERE user_id = ?`, []any{engineID}},
-		{`DELETE FROM theauth_session_links WHERE user_id = ?`, []any{engineID}},
-		{`DELETE FROM theauth_users WHERE id = ?`, []any{engineID}},
+	s.mu.RLock()
+	a := s.auth
+	s.mu.RUnlock()
+	if a == nil {
+		return errors.New("authengine: sessions engine not bound")
 	}
-	for _, st := range stmts {
-		if _, err := tx.ExecContext(ctx, st.q, st.args...); err != nil {
-			return fmt.Errorf("authengine: delete library user %s: %w", engineID, err)
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("authengine: commit user delete: %w", err)
+	if err := a.DeleteUser(ctx, id); err != nil && !errors.Is(err, theauth.ErrStorageNotFound) {
+		return fmt.Errorf("authengine: delete library user %s: %w", engineID, err)
 	}
 	return nil
 }

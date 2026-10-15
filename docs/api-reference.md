@@ -231,6 +231,7 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| PUT | /api/v1/users/{id}/password-change-required | AbilityRoot | handleSetPasswordChangeRequired |
 
 </Accordion>
 
@@ -1331,20 +1332,20 @@ Routes that do not fit an existing group.
 | POST | /api/v1/sso/scim/tokens | AbilityRoot | handleCreateSCIMToken |
 | POST | /api/v1/sso/scim/tokens/{id}/rotate | AbilityRoot | handleRotateSCIMToken |
 | DELETE | /api/v1/sso/scim/tokens/{id} | AbilityRoot | handleRevokeSCIMToken |
-| GET | /api/v1/scim/v2/ServiceProviderConfig | Public | handleSCIMServiceProviderConfig |
-| GET | /api/v1/scim/v2/ResourceTypes | Public | handleSCIMResourceTypes |
-| GET | /api/v1/scim/v2/Users | Public | handleSCIMListUsers |
-| POST | /api/v1/scim/v2/Users | Public | handleSCIMCreateUser |
-| GET | /api/v1/scim/v2/Users/{id} | Public | handleSCIMGetUser |
-| PUT | /api/v1/scim/v2/Users/{id} | Public | handleSCIMReplaceUser |
-| PATCH | /api/v1/scim/v2/Users/{id} | Public | handleSCIMPatchUser |
-| DELETE | /api/v1/scim/v2/Users/{id} | Public | handleSCIMDeleteUser |
-| GET | /api/v1/scim/v2/Groups | Public | handleSCIMListGroups |
-| POST | /api/v1/scim/v2/Groups | Public | handleSCIMCreateGroup |
-| GET | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMGetGroup |
-| PUT | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMReplaceGroup |
-| PATCH | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMPatchGroup |
-| DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIMDeleteGroup |
+| GET | /api/v1/scim/v2/ServiceProviderConfig | Public | handleSCIM |
+| GET | /api/v1/scim/v2/ResourceTypes | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Users | Public | handleSCIM |
+| POST | /api/v1/scim/v2/Users | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| PUT | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| PATCH | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| DELETE | /api/v1/scim/v2/Users/{id} | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Groups | Public | handleSCIM |
+| POST | /api/v1/scim/v2/Groups | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| PUT | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| PATCH | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
+| DELETE | /api/v1/scim/v2/Groups/{id} | Public | handleSCIM |
 | POST | /api/v1/node-providers/{provider}/test | AbilityWriteSensitive | handleTestNodeProvider |
 | DELETE | /api/v1/node-providers/{provider} | AbilityWriteSensitive | handleDisconnectNodeProvider |
 | GET | /api/v1/registry-vendors | AbilityRead | handleListRegistryVendors |
@@ -1356,6 +1357,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/database-versions/refresh | AbilityWriteSensitive | handleRefreshDatabaseVersions |
 | GET | /api/v1/database-catalog | AbilityRead | handleGetDatabaseCatalogStatus |
 | POST | /api/v1/database-catalog/refresh | AbilityWriteSensitive | handleRefreshDatabaseCatalog |
+| GET | /api/v1/scim/v2/ResourceTypes/{id} | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Schemas | Public | handleSCIM |
+| GET | /api/v1/scim/v2/Schemas/{id} | Public | handleSCIM |
 
 ## See also
 

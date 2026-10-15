@@ -78,7 +78,7 @@ func (rt *Router) subjectOf(r *http.Request) policySubject {
 			}
 		}
 	}
-	if raw, ok := bearerToken(r); ok && !strings.HasPrefix(raw, scimTokenPrefix) {
+	if raw, ok := bearerToken(r); ok && !strings.HasPrefix(r.URL.Path, scimBasePath+"/") {
 		if rec, err := rt.lookupBearerToken(r.Context(), raw); err == nil {
 			return policySubject{userID: rec.OwnerUserID}
 		}

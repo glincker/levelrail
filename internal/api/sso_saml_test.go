@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/samlsso/samltest"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -26,7 +25,7 @@ type samlHarness struct {
 	rt     *Router
 	db     *store.DB
 	admin  *http.Cookie
-	idp    *samltest.IDP
+	idp    *testIDP
 	connID string
 }
 
@@ -38,10 +37,11 @@ func newSAMLHarness(t *testing.T, conn map[string]any) *samlHarness {
 	if err := db.SetDashboardURL(context.Background(), samlTestBase); err != nil {
 		t.Fatal(err)
 	}
-	h := &samlHarness{t: t, rt: rt, db: db, admin: admin, idp: samltest.NewIDP(t, samlTestIDP)}
+	h := &samlHarness{t: t, rt: rt, db: db, admin: admin, idp: newTestIDP(t, samlTestIDP)}
 	body := map[string]any{
 		"name": "Okta", "enabled": true, "idp_entity_id": samlTestIDP, "idp_sso_url": samlTestIDPSSO,
 		"idp_certificates": h.idp.CertPEM(), "jit_provisioning": true, "default_role_id": "role_viewer",
+		"email_attribute": "email", "name_attribute": "displayName", "groups_attribute": "groups",
 	}
 	for k, v := range conn {
 		body[k] = v
@@ -67,21 +67,20 @@ func (h *samlHarness) admin2(method, path string, body any) *httptest.ResponseRe
 	if body == nil {
 		raw = nil
 	}
-	req := authedRequest(h.t, h.admin, method, path, string(raw))
 	rec := httptest.NewRecorder()
-	h.rt.Handler().ServeHTTP(rec, req)
+	h.rt.Handler().ServeHTTP(rec, authedRequest(h.t, h.admin, method, path, string(raw)))
 	return rec
 }
 
-func (h *samlHarness) target(requestID string) samltest.Target {
-	return samltest.Target{
+func (h *samlHarness) target(requestID string) idpTarget {
+	return idpTarget{
 		SPEntityID: samlTestBase + samlPathPrefix + h.connID + "/metadata",
 		ACSURL:     samlTestBase + samlPathPrefix + h.connID + "/acs",
 		RequestID:  requestID,
 	}
 }
 
-// start runs the login redirect and returns the stored request ID and flow cookie.
+// start runs the login redirect and returns the browser-bound request ID and flow cookie.
 func (h *samlHarness) start() (string, *http.Cookie) {
 	h.t.Helper()
 	req := httptest.NewRequest(http.MethodGet, samlPathPrefix+h.connID+"/login", nil)
@@ -100,9 +99,11 @@ func (h *samlHarness) start() (string, *http.Cookie) {
 	if flow == nil || !flow.Secure || !flow.HttpOnly || flow.SameSite != http.SameSiteNoneMode {
 		h.t.Fatalf("flow cookie = %+v", flow)
 	}
-	var id string
-	if err := h.db.QueryRowContext(context.Background(), `SELECT id FROM saml_authn_requests ORDER BY rowid DESC LIMIT 1`).Scan(&id); err != nil {
-		h.t.Fatal(err)
+	h.rt.samlFlows.mu.Lock()
+	id := h.rt.samlFlows.pending[hashToken(flow.Value)].requestID
+	h.rt.samlFlows.mu.Unlock()
+	if id == "" {
+		h.t.Fatal("login stored no request")
 	}
 	return id, flow
 }
@@ -150,13 +151,8 @@ func wantSAMLError(t *testing.T, rec *httptest.ResponseRecorder, code string) {
 	}
 }
 
-func TestSAMLSignInProvisionsWithMappedRole(t *testing.T) {
-	h := newSAMLHarness(t, map[string]any{"sync_roles": true})
-	if rec := h.admin2(http.MethodPut, "/api/v1/sso/group-mappings", map[string]any{"mappings": []map[string]any{{"group": "eng", "role_id": "role_operator", "priority": 5}}}); rec.Code != http.StatusOK {
-		t.Fatalf("mappings: %d %s", rec.Code, rec.Body)
-	}
-	id, flow := h.start()
-	rec := h.post(flow, h.respond(id, "nid-ada", "ada@example.com", "eng"))
+func wantSAMLSession(t *testing.T, h *samlHarness, rec *httptest.ResponseRecorder) {
+	t.Helper()
 	if rec.Code != http.StatusFound || rec.Header().Get("Location") != samlCompleteRedirect {
 		t.Fatalf("acs: %d %s", rec.Code, rec.Header().Get("Location"))
 	}
@@ -164,29 +160,45 @@ func TestSAMLSignInProvisionsWithMappedRole(t *testing.T) {
 	if sess == nil {
 		t.Fatal("no session cookie")
 	}
-	user, err := h.db.GetUserByEmail(context.Background(), "ada@example.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if role, _ := h.db.UserRoleID(context.Background(), user.ID); role != "role_operator" {
-		t.Fatalf("role = %q", role)
-	}
 	check := httptest.NewRecorder()
 	h.rt.Handler().ServeHTTP(check, authedRequest(t, sess, http.MethodGet, "/api/v1/auth/session", ""))
 	if check.Code != http.StatusOK {
 		t.Fatalf("session check: %d", check.Code)
 	}
+}
+
+func TestSAMLSignInProvisionsWithMappedRole(t *testing.T) {
+	h := newSAMLHarness(t, map[string]any{"sync_roles": true})
+	if rec := h.admin2(http.MethodPut, "/api/v1/sso/group-mappings", map[string]any{"mappings": []map[string]any{{"group": "eng", "role_id": "role_operator", "priority": 5}}}); rec.Code != http.StatusOK {
+		t.Fatalf("mappings: %d %s", rec.Code, rec.Body)
+	}
+	id, flow := h.start()
+	wantSAMLSession(t, h, h.post(flow, h.respond(id, "nid-ada", "ada@example.com", "eng")))
+	ctx := context.Background()
+	user, err := h.db.GetUserByEmail(ctx, "ada@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if role, _ := h.db.UserRoleID(ctx, user.ID); role != "role_operator" {
+		t.Fatalf("role = %q", role)
+	}
+	lib, err := h.rt.authEngine.SAMLIdentityUser(ctx, h.libID(), "nid-ada")
+	if err != nil || lib == "" {
+		t.Fatalf("library identity = %q %v", lib, err)
+	}
+	if legacy, _ := h.rt.authEngine.LegacyUserFor(ctx, lib); legacy != user.ID {
+		t.Fatalf("library identity maps to %q, want %q", legacy, user.ID)
+	}
 
 	id2, flow2 := h.start()
-	if rec = h.post(flow2, h.respond(id2, "nid-ada", "ada@example.com")); sessionFrom(rec) == nil {
-		t.Fatalf("fallback role sign-in refused: %s", rec.Header().Get("Location"))
-	}
-	if role, _ := h.db.UserRoleID(context.Background(), user.ID); role != "role_viewer" {
+	wantSAMLSession(t, h, h.post(flow2, h.respond(id2, "nid-ada", "ada@example.com")))
+	if role, _ := h.db.UserRoleID(ctx, user.ID); role != "role_viewer" {
 		t.Fatalf("leaving the group kept role %q", role)
 	}
 
 	update := map[string]any{"name": "Okta", "enabled": true, "idp_entity_id": samlTestIDP, "idp_sso_url": samlTestIDPSSO,
-		"idp_certificates": h.idp.CertPEM(), "jit_provisioning": true, "sync_roles": true}
+		"idp_certificates": h.idp.CertPEM(), "jit_provisioning": true, "sync_roles": true,
+		"email_attribute": "email", "name_attribute": "displayName", "groups_attribute": "groups"}
 	if rec := h.admin2(http.MethodPut, "/api/v1/sso/saml/connections/"+h.connID, update); rec.Code != http.StatusOK {
 		t.Fatalf("update: %d %s", rec.Code, rec.Body)
 	}
@@ -194,66 +206,33 @@ func TestSAMLSignInProvisionsWithMappedRole(t *testing.T) {
 	wantSAMLError(t, h.post(flow3, h.respond(id3, "nid-ada", "ada@example.com")), samlErrNoRole)
 }
 
-func TestSAMLRefusesReplay(t *testing.T) {
-	h := newSAMLHarness(t, nil)
-	id, flow := h.start()
-	resp := h.respond(id, "nid-1", "one@example.com")
-	if rec := h.post(flow, resp); sessionFrom(rec) == nil {
-		t.Fatalf("first use refused: %s", rec.Header().Get("Location"))
+func (h *samlHarness) libID() string {
+	h.t.Helper()
+	c, err := h.db.GetSSOConnection(context.Background(), h.connID)
+	if err != nil || c.LibraryID == "" {
+		h.t.Fatalf("connection has no library id: %v", err)
 	}
-	wantSAMLError(t, h.post(flow, resp), samlErrInvalidState)
-
-	id2, flow2 := h.start()
-	tg := h.target(id2)
-	a := h.idp.Assertion(tg, "nid-1", map[string][]string{"email": {"one@example.com"}}, time.Now())
-	first := h.idp.Assertion(tg, "nid-1", nil, time.Now())
-	a.ID = first.ID
-	if rec := h.post(flow2, h.idp.Respond(t, a, h.idp.DefaultOptions(tg))); sessionFrom(rec) == nil {
-		t.Fatalf("fresh assertion refused: %s", rec.Header().Get("Location"))
-	}
-	id3, flow3 := h.start()
-	tg3 := h.target(id3)
-	b := h.idp.Assertion(tg3, "nid-1", map[string][]string{"email": {"one@example.com"}}, time.Now())
-	b.ID = a.ID
-	wantSAMLError(t, h.post(flow3, h.idp.Respond(t, b, h.idp.DefaultOptions(tg3))), samlErrReplayed)
+	return c.LibraryID
 }
 
-func TestSAMLRejections(t *testing.T) {
-	h := newSAMLHarness(t, map[string]any{"jit_provisioning": false, "allowed_domains": []string{"example.com"}})
-	forger := samltest.NewIDP(t, samlTestIDP)
-
-	id, flow := h.start()
-	tg := h.target(id)
-	forged := forger.Respond(t, forger.Assertion(tg, "nid-x", map[string][]string{"email": {"x@example.com"}}, time.Now()), forger.DefaultOptions(tg))
-	wantSAMLError(t, h.post(flow, forged), samlErrInvalid)
-
-	id, flow = h.start()
-	wantSAMLError(t, h.post(flow, h.respond(id, "nid-new", "new@example.com")), samlErrNotProvisioned)
-
-	id, flow = h.start()
-	wantSAMLError(t, h.post(flow, h.respond(id, "nid-evil", "evil@other.test")), samlErrDomain)
-
-	id, _ = h.start()
-	wantSAMLError(t, h.post(nil, h.respond(id, "nid-new", "new@example.com")), samlErrInvalidState)
-
-	_, flow = h.start()
-	wrong := h.respond("id-some-other-request", "nid-x", "x@example.com")
-	wantSAMLError(t, h.post(flow, wrong), samlErrInvalid)
-
+func TestSAMLLinksExistingAccountAndRefusesDisabled(t *testing.T) {
+	h := newSAMLHarness(t, map[string]any{"jit_provisioning": false})
 	existing := storeUserForTest(t, h.db, "known@example.com")
+	id, flow := h.start()
+	wantSAMLSession(t, h, h.post(flow, h.respond(id, "nid-known", "known@example.com")))
+	ctx := context.Background()
+	lib, err := h.rt.authEngine.SAMLIdentityUser(ctx, h.libID(), "nid-known")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if legacy, _ := h.rt.authEngine.LegacyUserFor(ctx, lib); legacy != existing.ID {
+		t.Fatalf("identity links %q, want %q", legacy, existing.ID)
+	}
+	if err := h.rt.authEngine.DisableUser(ctx, existing.ID); err != nil {
+		t.Fatal(err)
+	}
 	id, flow = h.start()
-	rec := h.post(flow, h.respond(id, "nid-known", "known@example.com"))
-	if sessionFrom(rec) == nil {
-		t.Fatalf("existing account refused: %s", rec.Header().Get("Location"))
-	}
-	if uid, err := h.db.SAMLIdentityUser(context.Background(), h.connID, "nid-known"); err != nil || uid != existing.ID {
-		t.Fatalf("link = %q %v", uid, err)
-	}
-
-	plain := httptest.NewRequest(http.MethodGet, samlPathPrefix+h.connID+"/login", nil)
-	plainRec := httptest.NewRecorder()
-	h.rt.Handler().ServeHTTP(plainRec, plain)
-	wantSAMLError(t, plainRec, samlErrUnavailable)
+	wantSAMLError(t, h.post(flow, h.respond(id, "nid-known", "known@example.com")), samlErrDisabled)
 }
 
 func TestSAMLConnectionValidation(t *testing.T) {
@@ -262,6 +241,7 @@ func TestSAMLConnectionValidation(t *testing.T) {
 		"incomplete enabled": {"name": "B", "enabled": true, "idp_entity_id": samlTestIDP},
 		"http sso url":       {"name": "C", "enabled": true, "idp_entity_id": samlTestIDP, "idp_sso_url": "http://idp/sso", "idp_certificates": h.idp.CertPEM()},
 		"bad certificate":    {"name": "D", "idp_certificates": "not a cert"},
+		"two certificates":   {"name": "G", "idp_certificates": h.idp.CertPEM() + newTestIDP(t, "x").CertPEM()},
 		"unknown role":       {"name": "E", "default_role_id": "role_nope"},
 		"bad domain":         {"name": "F", "allowed_domains": []string{"not a domain"}},
 	}
@@ -278,6 +258,9 @@ func TestSAMLConnectionValidation(t *testing.T) {
 	}
 	var draft samlConnectionResource
 	_ = json.Unmarshal(rec.Body.Bytes(), &draft)
+	if draft.Configured {
+		t.Fatal("an empty connection reports configured")
+	}
 	rec = h.admin2(http.MethodPost, "/api/v1/sso/saml/connections/"+draft.ID+"/metadata", map[string]any{"xml": h.idp.MetadataXML(samlTestIDPSSO)})
 	var imported samlConnectionResource
 	_ = json.Unmarshal(rec.Body.Bytes(), &imported)
@@ -290,7 +273,17 @@ func TestSAMLConnectionValidation(t *testing.T) {
 	md := httptest.NewRecorder()
 	h.rt.Handler().ServeHTTP(md, httptest.NewRequest(http.MethodGet, samlPathPrefix+draft.ID+"/metadata", nil))
 	if md.Code != http.StatusOK || !strings.Contains(md.Body.String(), imported.SPACSURL) {
-		t.Fatalf("metadata: %d", md.Code)
+		t.Fatalf("metadata: %d %s", md.Code, md.Body)
+	}
+	cleared := map[string]any{"name": "Draft", "idp_entity_id": ""}
+	if rec := h.admin2(http.MethodPut, "/api/v1/sso/saml/connections/"+draft.ID, cleared); rec.Code != http.StatusBadRequest {
+		t.Fatalf("clearing a configured connection: %d %s", rec.Code, rec.Body)
+	}
+	if rec := h.admin2(http.MethodDelete, "/api/v1/sso/saml/connections/"+draft.ID, nil); rec.Code != http.StatusNoContent {
+		t.Fatalf("delete: %d %s", rec.Code, rec.Body)
+	}
+	if _, err := h.rt.authEngine.SAMLConnection(context.Background(), imported.ID); err == nil {
+		t.Fatal("library connection survived the delete")
 	}
 }
 

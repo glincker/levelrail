@@ -525,6 +525,14 @@ The security center adds its own `security.*` events, listed in [Security center
 
 </Accordion>
 
+### Account lifecycle
+
+Disabling, forced password changes and deletion run through the sign-in library, so each takes effect in one place:
+
+- **Disabled** accounts (today set by [SCIM](/scim) deprovisioning) are refused by every sign-in method, and disabling revokes their sessions, API tokens and remembered devices in the same call. The Users page marks them **Disabled**.
+- **Require password change** (Users page, or `levelrail-cli users require-password-change <id>`) ends the user's sessions at once. Every sign-in is then refused with "a password change is required" until the user sets a new password with forgot password on the sign-in page; `--off` clears it. It is refused for your own account and for accounts without a password.
+- **Remove** deletes the account and, through the library, every session, API token, passkey, TOTP secret, linked identity and directory membership it had.
+
 ### Audit log
 
 Every request gated above `AbilityRead` (write, deploy, root-tier, and `read:sensitive`) gets one row:
@@ -633,6 +641,7 @@ Recording is best-effort and runs after the real request completes. A failed aud
 | `GET` | `/api/v1/users` | `read` |
 | `PUT` | `/api/v1/users/{id}/abilities` | `root` |
 | `DELETE` | `/api/v1/users/{id}` | `root` |
+| `PUT` | `/api/v1/users/{id}/password-change-required` | `root` |
 | `GET` | `/api/v1/roles` | `read` |
 
 Custom role and environment grant routes are documented in [Access control](/access-control).
@@ -703,6 +712,7 @@ levelrail-cli users list
 levelrail-cli users create --email EMAIL --password PASSWORD (--role admin|operator|viewer | --abilities LIST)
 levelrail-cli users set-abilities <id> (--role ROLE | --abilities LIST)
 levelrail-cli users delete <id>
+levelrail-cli users require-password-change <id> [--off]
 levelrail-cli users roles
 
 # IAM policies
@@ -761,7 +771,7 @@ levelrail-cli audit-purge
   Sign-in covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito, generic OIDC and [SAML 2.0](/sso-saml); accounts and groups sync through [SCIM](/scim). There is no LDAP sync.
 
 - There is no per-team or per-project access boundary. IAM policies scope to individual resources (`app:name`, `database:name`) or a wildcard. The Organizations settings page groups projects for display and navigation only.
-- There is no SSO/SAML and no SCIM provisioning. OAuth covers Google, GitHub, Microsoft, GitLab, Bitbucket, Discord, Slack, LinkedIn, Twitch, Facebook, Linear, Vercel, Hugging Face, Figma, Salesforce, Codeberg, Amazon Cognito and generic OIDC, and nothing else today.
+- SAML sign-in and SCIM provisioning are experimental (the `saml-scim` beta feature) and run on the sign-in library's native implementation behind Levelrail's own checks. They are tested against a local test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant. See [SAML](/sso-saml) and [SCIM](/scim).
 - Sessions are in memory. A control plane restart signs everyone out, and waiting sign-in codes can no longer be shown.
 
 </Accordion>

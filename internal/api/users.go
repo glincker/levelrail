@@ -28,6 +28,9 @@ type userResource struct {
 	IsFirstUser bool       `json:"is_first_user"`
 	CreatedAt   time.Time  `json:"created_at"`
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
+	Disabled    bool       `json:"disabled"`
+	// MustChangePassword: sign-in is refused until a password reset completes.
+	MustChangePassword bool `json:"must_change_password"`
 }
 
 // toUserResource sets Role from roleForAbilities: empty (omitted from
@@ -90,6 +93,7 @@ func (rt *Router) handleListUsers(w http.ResponseWriter, r *http.Request) {
 		}
 		out = append(out, rt.userResourceFor(r.Context(), u, providers))
 	}
+	rt.attachAccountStates(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 
