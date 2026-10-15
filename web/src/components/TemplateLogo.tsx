@@ -1,23 +1,38 @@
 import { lazy, Suspense, type ReactNode } from 'react'
-import { TEMPLATE_LOGO_LOADERS, type LogoComponent } from '../lib/templateLogos'
+import {
+  TEMPLATE_LOGO_LOADERS,
+  logoLoaderFor,
+  type LogoComponent,
+  type LogoSurface,
+} from '../lib/templateLogos'
 
-const LOGOS: Record<string, LogoComponent> = Object.fromEntries(
-  Object.entries(TEMPLATE_LOGO_LOADERS).map(([id, loader]) => [
-    id,
-    lazy(loader) as unknown as LogoComponent,
-  ]),
-)
+function build(surface: LogoSurface): Record<string, LogoComponent> {
+  return Object.fromEntries(
+    Object.keys(TEMPLATE_LOGO_LOADERS).flatMap((id) => {
+      const loader = logoLoaderFor(id, surface)
+      return loader ? [[id, lazy(loader)]] : []
+    }),
+  )
+}
+
+const LOGOS: Record<LogoSurface, Record<string, LogoComponent>> = {
+  light: build('light'),
+  dark: build('dark'),
+}
 
 export function TemplateLogo({
   id,
   className,
   fallback,
+  surface = 'light',
 }: {
   id: string
   className?: string
   fallback: ReactNode
+  /** Surface the mark sits on; 'dark' picks the variant registered in DARK_SURFACE_VARIANTS. */
+  surface?: LogoSurface
 }) {
-  const Logo = LOGOS[id] as LogoComponent | undefined
+  const Logo = LOGOS[surface][id] as LogoComponent | undefined
   if (!Logo) {
     return <>{fallback}</>
   }

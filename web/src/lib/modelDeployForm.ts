@@ -64,6 +64,31 @@ export function validateDeployForm(f: DeployFormState): string | null {
   return null
 }
 
+export type DeployFieldError =
+  'name' | 'model' | 'gpus' | 'context' | 'idle' | 'swapGroup'
+
+// Per-field problems for inline validation; empty when the form can submit.
+export function deployFieldErrors(
+  f: DeployFormState,
+): Partial<Record<DeployFieldError, true>> {
+  const out: Partial<Record<DeployFieldError, true>> = {}
+  if (!NAME_PATTERN.test(f.name)) out.name = true
+  if (f.model.trim() === '') out.model = true
+  if (f.gpus !== 'all' && !POSITIVE_INT.test(f.gpus)) out.gpus = true
+  if (f.context !== '' && !POSITIVE_INT.test(f.context)) out.context = true
+  if (
+    f.residency === 'on_demand' &&
+    f.idleMinutes !== '' &&
+    !POSITIVE_INT.test(f.idleMinutes)
+  ) {
+    out.idle = true
+  }
+  if (f.swapGroup !== '' && !SWAP_GROUP_PATTERN.test(f.swapGroup)) {
+    out.swapGroup = true
+  }
+  return out
+}
+
 export function buildCreateRequest(f: DeployFormState): CreateModelRequest {
   const req: CreateModelRequest = {
     name: f.name,

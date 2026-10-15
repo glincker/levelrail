@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { BroomIcon, HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
@@ -175,6 +176,7 @@ function NodeCache({
 // Cached model weights per node, with a safe prune: volumes a model or
 // container still uses are never offered for removal.
 export function ModelCacheCard() {
+  const { t } = useTranslation('models')
   const { data, isPending, isError, error, refetch } = useModelCache()
   if (isPending) return <SkeletonList rows={2} />
   if (isError) {
@@ -195,8 +197,8 @@ export function ModelCacheCard() {
     return (
       <EmptyState
         icon={<HardDrivesIcon className="size-5" />}
-        title="No cached model weights"
-        description="Downloaded weights appear here once a model has been deployed on this host."
+        title={t('empty.cache.title')}
+        description={t('empty.cache.description')}
       />
     )
   }

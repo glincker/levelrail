@@ -48,6 +48,8 @@ import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type secretRotation from '../locales/en/secretRotation.json'
+import type templates from '../locales/en/templates.json'
+import type models from '../locales/en/models.json'
 import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
@@ -107,6 +109,8 @@ declare module 'i18next' {
       usage: typeof usage
       deployTimeline: typeof deployTimeline
       secretRotation: typeof secretRotation
+      models: typeof models
+      templates: typeof templates
       aiAssistant: typeof aiAssistant
       demo: typeof demo
       secretScan: typeof secretScan
