@@ -194,10 +194,13 @@ func (rt *Router) buildTrafficSnapshot(ctx context.Context, now time.Time) (*tra
 		}
 	}
 	tls := rt.tlsSnapshot(ctx)
+	ec := enforcementContext{snap: tls}
 	snap := &trafficSnapshot{at: now, windowDays: days}
 	for _, d := range domains {
 		key := strings.ToLower(d.Domain)
-		sig := domainSignals{Maintenance: maintenance[key], Upstream: tls.ProxyManaged(key)}
+		// A saved but unenforced maintenance flag must not count as maintenance.
+		inMaintenance := maintenance[key] && ec.forDomain(key, true).Maintenance
+		sig := domainSignals{Maintenance: inMaintenance, Upstream: tls.ProxyManaged(key)}
 		if o, ok := rt.traffic.lastCheck(key); ok {
 			sig.CheckStatus = o.Status
 		}

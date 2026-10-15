@@ -681,8 +681,25 @@ type SetDomainBasicAuthRequest struct {
 // domainMaintenanceResource: GET/PUT/DELETE
 // /api/v1/apps/{name}/domains/{domain}/maintenance's wire shape.
 type DomainMaintenanceResource struct {
-	Domain  string `json:"domain"`
-	Enabled bool   `json:"enabled"`
+	Domain            string   `json:"domain"`
+	Enabled           bool     `json:"enabled"`
+	Title             string   `json:"title,omitempty"`
+	Message           string   `json:"message,omitempty"`
+	RetryAfterSeconds int      `json:"retry_after_seconds,omitempty"`
+	Until             string   `json:"until,omitempty"`
+	WindowID          string   `json:"window_id,omitempty"`
+	Bypass            []string `json:"bypass,omitempty"`
+	BypassHealthCheck bool     `json:"bypass_health_check"`
+}
+
+// SetDomainMaintenanceRequest is PUT .../maintenance's optional body.
+type SetDomainMaintenanceRequest struct {
+	Title             string   `json:"title,omitempty"`
+	Message           string   `json:"message,omitempty"`
+	RetryAfterSeconds int      `json:"retry_after_seconds,omitempty"`
+	Until             string   `json:"until,omitempty"`
+	Bypass            []string `json:"bypass,omitempty"`
+	BypassHealthCheck *bool    `json:"bypass_health_check,omitempty"`
 }
 
 // DomainTLSCertResource mirrors internal/api's domainTLSCertResource

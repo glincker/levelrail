@@ -6,17 +6,30 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { domainKeys, domainsQueryOptions } from '../../queries/domains'
 import { useClearDomainMaintenance } from '../../queries/domainMaintenance'
+import { isEnforced } from '../../lib/domainEnforcement'
 
 const MAX_SHOWN = 3
 
-function DomainRow({ app, domain }: { app: string; domain: string }) {
+function DomainRow({
+  app,
+  domain,
+  enforced,
+}: {
+  app: string
+  domain: string
+  enforced: boolean
+}) {
   const { t } = useTranslation('maintenance')
   const queryClient = useQueryClient()
   const clear = useClearDomainMaintenance(app, domain)
   return (
     <Banner
       variant="warning"
-      title={t('domainBanner.title', { domain })}
+      title={
+        enforced
+          ? t('domainBanner.title', { domain })
+          : t('domainBanner.titleNotEnforced', { domain })
+      }
       action={
         <div className="flex items-center gap-2">
           <Button
@@ -53,7 +66,9 @@ function DomainRow({ app, domain }: { app: string; domain: string }) {
         </div>
       }
     >
-      <p>{t('domainBanner.body')}</p>
+      <p>
+        {enforced ? t('domainBanner.body') : t('domainBanner.bodyNotEnforced')}
+      </p>
     </Banner>
   )
 }
@@ -71,7 +86,12 @@ export function DomainMaintenanceBanner() {
   return (
     <div className="flex flex-col gap-2 px-4 pt-2 md:px-6">
       {active.slice(0, MAX_SHOWN).map((d) => (
-        <DomainRow key={d.domain} app={d.service_name} domain={d.domain} />
+        <DomainRow
+          key={d.domain}
+          app={d.service_name}
+          domain={d.domain}
+          enforced={isEnforced(d.enforcement, 'maintenance')}
+        />
       ))}
       {active.length > MAX_SHOWN ? (
         <p className="text-xs text-muted-foreground">

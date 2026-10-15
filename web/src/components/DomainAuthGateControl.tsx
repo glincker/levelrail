@@ -26,6 +26,7 @@ import {
 } from '../queries/domainAuthGate'
 import { type AllowDraft, AuthGateAllowEditor } from './AuthGateAllowEditor'
 import { AuthGateAccessLog } from './AuthGateAccessLog'
+import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 interface GateForm {
   enabled: boolean
@@ -132,10 +133,12 @@ export function DomainAuthGateControl({
           className="flex items-center gap-1.5 text-left"
         >
           {on ? (
-            <Badge variant="success" className="shrink-0">
-              <ShieldCheckIcon className="size-3" />
-              {t('authGate.badgeOn')}
-            </Badge>
+            <EnforcedBadge domain={domain} control="auth_gate">
+              <Badge variant="success" className="shrink-0">
+                <ShieldCheckIcon className="size-3" />
+                {t('authGate.badgeOn')}
+              </Badge>
+            </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
               <ShieldSlashIcon className="size-3" />
@@ -157,6 +160,7 @@ export function DomainAuthGateControl({
               : t('authGate.setUp')}
         </Button>
       </div>
+      <EnforcementNote domain={domain} control="auth_gate" active={on} />
 
       {open ? (
         <form onSubmit={handleSubmit} className="mt-3 space-y-3">

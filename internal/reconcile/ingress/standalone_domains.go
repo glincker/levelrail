@@ -36,6 +36,8 @@ type domainFeatures struct {
 	waf         map[string]store.DomainWAF
 	errorPages  map[string][]store.DomainErrorPage
 	hidden      map[string]bool
+	// maintenanceSettings carries each maintenance host's page settings.
+	maintenanceSettings map[string]store.DomainMaintenance
 }
 
 type standalonePlan struct {
@@ -76,7 +78,7 @@ func (c *Controller) standaloneRoutes(ctx context.Context, services []store.Desi
 		switch {
 		case f.maintenance[host]:
 			claimed[host] = standaloneRouteOwner
-			plan.maintenance = append(plan.maintenance, ingress.MaintenanceRoute{Hosts: []string{host}})
+			plan.maintenance = append(plan.maintenance, ingress.MaintenanceRoute{Hosts: []string{host}, Page: maintenancePage(f.maintenanceSettings[host])})
 			continue
 		case f.redirects[host].TargetURL != "":
 			r := f.redirects[host]

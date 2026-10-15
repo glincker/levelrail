@@ -1156,6 +1156,15 @@ func (c *Client) SetDomainMaintenance(ctx context.Context, name, domain string) 
 	return out, err
 }
 
+// SetDomainMaintenanceOptions calls PUT
+// /api/v1/apps/{name}/domains/{domain}/maintenance with page copy, an end
+// time and bypass rules.
+func (c *Client) SetDomainMaintenanceOptions(ctx context.Context, name, domain string, req SetDomainMaintenanceRequest) (DomainMaintenanceResource, error) {
+	var out DomainMaintenanceResource
+	err := c.do(ctx, http.MethodPut, domainMaintenancePath(name, domain), req, &out)
+	return out, err
+}
+
 // ClearDomainMaintenance calls DELETE
 // /api/v1/apps/{name}/domains/{domain}/maintenance: disables
 // maintenance mode on domain.

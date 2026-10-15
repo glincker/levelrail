@@ -2,8 +2,13 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"strings"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // domainsMaintenanceJSONUsage is every domains maintenance subcommand's
@@ -40,7 +45,7 @@ func runDomainsMaintenance(prog string, args []string, stdout, stderr io.Writer,
 func domainsMaintenanceUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s domains maintenance get <app> <domain> [flags]     show a domain's maintenance state
-  %[1]s domains maintenance set <app> <domain> [flags]     enable maintenance mode
+  %[1]s domains maintenance set <app> <domain> [flags]     enable maintenance mode (page text, end time, bypass)
   %[1]s domains maintenance clear <app> <domain> [flags]   disable maintenance mode
 
 While enabled, the embedded Caddy ingress serves a fixed "down for
@@ -84,9 +89,10 @@ func runDomainsMaintenanceGet(prog string, args []string, stdout, stderr io.Writ
 func runDomainsMaintenanceSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains maintenance set", domainsMaintenanceJSONUsage, stderr)
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance set <app> <domain> [flags]\n\nEnables maintenance mode on <domain>.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance set <app> <domain> [flags]\n\nEnables maintenance mode on <domain>. Running it again replaces the settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
+	opts := maintenanceSetFlags(fs)
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -99,9 +105,15 @@ func runDomainsMaintenanceSet(prog string, args []string, stdout, stderr io.Writ
 	}
 	appName, domain := rest[0], rest[1]
 
+	req, err := opts.request(time.Now())
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "%s: domains maintenance set: %v\n", prog, err)
+		return exitUsage
+	}
+
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
-	m, err := client.SetDomainMaintenance(context.Background(), appName, domain)
+	m, err := client.SetDomainMaintenanceOptions(context.Background(), appName, domain, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("enable maintenance mode for domain %q: %w", domain, err))
 	}
@@ -145,4 +157,75 @@ func printDomainMaintenanceHuman(out io.Writer, m domainMaintenanceResource) {
 		status = "enabled"
 	}
 	_, _ = fmt.Fprintf(out, "domain: %s\nstatus: %s\n", m.Domain, status)
+	if !m.Enabled {
+		return
+	}
+	if m.Title != "" {
+		_, _ = fmt.Fprintf(out, "title: %s\n", m.Title)
+	}
+	if m.Message != "" {
+		_, _ = fmt.Fprintf(out, "message: %s\n", m.Message)
+	}
+	if m.RetryAfterSeconds > 0 {
+		_, _ = fmt.Fprintf(out, "retry after: %ds\n", m.RetryAfterSeconds)
+	}
+	if m.Until != "" {
+		_, _ = fmt.Fprintf(out, "ends: %s (scheduled window %s)\n", m.Until, m.WindowID)
+	}
+	if len(m.Bypass) > 0 {
+		_, _ = fmt.Fprintf(out, "bypass: %s\n", strings.Join(m.Bypass, ", "))
+	}
+	_, _ = fmt.Fprintf(out, "health check bypass: %t\n", m.BypassHealthCheck)
+}
+
+// maintenanceSetOptions are the page, end time and bypass flags of set.
+type maintenanceSetOptions struct {
+	title, message, until, bypass *string
+	retryAfter, forDur            *time.Duration
+	noHealthBypass                *bool
+}
+
+func maintenanceSetFlags(fs interface {
+	String(name, value, usage string) *string
+	Duration(name string, value time.Duration, usage string) *time.Duration
+	Bool(name string, value bool, usage string) *bool
+}) maintenanceSetOptions {
+	return maintenanceSetOptions{
+		title:          fs.String("title", "", "maintenance page title (plain text, up to 120 characters)"),
+		message:        fs.String("message", "", "maintenance page message (plain text, up to 2000 characters)"),
+		until:          fs.String("until", "", "end maintenance automatically at this RFC 3339 time"),
+		forDur:         fs.Duration("for", 0, "end maintenance automatically after this long, e.g. 2h (alternative to --until)"),
+		retryAfter:     fs.Duration("retry-after", 0, "Retry-After sent with the 503, e.g. 10m (default 5m)"),
+		bypass:         fs.String("bypass", "", "comma separated IP addresses or CIDRs that still reach the app"),
+		noHealthBypass: fs.Bool("no-health-bypass", false, "also show the page on the app's readiness path (by default uptime probes still reach it)"),
+	}
+}
+
+func (o maintenanceSetOptions) request(now time.Time) (apiclient.SetDomainMaintenanceRequest, error) {
+	req := apiclient.SetDomainMaintenanceRequest{Title: *o.title, Message: *o.message, RetryAfterSeconds: int(o.retryAfter.Seconds())}
+	if *o.retryAfter < 0 || *o.forDur < 0 {
+		return req, errors.New("--retry-after and --for must not be negative")
+	}
+	switch {
+	case *o.until != "" && *o.forDur > 0:
+		return req, errors.New("use either --until or --for, not both")
+	case *o.until != "":
+		t, err := time.Parse(time.RFC3339, *o.until)
+		if err != nil {
+			return req, fmt.Errorf("--until %q is not an RFC 3339 time", *o.until)
+		}
+		req.Until = t.UTC().Format(time.RFC3339)
+	case *o.forDur > 0:
+		req.Until = now.Add(*o.forDur).UTC().Format(time.RFC3339)
+	}
+	for _, b := range strings.Split(*o.bypass, ",") {
+		if b = strings.TrimSpace(b); b != "" {
+			req.Bypass = append(req.Bypass, b)
+		}
+	}
+	if *o.noHealthBypass {
+		off := false
+		req.BypassHealthCheck = &off
+	}
+	return req, nil
 }

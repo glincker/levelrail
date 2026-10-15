@@ -76,6 +76,14 @@ func (n Namespace) RouterName(domain string) string {
 	return n.objectName(domain) + "@file"
 }
 
+// Router priorities. Traefik defaults a router's priority to its rule length,
+// so a label router such as Host(x) && PathPrefix(/) would beat a bare Host(x).
+// The cap stays below the priorities Traefik reserves for its own routers.
+const (
+	DefaultRouterPriority = 100000
+	MaxRouterPriority     = 1000000000
+)
+
 // Route is one domain's desired proxy route.
 type Route struct {
 	Domain          string
@@ -85,6 +93,8 @@ type Route struct {
 	CertResolver string
 	// Upstream is host:port of this instance's listener for the domain.
 	Upstream string
+	// Priority 0 means DefaultRouterPriority.
+	Priority int
 }
 
 // ValidateName checks an entrypoint or resolver name before it is written
@@ -153,18 +163,25 @@ func (n Namespace) Render(r Route) ([]byte, error) {
 	if err := ValidateUpstream(r.Upstream); err != nil {
 		return nil, err
 	}
+	prio := r.Priority
+	if prio == 0 {
+		prio = DefaultRouterPriority
+	}
+	if prio < 1 || prio > MaxRouterPriority {
+		return nil, fmt.Errorf("router priority %d is not 1-%d", prio, MaxRouterPriority)
+	}
 	obj := n.objectName(d)
 	var b bytes.Buffer
 	fmt.Fprintf(&b, "%s\n# Do not edit: rewritten on every reconcile. Remove the domain instead.\n", n.Header())
 	b.WriteString("http:\n  routers:\n")
-	fmt.Fprintf(&b, "    %s:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      service: %s\n", obj, d, r.EntrypointHTTPS, obj)
+	fmt.Fprintf(&b, "    %s:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      service: %s\n      priority: %d\n", obj, d, r.EntrypointHTTPS, obj, prio)
 	if r.CertResolver != "" {
 		fmt.Fprintf(&b, "      tls:\n        certResolver: %s\n", r.CertResolver)
 	} else {
 		b.WriteString("      tls: {}\n")
 	}
-	fmt.Fprintf(&b, "    %s-http:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      middlewares: [%s-https]\n      service: %s\n",
-		obj, d, r.EntrypointHTTP, obj, obj)
+	fmt.Fprintf(&b, "    %s-http:\n      rule: Host(`%s`)\n      entryPoints: [%s]\n      middlewares: [%s-https]\n      service: %s\n      priority: %d\n",
+		obj, d, r.EntrypointHTTP, obj, obj, prio)
 	fmt.Fprintf(&b, "  middlewares:\n    %s-https:\n      redirectScheme:\n        scheme: https\n        permanent: true\n", obj)
 	fmt.Fprintf(&b, "  services:\n    %s:\n      loadBalancer:\n        passHostHeader: true\n        servers:\n          - url: http://%s\n", obj, r.Upstream)
 	return b.Bytes(), nil

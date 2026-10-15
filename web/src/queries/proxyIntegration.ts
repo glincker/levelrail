@@ -64,6 +64,8 @@ export interface ProxyDomain {
   certificate: ProxyCertificate | null
   last_error: string
   checked_at: string
+  // delivered: verification proved requests reach the built-in ingress.
+  delivered?: boolean
 }
 
 export interface ProxyStep {

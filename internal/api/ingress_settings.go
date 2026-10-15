@@ -449,6 +449,8 @@ type domainResource struct {
 	// Target says where it proxies.
 	Kind   string `json:"kind"`
 	Target string `json:"target,omitempty"`
+	// Enforcement says which saved traffic controls visitors really get.
+	Enforcement *domainEnforcement `json:"enforcement,omitempty"`
 }
 
 // handleListDomains handles GET /api/v1/domains: every service_domains
@@ -524,6 +526,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	})...)
 	rt.annotateDomainTLS(r.Context(), out)
 	rt.annotateDomainReachability(r.Context(), out)
+	rt.annotateDomainEnforcement(r.Context(), out)
 	writeJSON(w, http.StatusOK, out)
 }
 

@@ -691,5 +691,52 @@
     "orInstead": "or instead",
     "recordsNone": "Set a public address to see the record to create.",
     "dnsStatus": "DNS status"
+  },
+  "enforcement": {
+    "savedNotEnforced": "Saved, not enforced",
+    "proxy": {
+      "traefik": "Traefik",
+      "external": "your proxy"
+    },
+    "reason": {
+      "route_unverified": "{{proxy}} routes {{domain}}, and this server has not confirmed that {{proxy}} hands its requests to the built-in ingress. The setting is saved, but visitors may not get it. Verify the route to check again.",
+      "proxy_unmanaged": "{{proxy}} terminates TLS for {{domain}} with a configuration this server does not manage, so it cannot confirm the requests reach the built-in ingress. The setting is saved, but it is not reported as enforced.",
+      "not_routed": "{{domain}} is not routed yet, so the setting is saved but nothing is enforced."
+    },
+    "proxyPage": "Open the proxy page",
+    "docs": "Which controls work behind a proxy",
+    "flagTitle": "{{label}} (saved, not enforced)"
+  },
+  "maintenance": {
+    "on": "Maintenance mode on",
+    "off": "Not in maintenance",
+    "enable": "Enable maintenance mode",
+    "enabling": "Enabling...",
+    "end": "End maintenance",
+    "ending": "Ending...",
+    "activeHint": "Visitors to {{domain}} see a fixed maintenance page. The container keeps running; nothing here stops or restarts it.",
+    "options": "Page and schedule",
+    "hideOptions": "Hide",
+    "ends": "Ends {{date}}",
+    "bypassCount_one": "{{count}} address bypasses the page",
+    "bypassCount_other": "{{count}} addresses bypass the page",
+    "healthOpen": "Uptime probes on the readiness path still reach the app",
+    "saved": "Maintenance settings saved",
+    "form": {
+      "title": "Page title",
+      "titlePlaceholder": "Down for maintenance",
+      "message": "Message",
+      "messagePlaceholder": "This site is temporarily unavailable. Please check back soon.",
+      "plainText": "Plain text. Visitors see it as written, without formatting.",
+      "until": "End automatically at",
+      "untilHelp": "Optional. Creates a scheduled maintenance entry that also shows on the status page.",
+      "retryAfter": "Retry after (minutes)",
+      "retryAfterHelp": "Sent as Retry-After so clients and crawlers know when to come back. Default 5.",
+      "bypass": "Addresses that still reach the app",
+      "bypassHelp": "IP addresses or CIDR ranges, one per line, up to 32. Use your own address to check the site while it is down.",
+      "healthBypass": "Let uptime probes reach the readiness path",
+      "enable": "Enable maintenance with these settings",
+      "save": "Save settings"
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
   useDomainBasicAuth,
   useSetDomainBasicAuth,
 } from '../queries/domainBasicAuth'
+import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 
 // HTTP Basic Auth protection for one already-saved domain, enforced by
 // the embedded Caddy ingress on the next reconcile pass
@@ -88,10 +89,12 @@ export function DomainBasicAuthControl({
           className="flex items-center gap-1.5 text-left"
         >
           {protectedNow ? (
-            <Badge variant="success" className="shrink-0">
-              <LockKeyIcon className="size-3" />
-              Basic auth on
-            </Badge>
+            <EnforcedBadge domain={domain} control="basic_auth">
+              <Badge variant="success" className="shrink-0">
+                <LockKeyIcon className="size-3" />
+                Basic auth on
+              </Badge>
+            </EnforcedBadge>
           ) : (
             <Badge variant="muted" className="shrink-0">
               <LockOpenIcon className="size-3" />
@@ -109,6 +112,11 @@ export function DomainBasicAuthControl({
           {open ? 'Hide' : protectedNow ? 'Manage' : 'Protect with basic auth'}
         </Button>
       </div>
+      <EnforcementNote
+        domain={domain}
+        control="basic_auth"
+        active={protectedNow}
+      />
 
       {open ? (
         <form

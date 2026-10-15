@@ -906,6 +906,8 @@ func run(logger *slog.Logger) error {
 	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
 	proxySyncer := newProxySyncer(b, db, logger)
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
+	routeCheck := newRouteCheck(logger)
+	apiRouter.SetProxyRouteCheck(routeCheck)
 	apiRouter.ResumeCutoverRuns(ctx)
 
 	engine.SetStore(db)
@@ -927,6 +929,7 @@ func run(logger *slog.Logger) error {
 		databaseSlowQueryThresholdMs: databaseSlowQueryThresholdMs(logger),
 		dashboardDial:                dashboardDialAddr(httpAddr()),
 		gateSecret:                   gateSecret,
+		routeCheck:                   routeCheck,
 		networkPrefix:                b.ShortName,
 		firewallRulePrefix:           b.RuleCommentPrefix(),
 		instanceID:                   instanceID,
@@ -3703,6 +3706,7 @@ type dynamicSourceDeps struct {
 	meshDNSAddr        string
 	dashboardDial      string
 	gateSecret         string
+	routeCheck         ingressdriver.RouteCheck
 	networkPrefix      string
 	firewallRulePrefix string
 	// databaseSlowQueryThresholdMs is 0 (databaseSlowQueryThresholdMs's own
@@ -3780,6 +3784,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
 			ingressreconcile.WithRequestStats(),
+			ingressreconcile.WithRouteCheck(deps.routeCheck),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),
 			// Routes remote apps to their node's mesh address.

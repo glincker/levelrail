@@ -11,6 +11,7 @@ const domains = vi.hoisted(() => ({
     domain: string
     service_name: string
     maintenance_enabled: boolean
+    enforcement?: { mode: string; maintenance: boolean }
   }[],
 }))
 
@@ -61,7 +62,12 @@ describe('DomainMaintenanceBanner', () => {
 
   it('shows a sticky notice with an end action for a domain in maintenance', async () => {
     domains.data = [
-      { domain: 'down.test', service_name: 'down', maintenance_enabled: true },
+      {
+        domain: 'down.test',
+        service_name: 'down',
+        maintenance_enabled: true,
+        enforcement: { mode: 'levelrail', maintenance: true },
+      },
       { domain: 'up.test', service_name: 'up', maintenance_enabled: false },
     ]
     renderBanner()
@@ -72,5 +78,23 @@ describe('DomainMaintenanceBanner', () => {
       screen.getByRole('button', { name: 'End maintenance' }),
     ).toBeEnabled()
     expect(screen.queryByText(/up\.test/)).toBeNull()
+  })
+
+  it('never says maintenance is on when the proxy path does not enforce it', async () => {
+    domains.data = [
+      {
+        domain: 'proxied.test',
+        service_name: 'web',
+        maintenance_enabled: true,
+        enforcement: { mode: 'proxy:traefik', maintenance: false },
+      },
+    ]
+    renderBanner()
+    expect(
+      await screen.findByText(
+        'Maintenance is saved for proxied.test but not enforced',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByText(/Maintenance mode is on/)).toBeNull()
   })
 })

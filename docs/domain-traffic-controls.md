@@ -76,6 +76,20 @@ For a request to a domain with controls configured, the ingress runs, in order:
 
 Maintenance mode and a whole-domain redirect still take precedence over everything above, exactly as before.
 
+## Where controls are enforced
+
+Every control on this page runs in the built-in ingress. When a domain is served through another reverse proxy, the controls apply only if that proxy provably forwards to the ingress:
+
+| Domain served by | Controls enforced |
+|---|---|
+| The built-in ingress (`enforcement.mode: levelrail`) | All |
+| A managed Traefik route whose last verification proved delivery (`proxy:traefik`) | All |
+| A managed Traefik route not yet proven (`proxy:traefik`, `route_unverified`) | None reported, the dashboard shows **Saved, not enforced** |
+| A proxy this server does not manage (`proxy:external`) | None reported |
+| Not routed (`none`) | None |
+
+See [behind an existing proxy](/behind-an-existing-proxy#traffic-controls-behind-a-proxy) for the full matrix and how to prove a route.
+
 ## Headers
 
 Rules are evaluated in order. Each rule has a side (`request` or `response`), an operation (`set`, `add` or `remove`), a name, and (except for `remove`) a value.
