@@ -171,7 +171,7 @@ func (c *Client) volumeIsFreshRootOwned(ctx context.Context, containerID, dir st
 const chownHelperImage = "alpine:3.20"
 
 func (c *Client) chownVolume(ctx context.Context, volumeName string, uid, gid int) error {
-	if err := c.ensureImage(ctx, chownHelperImage, nil, false); err != nil {
+	if err := c.ensureImage(ctx, chownHelperImage, nil, false, nil); err != nil {
 		return err
 	}
 	resp, err := c.cli.ContainerCreate(ctx,

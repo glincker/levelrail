@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -57,7 +58,8 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 	if logger == nil {
 		logger = slog.Default()
 	}
-	resolution, err := ResolveImage(ctx, t.Resolver, image, t.Auth, t.RequireFresh)
+	tr := deploytrace.NewBuffered()
+	resolution, err := ResolveImageTraced(ctx, tr, t.Resolver, image, t.Auth, t.RequireFresh, existing.Image)
 	if err != nil {
 		return store.DesiredService{}, fmt.Errorf("deploy: trigger image deploy for %q: %w", existing.Name, err)
 	}
@@ -84,7 +86,12 @@ func (t ImageTrigger) Deploy(ctx context.Context, existing store.DesiredService,
 	if source == "" {
 		source = store.DeployAttemptSourceImage
 	}
-	recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, logger)
+	deploytrace.ConfigStep(ctx, tr, updated)
+	if id := recordImageDeployAttempt(ctx, t.Store, updated, resolution, seq, source, t.Reason, logger); id != "" {
+		if sink, ok := t.Store.(deploytrace.Sink); ok {
+			tr.Flush(ctx, sink, id, existing.Name)
+		}
+	}
 
 	if t.Nudger != nil {
 		t.Nudger.Nudge()
@@ -100,11 +107,11 @@ func TriggerImageDeploy(ctx context.Context, st ImageDeployStore, nudger Reconci
 
 // recordImageDeployAttempt saves and immediately finishes an attempt for a
 // trigger with no build. Failures are logged: desired state already landed.
-func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason string, logger *slog.Logger) {
+func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc store.DesiredService, res ImageResolution, seq int64, source, reason string, logger *slog.Logger) string {
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
 		logger.Error("deploy: record deploy attempt: mint id failed", slog.String("error", err.Error()), slog.String("name", svc.Name))
-		return
+		return ""
 	}
 	now := time.Now()
 	if err := st.SaveDeployAttempt(ctx, store.DeployAttempt{
@@ -115,7 +122,7 @@ func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc stor
 		ImageDigest: res.Digest, DigestReason: res.Reason, Sequence: seq, Reason: reason,
 	}); err != nil {
 		logger.Error("deploy: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
-		return
+		return ""
 	}
 	if res.Note != "" {
 		logger.Warn("deploy: image resolved without the registry", slog.String("attempt_id", id), slog.String("reason", res.Reason), slog.String("registry_error", res.Note))
@@ -123,6 +130,7 @@ func recordImageDeployAttempt(ctx context.Context, st ImageDeployStore, svc stor
 	if err := st.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, time.Now(), ""); err != nil {
 		logger.Error("deploy: record deploy attempt: finish failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 	}
+	return id
 }
 
 // PreviousKnownGoodImage returns the newest succeeded attempt's image that

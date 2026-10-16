@@ -8,6 +8,8 @@ import type {
   DeployStepEvent,
   DeployStepStatus,
 } from '../hooks/useDeployStepStream'
+import { DeployTraceList } from './DeployTraceList'
+import { isTraceStep } from '@/lib/deployTrace'
 import { cn } from '@/lib/utils'
 
 // The pipeline's own fixed phase order (internal/api/builds.go's step
@@ -70,34 +72,42 @@ function StatusIcon({ status }: { status: RowStatus }) {
 // failure can land on any of the four steps.
 export function DeployStepFeed({ steps }: { steps: DeployStepEvent[] }) {
   const failed = steps.find((s) => s.step === 'failed')
+  const hasTrace = steps.some(isTraceStep)
+  const hasBuildSteps = steps.some((s) => !isTraceStep(s))
+  // A deploy with no build never emits build steps: its four pending rows
+  // would read as stalled, so only the trace shows.
+  if (hasTrace && !hasBuildSteps) return <DeployTraceList steps={steps} />
 
   return (
-    <ol className="flex flex-col gap-1.5">
-      {KNOWN_STEPS.map(({ key, label }) => {
-        // Each row shows its own last known status as-is: a step that
-        // never got an event (because an earlier one already failed)
-        // correctly stays "pending" rather than being inferred as done.
-        const status = statusFor(steps, key)
-        return (
-          <li key={key} className="flex items-center gap-2 text-sm">
-            <StatusIcon status={status} />
-            <span
-              className={cn(
-                status === 'pending' && 'text-muted-foreground',
-                status === 'failed' && 'text-destructive',
-              )}
-            >
-              {label}
-            </span>
+    <div className="flex flex-col gap-3">
+      <ol className="flex flex-col gap-1.5">
+        {KNOWN_STEPS.map(({ key, label }) => {
+          // Each row shows its own last known status as-is: a step that
+          // never got an event (because an earlier one already failed)
+          // correctly stays "pending" rather than being inferred as done.
+          const status = statusFor(steps, key)
+          return (
+            <li key={key} className="flex items-center gap-2 text-sm">
+              <StatusIcon status={status} />
+              <span
+                className={cn(
+                  status === 'pending' && 'text-muted-foreground',
+                  status === 'failed' && 'text-destructive',
+                )}
+              >
+                {label}
+              </span>
+            </li>
+          )
+        })}
+        {failed ? (
+          <li className="flex items-center gap-2 text-sm text-destructive">
+            <StatusIcon status="failed" />
+            <span>Failed</span>
           </li>
-        )
-      })}
-      {failed ? (
-        <li className="flex items-center gap-2 text-sm text-destructive">
-          <StatusIcon status="failed" />
-          <span>Failed</span>
-        </li>
-      ) : null}
-    </ol>
+        ) : null}
+      </ol>
+      <DeployTraceList steps={steps} />
+    </div>
   )
 }

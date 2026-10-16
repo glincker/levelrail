@@ -1,6 +1,6 @@
 import { act } from 'react'
 import { render, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useDeployStepStream } from './useDeployStepStream'
 
 // Same stub EventSource shape useLogStream.test.tsx already establishes
@@ -98,5 +98,29 @@ describe('useDeployStepStream', () => {
     })
 
     screen.getByText('steps:building:running')
+  })
+
+  it('keeps one row per key so layers and probes of the same step do not collapse', () => {
+    vi.stubGlobal('EventSource', StubEventSource)
+    render(<StepProbe url="http://test/steps" />)
+    const source = latestSource()
+    const traced = (key: string, status: string, detail: string) =>
+      JSON.stringify({
+        step: 'image_pull_layer',
+        key,
+        status,
+        detail,
+        timestamp: '2026-10-16T00:00:00Z',
+      })
+
+    act(() => {
+      source.emitMessage(traced('image_pull_layer.a', 'running', 'extracting'))
+      source.emitMessage(traced('image_pull_layer.b', 'done', 'complete'))
+      source.emitMessage(traced('image_pull_layer.a', 'done', 'complete'))
+    })
+
+    expect(screen.getByText(/steps:/)).toHaveTextContent(
+      'steps:image_pull_layer:done|image_pull_layer:done',
+    )
   })
 })

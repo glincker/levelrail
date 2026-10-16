@@ -24,3 +24,13 @@ levelrail-cli apps pr-env list <fixture-app> --pr 7
 ```
 
 The preview serves `preview-seven` while production keeps its own marker. The pull request comment lists the status, URL, build logs link and deploy time, and only counts the overrides. Close the pull request and `levelrail-cli apps pr-env list <fixture-app> --pr 7` comes back empty.
+
+## Reading the pipeline trace of a smoke deploy
+
+Every deploy records a step trace, build or not. After deploying a fixture (an image deploy is the quickest), print it:
+
+```bash
+levelrail-cli apps deploys steps <fixture-app> <deploy-id>
+```
+
+You should see `resolve_digest`, `image_pull` (or `skipped` with reason `Cached` on a second deploy), `container_start`, one or more `readiness_probe` rows hitting `/healthz`, `cutover` and a closing `deploy_summary`. To see a failure trace, deploy a tag that does not exist: `image_pull` fails with the registry's own message and `deploy_summary` is `failed`.

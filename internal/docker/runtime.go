@@ -211,6 +211,9 @@ type ContainerSpec struct {
 	// pull, unchanged from every container this codebase created before
 	// this field existed.
 	RegistryAuth *RegistryAuth
+	// OnPull, when set, receives throttled image pull progress from Create.
+	// Not carried over the agent transport: a remote node pulls silently.
+	OnPull func(PullEvent)
 	// Command overrides the image's own default CMD. Nil means the
 	// image's own default, unchanged from every container this codebase
 	// created before this field existed. First caller:

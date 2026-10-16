@@ -144,6 +144,7 @@
               "pages",
               "deploy-safety",
               "deploy-failures",
+              "deploy-trace",
               "build-performance",
               "scheduled-deploys",
               "scheduled-jobs",

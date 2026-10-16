@@ -70,6 +70,7 @@ func (c *Controller) safetyFor(ctx context.Context, desired *store.DesiredServic
 }
 
 func (c *Controller) recordGate(ctx context.Context, desired *store.DesiredService, container, phase, status, reason, message string) {
+	c.traceGate(ctx, desired, container, phase, status, reason, message)
 	if c.gateRecorder == nil {
 		return
 	}

@@ -380,7 +380,7 @@ func observedPorts(ports []container.Port) []PortBinding {
 
 // Create implements Runtime.
 func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error) {
-	if err := c.ensureImage(ctx, spec.Image, spec.RegistryAuth, spec.ForcePull); err != nil {
+	if err := c.ensureImage(ctx, spec.Image, spec.RegistryAuth, spec.ForcePull, spec.OnPull); err != nil {
 		return "", err
 	}
 
@@ -1060,10 +1060,16 @@ func (c *Client) streamExecOutput(ctx context.Context, containerID, execID strin
 // skips the local-presence check entirely: the only way a mutable tag
 // like ":latest" gets re-pulled when it hasn't changed on Docker's own
 // terms.
-func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth, forcePull bool) error {
+//
+// onPull, when set, receives the pull's progress; a local hit reports a single
+// Done event with Status "cached".
+func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth, forcePull bool, onPull func(PullEvent)) error {
 	if !forcePull {
 		_, err := c.cli.ImageInspect(ctx, ref)
 		if err == nil {
+			if onPull != nil {
+				onPull(PullEvent{Phase: PullPhaseDone, Ref: ref, Status: PullStatusCached, Percent: 100})
+			}
 			return nil
 		}
 		if !cerrdefs.IsNotFound(err) {
@@ -1086,8 +1092,14 @@ func (c *Client) ensureImage(ctx context.Context, ref string, auth *RegistryAuth
 	defer func() {
 		_ = rc.Close() // read side, fully drained by io.Copy below; nothing actionable on a close error here
 	}()
-	if _, err := io.Copy(io.Discard, rc); err != nil {
-		return fmt.Errorf("docker: pull image %q: reading progress stream: %w", ref, err)
+	if onPull == nil {
+		if _, err := io.Copy(io.Discard, rc); err != nil {
+			return fmt.Errorf("docker: pull image %q: reading progress stream: %w", ref, err)
+		}
+		return nil
+	}
+	if err := NewPullTracker(ref, PullConfigFromEnv(os.LookupEnv), onPull).Consume(rc); err != nil {
+		return fmt.Errorf("docker: pull image %q: %w", ref, err)
 	}
 	return nil
 }

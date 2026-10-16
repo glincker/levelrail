@@ -14,14 +14,29 @@ import { useEffect, useState } from 'react'
 // harmless (see mergeStep below) rather than something to suppress.
 //
 //   Content-Type: text/event-stream
-//   data: { "step": string, "status": "running" | "done" | "failed", "timestamp": string }
+//   data: { "step": string, "status": DeployStepStatus, "timestamp": string,
+//           "key"?: string, "reason"?: string, "detail"?: string, "service"?: string,
+//           "started_at"?: string, "ended_at"?: string, "duration_ms"?: number, "attempts"?: number }
+//
+// The optional fields are set for traced steps (every deploy, build or not).
+// A step is identified by key (falling back to step), so a repeated key
+// updates one row, such as the pull's progress or a retried probe.
 
-export type DeployStepStatus = 'running' | 'done' | 'failed'
+export type DeployStepStatus =
+  'running' | 'done' | 'failed' | 'skipped' | 'warning'
 
 export interface DeployStepEvent {
   step: string
   status: DeployStepStatus
   timestamp: string
+  key?: string
+  reason?: string
+  detail?: string
+  service?: string
+  started_at?: string
+  ended_at?: string
+  duration_ms?: number
+  attempts?: number
 }
 
 export type DeployStepStreamConnectionState = 'connecting' | 'open' | 'error'
@@ -38,10 +53,32 @@ interface RawStepEventPayload {
   step?: unknown
   status?: unknown
   timestamp?: unknown
+  key?: unknown
+  reason?: unknown
+  detail?: unknown
+  service?: unknown
+  started_at?: unknown
+  ended_at?: unknown
+  duration_ms?: unknown
+  attempts?: unknown
 }
 
 function isDeployStepStatus(value: unknown): value is DeployStepStatus {
-  return value === 'running' || value === 'done' || value === 'failed'
+  return (
+    value === 'running' ||
+    value === 'done' ||
+    value === 'failed' ||
+    value === 'skipped' ||
+    value === 'warning'
+  )
+}
+
+function str(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
+
+function num(value: unknown): number | undefined {
+  return typeof value === 'number' ? value : undefined
 }
 
 function parseStepEvent(raw: string): DeployStepEvent | null {
@@ -56,6 +93,14 @@ function parseStepEvent(raw: string): DeployStepEvent | null {
         step: parsed.step,
         status: parsed.status,
         timestamp: parsed.timestamp,
+        key: str(parsed.key),
+        reason: str(parsed.reason),
+        detail: str(parsed.detail),
+        service: str(parsed.service),
+        started_at: str(parsed.started_at),
+        ended_at: str(parsed.ended_at),
+        duration_ms: num(parsed.duration_ms),
+        attempts: num(parsed.attempts),
       }
     }
   } catch {
@@ -65,7 +110,7 @@ function parseStepEvent(raw: string): DeployStepEvent | null {
   return null
 }
 
-// mergeStep upserts ev by step name: a later event for the same step
+// mergeStep upserts ev by key (or step name): a later event for the same step
 // (e.g. "building"/running then "building"/done) replaces the earlier
 // one in place rather than appending a second row, so a reconnect
 // replaying the snapshot burst never duplicates a row in the rendered
@@ -74,7 +119,8 @@ function mergeStep(
   steps: DeployStepEvent[],
   ev: DeployStepEvent,
 ): DeployStepEvent[] {
-  const index = steps.findIndex((s) => s.step === ev.step)
+  const id = ev.key ?? ev.step
+  const index = steps.findIndex((s) => (s.key ?? s.step) === id)
   if (index === -1) return [...steps, ev]
   const next = [...steps]
   next[index] = ev

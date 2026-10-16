@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -200,6 +201,16 @@ func (s deployTriggerImageStore) SaveDeployAttempt(ctx context.Context, a store.
 	return s.rt.deployAttempts.SaveDeployAttempt(ctx, a)
 }
 
+// SaveDeployTraceStep lets deploy.ImageTrigger write its trace through the
+// same store the attempt lives in.
+func (s deployTriggerImageStore) SaveDeployTraceStep(ctx context.Context, step store.DeployTraceStep) error {
+	sink, ok := s.rt.deployAttempts.(deploytrace.Sink)
+	if !ok {
+		return nil
+	}
+	return sink.SaveDeployTraceStep(ctx, step)
+}
+
 func (s deployTriggerImageStore) FinishDeployAttempt(ctx context.Context, id, status string, finishedAt time.Time, errMsg string) error {
 	return s.rt.deployAttempts.FinishDeployAttempt(ctx, id, status, finishedAt, errMsg)
 }
@@ -379,13 +390,15 @@ func (rt *Router) recordPlainDeployAttempt(ctx context.Context, svc store.Desire
 // succeeded, so a history-tracking hiccup must never turn an otherwise-
 // successful deploy trigger into a client-visible failure.
 func (rt *Router) recordInstantDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string) {
-	rt.recordResolvedDeployAttempt(ctx, svc, image, source, deploy.ImageResolution{})
+	rt.recordResolvedDeployAttempt(ctx, svc, image, source, deploy.ImageResolution{}, nil)
 }
 
 // recordResolvedDeployAttempt is recordInstantDeployAttempt carrying the
 // image resolution: the digest, how it was obtained and, for a local-only
-// image, a short reason so history never shows an unexplained blank.
-func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string, res deploy.ImageResolution) {
+// image, a short reason so history never shows an unexplained blank. pre
+// holds trace steps measured before the attempt had an id (nil for none);
+// they are written to the new attempt together with its config step.
+func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.DesiredService, image, source string, res deploy.ImageResolution, pre *deploytrace.Tracer) {
 	serviceName := svc.Name
 	id, err := store.NewDeployAttemptID()
 	if err != nil {
@@ -404,6 +417,7 @@ func (rt *Router) recordResolvedDeployAttempt(ctx context.Context, svc store.Des
 		rt.logger.Error("api: record deploy attempt: save failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return
 	}
+	rt.traceInstantDeploy(ctx, id, svc, image, source, res, pre)
 	if err := rt.deployAttempts.FinishDeployAttempt(ctx, id, store.DeployAttemptStatusSucceeded, time.Now(), ""); err != nil {
 		rt.logger.Error("api: record deploy attempt: finish failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
 		return

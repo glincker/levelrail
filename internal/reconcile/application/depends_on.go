@@ -38,7 +38,9 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 			return &res
 		}
 		if !started {
-			return waitingFor(dep, depName, "WaitingForDependency", "start")
+			res := waitingFor(dep, depName, "WaitingForDependency", "start")
+			c.traceDependencyWait(ctx, desired, dep, "WaitingForDependency", res.Conditions[0].Message)
+			return res
 		}
 		if !slices.Contains(desired.DependsOnHealthy, dep) || c.conditions == nil {
 			continue
@@ -49,7 +51,9 @@ func (c *Controller) dependencyBlock(ctx context.Context, desired *store.Desired
 			return &res
 		}
 		if !ready {
-			return waitingFor(dep, depName, "WaitingForDependencyHealthy", "pass its readiness check")
+			res := waitingFor(dep, depName, "WaitingForDependencyHealthy", "pass its readiness check")
+			c.traceDependencyWait(ctx, desired, dep, "WaitingForDependencyHealthy", res.Conditions[0].Message)
+			return res
 		}
 	}
 	return nil
