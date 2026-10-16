@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/glincker/levelrail/compare/v0.5.0...v0.5.1) (2026-10-16)
+
+
+### Documentation
+
+* fix missing titles and descriptions, add OG cards and an SEO audit script ([#1227](https://github.com/glincker/levelrail/issues/1227)) ([ba18948](https://github.com/glincker/levelrail/commit/ba1894852f74ce57abf20d16886e25d9650f617a))
+
 ## [0.5.0](https://github.com/glincker/levelrail/compare/v0.4.0...v0.5.0) (2026-10-16)
 
 
