@@ -202,7 +202,9 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
 
   const scrollClass = cn(
     '@container/rtable rounded-lg border border-border bg-card',
-    virtual || horizontalScroll ? cn('overflow-auto', scrollHeightClass) : '',
+    virtual || horizontalScroll
+      ? cn('overflow-auto', scrollHeightClass)
+      : 'overflow-x-clip',
     className,
   )
 
@@ -304,7 +306,12 @@ export function ResponsiveTable<T>(props: ResponsiveTableProps<T>) {
             {hasActions ? (
               <TableHead
                 className={
-                  props.renderActions ? 'w-px whitespace-nowrap pr-4' : 'w-12'
+                  props.renderActions
+                    ? cn(
+                        'whitespace-nowrap pr-4',
+                        horizontalScroll ? 'w-px' : 'w-36',
+                      )
+                    : 'w-12'
                 }
               >
                 <span className="sr-only">Actions</span>

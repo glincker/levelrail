@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import {
   ArrowClockwiseIcon,
   ArrowSquareOutIcon,
@@ -17,9 +17,17 @@ import { DetailsSection } from './DetailsSection'
 import { LogsTail } from './LogsTail'
 import { OverviewHero } from './OverviewHero'
 import { OverviewSuggestions } from './OverviewSuggestions'
+import { useOverviewSuggestions } from './useOverviewSuggestions'
+import { RecommendedSetup } from './RecommendedSetup'
+import { useSetupDismissed } from './useSetupDismissed'
+import { computeOverviewLayout, type OverviewSection } from './overviewLayout'
+import { computeSetup } from './suggestions'
+import { AppAccessCard } from '../AppAccessCard'
+import { useAppUrls } from '../../queries/appUrls'
+import { pickOpenUrl } from '../appAccessRows'
+import { useAppTraffic } from '../../queries/appTraffic'
 import { ResourceTiles } from './ResourceTiles'
 import { useResourceReading } from './useResourceReading'
-import { SetupRing } from './SetupRing'
 import { isImageDeploy } from './suggestions'
 import { TrafficTiles } from './TrafficTiles'
 import { useAppUrl } from './useAppUrl'
@@ -36,10 +44,31 @@ export function OverviewPage({
   attempts: DeployAttempt[]
 }) {
   const [deployTab, setDeployTab] = useState<DeployTab | null>(null)
-  const url = useAppUrl(app)
+  const baseUrl = useAppUrl(app)
+  const { data: urls } = useAppUrls(app.name)
+  const openUrl = baseUrl ?? pickOpenUrl(urls)
+  const url = openUrl
   const latest = attempts[0]
   const reading = useResourceReading(app)
   const git = useGitSource(app.name)
+  const suggestions = useOverviewSuggestions(app, reading, latest, conditions)
+  const setup = useSetupDismissed(app.name)
+  const { data: traffic } = useAppTraffic(app.name)
+  const setupState = computeSetup({
+    app,
+    hasGitSource: Boolean(git.data),
+    imageDeployed: isImageDeploy(latest?.source),
+  })
+  const layout = computeOverviewLayout({
+    attentionCount: suggestions.attention.length,
+    hasTraffic: Boolean(traffic?.hasTraffic),
+    trafficKnown: traffic !== undefined,
+    suspended: app.suspended,
+    isStatic: false,
+    setupRemaining:
+      setupState.items.length - setupState.done + suggestions.setup.length,
+    setupDismissed: setup.dismissed,
+  })
   const actions = useOverviewActions(app, url)
   const { openApp, copyUrl, restart, redeploy } = actions
 
@@ -88,35 +117,30 @@ export function OverviewPage({
     onDeploy: () => setDeployTab('existing-image'),
   })
 
-  return (
-    <div className="space-y-6">
-      <OverviewHero
-        app={app}
-        conditions={conditions}
-        latestAttempt={latest}
-        attempts={attempts}
-        url={url}
-        onDeploy={setDeployTab}
-      />
-      <SetupRing
-        app={app}
-        hasGitSource={Boolean(git.data)}
-        imageDeployed={isImageDeploy(latest?.source)}
-      />
+  const sections: Record<OverviewSection, ReactNode> = {
+    attention: (
       <OverviewSuggestions
         app={app}
-        reading={reading}
+        descriptors={suggestions.attention}
+        dismiss={suggestions.dismiss}
         latest={latest}
-        conditions={conditions}
+        anchorId="overview-attention"
       />
-      <AppHealthScorePanel appName={app.name} />
+    ),
+    access: <AppAccessCard appName={app.name} />,
+    kpis: (
       <section
         aria-label="Live traffic and resources"
         className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
       >
-        <TrafficTiles appName={app.name} url={url} />
-        <ResourceTiles reading={reading} />
+        {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
+        {layout.traffic !== 'hidden' ? (
+          <TrafficTiles appName={app.name} url={url} />
+        ) : null}
       </section>
+    ),
+    health: <AppHealthScorePanel appName={app.name} />,
+    activity: (
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <ActivityTimeline
           app={app}
@@ -125,7 +149,44 @@ export function OverviewPage({
         />
         <LogsTail appName={app.name} />
       </div>
-      <DetailsSection app={app} conditions={conditions} />
+    ),
+    setup: (
+      <RecommendedSetup
+        app={app}
+        hasGitSource={Boolean(git.data)}
+        imageDeployed={isImageDeploy(latest?.source)}
+        descriptors={suggestions.setup}
+        dismissSuggestion={suggestions.dismiss}
+        latest={latest}
+        onHide={setup.dismiss}
+      />
+    ),
+    details: <DetailsSection app={app} conditions={conditions} />,
+  }
+  const pairing = layout.pairAttentionWithAccess
+
+  return (
+    <div className="space-y-6">
+      <OverviewHero
+        app={app}
+        conditions={conditions}
+        latestAttempt={latest}
+        attempts={attempts}
+        url={openUrl}
+        attentionCount={suggestions.attention.length}
+        onDeploy={setDeployTab}
+      />
+      {pairing ? (
+        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
+          {sections.attention}
+          {sections.access}
+        </div>
+      ) : null}
+      {layout.sections
+        .filter((id) => !(pairing && (id === 'attention' || id === 'access')))
+        .map((id) => (
+          <Fragment key={id}>{sections[id]}</Fragment>
+        ))}
       <DeploySheet
         appName={app.name}
         tab={deployTab}

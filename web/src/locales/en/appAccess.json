@@ -1,0 +1,78 @@
+{
+  "title": "Where to reach this app",
+  "description": "Every address this app answers on right now, and which port it uses.",
+  "id": {
+    "container": "Container port",
+    "host": "Host port",
+    "local": "This server",
+    "lan": "Local network",
+    "public": "Public address",
+    "domain": "Domain",
+    "internal": "Other apps"
+  },
+  "note": {
+    "container": "The port the app listens on inside its container.",
+    "host": "The port published on this server for the container port.",
+    "hostStopped": "The app is not running, so no host port is published.",
+    "hostNone": "No host port is published yet. Redeploy to publish one.",
+    "local": "Works from this server only.",
+    "localNone": "Available once the app is running.",
+    "lan": "Reachable from other devices on the same network.",
+    "lanLocalhost": "Not reachable from the network: the port is bound to localhost.",
+    "lanRemote": "This app runs on another node. Open that node to see its network addresses.",
+    "public": "Plain HTTP on a public interface. TLS and sign-in gates do not apply.",
+    "domain": "Served through the proxy with TLS.",
+    "internal": "Other apps on this server reach it by this name and port."
+  },
+  "state": {
+    "ok": "Reachable",
+    "warn": "Needs attention",
+    "off": "Not available",
+    "unknown": "Not tested"
+  },
+  "actions": {
+    "copy": "Copy {{what}}",
+    "copied": "Copied",
+    "open": "Open {{what}}",
+    "test": "Test",
+    "testing": "Testing",
+    "allowNetwork": "Allow network access",
+    "change": "Change port or exposure"
+  },
+  "test": {
+    "ok": "Answered in {{ms}} ms",
+    "failed": "Did not answer",
+    "failedWith": "Did not answer: {{detail}}"
+  },
+  "allow": {
+    "title": "Allow network access?",
+    "description": "The port is published on every interface and opened in the host firewall, so other devices can reach this app over plain HTTP.",
+    "confirm": "Allow network access",
+    "pending": "Applying",
+    "none": "Nothing would change.",
+    "change": "{{what}}: {{from}} to {{to}}",
+    "plain_http": "Plain HTTP: traffic is not encrypted and sign-in gates configured on the domain do not apply on this port.",
+    "recreates": "The container is recreated with the new settings.",
+    "done": "Network access allowed",
+    "doneDescription": "Reconcile runs in the background."
+  },
+  "errors": {
+    "load": "Could not load the app addresses.",
+    "retry": "Retry"
+  },
+  "empty": "No addresses yet. Deploy the app to get one.",
+  "badges": {
+    "attention": "{{count}} need attention",
+    "port": "port {{port}}",
+    "deployed": "Deployed"
+  },
+  "setup": {
+    "title": "Recommended setup",
+    "progress": "{{done}} of {{total}} done",
+    "hide": "Hide for this app",
+    "show": "Show recommended setup"
+  },
+  "traffic": {
+    "hint": "No traffic yet. Charts appear when the first request arrives."
+  }
+}

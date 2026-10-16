@@ -49,6 +49,17 @@ export interface SuggestionInput {
   dismissed: ReadonlySet<string>
 }
 
+const SETUP_ONLY = new Set(['no_health_check', 'no_git_source'])
+
+/** Failing or degraded signals; the rest are recommended setup and sink down the page. */
+export function isAttention(d: SuggestionDescriptor): boolean {
+  return (
+    !SETUP_ONLY.has(d.id) &&
+    !d.id.startsWith('image_update_') &&
+    (d.tone === 'danger' || d.tone === 'warning')
+  )
+}
+
 function plural(n: number, word: string): string {
   return `${n} ${word}${n === 1 ? '' : 's'}`
 }

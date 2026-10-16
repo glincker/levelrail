@@ -31,7 +31,10 @@
       "pass": "Ready",
       "warn": "Review",
       "fail": "Needs attention"
-    }
+    },
+    "summary": "{{pass}} of {{total}} checks pass",
+    "allClear": "All checks pass. Nothing needs your attention.",
+    "needsAction": "Needs action"
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended"
@@ -511,5 +514,11 @@
         "body": "Use the request id and the number shown on the new browser's approval screen."
       }
     }
+  },
+  "pages": {
+    "title": "Pages",
+    "count_one": "{{count}} page",
+    "count_other": "{{count}} pages",
+    "noDomain": "no domain"
   }
 }

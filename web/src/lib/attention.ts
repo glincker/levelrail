@@ -99,7 +99,10 @@ export function buildAttentionItems({
         id: `app:${app.name}`,
         severity: 'critical',
         title: app.name,
-        detail: app.status.label,
+        detail:
+          app.status.label === 'Attention needed'
+            ? 'A health or deploy condition is failing. Open the app to see which one.'
+            : `Status: ${app.status.label}`,
         target: { kind: 'app', name: app.name },
       })
     }

@@ -28,6 +28,7 @@ export const NAMESPACES = [
   'infraCanvas',
   'exposure',
   'appExposure',
+  'appAccess',
   'databaseAccess',
   'databaseUpgrades',
   'databaseVersions',
@@ -71,6 +72,7 @@ export const NAMESPACES = [
   'templates',
   'trialApp',
   'deployPolicies',
+  'deployDetail',
 ] as const
 
 void i18n

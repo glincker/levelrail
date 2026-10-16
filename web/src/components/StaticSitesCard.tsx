@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { GlobeIcon, LayoutIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { useStaticSites } from '../queries/staticSites'
@@ -15,6 +17,7 @@ import { useStaticSites } from '../queries/staticSites'
 // build.type: static never sees an empty card cluttering the page they
 // already land on for apps.
 export function StaticSitesCard() {
+  const { t } = useTranslation('common')
   const { data: sites } = useStaticSites()
 
   if (sites.length === 0) {
@@ -29,10 +32,10 @@ export function StaticSitesCard() {
           aria-hidden="true"
         />
         <h2 className="text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
-          Static sites
+          {t('pages.title', { defaultValue: 'Pages' })}
         </h2>
         <span className="text-xs text-muted-foreground">
-          {sites.length} {sites.length === 1 ? 'site' : 'sites'}
+          {t('pages.count', { count: sites.length })}
         </span>
       </div>
       <ul>
@@ -41,9 +44,13 @@ export function StaticSitesCard() {
             key={site.name}
             className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-2.5 last:border-b-0"
           >
-            <span className="truncate text-sm font-medium text-foreground">
+            <Link
+              to="/apps/$name"
+              params={{ name: site.name }}
+              className="truncate text-sm font-medium text-foreground underline-offset-2 hover:underline focus-visible:underline"
+            >
               {site.name}
-            </span>
+            </Link>
             <span className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
               {site.domains.length > 0 ? (
                 site.domains.map((domain) => (
@@ -58,7 +65,7 @@ export function StaticSitesCard() {
                 ))
               ) : (
                 <span className="text-xs text-muted-foreground/60 italic">
-                  no domain
+                  {t('pages.noDomain', { defaultValue: 'no domain' })}
                 </span>
               )}
             </span>

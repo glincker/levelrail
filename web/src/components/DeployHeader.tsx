@@ -25,7 +25,7 @@ import { commitSubject } from '../lib/deploymentPresentation'
 import { formatDeployDuration } from '../lib/deployDuration'
 import { imageTagOf } from './overview/imageTag'
 import { useRollbackToDeploy } from '../queries/deployControl'
-import { RelativeTime, StatusPill } from './kit'
+import { RelativeTime, StatusPill, type Tone } from './kit'
 import { CancelDeployDialog } from './CancelDeployDialog'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
@@ -57,12 +57,15 @@ export function DeployHeader({
   domain,
   branch,
   isLive,
+  displayStatus,
 }: {
   appName: string
   attempt: DeployAttempt
   domain?: string
   branch?: string
   isLive: boolean
+  /** Replaces the raw attempt badge with the page's single derived state. */
+  displayStatus?: { tone: Tone; label: string; live?: boolean }
 }) {
   const navigate = useNavigate()
   const rollback = useRollbackToDeploy(appName)
@@ -128,9 +131,15 @@ export function DeployHeader({
               {title}
             </Display>
             <StatusPill
-              tone={DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]}
-              label={DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]}
-              live={running}
+              tone={
+                displayStatus?.tone ??
+                DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]
+              }
+              label={
+                displayStatus?.label ??
+                DEPLOY_ATTEMPT_STATUS_LABEL[attempt.status]
+              }
+              live={displayStatus?.live ?? running}
             />
             {isLive ? <StatusPill tone="success" label="Current" /> : null}
           </div>

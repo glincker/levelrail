@@ -15,6 +15,7 @@ import type logBudgets from '../locales/en/logBudgets.json'
 import type environments from '../locales/en/environments.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
+import type appAccess from '../locales/en/appAccess.json'
 import type migration from '../locales/en/migration.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
@@ -55,6 +56,7 @@ import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
+import type deployDetail from '../locales/en/deployDetail.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type secretRotation from '../locales/en/secretRotation.json'
 import type templates from '../locales/en/templates.json'
@@ -86,6 +88,7 @@ declare module 'i18next' {
       environments: typeof environments
       exposure: typeof exposure
       appExposure: typeof appExposure
+      appAccess: typeof appAccess
       migration: typeof migration
       domains: typeof domains
       attention: typeof attention
@@ -134,6 +137,7 @@ declare module 'i18next' {
       sso: typeof sso
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies
+      deployDetail: typeof deployDetail
     }
   }
 }

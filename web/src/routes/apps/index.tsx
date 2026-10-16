@@ -70,6 +70,7 @@ function AppListPage() {
     ...appListQueryOptions(),
     refetchInterval: 15_000,
   })
+  const { data: staticSites } = useSuspenseQuery(staticSitesQueryOptions())
   const status = Route.useSearch().status ?? null
   const navigate = useNavigate({ from: Route.fullPath })
   const [filters, setFilters] = useState<AppListFilters>(EMPTY_FILTERS)
@@ -183,7 +184,7 @@ function AppListPage() {
           />
         </div>
       ) : null}
-      {apps.length === 0 ? (
+      {apps.length === 0 && staticSites.length === 0 ? (
         <EmptyState
           illustration="rocket"
           icon={<PackageIcon className="size-6" />}

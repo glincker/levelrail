@@ -7,7 +7,6 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { MetricTile, SkeletonTile } from '@/components/kit'
 import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
   percentChange,
@@ -104,27 +103,25 @@ export function TrafficTiles({
   }
   if (!data.hasTraffic) {
     return (
-      <div className="col-span-full">
-        <EmptyState
-          icon={<PulseIcon />}
-          illustration="chart"
-          title="No traffic yet"
-          description="Send a request to see live numbers."
-          action={
-            url ? (
-              <Button size="sm" variant="outline" onClick={() => copy(url)}>
-                {copied ? (
-                  <CheckIcon aria-hidden="true" />
-                ) : (
-                  <CopyIcon aria-hidden="true" />
-                )}
-                {copied ? 'Copied' : 'Copy app URL'}
-              </Button>
-            ) : undefined
-          }
-        />
+      <div className="col-span-full flex items-center justify-between gap-3 rounded-xl border border-dashed border-border px-4 py-2 text-sm text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <PulseIcon className="size-4 shrink-0" aria-hidden="true" />
+          <span className="font-medium text-foreground">No traffic yet</span>
+          <span>Send a request to see live numbers.</span>
+        </span>
+        {url ? (
+          <Button size="sm" variant="ghost" onClick={() => copy(url)}>
+            {copied ? (
+              <CheckIcon aria-hidden="true" />
+            ) : (
+              <CopyIcon aria-hidden="true" />
+            )}
+            {copied ? 'Copied' : 'Copy app URL'}
+          </Button>
+        ) : null}
       </div>
     )
   }
+
   return <TrafficTilesView stats={data} />
 }

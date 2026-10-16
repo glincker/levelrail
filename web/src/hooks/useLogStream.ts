@@ -76,7 +76,29 @@ export interface UseLogStreamResult {
   /** Latest `event: status` from the live app-log stream: null until one
    *  arrives, and always null for the deploy-log stream, which sends none. */
   runStatus: AppRunStatus | null
+  /** How lines are arriving: SSE, the polling fallback, or intentionally closed. */
+  transport: LogStreamTransport
+  /** Epoch ms of the last open or message event, null before the first. */
+  lastEventAt: number | null
+  /** Epoch ms of the next scheduled reconnect attempt, null when none. */
+  retryAt: number | null
+  /** Reconnect now (or leave the polling fallback and try SSE again). */
+  retry: () => void
 }
+
+export type LogStreamTransport = 'sse' | 'polling' | 'closed'
+
+export interface UseLogStreamOptions {
+  /** True once the stream is no longer wanted (the deploy is terminal). */
+  closed?: boolean
+  /** Plain-text endpoint to poll when SSE cannot be established. */
+  pollUrl?: string
+}
+
+// Failed opens before the proxy is assumed to be buffering or blocking SSE.
+const POLL_FALLBACK_AFTER_FAILURES = 3
+const POLL_INTERVAL_MS = 3000
+const MAX_RETRY_DELAY_MS = 15000
 
 // Ring buffer sized to the last 5,000-10,000 lines; full history stays
 // queryable from the backend log store per 4.8, this is just the
@@ -142,34 +164,25 @@ function parseEventPayload(raw: string): ParsedLogEvent {
   return { line: raw, stream: 'stdout' }
 }
 
-// Ring buffer implementation choice: a plain array in React state, capped
-// at MAX_BUFFERED_LINES on every append via slice, rather than a
-// ref-backed circular buffer with head/tail pointers. Justification:
-// TanStack Virtual (the consumer, see the logs routes) needs stable
-// by-index access into a plain array for its `count`/`getVirtualItems`
-// API, so a real circular buffer would need to be flattened into an array
-// on every render anyway to hand to the virtualizer, which is the same
-// cost as just capping a plain array directly. At the throughput a build
-// or app log realistically produces (dozens to low hundreds of lines/
-// second, not a per-frame stream), an O(n) slice at an 8,000-line cap
-// costs low-single-digit microseconds, not a perf concern worth a more
-// complex structure for. State (not a ref) because the route needs each
-// new line to trigger a re-render for the virtualized list anyway.
-export function useLogStream(url: string): UseLogStreamResult {
+export function useLogStream(
+  url: string,
+  options: UseLogStreamOptions = {},
+): UseLogStreamResult {
+  const { closed = false, pollUrl } = options
   const [lines, setLines] = useState<LogLine[]>([])
   const [connectionState, setConnectionState] =
     useState<LogStreamConnectionState>('connecting')
   const [isPaused, setIsPaused] = useState(false)
   const [runStatus, setRunStatus] = useState<AppRunStatus | null>(null)
+  const [lastEventAt, setLastEventAt] = useState<number | null>(null)
+  const [retryAt, setRetryAt] = useState<number | null>(null)
+  const [polling, setPolling] = useState(false)
+  const [retryNonce, setRetryNonce] = useState(0)
   const nextIdRef = useRef(0)
-  // Tracks the URL the state above was reset for, so a URL change (a
-  // navigation to a different app/deploy) can reset the buffer and
-  // connection status. This is React's documented "adjusting state when a
-  // prop changes" pattern: setState calls during render, not inside the
-  // effect body. Resetting from inside the effect below would fire after
-  // the new EventSource's first message could already arrive, and the
-  // react-hooks/set-state-in-effect lint rule flags synchronous setState
-  // calls in an effect body for exactly this cascading-render reason.
+  const linesRef = useRef<LogLine[]>([])
+  const urlRef = useRef(url)
+  // Reset during render (React's "adjust state on prop change" pattern), not
+  // in the effect, so the new stream never races stale state.
   const [urlForReset, setUrlForReset] = useState(url)
   if (url !== urlForReset) {
     setUrlForReset(url)
@@ -177,93 +190,151 @@ export function useLogStream(url: string): UseLogStreamResult {
     setConnectionState('connecting')
     setIsPaused(false)
     setRunStatus(null)
+    setLastEventAt(null)
+    setRetryAt(null)
+    setPolling(false)
   }
 
   useEffect(() => {
-    // Refs may not be mutated during render (only in effects or event
-    // handlers), so the id counter resets here rather than alongside the
-    // state reset above. This still runs before the new EventSource can
-    // deliver its first message, since effects commit after render.
-    nextIdRef.current = 0
-    let bufferedLines: LogLine[] = []
+    if (closed || polling) return
+    if (urlRef.current !== url) {
+      urlRef.current = url
+      linesRef.current = []
+    }
+    // Lines already rendered (manual retry) must not be appended twice.
+    let bufferedLines: LogLine[] = linesRef.current
+    nextIdRef.current = (bufferedLines.at(-1)?.id ?? -1) + 1
 
-    // Reconnect-duplicate suppression (see this module's own doc comment
-    // above for why the server has no Last-Event-ID resume to rely on
-    // instead). hasConnectedOnce distinguishes the very first open
-    // (backfill is wanted and correct) from every later one (a same-URL
-    // EventSource reconnect after a network drop, whose backfill/replay
-    // burst duplicates content already rendered): from the second onopen
-    // forward, overlapExpected snapshots everything currently buffered,
-    // and each incoming line is compared against it in order. An exact
-    // match means "already rendered before the reconnect," dropped
-    // silently; the first mismatch (or running out of overlap to compare
-    // against, if the resumed burst is longer than what's buffered)
-    // clears overlapExpected and every line from there on is appended
-    // normally, the same as before this existed.
-    let hasConnectedOnce = false
+    // The server has no Last-Event-ID resume, so a reconnect replays from
+    // the start: compare it against what is buffered and drop the overlap.
+    let hasConnectedOnce = bufferedLines.length > 0
     let overlapExpected: ParsedLogEvent[] = []
     let overlapIndex = 0
+    let failures = 0
+    let source: EventSource | null = null
+    let timer: number | undefined
+    let disposed = false
 
-    const source = new EventSource(url)
+    const connect = () => {
+      const es = new EventSource(url)
+      source = es
 
-    source.onopen = () => {
-      setConnectionState('open')
-      if (hasConnectedOnce) {
-        overlapExpected = bufferedLines.map((l) => ({
-          line: l.line,
-          stream: l.stream,
-        }))
-        overlapIndex = 0
+      es.onopen = () => {
+        failures = 0
+        setRetryAt(null)
+        setConnectionState('open')
+        setLastEventAt(Date.now())
+        if (hasConnectedOnce) {
+          overlapExpected = bufferedLines.map((l) => ({
+            line: l.line,
+            stream: l.stream,
+          }))
+          overlapIndex = 0
+        }
+        hasConnectedOnce = true
       }
-      hasConnectedOnce = true
-    }
 
-    // EventSource fires onerror both for a genuine failure and for the
-    // moment it drops connection right before it auto-reconnects; either
-    // way this only updates displayed status, onopen flips it back once
-    // reconnected. No manual retry logic per the module comment above.
-    source.onerror = () => {
-      setConnectionState('error')
-    }
-
-    source.onmessage = (event: MessageEvent<string>) => {
-      const parsed = parseEventPayload(event.data)
-
-      const expected = overlapExpected[overlapIndex]
-      if (expected !== undefined) {
-        if (
-          expected.line === parsed.line &&
-          expected.stream === parsed.stream
-        ) {
-          overlapIndex += 1
+      es.onerror = () => {
+        if (disposed) return
+        setConnectionState('error')
+        failures += 1
+        if (!hasConnectedOnce && failures >= POLL_FALLBACK_AFTER_FAILURES) {
+          es.close()
+          setRetryAt(null)
+          setPolling(true)
           return
         }
-        overlapExpected = []
+        if (es.readyState === EventSource.CLOSED) {
+          const delay = Math.min(
+            POLL_INTERVAL_MS * 2 ** (failures - 1),
+            MAX_RETRY_DELAY_MS,
+          )
+          setRetryAt(Date.now() + delay)
+          timer = window.setTimeout(() => {
+            setRetryAt(null)
+            connect()
+          }, delay)
+        } else {
+          setRetryAt(Date.now() + POLL_INTERVAL_MS)
+        }
       }
 
-      const { line, stream } = parsed
-      const id = nextIdRef.current
-      nextIdRef.current += 1
-      setLines((prev) => {
-        const withNewLine = [...prev, { id, line, stream }]
-        const capped =
-          withNewLine.length > MAX_BUFFERED_LINES
-            ? withNewLine.slice(withNewLine.length - MAX_BUFFERED_LINES)
-            : withNewLine
-        bufferedLines = capped
-        return capped
+      es.onmessage = (event: MessageEvent<string>) => {
+        setLastEventAt(Date.now())
+        const parsed = parseEventPayload(event.data)
+
+        const expected = overlapExpected[overlapIndex]
+        if (expected !== undefined) {
+          if (
+            expected.line === parsed.line &&
+            expected.stream === parsed.stream
+          ) {
+            overlapIndex += 1
+            return
+          }
+          overlapExpected = []
+        }
+
+        const { line, stream } = parsed
+        const id = nextIdRef.current
+        nextIdRef.current += 1
+        setLines((prev) => {
+          const withNewLine = [...prev, { id, line, stream }]
+          const capped =
+            withNewLine.length > MAX_BUFFERED_LINES
+              ? withNewLine.slice(withNewLine.length - MAX_BUFFERED_LINES)
+              : withNewLine
+          bufferedLines = capped
+          linesRef.current = capped
+          return capped
+        })
+      }
+
+      es.addEventListener('status', (event: MessageEvent<string>) => {
+        const status = parseRunStatus(event.data)
+        if (status) setRunStatus(status)
       })
     }
 
-    source.addEventListener('status', (event: MessageEvent<string>) => {
-      const status = parseRunStatus(event.data)
-      if (status) setRunStatus(status)
-    })
+    connect()
 
     return () => {
-      source.close()
+      disposed = true
+      window.clearTimeout(timer)
+      source?.close()
     }
-  }, [url])
+  }, [url, closed, polling, retryNonce])
+
+  useEffect(() => {
+    if (!polling || !pollUrl) return
+    let cancelled = false
+    const tick = async () => {
+      try {
+        const res = await fetch(pollUrl, { credentials: 'same-origin' })
+        if (!res.ok || cancelled) return
+        const text = await res.text()
+        if (cancelled) return
+        const next = text
+          .split('\n')
+          .filter((l) => l.length > 0)
+          .slice(-MAX_BUFFERED_LINES)
+          .map((line, id) => ({ id, line, stream: 'stdout' as const }))
+        linesRef.current = next
+        nextIdRef.current = next.length
+        setLines(next)
+        setLastEventAt(Date.now())
+      } catch {
+        // The next tick retries; the badge keeps showing the last event time.
+      }
+    }
+    void tick()
+    if (closed) return
+    const id = window.setInterval(() => void tick(), POLL_INTERVAL_MS)
+    return () => {
+      cancelled = true
+      window.clearInterval(id)
+    }
+  }, [polling, pollUrl, closed])
 
   const pause = useCallback(() => {
     setIsPaused(true)
@@ -273,5 +344,29 @@ export function useLogStream(url: string): UseLogStreamResult {
     setIsPaused(false)
   }, [])
 
-  return { lines, connectionState, isPaused, pause, resume, runStatus }
+  const retry = useCallback(() => {
+    setPolling(false)
+    setRetryAt(null)
+    setConnectionState('connecting')
+    setRetryNonce((n) => n + 1)
+  }, [])
+
+  const transport: LogStreamTransport = closed
+    ? 'closed'
+    : polling
+      ? 'polling'
+      : 'sse'
+
+  return {
+    lines,
+    connectionState,
+    isPaused,
+    pause,
+    resume,
+    runStatus,
+    transport,
+    lastEventAt,
+    retryAt,
+    retry,
+  }
 }

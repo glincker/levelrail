@@ -255,14 +255,14 @@ export function StatusPage() {
                 key={item.id}
                 className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3"
               >
-                <div className="flex min-w-0 items-start gap-2.5">
+                <div className="flex min-w-0 flex-1 items-start gap-2.5">
                   <Icon
                     className={`mt-0.5 size-4 shrink-0 ${item.severity === 'critical' ? 'text-destructive' : item.severity === 'info' ? 'text-muted-foreground' : 'text-amber-600 dark:text-amber-400'}`}
                     aria-hidden="true"
                   />
-                  <div className="min-w-0">
-                    <p className="flex items-center gap-2 text-sm font-medium">
-                      {item.title}
+                  <div className="min-w-0 flex-1">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
+                      <span className="min-w-0 break-words">{item.title}</span>
                       <Badge
                         variant={
                           item.severity === 'critical' ? 'destructive' : 'muted'
@@ -273,7 +273,7 @@ export function StatusPage() {
                           : item.severity}
                       </Badge>
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs break-words text-muted-foreground">
                       {item.detail}
                       {item.device?.requesterIp
                         ? ` (${item.device.requesterIp})`
@@ -285,7 +285,7 @@ export function StatusPage() {
                         technical={item.copy.technical}
                       />
                     ) : item.action ? (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs break-words text-muted-foreground">
                         {item.action}
                       </p>
                     ) : null}

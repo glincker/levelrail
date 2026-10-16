@@ -15,13 +15,9 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { Progress } from '@/components/ui/progress'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import { useLogUsage } from '../../queries/logBudgets'
 import type { LogUsageApp } from '../../types/logBudgets'
@@ -45,70 +41,122 @@ function barTone(percent: number): string {
   return ''
 }
 
-function Row({ row, canEdit }: { row: LogUsageApp; canEdit: boolean }) {
+function BudgetCell({ row, canEdit }: { row: LogUsageApp; canEdit: boolean }) {
   const { t } = useTranslation('logBudgets')
   const fmt = useFormatBytes()
   const [editing, setEditing] = useState(false)
-  const pct = row.percent === null ? null : Math.min(row.percent, 100)
+  if (editing) {
+    return (
+      <LogBudgetEditor
+        app={row.app}
+        initialMb={
+          row.budget_custom ? Math.round(row.budget_bytes / 2 ** 20) : 0
+        }
+        onDone={() => setEditing(false)}
+      />
+    )
+  }
   return (
-    <TableRow>
-      <TableCell className="font-medium">{row.app}</TableCell>
-      <TableCell className="tabular-nums">{fmt(row.bytes)}</TableCell>
-      <TableCell className="tabular-nums">
-        {t('rate', { size: fmt(row.rate_bytes_per_min) })}
-      </TableCell>
-      <TableCell>
-        {editing ? (
-          <LogBudgetEditor
-            app={row.app}
-            initialMb={
-              row.budget_custom ? Math.round(row.budget_bytes / 2 ** 20) : 0
-            }
-            onDone={() => setEditing(false)}
-          />
-        ) : (
-          <span className="flex items-center gap-2">
-            <span className="tabular-nums">
-              {row.budget_bytes > 0 ? fmt(row.budget_bytes) : t('unlimited')}
-            </span>
-            {row.budget_custom && (
-              <Badge variant="muted">{t('customBudget')}</Badge>
-            )}
-            {canEdit && (
-              <Button
-                type="button"
-                size="icon-sm"
-                variant="ghost"
-                aria-label={t('editFor', { app: row.app })}
-                onClick={() => setEditing(true)}
-              >
-                <PencilSimpleIcon />
-              </Button>
-            )}
-          </span>
-        )}
-      </TableCell>
-      <TableCell className="w-40">
-        {pct === null ? (
+    <span className="flex flex-wrap items-center gap-2">
+      <span className="tabular-nums">
+        {row.budget_bytes > 0 ? fmt(row.budget_bytes) : t('unlimited')}
+      </span>
+      {row.budget_custom && <Badge variant="muted">{t('customBudget')}</Badge>}
+      {canEdit && (
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          aria-label={t('editFor', { app: row.app })}
+          onClick={() => setEditing(true)}
+        >
+          <PencilSimpleIcon />
+        </Button>
+      )}
+    </span>
+  )
+}
+
+function useColumns(canEdit: boolean): ResponsiveColumn<LogUsageApp>[] {
+  const { t } = useTranslation('logBudgets')
+  const fmt = useFormatBytes()
+  return [
+    {
+      id: 'app',
+      header: t('columns.app'),
+      primary: true,
+      cell: (row) => (
+        <span className="block truncate font-medium" title={row.app}>
+          {row.app}
+        </span>
+      ),
+    },
+    {
+      id: 'stored',
+      header: t('columns.stored'),
+      width: 'w-24',
+      cell: (row) => <span className="tabular-nums">{fmt(row.bytes)}</span>,
+    },
+    {
+      id: 'rate',
+      header: t('columns.rate'),
+      priority: 3,
+      width: 'w-28',
+      cell: (row) => (
+        <span className="tabular-nums">
+          {t('rate', { size: fmt(row.rate_bytes_per_min) })}
+        </span>
+      ),
+    },
+    {
+      id: 'budget',
+      header: t('columns.budget'),
+      width: 'w-52',
+      cell: (row) => <BudgetCell row={row} canEdit={canEdit} />,
+    },
+    {
+      id: 'usage',
+      header: t('columns.usage'),
+      priority: 2,
+      width: 'w-36',
+      cell: (row) => {
+        const pct = row.percent === null ? null : Math.min(row.percent, 100)
+        return pct === null ? (
           <span className="text-muted-foreground">-</span>
         ) : (
           <Progress value={pct} className={barTone(pct)} />
-        )}
-      </TableCell>
-      <TableCell className="tabular-nums">
-        {row.forecast_days === null
-          ? '-'
-          : row.forecast_days === 0
-            ? t('forecastReached')
-            : t('forecast', { days: row.forecast_days.toFixed(1) })}
-      </TableCell>
-      <TableCell className="tabular-nums">
-        {row.trimmed_lines > 0
-          ? t('trimmed', { count: row.trimmed_lines })
-          : '-'}
-      </TableCell>
-    </TableRow>
-  )
+        )
+      },
+    },
+    {
+      id: 'forecast',
+      header: t('columns.forecast'),
+      priority: 3,
+      width: 'w-28',
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.forecast_days === null
+            ? '-'
+            : row.forecast_days === 0
+              ? t('forecastReached')
+              : t('forecast', { days: row.forecast_days.toFixed(1) })}
+        </span>
+      ),
+    },
+    {
+      id: 'trimmed',
+      header: t('columns.trimmed'),
+      priority: 3,
+      width: 'w-28',
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.trimmed_lines > 0
+            ? t('trimmed', { count: row.trimmed_lines })
+            : '-'}
+        </span>
+      ),
+    },
+  ]
 }
 
 /** LogVolumeCard lists stored log volume per app against its budget. */
@@ -119,6 +167,7 @@ export function LogVolumeCard() {
   const usage = useLogUsage()
   const [shown, setShown] = useState(PAGE_SIZE)
   const apps = usage.data?.apps ?? []
+  const columns = useColumns(isRoot)
   return (
     <Card>
       <CardHeader>
@@ -150,24 +199,12 @@ export function LogVolumeCard() {
           />
         )}
         {apps.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('columns.app')}</TableHead>
-                <TableHead>{t('columns.stored')}</TableHead>
-                <TableHead>{t('columns.rate')}</TableHead>
-                <TableHead>{t('columns.budget')}</TableHead>
-                <TableHead>{t('columns.usage')}</TableHead>
-                <TableHead>{t('columns.forecast')}</TableHead>
-                <TableHead>{t('columns.trimmed')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {apps.slice(0, shown).map((row) => (
-                <Row key={row.app} row={row} canEdit={isRoot} />
-              ))}
-            </TableBody>
-          </Table>
+          <ResponsiveTable
+            rows={apps.slice(0, shown)}
+            columns={columns}
+            getRowId={(row) => row.app}
+            ariaLabel={t('title')}
+          />
         )}
         {apps.length > shown && (
           <Button

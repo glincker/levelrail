@@ -15,6 +15,7 @@ import { useAppAsleep } from '../../queries/appSleep'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { AppActionBar } from '../../components/apps/AppActionBar'
+import { AppHeaderBadges } from '../../components/apps/AppHeaderBadges'
 import {
   DeploySheet,
   type DeployTab,
@@ -139,7 +140,12 @@ function AppDetailLayout() {
       title={app.name}
       breadcrumb={breadcrumb}
       status={<Badge variant={status.variant}>{status.label}</Badge>}
-      actions={<AppActionBar app={app} onDeploy={setDeployTab} />}
+      actions={
+        <div className="flex flex-col gap-2 lg:items-end">
+          <AppHeaderBadges app={app} />
+          <AppActionBar app={app} onDeploy={setDeployTab} />
+        </div>
+      }
       banners={banners}
     >
       {content}
