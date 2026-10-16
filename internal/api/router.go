@@ -73,6 +73,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
@@ -523,6 +524,8 @@ type Router struct {
 	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver                                  // nil means the real resolver
+	sleepPortWake                appsleep.PortWaker                                    // nil disables port wake in the sleep routes
+	sleepActivity                SleepActivity                                         // nil falls back to the stored idle baseline
 	wakeToken                    string                                                // empty disables the wake hook
 	canaries                     CanaryStore                                           // always set, in-flight canary releases
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries

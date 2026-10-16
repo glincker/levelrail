@@ -20,6 +20,7 @@ type SleepStats struct {
 	AsleepSeconds30d     int64
 	WakeCount7d          int
 	AvgWakeLatencyMs     *int64
+	P50WakeLatencyMs     *int64
 	P95WakeLatencyMs     *int64
 	LastSleptAt          *time.Time
 	LastWokeAt           *time.Time
@@ -85,7 +86,8 @@ func ComputeSleepStats(events []SleepEvent, priorAsleep bool, currentSince *time
 		}
 		avg := sum / int64(n)
 		p95 := latencies[(n*95+99)/100-1]
-		st.AvgWakeLatencyMs, st.P95WakeLatencyMs = &avg, &p95
+		p50 := latencies[(n*50+99)/100-1]
+		st.AvgWakeLatencyMs, st.P95WakeLatencyMs, st.P50WakeLatencyMs = &avg, &p95, &p50
 	}
 	return st
 }

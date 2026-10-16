@@ -1177,7 +1177,21 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger}
+	sleepCfg := appsleep.ConfigFromEnv(os.Getenv)
+	portWake := &appsleep.PortWakeManager{
+		Store: db, Apps: db, Nudger: engine, Events: db, Logger: logger, Cfg: sleepCfg, Ready: apiRouter.AppReadyAfter,
+		IsLocal: func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) },
+	}
+	appSleepScheduler := &appsleep.Scheduler{
+		Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger, Cfg: sleepCfg,
+		Metrics: telemetryDB, Breakdowns: telemetryDB, Conns: portWake, Ops: db, Fleet: db, PortWake: portWake, PortSync: portWake,
+	}
+	apiRouter.SetSleepRuntime(portWake, appSleepScheduler)
+	go func() {
+		if err := portWake.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("app sleep port wake stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go func() {
 		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))

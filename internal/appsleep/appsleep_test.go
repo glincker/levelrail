@@ -74,7 +74,7 @@ func TestTick(t *testing.T) {
 	}}
 	apps := &fakeApps{suspended: map[string]bool{"idle": false, "busy": false, "fresh": false, "stopped": true, "restarted": false, "pinned": false}}
 	s := &Scheduler{
-		Sleep: sleep, Apps: apps, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: func() time.Time { return now },
+		Sleep: sleep, Apps: apps, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: func() time.Time { return now }, ObservedFrom: old,
 		Traffic: fakeTraffic{last: map[string]time.Time{"service:busy": now.Add(-time.Minute)}},
 	}
 	if err := s.Tick(context.Background()); err != nil {
@@ -122,7 +122,7 @@ func TestTickRecordsSlept(t *testing.T) {
 	sleep := &fakeSleep{rows: map[string]*store.AppSleep{"web": {ServiceName: "web", IdleMinutes: 30, Since: now.Add(-time.Hour)}}}
 	apps := &fakeApps{suspended: map[string]bool{"web": false}}
 	rec := &recSleepEvents{}
-	s := &Scheduler{Sleep: sleep, Apps: apps, Traffic: fakeTraffic{}, Events: rec, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: func() time.Time { return now }}
+	s := &Scheduler{Sleep: sleep, Apps: apps, Traffic: fakeTraffic{}, Events: rec, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: func() time.Time { return now }, ObservedFrom: now.Add(-2 * time.Hour)}
 	if err := s.Tick(context.Background()); err != nil {
 		t.Fatal(err)
 	}

@@ -26,6 +26,7 @@ type AppSleepStore interface {
 	SetAppSleepIdle(ctx context.Context, serviceName string, minutes int, now time.Time) error
 	SetAppSleeping(ctx context.Context, serviceName string, sleeping bool, now time.Time) error
 	SetAppSleepHold(ctx context.Context, serviceName string, hold bool, now time.Time) error
+	SetAppSleepOptions(ctx context.Context, serviceName string, ignorePaths []string, portWake *bool, now time.Time) error
 	GetAppSleep(ctx context.Context, serviceName string) (store.AppSleep, error)
 	ListAppSleep(ctx context.Context) ([]store.AppSleep, error)
 }
@@ -44,17 +45,31 @@ type appSleepResource struct {
 	Since *time.Time `json:"since,omitempty"`
 	// HoldRequests is function mode: a request that wakes the app waits for it.
 	HoldRequests bool `json:"hold_requests"`
-	// BlockedReason is why the app cannot sleep (appsleep.Blocked*), empty when it can.
-	BlockedReason string `json:"blocked_reason,omitempty"`
+	// BlockedReason is the first blocker's detail, kept for old clients.
+	//
+	// Deprecated: read Blockers.
+	BlockedReason string            `json:"blocked_reason,omitempty"`
+	Blockers      []sleepItem       `json:"blockers"`
+	Warnings      []sleepItem       `json:"warnings"`
+	Eligible      bool              `json:"eligible"`
+	Settings      sleepSettings     `json:"settings"`
+	PortWake      sleepPortWake     `json:"port_wake"`
+	Activity      sleepActivityView `json:"activity"`
+	// ColdStartMsP50 is the median wake time from sleep history, null with no wakes.
+	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
+	// EstimatedMemoryFreedBytes is the app's memory limit, null when it has none.
+	EstimatedMemoryFreedBytes *int64 `json:"estimated_memory_freed_bytes"`
 }
 
 type appSleepRequest struct {
-	IdleMinutes  int   `json:"idle_minutes"`
-	HoldRequests *bool `json:"hold_requests,omitempty"`
+	IdleMinutes  int       `json:"idle_minutes"`
+	HoldRequests *bool     `json:"hold_requests,omitempty"`
+	IgnorePaths  *[]string `json:"ignore_paths,omitempty"`
+	PortWake     *bool     `json:"port_wake,omitempty"`
 }
 
 func toAppSleepResource(a store.AppSleep) appSleepResource {
-	res := appSleepResource{Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests}
+	res := appSleepResource{Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests, Blockers: []sleepItem{}, Warnings: []sleepItem{}}
 	if a.Sleeping {
 		since := a.Since
 		res.Since = &since
@@ -69,11 +84,20 @@ func (rt *Router) handleGetAppSleep(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: get app sleep", err, slog.String("name", name))
 		return
 	}
-	res := toAppSleepResource(a)
-	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
-		res.BlockedReason = appsleep.Blocker(svc)
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
+	if errors.Is(err, store.ErrServiceNotFound) {
+		writeJSON(w, http.StatusOK, toAppSleepResource(a))
+		return
+	} else if err != nil {
+		rt.internalError(w, "api: get app sleep: load app", err, slog.String("name", name))
+		return
 	}
-	writeJSON(w, http.StatusOK, res)
+	fleet, err := rt.sleepFleet(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: get app sleep: load fleet", err, slog.String("name", name))
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.sleepResource(r.Context(), fleet, svc, a, time.Now()))
 }
 
 // handleSetAppSleep enables sleeping after idle_minutes without requests, or
@@ -97,12 +121,16 @@ func (rt *Router) handleSetAppSleep(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: set app sleep: load app", err, slog.String("name", name))
 		return
 	}
-	if req.IdleMinutes > 0 {
-		switch appsleep.Blocker(svc) {
-		case appsleep.BlockedPinnedPort:
-			writeError(w, http.StatusBadRequest, "an app with a pinned host port cannot sleep: traffic on that port would not wake it")
+	var ignorePaths []string
+	if req.IgnorePaths != nil {
+		var bad string
+		if ignorePaths, bad = validateIgnorePaths(*req.IgnorePaths); bad != "" {
+			writeError(w, http.StatusBadRequest, bad)
 			return
 		}
+	}
+	if req.IdleMinutes > 0 && !rt.sleepEnableAllowed(w, r, svc, req) {
+		return
 	}
 	prev, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	actor := rt.eventActor(r)
@@ -132,8 +160,55 @@ func (rt *Router) handleSetAppSleep(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	a, _ := rt.appSleep.GetAppSleep(r.Context(), name)
-	writeJSON(w, http.StatusOK, toAppSleepResource(a))
+	if req.IdleMinutes > 0 && (ignorePaths != nil || req.PortWake != nil) {
+		if err := rt.appSleep.SetAppSleepOptions(r.Context(), name, ignorePaths, req.PortWake, time.Now()); err != nil {
+			rt.internalError(w, "api: set app sleep options", err, slog.String("name", name))
+			return
+		}
+	}
+	rt.syncPortWake(r.Context())
+	rt.writeSleepResource(w, r, svc)
+}
+
+// sleepEnableAllowed refuses with 409 and the blockers when sleep cannot be
+// turned on, judging the settings the request would leave in place.
+func (rt *Router) sleepEnableAllowed(w http.ResponseWriter, r *http.Request, svc *store.DesiredService, req appSleepRequest) bool {
+	setting, _ := rt.appSleep.GetAppSleep(r.Context(), svc.Name)
+	setting.IdleMinutes = req.IdleMinutes
+	if req.PortWake != nil {
+		setting.PortWake = *req.PortWake
+	}
+	if req.HoldRequests != nil {
+		setting.HoldRequests = *req.HoldRequests
+	}
+	fleet, err := rt.sleepFleet(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: set app sleep: load fleet", err, slog.String("name", svc.Name))
+		return false
+	}
+	blockers := appsleep.Evaluate(fleet.Facts(svc, setting, rt.sleepPortWake)).Blockers
+	if len(blockers) == 0 {
+		return true
+	}
+	writeJSON(w, http.StatusConflict, sleepRefusal{Error: "sleep when idle cannot be turned on: " + blockers[0].Title, Blockers: toSleepItems(blockers)})
+	return false
+}
+
+// writeSleepResource answers with the app's full, freshly computed sleep state.
+func (rt *Router) writeSleepResource(w http.ResponseWriter, r *http.Request, svc *store.DesiredService) {
+	a, _ := rt.appSleep.GetAppSleep(r.Context(), svc.Name)
+	fleet, err := rt.sleepFleet(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusOK, toAppSleepResource(a))
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.sleepResource(r.Context(), fleet, svc, a, time.Now()))
+}
+
+func (rt *Router) syncPortWake(ctx context.Context) {
+	if s, ok := rt.sleepPortWake.(appsleep.PortSyncer); ok {
+		s.Sync(ctx)
+	}
 }
 
 // handleWakeApp starts a sleeping app now.
@@ -154,6 +229,11 @@ func (rt *Router) handleWakeApp(w http.ResponseWriter, r *http.Request) {
 	if woke {
 		id := rt.recordSleepEvent(r.Context(), appsleep.WokeEvent(name, store.SleepReasonManual, rt.eventActor(r), prev.Since, start))
 		rt.watchWake(name, id, start, store.SleepReasonManual)
+	}
+	rt.syncPortWake(r.Context())
+	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil {
+		rt.writeSleepResource(w, r, svc)
+		return
 	}
 	a, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	writeJSON(w, http.StatusOK, toAppSleepResource(a))
@@ -286,8 +366,13 @@ func (rt *Router) handleSleepAppNow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "turn on sleep when idle for this app first")
 		return
 	}
-	if reason := appsleep.Blocker(svc); reason != "" {
-		writeError(w, http.StatusBadRequest, "this app cannot sleep: "+reason)
+	fleet, err := rt.sleepFleet(r.Context())
+	if err != nil {
+		rt.internalError(w, "api: sleep app now: load fleet", err, slog.String("name", name))
+		return
+	}
+	if blockers := appsleep.Evaluate(fleet.Facts(svc, a, rt.sleepPortWake)).Blockers; len(blockers) > 0 {
+		writeJSON(w, http.StatusConflict, sleepRefusal{Error: "this app cannot sleep: " + blockers[0].Title, Blockers: toSleepItems(blockers)})
 		return
 	}
 	if svc.Suspended {
@@ -299,6 +384,5 @@ func (rt *Router) handleSleepAppNow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rt.recordSleepEvent(r.Context(), store.SleepEvent{ServiceName: name, Kind: store.SleepEventSlept, At: time.Now(), Reason: store.SleepReasonManual, IdleMinutes: a.IdleMinutes, Actor: rt.eventActor(r)})
-	a, _ = rt.appSleep.GetAppSleep(r.Context(), name)
-	writeJSON(w, http.StatusOK, toAppSleepResource(a))
+	rt.writeSleepResource(w, r, svc)
 }

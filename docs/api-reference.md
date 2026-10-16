@@ -462,6 +462,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/build-stats | AbilityRead | handleBuildStats |
 | GET | /api/v1/apps/{name}/github-actions | AbilityRead | handleGetAppGitHubActions |
 | PUT | /api/v1/apps/{name}/github-actions | AbilityWriteSensitive | handleSetAppGitHubActions |
+| GET | /api/v1/apps/sleep/overview | AbilityRead | handleAppsSleepOverview |
 
 </Accordion>
 
