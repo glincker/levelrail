@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -72,6 +73,7 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 		JobTimeout:      envDuration("APP_PIPELINE_JOB_TIMEOUT", 0),
 		ApprovalTimeout: envDuration("APP_PIPELINE_APPROVAL_TIMEOUT", 0),
 		KeepRuns:        envInt("APP_PIPELINE_KEEP_RUNS", 0),
+		MaxInputBytes:   envInt("APP_PIPELINE_INPUT_MAX_BYTES", 0),
 		Reporter:        apiRouter.PipelineStatusReporter(),
 		ReportTimeout:   envDuration("APP_GIT_STATUS_TIMEOUT", 0),
 	}
@@ -81,8 +83,14 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 		cfg.Secrets = secretsManager
 		oidcRequestAddr = wireOIDC(ctx, &cfg, apiRouter, secretsManager, client, logger)
 	}
+	artifacts := newPipelineArtifactStore(logger)
+	cfg.Artifacts = artifacts
 	engine := pipeline.New(cfg)
 	apiRouter.SetPipelines(db, engine)
+	if artifacts != nil {
+		apiRouter.SetPipelineArtifactFiles(artifacts)
+	}
+	apiRouter.SetPipelineWebhookLimits(int64(envInt("APP_PIPELINE_WEBHOOK_MAX_BODY", 0)), envInt("APP_PIPELINE_WEBHOOK_DELIVERIES_KEEP", 0))
 	apiRouter.SetPipelineEvents(engine)
 	apiRouter.SetPipelineSync(pipeline.NewSyncer(pipeline.SyncConfig{
 		Store: db, Source: acts, Fetcher: pipeline.GitFetcher{}, BrandName: b.ShortName, Logger: logger,
@@ -453,4 +461,33 @@ func (a *pipelineActions) Notify(ctx context.Context, app string, succeeded bool
 	}
 	a.notifier.Dispatch(ctx, "service:"+app, ev)
 	return nil
+}
+
+const (
+	defaultPipelineArtifactMaxBytes    = 256 << 20
+	defaultPipelineArtifactMaxRunBytes = 1 << 30
+	defaultPipelineArtifactMaxUnpacked = 1 << 30
+	defaultPipelineArtifactRetention   = 7 * 24 * time.Hour
+	pipelineArtifactSubdir             = "pipeline-artifacts"
+)
+
+// newPipelineArtifactStore opens the on-disk artifact store. A failure is
+// logged and returns nil: jobs that declare artifacts then fail with a
+// clear error, while every other pipeline keeps working.
+func newPipelineArtifactStore(logger *slog.Logger) *pipeline.ArtifactStore {
+	dir := os.Getenv("APP_PIPELINE_ARTIFACT_DIR")
+	if dir == "" {
+		dir = filepath.Join(dataDirFromEnv(), pipelineArtifactSubdir)
+	}
+	s, err := pipeline.NewArtifactStore(dir, pipeline.ArtifactLimits{
+		MaxBytes:         int64(envInt("APP_PIPELINE_ARTIFACT_MAX_BYTES", defaultPipelineArtifactMaxBytes)),
+		MaxRunBytes:      int64(envInt("APP_PIPELINE_ARTIFACT_MAX_RUN_BYTES", defaultPipelineArtifactMaxRunBytes)),
+		MaxUnpackedBytes: int64(envInt("APP_PIPELINE_ARTIFACT_MAX_UNPACKED_BYTES", defaultPipelineArtifactMaxUnpacked)),
+		Retention:        envDuration("APP_PIPELINE_ARTIFACT_RETENTION", defaultPipelineArtifactRetention),
+	})
+	if err != nil {
+		logger.Error("pipeline artifact storage unavailable", slog.String("dir", dir), slog.String("error", err.Error()))
+		return nil
+	}
+	return s
 }

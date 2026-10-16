@@ -97,4 +97,5 @@ func (rt *Router) firePipelineMergeGroup(ctx context.Context, app string, mg web
 func (rt *Router) SetPipelines(st PipelineStore, runner PipelineRunner) {
 	rt.pipelineStore = st
 	rt.pipelineRunner = runner
+	rt.pipelineExtras, _ = st.(PipelineExtraStore)
 }

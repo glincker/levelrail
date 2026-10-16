@@ -152,6 +152,12 @@ type Config struct {
 	JobTimeout      time.Duration
 	ApprovalTimeout time.Duration
 	KeepRuns        int
+	// MaxInputBytes caps one run parameter value.
+	MaxInputBytes int
+
+	// Artifacts stores job artifact archives on disk. Nil means a job that
+	// declares artifacts fails with a clear error instead of dropping them.
+	Artifacts *ArtifactStore
 
 	// Reporter, when set, posts run state to the git forge as a commit
 	// status. ReportTimeout bounds each post.
@@ -167,6 +173,7 @@ const (
 	defaultJobTimeout      = time.Hour
 	defaultApprovalTimeout = 72 * time.Hour
 	defaultKeepRuns        = 100
+	defaultMaxInputBytes   = 4096
 )
 
 func (c *Config) applyDefaults() {
@@ -205,5 +212,8 @@ func (c *Config) applyDefaults() {
 	}
 	if c.KeepRuns <= 0 {
 		c.KeepRuns = defaultKeepRuns
+	}
+	if c.MaxInputBytes <= 0 {
+		c.MaxInputBytes = defaultMaxInputBytes
 	}
 }

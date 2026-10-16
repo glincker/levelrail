@@ -3,6 +3,7 @@ package pipeline
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -26,6 +27,10 @@ func (jr *jobRun) execStep(ctx context.Context, k int, p plannedStep, step Step)
 		return nil, jr.setup(ctx, k)
 	case KindRun, KindTest, KindArtifactUpload, KindArtifactDownload:
 		return jr.execContainerStep(ctx, k, p, step)
+	case KindArtifactRestore:
+		return nil, jr.restoreArtifacts(ctx, k)
+	case KindArtifactCollect:
+		return nil, jr.collectArtifacts(ctx, k)
 	}
 	return nil, jr.execControlStep(ctx, k, p, step)
 }
@@ -76,7 +81,9 @@ func (jr *jobRun) stepEnv(ctx context.Context, step Step, sc Scope) (map[string]
 	env := map[string]string{
 		"CI": "true", "PIPELINE_RUN_ID": jr.run.ID, "PIPELINE_RUN_NUMBER": fmt.Sprint(jr.run.Number), "PIPELINE_JOB": jr.row.Key,
 		"PIPELINE_SHA": jr.run.CommitSHA, "PIPELINE_REF": jr.run.Ref, "PIPELINE_APP": jr.run.AppName,
+		"PIPELINE_TRIGGER": jr.run.TriggerKind,
 	}
+	jr.triggerEnv(env)
 	maps.Copy(env, jr.runEnv)
 	for _, layer := range []map[string]string{jr.def.Env, jr.jd.Env, step.Env} {
 		for k, v := range layer {
@@ -208,9 +215,13 @@ func (jr *jobRun) stepScript(kind string, step Step) (string, error) {
 	case KindTest:
 		return step.With["command"], nil
 	case KindArtifactUpload:
-		name, path := step.With["name"], step.With["path"]
+		name := step.With["name"]
 		if !safeArtifactName(name) {
 			return "", fmt.Errorf("invalid artifact name %q", name)
+		}
+		path, err := cleanVolumePath(step.With["path"])
+		if err != nil {
+			return "", err
 		}
 		return fmt.Sprintf("mkdir -p /artifacts/%s && cp -a %s /artifacts/%s/", name, shellQuote(path), name), nil
 	case KindArtifactDownload:
@@ -218,10 +229,22 @@ func (jr *jobRun) stepScript(kind string, step Step) (string, error) {
 		if !safeArtifactName(name) {
 			return "", fmt.Errorf("invalid artifact name %q", name)
 		}
-		dest := firstNonEmpty(step.With["path"], ".")
+		dest, err := cleanVolumePath(firstNonEmpty(step.With["path"], "."))
+		if err != nil {
+			return "", err
+		}
 		return fmt.Sprintf("test -d /artifacts/%s || { echo 'artifact %s not found' >&2; exit 1; }\nmkdir -p %s && cp -a /artifacts/%s/. %s/", name, name, shellQuote(dest), name, shellQuote(dest)), nil
 	}
 	return step.Run, nil
+}
+
+// cleanVolumePath keeps an upload or download path inside the workspace.
+// Expressions are left to the later interpolation, so they pass through.
+func cleanVolumePath(p string) (string, error) {
+	if strings.Contains(p, "${{") {
+		return p, nil
+	}
+	return cleanArtifactPath(p)
 }
 
 var artifactNameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.-]*$`)
@@ -468,4 +491,19 @@ func shortSHA(sha string) string {
 		return sha[:12]
 	}
 	return sha
+}
+
+// triggerEnv exposes run parameters and a webhook payload as plain
+// environment variables. They are data: nothing evaluates them.
+func (jr *jobRun) triggerEnv(env map[string]string) {
+	var inputs map[string]string
+	if json.Unmarshal([]byte(jr.run.InputsJSON), &inputs) == nil {
+		for k, v := range inputs {
+			env["PIPELINE_INPUT_"+strings.ToUpper(k)] = v
+		}
+	}
+	if jr.run.TriggerKind == TriggerWebhook {
+		env["PIPELINE_WEBHOOK_PAYLOAD"] = jr.run.TriggerPayload
+		env["PIPELINE_WEBHOOK_CONTENT_TYPE"] = jr.run.TriggerContentType
+	}
 }

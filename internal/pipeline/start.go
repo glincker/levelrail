@@ -27,6 +27,10 @@ type StartOptions struct {
 	// Hold, when set, creates the run held for approval with this reason:
 	// no job starts and no secret is read until an approver releases it.
 	Hold string
+	// Payload and PayloadContentType carry an inbound webhook's body. Jobs
+	// read it from the environment; it is never interpolated into scripts.
+	Payload            []byte
+	PayloadContentType string
 }
 
 // ErrInvalidInput marks a run request the pipeline's declared inputs reject.
@@ -46,7 +50,7 @@ func (e *Engine) Start(ctx context.Context, p store.Pipeline, opt StartOptions) 
 	if !def.On.Matches(ev) && opt.Trigger != TriggerSchedule {
 		return store.PipelineRun{}, fmt.Errorf("pipeline: %q does not accept %s triggers", p.Name, opt.Trigger)
 	}
-	inputs, err := resolveInputs(def, opt.Inputs)
+	inputs, err := ResolveParameters(def, opt.Inputs, e.cfg.MaxInputBytes)
 	if err != nil {
 		return store.PipelineRun{}, err
 	}
@@ -55,6 +59,7 @@ func (e *Engine) Start(ctx context.Context, p store.Pipeline, opt StartOptions) 
 	run := store.PipelineRun{
 		ID: e.cfg.NewID(), PipelineID: p.ID, AppName: p.AppName, TriggerKind: opt.Trigger, TriggerActor: opt.Actor,
 		Ref: opt.Ref, CommitSHA: opt.SHA, InputsJSON: string(inputsJSON), Definition: p.YAML, CreatedAt: e.cfg.Now(),
+		TriggerPayload: string(opt.Payload), TriggerContentType: opt.PayloadContentType,
 	}
 	if opt.Hold != "" {
 		run.HoldState, run.HoldReason, run.Reason = store.HoldPending, opt.Hold, holdReason(opt.Hold)
@@ -73,42 +78,6 @@ func (e *Engine) Start(ctx context.Context, p store.Pipeline, opt StartOptions) 
 	}
 	e.Nudge()
 	return created, nil
-}
-
-func resolveInputs(def *Definition, given map[string]string) (map[string]string, error) {
-	out := map[string]string{}
-	var decl map[string]Input
-	if def.On.Manual != nil {
-		decl = def.On.Manual.Inputs
-	}
-	for k := range given {
-		if _, ok := decl[k]; !ok {
-			return nil, fmt.Errorf("%w: unknown input %q", ErrInvalidInput, k)
-		}
-	}
-	for name, in := range decl {
-		v, ok := given[name]
-		if !ok {
-			v = in.Default
-		}
-		if v == "" && in.Required {
-			return nil, fmt.Errorf("%w: input %q is required", ErrInvalidInput, name)
-		}
-		if len(in.Options) > 0 && v != "" && !containsString(in.Options, v) {
-			return nil, fmt.Errorf("%w: input %q must be one of %s", ErrInvalidInput, name, strings.Join(in.Options, ", "))
-		}
-		out[name] = v
-	}
-	return out, nil
-}
-
-func containsString(list []string, v string) bool {
-	for _, s := range list {
-		if s == v {
-			return true
-		}
-	}
-	return false
 }
 
 // Cancel flags a run for cancellation and wakes the engine.
@@ -140,7 +109,10 @@ func (e *Engine) Rerun(ctx context.Context, runID, actor string) (store.Pipeline
 			trig = TriggerAPI
 		}
 	}
-	return e.Start(ctx, p, StartOptions{Trigger: trig, Actor: actor, Ref: old.Ref, SHA: old.CommitSHA, Inputs: inputs})
+	return e.Start(ctx, p, StartOptions{
+		Trigger: trig, Actor: actor, Ref: old.Ref, SHA: old.CommitSHA, Inputs: inputs,
+		Payload: []byte(old.TriggerPayload), PayloadContentType: old.TriggerContentType,
+	})
 }
 
 // Scheduler starts pipelines whose `on.schedule` cron expressions come due.

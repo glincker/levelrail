@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1197 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1206 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -222,6 +222,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRuns", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipelineRun", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/approvals/{approval}", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDecidePipelineApproval", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/artifacts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRunArtifacts", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/artifacts/{aid}/download", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDownloadPipelineArtifact", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelPipelineRun", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/hold", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDecidePipelineRunHold", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/logs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRunLogs", Description: ""},
@@ -237,6 +239,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipeline", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdatePipeline", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipelines/{pname}/runs", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartPipelineRun", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeletePipelineWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipelineWebhook", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetPipelineWebhook", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineWebhookDeliveries", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries/{did}/replay", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReplayPipelineWebhookDelivery", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook/rotate", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotatePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/placement", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPlacement", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/placement", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetPlacement", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/preflight", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreflightApp", Description: "Preflight checks (preflight.go): read-only probes of an existing app's stored config (AbilityRead, resource-scoped), or of a not yet created app described in the body (AbilityWrite, since the body names hosts the server will contact)."},
@@ -813,6 +821,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/branches", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListGiteaAppBranches", Description: ""},
 	{Method: "POST", Path: "/api/v1/gitea-app/repos/{owner}/{repo}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUseGiteaRepoAsSource", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
+	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},

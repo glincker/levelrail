@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -37,14 +38,16 @@ func pipelinesUsage(prog string) string {
   %[1]s pipelines validate <file> [--json]                 validate a pipeline file locally (no API call)
   %[1]s pipelines save <app> <file-or-repo-dir> [--name N] [--paths G,...] [--paths-ignore G,...] [--report-status=false] [flags]   create or update pipelines from a file, or every file in a repo's pipeline directory
   %[1]s pipelines delete <app> <name> [flags]              delete a pipeline
-  %[1]s pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
+  %[1]s pipelines run <app> <name> [--ref R] [--sha S] [--param k=v]... [--follow] [flags]   --input is the older spelling of --param
   %[1]s pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]   list runs, or show one run's jobs and steps
   %[1]s pipelines runs --all [--status S] [--app A] [--trigger T] [--pipeline N] [--limit N] [flags]   list runs across every app
   %[1]s pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
   %[1]s pipelines cancel <app> <run-id> [flags]
   %[1]s pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]   decide approval gates, or release a run held for approval
   %[1]s pipelines sync <app> [--repo-truth=true|false] [flags]   sync pipeline files from the repository now, or set repository as source of truth
+  %[1]s pipelines artifacts <app> <run-id> [--download JOB] [--out FILE] [flags]   list a run's stored artifacts, or download one job's archive
   %[1]s pipelines triggers <app> [flags]                   why recent git events did or did not start runs
+  %[1]s pipelines triggers <app> <pipeline> [--enable [--hmac]|--disable|--rotate|--delete|--deliveries|--replay ID] [flags]   manage the pipeline's inbound webhook trigger
   %[1]s pipelines oidc [flags]                             whether pipeline jobs can mint OIDC tokens, and the JWKS URL to wire to a cloud provider
   %[1]s pipelines oidc rotate-key [--retire-after D] [flags]   rotate the OIDC signing key; the old key stays published in the JWKS until it retires
 
@@ -83,7 +86,12 @@ func runPipelines(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runPipelinesApprove(prog, rest, stdout, stderr, lookupEnv)
 	case "sync":
 		return runPipelinesSync(prog, rest, stdout, stderr, lookupEnv)
+	case "artifacts":
+		return runPipelinesArtifacts(prog, rest, stdout, stderr, lookupEnv)
 	case "triggers":
+		if countPositionals(rest) >= 2 {
+			return runPipelinesWebhook(prog, rest, stdout, stderr, lookupEnv)
+		}
 		return runPipelinesTriggers(prog, rest, stdout, stderr, lookupEnv)
 	case "oidc":
 		return runPipelinesOIDC(prog, rest, stdout, stderr, lookupEnv)
@@ -328,7 +336,8 @@ func runPipelinesRun(prog string, args []string, stdout, stderr io.Writer, looku
 	sha := c.fs.String("sha", "", "commit SHA to check out and tag builds with")
 	follow := c.fs.Bool("follow", false, "stream the run's logs until it finishes")
 	inputs := kvFlag{}
-	c.fs.Var(inputs, "input", "manual input as key=value (repeatable)")
+	c.fs.Var(inputs, "param", "run parameter as key=value (repeatable)")
+	c.fs.Var(inputs, "input", "older spelling of --param")
 	client, pos, of, jsonOut, code, ok := c.parse(args, 2, 2, lookupEnv)
 	if !ok {
 		return code
@@ -431,6 +440,10 @@ func reportSummary(r *apiclient.PipelineReport) string {
 
 func printPipelineRun(out io.Writer, r apiclient.PipelineRunResource) {
 	_, _ = fmt.Fprintf(out, "run #%d of %s: %s (%s)\n", r.Number, r.PipelineName, r.Status, r.Reason)
+	_, _ = fmt.Fprintf(out, "  trigger: %s %s\n", r.Trigger, r.Actor)
+	for _, k := range sortedKeys(r.Inputs) {
+		_, _ = fmt.Fprintf(out, "  param %s=%s\n", k, r.Inputs[k])
+	}
 	if r.Report != nil {
 		if r.Report.Warning != "" {
 			_, _ = fmt.Fprintf(out, "  forge status: %s\n", r.Report.Warning)
@@ -526,4 +539,32 @@ func runPipelinesApprove(prog string, args []string, stdout, stderr io.Writer, l
 	return c.write(of, map[string]any{"decision": decision, "approvals": decided}, func() {
 		_, _ = fmt.Fprintf(stdout, "%s %d approval gate(s) on run %s\n", decision, len(decided), pos[1])
 	})
+}
+
+var valueFlags = map[string]bool{"replay": true, "token": true, "api-url": true, "profile": true, "output": true, "query": true}
+
+// countPositionals counts the non-flag arguments, skipping the value of a
+// flag that takes one (--replay, --token, and the other value flags).
+func countPositionals(args []string) int {
+	n := 0
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch name := strings.TrimLeft(a, "-"); {
+		case strings.HasPrefix(a, "-") && !strings.Contains(a, "=") && valueFlags[name]:
+			i++
+		case strings.HasPrefix(a, "-"):
+		default:
+			n++
+		}
+	}
+	return n
+}
+
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }

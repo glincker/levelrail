@@ -463,6 +463,14 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/github-actions | AbilityRead | handleGetAppGitHubActions |
 | PUT | /api/v1/apps/{name}/github-actions | AbilityWriteSensitive | handleSetAppGitHubActions |
 | GET | /api/v1/apps/sleep/overview | AbilityRead | handleAppsSleepOverview |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/artifacts | AbilityRead | handleListPipelineRunArtifacts |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/artifacts/{aid}/download | AbilityRead | handleDownloadPipelineArtifact |
+| GET | /api/v1/apps/{name}/pipelines/{pname}/webhook | AbilityRead | handleGetPipelineWebhook |
+| PUT | /api/v1/apps/{name}/pipelines/{pname}/webhook | AbilityWriteSensitive | handleSetPipelineWebhook |
+| DELETE | /api/v1/apps/{name}/pipelines/{pname}/webhook | AbilityWriteSensitive | handleDeletePipelineWebhook |
+| POST | /api/v1/apps/{name}/pipelines/{pname}/webhook/rotate | AbilityWriteSensitive | handleRotatePipelineWebhook |
+| GET | /api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries | AbilityRead | handleListPipelineWebhookDeliveries |
+| POST | /api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries/{did}/replay | AbilityDeploy | handleReplayPipelineWebhookDelivery |
 
 </Accordion>
 
@@ -1421,6 +1429,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/maintenance/domains | AbilityRead | handleListFleetMaintenance |
 | POST | /api/v1/maintenance/preview | AbilityRead | handlePreviewMaintenance |
 | POST | /api/v1/git-sources/analyze | AbilityWrite | handleAnalyzeImport |
+| POST | /api/v1/hooks/pipeline/{id}/{token} | Public | handlePipelineWebhook |
 
 ## See also
 

@@ -11,19 +11,21 @@ import (
 
 // PipelineResource mirrors internal/api's pipelineResource.
 type PipelineResource struct {
-	ID        string    `json:"id"`
-	App       string    `json:"app"`
-	Name      string    `json:"name"`
-	Source    string    `json:"source"`
-	Enabled   bool      `json:"enabled"`
-	YAML      string    `json:"yaml,omitempty"`
-	Triggers  []string  `json:"triggers,omitempty"`
-	Jobs      int       `json:"jobs"`
-	LastRun   *RunBrief `json:"last_run,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	SourceSHA string    `json:"source_sha,omitempty"`
-	Diverged  bool      `json:"diverged,omitempty"`
+	ID       string   `json:"id"`
+	App      string   `json:"app"`
+	Name     string   `json:"name"`
+	Source   string   `json:"source"`
+	Enabled  bool     `json:"enabled"`
+	YAML     string   `json:"yaml,omitempty"`
+	Triggers []string `json:"triggers,omitempty"`
+	// Parameters are the values a run may set.
+	Parameters []PipelineParameter `json:"parameters,omitempty"`
+	Jobs       int                 `json:"jobs"`
+	LastRun    *RunBrief           `json:"last_run,omitempty"`
+	CreatedAt  time.Time           `json:"created_at"`
+	UpdatedAt  time.Time           `json:"updated_at"`
+	SourceSHA  string              `json:"source_sha,omitempty"`
+	Diverged   bool                `json:"diverged,omitempty"`
 }
 
 // RunBrief is a pipeline's most recent run summary.
@@ -60,6 +62,8 @@ type PipelineRunResource struct {
 	Ref          string             `json:"ref,omitempty"`
 	CommitSHA    string             `json:"commit_sha,omitempty"`
 	Inputs       map[string]string  `json:"inputs,omitempty"`
+	PayloadBytes int                `json:"payload_bytes,omitempty"`
+	PayloadType  string             `json:"payload_type,omitempty"`
 	Status       string             `json:"status"`
 	Reason       string             `json:"reason,omitempty"`
 	CreatedAt    time.Time          `json:"created_at"`
