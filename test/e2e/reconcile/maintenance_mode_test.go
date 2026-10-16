@@ -62,7 +62,7 @@ func TestMaintenanceMode_Live_TogglesResponseWithoutStoppingContainer(t *testing
 		Image:   res.Tag,
 		Port:    8080,
 		Domains: []string{domain},
-		Health:  &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/"}},
+		Health:  &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/index.html"}},
 	}
 	if err := svcStore.SaveDesiredService(buildCtx, desired); err != nil {
 		t.Fatalf("SaveDesiredService() error = %v", err)
@@ -128,17 +128,18 @@ func TestMaintenanceMode_Live_TogglesResponseWithoutStoppingContainer(t *testing
 		t.Fatalf("ingress Controller.Reconcile() (during maintenance) error = %v", err)
 	}
 
-	// "/" is the readiness path, which maintenance mode lets through by
-	// default (bypass_health_check), so the page is checked on another path.
-	status, body := getStatusAndBodyWithRetry(t, client, "https://"+domain+"/e2e-maintenance-probe", http.StatusServiceUnavailable)
+	// The homepage is never bypassed, so its assets cannot be served the
+	// maintenance page while the document renders unstyled.
+	status, body := getStatusAndBodyWithRetry(t, client, "https://"+domain+"/", http.StatusServiceUnavailable)
 	if status != http.StatusServiceUnavailable {
-		t.Fatalf("status during maintenance = %d, want %d", status, http.StatusServiceUnavailable)
+		t.Fatalf("status of / during maintenance = %d, want %d", status, http.StatusServiceUnavailable)
 	}
 	if strings.Contains(body, helloBody) {
 		t.Fatalf("response during maintenance mode = %q, must not contain the real app's body", body)
 	}
 
-	if got := getBodyWithRetry(t, client, "https://"+domain+"/"); !strings.Contains(got, helloBody) {
+	// The readiness path (bypass_health_check, on by default) still reaches the app.
+	if got := getBodyWithRetry(t, client, "https://"+domain+"/index.html"); !strings.Contains(got, helloBody) {
 		t.Fatalf("readiness path during maintenance = %q, want the real app's body: health checks bypass maintenance by default", got)
 	}
 
