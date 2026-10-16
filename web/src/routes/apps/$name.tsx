@@ -141,9 +141,11 @@ function AppDetailLayout() {
       breadcrumb={breadcrumb}
       status={<Badge variant={status.variant}>{status.label}</Badge>}
       actions={
-        <div className="flex flex-col gap-2 lg:items-end">
+        <div className="flex min-w-0 flex-col gap-2 lg:items-end">
           <AppHeaderBadges app={app} />
-          <AppActionBar app={app} onDeploy={setDeployTab} />
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <AppActionBar app={app} onDeploy={setDeployTab} />
+          </div>
         </div>
       }
       banners={banners}
