@@ -514,6 +514,9 @@ s9_lifecycle() {
   evc apps restart "$app"; sleep 6
   http_wait "$app" / 60 || stopped_ok=0
   c2=$(cid "$app")
+  # The old container serves through the drain window, so wait for the new id to take over.
+  t1=$(now)
+  while [ "$c2" = "$c1" ] && [ "$(now)" -lt $((t1 + 60)) ]; do sleep 3; c2=$(cid "$app"); done
   ev_text "container after start=$c1 after restart=$c2"
   deploy_image "$del" nginx:1.27-alpine 80 || true
   evc apps volumes attach "$del" --name keep --path /keep
