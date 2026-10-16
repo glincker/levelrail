@@ -177,20 +177,35 @@ echo "pre-commit: web (tsc, eslint, prettier)"
 staged_web_files=$(git diff --cached --name-only --diff-filter=ACM -- 'web/*.ts' 'web/*.tsx')
 if [ -n "$staged_web_files" ]; then
 	rel_web_files=$(echo "$staged_web_files" | sed 's#^web/##')
+	# routeTree.gen.ts is gitignored and written by vite build, so a fresh
+	# worktree makes tsc -b fail on every route until it exists.
+	if [ ! -f web/src/routeTree.gen.ts ]; then
+		echo "web/src/routeTree.gen.ts missing: generating it with vite build (once per checkout)"
+		if ! ( cd web && npx vite build >/dev/null 2>&1 ); then
+			echo "vite build failed; run: cd web && npx vite build"
+			fail=1
+		fi
+	fi
 	# tsc -b, not tsc --noEmit: the root tsconfig only holds project
-	# references, so --noEmit checks nothing. -b is what CI runs.
-	if ! ( cd web && npx tsc -b ); then
-		fail=1
-	fi
+	# references, so --noEmit checks nothing. -b is what CI runs. It is the
+	# long pole, so eslint and prettier (under 10s together) run beside it.
+	tsc_log="$(mktemp)"
+	( cd web && npx tsc -b ) >"$tsc_log" 2>&1 &
+	tsc_pid=$!
+	lint_rc=0
 	# shellcheck disable=SC2086
-	if ! ( cd web && npx eslint $rel_web_files ); then
-		fail=1
-	fi
+	( cd web && npx eslint $rel_web_files ) || lint_rc=1
 	# shellcheck disable=SC2086
 	if ! ( cd web && npx prettier --check $rel_web_files ); then
 		echo "not prettier-formatted (run: npx prettier --write <file>, inside web/)"
-		fail=1
+		lint_rc=1
 	fi
+	tsc_rc=0
+	wait "$tsc_pid" || tsc_rc=$?
+	cat "$tsc_log"
+	rm -f "$tsc_log"
+	[ "$tsc_rc" -eq 0 ] || fail=1
+	[ "$lint_rc" -eq 0 ] || fail=1
 fi
 
 # Phosphor-only UI icons (ADR 014): lucide-react must never appear in a

@@ -32,11 +32,6 @@ if ! scripts/check-migration-versions.sh; then
 	fail=1
 fi
 
-echo "pre-push: go build"
-if ! go build ./... 2>&1; then
-	fail=1
-fi
-
 scope="ALL"
 if [ "$fail" -eq 0 ] && command -v jq >/dev/null 2>&1; then
 	# Best-effort: a fetch failure (offline, no network) just means the
@@ -54,6 +49,19 @@ if [ "$fail" -eq 0 ] && command -v jq >/dev/null 2>&1; then
 fi
 
 push_scope="${LEVELRAIL_PUSH_SCOPE:-fast}"
+
+# A push with no Go-affecting change (web, docs) cannot break the Go build,
+# and go build ./... costs ~18s on a warm cache.
+if [ "$fail" -eq 0 ] && [ "$scope" != "NONE" ]; then
+	echo "pre-push: go build"
+	if ! go build ./... 2>&1; then
+		fail=1
+	fi
+fi
+
+# Bounds the internal/api run and the whole-tree run: go test's default is 10m,
+# which internal/api exceeds when run whole.
+go_test_timeout="${LEVELRAIL_PUSH_TEST_TIMEOUT:-30m}"
 
 if [ "$fail" -eq 0 ] && [ "$scope" = "NONE" ]; then
 	echo "pre-push: go test skipped, no Go-affecting changes vs origin/main"
@@ -76,7 +84,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	if [ -n "$fast_pkgs" ]; then
 		echo "pre-push: go test -short (fast lane):$fast_pkgs"
 		# shellcheck disable=SC2086
-		if ! go test $fast_pkgs -short 2>&1; then
+		if ! go test $fast_pkgs -short -timeout "$go_test_timeout" 2>&1; then
 			fail=1
 		fi
 	fi
@@ -103,7 +111,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	fi
 	if [ "$fail" -eq 0 ] && [ -n "$api_tests" ]; then
 		echo "pre-push: go test -short ./internal/api, only tests from changed test files"
-		if ! go test ./internal/api -short -run "^($api_tests)\$" 2>&1; then
+		if ! go test ./internal/api -short -timeout "$go_test_timeout" -run "^($api_tests)\$" 2>&1; then
 			fail=1
 		fi
 	fi
@@ -120,7 +128,7 @@ elif [ "$fail" -eq 0 ]; then
 		test_targets="$scope"
 	fi
 	# shellcheck disable=SC2086 # test_targets is intentionally word-split: either "./..." or a newline-joined package list
-	if ! go test $test_targets -short -coverprofile="$coverage_out" 2>&1; then
+	if ! go test $test_targets -short -timeout "$go_test_timeout" -coverprofile="$coverage_out" 2>&1; then
 		fail=1
 	fi
 fi
