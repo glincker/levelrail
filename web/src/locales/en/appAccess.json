@@ -1,35 +1,6 @@
 {
   "title": "Where to reach this app",
-  "description": "Every address this app answers on right now, and which port it uses.",
-  "id": {
-    "container": "Container port",
-    "host": "Host port",
-    "local": "This server",
-    "lan": "Local network",
-    "public": "Public address",
-    "domain": "Domain",
-    "internal": "Other apps"
-  },
-  "note": {
-    "container": "The port the app listens on inside its container.",
-    "host": "The port published on this server for the container port.",
-    "hostStopped": "The app is not running, so no host port is published.",
-    "hostNone": "No host port is published yet. Redeploy to publish one.",
-    "local": "Works from this server only.",
-    "localNone": "Available once the app is running.",
-    "lan": "Reachable from other devices on the same network.",
-    "lanLocalhost": "Not reachable from the network: the port is bound to localhost.",
-    "lanRemote": "This app runs on another node. Open that node to see its network addresses.",
-    "public": "Plain HTTP on a public interface. TLS and sign-in gates do not apply.",
-    "domain": "Served through the proxy with TLS.",
-    "internal": "Other apps on this server reach it by this name and port."
-  },
-  "state": {
-    "ok": "Reachable",
-    "warn": "Needs attention",
-    "off": "Not available",
-    "unknown": "Not tested"
-  },
+  "description": "The best address to open first, then other ways in.",
   "actions": {
     "copy": "Copy {{what}}",
     "copied": "Copied",
@@ -37,12 +8,12 @@
     "test": "Test",
     "testing": "Testing",
     "allowNetwork": "Allow network access",
-    "change": "Change port or exposure"
-  },
-  "test": {
-    "ok": "Answered in {{ms}} ms",
-    "failed": "Did not answer",
-    "failedWith": "Did not answer: {{detail}}"
+    "change": "Change port or exposure",
+    "openApp": "Open app",
+    "copyUrl": "Copy address",
+    "recheck": "Check again",
+    "showDetails": "Show details",
+    "hideDetails": "Hide details"
   },
   "allow": {
     "title": "Allow network access?",
@@ -74,5 +45,74 @@
   },
   "traffic": {
     "hint": "No traffic yet. Charts appear when the first request arrives."
+  },
+  "hero": {
+    "title": "Open your app",
+    "stopped": "The app is not running, so this address will not answer until it starts."
+  },
+  "status": {
+    "live": "Live",
+    "down": "Not answering",
+    "unchecked": "Not checked",
+    "checking": "Checking",
+    "stopped": "Not running"
+  },
+  "security": {
+    "secure": "Secure",
+    "selfSigned": "Self-signed certificate: browser will warn",
+    "plain": "Not encrypted"
+  },
+  "scope": {
+    "internet": "Anyone on the internet",
+    "network": "Same network or VPN",
+    "server": "This server only",
+    "apps": "Other apps on this server"
+  },
+  "others": {
+    "title": "Other ways in"
+  },
+  "advanced": {
+    "title": "Advanced: addresses for other apps and this server",
+    "hint": "Only needed when wiring apps together or working on the server itself.",
+    "noPublic": "This server has no public address, so the private network address is the way in."
+  },
+  "id": {
+    "domain": "Domain",
+    "public": "Public address",
+    "private": "Private network",
+    "loopback": "This server",
+    "internal": "Other apps",
+    "container": "Container port",
+    "host": "Host port"
+  },
+  "note": {
+    "container": "The port the app listens on inside its container.",
+    "host": "The port published on this server for the container port.",
+    "hostStopped": "The app is not running, so no host port is published.",
+    "hostNone": "No host port is published yet. Redeploy to publish one.",
+    "local": "Works only when you are logged in on this server.",
+    "localNone": "Available once the app is running.",
+    "private": "Works only from the same network or over a VPN.",
+    "privateLocalhost": "Not reachable from the network: the port is bound to localhost.",
+    "privateRemote": "This app runs on another node. Open that node to see its network addresses.",
+    "public": "Plain HTTP, anyone who knows the address can reach it.",
+    "domain": "Served through the proxy with TLS.",
+    "domainAuto": "Automatic address. Add your own domain for a trusted certificate.",
+    "internal": "Other apps on this server connect with this name and port, for example http://{{address}}."
+  },
+  "test": {
+    "ok": "Answered in {{ms}} ms",
+    "failed": "The app did not answer on this address. It may still be starting.",
+    "reason": {
+      "default": "The app did not answer on this address. It may still be starting.",
+      "container_not_running": "The app is not running right now.",
+      "container_not_listening": "The app did not answer on this address. It may still be starting.",
+      "firewall_closed": "This address is blocked, most likely by a firewall on the server or the hosting provider.",
+      "unreachable_from_host": "The proxy is not answering on this address yet.",
+      "tls_not_issued": "The certificate is not trusted yet, so browsers will show a warning.",
+      "proxy_route_missing": "The proxy has no route for this address yet.",
+      "upstream_failing": "The proxy reached the server but the app behind it is not responding.",
+      "app_error": "The app answered with an error."
+    }
   }
 }
