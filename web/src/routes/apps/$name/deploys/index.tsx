@@ -18,6 +18,7 @@ import { AppSleepCard } from '../../../../components/AppSleepCard'
 import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
 import { CanaryCard } from '../../../../components/CanaryCard'
 import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
+import { BuildTrendCard } from '../../../../components/BuildTrendCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -75,6 +76,7 @@ function DeploysSection() {
           setTab('existing-image')
         }}
       />
+      <BuildTrendCard appName={name} />
       {sleepOn ? <AppSleepCard appName={name} /> : null}
       <SleepHistoryCard appName={name} />
       <Collapsible>

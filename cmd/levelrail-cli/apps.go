@@ -139,6 +139,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScan(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "build-stats":
+		return runAppsBuildStats(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "build-limits":
+		return runAppsBuildLimits(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "alerts":
 		return runAppsAlerts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "deploy-notify-targets":
@@ -289,6 +293,8 @@ func appsUsage(prog string) string {
   %[1]s apps sbom <app> [deploy-id] [--download]   show a deploy's software bill of materials
   %[1]s apps scan <verb> <app> [flags]    enable/disable/status/run/gate/override vulnerability scanning
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
+  %[1]s apps build-stats <name> [--limit N]   build duration trend (p50, p95) and cache hits
+  %[1]s apps build-limits <verb> [flags]   show/set/reset the build timeout and concurrency limit
   %[1]s apps alerts <verb> [flags]   manage alert rules (threshold, crashloop, cert_expiry)
   %[1]s apps deploy-notify-targets <verb> [flags]   manage which notification channels get a deploy's outcome
   %[1]s apps organizations <verb> [flags]   manage organizations, which group projects

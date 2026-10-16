@@ -1,0 +1,34 @@
+{
+  "trend": {
+    "title": "Build performance",
+    "loadError": "Could not load build stats.",
+    "empty": "No builds recorded yet. Stats appear after the next build.",
+    "p50": "Median build",
+    "p95": "Slowest 5% (p95)",
+    "cacheHit": "Cache hits",
+    "failures": "Failed or timed out",
+    "none": "n/a",
+    "chartLabel_one": "Duration of the last build",
+    "chartLabel_other": "Durations of the last {{count}} builds, oldest first",
+    "footnote_one": "Based on the last build. Timings count successful builds only.",
+    "footnote_other": "Based on the last {{count}} builds. Timings count successful builds only.",
+    "skewed_one": "1 build had a negative duration (clock skew) and is left out of the timings.",
+    "skewed_other": "{{count}} builds had a negative duration (clock skew) and are left out of the timings."
+  },
+  "settings": {
+    "title": "Build performance",
+    "description": "Cap how long a build may run and how many builds run at once. Extra builds wait in a queue.",
+    "loadError": "Could not load build limits.",
+    "timeoutLabel": "Build timeout (minutes)",
+    "timeoutHelp": "A build running longer than this is stopped and marked as timed out. 0 means no limit.",
+    "concurrentLabel": "Concurrent builds",
+    "concurrentHelp": "Builds past this number wait for a free slot. 0 means no limit.",
+    "defaultsNote": "Defaults come from APP_BUILD_TIMEOUT and APP_BUILD_MAX_CONCURRENT: {{timeout}} minutes and {{concurrent}} builds.",
+    "overridden": "Overridden",
+    "save": "Save limits",
+    "reset": "Use defaults",
+    "saved": "Build limits saved.",
+    "resetDone": "Build limits reset to the defaults.",
+    "rootOnly": "Only a root account can change build limits."
+  }
+}

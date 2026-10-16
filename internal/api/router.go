@@ -192,6 +192,7 @@ type Router struct {
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState        // see mesh_settings.go
 	fixit                  fixitState               // see fixit.go
+	buildPerf              BuildPerformanceStore    // see build_performance.go
 	restart                restartState             // see system_restart.go
 	memAttribution         memoryAttributionCache   // see node_memory_attribution.go
 	nodeHostReports        NodeHostReports          // nil is valid: remote rows keep the placed-services-only shape

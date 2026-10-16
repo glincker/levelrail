@@ -459,6 +459,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/urls | AbilityRead | handleGetAppURLs |
 | GET | /api/v1/apps/{name}/sleep/history | AbilityRead | handleAppSleepHistory |
 | GET | /api/v1/apps/{name}/deploys/release-notes | AbilityRead | handleReleaseNotes |
+| GET | /api/v1/apps/{name}/build-stats | AbilityRead | handleBuildStats |
 
 </Accordion>
 
@@ -1408,6 +1409,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/fixes | AbilityRead | handleListFixes |
 | POST | /api/v1/fixes/{id}/preview | AbilityRead | handlePreviewFix |
 | POST | /api/v1/fixes/{id}/apply | AbilityRoot | handleApplyFix |
+| GET | /api/v1/build-limits | AbilityRead | handleGetBuildLimits |
+| PUT | /api/v1/build-limits | AbilityRoot | handleSetBuildLimits |
+| DELETE | /api/v1/build-limits | AbilityRoot | handleResetBuildLimits |
 
 ## See also
 

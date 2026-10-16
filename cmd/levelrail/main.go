@@ -2164,7 +2164,9 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
-	return deploy.New(router, db, deployOpts...), closer, nil
+	limiter := build.NewLimiter(router, api.BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv)),
+		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger))
+	return deploy.New(limiter, db, deployOpts...), closer, nil
 }
 
 // loadWebhookHandler builds the git webhook receiver, wired
@@ -2823,7 +2825,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
-	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db))
+	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db), api.WithBuildPerformance(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)
