@@ -4,6 +4,7 @@ import {
   backupTargetBrand,
   dnsProviderBrand,
   nodeProviderBrand,
+  aiProviderBrand,
   registryBrandForHost,
   storagePresetBrand,
 } from './providerBrands'
@@ -83,5 +84,17 @@ describe('providerBrands', () => {
     for (const name of names) {
       expect(isBrandIconName(name), name).toBe(true)
     }
+  })
+
+  it.each([
+    ['openai', 'openai'],
+    ['gemini', 'google-gemini'],
+    ['Together', 'together-ai'],
+    ['x-ai', 'xai'],
+    ['', ''],
+    [undefined, ''],
+  ])('ai brand %s', (brand, want) => {
+    expect(aiProviderBrand(brand)).toBe(want)
+    if (want) expect(isBrandIconName(want)).toBe(true)
   })
 })
