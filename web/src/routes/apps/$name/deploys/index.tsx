@@ -13,7 +13,6 @@ import { DeployAttemptsList } from '../../../../components/DeployAttemptsList'
 import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
 import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
 import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
-import { useQuery } from '@tanstack/react-query'
 import { AppSleepCard } from '../../../../components/AppSleepCard'
 import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
 import { CanaryCard } from '../../../../components/CanaryCard'
@@ -64,8 +63,6 @@ function DeploysSection() {
   const { name } = Route.useParams()
   const { attempts, conditions } = useDeployProgress(name)
   const [tab, setTab] = useState<DeployTab | null>(null)
-  const { data: sleep } = useQuery(appSleepQueryOptions(name))
-  const sleepOn = sleep?.enabled ?? false
 
   return (
     <div className="space-y-6">
@@ -78,8 +75,8 @@ function DeploysSection() {
         }}
       />
       <BuildTrendCard appName={name} />
-      {sleepOn ? <AppSleepCard appName={name} /> : null}
-      <SleepHistoryCard appName={name} />
+      <AppSleepCard appName={name} />
+      <SleepHistoryCard appName={name} hideWhenOff />
       <Collapsible>
         <CollapsibleTrigger className="group/deploy-settings flex items-center gap-2 text-sm font-medium text-foreground">
           <CaretRightIcon
@@ -88,7 +85,7 @@ function DeploysSection() {
           />
           Deploy settings
           <span className="text-xs font-normal text-muted-foreground">
-            Rollback, canary, auto update, sleep, badge
+            Rollback, canary, auto update, badge
           </span>
         </CollapsibleTrigger>
         <CollapsiblePanel>
@@ -97,7 +94,6 @@ function DeploysSection() {
             <AutoRollbackSLOBurnCard appName={name} />
             <CanaryCard appName={name} />
             <ImageAutoUpdateCard appName={name} />
-            {sleepOn ? null : <AppSleepCard appName={name} />}
             <BadgeSettingsCard appName={name} />
             <GitHubActionsCard appName={name} />
           </div>

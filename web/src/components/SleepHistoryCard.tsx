@@ -184,7 +184,11 @@ export function SleepHistoryCard({
       header: t('events.columns.reason'),
       priority: 2,
       cell: (e) =>
-        e.reason ? t(`events.reason.${e.reason as 'manual'}`) : none,
+        e.reason
+          ? t(`events.reason.${e.reason as 'manual'}`, {
+              defaultValue: e.reason,
+            })
+          : none,
     },
     {
       id: 'measure',

@@ -139,7 +139,7 @@
     "description": "Stop this app after it has had no requests for a while, so it uses no memory or CPU. The next request to its domain starts it and shows a short waking-up page that retries on its own, so the first visitor waits for the cold start.",
     "enabledLabel": "Sleep when idle",
     "switchAriaLabel": "Sleep when idle enabled",
-    "minutesLabel": "Idle minutes (5 to 10080)",
+    "minutesLabel": "Custom minutes ({{min}} to {{max}})",
     "save": "Save",
     "asleep": "This app is asleep.",
     "wakeNow": "Wake now",
@@ -148,7 +148,9 @@
       "disabled": "Sleep when idle disabled.",
       "updated": "Idle time updated.",
       "errorTitle": "Sleep setting failed",
-      "holdUpdated": "Function mode updated."
+      "holdUpdated": "Function mode updated.",
+      "portWakeUpdated": "Port wake updated.",
+      "ignoreUpdated": "Ignored paths updated."
     },
     "holdLabel": "Hold requests while waking (function mode)",
     "holdHelp": "A request that arrives while the app is asleep waits for it to start and is then replayed, instead of showing a waking-up page. Use for API callers.",
@@ -157,9 +159,6 @@
     "fleetTitle": "Sleeping apps",
     "fleetSummary": "{{sleeping}} of {{enabled}} apps asleep",
     "fleetEmpty": "No app sleeps when idle yet. Turn it on from an app's Deploys tab to free its memory while nobody visits.",
-    "blocked": {
-      "pinned_port": "This app has a pinned host port. Traffic on that port would not wake it, so it cannot sleep."
-    },
     "sleepNow": "Sleep now",
     "sleepNowHelp": "Stop the app now instead of waiting for the idle time. The next request starts it.",
     "fleetEmptyShort": "Nothing sleeps yet",
@@ -167,7 +166,64 @@
     "fleetBrowseApps": "Choose apps",
     "fleetAllAwake": "Every app with sleep on is awake right now.",
     "fleetMore": "and {{count}} more asleep",
-    "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here."
+    "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here.",
+    "status": {
+      "off": "Off",
+      "ready": "Ready to turn on",
+      "blocked": "Blocked",
+      "awake": "On, awake",
+      "sleeping": "Sleeping now",
+      "waking": "Waking"
+    },
+    "explain": {
+      "generic": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits for a cold start.",
+      "withCold": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits about {{duration}} for the cold start."
+    },
+    "frees": "Frees about {{size}} while asleep",
+    "checklistLabel": "Sleep eligibility",
+    "blockedPrefix": "Blocks sleep: ",
+    "warnPrefix": "Warning: ",
+    "whatThisMeans": "What this means:",
+    "allClear": "Nothing blocks sleep for this app.",
+    "legacy": {
+      "pinned_port": {
+        "title": "Pinned host port",
+        "detail": "Traffic on a pinned host port would not wake the app, so it cannot sleep."
+      }
+    },
+    "turnOn": "Turn on sleep when idle",
+    "turnOff": "Turn off sleep when idle",
+    "turnOnHint": "Sleeps after {{minutes}} minutes without use. You can change this afterwards.",
+    "turnOnBlocked": "Fix this first: {{titles}}",
+    "idleTitle": "Sleep after idle for",
+    "presetMinutes_one": "{{count}} minute",
+    "presetMinutes_other": "{{count}} minutes",
+    "activity": {
+      "lastRequest": "Last request",
+      "lastNetwork": "Last network activity",
+      "connections": "Open connections",
+      "sleepsIn": "Sleeps in",
+      "notScheduled": "Not scheduled",
+      "none": "None yet"
+    },
+    "countdown": {
+      "minutes_one": "{{count}} min",
+      "minutes_other": "{{count}} min",
+      "seconds_one": "{{count}} sec",
+      "seconds_other": "{{count}} sec"
+    },
+    "portWake": {
+      "title": "Wake on traffic to published ports",
+      "help": "A connection to port {{ports}} wakes the app, so it can sleep even with a pinned host port.",
+      "aria": "Wake on traffic to published ports"
+    },
+    "ignore": {
+      "title": "Ignored paths",
+      "help": "Requests to these paths never keep the app awake: health checks and uptime monitors.",
+      "remove": "Remove {{path}}",
+      "addLabel": "Path to ignore",
+      "add": "Add"
+    }
   },
   "releaseNotes": {
     "title": "Commits and release notes",
