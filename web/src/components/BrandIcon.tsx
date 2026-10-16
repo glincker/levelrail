@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from 'react'
 import OpenAiLogo from '@thesvg/react/openai'
-import AnthropicLogo from '@thesvg/react/anthropic'
+import ClaudeLogo from '@thesvg/react/claude'
 import GeminiLogo from '@thesvg/react/google-gemini'
 import MistralLogo from '@thesvg/react/mistral'
 import GroqLogo from '@thesvg/react/groq'
@@ -344,12 +344,12 @@ const BRAND_ICONS: Record<
   android: AndroidLogo,
   curl: CurlLogo,
   openai: OpenAiLogo,
-  anthropic: AnthropicLogo,
+  anthropic: ClaudeLogo,
   'google-gemini': GeminiLogo,
   mistral: MistralLogo,
   groq: GroqLogo,
   'together-ai': TogetherAiLogo,
-  openrouter: OpenRouterLogo,
+  openrouter: (p) => <OpenRouterLogo variant="light" {...p} />,
   deepseek: DeepseekLogo,
   xai: XaiLogo,
   fireworks: FireworksLogo,
