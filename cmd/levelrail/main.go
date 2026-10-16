@@ -1014,6 +1014,7 @@ func run(logger *slog.Logger) error {
 			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
 		}
 	}()
+	go wakeLogCollectorOnContainerEvents(ctx, client, logCollector)
 	go runLogsRetentionSweep(ctx, telemetryDB, logger)
 
 	// drainForwarder taps logBroadcaster the same way a live SSE viewer
@@ -1722,12 +1723,10 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
 			}
 			for _, c := range containers {
-				if !c.Running {
-					continue
-				}
 				targets = append(targets, telemetry.LogTarget{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,
+					Stopped:     !c.Running,
 				})
 			}
 		}
@@ -1756,12 +1755,13 @@ func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtim
 		if err != nil {
 			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
 		}
-		if cs == nil || !cs.Running {
+		if cs == nil {
 			continue
 		}
 		targets = append(targets, telemetry.LogTarget{
 			ResourceID:  "database:" + d.Name,
 			ContainerID: cs.ID,
+			Stopped:     !cs.Running,
 		})
 	}
 	return targets, nil
@@ -4260,5 +4260,29 @@ func purgeStaleIssuerCerts(ctx context.Context, db *store.DB, logger *slog.Logge
 	}
 	if n > 0 {
 		logger.Info("dropped certificates from other issuers so they re-issue", slog.Int("keys", n))
+	}
+}
+
+// wakeLogCollectorOnContainerEvents makes the log collector re-derive
+// targets on container start/die so containers shorter-lived than the
+// resync tick still get their output captured.
+func wakeLogCollectorOnContainerEvents(ctx context.Context, src alerting.EventSource, lc *telemetry.LogCollector) {
+	events, errs := src.Events(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev, ok := <-events:
+			if !ok {
+				return
+			}
+			if ev.Action == docker.EventStart || ev.Action == docker.EventDie {
+				lc.Wake()
+			}
+		case _, ok := <-errs:
+			if !ok {
+				errs = nil
+			}
+		}
 	}
 }

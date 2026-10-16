@@ -161,7 +161,7 @@ app_name:            storefront
 repo_url:            https://github.com/acme/storefront.git
 branch:              main
 build_type:          dockerfile
-webhook_url:         /api/v1/webhooks/github/storefront
+webhook_url:         https://levelrail.example.com/api/v1/webhooks/github/storefront
 webhook_registered:  true
 ```
 
@@ -361,6 +361,8 @@ flowchart LR
 
 Every webhook creates a delivery history entry, whether it succeeds, fails, or does not match, so you can see and replay failed deliveries.
 
+A push is acknowledged with `202 deploy queued: <id>` as soon as the attempt is recorded; the clone and build run in the background, and the delivery's note is updated to the outcome when the deploy ends. A delivery repeating a provider delivery id (`X-GitHub-Delivery` and equivalents) that already succeeded is answered with the original status and the note `duplicate delivery`. A push whose commit is already deployed or in flight is ignored, as is a push for a repository other than the one the app tracks. A commit the repository does not have returns `422 commit not found`.
+
 All four providers post to `POST /api/v1/webhooks/github/{name}`. The path says `github` for backward compatibility with webhooks configured before the other providers existed. The provider is detected from headers (`X-GitHub-Event`, `X-Gitlab-Event`, `X-Event-Key`, `X-Gitea-Event-Type`), not the URL.
 
 The route takes no session or token, because providers cannot send one. The per-app webhook secret, generated when the git source was connected, is checked against the request instead.
@@ -394,6 +396,14 @@ Replay runs the same processing against the stored payload and headers once you 
 </Warning>
 
 Rows are kept for 30 days by default (`APP_WEBHOOK_DELIVERY_RETENTION_DAYS`) and swept every hour (`APP_WEBHOOK_DELIVERY_SWEEP_INTERVAL`). Deliveries that fail signature verification are capped separately: only the newest 20 per app are kept (`APP_WEBHOOK_FAILED_DELIVERY_KEEP`) and each stores at most 2048 body bytes (`APP_WEBHOOK_FAILED_BODY_BYTES`). This is debugging data, not a compliance trail.
+
+### Print the webhook settings
+
+```bash
+levelrail-cli apps git-source webhook storefront
+```
+
+This prints the absolute webhook URL, the content type (`application/json`) and the events to subscribe to (`push`, `pull_request`). The URL is built from the primary domain, or from the address you called when none is set. The secret is only shown with `--rotate`, which mints a new one.
 
 ### Rotate the webhook secret
 

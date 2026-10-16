@@ -29,6 +29,12 @@ const (
 	exposureModeDirect  = "direct"
 )
 
+const (
+	exposureOutcomeUnchanged  = "unchanged"
+	exposureOutcomeApplied    = "applied"
+	exposureOutcomeRecreating = "recreating"
+)
+
 const exposureRuleLabelPrefix = "app-exposure:"
 
 // hostListeningPorts reads this server's listening TCP ports; replaced in tests.
@@ -77,6 +83,9 @@ type exposureResource struct {
 	FirewallRow string       `json:"firewall_rule_id,omitempty"`
 	PortsInUse  []portHolder `json:"ports_in_use"`
 	PortRange   [2]int       `json:"port_range"`
+	// Outcome is set on PUT only: unchanged, applied (no container
+	// recreate needed) or recreating (queued, the reconciler republishes).
+	Outcome string `json:"outcome,omitempty"`
 	// LocalNode is false for an app placed on a remote node, where direct
 	// exposure is unavailable (the firewall reconciler only manages this node).
 	LocalNode bool `json:"local_node"`
@@ -407,6 +416,7 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(plan.Changes) == 0 {
 		res := rt.exposureState(r.Context(), svc)
+		res.Outcome = exposureOutcomeUnchanged
 		writeJSON(w, http.StatusOK, res)
 		return
 	}
@@ -432,6 +442,10 @@ func (rt *Router) handleSetAppExposure(w http.ResponseWriter, r *http.Request) {
 		fresh = &next
 	}
 	res := rt.exposureState(r.Context(), fresh)
+	res.Outcome = exposureOutcomeApplied
+	if plan.Recreates {
+		res.Outcome = exposureOutcomeRecreating
+	}
 	writeJSON(w, http.StatusOK, res)
 }
 

@@ -52,6 +52,7 @@ type AppExposureResource struct {
 	FirewallRuleID string          `json:"firewall_rule_id,omitempty"`
 	PortsInUse     []AppPortHolder `json:"ports_in_use"`
 	PortRange      [2]int          `json:"port_range"`
+	Outcome        string          `json:"outcome,omitempty"`
 	LocalNode      bool            `json:"local_node"`
 }
 

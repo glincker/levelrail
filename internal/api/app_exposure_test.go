@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -142,5 +143,63 @@ func TestAppExposureCheck_NotRunning(t *testing.T) {
 	_ = json.Unmarshal(rec.Body.Bytes(), &got)
 	if rec.Code != 200 || got.Scope != reachabilityScopeCPHost || len(got.Targets) != 1 || got.Targets[0].Failure != probeContainerNotRunning {
 		t.Fatalf("%d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAppCreateUpdate_HostPortConflict(t *testing.T) {
+	prev := hostListeningPorts
+	hostListeningPorts = func() []int { return []int{25000} }
+	t.Cleanup(func() { hostListeningPorts = prev })
+
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	ctx := context.Background()
+	held := 24500
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "pin-a", Image: "i:1", Port: 80, HostPort: &held}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "pin-b", Image: "i:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	body := func(name string, port int) string {
+		return `{"name":"` + name + `","image":"i:1","port":80,"host_port":` + strconv.Itoa(port) + `}`
+	}
+	cases := []struct {
+		name, method, path, body string
+		status                   int
+		wantMsg                  string
+	}{
+		{"create on app pin", http.MethodPost, "/api/v1/apps", body("pin-c", 24500), 409, "app pin-a"},
+		{"create on control port", http.MethodPost, "/api/v1/apps", body("pin-d", 8080), 409, "control plane"},
+		{"create on listener", http.MethodPost, "/api/v1/apps", body("pin-e", 25000), 409, "another process"},
+		{"update onto app pin", http.MethodPut, "/api/v1/apps/pin-b", body("pin-b", 24500), 409, "app pin-a"},
+		{"update to free port", http.MethodPut, "/api/v1/apps/pin-b", body("pin-b", 24501), 200, ""},
+		{"update keeping own pin", http.MethodPut, "/api/v1/apps/pin-a", body("pin-a", 24500), 200, ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, c.method, c.path, c.body))
+			if rec.Code != c.status || !strings.Contains(rec.Body.String(), c.wantMsg) {
+				t.Fatalf("got %d %s, want %d containing %q", rec.Code, rec.Body.String(), c.status, c.wantMsg)
+			}
+		})
+	}
+}
+
+func TestAppExposure_PutReportsOutcome(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	if err := db.SaveDesiredService(context.Background(), store.DesiredService{Name: "web", Image: "i:1", Port: 3000}); err != nil {
+		t.Fatal(err)
+	}
+	for _, c := range []struct{ body, want string }{
+		{`{"container_port":8000}`, exposureOutcomeRecreating},
+		{`{"container_port":8000}`, exposureOutcomeUnchanged},
+	} {
+		_, res := exposureDo(t, rt, cookie, http.MethodPut, "/api/v1/apps/web/exposure", c.body)
+		if res.Outcome != c.want {
+			t.Fatalf("outcome = %q, want %q", res.Outcome, c.want)
+		}
 	}
 }

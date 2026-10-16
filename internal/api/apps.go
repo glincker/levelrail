@@ -563,6 +563,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "an app with this name already exists")
 		return
 	}
+	if eerr := rt.hostPortConflict(r.Context(), req.Name, req.NodeID, req.HostPort, nil); eerr != nil {
+		writeError(w, eerr.status, eerr.msg)
+		return
+	}
 	if !errors.Is(err, store.ErrServiceNotFound) {
 		rt.logger.Error("api: create app: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -730,8 +734,13 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
+	pendingImage := ""
+	if serving, ok := rt.lastServingImage(r.Context(), *svc); ok {
+		pendingImage, resource.Image = resource.Image, serving
+	}
 	writeJSON(w, http.StatusOK, appWithRequests{
 		appResource:              resource,
+		PendingImage:             pendingImage,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
 		FallbackURL:              rt.fallbackURLFor(r.Context(), *svc),
@@ -758,6 +767,9 @@ func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *ti
 type appWithRequests struct {
 	appResource
 	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	// PendingImage is the desired image while a rollout to it is in progress
+	// or failed, with Image then the last image confirmed serving.
+	PendingImage string `json:"pending_image,omitempty"`
 	// PreviousReleaseHeldUntil is when the kept previous release, an instant
 	// rollback target, is removed. Omitted when none is held.
 	PreviousReleaseHeldUntil *time.Time `json:"previous_release_held_until,omitempty"`
@@ -850,6 +862,11 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.logger.Error("api: update app: check existing failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if eerr := rt.hostPortConflict(r.Context(), name, existing.NodeID, req.HostPort, existing); eerr != nil {
+		writeError(w, eerr.status, eerr.msg)
 		return
 	}
 

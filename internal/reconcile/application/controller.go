@@ -914,6 +914,14 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	meshIP, _ := c.meshBindIP(ctx, desired)
+	if publishedPortDrifted(state, desired, meshIP) {
+		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
+		}
+		state = nil
+	}
+
 	var released []docker.ContainerState
 	justDeployed := false
 	// created is narrower than justDeployed: true only when this pass

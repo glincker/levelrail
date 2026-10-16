@@ -15,6 +15,29 @@ const (
 	OutcomeBlocked    = "blocked"
 )
 
+// Non-terminal and derived statuses reported by the single-deploy endpoint.
+const (
+	StatusBuilding   = "building"
+	StatusRollingOut = "rolling_out"
+)
+
+// presentedDeployStatus maps the stored attempt status to what a poller
+// should see: "succeeded" is stored once the request is accepted, but it is
+// only reported once the rollout gate passed.
+func presentedDeployStatus(stored, outcome string) string {
+	switch {
+	case stored == store.DeployAttemptStatusRunning:
+		return StatusBuilding
+	case stored != store.DeployAttemptStatusSucceeded:
+		return stored
+	case outcome == OutcomeInProgress:
+		return StatusRollingOut
+	case outcome == OutcomeFailed:
+		return store.DeployAttemptStatusFailed
+	}
+	return stored
+}
+
 var rolloutDoneReasons = map[string]bool{"Deployed": true, "AlreadyRunning": true, "StaticSitePublished": true}
 
 // computeDeployOutcome derives one deploy's outcome. It is keyed on the

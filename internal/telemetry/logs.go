@@ -295,6 +295,9 @@ func classifyLine(raw string) (structured bool, fieldsJSON string) {
 type LogTarget struct {
 	ResourceID  string
 	ContainerID string
+	// Stopped marks an exited container: its output is fetched once
+	// (non-follow) so a short-lived or crashed container is not lost.
+	Stopped bool
 }
 
 // LogSource is the narrow Docker surface a LogCollector needs: nothing
@@ -322,6 +325,23 @@ type LogCollector struct {
 	cursors  map[string]time.Time
 
 	pipelines pipelineCache
+
+	wake chan struct{}
+}
+
+// Wake asks Run to re-derive targets now, e.g. on a container start or
+// die event, so a container shorter-lived than the resync tick is seen.
+func (lc *LogCollector) Wake() {
+	select {
+	case lc.wake <- struct{}{}:
+	default:
+	}
+}
+
+func (lc *LogCollector) cursorOf(containerID string) time.Time {
+	lc.cursorMu.Lock()
+	defer lc.cursorMu.Unlock()
+	return lc.cursors[containerID]
 }
 
 // resumePoint is where a (re)subscription to containerID's log stream must
@@ -373,7 +393,7 @@ func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, l
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &LogCollector{source: source, store: store, broadcaster: broadcaster, logger: logger}
+	return &LogCollector{source: source, store: store, broadcaster: broadcaster, logger: logger, wake: make(chan struct{}, 1)}
 }
 
 // StreamOne follows target's log stream (Follow: true, from the current
@@ -386,7 +406,7 @@ func NewLogCollector(source LogSource, store *DB, broadcaster *LogBroadcaster, l
 // this package's two collectors have genuinely different shapes even
 // though they share a store and a retention pattern.
 func (lc *LogCollector) StreamOne(ctx context.Context, target LogTarget) error {
-	lines, errs := lc.source.Logs(ctx, target.ContainerID, true, lc.resumePoint(ctx, target.ResourceID, target.ContainerID))
+	lines, errs := lc.source.Logs(ctx, target.ContainerID, !target.Stopped, lc.resumePoint(ctx, target.ResourceID, target.ContainerID))
 
 	ticker := time.NewTicker(logBatchMaxWait)
 	defer ticker.Stop()
@@ -517,9 +537,28 @@ func toLogEntry(resourceID, containerID string, line docker.LogLine) LogEntry {
 // separate mechanism to notice that a target disappeared mid-stream
 // versus never existed.
 func (lc *LogCollector) Run(ctx context.Context, resync time.Duration, targetsFunc func(context.Context) ([]LogTarget, error)) error {
-	active := make(map[string]context.CancelFunc) // keyed by ContainerID
+	active := make(map[string]*logStream) // keyed by ContainerID
+	var lastReconcile time.Time
+
+	start := func(target LogTarget, prev *logStream) {
+		streamCtx, cancel := context.WithCancel(ctx) //nolint:gosec // cancel is stored in active and called when the target is removed or Run shuts down
+		st := &logStream{cancel: cancel}
+		if prev != nil {
+			st.idle = prev.idle
+		}
+		active[target.ContainerID] = st
+		go func() {
+			before := lc.cursorOf(target.ContainerID)
+			err := lc.StreamOne(streamCtx, target)
+			if err != nil && !errors.Is(err, context.Canceled) {
+				lc.logger.Warn("telemetry: log stream ended", slog.String("resource_id", target.ResourceID), slog.String("error", err.Error()))
+			}
+			st.finish(lc.cursorOf(target.ContainerID).After(before))
+		}()
+	}
 
 	reconcile := func() {
+		lastReconcile = time.Now()
 		targets, err := targetsFunc(ctx)
 		if err != nil {
 			lc.logger.Error("telemetry: list log targets failed", slog.String("error", err.Error()))
@@ -531,25 +570,34 @@ func (lc *LogCollector) Run(ctx context.Context, resync time.Duration, targetsFu
 			wanted[t.ContainerID] = t
 		}
 
-		for id, cancel := range active {
+		for id, st := range active {
 			if _, ok := wanted[id]; !ok {
-				cancel()
+				st.cancel()
 				delete(active, id)
 				lc.forgetCursor(id)
 			}
 		}
 
 		for id, target := range wanted {
-			if _, ok := active[id]; ok {
+			st, ok := active[id]
+			if !ok {
+				start(target, nil)
 				continue
 			}
-			streamCtx, cancel := context.WithCancel(ctx) //nolint:gosec // cancel is stored in active and called from the two loops above (target removed, or Run shutting down), gosec's static check can't trace a func value stored in a map
-			active[id] = cancel
-			go func(target LogTarget) {
-				if err := lc.StreamOne(streamCtx, target); err != nil && !errors.Is(err, context.Canceled) {
-					lc.logger.Warn("telemetry: log stream ended", slog.String("resource_id", target.ResourceID), slog.String("error", err.Error()))
-				}
-			}(target)
+			done, idle := st.state()
+			if !done {
+				continue
+			}
+			// Same ID, new run (restart policy), or a stopped container
+			// worth one more fetch; the cursor keeps lines from repeating.
+			if target.Stopped && idle >= stoppedIdleFetches {
+				continue
+			}
+			st.cancel()
+			if !target.Stopped {
+				st.resetIdle()
+			}
+			start(target, st)
 		}
 	}
 
@@ -560,14 +608,55 @@ func (lc *LogCollector) Run(ctx context.Context, resync time.Duration, targetsFu
 	for {
 		select {
 		case <-ctx.Done():
-			for _, cancel := range active {
-				cancel()
+			for _, st := range active {
+				st.cancel()
 			}
 			return ctx.Err()
 		case <-ticker.C:
 			reconcile()
+		case <-lc.wake:
+			if time.Since(lastReconcile) >= wakeMinGap {
+				reconcile()
+			}
 		}
 	}
+}
+
+const (
+	// stoppedIdleFetches bounds refetches of an exited container that
+	// yields no new lines.
+	stoppedIdleFetches = 2
+	wakeMinGap         = time.Second
+)
+
+type logStream struct {
+	cancel context.CancelFunc
+	mu     sync.Mutex
+	done   bool
+	idle   int
+}
+
+func (s *logStream) finish(gotLines bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.done = true
+	if gotLines {
+		s.idle = 0
+	} else {
+		s.idle++
+	}
+}
+
+func (s *logStream) state() (done bool, idle int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.done, s.idle
+}
+
+func (s *logStream) resetIdle() {
+	s.mu.Lock()
+	s.idle = 0
+	s.mu.Unlock()
 }
 
 // LatestLogTimestamp returns the newest stored line time for containerID,

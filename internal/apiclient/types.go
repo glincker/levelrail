@@ -55,6 +55,9 @@ type ServiceHooks struct {
 type AppResource struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
+	// PendingImage is set while a rollout to a new image is in progress or
+	// failed; Image is then the last image confirmed serving.
+	PendingImage string `json:"pending_image,omitempty"`
 	// ImageDigest is the content Image is pinned to, empty for a legacy tag.
 	ImageDigest string `json:"image_digest,omitempty"`
 	Port        int    `json:"port"`
@@ -3507,6 +3510,11 @@ type DeployAttemptResource struct {
 	// (a CLI or webhook-triggered build) or found nothing buildable.
 	DetectedFramework string `json:"detected_framework,omitempty"`
 
+	Branch        string `json:"branch,omitempty"`
+	CommitMessage string `json:"commit_message,omitempty"`
+	Author        string `json:"author,omitempty"`
+	Trigger       string `json:"trigger,omitempty"`
+
 	ImageDigest    string `json:"image_digest,omitempty"`
 	DigestReason   string `json:"digest_reason,omitempty"`
 	RolloutState   string `json:"rollout_state,omitempty"`
@@ -3527,6 +3535,9 @@ type DeployAttemptResource struct {
 	// Outcome is set by GetDeploy only: in_progress, healthy, failed,
 	// canceled, superseded or blocked.
 	Outcome string `json:"outcome,omitempty"`
+	// Phase is the stored attempt status when GetDeploy reports a derived
+	// Status (building, rolling_out, failed).
+	Phase string `json:"phase,omitempty"`
 }
 
 // DeployFailure mirrors internal/failure's Failure: the structured cause of a

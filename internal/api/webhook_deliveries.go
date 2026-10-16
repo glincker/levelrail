@@ -33,6 +33,8 @@ type webhookDeliveryResource struct {
 	Error            string    `json:"error,omitempty"`
 	Note             string    `json:"note,omitempty"`
 	ReceivedAt       time.Time `json:"received_at"`
+	DeliveryID       string    `json:"delivery_id,omitempty"`
+	AttemptID        string    `json:"attempt_id,omitempty"`
 }
 
 func toWebhookDeliveryResource(d store.WebhookDelivery) webhookDeliveryResource {
@@ -49,6 +51,8 @@ func toWebhookDeliveryResource(d store.WebhookDelivery) webhookDeliveryResource 
 		Error:            d.Error,
 		Note:             d.Note,
 		ReceivedAt:       d.ReceivedAt,
+		DeliveryID:       d.DeliveryID,
+		AttemptID:        d.AttemptID,
 	}
 }
 
@@ -182,7 +186,11 @@ func (rt *Router) handleReplayWebhookDelivery(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	status, message := rt.processGitPushWebhookPayload(r.Context(), name, *gs, delivery.Payload, header)
+	pctx, outcome := withWebhookOutcome(withWebhookReplay(r.Context()))
+	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, delivery.Payload, header)
+	if outcome.AttemptID != "" {
+		rt.kickDeployQueue(r.Context())
+	}
 	rt.logger.Info("api: replayed webhook delivery", slog.String("name", name), slog.String("delivery_id", id), slog.Int("status", status))
 	writeJSON(w, http.StatusOK, replayWebhookDeliveryResult{Status: status, Message: message})
 }

@@ -33,7 +33,7 @@ func TestWebhookPushQueuesBehindRunningDeployThenRuns(t *testing.T) {
 	gb.awaitStart(t)
 
 	status, msg := rt.processGitPushWebhookPayload(ctx, "web", gs, pushPayload("bbb"), http.Header{})
-	if status != http.StatusAccepted || !strings.HasPrefix(msg, "queued:") {
+	if status != http.StatusAccepted || !strings.HasPrefix(msg, "deploy queued:") {
 		t.Fatalf("push while busy = %d %q", status, msg)
 	}
 	queued, err := db.ListQueuedDeployAttempts(ctx)

@@ -60,6 +60,12 @@ type WebhookDelivery struct {
 	// skip. Empty when the delivery returned an error.
 	Note       string
 	ReceivedAt time.Time
+	// DeliveryID is the provider's own delivery identifier
+	// (X-GitHub-Delivery and equivalents), empty when none was sent.
+	DeliveryID string
+	// AttemptID links a delivery that queued a deploy to its attempt row,
+	// so the outcome note can be updated when the deploy ends.
+	AttemptID string
 }
 
 const webhookDeliveryIDPrefix = "whd_"
@@ -98,11 +104,11 @@ func (db *DB) SaveWebhookDelivery(ctx context.Context, d WebhookDelivery) error 
 	}
 
 	_, err = db.ExecContext(ctx, `
-		INSERT INTO webhook_deliveries (id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO webhook_deliveries (id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at, delivery_id, attempt_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`, d.ID, d.ServiceName, d.Provider, d.EventType, string(headerFieldsJSON),
 		boolToInt(d.SignatureValid), boolToInt(d.Matched), d.StatusCode,
-		payload, boolToInt(truncated), d.Error, d.Note, d.ReceivedAt.UTC().Format(time.RFC3339Nano))
+		payload, boolToInt(truncated), d.Error, d.Note, d.ReceivedAt.UTC().Format(time.RFC3339Nano), d.DeliveryID, d.AttemptID)
 	if err != nil {
 		return fmt.Errorf("store: save webhook delivery %q: %w", d.ID, err)
 	}
@@ -119,7 +125,7 @@ var ErrWebhookDeliveryNotFound = errors.New("store: webhook delivery not found")
 // re-run.
 func (db *DB) GetWebhookDelivery(ctx context.Context, id string) (*WebhookDelivery, error) {
 	row := db.QueryRowContext(ctx, `
-		SELECT id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at
+		SELECT id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at, delivery_id, attempt_id
 		FROM webhook_deliveries WHERE id = ?
 	`, id)
 	d, err := scanWebhookDelivery(row.Scan)
@@ -142,7 +148,7 @@ func (db *DB) ListWebhookDeliveries(ctx context.Context, serviceName string, lim
 		rows *sql.Rows
 		err  error
 	)
-	const selectCols = `id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at`
+	const selectCols = `id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at, delivery_id, attempt_id`
 	if before != nil {
 		rows, err = db.QueryContext(ctx, `
 			SELECT `+selectCols+`
@@ -229,7 +235,7 @@ func scanWebhookDelivery(scan func(dest ...any) error) (*WebhookDelivery, error)
 		receivedAt              string
 	)
 	if err := scan(&d.ID, &d.ServiceName, &d.Provider, &d.EventType, &headerFieldsJSON,
-		&signatureValid, &matched, &d.StatusCode, &d.Payload, &payloadTruncated, &d.Error, &d.Note, &receivedAt); err != nil {
+		&signatureValid, &matched, &d.StatusCode, &d.Payload, &payloadTruncated, &d.Error, &d.Note, &receivedAt, &d.DeliveryID, &d.AttemptID); err != nil {
 		return nil, err
 	}
 
@@ -249,4 +255,39 @@ func scanWebhookDelivery(scan func(dest ...any) error) (*WebhookDelivery, error)
 	d.ReceivedAt = received
 
 	return &d, nil
+}
+
+// FindWebhookDeliveryByDeliveryID returns the earliest signature-verified
+// delivery of serviceName carrying the provider delivery id, or
+// ErrWebhookDeliveryNotFound. Backs duplicate-delivery suppression.
+func (db *DB) FindWebhookDeliveryByDeliveryID(ctx context.Context, serviceName, deliveryID string) (*WebhookDelivery, error) {
+	if deliveryID == "" {
+		return nil, ErrWebhookDeliveryNotFound
+	}
+	row := db.QueryRowContext(ctx, `
+		SELECT id, service_name, provider, event_type, header_fields, signature_valid, matched, status_code, payload, payload_truncated, error, note, received_at, delivery_id, attempt_id
+		FROM webhook_deliveries
+		WHERE service_name = ? AND delivery_id = ? AND signature_valid = 1
+		ORDER BY received_at ASC LIMIT 1
+	`, serviceName, deliveryID)
+	d, err := scanWebhookDelivery(row.Scan)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrWebhookDeliveryNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: find webhook delivery %q for %q: %w", deliveryID, serviceName, err)
+	}
+	return d, nil
+}
+
+// UpdateWebhookDeliveryOutcomeByAttempt records the final outcome of the
+// background deploy a delivery queued. errMsg is empty on success.
+func (db *DB) UpdateWebhookDeliveryOutcomeByAttempt(ctx context.Context, attemptID, note, errMsg string) error {
+	if attemptID == "" {
+		return nil
+	}
+	if _, err := db.ExecContext(ctx, `UPDATE webhook_deliveries SET note = ?, error = ? WHERE attempt_id = ?`, note, errMsg, attemptID); err != nil {
+		return fmt.Errorf("store: update webhook delivery outcome for attempt %q: %w", attemptID, err)
+	}
+	return nil
 }

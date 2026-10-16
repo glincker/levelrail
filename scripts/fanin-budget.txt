@@ -5,6 +5,7 @@ internal/bindaddr 89
 internal/bindmount 91
 internal/build 21
 internal/compose 25
+internal/deploysafety 22
 internal/docker 96
 internal/dockerguard 27
 internal/extdb 21

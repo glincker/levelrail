@@ -403,7 +403,7 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		return
 	}
 	tw := tabwriter.NewWriter(out, 0, 2, 2, ' ', 0)
-	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tDIGEST\tSOURCE\tSTATUS\tROLLOUT\tREASON\tFRAMEWORK\tSTARTED\tFINISHED\tERROR")
+	_, _ = fmt.Fprintln(tw, "ID\tIMAGE\tDIGEST\tSOURCE\tSTATUS\tROLLOUT\tREASON\tFRAMEWORK\tSTARTED\tFINISHED\tTRIGGER\tBRANCH\tAUTHOR\tERROR")
 	for _, a := range attempts {
 		finished := "-"
 		if a.FinishedAt != nil {
@@ -417,8 +417,8 @@ func printDeployAttemptsHuman(out io.Writer, attempts []deployAttemptResource) {
 		if a.WaitReason != "" {
 			reason = a.WaitReason
 		}
-		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, a.Error)
+		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			a.ID, unpinnedImage(a.Image), shortDigest(a.ImageDigest, a.DigestReason), a.Source, a.Status, dashIfEmpty(a.RolloutState), dashIfEmpty(reason), framework, a.StartedAt.Format(time.RFC3339), finished, dashIfEmpty(a.Trigger), dashIfEmpty(a.Branch), dashIfEmpty(a.Author), a.Error)
 	}
 	_ = tw.Flush()
 }

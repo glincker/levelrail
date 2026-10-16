@@ -90,7 +90,7 @@ type setGitSourceBuildRequest struct {
 // replaces only the build type, Dockerfile path and base directory.
 func (rt *Router) handleSetGitSourceBuild(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
-	ctx := r.Context()
+	ctx := withRequestOrigin(r.Context(), r)
 
 	var req setGitSourceBuildRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

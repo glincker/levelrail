@@ -1,11 +1,15 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"hash/fnv"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // envExposurePortRange overrides the host port range auto-picked for direct
@@ -82,4 +86,28 @@ func pickHostPort(app string, lo, hi int, taken map[int]portHolder) (int, bool) 
 		}
 	}
 	return 0, false
+}
+
+// hostPortConflict refuses a pinned host port another app, the control plane
+// or a local process already holds, naming the holder. existing is nil on
+// create; an unchanged pin on update is never re-checked.
+func (rt *Router) hostPortConflict(ctx context.Context, name, nodeID string, hostPort *int, existing *store.DesiredService) *exposureError {
+	if hostPort == nil || nodeID != "" {
+		return nil
+	}
+	if existing != nil && existing.HostPort != nil && *existing.HostPort == *hostPort {
+		return nil
+	}
+	taken := rt.takenHostPorts(ctx, name)
+	if existing != nil {
+		for _, p := range rt.selfHostPorts(ctx, existing) {
+			if h, ok := taken[p]; ok && h.Kind == holderKindListener {
+				delete(taken, p)
+			}
+		}
+	}
+	if h, busy := taken[*hostPort]; busy {
+		return &exposureError{http.StatusConflict, fmt.Sprintf("host port %d is held by %s", *hostPort, h.describe())}
+	}
+	return nil
 }

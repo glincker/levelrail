@@ -81,7 +81,14 @@ func runAppsExposure(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set exposure for app %q: %w", name, err))
 	}
 	return render(res, func() {
-		_, _ = fmt.Fprintf(stderr, "exposure updated; reconcile is asynchronous, check \"%s apps status %s\"\n", prog, name)
+		switch res.Outcome {
+		case "unchanged":
+			_, _ = fmt.Fprintln(stderr, "exposure unchanged: nothing to apply")
+		case "recreating":
+			_, _ = fmt.Fprintf(stderr, "exposure saved; the container is being recreated, check \"%s apps status %s\"\n", prog, name)
+		default:
+			_, _ = fmt.Fprintf(stderr, "exposure saved; no container recreate needed, check \"%s apps status %s\"\n", prog, name)
+		}
 		printAppExposure(stdout, res.AppExposurePlan, nil)
 	})
 }

@@ -4260,3 +4260,6 @@ func (c *Client) RollbackMajorUpgrade(ctx context.Context, name, id string) (Maj
 func (c *Client) DiscardMajorUpgradeSnapshot(ctx context.Context, name, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/databases/"+PathEscape(name)+"/major-upgrades/"+PathEscape(id)+"/snapshot", nil, nil)
 }
+
+// BaseURL returns the control plane origin this client talks to.
+func (c *Client) BaseURL() string { return c.baseURL }

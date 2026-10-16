@@ -5,8 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"regexp"
+	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -30,6 +33,9 @@ type networkResource struct {
 	ContainerPort int  `json:"container_port"`
 	HostPort      int  `json:"host_port,omitempty"`
 	Running       bool `json:"running"`
+	// RolloutInProgress is true when HostPort and Running describe an older
+	// container still serving while the desired release is not live yet.
+	RolloutInProgress bool `json:"rollout_in_progress,omitempty"`
 	// FallbackURL is the zero-config sslip.io URL this app is reachable
 	// at when it has no operator-configured domain (svc.Domains empty)
 	// and this control plane's own APP_PUBLIC_HOST is a real, publicly
@@ -96,14 +102,51 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
 	state, err := rt2.InspectByName(inspectCtx, target)
 	cancel()
-	if err != nil || state == nil {
+	if err == nil && state != nil && state.Running && len(state.Ports) > 0 {
+		resp.Running = true
+		resp.HostPort = state.Ports[0].HostPort
 		writeJSON(w, http.StatusOK, resp)
 		return
 	}
-
-	resp.Running = state.Running
-	if state.Running && len(state.Ports) > 0 {
-		resp.HostPort = state.Ports[0].HostPort
+	if serving := rt.servingReplica(r.Context(), rt2, svc.Name, svc.Port, target); serving != nil {
+		resp.Running = true
+		resp.HostPort = serving.hostPort
+		resp.RolloutInProgress = true
+		writeJSON(w, http.StatusOK, resp)
+		return
+	}
+	if err == nil && state != nil {
+		resp.Running = state.Running
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+var extraReplicaName = regexp.MustCompile(`-r[0-9]+$`)
+
+type servingReplica struct{ hostPort int }
+
+// servingReplica finds an older release's replica 0 still publishing the
+// app's port while the desired container is not live, so a redeploy never
+// reads as downtime. nil when nothing else is serving.
+func (rt *Router) servingReplica(ctx context.Context, runtime docker.Runtime, app string, port int, skip string) *servingReplica {
+	lctx, cancel := context.WithTimeout(ctx, dockerInspectTimeout)
+	defer cancel()
+	list, err := runtime.ListByPrefix(lctx, app+"-")
+	if err != nil {
+		return nil
+	}
+	for _, c := range list {
+		if c.Name == skip || !c.Running || strings.HasSuffix(c.Name, "-egress") || extraReplicaName.MatchString(c.Name) {
+			continue
+		}
+		if owner, ok := application.ParseContainerName(c.Name); !ok || owner != app {
+			continue
+		}
+		for _, p := range c.Ports {
+			if p.ContainerPort == port && p.HostPort > 0 {
+				return &servingReplica{hostPort: p.HostPort}
+			}
+		}
+	}
+	return nil
 }

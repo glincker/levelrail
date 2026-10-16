@@ -322,3 +322,42 @@ func TestHandleListDomains_AutomaticHostnames(t *testing.T) {
 		t.Fatalf("domains = %+v with the toggle off, want none", got)
 	}
 }
+
+func TestHandleGetAppNetwork_RolloutKeepsServingHostPort(t *testing.T) {
+	tests := []struct {
+		name        string
+		list        []docker.ContainerState
+		wantHost    int
+		wantRunning bool
+		wantRollout bool
+	}{
+		{"old release serving", []docker.ContainerState{
+			{Name: "web-aaaaaaaa", Running: true, Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 41000}}},
+		}, 41000, true, true},
+		{"only a sidecar and extra replica", []docker.ContainerState{
+			{Name: "web-aaaaaaaa-egress", Running: true, Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 41001}}},
+			{Name: "web-aaaaaaaa-r1", Running: true, Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 41002}}},
+		}, 0, false, false},
+		{"old release stopped", []docker.ContainerState{
+			{Name: "web-aaaaaaaa", Running: false, Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 41000}}},
+		}, 0, false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake := &fakeExecAppRuntime{listByPrefixResult: tt.list}
+			rt, db := newTestRouterWithExecRuntime(t, fake)
+			cookie := loginTestSession(t, rt, db)
+			seedExecApp(t, db)
+
+			rec := httptest.NewRecorder()
+			rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/network", ""))
+			var got networkResource
+			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if got.HostPort != tt.wantHost || got.Running != tt.wantRunning || got.RolloutInProgress != tt.wantRollout {
+				t.Fatalf("got %+v, want host=%d running=%v rollout=%v", got, tt.wantHost, tt.wantRunning, tt.wantRollout)
+			}
+		})
+	}
+}

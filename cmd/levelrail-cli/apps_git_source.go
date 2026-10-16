@@ -34,6 +34,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return runAppsGitSourceSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "settings":
 		return runAppsGitSourceSettings(prog, args[1:], stdout, stderr, lookupEnv)
+	case "webhook":
+		return runAppsGitSourceWebhook(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rotate-secret":
 		return runAppsGitSourceRotateSecret(prog, args[1:], stdout, stderr, lookupEnv)
 	case "delete":
@@ -54,6 +56,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
   %[1]s apps git-source detect <name> [--apply] [flags]                 list Dockerfiles and build roots found in the repo
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
+  %[1]s apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once
   %[1]s apps git-source delete <name> [flags]                           disconnect an app's repo
 
