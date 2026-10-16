@@ -607,6 +607,8 @@ levelrail-cli models residency <name> --mode M [flags]
 levelrail-cli models swap-group <name> --group G [flags]
 levelrail-cli models wake|sleep <name> [flags]
 levelrail-cli models fit --engine E --model M [flags]
+levelrail-cli models catalog [flags]
+levelrail-cli models benchmark <name> [flags]
 levelrail-cli models metrics <name> [flags]
 levelrail-cli models gpus [flags]
 levelrail-cli models preflight <repo> [flags]
@@ -614,7 +616,7 @@ levelrail-cli models cache list [flags]
 levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 ```
 
-- `deploy` runs a model as a container on a GPU node and prints its API key once. Flags: `--engine` (`ollama`, `vllm` or `llamacpp`), `--model`, `--node`, `--gpus` (a count or `all`), `--gpu-devices`, `--context`, `--quantization`, `--domain`, `--hf-token-from-env`, `--residency` (`always` or `on_demand`), `--idle-ttl`, `--swap-group`.
+- `deploy` runs a model as a container on a GPU node and prints its API key once. Flags: `--engine` (`ollama`, `vllm` or `llamacpp`), `--model`, `--node`, `--gpus` (a count or `all`), `--gpu-devices`, `--context`, `--quantization`, `--domain`, `--hf-token-from-env`, `--residency` (`always` or `on_demand`), `--idle-ttl`, `--swap-group`. `--compute cpu` (or `--catalog ID`) runs a small GGUF model on the CPU with hard limits: `--cpus`, `--memory-mib`, `--weights-file`, `--accept-license` (see [AI models](/ai-models#cpu-models)). `catalog` lists the curated CPU models with licence, memory need and an estimated speed on this server. `benchmark` measures a running model. `fit --compute cpu` rates a model against the node's CPUs and memory.
 - `logs` searches a model engine's logs, or `--follow` streams download and load progress live. `delete` keeps the downloaded weights volume. `restart` recreates the engine container.
 - `rotate-key` issues a new API key, printed once; `keys` manages named API keys with limits, expiry and rotation grace; `usage` shows gateway requests, tokens, errors and latency per key.
 - `residency` sets a model always resident or `on_demand` (stopped when idle, started on first request); `wake` and `sleep` start or stop an on demand engine now; `swap-group` lets models share a GPU (`--clear` removes it).
