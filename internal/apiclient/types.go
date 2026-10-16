@@ -1071,14 +1071,15 @@ type ReplayWebhookDeliveryResult struct {
 // IsCurrent true and DeployID empty means this side is the app's current
 // live desired state, not a stored attempt.
 type DeployCompareSide struct {
-	DeployID   string     `json:"deploy_id,omitempty"`
-	IsCurrent  bool       `json:"is_current"`
-	Image      string     `json:"image"`
-	CommitSHA  string     `json:"commit_sha,omitempty"`
-	Source     string     `json:"source,omitempty"`
-	Status     string     `json:"status,omitempty"`
-	StartedAt  *time.Time `json:"started_at,omitempty"`
-	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	DeployID    string     `json:"deploy_id,omitempty"`
+	IsCurrent   bool       `json:"is_current"`
+	Image       string     `json:"image"`
+	ImageDigest string     `json:"image_digest,omitempty"`
+	CommitSHA   string     `json:"commit_sha,omitempty"`
+	Source      string     `json:"source,omitempty"`
+	Status      string     `json:"status,omitempty"`
+	StartedAt   *time.Time `json:"started_at,omitempty"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 }
 
 // DeployCompareField mirrors internal/api's deployCompareField: one
@@ -1096,20 +1097,69 @@ type DeployCompareField struct {
 // domains/etc per attempt, so those cannot be diffed across past deploys,
 // only reported as not tracked.
 type DeployCompareResource struct {
-	ServiceName         string               `json:"service_name"`
-	From                DeployCompareSide    `json:"from"`
-	To                  DeployCompareSide    `json:"to"`
-	Changes             []DeployCompareField `json:"changes"`
-	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
-	Note                string               `json:"note"`
+	ServiceName         string                   `json:"service_name"`
+	From                DeployCompareSide        `json:"from"`
+	To                  DeployCompareSide        `json:"to"`
+	Changes             []DeployCompareField     `json:"changes"`
+	EnvChanges          []DeployCompareEnvChange `json:"env_changes,omitempty"`
+	Commits             []GitCommitSummary       `json:"commits"`
+	CommitsNote         string                   `json:"commits_note,omitempty"`
+	UnsnapshottedFields []string                 `json:"unsnapshotted_fields"`
+	Note                string                   `json:"note"`
+}
+
+// DeployCompareEnvChange is one env var key that differs between two deploys.
+type DeployCompareEnvChange struct {
+	Key    string `json:"key"`
+	Kind   string `json:"kind"`
+	Status string `json:"status"`
+	From   string `json:"from,omitempty"`
+	To     string `json:"to,omitempty"`
+}
+
+// GitCommitSummary is one commit listed between two deploys.
+type GitCommitSummary struct {
+	SHA        string    `json:"sha"`
+	Message    string    `json:"message"`
+	Author     string    `json:"author"`
+	AuthoredAt time.Time `json:"authored_at"`
+	URL        string    `json:"url,omitempty"`
+}
+
+// ReleaseNoteEntry is one commit line in a release notes group.
+type ReleaseNoteEntry struct {
+	SHA     string `json:"sha"`
+	Scope   string `json:"scope,omitempty"`
+	Summary string `json:"summary"`
+	Author  string `json:"author,omitempty"`
+	URL     string `json:"url,omitempty"`
+}
+
+// ReleaseNoteGroup is the commits of one conventional-commit type.
+type ReleaseNoteGroup struct {
+	Key     string             `json:"key"`
+	Title   string             `json:"title"`
+	Entries []ReleaseNoteEntry `json:"entries"`
+}
+
+// ReleaseNotesResource mirrors GET /api/v1/apps/{name}/deploys/release-notes.
+type ReleaseNotesResource struct {
+	ServiceName string             `json:"service_name"`
+	From        DeployCompareSide  `json:"from"`
+	To          DeployCompareSide  `json:"to"`
+	Commits     []GitCommitSummary `json:"commits"`
+	Groups      []ReleaseNoteGroup `json:"groups"`
+	Markdown    string             `json:"markdown"`
+	Note        string             `json:"note,omitempty"`
 }
 
 // PromotePreviewSide mirrors internal/api's promotePreviewSide
 // (internal/api/promote.go): one side of a promotion preview, always
 // live desired state (there is no DeployID/CommitSHA/Status to show).
 type PromotePreviewSide struct {
-	AppName string `json:"app_name"`
-	Image   string `json:"image"`
+	AppName     string `json:"app_name"`
+	Image       string `json:"image"`
+	ImageDigest string `json:"image_digest,omitempty"`
 }
 
 // PromotePreviewResource mirrors internal/api's promotePreviewResource,

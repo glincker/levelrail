@@ -21,6 +21,7 @@ import { formatBytes, formatNanoCpus } from '../lib/format'
 import { DEPLOY_ATTEMPT_SOURCE_LABEL } from '../lib/deployAttemptPresentation'
 import type { DeployAttemptSource } from '../types/deployAttempt'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
+import { DeployCompareCommitsCard } from './DeployCompareCommitsCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ import { toast } from '@/components/ui/toast'
 // vocabulary this component renders.
 const CHANGE_FIELD_LABEL: Record<string, string> = {
   image: 'Image',
+  image_digest: 'Image digest',
   commit_sha: 'Commit',
   source: 'Trigger source',
   port: 'Port',
@@ -191,6 +193,8 @@ export function DeployCompareView({
       </Card>
 
       <DeployCompareEnvChangesCard changes={compare.env_changes ?? []} />
+
+      <DeployCompareCommitsCard appName={appName} compare={compare} />
 
       <Alert>
         <InfoIcon className="size-4" />

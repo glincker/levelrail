@@ -60,7 +60,7 @@ var Tree = map[string]*Node{
 		"preflight":               nil,
 		"resource-recommendation": nil,
 		"cost":                    nil,
-		"deploys":                 {Subs: map[string]*Node{"list": nil, "show": nil, "wait": nil, "compare": nil, "logs": nil, "failed": nil, "steps": nil, "probes": nil, "cancel": nil, "rollback-to": nil, "gate": nil, "status": nil}},
+		"deploys":                 {Subs: map[string]*Node{"list": nil, "show": nil, "wait": nil, "compare": nil, "release-notes": nil, "logs": nil, "failed": nil, "steps": nil, "probes": nil, "cancel": nil, "rollback-to": nil, "gate": nil, "status": nil}},
 		"cancel-superseded":       {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
 		"deploy-safety":           {Subs: map[string]*Node{"show": nil, "set": nil, "targets": nil}},
 		"promote":                 nil,

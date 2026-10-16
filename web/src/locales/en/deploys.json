@@ -168,5 +168,20 @@
     "fleetAllAwake": "Every app with sleep on is awake right now.",
     "fleetMore": "and {{count}} more asleep",
     "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here."
+  },
+  "releaseNotes": {
+    "title": "Commits and release notes",
+    "digest": "Image digest",
+    "digestSame": "Same image digest on both sides.",
+    "noCommits": "No commits between these two deploys.",
+    "commitsCount_one": "{{count}} commit between these deploys",
+    "commitsCount_other": "{{count}} commits between these deploys",
+    "generate": "Generate release notes",
+    "generating": "Generating...",
+    "copy": "Copy markdown",
+    "copied": "Release notes copied.",
+    "copyFailed": "Could not copy to the clipboard.",
+    "loadFailed": "Could not generate release notes.",
+    "needsDeploy": "Pick two deploys that recorded a git commit to generate release notes."
   }
 }

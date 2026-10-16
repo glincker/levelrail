@@ -458,6 +458,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/exposure/check | AbilityRead | handleCheckAppExposure |
 | GET | /api/v1/apps/{name}/urls | AbilityRead | handleGetAppURLs |
 | GET | /api/v1/apps/{name}/sleep/history | AbilityRead | handleAppSleepHistory |
+| GET | /api/v1/apps/{name}/deploys/release-notes | AbilityRead | handleReleaseNotes |
 
 </Accordion>
 

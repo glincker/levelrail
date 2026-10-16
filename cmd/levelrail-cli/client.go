@@ -297,6 +297,7 @@ type (
 	replayWebhookDeliveryResult = apiclient.ReplayWebhookDeliveryResult
 
 	deployCompareResource = apiclient.DeployCompareResource
+	releaseNotesResource  = apiclient.ReleaseNotesResource
 	deployCompareSide     = apiclient.DeployCompareSide
 	deployCompareField    = apiclient.DeployCompareField
 

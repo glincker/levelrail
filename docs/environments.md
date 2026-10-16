@@ -64,6 +64,8 @@ levelrail-cli apps move-env myapp env_production --confirm
 
 A move during a deploy freeze is refused with 423 unless you pass the freeze override. If the environment an app is leaving cannot be read, the move is refused rather than assumed unprotected.
 
+To ship the same image from one environment to the next without a rebuild, see [Promotions and release notes](/promotions-and-releases).
+
 ## Protection
 
 Mark an environment as protected to put deploys and moves behind approval:

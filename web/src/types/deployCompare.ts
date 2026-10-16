@@ -62,6 +62,7 @@ export interface DeployCompareSide {
   deploy_id?: string
   is_current: boolean
   image: string
+  image_digest?: string
   commit_sha?: string
   source?: string
   status?: string
@@ -112,6 +113,40 @@ export interface DeployCompare {
   to: DeployCompareSide
   changes: DeployCompareField[]
   env_changes?: DeployCompareEnvChange[]
+  commits?: DeployCompareCommit[]
+  commits_note?: string
   unsnapshotted_fields: string[]
   note: string
+}
+
+export interface DeployCompareCommit {
+  sha: string
+  message: string
+  author: string
+  authored_at: string
+  url?: string
+}
+
+export interface ReleaseNoteEntry {
+  sha: string
+  scope?: string
+  summary: string
+  author?: string
+  url?: string
+}
+
+export interface ReleaseNoteGroup {
+  key: string
+  title: string
+  entries: ReleaseNoteEntry[]
+}
+
+export interface ReleaseNotes {
+  service_name: string
+  from: DeployCompareSide
+  to: DeployCompareSide
+  commits: DeployCompareCommit[]
+  groups: ReleaseNoteGroup[]
+  markdown: string
+  note?: string
 }

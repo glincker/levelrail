@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1182 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1183 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -143,6 +143,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerDeploy", Description: "Deploys."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/compare", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCompareDeploys", Description: "Deploy comparison (deploy_compare.go): a before/after diff between two attempts, or one attempt against the app's current live state when ?to is omitted. AbilityRead, same sensitivity as the deploy-attempts list above."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/release-notes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReleaseNotes", Description: "Release notes (release_notes.go): the commits between two deploys, grouped by conventional-commit type, plus a markdown rendering."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeploy", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/gate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeployGate", Description: ""},

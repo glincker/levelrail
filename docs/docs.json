@@ -237,6 +237,7 @@
               "teams-and-roles",
               "team-and-project-quotas",
               "environments",
+              "promotions-and-releases",
               "identity-and-access",
               "sso-saml",
               "scim",

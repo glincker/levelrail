@@ -1935,6 +1935,20 @@ func (c *Client) CompareDeploys(ctx context.Context, name, from, to string) (Dep
 	return out, err
 }
 
+// ReleaseNotes calls GET /api/v1/apps/{name}/deploys/release-notes: the
+// commits between two deploys, grouped by conventional-commit type. to
+// empty means the newest deploy that recorded a commit.
+func (c *Client) ReleaseNotes(ctx context.Context, name, from, to string) (ReleaseNotesResource, error) {
+	q := url.Values{}
+	q.Set("from", from)
+	if to != "" {
+		q.Set("to", to)
+	}
+	var out ReleaseNotesResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/release-notes?"+q.Encode(), nil, &out)
+	return out, err
+}
+
 // PreviewPromotion calls GET /api/v1/apps/{name}/promote/preview: what
 // promoting name's current image into environmentID would change,
 // without applying it. target disambiguates when more than one app in

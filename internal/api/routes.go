@@ -577,6 +577,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// when ?to is omitted. AbilityRead, same sensitivity as the
 	// deploy-attempts list above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCompareDeploys))
+	// Release notes (release_notes.go): the commits between two deploys,
+	// grouped by conventional-commit type, plus a markdown rendering.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/release-notes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleReleaseNotes))
 
 	// Promotion (promote.go): move a known-good image from this app to a
 	// sibling app tagged with another environment in the same project,

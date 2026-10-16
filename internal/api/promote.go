@@ -16,8 +16,9 @@ import (
 // DeployID/CommitSHA/Status/timestamps to show, source and target are
 // both live desired state, not stored deploy attempts.
 type promotePreviewSide struct {
-	AppName string `json:"app_name"`
-	Image   string `json:"image"`
+	AppName     string `json:"app_name"`
+	Image       string `json:"image"`
+	ImageDigest string `json:"image_digest,omitempty"`
 }
 
 // promotePreviewResource is GET .../promote/preview's response shape.
@@ -83,8 +84,8 @@ func toPromotePreviewResource(res promoteResolution) promotePreviewResource {
 		SourceApp:           res.source.Name,
 		TargetApp:           res.target.Name,
 		Environment:         toEnvironmentResource(res.env),
-		From:                promotePreviewSide{AppName: res.source.Name, Image: res.source.Image},
-		To:                  promotePreviewSide{AppName: res.target.Name, Image: res.target.Image},
+		From:                promotePreviewSide{AppName: res.source.Name, Image: res.source.Image, ImageDigest: appImageDigest(res.source)},
+		To:                  promotePreviewSide{AppName: res.target.Name, Image: res.target.Image, ImageDigest: appImageDigest(res.target)},
 		Changes:             changes,
 		UnsnapshottedFields: promotePreviewUnsnapshottedFields,
 		Note:                promotePreviewNote,
