@@ -85,9 +85,12 @@ func isInvisible(r rune) bool {
 // folds fullwidth angle brackets so they cannot fake a delimiter.
 func Clean(s string) string {
 	s = strings.ToValidUTF8(s, "\uFFFD")
-	s = ansiCSI.ReplaceAllString(s, "")
-	s = ansiOSC.ReplaceAllString(s, "")
-	s = ansiESC.ReplaceAllString(s, "")
+	// Every ANSI pattern starts with ESC, so plain text skips the three regex passes.
+	if strings.IndexByte(s, 0x1b) >= 0 {
+		s = ansiCSI.ReplaceAllString(s, "")
+		s = ansiOSC.ReplaceAllString(s, "")
+		s = ansiESC.ReplaceAllString(s, "")
+	}
 	var b strings.Builder
 	b.Grow(len(s))
 	for _, r := range s {

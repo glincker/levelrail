@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -237,15 +238,25 @@ func MatchLogRule(kind Kind, cfg LogRuleConfig, entries []telemetry.LogEntry, tr
 	}
 	for i := len(matched) - 1; i >= 0 && len(res.Samples) < policy.Samples; i-- {
 		line := telemetry.RedactLine(strings.TrimSpace(matched[i].Message))
-		if len(line) > maxLogSampleLen {
-			line = line[:maxLogSampleLen]
-		}
+		line = cutAtRuneBoundary(line, maxLogSampleLen)
 		res.Samples = append(res.Samples, line)
 	}
 	for i, j := 0, len(res.Samples)-1; i < j; i, j = i+1, j-1 {
 		res.Samples[i], res.Samples[j] = res.Samples[j], res.Samples[i]
 	}
 	return res, nil
+}
+
+// cutAtRuneBoundary returns s cut to at most limit bytes without splitting a rune.
+func cutAtRuneBoundary(s string, limit int) string {
+	if len(s) <= limit {
+		return s
+	}
+	cut := limit
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut]
 }
 
 // EvaluateLogRule runs one log_pattern or log_level_rate rule: it reads at

@@ -132,8 +132,10 @@ type Failure struct {
 	Err    error
 }
 
+// Error returns the human-readable failure reason.
 func (f *Failure) Error() string { return f.Reason }
 
+// Unwrap returns the underlying error, if any.
 func (f *Failure) Unwrap() error { return f.Err }
 
 // Prober runs probes with shared transport and limits.

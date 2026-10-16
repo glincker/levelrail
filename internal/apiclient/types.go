@@ -4075,6 +4075,7 @@ type APIError struct {
 	Code string
 }
 
+// Error renders the server message, appending a retry hint when RetryAfter is set.
 func (e *APIError) Error() string {
 	if e.RetryAfter > 0 {
 		return fmt.Sprintf("server returned %d: %s (retry after %s)", e.StatusCode, e.Message, e.RetryAfter)
