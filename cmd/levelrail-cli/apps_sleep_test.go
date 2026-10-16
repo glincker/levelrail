@@ -67,3 +67,49 @@ func TestRun_AppsSleepHistoryTable(t *testing.T) {
 		}
 	}
 }
+
+func TestRun_AppsSleepEnableFlagsAndRefusal(t *testing.T) {
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var b bytes.Buffer
+		_, _ = b.ReadFrom(r.Body)
+		if r.Method == http.MethodPut {
+			gotBody = b.String()
+			if strings.Contains(gotBody, `"port_wake":false`) {
+				w.WriteHeader(http.StatusConflict)
+				_, _ = w.Write([]byte(`{"error":"sleep when idle cannot be turned on: Pinned host port needs port wake"}`))
+				return
+			}
+		}
+		_, _ = w.Write([]byte(`{"enabled":false,"idle_minutes":0,"eligible":false,"blockers":[{"code":"pinned_port","title":"Pinned host port needs port wake","detail":"Traffic on host port 3000 bypasses the ingress.","fix":{"kind":"enable_port_wake","label":"Turn on port wake","method":"PUT","path":"/api/v1/apps/grafana/sleep"}}],"warnings":[{"code":"no_domain","title":"No domain attached","detail":"No ingress request is ever seen."}],"port_wake":{"supported":true,"active":false,"ports":[3000]},"activity":{"open_connections":0,"idle_for_seconds":0}}`))
+	}))
+	t.Cleanup(srv.Close)
+	run1 := func(args ...string) (int, string, string) {
+		var stdout, stderr bytes.Buffer
+		args = append(append([]string{"apps", "sleep"}, args...), "--token", "t", "--api-url", srv.URL)
+		code := run("levelrail-cli-test", args, &stdout, &stderr, envMap())
+		return code, stdout.String(), stderr.String()
+	}
+	if code, _, errOut := run1("enable", "grafana", "--after", "30m", "--port-wake", "--ignore-path", "/metrics", "--ignore-path", "/up"); code != exitOK {
+		t.Fatalf("enable exit = %d (%s)", code, errOut)
+	}
+	if want := `{"idle_minutes":30,"ignore_paths":["/metrics","/up"],"port_wake":true}`; strings.TrimSpace(gotBody) != want {
+		t.Errorf("body = %s, want %s", gotBody, want)
+	}
+	code, _, errOut := run1("enable", "grafana", "--after", "30m", "--no-port-wake")
+	if code == exitOK || !strings.Contains(errOut, "Pinned host port needs port wake") || !strings.Contains(errOut, "fix: Turn on port wake") {
+		t.Errorf("refusal must list the blocker and its fix, got code %d: %s", code, errOut)
+	}
+	if code, _, _ := run1("enable", "grafana", "--port-wake", "--no-port-wake"); code != exitUsage {
+		t.Errorf("both port wake flags = %d, want usage error", code)
+	}
+	code, out, _ := run1("status", "grafana")
+	if code != exitOK {
+		t.Fatalf("status exit = %d", code)
+	}
+	for _, want := range []string{"eligible: false", "blocker: Pinned host port needs port wake", "apps sleep enable grafana --port-wake", "warning: No domain attached", "ports=[3000]"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("status output missing %q:\n%s", want, out)
+		}
+	}
+}

@@ -86,7 +86,7 @@ describe('UpgradeProgress', () => {
 
   it('shows a reconnecting notice while the control plane restarts', () => {
     wrap(attempt({}), true)
-    expect(screen.getByText(/Reconnecting/)).toBeTruthy()
+    expect(screen.getByText(/reconnecting/)).toBeTruthy()
   })
 
   it('shows the failed step, error and rollback note', () => {
@@ -95,12 +95,23 @@ describe('UpgradeProgress', () => {
         outcome: 'rolled_back',
         failed_step: 'health',
         error: 'not healthy',
+        steps: [
+          {
+            name: 'health',
+            status: 'failed',
+            detail: '',
+            at: '',
+            duration_ms: 1,
+          },
+        ],
         finished_at: '2026-10-15T10:01:00Z',
       }),
     )
     expect(screen.getByText(/Stopped at: Health check/)).toBeTruthy()
     expect(screen.getByText('not healthy')).toBeTruthy()
-    expect(screen.getByText(/v0.3.0 is running again/)).toBeTruthy()
+    expect(
+      screen.getByText(/Rolled back to v0.3.0, your data is intact/),
+    ).toBeTruthy()
   })
 
   it('links the release notes on success', () => {

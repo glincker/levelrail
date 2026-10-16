@@ -65,20 +65,24 @@ type CertInfo struct {
 	Status string
 }
 
-// CertExpiryStatus buckets notAfter, relative to now, into the three
-// states a certificate can be in: "expired" once notAfter has passed or
-// is passing this instant, "expiring_soon" within warningWindow of it,
-// "healthy" otherwise. A notAfter exactly warningWindow away is still
-// "healthy": the window is when to start warning, not an inclusive
+// Certificate expiry buckets reported by CertExpiryStatus.
+const (
+	certStatusHealthy      = "healthy"
+	certStatusExpiringSoon = "expiring_soon"
+	certStatusExpired      = "expired"
+)
+
+// CertExpiryStatus buckets notAfter into expired, expiring_soon or healthy.
+// A notAfter exactly warningWindow away is still healthy: the window is when warnings start.
 // boundary.
 func CertExpiryStatus(notAfter, now time.Time, warningWindow time.Duration) string {
 	switch {
 	case !notAfter.After(now):
-		return "expired"
+		return certStatusExpired
 	case notAfter.Before(now.Add(warningWindow)):
-		return "expiring_soon"
+		return certStatusExpiringSoon
 	default:
-		return "healthy"
+		return certStatusHealthy
 	}
 }
 
@@ -232,28 +236,9 @@ type CertExpiryObservationStore interface {
 	ListCertExpiryObservations(ctx context.Context, ruleID string) ([]CertExpiryObservation, error)
 }
 
-// EvaluateCertExpiry runs one KindCertExpiry rule against every
-// certificate currently in certs and returns its updated evaluation
-// state plus, when firing, one human-readable notice line per
-// non-healthy certificate for Engine to attach to the outgoing Event.
-//
-// The rule fires (satisfied, in advanceState terms) the instant any
-// certificate is "expiring_soon" or "expired", with no ForDuration
-// debounce: unlike a noisy metric sample, expiry status only moves
-// monotonically with real time, so there is nothing to debounce.
-// LastValue is the number of days until the earliest-expiring
-// certificate (negative once expired), across every certificate, not
-// just the non-healthy ones, so an operator can see "how close" even
-// while healthy.
-//
-// Per non-healthy domain, snapshots records the NotAfter it had when it
-// first entered this expiry episode (EpisodeNotAfter/EpisodeStartedAt).
-// If a later tick finds the same domain still non-healthy with an
-// unchanged NotAfter for at least stalledThreshold, that domain's notice
-// is marked as a renewal that appears stalled rather than a plain
-// warning: Caddy's own renewal should have already succeeded well
-// before the warning window even opened (DefaultCertRenewalStalledThreshold's
-// own doc comment), so a stuck NotAfter this deep into the window is a
+// EvaluateCertExpiry runs one KindCertExpiry rule over certs and returns its state plus one notice per non-healthy certificate.
+// It fires with no ForDuration debounce: expiry only moves with real time, so there is nothing to debounce.
+// A renewal stuck on the same NotAfter past stalledThreshold is reported as stalled, not as a plain warning.
 // stronger, more actionable signal than "getting close to expiry."
 func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExpiryObservationStore, r Rule, warningWindow, stalledThreshold time.Duration, now time.Time, logger *slog.Logger) (Rule, []string, error) {
 	if warningWindow <= 0 {
@@ -300,7 +285,7 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 			minDays, haveMinDays = days, true
 		}
 
-		if info.Status == "healthy" {
+		if info.Status == certStatusHealthy {
 			// Clear any stale episode: the next time this domain goes
 			// unhealthy, it starts a fresh one rather than reusing an
 			// old, unrelated expiry's episode start.
@@ -318,7 +303,7 @@ func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExp
 		episodeNotAfter, episodeStartedAt := info.NotAfter, now
 		stalled := false
 		if p, ok := prevByDomain[info.Domain]; ok &&
-			(p.Status == "expiring_soon" || p.Status == "expired") &&
+			(p.Status == certStatusExpiringSoon || p.Status == certStatusExpired) &&
 			p.EpisodeNotAfter.Equal(info.NotAfter) {
 			episodeNotAfter, episodeStartedAt = p.EpisodeNotAfter, p.EpisodeStartedAt
 			stalled = now.Sub(episodeStartedAt) >= stalledThreshold

@@ -36,6 +36,57 @@ curl -fsSL https://levelrail.com/install.sh | sudo sh
   </Card>
 </CardGroup>
 
+## The pull request comment
+
+Each preview keeps one comment on its pull request, edited in place as the preview moves from building to ready, failed or removed. It shows:
+
+- **Status**, and the preview **URL** once it is ready.
+- The **commit** it was built from and the time it was **last updated**.
+- A **build logs** link to the dashboard, and the **deploy time** of the last build.
+- The **cleanup** time if nothing changes, and how many **env overrides** apply.
+
+The comment never contains an env var name or value, so secrets set for a pull request cannot leak into it.
+
+## Env overrides for one pull request
+
+Besides the app-wide `preview-env` and branch-pattern `branch-env` overrides, you can set values for a single pull request, for example to point one preview at a staging API. They win over every other source for that pull request and apply on its next deploy, so push a commit after setting them.
+
+<Tabs>
+<Tab title="UI">
+
+Open the app, then **Previews**, and use **Env overrides** on the pull request's row. Tick **Store encrypted** for a secret.
+
+</Tab>
+<Tab title="CLI">
+
+```bash
+levelrail-cli apps pr-env set web FEATURE_FLAG --pr 42 --value on
+levelrail-cli apps pr-env set web API_KEY --pr 42 --value sk-test-123 --secret
+levelrail-cli apps pr-env list web --pr 42
+levelrail-cli apps pr-env clear web prenv_abc123 --pr 42
+```
+
+</Tab>
+<Tab title="API">
+
+`GET`, `POST` on `/api/v1/apps/{name}/previews/{number}/env` and `DELETE /api/v1/apps/{name}/previews/{number}/env/{id}`. A secret is stored encrypted and its value is never returned.
+
+</Tab>
+</Tabs>
+
+Fork pull requests only receive overrides when you approved sharing the app's secrets with that fork.
+
+## What cleanup removes
+
+When a pull request closes or merges, Levelrail removes everything the preview created:
+
+- the preview app and its containers, and the DNS record,
+- every disposable database and its data volumes,
+- the preview's own named volumes (a volume that another service still mounts is kept),
+- the pull request's env overrides and their encrypted values.
+
+Cleanup is safe to repeat. A closed event delivered twice is ignored the second time. If a step fails, such as a volume that is still in use, the preview is marked failed with the reason and the next close event, manual **Tear down**, or the stale sweep finishes the job. A pull request reopened later starts from a fresh preview with no old overrides.
+
 ## Frequently asked questions
 
 <AccordionGroup>

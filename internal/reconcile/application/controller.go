@@ -37,6 +37,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/integrations"
 	"github.com/GLINCKER/levelrail/internal/meshpath"
@@ -239,6 +240,7 @@ type Controller struct {
 	vaultSettings   VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
 	vaultResolver   VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
 	hookRuns        HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	traceStore      TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
 	probeAttempts   ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
 	hookTimeout     time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
 	liveness        *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
@@ -517,6 +519,9 @@ func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts
 		readyBudget: defaultReadyBudget,
 		hookTimeout: defaultHookTimeout,
 		liveness:    NewLivenessTracker(),
+	}
+	if ts, ok := svcStore.(TraceStore); ok {
+		ctrl.traceStore = ts
 	}
 	for _, opt := range opts {
 		opt(ctrl)
@@ -872,6 +877,7 @@ func (c *Controller) finishReconcile(ctx context.Context, targets []string, desi
 			}}}, fmt.Errorf("application/%s: record deploy metric: %w", c.serviceName, err)
 		}
 	}
+	c.traceSummary(ctx, desired, len(targets))
 	return ready("Deployed"), nil
 }
 
@@ -945,6 +951,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			return replicaOutcome{reason: reason}, relErr
 		}
 		if err := c.createAndStart(ctx, target, desired); err != nil {
+			c.traceAbort(ctx, desired, target, createFailureReason(err), err)
 			return replicaOutcome{reason: createFailureReason(err)}, c.abortHandoff(ctx, target, released, err)
 		}
 		justDeployed = true
@@ -1056,6 +1063,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 			c.captureExit(ctx, desired, target, crash.exit, crash.verdict())
 		}
 		c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusFailed, reason, err.Error())
+		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)
 		c.markGateFailure(ctx, desired, reason)
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
@@ -1063,6 +1071,7 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 	c.recordGate(ctx, desired, target, deploysafety.PhaseReadiness, deploysafety.StatusPassed, "", "first readiness check passed")
 	if err := c.stabilityGate(ctx, state, desired); err != nil {
 		reason := readinessReason(err, deploysafety.ReasonGateTimeout)
+		c.traceAbort(ctx, desired, target, reason, err)
 		c.recordRolloutFailure(ctx, desired, err)
 		c.markGateFailure(ctx, desired, reason)
 		return replicaOutcome{reason: reason}, c.abortHandoff(ctx, target, released, err)
@@ -1171,13 +1180,19 @@ func (c *Controller) ensureAppNetwork(ctx context.Context, desired *store.Desire
 }
 
 func (c *Controller) createAndStart(ctx context.Context, name string, desired *store.DesiredService) error {
+	tr := c.tracer(ctx, desired)
+	c.traceDependenciesMet(ctx, tr, desired)
+	cfgSpan := tr.Begin(ctx, deploytrace.StepConfigValidate, "resolving env and container config")
 	env, err := c.resolveEnv(ctx, desired)
 	if err != nil {
+		cfgSpan.Fail(ctx, "EnvResolveFailed", err)
 		return fmt.Errorf("resolve env: %w", err)
 	}
+	cfgSpan.Done(ctx, configDetail(desired, env))
 
 	for _, v := range desired.Volumes {
-		if err := c.runtime.EnsureVolume(ctx, v.Name); err != nil {
+		if err := traceStep(ctx, tr, deploytrace.StepEnsureVolume, deploytrace.StepEnsureVolume+"."+v.Name, "ensuring volume "+v.Name,
+			func() error { return c.runtime.EnsureVolume(ctx, v.Name) }, "EnsureVolumeFailed", v.Name+" mounted at "+v.ContainerPath); err != nil {
 			return fmt.Errorf("ensure volume %q: %w", v.Name, err)
 		}
 	}
@@ -1203,13 +1218,15 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		}
 		spec.RegistryAuth = auth
 	}
+	traceRegistryAuth(ctx, tr, desired, spec.RegistryAuth)
 	if c.meshDNSAddr != "" {
 		spec.DNS = []string{c.meshDNSAddr}
 	}
 	if spec.ExtraHosts, err = c.databaseExtraHosts(ctx, desired); err != nil {
 		return fmt.Errorf("database mesh hosts: %w", err)
 	}
-	if err := c.ensureAppNetwork(ctx, desired); err != nil {
+	if err := traceStep(ctx, tr, deploytrace.StepEnsureNetwork, deploytrace.StepEnsureNetwork, "ensuring app network",
+		func() error { return c.ensureAppNetwork(ctx, desired) }, "EnsureNetworkFailed", networkTraceLabel(c.networkPrefix, desired)); err != nil {
 		return err
 	}
 	if desired.AppID != "" {
@@ -1219,17 +1236,29 @@ func (c *Controller) createAndStart(ctx context.Context, name string, desired *s
 		}
 	}
 
+	ct := c.newCreateTrace(ctx, desired, name)
+	if ct != nil {
+		spec.OnPull = ct.onPull
+	}
+	stopWatch := c.watchLifecycle(ctx, tr, name, c.effectiveReadyBudget(desired))
 	id, err := c.runtime.Create(ctx, spec)
+	ct.created(id, err)
 	if err != nil {
+		stopWatch()
 		return fmt.Errorf("create %q: %w", name, err)
 	}
+	c.traceImageInspect(ctx, tr, desired.Image)
 	c.holdApplied(name, c.appliedSnapshot(ctx, name, desired))
+	startSpan := tr.Begin(ctx, deploytrace.StepContainerStart, "starting "+name)
 	if err := c.runtime.Start(ctx, id); err != nil {
 		// A container whose first start failed can be started again by Docker
 		// without its port bindings, so it is never left behind to retry.
+		startSpan.Fail(ctx, "StartFailed", err)
+		stopWatch()
 		_ = c.runtime.Remove(ctx, id, true)
 		return fmt.Errorf("start %q after create: %w", name, err)
 	}
+	startSpan.Done(ctx, name+" is running")
 	if err := c.connectExternalNetworks(ctx, desired, name); err != nil {
 		return err
 	}

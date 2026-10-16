@@ -84,6 +84,8 @@ export interface ServerReadiness {
   summary: string
 }
 
+export const UPGRADE_POLL_MS = 3_000
+
 export const selfUpgradeKeys = {
   all: [...updatesKeys.all, 'self-upgrade'] as const,
   plan: (target: string) =>

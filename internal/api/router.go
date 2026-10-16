@@ -73,6 +73,7 @@ package api
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"log/slog"
@@ -192,6 +193,7 @@ type Router struct {
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState        // see mesh_settings.go
 	fixit                  fixitState               // see fixit.go
+	buildPerf              BuildPerformanceStore    // see build_performance.go
 	restart                restartState             // see system_restart.go
 	memAttribution         memoryAttributionCache   // see node_memory_attribution.go
 	nodeHostReports        NodeHostReports          // nil is valid: remote rows keep the placed-services-only shape
@@ -522,9 +524,12 @@ type Router struct {
 	advisor                      *advisorCache                                         // resource advisor findings, cached for a short TTL
 	externalDatabases            ExternalDatabaseStore                                 // always set, databases connected but not run
 	dnsResolver                  datamigrate.Resolver                                  // nil means the real resolver
+	sleepPortWake                appsleep.PortWaker                                    // nil disables port wake in the sleep routes
+	sleepActivity                SleepActivity                                         // nil falls back to the stored idle baseline
 	wakeToken                    string                                                // empty disables the wake hook
 	canaries                     CanaryStore                                           // always set, in-flight canary releases
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
+	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
 	appSchedules                 AppScheduleStore                                      // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA             resolveBranchSHAFunc                                  // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
 	previewEnvironments          PreviewEnvironmentStore                               // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
@@ -781,6 +786,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		serviceVolumeRestoreHistory: s,
 		gitSources:                  s,
 		appSchedules:                s,
+		githubActions:               s,
 		imageAutoUpdates:            s,
 		appSleep:                    s,
 		dataImports:                 s,

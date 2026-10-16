@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr'
 import { CreateResourceWizard } from '../../components/CreateResourceWizard'
@@ -20,24 +21,26 @@ export const Route = createFileRoute('/templates/')({
 })
 
 function TemplatesPage() {
+  const { t } = useTranslation('templates')
   const navigate = useNavigate()
   const deployTemplateNow = useDeployTemplateNow()
+  const newFromTemplate = (
+    <CreateResourceWizard
+      initialSelected="browse-templates"
+      trigger={
+        <Button size="sm" variant="outline">
+          <PlusIcon />
+          {t('page.new')}
+        </Button>
+      }
+    />
+  )
 
   return (
     <PageTemplate
-      title="Service templates"
-      description="Curated, one-click services from the catalog. Pick one to see what it deploys."
-      actions={
-        <CreateResourceWizard
-          initialSelected="browse-templates"
-          trigger={
-            <Button size="sm" variant="outline">
-              <PlusIcon />
-              New from a template
-            </Button>
-          }
-        />
-      }
+      title={t('page.title')}
+      description={t('page.description')}
+      actions={newFromTemplate}
     >
       <TemplateMarketplace
         onSelect={(id) => {
@@ -47,6 +50,7 @@ function TemplatesPage() {
           deployTemplateNow.deploy(template.id)
         }}
         deployingId={deployTemplateNow.pendingId}
+        emptyAction={newFromTemplate}
       />
     </PageTemplate>
   )

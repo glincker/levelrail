@@ -29,6 +29,16 @@ type sseStepEvent struct {
 	Step      string `json:"step"`
 	Status    string `json:"status"`
 	Timestamp string `json:"timestamp"`
+	// The fields below are set for traced steps only (deploytrace), so a
+	// legacy build step keeps its original three-field shape.
+	Key        string `json:"key,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+	Detail     string `json:"detail,omitempty"`
+	Service    string `json:"service,omitempty"`
+	StartedAt  string `json:"started_at,omitempty"`
+	EndedAt    string `json:"ended_at,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+	Attempts   int    `json:"attempts,omitempty"`
 }
 
 func toSSEStepEvent(ev deploylog.StepEvent) sseStepEvent {
@@ -94,6 +104,10 @@ func (rt *Router) handleDeployStepStream(w http.ResponseWriter, r *http.Request)
 // survive past Finish, so a caller reconnecting after the attempt ended
 // sees only these two synthesized points, not each intermediate phase.
 func (rt *Router) serveFinishedDeploySteps(ctx context.Context, w http.ResponseWriter, attempt store.DeployAttempt) {
+	if rows := rt.traceRows(ctx, attempt.ID); len(rows) > 0 {
+		rt.serveTraceSteps(ctx, w, attempt.ID, rows, true)
+		return
+	}
 	flusher, ok := startSSE(w)
 	if !ok {
 		rt.logger.Error("api: deploy step stream: response writer does not support flushing", slog.String("deploy_id", attempt.ID))
@@ -145,14 +159,32 @@ func (rt *Router) serveLiveDeploySteps(w http.ResponseWriter, r *http.Request, d
 	for _, ev := range steps {
 		writeSSEStepEvent(w, toSSEStepEvent(ev))
 	}
+	sent := map[string]string{}
+	rt.writeTraceExtras(r.Context(), w, deployID, sent)
 	flusher.Flush()
 
+	tick := time.NewTicker(durationEnv(EnvTracePollInterval, time.Second))
+	defer tick.Stop()
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-tick.C:
+			if rt.writeTraceExtras(r.Context(), w, deployID, sent) {
+				flusher.Flush()
+			}
 		case ev, chOpen := <-live:
 			if !chOpen {
+				// The build recorder is done; the reconciler keeps adding
+				// pull, probe and cutover steps to the stored trace.
+				rt.writeTraceExtras(r.Context(), w, deployID, sent)
+				flusher.Flush()
+				rt.followTrace(r.Context(), deployID, true, sent, func(changed []store.DeployTraceStep) {
+					for _, row := range changed {
+						writeSSEStepEvent(w, toSSETraceEvent(row))
+					}
+					flusher.Flush()
+				})
 				<-r.Context().Done()
 				return
 			}

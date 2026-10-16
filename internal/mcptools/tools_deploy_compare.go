@@ -11,7 +11,7 @@ import (
 func registerDeployCompareTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "compare_deploys",
-		Description: "Diff two of an app's deploy attempts (from/to deploy attempt IDs), or from against the app's current live desired state when to is omitted. Only image, commit SHA, source, and status are ever snapshotted per attempt; env vars, ports, domains, and resource limits are not tracked per attempt and come back listed as unsnapshotted, not diffed. Read-only.",
+		Description: "Diff two of an app's deploy attempts (from/to attempt IDs), or from against live state when to is omitted. Reports image and digest, commit SHA, source, status and commits between them. Env vars, ports, domains and limits are not snapshotted and come back as unsnapshotted. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in compareDeploysInput) (*mcp.CallToolResult, apiclient.DeployCompareResource, error) {
 		cmp, err := client.CompareDeploys(ctx, in.Name, in.From, in.To)
 		if err != nil {

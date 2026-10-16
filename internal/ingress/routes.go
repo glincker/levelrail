@@ -644,7 +644,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: []any{NewMaintenancePageHandler(r.Page)},
+			Handle: maintenanceHandle(r.Page),
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}
@@ -658,8 +658,14 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			hold = *opts.Hardening
 		}
 		routes = append(routes, Route{
-			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated and will be back in a moment. This page will retry on its own.")},
+			Match: []Matcher{{Host: r.Hosts}},
+			Handle: []any{SubrouteHandler{
+				Handler: "subroute",
+				Routes: []Route{
+					{Match: []Matcher{{Path: staticAssetPaths}}, Handle: []any{NewAssetUnavailableHandler(hold.retryAfter())}},
+					{Handle: []any{hold.UnavailableResponse("Updating", "This site is being updated and will be back in a moment. This page will retry on its own.")}},
+				},
+			}},
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

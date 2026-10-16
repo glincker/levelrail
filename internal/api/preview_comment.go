@@ -65,6 +65,11 @@ func renderPreviewComment(p store.PreviewEnvironment, state, detail string, now 
 type previewCommentExtras struct {
 	LogsURL   string
 	ExpiresAt time.Time
+	// DeployTook is the build and deploy time, zero when unknown.
+	DeployTook time.Duration
+	// EnvOverrides counts this pull request's env overrides; only the count is
+	// shown, never a key or value.
+	EnvOverrides int
 }
 
 func renderPreviewCommentWith(p store.PreviewEnvironment, state, detail string, now time.Time, x previewCommentExtras) string {
@@ -79,6 +84,12 @@ func renderPreviewCommentWith(p store.PreviewEnvironment, state, detail string, 
 	}
 	if p.HeadSHA != "" {
 		fmt.Fprintf(&sb, "\n- **Commit:** `%s`", shortSHA(p.HeadSHA))
+	}
+	if x.DeployTook > 0 && (state == previewCommentReady || state == previewCommentFailed) {
+		fmt.Fprintf(&sb, "\n- **Deploy time:** %s", x.DeployTook.Round(time.Second))
+	}
+	if x.EnvOverrides > 0 && state != previewCommentRemoved {
+		fmt.Fprintf(&sb, "\n- **Env overrides:** %d for this pull request", x.EnvOverrides)
 	}
 	fmt.Fprintf(&sb, "\n- **Last updated:** %s", now.UTC().Format("2006-01-02 15:04:05 UTC"))
 	if x.LogsURL != "" && state != previewCommentRemoved {
@@ -98,11 +109,19 @@ func renderPreviewCommentWith(p store.PreviewEnvironment, state, detail string, 
 // upsertPreviewComment creates or edits the pull request's single status
 // comment. It never returns an error: a failed comment must not fail a deploy.
 func (rt *Router) upsertPreviewComment(ctx context.Context, gs store.GitSource, p *store.PreviewEnvironment, state, detail string) {
+	rt.upsertPreviewCommentTimed(ctx, gs, p, state, detail, 0)
+}
+
+// upsertPreviewCommentTimed is upsertPreviewComment that also shows how long
+// the deploy took.
+func (rt *Router) upsertPreviewCommentTimed(ctx context.Context, gs store.GitSource, p *store.PreviewEnvironment, state, detail string, took time.Duration) {
 	c := rt.previewCommenter(ctx, gs, *p)
 	if c == nil {
 		return
 	}
-	body := renderPreviewCommentWith(*p, state, detail, time.Now(), rt.previewCommentExtras(ctx, *p))
+	extras := rt.previewCommentExtras(ctx, *p)
+	extras.DeployTook = took
+	body := renderPreviewCommentWith(*p, state, detail, time.Now(), extras)
 	marker := previewCommentMarker(p.PreviewAppID)
 	log := rt.logger.With(slog.String("app_name", p.AppName), slog.Int("pr_number", p.PRNumber), slog.String("preview_id", p.ID))
 
@@ -152,6 +171,9 @@ func (rt *Router) previewCommentExtras(ctx context.Context, p store.PreviewEnvir
 	var x previewCommentExtras
 	if base := strings.TrimRight(rt.dashboardURL(), "/"); base != "" {
 		x.LogsURL = base + "/apps/" + p.PreviewAppID + "/logs"
+	}
+	if overrides, err := rt.previewEnvironments.ListPRPreviewEnvOverrides(ctx, p.AppName, p.PRNumber); err == nil {
+		x.EnvOverrides = len(overrides)
 	}
 	if expires, ok := previewExpiry(p, rt.previewTTLFor(rt.previewSettings(ctx, p.AppName))); ok {
 		x.ExpiresAt = expires

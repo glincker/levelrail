@@ -296,6 +296,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         to: '/settings/deploy-policies',
         icon: ShieldCheckIcon,
       },
+      {
+        id: 'build-performance',
+        to: '/settings/build-performance',
+        icon: TimerIcon,
+      },
     ],
   },
   {

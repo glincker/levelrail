@@ -22,7 +22,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_network",
-		Description: "Get an app's live traffic path: the container's declared port, the current Docker-assigned host port Caddy is actually proxying to, and whether the container is running. Useful for diagnosing why a domain isn't reaching an app. Read-only.",
+		Description: "Get an app's live traffic path: the declared port, the Docker-assigned host port Caddy proxies to, and whether the container is running. Useful when a domain isn't reaching an app. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.NetworkResource, error) {
 		network, err := client.GetAppNetwork(ctx, in.Name)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_maintenance_status",
-		Description: "Get whether one of an app's domains currently has maintenance mode enabled, showing a static page instead of proxying to the app's container. Read-only; does not enable or disable maintenance mode.",
+		Description: "Get whether one of an app's domains has maintenance mode enabled (a static page instead of the app), since when, and when it switches off. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainMaintenanceResource, error) {
 		status, err := client.GetDomainMaintenance(ctx, in.Name, in.Domain)
 		if err != nil {
@@ -44,7 +44,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_redirect",
-		Description: "Get whether one of an app's domains currently redirects to a target URL instead of proxying to the app's container, and if so, the target URL and status code (301 permanent or 302 temporary). Read-only; does not configure or clear the redirect. Note: if the same domain also has maintenance mode enabled, maintenance mode takes precedence and the redirect does not actually apply.",
+		Description: "Get whether one of an app's domains redirects to a target URL instead of proxying to the app, and the target and status code (301 or 302). Read-only. Maintenance mode takes precedence over a redirect.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainRedirectResource, error) {
 		status, err := client.GetDomainRedirect(ctx, in.Name, in.Domain)
 		if err != nil {

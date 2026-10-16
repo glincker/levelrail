@@ -24,6 +24,7 @@ import { InfoTip, RelativeTime } from './kit'
 import { ApprovePreviewDialog } from './ApprovePreviewDialog'
 import { ExtendPreviewButton } from './ExtendPreviewButton'
 import { PreviewLogsLink } from './PreviewLogsLink'
+import { PreviewPrEnvEditor } from './PreviewPrEnvEditor'
 import { useGitSource } from '../queries/gitSources'
 import {
   useSetPreviewEnabled,
@@ -444,6 +445,10 @@ export function PreviewEnvironmentsCard({ app }: { app: AppDetail }) {
                       Tear down
                     </Button>
                   </div>
+                  <PreviewPrEnvEditor
+                    appName={app.name}
+                    prNumber={preview.pr_number}
+                  />
                 </li>
               ))}
             </ul>

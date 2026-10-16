@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AppUrls } from '../queries/appUrls'
-import { deriveAccessRows, pickOpenUrl } from './appAccessRows'
+import { pickOpenUrl } from './appAccessRows'
 
 const base: AppUrls = {
   app: 'web',
@@ -38,60 +38,6 @@ const base: AppUrls = {
     },
   ],
 }
-
-describe('deriveAccessRows', () => {
-  it('orders ports, local, lan, domain, internal', () => {
-    const ids = deriveAccessRows(base).map((r) => r.id)
-    expect(ids).toEqual([
-      'container',
-      'host',
-      'local',
-      'lan',
-      'domain',
-      'internal',
-    ])
-  })
-
-  it('offers network access when the port is bound to localhost', () => {
-    const rows = deriveAccessRows({
-      ...base,
-      bind_address: 'private',
-      addresses: [
-        {
-          kind: 'loopback',
-          url: 'http://127.0.0.1:24100',
-          reachable_hint: 'reachable',
-        },
-        { kind: 'lan', port: 24100, reachable_hint: 'bound_localhost' },
-      ],
-    })
-    const lan = rows.find((r) => r.id === 'lan')
-    expect(lan?.allowNetwork).toBe(true)
-    expect(lan?.href).toBeUndefined()
-    expect(lan?.note).toBe('lanLocalhost')
-  })
-
-  it('does not offer network access for a remote node', () => {
-    const rows = deriveAccessRows({
-      ...base,
-      local_node: false,
-      addresses: [{ kind: 'lan', reachable_hint: 'remote_node' }],
-    })
-    expect(rows.find((r) => r.id === 'lan')?.allowNetwork).toBeUndefined()
-  })
-
-  it('marks a stopped app', () => {
-    const rows = deriveAccessRows({
-      ...base,
-      running: false,
-      host_port: undefined,
-      addresses: [{ kind: 'loopback', reachable_hint: 'not_running' }],
-    })
-    expect(rows[0]?.state).toBe('off')
-    expect(rows[1]?.note).toBe('hostStopped')
-    expect(rows.find((r) => r.id === 'local')?.note).toBe('localNone')
-  })
-})
 
 describe('pickOpenUrl', () => {
   it('prefers domain, then lan, then localhost', () => {

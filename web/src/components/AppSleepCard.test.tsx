@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -65,6 +65,39 @@ function renderCard() {
   )
 }
 
+const off = {
+  enabled: false,
+  idle_minutes: 0,
+  sleeping: false,
+  hold_requests: false,
+}
+const pinned = {
+  code: 'pinned_port',
+  title: 'Pinned host port',
+  detail: 'Traffic on that port would not wake it.',
+  fix: {
+    kind: 'enable_port_wake',
+    label: 'Wake on port traffic',
+    method: 'PUT',
+    path: '/api/v1/apps/demo-app/sleep',
+    body: { idle_minutes: 30, port_wake: true },
+  },
+}
+
+function sentBody(
+  fetchMock: ReturnType<typeof vi.fn>,
+  method: string,
+): unknown {
+  const call = methodCalls(fetchMock, method)[0]
+  return call ? JSON.parse((call[1] as RequestInit).body as string) : undefined
+}
+
+function methodCalls(fetchMock: ReturnType<typeof vi.fn>, method: string) {
+  return fetchMock.mock.calls.filter(
+    ([, init]) => (init as RequestInit | undefined)?.method === method,
+  )
+}
+
 describe('AppSleepCard', () => {
   const fetchMock = vi.fn()
 
@@ -78,153 +111,176 @@ describe('AppSleepCard', () => {
     vi.unstubAllGlobals()
   })
 
-  it('enables sleeping with the chosen idle time', async () => {
-    fetchMock.mockImplementation(
-      (_input: RequestInfo | URL, init?: RequestInit) =>
-        Promise.resolve(
-          init?.method === 'PUT'
-            ? json({
-                enabled: true,
-                idle_minutes: 30,
-                sleeping: false,
-                hold_requests: false,
-              })
-            : json({
-                enabled: false,
-                idle_minutes: 0,
-                sleeping: false,
-                hold_requests: false,
-              }),
-        ),
+  it('disables Turn on with a blocker, names it, and shows no toast', async () => {
+    fetchMock.mockResolvedValue(
+      json({ ...off, eligible: false, blockers: [pinned] }),
     )
+    renderCard()
+    const button = await screen.findByRole('button', {
+      name: 'Turn on sleep when idle',
+    })
+    expect(button).toBeDisabled()
+    expect(screen.getAllByText(/Pinned host port/).length).toBeGreaterThan(1)
+    expect(screen.getByText('Blocked')).toBeInTheDocument()
+    expect(toast.add).not.toHaveBeenCalled()
+  })
 
+  it('treats a legacy blocked_reason as one blocker', async () => {
+    fetchMock.mockResolvedValue(json({ ...off, blocked_reason: 'pinned_port' }))
+    renderCard()
+    expect(
+      await screen.findByRole('button', { name: 'Turn on sleep when idle' }),
+    ).toBeDisabled()
+    expect(screen.getAllByText('Pinned host port').length).toBeGreaterThan(0)
+  })
+
+  it('runs the fix endpoint, then refetches eligibility', async () => {
+    let fixed = false
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'PUT') {
+          fixed = true
+          return Promise.resolve(json({ ...off, eligible: true }))
+        }
+        return Promise.resolve(
+          json(
+            fixed
+              ? { ...off, eligible: true, blockers: [] }
+              : { ...off, eligible: false, blockers: [pinned] },
+          ),
+        )
+      },
+    )
     const user = userEvent.setup()
     renderCard()
     await user.click(
-      await screen.findByRole('switch', { name: 'Sleep when idle enabled' }),
+      await screen.findByRole('button', { name: 'Wake on port traffic' }),
     )
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: 'Turn on sleep when idle' }),
+      ).toBeEnabled()
+    })
+    expect(String(methodCalls(fetchMock, 'PUT')[0]?.[0])).toBe(
+      '/api/v1/apps/demo-app/sleep',
+    )
+    expect(sentBody(fetchMock, 'PUT')).toEqual({
+      idle_minutes: 30,
+      port_wake: true,
+    })
+  })
 
+  it('lists warnings without disabling Turn on', async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        ...off,
+        eligible: true,
+        blockers: [],
+        warnings: [
+          {
+            code: 'no_domain',
+            title: 'No domain',
+            detail: 'Nothing can wake it.',
+          },
+        ],
+      }),
+    )
+    renderCard()
+    expect(
+      await screen.findByRole('button', { name: 'Turn on sleep when idle' }),
+    ).toBeEnabled()
+    expect(screen.getByText('No domain')).toBeInTheDocument()
+    expect(screen.getByText(/What this means/)).toBeInTheDocument()
+  })
+
+  it('enables sleeping with the default idle time', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          json({ ...off, eligible: true, enabled: init?.method === 'PUT' }),
+        ),
+    )
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(
+      await screen.findByRole('button', { name: 'Turn on sleep when idle' }),
+    )
     await waitFor(() => {
       expect(toast.add).toHaveBeenCalledWith({
         title: 'Sleep when idle enabled.',
         type: 'success',
       })
     })
-    const put = fetchMock.mock.calls.find(
-      ([, init]) => (init as RequestInit | undefined)?.method === 'PUT',
-    )
-    expect(JSON.parse((put?.[1] as RequestInit).body as string)).toEqual({
+    expect(sentBody(fetchMock, 'PUT')).toEqual({
       idle_minutes: 30,
     })
   })
 
-  it('turns function mode on for an enabled app', async () => {
-    fetchMock.mockImplementation(
-      (_input: RequestInfo | URL, init?: RequestInit) =>
-        Promise.resolve(
-          json({
-            enabled: true,
-            idle_minutes: 30,
-            sleeping: false,
-            hold_requests: init?.method === 'PUT',
-          }),
-        ),
-    )
-
-    const user = userEvent.setup()
-    renderCard()
-    await user.click(
-      await screen.findByRole('switch', { name: 'Hold requests while waking' }),
-    )
-
-    await waitFor(() => {
-      expect(toast.add).toHaveBeenCalledWith({
-        title: 'Function mode updated.',
-        type: 'success',
-      })
-    })
-    const put = fetchMock.mock.calls.find(
-      ([, init]) => (init as RequestInit | undefined)?.method === 'PUT',
-    )
-    expect(JSON.parse((put?.[1] as RequestInit).body as string)).toEqual({
-      idle_minutes: 30,
-      hold_requests: true,
-    })
-  })
-
-  it('offers wake now for a sleeping app', async () => {
-    fetchMock.mockImplementation(
-      (_input: RequestInfo | URL, init?: RequestInit) =>
-        Promise.resolve(
-          init?.method === 'POST'
-            ? json({
-                enabled: true,
-                idle_minutes: 30,
-                sleeping: false,
-                hold_requests: false,
-              })
-            : json({
-                enabled: true,
-                idle_minutes: 30,
-                sleeping: true,
-                hold_requests: false,
-              }),
-        ),
-    )
-
-    const user = userEvent.setup()
-    renderCard()
-    expect(await screen.findByText('This app is asleep.')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Wake now' }))
-
-    await waitFor(() => {
-      expect(screen.queryByText('This app is asleep.')).not.toBeInTheDocument()
-    })
-  })
-  it('sleeps an enabled app now', async () => {
-    fetchMock.mockImplementation(
-      (_input: RequestInfo | URL, init?: RequestInit) =>
-        Promise.resolve(
-          json({
-            enabled: true,
-            idle_minutes: 30,
-            sleeping: init?.method === 'POST',
-            hold_requests: false,
-          }),
-        ),
-    )
-
-    const user = userEvent.setup()
-    renderCard()
-    await user.click(await screen.findByRole('button', { name: 'Sleep now' }))
-
-    expect(await screen.findByText('This app is asleep.')).toBeTruthy()
-    const post = fetchMock.mock.calls.find(
-      ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
-    )
-    expect(String(post?.[0])).toBe('/api/v1/apps/demo-app/sleep/now')
-  })
-
-  it('explains why an app with a pinned host port cannot sleep', async () => {
+  it('shows a live countdown and the cold start estimate', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const willSleepAt = new Date(Date.now() + 12 * 60_000).toISOString()
     fetchMock.mockResolvedValue(
       json({
-        enabled: false,
-        idle_minutes: 0,
-        sleeping: false,
-        hold_requests: false,
-        blocked_reason: 'pinned_port',
+        ...off,
+        enabled: true,
+        idle_minutes: 30,
+        cold_start_ms_p50: 4000,
+        estimated_memory_freed_bytes: 536870912,
+        activity: {
+          open_connections: 2,
+          idle_for_seconds: 60,
+          will_sleep_at: willSleepAt,
+        },
       }),
     )
-
     renderCard()
-    expect(await screen.findByText(/pinned host port/)).toBeTruthy()
-    const toggle = await screen.findByRole('switch', {
-      name: 'Sleep when idle enabled',
-    })
+    expect(await screen.findByTestId('sleep-countdown')).toHaveTextContent(
+      '12 min',
+    )
+    expect(screen.getByText(/about 4s/)).toBeInTheDocument()
     expect(
-      toggle.hasAttribute('disabled') ||
-        toggle.getAttribute('aria-disabled') === 'true' ||
-        toggle.hasAttribute('data-disabled'),
-    ).toBe(true)
+      screen.getByText('Frees about 512 MiB while asleep'),
+    ).toBeInTheDocument()
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(11 * 60_000 + 30_000)
+    })
+    expect(screen.getByTestId('sleep-countdown')).toHaveTextContent(
+      /^(30|29) sec/,
+    )
+    vi.useRealTimers()
+  })
+
+  it('animates only behind motion-safe', async () => {
+    fetchMock.mockResolvedValue(
+      json({ ...off, enabled: true, sleeping: true, idle_minutes: 30 }),
+    )
+    const { container } = renderCard()
+    await screen.findByText('Sleeping now')
+    expect(container.innerHTML).toContain('motion-safe:')
+    expect(container.innerHTML).not.toMatch(/[ "]animate-pulse/)
+  })
+
+  it('offers wake now for a sleeping app and sleep now for an awake one', async () => {
+    fetchMock.mockResolvedValue(
+      json({ ...off, enabled: true, sleeping: true, idle_minutes: 30 }),
+    )
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(await screen.findByRole('button', { name: 'Wake now' }))
+    expect(String(methodCalls(fetchMock, 'POST')[0]?.[0])).toBe(
+      '/api/v1/apps/demo-app/sleep/wake',
+    )
+  })
+
+  it('saves a preset idle time with the full body', async () => {
+    fetchMock.mockResolvedValue(
+      json({ ...off, enabled: true, idle_minutes: 30, hold_requests: true }),
+    )
+    const user = userEvent.setup()
+    renderCard()
+    await user.click(await screen.findByRole('button', { name: '60 minutes' }))
+    expect(sentBody(fetchMock, 'PUT')).toEqual({
+      idle_minutes: 60,
+    })
   })
 })

@@ -1,0 +1,5 @@
+{
+  "code": "registry_auth_failed",
+  "retryable": false,
+  "excerpt_contains": ["no basic auth credentials"]
+}

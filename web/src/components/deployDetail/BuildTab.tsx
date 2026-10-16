@@ -102,10 +102,15 @@ export function BuildTab({
         </section>
       ) : null}
 
-      {!noBuildStep && steps.length > 0 ? (
-        <details className="rounded-lg border border-border px-3 py-2">
+      {steps.length > 0 ? (
+        <details
+          open={noBuildStep || !finished}
+          className="rounded-lg border border-border px-3 py-2"
+        >
           <summary className="cursor-pointer text-sm font-medium text-foreground">
-            {t('build.steps', { count: steps.length })}
+            {t(noBuildStep ? 'build.traceSteps' : 'build.steps', {
+              count: steps.length,
+            })}
           </summary>
           <div className="pt-2">
             <DeployStepFeed steps={steps} />
@@ -135,7 +140,7 @@ export function BuildTab({
             isFinished={finished}
           />
         </>
-      ) : (
+      ) : steps.length > 0 ? null : (
         <div className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4">
           {emptyKind === 'waiting' ? (
             <HourglassIcon

@@ -217,8 +217,8 @@ func TestAppSleepRefusesPinnedHostPort(t *testing.T) {
 	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80, HostPort: &port}); err != nil {
 		t.Fatal(err)
 	}
-	if rec := sleepPut(t, rt.handleSetAppSleep, `{"idle_minutes":30}`); rec.Code != http.StatusBadRequest {
-		t.Fatalf("enable with a pinned host port = %d, want 400", rec.Code)
+	if rec := sleepPut(t, rt.handleSetAppSleep, `{"idle_minutes":30}`); rec.Code != http.StatusConflict {
+		t.Fatalf("enable with a pinned host port = %d, want 409", rec.Code)
 	}
 	if a, _ := db.GetAppSleep(ctx, "web"); a.IdleMinutes != 0 {
 		t.Error("a refused request still stored a sleep setting")

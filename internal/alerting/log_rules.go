@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -115,12 +116,12 @@ func (c LogRuleConfig) Validate(kind Kind, p LogRulePolicy) error {
 		return fmt.Errorf("regex must be at most %d characters", maxLogRegexLen)
 	}
 	if c.Regex != "" {
-		if _, err := regexp.Compile(c.Regex); err != nil {
+		if _, err := compileLogRegex(c.Regex); err != nil {
 			return fmt.Errorf("regex: %w", err)
 		}
 	}
 	if _, err := telemetry.ParseFieldFilters(c.Fields); err != nil {
-		return err
+		return fmt.Errorf("field filters: %w", err)
 	}
 	switch kind {
 	case KindLogPattern:
@@ -186,13 +187,13 @@ func MatchLogRule(kind Kind, cfg LogRuleConfig, entries []telemetry.LogEntry, tr
 	var re *regexp.Regexp
 	if cfg.Regex != "" {
 		var err error
-		if re, err = regexp.Compile(cfg.Regex); err != nil {
+		if re, err = compileLogRegex(cfg.Regex); err != nil {
 			return LogRuleResult{}, fmt.Errorf("compile regex: %w", err)
 		}
 	}
 	filters, err := telemetry.ParseFieldFilters(cfg.Fields)
 	if err != nil {
-		return LogRuleResult{}, err
+		return LogRuleResult{}, fmt.Errorf("field filters: %w", err)
 	}
 	level := cfg.Level
 	if kind == KindLogLevelRate && level == "" {
@@ -237,15 +238,25 @@ func MatchLogRule(kind Kind, cfg LogRuleConfig, entries []telemetry.LogEntry, tr
 	}
 	for i := len(matched) - 1; i >= 0 && len(res.Samples) < policy.Samples; i-- {
 		line := telemetry.RedactLine(strings.TrimSpace(matched[i].Message))
-		if len(line) > maxLogSampleLen {
-			line = line[:maxLogSampleLen]
-		}
+		line = cutAtRuneBoundary(line, maxLogSampleLen)
 		res.Samples = append(res.Samples, line)
 	}
 	for i, j := 0, len(res.Samples)-1; i < j; i, j = i+1, j-1 {
 		res.Samples[i], res.Samples[j] = res.Samples[j], res.Samples[i]
 	}
 	return res, nil
+}
+
+// cutAtRuneBoundary returns s cut to at most limit bytes without splitting a rune.
+func cutAtRuneBoundary(s string, limit int) string {
+	if len(s) <= limit {
+		return s
+	}
+	cut := limit
+	for cut > 0 && !utf8.RuneStart(s[cut]) {
+		cut--
+	}
+	return s[:cut]
 }
 
 // EvaluateLogRule runs one log_pattern or log_level_rate rule: it reads at

@@ -22,8 +22,20 @@ vi.mock('../../queries/domains', () => ({
     queryFn: () => Promise.resolve(domains.data),
   }),
 }))
+const fleet = vi.hoisted(() => ({
+  items: [] as Record<string, unknown>[],
+}))
 vi.mock('../../queries/domainMaintenance', () => ({
   useClearDomainMaintenance: () => ({ mutate: vi.fn(), isPending: false }),
+  fleetMaintenanceQueryOptions: () => ({
+    queryKey: ['fleet'],
+    queryFn: () =>
+      Promise.resolve({
+        items: fleet.items,
+        max_duration_seconds: 0,
+        attention_after_seconds: 3600,
+      }),
+  }),
 }))
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children }: { children: React.ReactNode }) => (
@@ -96,5 +108,30 @@ describe('DomainMaintenanceBanner', () => {
       ),
     ).toBeVisible()
     expect(screen.queryByText(/Maintenance mode is on/)).toBeNull()
+  })
+
+  it('shows how long maintenance has been on and flags a long run', async () => {
+    domains.data = [
+      {
+        domain: 'down.test',
+        service_name: 'down',
+        maintenance_enabled: true,
+        enforcement: { mode: 'levelrail', maintenance: true },
+      },
+    ]
+    fleet.items = [
+      {
+        domain: 'down.test',
+        app: 'down',
+        enabled: true,
+        elapsed_seconds: 0,
+        started_at: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
+      },
+    ]
+    renderBanner()
+    expect(await screen.findByText(/On for 3h 0m\./)).toBeVisible()
+    expect(screen.getByText(/No automatic end/)).toBeVisible()
+    expect(screen.getByText(/longer than expected/)).toBeVisible()
+    fleet.items = []
   })
 })

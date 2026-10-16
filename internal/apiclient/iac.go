@@ -35,6 +35,7 @@ type IaCRequest struct {
 // IaCIssuesError carries the line numbered validation issues of a 422.
 type IaCIssuesError struct{ Issues []iac.Issue }
 
+// Error joins the numbered issues into one message.
 func (e *IaCIssuesError) Error() string {
 	lines := make([]string, len(e.Issues))
 	for i, is := range e.Issues {

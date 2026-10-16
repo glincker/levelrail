@@ -12,6 +12,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from '@/components/ui/toast'
 import { GitBuildSuggestions } from './GitBuildSuggestions'
+import { GitWorkspacePackages } from './GitWorkspacePackages'
+import { useSetGitDeploySettings } from '../queries/gitDeploySettings'
 import {
   useGitBuildDetection,
   useSetGitBuild,
@@ -25,6 +27,7 @@ import type {
   GitBuildSuggestion,
   GitSourceBuildType,
   GitSourceResource,
+  WorkspacePackage,
 } from '../types/gitSource'
 
 const BUILD_TYPES: GitSourceBuildType[] = ['railpack', 'dockerfile', 'static']
@@ -44,6 +47,7 @@ interface GitBuildSettingsProps {
 export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
   const { t } = useTranslation('gitBuild')
   const save = useSetGitBuild(appName)
+  const saveWatch = useSetGitDeploySettings(appName)
   const [editing, setEditing] = useState(
     () =>
       typeof window !== 'undefined' &&
@@ -114,6 +118,50 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
       build_path: s.dockerfile_path ?? '',
       base_directory: s.base_directory ?? '',
     })
+  }
+
+  function applyPackage(p: WorkspacePackage) {
+    const type: GitSourceBuildType = p.dockerfile ? 'dockerfile' : 'railpack'
+    setBuildType(type)
+    setDockerfile(p.dockerfile ?? '')
+    setBaseDirectory(p.dir)
+    save.mutate(
+      {
+        build_type: type,
+        build_path: p.dockerfile ?? '',
+        base_directory: p.dir,
+      },
+      {
+        onSuccess: () => {
+          saveWatch.mutate(
+            { deploy_paths: p.watch_paths },
+            {
+              onSuccess: () => {
+                setEditing(false)
+                toast.add({
+                  title: t('workspace.used', {
+                    dir: p.dir,
+                    count: p.watch_paths.length,
+                  }),
+                  type: 'success',
+                })
+              },
+              onError: (error) => {
+                setServerError(error.message)
+              },
+            },
+          )
+        },
+        onError: (error) => {
+          setServerError(error.message)
+          toast.add({
+            title: t('workspace.useFailed'),
+            description: error.message,
+            type: 'error',
+          })
+        },
+      },
+    )
   }
 
   function problemText(p: BuildPathProblem): string {
@@ -304,6 +352,13 @@ export function GitBuildSettings({ appName, source }: GitBuildSettingsProps) {
               void detection.refetch()
             }}
             onApply={applySuggestion}
+          />
+
+          <GitWorkspacePackages
+            appName={appName}
+            packages={detection.data?.packages ?? []}
+            applying={save.isPending || saveWatch.isPending}
+            onUse={applyPackage}
           />
 
           {serverError ? (

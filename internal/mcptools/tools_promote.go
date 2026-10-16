@@ -11,7 +11,7 @@ import (
 func registerPromoteTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "preview_promote_app",
-		Description: "Show what promote_app would change, without applying it: the source and target apps, their current images, and the resulting image diff. The diff covers image, replicas, resources, health and env key names (never values); domains and secret values are never touched. It also lists blockers (unhealthy source, failed last deploy) and whether confirmation is needed. Read-only.",
+		Description: "Preview promote_app without applying it: source and target apps, their images, and the diff of image, replicas, resources, health and env key names (never values). Lists blockers and whether confirmation is needed. Read-only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.PromotePreviewResource, error) {
 		preview, err := client.PreviewPromotion(ctx, in.Name, in.To, in.Target)
 		if err != nil {

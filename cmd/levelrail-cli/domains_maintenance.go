@@ -35,6 +35,10 @@ func runDomainsMaintenance(prog string, args []string, stdout, stderr io.Writer,
 		return runDomainsMaintenanceSet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "clear":
 		return runDomainsMaintenanceClear(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status":
+		return runDomainsMaintenanceStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "preview":
+		return runDomainsMaintenancePreview(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown domains maintenance subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, domainsMaintenanceUsage(prog))
@@ -47,10 +51,14 @@ func domainsMaintenanceUsage(prog string) string {
   %[1]s domains maintenance get <app> <domain> [flags]     show a domain's maintenance state
   %[1]s domains maintenance set <app> <domain> [flags]     enable maintenance mode (page text, end time, bypass)
   %[1]s domains maintenance clear <app> <domain> [flags]   disable maintenance mode
+  %[1]s domains maintenance status [flags]                 list every domain in maintenance, with how long
+  %[1]s domains maintenance preview [flags]                show the page visitors get, without enabling anything
 
 While enabled, the embedded Caddy ingress serves a fixed "down for
 maintenance" response for <domain> instead of proxying to its
-container, without stopping the container itself. <domain> must
+container, without stopping the container itself. Visitors get a 503 page with a Retry-After header;
+scripts, styles and images are not served. Pass --for, --until or
+--max-duration so it cannot be left on by accident. <domain> must
 already be one of <app>'s configured domains (see "%[1]s apps get <app>"
 or "%[1]s domains list").
 
@@ -169,8 +177,17 @@ func printDomainMaintenanceHuman(out io.Writer, m domainMaintenanceResource) {
 	if m.RetryAfterSeconds > 0 {
 		_, _ = fmt.Fprintf(out, "retry after: %ds\n", m.RetryAfterSeconds)
 	}
+	if m.StartedAt != "" {
+		_, _ = fmt.Fprintf(out, "started: %s\n", m.StartedAt)
+	}
 	if m.Until != "" {
 		_, _ = fmt.Fprintf(out, "ends: %s (scheduled window %s)\n", m.Until, m.WindowID)
+	}
+	if m.AutoOffAt != "" {
+		_, _ = fmt.Fprintf(out, "switches off on its own at: %s\n", m.AutoOffAt)
+	}
+	if m.Until == "" && m.AutoOffAt == "" {
+		_, _ = fmt.Fprintln(out, "ends: never on its own, run \"domains maintenance clear\" or pass --max-duration")
 	}
 	if len(m.Bypass) > 0 {
 		_, _ = fmt.Fprintf(out, "bypass: %s\n", strings.Join(m.Bypass, ", "))
@@ -180,9 +197,9 @@ func printDomainMaintenanceHuman(out io.Writer, m domainMaintenanceResource) {
 
 // maintenanceSetOptions are the page, end time and bypass flags of set.
 type maintenanceSetOptions struct {
-	title, message, until, bypass *string
-	retryAfter, forDur            *time.Duration
-	noHealthBypass                *bool
+	title, message, until, bypass, maxDur *string
+	retryAfter, forDur                    *time.Duration
+	noHealthBypass                        *bool
 }
 
 func maintenanceSetFlags(fs interface {
@@ -196,6 +213,7 @@ func maintenanceSetFlags(fs interface {
 		until:          fs.String("until", "", "end maintenance automatically at this RFC 3339 time"),
 		forDur:         fs.Duration("for", 0, "end maintenance automatically after this long, e.g. 2h (alternative to --until)"),
 		retryAfter:     fs.Duration("retry-after", 0, "Retry-After sent with the 503, e.g. 10m (default 5m)"),
+		maxDur:         fs.String("max-duration", "", "switch maintenance off after this long when no end time is set, e.g. 4h; 0 means no limit (default: the server's APP_MAINTENANCE_MAX_DURATION)"),
 		bypass:         fs.String("bypass", "", "comma separated IP addresses or CIDRs that still reach the app"),
 		noHealthBypass: fs.Bool("no-health-bypass", false, "also show the page on the app's readiness path (by default uptime probes still reach it)"),
 	}
@@ -223,9 +241,79 @@ func (o maintenanceSetOptions) request(now time.Time) (apiclient.SetDomainMainte
 			req.Bypass = append(req.Bypass, b)
 		}
 	}
+	if *o.maxDur != "" {
+		d, err := time.ParseDuration(*o.maxDur)
+		if err != nil || d < 0 {
+			return req, fmt.Errorf("--max-duration %q is not a duration like 4h", *o.maxDur)
+		}
+		secs := int(d.Seconds())
+		req.MaxDurationSeconds = &secs
+	}
 	if *o.noHealthBypass {
 		off := false
 		req.BypassHealthCheck = &off
 	}
 	return req, nil
+}
+
+func runDomainsMaintenanceStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains maintenance status", domainsMaintenanceJSONUsage, stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance status [flags]\n\nLists every domain currently in maintenance across all apps.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.ListFleetMaintenance(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list domains in maintenance: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() { printFleetMaintenance(stdout, res) })
+}
+
+func printFleetMaintenance(out io.Writer, res apiclient.FleetMaintenanceResource) {
+	if len(res.Items) == 0 {
+		_, _ = fmt.Fprintln(out, "no domain is in maintenance")
+		return
+	}
+	for _, e := range res.Items {
+		ends := "never on its own"
+		switch {
+		case e.Until != "":
+			ends = "ends " + e.Until
+		case e.AutoOffAt != "":
+			ends = "auto off " + e.AutoOffAt
+		}
+		warn := ""
+		if res.AttentionAfterSeconds > 0 && e.ElapsedSeconds > res.AttentionAfterSeconds {
+			warn = "  (longer than expected)"
+		}
+		_, _ = fmt.Fprintf(out, "%s  app=%s  on for %s  %s%s\n", e.Domain, e.App, (time.Duration(e.ElapsedSeconds) * time.Second).Round(time.Minute), ends, warn)
+	}
+}
+
+func runDomainsMaintenancePreview(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains maintenance preview", domainsMaintenanceJSONUsage, stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance preview [flags]\n\nPrints the status, Retry-After and HTML visitors would get. Changes nothing.\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	title := fs.String("title", "", "maintenance page title")
+	message := fs.String("message", "", "maintenance page message")
+	retry := fs.Duration("retry-after", 0, "Retry-After, e.g. 10m (default 5m)")
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.PreviewMaintenancePage(context.Background(), *title, *message, int(retry.Seconds()))
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("preview maintenance page: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		_, _ = fmt.Fprintf(stdout, "status: %d\nretry-after: %ss\n\n%s", res.Status, res.RetryAfter, res.HTML)
+	})
 }

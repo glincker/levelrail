@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/compose"
+	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -90,6 +92,8 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 // do but return.
 func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name string, body []byte, opts composeDeployOpts) (composeDeployResponse, bool) {
 	isTrial := opts.isTrial
+	trace := deploytrace.NewBuffered()
+	parseSpan := trace.Begin(r.Context(), deploytrace.StepComposeParse, fmt.Sprintf("parsing compose file (%d bytes)", len(body)))
 	file, err := compose.Parse(body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -124,6 +128,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		writeError(w, http.StatusForbidden, "this compose file bind-mounts a host directory, which requires the root ability")
 		return composeDeployResponse{}, false
 	}
+	parseSpan.Done(r.Context(), fmt.Sprintf("valid: %d service(s), %d skipped by profile, %d health warning(s)", len(services), len(skipped), len(healthWarnings)))
 	for _, warning := range healthWarnings {
 		rt.logger.Warn("api: deploy compose: healthcheck not translatable to a readiness probe", slog.String("app", name), slog.String("detail", warning))
 	}
@@ -158,13 +163,16 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		return composeDeployResponse{}, false
 	}
 
+	traceComposePlan(r.Context(), trace, name, services)
 	out := make([]appResource, 0, len(services))
 	for _, svc := range services {
 		if err := rt.appCompose.SaveDesiredService(r.Context(), svc); err != nil {
 			rt.internalError(w, "api: deploy compose: save service failed", err, slog.String("service", svc.Name))
 			return composeDeployResponse{}, false
 		}
-		rt.recordInstantDeployAttempt(r.Context(), svc, svc.Image, store.DeployAttemptSourceCompose)
+		svcTrace := trace.Clone()
+		svcTrace.Note(r.Context(), deploytrace.StepComposeService, store.TraceStatusDone, "", composeServiceLine(svc))
+		rt.recordResolvedDeployAttempt(r.Context(), svc, svc.Image, store.DeployAttemptSourceCompose, deploy.ImageResolution{}, svcTrace)
 		rt.recreateIfConfigChanged(r.Context(), previousServices, svc)
 		out = append(out, toAppResource(svc))
 	}

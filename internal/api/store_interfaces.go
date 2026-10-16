@@ -567,6 +567,7 @@ type Store interface {
 	DomainTrafficPolicyStore
 	GitSourceStore
 	AppScheduleStore
+	AppGitHubActionsStore
 	ImageAutoUpdateStore
 	AppSleepStore
 	DataImportStore

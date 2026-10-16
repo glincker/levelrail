@@ -149,7 +149,7 @@ func (c *Client) DownloadSBOM(ctx context.Context, name, id string) ([]byte, err
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)

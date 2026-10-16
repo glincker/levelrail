@@ -28,7 +28,7 @@ func TestClient_Logs_Live(t *testing.T) {
 	removeIfExists(ctx, t, c, name)
 	t.Cleanup(func() { removeIfExists(context.Background(), t, c, name) })
 
-	if err := c.ensureImage(ctx, "busybox:latest", nil, false); err != nil {
+	if err := c.ensureImage(ctx, "busybox:latest", nil, false, nil); err != nil {
 		t.Fatalf("ensureImage() error = %v", err)
 	}
 

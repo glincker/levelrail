@@ -15,6 +15,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/deploytrace"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/ingress"
@@ -613,7 +614,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			desired.VaultEnv[k] = store.VaultEnvRef{Path: v.Path, Key: v.Key}
 		}
 	}
-	resolution := rt.resolveCreateImage(r.Context(), &desired)
+	resolution, createTrace := rt.resolveCreateImage(r.Context(), &desired)
 	if err := rt.apps.SaveDesiredService(r.Context(), desired); err != nil {
 		var domainTaken *store.ErrDomainTaken
 		if errors.As(err, &domainTaken) {
@@ -660,7 +661,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// pendingImageTag): its own POST .../builds call records the real
 	// history entry once a build actually succeeds.
 	if !spec.IsPendingImage(req.Image) {
-		rt.recordResolvedDeployAttempt(r.Context(), desired, desired.Image, store.DeployAttemptSourceImage, resolution)
+		rt.recordResolvedDeployAttempt(r.Context(), desired, desired.Image, store.DeployAttemptSourceImage, resolution, createTrace)
 	}
 	req.Image = desired.Image
 	req.ImageDigest = appImageDigest(desired)
@@ -694,22 +695,23 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 // digest, or the local image ID when only a local image exists) and returns
 // the resolution to record on the first deploy attempt. A resolver failure
 // leaves the image as given: creating an app must not depend on a registry.
-func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.DesiredService) deploy.ImageResolution {
+func (rt *Router) resolveCreateImage(ctx context.Context, desired *store.DesiredService) (deploy.ImageResolution, *deploytrace.Tracer) {
 	res := deploy.ImageResolution{Image: desired.Image}
 	if spec.IsPendingImage(desired.Image) {
-		return res
+		return res, nil
 	}
-	got, err := deploy.ResolveImage(ctx, rt.imageResolver, desired.Image, nil, false)
+	tr := deploytrace.NewBuffered()
+	got, err := deploy.ResolveImageTraced(ctx, tr, rt.imageResolver, desired.Image, nil, false, "")
 	if err != nil {
 		rt.logger.Warn("api: create app: resolve image failed, deploying it unresolved", slog.String("error", err.Error()), slog.String("name", desired.Name))
-		return res
+		return res, tr
 	}
 	desired.Image = got.Image
 	desired.ImageID, desired.ImageIDRef = "", ""
 	if got.LocalID != "" && docker.ImageDigestOf(got.Image) == "" {
 		desired.ImageID, desired.ImageIDRef = got.LocalID, got.Image
 	}
-	return got
+	return got, tr
 }
 
 // handleGetApp handles GET /api/v1/apps/{name}.

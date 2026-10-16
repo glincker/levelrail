@@ -7,6 +7,7 @@ export interface DeployFailure {
   suggested_fix: string
   docs_url: string
   retryable: boolean
+  also_matched?: string[]
   deploy_id: string
   app: string
   at: string

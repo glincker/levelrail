@@ -49,6 +49,7 @@ type Result struct {
 	ComposeFiles      []string     `json:"compose_files"`
 	Suggestions       []Suggestion `json:"suggestions"`
 	Truncated         bool         `json:"truncated"`
+	Packages          []Package    `json:"packages"`
 }
 
 // Reader returns the first max bytes of a file, or an error when it cannot be
@@ -71,7 +72,7 @@ var rootAppFiles = []string{"go.mod", "requirements.txt", "pyproject.toml", "pom
 // separated) and returns layout findings. read supplies file contents for
 // the few files whose text decides a suggestion.
 func Analyze(paths []string, read Reader) Result {
-	res := Result{Tools: []string{}, Dockerfiles: []string{}, ComposeFiles: []string{}, Suggestions: []Suggestion{}}
+	res := Result{Tools: []string{}, Dockerfiles: []string{}, ComposeFiles: []string{}, Suggestions: []Suggestion{}, Packages: []Package{}}
 	files := filterIgnored(paths)
 	present := make(map[string]bool, len(files))
 	for _, f := range files {
@@ -80,6 +81,7 @@ func Analyze(paths []string, read Reader) Result {
 
 	tools := workspaceTools(present, read)
 	res.Tools = tools
+	res.Packages = findPackages(files, present, read)
 
 	var dockerfiles []string
 	for _, f := range files {

@@ -9,6 +9,9 @@ const (
 	CodeBuildOOM           = "build_out_of_memory"
 	CodeBuildTimeout       = "build_timeout"
 	CodeImagePullFailed    = "image_pull_failed"
+	CodeRegistryAuthFailed = "registry_auth_failed"
+	CodePlatformMismatch   = "platform_mismatch"
+	CodeLockfileOutOfSync  = "lockfile_out_of_sync"
 	CodePortNotListening   = "port_not_listening"
 	CodeHealthCheckFailed  = "health_check_failed"
 	CodeContainerCrashed   = "container_crashed"
@@ -103,10 +106,28 @@ var classes = []class{
 		patterns: []string{"failed to push", "error pushing", "push access denied", "blob upload unknown", "pushing to registry"},
 	},
 	{
+		code:     CodeRegistryAuthFailed,
+		cause:    "The registry rejected the credentials, or no credential was supplied for a private registry.",
+		fix:      "Add or refresh the registry credential for this registry host (check the username, token scope and expiry), then retry.",
+		patterns: []string{"unauthorized: authentication required", "requested access to the resource is denied", "no basic auth credentials", "incorrect username or password", "denied: permission_denied", "401 unauthorized", "authentication required", "unauthorized: incorrect"},
+	},
+	{
+		code:     CodePlatformMismatch,
+		cause:    "The image was built for a different CPU architecture than the node runs (for example arm64 on an amd64 host).",
+		fix:      "Build for the node's platform (set the build platform, for example linux/amd64) or pick an image tag that publishes a manifest for it, then redeploy.",
+		patterns: []string{"exec format error", "no matching manifest for linux", "does not match the detected host platform", "image's platform", "wrong architecture", "qemu: uncaught target signal"},
+	},
+	{
+		code: CodeLockfileOutOfSync, buildOnly: true,
+		cause:    "The lockfile is missing or does not match the dependency manifest, so a locked install refused to run.",
+		fix:      "Run the package manager's install locally (npm install, pnpm install, poetry lock), commit the updated lockfile, and make sure .dockerignore does not exclude it.",
+		patterns: []string{"npm ci can only install", "package-lock.json or npm-shrinkwrap.json", "err_pnpm_outdated_lockfile", "err_pnpm_no_lockfile", "lockfile needs to be updated", "lockfile had changes", "yarn.lock is out of date", "missing go.sum entry", "poetry.lock is not up to date", "cargo.lock needs to be updated", "no lockfile found"},
+	},
+	{
 		code:     CodeImagePullFailed,
 		cause:    "The image could not be pulled: it does not exist, the tag is wrong, or the registry denied access.",
 		fix:      "Check the image name and tag, and add or refresh the registry credential if the registry is private.",
-		patterns: []string{"pull access denied", "manifest unknown", "no such image", "repository does not exist", "unauthorized: authentication required", "toomanyrequests", "requested access to the resource is denied", "not found: manifest", "failed to resolve source metadata"},
+		patterns: []string{"pull access denied", "manifest unknown", "no such image", "repository does not exist", "toomanyrequests", "not found: manifest", "failed to resolve source metadata"},
 	},
 	{
 		code:     CodeDockerfileError,

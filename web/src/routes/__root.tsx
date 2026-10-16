@@ -22,6 +22,7 @@ import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
 import { DeviceLoginBanner } from '../components/attention/DeviceLoginBanner'
 import { SignInRequestsBanner } from '../components/attention/SignInRequestsBanner'
 import { SidebarInset, SidebarProvider } from '../components/ui/sidebar'
+import { UpgradeGlobalBar } from '../components/settings/updates/UpgradeGlobalBar'
 import { RestartBanner } from '../components/RestartBanner'
 import { MaintenanceBanner } from '../components/maintenance/MaintenanceBanner'
 import { DomainMaintenanceBanner } from '../components/maintenance/DomainMaintenanceBanner'
@@ -137,6 +138,7 @@ function AppShell() {
         <AppHeader onSearch={() => setCommandPaletteOpen(true)} />
         <ShellBanner />
         <RestartBanner />
+        <UpgradeGlobalBar />
         <MaintenanceBanner />
         <DomainMaintenanceBanner />
         <DeviceLoginBanner />

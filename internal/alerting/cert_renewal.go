@@ -46,10 +46,8 @@ func (db *DB) ListAllCertExpiryObservations(ctx context.Context) ([]CertExpiryOb
 	return out, nil
 }
 
-// CertRenewalStates maps each certificate's domain to CertRenewalOK or
-// CertRenewalStalled. An expired certificate is always stalled (a renewal
-// would have replaced it). An expiring_soon one is stalled once an
-// observation shows the same NotAfter unchanged for at least threshold,
+// CertRenewalStates maps each domain to CertRenewalOK or CertRenewalStalled.
+// Expired is always stalled; expiring_soon is stalled once NotAfter is unchanged for threshold, as in EvaluateCertExpiry.
 // the same test EvaluateCertExpiry applies.
 func CertRenewalStates(infos []CertInfo, obs []CertExpiryObservation, threshold time.Duration, now time.Time) map[string]string {
 	if threshold <= 0 {
@@ -59,11 +57,11 @@ func CertRenewalStates(infos []CertInfo, obs []CertExpiryObservation, threshold 
 	for _, info := range infos {
 		out[info.Domain] = CertRenewalOK
 		switch info.Status {
-		case "expired":
+		case certStatusExpired:
 			out[info.Domain] = CertRenewalStalled
-		case "expiring_soon":
+		case certStatusExpiringSoon:
 			for _, o := range obs {
-				if o.Domain == info.Domain && o.Status != "healthy" &&
+				if o.Domain == info.Domain && o.Status != certStatusHealthy &&
 					o.EpisodeNotAfter.Equal(info.NotAfter) && now.Sub(o.EpisodeStartedAt) >= threshold {
 					out[info.Domain] = CertRenewalStalled
 					break

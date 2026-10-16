@@ -41,6 +41,9 @@ type domainMaintenanceResource struct {
 	WindowID          string   `json:"window_id,omitempty"`
 	Bypass            []string `json:"bypass,omitempty"`
 	BypassHealthCheck bool     `json:"bypass_health_check"`
+	StartedAt         string   `json:"started_at,omitempty"`
+	// AutoOffAt is the safety cut-off for open ended maintenance.
+	AutoOffAt string `json:"auto_off_at,omitempty"`
 }
 
 // domainMaintenanceRequest is PUT's optional body; an empty body enables the
@@ -52,6 +55,9 @@ type domainMaintenanceRequest struct {
 	Until             *time.Time `json:"until"`
 	Bypass            []string   `json:"bypass"`
 	BypassHealthCheck *bool      `json:"bypass_health_check"`
+	// MaxDurationSeconds switches open ended maintenance off after this long;
+	// omitted takes the server default, 0 means no limit.
+	MaxDurationSeconds *int `json:"max_duration_seconds"`
 }
 
 func toDomainMaintenanceResource(m store.DomainMaintenance) domainMaintenanceResource {
@@ -62,6 +68,12 @@ func toDomainMaintenanceResource(m store.DomainMaintenance) domainMaintenanceRes
 	}
 	if !m.EndsAt.IsZero() {
 		res.Until = m.EndsAt.UTC().Format(time.RFC3339)
+	}
+	if !m.StartedAt.IsZero() {
+		res.StartedAt = m.StartedAt.UTC().Format(time.RFC3339)
+	}
+	if !m.AutoOffAt.IsZero() {
+		res.AutoOffAt = m.AutoOffAt.UTC().Format(time.RFC3339)
 	}
 	return res
 }
@@ -132,11 +144,22 @@ func (rt *Router) handleSetDomainMaintenance(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	prev, _, err := ss.GetDomainMaintenanceSettings(r.Context(), domain, now)
+	prev, wasOn, err := ss.GetDomainMaintenanceSettings(r.Context(), domain, now)
 	if err != nil {
 		rt.internalError(w, "api: set domain maintenance: load previous", err, slog.String("domain", domain))
 		return
 	}
+	var requested *time.Duration
+	if req.MaxDurationSeconds != nil {
+		d := time.Duration(*req.MaxDurationSeconds) * time.Second
+		requested = &d
+	}
+	autoOff, err := maintenance.ResolveAutoOff(now, req.Until, requested, envDuration(envMaintenanceMaxDuration, 0))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	m.StartedAt, m.AutoOffAt = maintenance.KeepStart(prev, wasOn, now), autoOff
 	if req.Until != nil {
 		if rt.scheduledMaintenance == nil {
 			writeError(w, http.StatusNotImplemented, "an end time needs scheduled maintenance, which is not enabled on this server")

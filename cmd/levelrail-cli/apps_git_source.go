@@ -26,6 +26,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 		return exitOK
 	case "detect":
 		return runAppsGitSourceDetect(prog, args[1:], stdout, stderr, lookupEnv)
+	case "affected":
+		return runAppsGitSourceAffected(prog, args[1:], stdout, stderr, lookupEnv)
 	case "commits":
 		return runAppsGitSourceCommits(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get", "show":
@@ -54,7 +56,8 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source commits <name> [--branch B] [flags]             newest commits with deploy status and suggestions
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
   %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
-  %[1]s apps git-source detect <name> [--apply] [flags]                 list Dockerfiles and build roots found in the repo
+  %[1]s apps git-source detect <name> [--apply|--package <dir>] [flags] list Dockerfiles, build roots and workspace packages
+  %[1]s apps git-source affected <name> --files a,b [flags]             dry run: which packages a change would redeploy
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting
   %[1]s apps git-source webhook <name> [--rotate] [flags]               print the URL, content type and events for the provider
   %[1]s apps git-source rotate-secret <name> [flags]                    mint a fresh webhook secret, shown once

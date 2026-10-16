@@ -170,10 +170,13 @@ func (rt *Router) recordCacheWarning(id string, next func(build.ProgressEvent)) 
 // as a Router method so call sites (builds.go) don't need to nil-check
 // rt.deployRecorder themselves.
 func (rt *Router) emitStep(id, step, status string) {
-	if rt.deployRecorder == nil || id == "" {
+	if id == "" {
 		return
 	}
-	rt.deployRecorder.Step(id, step, status)
+	if rt.deployRecorder != nil {
+		rt.deployRecorder.Step(id, step, status)
+	}
+	rt.persistStep(id, step, status)
 }
 
 // deployAttemptResource is the wire shape for one deploy attempt.
@@ -432,11 +435,17 @@ func (rt *Router) serveFinishedDeployLog(ctx context.Context, w http.ResponseWri
 	_, _ = fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 
-	for _, e := range entries {
+	rows := rt.traceRows(ctx, deployID)
+	sent := map[string]string{}
+	for _, r := range rows {
+		sent[r.Key] = stepSignature(r)
+	}
+	for _, e := range rt.mergeTraceIntoLog(ctx, deployID, entries) {
 		writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
 	}
 	flusher.Flush()
 
+	rt.followTraceLog(ctx, w, flusher, deployID, true, sent)
 	<-ctx.Done()
 }
 
@@ -471,18 +480,33 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 	for _, ev := range lines {
 		writeSSEEvent(w, sseLogEvent{Line: ev.Line, Stream: ev.Stream})
 	}
+	sent := map[string]string{}
+	if rows := rt.traceRows(r.Context(), deployID); len(rows) > 0 {
+		for _, e := range traceLogEntries(deployID, rows) {
+			writeSSEEvent(w, sseLogEvent{Line: e.Message, Stream: e.Stream})
+		}
+		for _, row := range rows {
+			sent[row.Key] = stepSignature(row)
+		}
+	}
 	flusher.Flush()
 
+	traceTick := time.NewTicker(durationEnv(EnvTracePollInterval, time.Second))
+	defer traceTick.Stop()
 	for {
 		select {
 		case <-r.Context().Done():
 			return
+		case <-traceTick.C:
+			rt.writeChangedTraceLines(r.Context(), w, flusher, deployID, sent)
 		case ev, chOpen := <-live:
 			if !chOpen {
 				// Recorder.Finish closed this channel: the attempt ended
-				// and every line was already delivered above. Stay open
-				// for the same reconnect-avoidance reason as
-				// serveFinishedDeployLog.
+				// and every line was already delivered above. Keep
+				// following trace rows the reconciler adds after the
+				// attempt finished, and stay open for the same
+				// reconnect-avoidance reason as serveFinishedDeployLog.
+				rt.followTraceLog(r.Context(), w, flusher, deployID, true, sent)
 				<-r.Context().Done()
 				return
 			}

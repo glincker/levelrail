@@ -17,6 +17,13 @@ import (
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
+// HTTP header names and values shared by the outbound notification senders.
+const (
+	headerContentType = "Content-Type"
+	contentTypeJSON   = "application/json"
+	bearerPrefix      = "Bearer "
+)
+
 // Event is what a firing (or resolved) rule hands to a Notifier: enough
 // context to write a useful message without the notifier needing to go
 // query anything itself.
@@ -558,12 +565,7 @@ type ntfyPayload struct {
 	Priority int    `json:"priority,omitempty"`
 }
 
-// notifyNtfy posts to rawURL as given. An access-controlled ntfy topic
-// carries its bearer token as an "auth" query parameter on rawURL (this
-// package's own convention, parsed out here rather than forwarded in the
-// query string, matching notifyTelegram/notifyPushover's own "credentials
-// travel in the query string, not the final request" pattern): when
-// present it's removed from the URL and sent as an Authorization header
+// notifyNtfy posts to rawURL. An "auth" query parameter carries the ntfy token and is sent as an Authorization header.
 // instead, since ntfy authenticates that way, not via the query string.
 func notifyNtfy(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
 	token, cleanURL, err := extractNtfyToken(rawURL)
@@ -578,7 +580,7 @@ func notifyNtfy(ctx context.Context, client *http.Client, rawURL string, ev Even
 	if token == "" {
 		return postJSON(ctx, client, cleanURL, payload)
 	}
-	return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+	return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
 }
 
 // extractNtfyToken pulls an optional "auth" query parameter (an access
@@ -619,16 +621,7 @@ type resendPayload struct {
 // supplies an API key and a destination address still sends.
 const resendDefaultFrom = "onboarding@resend.dev"
 
-// notifyResend sends via the Resend Emails API rather than a webhook:
-// Resend needs an API key (as an Authorization header, never a query
-// parameter) and a destination address, neither of which fits
-// notify.go's "NotifyURL is a webhook URL" convention. Rather than
-// changing Rule's shape, rawURL packs both as query parameters against
-// resendAPIURL as a fixed placeholder, the identical convention
-// notifyPushover already established for its own two credentials
-// (token/user) and notifyNtfy now reuses for its own optional token;
-// parseResendCreds below reads them back out and notifyResend posts the
-// real request to resendAPIURL with the key moved into the Authorization
+// notifyResend sends via the Resend Emails API. The key and destination ride in rawURL's query string and move to an Authorization header.
 // header where Resend's API actually expects it.
 func notifyResend(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
 	key, to, from, err := parseResendCreds(rawURL)
@@ -640,7 +633,7 @@ func notifyResend(ctx context.Context, client *http.Client, rawURL string, ev Ev
 		subject = fmt.Sprintf("[Levelrail][RESOLVED] %s", ev.Rule.Name)
 	}
 	payload := resendPayload{From: from, To: []string{to}, Subject: subject, Text: summaryText(ev)}
-	return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
+	return postJSONWithAuth(ctx, client, resendAPIURL, payload, bearerPrefix+key)
 }
 
 // parseResendCreds extracts the key/to/from query parameters a Resend
@@ -876,7 +869,7 @@ func postJSONAttempt(ctx context.Context, client *http.Client, url string, body 
 	if err != nil {
 		return fmt.Errorf("alerting: notify: build request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(headerContentType, contentTypeJSON)
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
 	}

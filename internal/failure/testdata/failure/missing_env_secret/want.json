@@ -1,0 +1,5 @@
+{
+  "code": "missing_env",
+  "retryable": false,
+  "excerpt_contains": ["is required but no secret value"]
+}

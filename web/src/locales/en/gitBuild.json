@@ -72,5 +72,26 @@
     "nestedDockerfile": "A Dockerfile in {{directory}}, built from that directory.",
     "appRailpack": "{{directory}} looks like an application, auto-detected from that directory."
   },
-  "failureLink": "Check build settings"
+  "failureLink": "Check build settings",
+  "failureAlsoMatched": "Also matched: {{codes}}",
+  "workspace": {
+    "title": "Workspace packages",
+    "description": "Each package can run as its own service. Using one sets its directory as the build root and limits pushes to the paths that change it.",
+    "tool": "Managed by {{tool}}",
+    "watching": "Watches {{paths}}",
+    "dependsOn": "Also rebuilds on changes in {{deps}}",
+    "use": "Use this package",
+    "used": "Applied {{dir}} with {{count}} watch paths.",
+    "useFailed": "Could not apply the package",
+    "checkTitle": "Check what a change would redeploy",
+    "checkLabel": "Changed files, one per line (list both names for a rename)",
+    "checkPlaceholder": "apps/web/src/index.ts",
+    "check": "Check",
+    "checking": "Checking",
+    "affected": "Redeploys",
+    "unaffected": "Skipped",
+    "thisApp": "This app: {{verdict}}",
+    "appDeploys": "deploys",
+    "appSkipped": "skipped ({{reason}})"
+  }
 }

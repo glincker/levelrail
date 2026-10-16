@@ -144,6 +144,8 @@
               "pages",
               "deploy-safety",
               "deploy-failures",
+              "deploy-trace",
+              "build-performance",
               "scheduled-deploys",
               "scheduled-jobs",
               "image-auto-update",
@@ -217,7 +219,8 @@
               "github-actions",
               "pipelines",
               "pipelines-oidc",
-              "git-integrations"
+              "git-integrations",
+              "monorepos"
             ],
             "icon": "/assets/icons/git-branch.svg"
           },
@@ -237,6 +240,7 @@
               "teams-and-roles",
               "team-and-project-quotas",
               "environments",
+              "promotions-and-releases",
               "identity-and-access",
               "sso-saml",
               "scim",

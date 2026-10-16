@@ -66,5 +66,18 @@
       "gatePasswordSet": "A password is set. Leave blank to keep it.",
       "gateNeedsPassword": "Set a username and a password to turn the gate on."
     }
+  },
+  "prEnv": {
+    "button": "Env overrides",
+    "help": "Set values for this pull request's preview only. They win over the app's own env and apply on the next deploy (push a commit). They are removed with the preview.",
+    "empty": "No overrides for this pull request.",
+    "hidden": "hidden",
+    "remove": "Remove override {{key}}",
+    "key": "Env var",
+    "value": "Value",
+    "secret": "Store encrypted (secret). It is never shown again, including in the pull request comment.",
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Override saved for PR #{{number}}. It applies on the next deploy."
   }
 }

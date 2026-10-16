@@ -44,6 +44,7 @@ import type smartDeploy from '../locales/en/smartDeploy.json'
 import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type maintenance from '../locales/en/maintenance.json'
+import type buildPerformance from '../locales/en/buildPerformance.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
@@ -138,6 +139,7 @@ declare module 'i18next' {
       demo: typeof demo
       secretScan: typeof secretScan
       maintenance: typeof maintenance
+      buildPerformance: typeof buildPerformance
       sso: typeof sso
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies

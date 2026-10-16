@@ -130,7 +130,7 @@ func (c *Client) postYAML(ctx context.Context, path string, body []byte, out any
 	}
 	req.Header.Set("Content-Type", "text/yaml")
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	start := time.Now()
 	resp, err := c.hc.Do(req) //nolint:gosec // same target as do()

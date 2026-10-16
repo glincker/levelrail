@@ -223,6 +223,23 @@ type AppBranchEnvOverride struct {
 	UpdatedAt     string `json:"updated_at"`
 }
 
+// setPRPreviewEnvRequest mirrors internal/api's setPRPreviewEnvRequest.
+type setPRPreviewEnvRequest struct {
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+	Secret bool   `json:"secret"`
+}
+
+// PRPreviewEnvOverride mirrors internal/api's prPreviewEnvResource: one env
+// override for a single pull request's preview. Value is "" for a secret.
+type PRPreviewEnvOverride struct {
+	ID        string `json:"id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Secret    bool   `json:"secret"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 // AppVolumeResource mirrors internal/api's appVolumeResource
 // (app_volumes.go): one of an app's named Docker volumes, identified by
 // its logical name (what an operator wrote in app.yaml), not the
@@ -693,6 +710,29 @@ type DomainMaintenanceResource struct {
 	WindowID          string   `json:"window_id,omitempty"`
 	Bypass            []string `json:"bypass,omitempty"`
 	BypassHealthCheck bool     `json:"bypass_health_check"`
+	StartedAt         string   `json:"started_at,omitempty"`
+	AutoOffAt         string   `json:"auto_off_at,omitempty"`
+}
+
+// FleetMaintenanceEntry is one domain in GET /api/v1/maintenance/domains.
+type FleetMaintenanceEntry struct {
+	App string `json:"app"`
+	DomainMaintenanceResource
+	ElapsedSeconds int64 `json:"elapsed_seconds"`
+}
+
+// FleetMaintenanceResource is GET /api/v1/maintenance/domains.
+type FleetMaintenanceResource struct {
+	Items                 []FleetMaintenanceEntry `json:"items"`
+	MaxDurationSeconds    int64                   `json:"max_duration_seconds"`
+	AttentionAfterSeconds int64                   `json:"attention_after_seconds"`
+}
+
+// MaintenancePreviewResource is POST /api/v1/maintenance/preview.
+type MaintenancePreviewResource struct {
+	HTML       string `json:"html"`
+	Status     int    `json:"status"`
+	RetryAfter string `json:"retry_after"`
 }
 
 // SetDomainMaintenanceRequest is PUT .../maintenance's optional body.
@@ -703,6 +743,8 @@ type SetDomainMaintenanceRequest struct {
 	Until             string   `json:"until,omitempty"`
 	Bypass            []string `json:"bypass,omitempty"`
 	BypassHealthCheck *bool    `json:"bypass_health_check,omitempty"`
+	// MaxDurationSeconds nil takes the server default, 0 means no limit.
+	MaxDurationSeconds *int `json:"max_duration_seconds,omitempty"`
 }
 
 // DomainTLSCertResource mirrors internal/api's domainTLSCertResource
@@ -1071,14 +1113,15 @@ type ReplayWebhookDeliveryResult struct {
 // IsCurrent true and DeployID empty means this side is the app's current
 // live desired state, not a stored attempt.
 type DeployCompareSide struct {
-	DeployID   string     `json:"deploy_id,omitempty"`
-	IsCurrent  bool       `json:"is_current"`
-	Image      string     `json:"image"`
-	CommitSHA  string     `json:"commit_sha,omitempty"`
-	Source     string     `json:"source,omitempty"`
-	Status     string     `json:"status,omitempty"`
-	StartedAt  *time.Time `json:"started_at,omitempty"`
-	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	DeployID    string     `json:"deploy_id,omitempty"`
+	IsCurrent   bool       `json:"is_current"`
+	Image       string     `json:"image"`
+	ImageDigest string     `json:"image_digest,omitempty"`
+	CommitSHA   string     `json:"commit_sha,omitempty"`
+	Source      string     `json:"source,omitempty"`
+	Status      string     `json:"status,omitempty"`
+	StartedAt   *time.Time `json:"started_at,omitempty"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 }
 
 // DeployCompareField mirrors internal/api's deployCompareField: one
@@ -1096,20 +1139,69 @@ type DeployCompareField struct {
 // domains/etc per attempt, so those cannot be diffed across past deploys,
 // only reported as not tracked.
 type DeployCompareResource struct {
-	ServiceName         string               `json:"service_name"`
-	From                DeployCompareSide    `json:"from"`
-	To                  DeployCompareSide    `json:"to"`
-	Changes             []DeployCompareField `json:"changes"`
-	UnsnapshottedFields []string             `json:"unsnapshotted_fields"`
-	Note                string               `json:"note"`
+	ServiceName         string                   `json:"service_name"`
+	From                DeployCompareSide        `json:"from"`
+	To                  DeployCompareSide        `json:"to"`
+	Changes             []DeployCompareField     `json:"changes"`
+	EnvChanges          []DeployCompareEnvChange `json:"env_changes,omitempty"`
+	Commits             []GitCommitSummary       `json:"commits"`
+	CommitsNote         string                   `json:"commits_note,omitempty"`
+	UnsnapshottedFields []string                 `json:"unsnapshotted_fields"`
+	Note                string                   `json:"note"`
+}
+
+// DeployCompareEnvChange is one env var key that differs between two deploys.
+type DeployCompareEnvChange struct {
+	Key    string `json:"key"`
+	Kind   string `json:"kind"`
+	Status string `json:"status"`
+	From   string `json:"from,omitempty"`
+	To     string `json:"to,omitempty"`
+}
+
+// GitCommitSummary is one commit listed between two deploys.
+type GitCommitSummary struct {
+	SHA        string    `json:"sha"`
+	Message    string    `json:"message"`
+	Author     string    `json:"author"`
+	AuthoredAt time.Time `json:"authored_at"`
+	URL        string    `json:"url,omitempty"`
+}
+
+// ReleaseNoteEntry is one commit line in a release notes group.
+type ReleaseNoteEntry struct {
+	SHA     string `json:"sha"`
+	Scope   string `json:"scope,omitempty"`
+	Summary string `json:"summary"`
+	Author  string `json:"author,omitempty"`
+	URL     string `json:"url,omitempty"`
+}
+
+// ReleaseNoteGroup is the commits of one conventional-commit type.
+type ReleaseNoteGroup struct {
+	Key     string             `json:"key"`
+	Title   string             `json:"title"`
+	Entries []ReleaseNoteEntry `json:"entries"`
+}
+
+// ReleaseNotesResource mirrors GET /api/v1/apps/{name}/deploys/release-notes.
+type ReleaseNotesResource struct {
+	ServiceName string             `json:"service_name"`
+	From        DeployCompareSide  `json:"from"`
+	To          DeployCompareSide  `json:"to"`
+	Commits     []GitCommitSummary `json:"commits"`
+	Groups      []ReleaseNoteGroup `json:"groups"`
+	Markdown    string             `json:"markdown"`
+	Note        string             `json:"note,omitempty"`
 }
 
 // PromotePreviewSide mirrors internal/api's promotePreviewSide
 // (internal/api/promote.go): one side of a promotion preview, always
 // live desired state (there is no DeployID/CommitSHA/Status to show).
 type PromotePreviewSide struct {
-	AppName string `json:"app_name"`
-	Image   string `json:"image"`
+	AppName     string `json:"app_name"`
+	Image       string `json:"image"`
+	ImageDigest string `json:"image_digest,omitempty"`
 }
 
 // PromotePreviewResource mirrors internal/api's promotePreviewResource,
@@ -1749,6 +1841,31 @@ type GitBuildDetection struct {
 	Suggestions        []GitBuildSuggestion `json:"suggestions"`
 	Truncated          bool                 `json:"truncated"`
 	NeedsBuildSettings bool                 `json:"needs_build_settings"`
+	Packages           []WorkspacePackage   `json:"packages"`
+}
+
+// WorkspacePackage mirrors internal/repolayout's Package.
+type WorkspacePackage struct {
+	Name       string   `json:"name"`
+	Dir        string   `json:"dir"`
+	Tool       string   `json:"tool"`
+	Dockerfile string   `json:"dockerfile,omitempty"`
+	DependsOn  []string `json:"depends_on"`
+	WatchPaths []string `json:"watch_paths"`
+}
+
+// GitSourceAffected mirrors internal/api's affectedResponse.
+type GitSourceAffected struct {
+	AppDeploys bool                     `json:"app_deploys"`
+	Reason     string                   `json:"reason,omitempty"`
+	Packages   []GitSourceAffectedEntry `json:"packages"`
+}
+
+// GitSourceAffectedEntry is one workspace package's verdict.
+type GitSourceAffectedEntry struct {
+	Name     string `json:"name"`
+	Dir      string `json:"dir"`
+	Affected bool   `json:"affected"`
 }
 
 // AppScheduleResource mirrors internal/api's appScheduleResource
@@ -4075,6 +4192,7 @@ type APIError struct {
 	Code string
 }
 
+// Error renders the server message, appending a retry hint when RetryAfter is set.
 func (e *APIError) Error() string {
 	if e.RetryAfter > 0 {
 		return fmt.Sprintf("server returned %d: %s (retry after %s)", e.StatusCode, e.Message, e.RetryAfter)

@@ -35,6 +35,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerIaCRoutes(mux)
 	rt.registerDockerGuardRoutes(mux)
 	rt.registerFixitRoutes(mux)
+	rt.registerBuildPerformanceRoutes(mux)
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
 	rt.registerResourceAdvisorRoutes(mux)
@@ -504,6 +505,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
 	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
 	mux.HandleFunc("GET /api/v1/sleep/overview", rt.requireAbility(AbilityRead, rt.handleSleepOverview))
+	mux.HandleFunc("GET /api/v1/apps/sleep/overview", rt.requireAbility(AbilityRead, rt.handleAppsSleepOverview))
 	mux.HandleFunc("GET /api/v1/apps/{name}/sleep/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppSleepHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSleep))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppSleep))
@@ -577,6 +579,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// when ?to is omitted. AbilityRead, same sensitivity as the
 	// deploy-attempts list above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCompareDeploys))
+	// Release notes (release_notes.go): the commits between two deploys,
+	// grouped by conventional-commit type, plus a markdown rendering.
+	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/release-notes", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleReleaseNotes))
 
 	// Promotion (promote.go): move a known-good image from this app to a
 	// sibling app tagged with another environment in the same project,

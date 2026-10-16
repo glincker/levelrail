@@ -89,6 +89,7 @@
     "framework": "Detected framework",
     "image": "Image",
     "steps": "Build steps ({{count}})",
+    "traceSteps": "Pipeline trace ({{count}})",
     "download": "Download",
     "builderValue": {
       "dockerfile": "Dockerfile",
@@ -97,11 +98,57 @@
     },
     "empty": {
       "noStepTitle": "This deploy had no build step",
-      "noStepBody": "A pre-built image was deployed as is, so there is no build output to show.",
+      "noStepBody": "A pre-built image was deployed as is, so there is no build output. The pipeline trace (digest, pull, start, health checks, cutover) appears here as soon as the deploy starts.",
       "notCapturedTitle": "Build output was not captured",
       "notCapturedBody": "The build did not record any log lines. The deploy itself completed, so the Roll out tab shows what happened next.",
       "waitingTitle": "Waiting for build output",
       "waitingBody": "Lines appear here as soon as the builder starts writing them."
+    }
+  },
+  "trace": {
+    "step": {
+      "resolve_digest": "Resolve tag to digest",
+      "registry_auth": "Registry auth check",
+      "image_pull": "Image pull",
+      "image_pull_layer": "Layer",
+      "image_inspect": "Image inspect",
+      "config_validate": "Config validation",
+      "ensure_network": "Ensure network",
+      "ensure_volume": "Ensure volume",
+      "container_create": "Create container",
+      "container_start": "Start container",
+      "docker_event": "Docker event",
+      "readiness_probe": "Readiness probe",
+      "readiness_gate": "Readiness gate",
+      "stability_gate": "Stability gate",
+      "cutover": "Cutover",
+      "drain_old": "Drain old container",
+      "retain_image": "Retain image for rollback",
+      "compose_parse": "Parse compose file",
+      "compose_plan": "Compose plan",
+      "compose_service": "Compose service",
+      "depends_on": "Dependency order",
+      "deploy_summary": "Deploy result"
+    },
+    "group": {
+      "compose": "Compose",
+      "image": "Image",
+      "prepare": "Prepare",
+      "container": "Container",
+      "readiness": "Readiness",
+      "cutover": "Cutover",
+      "summary": "Result"
+    },
+    "attempts_one": "tried {{count}} time",
+    "attempts_other": "tried {{count}} times",
+    "pullProgress": "Image pull progress",
+    "folded": {
+      "image_pull_layer_one": "{{count}} layer",
+      "image_pull_layer_other": "{{count}} layers",
+      "readiness_probe_one": "{{count}} probe attempt",
+      "readiness_probe_other": "{{count}} probe attempts",
+      "docker_event_one": "{{count}} daemon event",
+      "docker_event_other": "{{count}} daemon events"
     }
   },
   "rollout": {

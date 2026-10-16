@@ -58,7 +58,7 @@ func TestEnsureImage_ForcePull(t *testing.T) {
 				}
 			}()
 
-			if err := c.ensureImage(context.Background(), "img:tag", nil, tt.forcePull); err != nil {
+			if err := c.ensureImage(context.Background(), "img:tag", nil, tt.forcePull, nil); err != nil {
 				t.Fatalf("ensureImage() error = %v", err)
 			}
 			if inspectHit != tt.wantInspectHit {

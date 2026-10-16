@@ -458,6 +458,11 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/exposure/check | AbilityRead | handleCheckAppExposure |
 | GET | /api/v1/apps/{name}/urls | AbilityRead | handleGetAppURLs |
 | GET | /api/v1/apps/{name}/sleep/history | AbilityRead | handleAppSleepHistory |
+| GET | /api/v1/apps/{name}/deploys/release-notes | AbilityRead | handleReleaseNotes |
+| GET | /api/v1/apps/{name}/build-stats | AbilityRead | handleBuildStats |
+| GET | /api/v1/apps/{name}/github-actions | AbilityRead | handleGetAppGitHubActions |
+| PUT | /api/v1/apps/{name}/github-actions | AbilityWriteSensitive | handleSetAppGitHubActions |
+| GET | /api/v1/apps/sleep/overview | AbilityRead | handleAppsSleepOverview |
 
 </Accordion>
 
@@ -501,6 +506,10 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleSetSecretRotation |
 | DELETE | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleDeleteSecretRotation |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotation/rotate | AbilityWriteSensitive | handleRotateSecretNow |
+| POST | /api/v1/apps/{name}/git-source/affected | AbilityRead | handleGitSourceAffected |
+| GET | /api/v1/apps/{name}/previews/{number}/env | AbilityRead | handleListPRPreviewEnv |
+| POST | /api/v1/apps/{name}/previews/{number}/env | AbilityWriteSensitive | handleSetPRPreviewEnv |
+| DELETE | /api/v1/apps/{name}/previews/{number}/env/{id} | AbilityWrite | handleDeletePRPreviewEnv |
 
 ## Telemetry
 
@@ -1406,6 +1415,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/fixes | AbilityRead | handleListFixes |
 | POST | /api/v1/fixes/{id}/preview | AbilityRead | handlePreviewFix |
 | POST | /api/v1/fixes/{id}/apply | AbilityRoot | handleApplyFix |
+| GET | /api/v1/build-limits | AbilityRead | handleGetBuildLimits |
+| PUT | /api/v1/build-limits | AbilityRoot | handleSetBuildLimits |
+| DELETE | /api/v1/build-limits | AbilityRoot | handleResetBuildLimits |
+| GET | /api/v1/maintenance/domains | AbilityRead | handleListFleetMaintenance |
+| POST | /api/v1/maintenance/preview | AbilityRead | handlePreviewMaintenance |
 
 ## See also
 

@@ -63,3 +63,5 @@ On a single-node install, the Nodes page can suggest adding a second node when t
 
 - [Multi-node](/multi-node): enrolling nodes and managing placement.
 - [Observability](/observability): the node alerts behind the suggestion.
+
+To cap how long builds run and how many run at once on any node, see [Build performance](/build-performance).

@@ -51,15 +51,15 @@ func (g *MaintenanceGate) bypassSets() []Matcher {
 // wrap serves the page to everything outside the bypass sets; a gate with
 // no bypass serves the page to every request.
 func (g *MaintenanceGate) wrap(handle []any) []any {
-	page := NewMaintenancePageHandler(g.Page)
+	page := maintenanceHandle(g.Page)
 	sets := g.bypassSets()
 	if len(sets) == 0 {
-		return []any{page}
+		return page
 	}
 	return []any{SubrouteHandler{
 		Handler: "subroute",
 		Routes: []Route{
-			{Match: []Matcher{{Not: sets}}, Handle: []any{page}},
+			{Match: []Matcher{{Not: sets}}, Handle: page},
 			{Handle: handle},
 		},
 	}}
@@ -116,4 +116,41 @@ func NewMaintenancePageHandler(p MaintenancePage) StaticResponseHandler {
 // NewMaintenanceResponseHandler is the default maintenance page.
 func NewMaintenanceResponseHandler() StaticResponseHandler {
 	return NewMaintenancePageHandler(MaintenancePage{})
+}
+
+// staticAssetPaths are the paths a document pulls in, matched case
+// insensitively by Caddy; an HTML body there poisons browser and CDN caches.
+var staticAssetPaths = []string{
+	"/_next/*", "/static/*", "/assets/*",
+	"*.css", "*.js", "*.mjs", "*.map", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.webp",
+	"*.avif", "*.svg", "*.ico", "*.woff", "*.woff2", "*.ttf", "*.otf", "*.eot",
+	"*.webmanifest", "*.mp4", "*.webm", "*.mp3",
+}
+
+// NewAssetUnavailableHandler answers an asset request with an empty, never
+// cached 503 so no client ever stores HTML under an asset URL.
+func NewAssetUnavailableHandler(retryAfter int) StaticResponseHandler {
+	if retryAfter <= 0 {
+		retryAfter = DefaultMaintenanceRetryAfter
+	}
+	return StaticResponseHandler{
+		Handler:    "static_response",
+		StatusCode: 503,
+		Headers: map[string][]string{
+			"Content-Type":  {"text/plain; charset=utf-8"},
+			"Retry-After":   {strconv.Itoa(retryAfter)},
+			"Cache-Control": {"no-store"},
+		},
+	}
+}
+
+// maintenanceHandle serves the page to documents and an empty 503 to assets.
+func maintenanceHandle(p MaintenancePage) []any {
+	return []any{SubrouteHandler{
+		Handler: "subroute",
+		Routes: []Route{
+			{Match: []Matcher{{Path: staticAssetPaths}}, Handle: []any{NewAssetUnavailableHandler(p.RetryAfterSeconds)}},
+			{Handle: []any{NewMaintenancePageHandler(p)}},
+		},
+	}}
 }

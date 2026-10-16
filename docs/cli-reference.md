@@ -313,6 +313,8 @@ levelrail-cli apps storage clear <name> [flags]
 levelrail-cli apps build-cache show <name>|--global
 levelrail-cli apps build-cache set <name>|--global --target ID [--mode min|max] [--disable]
 levelrail-cli apps build-cache clear <name>
+levelrail-cli apps build-stats <name> [--limit N]
+levelrail-cli apps build-limits show|set|reset
 levelrail-cli apps build-cache remove <name>|--global
 ```
 
@@ -352,6 +354,8 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 ### Source, previews and webhooks
 
 ```
+levelrail-cli apps git-source detect <name> [--apply|--package DIR] [flags]
+levelrail-cli apps git-source affected <name> --files a,b [flags]
 levelrail-cli apps git-source get <name> [flags]
 levelrail-cli apps git-source set <name> --repo-url URL [flags]
 levelrail-cli apps git-source settings <name> [flags]

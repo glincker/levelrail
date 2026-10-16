@@ -97,6 +97,9 @@ func printPromotePreviewHuman(w io.Writer, prev promotePreviewResource) {
 	_, _ = fmt.Fprintf(w, "promote %q -> %q (environment %q)\n", prev.SourceApp, prev.TargetApp, prev.Environment.Name)
 	_, _ = fmt.Fprintf(w, "  from: %s (image %s)\n", prev.From.AppName, prev.From.Image)
 	_, _ = fmt.Fprintf(w, "  to:   %s (image %s)\n", prev.To.AppName, prev.To.Image)
+	if prev.From.ImageDigest != "" || prev.To.ImageDigest != "" {
+		_, _ = fmt.Fprintf(w, "  digest: %s -> %s\n", deployCompareValueLabel(prev.To.ImageDigest), deployCompareValueLabel(prev.From.ImageDigest))
+	}
 
 	if len(prev.Changes) == 0 {
 		_, _ = fmt.Fprint(w, "\nno change: target already runs this image\n")

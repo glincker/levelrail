@@ -571,6 +571,7 @@ type ErrDomainTaken struct {
 	Owner  string
 }
 
+// Error names the domain and the service that already owns it.
 func (e *ErrDomainTaken) Error() string {
 	return fmt.Sprintf("store: domain %q is already in use by service %q", e.Domain, e.Owner)
 }

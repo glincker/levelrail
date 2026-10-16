@@ -17,6 +17,74 @@ type AppSleepResource struct {
 	Since *time.Time `json:"since,omitempty"`
 	// HoldRequests is function mode: a request that wakes the app waits for it.
 	HoldRequests bool `json:"hold_requests"`
+	// BlockedReason is deprecated: read Blockers.
+	BlockedReason string        `json:"blocked_reason,omitempty"`
+	Blockers      []SleepItem   `json:"blockers"`
+	Warnings      []SleepItem   `json:"warnings"`
+	Eligible      bool          `json:"eligible"`
+	Settings      SleepSettings `json:"settings"`
+	PortWake      SleepPortWake `json:"port_wake"`
+	Activity      SleepActivity `json:"activity"`
+	// ColdStartMsP50 is nil when the app has no recorded wakes.
+	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
+	// EstimatedMemoryFreedBytes is nil when the app has no memory limit.
+	EstimatedMemoryFreedBytes *int64 `json:"estimated_memory_freed_bytes"`
+}
+
+// Fix kinds a SleepFix can carry.
+const (
+	SleepFixEnablePortWake   = "enable_port_wake"
+	SleepFixRemovePinnedPort = "remove_pinned_port"
+	SleepFixSetHoldRequests  = "set_hold_requests"
+	SleepFixAttachDomain     = "attach_domain"
+)
+
+// SleepFix is a suggested remedy for a blocker or warning.
+type SleepFix struct {
+	Kind   string         `json:"kind"`
+	Label  string         `json:"label"`
+	Method string         `json:"method"`
+	Path   string         `json:"path"`
+	Body   map[string]any `json:"body,omitempty"`
+}
+
+// SleepItem is one blocker or warning.
+type SleepItem struct {
+	Code   string    `json:"code"`
+	Title  string    `json:"title"`
+	Detail string    `json:"detail"`
+	Fix    *SleepFix `json:"fix,omitempty"`
+}
+
+// SleepSettings are the stored sleep options.
+type SleepSettings struct {
+	IdleMinutes  int      `json:"idle_minutes"`
+	HoldRequests bool     `json:"hold_requests"`
+	IgnorePaths  []string `json:"ignore_paths"`
+	PortWake     bool     `json:"port_wake"`
+}
+
+// SleepPortWake is the live port wake state.
+type SleepPortWake struct {
+	Supported bool  `json:"supported"`
+	Active    bool  `json:"active"`
+	Ports     []int `json:"ports"`
+}
+
+// SleepActivity is what the scheduler last saw.
+type SleepActivity struct {
+	LastRequestAt         *time.Time `json:"last_request_at,omitempty"`
+	LastNetworkActivityAt *time.Time `json:"last_network_activity_at,omitempty"`
+	OpenConnections       int        `json:"open_connections"`
+	IdleForSeconds        int64      `json:"idle_for_seconds"`
+	WillSleepAt           *time.Time `json:"will_sleep_at,omitempty"`
+}
+
+// SleepEnableOptions are the optional settings sent with an enable.
+type SleepEnableOptions struct {
+	HoldRequests *bool    `json:"hold_requests,omitempty"`
+	IgnorePaths  []string `json:"ignore_paths,omitempty"`
+	PortWake     *bool    `json:"port_wake,omitempty"`
 }
 
 func sleepPath(appName string) string { return "/api/v1/apps/" + PathEscape(appName) + "/sleep" }
@@ -46,6 +114,17 @@ func (c *Client) WakeApp(ctx context.Context, appName string) (AppSleepResource,
 func (c *Client) SetAppSleepHold(ctx context.Context, appName string, idleMinutes int, hold bool) (AppSleepResource, error) {
 	var out AppSleepResource
 	err := c.do(ctx, http.MethodPut, sleepPath(appName), map[string]any{"idle_minutes": idleMinutes, "hold_requests": hold}, &out)
+	return out, err
+}
+
+// EnableAppSleep calls PUT /api/v1/apps/{name}/sleep with idleMinutes and opts.
+func (c *Client) EnableAppSleep(ctx context.Context, appName string, idleMinutes int, opts SleepEnableOptions) (AppSleepResource, error) {
+	body := struct {
+		IdleMinutes int `json:"idle_minutes"`
+		SleepEnableOptions
+	}{idleMinutes, opts}
+	var out AppSleepResource
+	err := c.do(ctx, http.MethodPut, sleepPath(appName), body, &out)
 	return out, err
 }
 

@@ -31,6 +31,8 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysShow(prog, args[1:], stdout, stderr, lookupEnv)
 	case "compare":
 		return runAppsDeploysCompare(prog, args[1:], stdout, stderr, lookupEnv)
+	case "release-notes":
+		return runAppsDeploysReleaseNotes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "logs":
 		return runAppsDeploysLogs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "failed":
@@ -60,6 +62,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys wait <name> [deploy-id] [--timeout 10m]      block until a deploy is healthy or fails, exit 7 when it does not succeed
   %[1]s apps deploys show <name> [deploy-id] [flags]              one deploy attempt with its structured failure (newest by default)
   %[1]s apps deploys compare <name> --from ID [--to ID] [flags]   diff two deploy attempts, or one against the current live state
+  %[1]s apps deploys release-notes <name> --from ID [--to ID]   markdown release notes from the commits between two deploys
   %[1]s apps deploys logs <name> <deploy-id> [flags]              one deploy attempt's full build/log output
   %[1]s apps deploys failed [--since 24h] [flags]                 every app's latest failed deploy in the window, fleet-wide
   %[1]s apps deploys timeline [--since 24h] [flags]               fleet-wide deploys as bars on a shared time axis
@@ -184,6 +187,7 @@ func printDeployCompareHuman(w io.Writer, cmp deployCompareResource) {
 		}
 	}
 
+	printDeployCompareExtras(w, cmp)
 	_, _ = fmt.Fprintf(w, "\nnot tracked per deploy attempt: %v\n%s\n", cmp.UnsnapshottedFields, cmp.Note)
 }
 

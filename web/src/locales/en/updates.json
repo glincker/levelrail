@@ -465,5 +465,37 @@
     "save": "Save",
     "saved": "Update settings saved.",
     "unsaved": "You have unsaved changes."
+  },
+  "pipeline": {
+    "phase": {
+      "prepare": "Prepare",
+      "validate": "Validate",
+      "protect": "Protect",
+      "switch": "Switch",
+      "confirm": "Confirm",
+      "other": "Other"
+    },
+    "state": {
+      "ok": "Done",
+      "running": "Running",
+      "failed": "Failed",
+      "skipped": "Skipped",
+      "pending": "Waiting"
+    },
+    "reconnecting": "Restarting the control plane, reconnecting...",
+    "rolledBack": "Rolled back to {{version}}, your data is intact.",
+    "to": "to",
+    "totalTime": "Total {{time}}",
+    "backupAt": "Backup: {{name}}",
+    "reload": "Reload",
+    "bar": {
+      "title": "Upgrading to {{version}}",
+      "step": "Step {{n}} of {{total}}",
+      "view": "View progress",
+      "reconnecting": "Restarting the control plane, reconnecting..."
+    },
+    "sidebar": {
+      "running": "Upgrading"
+    }
   }
 }

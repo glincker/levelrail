@@ -558,9 +558,12 @@ While a domain is in maintenance, the ingress answers `503` with a small page in
 | `retry_after_seconds` | Sent as `Retry-After`, 1 to 86400. Default 300. |
 | `until` | RFC 3339 end time. Creates a linked [scheduled maintenance](/scheduled-maintenance) window (app scope, no deploy freeze), so the dashboard banner and the public status page show it. When the window ends, or is cancelled, maintenance ends on its own within a minute and an audit entry `domain_maintenance.ended` is written. |
 | `bypass` | Up to 32 IP addresses or CIDRs whose clients still reach the app, for example your office, so you can check the site while it is down. Matched on the client address after trusted proxy headers. `0.0.0.0/0` is refused. |
-| `bypass_health_check` | Default on. When the app has an HTTP readiness path, requests to exactly that path still reach the app, so uptime probes are not answered with `503`. |
+| `max_duration_seconds` | Safety net for maintenance with no `until`: it switches itself off after this long. Omitted takes `APP_MAINTENANCE_MAX_DURATION` (default none), `0` means no limit, at most 30 days. Ignored when `until` is set, since the window already ends it. |
+| `bypass_health_check` | Default on. When the app has an HTTP readiness path, requests to exactly that path still reach the app, so uptime probes are not answered with `503`. A readiness path of `/` is never bypassed, because that is the homepage itself. |
 
 Bypassed requests go through the domain's normal route, so basic auth, the auth gate and the WAF still apply to them. When the app has no running container, every request gets the page.
+
+The page is self-contained (inline CSS, no files from your app) and carries `Cache-Control: no-store`. Requests for assets (`/_next/*`, `/static/*`, `/assets/*`, and files such as `.css`, `.js`, images and fonts) get an empty `503` with `Cache-Control: no-store` and a `text/plain` type instead of the page, so browsers and CDNs never store HTML under an asset URL. The brief "Updating" hold page shown during a deploy follows the same rule. After maintenance ends the next request reaches the app; nothing in the `503` is cacheable. A service worker that cached assets keeps serving them until it updates, which a normal reload does.
 
 ```bash
 levelrail-cli domains maintenance set web app.example.com \
@@ -571,6 +574,35 @@ levelrail-cli domains maintenance clear web app.example.com   # also cancels the
 ```
 
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/maintenance` with an optional JSON body of the fields above; an empty body keeps the default page. Running `set` again replaces the settings. On the dashboard, open the app's **Domains** tab and choose **Page and schedule** next to the maintenance toggle.
+
+### What visitors get, and what it does not do
+
+- Every URL of the domain answers `503` with the page and a `Retry-After` header. Scripts, styles, images and API calls are not served either, so nothing in the page can load from the app.
+- The container is not stopped or restarted, and a deploy during maintenance does not end it: the setting is stored per domain and only you, `until` or the max duration clear it.
+- Alerts and uptime checks are not muted. A probe on any path other than the readiness path gets the `503` and can fire a down alert. To silence them, add an [alert maintenance window](/observability) for the same period.
+- The audit log records who turned it on and off. When a timed end or the max duration switches it off, the system writes `domain_maintenance.ended`.
+- The public status page lists maintenance only when an `until` created a linked window.
+
+### Not leaving it on
+
+- Turning it on from the dashboard asks for confirmation: it lists the points above, the end time or max duration that applies, and a live preview of the page, rendered by the server with the same template visitors get.
+- While any domain is in maintenance a banner on every page shows how long it has been on and when it ends, with a one click **End maintenance**. It cannot be dismissed.
+- A domain that has been on longer than `APP_MAINTENANCE_ATTENTION_AFTER` (default `4h`) appears in the [attention center](/attention-center) as a warning. `0` or an unparseable value falls back to the default.
+- `levelrail-cli domains maintenance status` lists every domain in maintenance across all apps and how long each has been on. `levelrail-cli domains maintenance preview` prints the page and headers without enabling anything.
+
+Worked example: take `app.example.com` down for a database upgrade, keep your office able to check it, and never leave it on past four hours.
+
+```bash
+levelrail-cli domains maintenance preview --title "Upgrading the database" --message "Back in about 30 minutes."
+levelrail-cli domains maintenance set web app.example.com \
+  --title "Upgrading the database" --message "Back in about 30 minutes." \
+  --max-duration 4h --retry-after 10m --bypass 203.0.113.7
+levelrail-cli domains maintenance status
+# app.example.com  app=web  on for 12m  auto off 2026-11-01T06:00:00Z
+levelrail-cli domains maintenance clear web app.example.com
+```
+
+The same data is available over the API: `GET /api/v1/maintenance/domains` (read) returns every active entry with `started_at`, `auto_off_at` and `elapsed_seconds`, and `POST /api/v1/maintenance/preview` (read, changes nothing) returns the page `html`, `status` and `retry_after` for a given `title`, `message` and `retry_after_seconds`.
 
 Behind another reverse proxy, maintenance applies only when that proxy is proven to forward to the ingress; otherwise the dashboard shows it as **Saved, not enforced**. See [traffic controls behind a proxy](/behind-an-existing-proxy#traffic-controls-behind-a-proxy).
 

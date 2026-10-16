@@ -41,7 +41,8 @@
       "request": "Request",
       "schedule": "Schedule",
       "deploy": "Deploy",
-      "api": "API"
+      "api": "API",
+      "port": "Traffic on a published port"
     },
     "columns": {
       "when": "When",

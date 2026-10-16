@@ -1,19 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from '@tanstack/react-router'
-import {
-  ArrowSquareOutIcon,
-  CheckIcon,
-  CopyIcon,
-  WarningIcon,
-} from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button, buttonVariants } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
-import { useCopyToClipboard } from '../hooks/useCopyToClipboard'
 import {
   useCheckExposure,
   usePreviewExposure,
@@ -23,113 +15,29 @@ import {
   type ProbeTarget,
 } from '../queries/appExposure'
 import { useAppUrls } from '../queries/appUrls'
-import {
-  deriveAccessRows,
-  type AccessRow,
-  type AccessState,
-} from './appAccessRows'
-
-const DOT: Record<AccessState, string> = {
-  ok: 'bg-tone-success-solid',
-  warn: 'bg-tone-warning-solid',
-  off: 'bg-muted-foreground/40',
-  unknown: 'bg-muted-foreground/40',
-}
+import { ReachAdvanced } from './appAccess/ReachAdvanced'
+import { ReachHero } from './appAccess/ReachHero'
+import { ReachRow } from './appAccess/ReachRow'
+import { deriveReach, type ReachAddress } from './appAccess/reachModel'
 
 function probeFor(
-  row: AccessRow,
+  addr: ReachAddress,
   check?: ExposureCheck,
 ): ProbeTarget | undefined {
-  if (!check || !row.href) return undefined
-  return check.targets.find((t) => t.url.startsWith(row.href as string))
+  if (!check || !addr.href) return undefined
+  const href = addr.href
+  return check.targets.find((t) => t.url.startsWith(href))
 }
 
-function AccessRowView({
-  row,
-  probe,
-  testing,
-  onTest,
-  onAllow,
-}: {
-  row: AccessRow
-  probe?: ProbeTarget
-  testing: boolean
-  onTest: () => void
-  onAllow: () => void
-}) {
-  const { t } = useTranslation('appAccess')
-  const { copied, copy } = useCopyToClipboard()
-  const what = t(`id.${row.id}`)
-  const state: AccessState = probe ? (probe.ok ? 'ok' : 'warn') : row.state
-  const probeNote = probe
-    ? probe.ok
-      ? t('test.ok', { ms: probe.latency_ms ?? 0 })
-      : probe.detail
-        ? t('test.failedWith', { detail: probe.detail })
-        : t('test.failed')
-    : null
-  return (
-    <li className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:gap-3">
-      <div className="flex min-w-0 items-center gap-2 sm:w-40 sm:shrink-0">
-        <span
-          role="img"
-          aria-label={t(`state.${state}`)}
-          className={`size-2 shrink-0 rounded-full ${DOT[state]}`}
-        />
-        <span className="text-sm font-medium">{what}</span>
-      </div>
-      <div className="min-w-0 flex-1">
-        {row.display ? (
-          <code className="block truncate font-mono text-sm">
-            {row.display}
-          </code>
-        ) : null}
-        <p className="text-xs text-muted-foreground">
-          {probeNote ?? t(`note.${row.note}`)}
-        </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-1">
-        {row.allowNetwork ? (
-          <Button size="sm" variant="outline" onClick={onAllow}>
-            <WarningIcon className="size-3.5" aria-hidden="true" />
-            {t('actions.allowNetwork')}
-          </Button>
-        ) : null}
-        {row.href ? (
-          <Button size="sm" variant="ghost" disabled={testing} onClick={onTest}>
-            {testing ? t('actions.testing') : t('actions.test')}
-          </Button>
-        ) : null}
-        {row.value ? (
-          <Button
-            size="icon-sm"
-            variant="ghost"
-            aria-label={
-              copied ? t('actions.copied') : t('actions.copy', { what })
-            }
-            onClick={() => copy(row.value)}
-          >
-            {copied ? (
-              <CheckIcon className="size-3.5" aria-hidden="true" />
-            ) : (
-              <CopyIcon className="size-3.5" aria-hidden="true" />
-            )}
-          </Button>
-        ) : null}
-        {row.href ? (
-          <a
-            href={row.href}
-            target="_blank"
-            rel="noreferrer noopener"
-            aria-label={t('actions.open', { what })}
-            className={buttonVariants({ size: 'icon-sm', variant: 'ghost' })}
-          >
-            <ArrowSquareOutIcon className="size-3.5" aria-hidden="true" />
-          </a>
-        ) : null}
-      </div>
-    </li>
-  )
+// The container probe gates the rest, so its failure explains the hero too.
+function heroProbeFor(
+  addr: ReachAddress,
+  check?: ExposureCheck,
+): ProbeTarget | undefined {
+  const own = probeFor(addr, check)
+  if (own) return own
+  const base = check?.targets.find((t) => t.kind === 'container')
+  return base && !base.ok ? base : undefined
 }
 
 function AllowDialog({
@@ -195,13 +103,22 @@ function AllowDialog({
   )
 }
 
-/** Where this app can be reached right now, on which port, with tests. */
+/** Where this app can be reached right now, best address first. */
 export function AppAccessCard({ appName }: { appName: string }) {
   const { t } = useTranslation('appAccess')
   const { data, isError, isPending, refetch } = useAppUrls(appName)
   const check = useCheckExposure(appName)
   const preview = usePreviewExposure(appName)
   const [plan, setPlan] = useState<ExposurePlan | null>(null)
+  const autoChecked = useRef(false)
+  const { mutate: runCheck } = check
+  const canCheck = Boolean(data?.running && data.local_node)
+
+  useEffect(() => {
+    if (!canCheck || autoChecked.current) return
+    autoChecked.current = true
+    runCheck()
+  }, [canCheck, runCheck])
 
   const askAllow = () =>
     preview.mutate(
@@ -212,20 +129,33 @@ export function AppAccessCard({ appName }: { appName: string }) {
       },
     )
 
+  const model = data ? deriveReach(data) : null
+  const row = (addr: ReachAddress) => (
+    <ReachRow
+      key={addr.key}
+      addr={addr}
+      appName={appName}
+      probe={probeFor(addr, check.data)}
+      testing={check.isPending}
+      onTest={() => check.mutate()}
+      onAllow={askAllow}
+    />
+  )
+
   return (
     <Card aria-label={t('title')}>
       <CardHeader>
         <CardTitle>{t('title')}</CardTitle>
         <p className="text-sm text-muted-foreground">{t('description')}</p>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {isPending ? (
           <div className="space-y-2" aria-hidden="true">
-            {Array.from({ length: 4 }, (_, i) => (
+            {Array.from({ length: 3 }, (_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
             ))}
           </div>
-        ) : isError || !data ? (
+        ) : isError || !model ? (
           <Alert variant="destructive">
             <AlertDescription className="flex flex-wrap items-center gap-2">
               {t('errors.load')}
@@ -239,28 +169,34 @@ export function AppAccessCard({ appName }: { appName: string }) {
             </AlertDescription>
           </Alert>
         ) : (
-          <ul className="divide-y divide-border">
-            {deriveAccessRows(data).map((row) => (
-              <AccessRowView
-                key={row.key}
-                row={row}
-                probe={probeFor(row, check.data)}
-                testing={check.isPending}
-                onTest={() => check.mutate()}
-                onAllow={askAllow}
+          <>
+            {model.hero ? (
+              <ReachHero
+                addr={model.hero}
+                running={model.running}
+                probe={heroProbeFor(model.hero, check.data)}
+                checking={check.isPending}
+                onRecheck={() => check.mutate()}
               />
-            ))}
-          </ul>
+            ) : null}
+            {model.promoted ? (
+              <p className="text-xs text-muted-foreground">
+                {t('advanced.noPublic')}
+              </p>
+            ) : null}
+            {model.others.length > 0 ? (
+              <section aria-label={t('others.title')}>
+                <h3 className="text-sm font-semibold">{t('others.title')}</h3>
+                <ul className="divide-y divide-border">
+                  {model.others.map(row)}
+                </ul>
+              </section>
+            ) : null}
+            <ReachAdvanced defaultOpen={model.autoExpand}>
+              {model.advanced.map(row)}
+            </ReachAdvanced>
+          </>
         )}
-        <div className="mt-3">
-          <Link
-            to="/apps/$name/network"
-            params={{ name: appName }}
-            className="text-sm text-primary underline underline-offset-2"
-          >
-            {t('actions.change')}
-          </Link>
-        </div>
       </CardContent>
       <AllowDialog
         appName={appName}

@@ -264,6 +264,17 @@ Fix: if there is a permission error, check that `APP_DATA_DIR` is readable and w
 
 Still stuck? Check [Disaster recovery](/disaster-recovery) for how to restore from a backup, or attach `sudo journalctl -u levelrail` (last 100 lines) to an issue on [GitHub](https://github.com/glincker/levelrail/issues).
 
+## Watching an upgrade
+
+While an upgrade runs, a progress bar sits above every page for root users, and the Updates item in the sidebar shows a progress ring. Open **Settings > Updates** for the pipeline view:
+
+- Five stages: Prepare, Validate, Protect, Switch and Confirm. Click a stage to see each step with its start time, duration and log lines.
+- The control plane restarts during Switch. The bar and page show "Restarting the control plane, reconnecting..." and settle on the real result when it answers.
+- If the new release is not healthy, the failed stage is shown in red with the error and a "Rolled back to vX, your data is intact" notice.
+- Animations respect your reduced motion setting.
+
+{/* Screenshot placeholder: pipeline view mid-upgrade, light and dark */}
+
 ## Next steps
 
 <CardGroup cols={2}>

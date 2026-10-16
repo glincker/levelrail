@@ -3,6 +3,7 @@ package ingress
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -47,8 +48,20 @@ func TestMaintenanceGate_NoBypassServesPageOnly(t *testing.T) {
 	if len(got) != 1 {
 		t.Fatalf("wrap = %+v", got)
 	}
-	if _, ok := got[0].(StaticResponseHandler); !ok {
-		t.Errorf("wrap without bypass = %T, want the page alone", got[0])
+	sub, ok := got[0].(SubrouteHandler)
+	if !ok || len(sub.Routes) != 2 {
+		t.Fatalf("wrap without bypass = %T, want asset and page routes only", got[0])
+	}
+	if _, ok := sub.Routes[1].Handle[0].(StaticResponseHandler); !ok {
+		t.Errorf("fallthrough = %T, want the page", sub.Routes[1].Handle[0])
+	}
+}
+
+func TestAssetUnavailableHandler(t *testing.T) {
+	h := NewAssetUnavailableHandler(0)
+	if h.StatusCode != 503 || h.Body != "" || h.Headers["Cache-Control"][0] != "no-store" ||
+		h.Headers["Retry-After"][0] != "300" || !strings.HasPrefix(h.Headers["Content-Type"][0], "text/plain") {
+		t.Errorf("asset response = %+v", h)
 	}
 }
 
@@ -124,5 +137,100 @@ func TestMaintenance_Live_PageBypassAndRetryAfter(t *testing.T) {
 	}
 	if len(paths) != 1 || paths[0] != "ops.test/" {
 		t.Errorf("backend saw %v, want only the bypassed client", paths)
+	}
+}
+
+// TestMaintenance_Live_AssetsNeverGetHTML pins the regression where a
+// document passed the gate but its assets received the HTML page.
+func TestMaintenance_Live_AssetsNeverGetHTML(t *testing.T) {
+	skipUnderLoad(t)
+	backend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("real app"))
+	}))
+	defer backend.Close()
+	storage, err := os.MkdirTemp("", "maintenance-assets-")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(storage) })
+	dial := backend.Listener.Addr().String()
+	httpPort := freePort(t)
+	page := MaintenancePage{RetryAfterSeconds: 90}
+	cfg, err := BuildRoutesConfig(RoutesOptions{
+		ServerName: "maintassets", ListenAddr: fmt.Sprintf("127.0.0.1:%d", freePort(t)), HTTPPort: httpPort,
+		PlainHTTP: true, TLS: true, StorageDir: storage,
+		Routes: []ProxyRoute{
+			{Hosts: []string{"ops.test"}, BackendDial: dial, Maintenance: &MaintenanceGate{Page: page, BypassCIDRs: []string{"127.0.0.0/8"}}},
+			{Hosts: []string{"gate.test"}, BackendDial: dial, Maintenance: &MaintenanceGate{Page: page, BypassCIDRs: []string{"10.0.0.0/8"}, BypassPaths: []string{"/healthz"}}},
+			{Hosts: []string{"home.test"}, BackendDial: dial, Maintenance: &MaintenanceGate{Page: page, BypassPaths: []string{"/"}}},
+		},
+		MaintenanceRoutes: []MaintenanceRoute{{Hosts: []string{"down.test"}, Page: page}},
+		HoldRoutes:        []HoldRoute{{Hosts: []string{"hold.test"}}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := New(testLogger(t))
+	if err := d.Apply(context.Background(), cfg); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	t.Cleanup(func() { _ = d.Stop(context.Background()) })
+	base := fmt.Sprintf("http://127.0.0.1:%d", httpPort)
+
+	get := func(method, host, path string, hdr map[string]string) (*http.Response, string) {
+		req, _ := http.NewRequest(method, base+path, nil)
+		req.Host = host
+		for k, v := range hdr {
+			req.Header.Set(k, v)
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+		b, _ := io.ReadAll(resp.Body)
+		return resp, string(b)
+	}
+	cases := []struct {
+		name, method, host, path string
+		hdr                      map[string]string
+		status                   int
+		html                     bool
+	}{
+		{"document", "GET", "down.test", "/", nil, 503, true},
+		{"document with query", "GET", "down.test", "/a?b=1", nil, 503, true},
+		{"next chunk", "GET", "down.test", "/_next/static/chunks/app.js", nil, 503, false},
+		{"css", "GET", "down.test", "/x/site.CSS?v=2", nil, 503, false},
+		{"font", "GET", "gate.test", "/f/a.woff2", nil, 503, false},
+		{"image under prefix", "GET", "down.test", "/docs/img/a.png", nil, 503, false},
+		{"favicon", "GET", "down.test", "/favicon.ico", nil, 503, false},
+		{"asset HEAD", "HEAD", "down.test", "/a.js", nil, 503, false},
+		{"asset range", "GET", "down.test", "/a.mp4", map[string]string{"Range": "bytes=0-9"}, 503, false},
+		{"websocket upgrade", "GET", "down.test", "/ws", map[string]string{"Connection": "Upgrade", "Upgrade": "websocket"}, 503, true},
+		{"hold asset", "GET", "hold.test", "/_next/static/a.js", nil, 503, false},
+		{"hold document", "GET", "hold.test", "/", nil, 503, true},
+		{"bypass client document", "GET", "ops.test", "/", nil, 200, false},
+		{"bypass client asset", "GET", "ops.test", "/_next/static/a.js", nil, 200, false},
+		{"health path bypass", "GET", "gate.test", "/healthz", nil, 200, false},
+		{"homepage bypass leaves assets gated", "GET", "home.test", "/_next/static/a.js", nil, 503, false},
+	}
+	for _, tc := range cases {
+		resp, body := get(tc.method, tc.host, tc.path, tc.hdr)
+		if resp.StatusCode != tc.status {
+			t.Errorf("%s: status = %d, want %d", tc.name, resp.StatusCode, tc.status)
+		}
+		if tc.status != 503 {
+			continue
+		}
+		if cc := resp.Header.Get("Cache-Control"); !strings.Contains(cc, "no-store") {
+			t.Errorf("%s: Cache-Control = %q", tc.name, cc)
+		}
+		if resp.Header.Get("Retry-After") == "" {
+			t.Errorf("%s: no Retry-After", tc.name)
+		}
+		isHTML := strings.Contains(resp.Header.Get("Content-Type"), "text/html")
+		if isHTML != tc.html || (!tc.html && body != "") {
+			t.Errorf("%s: html=%v body=%q, want html=%v and empty asset body", tc.name, isHTML, body, tc.html)
+		}
 	}
 }

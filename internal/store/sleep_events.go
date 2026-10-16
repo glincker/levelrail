@@ -22,6 +22,7 @@ const (
 	SleepReasonSchedule    = "schedule"
 	SleepReasonDeploy      = "deploy"
 	SleepReasonAPI         = "api"
+	SleepReasonPort        = "port"
 
 	EnvSleepEventsKeep     = "APP_SLEEP_EVENTS_KEEP"
 	defaultSleepEventsKeep = 500

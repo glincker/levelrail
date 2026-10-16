@@ -43,6 +43,8 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_CACHE_DIR` | unset (no local cache backend) | Directory for BuildKit's local cache backend. Builds import from and export to it. Control plane. |
 | `APP_BUILD_CACHE_REGISTRY` | unset | Image reference of a registry cache (for example `registry.example.com/cache`) shared across build nodes. When set, it takes priority over the registry settings saved in the dashboard. Control plane. |
 | `APP_BUILD_CACHE_REGISTRY_INSECURE` | unset (off) | Set to exactly `true` to allow a plain-HTTP or self-signed cache registry. Only applies when `APP_BUILD_CACHE_REGISTRY` is set. Control plane. |
+| `APP_BUILD_TIMEOUT` | `30m` | How long one build may run before it is stopped and marked timed out. A Go duration such as `45m`; `0` means no limit. A value saved in the dashboard or with `apps build-limits set` wins. Control plane. |
+| `APP_BUILD_MAX_CONCURRENT` | `2` | Builds allowed to run at once; the rest wait in a queue. `0` means no limit. A saved override wins. Control plane. |
 
 ## Git webhook (single repository mode)
 

@@ -311,6 +311,8 @@ In the dashboard, the Source tab shows the same list under "Detected in this rep
 
 Apply the recommended suggestion straight from the CLI with `levelrail-cli apps git-source detect <name> --apply`. Invalid values (absolute paths, `..`, or a Dockerfile outside the base directory) are rejected with a `400`.
 
+See [Monorepos](/monorepos) for workspace packages, per-service watch paths and affected-only deploys.
+
 ### The turbo prune pattern
 
 A Dockerfile that runs `turbo prune` needs the whole repository as its context, because the prune step reads the root `turbo.json` and lockfile and then copies only the packages the app needs. Keep the base directory empty and point the Dockerfile path at the app's file:

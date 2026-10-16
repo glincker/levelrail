@@ -10,6 +10,7 @@ import type { DeployCompareField } from './deployCompare'
 export interface PromotePreviewSide {
   app_name: string
   image: string
+  image_digest?: string
 }
 
 export interface PromoteDiff {

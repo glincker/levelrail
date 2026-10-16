@@ -10,6 +10,15 @@ type DeployStepEvent struct {
 	Step      string `json:"step"`
 	Status    string `json:"status"`
 	Timestamp string `json:"timestamp"`
+	// Key, Reason, Detail and the fields after them are set for traced steps.
+	Key        string `json:"key,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+	Detail     string `json:"detail,omitempty"`
+	Service    string `json:"service,omitempty"`
+	StartedAt  string `json:"started_at,omitempty"`
+	EndedAt    string `json:"ended_at,omitempty"`
+	DurationMS int64  `json:"duration_ms,omitempty"`
+	Attempts   int    `json:"attempts,omitempty"`
 }
 
 // ListCloneRestores calls GET /api/v1/databases/{name}/clone-restores.

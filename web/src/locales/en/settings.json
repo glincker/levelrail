@@ -508,6 +508,10 @@
         "title": "Deploy policies",
         "description": "Guardrails checked before every deploy: registries, probes, limits, mounts, labels."
       },
+      "build-performance": {
+        "title": "Build performance",
+        "description": "Build timeout and how many builds run at once."
+      },
       "maintenance": {
         "title": "Scheduled maintenance",
         "description": "Plan downtime, show it on the dashboard and status page, and hold deploys."

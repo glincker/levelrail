@@ -40,6 +40,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/build", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSourceBuild))
 	mux.HandleFunc("GET /api/v1/apps/{name}/git-source/commits", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleListGitSourceCommits))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/detect", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDetectGitSourceBuild))
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/affected", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGitSourceAffected))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 	// Rotate webhook secret (git_sources.go): mints a fresh secret without
 	// touching repo_url/branch/build config, the narrow alternative to a
@@ -54,6 +55,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// split as git-source just above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/schedule", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSchedule))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/schedule", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppSchedule))
+	// GitHub Actions deploy action report settings (app_github_actions.go).
+	mux.HandleFunc("GET /api/v1/apps/{name}/github-actions", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppGitHubActions))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/github-actions", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppGitHubActions))
 	mux.HandleFunc("GET /api/v1/apps/{name}/schedule/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppScheduleHistory))
 
 	// Git push webhook (git_webhook.go), the per-app-URL evolution of the
@@ -97,6 +101,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/previews", rt.requireAbility(AbilityRead, rt.handleListAllPreviews))
 	mux.HandleFunc("GET /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPreviewPolicy))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewPolicy))
+	mux.HandleFunc("GET /api/v1/apps/{name}/previews/{number}/env", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPRPreviewEnv))
+	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/env", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPRPreviewEnv))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/previews/{number}/env/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeletePRPreviewEnv))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/extend", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleExtendPreviewEnvironment))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/approve", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleApprovePreviewEnvironment))
 

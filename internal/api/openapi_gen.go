@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1182 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1196 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -89,6 +89,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateApp", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/bulk", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBulkApps", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/git-sources", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListGitSources", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/sleep/overview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppsSleepOverview", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetApp", Description: "Resource-scoped (iam.go): a policy can Deny or narrowly Allow write/delete on one specific app by name, e.g. a token whose flat abilities grant write everywhere except an app: prod-web Deny policy attached to it. Every other per-app and per-database mutating route in this file and routes_platform.go is now on the same requireAbilityForResource gate; only POST /apps (creation, no existing resource to scope to) and GET .../terminal (websocket upgrade, not touched in this pass) remain on plain requireAbility."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdateApp", Description: ""},
@@ -106,6 +107,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetBadgeSettings", Description: "Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead, PUT-is-AbilityRoot split as exec-access just above, since enabling it hands out an unauthenticated public view of this app's deploy status. GET .../badge.svg itself is registered unauthenticated on purpose (see publicRoutes in authz_matrix_test.go); it 404s on its own when the per-app flag is off, so it never needs this file's own IAM wrapper."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBadgeSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge.svg", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublicAppBadge", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/build-stats", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAbortCanary", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCanary", Description: ""},
@@ -143,6 +145,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeployHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerDeploy", Description: "Deploys."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/compare", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCompareDeploys", Description: "Deploy comparison (deploy_compare.go): a before/after diff between two attempts, or one attempt against the app's current live state when ?to is omitted. AbilityRead, same sensitivity as the deploy-attempts list above."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/release-notes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleReleaseNotes", Description: "Release notes (release_notes.go): the commits between two deploys, grouped by conventional-commit type, plus a markdown rendering."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeploy", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/deploys/{deployId}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelDeploy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/deploys/{deployId}/gate", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetDeployGate", Description: ""},
@@ -176,6 +179,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckAppExposure", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewAppExposure", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/failure-context", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFailureContext", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/github-actions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGitHubActions", Description: "GitHub Actions deploy action report settings (app_github_actions.go)."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/github-actions", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppGitHubActions", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/group", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGroup", Description: "Stage 1 of multi-service apps (migrations/0039_apps.sql, apps_group.go): a service plus its siblings under the same store.App, with a worst-condition-wins rollup status. Additive, read-only; GET /api/v1/apps/{name} above is unchanged."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealth", Description: ""},
@@ -701,6 +706,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleSetBuildCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/build-cache/clear", Ability: "AbilityWrite", Group: "Other", Handler: "handleClearBuildCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/build-cache/stats", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCacheStats", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/build-limits", Ability: "AbilityRoot", Group: "Other", Handler: "handleResetBuildLimits", Description: ""},
+	{Method: "GET", Path: "/api/v1/build-limits", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuildLimits", Description: ""},
+	{Method: "PUT", Path: "/api/v1/build-limits", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetBuildLimits", Description: "Limits decide when every app's builds are killed, so root only."},
 	{Method: "POST", Path: "/api/v1/build/detect", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDetectFramework", Description: "Framework pre-flight detection (handleDetectFramework's own doc comment): also not scoped to an existing app, same AbilityDeploy boundary as the branch listing above."},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
@@ -827,6 +835,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedLogQuery", Description: ""},
 	{Method: "PUT", Path: "/api/v1/logs/queries/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateSavedLogQuery", Description: ""},
 	{Method: "GET", Path: "/api/v1/logs/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleLogUsage", Description: ""},
+	{Method: "GET", Path: "/api/v1/maintenance/domains", Ability: "AbilityRead", Group: "Other", Handler: "handleListFleetMaintenance", Description: ""},
+	{Method: "POST", Path: "/api/v1/maintenance/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewMaintenance", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetMeshStatus", Description: "Mesh status and key rotation, same AbilityRoot boundary: WireGuard peer/handshake data and a node's own key material are fleet infrastructure, not app-scoped, matching every other node route above."},
 	{Method: "GET", Path: "/api/v1/mesh/connectivity", Ability: "AbilityRoot", Group: "Other", Handler: "handleMeshConnectivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/mesh/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMeshSettings", Description: ""},
@@ -1074,6 +1084,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/git-source", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeleteGitSource", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-source", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGetGitSource", Description: "Git source (a deferred follow-up, git_sources.go): persist a repo/branch/build config per app so a git push can auto-deploy it, the multi-app evolution of internal/webhook's own single-app, env-var-configured Config. AbilityWriteSensitive for PUT/DELETE, matching PUT .../secrets/{key} above: connecting a repo accepts an optional live deploy token in the same request body."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitSource", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/affected", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleGitSourceAffected", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/build", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitSourceBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-source/commits", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListGitSourceCommits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/deploy-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitDeploySettings", Description: ""},
@@ -1082,6 +1093,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPreviewEnabled", Description: "Preview environments per pull request (preview_environments.go/ preview_environments_handlers.go): opt-in per app, off by default. AbilityWriteSensitive for the toggle, matching PUT .../git-source's own tier since it's the same connect-time-adjacent configuration surface; AbilityRead for the list, matching GET .../git-source; AbilityDeploy for the manual teardown, the same lifecycle-action tier POST .../restart and POST .../stop already use."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPreviewEnvironments", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/approve", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleApprovePreviewEnvironment", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/previews/{number}/env", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPRPreviewEnv", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/env", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPRPreviewEnv", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/previews/{number}/env/{id}", Ability: "AbilityWrite", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeletePRPreviewEnv", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/extend", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleExtendPreviewEnvironment", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/teardown", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleTeardownPreviewEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secrets", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListSecrets", Description: "List known secret keys (never values) and toggle a key's lock. GET at AbilityRead, matching GET .../git-source's own GET=Read/PUT=WriteSensitive split just below: a key NAME is no more sensitive than a git-source's connection config."},

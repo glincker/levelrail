@@ -95,6 +95,13 @@ export function DeployFailureView({
           </a>
         ) : null}
       </p>
+      {failure.also_matched && failure.also_matched.length > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {t('failureAlsoMatched', {
+            codes: failure.also_matched.join(', '),
+          })}
+        </p>
+      ) : null}
       {failure.log_excerpt ? (
         <div>
           <button

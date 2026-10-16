@@ -47,7 +47,7 @@ func TestController_Reconcile_DomainMaintenance_NoRunningContainer_StillRouted(t
 	if len(route.Handle) != 1 {
 		t.Fatalf("route.Handle = %+v, want exactly 1 handler (static_response only, no reverse_proxy)", route.Handle)
 	}
-	handler, ok := route.Handle[0].(ingress.StaticResponseHandler)
+	handler, ok := pageHandler(route.Handle[0])
 	if !ok {
 		t.Fatalf("route.Handle[0] is %T, want ingress.StaticResponseHandler", route.Handle[0])
 	}
@@ -93,7 +93,7 @@ func TestController_Reconcile_DomainMaintenance_MixedDomains_SplitsIntoMaintenan
 		switch {
 		case len(hosts) == 1 && hosts[0] == "down.example.com":
 			sawMaintenance = true
-			if _, ok := route.Handle[0].(ingress.StaticResponseHandler); !ok {
+			if _, ok := pageHandler(route.Handle[0]); !ok {
 				t.Errorf("down.example.com route.Handle[0] is %T, want ingress.StaticResponseHandler", route.Handle[0])
 			}
 		case len(hosts) == 1 && hosts[0] == "up.example.com":
@@ -126,5 +126,31 @@ func TestController_Reconcile_DomainMaintenance_ListError_Fails(t *testing.T) {
 	}
 	if cond := conditionOf(t, result); cond.Status != reconcile.ConditionFalse || cond.Reason != "StoreError" {
 		t.Errorf("condition = %+v, want Status=False Reason=StoreError", cond)
+	}
+}
+
+// pageHandler unwraps the asset-or-page subroute to the document response.
+func pageHandler(h any) (ingress.StaticResponseHandler, bool) {
+	sub, ok := h.(ingress.SubrouteHandler)
+	if !ok || len(sub.Routes) == 0 {
+		r, ok := h.(ingress.StaticResponseHandler)
+		return r, ok
+	}
+	last := sub.Routes[len(sub.Routes)-1].Handle
+	r, ok := last[0].(ingress.StaticResponseHandler)
+	return r, ok
+}
+
+func TestMaintenanceGate_HealthBypassSkipsHomepageReadiness(t *testing.T) {
+	cases := []struct {
+		path string
+		want []string
+	}{{"/healthz", []string{"/healthz"}}, {"/", nil}}
+	for _, tc := range cases {
+		svc := store.DesiredService{Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: tc.path}}}
+		g := maintenanceGate(svc, store.DomainMaintenance{BypassHealthCheck: true, BypassCIDRs: []string{"10.0.0.0/8"}})
+		if g == nil || len(g.BypassPaths) != len(tc.want) {
+			t.Errorf("path %q: gate = %+v, want bypass paths %v", tc.path, g, tc.want)
+		}
 	}
 }

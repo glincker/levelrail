@@ -42,5 +42,58 @@
       "trial": "Deploys as a trial instance you can stop and delete anytime from its own page.",
       "configureHint": "This template needs a few values from you before it can start."
     }
+  },
+  "page": {
+    "title": "Service templates",
+    "description": "Curated, one-click services from the catalog. Pick one to see what it deploys.",
+    "new": "New from a template"
+  },
+  "marketplace": {
+    "search": {
+      "label": "Search templates",
+      "placeholder": "Search {{count}} templates by name or description"
+    },
+    "sort": {
+      "label": "Sort",
+      "relevance": "Relevance",
+      "name": "Name, A to Z",
+      "memory": "Lightest first"
+    },
+    "density": {
+      "label": "Layout",
+      "comfortable": "Cards",
+      "compact": "List"
+    },
+    "count": "{{shown}} of {{total}} templates",
+    "categories": {
+      "label": "Template categories",
+      "filterLabel": "Filter templates by category",
+      "all": "All templates",
+      "heading": "Categories"
+    },
+    "featured": {
+      "title": "Starter kits",
+      "subtitle": "Working multi-service stacks. Deploy one, then swap in your own images.",
+      "hide": "Hide starter kits",
+      "show": "Show starter kits"
+    },
+    "card": {
+      "deploy": "Deploy",
+      "deployNeedsSetup": "Deploy (needs setup)",
+      "deploying": "Deploying...",
+      "ram": "~{{size}} RAM",
+      "ramLabel": "Recommended memory {{size}}",
+      "services": "{{count}} services",
+      "gpu": "GPU required",
+      "details": "View {{name}}"
+    },
+    "empty": {
+      "title": "No templates match",
+      "filtered": "Nothing in {{category}} matches \"{{query}}\". Try a shorter search or another category.",
+      "filteredNoQuery": "There are no templates in {{category}} yet.",
+      "clear": "Clear filters",
+      "catalogTitle": "The catalog is empty",
+      "catalogDescription": "No templates are available right now. You can start a new service from scratch."
+    }
   }
 }

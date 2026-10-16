@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -40,5 +41,22 @@ func TestRun_AppsDeploysShow(t *testing.T) {
 	}
 	if gotPath != "/api/v1/apps/web/deploys/dep_2" {
 		t.Fatalf("path = %q", gotPath)
+	}
+}
+
+func TestPrintDeployCompareExtras(t *testing.T) {
+	cmp := deployCompareResource{
+		From:        deployCompareSide{ImageDigest: "sha256:1"},
+		To:          deployCompareSide{ImageDigest: "sha256:2"},
+		EnvChanges:  []apiclient.DeployCompareEnvChange{{Key: "API_URL", Status: "added"}},
+		Commits:     []apiclient.GitCommitSummary{{SHA: "abcdef123456", Message: "fix: x\n\nbody"}},
+		CommitsNote: "ignored when commits exist",
+	}
+	var buf bytes.Buffer
+	printDeployCompareExtras(&buf, cmp)
+	for _, want := range []string{"digest: sha256:1 -> sha256:2", "added    API_URL", "abcdef1 fix: x"} {
+		if !strings.Contains(buf.String(), want) {
+			t.Errorf("output missing %q:\n%s", want, buf.String())
+		}
 	}
 }

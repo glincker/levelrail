@@ -74,7 +74,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
-		for _, e := range entries {
+		for _, e := range rt.mergeTraceIntoLog(r.Context(), deployID, entries) {
 			fmt.Fprintf(&body, "%s %s\n", e.Stream, e.Message)
 		}
 	}

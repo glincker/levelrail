@@ -268,9 +268,8 @@ type deployGenericPayload struct {
 	LogLines []string `json:"log_lines,omitempty"`
 }
 
-// sendDeployOutcome sends ev to one target, dispatching on t.NotifyKind
-// the same way NewNotifier does for a Rule: an unknown or empty
-// NotifyKind falls back to the generic JSON shape (deployGenericPayload)
+// sendDeployOutcome sends ev to one target, dispatching on t.NotifyKind.
+// An unknown or empty NotifyKind falls back to the generic JSON shape so the notification still goes out.
 // so a notification still goes out somewhere.
 func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, t DeployTarget, ev DeployOutcome) error {
 	if IsMaskedNotifyTarget(t.NotifyURL) {
@@ -358,7 +357,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		if token == "" {
 			return postJSON(ctx, client, cleanURL, payload)
 		}
-		return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+		return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
 	case NotifyResend:
 		key, to, from, err := parseResendCreds(t.NotifyURL)
 		if err != nil {
@@ -369,7 +368,7 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 			subject = fmt.Sprintf("[Levelrail] deploy FAILED: %s", ev.AppName)
 		}
 		payload := resendPayload{From: from, To: []string{to}, Subject: subject, Text: summaryDeployText(ev)}
-		return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
+		return postJSONWithAuth(ctx, client, resendAPIURL, payload, bearerPrefix+key)
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: notify deploy outcome: email is not configured on this control plane")

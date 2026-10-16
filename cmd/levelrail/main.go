@@ -1177,7 +1177,21 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger}
+	sleepCfg := appsleep.ConfigFromEnv(os.Getenv)
+	portWake := &appsleep.PortWakeManager{
+		Store: db, Apps: db, Nudger: engine, Events: db, Logger: logger, Cfg: sleepCfg, Ready: apiRouter.AppReadyAfter,
+		IsLocal: func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) },
+	}
+	appSleepScheduler := &appsleep.Scheduler{
+		Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger, Cfg: sleepCfg,
+		Metrics: telemetryDB, Breakdowns: telemetryDB, Conns: portWake, Ops: db, Fleet: db, PortWake: portWake, PortSync: portWake,
+	}
+	apiRouter.SetSleepRuntime(portWake, appSleepScheduler)
+	go func() {
+		if err := portWake.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("app sleep port wake stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go func() {
 		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))
@@ -2164,7 +2178,9 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	}
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
-	return deploy.New(router, db, deployOpts...), closer, nil
+	limiter := build.NewLimiter(router, api.BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv)),
+		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger))
+	return deploy.New(limiter, db, deployOpts...), closer, nil
 }
 
 // loadWebhookHandler builds the git webhook receiver, wired
@@ -2823,7 +2839,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
-	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db))
+	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db), api.WithBuildPerformance(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)

@@ -39,7 +39,7 @@ func TestController_Reconcile_HoldsHostWhenBackendDisappears(t *testing.T) {
 	if len(routes) != 1 {
 		t.Fatalf("backend gone: routes = %d, want 1 hold route", len(routes))
 	}
-	h, ok := routes[0].Handle[0].(ingress.StaticResponseHandler)
+	h, ok := pageHandler(routes[0].Handle[0])
 	if !ok || h.StatusCode != 503 || h.Headers["Retry-After"] == nil {
 		t.Errorf("hold handler = %+v", routes[0].Handle[0])
 	}

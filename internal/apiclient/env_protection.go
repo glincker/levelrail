@@ -123,10 +123,10 @@ func (c *Client) rawRequest(ctx context.Context, method, path string, body any) 
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(headerContentType, contentTypeJSON)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)

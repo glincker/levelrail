@@ -35,6 +35,16 @@ type PreviewEnvironmentStore interface {
 	ListPreviewAppSettings(ctx context.Context) (map[string]store.PreviewAppSettings, error)
 	SavePreviewAppSettings(ctx context.Context, s store.PreviewAppSettings) error
 
+	// The PR env override methods back per-pull-request env overrides
+	// (preview_pr_env.go), removed with the preview.
+	SetPRPreviewEnvOverride(ctx context.Context, serviceName string, prNumber int, key, value string, secret bool) (string, error)
+	ListPRPreviewEnvOverrides(ctx context.Context, serviceName string, prNumber int) ([]store.PRPreviewEnvOverride, error)
+	DeletePRPreviewEnvOverride(ctx context.Context, serviceName string, prNumber int, id string) error
+	DeleteAllPRPreviewEnvOverrides(ctx context.Context, serviceName string, prNumber int) error
+	AddPreviewPendingVolumes(ctx context.Context, previewAppID string, names []string) error
+	ListPreviewPendingVolumes(ctx context.Context, previewAppID string) ([]string, error)
+	ClearPreviewPendingVolumes(ctx context.Context, previewAppID string) error
+
 	// SavePreviewEphemeralDatabase through DeletePreviewEphemeralDatabase
 	// back the ephemeralInPreviews lifecycle
 	// (preview_environments_databases.go): provisioning a preview-scoped
@@ -124,6 +134,7 @@ func (rt *Router) deployPreviewEnvironment(ctx context.Context, appName string, 
 
 func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName string, gs store.GitSource, ev webhook.PullRequestEvent, approved bool) (int, string) {
 	previewName := previewAppName(appName, ev.Number)
+	started := time.Now()
 
 	preview, done, status, message := rt.beginPreview(ctx, appName, gs, ev, approved)
 	if done {
@@ -161,7 +172,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 		deployErr      error
 	)
 	if len(gs.Services) > 0 {
-		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
+		usedDomain, domainConflict, deployErr = rt.deployPreviewMulti(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	} else {
 		usedDomain, domainConflict, deployErr = rt.deployPreviewSingle(ctx, appName, previewName, gs, sourceDir, ev.HeadSHA, wantDomain, vars)
 	}
@@ -210,7 +221,7 @@ func (rt *Router) deployPreviewEnvironmentInner(ctx context.Context, appName str
 	}
 
 	rt.notifyPreviewSuccess(ctx, appName, gs, ev.HeadSHA, usedDomain)
-	rt.upsertPreviewComment(ctx, gs, preview, previewCommentReady, preview.StatusReason)
+	rt.upsertPreviewCommentTimed(ctx, gs, preview, previewCommentReady, preview.StatusReason, time.Since(started))
 
 	rt.logger.Info("api: pull request webhook: preview deployed", slog.String("app_name", appName), slog.Int("pr_number", ev.Number), slog.String("preview_app", previewName))
 	return statusCode, fmt.Sprintf("preview deployed: %s\n", previewName)
@@ -324,6 +335,9 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 		if err := applyBranchEnvOverrides(ctx, &svcSpec, appName, vars.Branch, branchOverrides, rt.secrets); err != nil {
 			return "", false, fmt.Errorf("apply branch env overrides for %q: %w", appName, err)
 		}
+		if err := rt.applyPRPreviewEnv(ctx, &svcSpec, appName, vars.PRNumber); err != nil {
+			return "", false, fmt.Errorf("apply pr env overrides for %q: %w", appName, err)
+		}
 	}
 	svcSpec.Domains = domainSlice(wantDomain)
 	svcSpec.Env = injectPreviewEnv(svcSpec.Env, vars, rt.previewURLFor(ctx, wantDomain))
@@ -362,7 +376,7 @@ func (rt *Router) deployPreviewSingle(ctx context.Context, appName, previewName 
 // reports that service's failure independently of its siblings, which
 // this treats as a domain-conflict-shaped partial success (the rest of
 // the preview is still reachable) rather than special-casing the retry.
-func (rt *Router) deployPreviewMulti(ctx context.Context, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string, vars previewEnvVars) (usedDomain string, domainConflict bool, err error) {
+func (rt *Router) deployPreviewMulti(ctx context.Context, appName, previewName string, gs store.GitSource, sourceDir, headSHA, wantDomain string, vars previewEnvVars) (usedDomain string, domainConflict bool, err error) {
 	services, primaryKey := previewServicesSpec(gs.Services, wantDomain)
 	for k, svc := range services {
 		domain := ""
@@ -370,6 +384,11 @@ func (rt *Router) deployPreviewMulti(ctx context.Context, previewName string, gs
 			domain = svc.Domains[0]
 		}
 		applyPreviewPolicy(&svc, vars, "")
+		if previewInheritsEnv(vars.Fork, vars.Policy) {
+			if err := rt.applyPRPreviewEnv(ctx, &svc, appName, vars.PRNumber); err != nil {
+				return "", false, fmt.Errorf("apply pr env overrides for %q: %w", appName, err)
+			}
+		}
 		svc.Env = injectPreviewEnv(svc.Env, vars, rt.previewURLFor(ctx, domain))
 		services[k] = svc
 	}

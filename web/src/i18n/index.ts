@@ -69,6 +69,7 @@ export const NAMESPACES = [
   'demo',
   'secretScan',
   'maintenance',
+  'buildPerformance',
   'sso',
   'models',
   'templates',

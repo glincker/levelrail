@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/envredact"
+	"github.com/GLINCKER/levelrail/internal/repolayout"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -29,14 +30,15 @@ import (
 // added to the snapshot) shows a zero value for it, not a real "port 0" or
 // "no health check": Note spells this caveat out on the wire.
 type deployCompareSide struct {
-	DeployID   string     `json:"deploy_id,omitempty"`
-	IsCurrent  bool       `json:"is_current"`
-	Image      string     `json:"image"`
-	CommitSHA  string     `json:"commit_sha,omitempty"`
-	Source     string     `json:"source,omitempty"`
-	Status     string     `json:"status,omitempty"`
-	StartedAt  *time.Time `json:"started_at,omitempty"`
-	FinishedAt *time.Time `json:"finished_at,omitempty"`
+	DeployID    string     `json:"deploy_id,omitempty"`
+	IsCurrent   bool       `json:"is_current"`
+	Image       string     `json:"image"`
+	ImageDigest string     `json:"image_digest,omitempty"`
+	CommitSHA   string     `json:"commit_sha,omitempty"`
+	Source      string     `json:"source,omitempty"`
+	Status      string     `json:"status,omitempty"`
+	StartedAt   *time.Time `json:"started_at,omitempty"`
+	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 
 	Port        int                         `json:"port,omitempty"`
 	HostPort    *int                        `json:"host_port,omitempty"`
@@ -91,6 +93,8 @@ type deployCompareResource struct {
 	To                  deployCompareSide        `json:"to"`
 	Changes             []deployCompareField     `json:"changes"`
 	EnvChanges          []deployCompareEnvChange `json:"env_changes,omitempty"`
+	Commits             []repolayout.Commit      `json:"commits"`
+	CommitsNote         string                   `json:"commits_note,omitempty"`
 	UnsnapshottedFields []string                 `json:"unsnapshotted_fields"`
 	Note                string                   `json:"note"`
 }
@@ -147,8 +151,11 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	commits, commitsNote := rt.commitsForRange(r.Context(), name, fromSide.CommitSHA, toSide.CommitSHA)
 	writeJSON(w, http.StatusOK, deployCompareResource{
 		ServiceName:         name,
+		Commits:             commits,
+		CommitsNote:         commitsNote,
 		From:                maskDeploySideEnv(fromSide),
 		To:                  maskDeploySideEnv(toSide),
 		Changes:             diffDeployCompareSides(fromSide, toSide),
@@ -165,7 +172,7 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 func currentDeployCompareSide(svc store.DesiredService) deployCompareSide {
 	snap := store.NewDeployAttemptSnapshot(svc)
 	return deployCompareSide{
-		IsCurrent: true, Image: svc.Image,
+		IsCurrent: true, Image: svc.Image, ImageDigest: appImageDigest(svc),
 		Port: snap.Port, HostPort: snap.HostPort, BindAddress: snap.BindAddress, Domains: snap.Domains,
 		Resources: snap.Resources, Env: snap.Env,
 		Health: snap.Health, Replicas: snap.Replicas, Strategy: snap.Strategy,
@@ -194,6 +201,7 @@ func (rt *Router) loadDeployCompareSide(w http.ResponseWriter, r *http.Request, 
 	return deployCompareSide{
 		DeployID:    a.ID,
 		Image:       a.Image,
+		ImageDigest: a.ImageDigest,
 		CommitSHA:   a.CommitSHA,
 		Source:      a.Source,
 		Status:      a.Status,
@@ -223,6 +231,9 @@ func diffDeployCompareSides(from, to deployCompareSide) []deployCompareField {
 	var changes []deployCompareField
 	if from.Image != to.Image {
 		changes = append(changes, deployCompareField{Field: "image", From: from.Image, To: to.Image})
+	}
+	if from.ImageDigest != to.ImageDigest && (from.ImageDigest != "" || to.ImageDigest != "") {
+		changes = append(changes, deployCompareField{Field: "image_digest", From: from.ImageDigest, To: to.ImageDigest})
 	}
 	if from.CommitSHA != to.CommitSHA {
 		changes = append(changes, deployCompareField{Field: "commit_sha", From: from.CommitSHA, To: to.CommitSHA})

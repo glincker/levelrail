@@ -41,6 +41,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "freeze":
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "github-actions":
+		return runAppsGitHubActions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
@@ -139,6 +141,10 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsScan(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "build-cache":
 		return runAppsBuildCache(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "build-stats":
+		return runAppsBuildStats(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "build-limits":
+		return runAppsBuildLimits(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "alerts":
 		return runAppsAlerts(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "deploy-notify-targets":
@@ -201,6 +207,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsPreviewEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "branch-env":
 		return runAppsBranchEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "pr-env":
+		return runAppsPREnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "tag":
 		return runAppsTag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "untag":
@@ -228,6 +236,7 @@ func appsUsage(prog string) string {
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
+  %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)
   %[1]s apps wait <name> [flags]        poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s apps validate --file <app.yaml|compose.yaml> [flags]   locally parse and validate a spec file, no API call
@@ -289,6 +298,8 @@ func appsUsage(prog string) string {
   %[1]s apps sbom <app> [deploy-id] [--download]   show a deploy's software bill of materials
   %[1]s apps scan <verb> <app> [flags]    enable/disable/status/run/gate/override vulnerability scanning
   %[1]s apps build-cache <verb> [flags]   show/set/clear/remove the BuildKit remote cache on a storage destination
+  %[1]s apps build-stats <name> [--limit N]   build duration trend (p50, p95) and cache hits
+  %[1]s apps build-limits <verb> [flags]   show/set/reset the build timeout and concurrency limit
   %[1]s apps alerts <verb> [flags]   manage alert rules (threshold, crashloop, cert_expiry)
   %[1]s apps deploy-notify-targets <verb> [flags]   manage which notification channels get a deploy's outcome
   %[1]s apps organizations <verb> [flags]   manage organizations, which group projects
@@ -319,6 +330,7 @@ func appsUsage(prog string) string {
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps branch-env <verb> [flags]    declare/remove a branch-scoped env var override, applied only when a preview's own branch matches
+  %[1]s apps pr-env <verb> [flags]        declare/remove an env var override for one pull request's preview
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist

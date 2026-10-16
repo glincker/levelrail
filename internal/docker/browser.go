@@ -137,7 +137,7 @@ func (c *Client) EnsureImageID(ctx context.Context, ref string) (id string, pull
 	} else if !cerrdefs.IsNotFound(ierr) {
 		return "", false, fmt.Errorf("docker: inspect image %q: %w", ref, ierr)
 	}
-	if err := c.ensureImage(ctx, ref, nil, false); err != nil {
+	if err := c.ensureImage(ctx, ref, nil, false, nil); err != nil {
 		return "", false, err
 	}
 	inspected, err := c.cli.ImageInspect(ctx, ref)

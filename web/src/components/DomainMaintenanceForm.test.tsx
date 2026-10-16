@@ -6,6 +6,7 @@ import i18next from 'i18next'
 import { I18nextProvider, initReactI18next } from 'react-i18next'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DomainMaintenanceControl } from './DomainMaintenanceControl'
+import maintenanceEn from '../locales/en/maintenance.json'
 import domainsEn from '../locales/en/domains.json'
 
 vi.mock('@tanstack/react-router', async (importOriginal) => {
@@ -35,9 +36,9 @@ const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
   lng: 'en',
   fallbackLng: 'en',
-  ns: ['domains'],
+  ns: ['domains', 'maintenance'],
   defaultNS: 'domains',
-  resources: { en: { domains: domainsEn } },
+  resources: { en: { domains: domainsEn, maintenance: maintenanceEn } },
   interpolation: { escapeValue: false },
 })
 
@@ -126,6 +127,9 @@ describe('DomainMaintenanceForm', () => {
       }),
     )
     await user.click(screen.getByText('Enable maintenance with these settings'))
+    await user.click(
+      await screen.findByRole('button', { name: 'Turn maintenance on' }),
+    )
     await waitFor(() => {
       expect(calls.some((c) => c.method === 'PUT')).toBe(true)
     })
