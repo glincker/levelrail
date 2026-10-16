@@ -2,6 +2,7 @@
 # with a reason in the PR; lowering it after a split is the point.
 # 0.10: docker, telemetry and netguard gained dependents from tracing, error tracking, budgets and the network pool.
 # 0.11: deploytrace and the GitHub Actions reporter are new packages, each adds one dependent to what it imports.
+# 0.11: the CPU model downloader (netguard, diskspace) adds one dependent each.
 internal/bindaddr 90
 internal/bindmount 92
 internal/build 21
@@ -24,6 +25,6 @@ internal/store 87
 internal/telemetry 28
 internal/usagecost 88
 kit/cronexpr 90
-kit/diskspace 26
-kit/netguard 40
+kit/diskspace 27
+kit/netguard 41
 kit/probe 90
