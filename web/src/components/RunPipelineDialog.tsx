@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { PlayIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Dialog,
@@ -14,10 +15,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { useStartPipelineRun } from '../queries/pipelines'
 import type { Pipeline } from '../types/pipelines'
-import { parseInputLines } from '../lib/pipelineTemplate'
+import { initialParamValues } from '../lib/pipelineParams'
+import { PipelineParamFields } from './PipelineParamFields'
 
 export function RunPipelineDialog({
   appName,
@@ -26,73 +27,74 @@ export function RunPipelineDialog({
   appName: string
   pipeline: Pipeline
 }) {
+  const { t } = useTranslation('pipelines')
+  const params = pipeline.parameters ?? []
   const [open, setOpen] = useState(false)
   const [ref, setRef] = useState('')
   const [sha, setSha] = useState('')
-  const [inputs, setInputs] = useState('')
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    initialParamValues(params),
+  )
   const start = useStartPipelineRun(appName)
   const navigate = useNavigate()
   const canRun =
     pipeline.enabled &&
-    (pipeline.triggers ?? []).some((t) => t === 'manual' || t === 'api')
+    (pipeline.triggers ?? []).some(
+      (trig) => trig === 'manual' || trig === 'api',
+    )
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next)
-        if (!next) {
+        if (next) {
+          setValues(initialParamValues(params))
+        } else {
           start.reset()
         }
       }}
     >
       <DialogTrigger
         render={<Button size="sm" disabled={!canRun} />}
-        title={
-          canRun
-            ? undefined
-            : 'Enable the pipeline and a manual trigger to run it'
-        }
+        title={canRun ? undefined : t('run.disabledHint')}
       >
         <PlayIcon aria-hidden="true" />
-        Run
+        {params.length > 0 ? t('run.withParams') : t('run.button')}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Run {pipeline.name}</DialogTitle>
-          <DialogDescription>
-            Starts a run now. Leave ref and commit empty to use the
-            repository&apos;s default branch head.
-          </DialogDescription>
+          <DialogTitle>{t('run.title', { name: pipeline.name })}</DialogTitle>
+          <DialogDescription>{t('run.description')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="run-ref">Ref</Label>
+            <Label htmlFor="run-ref">{t('run.ref')}</Label>
             <Input
               id="run-ref"
               value={ref}
               onChange={(e) => setRef(e.target.value)}
-              placeholder="refs/heads/main"
+              placeholder={t('run.refPlaceholder')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="run-sha">Commit SHA</Label>
+            <Label htmlFor="run-sha">{t('run.sha')}</Label>
             <Input
               id="run-sha"
               value={sha}
               onChange={(e) => setSha(e.target.value)}
             />
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="run-inputs">Inputs (one key=value per line)</Label>
-            <Textarea
-              id="run-inputs"
-              value={inputs}
-              onChange={(e) => setInputs(e.target.value)}
-              className="font-mono"
-              placeholder="env=staging"
-            />
-          </div>
+          <h3 className="pt-1 text-sm font-semibold text-foreground">
+            {t('run.parameters')}
+          </h3>
+          <PipelineParamFields
+            params={params}
+            values={values}
+            onChange={(name, value) =>
+              setValues((prev) => ({ ...prev, [name]: value }))
+            }
+          />
         </div>
         {start.isError ? (
           <Alert variant="destructive">
@@ -106,7 +108,7 @@ export function RunPipelineDialog({
             variant="outline"
             onClick={() => setOpen(false)}
           >
-            Cancel
+            {t('run.cancel')}
           </Button>
           <Button
             type="button"
@@ -115,7 +117,7 @@ export function RunPipelineDialog({
               start.mutate(
                 {
                   name: pipeline.name,
-                  req: { ref, sha, inputs: parseInputLines(inputs) },
+                  req: { ref, sha, inputs: values },
                 },
                 {
                   onSuccess: (run) => {
@@ -129,7 +131,7 @@ export function RunPipelineDialog({
               )
             }
           >
-            {start.isPending ? 'Starting...' : 'Start run'}
+            {start.isPending ? t('run.starting') : t('run.start')}
           </Button>
         </DialogFooter>
       </DialogContent>

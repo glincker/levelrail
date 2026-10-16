@@ -483,14 +483,16 @@ levelrail-cli pipelines list <app> [flags]
 levelrail-cli pipelines validate <file> [--json]
 levelrail-cli pipelines save <app> <file-or-repo-dir> [--name N] [--paths G,...] [--paths-ignore G,...] [--report-status=false] [flags]
 levelrail-cli pipelines delete <app> <name> [flags]
-levelrail-cli pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
+levelrail-cli pipelines run <app> <name> [--ref R] [--sha S] [--param k=v]... [--follow] [flags]
 levelrail-cli pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]
 levelrail-cli pipelines runs --all [--status S] [--app A] [--trigger T] [--pipeline N] [--limit N] [flags]
 levelrail-cli pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
 levelrail-cli pipelines cancel <app> <run-id> [flags]
 levelrail-cli pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
 levelrail-cli pipelines sync <app> [--repo-truth=true|false] [flags]
+levelrail-cli pipelines artifacts <app> <run-id> [--download JOB] [--out FILE] [flags]
 levelrail-cli pipelines triggers <app> [flags]
+levelrail-cli pipelines triggers <app> <pipeline> [--enable [--hmac]|--disable|--rotate|--delete|--deliveries|--replay ID] [flags]
 levelrail-cli pipelines oidc [flags]
 levelrail-cli pipelines oidc rotate-key [--retire-after D] [flags]
 ```
@@ -498,6 +500,9 @@ levelrail-cli pipelines oidc rotate-key [--retire-after D] [flags]
 - `validate` checks a pipeline file locally with no API call and exits 2 when it has problems.
 - `save` creates or updates pipelines from one file, or from every file in a repository's pipeline directory.
 - `runs` lists runs, or shows one run's jobs, steps and approval gates; `--all` lists runs across every app.
+- `run --param` sets a declared run parameter (`--input` is the older spelling).
+- `artifacts` lists the archives a run stored, or downloads one job's archive.
+- `triggers <app> <pipeline>` manages the pipeline's inbound webhook: the token and signing secret are shown once when created or rotated.
 - `approve` decides approval gates, or releases a run held for approval.
 - `sync` syncs pipeline files from the repository now, or sets the repository as source of truth.
 - `triggers` shows why recent git events did or did not start runs.

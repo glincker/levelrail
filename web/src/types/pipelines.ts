@@ -19,6 +19,7 @@ export type PipelineTrigger =
   | 'manual'
   | 'schedule'
   | 'api'
+  | 'webhook'
 
 export interface PipelineRunBrief {
   id: string
@@ -34,6 +35,7 @@ export interface Pipeline {
   enabled: boolean
   yaml?: string
   triggers?: PipelineTrigger[]
+  parameters?: PipelineParameter[]
   jobs: number
   last_run?: PipelineRunBrief
   created_at: string
@@ -95,6 +97,8 @@ export interface PipelineRun {
   ref?: string
   commit_sha?: string
   inputs?: Record<string, string>
+  payload_bytes?: number
+  payload_type?: string
   status: PipelineStatus
   reason?: string
   created_at: string
@@ -208,4 +212,59 @@ export interface PipelineLogLine {
   stream: 'stdout' | 'stderr'
   line: string
   time: string
+}
+
+export type PipelineParameterType = 'string' | 'choice' | 'boolean'
+
+export interface PipelineParameter {
+  name: string
+  type?: PipelineParameterType
+  default?: string
+  choices?: string[]
+  required?: boolean
+  description?: string
+}
+
+export interface PipelineArtifact {
+  id: string
+  job: string
+  name: string
+  size_bytes: number
+  sha256: string
+  created_at: string
+  expires_at: string
+}
+
+export interface PipelineWebhook {
+  configured: boolean
+  enabled?: boolean
+  hmac?: boolean
+  path?: string
+  created_at?: string
+  rotated_at?: string
+  last_used_at?: string
+  // token and secret are present only on the response that minted them.
+  token?: string
+  secret?: string
+}
+
+export interface PipelineWebhookRequest {
+  hmac?: boolean
+  enabled?: boolean
+}
+
+export type PipelineWebhookOutcome =
+  'received' | 'started' | 'rejected' | 'failed'
+
+export interface PipelineWebhookDelivery {
+  id: string
+  received_at: string
+  status_code: number
+  outcome: PipelineWebhookOutcome
+  reason?: string
+  run_id?: string
+  idempotency_key?: string
+  content_type?: string
+  body_bytes: number
+  replayable: boolean
 }
