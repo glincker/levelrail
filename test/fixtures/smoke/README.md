@@ -34,3 +34,16 @@ levelrail-cli apps deploys steps <fixture-app> <deploy-id>
 ```
 
 You should see `resolve_digest`, `image_pull` (or `skipped` with reason `Cached` on a second deploy), `container_start`, one or more `readiness_probe` rows hitting `/healthz`, `cutover` and a closing `deploy_summary`. To see a failure trace, deploy a tag that does not exist: `image_pull` fails with the registry's own message and `deploy_summary` is `failed`.
+
+## What `apps analyze` should print per fixture
+
+Run `levelrail-cli apps analyze <repo-url> --dir <fixture-dir>` against a repository holding the fixtures. Nothing is created. See [Import a repository](../../../docs/import-a-repo.md) for full output.
+
+| Fixture | Framework | Build type | Port (source) | Notable |
+| --- | --- | --- | --- | --- |
+| `smoke/nextjs` | Next.js | dockerfile | 3000 (EXPOSE) | confidence high, App Router reason |
+| `smoke/goapi` | Go (net/http) | dockerfile | 8080 (EXPOSE) | runtime 1.22 from go.mod |
+| `smoke/static` | none named | dockerfile | 8080 (EXPOSE) | the Dockerfile decides; without it, `static` on port 80 |
+| `dogfood-nextjs` | Next.js | dockerfile | 3000 (EXPOSE) | `output: 'standalone'` reason |
+| `monorepo` | none at the root | dockerfile | 3000 (EXPOSE) | `multiple_dockerfiles` and `monorepo_no_root_app` warnings, two packages |
+| `failing-build` | Node.js, low signal | dockerfile | none | `dockerfile_no_expose` and `port_unknown` warnings |

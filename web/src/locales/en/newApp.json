@@ -174,5 +174,63 @@
       "port": "Enter a port from 1 to 65535.",
       "health": "The path must start with a single slash."
     }
+  },
+  "detection": {
+    "title": "How we read this repository",
+    "why": "Why",
+    "whyFor": "Why {{field}} was detected",
+    "fromFramework": "Default for {{framework}}",
+    "framework": "Framework and language",
+    "buildType": "Build type",
+    "port": "Port",
+    "start": "Start command",
+    "buildCommand": "Build command",
+    "output": "Output directory",
+    "runtime": "Runtime version",
+    "health": "Health check path",
+    "confidence": {
+      "high": "High confidence",
+      "medium": "Medium confidence",
+      "low": "Low confidence"
+    },
+    "warnings": {
+      "no_lockfile": {
+        "text": "No lockfile was found, so installs are not reproducible.",
+        "fix": "Commit your lockfile and analyze again."
+      },
+      "multiple_dockerfiles": {
+        "text": "Several Dockerfiles were found.",
+        "fix": "Pick the right one under Advanced if the choice is wrong."
+      },
+      "malformed_manifest": {
+        "text": "A manifest could not be parsed, so this is a best guess.",
+        "fix": "Fix the JSON or TOML syntax and analyze again."
+      },
+      "dockerfile_no_expose": {
+        "text": "The Dockerfile has no EXPOSE line.",
+        "fix": "Add EXPOSE with your port, or set the port yourself below."
+      },
+      "monorepo_no_root_app": {
+        "text": "This is a monorepo with no app at its root.",
+        "fix": "Create one app per package below."
+      },
+      "railpack_unsupported": {
+        "text": "Automatic builds do not cover this language yet.",
+        "fix": "Add a Dockerfile to the repository and analyze again."
+      }
+    }
+  },
+  "packages": {
+    "title": "Workspace packages",
+    "hint": "This repository holds several packages. Create one app per package, each built from its own directory and redeployed only when it changes.",
+    "dockerfile": "Dockerfile",
+    "configure": "Configure this one",
+    "creating": "Creating the app and starting its first build...",
+    "open": "Open {{name}} build",
+    "creatingAll": "Creating apps...",
+    "createSelected_one": "Create an app for the selected package",
+    "createSelected_other": "Create an app for each selected package ({{count}})",
+    "createSelected_zero": "Create an app for each selected package",
+    "envNote": "Required environment variables are not asked here. Add them on each app, then redeploy."
   }
 }

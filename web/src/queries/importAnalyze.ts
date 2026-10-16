@@ -48,6 +48,43 @@ export interface AnalyzeWarning {
   message: string
 }
 
+export interface DetectionReason {
+  signal: string
+  detail: string
+}
+
+export interface DetectionEnvVar {
+  name: string
+  source: string
+  required: boolean
+  secret_guess: boolean
+}
+
+export interface Detection {
+  framework: string
+  language: string
+  build_type: string
+  confidence: 'high' | 'medium' | 'low'
+  reasons: DetectionReason[]
+  port: { value: number; source: string }
+  start_command?: string
+  build_command?: string
+  output_dir?: string
+  health_path: string
+  runtime_version: { value: string; source: string }
+  env_vars: DetectionEnvVar[]
+  warnings: AnalyzeWarning[]
+}
+
+export interface WorkspacePackage {
+  name: string
+  dir: string
+  tool: string
+  dockerfile?: string
+  depends_on: string[]
+  watch_paths: string[]
+}
+
 export interface ImportAnalysis {
   repo_url: string
   branch: string
@@ -63,6 +100,8 @@ export interface ImportAnalysis {
   env: AnalyzeEnvKey[]
   databases: AnalyzeDatabase[]
   warnings: AnalyzeWarning[]
+  detection?: Detection
+  packages?: WorkspacePackage[]
   files_read: number
   tree_truncated: boolean
 }

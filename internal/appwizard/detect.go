@@ -26,6 +26,7 @@ const (
 	WarnMalformedManifest = "malformed_manifest"
 	WarnDockerfileNoPort  = "dockerfile_no_expose"
 	WarnMonorepoNoApp     = "monorepo_no_root_app"
+	WarnRailpackNoRust    = "railpack_unsupported"
 )
 
 const maxManifestBytes = 1 << 20
@@ -194,6 +195,9 @@ func Detect(in Input) Detection {
 	if d.Port.Value == 0 && d.BuildType != buildStatic && d.BuildType != buildCompose {
 		d.Warnings = append(d.Warnings, Warning{Code: WarnNoPort, Message: "no listening port could be detected; set the port the app listens on"})
 	}
+	if d.BuildType == buildRailpack && g.language == "rust" {
+		d.Warnings = append(d.Warnings, Warning{Code: WarnRailpackNoRust, Message: "automatic builds do not cover Rust yet; add a Dockerfile to the repository"})
+	}
 	if g.noLockfile {
 		d.Warnings = append(d.Warnings, Warning{Code: WarnNoLockfile, Message: "no lockfile was found, so installs are not reproducible; commit one"})
 	}
@@ -257,10 +261,11 @@ func applyDockerfile(f *files, dockerfiles []string, g *found, d *Detection) {
 	}
 	g.buildType = buildDockerfile
 	g.why("dockerfile", best+" exists, so the Dockerfile is used instead of auto-detection")
-	if g.framework == "" {
+	switch {
+	case g.framework == "" || g.confidence == "":
 		g.confidence = ConfidenceHigh
-	} else if g.confidence == "" {
-		g.confidence = ConfidenceHigh
+	case g.confidence == ConfidenceLow:
+		g.confidence = ConfidenceMedium
 	}
 	g.start, g.build, g.output = "", "", ""
 	text := ""

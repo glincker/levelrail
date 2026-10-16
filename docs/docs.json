@@ -220,6 +220,7 @@
               "pipelines",
               "pipelines-oidc",
               "git-integrations",
+              "import-a-repo",
               "monorepos"
             ],
             "icon": "/assets/icons/git-branch.svg"

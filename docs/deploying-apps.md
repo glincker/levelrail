@@ -71,6 +71,8 @@ levelrail-cli apps create --file app.yaml --service KEY
 levelrail-cli init
 ```
 
+To see what Levelrail would detect before creating anything, run `levelrail-cli apps analyze REPO_URL`: it prints the framework, build type, port, runtime version and environment variables together with the reasons behind each. The dashboard wizard shows the same reasons in a **Why** popover per field, and creates one app per package for a monorepo. See [Import a repository](/import-a-repo).
+
 Over the API this is `POST /api/v1/apps` with a `:pending` placeholder image, then `POST /api/v1/apps/{name}/builds`, which replaces the placeholder with the real tag when the build succeeds. `levelrail-cli apps builds trigger` does the second step.
 
 <Note>

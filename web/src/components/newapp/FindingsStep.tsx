@@ -22,7 +22,10 @@ import {
   type NewAppEdits,
 } from '../../lib/newApp'
 import type { GitSourceBuildType } from '../../types/gitSource'
+import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { DatabaseFinding, EnvFinding, Finding } from './FindingParts'
+import { DetectionSummary } from './DetectionSummary'
+import { MonorepoPackages } from './MonorepoPackages'
 
 const BUILD_TYPES: GitSourceBuildType[] = ['railpack', 'dockerfile', 'static']
 
@@ -32,6 +35,7 @@ const BUILD_TYPES: GitSourceBuildType[] = ['railpack', 'dockerfile', 'static']
  */
 export function FindingsStep({
   analysis,
+  source,
   edits,
   onEdits,
   onReanalyze,
@@ -39,6 +43,7 @@ export function FindingsStep({
   onNext,
 }: {
   analysis: ImportAnalysis
+  source: GitRepoSourceValue
   edits: NewAppEdits
   onEdits: (next: NewAppEdits) => void
   onReanalyze: (override: {
@@ -57,6 +62,7 @@ export function FindingsStep({
   const required = analysis.env.filter((k) => k.required)
   const optional = analysis.env.filter((k) => !k.required)
   const alternatives = analysis.build.alternatives
+  const packages = analysis.packages ?? []
 
   return (
     <div className="space-y-5">
@@ -67,6 +73,27 @@ export function FindingsStep({
           </AlertDescription>
         </Alert>
       ))}
+
+      {analysis.detection ? (
+        <DetectionSummary
+          detection={analysis.detection}
+          hideWarnings={analysis.warnings.map((w) => w.code)}
+        />
+      ) : null}
+
+      {analysis.monorepo && packages.length > 0 ? (
+        <MonorepoPackages
+          packages={packages}
+          source={source}
+          onPick={(pkg) => {
+            onReanalyze({
+              base_directory: pkg.dir,
+              dockerfile_path: pkg.dockerfile ?? '',
+              build_type: pkg.dockerfile ? 'dockerfile' : 'railpack',
+            })
+          }}
+        />
+      ) : null}
 
       <section className="space-y-3" aria-labelledby="f-app">
         <h3 id="f-app" className="text-sm font-semibold">
