@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1188 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1190 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -178,6 +178,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/check", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCheckAppExposure", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/exposure/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewAppExposure", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/failure-context", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleFailureContext", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/github-actions", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGitHubActions", Description: "GitHub Actions deploy action report settings (app_github_actions.go)."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/github-actions", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppGitHubActions", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/group", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppGroup", Description: "Stage 1 of multi-service apps (migrations/0039_apps.sql, apps_group.go): a service plus its siblings under the same store.App, with a worst-condition-wins rollup status. Additive, read-only; GET /api/v1/apps/{name} above is unchanged."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/health", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppHealth", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/health", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHealth", Description: ""},

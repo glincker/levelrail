@@ -41,6 +41,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsRollback(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "freeze":
 		return runAppsFreeze(prog, args[1:], stdout, stderr, lookupEnv)
+	case "github-actions":
+		return runAppsGitHubActions(prog, args[1:], stdout, stderr, lookupEnv)
 	case "schedule":
 		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
@@ -232,6 +234,7 @@ func appsUsage(prog string) string {
   %[1]s apps list [flags]             list apps
   %[1]s apps get <name> [flags]       show one app
   %[1]s apps deploy <name> [flags]   deploy an image to an existing app
+  %[1]s apps github-actions get|set|start|finish <name> [flags]   what the GitHub Actions deploy action reports back (deployment, check run)
   %[1]s apps wait <name> [flags]        poll until a deploy attempt actually converges, exit accordingly (a CI gate for "apps deploy")
   %[1]s apps deploy-compose <name> --file compose.yaml [flags]   deploy a Docker Compose file as an app
   %[1]s apps validate --file <app.yaml|compose.yaml> [flags]   locally parse and validate a spec file, no API call

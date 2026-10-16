@@ -460,6 +460,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/sleep/history | AbilityRead | handleAppSleepHistory |
 | GET | /api/v1/apps/{name}/deploys/release-notes | AbilityRead | handleReleaseNotes |
 | GET | /api/v1/apps/{name}/build-stats | AbilityRead | handleBuildStats |
+| GET | /api/v1/apps/{name}/github-actions | AbilityRead | handleGetAppGitHubActions |
+| PUT | /api/v1/apps/{name}/github-actions | AbilityWriteSensitive | handleSetAppGitHubActions |
 
 </Accordion>
 

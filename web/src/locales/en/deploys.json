@@ -183,5 +183,19 @@
     "copyFailed": "Could not copy to the clipboard.",
     "loadFailed": "Could not generate release notes.",
     "needsDeploy": "Pick two deploys that recorded a git commit to generate release notes."
+  },
+  "githubActions": {
+    "title": "GitHub Actions reporting",
+    "infoTipLabel": "About GitHub Actions reporting",
+    "description": "When the Levelrail deploy action runs in your workflow, it records a GitHub deployment and a check run on the commit so the result shows on the pull request. A failed report never fails the deploy.",
+    "environmentLabel": "GitHub environment name",
+    "deploymentsLabel": "Record GitHub deployments",
+    "checksLabel": "Post a check run",
+    "snippetHint": "Use glincker/levelrail/integrations/github-action in your workflow, or run levelrail-cli apps github-actions get {{app}}.",
+    "save": "Save",
+    "toast": {
+      "saved": "GitHub Actions reporting saved.",
+      "errorTitle": "Could not save GitHub Actions reporting."
+    }
   }
 }

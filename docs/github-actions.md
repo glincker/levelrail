@@ -44,6 +44,41 @@ To run other CLI commands in a job, install the CLI on its own with the `setup-c
     APP_API_TOKEN: ${{ secrets.LEVELRAIL_API_TOKEN }}
 ```
 
+## Reporting back to the pull request
+
+`integrations/github-action` is the same deploy-and-wait flow plus a report back to GitHub: a deployment status on the commit (the Deployments panel on the PR) and a check run named after the environment. Use it instead of `.github/actions/deploy` when you want the result visible on the PR.
+
+```yaml
+permissions:
+  contents: read
+  deployments: write
+  checks: write
+
+steps:
+  - uses: glincker/levelrail/integrations/github-action@main
+    with:
+      api-url: ${{ secrets.LEVELRAIL_API_URL }}
+      api-token: ${{ secrets.LEVELRAIL_API_TOKEN }}
+      app: my-app
+      image: ghcr.io/${{ github.repository }}:${{ github.sha }}
+      environment-url: https://my-app.example.com
+```
+
+The `status` output is `succeeded`, `failed`, `timeout`, or `accepted` (when `wait` is `false`, the check run ends neutral). A failed report call never fails the deploy: the deploy result stays as is, the job prints a warning, and `report-warnings` counts the failed calls.
+
+Triggers are ordinary GitHub triggers on your workflow: `push`, `workflow_dispatch`, or `repository_dispatch` (for example `curl -X POST -H "Authorization: Bearer $TOKEN" https://api.github.com/repos/OWNER/REPO/dispatches -d '{"event_type":"levelrail-deploy"}'`). Teams that deploy several apps can call the reusable workflow `.github/workflows/levelrail-deploy.yml` with `uses:` and pass `app` and `image`.
+
+### Per-app settings
+
+Each app stores the GitHub environment name used for deployments (default `production`) and whether deployments and check runs are posted. Change them in the dashboard on the app's Deploys page (GitHub Actions card), or with the CLI:
+
+```bash
+levelrail-cli apps github-actions get my-app
+levelrail-cli apps github-actions set my-app --environment staging --no-checks
+```
+
+The same settings are available at `GET/PUT /api/v1/apps/{name}/github-actions`. `apps github-actions start` and `finish` are the commands the action runs; they read `GITHUB_TOKEN`, `GITHUB_REPOSITORY` and `GITHUB_SHA`, so you can call them from any CI that has a GitHub token.
+
 ## Not tied to GitHub Actions
 
 `apps deploy` and `apps wait` are ordinary `levelrail-cli` commands with real exit codes, so the same pattern works in GitLab CI, CircleCI, Jenkins, or a shell script.
