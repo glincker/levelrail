@@ -82,3 +82,19 @@ const STORAGE_PRESET_BRAND: Record<StoragePreset, string> = {
 export function storagePresetBrand(preset: StoragePreset): string {
   return STORAGE_PRESET_BRAND[preset]
 }
+
+const AI_BRAND_ALIAS: Record<string, string> = {
+  gemini: 'google-gemini',
+  'mistral-ai': 'mistral',
+  together: 'together-ai',
+  'x-ai': 'xai',
+  grok: 'xai',
+  'fireworks-ai': 'fireworks',
+  'microsoft-azure': 'azure',
+  claude: 'anthropic',
+}
+
+export function aiProviderBrand(brand: string | undefined): string {
+  const key = (brand ?? '').trim().toLowerCase()
+  return AI_BRAND_ALIAS[key] ?? key
+}
