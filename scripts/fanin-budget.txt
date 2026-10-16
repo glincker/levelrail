@@ -1,27 +1,29 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
 # 0.10: docker, telemetry and netguard gained dependents from tracing, error tracking, budgets and the network pool.
-internal/bindaddr 89
-internal/bindmount 91
+# 0.11: deploytrace and the GitHub Actions reporter are new packages, each adds one dependent to what it imports.
+internal/bindaddr 90
+internal/bindmount 92
 internal/build 21
 internal/compose 25
 internal/deploysafety 22
-internal/docker 96
+internal/deploytrace 21
+internal/docker 97
 internal/dockerguard 27
 internal/extdb 21
-internal/gpu 87
-internal/loadbalancer 89
+internal/gpu 88
+internal/loadbalancer 90
 internal/meshpath 28
 internal/network 32
-internal/policy 88
-internal/quota 87
-internal/reconcile 88
+internal/policy 89
+internal/quota 88
+internal/reconcile 89
 internal/reconcile/database 27
-internal/spec 88
-internal/store 86
+internal/spec 89
+internal/store 87
 internal/telemetry 28
-internal/usagecost 87
-kit/cronexpr 89
+internal/usagecost 88
+kit/cronexpr 90
 kit/diskspace 26
-kit/netguard 38
-kit/probe 89
+kit/netguard 40
+kit/probe 90
