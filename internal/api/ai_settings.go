@@ -40,9 +40,11 @@ type aiAssistantSettingsResource struct {
 }
 
 type updateAIAssistantSettingsRequest struct {
-	Provider string `json:"provider"`
-	Model    string `json:"model"`
-	APIKey   string `json:"api_key"`
+	Provider string                `json:"provider"`
+	Model    string                `json:"model"`
+	APIKey   string                `json:"api_key"`
+	Active   *aiModelRefResource   `json:"active"`
+	Fallback *[]aiModelRefResource `json:"fallback"`
 }
 
 // handleGetAIAssistantSettings handles GET /api/v1/settings/ai-assistant.
@@ -50,6 +52,15 @@ type updateAIAssistantSettingsRequest struct {
 // whether provider/model fields are set; the key itself never appears in
 // the response.
 func (rt *Router) handleGetAIAssistantSettings(w http.ResponseWriter, r *http.Request) {
+	if rt.aiVault != nil {
+		out, err := rt.aiSettingsV2(r.Context())
+		if err != nil {
+			rt.writeAIVaultError(w, "api: get ai assistant settings failed", err, "")
+			return
+		}
+		writeJSON(w, http.StatusOK, out)
+		return
+	}
 	settings, err := rt.aiSettings.GetAIAssistantSettings(r.Context())
 	if err != nil {
 		rt.logger.Error("api: get ai assistant settings failed", slog.String("error", err.Error()))
@@ -88,6 +99,10 @@ func (rt *Router) handleUpdateAIAssistantSettings(w http.ResponseWriter, r *http
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if rt.aiVault != nil && (req.Active != nil || req.Fallback != nil) {
+		rt.updateAIChoice(w, r, aiChoiceRequest{Active: req.Active, Fallback: req.Fallback})
+		return
+	}
 	if req.Provider != store.AIProviderAnthropic {
 		writeError(w, http.StatusBadRequest, errAIProviderInvalid.Error())
 		return
@@ -108,6 +123,9 @@ func (rt *Router) handleUpdateAIAssistantSettings(w http.ResponseWriter, r *http
 		return
 	}
 	settings := store.AIAssistantSettings{Provider: req.Provider, Model: req.Model}
+	if prev, err := rt.aiSettings.GetAIAssistantSettings(r.Context()); err == nil {
+		settings.Fallback = prev.Fallback
+	}
 	if err := rt.aiSettings.UpdateAIAssistantSettings(r.Context(), settings); err != nil {
 		rt.logger.Error("api: update ai assistant settings failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")

@@ -2,12 +2,11 @@ package store
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 )
 
-// AIProviderAnthropic is the only supported internal/ai provider today.
-// A string enum (not an int) so a future "openai" addition is a new
-// constant and a switch case, not a schema change.
+// AIProviderAnthropic is the provider id whose key keeps the legacy secrets slot.
 const AIProviderAnthropic = "anthropic"
 
 // AIAssistantSecretsKey is the internal/secrets serviceName the BYOK LLM
@@ -29,17 +28,22 @@ func AIInternalTokenSecretsKey() string {
 type AIAssistantSettings struct {
 	Provider string
 	Model    string
+	Fallback []AIModelRef
 }
 
 // GetAIAssistantSettings returns the single ai_assistant_settings row.
 // Always succeeds: the migration itself inserts the row (id = 1).
 func (db *DB) GetAIAssistantSettings(ctx context.Context) (AIAssistantSettings, error) {
 	var s AIAssistantSettings
+	var fallback string
 	err := db.QueryRowContext(ctx, `
-		SELECT provider, model FROM ai_assistant_settings WHERE id = 1
-	`).Scan(&s.Provider, &s.Model)
+		SELECT provider, model, fallback FROM ai_assistant_settings WHERE id = 1
+	`).Scan(&s.Provider, &s.Model, &fallback)
 	if err != nil {
 		return AIAssistantSettings{}, fmt.Errorf("store: get ai assistant settings: %w", err)
+	}
+	if err := json.Unmarshal([]byte(fallback), &s.Fallback); err != nil {
+		return AIAssistantSettings{}, fmt.Errorf("store: decode ai fallback chain: %w", err)
 	}
 	return s, nil
 }
@@ -47,9 +51,16 @@ func (db *DB) GetAIAssistantSettings(ctx context.Context) (AIAssistantSettings, 
 // UpdateAIAssistantSettings replaces the single ai_assistant_settings row
 // in full, the same whole-record convention UpdateEmailSettings uses.
 func (db *DB) UpdateAIAssistantSettings(ctx context.Context, s AIAssistantSettings) error {
-	_, err := db.ExecContext(ctx, `
-		UPDATE ai_assistant_settings SET provider = ?, model = ? WHERE id = 1
-	`, s.Provider, s.Model)
+	if s.Fallback == nil {
+		s.Fallback = []AIModelRef{}
+	}
+	fallback, err := json.Marshal(s.Fallback)
+	if err != nil {
+		return fmt.Errorf("store: encode ai fallback chain: %w", err)
+	}
+	_, err = db.ExecContext(ctx, `
+		UPDATE ai_assistant_settings SET provider = ?, model = ?, fallback = ? WHERE id = 1
+	`, s.Provider, s.Model, string(fallback))
 	if err != nil {
 		return fmt.Errorf("store: update ai assistant settings: %w", err)
 	}

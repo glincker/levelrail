@@ -13,6 +13,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 )
 
 // Role values for Message, matching Anthropic's own role vocabulary.
@@ -108,6 +109,45 @@ type TurnResult struct {
 	Text       string
 	ToolCalls  []ToolUseCall
 	StopReason string
+	Usage      Usage
+}
+
+// Usage is the token accounting a provider reported for one call. Zero
+// means the provider reported nothing.
+type Usage struct {
+	PromptTokens     int
+	CompletionTokens int
+}
+
+// ModelInfo is one model a provider offers, normalized across adapters.
+type ModelInfo struct {
+	ID            string `json:"id"`
+	Label         string `json:"label"`
+	ContextWindow int    `json:"context_window,omitempty"`
+	SupportsTools *bool  `json:"supports_tools,omitempty"`
+}
+
+// Backend is a Provider that can also list its models and validate its key.
+type Backend interface {
+	Provider
+	ListModels(ctx context.Context) ([]ModelInfo, error)
+	// Validate makes one cheap authenticated call and returns a *ProviderError on failure.
+	Validate(ctx context.Context) error
+}
+
+// AdapterConfig is what every adapter needs to talk to one provider.
+type AdapterConfig struct {
+	ProviderID string
+	BaseURL    string
+	APIKey     string
+	HTTP       *http.Client
+}
+
+func (c AdapterConfig) client() *http.Client {
+	if c.HTTP != nil {
+		return c.HTTP
+	}
+	return NewHTTPClient(false)
 }
 
 // TextDeltaFunc receives one incremental chunk of assistant text as a

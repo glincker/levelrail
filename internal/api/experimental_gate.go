@@ -25,7 +25,8 @@ var lbAppPath = regexp.MustCompile(`^/api/v1/apps/[^/]+/loadbalancer(/|$)`)
 func featureForPath(p string) (experimental.Feature, bool) {
 	switch {
 	case p == "/api/v1/ai/sessions" || strings.HasPrefix(p, "/api/v1/ai/sessions/"),
-		p == "/api/v1/settings/ai-assistant":
+		p == "/api/v1/settings/ai-assistant", strings.HasPrefix(p, "/api/v1/settings/ai-assistant/"),
+		p == "/api/v1/ai/usage":
 		return experimental.AIChat, true
 	case p == "/api/v1/models" || strings.HasPrefix(p, "/api/v1/models/"):
 		return experimental.AIModels, true

@@ -328,6 +328,7 @@ const (
 	aiSSEEventTextDelta        = "text_delta"
 	aiSSEEventToolCallProposed = "tool_call_proposed"
 	aiSSEEventToolResult       = "tool_result"
+	aiSSEEventError            = "error"
 	aiSSEEventDone             = "done"
 )
 
@@ -379,6 +380,19 @@ func (s *aiSSESink) ToolResultAttributed(toolUseID, toolName string, result json
 		ActingAs       string          `json:"acting_as,omitempty"`
 		Abilities      []string        `json:"abilities,omitempty"`
 	}{aiSSEEventToolResult, toolUseID, attr.ConfirmationID, toolName, result, isError, attr.ActingAs, attr.Abilities})
+}
+
+// TurnError implements ai.ErrorSink: a typed failure with a plain
+// explanation and a suggested fix, sent just before "done".
+func (s *aiSSESink) TurnError(info ai.TurnErrorInfo) {
+	s.write(struct {
+		Type      string `json:"type"`
+		Code      string `json:"code"`
+		Message   string `json:"message"`
+		Fix       string `json:"fix,omitempty"`
+		Provider  string `json:"provider,omitempty"`
+		Retryable bool   `json:"retryable"`
+	}{aiSSEEventError, info.Code, info.Message, info.Fix, info.Provider, info.Retryable})
 }
 
 func (s *aiSSESink) done() {

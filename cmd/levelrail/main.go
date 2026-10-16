@@ -29,6 +29,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/ai"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
@@ -2804,6 +2805,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// secretsManager, same nil-interface hazard as everything
 			// else in this block.
 			api.WithAIAssistantSecrets(secretsManager),
+			api.WithAIVault(ai.NewVault(db, secretsManager, logger)),
+			api.WithAIUsage(db),
 			// Point-in-time restore (baseBackupRunner/pitrRunner just
 			// above): manual base-backup trigger and the actual PITR
 			// restore endpoint.

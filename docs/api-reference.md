@@ -236,6 +236,11 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/settings/ai-assistant/providers | AbilityRead | handleListAIProviders |
+| PUT | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleSetAIProvider |
+| POST | /api/v1/settings/ai-assistant/providers/{id}/test | AbilityRoot | handleTestAIProvider |
+| DELETE | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleDeleteAIProvider |
+| GET | /api/v1/settings/ai-assistant/providers/{id}/models | AbilityRoot | handleListAIProviderModels |
 
 </Accordion>
 
@@ -1433,6 +1438,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/maintenance/preview | AbilityRead | handlePreviewMaintenance |
 | POST | /api/v1/git-sources/analyze | AbilityWrite | handleAnalyzeImport |
 | POST | /api/v1/hooks/pipeline/{id}/{token} | Public | handlePipelineWebhook |
+| GET | /api/v1/ai/usage | AbilityRead | handleAIUsage |
 
 ## See also
 
