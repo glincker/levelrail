@@ -27,6 +27,10 @@ type DomainMaintenance struct {
 	WindowID string
 	// EndsAt is the linked window's end, zero when open ended.
 	EndsAt time.Time
+	// StartedAt is when maintenance began, zero for rows from before it was recorded.
+	StartedAt time.Time
+	// AutoOffAt is the safety cut-off for open ended maintenance, zero when none.
+	AutoOffAt time.Time
 	// windowGone is true when WindowID names a window that no longer exists.
 	windowGone bool
 }
@@ -34,6 +38,9 @@ type DomainMaintenance struct {
 // ActiveAt reports whether m still applies at now. A row linked to a window
 // that ended or was cancelled no longer does.
 func (m DomainMaintenance) ActiveAt(now time.Time) bool {
+	if !m.AutoOffAt.IsZero() && !now.Before(m.AutoOffAt) {
+		return false
+	}
 	if m.WindowID == "" {
 		return true
 	}
@@ -42,21 +49,24 @@ func (m DomainMaintenance) ActiveAt(now time.Time) bool {
 
 const domainMaintenanceSelect = `
 	SELECT m.domain, m.title, m.message, m.retry_after_seconds, m.bypass_cidrs, m.bypass_health_check,
-	       m.window_id, w.id, COALESCE(w.ends_at, '')
+	       m.window_id, w.id, COALESCE(w.ends_at, ''), m.started_at, m.auto_off_at
 	FROM domain_maintenance m LEFT JOIN maintenance_windows w ON w.id = m.window_id AND m.window_id != ''`
 
 func scanDomainMaintenance(row interface{ Scan(dest ...any) error }) (DomainMaintenance, error) {
 	var (
-		m              DomainMaintenance
-		cidrs, endsAt  string
-		health         int
-		linkedWindowID sql.NullString
+		m                DomainMaintenance
+		cidrs, endsAt    string
+		started, autoOff string
+		health           int
+		linkedWindowID   sql.NullString
 	)
 	if err := row.Scan(&m.Domain, &m.Title, &m.Message, &m.RetryAfterSeconds, &cidrs, &health,
-		&m.WindowID, &linkedWindowID, &endsAt); err != nil {
+		&m.WindowID, &linkedWindowID, &endsAt, &started, &autoOff); err != nil {
 		return DomainMaintenance{}, err
 	}
 	m.BypassHealthCheck = health != 0
+	m.StartedAt, _ = parseStatusTime(started)
+	m.AutoOffAt, _ = parseStatusTime(autoOff)
 	if cidrs != "" {
 		m.BypassCIDRs = strings.Split(cidrs, ",")
 	}
@@ -87,12 +97,14 @@ func (db *DB) GetDomainMaintenanceSettings(ctx context.Context, domain string, n
 // settings, replacing any earlier settings.
 func (db *DB) SaveDomainMaintenance(ctx context.Context, m DomainMaintenance) error {
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO domain_maintenance (domain, title, message, retry_after_seconds, bypass_cidrs, bypass_health_check, window_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO domain_maintenance (domain, title, message, retry_after_seconds, bypass_cidrs, bypass_health_check, window_id, started_at, auto_off_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (domain) DO UPDATE SET title = excluded.title, message = excluded.message,
 			retry_after_seconds = excluded.retry_after_seconds, bypass_cidrs = excluded.bypass_cidrs,
-			bypass_health_check = excluded.bypass_health_check, window_id = excluded.window_id
-	`, m.Domain, m.Title, m.Message, m.RetryAfterSeconds, strings.Join(m.BypassCIDRs, ","), boolInt(m.BypassHealthCheck), m.WindowID)
+			bypass_health_check = excluded.bypass_health_check, window_id = excluded.window_id,
+			started_at = excluded.started_at, auto_off_at = excluded.auto_off_at
+	`, m.Domain, m.Title, m.Message, m.RetryAfterSeconds, strings.Join(m.BypassCIDRs, ","), boolInt(m.BypassHealthCheck), m.WindowID,
+		formatTimeOrEmpty(m.StartedAt), formatTimeOrEmpty(m.AutoOffAt))
 	if err != nil {
 		return fmt.Errorf("store: save domain maintenance: %w", err)
 	}
@@ -161,7 +173,8 @@ func (db *DB) GetDomainMaintenance(ctx context.Context, domain string) (bool, er
 // SetDomainMaintenance enables maintenance mode for domain with the default
 // page, keeping any settings already saved. Idempotent.
 func (db *DB) SetDomainMaintenance(ctx context.Context, domain string) error {
-	_, err := db.ExecContext(ctx, `INSERT INTO domain_maintenance (domain) VALUES (?) ON CONFLICT (domain) DO NOTHING`, domain)
+	_, err := db.ExecContext(ctx, `INSERT INTO domain_maintenance (domain, started_at) VALUES (?, ?) ON CONFLICT (domain) DO NOTHING`,
+		domain, formatTimeOrEmpty(time.Now()))
 	if err != nil {
 		return fmt.Errorf("store: set domain maintenance: %w", err)
 	}
@@ -191,4 +204,11 @@ func (db *DB) ListDomainMaintenance(ctx context.Context) ([]string, error) {
 		out = append(out, m.Domain)
 	}
 	return out, nil
+}
+
+func formatTimeOrEmpty(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }

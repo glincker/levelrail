@@ -27,6 +27,9 @@ export interface DomainMaintenance {
   window_id?: string
   bypass?: string[]
   bypass_health_check?: boolean
+  started_at?: string
+  // auto_off_at is the safety cut-off for open ended maintenance.
+  auto_off_at?: string
 }
 
 // SetDomainMaintenanceRequest is PUT's optional body; omit it for defaults.
@@ -37,6 +40,81 @@ export interface SetDomainMaintenanceRequest {
   until?: string
   bypass?: string[]
   bypass_health_check?: boolean
+  // max_duration_seconds omitted takes the server default, 0 means no limit.
+  max_duration_seconds?: number
+}
+
+export interface FleetMaintenanceEntry extends DomainMaintenance {
+  app: string
+  elapsed_seconds: number
+}
+
+export interface FleetMaintenance {
+  items: FleetMaintenanceEntry[]
+  max_duration_seconds: number
+  attention_after_seconds: number
+}
+
+export interface MaintenancePreview {
+  html: string
+  status: number
+  retry_after: string
+}
+
+export const fleetMaintenanceKey = ['maintenance', 'domains'] as const
+
+export function fleetMaintenanceQueryOptions() {
+  return queryOptions({
+    queryKey: fleetMaintenanceKey,
+    queryFn: async (): Promise<FleetMaintenance> => {
+      const res = await fetch('/api/v1/maintenance/domains')
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `list maintenance failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as FleetMaintenance
+    },
+    staleTime: 15_000,
+    refetchInterval: 60_000,
+  })
+}
+
+export function useFleetMaintenance() {
+  return useQuery(fleetMaintenanceQueryOptions())
+}
+
+// The server renders the page with the ingress's own template, so the
+// preview is what visitors get, not a copy that can drift.
+export function useMaintenancePreview(
+  title: string,
+  message: string,
+  retryAfterSeconds: number,
+) {
+  return useQuery({
+    queryKey: ['maintenance', 'preview', title, message, retryAfterSeconds],
+    queryFn: async (): Promise<MaintenancePreview> => {
+      const res = await fetch('/api/v1/maintenance/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          message,
+          retry_after_seconds: retryAfterSeconds,
+        }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `preview failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as MaintenancePreview
+    },
+    staleTime: 60_000,
+    placeholderData: (prev) => prev,
+  })
 }
 
 export const domainMaintenanceKeys = {
@@ -118,6 +196,7 @@ export function useSetDomainMaintenance(appName: string, domain: string) {
         domainMaintenanceKeys.detail(appName, domain),
         updated,
       )
+      void queryClient.invalidateQueries({ queryKey: fleetMaintenanceKey })
     },
   })
 }
@@ -150,6 +229,7 @@ export function useClearDomainMaintenance(appName: string, domain: string) {
         domainMaintenanceKeys.detail(appName, domain),
         updated,
       )
+      void queryClient.invalidateQueries({ queryKey: fleetMaintenanceKey })
     },
   })
 }

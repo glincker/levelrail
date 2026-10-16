@@ -736,7 +736,13 @@
       "bypassHelp": "IP addresses or CIDR ranges, one per line, up to 32. Use your own address to check the site while it is down.",
       "healthBypass": "Let uptime probes reach the readiness path",
       "enable": "Enable maintenance with these settings",
-      "save": "Save settings"
-    }
+      "save": "Save settings",
+      "maxHours": "Switch off automatically after (hours)",
+      "maxHoursDefault": "Used when no end time is set. Leave empty for the server default of {{hours}} hours, 0 for no limit.",
+      "maxHoursNone": "Safety net when no end time is set. Leave empty for no limit, or enter hours.",
+      "maxHoursUntil": "Not needed: the end time above already ends maintenance."
+    },
+    "autoOffAt": "Switches off on its own at {{date}}",
+    "noAutoOff": "No automatic end, it stays on until you end it"
   }
 }

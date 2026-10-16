@@ -6,14 +6,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
+import type { SetDomainMaintenanceRequest } from '../queries/domainMaintenance'
 import {
   useClearDomainMaintenance,
   useDomainMaintenance,
+  useFleetMaintenance,
   useSetDomainMaintenance,
 } from '../queries/domainMaintenance'
 import type { DomainMaintenance } from '../queries/domainMaintenance'
 import { EnforcedBadge, EnforcementNote } from './domains/EnforcementGate'
 import { DomainMaintenanceForm } from './domains/DomainMaintenanceForm'
+import { EnableMaintenanceDialog } from './maintenance/EnableMaintenanceDialog'
 import { useDomainEnforcement } from '../hooks/useDomainEnforcement'
 import { isEnforced } from '../lib/domainEnforcement'
 
@@ -28,6 +31,16 @@ function MaintenanceSummary({ m }: { m: DomainMaintenance }) {
             date: new Date(m.until).toLocaleString(i18n.language),
           })}
         </li>
+      ) : null}
+      {m.auto_off_at && !m.until ? (
+        <li>
+          {t('maintenance.autoOffAt', {
+            date: new Date(m.auto_off_at).toLocaleString(i18n.language),
+          })}
+        </li>
+      ) : null}
+      {!m.auto_off_at && !m.until ? (
+        <li>{t('maintenance.noAutoOff')}</li>
       ) : null}
       {bypass > 0 ? (
         <li>{t('maintenance.bypassCount', { count: bypass })}</li>
@@ -52,6 +65,9 @@ export function DomainMaintenanceControl({
   const clearMaintenance = useClearDomainMaintenance(appName, domain)
   const enforcement = useDomainEnforcement(domain)
   const [open, setOpen] = useState(false)
+  const [confirming, setConfirming] =
+    useState<SetDomainMaintenanceRequest | null>(null)
+  const { data: fleet } = useFleetMaintenance()
 
   if (isLoading) {
     return (
@@ -120,7 +136,7 @@ export function DomainMaintenanceControl({
               variant="outline"
               disabled={pending}
               onClick={() => {
-                setMaintenance.mutate(undefined)
+                setConfirming({})
               }}
             >
               {setMaintenance.isPending
@@ -141,10 +157,15 @@ export function DomainMaintenanceControl({
         <DomainMaintenanceForm
           key={maintenance?.window_id ?? String(enabled)}
           domain={domain}
+          defaultMaxSeconds={fleet?.max_duration_seconds ?? 0}
           current={maintenance}
           enabled={enabled}
           pending={pending}
           onSubmit={(req) => {
+            if (!enabled) {
+              setConfirming(req)
+              return
+            }
             setMaintenance.mutate(req, {
               onSuccess: () => {
                 setOpen(false)
@@ -154,7 +175,26 @@ export function DomainMaintenanceControl({
           }}
         />
       ) : null}
-      {error ? (
+      <EnableMaintenanceDialog
+        domain={domain}
+        request={confirming}
+        defaultMaxSeconds={fleet?.max_duration_seconds ?? 0}
+        pending={setMaintenance.isPending}
+        error={error}
+        onCancel={() => {
+          setConfirming(null)
+        }}
+        onConfirm={(req) => {
+          setMaintenance.mutate(req, {
+            onSuccess: () => {
+              setConfirming(null)
+              setOpen(false)
+              toast.add({ title: t('maintenance.saved'), type: 'success' })
+            },
+          })
+        }}
+      />
+      {error && confirming === null ? (
         <Alert variant="destructive" className="mt-2">
           <WarningIcon />
           <AlertDescription>{error}</AlertDescription>

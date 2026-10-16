@@ -120,3 +120,41 @@ func TestRun_DomainsMaintenance_UnknownVerb(t *testing.T) {
 		t.Errorf("stderr = %q, want an unknown-subcommand error", stderr.String())
 	}
 }
+
+func TestRun_DomainsMaintenanceStatusAndMaxDuration(t *testing.T) {
+	var gotBody string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/maintenance/domains":
+			_, _ = w.Write([]byte(`{"items":[{"app":"web","domain":"a.example.com","enabled":true,"elapsed_seconds":18000}],"attention_after_seconds":14400}`))
+		default:
+			b := new(bytes.Buffer)
+			_, _ = b.ReadFrom(r.Body)
+			gotBody = b.String()
+			_, _ = w.Write([]byte(`{"domain":"a.example.com","enabled":true}`))
+		}
+	}))
+	defer srv.Close()
+
+	var stdout, stderr bytes.Buffer
+	if got := run("levelrail-cli-test", []string{"domains", "maintenance", "status", "--api-url", srv.URL}, &stdout, &stderr, envMap()); got != exitOK {
+		t.Fatalf("status exit = %d (%s)", got, stderr.String())
+	}
+	if !strings.Contains(stdout.String(), "a.example.com") || !strings.Contains(stdout.String(), "longer than expected") {
+		t.Errorf("status output = %q", stdout.String())
+	}
+
+	stdout.Reset()
+	args := []string{"domains", "maintenance", "set", "web", "a.example.com", "--max-duration", "2h", "--api-url", srv.URL}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitOK {
+		t.Fatalf("set exit = %d (%s)", got, stderr.String())
+	}
+	if !strings.Contains(gotBody, `"max_duration_seconds":7200`) {
+		t.Errorf("body = %q", gotBody)
+	}
+	args = []string{"domains", "maintenance", "set", "web", "a.example.com", "--max-duration", "soon", "--api-url", srv.URL}
+	if got := run("levelrail-cli-test", args, &stdout, &stderr, envMap()); got != exitUsage {
+		t.Errorf("bad duration exit = %d", got)
+	}
+}

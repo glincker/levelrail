@@ -710,6 +710,29 @@ type DomainMaintenanceResource struct {
 	WindowID          string   `json:"window_id,omitempty"`
 	Bypass            []string `json:"bypass,omitempty"`
 	BypassHealthCheck bool     `json:"bypass_health_check"`
+	StartedAt         string   `json:"started_at,omitempty"`
+	AutoOffAt         string   `json:"auto_off_at,omitempty"`
+}
+
+// FleetMaintenanceEntry is one domain in GET /api/v1/maintenance/domains.
+type FleetMaintenanceEntry struct {
+	App string `json:"app"`
+	DomainMaintenanceResource
+	ElapsedSeconds int64 `json:"elapsed_seconds"`
+}
+
+// FleetMaintenanceResource is GET /api/v1/maintenance/domains.
+type FleetMaintenanceResource struct {
+	Items                 []FleetMaintenanceEntry `json:"items"`
+	MaxDurationSeconds    int64                   `json:"max_duration_seconds"`
+	AttentionAfterSeconds int64                   `json:"attention_after_seconds"`
+}
+
+// MaintenancePreviewResource is POST /api/v1/maintenance/preview.
+type MaintenancePreviewResource struct {
+	HTML       string `json:"html"`
+	Status     int    `json:"status"`
+	RetryAfter string `json:"retry_after"`
 }
 
 // SetDomainMaintenanceRequest is PUT .../maintenance's optional body.
@@ -720,6 +743,8 @@ type SetDomainMaintenanceRequest struct {
 	Until             string   `json:"until,omitempty"`
 	Bypass            []string `json:"bypass,omitempty"`
 	BypassHealthCheck *bool    `json:"bypass_health_check,omitempty"`
+	// MaxDurationSeconds nil takes the server default, 0 means no limit.
+	MaxDurationSeconds *int `json:"max_duration_seconds,omitempty"`
 }
 
 // DomainTLSCertResource mirrors internal/api's domainTLSCertResource

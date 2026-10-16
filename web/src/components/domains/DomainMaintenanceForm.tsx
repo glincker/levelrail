@@ -5,6 +5,7 @@ import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { MaintenancePreview } from '../maintenance/MaintenancePreview'
 import type {
   DomainMaintenance,
   SetDomainMaintenanceRequest,
@@ -18,6 +19,7 @@ interface Draft {
   message: string
   until: string
   retryMinutes: string
+  maxHours: string
   bypass: string
   healthBypass: boolean
 }
@@ -39,6 +41,7 @@ function draftFrom(m: DomainMaintenance | undefined): Draft {
     retryMinutes: m?.retry_after_seconds
       ? String(Math.round(m.retry_after_seconds / 60))
       : '',
+    maxHours: '',
     bypass: (m?.bypass ?? []).join('\n'),
     healthBypass: m?.bypass_health_check ?? true,
   }
@@ -58,6 +61,10 @@ function toRequest(d: Draft): SetDomainMaintenanceRequest {
   if (d.retryMinutes.trim() && Number.isFinite(minutes) && minutes > 0) {
     req.retry_after_seconds = Math.round(minutes * 60)
   }
+  const hours = Number(d.maxHours)
+  if (d.maxHours.trim() && Number.isFinite(hours) && hours >= 0) {
+    req.max_duration_seconds = Math.round(hours * 3600)
+  }
   if (d.until) {
     const at = new Date(d.until)
     if (!Number.isNaN(at.getTime())) req.until = at.toISOString()
@@ -67,12 +74,14 @@ function toRequest(d: Draft): SetDomainMaintenanceRequest {
 
 // Page copy, end time and bypass rules for one domain's maintenance.
 export function DomainMaintenanceForm({
+  defaultMaxSeconds = 0,
   domain,
   current,
   enabled,
   pending,
   onSubmit,
 }: {
+  defaultMaxSeconds?: number
   domain: string
   current: DomainMaintenance | undefined
   enabled: boolean
@@ -156,6 +165,38 @@ export function DomainMaintenanceForm({
           </FieldDescription>
         </Field>
       </div>
+      <Field>
+        <FieldLabel htmlFor={id('max')}>
+          {t('maintenance.form.maxHours')}
+        </FieldLabel>
+        <Input
+          id={id('max')}
+          type="number"
+          min={0}
+          step="any"
+          inputMode="decimal"
+          value={draft.maxHours}
+          placeholder={String(Math.round(defaultMaxSeconds / 360) / 10)}
+          onChange={(e) => update({ maxHours: e.target.value })}
+          disabled={pending || draft.until !== ''}
+        />
+        <FieldDescription>
+          {draft.until !== ''
+            ? t('maintenance.form.maxHoursUntil')
+            : defaultMaxSeconds > 0
+              ? t('maintenance.form.maxHoursDefault', {
+                  hours: Math.round(defaultMaxSeconds / 360) / 10,
+                })
+              : t('maintenance.form.maxHoursNone')}
+        </FieldDescription>
+      </Field>
+      <MaintenancePreview
+        title={draft.title}
+        message={draft.message}
+        retryAfterSeconds={
+          Math.round(Number(draft.retryMinutes || 0) * 60) || 0
+        }
+      />
       <Field>
         <FieldLabel htmlFor={id('bypass')}>
           {t('maintenance.form.bypass')}

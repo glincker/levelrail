@@ -1417,6 +1417,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/build-limits | AbilityRead | handleGetBuildLimits |
 | PUT | /api/v1/build-limits | AbilityRoot | handleSetBuildLimits |
 | DELETE | /api/v1/build-limits | AbilityRoot | handleResetBuildLimits |
+| GET | /api/v1/maintenance/domains | AbilityRead | handleListFleetMaintenance |
+| POST | /api/v1/maintenance/preview | AbilityRead | handlePreviewMaintenance |
 
 ## See also
 

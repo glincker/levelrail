@@ -108,6 +108,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/prometheus/read":                               "Prometheus remote read is a POST but only queries, gated by AbilityRead",
 	"POST /api/v1/iam/resources/match":                           "counts what resource patterns select, persists nothing",
 	"POST /api/v1/iam/policies/validate":                         "validates a submitted policy document, persists nothing",
+	"POST /api/v1/maintenance/preview":                           "renders the maintenance page for given text, persists nothing",
 	"POST /api/v1/iam/preview":                                   "computes a before and after of a hypothetical policy change, persists nothing",
 	"POST /api/v1/iam/policy-templates/{id}/render":              "expands template parameters into a document, persists nothing",
 	"POST /api/v1/deploy-policies/check":                         "dry run of the rules against current apps, persists nothing",

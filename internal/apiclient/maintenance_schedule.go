@@ -53,3 +53,18 @@ func (c *Client) CreateScheduledMaintenance(ctx context.Context, req ScheduledMa
 func (c *Client) DeleteScheduledMaintenance(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/v1/scheduled-maintenance/"+PathEscape(id), nil, nil)
 }
+
+// ListFleetMaintenance calls GET /api/v1/maintenance/domains.
+func (c *Client) ListFleetMaintenance(ctx context.Context) (FleetMaintenanceResource, error) {
+	var out FleetMaintenanceResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/maintenance/domains", nil, &out)
+	return out, err
+}
+
+// PreviewMaintenancePage calls POST /api/v1/maintenance/preview.
+func (c *Client) PreviewMaintenancePage(ctx context.Context, title, message string, retryAfterSeconds int) (MaintenancePreviewResource, error) {
+	var out MaintenancePreviewResource
+	body := map[string]any{"title": title, "message": message, "retry_after_seconds": retryAfterSeconds}
+	err := c.do(ctx, http.MethodPost, "/api/v1/maintenance/preview", body, &out)
+	return out, err
+}

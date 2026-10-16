@@ -55,13 +55,38 @@
   "domainBanner": {
     "title": "Maintenance mode is on for {{domain}}",
     "titleNotEnforced": "Maintenance is saved for {{domain}} but not enforced",
-    "body": "Visitors see the maintenance page. The app keeps running and nothing was stopped.",
+    "body": "Visitors see the maintenance page and nothing else: scripts, styles and images are not served. The app keeps running and a deploy does not end maintenance.",
     "bodyNotEnforced": "Visitors may still reach the app: the proxy in front of this domain is not proven to send its traffic to the built-in ingress. Open Manage for details.",
     "manage": "Manage",
     "end": "End maintenance",
     "ending": "Ending...",
     "ended": "Maintenance ended for {{domain}}",
     "more_one": "{{count}} more domain is in maintenance mode.",
-    "more_other": "{{count}} more domains are in maintenance mode."
+    "more_other": "{{count}} more domains are in maintenance mode.",
+    "elapsed": "On for {{time}}.",
+    "endsAt": "Ends {{date}}.",
+    "autoOff": "Switches off on its own at {{date}}.",
+    "noEnd": "No automatic end: it stays on until you end it.",
+    "long": "This is longer than expected."
+  },
+  "confirm": {
+    "title": "Put {{domain}} into maintenance?",
+    "description": "Visitors will not reach the app until you end maintenance. Check the page below first.",
+    "visitors": "Visitors get a 503 maintenance page with a Retry-After header, on every URL of this domain.",
+    "assets": "Scripts, styles, images and API calls are not served either, so the page cannot load anything from the app.",
+    "running": "The container keeps running and is not restarted.",
+    "deploys": "A deploy during maintenance keeps maintenance on until you end it.",
+    "alerts": "Alerts and uptime checks are not muted. Probes on the readiness path still reach the app unless you turned that off.",
+    "endsAt": "It ends automatically on {{date}}.",
+    "autoOff": "It switches off by itself after {{hours}} hours.",
+    "noEnd": "It has no automatic end. Set an end time or a maximum duration so it cannot be left on.",
+    "confirm": "Turn maintenance on",
+    "pending": "Turning on..."
+  },
+  "preview": {
+    "title": "Preview of the page visitors see",
+    "caption": "Preview: status {{status}}, Retry-After {{retry}} seconds",
+    "frameTitle": "Maintenance page preview",
+    "failed": "The preview could not be loaded."
   }
 }
