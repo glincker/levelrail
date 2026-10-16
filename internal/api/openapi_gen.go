@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1216 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1219 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -679,6 +679,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/renew", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRenewNodeCert", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCordonNode", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/drains", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeDrains", Description: ""},
@@ -693,6 +694,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/nodes/{id}/reenroll-token", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeReenrollToken", Description: "Agent certificate lifecycle (node_cert.go, ADR 021)."},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/region", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeRegion", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/revoke-cert", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeCert", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/security", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNodeTrust", Description: "Trust panel (node_trust.go): what was verified and when."},
+	{Method: "GET", Path: "/api/v1/nodes/{id}/security/events", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodeSecurityEvents", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/uncordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleUncordonNode", Description: ""},
 	{Method: "PUT", Path: "/api/v1/nodes/{id}/workloads", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSetNodeWorkloads", Description: ""},
 	{Method: "GET", Path: "/.well-known/jwks.json", Ability: "Public", Group: "Other", Handler: "handleOIDCJWKS", Description: ""},

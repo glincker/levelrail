@@ -71,6 +71,10 @@ message EnrollRequest {
   // (agents older than ADR 021) the control plane generates the key.
   bytes csr_der = 3;
   AgentInfo agent = 4;
+  // ca_pin_state is what the agent checked before sending this request:
+  // "pinned" (the control plane CA matched the operator's fingerprint) or
+  // "unpinned" (trust on first use). A mismatch never gets this far.
+  string ca_pin_state = 5;
 }
 
 message EnrollResponse {
@@ -122,6 +126,7 @@ message ReenrollRequest {
   string node_id = 2;
   bytes csr_der = 3;
   AgentInfo agent = 4;
+  string ca_pin_state = 5;
 }
 
 message ReenrollResponse {
@@ -174,8 +179,24 @@ message AgentMessage {
     // HostReport is the agent's host memory split, sent periodically.
     // Control planes that predate it ignore the frame.
     HostReport host_report = 10;
+    // RenewalReport is the agent's certificate renewal state, sent at
+    // session start and after every renewal attempt.
+    RenewalReport renewal = 11;
   }
 }
+
+// RenewalReport describes the agent's renewal schedule and last failure.
+// Timestamps are unset when not applicable.
+message RenewalReport {
+  google.protobuf.Timestamp next_renew_at = 1;
+  string last_error = 2;
+  google.protobuf.Timestamp last_failed_at = 3;
+  google.protobuf.Timestamp next_retry_at = 4;
+  int32 consecutive_failures = 5;
+}
+
+// RenewNow asks the agent to renew its certificate immediately.
+message RenewNow {}
 
 // ControlMessage is one frame the control plane sends down the Session
 // stream: a request, or one frame of an in-flight exec's stdin,
@@ -199,6 +220,7 @@ message ControlMessage {
     // agent should close its end now rather than wait to be cut off by
     // the control plane's own bounded GracefulStop timeout.
     GoAway go_away = 9;
+    RenewNow renew_now = 10;
   }
 }
 

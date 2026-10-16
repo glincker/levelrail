@@ -125,6 +125,7 @@ type mux struct {
 	onHello func(*agentpb.AgentInfo)
 
 	onHostReport func(*agentpb.HostReport)
+	onRenewal    func(*agentpb.RenewalReport)
 }
 
 // frameSub is one in-flight multi-frame operation's control-plane-side
@@ -173,6 +174,7 @@ type muxHandlers struct {
 	heartbeat  func()
 	hello      func(*agentpb.AgentInfo)
 	hostReport func(*agentpb.HostReport)
+	renewal    func(*agentpb.RenewalReport)
 }
 
 // newMuxWithHandlers is newMux plus h. They are passed here, before
@@ -190,6 +192,7 @@ func newMuxWithHandlers(stream sessionStream, h muxHandlers) *mux {
 	m.onGPU = h.gpu
 	m.onHello = h.hello
 	m.onHostReport = h.hostReport
+	m.onRenewal = h.renewal
 	go m.recvLoop()
 	return m
 }
@@ -229,6 +232,10 @@ func (m *mux) recvLoop() {
 		case *agentpb.AgentMessage_HostReport:
 			if m.onHostReport != nil {
 				m.onHostReport(p.HostReport)
+			}
+		case *agentpb.AgentMessage_Renewal:
+			if m.onRenewal != nil {
+				m.onRenewal(p.Renewal)
 			}
 		}
 	}

@@ -50,7 +50,8 @@ type certTestServer struct {
 
 func startCertTestServer(t *testing.T, ca *CA, st EnrollStore, opts ...Option) *certTestServer {
 	t.Helper()
-	creds, err := NewServerCredentials(ca, []string{"127.0.0.1"}, time.Hour)
+	ts := &certTestServer{}
+	creds, err := NewServerCredentials(ca, []string{"127.0.0.1"}, time.Hour, WithRejectObserver(func(r RejectedHandshake) { ts.srv.ObserveRejected(r) }))
 	if err != nil {
 		t.Fatalf("NewServerCredentials() error = %v", err)
 	}
@@ -58,7 +59,10 @@ func startCertTestServer(t *testing.T, ca *CA, st EnrollStore, opts ...Option) *
 	if err != nil {
 		t.Fatalf("net.Listen() error = %v", err)
 	}
-	ts := &certTestServer{addr: lis.Addr().String()}
+	ts.addr = lis.Addr().String()
+	if sec, ok := st.(SecurityStore); ok {
+		opts = append([]Option{WithSecurityLog(sec, SecurityConfig{})}, opts...)
+	}
 	ts.srv = NewServer(ca, st, NewRegistry(), nil, opts...)
 	ts.grpc = grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(func(ctx context.Context, req any, info *grpc.UnaryServerInfo, h grpc.UnaryHandler) (any, error) {
 		resp, err := h(ctx, req)

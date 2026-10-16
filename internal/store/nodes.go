@@ -217,7 +217,7 @@ func (db *DB) DeleteNode(ctx context.Context, id string) error {
 	if _, err := db.ExecContext(ctx, `DELETE FROM nodes WHERE id = ?`, id); err != nil {
 		return fmt.Errorf("store: delete node %q: %w", id, err)
 	}
-	return nil
+	return db.deleteNodeSecurityData(ctx, id)
 }
 
 // maxNodeStatusEventsPerNode bounds node_status_events so a flapping

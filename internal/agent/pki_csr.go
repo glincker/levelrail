@@ -45,6 +45,7 @@ type IssuedCert struct {
 	PEM         []byte
 	Fingerprint string
 	Serial      string
+	NotBefore   time.Time
 	NotAfter    time.Time
 }
 
@@ -104,6 +105,7 @@ func issuedFromDER(der []byte) (IssuedCert, error) {
 		PEM:         pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}),
 		Fingerprint: CertFingerprint(der),
 		Serial:      certSerial(cert),
+		NotBefore:   cert.NotBefore,
 		NotAfter:    cert.NotAfter,
 	}, nil
 }

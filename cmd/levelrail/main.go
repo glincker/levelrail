@@ -603,7 +603,13 @@ func run(logger *slog.Logger) error {
 	if id := readLocalNodeID(agentDataDir); id != "" {
 		agentRegistry.SetLocal(id, agent.NewLocal(client))
 	}
-	agentCreds, err := agent.NewServerCredentials(agentCA, []string{advertiseHostFromStore(ctx, db)}, agentServerCertValidity)
+	var agentServerRef atomic.Pointer[agent.Server]
+	agentCreds, err := agent.NewServerCredentials(agentCA, []string{advertiseHostFromStore(ctx, db)}, agentServerCertValidity,
+		agent.WithRejectObserver(func(r agent.RejectedHandshake) {
+			if srv := agentServerRef.Load(); srv != nil {
+				srv.ObserveRejected(r)
+			}
+		}))
 	if err != nil {
 		return fmt.Errorf("build agent grpc credentials: %w", err)
 	}
@@ -643,7 +649,8 @@ func run(logger *slog.Logger) error {
 	)
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
@@ -831,7 +838,7 @@ func run(logger *slog.Logger) error {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
-	configureNodeCerts(apiRouter, agentServer)
+	configureNodeCerts(apiRouter, agentServer, agentServer)
 	apiRouter.SetNodeHostReports(hostReports)
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)

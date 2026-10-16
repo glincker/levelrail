@@ -26,6 +26,7 @@ func (s *Server) Renew(ctx context.Context, req *agentpb.RenewRequest) (*agentpb
 	}
 	issued, err := s.signCSR(node.ID, req.GetCsrDer())
 	if err != nil {
+		s.recordRenewFailed(ctx, node.ID, store.SecurityReasonSignFailed)
 		return nil, err
 	}
 	presented := CertFingerprint(peerCert.Raw)
@@ -35,15 +36,19 @@ func (s *Server) Renew(ctx context.Context, req *agentpb.RenewRequest) (*agentpb
 	switch {
 	case err == nil:
 	case errors.Is(err, store.ErrNodeCertRevoked):
+		s.recordRenewFailed(ctx, node.ID, store.SecurityReasonRevoked)
 		return nil, status.Errorf(codes.PermissionDenied, "certificate for node %q was revoked: re-enroll the node", node.ID)
 	case errors.Is(err, store.ErrNodeCertNotAccepted), errors.Is(err, store.ErrNodeNotFound):
+		s.recordRenewFailed(ctx, node.ID, store.SecurityReasonFingerprintMismatch)
 		return nil, status.Errorf(codes.Unauthenticated, "certificate no longer accepted for node %q", node.ID)
 	case errors.Is(err, store.ErrNodeCertConflict):
+		s.recordRenewFailed(ctx, node.ID, store.SecurityReasonRenewConflict)
 		return nil, status.Error(codes.Aborted, "a concurrent renewal won: retry")
 	default:
 		s.logger.Error("agent: renew: record cert failed", slog.String("node_id", node.ID), slog.String("error", err.Error()))
 		return nil, status.Error(codes.Internal, "internal error")
 	}
+	s.recordCertIssued(ctx, node.ID, "renew", issued)
 	s.logger.Info("agent: node certificate renewed", slog.String("node_id", node.ID), slog.Time("not_after", issued.NotAfter))
 	return &agentpb.RenewResponse{
 		ClientCertPem: issued.PEM,
@@ -64,6 +69,7 @@ func (s *Server) Reenroll(ctx context.Context, req *agentpb.ReenrollRequest) (*a
 	}
 	tok, err := s.redeemToken(ctx, req.GetReenrollToken(), store.NodeJoinTokenPurposeReenroll)
 	if err != nil {
+		s.recordTokenRefusal(ctx, store.SecurityKindReenroll, "", err)
 		return nil, err
 	}
 	nodeID := tok.NodeID
@@ -88,6 +94,7 @@ func (s *Server) Reenroll(ctx context.Context, req *agentpb.ReenrollRequest) (*a
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
+	s.recordEnrolled(ctx, store.SecurityKindReenroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 	s.logger.Info("agent: node re-enrolled", slog.String("node_id", nodeID), slog.Time("not_after", issued.NotAfter))
 	return &agentpb.ReenrollResponse{
 		NodeId:        nodeID,
