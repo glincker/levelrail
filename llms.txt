@@ -1,0 +1,23 @@
+# Levelrail
+
+> Open source, self-hosted deployment platform and lightweight Coolify alternative. Push to git and get a running app with HTTPS, logs, traces, metrics, previews and one-click rollback on your own Linux servers. Single Go binary, Docker runtime, built-in observability, scale to zero. Apache 2.0.
+
+## Start here
+
+- [Docs](https://docs.levelrail.com): hosted documentation
+- [Getting started](https://docs.levelrail.com/getting-started): install and first deploy
+- [Feature status](https://docs.levelrail.com/feature-status): what is stable and what is beta
+- [Comparison](https://docs.levelrail.com/comparison): Levelrail against Coolify, Dokploy, CapRover, Dokku and Kamal
+
+## For agents
+
+- [Agent skill](skills/levelrail/SKILL.md): deploy, wait, diagnose and roll back with the CLI or MCP
+- [MCP server](https://docs.levelrail.com/mcp): tools, modes and token budget
+- [CLI reference](https://docs.levelrail.com/cli-reference)
+- [App spec reference](https://docs.levelrail.com/app-spec-reference)
+- [Repo guide](AGENTS.md)
+
+## Machine readable docs
+
+- [llms.txt](https://docs.levelrail.com/llms.txt)
+- [llms-full.txt](https://docs.levelrail.com/llms-full.txt)
