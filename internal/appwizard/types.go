@@ -85,22 +85,24 @@ type Warning struct {
 
 // Analysis is the full set of suggestions for one repository and ref.
 type Analysis struct {
-	RepoURL       string         `json:"repo_url"`
-	Branch        string         `json:"branch"`
-	Monorepo      bool           `json:"monorepo"`
-	AppDirectory  string         `json:"app_directory,omitempty"`
-	Name          Text           `json:"name"`
-	Stack         Stack          `json:"stack"`
-	Build         Build          `json:"build"`
-	Port          Port           `json:"port"`
-	Health        Text           `json:"health"`
-	Memory        Memory         `json:"memory"`
-	Domain        Text           `json:"domain"`
-	Env           []EnvKey       `json:"env"`
-	Databases     []DatabaseNeed `json:"databases"`
-	Warnings      []Warning      `json:"warnings"`
-	FilesRead     int            `json:"files_read"`
-	TreeTruncated bool           `json:"tree_truncated"`
+	RepoURL       string               `json:"repo_url"`
+	Branch        string               `json:"branch"`
+	Monorepo      bool                 `json:"monorepo"`
+	AppDirectory  string               `json:"app_directory,omitempty"`
+	Name          Text                 `json:"name"`
+	Stack         Stack                `json:"stack"`
+	Build         Build                `json:"build"`
+	Port          Port                 `json:"port"`
+	Health        Text                 `json:"health"`
+	Memory        Memory               `json:"memory"`
+	Domain        Text                 `json:"domain"`
+	Env           []EnvKey             `json:"env"`
+	Databases     []DatabaseNeed       `json:"databases"`
+	Warnings      []Warning            `json:"warnings"`
+	Detection     Detection            `json:"detection"`
+	Packages      []repolayout.Package `json:"packages"`
+	FilesRead     int                  `json:"files_read"`
+	TreeTruncated bool                 `json:"tree_truncated"`
 }
 
 // Options carries per-request inputs and environment hooks.

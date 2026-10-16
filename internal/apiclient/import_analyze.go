@@ -10,6 +10,7 @@ type ImportAnalyzeRequest struct {
 	RepoURL        string `json:"repo_url"`
 	Ref            string `json:"ref,omitempty"`
 	BaseDirectory  string `json:"base_directory,omitempty"`
+	Directory      string `json:"directory,omitempty"`
 	DockerfilePath string `json:"dockerfile_path,omitempty"`
 	BuildType      string `json:"build_type,omitempty"`
 	Name           string `json:"name,omitempty"`
@@ -61,6 +62,40 @@ type AnalyzeDatabase struct {
 	Evidence      string `json:"evidence"`
 }
 
+// DetectionReason mirrors internal/appwizard's Reason.
+type DetectionReason struct {
+	Signal string `json:"signal"`
+	Detail string `json:"detail"`
+}
+
+// Detection mirrors internal/appwizard's Detection. EnvVars never carry a value.
+type Detection struct {
+	Framework  string            `json:"framework"`
+	Language   string            `json:"language"`
+	BuildType  string            `json:"build_type"`
+	Confidence string            `json:"confidence"`
+	Reasons    []DetectionReason `json:"reasons"`
+	Port       struct {
+		Value  int    `json:"value"`
+		Source string `json:"source"`
+	} `json:"port"`
+	StartCommand   string `json:"start_command,omitempty"`
+	BuildCommand   string `json:"build_command,omitempty"`
+	OutputDir      string `json:"output_dir,omitempty"`
+	HealthPath     string `json:"health_path"`
+	RuntimeVersion struct {
+		Value  string `json:"value"`
+		Source string `json:"source"`
+	} `json:"runtime_version"`
+	EnvVars []struct {
+		Name        string `json:"name"`
+		Source      string `json:"source"`
+		Required    bool   `json:"required"`
+		SecretGuess bool   `json:"secret_guess"`
+	} `json:"env_vars"`
+	Warnings []ImportWarning `json:"warnings"`
+}
+
 // ImportAnalysis mirrors internal/appwizard's Analysis.
 type ImportAnalysis struct {
 	RepoURL      string      `json:"repo_url"`
@@ -83,16 +118,25 @@ type ImportAnalysis struct {
 		Bytes    int64  `json:"bytes"`
 		Evidence string `json:"evidence"`
 	} `json:"memory"`
-	Domain    AnalyzeText       `json:"domain"`
-	Env       []AnalyzeEnvKey   `json:"env"`
-	Databases []AnalyzeDatabase `json:"databases"`
-	Warnings  []ImportWarning   `json:"warnings"`
-	FilesRead int               `json:"files_read"`
+	Domain    AnalyzeText        `json:"domain"`
+	Env       []AnalyzeEnvKey    `json:"env"`
+	Databases []AnalyzeDatabase  `json:"databases"`
+	Warnings  []ImportWarning    `json:"warnings"`
+	Detection Detection          `json:"detection"`
+	Packages  []WorkspacePackage `json:"packages"`
+	FilesRead int                `json:"files_read"`
 }
 
 // AnalyzeImport calls POST /api/v1/imports/analyze. It creates nothing.
 func (c *Client) AnalyzeImport(ctx context.Context, req ImportAnalyzeRequest) (ImportAnalysis, error) {
 	var out ImportAnalysis
 	err := c.do(ctx, http.MethodPost, "/api/v1/imports/analyze", req, &out)
+	return out, err
+}
+
+// AnalyzeGitSource calls POST /api/v1/git-sources/analyze. It creates nothing.
+func (c *Client) AnalyzeGitSource(ctx context.Context, req ImportAnalyzeRequest) (ImportAnalysis, error) {
+	var out ImportAnalysis
+	err := c.do(ctx, http.MethodPost, "/api/v1/git-sources/analyze", req, &out)
 	return out, err
 }

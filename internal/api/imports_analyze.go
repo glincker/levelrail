@@ -20,9 +20,11 @@ const analyzeBodyLimit = 16 << 10
 // optional one-shot deploy token for a private repository; it is used for
 // this call only and never stored or logged.
 type analyzeImportRequest struct {
-	RepoURL        string `json:"repo_url"`
-	Ref            string `json:"ref,omitempty"`
-	BaseDirectory  string `json:"base_directory,omitempty"`
+	RepoURL       string `json:"repo_url"`
+	Ref           string `json:"ref,omitempty"`
+	BaseDirectory string `json:"base_directory,omitempty"`
+	// Directory is an alias of BaseDirectory, used by the git-sources route.
+	Directory      string `json:"directory,omitempty"`
 	DockerfilePath string `json:"dockerfile_path,omitempty"`
 	BuildType      string `json:"build_type,omitempty"`
 	Name           string `json:"name,omitempty"`
@@ -62,6 +64,9 @@ func (rt *Router) handleAnalyzeImport(w http.ResponseWriter, r *http.Request) {
 	branches := []string{strings.TrimSpace(req.Ref)}
 	if branches[0] == "" {
 		branches = []string{"main", "master"}
+	}
+	if req.BaseDirectory == "" {
+		req.BaseDirectory = strings.Trim(req.Directory, "/ ")
 	}
 	base := rt.appsBaseDomain(ctx)
 	var lastErr error

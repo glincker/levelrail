@@ -20,6 +20,7 @@ var Tree = map[string]*Node{
 		"sbom":                    nil,
 		"scan":                    {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil, "run": nil, "gate": nil, "override": nil}},
 		"create":                  nil,
+		"analyze":                 nil,
 		"list":                    nil,
 		"get":                     nil,
 		"deploy":                  nil,

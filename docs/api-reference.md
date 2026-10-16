@@ -1420,6 +1420,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/build-limits | AbilityRoot | handleResetBuildLimits |
 | GET | /api/v1/maintenance/domains | AbilityRead | handleListFleetMaintenance |
 | POST | /api/v1/maintenance/preview | AbilityRead | handlePreviewMaintenance |
+| POST | /api/v1/git-sources/analyze | AbilityWrite | handleAnalyzeImport |
 
 ## See also
 

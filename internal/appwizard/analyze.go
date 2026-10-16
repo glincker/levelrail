@@ -149,6 +149,11 @@ func Analyze(ctx context.Context, src repolayout.Source, opts Options) (*Analysi
 	a.Databases = detectDatabases(a.Name.Value, dbSignals{keys: a.Env, depText: depText(rel), compose: doc, cpath: cpath}, opts.DefaultVersion)
 	markProvided(a.Env, a.Databases)
 
+	a.Detection = Detect(Input{Paths: paths, Read: reader, Dir: a.AppDirectory, Layout: &layout})
+	a.Packages = layout.Packages
+	if a.Packages == nil {
+		a.Packages = []repolayout.Package{}
+	}
 	a.FilesRead = b.read
 	if b.exhausted {
 		a.Warnings = append(a.Warnings, Warning{Code: WarnReadBudget, Message: "the file read budget was reached, so some findings may be missing"})
