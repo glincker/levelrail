@@ -502,6 +502,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleSetSecretRotation |
 | DELETE | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleDeleteSecretRotation |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotation/rotate | AbilityWriteSensitive | handleRotateSecretNow |
+| POST | /api/v1/apps/{name}/git-source/affected | AbilityRead | handleGitSourceAffected |
 
 ## Telemetry
 

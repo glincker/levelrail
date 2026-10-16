@@ -154,9 +154,6 @@ type detectGitSourceResponse struct {
 // lists candidate build roots from the provider's tree API, with no clone for
 // GitHub, GitLab and Gitea.
 func (rt *Router) handleDetectGitSourceBuild(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-	ctx := r.Context()
-
 	var req detectGitSourceRequest
 	if r.ContentLength != 0 {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -164,22 +161,35 @@ func (rt *Router) handleDetectGitSourceBuild(w http.ResponseWriter, r *http.Requ
 			return
 		}
 	}
+	gs, branch, res, ok := rt.detectRepoLayout(w, r, r.PathValue("name"), req.Branch)
+	if !ok {
+		return
+	}
+	needs := gs.BuildType == spec.BuildRailpack && gs.BaseDirectory == "" && !res.RootHasApp &&
+		(len(res.Dockerfiles) > 0 || res.LooksLikeMonorepo)
+	writeJSON(w, http.StatusOK, detectGitSourceResponse{Branch: branch, Result: res, NeedsBuildSettings: needs})
+}
+
+// detectRepoLayout loads the app's git source and analyses its file tree. On
+// failure it has already written the error response.
+func (rt *Router) detectRepoLayout(w http.ResponseWriter, r *http.Request, name, reqBranch string) (*store.GitSource, string, repolayout.Result, bool) {
+	ctx := r.Context()
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
 	if errors.Is(err, store.ErrGitSourceNotFound) {
 		writeError(w, http.StatusNotFound, "no git source connected for this app")
-		return
+		return gs, "", repolayout.Result{}, false
 	}
 	if err != nil {
 		rt.internalError(w, "api: detect git source build: load failed", err, slog.String("name", name))
-		return
+		return gs, "", repolayout.Result{}, false
 	}
-	branch := strings.TrimSpace(req.Branch)
+	branch := strings.TrimSpace(reqBranch)
 	if branch == "" {
 		branch = gs.Branch
 	}
 	if err := requireHTTPOrHTTPSScheme(gs.RepoURL); err != nil {
 		writeError(w, http.StatusBadRequest, "repo_url must use http or https")
-		return
+		return gs, "", repolayout.Result{}, false
 	}
 
 	token := rt.tokenForRepo(ctx, name, gs.RepoURL, true)
@@ -190,16 +200,14 @@ func (rt *Router) handleDetectGitSourceBuild(w http.ResponseWriter, r *http.Requ
 	src, err := open(ctx, gs.RepoURL, branch, token, rt.repoLayoutHosts(ctx))
 	if err != nil {
 		rt.writeDetectError(w, name, gs.RepoURL, err)
-		return
+		return gs, "", repolayout.Result{}, false
 	}
 	res, err := repolayout.Detect(ctx, src)
 	if err != nil {
 		rt.writeDetectError(w, name, gs.RepoURL, err)
-		return
+		return gs, "", repolayout.Result{}, false
 	}
-	needs := gs.BuildType == spec.BuildRailpack && gs.BaseDirectory == "" && !res.RootHasApp &&
-		(len(res.Dockerfiles) > 0 || res.LooksLikeMonorepo)
-	writeJSON(w, http.StatusOK, detectGitSourceResponse{Branch: branch, Result: res, NeedsBuildSettings: needs})
+	return gs, branch, res, true
 }
 
 func (rt *Router) writeDetectError(w http.ResponseWriter, name, repoURL string, err error) {

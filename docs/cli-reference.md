@@ -352,6 +352,8 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 ### Source, previews and webhooks
 
 ```
+levelrail-cli apps git-source detect <name> [--apply|--package DIR] [flags]
+levelrail-cli apps git-source affected <name> --files a,b [flags]
 levelrail-cli apps git-source get <name> [flags]
 levelrail-cli apps git-source set <name> --repo-url URL [flags]
 levelrail-cli apps git-source settings <name> [flags]

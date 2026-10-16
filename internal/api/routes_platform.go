@@ -40,6 +40,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/apps/{name}/git-source/build", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetGitSourceBuild))
 	mux.HandleFunc("GET /api/v1/apps/{name}/git-source/commits", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleListGitSourceCommits))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/detect", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDetectGitSourceBuild))
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/affected", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGitSourceAffected))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/git-source", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteGitSource))
 	// Rotate webhook secret (git_sources.go): mints a fresh secret without
 	// touching repo_url/branch/build config, the narrow alternative to a

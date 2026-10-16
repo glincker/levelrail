@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query'
 import type {
   GitBuildDetection,
+  GitSourceAffected,
   GitSourceResource,
   SetGitSourceBuildRequest,
 } from '../types/gitSource'
@@ -101,5 +102,32 @@ export function useSetGitBuild(name: string) {
         queryKey: [...gitSourceKeys.all, 'detect', name],
       })
     },
+  })
+}
+
+export async function checkGitSourceAffected(
+  name: string,
+  files: string[],
+): Promise<GitSourceAffected> {
+  const res = await fetch(
+    `/api/v1/apps/${encodeURIComponent(name)}/git-source/affected`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ files }),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `affected check failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as GitSourceAffected
+}
+
+export function useCheckGitSourceAffected(name: string) {
+  return useMutation({
+    mutationFn: (files: string[]) => checkGitSourceAffected(name, files),
   })
 }

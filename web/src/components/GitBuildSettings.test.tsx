@@ -47,6 +47,7 @@ const turborepoDetection: GitBuildDetection = {
   compose_files: [],
   truncated: false,
   needs_build_settings: true,
+  packages: [],
   suggestions: [
     {
       build_type: 'dockerfile',

@@ -35,6 +35,21 @@ export interface GitBuildSuggestion {
 }
 
 // Mirrors internal/api's detectGitSourceResponse.
+export interface WorkspacePackage {
+  name: string
+  dir: string
+  tool: string
+  dockerfile?: string
+  depends_on: string[]
+  watch_paths: string[]
+}
+
+export interface GitSourceAffected {
+  app_deploys: boolean
+  reason?: string
+  packages: { name: string; dir: string; affected: boolean }[]
+}
+
 export interface GitBuildDetection {
   branch: string
   looks_like_monorepo: boolean
@@ -45,6 +60,7 @@ export interface GitBuildDetection {
   suggestions: GitBuildSuggestion[]
   truncated: boolean
   needs_build_settings: boolean
+  packages: WorkspacePackage[]
 }
 
 export interface SetGitSourceBuildRequest {

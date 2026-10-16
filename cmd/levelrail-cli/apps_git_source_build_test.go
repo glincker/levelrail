@@ -66,3 +66,42 @@ func TestRun_AppsGitSourceDetectApply(t *testing.T) {
 		t.Errorf("applied = %v, want the recommended suggestion", applied)
 	}
 }
+
+func TestRun_AppsGitSourceDetectPackageAndAffected(t *testing.T) {
+	var build, deploy map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/api/v1/apps/web/git-source/detect":
+			_ = json.NewEncoder(w).Encode(apiclient.GitBuildDetection{
+				Branch: "main", LooksLikeMonorepo: true,
+				Packages: []apiclient.WorkspacePackage{{Name: "web", Dir: "apps/web", Tool: "pnpm-workspace", WatchPaths: []string{"apps/web/**", "pnpm-lock.yaml"}}},
+			})
+		case "/api/v1/apps/web/git-source/build":
+			_ = json.NewDecoder(r.Body).Decode(&build)
+			_ = json.NewEncoder(w).Encode(gitSourceResource{ServiceName: "web", BuildType: "railpack"})
+		case "/api/v1/apps/web/git-source/deploy-settings":
+			_ = json.NewDecoder(r.Body).Decode(&deploy)
+			_ = json.NewEncoder(w).Encode(apiclient.GitDeploySettings{})
+		case "/api/v1/apps/web/git-source/affected":
+			_ = json.NewEncoder(w).Encode(apiclient.GitSourceAffected{
+				AppDeploys: true, Packages: []apiclient.GitSourceAffectedEntry{{Dir: "apps/web", Affected: true}},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	runCLIExpectOK(t, []string{"apps", "git-source", "detect", "web", "--package", "apps/web", "--api-url", srv.URL})
+	if build["base_directory"] != "apps/web" {
+		t.Errorf("build = %v, want base_directory apps/web", build)
+	}
+	if paths, _ := deploy["deploy_paths"].([]any); len(paths) != 2 {
+		t.Errorf("deploy = %v, want the package watch paths", deploy)
+	}
+	stdout, _ := runCLIExpectOK(t, []string{"apps", "git-source", "affected", "web", "--files", "apps/web/a.ts", "--api-url", srv.URL})
+	if !strings.Contains(stdout, "apps/web") || !strings.Contains(stdout, "affected=true") {
+		t.Errorf("stdout = %q", stdout)
+	}
+}

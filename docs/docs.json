@@ -217,7 +217,8 @@
               "github-actions",
               "pipelines",
               "pipelines-oidc",
-              "git-integrations"
+              "git-integrations",
+              "monorepos"
             ],
             "icon": "/assets/icons/git-branch.svg"
           },

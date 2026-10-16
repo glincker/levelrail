@@ -1839,6 +1839,17 @@ func (c *Client) DetectGitSourceBuild(ctx context.Context, name, branch string) 
 	return out, err
 }
 
+// GitSourceAffected calls POST /api/v1/apps/{name}/git-source/affected.
+func (c *Client) GitSourceAffected(ctx context.Context, name, branch string, files []string) (GitSourceAffected, error) {
+	var out GitSourceAffected
+	body := map[string]any{"files": files}
+	if branch != "" {
+		body["branch"] = branch
+	}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/git-source/affected", body, &out)
+	return out, err
+}
+
 // GetAppSchedule calls GET /api/v1/apps/{name}/schedule.
 func (c *Client) GetAppSchedule(ctx context.Context, name string) (AppScheduleResource, error) {
 	var out AppScheduleResource

@@ -1799,6 +1799,31 @@ type GitBuildDetection struct {
 	Suggestions        []GitBuildSuggestion `json:"suggestions"`
 	Truncated          bool                 `json:"truncated"`
 	NeedsBuildSettings bool                 `json:"needs_build_settings"`
+	Packages           []WorkspacePackage   `json:"packages"`
+}
+
+// WorkspacePackage mirrors internal/repolayout's Package.
+type WorkspacePackage struct {
+	Name       string   `json:"name"`
+	Dir        string   `json:"dir"`
+	Tool       string   `json:"tool"`
+	Dockerfile string   `json:"dockerfile,omitempty"`
+	DependsOn  []string `json:"depends_on"`
+	WatchPaths []string `json:"watch_paths"`
+}
+
+// GitSourceAffected mirrors internal/api's affectedResponse.
+type GitSourceAffected struct {
+	AppDeploys bool                     `json:"app_deploys"`
+	Reason     string                   `json:"reason,omitempty"`
+	Packages   []GitSourceAffectedEntry `json:"packages"`
+}
+
+// GitSourceAffectedEntry is one workspace package's verdict.
+type GitSourceAffectedEntry struct {
+	Name     string `json:"name"`
+	Dir      string `json:"dir"`
+	Affected bool   `json:"affected"`
 }
 
 // AppScheduleResource mirrors internal/api's appScheduleResource
