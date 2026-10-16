@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
@@ -18,6 +18,11 @@ import {
   type ApplyStep,
   type NewAppEdits,
 } from '../../lib/newApp'
+import {
+  clearImportDraft,
+  loadImportDraft,
+  saveImportDraft,
+} from '../../lib/importDraft'
 import type { GitRepoSourceValue } from '../GitRepoSourcePicker'
 import { SourceStep } from './SourceStep'
 import { FindingsStep } from './FindingsStep'
@@ -41,11 +46,15 @@ export function NewAppWizard() {
   const { t } = useTranslation('newApp')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [draft] = useState(loadImportDraft)
   const [step, setStep] = useState<StepId>('source')
-  const [source, setSource] = useState<GitRepoSourceValue | null>(null)
+  const [source, setSource] = useState<GitRepoSourceValue | null>(
+    draft && draft.step !== 'source' ? draft.source : null,
+  )
   const [analysis, setAnalysis] = useState<ImportAnalysis | null>(null)
   const [edits, setEdits] = useState<NewAppEdits | null>(null)
   const [failure, setFailure] = useState<Failure | null>(null)
+  const resumeStep = useRef<StepId | null>(draft?.step ?? null)
 
   const analyze = useMutation({
     mutationFn: (req: ImportAnalyzeRequest) => analyzeImport(req),
@@ -59,6 +68,7 @@ export function NewAppWizard() {
       return applyNewApp(analysis, source, edits, resume)
     },
     onSuccess: (result) => {
+      clearImportDraft()
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
       toast.add({
         title: t('toast.created', { name: result.appName }),
@@ -93,6 +103,14 @@ export function NewAppWizard() {
     keepEnv: Record<string, string> = {},
   ) {
     setSource(src)
+    runAnalysis(src, override, keepEnv)
+  }
+
+  function runAnalysis(
+    src: GitRepoSourceValue,
+    override: Partial<ImportAnalyzeRequest>,
+    keepEnv: Record<string, string>,
+  ) {
     analyze.mutate(
       {
         repo_url: src.repoUrl,
@@ -104,11 +122,38 @@ export function NewAppWizard() {
         onSuccess: (result) => {
           setAnalysis(result)
           setEdits({ ...editsFromAnalysis(result), env: keepEnv })
-          setStep('findings')
+          setStep(resumeStep.current ?? 'findings')
+          resumeStep.current = null
         },
       },
     )
   }
+
+  useEffect(() => {
+    if (!draft || draft.step === 'source') return
+    runAnalysis(
+      draft.source,
+      draft.baseDirectory ? { base_directory: draft.baseDirectory } : {},
+      {},
+    )
+    // restore once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!source || step === 'source') return
+    const safe = {
+      provider: source.provider,
+      repoUrl: source.repoUrl,
+      branch: source.branch,
+      providerRef: source.providerRef,
+    }
+    saveImportDraft({
+      step,
+      source: safe,
+      baseDirectory: edits?.baseDirectory ?? '',
+    })
+  }, [source, step, edits?.baseDirectory])
 
   const current = STEPS.indexOf(step)
 
@@ -158,12 +203,14 @@ export function NewAppWizard() {
         ) : (
           <FindingsStep
             analysis={analysis}
+            source={source}
             edits={edits}
             onEdits={setEdits}
             onReanalyze={(override) => {
               run(source, override, edits.env)
             }}
             onBack={() => {
+              clearImportDraft()
               setStep('source')
             }}
             onNext={() => {

@@ -262,7 +262,7 @@ func detectGo(f *files) (found, int, bool) {
 	if !ok {
 		return found{}, 0, false
 	}
-	g := found{language: "go", framework: "Go (net/http)", buildType: buildRailpack, confidence: ConfidenceMedium, noLockfile: !f.has("go.sum")}
+	g := found{language: "go", framework: "Go (net/http)", buildType: buildRailpack, confidence: ConfidenceMedium, noLockfile: !f.has("go.sum") && strings.Contains(text, "require")}
 	g.why("file", "go.mod is present")
 	for mod, name := range goModNames {
 		if strings.Contains(text, mod) {
