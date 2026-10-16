@@ -26,6 +26,10 @@ import {
   type LabelledSettingsItem,
 } from '../hooks/useSettingsNav'
 import { BETA_FEATURES_PATH, lockedSearch } from '../lib/experimental'
+import {
+  SidebarUpgradeIcon,
+  SidebarUpgradeLabel,
+} from './settings/updates/SidebarUpgradeIndicator'
 import { LockedFeatureMark } from './shell/LockedFeatureMark'
 
 const OPEN_GROUPS_STORAGE_KEY = 'settings-sidebar-open-groups'
@@ -76,8 +80,13 @@ function SettingsNavLink({
         isActive={pathname === item.to}
         tooltip={item.title}
       >
-        <item.icon />
+        {item.id === 'updates' ? (
+          <SidebarUpgradeIcon icon={item.icon} />
+        ) : (
+          <item.icon />
+        )}
         <span>{item.title}</span>
+        {item.id === 'updates' ? <SidebarUpgradeLabel /> : null}
       </SidebarMenuButton>
     </SidebarMenuItem>
   )

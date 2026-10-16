@@ -9,6 +9,7 @@ import {
 } from '../../queries/updates'
 import {
   selfUpgradeAttemptsQueryOptions,
+  UPGRADE_POLL_MS,
   selfUpgradePlanQueryOptions,
   type SelfUpgradeAttempt,
   useStartSelfUpgrade,
@@ -22,7 +23,7 @@ import { UpgradeConfirmDialog } from './UpgradeConfirmDialog'
 import { EdgeUpdateGuidance } from './EdgeUpdateGuidance'
 import { UpgradeProgress } from './UpgradeProgress'
 
-const POLL_MS = 3_000
+const POLL_MS = UPGRADE_POLL_MS
 const RECENT_MS = 15 * 60_000
 const RELOAD_DELAY_MS = 5_000
 
