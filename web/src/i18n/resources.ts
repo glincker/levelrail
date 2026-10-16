@@ -49,6 +49,7 @@ import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
+import type pipelines from '../locales/en/pipelines.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type help from '../locales/en/help.json'
@@ -121,6 +122,7 @@ declare module 'i18next' {
       compliance: typeof compliance
       deploySafety: typeof deploySafety
       jobs: typeof jobs
+      pipelines: typeof pipelines
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       help: typeof help
