@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1206 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1209 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -212,6 +212,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLogPipeline", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLogPipeline", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/log-pipeline/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreviewLogPipeline", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/maintenance", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppMaintenance", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/maintenance", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppMaintenance", Description: "Maintenance mode: GET is AbilityRead, matching the auth routes' own passive-visibility tier. PUT/DELETE are AbilityDeploy, not AbilityRoot: this changes an app's runtime routing behavior, the same \"app lifecycle\" tier POST .../stop and .../start already use, not a credential-bearing change like basic auth."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/maintenance", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/move", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartMove", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/move-with-volumes", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleMoveAppWithVolumes", Description: "move-with-volumes: the same AbilityRoot tier as the plain node move above, since this both changes placement and does an in-place, full-overwrite restore of every named volume onto the destination node (the same risk class POST .../volumes/{volume}/restore already sits behind). The two GETs are AbilityRead, matching every other history listing in this file."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/moves", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppVolumeMoves", Description: ""},
@@ -611,7 +614,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/headers", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicy", Description: "Per-domain header rules and presets. Reads are AbilityRead; changes are AbilityDeploy like the other per-domain routing settings."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/headers", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainPolicy", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainMaintenance", Description: ""},
-	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainMaintenance", Description: "Maintenance mode: GET is AbilityRead, matching the auth routes' own passive-visibility tier. PUT/DELETE are AbilityDeploy, not AbilityRoot: this changes an app's runtime routing behavior, the same \"app lifecycle\" tier POST .../stop and .../start already use, not a credential-bearing change like basic auth."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainMaintenance", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/maintenance", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainMaintenance", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/policies", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicies", Description: "Every section plus status for the domain page, and a dry run preview."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/policies/preview", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePreviewDomainPolicies", Description: ""},

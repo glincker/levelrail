@@ -32,22 +32,24 @@ type MaintenanceWindow struct {
 	AnnouncedAt      *time.Time
 	CreatedBy        string
 	CreatedAt        time.Time
+	// Ongoing marks a window that has no real end yet; EndsAt is a placeholder.
+	Ongoing bool
 }
 
 const maintenanceColumns = `id, title, message, scope, target, starts_at, ends_at, freeze,
-	announce_lead_mins, announced_at, created_by, created_at`
+	announce_lead_mins, announced_at, created_by, created_at, ongoing`
 
 func scanMaintenanceWindow(row interface{ Scan(dest ...any) error }) (MaintenanceWindow, error) {
 	var (
 		w                                    MaintenanceWindow
-		freeze                               int
+		freeze, ongoing                      int
 		startsAt, endsAt, announced, created string
 	)
 	if err := row.Scan(&w.ID, &w.Title, &w.Message, &w.Scope, &w.Target, &startsAt, &endsAt, &freeze,
-		&w.AnnounceLeadMins, &announced, &w.CreatedBy, &created); err != nil {
+		&w.AnnounceLeadMins, &announced, &w.CreatedBy, &created, &ongoing); err != nil {
 		return MaintenanceWindow{}, err
 	}
-	w.Freeze = freeze != 0
+	w.Freeze, w.Ongoing = freeze != 0, ongoing != 0
 	w.StartsAt, _ = parseStatusTime(startsAt)
 	w.EndsAt, _ = parseStatusTime(endsAt)
 	w.CreatedAt, _ = parseStatusTime(created)
@@ -73,9 +75,9 @@ func (db *DB) InsertMaintenanceWindow(ctx context.Context, w MaintenanceWindow) 
 	}
 	_, err = db.ExecContext(ctx, `
 		INSERT INTO maintenance_windows (`+maintenanceColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?)
 	`, w.ID, w.Title, w.Message, w.Scope, w.Target, statusTime(w.StartsAt), statusTime(w.EndsAt), freeze,
-		w.AnnounceLeadMins, w.CreatedBy, statusTime(w.CreatedAt))
+		w.AnnounceLeadMins, w.CreatedBy, statusTime(w.CreatedAt), boolInt(w.Ongoing))
 	if err != nil {
 		return MaintenanceWindow{}, fmt.Errorf("store: insert maintenance window: %w", err)
 	}
@@ -188,4 +190,14 @@ func (db *DB) ListAllDeployFreezeWindows(ctx context.Context) ([]DeployFreezeWin
 		out = append(out, w)
 	}
 	return out, rows.Err()
+}
+
+// EndOngoingMaintenanceWindow turns an ongoing window into a completed one
+// ending at at, so the status page lists it as resolved. Missing is a no-op.
+func (db *DB) EndOngoingMaintenanceWindow(ctx context.Context, id string, at time.Time) error {
+	_, err := db.ExecContext(ctx, `UPDATE maintenance_windows SET ongoing = 0, ends_at = ? WHERE id = ? AND ongoing = 1`, statusTime(at), id)
+	if err != nil {
+		return fmt.Errorf("store: end ongoing maintenance window: %w", err)
+	}
+	return nil
 }

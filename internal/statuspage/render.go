@@ -126,7 +126,7 @@ footer{margin-top:40px;color:var(--muted);font-size:.85rem}
 
 {{if .Maintenance}}<h2>Maintenance</h2>
 {{range .Maintenance}}<article class="card"><div class="row"><span class="name">{{.Title}}</span><span class="badge maintenance">{{label .Status}}</span></div>
-<div class="meta">{{stamp .StartsAt}}{{if .EndsAt}} to {{stamp .EndsAt.UTC}}{{end}}{{if .Components}} &middot; {{range $i, $c := .Components}}{{if $i}}, {{end}}{{$c}}{{end}}{{end}}</div>
+<div class="meta">{{stamp .StartsAt}}{{if .EndsAt}} to {{stamp .EndsAt.UTC}}{{end}}{{if .Ongoing}} &middot; ongoing{{end}}{{if .Components}} &middot; {{range $i, $c := .Components}}{{if $i}}, {{end}}{{$c}}{{end}}{{end}}</div>
 {{range .Updates}}<div class="update"><div class="meta">{{label .Status}} &middot; {{.At}}</div>{{.Body}}</div>{{end}}</article>{{end}}{{end}}
 
 {{if .Incidents}}<h2>Incidents</h2>

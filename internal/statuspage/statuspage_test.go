@@ -267,7 +267,7 @@ func TestPublicViewPrivacy(t *testing.T) {
 	whitelist := []string{
 		"title", "description", "status", "status_text", "generated_at", "components", "incidents", "maintenance",
 		"name", "uptime_90d", "days", "date", "uptime",
-		"id", "impact", "starts_at", "ends_at", "resolved_at", "updates", "body", "at",
+		"id", "impact", "starts_at", "ends_at", "resolved_at", "ongoing", "updates", "body", "at",
 	}
 	got := map[string]bool{}
 	jsonFields(reflect.TypeOf(View{}), got)

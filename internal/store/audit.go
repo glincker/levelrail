@@ -39,6 +39,8 @@ type AuditEntry struct {
 	Action string
 	// OnBehalfOf is the human principal ("user:<id>") an AI turn token acted for.
 	OnBehalfOf string
+	// Detail is optional JSON describing a lifecycle event, empty for plain request rows.
+	Detail string
 }
 
 // auditTimeLayout formats a CreatedAt value with a fixed 9-digit
@@ -99,9 +101,9 @@ type auditExecer interface {
 
 func insertAuditEntry(ctx context.Context, x auditExecer, e AuditEntry) error {
 	_, err := x.ExecContext(ctx, `
-		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient, e.Action, e.OnBehalfOf)
+		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, detail)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient, e.Action, e.OnBehalfOf, e.Detail)
 	if err != nil {
 		return fmt.Errorf("store: save audit entry %q: %w", e.ID, err)
 	}
@@ -149,7 +151,7 @@ var auditLikeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 // exact path and/or method match.
 func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time, filter AuditEntryFilter) ([]AuditEntry, error) {
 	query := `
-		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of
+		SELECT id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, detail
 		FROM audit_log
 	`
 	var (
@@ -205,7 +207,7 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	var out []AuditEntry
 	for rows.Next() {
 		var e AuditEntry
-		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf); err != nil {
+		if err := rows.Scan(&e.ID, &e.ActorType, &e.ActorID, &e.ActorName, &e.Ability, &e.Method, &e.Path, &e.StatusCode, &e.RemoteAddr, &e.CreatedAt, &e.ClientKind, &e.AgentName, &e.AgentClient, &e.Action, &e.OnBehalfOf, &e.Detail); err != nil {
 			return nil, fmt.Errorf("store: scan audit entry row: %w", err)
 		}
 		out = append(out, e)

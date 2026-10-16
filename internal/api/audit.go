@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"log/slog"
 	"net"
 	"net/http"
@@ -157,6 +158,8 @@ type auditLogEntryResource struct {
 	Action string `json:"action,omitempty"`
 	// OnBehalfOf is the human principal an AI assistant turn acted for.
 	OnBehalfOf string `json:"on_behalf_of,omitempty"`
+	// Detail is the lifecycle row's JSON detail, absent for plain request rows.
+	Detail json.RawMessage `json:"detail,omitempty"`
 }
 
 func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
@@ -173,7 +176,15 @@ func toAuditLogEntryResource(e store.AuditEntry) auditLogEntryResource {
 		CreatedAt:  e.CreatedAt,
 		ClientKind: e.ClientKind,
 		AgentName:  e.AgentName, AgentClient: e.AgentClient, Action: e.Action, OnBehalfOf: e.OnBehalfOf,
+		Detail: auditDetail(e.Detail),
 	}
+}
+
+func auditDetail(raw string) json.RawMessage {
+	if raw == "" || !json.Valid([]byte(raw)) {
+		return nil
+	}
+	return json.RawMessage(raw)
 }
 
 const (

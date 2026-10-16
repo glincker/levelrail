@@ -24,6 +24,9 @@ export interface Silence {
   created_at: string
   expired_at?: string
   status: SilenceStatus
+  // source is "maintenance" for a silence made by domain maintenance.
+  source?: 'manual' | 'maintenance'
+  maintenance_domain?: string
 }
 
 export interface CreateSilenceRequest {

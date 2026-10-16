@@ -49,11 +49,11 @@ func TestMaintenanceAutoOffFleetAndPreview(t *testing.T) {
 		t.Fatalf("preview = %s (%v)", rec.Body.String(), err)
 	}
 
-	items := rt.maintenanceAttentionItems(httptest.NewRequest(http.MethodGet, "/", nil), []string{AbilityRead}, time.Now().Add(3*time.Hour))
+	items := rt.maintenanceAttentionItems(authedRequest(t, cookie, http.MethodGet, "/api/v1/attention/feed", ""), []string{AbilityRead}, time.Now().Add(3*time.Hour))
 	if len(items) != 1 || items[0].Kind != "maintenance_long" {
 		t.Fatalf("attention = %+v", items)
 	}
-	if got := rt.maintenanceAttentionItems(httptest.NewRequest(http.MethodGet, "/", nil), []string{AbilityRead}, time.Now()); len(got) != 0 {
+	if got := rt.maintenanceAttentionItems(authedRequest(t, cookie, http.MethodGet, "/api/v1/attention/feed", ""), []string{AbilityRead}, time.Now()); len(got) != 0 {
 		t.Fatalf("fresh maintenance raised attention: %+v", got)
 	}
 }

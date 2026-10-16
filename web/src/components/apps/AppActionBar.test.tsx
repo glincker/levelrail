@@ -27,6 +27,10 @@ vi.mock('../../queries/appSleep', () => ({
     wake: { mutate: wakeMutate, isPending: false },
   }),
 }))
+const maintenanceState = { on: false }
+vi.mock('../../hooks/useAppInMaintenance', () => ({
+  useAppInMaintenance: () => maintenanceState.on,
+}))
 vi.mock('../PromoteAppDialog', () => ({ PromoteAppDialog: () => null }))
 vi.mock('../CloneAppDialog', () => ({ CloneAppDialog: () => null }))
 vi.mock('../DeleteAppDialog', () => ({ DeleteAppDialog: () => null }))

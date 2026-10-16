@@ -31,6 +31,9 @@ func (s *Service) withWindows(ctx context.Context, v View, now time.Time) View {
 		end := w.EndsAt
 		status := StatusScheduled
 		switch {
+		case w.Ongoing:
+			status = StatusInProgress
+			allActive = allActive || w.Scope == store.MaintenanceScopeAll
 		case !now.Before(w.EndsAt):
 			status = StatusCompleted
 		case !now.Before(w.StartsAt):
@@ -41,8 +44,12 @@ func (s *Service) withWindows(ctx context.Context, v View, now time.Time) View {
 		if w.Message != "" {
 			updates = append(updates, UpdateView{Status: status, Body: w.Message, At: w.CreatedAt.UTC()})
 		}
-		v.Maintenance = append(v.Maintenance, IncidentView{ID: w.ID, Title: w.Title, Status: status,
-			Impact: Maintenance, StartsAt: w.StartsAt.UTC(), EndsAt: &end, Updates: updates})
+		view := IncidentView{ID: w.ID, Title: w.Title, Status: status,
+			Impact: Maintenance, StartsAt: w.StartsAt.UTC(), EndsAt: &end, Updates: updates}
+		if w.Ongoing {
+			view.EndsAt, view.Ongoing = nil, true
+		}
+		v.Maintenance = append(v.Maintenance, view)
 	}
 	if allActive && len(v.Components) > 0 {
 		statuses := make([]string, len(v.Components))

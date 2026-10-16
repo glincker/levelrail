@@ -13,6 +13,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/changes"
+	"github.com/GLINCKER/levelrail/internal/maintenance"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -49,11 +50,19 @@ type silenceResource struct {
 	CreatedAt time.Time               `json:"created_at"`
 	ExpiredAt *time.Time              `json:"expired_at,omitempty"`
 	Status    string                  `json:"status"`
+	// Source is "maintenance" for a silence made by domain maintenance, else "manual".
+	Source string `json:"source"`
+	// MaintenanceDomain is the domain that owns a maintenance silence.
+	MaintenanceDomain string `json:"maintenance_domain,omitempty"`
 }
 
 func toSilenceResource(s alerting.Silence, now time.Time) silenceResource {
-	return silenceResource{ID: s.ID, Matchers: s.Matchers, StartsAt: s.StartsAt.UTC(), EndsAt: s.EndsAt.UTC(), CreatedBy: s.CreatedBy,
-		Reason: s.Reason, CreatedAt: s.CreatedAt.UTC(), ExpiredAt: s.ExpiredAt, Status: s.Status(now)}
+	res := silenceResource{ID: s.ID, Matchers: s.Matchers, StartsAt: s.StartsAt.UTC(), EndsAt: s.EndsAt.UTC(), CreatedBy: s.CreatedBy,
+		Reason: s.Reason, CreatedAt: s.CreatedAt.UTC(), ExpiredAt: s.ExpiredAt, Status: s.Status(now), Source: "manual"}
+	if domain, ok := maintenance.SilenceDomain(s.CreatedBy); ok {
+		res.Source, res.MaintenanceDomain = "maintenance", domain
+	}
+	return res
 }
 
 type createSilenceRequest struct {
@@ -151,6 +160,12 @@ func (rt *Router) handleExpireAlertSilence(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	now := time.Now()
+	if cur, err := rt.alertNoise.GetSilence(r.Context(), r.PathValue("id")); err == nil && cur.Status(now) != alerting.SilenceExpired {
+		if domain, ok := maintenance.SilenceDomain(cur.CreatedBy); ok {
+			writeError(w, http.StatusConflict, "this silence ends when maintenance on "+domain+" ends; turn that maintenance off instead")
+			return
+		}
+	}
 	s, err := rt.alertNoise.ExpireSilence(r.Context(), r.PathValue("id"), now)
 	if errors.Is(err, alerting.ErrSilenceNotFound) {
 		writeError(w, http.StatusNotFound, "silence not found")
