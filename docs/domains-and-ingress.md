@@ -558,9 +558,11 @@ While a domain is in maintenance, the ingress answers `503` with a small page in
 | `retry_after_seconds` | Sent as `Retry-After`, 1 to 86400. Default 300. |
 | `until` | RFC 3339 end time. Creates a linked [scheduled maintenance](/scheduled-maintenance) window (app scope, no deploy freeze), so the dashboard banner and the public status page show it. When the window ends, or is cancelled, maintenance ends on its own within a minute and an audit entry `domain_maintenance.ended` is written. |
 | `bypass` | Up to 32 IP addresses or CIDRs whose clients still reach the app, for example your office, so you can check the site while it is down. Matched on the client address after trusted proxy headers. `0.0.0.0/0` is refused. |
-| `bypass_health_check` | Default on. When the app has an HTTP readiness path, requests to exactly that path still reach the app, so uptime probes are not answered with `503`. |
+| `bypass_health_check` | Default on. When the app has an HTTP readiness path, requests to exactly that path still reach the app, so uptime probes are not answered with `503`. A readiness path of `/` is never bypassed, because that is the homepage itself. |
 
 Bypassed requests go through the domain's normal route, so basic auth, the auth gate and the WAF still apply to them. When the app has no running container, every request gets the page.
+
+The page is self-contained (inline CSS, no files from your app) and carries `Cache-Control: no-store`. Requests for assets (`/_next/*`, `/static/*`, `/assets/*`, and files such as `.css`, `.js`, images and fonts) get an empty `503` with `Cache-Control: no-store` and a `text/plain` type instead of the page, so browsers and CDNs never store HTML under an asset URL. The brief "Updating" hold page shown during a deploy follows the same rule. After maintenance ends the next request reaches the app; nothing in the `503` is cacheable. A service worker that cached assets keeps serving them until it updates, which a normal reload does.
 
 ```bash
 levelrail-cli domains maintenance set web app.example.com \

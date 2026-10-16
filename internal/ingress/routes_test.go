@@ -410,11 +410,13 @@ func TestBuildRoutesConfig_JSONShape(t *testing.T) {
 			t.Fatalf("handle = %d entries, want 1 (no reverse_proxy, no dial)", len(handle))
 		}
 		h := handle[0].(map[string]any)
-		if h["handler"] != "static_response" {
-			t.Errorf("handler = %v, want static_response", h["handler"])
+		if h["handler"] != "subroute" {
+			t.Fatalf("handler = %v, want subroute (asset 503 then page)", h["handler"])
 		}
-		if h["status_code"] != float64(503) {
-			t.Errorf("status_code = %v, want 503", h["status_code"])
+		inner := h["routes"].([]any)
+		page := inner[len(inner)-1].(map[string]any)["handle"].([]any)[0].(map[string]any)
+		if page["handler"] != "static_response" || page["status_code"] != float64(503) {
+			t.Errorf("page handler = %v", page)
 		}
 	})
 

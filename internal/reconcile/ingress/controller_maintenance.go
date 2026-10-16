@@ -67,7 +67,9 @@ func readinessPath(svc store.DesiredService) string {
 func maintenanceGate(svc store.DesiredService, m store.DomainMaintenance) *ingress.MaintenanceGate {
 	g := &ingress.MaintenanceGate{Page: maintenancePage(m), BypassCIDRs: m.BypassCIDRs}
 	if m.BypassHealthCheck {
-		if p := readinessPath(svc); p != "" {
+		// "/" is the app's homepage, not a probe: bypassing it serves the real
+		// document while its assets still get the maintenance response.
+		if p := readinessPath(svc); p != "" && p != "/" {
 			g.BypassPaths = []string{p}
 		}
 	}

@@ -133,7 +133,7 @@ func TestController_Reconcile_MaintenanceTakesPrecedenceOverRedirect(t *testing.
 	if len(routes) != 1 {
 		t.Fatalf("applied routes = %+v, want exactly 1: maintenance and redirect must never both route the same host", routes)
 	}
-	handler, ok := routes[0].Handle[0].(ingress.StaticResponseHandler)
+	handler, ok := pageHandler(routes[0].Handle[0])
 	if !ok {
 		t.Fatalf("route.Handle[0] is %T, want ingress.StaticResponseHandler", routes[0].Handle[0])
 	}
