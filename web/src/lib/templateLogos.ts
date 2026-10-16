@@ -406,6 +406,8 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   windmill: () => import('@thesvg/react/windmill'),
   yamtrack: () => import('@thesvg/react/yamtrack'),
   zipline: () => import('@thesvg/react/zipline'),
+  'obsidian-livesync': () => import('@thesvg/react/obsidian'),
+  'cloudflare-ddns': () => import('@thesvg/react/cloudflare'),
 }
 
 export type LogoSurface = 'light' | 'dark'
@@ -463,3 +465,31 @@ export function logoLoaderFor(
         createElement(m.default as VariantLogo, { ...props, variant }),
     }))
 }
+
+export const TECH_LOGO_LOADERS = {
+  nodejs: () => import('@thesvg/react/nodejs'),
+  postgresql: () => import('@thesvg/react/postgresql'),
+  redis: () => import('@thesvg/react/redis'),
+  nextjs: () => import('@thesvg/react/nextjs'),
+  fastapi: () => import('@thesvg/react/fastapi'),
+  nginx: () => import('@thesvg/react/nginx'),
+} satisfies Record<string, () => Promise<{ default: LogoComponent }>>
+
+export type TechLogoKey = keyof typeof TECH_LOGO_LOADERS
+
+// Starter kits compose two products: [primary, optional badge] by technology.
+export const COMPOSITE_LOGOS: Record<string, [TechLogoKey, TechLogoKey?]> = {
+  'node-postgres-starter': ['nodejs', 'postgresql'],
+  'redis-cache-starter': ['redis', 'nodejs'],
+  'nextjs-postgres-starter': ['nextjs', 'postgresql'],
+  'static-site-api-starter': ['nginx', 'nodejs'],
+  'fastapi-postgres-starter': ['fastapi', 'postgresql'],
+  'worker-redis-queue-starter': ['nodejs', 'redis'],
+  'nginx-multi-backend-starter': ['nginx', 'nodejs'],
+}
+
+// No thesvg mark exists for these products yet; they render the monogram tile.
+export const KNOWN_MISSING_LOGOS: readonly string[] =
+  'diun gotenberg lldap campfire once-campfire bugsink imgcompress embystat budge proxyscotch kutt metamcp'.split(
+    ' ',
+  )
