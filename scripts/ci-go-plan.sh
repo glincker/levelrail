@@ -171,6 +171,8 @@ fi
 e2e_pkg="github.com/GLINCKER/levelrail/test/e2e"
 reconcile_pkg="github.com/GLINCKER/levelrail/test/e2e/reconcile"
 fleet_test="TestTemplateFleet_Live_DeploysAndTearsDownCleanly"
+# Three catalog batch tests, about 200 s of the reconcile package's 430 s (CI timings 2026-10-16).
+reconcile_heavy="TestCatalogProductivityBatch_Live_Deploys|TestCatalogAutomationBatch_Live|TestCatalogDevtoolsInfraBatch_Live_Deploys"
 docker_rest=()
 for pkg in "${docker[@]}"; do
 	case "$pkg" in
@@ -190,8 +192,15 @@ for pkg in "${docker[@]}"; do
 		;;
 	"$reconcile_pkg")
 		[ "$fleet_run" = true ] || continue
-		lane e2e-reconcile "$pkg" "" "-short -timeout=27m" docker false
-		rest_checks+=("Test (e2e-reconcile)")
+		if [ "$live" = full ]; then
+			# New tests land in e2e-reconcile (skip list), so a rename never drops one.
+			lane e2e-reconcile "$pkg" "" "-short -timeout=27m" docker false "" "$reconcile_heavy"
+			lane e2e-reconcile-2 "$pkg" "1/1" "-short -timeout=27m" docker false "$reconcile_heavy"
+			rest_checks+=("Test (e2e-reconcile)" "Test (e2e-reconcile-2)")
+		else
+			lane e2e-reconcile "$pkg" "" "-short -timeout=27m" docker false
+			rest_checks+=("Test (e2e-reconcile)")
+		fi
 		;;
 	*) docker_rest+=("$pkg") ;;
 	esac

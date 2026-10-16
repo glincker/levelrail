@@ -62,7 +62,9 @@ Go toolchain) sorts changed files into areas:
 | Non-Go file inside a Go package (embedded schema, SQL, `testdata/`) | That package |
 | File outside any package (`docs/`, root files, `proto/`) | Packages whose Go files name it in a string literal, for example `internal/api` for `docs/api-reference.md` |
 | `web/` | Web job; config, lockfile or test setup changes run the full vitest suite |
-| `docs/*.md` | Web bundle build and the help page tests |
+| `docs/*.md` (except `docs/changelog/`, which the in-app help does not bundle) | Web bundle build and the help page tests |
+| `scripts/test-ci-*.sh`, `scripts/ci-test-weights.txt`, `scripts/refresh-test-weights.sh` | The planner table tests (`Build, vet`), no Go test lane |
+| `.github/actions/setup-go-cached/` | Every Go lane (live suites in smoke mode) |
 | `install.sh`, `scripts/test-install-sh.sh`, `packaging/` | install.sh end to end on Ubuntu and Debian |
 | Other `.github/workflows/*` | actionlint on the changed files |
 | `.github/flaky-tests.txt` | The packages named in the changed lines, plus the quarantine lane |
@@ -75,12 +77,18 @@ package's own tests can see (`_test.go`, `testdata/`, a doc a test reads)
 selects that package alone, not its dependents. Lanes:
 
 - `internal/api` in four shards by test name whenever it is affected. It is
-  the slowest package by far, and most backend changes reach it.
+  the slowest package by far, and most backend changes reach it. Tests are
+  packed onto shards by `scripts/ci-shard-names.sh`, heaviest first onto the
+  least loaded shard, using the seconds in `scripts/ci-test-weights.txt`
+  (unlisted tests weigh 0.28 s). Refresh the file from recent
+  `test-results-api-*` artifacts with `scripts/refresh-test-weights.sh`.
 - `test/e2e` always gets its own `e2e` lane when it is affected, so the
   heaviest package sets the floor alone. On a full live run
   (see [Live suites](#live-suites)) the template fleet test gets its own
   `e2e-fleet` lane, `e2e` runs everything else in that package, and
-  `test/e2e/reconcile` gets an `e2e-reconcile` lane.
+  `test/e2e/reconcile` gets `e2e-reconcile` and `e2e-reconcile-2`: the three
+  catalog batch tests (about 200 s of the package's 430 s) run in the second
+  lane, every other test, including any new one, in the first.
 - Up to `CI_SMALL_LANE_MAX` (default 8) other affected packages share one
   `rest` lane. Above that, Docker-backed packages get their own `docker`
   lane with bounded `-p` and the rest share `rest`.
@@ -93,7 +101,8 @@ The lanes and the checks that gate them:
 | `api-1` to `api-4` | `internal/api`, sharded by test name | `internal/api` affected | `Test (api-N)`, aggregated as `Test (internal/api)` |
 | `e2e-fleet` | `test/e2e`, template fleet test only | `test/e2e` affected and a fleet path changed ([below](#which-e2e-lanes-run)) | `Test (e2e-fleet)` |
 | `e2e` | `test/e2e` (minus the fleet test on a full live run) | `test/e2e` affected and an e2e path changed | `Test (e2e)` |
-| `e2e-reconcile` | `test/e2e/reconcile` | package affected and a fleet path changed | `Test (e2e-reconcile)` |
+| `e2e-reconcile` | `test/e2e/reconcile`, minus the three catalog batch tests on a full live run | package affected and a fleet path changed | `Test (e2e-reconcile)` |
+| `e2e-reconcile-2` | the three catalog batch tests of `test/e2e/reconcile` | as above, full live run only (smoke mode runs one lane) | `Test (e2e-reconcile-2)` |
 | `docker` | other Docker-backed packages, `-p 2` | many packages affected | `Test (docker)` |
 | `rest` | everything else (and the Docker ones on a small diff) | any other package affected | `Test (rest)` |
 
@@ -307,6 +316,15 @@ applies. Live Docker lanes should keep `-count=1`.
   repeating setup-go plus restore/save inline.
 - golangci-lint: the action's own analysis cache, saved on `main` only.
 - npm: `actions/setup-node`'s npm cache, keyed on `web/package-lock.json`.
+- Dependabot: its PRs go through the same scoping. A GitHub Actions bump touches
+  only `.github/workflows/*`, so it runs actionlint and nothing else; an npm bump
+  runs the web jobs only; a `tools/` bump runs the release notes generator; a
+  `go.mod`, `go.sum` or `kit/go.mod` bump runs every Go lane, because the import
+  graph cannot scope a dependency change.
+- Release image cache: `release.yml` writes its BuildKit layers with
+  `cache-to: type=gha`, and a tag run can only read caches of its own tag, so
+  each release leaves about 5 GB that no later run reads and that competes with
+  the CI caches for the 10 GB quota.
 - tsc: `web/node_modules/.tmp` (the `tsc -b` build info), restored on PRs and
   saved on `main` pushes. A stale build info is safe: tsc compares file hashes.
 
@@ -322,8 +340,10 @@ passes `CI required` the same way a skipped area does.
 
 ## Concurrency and merge queue
 
-A new push to a PR cancels that PR's previous CI run. Runs on `main` are
-never cancelled.
+A new push to a PR cancels that PR's previous CI run (`ci.yml`, `secret-scan.yml`,
+`pr-hygiene.yml`). The group key includes the event name and, outside pull
+requests, the commit SHA, so `merge_group` and `main` runs never share a
+group with a PR and are never cancelled; `nightly.yml` has no group.
 
 There is no merge queue on `main` now, so a PR merges as soon as its own
 `CI required` check passes, and the `push` run on `main` is the only
@@ -345,7 +365,11 @@ files with their own `push` triggers, unaffected by anything in `ci.yml`.
 
 ## Check what a diff would run
 
-Both scoping scripts run locally against any pair of commits, which is the quickest way to see what a change selects:
+Both scoping scripts run locally against any pair of commits, which is the quickest way to see what a change selects.
+`scripts/test-ci-changes.sh` holds the table cases for `ci-changes.sh` (docs-only,
+web-only, lockfile-only, script-only, Go-only, `go.mod`, workflow, planner and
+embedded-file changes), the shard partition checks and a fake-`gh` check that a
+skipped, missing or failed lane fails the aggregator that `CI required` waits on:
 
 ```sh
 scripts/ci-changes.sh <base-sha> <head-sha>
@@ -371,7 +395,9 @@ wall time per job, from the run and step timestamps.
 The first job starts 2 to 57 s after the run is created. Go build and
 module caches hit on PR runs. The tsc build-info cache never hits, because
 `tsc -b` re-checks the whole project on every run (about 31 s) and
-`web/tsconfig.app.json` sets no `incremental`.
+`web/tsconfig.app.json` sets no `incremental`. Enabling it is a tsconfig change
+that needs maintainer approval; the cache save step would then need to allow
+PR runs as well.
 
 Local hooks, one small sample diff each on a warm cache (seconds):
 
@@ -390,6 +416,21 @@ runs `vite build` once when the file is missing, about 20 s.
 pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
 overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
 timeout of 10 minutes is shorter than a whole internal/api run.
+
+## Expected effect of the lane changes
+
+Estimates from the artifacts of three recent runs, to be compared with the table
+above after the first runs on the new layout.
+
+| Change | Expected | Basis |
+| --- | --- | --- |
+| Weighted api shards | api lanes lose about 25 s of test time (the slowest shard's summed test time 303 s to 276 s; shards were 232 to 303 s) | per-test means of 3 runs, packed greedily |
+| `e2e-reconcile` split in two | the reconcile lane drops from about 480 s to about 280 s; with `e2e-fleet` (about 410 s) now the longest e2e lane, a run that plans the fleet lanes saves roughly 65 s of wall time | per-test times of the reconcile package |
+| Planner tests on planner-only changes | no wall effect; a change to the planner tests alone no longer skips them | `ci-changes.sh` planner output |
+
+The api shard balance is noisy run to run (a shard's summed test time varied by
+up to 30% between runs with the same assignment), so the gain from weights is
+smaller than the spread.
 
 ## Runners
 

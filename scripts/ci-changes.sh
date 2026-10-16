@@ -4,6 +4,7 @@
 #
 # Usage: scripts/ci-changes.sh <base> [head]   diff base..head
 #        scripts/ci-changes.sh --full          everything
+#        scripts/ci-changes.sh --files         changed paths on stdin (scripts/test-ci-changes.sh)
 # Output: key=value lines for $GITHUB_OUTPUT, a human summary on stderr.
 #
 #   full        true when the CI pipeline itself changed, so run everything
@@ -19,13 +20,14 @@
 #   vitest      none | changed | full
 #   installer   install.sh end-to-end job
 #   workflows   actionlint
+#   planner     scripts/test-ci-*.sh (the planner table tests) have work even when no Go package is affected
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
 full=false go=false go_full=false lint=none tools=false kit=false tfprovider=false
 dep_full=false
-web=none vitest=none installer=false workflows=false
+web=none vitest=none installer=false workflows=false planner=false
 declare -A lint_dirs=()
 reasons=()
 
@@ -38,8 +40,10 @@ if [ "${1:-}" = "--full" ]; then
 	set_full "full run requested"
 	dep_full=true
 	files=()
+elif [ "${1:-}" = "--files" ]; then
+	mapfile -t files
 else
-	base="${1:?usage: ci-changes.sh <base> [head] | --full}"
+	base="${1:?usage: ci-changes.sh <base> [head] | --full | --files}"
 	head="${2:-HEAD}"
 	mapfile -t files < <(git diff --name-only --diff-filter=ACDMR "$base" "$head")
 fi
@@ -48,6 +52,15 @@ for f in "${files[@]}"; do
 	case "$f" in
 	.github/workflows/ci.yml | scripts/ci-changes.sh | scripts/ci-lane-*.sh)
 		set_full "CI pipeline changed: $f"
+		;;
+	scripts/test-ci-*.sh | scripts/ci-test-weights.txt | scripts/refresh-test-weights.sh)
+		# Planner tests and shard weights: the table tests cover them, no Go lane does.
+		go=true planner=true
+		reasons+=("planner test or weights changed: $f")
+		;;
+	.github/actions/setup-go-cached/*)
+		go=true go_full=true
+		reasons+=("Go setup action changed: $f")
 		;;
 	scripts/ci-*.sh | scripts/affected-go-packages.sh | scripts/go-test-groups.sh | scripts/ci-guards.txt | \
 		scripts/ci-heavy-packages.txt | scripts/check-coverage.sh | scripts/check-changed-file-coverage.sh | \
@@ -101,6 +114,7 @@ for f in "${files[@]}"; do
 		web=full
 		[ "$vitest" = full ] || vitest=changed
 		;;
+	docs/changelog/*) ;;
 	docs/*.md)
 		[ "$web" = full ] || web=docs
 		;;
@@ -127,7 +141,7 @@ if [ "$full" = false ] && [ "${#files[@]}" -gt 0 ]; then
 fi
 
 if [ "$full" = true ]; then
-	go=true go_full=true lint=all tools=true kit=true tfprovider=true web=full vitest=full installer=true workflows=true
+	go=true go_full=true lint=all tools=true kit=true tfprovider=true web=full vitest=full installer=true workflows=true planner=true
 fi
 
 if [ "$lint" = none ] && [ "${#lint_dirs[@]}" -gt 0 ]; then
@@ -152,10 +166,11 @@ web=$web
 vitest=$vitest
 installer=$installer
 workflows=$workflows
+planner=$planner
 EOF
 
 {
 	echo "changed files: ${#files[@]}"
 	for r in "${reasons[@]}"; do echo "  $r"; done
-	echo "go=$go go_full=$go_full lint=$lint tools=$tools kit=$kit tfprovider=$tfprovider web=$web vitest=$vitest installer=$installer workflows=$workflows"
+	echo "go=$go go_full=$go_full lint=$lint tools=$tools kit=$kit tfprovider=$tfprovider web=$web vitest=$vitest installer=$installer workflows=$workflows planner=$planner"
 } >&2

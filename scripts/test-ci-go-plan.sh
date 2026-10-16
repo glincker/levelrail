@@ -105,6 +105,11 @@ run "deploy change runs e2e, not full live" - "live=smoke" has:e2e lacks:e2e-fle
 run "pipeline script change plus api runs fleet and e2e" - "live=full" has:e2e-fleet has:e2e -- scripts/ci-go-plan.sh internal/api/apps.go
 run "reconcile change is full" - "live=full" has:e2e-fleet has:e2e has:e2e-reconcile \
 	check:"Test (e2e-fleet)" check:"Test (e2e-reconcile)" -- internal/reconcile/application/controller.go
+run "full reconcile run is split in two lanes, both gated" - "live=full" has:e2e-reconcile has:e2e-reconcile-2 \
+	check:"Test (e2e-reconcile)" check:"Test (e2e-reconcile-2)" -- internal/reconcile/application/controller.go
+run "smoke-mode reconcile run stays one lane" "CI_LIVE_SMOKE=true" "scope=all" "live=smoke" has:e2e-reconcile lacks:e2e-reconcile-2 \
+	check:"Test (e2e-reconcile)" nocheck:"Test (e2e-reconcile-2)" -- go.mod
+run "go.mod full run splits reconcile too" - "scope=all" has:e2e-reconcile has:e2e-reconcile-2 -- go.mod
 run "catalog data change is live=full but runs no e2e lane" - "live=full" lacks:e2e-fleet lacks:e2e -- internal/catalog/templates_ai.go
 run "e2e test change is full" - "live=full" has:e2e-fleet has:e2e -- test/e2e/template_fleet_test.go
 run "e2e testenv change is full" - "live=full" has:e2e-reconcile -- test/e2e/testenv/testenv.go
