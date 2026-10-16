@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.0](https://github.com/glincker/levelrail/compare/v0.4.0...v0.5.0) (2026-10-16)
+
+
+### Features
+
+* observability suite, Pages, and hardened git deploys ([#1223](https://github.com/glincker/levelrail/issues/1223)) ([6bfee2d](https://github.com/glincker/levelrail/commit/6bfee2dd57688d3ebc57336f7382f8175997519a))
+
 ## [0.4.0](https://github.com/glincker/levelrail/compare/v0.3.0...v0.4.0) (2026-10-15)
 
 
