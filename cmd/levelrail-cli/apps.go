@@ -240,7 +240,7 @@ func appsUsage(prog string) string {
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
-  %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
+  %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
   %[1]s apps urls <name> [flags]   where the app can be reached now: ports, local and LAN addresses, domains, internal DNS name
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids

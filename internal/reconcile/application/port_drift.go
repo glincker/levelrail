@@ -13,10 +13,18 @@ const reasonPortDriftRecreate = "PortDriftRecreateFailed"
 // publishedPortDrifted reports a running container whose published main
 // port no longer matches desired: the container port changed, or the bind
 // interface did. Container names hash only image and nonce, so without this
-// an exposure edit would read as AlreadyRunning forever. A container that
+// an exposure edit would read as AlreadyRunning forever. A stopped container is judged by its configured
+// bindings, since a restart would republish the stale port. A container that
 // reports no bindings or no host IP is unknown, not drifted.
 func publishedPortDrifted(state *docker.ContainerState, desired *store.DesiredService, meshIP string) bool {
-	if state == nil || !state.Running || desired.Port == 0 || len(state.Ports) == 0 {
+	if state == nil || desired.Port == 0 {
+		return false
+	}
+	ports := state.Ports
+	if !state.Running {
+		ports = state.ConfiguredPorts
+	}
+	if len(ports) == 0 {
 		return false
 	}
 	want := meshIP
@@ -27,7 +35,7 @@ func publishedPortDrifted(state *docker.ContainerState, desired *store.DesiredSe
 		}
 		want = ip
 	}
-	for _, p := range state.Ports {
+	for _, p := range ports {
 		if p.ContainerPort != desired.Port {
 			continue
 		}

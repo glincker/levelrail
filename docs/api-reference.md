@@ -455,6 +455,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/exposure | AbilityWriteSensitive | handleSetAppExposure |
 | POST | /api/v1/apps/{name}/exposure/check | AbilityRead | handleCheckAppExposure |
 | GET | /api/v1/apps/{name}/urls | AbilityRead | handleGetAppURLs |
+| GET | /api/v1/apps/{name}/sleep/history | AbilityRead | handleAppSleepHistory |
 
 </Accordion>
 
@@ -1399,6 +1400,10 @@ Routes that do not fit an existing group.
 | OPTIONS | /api/v1/sentry/api/{project}/envelope/ | Public | handleSentryPreflight |
 | OPTIONS | /api/v1/sentry/api/{project}/store/ | Public | handleSentryPreflight |
 | GET | /api/v1/logs/usage | AbilityRead | handleLogUsage |
+| GET | /api/v1/sleep/overview | AbilityRead | handleSleepOverview |
+| GET | /api/v1/fixes | AbilityRead | handleListFixes |
+| POST | /api/v1/fixes/{id}/preview | AbilityRead | handlePreviewFix |
+| POST | /api/v1/fixes/{id}/apply | AbilityRoot | handleApplyFix |
 
 ## See also
 

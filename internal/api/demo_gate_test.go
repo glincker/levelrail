@@ -106,6 +106,8 @@ func TestDemoGateEveryNonGETRoute(t *testing.T) {
 
 func TestDemoGateAllowlistGolden(t *testing.T) {
 	want := []string{
+		"OPTIONS /api/v1/sentry/api/{project}/envelope/",
+		"OPTIONS /api/v1/sentry/api/{project}/store/",
 		"POST /api/v1/apps/{name}/validate-spec",
 		"POST /api/v1/auth/login",
 		"POST /api/v1/auth/logout",

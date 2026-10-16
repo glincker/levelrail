@@ -117,12 +117,16 @@ func TestDetectUnchecked(t *testing.T) {
 		{name: "next.js app router", fixture: "testdata/railpack-nextjs", wantProvider: "node", wantFramework: "Next.js"},
 		{name: "go", fixture: "testdata/railpack-go", wantProvider: "golang", wantFramework: "Go"},
 		{name: "python", fixture: "testdata/railpack-python", wantProvider: "python", wantFramework: "Python (Django)"},
-		// Railpack itself detects a real provider here (ruby), just one
+		// Railpack itself detects a real provider here (deno), just one
 		// outside supportedRailpackProviders: Provider still reports what
 		// Railpack found, FrameworkName stays empty so the wizard falls
 		// back to manual build-type selection rather than claiming a name
 		// for a stack it can't actually build yet.
-		{name: "unsupported provider reports raw provider, no framework name", fixture: "testdata/railpack-unsupported", wantProvider: "ruby", wantFramework: ""},
+		{name: "rails", fixture: "testdata/railpack-rails", wantProvider: "ruby", wantFramework: "Ruby"},
+		{name: "sinatra", fixture: "testdata/railpack-sinatra", wantProvider: "ruby", wantFramework: "Ruby"},
+		{name: "laravel", fixture: "testdata/railpack-laravel", wantProvider: "php", wantFramework: "PHP"},
+		{name: "plain php", fixture: "testdata/railpack-php", wantProvider: "php", wantFramework: "PHP"},
+		{name: "unsupported provider reports raw provider, no framework name", fixture: "testdata/railpack-unsupported", wantProvider: "deno", wantFramework: ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -226,6 +230,8 @@ func TestExtractPort(t *testing.T) {
 		{name: "port out of range", script: "--port 70000", want: 0},
 		{name: "port 0", script: "--port 0", want: 0},
 		{name: "port 1", script: "--port 1", want: 1},
+		{name: "shell default", script: "bundle exec rackup -p ${PORT:-9292}", want: 9292},
+		{name: "attached -p", script: "rails s -p3001", want: 3001},
 		{name: "port 65535", script: "--port 65535", want: 65535},
 	}
 	for _, tt := range tests {
@@ -388,5 +394,44 @@ func TestDetectUnchecked_ViteReact(t *testing.T) {
 	}
 	if result.PortSource == "" {
 		t.Errorf("PortSource = %q, want non-empty", result.PortSource)
+	}
+}
+
+func TestDetectRubyAndPHPPort(t *testing.T) {
+	tests := []struct {
+		name     string
+		files    map[string]string
+		ruby     bool
+		wantPort int
+	}{
+		{name: "ruby default", files: map[string]string{}, ruby: true, wantPort: 3000},
+		{name: "ruby procfile flag", files: map[string]string{"Procfile": "release: x\nweb: bundle exec puma -p 4567\n"}, ruby: true, wantPort: 4567},
+		{name: "ruby puma ENV.fetch default", files: map[string]string{"config/puma.rb": "port ENV.fetch(\"PORT\", 3100)\n"}, ruby: true, wantPort: 3100},
+		{name: "ruby puma literal", files: map[string]string{"config/puma.rb": "port 9292\n"}, ruby: true, wantPort: 9292},
+		{name: "php default", files: map[string]string{}, wantPort: 80},
+		{name: "php procfile", files: map[string]string{"Procfile": "web: php -S 0.0.0.0:8000 -p 8000"}, wantPort: 8000},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for name, body := range tt.files {
+				full := filepath.Join(dir, name)
+				if err := os.MkdirAll(filepath.Dir(full), 0o750); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(full, []byte(body), 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			var got int
+			if tt.ruby {
+				got, _ = detectRubyPort(dir)
+			} else {
+				got, _ = detectPHPPort(dir)
+			}
+			if got != tt.wantPort {
+				t.Errorf("port = %d, want %d", got, tt.wantPort)
+			}
+		})
 	}
 }

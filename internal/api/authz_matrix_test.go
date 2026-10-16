@@ -95,6 +95,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
+	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
 	"POST /api/v1/pipelines/filters":                             "rewrites submitted YAML with path filters, persists nothing",
 	"POST /api/v1/apps/{name}/log-pipeline/preview":              "runs submitted rules over submitted sample lines, persists nothing",

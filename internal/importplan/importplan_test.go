@@ -249,6 +249,11 @@ func TestRepoPlans(t *testing.T) {
 		{"gomod", BuildRailpack, 8080, DeployBuild, "/"},
 		{"static", BuildStatic, 0, DeployBuild, "/"},
 		{"compose_repo", BuildImage, 80, DeployCompose, ""},
+		{"rails", BuildRailpack, 3000, DeployBuild, "/up"},
+		{"rails_procfile", BuildRailpack, 4567, DeployBuild, "/up"},
+		{"sinatra", BuildRailpack, 3000, DeployBuild, "/"},
+		{"laravel", BuildRailpack, 80, DeployBuild, "/"},
+		{"phpplain", BuildRailpack, 80, DeployBuild, "/"},
 	}
 	for _, c := range cases {
 		t.Run(c.dir, func(t *testing.T) {

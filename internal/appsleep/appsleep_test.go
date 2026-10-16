@@ -108,3 +108,25 @@ func TestWake(t *testing.T) {
 		t.Error("waking an awake app must be a no-op")
 	}
 }
+
+type recSleepEvents struct{ events []store.SleepEvent }
+
+func (r *recSleepEvents) AddSleepEvent(_ context.Context, e store.SleepEvent) (int64, error) {
+	r.events = append(r.events, e)
+	return int64(len(r.events)), nil
+}
+func (r *recSleepEvents) AddAppEvent(context.Context, store.AppEvent) error { return nil }
+
+func TestTickRecordsSlept(t *testing.T) {
+	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
+	sleep := &fakeSleep{rows: map[string]*store.AppSleep{"web": {ServiceName: "web", IdleMinutes: 30, Since: now.Add(-time.Hour)}}}
+	apps := &fakeApps{suspended: map[string]bool{"web": false}}
+	rec := &recSleepEvents{}
+	s := &Scheduler{Sleep: sleep, Apps: apps, Traffic: fakeTraffic{}, Events: rec, Logger: slog.New(slog.NewTextHandler(io.Discard, nil)), Now: func() time.Time { return now }}
+	if err := s.Tick(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(rec.events) != 1 || rec.events[0].Kind != store.SleepEventSlept || rec.events[0].Reason != store.SleepReasonIdleTimeout || rec.events[0].IdleMinutes != 30 {
+		t.Fatalf("events = %+v", rec.events)
+	}
+}

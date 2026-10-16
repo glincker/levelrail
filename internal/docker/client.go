@@ -218,7 +218,34 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerStat
 	if len(summaries) == 0 {
 		return nil, nil
 	}
-	return toContainerState(summaries[0]), nil
+	state := toContainerState(summaries[0])
+	if !state.Running {
+		state.ConfiguredPorts = c.configuredPorts(ctx, state.ID)
+	}
+	return state, nil
+}
+
+// configuredPorts reads PortBindings from a full inspect. Best-effort: nil
+// means unknown, which callers treat as not drifted.
+func (c *Client) configuredPorts(ctx context.Context, id string) []PortBinding {
+	resp, err := c.cli.ContainerInspect(ctx, id)
+	if err != nil || resp.HostConfig == nil {
+		return nil
+	}
+	var out []PortBinding
+	for port, bindings := range resp.HostConfig.PortBindings {
+		for _, b := range bindings {
+			hp, _ := strconv.Atoi(b.HostPort)
+			out = append(out, PortBinding{ContainerPort: port.Int(), HostPort: hp, HostIP: b.HostIP, Protocol: port.Proto()})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ContainerPort != out[j].ContainerPort {
+			return out[i].ContainerPort < out[j].ContainerPort
+		}
+		return out[i].HostIP < out[j].HostIP
+	})
+	return out
 }
 
 // InspectExitState implements ExitStateInspector. Unlike InspectByName,

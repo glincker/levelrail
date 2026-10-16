@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -359,5 +360,38 @@ func TestHandleGetAppNetwork_RolloutKeepsServingHostPort(t *testing.T) {
 				t.Fatalf("got %+v, want host=%d running=%v rollout=%v", got, tt.wantHost, tt.wantRunning, tt.wantRollout)
 			}
 		})
+	}
+}
+
+func TestHandleGetAppNetwork_FailingCandidateIsNotAdvertised(t *testing.T) {
+	fake := &fakeExecAppRuntime{
+		inspectState: &docker.ContainerState{Name: "web-bbbbbbbb", Running: true,
+			Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 42000}}},
+		listByPrefixResult: []docker.ContainerState{
+			{Name: "web-aaaaaaaa", Running: true, Ports: []docker.PortBinding{{ContainerPort: 3000, HostPort: 41000}}},
+		},
+	}
+	rt, db := newTestRouterWithExecRuntime(t, fake)
+	cookie := loginTestSession(t, rt, db)
+	seedExecApp(t, db)
+
+	get := func() networkResource {
+		rec := httptest.NewRecorder()
+		rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/network", ""))
+		var got networkResource
+		if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		return got
+	}
+	if got := get(); got.HostPort != 42000 {
+		t.Fatalf("no failing condition: host port = %d, want the target's 42000", got.HostPort)
+	}
+	conds := []reconcile.Condition{{Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionFalse, Reason: "ReadinessFailed"}}
+	if err := db.UpsertConditions(t.Context(), applicationControllerName("web"), conds); err != nil {
+		t.Fatal(err)
+	}
+	if got := get(); got.HostPort != 41000 || !got.RolloutInProgress {
+		t.Fatalf("failing candidate: got %+v, want the serving replica's 41000", got)
 	}
 }

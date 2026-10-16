@@ -75,7 +75,7 @@ func (rt *Router) meshReadinessEnv(running bool) network.ReadinessEnv {
 	if rt.meshSettings.readiness != nil {
 		return rt.meshSettings.readiness(running)
 	}
-	return network.SystemReadinessEnv(rt.doctorAgentAdvertiseHost, running)
+	return network.SystemReadinessEnv(rt.advertiseHost(), running)
 }
 
 func (rt *Router) buildMeshSettings(ctx context.Context) (meshSettingsResource, error) {

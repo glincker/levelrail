@@ -102,7 +102,20 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 	inspectCtx, cancel := context.WithTimeout(r.Context(), dockerInspectTimeout)
 	state, err := rt2.InspectByName(inspectCtx, target)
 	cancel()
-	if err == nil && state != nil && state.Running && len(state.Ports) > 0 {
+	// A target that is up but not confirmed serving (still rolling out, or
+	// failing its Ready condition) must not be advertised while an older
+	// replica serves.
+	targetUp := err == nil && state != nil && state.Running && len(state.Ports) > 0
+	if targetUp && rt.candidateUnconfirmed(r.Context(), svc) {
+		if serving := rt.servingReplica(r.Context(), rt2, svc.Name, svc.Port, target); serving != nil {
+			resp.Running = true
+			resp.HostPort = serving.hostPort
+			resp.RolloutInProgress = true
+			writeJSON(w, http.StatusOK, resp)
+			return
+		}
+	}
+	if targetUp {
 		resp.Running = true
 		resp.HostPort = state.Ports[0].HostPort
 		writeJSON(w, http.StatusOK, resp)
@@ -123,6 +136,19 @@ func (rt *Router) handleGetAppNetwork(w http.ResponseWriter, r *http.Request) {
 
 var extraReplicaName = regexp.MustCompile(`-r[0-9]+$`)
 
+// candidateUnconfirmed reports a desired container the controller has not
+// confirmed serving: its attempt is not yet marked serving, or Ready is False.
+func (rt *Router) candidateUnconfirmed(ctx context.Context, svc *store.DesiredService) bool {
+	if _, rolling := rt.lastServingImage(ctx, *svc); rolling {
+		return true
+	}
+	if rt.deploys == nil {
+		return false
+	}
+	reason, _ := rt.failingReadyCondition(ctx, svc.Name)
+	return reason != ""
+}
+
 type servingReplica struct{ hostPort int }
 
 // servingReplica finds an older release's replica 0 still publishing the
@@ -135,6 +161,8 @@ func (rt *Router) servingReplica(ctx context.Context, runtime docker.Runtime, ap
 	if err != nil {
 		return nil
 	}
+	var best *servingReplica
+	var bestCreated time.Time
 	for _, c := range list {
 		if c.Name == skip || !c.Running || strings.HasSuffix(c.Name, "-egress") || extraReplicaName.MatchString(c.Name) {
 			continue
@@ -143,10 +171,11 @@ func (rt *Router) servingReplica(ctx context.Context, runtime docker.Runtime, ap
 			continue
 		}
 		for _, p := range c.Ports {
-			if p.ContainerPort == port && p.HostPort > 0 {
-				return &servingReplica{hostPort: p.HostPort}
+			if p.ContainerPort == port && p.HostPort > 0 && (best == nil || c.Created.After(bestCreated)) {
+				best, bestCreated = &servingReplica{hostPort: p.HostPort}, c.Created
+				break
 			}
 		}
 	}
-	return nil
+	return best
 }

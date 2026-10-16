@@ -277,7 +277,7 @@ func (rt *Router) doctorCheckAgentAdvertiseHost(ctx context.Context) doctorCheck
 	const code, name = "agent_advertise_reachability", "Agent advertise host"
 	const docsPath = "/troubleshooting#agent-advertise-host-is-unreachable"
 
-	host := rt.doctorAgentAdvertiseHost
+	host := rt.advertiseHost()
 	port := rt.doctorAgentAdvertisePort
 	if host == "" || port == 0 {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusUnknown, Message: "agent advertise host not configured"}
@@ -357,7 +357,7 @@ func (rt *Router) doctorCheckMeshHubEndpoint(ctx context.Context) doctorCheckRes
 	if rt.mesh == nil {
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "mesh networking is not enabled on this control plane"}
 	}
-	host := rt.doctorAgentAdvertiseHost
+	host := rt.advertiseHost()
 	if doctorIsLoopbackHost(host) {
 		nodes, err := rt.nodes.ListNodes(ctx)
 		if err == nil && len(nodes) > 0 {

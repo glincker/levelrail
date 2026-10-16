@@ -83,7 +83,8 @@ func extractPort(script string) int {
 	for _, re := range []*regexp.Regexp{
 		regexp.MustCompile(`--port=(\d+)`),
 		regexp.MustCompile(`--port\s+(\d+)`),
-		regexp.MustCompile(`-p\s+(\d+)`),
+		regexp.MustCompile(`-p\s*(\d+)`),
+		regexp.MustCompile(`PORT:-(\d+)`),
 		regexp.MustCompile(`PORT=(\d+)`),
 		regexp.MustCompile(`-l\s+tcp://[\d.]+:(\d+)`),
 	} {
@@ -271,6 +272,12 @@ func detectUnchecked(ctx context.Context, req DetectRequest) (*DetectResult, err
 			frameworkName = label
 		}
 		port, portSource = detectNodePort(dir)
+	}
+	switch provider {
+	case "ruby":
+		port, portSource = detectRubyPort(dir)
+	case "php":
+		port, portSource = detectPHPPort(dir)
 	}
 	return &DetectResult{
 		Provider:      provider,

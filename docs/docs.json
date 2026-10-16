@@ -96,7 +96,8 @@
               "tutorials/debug-an-app-with-logs-and-metrics",
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
-              "troubleshooting"
+              "troubleshooting",
+              "fix-it"
             ],
             "icon": "/assets/icons/plus-circle.svg"
           },

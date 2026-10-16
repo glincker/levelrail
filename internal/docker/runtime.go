@@ -78,6 +78,10 @@ type ContainerState struct {
 	// container's published ports once it's running, so this is empty
 	// for a created-but-not-yet-started container, not an error.
 	Ports []PortBinding
+	// ConfiguredPorts are the bindings the container was created with,
+	// read only for a stopped container (whose Ports is always empty) so a
+	// caller can still tell a stale port from a current one.
+	ConfiguredPorts []PortBinding
 	// Labels are the container's own Docker labels, verbatim, including
 	// internal/spec.InstanceLabelKey when the creating control-plane
 	// instance set one. Callers doing cleanup/stale-detection across a

@@ -214,3 +214,54 @@ func TestPublishedPortDrift_RecreatesRunningContainer(t *testing.T) {
 		})
 	}
 }
+
+func TestPublishedPortDrift_StoppedContainerJudgedByConfiguredPorts(t *testing.T) {
+	// Real shape: a container that failed readiness is stopped, its list
+	// entry has no Ports, and only the inspect HostConfig keeps 3000/tcp.
+	stopped := func(configured ...docker.PortBinding) *docker.ContainerState {
+		return &docker.ContainerState{Running: false, ConfiguredPorts: configured}
+	}
+	tests := []struct {
+		name  string
+		state *docker.ContainerState
+		want  bool
+	}{
+		{"stale port", stopped(docker.PortBinding{ContainerPort: 3000, HostIP: "127.0.0.1", Protocol: "tcp"}), true},
+		{"current port", stopped(docker.PortBinding{ContainerPort: 80, HostIP: "127.0.0.1", Protocol: "tcp"}), false},
+		{"unknown bindings", stopped(), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := publishedPortDrifted(tt.state, &store.DesiredService{Port: 80}, "")
+			if got != tt.want {
+				t.Fatalf("publishedPortDrifted() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPublishedPortDrift_NoChurnAcrossPasses(t *testing.T) {
+	name := replicaContainerName("web", "img:v1", "", 0)
+	rt := newFakeRuntime(0)
+	rt.trackPorts = true
+	rt.seed(name, false)
+	rt.containers[name].ConfiguredPorts = []docker.PortBinding{{ContainerPort: 3000, HostIP: "127.0.0.1"}}
+	svc := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Replicas: 1}
+	c := New("web", &fakeStore{svc: &svc}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	createsAfterFirst := rt.createCalls
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("pass %d: %v", i, err)
+		}
+	}
+	if rt.createCalls != createsAfterFirst {
+		t.Fatalf("creates = %d after steady passes, want %d", rt.createCalls, createsAfterFirst)
+	}
+	if rt.createCalls == 0 {
+		t.Fatalf("stale stopped container was never recreated")
+	}
+}

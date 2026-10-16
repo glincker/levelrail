@@ -354,7 +354,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
-	if hub := meshHubEndpoint(agentAdvertiseHost(), network.DefaultListenPort); hub != "" {
+	if hub := meshHubEndpoint(advertiseHostFromStore(ctx, db), network.DefaultListenPort); hub != "" {
 		if err := coordinator.SetObservedEndpoint(localNodeID, hub); err != nil {
 			logger.Warn("mesh hub endpoint not recorded", slog.String("endpoint", hub), slog.String("error", err.Error()))
 		}

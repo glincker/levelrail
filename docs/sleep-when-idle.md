@@ -57,10 +57,45 @@ box only needs room for the apps in use at once, plus the platform itself.
 ```
 levelrail-cli apps sleep enable web --after 30m
 levelrail-cli apps sleep status web
+levelrail-cli apps sleep history web --since 7d --limit 50
 levelrail-cli apps sleep list
 levelrail-cli apps sleep wake web
 levelrail-cli apps sleep disable web
 ```
+
+## Sleep history
+
+Every sleep and wake is recorded, so you can see what was asleep when, and why.
+Each event has a kind (`slept`, `woke`, `enabled`, `disabled`, `wake_failed`),
+the time, a reason and who caused it (a user, a token, or `system`).
+
+| Reason | Meaning |
+| --- | --- |
+| `idle_timeout` | The idle time passed with no requests |
+| `manual` | Someone ran sleep now, wake, or turned sleep off while asleep |
+| `request` | A request to the app's domain woke it |
+| `api` | Enabled, disabled, or the app was started outside sleep when idle |
+| `schedule`, `deploy` | Reserved for scheduled and deploy-triggered wakes |
+
+A wake caused by a request also stores the request path and a coarse source:
+the host that was asked for, or `health probe` or `bot` when the request looks
+automated. Client addresses are never stored. A `woke` event carries how long
+the app had slept and, once the app is healthy, how long the wake took. If the
+app does not become healthy within 30 seconds a `wake_failed` event records it.
+
+`levelrail-cli apps sleep status` also prints when the app last slept and woke
+and how long it was asleep in the last 7 days. `apps sleep list` adds a SINCE
+and a LAST WOKE column.
+
+`GET /api/v1/apps/{name}/sleep/history?since=7d&limit=100` returns the events
+plus totals: asleep seconds over 7 and 30 days, wakes in 7 days, average and
+95th percentile wake latency, last slept and woke, and memory saved (GiB-hours,
+from the app's memory limit, only when it has one).
+`GET /api/v1/sleep/overview` lists the apps asleep now with their start time and
+the apps that slept the most in the last 7 days. Both need the `read` ability.
+
+Slept and woke also appear in the app's activity timeline. History keeps the
+newest 500 events per app; set `APP_SLEEP_EVENTS_KEEP` to change that.
 
 ## Dashboard
 
@@ -68,7 +103,11 @@ levelrail-cli apps sleep disable web
 
 App, Deploys: the Sleep when idle card has the switch, the idle minutes, and a
 Wake now button while the app is asleep. Sleeping apps carry an Asleep badge in
-the apps list, and the dashboard's Usage details has a Sleeping apps card.
+the apps list with how long they have slept, and the dashboard's Usage details
+has a Sleeping apps card. A Sleep history card on the app's Deploys page (and its
+Overview once sleep is on) draws the last 7 days as asleep and awake runs, shows
+the totals, and lists recent events. An app asleep also shows a moon chip with
+its time asleep in the app header.
 
 ## API
 

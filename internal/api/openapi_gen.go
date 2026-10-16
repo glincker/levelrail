@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1177 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1182 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -260,6 +260,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/secret-scan/run", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunSecretScan", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSleep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSleep", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/sleep/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppSleepHistory", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/now", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSleepAppNow", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/sleep/wake", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleWakeApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/slo-preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSLOPreview", Description: ""},
@@ -790,6 +791,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/firewall/host", Ability: "AbilityRead", Group: "Other", Handler: "handleHostFirewallStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisableHostFirewall", Description: ""},
 	{Method: "POST", Path: "/api/v1/firewall/host/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnableHostFirewall", Description: ""},
+	{Method: "GET", Path: "/api/v1/fixes", Ability: "AbilityRead", Group: "Other", Handler: "handleListFixes", Description: ""},
+	{Method: "POST", Path: "/api/v1/fixes/{id}/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyFix", Description: "Fixes prune Docker data, write settings and re-verify host state, so AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/fixes/{id}/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewFix", Description: ""},
 	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
 	{Method: "DELETE", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGiteaApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetGiteaAppStatus", Description: "Gitea App: the OAuth-Application counterpart of the GitLab App routes above, same ability tiers and self-hosted instance_url shape (Gitea is almost always self-hosted). Repos are addressed by an \"owner/repo\" path pair like Bitbucket's workspace/repoSlug, not a numeric id like GitLab's."},
@@ -944,6 +948,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/setup/guide/steps/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideStep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/setup/guide/visibility", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetSetupGuideVisibility", Description: ""},
 	{Method: "GET", Path: "/api/v1/sleep", Ability: "AbilityRead", Group: "Other", Handler: "handleSleepFleet", Description: ""},
+	{Method: "GET", Path: "/api/v1/sleep/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleSleepOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSHNodeProvisions", Description: ""},
 	{Method: "GET", Path: "/api/v1/ssh-node-provisions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetSSHNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/sso/group-mappings", Ability: "AbilityRoot", Group: "Other", Handler: "handleListSSOGroupMappings", Description: ""},

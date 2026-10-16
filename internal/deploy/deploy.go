@@ -344,11 +344,7 @@ func (p *Pipeline) deployRailpack(ctx context.Context, req Request, progress fun
 	if err != nil {
 		var unsupported *build.UnsupportedProviderError
 		if errors.As(err, &unsupported) {
-			provider := unsupported.Provider
-			if provider == "" {
-				provider = "(none detected)"
-			}
-			return "", fmt.Errorf("deploy: service %q: railpack detected provider %q, only node, golang, java, and python are supported yet", req.ServiceName, provider)
+			return "", fmt.Errorf("deploy: service %q: railpack %s", req.ServiceName, unsupported.Detail())
 		}
 		return "", fmt.Errorf("deploy: service %q: build: %w", req.ServiceName, err)
 	}

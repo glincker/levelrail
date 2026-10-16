@@ -54,8 +54,10 @@ type Scheduler struct {
 	Apps    Apps
 	Traffic Traffic
 	Nudger  Nudger
-	Logger  *slog.Logger
-	Now     func() time.Time
+	// Events records slept and woke history; nil skips it.
+	Events EventStore
+	Logger *slog.Logger
+	Now    func() time.Time
 }
 
 func (s *Scheduler) now() time.Time {
@@ -93,7 +95,13 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		}
 		if a.Sleeping {
 			if !svc.Suspended {
-				errs = append(errs, s.Sleep.SetAppSleeping(ctx, a.ServiceName, false, now))
+				if err := s.Sleep.SetAppSleeping(ctx, a.ServiceName, false, now); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+				e := WokeEvent(a.ServiceName, store.SleepReasonAPI, "system", a.Since, now)
+				e.Detail = "started outside sleep when idle"
+				Record(ctx, s.Events, s.Logger, e)
 			}
 			continue
 		}
@@ -111,17 +119,18 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 		if now.Sub(idleSince) < time.Duration(a.IdleMinutes)*time.Minute {
 			continue
 		}
-		if err := s.sleep(ctx, a.ServiceName, now); err != nil {
+		if err := s.sleep(ctx, a.ServiceName, a.IdleMinutes, now); err != nil {
 			errs = append(errs, fmt.Errorf("app %q: %w", a.ServiceName, err))
 		}
 	}
 	return errors.Join(errs...)
 }
 
-func (s *Scheduler) sleep(ctx context.Context, name string, now time.Time) error {
+func (s *Scheduler) sleep(ctx context.Context, name string, idleMinutes int, now time.Time) error {
 	if err := Sleep(ctx, s.Sleep, s.Apps, s.Nudger, name, now); err != nil {
 		return err
 	}
+	Record(ctx, s.Events, s.Logger, store.SleepEvent{ServiceName: name, Kind: store.SleepEventSlept, At: now, Reason: store.SleepReasonIdleTimeout, IdleMinutes: idleMinutes, Actor: "system"})
 	s.Logger.Info("appsleep: app idle, stopped", slog.String("app", name))
 	return nil
 }

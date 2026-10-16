@@ -199,6 +199,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runTUI(prog, args[1:], stdout, stderr, lookupEnv)
 	case "init":
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
+	case "fixes":
+		return runFixes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":

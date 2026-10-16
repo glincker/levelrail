@@ -50,9 +50,29 @@ func TestGenerateRailpackPlan(t *testing.T) {
 			wantProvider: "python",
 		},
 		{
-			name:      "unsupported: ruby detected but out of scope",
+			name:         "rails fixture detected as ruby",
+			req:          RailpackRequest{SourceDir: "testdata/railpack-rails", Tag: "levelrail-railpack:rails"},
+			wantProvider: "ruby",
+		},
+		{
+			name:         "sinatra fixture detected as ruby",
+			req:          RailpackRequest{SourceDir: "testdata/railpack-sinatra", Tag: "levelrail-railpack:sinatra"},
+			wantProvider: "ruby",
+		},
+		{
+			name:         "laravel fixture detected as php",
+			req:          RailpackRequest{SourceDir: "testdata/railpack-laravel", Tag: "levelrail-railpack:laravel"},
+			wantProvider: "php",
+		},
+		{
+			name:         "plain php fixture detected as php",
+			req:          RailpackRequest{SourceDir: "testdata/railpack-php", Tag: "levelrail-railpack:php"},
+			wantProvider: "php",
+		},
+		{
+			name:      "unsupported: deno detected but out of scope",
 			req:       RailpackRequest{SourceDir: "testdata/railpack-unsupported", Tag: "levelrail-railpack:unsupported"},
-			wantUnsup: "ruby",
+			wantUnsup: "deno",
 		},
 		{
 			name:    "missing source dir fails before touching the filesystem",
@@ -82,7 +102,7 @@ func TestGenerateRailpackPlan(t *testing.T) {
 				return
 			}
 
-			if tt.name == "unsupported: ruby detected but out of scope" {
+			if tt.wantUnsup != "" {
 				var unsupported *UnsupportedProviderError
 				if !errors.As(err, &unsupported) {
 					t.Fatalf("generateRailpackPlan() err = %v, want *UnsupportedProviderError", err)
@@ -90,8 +110,8 @@ func TestGenerateRailpackPlan(t *testing.T) {
 				if unsupported.Provider != tt.wantUnsup {
 					t.Errorf("UnsupportedProviderError.Provider = %q, want %q", unsupported.Provider, tt.wantUnsup)
 				}
-				if unsupported.Error() == "" {
-					t.Error("UnsupportedProviderError.Error() = \"\", want a non-empty message")
+				if msg := unsupported.Error(); !strings.Contains(msg, "ruby, and php") || !strings.Contains(msg, "Dockerfile") {
+					t.Errorf("UnsupportedProviderError.Error() = %q, want the supported list and a Dockerfile hint", msg)
 				}
 				return
 			}
@@ -488,5 +508,28 @@ func TestClient_BuildRailpack_Live_UnsupportedProvider(t *testing.T) {
 	var unsupported *UnsupportedProviderError
 	if !errors.As(err, &unsupported) {
 		t.Fatalf("BuildRailpack() err = %v, want *UnsupportedProviderError", err)
+	}
+}
+
+func TestGenerateRailpackPlan_RubyPHPStartCommands(t *testing.T) {
+	tests := []struct {
+		fixture   string
+		wantStart string
+	}{
+		{"testdata/railpack-rails", "bundle exec bin/rails server -b 0.0.0.0 -p ${PORT:-3000} -e $RAILS_ENV"},
+		{"testdata/railpack-sinatra", "bundle exec rackup config.ru -o 0.0.0.0 -p ${PORT:-3000}"},
+		{"testdata/railpack-laravel", "/start-container.sh"},
+		{"testdata/railpack-php", "/start-container.sh"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.fixture, func(t *testing.T) {
+			res, err := generateRailpackPlan(RailpackRequest{SourceDir: tt.fixture, Tag: "levelrail-railpack:x"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := res.Plan.Deploy.StartCmd; got != tt.wantStart {
+				t.Errorf("start command = %q, want %q", got, tt.wantStart)
+			}
+		})
 	}
 }

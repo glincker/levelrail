@@ -388,6 +388,12 @@ if selected 4; then
   git -C "$EXP_DIR" push -q origin main 2>&1 | redact >&2
   payload refs/heads/main "$C2" "$C3" "$EXP_REPO" "test: gitflow $TAG push 3" '[]' "$FILES" '[]' >"$TMP/p4.json"
   n0=$(attempts_for "$EXP_APP" "$C3" | jq 'length')
+  if [ "$n0" = "0" ]; then
+    # Scenario 3 did not run, so d3 was never delivered: send it once so the next one is a true repeat.
+    send "$EXP_APP" "$EXP_SECRET" push "lrqa-$TAG-d3" good "$TMP/p4.json"
+    wait_sha "$EXP_APP" "$C3"
+    n0=$(attempts_for "$EXP_APP" "$C3" | jq 'length')
+  fi
   send "$EXP_APP" "$EXP_SECRET" push "lrqa-$TAG-d3" good "$TMP/p4.json"; hc_dup="$HC"; hb_dup="$HB"
   n1=$(attempts_for "$EXP_APP" "$C3" | jq 'length')
   send "$EXP_APP" "$EXP_SECRET" push "lrqa-$TAG-d3-new-id" good "$TMP/p4.json"; hc_same="$HC"; hb_same="$HB"

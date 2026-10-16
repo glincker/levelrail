@@ -40,6 +40,8 @@ type appSleepResource struct {
 	Enabled     bool `json:"enabled"`
 	IdleMinutes int  `json:"idle_minutes"`
 	Sleeping    bool `json:"sleeping"`
+	// Since is when the app went to sleep, present only while it is asleep.
+	Since *time.Time `json:"since,omitempty"`
 	// HoldRequests is function mode: a request that wakes the app waits for it.
 	HoldRequests bool `json:"hold_requests"`
 	// BlockedReason is why the app cannot sleep (appsleep.Blocked*), empty when it can.
@@ -52,7 +54,12 @@ type appSleepRequest struct {
 }
 
 func toAppSleepResource(a store.AppSleep) appSleepResource {
-	return appSleepResource{Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests}
+	res := appSleepResource{Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests}
+	if a.Sleeping {
+		since := a.Since
+		res.Since = &since
+	}
+	return res
 }
 
 func (rt *Router) handleGetAppSleep(w http.ResponseWriter, r *http.Request) {
@@ -97,15 +104,27 @@ func (rt *Router) handleSetAppSleep(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	prev, _ := rt.appSleep.GetAppSleep(r.Context(), name)
+	actor := rt.eventActor(r)
 	if req.IdleMinutes == 0 {
-		if _, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now()); err != nil {
+		woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now())
+		if err != nil {
 			rt.internalError(w, "api: set app sleep: wake before disable", err, slog.String("name", name))
 			return
+		}
+		if woke {
+			rt.recordSleepEvent(r.Context(), appsleep.WokeEvent(name, store.SleepReasonManual, actor, prev.Since, time.Now()))
 		}
 	}
 	if err := rt.appSleep.SetAppSleepIdle(r.Context(), name, req.IdleMinutes, time.Now()); err != nil {
 		rt.internalError(w, "api: set app sleep", err, slog.String("name", name))
 		return
+	}
+	switch {
+	case req.IdleMinutes > 0 && prev.IdleMinutes != req.IdleMinutes:
+		rt.recordSleepEvent(r.Context(), store.SleepEvent{ServiceName: name, Kind: store.SleepEventEnabled, At: time.Now(), Reason: store.SleepReasonAPI, IdleMinutes: req.IdleMinutes, Actor: actor})
+	case req.IdleMinutes == 0 && prev.IdleMinutes > 0:
+		rt.recordSleepEvent(r.Context(), store.SleepEvent{ServiceName: name, Kind: store.SleepEventDisabled, At: time.Now(), Reason: store.SleepReasonAPI, Actor: actor})
 	}
 	if req.HoldRequests != nil && req.IdleMinutes > 0 {
 		if err := rt.appSleep.SetAppSleepHold(r.Context(), name, *req.HoldRequests, time.Now()); err != nil {
@@ -124,9 +143,17 @@ func (rt *Router) handleWakeApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
 	}
-	if _, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now()); err != nil {
+	prev, _ := rt.appSleep.GetAppSleep(r.Context(), name)
+	start := time.Now()
+	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
+	if err != nil {
+		rt.recordSleepEvent(r.Context(), store.SleepEvent{ServiceName: name, Kind: store.SleepEventWakeFailed, At: start, Reason: store.SleepReasonManual, Detail: err.Error(), Actor: rt.eventActor(r)})
 		rt.internalError(w, "api: wake app", err, slog.String("name", name))
 		return
+	}
+	if woke {
+		id := rt.recordSleepEvent(r.Context(), appsleep.WokeEvent(name, store.SleepReasonManual, rt.eventActor(r), prev.Since, start))
+		rt.watchWake(name, id, start, store.SleepReasonManual)
 	}
 	a, _ := rt.appSleep.GetAppSleep(r.Context(), name)
 	writeJSON(w, http.StatusOK, toAppSleepResource(a))
@@ -143,14 +170,29 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.Header.Get(ingress.WakeAppHeader)
 	setting, _ := rt.appSleep.GetAppSleep(r.Context(), name)
-	if _, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, time.Now()); err != nil {
+	start := time.Now()
+	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
+	var eventID int64
+	switch {
+	case err != nil:
 		rt.logger.Error("api: wake hook", slog.String("app", name), slog.String("error", err.Error()))
+		e := wakeRequestEvent(r, name, setting.Since, start)
+		e.Kind, e.Detail = store.SleepEventWakeFailed, err.Error()
+		rt.recordSleepEvent(r.Context(), e)
+	case woke:
+		eventID = rt.recordSleepEvent(r.Context(), wakeRequestEvent(r, name, setting.Since, start))
 	}
-	if setting.HoldRequests && setting.Sleeping && rt.holdUntilReady(r.Context(), name, time.Now()) {
-		if loc := wakeRedirectURL(r); loc != "" {
-			http.Redirect(w, r, loc, http.StatusTemporaryRedirect)
-			return
+	if setting.HoldRequests && setting.Sleeping {
+		ready := rt.holdUntilReady(r.Context(), name, start)
+		rt.finishWake(r.Context(), name, eventID, start, ready, store.SleepReasonRequest)
+		if ready {
+			if loc := wakeRedirectURL(r); loc != "" {
+				http.Redirect(w, r, loc, http.StatusTemporaryRedirect)
+				return
+			}
 		}
+	} else {
+		rt.watchWake(name, eventID, start, store.SleepReasonRequest)
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -256,6 +298,7 @@ func (rt *Router) handleSleepAppNow(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: sleep app now", err, slog.String("name", name))
 		return
 	}
+	rt.recordSleepEvent(r.Context(), store.SleepEvent{ServiceName: name, Kind: store.SleepEventSlept, At: time.Now(), Reason: store.SleepReasonManual, IdleMinutes: a.IdleMinutes, Actor: rt.eventActor(r)})
 	a, _ = rt.appSleep.GetAppSleep(r.Context(), name)
 	writeJSON(w, http.StatusOK, toAppSleepResource(a))
 }

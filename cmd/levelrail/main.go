@@ -602,7 +602,7 @@ func run(logger *slog.Logger) error {
 	if id := readLocalNodeID(agentDataDir); id != "" {
 		agentRegistry.SetLocal(id, agent.NewLocal(client))
 	}
-	agentCreds, err := agent.NewServerCredentials(agentCA, []string{agentAdvertiseHost()}, agentServerCertValidity)
+	agentCreds, err := agent.NewServerCredentials(agentCA, []string{advertiseHostFromStore(ctx, db)}, agentServerCertValidity)
 	if err != nil {
 		return fmt.Errorf("build agent grpc credentials: %w", err)
 	}
@@ -1177,7 +1177,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Logger: logger}
+	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger}
 	go func() {
 		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))
@@ -2823,7 +2823,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
-	opts = append(opts, api.WithMeshSettings(db))
+	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)

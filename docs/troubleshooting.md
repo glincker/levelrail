@@ -18,6 +18,8 @@ levelrail-cli apps logs NAME --follow
 levelrail-cli doctor                 # preflight checks for Docker, disk, ports, and the database
 ```
 
+Many readiness and doctor findings come with a one-click or guided fix: see [Fix-it engine](/fix-it).
+
 Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the [Status page](/status-page) (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
 
 ## Apps and deploys
