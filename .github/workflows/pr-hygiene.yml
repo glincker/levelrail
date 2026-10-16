@@ -7,6 +7,11 @@ on:
   pull_request_target:
     types: [opened, reopened, synchronize]
 
+# A newer push supersedes a labeling run still in flight.
+concurrency:
+  group: pr-hygiene-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   hygiene:
     name: PR hygiene

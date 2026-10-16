@@ -10,7 +10,7 @@
 #   COVERPROFILE        write a merged coverage profile here (optional)
 #   RERUNS              reruns per failed test (default 2, 0 disables)
 #   RERUN_MAX_FAILURES  skip reruns entirely above this many failures (default 5)
-#   SHARD               "i/n": run only every n-th top-level test (single package only)
+#   SHARD               "i/n": run shard i of n, packed by scripts/ci-test-weights.txt (single package only)
 #   TEST_NAME_FILTER    "|"-joined regex: shard only tests matching this,
 #                       from scripts/ci-go-plan.sh's internal/api narrowing
 #   TEST_NAME_SKIP     "|"-joined top-level test names to leave out of this
@@ -104,7 +104,7 @@ if [ -n "${SHARD:-}" ]; then
 		# an empty shard below just means this lane found nothing to do.
 		names="$(grep -E "^($TEST_NAME_FILTER)\$" <<<"$names" || true)"
 	fi
-	shard_names="$(awk -v i="$shard_i" -v n="$shard_n" '(NR - 1) % n == i - 1' <<<"$names" | paste -sd'|' -)"
+	shard_names="$(scripts/ci-shard-names.sh "$shard_i" "$shard_n" <<<"$names" | paste -sd'|' -)"
 	if [ -z "$shard_names" ]; then
 		echo "Shard $SHARD of $lane has no tests." | tee -a "$summary"
 		exit 0
