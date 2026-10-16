@@ -78,3 +78,34 @@ func TestAnalyzeImport_Errors(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeGitSource_DirectoryAndDetection(t *testing.T) {
+	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
+	cookie := loginTestSession(t, rt, db)
+	useFakeLayout(rt, &fakeLayoutSource{files: map[string]string{
+		"package.json":          `{"workspaces":["apps/*"]}`,
+		"apps/web/package.json": `{"dependencies":{"next":"14"}}`,
+		"apps/web/.env.example": "API_TOKEN=abc123\n",
+	}})
+
+	rec := layoutReq(t, rt, cookie, http.MethodPost, "/api/v1/git-sources/analyze", `{"repo_url":"https://github.com/acme/mono","ref":"main","directory":"apps/web"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if strings.Contains(rec.Body.String(), "abc123") {
+		t.Fatalf("response leaks an env value: %s", rec.Body.String())
+	}
+	var a appwizard.Analysis
+	if err := json.Unmarshal(rec.Body.Bytes(), &a); err != nil {
+		t.Fatal(err)
+	}
+	if a.Detection.Framework != "Next.js" || len(a.Detection.Reasons) == 0 || a.Build.BaseDirectory != "apps/web" {
+		t.Fatalf("detection = %+v build = %+v", a.Detection, a.Build)
+	}
+	if len(a.Detection.EnvVars) != 1 || !a.Detection.EnvVars[0].SecretGuess {
+		t.Fatalf("env vars = %+v", a.Detection.EnvVars)
+	}
+	if len(a.Packages) == 0 {
+		t.Fatalf("expected workspace packages, got none")
+	}
+}

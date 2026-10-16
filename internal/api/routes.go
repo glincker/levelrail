@@ -683,6 +683,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// creating nothing. AbilityWrite because it makes outbound fetches.
 	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
 	mux.HandleFunc("POST /api/v1/imports/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
+	mux.HandleFunc("POST /api/v1/git-sources/analyze", rt.requireAbility(AbilityWrite, rt.handleAnalyzeImport))
 
 	// Previously-built image tags for this app's repo, so the deploy
 	// trigger form can offer a dropdown instead of a hand-typed tag
