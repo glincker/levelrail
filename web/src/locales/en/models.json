@@ -95,5 +95,96 @@
       "modelLabel": "Model",
       "cacheLabel": "Cached weights"
     }
+  },
+  "cpu": {
+    "switch": {
+      "legend": "Where to run the model",
+      "gpu": "On a GPU node",
+      "gpuHint": "Ollama, vLLM or llama.cpp on an NVIDIA GPU. Best for large models.",
+      "cpu": "Run on CPU",
+      "cpuHint": "A small model on this server's CPU and RAM, with hard limits. No GPU needed."
+    },
+    "deploy": {
+      "description": "Runs a small model on this server's CPU with hard CPU and memory limits, and an OpenAI-compatible endpoint protected by an API key.",
+      "pick": "Choose a model",
+      "catalogNote": "Curated list verified on {{date}}. Speeds and memory are estimates. Your server downloads the weights directly from Hugging Face when you deploy.",
+      "useCustom": "Use another Hugging Face repository",
+      "customRepo": "Repository",
+      "customRepoHint": "A GGUF repository, optionally with a quantization suffix.",
+      "customFile": "GGUF file",
+      "customFileHint": "Optional when the quantization suffix picks exactly one file.",
+      "unload": "Unload when idle",
+      "unloadHint": "Stops the engine after a while without requests and frees its memory. The next request starts it again.",
+      "warnTitle": "This model shares your server",
+      "warn": "This will use up to {{cpus}} CPUs and {{memory}} of memory on this server and about {{disk}} of disk. Other apps keep priority.",
+      "diskUnknown": "some GB",
+      "submit": "Deploy on CPU",
+      "toast": "The weights are downloading from Hugging Face, then the model loads."
+    },
+    "license": {
+      "title": "Licence not reviewed",
+      "generic": "This repository is not on the curated list and its licence was not reviewed. You are responsible for complying with it.",
+      "ack": "I have read the licence and accept responsibility for using this model.",
+      "required": "Acknowledge the licence to continue."
+    },
+    "tier": {
+      "light": "Light",
+      "default": "Recommended",
+      "plus": "Plus"
+    },
+    "verdict": {
+      "fits_comfortably": "Fits comfortably",
+      "tight": "Tight",
+      "wont_fit": "Will not fit",
+      "unknown": "Unknown"
+    },
+    "card": {
+      "size": "{{params}}B parameters, {{quant}}",
+      "licenseTitle": "Licence (SPDX)",
+      "embedding": "Embeddings",
+      "resources": "{{download}} download, needs about {{ram}} of memory",
+      "estimate": "About {{range}} tokens per second (estimate)",
+      "noEstimate": "Speed unknown"
+    },
+    "limits": {
+      "cpu": "CPU limit: {{value}}",
+      "cpuHint": "A hard cap. The model gets low priority when other apps need the CPU.",
+      "memory": "Memory limit: {{value}}",
+      "memoryHint": "A hard cap with no swap. At least {{floor}} always stays free for other workloads."
+    },
+    "fit": {
+      "speed": "Expected speed: {{range}} tokens per second. This is an estimate, run the benchmark for the real number.",
+      "disk": "The download needs about {{size}} of disk.",
+      "useSuggested": "Use it"
+    },
+    "download": {
+      "label": "Downloading weights",
+      "value": "{{done}} of {{total}} ({{percent}}%)"
+    },
+    "benchmark": {
+      "title": "Benchmark",
+      "run": "Run benchmark",
+      "running": "Measuring...",
+      "done": "Benchmark finished.",
+      "failed": "Benchmark failed.",
+      "hint": "Runs a few short prompts and stops after a time limit. It uses the CPU you gave this model and never runs by itself.",
+      "notReady": "Load the model first. A benchmark never starts a stopped model.",
+      "measured": "Measured generation",
+      "estimated": "Estimate",
+      "noEstimate": "none",
+      "prompt": "Prompt processing",
+      "ttft": "Time to first token",
+      "tps": "{{value}} tokens/s",
+      "ms": "{{value}} ms",
+      "memory": "Peak memory {{peak}} of {{limit}}.",
+      "truncated": "Stopped at the time limit.",
+      "onlyEstimate": "Estimated {{range}} tokens per second. Not measured yet.",
+      "none": "Not measured yet."
+    },
+    "detail": {
+      "capsTitle": "Resource limits",
+      "caps": "This model may use up to {{cpus}} CPUs and {{memory}} of memory, with no swap and low priority. If the server runs short, this model is stopped before your apps.",
+      "idleExplain": "Idle unload: with on demand residency the engine stops after the idle time and frees its memory and CPU. The downloaded weights stay on disk, so the next request only waits for the model to load again."
+    }
   }
 }

@@ -1,6 +1,8 @@
 // Wire shapes for /api/v1/models and /api/v1/gpus, mirroring
 // internal/api/models.go (modelResource, gpuNodeResource).
 
+import type { ModelBenchmark, ModelCompute, ModelDownload } from './modelsCpu'
+
 export type ModelEngine = 'ollama' | 'vllm' | 'llamacpp'
 export type ModelResidency = 'always' | 'on_demand'
 
@@ -33,6 +35,14 @@ export interface ModelResource {
   last_active_at?: string
   swap_group?: string
   shares_gpu_with?: string[]
+  compute?: ModelCompute
+  cpu_limit?: number
+  memory_limit_mib?: number
+  weights_repo?: string
+  weights_file?: string
+  license_acknowledged?: boolean
+  download?: ModelDownload
+  benchmark?: ModelBenchmark
 }
 
 export interface CreateModelRequest {
@@ -49,6 +59,12 @@ export interface CreateModelRequest {
   residency?: ModelResidency
   idle_ttl_seconds?: number
   swap_group?: string
+  compute?: ModelCompute
+  catalog_id?: string
+  cpus?: number
+  memory_mib?: number
+  weights_file?: string
+  accept_license?: boolean
 }
 
 export interface CreateModelResponse extends ModelResource {
