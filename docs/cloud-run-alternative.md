@@ -49,7 +49,7 @@ Nobody wants to be on call for a server. Moving trades a bill for operations wor
 
 ## What to know before you try it
 
-Levelrail is self-hosted and early. It is in beta, there is no stable release yet, and the feature status page says which parts are proven and which are not.
+Levelrail is self-hosted and early. Many areas are still beta, and the feature status page says which parts are proven and which are not.
 
 You operate the server. OS updates, the Docker daemon, disk space, backups and restore tests are your job. A single server is a single failure domain.
 

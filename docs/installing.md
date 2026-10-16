@@ -71,7 +71,7 @@ The script:
 - Prints the dashboard URL, the one-time **setup token** for the first admin, and a reminder to back up `<data dir>/master.key`.
 
 <Note>
-A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`. While no stable release exists, the installer picks the newest pre-release; choose explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release with no binary for your architecture is skipped with a warning. Some providers never route a server's own public IP back to itself, so treat a failed reachability test as a hint, not proof.
+A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECKSUM=1`. The installer picks the newest stable release; choose explicitly with `LEVELRAIL_CHANNEL=stable|beta`. A release with no binary for your architecture is skipped with a warning. Some providers never route a server's own public IP back to itself, so treat a failed reachability test as a hint, not proof.
 </Note>
 
 ### First sign-in
@@ -340,10 +340,6 @@ Images (both `linux/amd64` and `linux/arm64`, multi-arch):
 | `:edge` | manual dispatch of the Release workflow against `main` | unreleased, use for testing only |
 
 `:latest` and `:vX.Y` only move on a stable tag; `:beta` moves on every prerelease tag. `:edge` moves only when someone manually triggers a build against `main`, not on every push. Pin an exact `:vX.Y.Z` tag for anything you care about staying still.
-
-<Warning>
-**No stable release yet.** No non-prerelease tag has shipped as of this writing, so `:latest` currently points at an old beta build, not the newest one. **Use `:beta` until the first stable release ships**, then switch to `:latest`.
-</Warning>
 
 <Tip>
 `install.sh` remains the recommended path for a real single-node deployment since it also provisions Docker and a systemd unit. The Docker image is for operators who want Levelrail to fit into an existing container-only setup.
