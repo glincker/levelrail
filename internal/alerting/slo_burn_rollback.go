@@ -2,6 +2,7 @@ package alerting
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -165,16 +166,13 @@ func recordSLOBurnDryRun(ctx context.Context, history SLOBurnHistoryRecorder, r 
 	}
 }
 
-// requestSLOBurnRollbackApproval opens a pending store.DeployApproval for
-// image, the same row shape and DeployApprovalActionDeploy path a manual
-// deploy into a protected environment already goes through
-// (requestDeployApproval, internal/api/deploy_approvals.go); approving it
-// runs svc's deploy through the exact same handleApproveDeployApproval
+// requestSLOBurnRollbackApproval opens a pending DeployApproval for image, the same path a manual protected-environment deploy takes.
+// Approving it runs svc's deploy through handleApproveDeployApproval.
 // code path.
 func requestSLOBurnRollbackApproval(ctx context.Context, st SLOAutoRollbackStore, r Rule, svc store.DesiredService, image string) error {
 	id, err := store.NewDeployApprovalID()
 	if err != nil {
-		return err
+		return fmt.Errorf("new deploy approval id: %w", err)
 	}
 	now := time.Now().UTC()
 	return st.SaveDeployApproval(ctx, store.DeployApproval{

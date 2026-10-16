@@ -54,8 +54,11 @@ type NodeMoveResource struct {
 	FinishedAt string         `json:"finished_at,omitempty"`
 }
 
+// statusRunning is the in-flight status of a node move or drain.
+const statusRunning = "running"
+
 // Done reports whether the move reached a final status.
-func (m NodeMoveResource) Done() bool { return m.Status != "running" }
+func (m NodeMoveResource) Done() bool { return m.Status != statusRunning }
 
 // DrainBlocked is a resource a drain could not move.
 type DrainBlocked struct {
@@ -79,7 +82,7 @@ type NodeDrainResource struct {
 }
 
 // Done reports whether the drain reached a final status.
-func (d NodeDrainResource) Done() bool { return d.Status != "running" }
+func (d NodeDrainResource) Done() bool { return d.Status != statusRunning }
 
 // StartMove calls POST /api/v1/{apps|databases}/{name}/move. kind is "app" or
 // "database"; an empty nodeID lets the scheduler pick.

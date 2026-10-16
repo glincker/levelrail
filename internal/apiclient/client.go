@@ -23,6 +23,14 @@ import (
 	"time"
 )
 
+// Request header names and values shared by every client call.
+const (
+	headerAuthorization = "Authorization"
+	headerContentType   = "Content-Type"
+	contentTypeJSON     = "application/json"
+	bearerPrefix        = "Bearer "
+)
+
 // Client is a minimal HTTP client for the control plane's versioned API
 // (internal/api, mounted at /api/v1). It carries no session/cookie
 // state: every request is a single bearer-token call, matching how this
@@ -89,10 +97,10 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(headerContentType, contentTypeJSON)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
@@ -215,9 +223,8 @@ type AppsPage struct {
 	TotalCount int
 }
 
-// ListAppsPage calls GET /api/v1/apps with opts.Limit/opts.Offset as
-// query params. Built as its own request rather than through do(): it
-// needs the server's X-Total-Count response header to compute
+// ListAppsPage calls GET /api/v1/apps with Limit/Offset query params.
+// It reads X-Total-Count for NextOffset, which do() discards, so it issues its own request.
 // NextOffset, which do() discards once it decodes the JSON body.
 func (c *Client) ListAppsPage(ctx context.Context, opts ListAppsOptions) (AppsPage, error) {
 	path := "/api/v1/apps"
@@ -240,7 +247,7 @@ func (c *Client) ListAppsPage(ctx context.Context, opts ListAppsOptions) (AppsPa
 		return AppsPage{}, fmt.Errorf("build request: %w", err)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
@@ -612,11 +619,8 @@ func (c *Client) DeleteAppBranchEnv(ctx context.Context, name, id string) error 
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/branch-env/"+PathEscape(id), nil, nil)
 }
 
-// DeployCompose calls POST /api/v1/apps/{name}/compose with composeYAML
-// as the raw request body. Unlike every other Client method, this
-// doesn't go through do(): handleDeployCompose (internal/api/apps_compose.go)
-// reads the body directly via io.ReadAll and parses it as a compose.yaml
-// document, so the body must be sent as-is, not JSON-marshaled, with
+// DeployCompose posts composeYAML as the raw body with Content-Type text/yaml.
+// The handler reads the body verbatim, so it must not be JSON-marshaled the way do() does.
 // Content-Type: text/yaml instead of do()'s hardcoded application/json.
 func (c *Client) DeployCompose(ctx context.Context, name string, composeYAML []byte) (ComposeDeployResult, error) {
 	var out ComposeDeployResult
@@ -627,7 +631,7 @@ func (c *Client) DeployCompose(ctx context.Context, name string, composeYAML []b
 	}
 	req.Header.Set("Content-Type", "text/yaml")
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 
 	start := time.Now()
@@ -3555,10 +3559,8 @@ func (c *Client) streamLogEvents(ctx context.Context, path string, onEntry func(
 	return streamSSE(ctx, c, http.MethodGet, path, nil, onEntry)
 }
 
-// streamSSE is the shared SSE scanner: it decodes each "data: " line as a T
-// and calls onEvent in arrival order. Lines that do not decode are skipped.
-// body is JSON-encoded and sent with the request when non-nil (the AI
-// chat message/confirmation routes are POST with a body; the log tail
+// streamSSE decodes each "data: " line as a T and calls onEvent in arrival order.
+// Lines that do not decode are skipped; body is JSON-encoded when non-nil.
 // above is a bodyless GET), matching do()'s own body-encoding rule.
 func streamSSE[T any](ctx context.Context, c *Client, method, path string, body any, onEvent func(T) error) error {
 	var reqBody io.Reader
@@ -3575,11 +3577,11 @@ func streamSSE[T any](ctx context.Context, c *Client, method, path string, body 
 		return fmt.Errorf("build request: %w", err)
 	}
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(headerContentType, contentTypeJSON)
 	}
 	req.Header.Set("Accept", "text/event-stream")
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
@@ -3675,9 +3677,8 @@ func (c *Client) ListAuditLog(ctx context.Context, opts ListAuditLogOptions) ([]
 	return out, err
 }
 
-// DownloadAuditLogCSV calls GET /api/v1/audit-log?format=csv: the same
-// rows ListAuditLog returns, as a raw CSV file rather than JSON. Built
-// as its own request rather than through do(), since the response body
+// DownloadAuditLogCSV calls GET /api/v1/audit-log?format=csv and returns the raw CSV bytes.
+// It bypasses do() because the body is passed through unmodified, not decoded as JSON.
 // is a CSV file to pass through unmodified, not a JSON value to decode.
 func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptions) ([]byte, error) {
 	q := auditLogQuery(opts)
@@ -3689,7 +3690,7 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
@@ -3740,11 +3741,8 @@ func (c *Client) GetDeploy(ctx context.Context, name, deployID string) (DeployAt
 	return out, err
 }
 
-// DownloadDeployLog calls GET /api/v1/apps/{name}/deploys/{deployId}/logs/download:
-// one deploy attempt's full log as raw text, the download counterpart
-// to the dashboard's own SSE view. Built as its own request rather than
-// through do(), the same reasoning DownloadAuditLogCSV above already
-// gives: the response body is a text file to pass through unmodified,
+// DownloadDeployLog returns one deploy attempt's full log as raw text.
+// It bypasses do() for the same reason as DownloadAuditLogCSV.
 // not a JSON value to decode.
 func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) ([]byte, error) {
 	path := "/api/v1/apps/" + PathEscape(name) + "/deploys/" + PathEscape(deployID) + "/logs/download"
@@ -3754,7 +3752,7 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)
@@ -3779,10 +3777,7 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 	return data, nil
 }
 
-// downloadRaw is DownloadBackup/DownloadVolumeBackup's shared "GET path,
-// return the raw response body" implementation, the same shape
-// DownloadDeployLog above hand-rolls for a single caller; factored out
-// here since a backup's own object stream has two callers (database and
+// downloadRaw GETs path and returns the raw response body, shared by backup downloads.
 // app-volume backups) rather than one.
 func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+path, nil) //nolint:gosec // c.baseURL is the operator-supplied API target this client exists to call, not attacker-controlled input
@@ -3790,7 +3785,7 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 		return nil, fmt.Errorf("build request: %w", err)
 	}
 	if c.token != "" {
-		req.Header.Set("Authorization", "Bearer "+c.token)
+		req.Header.Set(headerAuthorization, bearerPrefix+c.token)
 	}
 	if c.userAgent != "" {
 		req.Header.Set("User-Agent", c.userAgent)

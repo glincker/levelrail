@@ -254,14 +254,14 @@ func sendTextNotification(ctx context.Context, client *http.Client, sender email
 		if token == "" {
 			return postJSON(ctx, client, cleanURL, payload)
 		}
-		return postJSONWithAuth(ctx, client, cleanURL, payload, "Bearer "+token)
+		return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
 	case NotifyResend:
 		key, to, from, err := parseResendCreds(notifyURL)
 		if err != nil {
 			return fmt.Errorf("alerting: test notification: %w", err)
 		}
 		payload := resendPayload{From: from, To: []string{to}, Subject: "[Levelrail] test notification", Text: testText}
-		return postJSONWithAuth(ctx, client, resendAPIURL, payload, "Bearer "+key)
+		return postJSONWithAuth(ctx, client, resendAPIURL, payload, bearerPrefix+key)
 	case NotifyEmail:
 		if sender == nil {
 			return fmt.Errorf("alerting: test notification: email is not configured on this control plane")

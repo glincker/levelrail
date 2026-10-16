@@ -116,12 +116,12 @@ func (c LogRuleConfig) Validate(kind Kind, p LogRulePolicy) error {
 		return fmt.Errorf("regex must be at most %d characters", maxLogRegexLen)
 	}
 	if c.Regex != "" {
-		if _, err := regexp.Compile(c.Regex); err != nil {
+		if _, err := compileLogRegex(c.Regex); err != nil {
 			return fmt.Errorf("regex: %w", err)
 		}
 	}
 	if _, err := telemetry.ParseFieldFilters(c.Fields); err != nil {
-		return err
+		return fmt.Errorf("field filters: %w", err)
 	}
 	switch kind {
 	case KindLogPattern:
@@ -187,13 +187,13 @@ func MatchLogRule(kind Kind, cfg LogRuleConfig, entries []telemetry.LogEntry, tr
 	var re *regexp.Regexp
 	if cfg.Regex != "" {
 		var err error
-		if re, err = regexp.Compile(cfg.Regex); err != nil {
+		if re, err = compileLogRegex(cfg.Regex); err != nil {
 			return LogRuleResult{}, fmt.Errorf("compile regex: %w", err)
 		}
 	}
 	filters, err := telemetry.ParseFieldFilters(cfg.Fields)
 	if err != nil {
-		return LogRuleResult{}, err
+		return LogRuleResult{}, fmt.Errorf("field filters: %w", err)
 	}
 	level := cfg.Level
 	if kind == KindLogLevelRate && level == "" {
