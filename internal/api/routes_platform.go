@@ -699,6 +699,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// mutation path for a static site beyond internal/deploy.Pipeline's
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
 
 	// Backup targets (connected S3-compatible buckets a database backup
 	// can be uploaded to). Create and delete need AbilityWriteSensitive:

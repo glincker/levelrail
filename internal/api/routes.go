@@ -688,6 +688,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/network", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppNetwork))
 	// Exposure: port, direct host port and its tagged firewall rule. The write
 	// opens a host port, so it is AbilityWriteSensitive like firewall rules.
+	mux.HandleFunc("GET /api/v1/apps/{name}/urls", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppURLs))
 	mux.HandleFunc("GET /api/v1/apps/{name}/exposure", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppExposure))
 	mux.HandleFunc("POST /api/v1/apps/{name}/exposure/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreviewAppExposure))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/exposure", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppExposure))

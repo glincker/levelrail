@@ -1230,6 +1230,7 @@ func run(logger *slog.Logger) error {
 	// shape as the scheduled task scheduler just above: nothing about
 	// this loop needs a master key configured.
 	go sweepOrphanPreviewsOnce(ctx, logger, apiRouter)
+	go runStaticOrphanSweep(ctx, logger, apiRouter)
 	go func() {
 		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
@@ -2146,6 +2147,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLogger(logger),
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
+		deploy.WithStaticPublishRecorder(db),
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
@@ -2449,6 +2451,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
+		api.WithStaticRootDir(filepath.Join(dataDir, "static")),
 		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
@@ -2531,6 +2534,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
+		api.WithStaticOrphanGrace(staticOrphanGrace(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),

@@ -20,6 +20,9 @@ const (
 	DigestReasonPullFailedUsingCached = "PullFailedUsingCached"
 	// DigestReasonLocalImage: the image exists only locally, with no registry digest.
 	DigestReasonLocalImage = "LocalImage"
+	// DigestReasonStaticTree: the digest hashes the published file tree of a
+	// container-less static site.
+	DigestReasonStaticTree = "StaticTree"
 	// DigestReasonUnresolved: neither the registry nor the local cache knew
 	// the tag; the node resolves it when it creates the container.
 	DigestReasonUnresolved = "Unresolved"
@@ -44,6 +47,19 @@ func (db *DB) SetDeployAttemptDigest(ctx context.Context, id, digest, reason str
 	res, err := db.ExecContext(ctx, `UPDATE deploy_attempts SET image_digest = ?, digest_reason = ? WHERE id = ?`, digest, reason, id)
 	if err != nil {
 		return fmt.Errorf("store: set deploy attempt %q digest: %w", id, err)
+	}
+	if n, err := res.RowsAffected(); err == nil && n == 0 {
+		return ErrDeployAttemptNotFound
+	}
+	return nil
+}
+
+// SetDeployAttemptRollout records the rollout state of one attempt by id,
+// for deploys with no container for the application controller to observe.
+func (db *DB) SetDeployAttemptRollout(ctx context.Context, id, state string) error {
+	res, err := db.ExecContext(ctx, `UPDATE deploy_attempts SET rollout_state = ? WHERE id = ?`, state, id)
+	if err != nil {
+		return fmt.Errorf("store: set deploy attempt %q rollout: %w", id, err)
 	}
 	if n, err := res.RowsAffected(); err == nil && n == 0 {
 		return ErrDeployAttemptNotFound

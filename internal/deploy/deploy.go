@@ -187,8 +187,9 @@ type Pipeline struct {
 	// both nil/empty is valid, the same "fail loudly without config"
 	// shape secrets above already establishes for a different optional
 	// feature.
-	staticSites   StaticSiteStore
-	staticRootDir string
+	staticSites    StaticSiteStore
+	staticRootDir  string
+	staticRecorder StaticPublishRecorder
 
 	apps AppStore // nil is valid: every method except DeploySpec ignores it, see WithAppStore
 
@@ -248,7 +249,7 @@ func (p *Pipeline) Deploy(ctx context.Context, req Request, progress func(build.
 		// No image, no build.ProgressEvent stream: see static.go's
 		// package doc comment for why this is a directory copy plus a
 		// store.StaticSite save, not a build.
-		return p.deployStatic(ctx, req)
+		return p.deployStatic(ctx, req, progress)
 	case spec.BuildCompose:
 		// A compose file always declares its own set of services, so it
 		// can never resolve to the one image a single-service Deploy call

@@ -81,6 +81,8 @@ System endpoints for:
 | POST | /api/v1/system/restart | AbilityRoot | handleSystemRestart |
 | GET | /api/v1/system/cli-console/commands | AbilityRoot | handleCLIConsoleCommands |
 | GET | /api/v1/system/cli-console/session | AbilityRoot | handleCLIConsoleSession |
+| GET | /api/v1/system/networks | AbilityRead | handleGetSystemNetworks |
+| POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -452,6 +454,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/exposure/preview | AbilityRead | handlePreviewAppExposure |
 | PUT | /api/v1/apps/{name}/exposure | AbilityWriteSensitive | handleSetAppExposure |
 | POST | /api/v1/apps/{name}/exposure/check | AbilityRead | handleCheckAppExposure |
+| GET | /api/v1/apps/{name}/urls | AbilityRead | handleGetAppURLs |
 
 </Accordion>
 
@@ -862,6 +865,7 @@ Endpoints for:
 | DELETE | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleDeleteStandaloneDomain |
 | GET | /api/v1/registry-credentials/{id}/usage | AbilityRead | handleRegistryCredentialUsage |
 | POST | /api/v1/registry-credentials/test | AbilityWriteSensitive | handleProbeRegistryCredential |
+| DELETE | /api/v1/static-sites/{name} | AbilityWriteSensitive | handleDeleteStaticSite |
 
 ## Built-in Container Registry
 

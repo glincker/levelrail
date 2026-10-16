@@ -162,6 +162,7 @@ func (rt *Router) runDoctorChecks(ctx context.Context) systemDoctorResponse {
 		one(rt.doctorCheckDiskIOLatency),
 		one(func() doctorCheckResource { return doctorCheckContainerHardening(hardeningCfg, hardeningErr) }),
 		one(func() doctorCheckResource { return rt.doctorCheckDockerGuard(ctx) }),
+		one(func() doctorCheckResource { return rt.doctorCheckNetworkPool(ctx) }),
 		one(func() doctorCheckResource { return rt.doctorCheckDockerPrivilege(ctx) }),
 		func() []doctorCheckResource { return rt.doctorRunNetworkChecks(ctx, httpPort, httpsPort) },
 		func() []doctorCheckResource { return rt.doctorCheckRegistryReachability(ctx) },

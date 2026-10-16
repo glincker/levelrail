@@ -49,6 +49,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sleep":
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
+	case "urls":
+		return runAppsURLs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "access":
 		return runAppsAccess(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traces":
@@ -240,6 +242,7 @@ func appsUsage(prog string) string {
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
   %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
+  %[1]s apps urls <name> [flags]   where the app can be reached now: ports, local and LAN addresses, domains, internal DNS name
   %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
   %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
   %[1]s apps log-pipeline get|set|clear|preview <name> [flags]   redact, parse, drop or join log lines before they are stored

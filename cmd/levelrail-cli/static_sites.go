@@ -27,6 +27,8 @@ func runStaticSites(prog string, args []string, stdout, stderr io.Writer, lookup
 		return exitOK
 	case "list":
 		return runStaticSitesList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete":
+		return runStaticSitesDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown static-sites subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, staticSitesUsage(prog))
@@ -37,6 +39,7 @@ func runStaticSites(prog string, args []string, stdout, stderr io.Writer, lookup
 func staticSitesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s static-sites list [flags]
+  %[1]s static-sites delete <name> [flags]
 
 Lists every build.type: static app served directly through the embedded
 Caddy ingress, with no container involved.

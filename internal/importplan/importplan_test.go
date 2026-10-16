@@ -375,3 +375,185 @@ func TestRepoParts_SelfHostedNoOwner(t *testing.T) {
 		})
 	}
 }
+
+func TestComposeServiceSelection(t *testing.T) {
+	tests := []struct {
+		name      string
+		yaml      string
+		wantFirst string
+	}{
+		{
+			name: "web and api services prefer web",
+			yaml: `
+services:
+  api:
+    image: api:latest
+    ports:
+      - "3001:3001"
+  web:
+    image: web:latest
+    ports:
+      - "8080:8080"
+`,
+			wantFirst: "web",
+		},
+		{
+			name: "only one service",
+			yaml: `
+services:
+  app:
+    image: app:latest
+    ports:
+      - "3000:3000"
+`,
+			wantFirst: "app",
+		},
+		{
+			name: "exclude dependency targets",
+			yaml: `
+services:
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+  web:
+    image: web:latest
+    depends_on:
+      db:
+        condition: service_healthy
+`,
+			wantFirst: "web",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, err := composePlanFromText([]byte(tt.yaml), "compose.yaml", nil)
+			if err != nil {
+				t.Fatalf("composePlanFromText error: %v", err)
+			}
+			if len(p.Services) == 0 {
+				t.Fatal("no services in plan")
+			}
+			got := p.Services[0].Name
+			if got != tt.wantFirst {
+				t.Errorf("first service is %q, want %q", got, tt.wantFirst)
+			}
+		})
+	}
+}
+
+func TestServiceSelectionRule(t *testing.T) {
+	tests := []struct {
+		name       string
+		services   []ServicePlan
+		depTgts    map[string]bool
+		wantIdx    int
+		wantReason string
+	}{
+		{
+			name:       "single service",
+			services:   []ServicePlan{{Name: "app"}},
+			wantIdx:    0,
+			wantReason: "only service",
+		},
+		{
+			name: "web service preferred by name",
+			services: []ServicePlan{
+				{Name: "api", Ports: []PortMapping{{Container: 3001}}},
+				{Name: "web", Ports: []PortMapping{{Container: 8080}}},
+			},
+			wantIdx:    1,
+			wantReason: "named \"web\"",
+		},
+		{
+			name: "service with published ports",
+			services: []ServicePlan{
+				{Name: "db"},
+				{Name: "api", Ports: []PortMapping{{Container: 3000}}},
+			},
+			wantIdx:    1,
+			wantReason: "has published ports",
+		},
+		{
+			name: "exclude dependency targets",
+			services: []ServicePlan{
+				{Name: "redis", Ports: []PortMapping{{Container: 6379}}},
+				{Name: "app"},
+			},
+			depTgts:    map[string]bool{"redis": true},
+			wantIdx:    1,
+			wantReason: "app",
+		},
+		{
+			name: "prefer web even without ports",
+			services: []ServicePlan{
+				{Name: "db"},
+				{Name: "web"},
+				{Name: "api"},
+			},
+			wantIdx:    1,
+			wantReason: "named \"web\"",
+		},
+		{
+			name: "health check scores high",
+			services: []ServicePlan{
+				{Name: "worker"},
+				{Name: "api", HealthPath: "/health"},
+			},
+			wantIdx:    1,
+			wantReason: "has health check",
+		},
+		{
+			name: "nginx preferred by name",
+			services: []ServicePlan{
+				{Name: "app"},
+				{Name: "nginx"},
+			},
+			wantIdx:    1,
+			wantReason: "named \"nginx\"",
+		},
+		{
+			name: "gateway preferred by name",
+			services: []ServicePlan{
+				{Name: "service1"},
+				{Name: "gateway"},
+			},
+			wantIdx:    1,
+			wantReason: "named \"gateway\"",
+		},
+		{
+			name:       "empty services",
+			services:   []ServicePlan{},
+			wantIdx:    -1,
+			wantReason: "no services",
+		},
+		{
+			name: "all dependencies: pick first non-dep",
+			services: []ServicePlan{
+				{Name: "redis"},
+				{Name: "postgres"},
+				{Name: "app"},
+			},
+			depTgts:    map[string]bool{"redis": true, "postgres": true},
+			wantIdx:    2,
+			wantReason: "app",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			depTgts := tt.depTgts
+			if depTgts == nil {
+				depTgts = make(map[string]bool)
+			}
+			idx, reason := serviceSelectionRule(tt.services, depTgts)
+			if idx != tt.wantIdx {
+				t.Errorf("got index %d, want %d", idx, tt.wantIdx)
+			}
+			if !strings.Contains(reason, tt.wantReason) && reason != tt.wantReason {
+				t.Errorf("got reason %q, want it to contain %q", reason, tt.wantReason)
+			}
+		})
+	}
+}

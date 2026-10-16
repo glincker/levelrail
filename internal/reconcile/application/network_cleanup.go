@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
@@ -43,6 +44,8 @@ type NetworkCleanupController struct {
 	prefix     string
 	instanceID string
 	nodeID     string
+	grace      time.Duration
+	now        func() time.Time
 }
 
 // ForNode names this controller after a remote node so one runs per node
@@ -62,7 +65,7 @@ func (c *NetworkCleanupController) ForNode(nodeID string) *NetworkCleanupControl
 // as this instance's own, this package's behavior before cross-instance
 // safety existed.
 func NewNetworkCleanupController(apps AppLister, runtime docker.Runtime, prefix, instanceID string) *NetworkCleanupController {
-	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix, instanceID: instanceID}
+	return &NetworkCleanupController{apps: apps, runtime: runtime, prefix: prefix, instanceID: instanceID, grace: NetworkGraceFromEnv(), now: time.Now}
 }
 
 // Name implements reconcile.Controller.
@@ -81,6 +84,9 @@ func (c *NetworkCleanupController) Reconcile(ctx context.Context) (reconcile.Res
 	}
 	networkPrefix := prefix + "-app-"
 
+	if admin, ok := c.runtime.(docker.NetworkAdmin); ok {
+		return c.reconcileWithAdmin(ctx, admin, prefix)
+	}
 	observed, err := c.runtime.ListNetworksByPrefix(ctx, networkPrefix)
 	if err != nil {
 		return notReady("ListNetworksFailed", err), fmt.Errorf("application/network-cleanup: list networks: %w", err)
@@ -173,4 +179,47 @@ func (c *NetworkCleanupController) ownNetworks(observed []docker.NetworkInfo) []
 		}
 	}
 	return out
+}
+
+// reconcileWithAdmin is the grace-period, never-force GC used when the
+// runtime can report attached containers (a local Docker client).
+func (c *NetworkCleanupController) reconcileWithAdmin(ctx context.Context, admin docker.NetworkAdmin, prefix string) (reconcile.Result, error) {
+	details, err := admin.DescribeNetworks(ctx, prefix+"-app-")
+	if err != nil {
+		return notReady("ListNetworksFailed", err), fmt.Errorf("application/network-cleanup: list networks: %w", err)
+	}
+	if len(details) == 0 {
+		return ready("NothingToClean"), nil
+	}
+	apps, err := c.apps.ListApps(ctx)
+	if err != nil {
+		return notReady("ListAppsFailed", err), fmt.Errorf("application/network-cleanup: list apps: %w", err)
+	}
+	var firstErr error
+	removed := 0
+	for _, v := range ClassifyNetworks(prefix, c.instanceID, details, apps, c.now(), c.grace) {
+		if !v.Removable {
+			continue
+		}
+		ok, err := admin.RemoveNetworkIfEmpty(ctx, v.Name)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("remove orphaned network %q: %w", v.Name, err)
+			}
+			continue
+		}
+		if ok {
+			removed++
+		}
+	}
+	if firstErr != nil {
+		return reconcile.Result{Conditions: []reconcile.Condition{{
+			Type: reconcile.ConditionTypeReady, Status: reconcile.ConditionTrue,
+			Reason: "OrphanedNetworkCleanupFailed", Message: firstErr.Error(),
+		}}}, fmt.Errorf("application/network-cleanup: %w", firstErr)
+	}
+	if removed > 0 {
+		return ready("OrphanedNetworksRemoved"), nil
+	}
+	return ready("Converged"), nil
 }

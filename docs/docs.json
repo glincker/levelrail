@@ -140,6 +140,7 @@
               "compose-apps",
               "new-app-wizard",
               "importing-apps",
+              "pages",
               "deploy-safety",
               "deploy-failures",
               "scheduled-deploys",

@@ -398,6 +398,7 @@ type Router struct {
 	// previewStuckAfter is how long a preview may sit in deploying before the
 	// orphan sweep marks it failed (WithPreviewStuckAfter).
 	previewStuckAfter time.Duration
+	staticOrphanGrace time.Duration
 	// auditLogRetention overrides defaultAuditLogRetention
 	// (audit_retention.go): how long an audit_log row survives before
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
@@ -434,11 +435,12 @@ type Router struct {
 	// window. 0 means "use the default", set via
 	// WithCapacityForecastLookback.
 	capacityForecastLookback     time.Duration
-	builder                      Builder                         // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                        fetchFunc                       // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	listBranches                 listBranchesFunc                // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
-	importFiles                  func() importplan.FileSource    // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
-	detect                       detectFunc                      // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
+	builder                      Builder                      // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                        fetchFunc                    // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	listBranches                 listBranchesFunc             // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                  func() importplan.FileSource // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
+	detect                       detectFunc                   // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
+	staticRootDir                string
 	staticSites                  StaticSiteStore                 // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets                BackupTargetStore               // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
 	storage                      *StorageDeps                    // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501

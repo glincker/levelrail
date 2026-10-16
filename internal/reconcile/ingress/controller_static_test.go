@@ -185,3 +185,28 @@ func TestController_Reconcile_StaticSitesListError_Fails(t *testing.T) {
 		t.Errorf("Apply calls = %d, want 0: a failed list must never reach Caddy", applier.calls)
 	}
 }
+
+// TestController_Reconcile_StaticSiteRemoved_RouteDrops checks the level
+// triggered contract: once the site row is gone, the next pass applies a
+// config with no route for it.
+func TestController_Reconcile_StaticSiteRemoved_RouteDrops(t *testing.T) {
+	st := &fakeStore{staticSites: []store.StaticSite{
+		{Name: "docs", Domains: []string{"docs.example.com"}, RootDir: "/data/static/docs/abc"},
+	}}
+	applier := &fakeApplier{}
+	c := New(st, newFakeRuntime(), applier, WithLogger(discardLogger()))
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(applier.routes(t)); got != 1 {
+		t.Fatalf("routes before delete = %d, want 1", got)
+	}
+	st.staticSites = nil
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if got := len(applier.routes(t)); got != 0 {
+		t.Errorf("routes after delete = %d, want 0", got)
+	}
+}

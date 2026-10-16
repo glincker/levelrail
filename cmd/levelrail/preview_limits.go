@@ -62,3 +62,37 @@ func sweepOrphanPreviewsOnce(ctx context.Context, logger *slog.Logger, r *api.Ro
 		logger.Info("orphan preview sweep repaired state", slog.Int("stuck_deploys", res.StuckDeploys), slog.Int("orphaned_services", res.OrphanedServices))
 	}
 }
+
+// staticOrphanGrace reads APP_STATIC_ORPHAN_GRACE: how old an orphaned static
+// site must be before the sweep removes it. 0 keeps api's default (10m).
+func staticOrphanGrace(logger *slog.Logger) time.Duration {
+	raw := os.Getenv("APP_STATIC_ORPHAN_GRACE")
+	if raw == "" {
+		return 0
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil || d < 0 {
+		logger.Warn("invalid APP_STATIC_ORPHAN_GRACE, using the default", slog.String("value", raw))
+		return 0
+	}
+	return d
+}
+
+// runStaticOrphanSweep removes static sites whose app is gone, at startup and
+// then once per grace period.
+func runStaticOrphanSweep(ctx context.Context, logger *slog.Logger, r *api.Router) {
+	t := time.NewTicker(r.StaticOrphanGrace())
+	defer t.Stop()
+	for {
+		if removed, err := r.SweepOrphanStaticSites(ctx); err != nil {
+			logger.Warn("orphan static site sweep had errors", slog.String("error", err.Error()))
+		} else if len(removed) > 0 {
+			logger.Info("orphan static site sweep removed sites", slog.Int("removed", len(removed)))
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+		}
+	}
+}

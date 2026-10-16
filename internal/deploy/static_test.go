@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -464,26 +463,6 @@ func TestPipeline_DeployStatic_RecordsBuildDuration(t *testing.T) {
 // static deploys have no build progress to forward: progress, if given,
 // is simply never invoked, since there is no build.ProgressEvent-emitting
 // step in this path at all.
-func TestPipeline_DeployStatic_ProgressCallback_NeverCalled(t *testing.T) {
-	builder := &fakeBuilder{}
-	staticStore := &fakeStaticSiteStore{}
-	p := New(builder, &fakeServiceStore{}, WithStaticSiteStore(staticStore), WithStaticRootDir(t.TempDir()))
-
-	sourceDir := t.TempDir()
-	writeTree(t, sourceDir, map[string]string{"dist/index.html": "<h1>hi</h1>"})
-
-	called := false
-	_, err := p.Deploy(context.Background(), Request{
-		ServiceName: "docs", Service: staticService("docs.example.com"), SourceDir: sourceDir, CommitSHA: "abc1234",
-	}, func(build.ProgressEvent) { called = true })
-	if err != nil {
-		t.Fatalf("Deploy() error = %v", err)
-	}
-	if called {
-		t.Error("progress callback was called, want it never invoked for a static deploy")
-	}
-}
-
 func TestStaticDestRel(t *testing.T) {
 	tests := []struct {
 		name, service, commit string

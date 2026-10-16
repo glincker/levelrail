@@ -4200,6 +4200,11 @@ func (c *Client) ListStaticSites(ctx context.Context) ([]StaticSiteResource, err
 	return out, err
 }
 
+// DeleteStaticSite calls DELETE /api/v1/static-sites/{name}.
+func (c *Client) DeleteStaticSite(ctx context.Context, name string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/static-sites/"+PathEscape(name), nil, nil)
+}
+
 // PathEscape guards against a name containing characters that would
 // otherwise change the request's URL shape (a "/" turning one path
 // segment into two, for instance). Server-side validation is the real

@@ -15,7 +15,7 @@ const (
 	OutcomeBlocked    = "blocked"
 )
 
-var rolloutDoneReasons = map[string]bool{"Deployed": true, "AlreadyRunning": true}
+var rolloutDoneReasons = map[string]bool{"Deployed": true, "AlreadyRunning": true, "StaticSitePublished": true}
 
 // computeDeployOutcome derives one deploy's outcome. It is keyed on the
 // attempt: a serving rollout state is proof this attempt's image is running,

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/compose"
 )
 
 var composeFileNames = []string{"docker-compose.yml", "docker-compose.yaml", "compose.yaml", "compose.yml"}
@@ -88,7 +90,19 @@ func inspectRepo(ctx context.Context, repoURL, ref string, read func(string) (st
 		if !ok {
 			continue
 		}
-		cp, cerr := composePlanFromText([]byte(text), cf)
+
+		// Extract depends_on targets to pass to service selection.
+		depTargets := make(map[string]bool)
+		parsed, _ := compose.Parse([]byte(text))
+		if parsed != nil {
+			for _, s := range parsed.Services {
+				for _, dep := range s.DependsOn {
+					depTargets[dep] = true
+				}
+			}
+		}
+
+		cp, cerr := composePlanFromText([]byte(text), cf, depTargets)
 		if cerr == nil && !hasBuildService(cp) && cp.Deploy == DeployCompose {
 			p.Deploy = DeployCompose
 			p.ComposeYAML = cp.ComposeYAML

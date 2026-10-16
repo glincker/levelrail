@@ -1,10 +1,11 @@
 # Max transitive dependents per package (scripts/check-fanin.sh). Raise a number only
 # with a reason in the PR; lowering it after a split is the point.
+# 0.10: docker, telemetry and netguard gained dependents from tracing, error tracking, budgets and the network pool.
 internal/bindaddr 89
 internal/bindmount 91
 internal/build 21
 internal/compose 25
-internal/docker 94
+internal/docker 96
 internal/dockerguard 27
 internal/extdb 21
 internal/gpu 87
@@ -17,9 +18,9 @@ internal/reconcile 88
 internal/reconcile/database 27
 internal/spec 88
 internal/store 86
-internal/telemetry 26
+internal/telemetry 28
 internal/usagecost 87
 kit/cronexpr 89
 kit/diskspace 26
-kit/netguard 36
+kit/netguard 38
 kit/probe 89

@@ -15307,7 +15307,7 @@
     },
     "/api/v1/apps/{name}/exposure": {
       "get": {
-        "description": "Exposure: port, direct host port and its tagged firewall rule. The write opens a host port, so it is AbilityWriteSensitive like firewall rules.\n\nRequires the `read` ability.",
+        "description": "Requires the `read` ability.",
         "operationId": "handleGetAppExposure",
         "parameters": [
           {
@@ -15376,7 +15376,7 @@
             ]
           }
         ],
-        "summary": "Exposure: port, direct host port and its tagged firewall rule.",
+        "summary": "Get App Exposure",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],
@@ -27882,6 +27882,84 @@
           "Apps CRUD / Lifecycle / Deploy"
         ],
         "x-required-ability": "write:sensitive"
+      }
+    },
+    "/api/v1/apps/{name}/urls": {
+      "get": {
+        "description": "Exposure: port, direct host port and its tagged firewall rule. The write opens a host port, so it is AbilityWriteSensitive like firewall rules.\n\nRequires the `read` ability.",
+        "operationId": "handleGetAppURLs",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Exposure: port, direct host port and its tagged firewall rule.",
+        "tags": [
+          "Apps CRUD / Lifecycle / Deploy"
+        ],
+        "x-required-ability": "read"
       }
     },
     "/api/v1/apps/{name}/validate-spec": {
@@ -81496,6 +81574,84 @@
         "x-required-ability": "read"
       }
     },
+    "/api/v1/static-sites/{name}": {
+      "delete": {
+        "description": "Requires the `write:sensitive` ability.",
+        "operationId": "handleDeleteStaticSite",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "write:sensitive"
+            ]
+          }
+        ],
+        "summary": "Delete Static Site",
+        "tags": [
+          "Static Sites / Backup Targets / Registry Credentials"
+        ],
+        "x-required-ability": "write:sensitive"
+      }
+    },
     "/api/v1/status-page": {
       "get": {
         "description": "Requires the `read` ability.",
@@ -84834,6 +84990,153 @@
           }
         ],
         "summary": "Master key rotation re-wraps every stored DEK live: AbilityRoot, the same fleet-wide-blast-radius tier as prune above, not AbilityWrite (SecretSetter's own gate for a single app's values).",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "root"
+      }
+    },
+    "/api/v1/system/networks": {
+      "get": {
+        "description": "Requires the `read` ability.",
+        "operationId": "handleGetSystemNetworks",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "Get System Networks",
+        "tags": [
+          "System"
+        ],
+        "x-required-ability": "read"
+      }
+    },
+    "/api/v1/system/networks/prune": {
+      "post": {
+        "description": "Removes Docker networks, so AbilityRoot.\n\nRequires the `root` ability.",
+        "operationId": "handlePruneSystemNetworks",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "root"
+            ]
+          }
+        ],
+        "summary": "Removes Docker networks, so AbilityRoot.",
         "tags": [
           "System"
         ],

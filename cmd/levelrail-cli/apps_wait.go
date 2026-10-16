@@ -114,6 +114,8 @@ var rolloutFailureReasons = map[string]bool{
 var rolloutDoneReasons = map[string]bool{
 	"Deployed":       true,
 	"AlreadyRunning": true,
+	// The static site is published; there is no container to converge.
+	"StaticSitePublished": true,
 }
 
 // computeRolloutOutcome decides attempt's rollout outcome from

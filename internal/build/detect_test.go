@@ -207,3 +207,186 @@ func TestDirSize_UnderCap(t *testing.T) {
 		t.Errorf("dirSize() = %d, want 10", size)
 	}
 }
+
+func TestExtractPort(t *testing.T) {
+	tests := []struct {
+		name   string
+		script string
+		want   int
+	}{
+		{name: "--port=4173", script: "vite preview --port=4173", want: 4173},
+		{name: "--port 4173 (spaced)", script: "vite preview --port 4173", want: 4173},
+		{name: "-p flag", script: "node -p 3000 app.js", want: 3000},
+		{name: "PORT= prefix", script: "PORT=5000 npm start", want: 5000},
+		{name: "-l listen syntax", script: "node -l tcp://0.0.0.0:8080 server.js", want: 8080},
+		{name: "multiple flags, first wins", script: "--port 3000 --port 4000", want: 3000},
+		{name: "no port flag", script: "node index.js", want: 0},
+		{name: "empty string", script: "", want: 0},
+		{name: "invalid port number", script: "--port abc", want: 0},
+		{name: "port out of range", script: "--port 70000", want: 0},
+		{name: "port 0", script: "--port 0", want: 0},
+		{name: "port 1", script: "--port 1", want: 1},
+		{name: "port 65535", script: "--port 65535", want: 65535},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := extractPort(tt.script); got != tt.want {
+				t.Errorf("extractPort(%q) = %d, want %d", tt.script, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDetectFramework(t *testing.T) {
+	tests := []struct {
+		name   string
+		script string
+		want   string
+	}{
+		{name: "vite preview", script: "vite preview --host --port 4173", want: "vite preview"},
+		{name: "vite dev", script: "vite dev", want: "vite dev"},
+		{name: "next start", script: "next start", want: "next start"},
+		{name: "next dev", script: "next dev", want: "next dev"},
+		{name: "nuxt preview", script: "nuxt preview", want: "nuxt preview"},
+		{name: "astro preview", script: "astro preview", want: "astro preview"},
+		{name: "remix-serve", script: "remix-serve ./build/index.js", want: "remix-serve"},
+		{name: "sveltekit fallback", script: "node build", want: ""},
+		{name: "serve simple", script: "serve -s build", want: "serve"},
+		{name: "http-server", script: "http-server", want: "http-server"},
+		{name: "unknown", script: "node index.js", want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := detectFramework(tt.script); got != tt.want {
+				t.Errorf("detectFramework(%q) = %q, want %q", tt.script, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFrameworkPort(t *testing.T) {
+	tests := []struct {
+		name      string
+		framework string
+		want      int
+	}{
+		{name: "vite preview", framework: "vite preview", want: 4173},
+		{name: "vite dev", framework: "vite dev", want: 5173},
+		{name: "next dev", framework: "next dev", want: 3000},
+		{name: "next start", framework: "next start", want: 3000},
+		{name: "nuxt dev", framework: "nuxt dev", want: 3000},
+		{name: "astro preview", framework: "astro preview", want: 4321},
+		{name: "astro dev", framework: "astro dev", want: 4321},
+		{name: "remix-serve", framework: "remix-serve", want: 3000},
+		{name: "sveltekit", framework: "sveltekit", want: 3000},
+		{name: "serve", framework: "serve", want: 3000},
+		{name: "http-server", framework: "http-server", want: 8080},
+		{name: "unknown", framework: "unknown", want: 0},
+		{name: "empty", framework: "", want: 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := frameworkPort(tt.framework); got != tt.want {
+				t.Errorf("frameworkPort(%q) = %d, want %d", tt.framework, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDetectNodePort(t *testing.T) {
+	tests := []struct {
+		name         string
+		pkgJSON      string
+		wantPort     int
+		wantSourceOK bool
+	}{
+		{
+			name:         "scripts.start with --port flag",
+			pkgJSON:      `{"scripts":{"start":"vite preview --host --port 4173"}}`,
+			wantPort:     4173,
+			wantSourceOK: true,
+		},
+		{
+			name:         "scripts.preview fallback",
+			pkgJSON:      `{"scripts":{"preview":"vite preview --port 3001"}}`,
+			wantPort:     3001,
+			wantSourceOK: true,
+		},
+		{
+			name:         "scripts.start with framework default (vite preview)",
+			pkgJSON:      `{"scripts":{"start":"vite preview"}}`,
+			wantPort:     4173,
+			wantSourceOK: true,
+		},
+		{
+			name:         "scripts.start with framework default (next dev)",
+			pkgJSON:      `{"scripts":{"start":"next dev"}}`,
+			wantPort:     3000,
+			wantSourceOK: true,
+		},
+		{
+			name:         "no scripts field",
+			pkgJSON:      `{}`,
+			wantPort:     0,
+			wantSourceOK: false,
+		},
+		{
+			name:         "missing package.json",
+			pkgJSON:      "",
+			wantPort:     0,
+			wantSourceOK: false,
+		},
+		{
+			name:         "malformed package.json",
+			pkgJSON:      `{not json}`,
+			wantPort:     0,
+			wantSourceOK: false,
+		},
+		{
+			name:         "start with PORT= prefix",
+			pkgJSON:      `{"scripts":{"start":"PORT=8080 node server.js"}}`,
+			wantPort:     8080,
+			wantSourceOK: true,
+		},
+		{
+			name:         "start with -p flag",
+			pkgJSON:      `{"scripts":{"start":"node -p 9000 app.js"}}`,
+			wantPort:     9000,
+			wantSourceOK: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if tt.pkgJSON != "" {
+				if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte(tt.pkgJSON), 0o600); err != nil {
+					t.Fatalf("write package.json: %v", err)
+				}
+			}
+			port, source := detectNodePort(dir)
+			if port != tt.wantPort {
+				t.Errorf("detectNodePort() port = %d, want %d", port, tt.wantPort)
+			}
+			if (source != "") != tt.wantSourceOK {
+				t.Errorf("detectNodePort() source = %q, want non-empty=%v", source, tt.wantSourceOK)
+			}
+		})
+	}
+}
+
+func TestDetectUnchecked_ViteReact(t *testing.T) {
+	repoDir := localRepoFrom(t, "testdata/railpack-vite-react")
+	result, err := detectUnchecked(context.Background(), DetectRequest{RepoURL: repoDir})
+	if err != nil {
+		t.Fatalf("detectUnchecked() error = %v", err)
+	}
+	if result.Provider != "node" {
+		t.Errorf("Provider = %q, want %q", result.Provider, "node")
+	}
+	if result.Port != 4173 {
+		t.Errorf("Port = %d, want 4173", result.Port)
+	}
+	if result.PortSource == "" {
+		t.Errorf("PortSource = %q, want non-empty", result.PortSource)
+	}
+}

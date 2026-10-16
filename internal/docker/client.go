@@ -52,6 +52,9 @@ type Client struct {
 	// host, when set (WithHost), is dialed instead of runtime.Host.
 	host     string
 	declarer CreateDeclarer
+	// pool, when set, makes EnsureNetwork assign explicit subnets.
+	pool  *NetworkPool
+	alloc poolAllocator
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -85,7 +88,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	runtime := DetectRuntimeSocket(os.LookupEnv)
 	hardening, herr := HardeningFromEnv(runtime)
 	logHardeningEnv(herr)
-	c := &Client{hardening: hardening, runtime: runtime}
+	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv)}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -418,14 +421,30 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
-	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{
-		Driver: "bridge",
-		Labels: c.withInstanceLabel(nil),
-	})
+	labels := c.networkLabels(name)
+	if c.pool != nil {
+		id, err := c.alloc.create(ctx, c.cli, *c.pool, name, labels)
+		if err != nil {
+			return "", fmt.Errorf("docker: create network %q: %w", name, err)
+		}
+		return id, nil
+	}
+	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{Driver: "bridge", Labels: labels})
 	if err != nil {
+		if IsPoolExhausted(err) {
+			return "", &PoolExhaustedError{Daemon: true, InUse: c.countNetworks(ctx)}
+		}
 		return "", fmt.Errorf("docker: create network %q: %w", name, err)
 	}
 	return resp.ID, nil
+}
+
+func (c *Client) countNetworks(ctx context.Context) int {
+	nets, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{})
+	if err != nil {
+		return 0
+	}
+	return len(nets)
 }
 
 // RemoveNetwork implements Runtime. Force-disconnects every still-attached

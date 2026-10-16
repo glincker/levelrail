@@ -78,6 +78,18 @@ func (rt *Router) handleRollbackToDeploy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	if isStaticAttempt(*target) {
+		if _, ok := rt.freezeGate(w, r, target.ServiceName, req.freezeOverride); !ok {
+			return
+		}
+		if status, msg := rt.rollbackStatic(r.Context(), *target); status != 0 {
+			writeError(w, status, msg)
+			return
+		}
+		res := toAppResource(*existing)
+		writeJSON(w, http.StatusAccepted, deployTriggerResult{appResource: &res})
+		return
+	}
 	pin := rt.rollbackPin(r.Context(), *target)
 	ref, status, msg := rt.rollbackImageRef(r.Context(), *target, pin)
 	if status != 0 {

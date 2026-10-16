@@ -143,5 +143,11 @@ func createFailureReason(err error) string {
 	if errors.As(err, &missing) {
 		return reasonRequiredSecretMissing
 	}
+	var exhausted *docker.PoolExhaustedError
+	if errors.As(err, &exhausted) {
+		return reasonNetworkPoolExhausted
+	}
 	return "CreateFailed"
 }
+
+const reasonNetworkPoolExhausted = "NetworkPoolExhausted"

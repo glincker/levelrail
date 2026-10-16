@@ -191,6 +191,13 @@ These tune `levelrail-cli doctor` and the structured diagnosis of failed deploys
 | --- | --- | --- |
 | `APP_MESH_KEY_FILE` | `levelrail-agent-mesh.key` in the same directory as the agent identity file | Path where the agent stores its WireGuard private key. Only used when `APP_MESH_ENABLED=1`. Agent. See [Network topology](/network-topology). |
 
+## App networks
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_NETWORK_POOL` | `10.88.0.0/14` | IPv4 block per-app Docker networks get explicit /24 subnets from, about 1000 apps. Must not overlap host interfaces, routes or other Docker networks (already-used ranges are skipped). `off` uses the Docker daemon's own pools (about 30 networks). Existing networks are never re-addressed. Control plane. See [Troubleshooting](/troubleshooting#app-network-pool). |
+| `APP_NETWORK_GC_GRACE` | `10m` | How long a network whose app is gone must sit empty before it is removed. Control plane. |
+
 ## Secret rotation
 
 | Variable | Default | Meaning |
