@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-Levelrail is pre-1.0 and has not cut a stable release yet. There is no
-supported-versions table to publish because there is nothing to compare
-against: security fixes land on `main` as they're found.
+Security fixes ship in the latest release, so run the newest version from
+the [releases page](https://github.com/glincker/levelrail/releases).
+Older releases are not patched separately.
 
 ## Reporting a Vulnerability
 

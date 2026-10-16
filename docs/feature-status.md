@@ -222,6 +222,6 @@ These counts appear in the README, the landing page, and several guides. Re-chec
 | Alert rule kinds | 14 | `Kind` constants in `internal/alerting/rules.go` |
 | Managed database engines | 8 | `internal/store/database.go` |
 | Service templates | 311 | `len(catalog.Templates)`, listed in [Template catalog](/template-catalog) |
-| Latest release | 0.2.0-beta.18, so there is no stable release yet | `.release-please-manifest.json` |
+| Latest release | See the [releases page](https://github.com/glincker/levelrail/releases) | `.release-please-manifest.json` |
 
 Two caveats still hold. Idle footprint is measured only on an Apple M4 Max dev build (58 to 96 MB RSS from 0 to 500 apps, see [Performance](/performance)), with no Linux release-build number yet. Real public ACME issuance has one recorded live run ([the verification runbook](/acme-verification-runbook), 2026-10-05); renewal and DNS-01 wildcards are still unproven.

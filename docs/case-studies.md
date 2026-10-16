@@ -22,7 +22,7 @@ Levelrail is pre-release and has no customer logos yet, so instead of testimonia
 
 ## What is not proven yet
 
-Levelrail has no stable release, and single node is the best tested path. The WireGuard mesh and cross-host remote transport beyond the join flow are still unverified, there is no Linux release-build idle measurement yet, and public ACME has one live run with renewal and wildcards unverified. The feature status page lists the evidence behind each area.
+Single node is the best tested path. The WireGuard mesh and cross-host remote transport beyond the join flow are still unverified, there is no Linux release-build idle measurement yet, and public ACME has one live run with renewal and wildcards unverified. The feature status page lists the evidence behind each area.
 
 Fewer real-world deployments also means less community knowledge than projects that have existed for years.
 

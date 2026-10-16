@@ -24,17 +24,13 @@ services:
       - www.example.com
 ```
 
-The path must be relative and point to a directory that exists in your repository. Levelrail Pages serves that directory directly through Caddy's file_server handler, committing the built files to a content-addressed directory so rollback is instant.
+The path must be relative and point to a directory that exists in your repository. Levelrail Pages serves that directory directly through Caddy's file_server handler, publishing the built files to a directory named after the commit so an earlier deploy can be re-published without a rebuild.
 
-From the CLI:
+From the CLI, create the app from the spec file and say which repository and branch to deploy:
 
 ```bash
-# Deploy from a git repository
-levelrail-cli apps create --name my-site --file app.yaml --service web
-
-# Or inline
-levelrail-cli apps create --name my-site --repo https://github.com/user/site.git \
-  --static --domains example.com,www.example.com --build-path ./dist
+levelrail-cli apps create --name my-site --file app.yaml --service web \
+  --repo https://github.com/you/site.git --ref main
 ```
 
 From the dashboard, use the **New** wizard and pick the **Git repository** card. If you push an `app.yaml` with a static service, the deploy trigger will pick it up automatically.
@@ -44,7 +40,7 @@ From the dashboard, use the **New** wizard and pick the **Git repository** card.
 Unlike container-based apps, there is no container build step. The deploy process is:
 
 1. **Fetch**: Clone or pull the repository at the commit you push.
-2. **Publish**: Copy the specified `build.path` directory to a local directory on the control plane. The files are stored in a content-addressed path under the control plane's data directory (`/var/lib/levelrail-data/static/SERVICE/COMMIT` by default).
+2. **Publish**: Copy the specified `build.path` directory to a local directory on the control plane. The files are stored in a content-addressed path under the control plane's data directory (`<data dir>/static/SERVICE/COMMIT`, with the data directory defaulting to `/var/lib/levelrail-data`).
 3. **Route**: The ingress controller points the configured domains at this directory. Traffic routes immediately once the files are published.
 
 If the deploy fails (e.g., the path does not exist in the repository), the previous version stays live until you fix and push again.
@@ -71,19 +67,21 @@ Levelrail Pages keeps the built files from every deploy by storing them with the
 levelrail-cli apps deploys rollback-to my-site DEPLOY_ID
 ```
 
-Or in the dashboard, click **Rollback** on a previous deploy in the **Deployments** view. Rollback is instant: it updates the route to point to the older directory, no rebuild needed.
+Or in the dashboard, click **Rollback** on a previous deploy in the **Deployments** view. No rebuild is needed: Levelrail re-publishes the earlier tree and points the route at it.
 
 Rollback works by content digest: each deploy records a hash of the published tree, and rolling back re-publishes the earlier tree if its files are still on disk and unchanged (it answers 410 when the tree is gone and 409 when its content changed).
 
 ## Delete a static site
 
-Deleting the app removes the routes and marks the published files for cleanup:
+Deleting the app removes the site, its files and its route right away:
 
 ```bash
 levelrail-cli apps delete my-site
 ```
 
-The on-disk files are cleaned up asynchronously. The default grace period is 10 minutes: if the site is not immediately re-deployed, the directory is removed after that time. Set `APP_STATIC_ORPHAN_GRACE` (e.g. `APP_STATIC_ORPHAN_GRACE=1h`) to change the grace period, or set it to `0` to clean up immediately (not recommended if deletes and re-creates happen in quick succession).
+To remove only the published site and keep the app record, use `levelrail-cli static-sites delete my-site`. It returns 404 if the site does not exist and 409 if the app still needs it.
+
+If a site is ever left behind without an app, a background sweep removes it after a grace period. The default is 10 minutes. Set `APP_STATIC_ORPHAN_GRACE` (for example `1h`) to change it. An empty or `0` value falls back to the default.
 
 ## List your static sites
 
@@ -104,8 +102,8 @@ This shows every site currently served through the embedded ingress, with no bui
 
 ## Limitations
 
-- **Build languages**: Levelrail Pages does not run a build step. Your repository must contain the finished HTML in the path you specify. If you use a static site generator (Hugo, Jekyll, Next.js static export, etc.), commit the built output to the repository or use a git hook to build before push.
-- **Redirects and rewrites**: The embedded Caddy serves files as-is. URL rewrites and sophisticated routing are not configured. If you need them, build a `app.yaml` with a reverse proxy service instead.
+- **Build languages**: Levelrail Pages does not run a build step. Your repository must contain the finished HTML in the path you specify. If you use a static site generator (Hugo, Jekyll, Next.js static export and so on), build in CI and push the output to a branch, then deploy that branch with `--ref`.
+- **Redirects and rewrites**: The embedded Caddy serves files as-is. URL rewrites and sophisticated routing are not configured. If you need them, run a small container service for the site instead.
 - **Large file limits**: There are no hard limits, but very large directories (> 1GB) may see slower deploy and rollback times. Monitor the data directory disk usage with `df -h /var/lib/levelrail-data`.
 
 ## For contributors

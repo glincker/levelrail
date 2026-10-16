@@ -60,6 +60,12 @@ export default defineConfig({
     ],
   ],
 
+  transformPageData(pageData) {
+    const path = pageData.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '')
+    pageData.frontmatter.head ??= []
+    pageData.frontmatter.head.push(['link', { rel: 'canonical', href: `${siteUrl}/${path}` }])
+  },
+
   themeConfig: {
     socialLinks: [{ icon: 'github', link: 'https://github.com/glincker/levelrail' }],
   },

@@ -32,7 +32,7 @@ The action does not build your image. Build and push it in an earlier step, then
 
 The `status` output is `succeeded`, `failed`, or `skipped` (when `wait` is `false`).
 
-The action installs a prebuilt `levelrail-cli` from GitHub Releases (Linux and macOS, amd64 and arm64), verifies its checksum, and by default picks the newest release, pre-releases included while no stable release exists. Pin one with `cli-version: v0.2.0-beta.15`.
+The action installs a prebuilt `levelrail-cli` from GitHub Releases (Linux and macOS, amd64 and arm64), verifies its checksum, and by default picks the newest release. Pin one with `cli-version: vX.Y.Z`.
 
 To run other CLI commands in a job, install the CLI on its own with the `setup-cli` action. Its input is `version`:
 

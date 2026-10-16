@@ -18,8 +18,7 @@ The three groups below are the ones that framing describes.
   Some areas are stable (backed by a live end-to-end test) and others are
   beta or behind a flag. "It fits" means the feature exists and is
   tested, not that it has survived production load.
-- Levelrail has no stable release yet. There is no stable image tag yet: `:latest`
-  does not move, and prereleases publish as `:beta`. APIs, the app spec format, and the on-disk layout can still
+- Levelrail is young. APIs, the app spec format, and the on-disk layout can still
   change without notice. None of the three audiences below should put a
   revenue-critical workload on it without a shadow run alongside whatever
   they use today, the same caution [migrating-from-vercel.md](/migrating-from-vercel)
@@ -184,7 +183,7 @@ avoids.
   and [feature-status.md](/feature-status#templates)).
 - `docs/migrating-from-vercel.md` itself warns to run the new deployment in
   parallel and keep the old platform as the rollback path until a shadow
-  run is clean, specifically because there is no stable release yet and
+  run is clean, specifically because some areas are still beta and
   public ACME renewal is unverified. That caution applies to
   anyone moving off any existing platform, not just Vercel.
 - [Preview environments](/previews) are stable for GitHub but beta for GitLab and
@@ -202,8 +201,8 @@ charging them is outside this project's scope.
 
 Is this ready to replace my production Heroku/Vercel/Coolify setup today?
 
-Not without caution. There is no stable release yet (README status
-section), and the recommended path, explicit in
+Not without caution. Many areas are still beta (see
+[feature status](/feature-status)), and the recommended path, explicit in
 [migrating-from-vercel.md](/migrating-from-vercel), is to run Levelrail
 alongside your existing platform until a shadow run is clean.
 
