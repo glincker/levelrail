@@ -17,6 +17,7 @@ import { useRestartModel, useRotateModelApiKey } from '../queries/models'
 import type { ModelResource } from '../types/models'
 import { DeleteModelDialog } from './DeleteModelDialog'
 import { ModelKeyRevealDialog } from './ModelKeyRevealDialog'
+import { ModelDownloadProgress } from './models/ModelDownloadProgress'
 import { useState } from 'react'
 
 // Shared column grid between the sticky header (routes/models/index.tsx)
@@ -82,6 +83,11 @@ export function ModelRow({ model }: { model: ModelResource }) {
         <Badge variant="outline" className="font-mono text-[11px]">
           {model.engine}
         </Badge>
+        {model.compute === 'cpu' ? (
+          <Badge variant="outline" className="ml-1 text-[11px]">
+            CPU
+          </Badge>
+        ) : null}
       </span>
       <span className="min-w-0 text-xs text-muted-foreground">
         <span className="block truncate">
@@ -98,7 +104,11 @@ export function ModelRow({ model }: { model: ModelResource }) {
         className="min-w-0 truncate text-xs text-muted-foreground"
         title={model.status.message}
       >
-        {model.status.message}
+        {model.download && model.status.reason === 'Downloading' ? (
+          <ModelDownloadProgress download={model.download} compact />
+        ) : (
+          model.status.message
+        )}
       </span>
       <span className="flex items-center gap-1 justify-self-end">
         <Button
