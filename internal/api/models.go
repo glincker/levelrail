@@ -88,6 +88,7 @@ type modelResource struct {
 	// on the same node.
 	SwapGroup     string   `json:"swap_group,omitempty"`
 	SharesGPUWith []string `json:"shares_gpu_with,omitempty"`
+	modelCPUResource
 }
 
 func toModelResource(v models.View) modelResource {
@@ -103,6 +104,7 @@ func toModelResource(v models.View) modelResource {
 		EffectiveIdleTTLSeconds: int(models.IdleTTL(m) / time.Second),
 		LastActiveAt:            optTime(m.LastActiveAt),
 		SwapGroup:               m.SwapGroup, SharesGPUWith: v.SharesGPUWith,
+		modelCPUResource: toModelCPUResource(v),
 	}
 }
 
@@ -127,6 +129,14 @@ type createModelRequest struct {
 	Residency     string   `json:"residency"`
 	IdleTTLSecs   int      `json:"idle_ttl_seconds"`
 	SwapGroup     string   `json:"swap_group"`
+	// Compute is "gpu" (default) or "cpu". CatalogID picks a curated local
+	// model and implies cpu. CPUs and MemoryMiB are the CPU model caps.
+	Compute       string  `json:"compute"`
+	CatalogID     string  `json:"catalog_id"`
+	CPUs          float64 `json:"cpus"`
+	MemoryMiB     int     `json:"memory_mib"`
+	WeightsFile   string  `json:"weights_file"`
+	AcceptLicense bool    `json:"accept_license"`
 }
 
 type createModelResponse struct {
@@ -194,6 +204,9 @@ func (rt *Router) writeModelError(w http.ResponseWriter, op string, err error) {
 	case errors.Is(err, models.ErrInvalid):
 		msg := strings.TrimPrefix(err.Error(), models.ErrInvalid.Error()+": ")
 		writeError(w, http.StatusBadRequest, msg)
+	case errors.Is(err, models.ErrLicenseAck):
+		msg := strings.TrimPrefix(err.Error(), models.ErrLicenseAck.Error()+": ")
+		writeError(w, http.StatusBadRequest, "license_ack_required: "+msg)
 	case errors.Is(err, models.ErrNodeNotFound):
 		writeError(w, http.StatusBadRequest, "unknown node_id")
 	case errors.Is(err, models.ErrSecretsUnavailable):
@@ -256,6 +269,8 @@ func (rt *Router) handleCreateModel(w http.ResponseWriter, r *http.Request) {
 		NodeID: req.NodeID, Domain: req.Domain, HFToken: req.HFToken,
 		Residency: req.Residency, IdleTTL: time.Duration(req.IdleTTLSecs) * time.Second,
 		SwapGroup: req.SwapGroup,
+		Compute:   req.Compute, CatalogID: req.CatalogID, CPUMilli: int(req.CPUs * 1000), MemoryMiB: req.MemoryMiB,
+		WeightsFile: req.WeightsFile, LicenseAck: req.AcceptLicense,
 	})
 	if err != nil {
 		rt.writeModelError(w, "create model", err)

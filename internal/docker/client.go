@@ -602,6 +602,16 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 			CpusetCpus: spec.Resources.CPUSetCPUs,
 		}
 	}
+	if spec.CPUShares > 0 {
+		hostConfig.CPUShares = spec.CPUShares
+	}
+	if spec.OomScoreAdj != 0 {
+		hostConfig.OomScoreAdj = spec.OomScoreAdj
+	}
+	if spec.PidsLimit > 0 {
+		limit := spec.PidsLimit
+		hostConfig.PidsLimit = &limit
+	}
 	if spec.ShmSizeBytes > 0 {
 		hostConfig.ShmSize = spec.ShmSizeBytes
 	}

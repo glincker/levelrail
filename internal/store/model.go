@@ -59,7 +59,31 @@ type Model struct {
 	// resident at once, waking one stops the group's current resident
 	// sibling first.
 	SwapGroup string
+
+	// Compute is ComputeGPU (default) or ComputeCPU. CPUMilli and
+	// MemoryMiB are the hard caps of a CPU model (1000 milli = 1 CPU).
+	Compute   string
+	CPUMilli  int
+	MemoryMiB int
+	// WeightsRepo, WeightsFile and WeightsSHA256 name the GGUF file the
+	// control plane downloads itself for a local CPU model.
+	WeightsRepo   string
+	WeightsFile   string
+	WeightsSHA256 string
+	// LicenseAck records that the operator acknowledged a non-curated
+	// repository's licence notice.
+	LicenseAck         bool
+	DownloadDoneBytes  int64
+	DownloadTotalBytes int64
+	// BenchmarkJSON is the last benchmark result, empty when none ran.
+	BenchmarkJSON string
 }
+
+// Model compute kinds.
+const (
+	ComputeGPU = "gpu"
+	ComputeCPU = "cpu"
+)
 
 // Model residency modes and reconciler-observed states.
 const (
@@ -71,7 +95,7 @@ const (
 	ResidencyWaking = "waking"
 )
 
-const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at, residency, idle_ttl_seconds, last_active_at, residency_state, swap_group`
+const modelColumns = `name, engine, model_ref, node_id, gpu_count, gpu_device_ids, context_length, quantization, domain, api_key_hash, api_key_prefix, hf_token_set, endpoint_dial, restart_nonce, deleting, created_at, updated_at, residency, idle_ttl_seconds, last_active_at, residency_state, swap_group, compute, cpu_milli, memory_mib, weights_repo, weights_file, weights_sha256, license_ack, download_done_bytes, download_total_bytes, benchmark_json`
 
 // SaveModel inserts a new model row and its default API key.
 func (db *DB) SaveModel(ctx context.Context, m Model) error {
@@ -87,10 +111,11 @@ func (db *DB) SaveModel(ctx context.Context, m Model) error {
 	now := time.Now().UTC()
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO models (`+modelColumns+`)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, '')
 	`, m.Name, m.Engine, m.ModelRef, m.NodeID, m.GPUCount, string(ids), m.ContextLength, m.Quantization,
 		m.Domain, m.APIKeyHash, m.APIKeyPrefix, boolToInt(m.HFTokenSet), formatTime(now), formatTime(now),
-		residencyOrDefault(m.Residency), m.IdleTTLSeconds, formatOptTime(m.LastActiveAt), ResidencyAwake, m.SwapGroup)
+		residencyOrDefault(m.Residency), m.IdleTTLSeconds, formatOptTime(m.LastActiveAt), ResidencyAwake, m.SwapGroup,
+		computeOrDefault(m.Compute), m.CPUMilli, m.MemoryMiB, m.WeightsRepo, m.WeightsFile, m.WeightsSHA256, boolToInt(m.LicenseAck))
 	if err != nil {
 		_ = tx.Rollback() // the pool has one connection, so release it before the lookup
 		if _, getErr := db.GetModel(ctx, m.Name); getErr == nil {
@@ -123,14 +148,18 @@ func scanModel(scan func(dest ...any) error) (*Model, error) {
 		m                    Model
 		ids                  string
 		hfSet, deleting      int
+		licenseAck           int
 		createdAt, updatedAt string
 		lastActive           string
 	)
 	if err := scan(&m.Name, &m.Engine, &m.ModelRef, &m.NodeID, &m.GPUCount, &ids, &m.ContextLength, &m.Quantization,
 		&m.Domain, &m.APIKeyHash, &m.APIKeyPrefix, &hfSet, &m.EndpointDial, &m.RestartNonce, &deleting, &createdAt, &updatedAt,
-		&m.Residency, &m.IdleTTLSeconds, &lastActive, &m.ResidencyState, &m.SwapGroup); err != nil {
+		&m.Residency, &m.IdleTTLSeconds, &lastActive, &m.ResidencyState, &m.SwapGroup,
+		&m.Compute, &m.CPUMilli, &m.MemoryMiB, &m.WeightsRepo, &m.WeightsFile, &m.WeightsSHA256, &licenseAck,
+		&m.DownloadDoneBytes, &m.DownloadTotalBytes, &m.BenchmarkJSON); err != nil {
 		return nil, err
 	}
+	m.LicenseAck = licenseAck != 0
 	if lastActive != "" {
 		t, err := time.Parse(time.RFC3339Nano, lastActive)
 		if err != nil {
@@ -370,4 +399,36 @@ func (db *DB) ListModelsInSwapGroup(ctx context.Context, group string) ([]Model,
 		return nil, fmt.Errorf("store: iterate model rows: %w", err)
 	}
 	return out, nil
+}
+
+func computeOrDefault(c string) string {
+	if c == ComputeCPU {
+		return c
+	}
+	return ComputeGPU
+}
+
+// SetModelDownload records weights download progress without touching
+// updated_at, which tracks configuration changes.
+func (db *DB) SetModelDownload(ctx context.Context, name string, done, total int64) error {
+	res, err := db.ExecContext(ctx, `UPDATE models SET download_done_bytes = ?, download_total_bytes = ? WHERE name = ?`, done, total, name)
+	if err != nil {
+		return fmt.Errorf("store: set download progress of model %q: %w", name, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrModelNotFound
+	}
+	return nil
+}
+
+// SetModelBenchmark stores the last benchmark result as JSON.
+func (db *DB) SetModelBenchmark(ctx context.Context, name, resultJSON string) error {
+	res, err := db.ExecContext(ctx, `UPDATE models SET benchmark_json = ? WHERE name = ?`, resultJSON, name)
+	if err != nil {
+		return fmt.Errorf("store: set benchmark of model %q: %w", name, err)
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrModelNotFound
+	}
+	return nil
 }

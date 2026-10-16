@@ -16,7 +16,7 @@ const envHFToken = "HF_TOKEN"
 func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "models deploy", "print the model and its one-time API key as JSON to stdout and nothing else", stderr)
 	var req apiclient.CreateModelRequest
-	var gpus, devices string
+	var gpus, devices, compute string
 	var hfFromEnv bool
 	var idleTTL time.Duration
 	fs.StringVar(&req.Name, "name", "", "model name (lowercase letters, digits, hyphens)")
@@ -32,25 +32,51 @@ func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.StringVar(&req.Residency, "residency", "", "always (default) or on_demand: stop the engine when idle and start it on the first request")
 	fs.DurationVar(&idleTTL, "idle-ttl", 0, "with --residency on_demand: how long unused before the engine stops (default: the platform's APP_MODEL_IDLE_TTL)")
 	fs.StringVar(&req.SwapGroup, "swap-group", "", "models sharing this name on the same node/GPU cannot both be resident; waking one stops the group's current resident model")
+	fs.StringVar(&compute, "compute", "", "gpu (default) or cpu: run a small GGUF model on the CPU with hard resource caps")
+	fs.StringVar(&req.CatalogID, "catalog", "", "deploy a curated local model by id (see \"models catalog\"); implies --compute cpu")
+	fs.Float64Var(&req.CPUs, "cpus", 0, "with --compute cpu: hard CPU cap (default: the smaller of 2 and half the node's CPUs)")
+	fs.IntVar(&req.MemoryMiB, "memory-mib", 0, "with --compute cpu: hard memory cap in MiB (default: 25% of the node's RAM)")
+	fs.StringVar(&req.WeightsFile, "weights-file", "", "with --compute cpu and a custom repo: the GGUF file to download")
+	fs.BoolVar(&req.AcceptLicense, "accept-license", false, "with --compute cpu and a repo that is not on the curated list: acknowledge its licence notice")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, modelsDeployUsage(prog)) }
 
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
-	if req.Name == "" || req.Engine == "" || req.Model == "" {
+	if compute != "" && compute != "gpu" && compute != "cpu" {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--compute must be gpu or cpu, got %q", compute))
+	}
+	cpuMode := compute == "cpu" || req.CatalogID != ""
+	if cpuMode {
+		req.Compute = "cpu"
+		if req.Engine == "" {
+			req.Engine = "llamacpp"
+		}
+		if req.Name == "" && req.CatalogID != "" {
+			req.Name = strings.ReplaceAll(req.CatalogID, ".", "-")
+		}
+		if req.Name == "" || (req.CatalogID == "" && req.Model == "") {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--compute cpu needs --catalog ID, or --name and --model"))
+		}
+	} else if req.Name == "" || req.Engine == "" || req.Model == "" {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--name, --engine and --model are required"))
 	}
-	count, err := parseGPUCountFlag(gpus)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
+	if req.CPUs < 0 || req.MemoryMiB < 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--cpus and --memory-mib must not be negative"))
 	}
-	req.GPUCount = count
+	if !cpuMode {
+		count, err := parseGPUCountFlag(gpus)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		req.GPUCount = count
+	}
 	if idleTTL < 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--idle-ttl must not be negative"))
 	}
 	req.IdleTTLSecs = int(idleTTL / time.Second)
-	if devices != "" {
+	if devices != "" && !cpuMode {
 		req.GPUDeviceIDs = strings.Split(devices, ",")
 	}
 	if hfFromEnv {
@@ -62,12 +88,16 @@ func runModelsDeploy(prog string, args []string, stdout, stderr io.Writer, looku
 	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	created, err := client.CreateModel(context.Background(), req)
+	created, err := client.CreateModelDetail(context.Background(), req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy model %q: %w", req.Name, err))
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, created, func() {
 		_, _ = fmt.Fprintf(stdout, "model %q deployed (%s on %s)\n", created.Name, created.Engine, modelNodeLabel(created.NodeID))
+		if created.Compute == "cpu" {
+			_, _ = fmt.Fprintf(stdout, "cpu mode:  up to %.2f CPUs and %d MiB of memory on this server; other apps keep priority.\n", created.CPULimit, created.MemoryLimitMiB)
+			_, _ = fmt.Fprintln(stdout, "           The weights download from Hugging Face first: follow it with \"models get\".")
+		}
 		if created.EndpointURL != "" {
 			_, _ = fmt.Fprintf(stdout, "base url:  %s\n", created.EndpointURL)
 		}
@@ -99,6 +129,7 @@ printed once.
 Examples:
   %[1]s models deploy --name chat --engine ollama --model llama3.1:8b
   %[1]s models deploy --name llama --engine vllm --model meta-llama/Llama-3.1-8B-Instruct --hf-token-from-env --gpus 2
+  %[1]s models deploy --compute cpu --catalog granite-4.1-3b --cpus 2 --memory-mib 4096
 
 Flags:
   --name string              model name
@@ -114,6 +145,12 @@ Flags:
   --residency string         always (default) or on_demand
   --idle-ttl duration        idle time before an on_demand engine stops
   --swap-group string        models sharing this name on the same node/GPU cannot both be resident
+  --compute string           gpu (default) or cpu
+  --catalog string           curated local model id (implies --compute cpu), see "models catalog"
+  --cpus float               cpu mode: hard CPU cap (default min(2, half the node's CPUs))
+  --memory-mib int           cpu mode: hard memory cap in MiB (default 25%% of the node's RAM)
+  --weights-file string      cpu mode, custom repo: the GGUF file to download
+  --accept-license           cpu mode, repo not on the curated list: acknowledge its licence notice
   --token string             API token (default: %[2]s env var, then the credentials file)
   --api-url string           control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string           named credentials profile to read

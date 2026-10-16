@@ -87,6 +87,9 @@ func waitingForGPU(m *store.Model, node NodeInfo) *reconcile.Result {
 // models in the same group can never race each other's eviction
 // decision (see swap_lock.go).
 func (c *Controller) waitForGPUWithSwap(ctx context.Context, m *store.Model, node NodeInfo) *reconcile.Result {
+	if m.Compute == ComputeCPU {
+		return nil
+	}
 	blocked := waitingForGPU(m, node)
 	if blocked == nil || m.SwapGroup == "" {
 		return blocked

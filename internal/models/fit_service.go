@@ -132,7 +132,7 @@ func (s *Service) nodeFit(cfg FitConfig, params FitParams, req FitRequest, n GPU
 		}
 	}
 	for _, m := range all {
-		if m.Deleting || s.placementID(m.NodeID) != n.PlacementID {
+		if m.Deleting || m.Compute == ComputeCPU || s.placementID(m.NodeID) != n.PlacementID {
 			continue
 		}
 		need := s.modelNeed(cfg, params, m)

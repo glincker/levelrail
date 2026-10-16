@@ -72,6 +72,13 @@ type CreateModelRequest struct {
 	Residency     string   `json:"residency,omitempty"`
 	IdleTTLSecs   int      `json:"idle_ttl_seconds,omitempty"`
 	SwapGroup     string   `json:"swap_group,omitempty"`
+
+	Compute       string  `json:"compute,omitempty"`
+	CatalogID     string  `json:"catalog_id,omitempty"`
+	CPUs          float64 `json:"cpus,omitempty"`
+	MemoryMiB     int     `json:"memory_mib,omitempty"`
+	WeightsFile   string  `json:"weights_file,omitempty"`
+	AcceptLicense bool    `json:"accept_license,omitempty"`
 }
 
 // CreateModelResponse is a ModelResource plus the one-time API key.

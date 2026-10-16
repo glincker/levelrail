@@ -255,6 +255,15 @@ type ContainerSpec struct {
 	// non-default NetworkMode with an EndpointsConfig attachment; callers
 	// that set NetworkMode leave Network nil.
 	NetworkMode string
+	// CPUShares is the relative CPU weight under contention (Docker's
+	// default is 1024). 0 keeps the default. Local nodes only; not carried
+	// over the agent transport.
+	CPUShares int64
+	// OomScoreAdj biases the kernel OOM killer toward this container
+	// (higher dies first). 0 keeps the default. Local nodes only.
+	OomScoreAdj int
+	// PidsLimit overrides the hardening pids limit when positive.
+	PidsLimit int64
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

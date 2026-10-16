@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1215 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1217 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -26,6 +26,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/models/{name}", Ability: "AbilityWrite", Group: "AI Models / GPUs", Handler: "handleDeleteModel", Description: ""},
 	{Method: "GET", Path: "/api/v1/models/{name}", Ability: "AbilityRead", Group: "AI Models / GPUs", Handler: "handleGetModel", Description: ""},
 	{Method: "POST", Path: "/api/v1/models/{name}/api-key", Ability: "AbilityWriteSensitive", Group: "AI Models / GPUs", Handler: "handleRotateModelAPIKey", Description: ""},
+	{Method: "POST", Path: "/api/v1/models/{name}/benchmark", Ability: "AbilityWrite", Group: "AI Models / GPUs", Handler: "handleModelBenchmark", Description: ""},
 	{Method: "GET", Path: "/api/v1/models/{name}/engine-metrics", Ability: "AbilityRead", Group: "AI Models / GPUs", Handler: "handleModelEngineMetrics", Description: ""},
 	{Method: "GET", Path: "/api/v1/models/{name}/fit", Ability: "AbilityRead", Group: "AI Models / GPUs", Handler: "handleModelFit", Description: ""},
 	{Method: "PUT", Path: "/api/v1/models/{name}/hf-token", Ability: "AbilityWriteSensitive", Group: "AI Models / GPUs", Handler: "handleSetModelHFToken", Description: ""},
@@ -907,6 +908,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/mobile/pairing-codes", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateMobilePairing", Description: "Minting a pairing code hands out a credential, so root plus a fresh step-up."},
 	{Method: "GET", Path: "/api/v1/model-cache", Ability: "AbilityRead", Group: "Other", Handler: "handleListModelCache", Description: ""},
 	{Method: "POST", Path: "/api/v1/model-cache/prune", Ability: "AbilityRoot", Group: "Other", Handler: "handlePruneModelCache", Description: ""},
+	{Method: "GET", Path: "/api/v1/model-catalog", Ability: "AbilityRead", Group: "Other", Handler: "handleModelCatalog", Description: ""},
 	{Method: "GET", Path: "/api/v1/network-shares", Ability: "AbilityRead", Group: "Other", Handler: "handleListNetworkShares", Description: "Network shares (network_shares.go): an NFS/CIFS export mountable as a Docker local-driver volume. Same ability tiers as registry credentials just above: POST/PUT/DELETE handle a live CIFS password, test is a read-only reachability dial."},
 	{Method: "POST", Path: "/api/v1/network-shares", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateNetworkShare", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/network-shares/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteNetworkShare", Description: ""},
