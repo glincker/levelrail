@@ -121,3 +121,10 @@ func (m *masker) mask(s string) string {
 	}
 	return s
 }
+
+// values returns a copy of the registered secret values.
+func (m *masker) values() []string {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return append([]string(nil), m.vals...)
+}

@@ -71,7 +71,7 @@ func (e *Engine) runJob(ctx context.Context, run store.PipelineRun, def *Definit
 
 	m := &masker{}
 	jr := &jobRun{
-		e: e, run: run, def: def, jd: jd, row: row, plan: planSteps(jd), steps: row.Steps, all: jobs, mask: m,
+		e: e, run: run, def: def, jd: jd, row: row, plan: planSteps(def, baseJobName(row.Key), jd), steps: row.Steps, all: jobs, mask: m,
 		sink:    newLogSink(st, e.cfg.Logger, run.ID, row.Key, m, e.cfg.Now, e.cfg.MaxLogLines),
 		outputs: map[string]string{},
 	}

@@ -127,6 +127,8 @@ func (t Triggers) Matches(ev Event) bool {
 		return t.Manual != nil
 	case TriggerAPI:
 		return t.API
+	case TriggerWebhook:
+		return t.Webhook != nil
 	case TriggerSchedule:
 		return len(t.Schedule) > 0
 	}

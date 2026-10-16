@@ -101,6 +101,9 @@ func (e *Engine) Tick(ctx context.Context) error {
 		if _, err := e.cfg.Store.PrunePipelineRuns(ctx, e.cfg.KeepRuns); err != nil {
 			errs = append(errs, err)
 		}
+		if err := e.sweepArtifacts(ctx); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	return errors.Join(errs...)
 }

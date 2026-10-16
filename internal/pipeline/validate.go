@@ -88,10 +88,23 @@ func semanticIssues(def *Definition, root *yaml.Node) []Issue {
 			add(fmt.Sprintf("on.schedule.%d", i), err.Error())
 		}
 	}
+	seen := map[string]bool{}
+	for i, prm := range def.Parameters {
+		if seen[prm.Name] {
+			add(fmt.Sprintf("parameters.%d.name", i), fmt.Sprintf("duplicate parameter %q", prm.Name))
+		}
+		seen[prm.Name] = true
+		if msg := validateParameter(prm); msg != "" {
+			add(fmt.Sprintf("parameters.%d", i), msg)
+		}
+	}
 	if def.On.Manual != nil {
 		for name, in := range def.On.Manual.Inputs {
-			if len(in.Options) > 0 && in.Default != "" && !slices.Contains(in.Options, in.Default) {
-				add("on.manual.inputs."+name+".default", "default is not one of options")
+			if seen[name] {
+				add("on.manual.inputs."+name, fmt.Sprintf("parameter %q is declared twice", name))
+			}
+			if msg := validateParameter(Parameter{Name: name, Type: in.Type, Default: in.Default, Choices: in.ChoiceList()}); msg != "" {
+				add("on.manual.inputs."+name, msg)
 			}
 		}
 	}
@@ -140,6 +153,7 @@ func semanticIssues(def *Definition, root *yaml.Node) []Issue {
 			}
 		}
 		issues = append(issues, stepIssues(root, jp, job)...)
+		issues = append(issues, artifactIssues(root, jp, job)...)
 	}
 
 	if cyc := findCycle(def, names); cyc != "" {
@@ -273,4 +287,26 @@ func findCycle(def *Definition, names []string) string {
 		}
 	}
 	return ""
+}
+
+func artifactIssues(root *yaml.Node, jp string, job *Job) []Issue {
+	var issues []Issue
+	add := func(path, msg string) {
+		issues = append(issues, Issue{Path: path, Line: lineFor(root, strings.Split(path, ".")), Message: msg})
+	}
+	for i, p := range job.Artifacts {
+		if _, err := cleanArtifactPath(p); err != nil {
+			add(fmt.Sprintf("%s.artifacts.%d", jp, i), err.Error())
+		}
+	}
+	if len(job.Artifacts) > 0 {
+		hasContainer := false
+		for _, s := range job.Steps {
+			hasContainer = hasContainer || s.NeedsContainer()
+		}
+		if !hasContainer {
+			add(jp+".artifacts", "artifacts need at least one step that runs in the job container")
+		}
+	}
+	return issues
 }

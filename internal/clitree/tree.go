@@ -217,7 +217,7 @@ var Tree = map[string]*Node{
 		"package-registries": {Subs: map[string]*Node{"list": nil, "add": nil, "test": nil, "delete": nil}},
 	}},
 	"flags":        {Subs: map[string]*Node{"create": nil, "list": nil, "get": nil, "set": nil, "delete": nil}},
-	"pipelines":    {Subs: map[string]*Node{"list": nil, "validate": nil, "save": nil, "delete": nil, "run": nil, "runs": nil, "logs": nil, "cancel": nil, "approve": nil, "sync": nil, "triggers": nil, "oidc": nil}},
+	"pipelines":    {Subs: map[string]*Node{"list": nil, "validate": nil, "save": nil, "delete": nil, "run": nil, "runs": nil, "logs": nil, "cancel": nil, "approve": nil, "sync": nil, "artifacts": nil, "triggers": nil, "oidc": nil}},
 	"preview":      {Subs: map[string]*Node{"status": nil, "enable": nil, "disable": nil, "capture": nil, "prune": nil}},
 	"environments": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	"deployments":  {Subs: map[string]*Node{"list": nil, "watch": nil, "summary": nil}},

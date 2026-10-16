@@ -49,17 +49,19 @@ type PipelineRunner interface {
 const pipelineBodyLimit = 256 * 1024
 
 type pipelineResource struct {
-	ID        string    `json:"id"`
-	App       string    `json:"app"`
-	Name      string    `json:"name"`
-	Source    string    `json:"source"`
-	Enabled   bool      `json:"enabled"`
-	YAML      string    `json:"yaml,omitempty"`
-	Triggers  []string  `json:"triggers,omitempty"`
-	Jobs      int       `json:"jobs"`
-	LastRun   *runBrief `json:"last_run,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID       string   `json:"id"`
+	App      string   `json:"app"`
+	Name     string   `json:"name"`
+	Source   string   `json:"source"`
+	Enabled  bool     `json:"enabled"`
+	YAML     string   `json:"yaml,omitempty"`
+	Triggers []string `json:"triggers,omitempty"`
+	// Parameters are the values a manual run, API call, or webhook may set.
+	Parameters []pipeline.Parameter `json:"parameters,omitempty"`
+	Jobs       int                  `json:"jobs"`
+	LastRun    *runBrief            `json:"last_run,omitempty"`
+	CreatedAt  time.Time            `json:"created_at"`
+	UpdatedAt  time.Time            `json:"updated_at"`
 	// SourceSHA is the commit a repo-sourced definition was synced from, and
 	// Diverged is true when it was edited after that sync.
 	SourceSHA string `json:"source_sha,omitempty"`
@@ -73,16 +75,19 @@ type runBrief struct {
 }
 
 type pipelineRunResource struct {
-	ID           string             `json:"id"`
-	PipelineID   string             `json:"pipeline_id"`
-	PipelineName string             `json:"pipeline_name"`
-	App          string             `json:"app"`
-	Number       int                `json:"number"`
-	Trigger      string             `json:"trigger"`
-	Actor        string             `json:"actor,omitempty"`
-	Ref          string             `json:"ref,omitempty"`
-	CommitSHA    string             `json:"commit_sha,omitempty"`
-	Inputs       map[string]string  `json:"inputs,omitempty"`
+	ID           string            `json:"id"`
+	PipelineID   string            `json:"pipeline_id"`
+	PipelineName string            `json:"pipeline_name"`
+	App          string            `json:"app"`
+	Number       int               `json:"number"`
+	Trigger      string            `json:"trigger"`
+	Actor        string            `json:"actor,omitempty"`
+	Ref          string            `json:"ref,omitempty"`
+	CommitSHA    string            `json:"commit_sha,omitempty"`
+	Inputs       map[string]string `json:"inputs,omitempty"`
+	// PayloadBytes and PayloadType describe the webhook body a run received.
+	PayloadBytes int                `json:"payload_bytes,omitempty"`
+	PayloadType  string             `json:"payload_type,omitempty"`
 	Status       string             `json:"status"`
 	Reason       string             `json:"reason,omitempty"`
 	CreatedAt    time.Time          `json:"created_at"`
@@ -218,6 +223,7 @@ func toPipelineResource(p store.Pipeline, withYAML bool) pipelineResource {
 	if def, issues := pipeline.Validate([]byte(p.YAML)); len(issues) == 0 {
 		res.Jobs = len(def.Jobs)
 		res.Triggers = triggerNames(def.On)
+		res.Parameters = def.DeclaredParameters()
 	}
 	return res
 }
@@ -245,6 +251,9 @@ func triggerNames(t pipeline.Triggers) []string {
 	if t.API {
 		out = append(out, pipeline.TriggerAPI)
 	}
+	if t.Webhook != nil {
+		out = append(out, pipeline.TriggerWebhook)
+	}
 	return out
 }
 
@@ -255,6 +264,7 @@ func toRunResource(r store.PipelineRun, pipelineName string) pipelineRunResource
 		CreatedAt: r.CreatedAt, StartedAt: r.StartedAt, FinishedAt: r.FinishedAt,
 	}
 	_ = json.Unmarshal([]byte(r.InputsJSON), &res.Inputs)
+	res.PayloadBytes, res.PayloadType = len(r.TriggerPayload), r.TriggerContentType
 	if r.HoldState != "" {
 		res.Hold = &pipelineHold{State: r.HoldState, Reason: r.HoldReason, By: r.HoldBy, At: r.HoldAt}
 	}

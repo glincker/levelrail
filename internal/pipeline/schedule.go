@@ -41,7 +41,7 @@ func (e *Engine) schedule(ctx context.Context, run store.PipelineRun, def *Defin
 			if !ok {
 				reason := "condition not met"
 				if jd.If == "" {
-					reason = "a needed job did not succeed"
+					reason = skippedReason(j, jobs)
 				}
 				if err := st.SetPipelineJobStatus(ctx, j.ID, store.PipelineStatusSkipped, reason, "", 0, nil, &now); err != nil {
 					return err
@@ -192,4 +192,16 @@ func (e *Engine) cleanupRun(ctx context.Context, run store.PipelineRun, jobs []s
 			_ = vr.RemoveVolume(ctx, e.artifactsVolume(run.ID))
 		}
 	}
+}
+
+// skippedReason names the first needed job that did not succeed.
+func skippedReason(j store.PipelineJob, all []store.PipelineJob) string {
+	var needs []string
+	_ = json.Unmarshal([]byte(j.NeedsJSON), &needs)
+	for _, o := range all {
+		if slices.Contains(needs, baseJobName(o.Key)) && o.Status != store.PipelineStatusSucceeded {
+			return fmt.Sprintf("needed job %s %s", o.Key, o.Status)
+		}
+	}
+	return "a needed job did not succeed"
 }

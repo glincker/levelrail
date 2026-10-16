@@ -594,6 +594,10 @@ type Router struct {
 	secretScan                   SecretScanService            // nil is valid: secret scan routes return 501 (SetSecretScan)
 	pipelineStore                PipelineStore                // nil is valid: pipeline routes return 501 (WithPipelines)
 	pipelineRunner               PipelineRunner               // nil is valid: run/cancel/rerun return 501
+	pipelineExtras               PipelineExtraStore           // nil is valid: artifact and webhook trigger routes return 501
+	pipelineArtifactFiles        PipelineArtifactFiles        // nil is valid: artifact downloads return 501
+	pipelineWebhookMaxBody       int64                        // inbound pipeline webhook body cap in bytes, 0 means the default
+	pipelineWebhookKeep          int                          // deliveries kept per pipeline, 0 means the default
 	pipelineEvents               PipelineEvents               // nil is valid: git events start no pipelines
 	forgeDeployments             ForgeDeploymentStore         // nil is valid: app deploys are not reported to git forges
 	pipelineSync                 *pipelineSyncWiring          // nil is valid: pushes do not sync pipeline files and the sync routes return 501

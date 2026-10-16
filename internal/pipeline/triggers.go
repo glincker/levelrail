@@ -37,6 +37,9 @@ func (t *Triggers) UnmarshalYAML(n *yaml.Node) error {
 			err = val.Decode(&t.Schedule)
 		case "api":
 			err = val.Decode(&t.API)
+		case "webhook":
+			t.Webhook = &WebhookTrigger{}
+			err = decodeUnlessNull(val, isNull, t.Webhook)
 		default:
 			err = fmt.Errorf("line %d: unknown trigger %q", n.Content[i].Line, key)
 		}
@@ -56,5 +59,5 @@ func decodeUnlessNull(val *yaml.Node, isNull bool, out any) error {
 
 // IsEmpty reports whether no trigger is configured.
 func (t Triggers) IsEmpty() bool {
-	return t.Push == nil && t.PullRequest == nil && t.Tag == nil && t.MergeGroup == nil && t.Manual == nil && len(t.Schedule) == 0 && !t.API
+	return t.Push == nil && t.PullRequest == nil && t.Tag == nil && t.MergeGroup == nil && t.Manual == nil && len(t.Schedule) == 0 && !t.API && t.Webhook == nil
 }

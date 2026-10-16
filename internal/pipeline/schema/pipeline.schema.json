@@ -9,6 +9,10 @@
     "version": { "const": 1 },
     "name": { "type": "string", "minLength": 1 },
     "on": { "$ref": "#/$defs/triggers" },
+    "parameters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/parameter" }
+    },
     "stages": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true },
     "env": { "$ref": "#/$defs/stringMap" },
     "concurrency": {
@@ -42,6 +46,19 @@
     }
   },
   "$defs": {
+    "parameter": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
+        "type": { "enum": ["string", "choice", "boolean"] },
+        "default": { "type": ["string", "number", "boolean"] },
+        "choices": { "type": "array", "items": { "type": "string" } },
+        "required": { "type": "boolean" },
+        "description": { "type": "string" }
+      }
+    },
     "stringMap": {
       "type": "object",
       "additionalProperties": { "type": ["string", "number", "boolean"] }
@@ -100,6 +117,8 @@
                   "description": { "type": "string" },
                   "default": { "type": ["string", "number", "boolean"] },
                   "required": { "type": "boolean" },
+                  "type": { "enum": ["string", "choice", "boolean"] },
+                  "choices": { "type": "array", "items": { "type": "string" } },
                   "options": { "type": "array", "items": { "type": "string" } }
                 }
               }
@@ -107,7 +126,8 @@
           }
         },
         "schedule": { "type": "array", "items": { "type": "string" } },
-        "api": { "type": "boolean" }
+        "api": { "type": "boolean" },
+        "webhook": { "type": ["object", "null"], "additionalProperties": false }
       }
     },
     "job": {
@@ -142,6 +162,7 @@
         "retries": { "type": "integer", "minimum": 0, "maximum": 10 },
         "continue_on_error": { "type": "boolean" },
         "checkout": { "type": "boolean" },
+        "artifacts": { "$ref": "#/$defs/stringOrList" },
         "cache": {
           "type": "array",
           "items": {

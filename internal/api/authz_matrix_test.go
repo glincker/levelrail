@@ -76,6 +76,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /api/v1/auth/session-links/{token}/consume": "retired form, always answers 405",
 	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
+	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
 	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",

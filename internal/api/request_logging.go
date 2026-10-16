@@ -116,12 +116,13 @@ const imageUpdateHookPrefix = "/api/v1/hooks/image-update/"
 
 // loggablePath hides the secret in a webhook URL (/hooks/image-update/{name}/{token}) before it reaches a log line.
 func loggablePath(path string) string {
-	rest, ok := strings.CutPrefix(path, imageUpdateHookPrefix)
-	if !ok {
-		return path
+	for _, prefix := range []string{imageUpdateHookPrefix, pipelineHookPrefix} {
+		if rest, ok := strings.CutPrefix(path, prefix); ok {
+			name, _, _ := strings.Cut(rest, "/")
+			return prefix + name + "/redacted"
+		}
 	}
-	name, _, _ := strings.Cut(rest, "/")
-	return imageUpdateHookPrefix + name + "/redacted"
+	return path
 }
 
 type requestTimingsKey struct{}
