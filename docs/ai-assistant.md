@@ -1,7 +1,7 @@
 ---
 title: "AI assistant integration: levelrail-mcp"
 tag: "Beta"
-description: Run levelrail-mcp over stdio for a locally spawning client or over the network for a remotely hosted MCP-compatible AI assistant, and how to scope the API token it uses.
+description: "Run levelrail-mcp over stdio for a local client or over the network for a remote MCP assistant, and how to scope the API token it uses."
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/anthropic/default.svg" alt="Anthropic" title="Anthropic" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/openai/default.svg" alt="OpenAI" title="OpenAI" width="24" height="24" /></span></div>

@@ -1,6 +1,8 @@
 ---
 title: "app.yaml reference"
 description: Complete reference for app.yaml - the declarative app spec for Levelrail
+"og:image": "https://docs.levelrail.com/public/og/app-spec-reference.png"
+"twitter:image": "https://docs.levelrail.com/public/og/app-spec-reference.png"
 ---
 
 `app.yaml` is the declarative spec Levelrail reads from your repo: services, their build and runtime settings, and the managed databases they use. The control plane validates every field below against the JSON Schema embedded in it (`internal/spec/schema/app.schema.json`). An unknown key is an error, not something that gets quietly ignored.

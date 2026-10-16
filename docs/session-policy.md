@@ -1,8 +1,7 @@
 ---
-description: Per-team idle timeout, maximum session age, IP allowlist and required two-factor sign-in, enforced on every request, with a host-side recovery path for lockouts.
+title: "Session policy"
+description: "Per-team idle timeout, maximum session age, IP allowlist and required two-factor sign-in, enforced on every request, plus a host-side lockout recovery."
 ---
-
-# Session policy
 
 A session policy belongs to a team. Every authenticated request is checked against the policies of all the teams the caller belongs to, before any handler runs. Someone in several teams gets the strictest combination: the shortest timeouts, every allowlist, the smallest session cap, and MFA if any team requires it.
 

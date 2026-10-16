@@ -1,6 +1,6 @@
 ---
 title: "Deploy links and badge"
-description: Put a "Deploy with" button in your README. A visitor enters their own server once and lands on its create-app form with your image, port, env variable names and health path prefilled, never submitted automatically.
+description: "Put a Deploy with button in your README. A visitor enters their own server once and lands on a create-app form with your image, port and env names prefilled."
 ---
 
 A deploy link lets a project author add a button to a README. A visitor who clicks it picks their own server (remembered in their browser) and lands on that server's create-app form with the details filled in. Nothing is created until the visitor reviews the form and presses Deploy.

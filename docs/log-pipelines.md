@@ -1,8 +1,7 @@
 ---
+title: "Log pipelines"
 description: Apply transformations to every log line before storage, export or live tail. Redact secrets, drop noise, parse structured fields.
 ---
-
-# Log pipelines
 
 Transform logs on every line before storage, live tailing or export. Rules can redact secrets, drop health checks, parse fields and join multiline records. Rule changes take effect within about 15 seconds and only affect new lines.
 

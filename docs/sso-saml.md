@@ -1,8 +1,7 @@
 ---
-description: Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0 identity provider, map directory groups to roles, require single sign-on, and keep a break-glass path.
+title: "SAML single sign-on"
+description: "Sign in through Okta, Microsoft Entra ID, Keycloak or any SAML 2.0 identity provider, map directory groups to roles, require SSO and keep a break-glass path."
 ---
-
-# SAML single sign-on
 
 > **Experimental, off by default.** SAML sign-in and [SCIM provisioning](scim.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404`, the settings page and the sign-in button are hidden, and a "require single sign-on" setting is not applied. The service provider is the sign-in library's native SAML implementation; Levelrail adds a stricter response check, account policy and role mapping around it. It is tested against a signing test identity provider, not yet against a live Okta, Entra ID or Keycloak tenant (see [What has not been verified](#what-has-not-been-verified)).
 

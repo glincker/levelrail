@@ -3,8 +3,6 @@ title: Privacy policy
 description: What the Levelrail website collects, which browser storage it uses, and where to find how the software itself handles data.
 ---
 
-# Privacy policy
-
 Last updated: 2026-10-05.
 
 This policy describes the Levelrail website at levelrail.com. For how the software itself handles your data, secrets, metrics and logs on your own servers, see [Privacy and data handling](/privacy).

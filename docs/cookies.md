@@ -3,8 +3,6 @@ title: Cookie notice
 description: The Levelrail website sets no cookies of its own and stores only your theme preference in your browser's local storage.
 ---
 
-# Cookie notice
-
 Last updated: 2026-10-05.
 
 ## Cookies

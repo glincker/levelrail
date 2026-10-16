@@ -1,6 +1,6 @@
 ---
 title: "Emergency access"
-description: Get back into a control plane you cannot sign in to by resetting the admin password, minting a short-lived root token from the host, or using a break-glass token made in advance, and what keeps each safe.
+description: "Get back into a control plane you cannot sign in to: reset the admin password, mint a root token from the host, or use a break-glass token made earlier."
 ---
 
 If sign-in is broken (a lost password, passkeys that cannot work without HTTPS, a lockout after failed attempts, a stale session), you do not need to reinstall. Every route below needs root on the host that runs the control plane, the same trust boundary as the data directory itself. None of them is reachable over the network, so none of them widens the attack surface.

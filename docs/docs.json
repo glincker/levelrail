@@ -894,11 +894,11 @@
     "metatags": {
       "og:site_name": "Levelrail Docs",
       "og:type": "website",
-      "og:image": "https://docs.levelrail.com/assets/og-docs.png",
+      "og:image": "https://docs.levelrail.com/public/og/default.png",
       "og:image:width": "1200",
       "og:image:height": "630",
       "twitter:card": "summary_large_image",
-      "twitter:image": "https://docs.levelrail.com/assets/og-docs.png",
+      "twitter:image": "https://docs.levelrail.com/public/og/default.png",
       "twitter:site": "@thegdsks",
       "keywords": "self-hosted PaaS, Coolify alternative, Docker deployment platform, self-hosted deploys, Levelrail"
     },

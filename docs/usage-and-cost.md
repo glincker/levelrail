@@ -1,6 +1,6 @@
 ---
 title: "Usage and cost"
-description: Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, monthly budgets with alerts, CSV export, and the limits of the numbers.
+description: "Cost showback per app, project, environment and team, how your own prices and server bills are allocated by measured usage, budgets with alerts and CSV export."
 ---
 
 The Usage and cost page answers two questions: what does this app cost me to run, and which team is using the most. You enter your prices, and the page applies them to the CPU, memory, storage and traffic each app and database actually used. It then adds the result up per app, project, environment and team.

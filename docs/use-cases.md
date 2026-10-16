@@ -1,6 +1,6 @@
 ---
 title: Who Levelrail is for
-description: "Three real audiences for Levelrail (solo developers, small agencies, teams migrating off Coolify, Dokploy, Heroku, or Vercel), what each is likely trying to do, which shipped features actually fit, and where the project is not there yet."
+description: "Three audiences for Levelrail (solo developers, small agencies, teams leaving Coolify, Dokploy, Heroku or Vercel), which features fit and where it falls short."
 ---
 
 The audiences below come straight from the project's own stated scope: the
