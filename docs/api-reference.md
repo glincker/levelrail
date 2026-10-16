@@ -223,6 +223,11 @@ Endpoints for:
 | GET | /api/v1/security/session-policy/effective | Public | handleEffectiveSessionPolicy |
 | PUT | /api/v1/settings/database-catalog | AbilityRoot | handlePutDatabaseCatalogSettings |
 | PUT | /api/v1/users/{id}/password-change-required | AbilityRoot | handleSetPasswordChangeRequired |
+| GET | /api/v1/settings/ai-assistant/providers | AbilityRead | handleListAIProviders |
+| PUT | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleSetAIProvider |
+| POST | /api/v1/settings/ai-assistant/providers/{id}/test | AbilityRoot | handleTestAIProvider |
+| DELETE | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleDeleteAIProvider |
+| GET | /api/v1/settings/ai-assistant/providers/{id}/models | AbilityRoot | handleListAIProviderModels |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -236,11 +241,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/ai-assistant/providers | AbilityRead | handleListAIProviders |
-| PUT | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleSetAIProvider |
-| POST | /api/v1/settings/ai-assistant/providers/{id}/test | AbilityRoot | handleTestAIProvider |
-| DELETE | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleDeleteAIProvider |
-| GET | /api/v1/settings/ai-assistant/providers/{id}/models | AbilityRoot | handleListAIProviderModels |
 
 </Accordion>
 
@@ -1074,6 +1074,7 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | POST | /api/v1/models/{name}/wake | AbilityWrite | handleWakeModel |
 | POST | /api/v1/models/{name}/sleep | AbilityWrite | handleSleepModel |
 | PUT | /api/v1/models/{name}/swap-group | AbilityWrite | handleSetModelSwapGroup |
+| POST | /api/v1/models/{name}/benchmark | AbilityWrite | handleModelBenchmark |
 
 ## Other
 
@@ -1439,6 +1440,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/git-sources/analyze | AbilityWrite | handleAnalyzeImport |
 | POST | /api/v1/hooks/pipeline/{id}/{token} | Public | handlePipelineWebhook |
 | GET | /api/v1/ai/usage | AbilityRead | handleAIUsage |
+| GET | /api/v1/model-catalog | AbilityRead | handleModelCatalog |
 
 ## See also
 

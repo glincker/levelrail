@@ -687,3 +687,21 @@ func TestUpdateMemorySwap(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildHostConfig_CPUGuardrails(t *testing.T) {
+	spec := ContainerSpec{
+		Resources: &Resources{MemoryBytes: 4 << 30, SwapMemoryBytes: 4 << 30, NanoCPUs: 2_000_000_000},
+		CPUShares: 128, OomScoreAdj: 800, PidsLimit: 256,
+	}
+	got := buildHostConfig(spec, nat.PortMap{})
+	if got.CPUShares != 128 || got.OomScoreAdj != 800 || got.PidsLimit == nil || *got.PidsLimit != 256 {
+		t.Errorf("shares/oom/pids = %d/%d/%v", got.CPUShares, got.OomScoreAdj, got.PidsLimit)
+	}
+	if got.Memory != 4<<30 || got.MemorySwap != got.Memory || got.NanoCPUs != 2_000_000_000 {
+		t.Errorf("resources = %+v", got.Resources)
+	}
+	plain := buildHostConfig(ContainerSpec{}, nat.PortMap{})
+	if plain.CPUShares != 0 || plain.OomScoreAdj != 0 || plain.PidsLimit != nil {
+		t.Errorf("a spec without guardrails must not set them: %+v", plain)
+	}
+}

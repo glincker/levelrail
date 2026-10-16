@@ -52,6 +52,9 @@ type NodeInfo struct {
 	// DialHost is the address the control plane reaches BindIP at. Empty
 	// means the node is remote and not on the mesh.
 	DialHost string
+	// Local is true for the control plane's own host, the only node whose
+	// filesystem the control plane can download weights onto.
+	Local bool
 }
 
 // Nodes resolves a model's node. nodeID "" is the local node.
@@ -70,6 +73,8 @@ type Controller struct {
 	prefix  string
 	images  map[string]string
 	now     func() time.Time
+	weights Weights
+	cpu     CPUPolicy
 }
 
 // Option configures a Controller.
@@ -82,6 +87,13 @@ func WithContainerPrefix(p string) Option { return func(c *Controller) { c.prefi
 // WithImages overrides engine images by engine name.
 func WithImages(images map[string]string) Option { return func(c *Controller) { c.images = images } }
 
+// WithWeights enables control plane managed weights downloads for local
+// CPU models. Without it, CPU models let the engine pull the weights.
+func WithWeights(w Weights) Option { return func(c *Controller) { c.weights = w } }
+
+// WithCPUPolicy overrides the CPU guardrails read from the environment.
+func WithCPUPolicy(p CPUPolicy) Option { return func(c *Controller) { c.cpu = p } }
+
 // WithClock overrides the clock used for idle decisions.
 func WithClock(now func() time.Time) Option { return func(c *Controller) { c.now = now } }
 
@@ -92,7 +104,7 @@ func WithSecrets(s Secrets) Option { return func(c *Controller) { c.secrets = s 
 
 // New builds the Controller for model name.
 func New(name string, st Store, nodes Nodes, rt docker.Runtime, prober Prober, opts ...Option) *Controller {
-	c := &Controller{name: name, store: st, nodes: nodes, runtime: rt, prober: prober, now: time.Now}
+	c := &Controller{name: name, store: st, nodes: nodes, runtime: rt, prober: prober, now: time.Now, cpu: LoadCPUPolicy()}
 	for _, o := range opts {
 		o(c)
 	}
@@ -122,7 +134,7 @@ func VolumeName(prefix, name string) string {
 // SpecFromModel converts a stored model into its Spec.
 func SpecFromModel(m *store.Model) Spec {
 	return Spec{Name: m.Name, Engine: m.Engine, ModelRef: m.ModelRef, GPUCount: m.GPUCount,
-		GPUDeviceIDs: m.GPUDeviceIDs, ContextLength: m.ContextLength, Quantization: m.Quantization}
+		GPUDeviceIDs: m.GPUDeviceIDs, ContextLength: m.ContextLength, Quantization: m.Quantization, Compute: m.Compute}
 }
 
 func (c *Controller) imageFor(engine string) string {
@@ -132,10 +144,23 @@ func (c *Controller) imageFor(engine string) string {
 	return engines[engine].DefaultImage
 }
 
+func (c *Controller) imageForModel(m *store.Model) string {
+	if m.Compute != ComputeCPU {
+		return c.imageFor(m.Engine)
+	}
+	if img := c.images[ImageKeyLlamaCppCPU]; img != "" {
+		return img
+	}
+	return CPUImageDefault
+}
+
 func (c *Controller) containerName(m *store.Model, image string, hfSet bool) string {
 	h := sha256.New()
 	_, _ = fmt.Fprint(h, m.Engine, "|", m.ModelRef, "|", m.GPUCount, "|", strings.Join(m.GPUDeviceIDs, ","), "|",
 		m.ContextLength, "|", m.Quantization, "|", m.RestartNonce, "|", image, "|", hfSet, "|", m.NodeID)
+	if m.Compute == ComputeCPU {
+		_, _ = fmt.Fprint(h, "|cpu|", m.CPUMilli, "|", m.MemoryMiB, "|", m.WeightsFile)
+	}
 	return ContainerPrefix(c.prefix, m.Name) + hex.EncodeToString(h.Sum(nil))[:8]
 }
 
@@ -156,8 +181,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	if err != nil {
 		return notReady("NodeLookupFailed", err.Error()), fmt.Errorf("models/%s: node info: %w", c.name, err)
 	}
-	if blocked := gpuBlock(m, node); blocked != nil {
-		return *blocked, nil
+	if m.Compute != ComputeCPU {
+		if blocked := gpuBlock(m, node); blocked != nil {
+			return *blocked, nil
+		}
 	}
 
 	hfToken, blocked := c.resolveHFToken(ctx, m)
@@ -165,7 +192,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return *blocked, nil
 	}
 
-	image := c.imageFor(m.Engine)
+	image := c.imageForModel(m)
 	target := c.containerName(m, image, hfToken != "")
 	if err := c.removeStale(ctx, m, target); err != nil {
 		return notReady("CleanupFailed", err.Error()), fmt.Errorf("models/%s: remove stale containers: %w", c.name, err)
@@ -240,6 +267,9 @@ func resolvedGPUs(m *store.Model, node NodeInfo) int {
 }
 
 func (c *Controller) create(ctx context.Context, m *store.Model, node NodeInfo, target, image, hfToken string) (reconcile.Result, error) {
+	if m.Compute == ComputeCPU {
+		return c.createCPU(ctx, m, node, target, image, hfToken)
+	}
 	eng := engines[m.Engine]
 	vol := VolumeName(c.prefix, m.Name)
 	if err := c.runtime.EnsureVolume(ctx, vol); err != nil {
@@ -344,6 +374,9 @@ func (c *Controller) teardown(ctx context.Context, m *store.Model) (reconcile.Re
 		if err := c.removeContainer(ctx, s); err != nil {
 			return notReady("DeleteFailed", err.Error()), fmt.Errorf("models/%s: delete: %w", c.name, err)
 		}
+	}
+	if c.weights != nil {
+		c.weights.Forget(m.Name)
 	}
 	if c.secrets != nil {
 		if err := c.secrets.DeleteAll(ctx, store.ModelSecretsKey(m.Name)); err != nil {

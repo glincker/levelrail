@@ -29,6 +29,8 @@ func (rt *Router) registerModelRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/models/{name}/logs/stream", rt.requireAbilityForResource(AbilityRead, modelResourceFromPath, rt.withStreamReauth(modelResourceFromPath, rt.handleLiveModelLogStream)))
 	mux.HandleFunc("POST /api/v1/models/fit", rt.requireAbility(AbilityRead, rt.handleModelFitCheck))
 	mux.HandleFunc("POST /api/v1/models/preflight", rt.requireAbility(AbilityRead, rt.handleModelPreflight))
+	mux.HandleFunc("GET /api/v1/model-catalog", rt.requireAbility(AbilityRead, rt.handleModelCatalog))
+	mux.HandleFunc("POST /api/v1/models/{name}/benchmark", rt.requireAbilityForResource(AbilityWrite, modelResourceFromPath, rt.handleModelBenchmark))
 	mux.HandleFunc("GET /api/v1/model-cache", rt.requireAbility(AbilityRead, rt.handleListModelCache))
 	mux.HandleFunc("POST /api/v1/model-cache/prune", rt.requireAbility(AbilityRoot, rt.handlePruneModelCache))
 	mux.HandleFunc("GET /api/v1/gpus", rt.requireAbility(AbilityRead, rt.handleListGPUNodes))

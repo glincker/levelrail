@@ -38,6 +38,7 @@ type ServiceStore interface {
 	RotateModelKey(ctx context.Context, model, oldID string, next store.ModelKey, graceUntil *time.Time, now time.Time) error
 	ListModelUsage(ctx context.Context, model string, from, to time.Time) ([]store.ModelUsage, error)
 	RestartModel(ctx context.Context, name string) error
+	SetModelBenchmark(ctx context.Context, name, resultJSON string) error
 	SetModelHFTokenSet(ctx context.Context, name string, set bool) error
 	SetModelResidency(ctx context.Context, name, residency string, idleTTLSeconds int, now time.Time) error
 	TouchModel(ctx context.Context, name string, at time.Time) error
@@ -71,6 +72,9 @@ type Service struct {
 	preflight     preflightDeps
 	cache         cacheDeps
 	engineMetrics EngineMetricsReader
+	hostFacts     HostFactsFunc
+	cpuPolicy     *CPUPolicy
+	bench         benchDeps
 }
 
 // NewService builds a Service. secrets may be nil (HuggingFace tokens
@@ -93,6 +97,17 @@ type CreateInput struct {
 	// SwapGroup is empty (no group) or a name shared by other models on
 	// the same node/GPU; see store.Model.SwapGroup.
 	SwapGroup string
+	// Compute is "" or ComputeGPU (default) or ComputeCPU. CatalogID picks a
+	// curated local model and implies ComputeCPU.
+	Compute   string
+	CatalogID string
+	// CPUMilli and MemoryMiB are the CPU model caps, 0 for the defaults.
+	CPUMilli  int
+	MemoryMiB int
+	// WeightsFile names the GGUF file of a custom repository.
+	WeightsFile string
+	// LicenseAck acknowledges the licence notice of a non-curated repository.
+	LicenseAck bool
 }
 
 // Created is the result of Create; APIKey is the plaintext, shown once.
@@ -123,10 +138,14 @@ func (s *Service) SetLocalNodeID(id string) { s.localID = id }
 
 // Create validates and stores a new model, returning its one-time API key.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
+	plan, err := s.planCPU(ctx, &in)
+	if err != nil {
+		return Created{}, err
+	}
 	if err := in.Spec.Validate(); err != nil {
 		return Created{}, fmt.Errorf("%w: %v", ErrInvalid, err)
 	}
-	if in.Spec.GPUCount == 0 {
+	if in.Spec.GPUCount == 0 && !plan.cpu {
 		in.Spec.GPUCount = -1
 	}
 	residency, idleSecs, err := validateResidency(in.Residency, in.IdleTTL)
@@ -156,7 +175,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 	}
 	if info, known, err := s.nodeGPU(ctx, in.NodeID); err != nil {
 		return Created{}, fmt.Errorf("models: read node gpu: %w", err)
-	} else if known && !info.Present {
+	} else if known && !info.Present && !plan.cpu {
 		return Created{}, fmt.Errorf("%w: the selected node reports no NVIDIA GPU", ErrInvalid)
 	}
 
@@ -170,6 +189,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 		Quantization: in.Spec.Quantization, Domain: domain, APIKeyHash: hash, APIKeyPrefix: prefix,
 		HFTokenSet: in.HFToken != "", Residency: residency, IdleTTLSeconds: idleSecs, SwapGroup: swapGroup,
 	}
+	plan.apply(&m)
 	if residency == store.ResidencyOnDemand {
 		m.LastActiveAt = time.Now().UTC()
 	}

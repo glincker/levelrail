@@ -38,7 +38,7 @@ func runModelsGet(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	if !ok {
 		return exitCode
 	}
-	m, err := client.GetModel(context.Background(), name)
+	m, err := client.GetModelDetail(context.Background(), name)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get model %q: %w", name, err))
 	}
@@ -83,7 +83,7 @@ func printModelsTable(out io.Writer, list []apiclient.ModelResource) {
 	_ = tw.Flush()
 }
 
-func printModelHuman(out io.Writer, m apiclient.ModelResource) {
+func printModelHuman(out io.Writer, m apiclient.ModelDetail) {
 	_, _ = fmt.Fprintf(out, "name:        %s\n", m.Name)
 	_, _ = fmt.Fprintf(out, "engine:      %s\n", m.Engine)
 	_, _ = fmt.Fprintf(out, "model:       %s\n", m.Model)
@@ -94,6 +94,15 @@ func printModelHuman(out io.Writer, m apiclient.ModelResource) {
 	}
 	if m.EndpointURL != "" {
 		_, _ = fmt.Fprintf(out, "base url:    %s\n", m.EndpointURL)
+	}
+	if m.Compute == "cpu" {
+		_, _ = fmt.Fprintf(out, "compute:     cpu, up to %.2f CPUs and %d MiB memory, no swap, low priority\n", m.CPULimit, m.MemoryLimitMiB)
+		if m.Download != nil {
+			_, _ = fmt.Fprintf(out, "download:    %s of %s (%d%%)\n", gibText(m.Download.DoneBytes), gibText(m.Download.TotalBytes), m.Download.Percent)
+		}
+		if m.Benchmark != nil {
+			_, _ = fmt.Fprintf(out, "benchmark:   %.1f tokens per second measured, first token %d ms\n", m.Benchmark.GenTPS, m.Benchmark.TTFTMillis)
+		}
 	}
 	if m.Residency == "on_demand" {
 		_, _ = fmt.Fprintf(out, "residency:   on_demand, idle after %ds (state: %s)\n", m.EffectiveIdleTTLSeconds, m.ResidencyState)

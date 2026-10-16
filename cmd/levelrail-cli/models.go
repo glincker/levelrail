@@ -50,6 +50,10 @@ func runModels(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runModelsGPUs(prog, rest, stdout, stderr, lookupEnv)
 	case "preflight":
 		return runModelsPreflight(prog, rest, stdout, stderr, lookupEnv)
+	case "catalog":
+		return runModelsCatalog(prog, rest, stdout, stderr, lookupEnv)
+	case "benchmark":
+		return runModelsBenchmark(prog, rest, stdout, stderr, lookupEnv)
 	case "cache":
 		return runModelsCache(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -73,9 +77,11 @@ func modelsUsage(prog string) string {
   %[1]s models residency <name> --mode M    always resident, or on_demand (stop when idle, start on first request)
   %[1]s models swap-group <name> --group G  share a GPU with other models in group G (--clear to remove)
   %[1]s models wake|sleep <name> [flags]    start or stop an on-demand model's engine now
-  %[1]s models fit --engine E --model M     estimate VRAM fit (fits, tight, no) on each GPU node
+  %[1]s models fit --engine E --model M     estimate VRAM fit (fits, tight, no) on each GPU node (--compute cpu for CPU mode)
   %[1]s models metrics <name> [flags]       engine metrics: KV cache, queue, prefix hits, tokens per second, first token
   %[1]s models gpus [flags]                 list GPU nodes with VRAM and usage
+  %[1]s models catalog [flags]              curated small models for CPU mode: licence, memory, estimated speed
+  %[1]s models benchmark <name> [flags]     measure tokens per second, first token and peak memory of a running model
   %[1]s models preflight <repo> [flags]     check a Hugging Face repo: access, size, quants, fit, disk
   %[1]s models cache list|prune [flags]     list cached model weights, prune unused ones (--dry-run first)
 
