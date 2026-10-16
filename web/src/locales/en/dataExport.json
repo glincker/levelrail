@@ -20,7 +20,12 @@
     "logs_syslog": "Logs to syslog (RFC 5424)",
     "audit_webhook": "Audit log webhook",
     "audit_s3": "Audit log to a storage bucket",
-    "metrics_otlp": "Metrics over OTLP/HTTP"
+    "metrics_otlp": "Metrics over OTLP/HTTP",
+    "metrics_remote_write": "Metrics via Prometheus remote write",
+    "logs_newrelic": "Logs to New Relic",
+    "logs_datadog": "Logs to Datadog",
+    "logs_axiom": "Logs to Axiom",
+    "logs_betterstack": "Logs to Better Stack"
   },
   "levels": {
     "any": "Every level",
@@ -64,6 +69,10 @@
     "endpointLoki": "https://loki.example.com:3100",
     "endpointSyslog": "tls://logs.example.com:6514",
     "endpointOtlp": "https://otel.example.com:4318",
+    "endpointRemoteWrite": "https://prometheus.example.com/api/v1/write",
+    "username": "Username (basic auth, optional)",
+    "remoteWriteKey": "Password or token (optional)",
+    "remoteWriteKeyHint": "Sent as basic auth with a username, as a bearer token without. Stored encrypted and never shown again.",
     "apps": "Apps (comma separated, empty for all)",
     "minLevel": "Minimum level",
     "headers": "Request headers, one per line as Name: value",
@@ -79,6 +88,14 @@
     "submit": "Create destination",
     "submitting": "Creating",
     "cancel": "Cancel",
-    "created": "Export destination {{name}} created."
+    "created": "Export destination {{name}} created.",
+    "apiKey": "API key",
+    "apiKeyHint": "Stored encrypted and never shown again. Create a key that can only ingest logs.",
+    "region": "Region",
+    "regionUs": "United States",
+    "regionEu": "Europe",
+    "site": "Datadog site",
+    "dataset": "Axiom dataset",
+    "endpointOverride": "Leave blank to use the vendor endpoint"
   }
 }

@@ -160,6 +160,9 @@ func (rt *Router) gitSourceWebhookURL(ctx context.Context, name string) string {
 	path := gitSourceWebhookPath(name)
 	base, err := rt.controlPlaneBaseURL(ctx)
 	if err != nil {
+		if origin := requestOriginFrom(ctx); origin != "" {
+			return origin + path
+		}
 		return path
 	}
 	return base + path
@@ -515,7 +518,7 @@ func (rt *Router) handleGetGitSource(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(r.Context(), name)))
+	writeJSON(w, http.StatusOK, toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(withRequestOrigin(r.Context(), r), name)))
 }
 
 // handleSetGitSource handles PUT /api/v1/apps/{name}/git-source: connect
@@ -608,7 +611,7 @@ func (rt *Router) handleSetGitSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := rt.connectGitSource(r.Context(), name, connectGitSourceParams{
+	result, err := rt.connectGitSource(withRequestOrigin(r.Context(), r), name, connectGitSourceParams{
 		RepoURL: req.RepoURL, Branch: branch, BuildType: buildType, BuildPath: buildPath, BaseDirectory: baseDirectory, Token: req.Token,
 		AdditionalServices: additionalServices, Services: req.Services, Databases: req.Databases,
 		TriggerMode: triggerMode,
@@ -767,7 +770,7 @@ func (rt *Router) handleRotateGitSourceWebhookSecret(w http.ResponseWriter, r *h
 		return
 	}
 
-	resource := toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(r.Context(), name))
+	resource := toGitSourceResource(*gs, hasToken, rt.gitSourceWebhookURL(withRequestOrigin(r.Context(), r), name))
 	resource.WebhookSecret = newSecret
 
 	rt.logger.Info("api: git source webhook secret rotated", slog.String("name", name))

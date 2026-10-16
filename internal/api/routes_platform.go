@@ -220,6 +220,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// does for every JSON route, this isn't a special case.
 	mux.HandleFunc("POST /api/v1/prometheus/read", rt.requireAbility(AbilityRead, rt.handlePrometheusRead))
 
+	// Loki-compatible read API over the node-local log store (loki.go),
+	// same AbilityRead gate; Basic auth password is accepted as the token.
+	rt.registerLokiRoutes(mux)
+
 	// Projects (projects.go): a lightweight, non-auth organizational
 	// grouping, explicitly not the deferred Phase 4 teams/RBAC work (see
 	// that file's own package doc comment). AbilityRead/AbilityWrite,
@@ -695,6 +699,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// mutation path for a static site beyond internal/deploy.Pipeline's
 	// own git-push-triggered write.
 	mux.HandleFunc("GET /api/v1/static-sites", rt.requireAbility(AbilityRead, rt.handleListStaticSites))
+	mux.HandleFunc("DELETE /api/v1/static-sites/{name}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteStaticSite))
 
 	// Backup targets (connected S3-compatible buckets a database backup
 	// can be uploaded to). Create and delete need AbilityWriteSensitive:
@@ -1117,6 +1122,31 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// node-local store. AbilityWriteSensitive for write/clear, the same
 	// tier as storage above (both configure where data leaves this
 	// control plane to); AbilityRead for the GET.
+	mux.HandleFunc("POST /api/v1/otlp/v1/traces", rt.handleOTLPTraces)
+	mux.HandleFunc("GET /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTracing))
+	mux.HandleFunc("POST /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleEnableTracing))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/tracing", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDisableTracing))
+	mux.HandleFunc("GET /api/v1/apps/{name}/traces", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListTraces))
+	mux.HandleFunc("POST /api/v1/sentry/api/{project}/envelope/", rt.handleSentryEnvelope)
+	mux.HandleFunc("POST /api/v1/sentry/api/{project}/store/", rt.handleSentryStore)
+	mux.HandleFunc("OPTIONS /api/v1/sentry/api/{project}/envelope/", rt.handleSentryPreflight)
+	mux.HandleFunc("OPTIONS /api/v1/sentry/api/{project}/store/", rt.handleSentryPreflight)
+	mux.HandleFunc("GET /api/v1/apps/{name}/error-tracking", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetErrorTracking))
+	mux.HandleFunc("POST /api/v1/apps/{name}/error-tracking", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleEnableErrorTracking))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/error-tracking", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDisableErrorTracking))
+	mux.HandleFunc("GET /api/v1/apps/{name}/errors", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListErrors))
+	mux.HandleFunc("GET /api/v1/apps/{name}/errors/{fingerprint}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetError))
+	mux.HandleFunc("PATCH /api/v1/apps/{name}/errors/{fingerprint}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePatchError))
+	mux.HandleFunc("GET /api/v1/apps/{name}/log-pipeline", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetLogPipeline))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/log-pipeline", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetLogPipeline))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-pipeline", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteLogPipeline))
+	mux.HandleFunc("POST /api/v1/apps/{name}/log-pipeline/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreviewLogPipeline))
+	mux.HandleFunc("GET /api/v1/logs/usage", rt.requireAbility(AbilityRead, rt.handleLogUsage))
+	mux.HandleFunc("GET /api/v1/apps/{name}/log-budget", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetLogBudget))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/log-budget", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetLogBudget))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-budget", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteLogBudget))
+	mux.HandleFunc("GET /api/v1/apps/{name}/access", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppAccess))
+	mux.HandleFunc("GET /api/v1/apps/{name}/traces/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTrace))
 	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppLogDrain))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppLogDrain))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppLogDrain))

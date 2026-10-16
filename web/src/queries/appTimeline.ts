@@ -19,6 +19,8 @@ export type TimelineKind =
   | 'scan_gate_override'
   | 'suspend'
   | 'resume'
+  | 'slept'
+  | 'woke'
 
 export type TimelineStatus =
   'succeeded' | 'failed' | 'in_progress' | 'pending' | 'info'

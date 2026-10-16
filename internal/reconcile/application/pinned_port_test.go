@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/bindaddr"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -154,5 +155,113 @@ func TestPinnedPort_UnpinnedKeepsBlueGreenOverlap(t *testing.T) {
 	}
 	if create < 0 || remove < 0 || create > remove {
 		t.Fatalf("call order = %v, want the new release created before the old one is removed", rt.callOrder)
+	}
+}
+
+func TestPublishedPortDrift_RecreatesRunningContainer(t *testing.T) {
+	hp := 18110
+	tests := []struct {
+		name     string
+		seed     []docker.PortBinding
+		desired  store.DesiredService
+		wantPort int
+		wantIP   string
+		recreate bool
+	}{
+		{"container port changed", []docker.PortBinding{{ContainerPort: 3000, HostPort: 40001, HostIP: "127.0.0.1"}},
+			store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Replicas: 1}, 80, "127.0.0.1", true},
+		{"bind address widened", []docker.PortBinding{{ContainerPort: 80, HostPort: 40001, HostIP: "127.0.0.1"}},
+			store.DesiredService{Name: "web", Image: "img:v1", Port: 80, BindAddress: bindaddr.Public, Replicas: 1}, 80, "0.0.0.0", true},
+		{"host port pin changed", []docker.PortBinding{{ContainerPort: 80, HostPort: 18111, HostIP: "127.0.0.1"}},
+			store.DesiredService{Name: "web", Image: "img:v1", Port: 80, HostPort: &hp, Replicas: 1}, 80, "127.0.0.1", true},
+		{"unchanged", []docker.PortBinding{{ContainerPort: 80, HostPort: 40001, HostIP: "127.0.0.1"}},
+			store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Replicas: 1}, 80, "127.0.0.1", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			name := replicaContainerName("web", "img:v1", "", 0)
+			rt := newFakeRuntime(0)
+			rt.trackPorts = true
+			rt.seed(name, true)
+			rt.containers[name].Ports = tt.seed
+			svc := tt.desired
+			c := New("web", &fakeStore{svc: &svc}, rt)
+
+			res, err := c.Reconcile(context.Background())
+			if err != nil {
+				t.Fatalf("Reconcile() error = %v", err)
+			}
+			cond := conditionOf(t, res)
+			if tt.recreate && cond.Reason == "AlreadyRunning" {
+				t.Fatalf("reason = AlreadyRunning, want the container recreated")
+			}
+			if !tt.recreate && cond.Reason != "AlreadyRunning" {
+				t.Fatalf("reason = %q, want AlreadyRunning", cond.Reason)
+			}
+			cs := rt.containers[name]
+			if cs == nil || !cs.Running {
+				t.Fatalf("container = %+v, want running", cs)
+			}
+			found := false
+			for _, p := range cs.Ports {
+				if p.ContainerPort == tt.wantPort && p.HostIP == tt.wantIP {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("ports = %+v, want %d published on %s", cs.Ports, tt.wantPort, tt.wantIP)
+			}
+		})
+	}
+}
+
+func TestPublishedPortDrift_StoppedContainerJudgedByConfiguredPorts(t *testing.T) {
+	// Real shape: a container that failed readiness is stopped, its list
+	// entry has no Ports, and only the inspect HostConfig keeps 3000/tcp.
+	stopped := func(configured ...docker.PortBinding) *docker.ContainerState {
+		return &docker.ContainerState{Running: false, ConfiguredPorts: configured}
+	}
+	tests := []struct {
+		name  string
+		state *docker.ContainerState
+		want  bool
+	}{
+		{"stale port", stopped(docker.PortBinding{ContainerPort: 3000, HostIP: "127.0.0.1", Protocol: "tcp"}), true},
+		{"current port", stopped(docker.PortBinding{ContainerPort: 80, HostIP: "127.0.0.1", Protocol: "tcp"}), false},
+		{"unknown bindings", stopped(), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := publishedPortDrifted(tt.state, &store.DesiredService{Port: 80}, "")
+			if got != tt.want {
+				t.Fatalf("publishedPortDrifted() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestPublishedPortDrift_NoChurnAcrossPasses(t *testing.T) {
+	name := replicaContainerName("web", "img:v1", "", 0)
+	rt := newFakeRuntime(0)
+	rt.trackPorts = true
+	rt.seed(name, false)
+	rt.containers[name].ConfiguredPorts = []docker.PortBinding{{ContainerPort: 3000, HostIP: "127.0.0.1"}}
+	svc := store.DesiredService{Name: "web", Image: "img:v1", Port: 80, Replicas: 1}
+	c := New("web", &fakeStore{svc: &svc}, rt)
+
+	if _, err := c.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	createsAfterFirst := rt.createCalls
+	for i := 0; i < 3; i++ {
+		if _, err := c.Reconcile(context.Background()); err != nil {
+			t.Fatalf("pass %d: %v", i, err)
+		}
+	}
+	if rt.createCalls != createsAfterFirst {
+		t.Fatalf("creates = %d after steady passes, want %d", rt.createCalls, createsAfterFirst)
+	}
+	if rt.createCalls == 0 {
+		t.Fatalf("stale stopped container was never recreated")
 	}
 }

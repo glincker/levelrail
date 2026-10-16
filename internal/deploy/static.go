@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -34,6 +35,12 @@ import (
 type StaticSiteStore interface {
 	SaveStaticSite(ctx context.Context, site store.StaticSite) error
 }
+
+// Step names a static deploy reports to the build log.
+const (
+	stepStaticFetch   = "Fetch source"
+	stepStaticPublish = "Publish to file server"
+)
 
 // WithStaticSiteStore enables build.type: static deploys. Without one
 // configured (the default), a service declaring build.type: static fails
@@ -64,7 +71,7 @@ func WithStaticRootDir(dir string) Option {
 // "<staticRootDir>/<ServiceName>/<CommitSHA>" and saves it as a
 // store.StaticSite. The copy is required because the webhook checkout is
 // removed as soon as Deploy returns. Returns the directory now served.
-func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error) {
+func (p *Pipeline) deployStatic(ctx context.Context, req Request, progress func(build.ProgressEvent)) (string, error) {
 	if p.staticSites == nil {
 		return "", fmt.Errorf("deploy: service %q: build.type %q needs a static site store configured (WithStaticSiteStore)", req.ServiceName, spec.BuildStatic)
 	}
@@ -116,11 +123,17 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	defer staticRoot.Close() //nolint:errcheck // handle only used for confined writes
 	destDir := filepath.Join(p.staticRootDir, destRel)
 
+	emitStatic(progress, stepStaticFetch, "source checked out at "+req.CommitSHA+", serving "+filepath.ToSlash(srcRel), true)
+	emitStatic(progress, stepStaticPublish, "publishing to the embedded file server", false)
 	start := time.Now()
 	if err := copyStaticDir(checkoutRoot, srcRel, staticRoot, destRel); err != nil {
 		return "", fmt.Errorf("deploy: service %q: copy static files: %w", req.ServiceName, err)
 	}
 	duration := time.Since(start)
+	stats, err := HashStaticTree(destDir)
+	if err != nil {
+		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
+	}
 
 	if err := commitPoint(req); err != nil {
 		return "", fmt.Errorf("deploy: service %q: %w", req.ServiceName, err)
@@ -132,6 +145,9 @@ func (p *Pipeline) deployStatic(ctx context.Context, req Request) (string, error
 	}); err != nil {
 		return "", fmt.Errorf("deploy: service %q: save static site: %w", req.ServiceName, err)
 	}
+
+	emitStatic(progress, stepStaticPublish, fmt.Sprintf("%d files, %d bytes, digest %s", stats.Files, stats.Bytes, stats.Digest), true)
+	p.recordStaticPublished(ctx, req, stats, duration)
 
 	// Best-effort, secondary to the deploy itself, the identical
 	// "must never block the real operation" choice deployDockerfile

@@ -49,6 +49,22 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sleep":
 		return runAppsSleep(prog, args[1:], stdout, stderr, lookupEnv)
+	case "urls":
+		return runAppsURLs(prog, args[1:], stdout, stderr, lookupEnv)
+	case "access":
+		return runAppsAccess(prog, args[1:], stdout, stderr, lookupEnv)
+	case "traces":
+		return runAppsTraces(prog, args[1:], stdout, stderr, lookupEnv)
+	case "log-budget":
+		return runAppsLogBudget(prog, args[1:], stdout, stderr, lookupEnv)
+	case "log-pipeline":
+		return runAppsLogPipeline(prog, args[1:], stdout, stderr, lookupEnv)
+	case "tracing":
+		return runAppsTracing(prog, args[1:], stdout, stderr, lookupEnv)
+	case "errors":
+		return runAppsErrors(prog, args[1:], stdout, stderr, lookupEnv)
+	case "error-tracking":
+		return runAppsErrorTracking(prog, args[1:], stdout, stderr, lookupEnv)
 	case "canary":
 		return runAppsCanary(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback-slo-burn":
@@ -95,6 +111,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsResourceRecommendation(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "cost":
 		return runAppsCostEstimate(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "exposure", "ports":
+		return runAppsExposure(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "network":
 		return runAppsNetwork(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
 	case "logs":
@@ -222,8 +240,16 @@ func appsUsage(prog string) string {
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
-  %[1]s apps sleep enable|disable|status|wake|now <name> [flags]   stop an idle app and wake it on the next request
+  %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
   %[1]s apps sleep list [flags]       apps with sleep on, which are asleep, and the memory freed
+  %[1]s apps urls <name> [flags]   where the app can be reached now: ports, local and LAN addresses, domains, internal DNS name
+  %[1]s apps access <name> [--slow-ms N] [--min-status N] [flags]   recent edge requests with request and trace ids
+  %[1]s apps traces list|get <name> [flags]   OTLP traces received for an app: list, or one trace as a tree
+  %[1]s apps log-pipeline get|set|clear|preview <name> [flags]   redact, parse, drop or join log lines before they are stored
+  %[1]s apps log-budget get|set|clear <name> [flags]   cap the log bytes kept for an app, oldest lines trimmed first
+  %[1]s apps tracing enable|status|disable <name> [flags]   the app's OTLP ingest key and the env to set
+  %[1]s apps errors list|get|resolve|ignore|reopen <name> [fingerprint] [flags]   Sentry-compatible error issues grouped per app
+  %[1]s apps error-tracking enable|status|disable <name> [flags]   the app's Sentry DSN to set as SENTRY_DSN
   %[1]s apps canary start|status|weight|promote|abort <name> [flags]   send a share of traffic to a new image before promoting it
   %[1]s apps auto-update enable|disable|status|check <name> [flags]   redeploy automatically when the image tag moves to a new digest
   %[1]s apps auto-rollback-slo-burn set|status <name> [mode] [flags]   how an app reacts when an SLO burn-rate alert fires: off, auto, dry_run, pause_for_human
@@ -250,6 +276,7 @@ func appsUsage(prog string) string {
   %[1]s apps resource-recommendation <name> [flags]   suggest memory/CPU limits from historical usage
   %[1]s apps cost <name> [flags]   estimate what this app's CPU/memory would cost under reference providers (not a real bill)
   %[1]s apps network <name> [flags]   show the live traffic path: container port, host port, running
+  %[1]s apps exposure <name> [--mode proxied|direct] [--host-port N] [--port N] [--preview] [check]   change container port or direct host-port exposure, probe reachability
   %[1]s apps logs <name> [flags]     search an app's stored log entries, or --follow to stream live
   %[1]s apps metrics <name> --metric NAME [flags]   query an app's metric time series
   %[1]s apps requests <name> [flags]                show request rate, errors and latency from the ingress

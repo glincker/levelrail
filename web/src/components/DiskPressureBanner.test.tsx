@@ -7,6 +7,9 @@ const useDockerHealthPoll = vi.fn()
 vi.mock('../queries/systemStatus', () => ({
   useDockerHealthPoll: () => useDockerHealthPoll() as unknown,
 }))
+vi.mock('../queries/fixit', () => ({
+  useFixForCheck: () => undefined,
+}))
 vi.mock('./CleanUpDockerDialog', () => ({
   CleanUpDockerDialog: () => <button type="button">Clean up</button>,
 }))

@@ -20,11 +20,20 @@ type runner struct {
 // returning, so a crash right after leaves the journal at the right step.
 func (r *runner) step(name string, fn func() (string, error)) error {
 	start := r.d.now()
+	r.a.Current = name
+	r.a.AddLog(start, name, "started")
+	r.save()
 	detail, err := fn()
+	r.a.Current = ""
 	rec := StepRecord{Name: name, Status: StatusOK, Detail: detail, At: start, DurationMS: r.d.now().Sub(start).Milliseconds()}
 	if err != nil {
 		rec.Status, rec.Detail = StatusFailed, err.Error()
 	}
+	line := rec.Detail
+	if line == "" {
+		line = "done"
+	}
+	r.a.AddLog(r.d.now(), name, rec.Status+": "+line)
 	r.a.Steps = append(r.a.Steps, rec)
 	r.save()
 	return err

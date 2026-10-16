@@ -8,6 +8,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { TemplateLogo } from '../TemplateLogo'
 import { logoIdForImage } from '../../lib/imageLogo'
+import { AsleepFor } from '../AsleepFor'
 import type { AppListEntry } from '../../types/appDetail'
 
 export function AppLogo({ image }: { image: string }) {
@@ -37,7 +38,11 @@ export function AppMetaChips({ app }: { app: AppListEntry }) {
       {app.sleep?.sleeping ? (
         <Badge variant="muted" className="gap-1 px-1.5 py-0">
           <MoonIcon className="size-3 shrink-0" aria-hidden="true" />
-          {t('appSleep.badgeAsleep')}
+          {app.sleep.since ? (
+            <AsleepFor since={app.sleep.since} />
+          ) : (
+            t('appSleep.badgeAsleep')
+          )}
         </Badge>
       ) : null}
       {app.environment_name ? (

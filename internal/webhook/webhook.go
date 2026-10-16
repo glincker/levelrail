@@ -88,6 +88,10 @@ const (
 	HeaderGitLabToken       = "X-Gitlab-Token" //nolint:gosec // header name, not a credential value
 	HeaderHubSignature256   = "X-Hub-Signature-256"
 	HeaderHubSignature      = "X-Hub-Signature"
+	HeaderGitHubDelivery    = "X-GitHub-Delivery"
+	HeaderGitLabEventUUID   = "X-Gitlab-Event-Uuid"
+	HeaderGiteaDelivery     = "X-Gitea-Delivery"
+	HeaderBitbucketRequest  = "X-Request-Uuid"
 )
 
 const (
@@ -393,6 +397,11 @@ type PushEvent struct {
 	// author name, empty when the payload carries none.
 	HeadMessage string `json:"-"`
 	HeadAuthor  string `json:"-"`
+	// RepoNames and RepoURLs identify the repository the push is for
+	// (full_name, path_with_namespace, clone/ssh/html URLs). Empty when
+	// the payload does not say, which callers must treat as "unknown".
+	RepoNames []string `json:"-"`
+	RepoURLs  []string `json:"-"`
 	// Changed lists the files the pushed commits touched. Nil means the
 	// payload did not say (no commit list, or a list the provider truncates).
 	Changed []string `json:"-"`
@@ -436,6 +445,36 @@ func changedFromCommits(commits []pushCommit) []string {
 	return out
 }
 
+// pushRepo is the union of the repository/project objects GitHub, Gitea
+// and GitLab put in a push payload.
+type pushRepo struct {
+	FullName          string `json:"full_name"`
+	PathWithNamespace string `json:"path_with_namespace"`
+	CloneURL          string `json:"clone_url"`
+	SSHURL            string `json:"ssh_url"`
+	HTMLURL           string `json:"html_url"`
+	GitHTTPURL        string `json:"git_http_url"`
+	GitSSHURL         string `json:"git_ssh_url"`
+	WebURL            string `json:"web_url"`
+	Homepage          string `json:"homepage"`
+}
+
+func (r *pushRepo) collect(ev *PushEvent) {
+	if r == nil {
+		return
+	}
+	for _, n := range []string{r.FullName, r.PathWithNamespace} {
+		if n != "" {
+			ev.RepoNames = append(ev.RepoNames, n)
+		}
+	}
+	for _, u := range []string{r.CloneURL, r.SSHURL, r.HTMLURL, r.GitHTTPURL, r.GitSSHURL, r.WebURL, r.Homepage} {
+		if u != "" {
+			ev.RepoURLs = append(ev.RepoURLs, u)
+		}
+	}
+}
+
 // ErrPushEventFieldsMissing is returned by ParsePushEvent when body
 // decodes as valid JSON but is missing ref or after, distinct from a
 // json.Unmarshal failure so ServeHTTP (and internal/api's multi-app
@@ -452,6 +491,8 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 		PushEvent
 		HeadCommit *pushCommit  `json:"head_commit"`
 		Commits    []pushCommit `json:"commits"`
+		Repository *pushRepo    `json:"repository"`
+		Project    *pushRepo    `json:"project"`
 	}
 	if err := json.Unmarshal(body, &payload); err != nil {
 		return PushEvent{}, fmt.Errorf("webhook: malformed payload: %w", err)
@@ -461,6 +502,9 @@ func ParsePushEvent(body []byte) (PushEvent, error) {
 		return ev, ErrPushEventFieldsMissing
 	}
 	ev.Changed = changedFromCommits(payload.Commits)
+	for _, r := range []*pushRepo{payload.Repository, payload.Project} {
+		r.collect(&ev)
+	}
 	head := payload.HeadCommit
 	for i := range payload.Commits {
 		if head == nil && payload.Commits[i].ID == ev.After {

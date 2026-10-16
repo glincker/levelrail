@@ -81,6 +81,8 @@ System endpoints for:
 | POST | /api/v1/system/restart | AbilityRoot | handleSystemRestart |
 | GET | /api/v1/system/cli-console/commands | AbilityRoot | handleCLIConsoleCommands |
 | GET | /api/v1/system/cli-console/session | AbilityRoot | handleCLIConsoleSession |
+| GET | /api/v1/system/networks | AbilityRead | handleGetSystemNetworks |
+| POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -429,6 +431,31 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/deployments/{id}/secret-scan | AbilityRead | handleGetDeploymentSecretScan |
 | POST | /api/v1/apps/{name}/keep | AbilityWrite | handleKeepTrialApp |
 | POST | /api/v1/apps/{name}/sleep/now | AbilityDeploy | handleSleepAppNow |
+| GET | /api/v1/apps/{name}/tracing | AbilityRead | handleGetTracing |
+| POST | /api/v1/apps/{name}/tracing | AbilityWriteSensitive | handleEnableTracing |
+| DELETE | /api/v1/apps/{name}/tracing | AbilityWriteSensitive | handleDisableTracing |
+| GET | /api/v1/apps/{name}/traces | AbilityRead | handleListTraces |
+| GET | /api/v1/apps/{name}/traces/{id} | AbilityRead | handleGetTrace |
+| GET | /api/v1/apps/{name}/log-pipeline | AbilityRead | handleGetLogPipeline |
+| PUT | /api/v1/apps/{name}/log-pipeline | AbilityWriteSensitive | handleSetLogPipeline |
+| DELETE | /api/v1/apps/{name}/log-pipeline | AbilityWriteSensitive | handleDeleteLogPipeline |
+| POST | /api/v1/apps/{name}/log-pipeline/preview | AbilityRead | handlePreviewLogPipeline |
+| GET | /api/v1/apps/{name}/access | AbilityRead | handleAppAccess |
+| GET | /api/v1/apps/{name}/error-tracking | AbilityRead | handleGetErrorTracking |
+| POST | /api/v1/apps/{name}/error-tracking | AbilityWriteSensitive | handleEnableErrorTracking |
+| DELETE | /api/v1/apps/{name}/error-tracking | AbilityWriteSensitive | handleDisableErrorTracking |
+| GET | /api/v1/apps/{name}/errors | AbilityRead | handleListErrors |
+| GET | /api/v1/apps/{name}/errors/{fingerprint} | AbilityRead | handleGetError |
+| PATCH | /api/v1/apps/{name}/errors/{fingerprint} | AbilityWriteSensitive | handlePatchError |
+| GET | /api/v1/apps/{name}/log-budget | AbilityRead | handleGetLogBudget |
+| PUT | /api/v1/apps/{name}/log-budget | AbilityWriteSensitive | handleSetLogBudget |
+| DELETE | /api/v1/apps/{name}/log-budget | AbilityWriteSensitive | handleDeleteLogBudget |
+| GET | /api/v1/apps/{name}/exposure | AbilityRead | handleGetAppExposure |
+| POST | /api/v1/apps/{name}/exposure/preview | AbilityRead | handlePreviewAppExposure |
+| PUT | /api/v1/apps/{name}/exposure | AbilityWriteSensitive | handleSetAppExposure |
+| POST | /api/v1/apps/{name}/exposure/check | AbilityRead | handleCheckAppExposure |
+| GET | /api/v1/apps/{name}/urls | AbilityRead | handleGetAppURLs |
+| GET | /api/v1/apps/{name}/sleep/history | AbilityRead | handleAppSleepHistory |
 
 </Accordion>
 
@@ -839,6 +866,7 @@ Endpoints for:
 | DELETE | /api/v1/domains/standalone/{domain} | AbilityWriteSensitive | handleDeleteStandaloneDomain |
 | GET | /api/v1/registry-credentials/{id}/usage | AbilityRead | handleRegistryCredentialUsage |
 | POST | /api/v1/registry-credentials/test | AbilityWriteSensitive | handleProbeRegistryCredential |
+| DELETE | /api/v1/static-sites/{name} | AbilityWriteSensitive | handleDeleteStaticSite |
 
 ## Built-in Container Registry
 
@@ -1366,6 +1394,16 @@ Routes that do not fit an existing group.
 | POST | /api/v1/deploy-policies/check | AbilityRead | handleCheckDeployPolicy |
 | PUT | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleSetDeployPolicy |
 | DELETE | /api/v1/deploy-policies/{scope}/{id} | AbilityRoot | handleDeleteDeployPolicy |
+| POST | /api/v1/otlp/v1/traces | Public | handleOTLPTraces |
+| POST | /api/v1/sentry/api/{project}/envelope/ | Public | handleSentryEnvelope |
+| POST | /api/v1/sentry/api/{project}/store/ | Public | handleSentryStore |
+| OPTIONS | /api/v1/sentry/api/{project}/envelope/ | Public | handleSentryPreflight |
+| OPTIONS | /api/v1/sentry/api/{project}/store/ | Public | handleSentryPreflight |
+| GET | /api/v1/logs/usage | AbilityRead | handleLogUsage |
+| GET | /api/v1/sleep/overview | AbilityRead | handleSleepOverview |
+| GET | /api/v1/fixes | AbilityRead | handleListFixes |
+| POST | /api/v1/fixes/{id}/preview | AbilityRead | handlePreviewFix |
+| POST | /api/v1/fixes/{id}/apply | AbilityRoot | handleApplyFix |
 
 ## See also
 

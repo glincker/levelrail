@@ -366,8 +366,8 @@ func TestHandleSetGitSource_Create_Success(t *testing.T) {
 	if got.HasToken {
 		t.Errorf("HasToken = true, want false: no token was set")
 	}
-	if got.WebhookURL != "/api/v1/webhooks/github/web" {
-		t.Errorf("WebhookURL = %q, want /api/v1/webhooks/github/web", got.WebhookURL)
+	if got.WebhookURL != "http://example.com/api/v1/webhooks/github/web" {
+		t.Errorf("WebhookURL = %q, want the request-origin absolute URL", got.WebhookURL)
 	}
 	if got.WebhookSecret == "" {
 		t.Errorf("WebhookSecret = %q, want a non-empty generated secret on the create response", got.WebhookSecret)

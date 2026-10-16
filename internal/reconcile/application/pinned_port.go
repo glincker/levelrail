@@ -113,6 +113,11 @@ func (c *Controller) restoreReleased(ctx context.Context, released []docker.Cont
 // failure.
 func (c *Controller) abortHandoff(ctx context.Context, target string, released []docker.ContainerState, cause error) error {
 	if len(released) == 0 {
+		// Stopped, not removed: a failed candidate must not stay Up, and the
+		// exited container keeps its output for the log collector.
+		if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil && state.Running {
+			_ = c.runtime.Stop(ctx, state.ID, 10*time.Second)
+		}
 		return cause
 	}
 	if state, err := c.runtime.InspectByName(ctx, target); err == nil && state != nil {
@@ -143,5 +148,11 @@ func createFailureReason(err error) string {
 	if errors.As(err, &missing) {
 		return reasonRequiredSecretMissing
 	}
+	var exhausted *docker.PoolExhaustedError
+	if errors.As(err, &exhausted) {
+		return reasonNetworkPoolExhausted
+	}
 	return "CreateFailed"
 }
+
+const reasonNetworkPoolExhausted = "NetworkPoolExhausted"

@@ -28,6 +28,9 @@ import {
 } from '../../queries/meshSettings'
 import { meshCardState } from '../../lib/meshCardState'
 import { RestartControlPlaneButton } from '../RestartControlPlaneButton'
+import { FixAction } from '../fixit/FixAction'
+import { useFixForCheck } from '../../queries/fixit'
+import { groupBlockedChecks } from '../../lib/fixitGroups'
 
 const CHECK_ICON: Record<MeshCheckStatus, typeof CheckCircleIcon> = {
   pass: CheckCircleIcon,
@@ -44,6 +47,7 @@ const CHECK_TONE: Record<MeshCheckStatus, string> = {
 function CheckRow({ check }: { check: MeshCheck }) {
   const { t } = useTranslation('network')
   const Icon = CHECK_ICON[check.status] ?? MinusCircleIcon
+  const fix = useFixForCheck(check.id)
   return (
     <li className="flex items-start gap-2 text-sm">
       <Icon
@@ -56,13 +60,57 @@ function CheckRow({ check }: { check: MeshCheck }) {
           <span className="sr-only"> {t(`mesh.status.${check.status}`)}</span>
         </p>
         <p className="text-muted-foreground">{check.detail}</p>
-        {check.hint && check.status !== 'pass' ? (
+        {fix ? <FixAction fix={fix} /> : null}
+        {!fix && check.hint && check.status !== 'pass' ? (
           <p className="font-mono text-xs break-words text-foreground">
             {t('mesh.fix', { hint: check.hint })}
           </p>
         ) : null}
       </div>
     </li>
+  )
+}
+
+function CheckList({ checks }: { checks: MeshCheck[] }) {
+  const { t } = useTranslation('fixit')
+  const [open, setOpen] = useState(false)
+  const g = groupBlockedChecks(checks)
+  return (
+    <>
+      <ul className="space-y-2">
+        {g.primary.map((c) => (
+          <CheckRow key={c.id} check={c} />
+        ))}
+      </ul>
+      {g.dependent.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {t('blockers', {
+              count: g.blockers,
+              dependent: g.dependent.length,
+            })}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            aria-expanded={open}
+            onClick={() => {
+              setOpen((v) => !v)
+            }}
+          >
+            {open ? t('hideDependent') : t('showDependent')}
+          </Button>
+          {open ? (
+            <ul className="space-y-2">
+              {g.dependent.map((c) => (
+                <CheckRow key={c.id} check={c} />
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </>
   )
 }
 
@@ -140,11 +188,7 @@ export function MeshSettingsBody({ settings }: { settings: MeshSettings }) {
             <h3 className="text-sm font-medium text-foreground">
               {t('mesh.readiness')}
             </h3>
-            <ul className="space-y-2">
-              {settings.checks.map((c) => (
-                <CheckRow key={c.id} check={c} />
-              ))}
-            </ul>
+            <CheckList checks={settings.checks} />
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

@@ -193,11 +193,15 @@ type deployAttemptResource struct {
 	Branch        string `json:"branch,omitempty"`
 	CommitMessage string `json:"commit_message,omitempty"`
 	Author        string `json:"author,omitempty"`
+	// Trigger classifies Source the way the deployments list does.
+	Trigger string `json:"trigger,omitempty"`
 	// CacheWarning is set when the build carried on without its remote cache.
 	CacheWarning string `json:"cache_warning,omitempty"`
 
-	ImageDigest    string `json:"image_digest,omitempty"`
-	DigestReason   string `json:"digest_reason,omitempty"`
+	ImageDigest  string `json:"image_digest,omitempty"`
+	DigestReason string `json:"digest_reason,omitempty"`
+	// Kind is "static" for a container-less static site deploy.
+	Kind           string `json:"kind,omitempty"`
 	RolloutState   string `json:"rollout_state,omitempty"`
 	RunningImageID string `json:"running_image_id,omitempty"`
 	Sequence       int64  `json:"sequence,omitempty"`
@@ -223,6 +227,9 @@ type deployAttemptResource struct {
 	// Outcome is set by the single-deploy endpoint only: in_progress, healthy,
 	// failed, canceled, superseded or blocked.
 	Outcome string `json:"outcome,omitempty"`
+	// Phase is the stored attempt status when the single-deploy endpoint
+	// reports a derived Status (building, rolling_out, failed).
+	Phase string `json:"phase,omitempty"`
 	// Exit is set by the single-deploy endpoint when the release's container
 	// stopped before it could serve: how, and its last output.
 	Exit *deployExitResource `json:"exit,omitempty"`
@@ -238,7 +245,12 @@ func (rt *Router) applyWait(ctx context.Context, res *deployAttemptResource, a s
 }
 
 func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
+	kind := ""
+	if isStaticAttempt(a) {
+		kind = "static"
+	}
 	return deployAttemptResource{
+		Kind:              kind,
 		ID:                a.ID,
 		ServiceName:       a.ServiceName,
 		Image:             a.Image,
@@ -252,6 +264,7 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 		Branch:            a.Branch,
 		CommitMessage:     a.CommitMessage,
 		Author:            a.Author,
+		Trigger:           store.DeploymentTrigger(a.Source, false, 0),
 		ImageDigest:       a.ImageDigest,
 		DigestReason:      a.DigestReason,
 		RolloutState:      a.RolloutState,

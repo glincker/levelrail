@@ -165,6 +165,7 @@ export function NotificationCenter() {
                         />
                         <span className="min-w-0 flex-1">
                           <span
+                            title={n.title}
                             className={cn(
                               'block truncate text-sm',
                               set.has(n.id)
@@ -174,7 +175,10 @@ export function NotificationCenter() {
                           >
                             {n.title}
                           </span>
-                          <span className="block truncate text-xs text-muted-foreground">
+                          <span
+                            title={n.detail}
+                            className="line-clamp-2 block text-xs break-words text-muted-foreground"
+                          >
                             {n.detail}
                           </span>
                         </span>

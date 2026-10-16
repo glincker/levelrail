@@ -245,6 +245,12 @@ The threshold is control-plane-wide, not per database: `APP_DATABASE_SLOW_QUERY_
 MySQL 8's FILE log sink cannot reliably open `/dev/stderr` from inside a container (it fails with `Could not use /dev/stderr for logging`), so there is no working Docker-log-stream source for this engine. The handler uses the same `docker.Runtime.Exec` primitive backups already use to run `pg_dump` and `mysqldump`. Redis's SLOWLOG is a live-server command against an in-memory ring buffer, not something that appears in log output, so it is not planned for this endpoint.
 </Accordion>
 
+## Traces
+
+Apps can send OpenTelemetry traces to the control plane and read them as waterfalls on the app's Traces page. See [Tracing](/tracing).
+
+Apps can also report errors with any Sentry SDK and read them as grouped issues tied to deploys. See [Error tracking](/error-tracking).
+
 ## Exporting to OpenTelemetry
 
 Metrics and logs can be pushed to an OTLP/HTTP collector, opt-in per destination. Pull-based, node-local collection stays the default and nothing leaves the node until you add a destination. The export set includes per-app container metrics, platform self metrics (reconcile lag, deploy duration and queue depth, agent connections) and container logs. See [Data export](/data-export#otlp-logs) and `levelrail-cli otel destinations`.
@@ -815,6 +821,7 @@ When the database exceeds the size cap, the oldest tenth of the finest tier is d
 | `GET` | `/api/v1/apps/{name}/investigate?from=...&to=...` | `read` |
 | `GET` | `/api/v1/apps/{name}/failure-context` | `read` |
 | `POST` | `/api/v1/prometheus/read` (Prometheus remote read) | `read` |
+| `GET` | `/api/v1/loki/query_range` (Loki-compatible log read, see [Loki API](loki-api)) | `read` |
 | `GET` | `/api/v1/databases/{name}/metrics` | `read` |
 | `GET` | `/api/v1/nodes/{id}/metrics` | `root` |
 | `GET` | `/api/v1/apps/resource-usage` | `read` |
@@ -1029,6 +1036,8 @@ Fix: Adjust the rule's flap threshold or flap window to require more consecutive
 Still stuck: See [Alert rules](/observability#alert-rules) for flap configuration details.
 
 ## See also
+
+To transform logs before storage or export, see [Log pipelines](/log-pipelines) for rules that redact secrets, drop noise, parse JSON fields and handle multiline records. To cap how much one app can store and find the noisiest apps, see [Log volume budgets](/log-budgets).
 
 <CardGroup cols={2}>
   <Card title="Public status page" href="/status-page">

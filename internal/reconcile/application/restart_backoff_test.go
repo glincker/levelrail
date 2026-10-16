@@ -83,3 +83,43 @@ func TestController_Reconcile_CrashLoopBackOff_HoldsRepeatedRestarts(t *testing.
 		t.Errorf("startCalls = %d, want 1: a backed-off container must not be restarted", rt.startCalls)
 	}
 }
+
+// A candidate that exits during its first readiness wait is kept (stopped,
+// logs intact) and the next pass reports CrashLoopBackOff, not the same
+// ExitedDuringReadiness forever.
+func TestController_Reconcile_CrashDuringReadiness_ThenCrashLoopBackOff(t *testing.T) {
+	srv := neverHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	desired := &store.DesiredService{
+		Name: "web", Image: "img:v1", Port: 80,
+		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{Path: "/healthz", Interval: 10 * time.Millisecond, Timeout: 50 * time.Millisecond}},
+	}
+	target := ContainerName("web", desired.Image, "")
+	time.AfterFunc(30*time.Millisecond, func() { rt.crashContainer(target, false, 1) })
+	backoff := NewRestartBackoff(time.Hour, time.Hour, time.Hour)
+
+	first, err := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(2*time.Second), WithRestartBackoff(backoff)).Reconcile(context.Background())
+	if err == nil {
+		t.Fatal("first Reconcile() error = nil, want the crash surfaced")
+	}
+	if cond := conditionOf(t, first); cond.Reason != "ExitedDuringReadiness" {
+		t.Fatalf("first condition = %+v, want ExitedDuringReadiness", cond)
+	}
+	if state, _ := rt.InspectByName(context.Background(), target); state == nil || state.Running {
+		t.Fatalf("failed candidate = %+v, want kept and stopped", state)
+	}
+
+	pass := func() reconcile.Result {
+		res, _ := New("web", &fakeStore{svc: desired}, rt, WithReadyBudget(2*time.Second), WithRestartBackoff(backoff)).Reconcile(context.Background())
+		return res
+	}
+	pass() // the one allowed restart, which crashes again
+	starts := rt.startCalls
+	if cond := conditionOf(t, pass()); cond.Status != reconcile.ConditionFalse || cond.Reason != reasonCrashLoopBackOff {
+		t.Errorf("condition = %+v, want False/%s", cond, reasonCrashLoopBackOff)
+	}
+	if rt.startCalls != starts {
+		t.Errorf("startCalls = %d, want %d: a backed-off container must not be restarted", rt.startCalls, starts)
+	}
+}

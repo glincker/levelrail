@@ -1,0 +1,47 @@
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { PencilSimpleIcon } from '@phosphor-icons/react/dist/ssr'
+import { Button } from '@/components/ui/button'
+import { useIsRoot } from '../../hooks/useIsRoot'
+import { useLogBudget } from '../../queries/logBudgets'
+import { LogBudgetEditor } from './LogBudgetEditor'
+
+/** AppLogBudgetField shows and edits one app's log budget on its Logs page. */
+export function AppLogBudgetField({ app }: { app: string }) {
+  const { t } = useTranslation('logBudgets')
+  const isRoot = useIsRoot()
+  const budget = useLogBudget(app)
+  const [editing, setEditing] = useState(false)
+  if (!budget.data) return null
+  const { max_mb: maxMb, default_mb: defaultMb } = budget.data
+  const effective = maxMb > 0 ? maxMb : defaultMb
+  return (
+    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+      <span>{t('budgetField')}</span>
+      {editing ? (
+        <LogBudgetEditor
+          app={app}
+          initialMb={maxMb}
+          onDone={() => setEditing(false)}
+        />
+      ) : (
+        <>
+          <span className="tabular-nums text-foreground">
+            {effective > 0 ? effective : t('unlimited')}
+          </span>
+          {isRoot && (
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              aria-label={t('editFor', { app })}
+              onClick={() => setEditing(true)}
+            >
+              <PencilSimpleIcon />
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}

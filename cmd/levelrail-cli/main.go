@@ -199,6 +199,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runTUI(prog, args[1:], stdout, stderr, lookupEnv)
 	case "init":
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
+	case "fixes":
+		return runFixes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
@@ -420,7 +422,7 @@ Usage:
   %[1]s gitea-app status|disconnect|repos|branches|use-as-source [flags]   check/forget a Gitea App connection, browse and use its repos
   %[1]s templates list|get|deploy|install [flags]         browse, deploy and install from the curated service catalog
   %[1]s compose deploy|status|logs|redeploy|rollback|down  run a Docker Compose file as one stack
-  %[1]s static-sites list [flags]                          list build.type: static apps
+  %[1]s static-sites list|delete [flags]                   list build.type: static apps, remove an orphaned site
   %[1]s deploy-approvals list|get|approve|reject [flags]   two-person approval gate on a deploy/promote into a protected environment
   %[1]s build detect|branches --repo-url URL [flags]       check what framework a public repo would build as, or list its branches
   %[1]s backups restores <database> [flags]                database restore attempt history

@@ -15,6 +15,8 @@ export interface AppSleep {
   enabled: boolean
   idle_minutes: number
   sleeping: boolean
+  // When the app went to sleep, set only while it is asleep.
+  since?: string
   hold_requests: boolean
   // Why the app cannot sleep.
   blocked_reason?: 'pinned_port'
@@ -62,6 +64,9 @@ export function useAppSleepActions(appName: string) {
   const queryClient = useQueryClient()
   const onSuccess = (result: AppSleep) => {
     queryClient.setQueryData(appSleepKeys.detail(appName), result)
+    void queryClient.invalidateQueries({
+      queryKey: [...appKeys.detail(appName), 'sleep-history'],
+    })
     void queryClient.invalidateQueries({
       queryKey: appKeys.detail(appName),
       exact: true,

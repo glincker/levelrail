@@ -20,7 +20,8 @@
     "errorRate": "Error rate",
     "errorRateHint": "Share of requests answered with 4xx and 5xx",
     "latency": "Latency",
-    "latencyHint": "p95 {{p95}} ms over this range"
+    "latencyHint": "p95 {{p95}} ms over this range",
+    "memoryLimit": "limit {{limit}}, using {{usage}}"
   },
   "series": {
     "CPU": "CPU",

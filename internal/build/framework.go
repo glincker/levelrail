@@ -11,6 +11,8 @@ var frameworkLabels = map[string]string{
 	"golang": "Go",
 	"java":   "Java (Spring Boot)",
 	"python": "Python (Django)",
+	"ruby":   "Ruby",
+	"php":    "PHP",
 }
 
 // FrameworkLabel returns provider's human-readable name and true, or

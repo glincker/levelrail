@@ -195,7 +195,7 @@ levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli functions deploy|list|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
-levelrail-cli apps sleep enable|disable|status|wake <app-name> [flags]
+levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
 levelrail-cli apps sleep list [flags]
 levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
@@ -1224,6 +1224,15 @@ levelrail-cli system restart status [flags]
 Restarts the control plane process through its supervisor, for example after enabling the mesh. It asks for confirmation unless `--yes`; without a terminal, `--yes` is required. With `--wait` it polls until the control plane answers from a new process (its `boot_id` changes), tolerating connection errors while it is down, and gives up after `--timeout`. `status` prints the current `boot_id`, whether restart is supported and whether one is pending.
 
 If no process supervisor was detected, the command prints the reason and the command to run on the server (for example `sudo systemctl restart levelrail`) and exits non-zero. The API is `GET` and `POST /api/v1/system/restart`.
+
+## System networks {#system-networks}
+
+```
+levelrail-cli system networks [--orphans] [flags]
+levelrail-cli system networks prune --dry-run|--yes [flags]
+```
+
+Lists the per-app Docker networks with owner, subnet, attached container count and whether the owning app still exists, plus how full the `APP_NETWORK_POOL` block is. `prune` removes only orphaned networks that are past `APP_NETWORK_GC_GRACE`, empty, and not owned by another instance; pass exactly one of `--dry-run` or `--yes`. The API is `GET /api/v1/system/networks` and `POST /api/v1/system/networks/prune`. See [Troubleshooting](/troubleshooting#app-network-pool).
 
 ## Readiness
 

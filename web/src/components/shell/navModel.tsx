@@ -4,6 +4,7 @@ import {
   BellIcon,
   BookOpenIcon,
   BracketsCurlyIcon,
+  BugIcon,
   ClockCountdownIcon,
   CloudArrowUpIcon,
   CloudIcon,
@@ -37,11 +38,13 @@ import {
   SquaresFourIcon,
   StackIcon,
   TerminalIcon,
+  ListMagnifyingGlassIcon,
   TreeStructureIcon,
   ClockCounterClockwiseIcon,
   EyeIcon,
   TrafficSignalIcon,
   WrenchIcon,
+  FunnelIcon,
   LightbulbIcon,
   CoinsIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -393,6 +396,10 @@ export type AppTo =
   | '/apps/$name/integrations'
   | '/apps/$name/metrics'
   | '/apps/$name/logs'
+  | '/apps/$name/log-pipeline'
+  | '/apps/$name/traces'
+  | '/apps/$name/errors'
+  | '/apps/$name/requests'
   | '/apps/$name/alerts'
   | '/apps/$name/exec'
 
@@ -520,6 +527,20 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
     items: [
       item('metrics', 'Metrics', '/apps/$name/metrics', <PulseIcon />),
       item('logs', 'Logs', '/apps/$name/logs', <ScrollIcon />),
+      item(
+        'log-pipeline',
+        'Log pipeline',
+        '/apps/$name/log-pipeline',
+        <FunnelIcon />,
+      ),
+      item(
+        'requests',
+        'Requests',
+        '/apps/$name/requests',
+        <ListMagnifyingGlassIcon />,
+      ),
+      item('traces', 'Traces', '/apps/$name/traces', <TreeStructureIcon />),
+      item('errors', 'Errors', '/apps/$name/errors', <BugIcon />),
       item('alerts', 'Alerts', '/apps/$name/alerts', <BellIcon />),
     ],
   },

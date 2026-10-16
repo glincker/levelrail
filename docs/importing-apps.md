@@ -29,7 +29,7 @@ Detection order:
 
 1. A compose file (`docker-compose.yml`, `docker-compose.yaml`, `compose.yaml`, `compose.yml`) whose services are all prebuilt images is planned as a compose deploy. A compose file that builds from source falls through to the next step with a warning.
 2. A root `Dockerfile` is planned as a Dockerfile build. The port comes from `EXPOSE`.
-3. Manifest files (`package.json`, `go.mod`, `requirements.txt`, `pyproject.toml`, `Pipfile`, `pom.xml`, `build.gradle`, `index.html`) pick a Railpack build or a static site, with framework defaults for the port and a health check path guess (Next.js, Nuxt, NestJS, Express, Django, FastAPI, Flask, Spring and others).
+3. Manifest files (`package.json`, `go.mod`, `requirements.txt`, `pyproject.toml`, `Pipfile`, `pom.xml`, `build.gradle`, `Gemfile`, `composer.json`, `index.html`) pick a Railpack build or a static site, with framework defaults for the port and a health check path guess (Next.js, Nuxt, NestJS, Express, Django, FastAPI, Flask, Spring, Rails, Sinatra, Laravel and others).
 4. If nothing matches and the repo is on a public host, Railpack's own provider detection is tried.
 
 The plan states why it chose the build method.
@@ -43,6 +43,19 @@ Limits are set with environment variables on the control plane:
 | `APP_IMPORT_FETCH_TIMEOUT` | `20s` | Per-request timeout |
 
 Outbound requests use the same SSRF guard as webhooks: loopback, private and link-local addresses are refused unless `APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true`. Only `http` and `https` repo URLs are accepted.
+
+### Ruby and PHP
+
+Railpack builds Ruby and PHP projects, and the import plan fills in what its start commands expect:
+
+| Stack | Port | Health path | Env suggested |
+| --- | --- | --- | --- |
+| Rails (`rails` in the Gemfile) | 3000, or the port in the Procfile `web:` line or `config/puma.rb` | `/up` | `RAILS_ENV=production` (Railpack's start command passes `-e $RAILS_ENV`, so it must be set), `RAILS_SERVE_STATIC_FILES=true`, `SECRET_KEY_BASE` (required) |
+| Sinatra or other Rack app | 3000 (Railpack starts `rackup` on `${PORT:-3000}`) | `/` | none |
+| Laravel (`laravel/framework` or `artisan`) | 80 (FrankenPHP and Caddy) | `/` | `APP_KEY` (required) |
+| Plain PHP (`composer.json`, `public/index.php`) | 80 | `/` | none |
+
+Laravel runs `php artisan migrate --force` on every start. Set `RAILPACK_SKIP_MIGRATIONS=true` if the app has no database yet.
 
 ## Environment variables
 
@@ -124,6 +137,14 @@ When required variables have no value and no terminal is attached, `--deploy` fa
 **How to confirm:** Check the plan's "detected as" reason. Look at the files listed in the plan and verify they match what you expected.
 
 **Fix:** If the detection is wrong, you can override the build method before deploying. For a git repo, switch to the dashboard or CLI and use `--build-type dockerfile`, `--build-type railpack`, or `--build-type static` to override the auto-detected method.
+
+### Unsupported providers
+
+**Symptom:** the build fails with `detected provider "deno", only node, golang, java, python, ruby, and php are supported`.
+
+**Cause:** Railpack recognises more stacks than Levelrail has verified. Only the listed providers are accepted; others fail early instead of building something untested.
+
+**Fix:** add a `Dockerfile` to the repository and use `--build-type dockerfile`.
 
 ### Repository could not be read
 

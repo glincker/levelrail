@@ -89,6 +89,9 @@ func gitCheckoutWithToken(ctx context.Context, repoURL, checkoutRef, token strin
 	}
 	if err := wt.Checkout(checkoutOpts); err != nil {
 		cleanup()
+		if errors.Is(err, plumbing.ErrObjectNotFound) {
+			return "", nil, fmt.Errorf("api: checkout %q at %q: %w", repoURL, checkoutRef, errGitCommitNotFound)
+		}
 		return "", nil, fmt.Errorf("api: checkout %q at %q: %w", repoURL, checkoutRef, err)
 	}
 
@@ -208,14 +211,26 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, message := rt.processGitPushWebhookPayload(r.Context(), name, *gs, body, r.Header)
+	deliveryID := webhookDeliveryID(r.Header)
+	if dup := rt.duplicateWebhookDelivery(r.Context(), name, deliveryID); dup != nil {
+		rt.saveWebhookDeliveryIDs(r.Context(), name, provider, eventType, headerFields, true, true, dup.StatusCode, body, "", webhookNoteDuplicate, deliveryID, "")
+		w.WriteHeader(dup.StatusCode)
+		_, _ = fmt.Fprintf(w, "%s of %s\n", webhookNoteDuplicate, dup.ID)
+		return
+	}
+
+	pctx, outcome := withWebhookOutcome(r.Context())
+	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, body, r.Header)
 	deliveryErr, deliveryNote := "", ""
 	if status >= http.StatusBadRequest {
 		deliveryErr = message
 	} else {
 		deliveryNote = webhookDeliveryNote(message)
 	}
-	rt.saveWebhookDelivery(r.Context(), name, provider, eventType, headerFields, true, true, status, body, deliveryErr, deliveryNote)
+	rt.saveWebhookDeliveryIDs(r.Context(), name, provider, eventType, headerFields, true, true, status, body, deliveryErr, deliveryNote, deliveryID, outcome.AttemptID)
+	if outcome.AttemptID != "" {
+		rt.kickDeployQueue(r.Context())
+	}
 
 	w.WriteHeader(status)
 	if _, err := fmt.Fprint(w, message); err != nil { //nolint:gosec // gosec's taint check can't see the text/plain Content-Type set above this function's entry, which is the actual mitigation for a client ever interpreting message's webhook-payload-derived fields as markup
@@ -263,6 +278,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		rt.logger.Warn("api: git push webhook: malformed payload", slog.String("error", err.Error()), slog.String("name", name))
 		return http.StatusBadRequest, "malformed payload"
 	}
+	if ok, pushed := pushRepoMatches(ev, gs.RepoURL); !ok {
+		rt.logger.Info("api: git push webhook: push is for another repository", slog.String("name", name), slog.String("pushed_repo", pushed))
+		return http.StatusOK, fmt.Sprintf("ignored: push is for %s, this app tracks %s\n", pushed, repoIdentity(gs.RepoURL))
+	}
 
 	rt.firePipelinePushEvent(ctx, name, ev)
 	ctx = withPushCommitMeta(ctx, ev)
@@ -277,8 +296,22 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		return http.StatusOK, msg
 	}
 
+	if !isWebhookReplay(ctx) {
+		switch rt.commitDeployState(ctx, name, ev.After) {
+		case "deployed":
+			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already deployed\n", webhookShortSHA(ev.After))
+		case "in flight":
+			return http.StatusOK, fmt.Sprintf("ignored: commit %s is already in flight\n", webhookShortSHA(ev.After))
+		}
+	}
 	if held, msg := rt.holdIfFrozen(ctx, name, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt}, name+":"+ev.After); held {
 		return http.StatusAccepted, msg
+	}
+	if rt.builder != nil && rt.deploySafety != nil && len(gs.Services) == 0 {
+		hr := deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}
+		if status, msg, ok := rt.enqueueGitPushDeploy(ctx, name, hr); ok {
+			return status, msg
+		}
 	}
 	queued, msg, release := rt.queueIfBusy(ctx, name, gs, deploy.HeldRequest{Kind: deploy.HeldKindGit, CheckoutRef: ev.After, CommitLabel: ev.After, CommitSHA: ev.After, Before: ev.Before, CommitAt: ev.HeadCommitAt, Branch: strings.TrimPrefix(ev.Ref, "refs/heads/")}, name+":"+ev.After)
 	defer release()
@@ -453,6 +486,9 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	sourceDir, cleanup, err := rt.gitSourceFetch(ctx, gs.RepoURL, checkoutRef, token)
 	if err != nil {
 		rt.logger.Error("api: git push webhook: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("checkout_ref", checkoutRef))
+		if _, adopted := adoptedAttemptID(ctx); errors.Is(err, errGitCommitNotFound) && !adopted {
+			return http.StatusUnprocessableEntity, "commit not found"
+		}
 		// A fetch that fails before any build starts still gets a failed
 		// attempt row, so the Deploys page, the CLI and the deploy
 		// notifier show the real cause instead of an empty history. The
@@ -464,6 +500,9 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 			ImageRepo:   defaultImageRepo(name, existing.Image),
 		}, *existing, source, "")
 		finishFetchAttempt(fmt.Errorf("fetch source: %w", err))
+		if errors.Is(err, errGitCommitNotFound) {
+			return http.StatusUnprocessableEntity, "commit not found"
+		}
 		return http.StatusInternalServerError, "deploy failed"
 	}
 	defer cleanup()
@@ -575,6 +614,10 @@ func detectWebhookProviderAndEvent(header http.Header) (provider, eventType stri
 // "optional signal" reasoning beginBuildDeployAttempt's own doc comment
 // establishes for deploy_attempts.
 func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, eventType string, headerFields map[string]string, signatureValid, matched bool, statusCode int, payload []byte, errMsg, note string) {
+	rt.saveWebhookDeliveryIDs(ctx, name, provider, eventType, headerFields, signatureValid, matched, statusCode, payload, errMsg, note, "", "")
+}
+
+func (rt *Router) saveWebhookDeliveryIDs(ctx context.Context, name, provider, eventType string, headerFields map[string]string, signatureValid, matched bool, statusCode int, payload []byte, errMsg, note, deliveryID, attemptID string) {
 	id, err := store.NewWebhookDeliveryID()
 	if err != nil {
 		rt.logger.Error("api: save webhook delivery: mint id failed", slog.String("error", err.Error()), slog.String("name", name))
@@ -590,6 +633,7 @@ func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, event
 		ID: id, ServiceName: name, Provider: provider, EventType: eventType,
 		HeaderFields: headerFields, SignatureValid: signatureValid, Matched: matched,
 		StatusCode: statusCode, Payload: payload, PayloadTruncated: truncated, Error: errMsg, Note: note, ReceivedAt: time.Now(),
+		DeliveryID: deliveryID, AttemptID: attemptID,
 	}); err != nil {
 		rt.logger.Error("api: save webhook delivery failed", slog.String("error", err.Error()), slog.String("name", name))
 		return

@@ -23,6 +23,14 @@ const bitbucketEventKeyHeader = "repo:push"
 // "after". New is a pointer: a branch-delete change reports New as
 // null, which this package must recognize rather than panic on.
 type bitbucketPushPayload struct {
+	Repository struct {
+		FullName string `json:"full_name"`
+		Links    struct {
+			HTML struct {
+				Href string `json:"href"`
+			} `json:"html"`
+		} `json:"links"`
+	} `json:"repository"`
 	Push struct {
 		Changes []bitbucketPushChange `json:"changes"`
 	} `json:"push"`
@@ -69,6 +77,12 @@ func ParseBitbucketPushEvent(body []byte) (PushEvent, error) {
 		}
 		if t, err := time.Parse(time.RFC3339, change.New.Target.Date); err == nil {
 			ev.HeadCommitAt = t
+		}
+		if n := payload.Repository.FullName; n != "" {
+			ev.RepoNames = []string{n}
+		}
+		if u := payload.Repository.Links.HTML.Href; u != "" {
+			ev.RepoURLs = []string{u}
 		}
 		return ev, nil
 	}

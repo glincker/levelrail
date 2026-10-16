@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"time"
 )
 
 // StaticSite is what internal/reconcile/ingress's controller reads to
@@ -24,6 +26,8 @@ type StaticSite struct {
 	// returns). The ingress controller passes this straight to Caddy's
 	// file_server handler as its root.
 	RootDir string
+	// UpdatedAt is when the row was last written; zero if unparseable.
+	UpdatedAt time.Time
 }
 
 // SaveStaticSite creates or fully replaces a static site's desired
@@ -115,7 +119,7 @@ func claimStaticSiteDomains(ctx context.Context, tx *sql.Tx, siteName string, do
 // ListDesiredServices already gets.
 func (db *DB) ListStaticSites(ctx context.Context) ([]StaticSite, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT name, domains, root_dir
+		SELECT name, domains, root_dir, updated_at
 		FROM static_sites
 		ORDER BY name
 	`)
@@ -131,17 +135,82 @@ func (db *DB) ListStaticSites(ctx context.Context) ([]StaticSite, error) {
 		var (
 			site        StaticSite
 			domainsJSON string
+			updatedAt   string
 		)
-		if err := rows.Scan(&site.Name, &domainsJSON, &site.RootDir); err != nil {
+		if err := rows.Scan(&site.Name, &domainsJSON, &site.RootDir, &updatedAt); err != nil {
 			return nil, fmt.Errorf("store: scan static site row: %w", err)
 		}
 		if err := json.Unmarshal([]byte(domainsJSON), &site.Domains); err != nil {
 			return nil, fmt.Errorf("store: unmarshal domains for static site %q: %w", site.Name, err)
 		}
+		site.UpdatedAt = parseStaticSiteTime(updatedAt)
 		out = append(out, site)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("store: iterate static site rows: %w", err)
 	}
 	return out, nil
+}
+
+// GetStaticSite returns the named static site, or ErrServiceNotFound when
+// the app has never published one.
+func (db *DB) GetStaticSite(ctx context.Context, name string) (*StaticSite, error) {
+	var (
+		site        StaticSite
+		domainsJSON string
+		updatedAt   string
+	)
+	err := db.QueryRowContext(ctx, `SELECT name, domains, root_dir, updated_at FROM static_sites WHERE name = ?`, name).
+		Scan(&site.Name, &domainsJSON, &site.RootDir, &updatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrServiceNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("store: get static site %q: %w", name, err)
+	}
+	if err := json.Unmarshal([]byte(domainsJSON), &site.Domains); err != nil {
+		return nil, fmt.Errorf("store: unmarshal domains for static site %q: %w", name, err)
+	}
+	site.UpdatedAt = parseStaticSiteTime(updatedAt)
+	return &site, nil
+}
+
+func parseStaticSiteTime(s string) time.Time {
+	t, err := time.Parse(time.RFC3339Nano, s)
+	if err != nil {
+		return time.Time{}
+	}
+	return t.UTC()
+}
+
+// DeleteStaticSite removes the site row and its domain claims in one
+// transaction, so the ingress route disappears on the next reconcile. It
+// returns ErrServiceNotFound when no such site exists.
+func (db *DB) DeleteStaticSite(ctx context.Context, name string) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: delete static site %q: begin transaction: %w", name, err)
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	// Explicit delete: the FK cascade only fires with foreign_keys enabled.
+	if _, err := tx.ExecContext(ctx, `DELETE FROM static_site_domains WHERE static_site_name = ?`, name); err != nil {
+		return fmt.Errorf("store: delete static site %q: clear domains: %w", name, err)
+	}
+	res, err := tx.ExecContext(ctx, `DELETE FROM static_sites WHERE name = ?`, name)
+	if err != nil {
+		return fmt.Errorf("store: delete static site %q: %w", name, err)
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("store: delete static site %q: rows affected: %w", name, err)
+	}
+	if n == 0 {
+		return ErrServiceNotFound
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: delete static site %q: commit: %w", name, err)
+	}
+	return nil
 }

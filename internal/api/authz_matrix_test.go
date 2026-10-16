@@ -77,6 +77,11 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
+	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
+	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",
+	"POST /api/v1/sentry/api/{project}/store/":       "legacy Sentry store endpoint, same DSN key auth and per-app rate limit as the envelope route",
+	"OPTIONS /api/v1/sentry/api/{project}/envelope/": "CORS preflight for browser Sentry SDKs, answers headers only",
+	"OPTIONS /api/v1/sentry/api/{project}/store/":    "CORS preflight for browser Sentry SDKs, answers headers only",
 	"GET /api/v1/hooks/wake":                         "called by the ingress wake route with a per-process secret header; any mismatch answers 404",
 	"POST /api/v1/webhooks/slack/interactions":       "authenticated by the X-Slack-Signature HMAC of the channel's own interactive secret",
 	"POST /api/v1/webhooks/discord/interactions":     "authenticated by the Ed25519 signature of the channel's own Discord application public key",
@@ -90,8 +95,12 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 // public routes (not token-gated at all) and pure computations that
 // change no state.
 var readOnlyMayMutate = map[string]string{
+	"POST /api/v1/fixes/{id}/preview":                            "re-runs the originating check and lists the changes an apply would make, persists nothing",
 	"POST /api/v1/pipelines/validate":                            "validates YAML, persists nothing",
 	"POST /api/v1/pipelines/filters":                             "rewrites submitted YAML with path filters, persists nothing",
+	"POST /api/v1/apps/{name}/log-pipeline/preview":              "runs submitted rules over submitted sample lines, persists nothing",
+	"POST /api/v1/apps/{name}/exposure/preview":                  "computes the changes an exposure edit would make, persists nothing",
+	"POST /api/v1/apps/{name}/exposure/check":                    "probes reachability from the control plane host, persists nothing",
 	"POST /api/v1/apps/{name}/preflight":                         "read-only probes of the stored app config, persists nothing",
 	"POST /api/v1/models/preflight":                              "queries the public Hugging Face Hub with a caller-supplied token, persists nothing",
 	"POST /api/v1/models/fit":                                    "estimates VRAM fit from submitted specs and node facts, persists nothing",

@@ -41,6 +41,12 @@ export interface SelfUpgradeStep {
   duration_ms: number
 }
 
+export interface SelfUpgradeLogLine {
+  at: string
+  step: string
+  line: string
+}
+
 export interface SelfUpgradeAttempt {
   id: string
   from_version: string
@@ -54,6 +60,8 @@ export interface SelfUpgradeAttempt {
   backup_name: string
   acked: string[]
   steps: SelfUpgradeStep[]
+  current_step: string
+  log: SelfUpgradeLogLine[]
   started_at: string
   finished_at: string
 }

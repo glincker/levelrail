@@ -50,8 +50,15 @@ function IssueRow({ issue }: { issue: AttentionItem }) {
         }`}
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{issue.title}</p>
-        <p className="truncate text-xs text-muted-foreground">{issue.detail}</p>
+        <p className="truncate text-sm font-medium" title={issue.title}>
+          {issue.title}
+        </p>
+        <p
+          className="line-clamp-3 text-xs break-words text-muted-foreground"
+          title={issue.detail}
+        >
+          {issue.detail}
+        </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {issue.id === 'disk' ? (
             <CleanUpDockerDialog key="cleanup" />

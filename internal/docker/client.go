@@ -52,6 +52,9 @@ type Client struct {
 	// host, when set (WithHost), is dialed instead of runtime.Host.
 	host     string
 	declarer CreateDeclarer
+	// pool, when set, makes EnsureNetwork assign explicit subnets.
+	pool  *NetworkPool
+	alloc poolAllocator
 }
 
 // ClientOption configures optional Client behavior at construction time.
@@ -85,7 +88,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	runtime := DetectRuntimeSocket(os.LookupEnv)
 	hardening, herr := HardeningFromEnv(runtime)
 	logHardeningEnv(herr)
-	c := &Client{hardening: hardening, runtime: runtime}
+	c := &Client{hardening: hardening, runtime: runtime, pool: poolFromEnv(os.LookupEnv)}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -215,7 +218,34 @@ func (c *Client) InspectByName(ctx context.Context, name string) (*ContainerStat
 	if len(summaries) == 0 {
 		return nil, nil
 	}
-	return toContainerState(summaries[0]), nil
+	state := toContainerState(summaries[0])
+	if !state.Running {
+		state.ConfiguredPorts = c.configuredPorts(ctx, state.ID)
+	}
+	return state, nil
+}
+
+// configuredPorts reads PortBindings from a full inspect. Best-effort: nil
+// means unknown, which callers treat as not drifted.
+func (c *Client) configuredPorts(ctx context.Context, id string) []PortBinding {
+	resp, err := c.cli.ContainerInspect(ctx, id)
+	if err != nil || resp.HostConfig == nil {
+		return nil
+	}
+	var out []PortBinding
+	for port, bindings := range resp.HostConfig.PortBindings {
+		for _, b := range bindings {
+			hp, _ := strconv.Atoi(b.HostPort)
+			out = append(out, PortBinding{ContainerPort: port.Int(), HostPort: hp, HostIP: b.HostIP, Protocol: port.Proto()})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].ContainerPort != out[j].ContainerPort {
+			return out[i].ContainerPort < out[j].ContainerPort
+		}
+		return out[i].HostIP < out[j].HostIP
+	})
+	return out
 }
 
 // InspectExitState implements ExitStateInspector. Unlike InspectByName,
@@ -418,14 +448,30 @@ func (c *Client) EnsureNetwork(ctx context.Context, name string) (string, error)
 		return "", fmt.Errorf("docker: inspect network %q: %w", name, err)
 	}
 
-	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{
-		Driver: "bridge",
-		Labels: c.withInstanceLabel(nil),
-	})
+	labels := c.networkLabels(name)
+	if c.pool != nil {
+		id, err := c.alloc.create(ctx, c.cli, *c.pool, name, labels)
+		if err != nil {
+			return "", fmt.Errorf("docker: create network %q: %w", name, err)
+		}
+		return id, nil
+	}
+	resp, err := c.cli.NetworkCreate(ctx, name, dockernetwork.CreateOptions{Driver: "bridge", Labels: labels})
 	if err != nil {
+		if IsPoolExhausted(err) {
+			return "", &PoolExhaustedError{Daemon: true, InUse: c.countNetworks(ctx)}
+		}
 		return "", fmt.Errorf("docker: create network %q: %w", name, err)
 	}
 	return resp.ID, nil
+}
+
+func (c *Client) countNetworks(ctx context.Context) int {
+	nets, err := c.cli.NetworkList(ctx, dockernetwork.ListOptions{})
+	if err != nil {
+		return 0
+	}
+	return len(nets)
 }
 
 // RemoveNetwork implements Runtime. Force-disconnects every still-attached
@@ -746,10 +792,34 @@ func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) err
 // Remove implements Runtime.
 func (c *Client) Remove(ctx context.Context, id string, force bool) error {
 	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
+		if strings.Contains(err.Error(), "already in progress") && c.waitContainerGone(ctx, id) {
+			return nil
+		}
 		return fmt.Errorf("docker: remove container %s: %w", id, err)
 	}
 	return nil
 }
+
+// waitContainerGone covers a concurrent remover: Docker rejects the second
+// remove, but the container is going away, so wait for that instead of failing.
+func (c *Client) waitContainerGone(ctx context.Context, id string) bool {
+	deadline := time.Now().Add(removeInProgressWait)
+	for time.Now().Before(deadline) {
+		if _, err := c.cli.ContainerInspect(ctx, id); cerrdefs.IsNotFound(err) {
+			return true
+		} else if err != nil && ctx.Err() != nil {
+			return false
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(200 * time.Millisecond):
+		}
+	}
+	return false
+}
+
+const removeInProgressWait = 30 * time.Second
 
 // UpdateResources implements Runtime, via the Engine API's own
 // ContainerUpdate call. This adjusts the container's cgroup limits in

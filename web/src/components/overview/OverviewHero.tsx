@@ -12,6 +12,7 @@ import { ReleaseLine } from './ReleaseLine'
 import { TagChips } from './TagChips'
 import { AutoUrlTlsNote } from './AutoUrlTlsNote'
 import { UrlLine } from './UrlLine'
+import { AppHeaderBadges } from '../apps/AppHeaderBadges'
 import type { DeployTab } from './DeploySheet'
 
 export function OverviewHero({
@@ -20,6 +21,7 @@ export function OverviewHero({
   latestAttempt,
   attempts = [],
   url,
+  attentionCount = 0,
   onDeploy,
 }: {
   app: AppDetail
@@ -27,6 +29,7 @@ export function OverviewHero({
   latestAttempt?: DeployAttempt
   attempts?: DeployAttempt[]
   url: string | null
+  attentionCount?: number
   onDeploy: (tab: DeployTab) => void
 }) {
   const runningStage = latestAttempt
@@ -80,6 +83,7 @@ export function OverviewHero({
         <TagChips appName={app.name} tags={app.tags} />
       </div>
       <div className="flex shrink-0 flex-col gap-3 lg:items-end">
+        <AppHeaderBadges app={app} attentionCount={attentionCount} />
         <HeroActions app={app} url={url} onDeploy={onDeploy} />
         {released ? (
           <DeployPreviewThumb

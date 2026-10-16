@@ -34,6 +34,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDeployGateRoutes(mux)
 	rt.registerIaCRoutes(mux)
 	rt.registerDockerGuardRoutes(mux)
+	rt.registerFixitRoutes(mux)
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)
 	rt.registerResourceAdvisorRoutes(mux)
@@ -502,6 +503,8 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
 	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
 	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
+	mux.HandleFunc("GET /api/v1/sleep/overview", rt.requireAbility(AbilityRead, rt.handleSleepOverview))
+	mux.HandleFunc("GET /api/v1/apps/{name}/sleep/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppSleepHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppSleep))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/sleep", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppSleep))
 	mux.HandleFunc("POST /api/v1/apps/{name}/sleep/now", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSleepAppNow))
@@ -686,6 +689,13 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// current Docker-assigned host port Caddy is actually proxying to, for
 	// the dashboard's Network tab. AbilityRead, same tier as images above.
 	mux.HandleFunc("GET /api/v1/apps/{name}/network", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppNetwork))
+	// Exposure: port, direct host port and its tagged firewall rule. The write
+	// opens a host port, so it is AbilityWriteSensitive like firewall rules.
+	mux.HandleFunc("GET /api/v1/apps/{name}/urls", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppURLs))
+	mux.HandleFunc("GET /api/v1/apps/{name}/exposure", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppExposure))
+	mux.HandleFunc("POST /api/v1/apps/{name}/exposure/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreviewAppExposure))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/exposure", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppExposure))
+	mux.HandleFunc("POST /api/v1/apps/{name}/exposure/check", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCheckAppExposure))
 
 	// Databases CRUD, the database-kind counterpart to apps CRUD above.
 	// No PUT (full-replace update) yet: unlike a service's image/port/

@@ -3,6 +3,7 @@ package telemetry
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -605,5 +606,70 @@ func TestStreamOne_ResubscribeDoesNotDuplicateLines(t *testing.T) {
 				t.Errorf("since args = %v, want zero then non-zero", src.since)
 			}
 		})
+	}
+}
+
+type recordingLogSource struct {
+	mu      sync.Mutex
+	follows map[string][]bool
+	lines   map[string][]docker.LogLine
+}
+
+func (s *recordingLogSource) Logs(_ context.Context, id string, follow bool, since time.Time) (<-chan docker.LogLine, <-chan error) {
+	s.mu.Lock()
+	s.follows[id] = append(s.follows[id], follow)
+	ls := s.lines[id]
+	s.mu.Unlock()
+	out := make(chan docker.LogLine, len(ls))
+	for _, l := range ls {
+		if !l.Timestamp.Before(since) {
+			out <- l
+		}
+	}
+	close(out)
+	errs := make(chan error)
+	close(errs)
+	return out, errs
+}
+
+func TestLogCollector_StoppedContainerFetchedOnceNonFollow(t *testing.T) {
+	db := newTestDB(t)
+	src := &recordingLogSource{
+		follows: map[string][]bool{},
+		lines:   map[string][]docker.LogLine{"c1": {{Stream: "stderr", Message: "edge-boom", Timestamp: time.Now()}}},
+	}
+	lc := NewLogCollector(src, db, nil, nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	targets := func(context.Context) ([]LogTarget, error) {
+		return []LogTarget{{ResourceID: "service:web", ContainerID: "c1", Stopped: true}}, nil
+	}
+	go func() { _ = lc.Run(ctx, 20*time.Millisecond, targets) }()
+
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		got, err := db.QueryLogs(ctx, "service:web", time.Now().Add(-time.Hour), time.Now().Add(time.Hour), "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(got) == 1 {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	got, _ := db.QueryLogs(ctx, "service:web", time.Now().Add(-time.Hour), time.Now().Add(time.Hour), "")
+	if len(got) != 1 || got[0].Message != "edge-boom" {
+		t.Fatalf("stored logs = %+v, want the crashed container's one line", got)
+	}
+	time.Sleep(200 * time.Millisecond)
+	src.mu.Lock()
+	defer src.mu.Unlock()
+	if n := len(src.follows["c1"]); n > stoppedIdleFetches+1 {
+		t.Fatalf("stopped container fetched %d times, want bounded by %d", n, stoppedIdleFetches+1)
+	}
+	for _, f := range src.follows["c1"] {
+		if f {
+			t.Fatal("stopped container subscribed with follow=true")
+		}
 	}
 }

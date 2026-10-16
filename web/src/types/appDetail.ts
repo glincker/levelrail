@@ -282,7 +282,7 @@ export interface AppListEntry extends AppDetail {
   // Resolved name of environment_id, empty when the app has none.
   environment_name?: string
   // Present only when sleep-when-idle is on for the app.
-  sleep?: { idle_minutes: number; sleeping: boolean }
+  sleep?: { idle_minutes: number; sleeping: boolean; since?: string }
 }
 
 // Mirrors internal/api/apps.go's appStatusSummary exactly. `variant`

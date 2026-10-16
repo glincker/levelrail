@@ -263,7 +263,7 @@ func eventChange(e store.AppEvent) Change {
 		kind = KindScale
 	case store.AppEventFreezeOverride:
 		kind = KindFreeze
-	case store.AppEventRestart, store.AppEventSuspend, store.AppEventResume:
+	case store.AppEventRestart, store.AppEventSuspend, store.AppEventResume, store.AppEventSlept, store.AppEventWoke:
 		kind = KindLifecycle
 	case store.AppEventConfigChange:
 		if len(e.Keys) == 1 && e.Keys[0] == "domains" {

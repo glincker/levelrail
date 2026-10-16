@@ -11,10 +11,12 @@ Metrics, logs and the audit log stay on the control plane and its nodes by defau
 | --- | --- | --- |
 | Metrics | Prometheus scrape | You pull `GET /metrics` |
 | Metrics | `metrics_otlp` | Pushed as OTLP/HTTP JSON on an interval |
+| Metrics | `metrics_remote_write` | Pushed as Prometheus remote write on an interval |
 | Logs | `logs_loki` | Loki push API, batched |
 | Logs | `logs_otlp` | OTLP/HTTP JSON logs, batched |
 | Logs | `logs_http` | JSON lines (NDJSON) over HTTP POST, batched |
 | Logs | `logs_syslog` | RFC 5424 over TCP or TLS |
+| Logs | `logs_newrelic`, `logs_datadog`, `logs_axiom`, `logs_betterstack` | The vendor's own ingest API, you supply only a key |
 | Audit log | `audit_webhook` | NDJSON batches over HTTP POST, optional HMAC signature |
 | Audit log | `audit_s3` | NDJSON objects in a connected storage destination |
 | Audit log | download | `GET /api/v1/audit-log/export`, NDJSON or CSV |
@@ -85,6 +87,28 @@ Filters apply per destination: `--app` (repeatable, empty means every app) and `
 
 Log export reuses the log stream the live tail already reads: it adds a subscriber, never a second Docker reader.
 
+## Vendor destinations
+
+Four vendors have a destination kind of their own, so you paste a key and pick a region instead of working out an endpoint and a header. They use the same queue, retries, circuit breaker, filters, status and test as every other log destination.
+
+| Kind | Endpoint it uses | Key header | Options |
+| --- | --- | --- | --- |
+| `logs_newrelic` | `https://log-api.newrelic.com/log/v1`, or `log-api.eu.newrelic.com` | `Api-Key` | `region` us or eu |
+| `logs_datadog` | `https://http-intake.logs.<site>/api/v2/logs` | `DD-API-KEY` | `site`, default `datadoghq.com` |
+| `logs_axiom` | `https://api.axiom.co/v1/datasets/<dataset>/ingest`, or `api.eu.axiom.co` | `Authorization: Bearer` | `dataset` (required), `region` |
+| `logs_betterstack` | `https://in.logs.betterstack.com` | `Authorization: Bearer` | none; use `--endpoint` for a source specific host |
+
+The key is stored encrypted like any export header and never returned; a destination shows `has_api_key` instead. An explicit `--endpoint` overrides the preset, for a proxy or a regional host. Changing `region`, `site` or `dataset` on a preset destination moves its endpoint with it.
+
+```bash
+export NR_KEY=...
+levelrail-cli export destinations create --name new-relic --kind logs_newrelic \
+  --api-key-env NR_KEY --region eu --app web --min-level info
+levelrail-cli export destinations test <id>
+```
+
+Each line is sent with the app name as the service, its stream and its level. For structured lines the parsed fields are included (New Relic as `fields`, Axiom flattened into the record).
+
 ## Audit log export
 
 Streaming sends each new audit row at least once. Each batch is NDJSON, and webhook batches carry these headers (the prefix follows the brand name):
@@ -134,6 +158,18 @@ levelrail-cli export destinations create --name otel --kind metrics_otlp \
 
 A `metrics_otlp` destination also accepts `--app` (repeatable) to export only those apps' container series. Platform series are always included.
 
+### Prometheus remote write
+
+A `metrics_remote_write` destination pushes the same series as the scrape endpoint using Prometheus remote write 1.0 (snappy compressed protobuf), so Grafana Cloud, Mimir, VictoriaMetrics and Prometheus started with `--web.enable-remote-write-receiver` can ingest it. The endpoint is used as given, because the path differs per receiver (for example `/api/v1/write`, `/api/v1/push`, `/api/prom/push`). Series names and labels match the scrape endpoint, and the interval works like `metrics_otlp`.
+
+Pass `--username` with `--api-key-env` for basic auth (Grafana Cloud uses the instance id and an access policy token). Without a username the key is sent as a bearer token. `--header` can set any other auth header. Secrets are stored encrypted and never returned. `--app` limits the container series to those apps.
+
+```sh
+GRAFANA_TOKEN=glc_xxx levelrail-cli export destinations create --name grafana --kind metrics_remote_write \
+  --endpoint https://prometheus-prod-01.grafana.net/api/prom/push \
+  --username 123456 --api-key-env GRAFANA_TOKEN
+```
+
 ### Platform self metrics
 
 Besides per-app container metrics, the scrape endpoint and every `metrics_otlp` destination carry a fixed set of control plane gauges (prefix is the brand short name, `levelrail_` on a stock install). Restricted tokens never see them.
@@ -161,7 +197,8 @@ levelrail-cli otel destinations list
 
 ## Reliability and safety
 
-- Every destination has an in-memory queue of `APP_EXPORT_QUEUE_LINES` entries. When it fills, the oldest entries are dropped and counted. There is no disk buffer, so a control plane restart loses queued log lines but not audit rows.
+- Every log destination has a queue of `APP_EXPORT_QUEUE_LINES` entries. When it fills, the oldest entries are dropped and counted.
+- The queue is mirrored on disk under `APP_EXPORT_SPOOL_DIR` (default `<data dir>/export-spool`), so lines a down receiver has not accepted survive a control plane restart and are sent after it. A batch that fails after its retries stays queued and is tried again, instead of being dropped. A crash between a send and its record of success can deliver that batch twice, so delivery is at least once. Set `APP_EXPORT_SPOOL=false` to keep the backlog in memory only. Audit rows never needed this: they are read from the audit log by cursor.
 - Container log lines are handed to exporters through a non-blocking subscription. A slow destination cannot slow a container, the log store, a deploy or the API.
 - A batch is retried with exponential backoff and jitter up to `APP_EXPORT_MAX_ATTEMPTS` times. Responses in the 4xx range other than 408 and 429 are not retried, because retrying cannot fix them.
 - After `APP_EXPORT_BREAKER_FAILURES` consecutive failed batches a destination backs off for `APP_EXPORT_BREAKER_COOLDOWN`, then tries one batch.
@@ -173,7 +210,7 @@ levelrail-cli otel destinations list
 
 ```
 levelrail-cli export destinations list
-levelrail-cli export destinations create --name N --kind K [--endpoint URL] [--app A] [--min-level L] [--header K=V] [--hmac-key KEY] [--storage-target ID] [--label K=V] [--interval S] [--backfill] [--disabled]
+levelrail-cli export destinations create --name N --kind K [--endpoint URL] [--api-key-env VAR] [--region us|eu] [--site HOST] [--dataset NAME] [--app A] [--min-level L] [--header K=V] [--hmac-key KEY] [--storage-target ID] [--label K=V] [--interval S] [--backfill] [--disabled]
 levelrail-cli export destinations test <id>
 levelrail-cli export destinations status <id>
 levelrail-cli export destinations enable|disable <id>

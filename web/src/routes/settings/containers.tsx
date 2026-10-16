@@ -7,13 +7,9 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  ResponsiveTable,
+  type ResponsiveColumn,
+} from '@/components/ui/responsive-table'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -44,37 +40,69 @@ function formatPorts(ports: ContainerPort[]): string {
     .join(', ')
 }
 
-function ContainerRow({ container }: { container: ContainerResource }) {
-  return (
-    <TableRow>
-      <TableCell>
-        <Badge variant={container.running ? 'success' : 'muted'}>
-          {container.running ? <CheckCircleIcon /> : <MinusCircleIcon />}
-          {container.running ? 'Running' : 'Stopped'}
-        </Badge>
-      </TableCell>
-      <TableCell>
-        <Badge variant={container.managed ? 'outline' : 'warning'}>
-          {container.managed ? 'Managed' : 'Orphaned'}
-        </Badge>
-      </TableCell>
-      <TableCell className="font-medium text-foreground">
-        {container.name}
-      </TableCell>
-      <TableCell className="font-mono text-muted-foreground">
-        {container.image}
-      </TableCell>
-      <TableCell className="font-mono text-muted-foreground">
-        {formatPorts(container.ports)}
-      </TableCell>
-      <TableCell className="text-right">
-        {container.managed ? null : (
-          <ContainerRowActions name={container.name} />
-        )}
-      </TableCell>
-    </TableRow>
-  )
-}
+const COLUMNS: ResponsiveColumn<ContainerResource>[] = [
+  {
+    id: 'name',
+    header: 'Name',
+    primary: true,
+    cell: (c) => (
+      <span
+        className="block truncate font-medium text-foreground"
+        title={c.name}
+      >
+        {c.name}
+      </span>
+    ),
+  },
+  {
+    id: 'status',
+    header: 'Status',
+    width: 'w-28',
+    cell: (c) => (
+      <Badge variant={c.running ? 'success' : 'muted'}>
+        {c.running ? <CheckCircleIcon /> : <MinusCircleIcon />}
+        {c.running ? 'Running' : 'Stopped'}
+      </Badge>
+    ),
+  },
+  {
+    id: 'ownership',
+    header: 'Ownership',
+    width: 'w-28',
+    priority: 2,
+    cell: (c) => (
+      <Badge variant={c.managed ? 'outline' : 'warning'}>
+        {c.managed ? 'Managed' : 'Orphaned'}
+      </Badge>
+    ),
+  },
+  {
+    id: 'image',
+    header: 'Image',
+    priority: 2,
+    cell: (c) => (
+      <span
+        className="block truncate font-mono text-muted-foreground"
+        title={c.image}
+      >
+        {c.image}
+      </span>
+    ),
+  },
+  {
+    id: 'ports',
+    header: 'Ports',
+    priority: 3,
+    cell: (c) => (
+      <span
+        className="block truncate font-mono text-muted-foreground"
+        title={formatPorts(c.ports)}
+      >
+        {formatPorts(c.ports)}
+      </span>
+    ),
+  },
+]
 
 function ContainersPage() {
   const { t } = useTranslation('settings')
@@ -115,25 +143,15 @@ function ContainersPage() {
             description="Nothing is running on this node's Docker daemon right now."
           />
         ) : (
-          <div className="rounded-lg border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ownership</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Image</TableHead>
-                  <TableHead>Ports</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {containers.map((container) => (
-                  <ContainerRow key={container.name} container={container} />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          <ResponsiveTable
+            rows={containers}
+            columns={COLUMNS}
+            getRowId={(c) => c.name}
+            ariaLabel={t('containersPage.title')}
+            renderActions={(c) =>
+              c.managed ? null : <ContainerRowActions name={c.name} />
+            }
+          />
         )
       ) : null}
     </PageTemplate>

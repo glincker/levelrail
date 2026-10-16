@@ -10,8 +10,75 @@ import (
 	"github.com/GLINCKER/levelrail/internal/compose"
 )
 
+// serviceSelectionRule returns the index of the service that should be routed
+// to the ingress (the public-facing service), and a reason string.
+// Preference order: service with published ports, well-known name,
+// service with HTTP health check, any service not a dependency-only target.
+// Returns -1, reason if no good candidate exists.
+func serviceSelectionRule(services []ServicePlan, depTargets map[string]bool) (int, string) {
+	if len(services) == 0 {
+		return -1, "no services"
+	}
+	if len(services) == 1 {
+		return 0, "only service"
+	}
+
+	// Preference order for well-known names: higher number = higher priority.
+	wellKnownNames := map[string]int{
+		"web": 5, "frontend": 4, "nginx": 4, "proxy": 4, "gateway": 4,
+		"app": 2,
+	}
+
+	type candidate struct {
+		idx    int
+		score  int
+		reason string
+	}
+	var best *candidate
+
+	for i, s := range services {
+		if depTargets[s.Name] {
+			continue
+		}
+		score := 0
+		var reasons []string
+
+		if len(s.Ports) > 0 {
+			score += 10
+			reasons = append(reasons, "has published ports")
+		}
+
+		if wk, ok := wellKnownNames[strings.ToLower(s.Name)]; ok {
+			score += wk
+			reasons = append(reasons, fmt.Sprintf("named %q", s.Name))
+		}
+
+		if s.HealthPath != "" {
+			score += 3
+			reasons = append(reasons, "has health check")
+		}
+
+		if score == 0 {
+			score = 1
+		}
+
+		if best == nil || score > best.score {
+			reason := strings.Join(reasons, ", ")
+			if reason == "" {
+				reason = s.Name
+			}
+			best = &candidate{idx: i, score: score, reason: reason}
+		}
+	}
+
+	if best == nil {
+		return 0, "no non-dependency service"
+	}
+	return best.idx, best.reason
+}
+
 func planCompose(in Input) (*DeploymentPlan, error) {
-	p, err := composePlanFromText([]byte(in.Text), "compose file")
+	p, err := composePlanFromText([]byte(in.Text), "compose file", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +94,9 @@ func planCompose(in Input) (*DeploymentPlan, error) {
 }
 
 // composePlanFromText parses and validates compose text into per-service plans.
-func composePlanFromText(data []byte, source string) (*DeploymentPlan, error) {
+// depTargets is the set of service names that are targeted by depends_on;
+// these are not candidates for the routed service.
+func composePlanFromText(data []byte, source string, depTargets map[string]bool) (*DeploymentPlan, error) {
 	f, err := compose.Parse(data)
 	if err != nil {
 		return nil, fmt.Errorf("importplan: %w", err)
@@ -41,6 +110,17 @@ func composePlanFromText(data []byte, source string) (*DeploymentPlan, error) {
 			}
 		}
 	}
+
+	// Build depTargets if not provided: collect all service names mentioned in depends_on.
+	if depTargets == nil {
+		depTargets = make(map[string]bool)
+		for _, s := range f.Services {
+			for _, dep := range s.DependsOn {
+				depTargets[dep] = true
+			}
+		}
+	}
+
 	names := make([]string, 0, len(f.Services))
 	for n := range f.Services {
 		names = append(names, n)
@@ -49,6 +129,18 @@ func composePlanFromText(data []byte, source string) (*DeploymentPlan, error) {
 	for _, n := range names {
 		p.Services = append(p.Services, servicePlanFromCompose(n, f.Services[n], source, &p.Warnings))
 	}
+
+	// Reorder services so the routed service is first.
+	if len(p.Services) > 1 {
+		idx, reason := serviceSelectionRule(p.Services, depTargets)
+		if idx > 0 {
+			// Move the selected service to the front.
+			selected := p.Services[idx]
+			selected.BuildReason = selected.BuildReason + " (routed service, selected: " + reason + ")"
+			p.Services = append([]ServicePlan{selected}, append(p.Services[:idx], p.Services[idx+1:]...)...)
+		}
+	}
+
 	if len(names) == 1 {
 		p.SuggestedName = slugify(names[0])
 	} else if len(names) > 1 {

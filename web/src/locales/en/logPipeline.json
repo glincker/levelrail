@@ -1,0 +1,42 @@
+{
+  "title": "Log pipeline",
+  "subtitle": "Rules applied in order to this app's log lines before they are stored: join multi-line records, redact secrets, extract fields, drop noise.",
+  "rules": {
+    "title": "Rules",
+    "empty": "No rules yet. Logs are stored exactly as the app writes them. Add a rule to start shaping them.",
+    "add": "Add rule",
+    "remove": "Remove rule {{index}}",
+    "moveUp": "Move rule {{index}} up",
+    "moveDown": "Move rule {{index}} down",
+    "kind": "Kind",
+    "pattern": "Pattern (regex)",
+    "replace": "Replace with",
+    "replacePlaceholder": "[REDACTED]",
+    "limit": "At most {{max}} rules.",
+    "multilineOnce": "Only one multiline rule is allowed."
+  },
+  "kinds": {
+    "multiline": "Multiline (pattern starts a record)",
+    "redact": "Redact (replace matches)",
+    "parse": "Parse (named groups become fields)",
+    "drop": "Drop (discard matching lines)"
+  },
+  "preview": {
+    "title": "Preview",
+    "samples": "Sample log lines, one per line",
+    "samplesPlaceholder": "2026-01-01 ERROR token=abc123 failed",
+    "empty": "Paste a few sample lines to see what the pipeline would store.",
+    "dropped": "Dropped",
+    "unchanged": "Unchanged",
+    "loading": "Updating preview",
+    "error": "Preview failed: {{message}}"
+  },
+  "actions": {
+    "save": "Save pipeline",
+    "clear": "Clear pipeline",
+    "savedToast": "Log pipeline saved",
+    "clearedToast": "Log pipeline cleared",
+    "failed": "Could not update the log pipeline"
+  },
+  "loadError": "Could not load the log pipeline: {{message}}"
+}

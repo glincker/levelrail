@@ -167,10 +167,12 @@ function extractCategories(
     }
     if (!current) continue
     const link = /\[([^\]]+)\]\(([^)]+?)\)/.exec(line)
-    const target = link?.[2]
-    if (!target?.endsWith('.md')) continue
-    const relFile = path.posix.normalize(target)
-    const routePath = filePathToRoutePath(relFile)
+    const target = link?.[2]?.split('#')[0]
+    if (!target || /^[a-z]+:/i.test(target)) continue
+    // The README links either `foo.md` (GitHub preview) or `/foo` (hosted docs).
+    const routePath = target.endsWith('.md')
+      ? filePathToRoutePath(path.posix.normalize(target))
+      : `/${target.replace(/^\/+/, '')}`
     const page = pagesByPath.get(routePath)
     if (!page) continue
     // README.md's own link text is the bare filename (a GitHub-preview

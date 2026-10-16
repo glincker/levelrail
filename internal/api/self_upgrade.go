@@ -75,6 +75,30 @@ func hostCanLaunch() (bool, string) {
 	return true, ""
 }
 
+// hostEnvPassthrough are the non-secret variables the host command needs to
+// find the same brand file, data directory and listen address as the service.
+var hostEnvPassthrough = []string{
+	"APP_DATA_DIR", "APP_BRAND_FILE", "APP_HTTP_ADDR", "APP_INSTALL_VERIFY",
+	"LEVELRAIL_RELEASE_BASE_URL", "LEVELRAIL_INSECURE_MIRROR",
+}
+
+// systemdRunArgs builds the systemd-run argv. A transient unit starts with an
+// empty environment and cwd "/", so without the working directory and the
+// passthrough variables the host command cannot find brand.yaml and exits.
+func systemdRunArgs(exe, unit, cwd string, getenv func(string) string, args []string) []string {
+	full := []string{"--collect", "--quiet", "--unit=" + unit}
+	if cwd != "" {
+		full = append(full, "--working-directory="+cwd)
+	}
+	for _, k := range hostEnvPassthrough {
+		if v := getenv(k); v != "" {
+			full = append(full, "--setenv="+k+"="+v)
+		}
+	}
+	full = append(full, exe, "self-upgrade")
+	return append(full, args...)
+}
+
 func systemdRunLauncher(ctx context.Context, args []string) error {
 	exe, err := os.Executable()
 	if err != nil {
@@ -84,7 +108,8 @@ func systemdRunLauncher(ctx context.Context, args []string) error {
 		exe = resolved
 	}
 	unit := fmt.Sprintf("%s-self-upgrade-%d", filepath.Base(exe), time.Now().Unix())
-	full := append([]string{"--collect", "--quiet", "--unit=" + unit, exe, "self-upgrade"}, args...)
+	cwd, _ := os.Getwd()
+	full := systemdRunArgs(exe, unit, cwd, os.Getenv, args)
 	// A transient unit, so stopping the control plane unit does not kill the
 	// upgrade that is replacing it.
 	out, err := exec.CommandContext(ctx, "systemd-run", full...).CombinedOutput() //nolint:gosec // fixed program, argv validated by the caller
@@ -325,6 +350,12 @@ type selfUpgradeStepItem struct {
 	DurationMS int64  `json:"duration_ms"`
 }
 
+type selfUpgradeLogItem struct {
+	At   string `json:"at"`
+	Step string `json:"step"`
+	Line string `json:"line"`
+}
+
 type selfUpgradeAttemptItem struct {
 	ID          string                `json:"id"`
 	FromVersion string                `json:"from_version"`
@@ -338,6 +369,8 @@ type selfUpgradeAttemptItem struct {
 	BackupName  string                `json:"backup_name"`
 	Acked       []string              `json:"acked"`
 	Steps       []selfUpgradeStepItem `json:"steps"`
+	CurrentStep string                `json:"current_step"`
+	Log         []selfUpgradeLogItem  `json:"log"`
 	StartedAt   string                `json:"started_at"`
 	FinishedAt  string                `json:"finished_at"`
 }
@@ -350,9 +383,16 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 		writeJSON(w, http.StatusOK, map[string]any{"attempts": []selfUpgradeAttemptItem{}})
 		return
 	}
+	live := map[string]selfupgrade.Attempt{}
 	if rt.dataDir != "" {
-		if _, err := selfupgrade.ImportJournal(r.Context(), selfupgrade.NewJournal(rt.dataDir), rt.selfUpgrade.store); err != nil {
+		j := selfupgrade.NewJournal(rt.dataDir)
+		if _, err := selfupgrade.ImportJournal(r.Context(), j, rt.selfUpgrade.store); err != nil {
 			rt.logger.Warn("api: import self-upgrade journal failed", slog.String("error", err.Error()))
+		}
+		if list, err := j.List(); err == nil {
+			for _, a := range list {
+				live[a.ID] = a
+			}
 		}
 	}
 	rows, err := rt.selfUpgrade.store.ListSelfUpgradeAttempts(r.Context(), selfUpgradeListLimit)
@@ -363,7 +403,14 @@ func (rt *Router) handleSelfUpgradeAttempts(w http.ResponseWriter, r *http.Reque
 	}
 	out := make([]selfUpgradeAttemptItem, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, toSelfUpgradeItem(row))
+		item := toSelfUpgradeItem(row)
+		if a, ok := live[row.ID]; ok {
+			item.CurrentStep = a.Current
+			for _, l := range a.Log {
+				item.Log = append(item.Log, selfUpgradeLogItem{At: l.At.UTC().Format(time.RFC3339), Step: l.Step, Line: l.Line})
+			}
+		}
+		out = append(out, item)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"attempts": out})
 }
@@ -372,7 +419,7 @@ func toSelfUpgradeItem(row store.SelfUpgradeAttempt) selfUpgradeAttemptItem {
 	item := selfUpgradeAttemptItem{
 		ID: row.ID, FromVersion: row.FromVersion, ToVersion: row.ToVersion, FromSchema: row.FromSchema, ToSchema: row.ToSchema,
 		Initiator: row.Initiator, Outcome: row.Outcome, FailedStep: row.FailedStep, Error: row.Error, BackupName: row.BackupName,
-		Acked: []string{}, Steps: []selfUpgradeStepItem{}, StartedAt: row.StartedAt, FinishedAt: row.FinishedAt,
+		Acked: []string{}, Steps: []selfUpgradeStepItem{}, Log: []selfUpgradeLogItem{}, StartedAt: row.StartedAt, FinishedAt: row.FinishedAt,
 	}
 	_ = json.Unmarshal([]byte(row.AckedJSON), &item.Acked)
 	var steps []selfupgrade.StepRecord

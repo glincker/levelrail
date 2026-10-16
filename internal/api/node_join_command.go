@@ -54,10 +54,11 @@ type joinCommands struct {
 
 // defaultControlPlaneAddr is where agents dial, from APP_AGENT_ADVERTISE_HOST, or "".
 func (rt *Router) defaultControlPlaneAddr() string {
-	if rt.doctorAgentAdvertiseHost == "" || rt.doctorAgentAdvertisePort == 0 {
+	host := rt.advertiseHost()
+	if host == "" || rt.doctorAgentAdvertisePort == 0 {
 		return ""
 	}
-	return net.JoinHostPort(rt.doctorAgentAdvertiseHost, strconv.Itoa(rt.doctorAgentAdvertisePort))
+	return net.JoinHostPort(host, strconv.Itoa(rt.doctorAgentAdvertisePort))
 }
 
 // buildJoinCommands renders the docker and binary join commands. Every

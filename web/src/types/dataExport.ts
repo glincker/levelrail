@@ -6,9 +6,14 @@ export type DataExportKind =
   | 'logs_loki'
   | 'logs_otlp'
   | 'logs_syslog'
+  | 'logs_newrelic'
+  | 'logs_datadog'
+  | 'logs_axiom'
+  | 'logs_betterstack'
   | 'audit_webhook'
   | 'audit_s3'
   | 'metrics_otlp'
+  | 'metrics_remote_write'
 
 export interface DataExportOptions {
   storage_target_id?: string
@@ -16,6 +21,10 @@ export interface DataExportOptions {
   labels?: Record<string, string>
   interval_seconds?: number
   backfill?: boolean
+  region?: string
+  site?: string
+  dataset?: string
+  username?: string
 }
 
 export interface DataExportStatus {
@@ -41,6 +50,7 @@ export interface DataExportDestination {
   options: DataExportOptions
   header_names: string[]
   has_hmac_key: boolean
+  has_api_key?: boolean
   status: DataExportStatus
   created_at: string
   updated_at: string
@@ -56,12 +66,14 @@ export interface CreateDataExportDestinationRequest {
   options?: DataExportOptions
   headers?: Record<string, string>
   hmac_key?: string
+  api_key?: string
 }
 
 export interface UpdateDataExportDestinationRequest {
   enabled?: boolean
   headers?: Record<string, string>
   hmac_key?: string
+  api_key?: string
 }
 
 export interface DataExportTestResult {

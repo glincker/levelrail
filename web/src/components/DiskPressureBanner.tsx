@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button'
 import { assessDiskPressure } from '../lib/diskPressure'
 import { formatBytes } from '../lib/format'
 import { useDockerHealthPoll } from '../queries/systemStatus'
+import { useFixForCheck } from '../queries/fixit'
+import { FixAction } from './fixit/FixAction'
 
 const CleanUpDockerDialog = lazy(() =>
   import('./CleanUpDockerDialog').then((m) => ({
@@ -19,6 +21,7 @@ const CleanUpDockerDialog = lazy(() =>
 
 export function DiskPressureBanner() {
   const { data } = useDockerHealthPoll()
+  const diskFix = useFixForCheck('disk_space')
   const [dismissedLevel, setDismissedLevel] = useState<string>()
   const pressure = data ? assessDiskPressure(data) : undefined
 
@@ -49,9 +52,13 @@ export function DiskPressureBanner() {
           : ''}
         Builds and deploys may fail if it runs out.
         <span className="mt-2 block">
-          <Suspense fallback={null}>
-            <CleanUpDockerDialog />
-          </Suspense>
+          {diskFix ? (
+            <FixAction fix={diskFix} />
+          ) : (
+            <Suspense fallback={null}>
+              <CleanUpDockerDialog />
+            </Suspense>
+          )}
         </span>
       </AlertDescription>
       <AlertAction>

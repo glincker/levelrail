@@ -16,6 +16,7 @@ import {
   CreateLogAlertDialog,
   type LogAlertDefaults,
 } from '../../../components/CreateLogAlertDialog'
+import { AppLogBudgetField } from '../../../components/logBudgets/AppLogBudgetField'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { parseLogsSearch, type LogsTab } from '../../../lib/observabilitySearch'
 import { signatureToRegex } from '../../../lib/logExplorer'
@@ -72,6 +73,7 @@ function LogsSection() {
           Archive
         </TabsTrigger>
       </TabsList>
+      <AppLogBudgetField app={name} />
 
       <TabsContent value="live" className="flex-1">
         <LiveLogViewer appName={name} conditions={conditions} />

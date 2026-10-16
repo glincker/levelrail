@@ -9,6 +9,7 @@ import {
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import './index.css'
 import './lib/density'
+import './lib/pageWidth'
 import { isUnauthorized } from './lib/apiError'
 import { clearStoredUsername, getStoredUsername } from './lib/authStore'
 import {

@@ -49,6 +49,31 @@ func (q *queue[T]) push(v T) int {
 	return dropped
 }
 
+// pushFront puts a batch back ahead of newer items, oldest first, and reports
+// how many of the oldest items were dropped to stay within the cap.
+func (q *queue[T]) pushFront(batch []T) int {
+	if len(batch) == 0 {
+		return 0
+	}
+	q.mu.Lock()
+	rest := q.items[q.head:]
+	merged := make([]T, 0, len(batch)+len(rest))
+	merged = append(merged, batch...)
+	merged = append(merged, rest...)
+	dropped := 0
+	if over := len(merged) - q.cap; over > 0 {
+		merged = merged[over:]
+		dropped = over
+	}
+	q.items, q.head = merged, 0
+	q.mu.Unlock()
+	select {
+	case q.notify <- struct{}{}:
+	default:
+	}
+	return dropped
+}
+
 func (q *queue[T]) len() int {
 	q.mu.Lock()
 	defer q.mu.Unlock()
@@ -285,6 +310,10 @@ type batcher[T any] struct {
 	d    *deliverer
 	send func(context.Context, []T) error
 	size func(T) int
+	// done, when set, is told how many items left the queue for good:
+	// delivered, or dropped on a permanent failure. Setting it also keeps a
+	// batch that failed transiently in the queue instead of dropping it.
+	done func(n int)
 }
 
 func (b *batcher[T]) run(ctx context.Context) {
@@ -304,8 +333,27 @@ func (b *batcher[T]) run(ctx context.Context) {
 			if len(batch) == 0 {
 				break
 			}
-			if err := b.d.do(ctx, len(batch), func(c context.Context) error { return b.send(c, batch) }); err != nil {
+			err := b.d.do(ctx, len(batch), func(c context.Context) error { return b.send(c, batch) })
+			var perm *permanentError
+			switch {
+			case err == nil:
+				if b.done != nil {
+					b.done(len(batch))
+				}
+			case b.done != nil && !errors.As(err, &perm) && ctx.Err() == nil:
+				// Transient: keep it and try again after a pause.
+				if n := b.q.pushFront(batch); n > 0 {
+					b.d.st.dropped.Add(int64(n))
+					b.done(n)
+				}
+				if serr := b.d.sleep(ctx, b.d.cfg.BackoffMax); serr != nil {
+					return
+				}
+			default:
 				b.d.st.dropped.Add(int64(len(batch)))
+				if b.done != nil {
+					b.done(len(batch))
+				}
 			}
 			if ctx.Err() != nil {
 				return

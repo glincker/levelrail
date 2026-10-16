@@ -156,7 +156,14 @@ type Router struct {
 	rotation               atomic.Pointer[secretRotationState] // nil until SetSecretRotation: rotation policy endpoints answer 501
 	composeSecrets         ComposeSecretStore                  // nil is valid: a compose file needing a generated secret fails loudly instead, see handleDeployCompose
 	telemetry              TelemetryQuerier                    // nil is valid: metrics/logs query routes return 501, same shape as secrets above
-	requestSummaryWindow   time.Duration                       // 0 keeps defaultRequestSummaryWindow
+	traces                 TraceStore                          // nil is valid: trace routes answer 501
+	logPipelines           LogPipelineStore                    // nil is valid: log pipeline routes answer 501
+	logBudgets             LogBudgetStore                      // nil is valid: log budget routes answer 501
+	logUsageCache          logUsageCache
+	traceKeys              traceKeyCache
+	errTrack               errorTrackingState
+	access                 AccessSource  // nil is valid: the access route answers 501
+	requestSummaryWindow   time.Duration // 0 keeps defaultRequestSummaryWindow
 	// requestLogThresholds are requestLoggingMiddleware's Warn/Error
 	// duration bands (request_logging.go). Zero fields mean "use the
 	// matching default", set via WithRequestLogThresholds;
@@ -184,6 +191,7 @@ type Router struct {
 	meshZone               string        // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
 	meshSettings           meshSettingsState        // see mesh_settings.go
+	fixit                  fixitState               // see fixit.go
 	restart                restartState             // see system_restart.go
 	memAttribution         memoryAttributionCache   // see node_memory_attribution.go
 	nodeHostReports        NodeHostReports          // nil is valid: remote rows keep the placed-services-only shape
@@ -391,6 +399,7 @@ type Router struct {
 	// previewStuckAfter is how long a preview may sit in deploying before the
 	// orphan sweep marks it failed (WithPreviewStuckAfter).
 	previewStuckAfter time.Duration
+	staticOrphanGrace time.Duration
 	// auditLogRetention overrides defaultAuditLogRetention
 	// (audit_retention.go): how long an audit_log row survives before
 	// PurgeOldAuditEntries removes it. 0 means "use the default", set via
@@ -427,11 +436,12 @@ type Router struct {
 	// window. 0 means "use the default", set via
 	// WithCapacityForecastLookback.
 	capacityForecastLookback     time.Duration
-	builder                      Builder                         // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
-	fetch                        fetchFunc                       // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
-	listBranches                 listBranchesFunc                // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
-	importFiles                  func() importplan.FileSource    // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
-	detect                       detectFunc                      // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
+	builder                      Builder                      // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	fetch                        fetchFunc                    // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
+	listBranches                 listBranchesFunc             // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
+	importFiles                  func() importplan.FileSource // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
+	detect                       detectFunc                   // framework pre-flight detector for handleDetectFramework; always non-nil, defaulted to build.Detect in NewRouter, overridable in this package's own tests
+	staticRootDir                string
 	staticSites                  StaticSiteStore                 // always set, same "core Store interface, not an optional plug-in" shape as certs above
 	backupTargets                BackupTargetStore               // always set, same "core Store interface" shape as certs/staticSites above: listing/getting/deleting a backup target needs no secrets configuration, only creating one does
 	storage                      *StorageDeps                    // nil is valid: /api/v1/storage and /api/v1/log-archive routes return 501

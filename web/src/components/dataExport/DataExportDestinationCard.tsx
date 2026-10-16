@@ -34,9 +34,14 @@ const KIND_KEYS = {
   logs_loki: 'kinds.logs_loki',
   logs_otlp: 'kinds.logs_otlp',
   logs_syslog: 'kinds.logs_syslog',
+  logs_newrelic: 'kinds.logs_newrelic',
+  logs_datadog: 'kinds.logs_datadog',
+  logs_axiom: 'kinds.logs_axiom',
+  logs_betterstack: 'kinds.logs_betterstack',
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
   metrics_otlp: 'kinds.metrics_otlp',
+  metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
 
 function Stat({ label, value }: { label: string; value: string }) {

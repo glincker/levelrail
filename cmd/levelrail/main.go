@@ -602,7 +602,7 @@ func run(logger *slog.Logger) error {
 	if id := readLocalNodeID(agentDataDir); id != "" {
 		agentRegistry.SetLocal(id, agent.NewLocal(client))
 	}
-	agentCreds, err := agent.NewServerCredentials(agentCA, []string{agentAdvertiseHost()}, agentServerCertValidity)
+	agentCreds, err := agent.NewServerCredentials(agentCA, []string{advertiseHostFromStore(ctx, db)}, agentServerCertValidity)
 	if err != nil {
 		return fmt.Errorf("build agent grpc credentials: %w", err)
 	}
@@ -1014,6 +1014,7 @@ func run(logger *slog.Logger) error {
 			logger.Error("telemetry log collector stopped", slog.String("error", err.Error()))
 		}
 	}()
+	go wakeLogCollectorOnContainerEvents(ctx, client, logCollector)
 	go runLogsRetentionSweep(ctx, telemetryDB, logger)
 
 	// drainForwarder taps logBroadcaster the same way a live SSE viewer
@@ -1176,7 +1177,7 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
-	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Logger: logger}
+	appSleepScheduler := &appsleep.Scheduler{Sleep: db, Apps: db, Traffic: telemetryDB, Nudger: engine, Events: db, Logger: logger}
 	go func() {
 		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))
@@ -1230,6 +1231,7 @@ func run(logger *slog.Logger) error {
 	// shape as the scheduled task scheduler just above: nothing about
 	// this loop needs a master key configured.
 	go sweepOrphanPreviewsOnce(ctx, logger, apiRouter)
+	go runStaticOrphanSweep(ctx, logger, apiRouter)
 	go func() {
 		if err := apiRouter.RunPreviewSweeper(ctx, previewSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("preview sweeper stopped", slog.String("error", err.Error()))
@@ -1721,12 +1723,10 @@ func logTargets(db *store.DB, runtime docker.Runtime) func(context.Context) ([]t
 				return nil, fmt.Errorf("list containers for %s: %w", svc.Name, err)
 			}
 			for _, c := range containers {
-				if !c.Running {
-					continue
-				}
 				targets = append(targets, telemetry.LogTarget{
 					ResourceID:  "service:" + svc.Name,
 					ContainerID: c.ID,
+					Stopped:     !c.Running,
 				})
 			}
 		}
@@ -1755,12 +1755,13 @@ func databaseLogTargets(ctx context.Context, db *store.DB, runtime docker.Runtim
 		if err != nil {
 			return nil, fmt.Errorf("inspect container for database %s: %w", d.Name, err)
 		}
-		if cs == nil || !cs.Running {
+		if cs == nil {
 			continue
 		}
 		targets = append(targets, telemetry.LogTarget{
 			ResourceID:  "database:" + d.Name,
 			ContainerID: cs.ID,
+			Stopped:     !cs.Running,
 		})
 	}
 	return targets, nil
@@ -1813,6 +1814,24 @@ func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.L
 		}
 		if deleted > 0 {
 			logger.Info("logs retention sweep", slog.Int64("deleted", deleted), slog.Time("cutoff", cutoff))
+		}
+		if trims, berr := db.EnforceLogBudgets(ctx, telemetry.DefaultLogBudgetBytes()); berr != nil {
+			logger.Error("log budget sweep failed", slog.String("error", berr.Error()))
+		} else {
+			for _, t := range trims {
+				logger.Info("log budget trim", slog.String("resource", t.ResourceID), slog.Int64("lines", t.Lines), slog.Int64("bytes", t.Bytes))
+			}
+		}
+		// Traces age out on the same window as logs.
+		if n, serr := db.RetainSpans(ctx, cutoff); serr != nil {
+			logger.Error("trace retention sweep failed", slog.String("error", serr.Error()))
+		} else if n > 0 {
+			logger.Info("trace retention sweep", slog.Int64("deleted", n), slog.Time("cutoff", cutoff))
+		}
+		if n, eerr := db.RetainErrors(ctx, cutoff); eerr != nil {
+			logger.Error("error tracking retention sweep failed", slog.String("error", eerr.Error()))
+		} else if n > 0 {
+			logger.Info("error tracking retention sweep", slog.Int64("deleted", n), slog.Time("cutoff", cutoff))
 		}
 	}
 
@@ -2128,6 +2147,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLogger(logger),
 		deploy.WithStaticSiteStore(db),
 		deploy.WithStaticRootDir(staticSitesDir),
+		deploy.WithStaticPublishRecorder(db),
 		deploy.WithAppStore(db),
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
@@ -2431,9 +2451,15 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	}
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
+		api.WithStaticRootDir(filepath.Join(dataDir, "static")),
 		api.WithDeployGate(db, deployGateDefaults()),
 		api.WithReadinessProbes(api.ReadinessProbes{Database: db.PingContext, Migrations: db.MigrationsCurrent, EngineStarted: engine.Started}),
 		api.WithTelemetryQuerier(telemetry.NewLocalFederator(telemetryDB)),
+		api.WithTraceStore(telemetryDB),
+		api.WithErrorStore(telemetryDB),
+		api.WithLogPipelineStore(telemetryDB),
+		api.WithLogBudgetStore(telemetryDB),
+		api.WithAccessSource(api.EdgeAccess{Stats: ingressdriver.DefaultRequestStats(), Log: ingressdriver.DefaultAccessLog()}),
 		api.WithRequestSummaryWindow(requestSummaryWindow()),
 		api.WithAlertRules(alertingDB),
 		api.WithAlertNoise(alertingDB),
@@ -2508,6 +2534,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithPreviewTTL(previewTTL(logger)),
 		api.WithPreviewLimits(previewLimits(logger)),
 		api.WithPreviewStuckAfter(previewStuckAfter(logger)),
+		api.WithStaticOrphanGrace(staticOrphanGrace(logger)),
 		api.WithInviteTTL(inviteTTL(logger)),
 		api.WithAuditLogRetention(auditLogRetention(logger)),
 		api.WithWebhookDeliveryRetention(webhookDeliveryRetention(logger)),
@@ -2796,7 +2823,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		modelGateway.SetWakeHook(engine.Nudge)
 	}
 	opts = append(opts, api.WithModels(modelSvc))
-	opts = append(opts, api.WithMeshSettings(db))
+	opts = append(opts, api.WithMeshSettings(db), api.WithFixit(db))
 	if client != nil {
 		opts = append(opts, api.WithGPUHostDiagnoser(func(ctx context.Context) gpu.HostDiagnosis {
 			return gpu.DiagnoseHost(ctx, gpu.ExecRunner{}, client, nil)
@@ -4233,5 +4260,29 @@ func purgeStaleIssuerCerts(ctx context.Context, db *store.DB, logger *slog.Logge
 	}
 	if n > 0 {
 		logger.Info("dropped certificates from other issuers so they re-issue", slog.Int("keys", n))
+	}
+}
+
+// wakeLogCollectorOnContainerEvents makes the log collector re-derive
+// targets on container start/die so containers shorter-lived than the
+// resync tick still get their output captured.
+func wakeLogCollectorOnContainerEvents(ctx context.Context, src alerting.EventSource, lc *telemetry.LogCollector) {
+	events, errs := src.Events(ctx)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case ev, ok := <-events:
+			if !ok {
+				return
+			}
+			if ev.Action == docker.EventStart || ev.Action == docker.EventDie {
+				lc.Wake()
+			}
+		case _, ok := <-errs:
+			if !ok {
+				errs = nil
+			}
+		}
 	}
 }

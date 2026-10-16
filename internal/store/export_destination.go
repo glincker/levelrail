@@ -25,6 +25,15 @@ const (
 	ExportKindAuditS3      ExportKind = "audit_s3"
 	ExportKindMetricsOTLP  ExportKind = "metrics_otlp"
 	ExportKindLogsOTLP     ExportKind = "logs_otlp"
+
+	// ExportKindMetricsRemoteWrite pushes Prometheus remote write 1.0.
+	ExportKindMetricsRemoteWrite ExportKind = "metrics_remote_write"
+
+	// Vendor destinations: the vendor's own ingest API with a key header.
+	ExportKindLogsNewRelic    ExportKind = "logs_newrelic"
+	ExportKindLogsDatadog     ExportKind = "logs_datadog"
+	ExportKindLogsAxiom       ExportKind = "logs_axiom"
+	ExportKindLogsBetterStack ExportKind = "logs_betterstack"
 )
 
 // ErrExportDestinationNotFound is returned when no destination has the given id.
@@ -41,6 +50,15 @@ type ExportOptions struct {
 	Prefix string `json:"prefix,omitempty"`
 	// Labels are static Loki stream labels.
 	Labels map[string]string `json:"labels,omitempty"`
+	// Region is us (default) or eu for New Relic and Axiom.
+	Region string `json:"region,omitempty"`
+	// Site is the Datadog site, for example datadoghq.eu.
+	Site string `json:"site,omitempty"`
+	// Username is the basic auth user for metrics_remote_write; the password
+	// or API key is a secret and lives in the secret blob.
+	Username string `json:"username,omitempty"`
+	// Dataset is the Axiom dataset.
+	Dataset string `json:"dataset,omitempty"`
 	// IntervalSeconds is the OTLP push interval.
 	IntervalSeconds int `json:"interval_seconds,omitempty"`
 	// Backfill makes an audit export start from the oldest row instead of now.

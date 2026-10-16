@@ -23,7 +23,7 @@ import (
 )
 
 // This file: the Railpack integration, scoped to node, golang, java,
-// and python (see supportedRailpackProviders). Railpack
+// python, ruby, and php (see supportedRailpackProviders). Railpack
 // (github.com/railwayapp/railpack) is a real, embeddable Go library, not
 // a CLI wrapped by exec.Command: core.GenerateBuildPlan inspects a source
 // directory and returns Railpack's own build IR (a graph of named steps,
@@ -80,18 +80,18 @@ func (r RailpackRequest) Validate() error {
 	return nil
 }
 
-// supportedRailpackProviders is this slice's entire scope: Node.js, Go,
-// Java, and Python. Python is verified against testdata/railpack-python
-// (a Django app) with a real live Docker build and run
-// (TestClient_BuildRailpack_Live_Python), not just plan generation.
-// Every other provider Railpack itself supports (ruby, php, rust, deno,
-// elixir, gleam, dotnet, cpp, staticfile, ...) is deliberately deferred,
-// not silently accepted: see UnsupportedProviderError.
+// supportedRailpackProviders is the allowlist of providers this codebase
+// has verified. Python is verified live (TestClient_BuildRailpack_Live_Python);
+// ruby and php are verified at plan generation only. Anything else
+// Railpack detects (rust, deno, elixir, staticfile, ...) is rejected with
+// UnsupportedProviderError instead of silently accepted.
 var supportedRailpackProviders = map[string]bool{
 	"node":   true,
 	"golang": true,
 	"java":   true,
 	"python": true,
+	"ruby":   true,
+	"php":    true,
 }
 
 // UnsupportedProviderError is returned when Railpack's own detection
@@ -114,7 +114,23 @@ func (e *UnsupportedProviderError) Error() string {
 	if provider == "" {
 		provider = "(none detected)"
 	}
-	return fmt.Sprintf("build: railpack: detected provider %q, only node, golang, java, and python are supported yet", provider)
+	return "build: railpack: " + unsupportedDetail(provider)
+}
+
+// Detail is the message without the package prefix, for callers that
+// add their own (internal/deploy).
+func (e *UnsupportedProviderError) Detail() string {
+	provider := e.Provider
+	if provider == "" {
+		provider = "(none detected)"
+	}
+	return unsupportedDetail(provider)
+}
+
+// unsupportedDetail keeps the supported list in one place; the docs
+// anchor is the "Unsupported providers" section of importing-apps.md.
+func unsupportedDetail(provider string) string {
+	return fmt.Sprintf("detected provider %q, only node, golang, java, python, ruby, and php are supported; add a Dockerfile to the repository and build with the dockerfile build type (see importing-apps#unsupported-providers)", provider)
 }
 
 // generateRailpackPlan runs Railpack's own build-plan generation against

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   CartesianGrid,
@@ -21,6 +21,11 @@ import {
   formatMetricValue,
   latestReading,
 } from '../lib/metricChart'
+import {
+  computeNiceYDomain,
+  formatPercentWithAdaptivePrecision,
+  generateUniqueTicks,
+} from '../lib/chartScale'
 import { chartPalette } from '../lib/chartPalette'
 import type { ResolvedTimeRange } from '../lib/timeRange'
 import { Skeleton } from './ui/skeleton'
@@ -108,6 +113,7 @@ export function MetricChartCard({
 }) {
   const { t } = useTranslation('observability')
   const [hidden, setHidden] = useState<ReadonlySet<SeriesKey>>(new Set())
+  const [showMemoryLimit, setShowMemoryLimit] = useState(false)
   const series: SeriesDef[] = [
     { key: 'primary', label: primaryLabel, color: primaryColor },
   ]
@@ -135,10 +141,43 @@ export function MetricChartCard({
     })
   }
 
+  // Compute Y domain for percent and bytes charts with adaptive formatting.
+  const yDomain = useMemo(() => {
+    if (unit !== 'percent' && unit !== 'bytes') {
+      return undefined
+    }
+    // A memory limit line is hidden by default, so it must not stretch the scale.
+    const limitHidden =
+      unit === 'bytes' && secondaryLabel === 'Limit' && !showMemoryLimit
+    const values = rows
+      .flatMap((row) => [
+        row.primary,
+        limitHidden ? undefined : row.secondary,
+        row.tertiary,
+      ])
+      .filter((v): v is number => v !== undefined)
+    return computeNiceYDomain(values, unit)
+  }, [rows, unit, secondaryLabel, showMemoryLimit])
+
+  // Compute Y ticks with unique labels for percent charts.
+  const yTicks = useMemo(() => {
+    if (unit !== 'percent' || !yDomain) {
+      return undefined
+    }
+    return generateUniqueTicks(yDomain, yDomain[1], 'percent')
+  }, [unit, yDomain])
+
+  // Check if secondary is a limit line that should be shown as reference.
+  const isMemoryChart = unit === 'bytes' && secondaryLabel === 'Limit'
+  const shouldShowLimitLine =
+    isMemoryChart &&
+    showMemoryLimit &&
+    rows.some((r) => r.secondary !== undefined)
+
   return (
     <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
+        <div className="flex-1">
           <h3 className="flex items-center gap-1.5 text-(length:--glinr-type-size-section) leading-(--glinr-type-leading-section) font-(weight:--glinr-type-heading-weight) text-foreground">
             <svg
               className="size-2 shrink-0"
@@ -152,8 +191,21 @@ export function MetricChartCard({
           {subtitle ? (
             <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
           ) : null}
+          {isMemoryChart && rows.some((r) => r.secondary !== undefined) ? (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t('charts.memoryLimit', {
+                defaultValue: 'limit {{limit}}, using {{usage}}',
+                limit: rows
+                  .filter((r) => r.secondary !== undefined)
+                  .slice(-1)
+                  .map((r) => formatMetricValue('bytes', r.secondary ?? 0))
+                  .join(''),
+                usage: current,
+              })}
+            </p>
+          ) : null}
         </div>
-        {current !== null ? (
+        {current !== null && !isMemoryChart ? (
           <span className="font-mono text-sm font-medium text-foreground tabular-nums">
             {current}
           </span>
@@ -201,7 +253,14 @@ export function MetricChartCard({
                   className="text-muted-foreground"
                 />
                 <YAxis
-                  tickFormatter={(v: number) => formatMetricValue(unit, v)}
+                  domain={yDomain}
+                  ticks={yTicks}
+                  tickFormatter={(v: number) => {
+                    if (unit === 'percent' && yDomain) {
+                      return formatPercentWithAdaptivePrecision(v, yDomain[1])
+                    }
+                    return formatMetricValue(unit, v)
+                  }}
                   tick={{ fontSize: 11 }}
                   width={64}
                   stroke="currentColor"
@@ -250,48 +309,63 @@ export function MetricChartCard({
                     connectNulls
                   />
                 ) : null}
-                {series.map((s, i) =>
-                  hidden.has(s.key) ? null : (
+                {series.map((s, i) => {
+                  const isSecondary = s.key === 'secondary'
+                  const isLimitLine = isMemoryChart && isSecondary
+                  const showLine =
+                    !hidden.has(s.key) && (!isLimitLine || shouldShowLimitLine)
+                  return showLine ? (
                     <Line
                       key={s.key}
                       type="monotone"
                       dataKey={s.key}
                       name={s.label}
                       stroke={s.color}
-                      strokeDasharray={i > 1 ? '2 3' : undefined}
+                      strokeDasharray={
+                        i > 1 ? '2 3' : isLimitLine ? '3 3' : undefined
+                      }
                       dot={false}
-                      strokeWidth={1.5}
+                      strokeWidth={isLimitLine ? 1 : 1.5}
                       isAnimationActive={false}
                       connectNulls
                     />
-                  ),
-                )}
+                  ) : null
+                })}
               </LineChart>
             </ResponsiveContainer>
           </div>
-          {series.length > 1 || showPrevious ? (
+          {series.length > 1 || showPrevious || isMemoryChart ? (
             <ul className="mt-2 flex flex-wrap gap-2">
-              {series.map((s) => (
-                <li key={s.key}>
-                  <button
-                    type="button"
-                    aria-pressed={!hidden.has(s.key)}
-                    onClick={() => {
-                      toggle(s.key)
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs text-muted-foreground aria-pressed:text-foreground hover:bg-muted"
-                  >
-                    <svg
-                      className="size-2"
-                      viewBox="0 0 8 8"
-                      aria-hidden="true"
+              {series.map((s) => {
+                const isLimitLine = isMemoryChart && s.key === 'secondary'
+                return (
+                  <li key={s.key}>
+                    <button
+                      type="button"
+                      aria-pressed={
+                        !hidden.has(s.key) && (!isLimitLine || showMemoryLimit)
+                      }
+                      onClick={() => {
+                        if (isLimitLine) {
+                          setShowMemoryLimit(!showMemoryLimit)
+                        } else {
+                          toggle(s.key)
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs text-muted-foreground aria-pressed:text-foreground hover:bg-muted"
                     >
-                      <circle cx="4" cy="4" r="4" fill={s.color} />
-                    </svg>
-                    {s.label}
-                  </button>
-                </li>
-              ))}
+                      <svg
+                        className="size-2"
+                        viewBox="0 0 8 8"
+                        aria-hidden="true"
+                      >
+                        <circle cx="4" cy="4" r="4" fill={s.color} />
+                      </svg>
+                      {s.label}
+                    </button>
+                  </li>
+                )
+              })}
               {showPrevious && previousLabel ? (
                 <li className="inline-flex items-center gap-1.5 px-1.5 py-0.5 text-xs text-muted-foreground">
                   <svg

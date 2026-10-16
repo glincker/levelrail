@@ -18,6 +18,8 @@ levelrail-cli apps logs NAME --follow
 levelrail-cli doctor                 # preflight checks for Docker, disk, ports, and the database
 ```
 
+Many readiness and doctor findings come with a one-click or guided fix: see [Fix-it engine](/fix-it).
+
 Every reconcile pass writes a status condition with a reason, so `apps status` usually names the problem directly. The dashboard shows the same data on the app's Overview page and on the [Status page](/status-page) (`/status`, with a badge in the sidebar). `attention` and the Status page list failing apps, offline nodes, expired or expiring certificates, and doctor warnings or failures, critical first. The CLI exits 1 when any item is critical. A node listed as offline has a connection history: `levelrail-cli nodes events <id>`.
 
 ## Apps and deploys
@@ -246,6 +248,14 @@ The `control_plane_backup` check warns when the newest control plane snapshot is
 ### Control plane disaster recovery warning
 
 The `control_plane_dr` check warns when encrypted off-box backups are off or unhealthy. The message names the problem: no recipient set, last run failed (the error is shown; a rejected credential or a full bucket are the usual causes), run overdue, no escrow bundle, no drill yet, a failed or overdue drill, or the escrow destination being the backup bucket. `levelrail-cli control-plane-backups schedule show` lists every warning. See [Disaster recovery](/disaster-recovery).
+
+### App network pool {#app-network-pool}
+
+Each app gets its own Docker network. Docker's default pools allow about 30, after which a deploy fails with `all predefined address pools have been fully subnetted`. New networks therefore get an explicit /24 from `APP_NETWORK_POOL` (default `10.88.0.0/14`, about 1000 apps), and the `network_pool` check warns above 80% use. A deploy that cannot get a subnet reports `NetworkPoolExhausted` with the pool size and usage.
+
+- List networks and their owners: `levelrail-cli system networks` (`--orphans` for leftovers).
+- Remove networks whose app is gone and that have no containers: `levelrail-cli system networks prune --dry-run`, then `--yes`. The control plane also does this on its own after `APP_NETWORK_GC_GRACE` and never touches networks of another instance or with containers attached.
+- Still full: set `APP_NETWORK_POOL` to a larger free private block (for example `10.64.0.0/12`) and restart. Networks that already exist keep their addresses.
 
 ## "Can't reach the control plane" banner
 

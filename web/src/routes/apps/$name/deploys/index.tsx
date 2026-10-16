@@ -15,6 +15,7 @@ import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOB
 import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
 import { useQuery } from '@tanstack/react-query'
 import { AppSleepCard } from '../../../../components/AppSleepCard'
+import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
 import { CanaryCard } from '../../../../components/CanaryCard'
 import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,6 +76,7 @@ function DeploysSection() {
         }}
       />
       {sleepOn ? <AppSleepCard appName={name} /> : null}
+      <SleepHistoryCard appName={name} />
       <Collapsible>
         <CollapsibleTrigger className="group/deploy-settings flex items-center gap-2 text-sm font-medium text-foreground">
           <CaretRightIcon

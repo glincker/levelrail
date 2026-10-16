@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -66,5 +67,22 @@ func TestRun_StaticSites_NoArgs(t *testing.T) {
 	got := run("levelrail-cli-test", []string{"static-sites"}, &stdout, &stderr, envMap())
 	if got != exitUsage {
 		t.Fatalf("exit = %d, want %d", got, exitUsage)
+	}
+}
+
+func TestRun_StaticSites_Delete(t *testing.T) {
+	var gotMethod, gotPath string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer srv.Close()
+
+	stdout, _ := runCLIExpectOK(t, []string{"static-sites", "delete", "marketing", "--api-url", srv.URL})
+	if gotMethod != http.MethodDelete || gotPath != "/api/v1/static-sites/marketing" {
+		t.Errorf("request = %s %s", gotMethod, gotPath)
+	}
+	if !strings.Contains(stdout, "marketing") {
+		t.Errorf("stdout = %q", stdout)
 	}
 }

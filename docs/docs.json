@@ -87,6 +87,7 @@
             "group": "Add to your setup",
             "pages": [
               "domains-and-ingress",
+              "app-exposure",
               "tutorials/connect-an-app-to-postgres",
               "tutorials/deploy-from-github-actions",
               "environment-and-secrets",
@@ -95,7 +96,8 @@
               "tutorials/debug-an-app-with-logs-and-metrics",
               "multi-node-quickstart",
               "tutorials/self-host-vaultwarden",
-              "troubleshooting"
+              "troubleshooting",
+              "fix-it"
             ],
             "icon": "/assets/icons/plus-circle.svg"
           },
@@ -139,6 +141,7 @@
               "compose-apps",
               "new-app-wizard",
               "importing-apps",
+              "pages",
               "deploy-safety",
               "deploy-failures",
               "scheduled-deploys",
@@ -193,6 +196,11 @@
               "object-storage",
               "network-shares",
               "log-explorer",
+              "tracing",
+              "error-tracking",
+              "loki-api",
+              "log-pipelines",
+              "log-budgets",
               "data-export",
               "control-plane-backup",
               "disaster-recovery",

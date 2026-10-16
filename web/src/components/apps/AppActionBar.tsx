@@ -54,9 +54,11 @@ export function AppActionBar({
         onClick={actions.restart}
       >
         <ArrowClockwiseIcon aria-hidden="true" />
-        {actions.restarting
-          ? t('appActions.restarting', { defaultValue: 'Restarting...' })
-          : t('appActions.restart', { defaultValue: 'Restart' })}
+        <span className="max-md:sr-only">
+          {actions.restarting
+            ? t('appActions.restarting', { defaultValue: 'Restarting...' })
+            : t('appActions.restart', { defaultValue: 'Restart' })}
+        </span>
       </Button>
       <ActionMenu
         trigger={

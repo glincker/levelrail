@@ -881,6 +881,16 @@
       "dockerBody": "The control plane cannot talk to the Docker engine, so nothing can be deployed or reconciled until it comes back.",
       "secrets": "Secrets encryption is not configured",
       "secretsBody": "Environment secrets cannot be stored until a master key is set for this instance."
+    },
+    "width": {
+      "title": "Page width",
+      "description": "How wide page content gets on large screens. Screens under 1024px are not affected. Stored in this browser only.",
+      "comfortable": "Comfortable",
+      "comfortableHint": "Centered column with generous side margins",
+      "wide": "Wide",
+      "wideHint": "Fuller use of big screens",
+      "full": "Full width",
+      "fullHint": "Edge to edge"
     }
   },
   "emailPage": {

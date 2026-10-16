@@ -153,7 +153,7 @@ func TestSelfUpgradeAttemptsImportsJournal(t *testing.T) {
 	if len(out.Attempts) != 1 || out.Attempts[0].Outcome != selfupgrade.OutcomeRolledBack || len(out.Attempts[0].Steps) != 1 {
 		t.Fatalf("attempts = %+v", out.Attempts)
 	}
-	if left, _ := j.List(); len(left) != 0 {
-		t.Fatalf("finished journal file not removed: %d left", len(left))
+	if left, _ := j.List(); len(left) != 1 {
+		t.Fatalf("recent finished journal file should stay for the live log: %d", len(left))
 	}
 }

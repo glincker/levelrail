@@ -56,6 +56,9 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
   const { t } = useTranslation('common')
   const { data: score, isLoading, error, refetch } = useAppHealthScore(appName)
   const notFound = error instanceof ApiError && error.status === 404
+  const actionable = (score?.categories ?? []).filter(
+    (c) => c.status !== 'pass',
+  )
 
   return (
     <Card>
@@ -106,35 +109,45 @@ export function AppHealthScorePanel({ appName }: { appName: string }) {
             )}
           </div>
         ) : (
-          <ul className="divide-y divide-border">
-            {score?.categories.map((category) => {
-              const Icon = STATUS_ICON[category.status]
-              return (
-                <li
-                  key={category.key}
-                  className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0"
-                >
-                  <Icon
-                    className={`mt-0.5 size-4 shrink-0 ${STATUS_ICON_CLASS[category.status]}`}
-                    aria-hidden="true"
-                  />
-                  <div className="flex-1 space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-foreground">
-                        {category.label}
-                      </span>
-                      <Badge variant={STATUS_BADGE_VARIANT[category.status]}>
-                        {t(STATUS_LABEL_KEY[category.status])}
-                      </Badge>
+          <>
+            <p className="mb-2 text-sm text-muted-foreground">
+              {actionable.length === 0
+                ? t('healthScore.allClear')
+                : t('healthScore.summary', {
+                    pass: (score?.categories.length ?? 0) - actionable.length,
+                    total: score?.categories.length ?? 0,
+                  })}
+            </p>
+            <ul className="divide-y divide-border">
+              {actionable.map((category) => {
+                const Icon = STATUS_ICON[category.status]
+                return (
+                  <li
+                    key={category.key}
+                    className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0"
+                  >
+                    <Icon
+                      className={`mt-0.5 size-4 shrink-0 ${STATUS_ICON_CLASS[category.status]}`}
+                      aria-hidden="true"
+                    />
+                    <div className="flex-1 space-y-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">
+                          {category.label}
+                        </span>
+                        <Badge variant={STATUS_BADGE_VARIANT[category.status]}>
+                          {t(STATUS_LABEL_KEY[category.status])}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {category.reason}
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {category.reason}
-                    </p>
-                  </div>
-                </li>
-              )
-            })}
-          </ul>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </CardContent>
     </Card>

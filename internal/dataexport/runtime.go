@@ -107,7 +107,9 @@ type sender struct {
 	logs    func(context.Context, []LogRecord) error
 	audit   auditSender
 	metrics func(context.Context, []byte) error
-	close   func()
+	// encodeMetrics defaults to OTLP JSON when nil.
+	encodeMetrics func([]Series, time.Time) ([]byte, error)
+	close         func()
 }
 
 func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender, error) {
@@ -125,6 +127,9 @@ func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender,
 	case store.ExportKindLogsOTLP:
 		o := &otlpLogSender{url: OTLPLogsURL(d.Endpoint), client: s.client, headers: blob.Headers, static: d.Options.Labels, scope: s.prefix[:len(s.prefix)-1]}
 		return sender{logs: o.send}, nil
+	case store.ExportKindLogsNewRelic, store.ExportKindLogsDatadog, store.ExportKindLogsAxiom, store.ExportKindLogsBetterStack:
+		v := newVendorLogSender(d, s.client, blob.Headers, s.prefix[:len(s.prefix)-1])
+		return sender{logs: v.send}, nil
 	case store.ExportKindLogsSyslog:
 		sl, err := newSyslogSender(d.Endpoint, s.prefix[:len(s.prefix)-1])
 		if err != nil {
@@ -147,6 +152,16 @@ func (s *Service) build(ctx context.Context, d store.ExportDestination) (sender,
 		return sender{metrics: func(ctx context.Context, body []byte) error {
 			return postBody(ctx, s.client, url, "application/json", blob.Headers, body, "otlp metrics")
 		}}, nil
+	case store.ExportKindMetricsRemoteWrite:
+		url := RemoteWriteURL(d.Endpoint)
+		return sender{
+			metrics: func(ctx context.Context, body []byte) error {
+				return postRemoteWrite(ctx, s.client, url, blob.Headers, body)
+			},
+			encodeMetrics: func(series []Series, now time.Time) ([]byte, error) {
+				return EncodeRemoteWrite(series, now), nil
+			},
+		}, nil
 	}
 	return sender{}, fmt.Errorf("unknown destination kind %q", d.Kind)
 }
@@ -179,7 +194,7 @@ func (s *Service) startWorker(parent context.Context, d store.ExportDestination)
 	case snd.audit != nil:
 		spawn(func() { s.runAudit(ctx, d, snd.audit, dv) })
 	case snd.metrics != nil:
-		spawn(func() { s.runMetricsPush(ctx, d, snd.metrics, dv) })
+		spawn(func() { s.runMetricsPush(ctx, d, snd.metrics, snd.encodeMetrics, dv) })
 	}
 	spawn(func() { s.persistLoop(ctx, d.ID, dv) })
 	go func() {
@@ -192,9 +207,29 @@ func (s *Service) startWorker(parent context.Context, d store.ExportDestination)
 	return w, nil
 }
 
+// spoolFlushEvery is how often buffered spool lines reach the file.
+const spoolFlushEvery = 250 * time.Millisecond
+
 func (s *Service) startLogs(ctx context.Context, d store.ExportDestination, snd sender, dv *deliverer, spawn func(func())) {
 	q := newQueue[LogRecord](s.d.Config.QueueLines)
 	dv.st.depth = q.len
+	var sp *spool
+	if s.d.SpoolDir != "" {
+		var pending []LogRecord
+		var err error
+		if sp, pending, err = openSpool(s.d.SpoolDir, d.ID); err != nil {
+			s.d.Logger.Warn("dataexport: disk spool unavailable, using memory only",
+				slog.String("destination_id", d.ID), slog.String("error", err.Error()))
+			sp = nil
+		} else {
+			for _, r := range pending {
+				if n := q.push(r); n > 0 {
+					dv.st.dropped.Add(int64(n))
+					sp.ack(n)
+				}
+			}
+		}
+	}
 	apps := map[string]struct{}{}
 	for _, a := range d.Apps {
 		apps[a] = struct{}{}
@@ -212,14 +247,36 @@ func (s *Service) startLogs(ctx context.Context, d store.ExportDestination, snd 
 				}
 				r := NewLogRecord(e)
 				if r.matches(apps, d.MinLevel) {
+					if sp != nil {
+						sp.append(r)
+					}
 					if n := q.push(r); n > 0 {
 						dv.st.dropped.Add(int64(n))
+						if sp != nil {
+							sp.ack(n)
+						}
 					}
 				}
 			}
 		}
 	})
 	b := &batcher[LogRecord]{q: q, d: dv, send: snd.logs, size: LogRecord.size}
+	if sp != nil {
+		b.done = sp.ack
+		spawn(func() {
+			defer sp.close()
+			t := time.NewTicker(spoolFlushEvery)
+			defer t.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					sp.flush()
+				}
+			}
+		})
+	}
 	spawn(func() { b.run(ctx) })
 }
 
@@ -266,7 +323,11 @@ func (s *Service) runAudit(ctx context.Context, d store.ExportDestination, snd a
 	}
 }
 
-func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination, post func(context.Context, []byte) error, dv *deliverer) {
+func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination, post func(context.Context, []byte) error, encode func([]Series, time.Time) ([]byte, error), dv *deliverer) {
+	if encode == nil {
+		name := s.prefix[:len(s.prefix)-1]
+		encode = func(series []Series, now time.Time) ([]byte, error) { return EncodeOTLP(series, name, now) }
+	}
 	interval := s.d.Config.MetricsInterval
 	if d.Options.IntervalSeconds > 0 {
 		interval = time.Duration(d.Options.IntervalSeconds) * time.Second
@@ -297,7 +358,7 @@ func (s *Service) runMetricsPush(ctx context.Context, d store.ExportDestination,
 		if len(series) == 0 {
 			continue
 		}
-		body, err := EncodeOTLP(series, s.prefix[:len(s.prefix)-1], s.d.Now())
+		body, err := encode(series, s.d.Now())
 		if err != nil {
 			continue
 		}
@@ -405,7 +466,13 @@ func (s *Service) Test(ctx context.Context, id string) error {
 		if len(series) == 0 {
 			series = []Series{{Name: s.prefix + "export_test", Help: "Export destination test.", Value: 1, Time: now}}
 		}
-		body, err := EncodeOTLP(series, s.prefix[:len(s.prefix)-1], now)
+		var body []byte
+		var err error
+		if snd.encodeMetrics != nil {
+			body, err = snd.encodeMetrics(series, now)
+		} else {
+			body, err = EncodeOTLP(series, s.prefix[:len(s.prefix)-1], now)
+		}
 		if err != nil {
 			return err
 		}

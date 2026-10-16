@@ -9,6 +9,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-git/go-git/v5"
@@ -36,6 +39,103 @@ var ErrRepoTooLarge = errors.New("build: detect: repository is too large to insp
 // ErrRepoURLSchemeNotAllowed is returned by ValidatePublicRepoURL for a
 // repoURL whose scheme is not http/https.
 var ErrRepoURLSchemeNotAllowed = errors.New("repo_url must use http or https")
+
+// detectNodePort inspects dir's package.json scripts to find a port flag
+// in scripts.start, or scripts.preview, or scripts.serve (in that priority,
+// using the first that exists). Returns port and source description, or
+// (0, "") if detection fails or finds no explicit port flag.
+func detectNodePort(dir string) (int, string) {
+	raw, err := os.ReadFile(filepath.Join(dir, "package.json")) //nolint:gosec // dir is this call's own freshly cloned temp checkout, not user input
+	if err != nil {
+		return 0, ""
+	}
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(raw, &pkg); err != nil {
+		return 0, ""
+	}
+
+	for _, key := range []string{"start", "preview", "serve"} {
+		script, ok := pkg.Scripts[key]
+		if !ok || script == "" {
+			continue
+		}
+
+		port := extractPort(script)
+		if port > 0 {
+			return port, fmt.Sprintf("from scripts.%s flag", key)
+		}
+
+		framework := detectFramework(script)
+		if defaultPort := frameworkPort(framework); defaultPort > 0 {
+			return defaultPort, fmt.Sprintf("from %s default", framework)
+		}
+	}
+	return 0, ""
+}
+
+// extractPort finds a port number in a command string, looking for patterns
+// like --port N, --port=N, -p N, PORT=N, or -l tcp://0.0.0.0:N. Returns
+// 0 if none found or parsing fails.
+func extractPort(script string) int {
+	// --port=N or --port N
+	for _, re := range []*regexp.Regexp{
+		regexp.MustCompile(`--port=(\d+)`),
+		regexp.MustCompile(`--port\s+(\d+)`),
+		regexp.MustCompile(`-p\s*(\d+)`),
+		regexp.MustCompile(`PORT:-(\d+)`),
+		regexp.MustCompile(`PORT=(\d+)`),
+		regexp.MustCompile(`-l\s+tcp://[\d.]+:(\d+)`),
+	} {
+		if matches := re.FindStringSubmatch(script); len(matches) > 1 {
+			if port, err := strconv.Atoi(matches[1]); err == nil && port > 0 && port <= 65535 {
+				return port
+			}
+		}
+	}
+	return 0
+}
+
+// detectFramework identifies a framework from a script string, checking
+// longer patterns first to avoid substring collisions (e.g., http-server
+// contains serve).
+func detectFramework(script string) string {
+	for _, pattern := range []string{
+		"http-server",
+		"vite preview", "vite dev",
+		"astro preview", "astro dev",
+		"nuxt preview", "nuxt dev",
+		"remix-serve",
+		"next start", "next dev",
+		"sveltekit",
+		"serve",
+	} {
+		if strings.Contains(script, pattern) {
+			return pattern
+		}
+	}
+	return ""
+}
+
+// frameworkPort returns the default port for a known framework command.
+func frameworkPort(framework string) int {
+	ports := map[string]int{
+		"vite preview":  4173,
+		"vite dev":      5173,
+		"next dev":      3000,
+		"next start":    3000,
+		"nuxt dev":      3000,
+		"nuxt preview":  3000,
+		"astro preview": 4321,
+		"astro dev":     4321,
+		"remix-serve":   3000,
+		"sveltekit":     3000,
+		"serve":         3000,
+		"http-server":   8080,
+	}
+	return ports[framework]
+}
 
 // ValidatePublicRepoURL rejects any scheme other than http/https, the
 // same restriction internal/api/git_branches.go always enforced for a
@@ -79,6 +179,13 @@ type DetectResult struct {
 	// either way, the caller's own contract is "fall back to manual build
 	// type selection" for an empty FrameworkName, not an error.
 	FrameworkName string
+	// Port is the detected container port the app listens on, or 0 if
+	// detection failed or no port flag was found. For Node, parsed from
+	// scripts.start (or preview/serve); for Dockerfile, from EXPOSE.
+	Port int
+	// PortSource describes where Port came from (e.g. "from scripts.start
+	// --port 4173"), empty if Port is 0.
+	PortSource string
 }
 
 // Detect shallow-clones req.RepoURL at req.Ref into a temporary
@@ -159,12 +266,25 @@ func detectUnchecked(ctx context.Context, req DetectRequest) (*DetectResult, err
 
 	provider := result.DetectedProviders[0]
 	frameworkName, _ := FrameworkLabel(provider)
+	port, portSource := 0, ""
 	if provider == "node" {
 		if label := nextJSLabel(dir); label != "" {
 			frameworkName = label
 		}
+		port, portSource = detectNodePort(dir)
 	}
-	return &DetectResult{Provider: provider, FrameworkName: frameworkName}, nil
+	switch provider {
+	case "ruby":
+		port, portSource = detectRubyPort(dir)
+	case "php":
+		port, portSource = detectPHPPort(dir)
+	}
+	return &DetectResult{
+		Provider:      provider,
+		FrameworkName: frameworkName,
+		Port:          port,
+		PortSource:    portSource,
+	}, nil
 }
 
 // nextJSLabel reports "Next.js" when dir's package.json declares "next" as

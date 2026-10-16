@@ -31,7 +31,10 @@
       "pass": "Ready",
       "warn": "Review",
       "fail": "Needs attention"
-    }
+    },
+    "summary": "{{pass}} of {{total}} checks pass",
+    "allClear": "All checks pass. Nothing needs your attention.",
+    "needsAction": "Needs action"
   },
   "logs": {
     "previousContainerEnded": "Previous container instance ended"
@@ -71,6 +74,7 @@
     "errorBody": "The app list could not be loaded. {{message}}",
     "retry": "Retry"
   },
+  "appSectionHelp": "Read the guide for this page",
   "appActions": {
     "deploy": "Deploy",
     "restart": "Restart",
@@ -206,7 +210,12 @@
     "quickNav": {
       "label": "Quick navigation (hold L)"
     },
-    "newApp": "New app"
+    "newApp": "New app",
+    "pageWidth": {
+      "comfortable": "Comfortable width",
+      "wide": "Wide",
+      "full": "Full width"
+    }
   },
   "cliConsole": {
     "title": "Console",
@@ -506,5 +515,11 @@
         "body": "Use the request id and the number shown on the new browser's approval screen."
       }
     }
+  },
+  "pages": {
+    "title": "Pages",
+    "count_one": "{{count}} page",
+    "count_other": "{{count}} pages",
+    "noDomain": "no domain"
   }
 }

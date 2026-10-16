@@ -3294,7 +3294,7 @@ func TestController_Reconcile_Rolling_StaysRunningAfterReadinessTimeout_ReProbed
 	if err == nil {
 		t.Fatal("second Reconcile() error = nil, want the replacement's still-failing readiness surfaced")
 	}
-	assertConditionReasonFalse(t, result, "RunningNotReady")
+	assertConditionReasonFalse(t, result, "ReadinessFailed")
 	if _, ok := rt.containers[old]; !ok {
 		t.Error("old replica was removed on the second pass, want it still serving: its replacement has never passed a readiness probe")
 	}
@@ -3346,7 +3346,7 @@ func TestController_Reconcile_RunningButNeverReady_ReProbedEveryPass(t *testing.
 			if got := backend.callsFor("/ready"); got <= afterDeployPass {
 				t.Errorf("readiness requests after the second pass = %d, want more than the %d from the first: a replica that never became ready must be re-probed, not trusted because Docker reports it Running", got, afterDeployPass)
 			}
-			assertConditionReasonFalse(t, result, "RunningNotReady")
+			assertConditionReasonFalse(t, result, "ReadinessFailed")
 			if _, ok := rt.containers[old]; !ok {
 				t.Error("old container was removed, want it still serving until its replacement actually passes a probe")
 			}

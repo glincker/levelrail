@@ -24,6 +24,9 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
+import { BrandIcon } from '../BrandIcon'
+import { VendorFields } from './VendorFields'
+import { KIND_MARKS } from '../../lib/dataExportKinds'
 import { useCreateDataExportDestination } from '../../queries/dataExport'
 import { useStorageDestinationsOptional } from '../../queries/storage'
 import type {
@@ -32,6 +35,10 @@ import type {
 } from '../../types/dataExport'
 
 const KINDS: DataExportKind[] = [
+  'logs_newrelic',
+  'logs_datadog',
+  'logs_axiom',
+  'logs_betterstack',
   'logs_loki',
   'logs_otlp',
   'logs_http',
@@ -39,6 +46,7 @@ const KINDS: DataExportKind[] = [
   'audit_webhook',
   'audit_s3',
   'metrics_otlp',
+  'metrics_remote_write',
 ]
 
 const KIND_KEYS = {
@@ -46,9 +54,14 @@ const KIND_KEYS = {
   logs_loki: 'kinds.logs_loki',
   logs_otlp: 'kinds.logs_otlp',
   logs_syslog: 'kinds.logs_syslog',
+  logs_newrelic: 'kinds.logs_newrelic',
+  logs_datadog: 'kinds.logs_datadog',
+  logs_axiom: 'kinds.logs_axiom',
+  logs_betterstack: 'kinds.logs_betterstack',
   audit_webhook: 'kinds.audit_webhook',
   audit_s3: 'kinds.audit_s3',
   metrics_otlp: 'kinds.metrics_otlp',
+  metrics_remote_write: 'kinds.metrics_remote_write',
 } as const satisfies Record<DataExportKind, string>
 
 const LEVELS = ['any', 'debug', 'info', 'warn', 'error'] as const
@@ -62,7 +75,13 @@ const LEVEL_KEYS = {
 } as const
 
 const isLogKind = (k: DataExportKind) => k.startsWith('logs_')
-const hasAppFilter = (k: DataExportKind) => isLogKind(k) || k === 'metrics_otlp'
+const isVendorKind = (k: DataExportKind) =>
+  k === 'logs_newrelic' ||
+  k === 'logs_datadog' ||
+  k === 'logs_axiom' ||
+  k === 'logs_betterstack'
+const isMetricsKind = (k: DataExportKind) => k.startsWith('metrics_')
+const hasAppFilter = (k: DataExportKind) => isLogKind(k) || isMetricsKind(k)
 
 function parseHeaders(raw: string): Record<string, string> {
   const out: Record<string, string> = {}
@@ -92,6 +111,11 @@ export function CreateDataExportDestinationDialog() {
   const [prefix, setPrefix] = useState('')
   const [interval, setInterval] = useState('')
   const [backfill, setBackfill] = useState(false)
+  const [apiKey, setApiKey] = useState('')
+  const [region, setRegion] = useState('us')
+  const [site, setSite] = useState('')
+  const [dataset, setDataset] = useState('')
+  const [username, setUsername] = useState('')
 
   function reset() {
     setName('')
@@ -104,6 +128,11 @@ export function CreateDataExportDestinationDialog() {
     setPrefix('')
     setInterval('')
     setBackfill(false)
+    setApiKey('')
+    setUsername('')
+    setRegion('us')
+    setSite('')
+    setDataset('')
     create.reset()
   }
 
@@ -114,7 +143,14 @@ export function CreateDataExportDestinationDialog() {
       kind,
       enabled: true,
     }
-    if (kind !== 'audit_s3') req.endpoint = endpoint.trim()
+    if (kind !== 'audit_s3' && endpoint.trim() !== '') {
+      req.endpoint = endpoint.trim()
+    }
+    if (
+      isVendorKind(kind) ||
+      (kind === 'metrics_remote_write' && apiKey.trim())
+    )
+      req.api_key = apiKey.trim()
     if (hasAppFilter(kind)) {
       const list = apps
         .split(',')
@@ -134,12 +170,20 @@ export function CreateDataExportDestinationDialog() {
       options.storage_target_id = target
       if (prefix.trim()) options.prefix = prefix.trim()
     }
-    if (kind === 'metrics_otlp' && interval) {
+    if (kind === 'metrics_remote_write' && username.trim()) {
+      options.username = username.trim()
+    }
+    if (isMetricsKind(kind) && interval) {
       options.interval_seconds = Number(interval)
     }
     if ((kind === 'audit_s3' || kind === 'audit_webhook') && backfill) {
       options.backfill = true
     }
+    if (kind === 'logs_newrelic' || kind === 'logs_axiom') {
+      options.region = region
+    }
+    if (kind === 'logs_datadog' && site.trim()) options.site = site.trim()
+    if (kind === 'logs_axiom') options.dataset = dataset.trim()
     if (Object.keys(options).length > 0) req.options = options
 
     create.mutate(req, {
@@ -159,15 +203,25 @@ export function CreateDataExportDestinationDialog() {
     logs_loki: t('form.endpointLoki'),
     logs_otlp: t('form.endpointOtlp'),
     logs_syslog: t('form.endpointSyslog'),
+    logs_newrelic: t('form.endpointOverride'),
+    logs_datadog: t('form.endpointOverride'),
+    logs_axiom: t('form.endpointOverride'),
+    logs_betterstack: t('form.endpointOverride'),
     audit_webhook: t('form.endpointHttp'),
     audit_s3: '',
     metrics_otlp: t('form.endpointOtlp'),
+    metrics_remote_write: t('form.endpointRemoteWrite'),
   }[kind]
 
   const targets = storage.data ?? []
   const canSubmit =
     name.trim() !== '' &&
-    (kind === 'audit_s3' ? target !== '' : endpoint !== '')
+    (kind === 'audit_s3'
+      ? target !== ''
+      : isVendorKind(kind)
+        ? apiKey.trim() !== '' &&
+          (kind !== 'logs_axiom' || dataset.trim() !== '')
+        : endpoint !== '')
 
   return (
     <Dialog
@@ -212,7 +266,14 @@ export function CreateDataExportDestinationDialog() {
               <SelectContent>
                 {KINDS.map((k) => (
                   <SelectItem key={k} value={k}>
-                    {t(KIND_KEYS[k])}
+                    <span className="flex items-center gap-2">
+                      {KIND_MARKS[k] ? (
+                        <BrandIcon name={KIND_MARKS[k]} className="size-4" />
+                      ) : (
+                        <span className="size-4" aria-hidden="true" />
+                      )}
+                      {t(KIND_KEYS[k])}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -279,6 +340,19 @@ export function CreateDataExportDestinationDialog() {
               />
             </Field>
           )}
+
+          {isVendorKind(kind) ? (
+            <VendorFields
+              kind={kind}
+              values={{ apiKey, region, site, dataset }}
+              onChange={(next) => {
+                if (next.apiKey !== undefined) setApiKey(next.apiKey)
+                if (next.region !== undefined) setRegion(next.region)
+                if (next.site !== undefined) setSite(next.site)
+                if (next.dataset !== undefined) setDataset(next.dataset)
+              }}
+            />
+          ) : null}
 
           {hasAppFilter(kind) ? (
             <Field>
@@ -357,7 +431,42 @@ export function CreateDataExportDestinationDialog() {
             </Field>
           ) : null}
 
-          {kind === 'metrics_otlp' ? (
+          {kind === 'metrics_remote_write' ? (
+            <>
+              <Field>
+                <FieldLabel htmlFor="export-rw-user">
+                  {t('form.username')}
+                </FieldLabel>
+                <Input
+                  id="export-rw-user"
+                  autoComplete="off"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                  }}
+                />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="export-rw-key">
+                  {t('form.remoteWriteKey')}
+                </FieldLabel>
+                <Input
+                  id="export-rw-key"
+                  type="password"
+                  autoComplete="off"
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value)
+                  }}
+                />
+                <FieldDescription>
+                  {t('form.remoteWriteKeyHint')}
+                </FieldDescription>
+              </Field>
+            </>
+          ) : null}
+
+          {isMetricsKind(kind) ? (
             <Field>
               <FieldLabel htmlFor="export-interval">
                 {t('form.interval')}

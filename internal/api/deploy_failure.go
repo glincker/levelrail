@@ -131,6 +131,8 @@ func (rt *Router) handleGetDeploy(w http.ResponseWriter, r *http.Request) {
 	res := toDeployAttemptResource(a)
 	rt.applyWait(ctx, &res, a, attempts)
 	res.Outcome = computeDeployOutcome(a, idx == 0, conds)
+	res.Phase = res.Status
+	res.Status = presentedDeployStatus(a.Status, res.Outcome)
 	if f, ok := rt.classifyAttempt(ctx, a, conds, idx == 0); ok {
 		res.Failure = f
 	}

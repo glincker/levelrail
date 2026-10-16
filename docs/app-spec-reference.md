@@ -104,6 +104,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | --- | --- | --- | --- | --- |
 | `type` | string | yes | none | One of `dockerfile`, `compose`, `railpack`, `static`, `image`. |
 | `path` | string | conditional | none | Required when `type` is `compose`. Optional for `dockerfile`, `railpack` and `static` (for example, a non-default Dockerfile path). Rejected for `image`. |
+| (static deploys) | | | | A `static` deploy has no container, so it skips the readiness gate: it fetches the source, copies it to the embedded file server, records a content digest (which makes `rollback-to` work), logs the fetch and publish steps in the build log, and settles as soon as the site is published. |
 | `baseDirectory` | string | no | repo root | Subdirectory used as the build context, for a monorepo (`apps/web`). Must be relative and stay inside the repo. Rejected for `image` and `compose` (a compose file's own `context:` already scopes each service). |
 | `image` | string | conditional | none | Full registry reference such as `ghcr.io/org/app:v1.2.3`. Required when `type` is `image`, rejected otherwise. Nothing is built; the image is deployed as is. |
 | `registryCredential` | string | no | none | Name of a registry credential saved in Levelrail, used to pull `image` from a private registry. Empty means an unauthenticated pull. |

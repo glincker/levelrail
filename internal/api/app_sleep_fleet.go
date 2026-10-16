@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -18,6 +19,8 @@ type sleepFleetApp struct {
 	Sleeping    bool   `json:"sleeping"`
 	// MemoryLimitBytes is the app's configured limit, 0 when it has none.
 	MemoryLimitBytes int64 `json:"memory_limit_bytes"`
+	// Since is when it went to sleep, present only while asleep.
+	Since *time.Time `json:"since,omitempty"`
 }
 
 type sleepFleetResource struct {
@@ -66,6 +69,8 @@ func buildSleepFleet(rows []store.AppSleep, svcs []store.DesiredService, canRead
 		item := sleepFleetApp{Name: a.ServiceName, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, MemoryLimitBytes: limits[a.ServiceName]}
 		out.Enabled++
 		if a.Sleeping {
+			since := a.Since
+			item.Since = &since
 			out.Sleeping++
 			out.ReclaimedBytes += item.MemoryLimitBytes
 		}
@@ -82,15 +87,21 @@ func buildSleepFleet(rows []store.AppSleep, svcs []store.DesiredService, canRead
 
 // appListSleep is the sleep state the apps list carries per row.
 type appListSleep struct {
-	IdleMinutes int  `json:"idle_minutes"`
-	Sleeping    bool `json:"sleeping"`
+	IdleMinutes int        `json:"idle_minutes"`
+	Sleeping    bool       `json:"sleeping"`
+	Since       *time.Time `json:"since,omitempty"`
 }
 
 func sleepByApp(rows []store.AppSleep) map[string]appListSleep {
 	m := make(map[string]appListSleep, len(rows))
 	for _, a := range rows {
 		if a.IdleMinutes > 0 {
-			m[a.ServiceName] = appListSleep{IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping}
+			item := appListSleep{IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping}
+			if a.Sleeping {
+				since := a.Since
+				item.Since = &since
+			}
+			m[a.ServiceName] = item
 		}
 	}
 	return m

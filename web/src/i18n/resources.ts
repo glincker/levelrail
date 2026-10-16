@@ -5,13 +5,18 @@ import type dashboard from '../locales/en/dashboard.json'
 import type auditLog from '../locales/en/auditLog.json'
 import type streams from '../locales/en/streams.json'
 import type networkProxy from '../locales/en/networkProxy.json'
+import type fixit from '../locales/en/fixit.json'
 import type network from '../locales/en/network.json'
 import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
 import type nodes from '../locales/en/nodes.json'
 import type access from '../locales/en/access.json'
+import type logPipeline from '../locales/en/logPipeline.json'
+import type logBudgets from '../locales/en/logBudgets.json'
 import type environments from '../locales/en/environments.json'
 import type exposure from '../locales/en/exposure.json'
+import type appExposure from '../locales/en/appExposure.json'
+import type appAccess from '../locales/en/appAccess.json'
 import type migration from '../locales/en/migration.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
@@ -31,6 +36,7 @@ import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
+import type sleepHistory from '../locales/en/sleepHistory.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type teams from '../locales/en/teams.json'
 import type compose from '../locales/en/compose.json'
@@ -45,10 +51,14 @@ import type jobs from '../locales/en/jobs.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type help from '../locales/en/help.json'
+import type traces from '../locales/en/traces.json'
+import type errors from '../locales/en/errors.json'
+import type edgeAccess from '../locales/en/edgeAccess.json'
 import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
+import type deployDetail from '../locales/en/deployDetail.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type secretRotation from '../locales/en/secretRotation.json'
 import type templates from '../locales/en/templates.json'
@@ -70,13 +80,18 @@ declare module 'i18next' {
       auditLog: typeof auditLog
       streams: typeof streams
       networkProxy: typeof networkProxy
+      fixit: typeof fixit
       network: typeof network
       databases: typeof databases
       https: typeof https
       nodes: typeof nodes
       access: typeof access
+      logPipeline: typeof logPipeline
+      logBudgets: typeof logBudgets
       environments: typeof environments
       exposure: typeof exposure
+      appExposure: typeof appExposure
+      appAccess: typeof appAccess
       migration: typeof migration
       domains: typeof domains
       attention: typeof attention
@@ -95,6 +110,7 @@ declare module 'i18next' {
       observability: typeof observability
       previews: typeof previews
       backups: typeof backups
+      sleepHistory: typeof sleepHistory
       gitBuild: typeof gitBuild
       teams: typeof teams
       compose: typeof compose
@@ -107,6 +123,9 @@ declare module 'i18next' {
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       help: typeof help
+      traces: typeof traces
+      errors: typeof errors
+      edgeAccess: typeof edgeAccess
       betaFeatures: typeof betaFeatures
       newApp: typeof newApp
       getStarted: typeof getStarted
@@ -122,6 +141,7 @@ declare module 'i18next' {
       sso: typeof sso
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies
+      deployDetail: typeof deployDetail
     }
   }
 }

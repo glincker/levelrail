@@ -13,7 +13,7 @@ type StackGuess struct {
 // GuessStack inspects manifest files through read, in a fixed order, to pick a stack.
 func GuessStack(read func(string) (string, bool, error)) (StackGuess, bool) {
 	g, ok := guessFramework(read)
-	return StackGuess(g), ok
+	return StackGuess{Name: g.Name, Method: g.Method, Port: g.Port, Health: g.Health, Start: g.Start, Why: g.Why}, ok
 }
 
 // ParseDockerfile extracts the EXPOSE ports and ENV entries of a Dockerfile.

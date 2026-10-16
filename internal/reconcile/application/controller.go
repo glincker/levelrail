@@ -567,6 +567,11 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	// would fail with a registry "pull access denied" that reads as a
 	// broken deploy rather than one that has not happened yet.
 	if appspec.IsPendingImage(desired.Image) {
+		if published, err := c.staticSitePublished(ctx); err != nil {
+			return notReady("StoreError", err), fmt.Errorf("application/%s: get static site: %w", c.serviceName, err)
+		} else if published {
+			return ready(ReasonStaticSitePublished), nil
+		}
 		return unknownResult("AwaitingFirstBuild"), nil
 	}
 
@@ -909,6 +914,14 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		state = nil
 	}
 
+	meshIP, _ := c.meshBindIP(ctx, desired)
+	if publishedPortDrifted(state, desired, meshIP) {
+		if err := c.runtime.Remove(ctx, state.ID, true); err != nil {
+			return replicaOutcome{reason: reasonPortDriftRecreate}, fmt.Errorf("remove %q to republish its changed port or bind address: %w", target, err)
+		}
+		state = nil
+	}
+
 	var released []docker.ContainerState
 	justDeployed := false
 	// created is narrower than justDeployed: true only when this pass
@@ -949,7 +962,11 @@ func (c *Controller) ensureReplicaRunning(ctx context.Context, target string, in
 		// permanently stuck retrying Start against a network that no
 		// longer exists.
 		if err := c.ensureAppNetwork(ctx, desired); err != nil {
-			return replicaOutcome{reason: "EnsureNetworkFailed"}, fmt.Errorf("restart %q: %w", target, err)
+			reason := "EnsureNetworkFailed"
+			if r := createFailureReason(err); r == reasonNetworkPoolExhausted {
+				reason = r
+			}
+			return replicaOutcome{reason: reason}, fmt.Errorf("restart %q: %w", target, err)
 		}
 		if err := c.runtime.Start(ctx, state.ID); err != nil {
 			// EnsureNetwork just succeeded, so a Start failure here means

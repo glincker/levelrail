@@ -563,6 +563,10 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "an app with this name already exists")
 		return
 	}
+	if eerr := rt.hostPortConflict(r.Context(), req.Name, req.NodeID, req.HostPort, nil); eerr != nil {
+		writeError(w, eerr.status, eerr.msg)
+		return
+	}
 	if !errors.Is(err, store.ErrServiceNotFound) {
 		rt.logger.Error("api: create app: check existing failed", slog.String("error", err.Error()), slog.String("name", req.Name))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -730,8 +734,13 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resource.Tags = tagNames
+	pendingImage := ""
+	if serving, ok := rt.lastServingImage(r.Context(), *svc); ok {
+		pendingImage, resource.Image = resource.Image, serving
+	}
 	writeJSON(w, http.StatusOK, appWithRequests{
 		appResource:              resource,
+		PendingImage:             pendingImage,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
 		FallbackURL:              rt.fallbackURLFor(r.Context(), *svc),
@@ -758,6 +767,9 @@ func (rt *Router) previousReleaseHeldUntil(ctx context.Context, name string) *ti
 type appWithRequests struct {
 	appResource
 	Requests *telemetry.RequestSummary `json:"requests,omitempty"`
+	// PendingImage is the desired image while a rollout to it is in progress
+	// or failed, with Image then the last image confirmed serving.
+	PendingImage string `json:"pending_image,omitempty"`
 	// PreviousReleaseHeldUntil is when the kept previous release, an instant
 	// rollback target, is removed. Omitted when none is held.
 	PreviousReleaseHeldUntil *time.Time `json:"previous_release_held_until,omitempty"`
@@ -850,6 +862,11 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.logger.Error("api: update app: check existing failed", slog.String("error", err.Error()), slog.String("name", name))
 		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	if eerr := rt.hostPortConflict(r.Context(), name, existing.NodeID, req.HostPort, existing); eerr != nil {
+		writeError(w, eerr.status, eerr.msg)
 		return
 	}
 
@@ -1187,6 +1204,9 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 	if err := rt.apps.DeleteDesiredService(ctx, name); err != nil {
 		return nil, fmt.Errorf("delete app %q: %w", name, err)
 	}
+	if err := rt.removeStaticSite(ctx, name); err != nil {
+		rt.logger.Warn("api: delete app: remove static site failed", slog.String("error", err.Error()), slog.String("name", name))
+	}
 	// Nudge before the slow teardown so the ingress route drops right away.
 	rt.nudgeReconciler()
 	if finalizer != nil {
@@ -1220,7 +1240,13 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	if existing.AppID != "" {
-		rt.deleteAppIfOrphaned(ctx, existing.AppID)
+		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
+			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
+			if err := finalizer.RemoveAppNetwork(nctx, existing.AppID, existing.NodeID); err != nil {
+				rt.logger.Warn("api: delete app: remove app network failed, GC will retry", slog.String("error", err.Error()), slog.String("app_id", existing.AppID))
+			}
+			cancel()
+		}
 	}
 	return teardownErr, nil
 }
@@ -1277,16 +1303,18 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 // NetworkCleanupController doesn't yet know to remove) is a lesser,
 // self-healing problem, not one that should make an otherwise-successful
 // delete request fail.
-func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) {
+func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 	remaining, err := rt.appGroups.ListServicesByApp(ctx, appID)
 	if err != nil {
 		rt.logger.Error("api: delete app: check remaining siblings failed", slog.String("error", err.Error()), slog.String("app_id", appID))
-		return
+		return false
 	}
 	if len(remaining) > 0 {
-		return
+		return false
 	}
 	if err := rt.appGroups.DeleteApp(ctx, appID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
 		rt.logger.Error("api: delete app: delete orphaned app row failed", slog.String("error", err.Error()), slog.String("app_id", appID))
+		return false
 	}
+	return true
 }

@@ -268,3 +268,33 @@ func TestPruneFailedWebhookDeliveries_KeepsNewestUnsignedOnly(t *testing.T) {
 		t.Errorf("another service lost rows: %d", len(other))
 	}
 }
+
+func TestWebhookDeliveryIDsAndOutcomeUpdate(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	now := time.Now().UTC()
+	for _, d := range []WebhookDelivery{
+		{ID: "whd_a", ServiceName: "web", SignatureValid: true, StatusCode: 202, DeliveryID: "g-1", AttemptID: "dep_1", ReceivedAt: now},
+		{ID: "whd_b", ServiceName: "web", SignatureValid: false, StatusCode: 401, DeliveryID: "g-bad", ReceivedAt: now},
+		{ID: "whd_c", ServiceName: "web", SignatureValid: true, StatusCode: 200, ReceivedAt: now},
+	} {
+		if err := db.SaveWebhookDelivery(ctx, d); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := db.FindWebhookDeliveryByDeliveryID(ctx, "web", "g-1")
+	if err != nil || got.ID != "whd_a" || got.AttemptID != "dep_1" {
+		t.Fatalf("find = %+v, %v", got, err)
+	}
+	for _, tc := range []struct{ svc, id string }{{"web", "g-bad"}, {"web", ""}, {"web", "nope"}, {"api", "g-1"}} {
+		if _, err := db.FindWebhookDeliveryByDeliveryID(ctx, tc.svc, tc.id); !errors.Is(err, ErrWebhookDeliveryNotFound) {
+			t.Errorf("find(%q, %q) err = %v", tc.svc, tc.id, err)
+		}
+	}
+	if err := db.UpdateWebhookDeliveryOutcomeByAttempt(ctx, "dep_1", "deployed", ""); err != nil {
+		t.Fatal(err)
+	}
+	if d, _ := db.GetWebhookDelivery(ctx, "whd_a"); d.Note != "deployed" {
+		t.Fatalf("note = %q", d.Note)
+	}
+}

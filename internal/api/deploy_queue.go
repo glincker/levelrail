@@ -298,7 +298,7 @@ func (rt *Router) queuedFrozen(ctx context.Context, a store.DeployAttempt) bool 
 // runQueued executes a queued deploy that startQueued already moved to running.
 func (rt *Router) runQueued(a store.DeployAttempt) {
 	ctx := withAdoptedAttempt(context.Background(), a.ID) //nolint:gosec // a queued deploy outlives any request
-	err := rt.replayQueued(ctx, a)
+	err := rt.replayQueuedSafely(ctx, a)
 	status, msg := store.DeployAttemptStatusSucceeded, ""
 	if err != nil {
 		status, msg = store.DeployAttemptStatusFailed, err.Error()
@@ -307,8 +307,20 @@ func (rt *Router) runQueued(a store.DeployAttempt) {
 	if _, ferr := rt.deploySafety.FinishRunningDeployAttempt(ctx, a.ID, status, time.Now(), msg); ferr != nil {
 		rt.logger.Error("api: deploy queue: finish queued deploy failed", slog.String("attempt_id", a.ID), slog.String("error", ferr.Error()))
 	}
+	rt.recordWebhookDeliveryOutcome(ctx, a.ID, status, msg)
 	rt.cancels.Release(a.ID)
 	rt.DrainDeployQueue(ctx)
+}
+
+// replayQueuedSafely turns a panic in a detached deploy into a failed attempt.
+func (rt *Router) replayQueuedSafely(ctx context.Context, a store.DeployAttempt) (err error) {
+	defer func() {
+		if p := recover(); p != nil {
+			rt.logger.Error("api: deploy queue: queued deploy panicked", slog.String("attempt_id", a.ID), slog.Any("panic", p))
+			err = fmt.Errorf("deploy panicked: %v", p)
+		}
+	}()
+	return rt.replayQueued(ctx, a)
 }
 
 func (rt *Router) replayQueued(ctx context.Context, a store.DeployAttempt) error {

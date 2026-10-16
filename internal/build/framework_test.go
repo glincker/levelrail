@@ -12,7 +12,9 @@ func TestFrameworkLabel(t *testing.T) {
 		{provider: "golang", wantLabel: "Go", wantOK: true},
 		{provider: "java", wantLabel: "Java (Spring Boot)", wantOK: true},
 		{provider: "python", wantLabel: "Python (Django)", wantOK: true},
-		{provider: "ruby", wantLabel: "", wantOK: false},
+		{provider: "ruby", wantLabel: "Ruby", wantOK: true},
+		{provider: "php", wantLabel: "PHP", wantOK: true},
+		{provider: "deno", wantLabel: "", wantOK: false},
 		{provider: "", wantLabel: "", wantOK: false},
 	}
 	for _, tt := range tests {

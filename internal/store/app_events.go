@@ -14,13 +14,16 @@ import (
 // App event kinds recorded in app_events. Deploys and rollbacks are not
 // events: the timeline derives them from deploy attempts.
 const (
-	AppEventRestart        = "restart"
-	AppEventEnvChange      = "env_change"
-	AppEventSecretChange   = "secret_change"
-	AppEventConfigChange   = "config_change"
-	AppEventScale          = "scale"
-	AppEventSuspend        = "suspend"
-	AppEventResume         = "resume"
+	AppEventRestart      = "restart"
+	AppEventEnvChange    = "env_change"
+	AppEventSecretChange = "secret_change"
+	AppEventConfigChange = "config_change"
+	AppEventScale        = "scale"
+	AppEventSuspend      = "suspend"
+	AppEventResume       = "resume"
+	// AppEventSlept and AppEventWoke mark sleep-when-idle stopping and starting an app.
+	AppEventSlept          = "slept"
+	AppEventWoke           = "woke"
 	AppEventFreezeOverride = "freeze_override"
 	// AppEventScanGateOverride marks an operator letting a scan-blocked release through.
 	AppEventScanGateOverride = "scan_gate_override"

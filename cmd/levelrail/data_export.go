@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -43,6 +44,7 @@ func setupDataExport(ctx context.Context, logger *slog.Logger, b *brand.Brand, d
 			return len(svcs), err
 		},
 	}
+	deps.SpoolDir = exportSpoolDir(os.LookupEnv)
 	if telemetryDB != nil {
 		deps.Metrics = telemetryDB
 	}
@@ -53,4 +55,21 @@ func setupDataExport(ctx context.Context, logger *slog.Logger, b *brand.Brand, d
 	svc := dataexport.NewService(deps)
 	router.SetDataExport(svc)
 	go svc.Run(ctx)
+}
+
+// exportSpoolDir is where log destinations keep their on-disk backlog:
+// APP_EXPORT_SPOOL_DIR, else a folder under the data directory. Setting
+// APP_EXPORT_SPOOL=false keeps backlogs in memory only.
+func exportSpoolDir(lookup func(string) (string, bool)) string {
+	if v, ok := lookup("APP_EXPORT_SPOOL"); ok && (v == "false" || v == "0") {
+		return ""
+	}
+	if v, ok := lookup("APP_EXPORT_SPOOL_DIR"); ok && v != "" {
+		return v
+	}
+	dir, ok := lookup("APP_DATA_DIR")
+	if !ok || dir == "" {
+		dir = defaultDataDir
+	}
+	return filepath.Join(dir, "export-spool")
 }

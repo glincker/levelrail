@@ -3,6 +3,7 @@ import { useApp } from '../../../queries/apps'
 import { deployAttemptsQueryOptions } from '../../../queries/deployAttempts'
 import { useDeployProgress } from '../../../hooks/useDeployProgress'
 import { FailureContextCard } from '../../../components/FailureContextCard'
+import { SleepHistoryCard } from '../../../components/SleepHistoryCard'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -23,6 +24,7 @@ function OverviewSection() {
     <div className="space-y-6">
       <FailureContextCard appName={name} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
+      <SleepHistoryCard appName={name} hideWhenOff />
     </div>
   )
 }

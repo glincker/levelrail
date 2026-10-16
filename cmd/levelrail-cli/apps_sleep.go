@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"text/tabwriter"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 func runAppsSleep(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
@@ -18,6 +21,8 @@ func runAppsSleep(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitOK
 	case "list":
 		return runAppsSleepList(prog, args[1:], stdout, stderr, lookupEnv)
+	case "history":
+		return runAppsSleepHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	case "enable", "disable", "status", "wake", "now":
 		return runAppsSleepVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -32,7 +37,8 @@ func appsSleepUsage(prog string) string {
   %[1]s apps sleep enable <app-name> [--after 30m] [--hold]   stop the app after it has had no requests for this long
   %[1]s apps sleep disable <app-name>                never sleep (wakes the app first if it is asleep)
   %[1]s apps sleep list                              every app with sleep on, which are asleep, and the memory freed
-  %[1]s apps sleep status <app-name>                 show the setting and whether the app is asleep
+  %[1]s apps sleep status <app-name>                 show the setting, whether it is asleep, last slept and woke, and 7 day asleep time
+  %[1]s apps sleep history <app-name> [--since 7d] [--limit N]   when the app slept and woke, and why
   %[1]s apps sleep now <app-name>                    put the app to sleep now instead of waiting for the idle time
   %[1]s apps sleep wake <app-name>                   start a sleeping app now
 
@@ -84,12 +90,21 @@ func runAppsSleepVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("sleep %s for app %q: %w", verb, appName, err))
 	}
+	var hist *apiclient.SleepHistory
+	if verb == "status" {
+		if h, herr := client.GetSleepHistory(ctx, appName, "", 1); herr == nil {
+			hist = &h
+		}
+	}
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
 		if !result.Enabled {
 			_, _ = fmt.Fprintln(stdout, "sleep: off")
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "sleep:   after %d minutes idle\nasleep:  %t\nhold:    %t\n", result.IdleMinutes, result.Sleeping, result.HoldRequests)
+		if hist != nil {
+			printSleepStatusStats(stdout, hist.Stats)
+		}
 	})
 }
 
@@ -104,18 +119,34 @@ func runAppsSleepList(prog string, args []string, stdout, stderr io.Writer, look
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list sleeping apps: %w", err))
 	}
+	lastWoke := map[string]time.Time{}
+	for _, a := range fleet.Apps {
+		if h, herr := client.GetSleepHistory(context.Background(), a.Name, "30d", 1); herr == nil && h.Stats.LastWokeAt != nil {
+			lastWoke[a.Name] = *h.Stats.LastWokeAt
+		}
+	}
 	return writeScheduledTaskResult(stdout, stderr, of, fleet, func() {
 		if fleet.Enabled == 0 {
 			_, _ = fmt.Fprintln(stdout, "no app sleeps when idle")
 			return
 		}
 		_, _ = fmt.Fprintf(stdout, "%d of %d apps asleep, %d MiB of memory limits not in use\n", fleet.Sleeping, fleet.Enabled, fleet.ReclaimedBytes>>20)
+		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
+		_, _ = fmt.Fprintln(tw, "APP\tSTATE\tAFTER\tSINCE\tLAST WOKE")
 		for _, a := range fleet.Apps {
-			state := "awake"
+			state, since := "awake", "-"
 			if a.Sleeping {
 				state = "asleep"
+				if a.Since != nil {
+					since = humanAgo(*a.Since, time.Now())
+				}
 			}
-			_, _ = fmt.Fprintf(stdout, "%-24s %-7s after %d min\n", a.Name, state, a.IdleMinutes)
+			woke := "-"
+			if t, ok := lastWoke[a.Name]; ok {
+				woke = humanAgo(t, time.Now())
+			}
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%d min\t%s\t%s\n", a.Name, state, a.IdleMinutes, since, woke)
 		}
+		_ = tw.Flush()
 	})
 }

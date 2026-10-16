@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -192,5 +193,53 @@ func TestDeleteFinalizer_MovedAppStillGetsOldNodeTornDown(t *testing.T) {
 	}
 	if len(rt.names()) != 1 {
 		t.Fatal("tombstone on the node the app still lives on must not remove its container")
+	}
+}
+
+type netAdminRuntime struct {
+	*fakeRuntime
+	details []docker.NetworkDetail
+	removed []string
+}
+
+func (n *netAdminRuntime) DescribeNetworks(context.Context, string) ([]docker.NetworkDetail, error) {
+	return n.details, nil
+}
+
+func (n *netAdminRuntime) RemoveNetworkIfEmpty(_ context.Context, name string) (bool, error) {
+	n.removed = append(n.removed, name)
+	return true, nil
+}
+
+func (n *netAdminRuntime) NetworkPoolUsage(context.Context) (docker.PoolUsage, error) {
+	return docker.PoolUsage{}, nil
+}
+
+func TestDeleteFinalizer_RemoveAppNetwork(t *testing.T) {
+	name := NetworkName("lr", "shop")
+	own := map[string]string{appspec.InstanceLabelKey: "inst-1"}
+	tests := []struct {
+		name    string
+		detail  docker.NetworkDetail
+		removed bool
+	}{
+		{"own and empty", docker.NetworkDetail{Name: name, Labels: own}, true},
+		{"still attached", docker.NetworkDetail{Name: name, Labels: own, Attached: 1}, false},
+		{"foreign instance", docker.NetworkDetail{Name: name, Labels: map[string]string{appspec.InstanceLabelKey: "other"}}, false},
+		{"unlabeled", docker.NetworkDetail{Name: name}, false},
+		{"prefix sibling", docker.NetworkDetail{Name: name + "-2", Labels: own}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rt := &netAdminRuntime{fakeRuntime: newFakeRuntime(0), details: []docker.NetworkDetail{tt.detail}}
+			f := NewDeleteFinalizer(newFinalizerStore(t), func(string) (docker.Runtime, error) { return rt, nil }, nil,
+				WithNetworkPrefix("lr"), WithInstanceID("inst-1"))
+			if err := f.RemoveAppNetwork(context.Background(), "shop", ""); err != nil {
+				t.Fatalf("RemoveAppNetwork() error = %v", err)
+			}
+			if got := len(rt.removed) == 1; got != tt.removed {
+				t.Errorf("removed = %v, want removal=%v", rt.removed, tt.removed)
+			}
+		})
 	}
 }

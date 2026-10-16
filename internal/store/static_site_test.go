@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"sort"
 	"testing"
+	"time"
 )
 
 func TestSaveStaticSite_SaveAndList(t *testing.T) {
@@ -24,6 +25,10 @@ func TestSaveStaticSite_SaveAndList(t *testing.T) {
 	if len(sites) != 1 {
 		t.Fatalf("ListStaticSites() = %d sites, want 1", len(sites))
 	}
+	if sites[0].UpdatedAt.IsZero() {
+		t.Error("UpdatedAt not populated")
+	}
+	sites[0].UpdatedAt = time.Time{}
 	if !reflect.DeepEqual(sites[0], site) {
 		t.Errorf("ListStaticSites()[0] = %+v, want %+v", sites[0], site)
 	}
@@ -181,5 +186,25 @@ func TestSaveStaticSite_DomainReleasedWhenRedeployedWithout(t *testing.T) {
 		Name: "blog", Domains: []string{"b.example.com"}, RootDir: "/data/static/blog",
 	}); err != nil {
 		t.Errorf("SaveStaticSite(blog) claiming a domain docs released error = %v, want nil", err)
+	}
+}
+
+func TestDeleteStaticSite(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	if err := db.SaveStaticSite(ctx, StaticSite{Name: "docs", Domains: []string{"d.example.com"}, RootDir: "/x"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.DeleteStaticSite(ctx, "docs"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.GetStaticSite(ctx, "docs"); !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("get after delete = %v", err)
+	}
+	if err := db.DeleteStaticSite(ctx, "docs"); !errors.Is(err, ErrServiceNotFound) {
+		t.Errorf("second delete = %v, want ErrServiceNotFound", err)
+	}
+	if err := db.SaveStaticSite(ctx, StaticSite{Name: "other", Domains: []string{"d.example.com"}, RootDir: "/y"}); err != nil {
+		t.Errorf("domain not released: %v", err)
 	}
 }
