@@ -114,7 +114,7 @@ func TestAnalyzeFixtures(t *testing.T) {
 			files: map[string]string{
 				"composer.json": `{"require":{"laravel/framework":"^11"}}`,
 			},
-			wantRT: "php", wantFW: "Laravel", wantBuild: "railpack", wantPort: 8080, wantHealth: "/",
+			wantRT: "php", wantFW: "Laravel", wantBuild: "railpack", wantPort: 80, wantHealth: "/",
 		},
 		{
 			name: "plain static", repo: "docs",

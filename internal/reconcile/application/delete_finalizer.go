@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -79,6 +80,38 @@ func (f *DeleteFinalizer) teardown(ctx context.Context, name, nodeID string) err
 	}
 	if err := New(name, f.store, runtime, f.opts...).Teardown(ctx); err != nil {
 		return fmt.Errorf("remove containers: %w", err)
+	}
+	return nil
+}
+
+// RemoveAppNetwork drops appID's per-app network on nodeID once its last
+// service is gone, instead of leaving it to the grace-period GC. It never
+// disconnects containers and skips a network this instance does not own.
+func (f *DeleteFinalizer) RemoveAppNetwork(ctx context.Context, appID, nodeID string) error {
+	runtime, err := f.resolve(nodeID)
+	if err != nil {
+		return fmt.Errorf("resolve node %q runtime: %w", nodeID, err)
+	}
+	admin, ok := runtime.(docker.NetworkAdmin)
+	if !ok {
+		return nil
+	}
+	ctrl := New("", f.store, runtime, f.opts...)
+	name := NetworkName(ctrl.networkPrefix, appID)
+	details, err := admin.DescribeNetworks(ctx, name)
+	if err != nil {
+		return fmt.Errorf("describe network %q: %w", name, err)
+	}
+	for _, d := range details {
+		if d.Name != name || d.Attached > 0 {
+			continue
+		}
+		if owner, labeled := d.Labels[appspec.InstanceLabelKey]; ctrl.instanceID != "" && (!labeled || owner != ctrl.instanceID) {
+			continue
+		}
+		if _, err := admin.RemoveNetworkIfEmpty(ctx, name); err != nil {
+			return fmt.Errorf("remove network %q: %w", name, err)
+		}
 	}
 	return nil
 }

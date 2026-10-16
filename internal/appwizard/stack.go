@@ -65,7 +65,7 @@ func detectStack(read reader) (Stack, importplan.StackGuess) {
 			name = "Symfony"
 		}
 		return Stack{Runtime: runtimePHP, Framework: name, Evidence: "composer.json found"},
-			importplan.StackGuess{Name: name, Method: importplan.BuildRailpack, Port: 8080, Health: "/"}
+			importplan.StackGuess{Name: name, Method: importplan.BuildRailpack, Port: 80, Health: "/"}
 	}
 	if text, ok := read("mix.exs"); ok && strings.Contains(strings.ToLower(text), "phoenix") {
 		return Stack{Runtime: runtimeElixir, Framework: "Phoenix", Evidence: "mix.exs lists phoenix"},

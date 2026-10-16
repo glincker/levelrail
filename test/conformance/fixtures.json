@@ -132,7 +132,8 @@
         "port": 3000,
         "kind": "container",
         "health_path": "/"
-      }
+      },
+      "branch": "fixture-fixes"
     },
     {
       "name": "laravel",
@@ -140,10 +141,11 @@
       "repo": "glincker/lr-qa-laravel",
       "expect": {
         "framework": "Laravel",
-        "port": 8000,
+        "port": 80,
         "kind": "container",
         "health_path": "/"
-      }
+      },
+      "branch": "fixture-fixes"
     },
     {
       "name": "go",

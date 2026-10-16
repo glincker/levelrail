@@ -272,7 +272,7 @@ analyze_repo() { # url ref root
 
 run_fixture() {
   local name="$1" app repo image root exp_port exp_kind exp_health want url
-  local id btype branch dockerfile ok rc out hv ids prev is_static bstart alt_ref
+  local id btype branch dockerfile ok rc out hv ids prev is_static bstart alt_ref fx_branch
   local -a args
   F_DETECT=false; F_BUILD=false; F_RUN=false; F_HTTP=false; F_HEALTH=false
   F_REDEPLOY=null; F_ROLLBACK=null; F_STAGE=""; F_EXCERPT=""; F_ROLLBACK_NOTE=""; F_HTTP_NOTE=""
@@ -314,6 +314,8 @@ run_fixture() {
       F_DET_BUILD=$(printf '%s' "$A_JSON" | jq -r '.build.type // empty')
       btype="$F_DET_BUILD"
       branch=$(printf '%s' "$A_JSON" | jq -r '.branch // empty')
+      fx_branch=$(fx "$name" '.branch // empty')
+      [ -n "$fx_branch" ] && branch="$fx_branch"
       dockerfile=$(printf '%s' "$A_JSON" | jq -r '.build.dockerfile_path // empty')
       ok=true
       if [ "$F_DET_PORT" != "$exp_port" ]; then

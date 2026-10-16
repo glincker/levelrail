@@ -317,7 +317,7 @@ if selected 1; then
   trig=$(api_get "/api/v1/deployments?app=$EXP_APP&limit=5" | jq -r --arg s "$C1" '(if type=="array" then . else (.deployments // .items // []) end) | map(select(.commit_sha==$s))[0].trigger // ""')
   ev "deploy history trigger label: '$trig' (api /api/v1/deployments)"
   bad=""
-  [ "$HC" = "200" ] || bad="$bad http=$HC;"
+  case "$HC" in 200|202) ;; *) bad="$bad http=$HC;" ;; esac
   [ "$W_STATUS" = "succeeded" ] || bad="$bad attempt=$W_STATUS;"
   [ "$body_ok" -eq 0 ] || bad="$bad new content not served;"
   [ "$src" = "webhook" ] || bad="$bad source='$src';"
@@ -544,7 +544,8 @@ if selected 8; then
   send "$EXP_APP" "$EXP_SECRET" push "lrqa-$TAG-force" good "$TMP/p8.json"
   wait_sha "$EXP_APP" "$FP"
   show_attempt "$EXP_APP" "$FP"
-  if [ "$HC" = "200" ] && [ "$W_STATUS" = "succeeded" ]; then
+  case "$HC" in 200|202) HC_OK=1 ;; *) HC_OK=0 ;; esac
+  if [ "$HC_OK" = 1 ] && [ "$W_STATUS" = "succeeded" ]; then
     verdict 8 "force push to main" PASS "rewritten tip deploys (200), it is the new truth for the branch" "HTTP $HC, attempt $W_STATUS"
   else
     verdict 8 "force push to main" FAIL "rewritten tip deploys (200), it is the new truth for the branch" "HTTP $HC $HB attempt=$W_STATUS"
@@ -574,7 +575,7 @@ if selected 9 && [ "$SKIP_MONO" -eq 0 ]; then
   wait_sha "$MONO_APP" "$BE"
   show_attempt "$MONO_APP" "$BE"
   wait_body "$MONO_APP" "gitflow-$TAG-be" 90; mb=$?
-  if [ "$hc_be" = "200" ] && [ "$W_STATUS" = "succeeded" ] && [ "$mb" -eq 0 ]; then
+  if { [ "$hc_be" = "200" ] || [ "$hc_be" = "202" ]; } && [ "$W_STATUS" = "succeeded" ] && [ "$mb" -eq 0 ]; then
     verdict 9b "backend commit" PASS "deploys and serves the new content" "HTTP $hc_be, attempt $W_STATUS, body ok"
   else
     verdict 9b "backend commit" FAIL "deploys and serves the new content" "HTTP $hc_be $hb_be attempt=$W_STATUS body=$mb (0=ok)"

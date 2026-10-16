@@ -1240,7 +1240,13 @@ func (rt *Router) deleteApp(ctx context.Context, name string) (teardownErr, err 
 		}
 	}
 	if existing.AppID != "" {
-		rt.deleteAppIfOrphaned(ctx, existing.AppID)
+		if rt.deleteAppIfOrphaned(ctx, existing.AppID) && finalizer != nil && teardownErr == nil {
+			nctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rt.deleteTeardownTimeout())
+			if err := finalizer.RemoveAppNetwork(nctx, existing.AppID, existing.NodeID); err != nil {
+				rt.logger.Warn("api: delete app: remove app network failed, GC will retry", slog.String("error", err.Error()), slog.String("app_id", existing.AppID))
+			}
+			cancel()
+		}
 	}
 	return teardownErr, nil
 }
@@ -1297,16 +1303,18 @@ func (rt *Router) teardownServiceContainers(name, nodeID string) {
 // NetworkCleanupController doesn't yet know to remove) is a lesser,
 // self-healing problem, not one that should make an otherwise-successful
 // delete request fail.
-func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) {
+func (rt *Router) deleteAppIfOrphaned(ctx context.Context, appID string) bool {
 	remaining, err := rt.appGroups.ListServicesByApp(ctx, appID)
 	if err != nil {
 		rt.logger.Error("api: delete app: check remaining siblings failed", slog.String("error", err.Error()), slog.String("app_id", appID))
-		return
+		return false
 	}
 	if len(remaining) > 0 {
-		return
+		return false
 	}
 	if err := rt.appGroups.DeleteApp(ctx, appID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
 		rt.logger.Error("api: delete app: delete orphaned app row failed", slog.String("error", err.Error()), slog.String("app_id", appID))
+		return false
 	}
+	return true
 }

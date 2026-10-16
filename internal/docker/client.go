@@ -792,10 +792,34 @@ func (c *Client) Stop(ctx context.Context, id string, timeout time.Duration) err
 // Remove implements Runtime.
 func (c *Client) Remove(ctx context.Context, id string, force bool) error {
 	if err := c.cli.ContainerRemove(ctx, id, container.RemoveOptions{Force: force}); err != nil {
+		if strings.Contains(err.Error(), "already in progress") && c.waitContainerGone(ctx, id) {
+			return nil
+		}
 		return fmt.Errorf("docker: remove container %s: %w", id, err)
 	}
 	return nil
 }
+
+// waitContainerGone covers a concurrent remover: Docker rejects the second
+// remove, but the container is going away, so wait for that instead of failing.
+func (c *Client) waitContainerGone(ctx context.Context, id string) bool {
+	deadline := time.Now().Add(removeInProgressWait)
+	for time.Now().Before(deadline) {
+		if _, err := c.cli.ContainerInspect(ctx, id); cerrdefs.IsNotFound(err) {
+			return true
+		} else if err != nil && ctx.Err() != nil {
+			return false
+		}
+		select {
+		case <-ctx.Done():
+			return false
+		case <-time.After(200 * time.Millisecond):
+		}
+	}
+	return false
+}
+
+const removeInProgressWait = 30 * time.Second
 
 // UpdateResources implements Runtime, via the Engine API's own
 // ContainerUpdate call. This adjusts the container's cgroup limits in
