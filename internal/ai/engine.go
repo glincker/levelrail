@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -123,7 +124,38 @@ type Engine struct {
 	factory      ToolFactory
 	provider     ProviderFactory
 	systemPrompt string
+
+	resolver ProviderResolver
+	usage    UsageStore
+	limits   Limits
+	logger   *slog.Logger
+	now      func() time.Time
 }
+
+// ProviderResolver supplies the provider chain for a turn. When set it
+// replaces the single-provider settings path.
+type ProviderResolver interface {
+	Configured(ctx context.Context) (bool, error)
+	Chain(ctx context.Context) (Provider, error)
+}
+
+// UsageStore records metering rows and answers the monthly budget check.
+type UsageStore interface {
+	RecordAIUsage(ctx context.Context, r store.AIUsageRecord) error
+	SumAITokensSince(ctx context.Context, since time.Time) (int64, error)
+}
+
+// SetProviders switches the engine to the multi-provider chain.
+func (e *Engine) SetProviders(r ProviderResolver) { e.resolver = r }
+
+// SetUsage enables metering and the monthly budget.
+func (e *Engine) SetUsage(u UsageStore) { e.usage = u }
+
+// SetLimits overrides the harness limits (default: from the environment).
+func (e *Engine) SetLimits(l Limits) { e.limits = l }
+
+// SetLogger sets the engine logger.
+func (e *Engine) SetLogger(l *slog.Logger) { e.logger = l }
 
 // NewEngine builds an Engine. provider defaults to DefaultProviderFactory
 // if nil. brandName names the platform in the system prompt (the
@@ -139,6 +171,7 @@ func NewEngine(s Store, secrets SecretsResolver, tools ToolExecutor, provider Pr
 	return &Engine{
 		store: s, secrets: secrets, tools: tools, provider: provider,
 		systemPrompt: fmt.Sprintf(systemPromptTemplate, brandName),
+		limits:       LimitsFromEnv(), logger: slog.Default(), now: time.Now,
 	}
 }
 
@@ -146,6 +179,9 @@ func NewEngine(s Store, secrets SecretsResolver, tools ToolExecutor, provider Pr
 // saved, so the API layer can return 501 before ever starting an SSE
 // response, rather than mid-stream.
 func (e *Engine) IsConfigured(ctx context.Context) (bool, error) {
+	if e.resolver != nil {
+		return e.resolver.Configured(ctx)
+	}
 	settings, err := e.store.GetAIAssistantSettings(ctx)
 	if err != nil {
 		return false, fmt.Errorf("ai: is configured: %w", err)
@@ -180,13 +216,12 @@ func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sin
 		return ErrPendingConfirmation
 	}
 
-	settings, apiKey, err := e.resolveSettings(ctx)
-	if err != nil {
+	if err := e.checkBudget(ctx, sink); err != nil {
 		return err
 	}
-	llm, err := e.provider(settings.Provider, apiKey)
+	llm, model, err := e.newLLM(ctx)
 	if err != nil {
-		return fmt.Errorf("ai: run turn: %w", err)
+		return err
 	}
 
 	now := time.Now().UTC()
@@ -200,7 +235,7 @@ func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sin
 		return fmt.Errorf("ai: run turn: save user message: %w", err)
 	}
 
-	return e.continueTurn(ctx, tools, sessionID, settings.Model, llm, sink)
+	return e.continueTurn(ctx, tools, sessionID, model, llm, sink)
 }
 
 // ResolveConfirmation executes (approve=true) or rejects (approve=false)
@@ -243,15 +278,11 @@ func (e *Engine) ResolveConfirmation(ctx context.Context, sessionID, confirmatio
 		return nil
 	}
 
-	settings, apiKey, err := e.resolveSettings(ctx)
+	llm, model, err := e.newLLM(ctx)
 	if err != nil {
 		return err
 	}
-	llm, err := e.provider(settings.Provider, apiKey)
-	if err != nil {
-		return fmt.Errorf("ai: resolve confirmation: %w", err)
-	}
-	return e.continueTurn(ctx, tools, sessionID, settings.Model, llm, sink)
+	return e.continueTurn(ctx, tools, sessionID, model, llm, sink)
 }
 
 func (e *Engine) executeConfirmation(ctx context.Context, tools ToolExecutor, conf store.AIChatConfirmation, approve bool) (status string, result json.RawMessage, isError bool, attr ToolAttribution) {
@@ -268,7 +299,7 @@ func (e *Engine) executeConfirmation(ctx context.Context, tools ToolExecutor, co
 	if err != nil {
 		return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, err.Error())), true, attr
 	}
-	return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, text)), callIsError, attr
+	return store.AIChatConfirmationApproved, toJSONRawMessage(guardResult(conf.ToolName, traits, TruncateToolOutput(text, e.limits.ToolOutputMaxBytes))), callIsError, attr
 }
 
 // applyConfirmationResult writes the resolved outcome back onto the
@@ -314,7 +345,10 @@ func (e *Engine) resolveSettings(ctx context.Context) (store.AIAssistantSettings
 // loops back for another model call only when a full round of read-only
 // calls resolved with nothing left pending.
 func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID, model string, llm Provider, sink Sink) error {
-	for {
+	for step := 0; ; step++ {
+		if e.limits.MaxSteps > 0 && step >= e.limits.MaxSteps {
+			return e.stopAtMaxSteps(ctx, sessionID, sink)
+		}
 		rows, err := e.store.ListAIChatMessages(ctx, sessionID)
 		if err != nil {
 			return fmt.Errorf("ai: continue turn: load history: %w", err)
@@ -323,20 +357,24 @@ func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID
 		if err != nil {
 			return fmt.Errorf("ai: continue turn: list tools: %w", err)
 		}
-
-		turn, err := llm.Complete(ctx, ChatRequest{
-			System: e.systemPrompt, Messages: buildProviderMessages(rows), Tools: specs, Model: model,
-		}, sink.TextDelta)
-		if err != nil {
-			return fmt.Errorf("ai: continue turn: %w", err)
-		}
-
 		msgID, err := store.NewAIChatMessageID()
 		if err != nil {
 			return fmt.Errorf("ai: continue turn: %w", err)
 		}
-		now := time.Now().UTC()
 
+		stepCtx, cancel := e.stepContext(ctx)
+		stepCtx = WithAttemptObserver(stepCtx, func(a Attempt) { e.recordAttempt(ctx, sessionID, msgID, a) })
+		turn, err := llm.Complete(stepCtx, ChatRequest{
+			System: e.systemPrompt, Messages: mergeAdjacent(buildProviderMessages(rows)), Tools: specs, Model: model,
+		}, sink.TextDelta)
+		cancel()
+		if err != nil {
+			e.saveInterrupted(ctx, sessionID, msgID, turn.Text, err)
+			reportError(sink, err)
+			return fmt.Errorf("ai: continue turn: %w", err)
+		}
+
+		now := time.Now().UTC()
 		if len(turn.ToolCalls) == 0 {
 			if err := e.store.SaveAIChatMessage(ctx, store.AIChatMessage{
 				ID: msgID, SessionID: sessionID, Role: store.AIChatRoleAssistant, Content: turn.Text, CreatedAt: now,
@@ -357,7 +395,7 @@ func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID
 			return fmt.Errorf("ai: continue turn: save assistant message: %w", err)
 		}
 
-		toolCalls, anyPending, err := e.dispatchToolCalls(ctx, tools, sessionID, msgID, now, turn.ToolCalls, traitsOf(specs), conversationTainted(rows, traitsOf(specs)), sink)
+		toolCalls, anyPending, err := e.dispatchToolCalls(ctx, tools, sessionID, msgID, now, turn.ToolCalls, specs, conversationTainted(rows, traitsOf(specs)), sink)
 		if err != nil {
 			return err
 		}
@@ -373,16 +411,71 @@ func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID
 	}
 }
 
+func (e *Engine) stepContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	if e.limits.StepTimeout > 0 {
+		return context.WithTimeout(ctx, e.limits.StepTimeout)
+	}
+	return context.WithCancel(ctx)
+}
+
+// saveInterrupted keeps the session consistent after a failed model call:
+// any text already streamed is kept as an assistant message that says it was
+// cut off. A tool call that never completed is dropped, never executed.
+func (e *Engine) saveInterrupted(ctx context.Context, sessionID, msgID, partial string, cause error) {
+	if partial == "" {
+		return
+	}
+	note := DescribeError(cause)
+	content := partial + "\n\n[answer interrupted: " + note.Message + "]"
+	if err := e.store.SaveAIChatMessage(context.WithoutCancel(ctx), store.AIChatMessage{
+		ID: msgID, SessionID: sessionID, Role: store.AIChatRoleAssistant, Content: content, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		e.logger.Warn("ai: save interrupted turn failed", slog.String("session_id", sessionID), slog.String("error", err.Error()))
+	}
+}
+
+func (e *Engine) stopAtMaxSteps(ctx context.Context, sessionID string, sink Sink) error {
+	id, err := store.NewAIChatMessageID()
+	if err != nil {
+		return fmt.Errorf("ai: continue turn: %w", err)
+	}
+	text := fmt.Sprintf("I stopped after %d tool steps without reaching an answer. Ask a narrower question to continue.", e.limits.MaxSteps)
+	if err := e.store.SaveAIChatMessage(ctx, store.AIChatMessage{
+		ID: id, SessionID: sessionID, Role: store.AIChatRoleAssistant, Content: text, CreatedAt: time.Now().UTC(),
+	}); err != nil {
+		return fmt.Errorf("ai: continue turn: save assistant message: %w", err)
+	}
+	sink.TextDelta(text)
+	reportError(sink, ErrMaxSteps)
+	return ErrMaxSteps
+}
+
 // dispatchToolCalls classifies and (for read-only calls) executes every
 // tool call a single model turn proposed. Mutating calls are recorded as
 // pending confirmations and never executed here.
-func (e *Engine) dispatchToolCalls(ctx context.Context, tools ToolExecutor, sessionID, messageID string, now time.Time, calls []ToolUseCall, traits map[string]ToolTraits, tainted bool, sink Sink) (records []store.AIChatToolCall, anyPending bool, err error) {
+func (e *Engine) dispatchToolCalls(ctx context.Context, tools ToolExecutor, sessionID, messageID string, now time.Time, calls []ToolUseCall, specs []ToolSpec, tainted bool, sink Sink) (records []store.AIChatToolCall, anyPending bool, err error) {
 	cred := turnCredentialFrom(ctx)
+	traits := traitsOf(specs)
+	byName := make(map[string]ToolSpec, len(specs))
+	for _, sp := range specs {
+		byName[sp.Name] = sp
+	}
 	records = make([]store.AIChatToolCall, 0, len(calls))
 	for _, call := range calls {
 		callTraits := traits[call.Name]
-		autoRun := !callTraits.RequiresConfirmation(tainted)
 		record := store.AIChatToolCall{ID: call.ID, Name: call.Name, Arguments: call.Input, ReadOnly: callTraits.ReadOnly}
+
+		// Malformed calls never reach a tool or the approval queue: the model
+		// gets the reason back and can correct itself. This holds for every provider.
+		if reason := invalidCallReason(byName, call); reason != "" {
+			record.Status = "auto_executed"
+			record.Result = toJSONRawMessage(reason)
+			record.IsError = true
+			emitToolResult(sink, call.ID, call.Name, record.Result, true, ToolAttribution{})
+			records = append(records, record)
+			continue
+		}
+		autoRun := !callTraits.RequiresConfirmation(tainted)
 
 		if autoRun {
 			cred.drain()
@@ -391,7 +484,7 @@ func (e *Engine) dispatchToolCalls(ctx context.Context, tools ToolExecutor, sess
 			if callErr != nil {
 				text, isError = callErr.Error(), true
 			}
-			text = guardResult(call.Name, callTraits, text)
+			text = guardResult(call.Name, callTraits, TruncateToolOutput(text, e.limits.ToolOutputMaxBytes))
 			tainted = tainted || callTraits.IngestsUntrusted()
 			record.Status = "auto_executed"
 			record.Result = toJSONRawMessage(text)
@@ -419,6 +512,17 @@ func (e *Engine) dispatchToolCalls(ctx context.Context, tools ToolExecutor, sess
 		records = append(records, record)
 	}
 	return records, anyPending, nil
+}
+
+func invalidCallReason(byName map[string]ToolSpec, call ToolUseCall) string {
+	spec, ok := byName[call.Name]
+	if !ok {
+		return fmt.Sprintf("unknown tool %q", call.Name)
+	}
+	if err := ValidateToolArgs(spec.InputSchema, call.Input); err != nil {
+		return fmt.Sprintf("invalid arguments for %s: %v", call.Name, err)
+	}
+	return ""
 }
 
 func traitsOf(tools []ToolSpec) map[string]ToolTraits {

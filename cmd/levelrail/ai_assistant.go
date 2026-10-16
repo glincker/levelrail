@@ -20,6 +20,9 @@ func setupAIAssistantEngine(ctx context.Context, db *store.DB, secretsManager *s
 		return nil, err
 	}
 	engine := ai.NewEngine(db, secretsManager, nil, nil, brandName)
+	engine.SetProviders(ai.NewVault(db, secretsManager, logger))
+	engine.SetUsage(db)
+	engine.SetLogger(logger)
 	engine.SetToolFactory(func(ctx context.Context, token string) (ai.ToolExecutor, error) {
 		client := apiclient.NewClient("http://"+dialAddr, token) // NOSONAR: dialAddr is always loopback, this control plane calling its own local REST API in-process, never a real network HTTPS gap
 		return ai.NewToolCaller(ctx, client)

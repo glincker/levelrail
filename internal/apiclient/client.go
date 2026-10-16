@@ -4011,6 +4011,55 @@ func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSett
 	return out, err
 }
 
+// ListAIProviders calls GET /api/v1/settings/ai-assistant/providers.
+func (c *Client) ListAIProviders(ctx context.Context) ([]AIProviderResource, error) {
+	var out []AIProviderResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-assistant/providers", nil, &out)
+	return out, err
+}
+
+// SetAIProvider calls PUT /api/v1/settings/ai-assistant/providers/{id}.
+func (c *Client) SetAIProvider(ctx context.Context, id string, req SetAIProviderRequest) (AIProviderResource, error) {
+	var out AIProviderResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id), req, &out)
+	return out, err
+}
+
+// TestAIProvider calls POST /api/v1/settings/ai-assistant/providers/{id}/test.
+func (c *Client) TestAIProvider(ctx context.Context, id string) (AIProviderTestResource, error) {
+	var out AIProviderTestResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id)+"/test", nil, &out)
+	return out, err
+}
+
+// DeleteAIProvider calls DELETE /api/v1/settings/ai-assistant/providers/{id}.
+func (c *Client) DeleteAIProvider(ctx context.Context, id string) (AIProviderResource, error) {
+	var out AIProviderResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id), nil, &out)
+	return out, err
+}
+
+// ListAIProviderModels calls GET /api/v1/settings/ai-assistant/providers/{id}/models.
+func (c *Client) ListAIProviderModels(ctx context.Context, id string) ([]AIModelResource, error) {
+	var out []AIModelResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id)+"/models", nil, &out)
+	return out, err
+}
+
+// SetAIChoice calls PUT /api/v1/settings/ai-assistant with the active/fallback body.
+func (c *Client) SetAIChoice(ctx context.Context, req AIChoiceRequest) (AIAssistantSettingsResource, error) {
+	var out AIAssistantSettingsResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant", req, &out)
+	return out, err
+}
+
+// GetAIUsage calls GET /api/v1/ai/usage?days=N.
+func (c *Client) GetAIUsage(ctx context.Context, days int) (AIUsageResource, error) {
+	var out AIUsageResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/usage?days="+strconv.Itoa(days), nil, &out)
+	return out, err
+}
+
 // CreateAIChatSession calls POST /api/v1/ai/sessions.
 func (c *Client) CreateAIChatSession(ctx context.Context) (AIChatSessionCreatedResource, error) {
 	var out AIChatSessionCreatedResource

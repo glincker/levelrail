@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1209 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1215 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -418,6 +418,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIAssistantSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIAssistantSettings", Description: "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config."},
 	{Method: "PUT", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIAssistantSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/ai-assistant/providers", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListAIProviders", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant/providers/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIProvider", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/ai-assistant/providers/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetAIProvider", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/ai-assistant/providers/{id}/models", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListAIProviderModels", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/ai-assistant/providers/{id}/test", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleTestAIProvider", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ai-control", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIControl", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/ai-control", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIControl", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/ai-control/revoke-agent-tokens", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeAgentTokens", Description: ""},
@@ -697,6 +702,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/ai/sessions/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetAIChatSession", Description: ""},
 	{Method: "POST", Path: "/api/v1/ai/sessions/{id}/confirmations/{confirmation_id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleResolveAIChatConfirmation", Description: ""},
 	{Method: "POST", Path: "/api/v1/ai/sessions/{id}/messages", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAIChatMessage", Description: ""},
+	{Method: "GET", Path: "/api/v1/ai/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleAIUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-history", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/alert-maintenance-windows", Ability: "AbilityRead", Group: "Other", Handler: "handleListMaintenanceWindows", Description: ""},
 	{Method: "POST", Path: "/api/v1/alert-maintenance-windows", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateMaintenanceWindow", Description: ""},

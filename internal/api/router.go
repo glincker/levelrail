@@ -644,6 +644,8 @@ type Router struct {
 	aiControl                    AIControlStore           // always set: the AI control gate (ai_control_gate.go) and /settings/ai-control routes
 	aiControlCache               aiControlCache           // short lived per process copy of the AI control row, invalidated on PUT
 	aiChat                       AIChatStore              // always set, same "core Store interface" shape as backupTargets above
+	aiVault                      AIVault                  // nil is valid: provider routes return 501, settings keep the single-provider shape
+	aiUsage                      AIUsageStore             // nil is valid: GET /api/v1/ai/usage returns 501
 	aiEngine                     AIEngine                 // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
 	aiTurns                      aiTurnRegistry           // live per-turn assistant tokens, keyed by token id
 

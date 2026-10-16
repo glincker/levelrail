@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -9,35 +8,55 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 )
 
-// anthropicAPIURL is the real Messages API endpoint. AnthropicProvider
-// always calls this directly over HTTP with the BYOK key from settings,
-// never through a vendored SDK: one dependency-free HTTP client, the
-// same shape internal/apiclient already uses for the platform's own
-// REST API.
-const anthropicAPIURL = "https://api.anthropic.com/v1/messages"
+// anthropicDefaultBaseURL is the real Messages API host. The adapter calls
+// it directly over HTTP with the BYOK key, never through a vendored SDK.
+const anthropicDefaultBaseURL = "https://api.anthropic.com"
 
 // anthropicVersion is the API version header every request must carry.
 const anthropicVersion = "2023-06-01"
 
-// AnthropicProvider implements Provider against the real Anthropic
-// Messages API, using the streaming (server-sent events) variant so
-// TextDeltaFunc receives real incremental chunks as the model generates
-// them, not a single chunk after the full response lands.
+const anthropicProviderID = "anthropic"
+
+// AnthropicProvider implements Backend against the Anthropic Messages API,
+// using the streaming (server-sent events) variant so TextDeltaFunc gets
+// real incremental chunks.
 type AnthropicProvider struct {
-	apiKey     string
-	httpClient *http.Client
+	cfg AdapterConfig
 }
 
-// NewAnthropicProvider builds a provider using apiKey (the BYOK key
-// resolved from internal/secrets at call time, never persisted here) and
-// httpClient (defaulted to http.DefaultClient if nil).
+// NewAnthropicProvider builds a provider using apiKey and httpClient
+// (guarded default if nil), pointed at the public API.
 func NewAnthropicProvider(apiKey string, httpClient *http.Client) *AnthropicProvider {
-	if httpClient == nil {
-		httpClient = http.DefaultClient
+	return NewAnthropic(AdapterConfig{ProviderID: anthropicProviderID, APIKey: apiKey, HTTP: httpClient})
+}
+
+// NewAnthropic builds the adapter from cfg; an empty BaseURL means the public API.
+func NewAnthropic(cfg AdapterConfig) *AnthropicProvider {
+	if cfg.BaseURL == "" {
+		cfg.BaseURL = anthropicDefaultBaseURL
 	}
-	return &AnthropicProvider{apiKey: apiKey, httpClient: httpClient}
+	if cfg.ProviderID == "" {
+		cfg.ProviderID = anthropicProviderID
+	}
+	return &AnthropicProvider{cfg: cfg}
+}
+
+func (p *AnthropicProvider) newRequest(ctx context.Context, method, path string, body []byte) (*http.Request, error) {
+	var rd io.Reader
+	if body != nil {
+		rd = bytes.NewReader(body)
+	}
+	req, err := http.NewRequestWithContext(ctx, method, joinURL(p.cfg.BaseURL, path), rd)
+	if err != nil {
+		return nil, fmt.Errorf("ai: build anthropic request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", p.cfg.APIKey)
+	req.Header.Set("anthropic-version", anthropicVersion)
+	return req, nil
 }
 
 // anthropicMessage/anthropicContentBlock/anthropicTool are the request
@@ -68,15 +87,27 @@ type anthropicTool struct {
 	Name        string          `json:"name"`
 	Description string          `json:"description,omitempty"`
 	InputSchema json.RawMessage `json:"input_schema"`
+
+	CacheControl *anthropicCacheControl `json:"cache_control,omitempty"`
+}
+
+type anthropicCacheControl struct {
+	Type string `json:"type"`
+}
+
+type anthropicSystemBlock struct {
+	Type         string                 `json:"type"`
+	Text         string                 `json:"text"`
+	CacheControl *anthropicCacheControl `json:"cache_control,omitempty"`
 }
 
 type anthropicRequest struct {
-	Model     string             `json:"model"`
-	MaxTokens int                `json:"max_tokens"`
-	System    string             `json:"system,omitempty"`
-	Messages  []anthropicMessage `json:"messages"`
-	Tools     []anthropicTool    `json:"tools,omitempty"`
-	Stream    bool               `json:"stream"`
+	Model     string                 `json:"model"`
+	MaxTokens int                    `json:"max_tokens"`
+	System    []anthropicSystemBlock `json:"system,omitempty"`
+	Messages  []anthropicMessage     `json:"messages"`
+	Tools     []anthropicTool        `json:"tools,omitempty"`
+	Stream    bool                   `json:"stream"`
 }
 
 // defaultMaxTokens bounds a single turn's output. No env var override
@@ -89,14 +120,21 @@ func toAnthropicRequest(req ChatRequest) anthropicRequest {
 	out := anthropicRequest{
 		Model:     req.Model,
 		MaxTokens: defaultMaxTokens,
-		System:    req.System,
 		Stream:    true,
+	}
+	// The system prompt and tool list are stable across turns, so mark the
+	// end of each as a cache breakpoint.
+	if req.System != "" {
+		out.System = []anthropicSystemBlock{{Type: "text", Text: req.System, CacheControl: &anthropicCacheControl{Type: "ephemeral"}}}
 	}
 	for _, m := range req.Messages {
 		out.Messages = append(out.Messages, toAnthropicMessage(m))
 	}
 	for _, t := range req.Tools {
 		out.Tools = append(out.Tools, anthropicTool{Name: t.Name, Description: t.Description, InputSchema: t.InputSchema})
+	}
+	if n := len(out.Tools); n > 0 {
+		out.Tools[n-1].CacheControl = &anthropicCacheControl{Type: "ephemeral"}
 	}
 	return out
 }
@@ -144,11 +182,24 @@ type anthropicSSEEvent struct {
 		StopReason  string `json:"stop_reason"`
 	} `json:"delta"`
 
+	// message_start carries input usage; message_delta carries output usage.
+	Message *struct {
+		Usage anthropicUsage `json:"usage"`
+	} `json:"message"`
+	Usage *anthropicUsage `json:"usage"`
+
 	// error
 	Error *struct {
 		Type    string `json:"type"`
 		Message string `json:"message"`
 	} `json:"error"`
+}
+
+type anthropicUsage struct {
+	InputTokens              int `json:"input_tokens"`
+	OutputTokens             int `json:"output_tokens"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
+	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 }
 
 // streamingToolUse accumulates one tool_use content block's id/name
@@ -159,67 +210,105 @@ type streamingToolUse struct {
 	inputJSON strings.Builder
 }
 
-// Complete implements Provider by POSTing req to the real Messages API
-// with stream:true and parsing the server-sent event stream, forwarding
-// every text delta to onText as it arrives.
+// Complete implements Provider by POSTing req to the Messages API with
+// stream:true and parsing the server-sent event stream, forwarding every
+// text delta to onText as it arrives.
 func (p *AnthropicProvider) Complete(ctx context.Context, req ChatRequest, onText TextDeltaFunc) (TurnResult, error) {
 	body, err := json.Marshal(toAnthropicRequest(req))
 	if err != nil {
 		return TurnResult{}, fmt.Errorf("ai: marshal anthropic request: %w", err)
 	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, anthropicAPIURL, bytes.NewReader(body))
+	httpReq, err := p.newRequest(ctx, http.MethodPost, "/v1/messages", body)
 	if err != nil {
-		return TurnResult{}, fmt.Errorf("ai: build anthropic request: %w", err)
+		return TurnResult{}, err
 	}
-	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("x-api-key", p.apiKey)
-	httpReq.Header.Set("anthropic-version", anthropicVersion)
-
-	resp, err := p.httpClient.Do(httpReq)
+	resp, err := p.cfg.client().Do(httpReq)
 	if err != nil {
-		return TurnResult{}, fmt.Errorf("ai: call anthropic api: %w", err)
+		return TurnResult{}, ClassifyTransport(p.cfg.ProviderID, err, p.cfg.APIKey)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return TurnResult{}, fmt.Errorf("ai: anthropic api returned %d: %s", resp.StatusCode, string(respBody))
+		return TurnResult{}, httpFailure(p.cfg.ProviderID, resp, p.cfg.APIKey)
 	}
+	res, err := parseAnthropicStream(resp.Body, onText)
+	if pe, ok := AsProviderError(err); ok {
+		pe.Provider = p.cfg.ProviderID
+	}
+	return res, err
+}
 
-	return parseAnthropicStream(resp.Body, onText)
+// httpFailure reads a bounded error body and classifies it.
+func httpFailure(provider string, resp *http.Response, key string) *ProviderError {
+	b, _ := io.ReadAll(io.LimitReader(resp.Body, 8192))
+	return ClassifyHTTP(provider, resp.StatusCode, b, resp.Header, key, time.Now())
+}
+
+// ListModels implements Backend via GET /v1/models.
+func (p *AnthropicProvider) ListModels(ctx context.Context) ([]ModelInfo, error) {
+	req, err := p.newRequest(ctx, http.MethodGet, "/v1/models?limit=100", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := p.cfg.client().Do(req)
+	if err != nil {
+		return nil, ClassifyTransport(p.cfg.ProviderID, err, p.cfg.APIKey)
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode != http.StatusOK {
+		return nil, httpFailure(p.cfg.ProviderID, resp, p.cfg.APIKey)
+	}
+	var out struct {
+		Data []struct {
+			ID          string `json:"id"`
+			DisplayName string `json:"display_name"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&out); err != nil {
+		return nil, &ProviderError{Provider: p.cfg.ProviderID, Class: ClassBadRequest, Detail: "model list was not valid JSON"}
+	}
+	tools := true
+	models := make([]ModelInfo, 0, len(out.Data))
+	for _, m := range out.Data {
+		label := m.DisplayName
+		if label == "" {
+			label = m.ID
+		}
+		models = append(models, ModelInfo{ID: m.ID, Label: label, SupportsTools: &tools})
+	}
+	return models, nil
+}
+
+// Validate implements Backend with one model-list call.
+func (p *AnthropicProvider) Validate(ctx context.Context) error {
+	_, err := p.ListModels(ctx)
+	return err
 }
 
 func parseAnthropicStream(body io.Reader, onText TextDeltaFunc) (TurnResult, error) {
 	var result TurnResult
-	toolUses := map[int]*streamingToolUse{} // index -> accumulating tool_use block
+	toolUses := map[int]*streamingToolUse{}
 	var textBuilder strings.Builder
+	stopped := false
 
-	scanner := bufio.NewScanner(body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		line := scanner.Text()
-		data, ok := strings.CutPrefix(line, "data: ")
-		if !ok {
-			continue // blank lines, "event: ..." lines, and ": comment" pings are all ignorable
-		}
-
+	err := readSSEData(body, func(data string) error {
 		var ev anthropicSSEEvent
 		if err := json.Unmarshal([]byte(data), &ev); err != nil {
-			return TurnResult{}, fmt.Errorf("ai: decode anthropic stream event: %w", err)
+			return &ProviderError{Provider: anthropicProviderID, Class: ClassBadRequest, Detail: "undecodable stream event"}
 		}
-
 		switch ev.Type {
-		case "content_block_start":
-			if ev.ContentBlock == nil {
-				continue
+		case "message_start":
+			if ev.Message != nil {
+				u := ev.Message.Usage
+				result.Usage.PromptTokens = u.InputTokens + u.CacheCreationInputTokens + u.CacheReadInputTokens
 			}
-			if ev.ContentBlock.Type == "tool_use" {
+		case "content_block_start":
+			if ev.ContentBlock != nil && ev.ContentBlock.Type == "tool_use" {
 				toolUses[ev.Index] = &streamingToolUse{id: ev.ContentBlock.ID, name: ev.ContentBlock.Name}
 			}
 		case "content_block_delta":
 			if ev.Delta == nil {
-				continue
+				return nil
 			}
 			switch ev.Delta.Type {
 			case "text_delta":
@@ -236,17 +325,35 @@ func parseAnthropicStream(body io.Reader, onText TextDeltaFunc) (TurnResult, err
 			if ev.Delta != nil && ev.Delta.StopReason != "" {
 				result.StopReason = ev.Delta.StopReason
 			}
+			if ev.Usage != nil {
+				result.Usage.CompletionTokens = ev.Usage.OutputTokens
+			}
 		case "message_stop":
-			// Nothing further to accumulate; the loop ends when the
-			// stream itself closes.
+			stopped = true
 		case "error":
 			if ev.Error != nil {
-				return TurnResult{}, fmt.Errorf("ai: anthropic stream error: %s", ev.Error.Message)
+				class := ClassBadRequest
+				switch ev.Error.Type {
+				case "overloaded_error", "api_error":
+					class = ClassOverloaded
+				case "rate_limit_error":
+					class = ClassRateLimited
+				case "authentication_error", "permission_error":
+					class = ClassInvalidKey
+				}
+				return &ProviderError{Provider: anthropicProviderID, Class: class, Detail: Scrub(ev.Error.Message, "")}
 			}
 		}
+		return nil
+	})
+	if err != nil {
+		if _, ok := AsProviderError(err); ok {
+			return TurnResult{Text: textBuilder.String()}, err
+		}
+		return TurnResult{Text: textBuilder.String()}, ClassifyTransport(anthropicProviderID, err, "")
 	}
-	if err := scanner.Err(); err != nil {
-		return TurnResult{}, fmt.Errorf("ai: read anthropic stream: %w", err)
+	if !stopped {
+		return TurnResult{Text: textBuilder.String()}, &ProviderError{Provider: anthropicProviderID, Class: ClassStreamCut, Detail: "stream ended before message_stop"}
 	}
 
 	result.Text = textBuilder.String()
@@ -259,6 +366,9 @@ func parseAnthropicStream(body io.Reader, onText TextDeltaFunc) (TurnResult, err
 	}
 	result.ToolCalls = sortToolCallsByOrderSeen(result.ToolCalls, toolUses)
 
+	if result.StopReason == "max_tokens" && anyInvalidToolInput(result.ToolCalls) {
+		return TurnResult{Text: result.Text}, &ProviderError{Provider: anthropicProviderID, Class: ClassStreamCut, Detail: "output limit hit mid tool call"}
+	}
 	if result.StopReason == "" {
 		if len(result.ToolCalls) > 0 {
 			result.StopReason = StopReasonToolUse
@@ -267,6 +377,15 @@ func parseAnthropicStream(body io.Reader, onText TextDeltaFunc) (TurnResult, err
 		}
 	}
 	return result, nil
+}
+
+func anyInvalidToolInput(calls []ToolUseCall) bool {
+	for _, c := range calls {
+		if !json.Valid(c.Input) {
+			return true
+		}
+	}
+	return false
 }
 
 // sortToolCallsByOrderSeen restores stream order: Go map iteration above
