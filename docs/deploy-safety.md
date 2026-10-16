@@ -1,6 +1,8 @@
 ---
 title: "Deploy safety"
-description: What stands between a deploy being triggered and that exact content serving, a readiness gate with a stable window, a drain, pinned rollback targets, a post-deploy watch with automatic rollback, digest-truthful deploys, a stale-deploy guard and freeze windows.
+description: "What stands between a deploy trigger and serving: readiness gate, drain, pinned rollback targets, post-deploy watch with auto rollback, and freeze windows."
+"og:image": "https://docs.levelrail.com/public/og/deploy-safety.png"
+"twitter:image": "https://docs.levelrail.com/public/og/deploy-safety.png"
 ---
 
 Between "a deploy was triggered" and "that exact content is serving",

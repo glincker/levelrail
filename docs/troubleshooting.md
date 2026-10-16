@@ -3,6 +3,8 @@ title: "Troubleshooting"
 icon: "/assets/icons/lifebuoy.svg"
 sidebarTitle: "Troubleshooting"
 description: Fixes for the most common problems when deploying, logging in, or running Levelrail.
+"og:image": "https://docs.levelrail.com/public/og/troubleshooting.png"
+"twitter:image": "https://docs.levelrail.com/public/og/troubleshooting.png"
 ---
 
 Find the symptom, apply the fix, and follow the link if you need more depth. Entries are grouped: problems with an app or deploy first, then problems with the server itself, then what each `doctor` finding means.

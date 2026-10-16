@@ -3,6 +3,8 @@ title: "Connect an app to a managed Postgres database"
 icon: "/assets/icons/database.svg"
 sidebarTitle: "Add a database"
 description: Create a managed Postgres database on your own server, connect an app with one command, and confirm the connection string reaches the container.
+"og:image": "https://docs.levelrail.com/public/og/tutorials-connect-an-app-to-postgres.png"
+"twitter:image": "https://docs.levelrail.com/public/og/tutorials-connect-an-app-to-postgres.png"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span></div>

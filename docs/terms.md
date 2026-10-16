@@ -3,8 +3,6 @@ title: Terms of use
 description: Terms for using the Levelrail website and software, including the Apache 2.0 license, no warranty, trademarks and third-party links.
 ---
 
-# Terms of use
-
 Last updated: 2026-10-05.
 
 These terms cover your use of the Levelrail website at levelrail.com and the Levelrail software. Levelrail is published by GLINCKER. By using the website or the software you agree to them.

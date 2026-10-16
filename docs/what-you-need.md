@@ -3,6 +3,8 @@ title: "What you need before you start"
 icon: "/assets/icons/clipboard-text.svg"
 sidebarTitle: "What you need"
 description: "A plain-language checklist for installing Levelrail: a Linux server, a few ports, and optionally a domain. No Kubernetes, no prior DevOps experience."
+"og:image": "https://docs.levelrail.com/public/og/what-you-need.png"
+"twitter:image": "https://docs.levelrail.com/public/og/what-you-need.png"
 ---
 
 Levelrail runs on a Linux server that you own or rent. You install it with one command, then use a web dashboard to deploy apps. This page lists everything you need up front.

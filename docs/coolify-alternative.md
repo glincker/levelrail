@@ -1,6 +1,8 @@
 ---
 title: "Coolify alternative: a self-hosted deploy platform that stays light"
 description: "Levelrail is an open source Coolify alternative: Docker Engine API instead of SSH, built-in metrics and logs, one-click rollback, read-only importer."
+"og:image": "https://docs.levelrail.com/public/og/coolify-alternative.png"
+"twitter:image": "https://docs.levelrail.com/public/og/coolify-alternative.png"
 ---
 
 **A lighter way to self-host what you deploy with Coolify**

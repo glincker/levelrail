@@ -78,7 +78,7 @@ How to confirm: Run `levelrail-cli auth-engine status` and check the "Passkeys" 
 
 Fix: Set your dashboard to a domain name (not an IP), or set `APP_AUTH_ENGINE_WEBAUTHN_RP_ID` to your domain and restart the control plane.
 
-Still stuck: See [Configuration](/configuration) for how to set environment variables and restart.
+Still stuck: See [Configuration](/environment-variables) for how to set environment variables and restart.
 
 ### Two-factor codes not working or "Enrollment unavailable"
 
@@ -98,7 +98,7 @@ How to confirm: Check your OAuth provider's console for which URIs are registere
 
 Fix: Update the registered redirect URI at your OAuth provider to exactly match `https://<dashboard-domain>/api/v1/auth/oauth/<provider>/callback`. If you need to use a different hostname, set `APP_AUTH_ENGINE_OAUTH_ALLOWED_HOSTS` to comma-separated allowed hosts.
 
-Still stuck: See [OAuth and OIDC](/oauth-and-oidc) for detailed setup instructions per provider.
+Still stuck: See [SSO and SAML](/sso-saml) for identity provider setup.
 
 ### API token returns 401 "Unauthorized" after an upgrade
 
@@ -108,4 +108,4 @@ How to confirm: Check when the token was created. If it was before the upgrade, 
 
 Fix: Create a new API token in Settings > CLI Access (dashboard) or by running `levelrail-cli auth login --device`, then update your CI or scripts to use the new token.
 
-Still stuck: See [API tokens](/api-tokens) for the full token lifecycle.
+Still stuck: See [API reference](/api-reference) for the API surface.

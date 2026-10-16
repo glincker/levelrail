@@ -1,4 +1,7 @@
-# Database version catalog
+---
+title: "Database version catalog"
+description: "Where the database versions, release channels and end-of-life dates offered at create and upgrade time come from: a published, signed catalog file."
+---
 
 The version lists, release channels and end-of-life dates offered when you create
 or upgrade a database come from a published, signed file. Nobody edits version

@@ -1,6 +1,6 @@
 ---
 title: "Attention center"
-description: How the dashboard surfaces things that wait on an operator, including CLI login approvals, expired logins, deploy approvals, expiring tokens, failed data copies, overdue backups and stalled certificate renewals.
+description: "How the dashboard surfaces what waits on an operator: CLI login approvals, deploy approvals, expiring tokens, failed data copies, overdue backups and renewals."
 ---
 
 Some states block on a person and used to be visible only if you went looking. The attention center puts them in one place: the banner and bell in the dashboard header, the [Status page](/status-page), `levelrail-cli attention`, and the MCP `get_attention` tool.

@@ -1,7 +1,7 @@
 ---
 title: "Resource advisor (beta)"
 tag: "Beta"
-description: The beta resource advisor that suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes Postgres, Redis and MySQL settings from local telemetry, with every rule and threshold explained.
+description: "The beta resource advisor suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes database settings from local telemetry."
 ---
 
 The resource advisor reads the usage history the platform already keeps on each server and turns it into plain suggestions. It tells you which containers need a memory limit, which limits are too tight or far too generous, which apps sit idle, how to size Postgres for the memory it has, and when a disk will fill. It never changes anything on its own. You apply a suggestion by opening it, reviewing the before and after, and confirming.

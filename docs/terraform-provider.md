@@ -1,6 +1,6 @@
 ---
 title: "Terraform and OpenTofu provider"
-description: Manage projects, environments, apps, domains, databases and shared environment variables from Terraform or OpenTofu, with import support and a list of what is not covered.
+description: "Manage projects, environments, apps, domains, databases and shared env variables from Terraform or OpenTofu, with import support and what is not covered."
 ---
 
 The provider drives the same REST API as the dashboard and CLI, with your own token, so every policy and approval rule still applies. It lives in its own Go module, `terraform-provider/`, and never ships inside the control plane binary.

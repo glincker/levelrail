@@ -1,6 +1,8 @@
 ---
 title: "Architecture"
 description: Core architecture of Levelrail's reconciler, agent, builds, ingress, state, observability, and security layers.
+"og:image": "https://docs.levelrail.com/public/og/architecture.png"
+"twitter:image": "https://docs.levelrail.com/public/og/architecture.png"
 ---
 
 This page explains how Levelrail is built, for contributors and for operators who want to know what runs on their server. It describes the code as it is today. To use the platform, start with [Getting started](/getting-started). For maturity per feature, see [feature status](/feature-status).

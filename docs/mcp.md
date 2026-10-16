@@ -1,7 +1,7 @@
 ---
 title: "MCP tools, token budget and write mode"
 tag: "Beta"
-description: The levelrail-mcp tool listing, its token budget, the read-only diagnostic tools, the confirm-gated write tools behind --allow-write, and the prompt injection threat model.
+description: "The levelrail-mcp tool listing, token budget, read-only diagnostic tools, confirm-gated write tools behind --allow-write, and the prompt injection threat model."
 ---
 
 `levelrail-mcp` is a read-and-suggest layer over the HTTP API. It never sits in the reconcile path. Reads are always available. Mutations are explicit, confirmable and gated by ability. For transports and token scoping see [AI assistant integration](/ai-assistant). Per-toolset counts are in [MCP tool surface](/mcp-tool-surface).

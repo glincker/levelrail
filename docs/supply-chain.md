@@ -1,6 +1,6 @@
 ---
 title: "Supply chain visibility"
-description: A software bill of materials for each Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can keep a release from going live. What it costs, what it does not cover and every APP_BUILD_ATTEST, APP_SCAN and APP_SBOM setting.
+description: "A software bill of materials per Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can block a release. Costs, limits."
 ---
 
 A Dockerfile build can record what is inside the image, and the control plane can check that list for known vulnerabilities before the release goes live. Both are off by default.

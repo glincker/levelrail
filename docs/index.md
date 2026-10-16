@@ -3,6 +3,8 @@ title: "Levelrail documentation"
 icon: "/assets/icons/house.svg"
 sidebarTitle: "What is Levelrail"
 description: Self-hosted deployment platform. Push to git, get a running app with TLS, logs, metrics and rollback. One Go binary, no Kubernetes.
+"og:image": "https://docs.levelrail.com/public/og/index.png"
+"twitter:image": "https://docs.levelrail.com/public/og/index.png"
 ---
 
 Levelrail turns one or more Linux servers into a private cloud. Push to a git repo and get a running app with TLS, logs, metrics and one-click rollback.
