@@ -7,10 +7,31 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
+import type { ReactNode } from 'react'
 import { RelativeTime } from '../kit/RelativeTime'
 import { useAppNetwork } from '../../queries/appNetwork'
 import { useDeployAttempts } from '../../queries/deployAttempts'
 import type { AppDetail } from '../../types/appDetail'
+
+// Below sm only the icon shows; the text stays reachable via title and sr-only.
+function Chip({
+  icon,
+  children,
+  label,
+  variant = 'muted',
+}: {
+  icon: ReactNode
+  children: ReactNode
+  label: string
+  variant?: 'muted' | 'destructive'
+}) {
+  return (
+    <Badge variant={variant} title={label}>
+      {icon}
+      <span className="max-sm:sr-only">{children}</span>
+    </Badge>
+  )
+}
 
 /** Compact facts for the top right of every app page; each links to its detail. */
 export function AppHeaderBadges({
@@ -24,36 +45,46 @@ export function AppHeaderBadges({
   const { data: network } = useAppNetwork(app.name)
   const { data: attempts } = useDeployAttempts(app.name)
   const lastOk = attempts?.find((a) => a.status === 'succeeded')
+  const portLabel = network?.container_port
+    ? t('badges.port', { port: network.container_port })
+    : ''
+  const deployedLabel = t('badges.deployed')
   return (
-    <div className="flex flex-wrap items-center gap-1.5 lg:justify-end">
+    <div className="flex flex-wrap items-center gap-1.5">
       {attentionCount > 0 ? (
         <a href="#overview-attention">
-          <Badge variant="destructive">
-            <WarningCircleIcon aria-hidden="true" />
+          <Chip
+            variant="destructive"
+            label={t('badges.attention', { count: attentionCount })}
+            icon={<WarningCircleIcon aria-hidden="true" />}
+          >
             {t('badges.attention', { count: attentionCount })}
-          </Badge>
+          </Chip>
         </a>
       ) : null}
       {network?.container_port ? (
         <Link to="/apps/$name/network" params={{ name: app.name }}>
-          <Badge variant="muted">
-            <PlugsConnectedIcon aria-hidden="true" />
-            {t('badges.port', { port: network.container_port })}
-          </Badge>
+          <Chip
+            label={portLabel}
+            icon={<PlugsConnectedIcon aria-hidden="true" />}
+          >
+            {portLabel}
+          </Chip>
         </Link>
       ) : null}
       {app.node_id ? (
-        <Badge variant="muted">
-          <HardDrivesIcon aria-hidden="true" />
+        <Chip label={app.node_id} icon={<HardDrivesIcon aria-hidden="true" />}>
           {app.node_id}
-        </Badge>
+        </Chip>
       ) : null}
       {lastOk?.finished_at ? (
         <Link to="/apps/$name/deploys" params={{ name: app.name }}>
-          <Badge variant="muted">
-            <ClockCounterClockwiseIcon aria-hidden="true" />
-            {t('badges.deployed')} <RelativeTime at={lastOk.finished_at} />
-          </Badge>
+          <Chip
+            label={deployedLabel}
+            icon={<ClockCounterClockwiseIcon aria-hidden="true" />}
+          >
+            {deployedLabel} <RelativeTime at={lastOk.finished_at} />
+          </Chip>
         </Link>
       ) : null}
     </div>

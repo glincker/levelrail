@@ -74,6 +74,7 @@
     "errorBody": "The app list could not be loaded. {{message}}",
     "retry": "Retry"
   },
+  "appSectionHelp": "Read the guide for this page",
   "appActions": {
     "deploy": "Deploy",
     "restart": "Restart",

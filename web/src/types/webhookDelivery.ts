@@ -15,6 +15,8 @@ export interface WebhookDelivery {
   error?: string
   note?: string
   received_at: string
+  delivery_id?: string
+  attempt_id?: string
 }
 
 // Wire type for POST .../webhook-deliveries/{id}/replay

@@ -118,7 +118,7 @@ export function PageTemplate({
           ) : null}
           <div className="min-w-0 flex-1 basis-64 space-y-1">
             {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Display as="h1" size={titleSize} className="min-w-0 break-words">
                 {title}
               </Display>
@@ -137,8 +137,8 @@ export function PageTemplate({
             <div
               data-slot="page-hero-actions"
               className={cn(
-                'flex min-h-7 flex-wrap items-center gap-2 sm:ml-auto',
-                wrapped && 'self-start',
+                'flex min-w-0 basis-full flex-wrap items-center gap-2 lg:ml-auto lg:basis-auto lg:justify-end',
+                wrapped && 'lg:self-start',
                 wrapped && eyebrow && 'mt-5',
               )}
             >
@@ -148,7 +148,7 @@ export function PageTemplate({
         </div>
         {tabs ? <div className="border-b border-border">{tabs}</div> : null}
       </header>
-      {banners ? <div className="space-y-2">{banners}</div> : null}
+      {banners ? <div className="space-y-2 empty:hidden">{banners}</div> : null}
       {aside ? (
         <div
           data-page-body=""

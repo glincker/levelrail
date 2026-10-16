@@ -25,6 +25,8 @@ import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { APP_SECTION_HELP } from '@/components/apps/appSectionHelp'
+import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 
 // Matches the 18 real section routes under /apps/$name/* (see
@@ -90,10 +92,12 @@ function AppDetailLayout() {
   const isOverview = useRouterState({
     select: (s) => s.location.pathname.endsWith('/overview'),
   })
+  const { t } = useTranslation('common')
   const [deployTab, setDeployTab] = useState<DeployTab | null>(null)
   const section = useRouterState({
     select: (s) => s.location.pathname.split('/').filter(Boolean).pop(),
   })
+  const helpPath = section ? APP_SECTION_HELP[section] : undefined
   if (isViewingDeployLogs) {
     return <Outlet />
   }
@@ -141,12 +145,24 @@ function AppDetailLayout() {
       breadcrumb={breadcrumb}
       status={<Badge variant={status.variant}>{status.label}</Badge>}
       actions={
-        <div className="flex min-w-0 flex-col gap-2 lg:items-end">
+        <>
           <AppHeaderBadges app={app} />
-          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+          <span
+            aria-hidden="true"
+            className="hidden h-5 w-px bg-border lg:block"
+          />
+          <div className="flex items-center gap-2">
             <AppActionBar app={app} onDeploy={setDeployTab} />
           </div>
-        </div>
+        </>
+      }
+      helpPath={helpPath}
+      helpLabel={
+        helpPath
+          ? t('appSectionHelp', {
+              defaultValue: 'Read the guide for this page',
+            })
+          : undefined
       }
       banners={banners}
     >

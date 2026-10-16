@@ -80,3 +80,24 @@ describe('PageTemplate width classes', () => {
     expect(container.firstElementChild?.className).toContain(cls)
   })
 })
+
+describe('PageTemplate header height', () => {
+  it('keeps an empty banners wrapper out of the flow', () => {
+    render(<PageTemplate title="T" banners={<></>} />)
+    const wrap = screen
+      .getByRole('heading', { level: 1 })
+      .closest('header')?.nextElementSibling
+    expect(wrap?.className).toContain('empty:hidden')
+  })
+
+  it('puts actions on their own full row below lg and inline from lg', () => {
+    render(
+      <PageTemplate title="T" actions={<button type="button">A</button>} />,
+    )
+    const cls =
+      document.querySelector('[data-slot="page-hero-actions"]')?.className ?? ''
+    expect(cls).toContain('basis-full')
+    expect(cls).toContain('lg:basis-auto')
+    expect(cls).not.toContain('min-h-')
+  })
+})
