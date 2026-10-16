@@ -15,6 +15,12 @@ import { CloneAppDialog } from '../CloneAppDialog'
 import { DeleteAppDialog } from '../DeleteAppDialog'
 import { PromoteAppDialog } from '../PromoteAppDialog'
 import { useOverviewActions } from '../overview/useOverviewActions'
+import { useAppInMaintenance } from '../../hooks/useAppInMaintenance'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import type { DeployTab } from '../overview/DeploySheet'
 import type { AppDetail } from '../../types/appDetail'
 import { useAppAsleep, useAppSleepActions } from '../../queries/appSleep'
@@ -35,18 +41,30 @@ export function AppActionBar({
   const [promoteOpen, setPromoteOpen] = useState(false)
   const [cloneOpen, setCloneOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const { t: tm } = useTranslation('maintenance')
+  const inMaintenance = useAppInMaintenance(app.name)
+  const deployButton = (
+    <Button
+      size="sm"
+      onClick={() => {
+        onDeploy('existing-image')
+      }}
+    >
+      <RocketLaunchIcon aria-hidden="true" />
+      {t('appActions.deploy', { defaultValue: 'Deploy' })}
+    </Button>
+  )
 
   return (
     <>
-      <Button
-        size="sm"
-        onClick={() => {
-          onDeploy('existing-image')
-        }}
-      >
-        <RocketLaunchIcon aria-hidden="true" />
-        {t('appActions.deploy', { defaultValue: 'Deploy' })}
-      </Button>
+      {inMaintenance ? (
+        <Tooltip>
+          <TooltipTrigger render={deployButton} />
+          <TooltipContent>{tm('deployNotice.tooltip')}</TooltipContent>
+        </Tooltip>
+      ) : (
+        deployButton
+      )}
       <Button
         size="sm"
         variant="outline"

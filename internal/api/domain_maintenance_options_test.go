@@ -50,12 +50,12 @@ func TestDomainMaintenance_OptionsWindowAndClear(t *testing.T) {
 		t.Errorf("GET = %d %+v", code, got)
 	}
 
-	// Replacing the settings without an end time drops the old window.
-	if code, res = maintenanceCall(t, rt, cookie, http.MethodPut, `{"title":"Still upgrading"}`); code != http.StatusOK || res.WindowID != "" || !res.BypassHealthCheck {
+	// Replacing the settings without an end time swaps the dated window for an ongoing one.
+	if code, res = maintenanceCall(t, rt, cookie, http.MethodPut, `{"title":"Still upgrading"}`); code != http.StatusOK || res.WindowID == "" || !res.Ongoing || res.Until != "" || !res.BypassHealthCheck {
 		t.Fatalf("replace = %d %+v", code, res)
 	}
-	if windows, _ = db.ListMaintenanceWindows(ctx, time.Now().Add(-time.Hour)); len(windows) != 0 {
-		t.Errorf("old window kept: %+v", windows)
+	if windows, _ = db.ListMaintenanceWindows(ctx, time.Now().Add(-time.Hour)); len(windows) != 1 || !windows[0].Ongoing {
+		t.Errorf("want one ongoing window: %+v", windows)
 	}
 
 	if code, res = maintenanceCall(t, rt, cookie, http.MethodPut, `{"until":"`+until+`"}`); code != http.StatusOK || res.WindowID == "" {
@@ -66,6 +66,16 @@ func TestDomainMaintenance_OptionsWindowAndClear(t *testing.T) {
 	}
 	if windows, _ = db.ListMaintenanceWindows(ctx, time.Now().Add(-time.Hour)); len(windows) != 0 {
 		t.Errorf("clearing kept the window: %+v", windows)
+	}
+	// Clearing open ended maintenance resolves its status entry instead of deleting it.
+	if code, _ = maintenanceCall(t, rt, cookie, http.MethodPut, `{}`); code != http.StatusOK {
+		t.Fatalf("open ended = %d", code)
+	}
+	if code, _ = maintenanceCall(t, rt, cookie, http.MethodDelete, ""); code != http.StatusOK {
+		t.Fatalf("clear open ended = %d", code)
+	}
+	if windows, _ = db.ListMaintenanceWindows(ctx, time.Now().Add(-time.Hour)); len(windows) != 1 || windows[0].Ongoing || windows[0].EndsAt.After(time.Now().Add(time.Minute)) {
+		t.Errorf("ongoing entry not resolved: %+v", windows)
 	}
 }
 

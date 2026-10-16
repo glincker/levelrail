@@ -573,22 +573,24 @@ levelrail-cli domains maintenance get web app.example.com
 levelrail-cli domains maintenance clear web app.example.com   # also cancels the linked window
 ```
 
+To put every domain of an app into maintenance at once, add `--app` and drop the domain: `levelrail-cli domains maintenance set --app web --for 2h`. It applies to all domains or none and reports the domain and stage that failed, with nothing changed. `GET`, `PUT` and `DELETE /api/v1/apps/{name}/maintenance` do the same over the API, and the app's pages show one app-level banner instead of one per domain. A deploy while an app is in maintenance completes and leaves maintenance on; the deploy sheet and the Deploy button say so.
+
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/maintenance` with an optional JSON body of the fields above; an empty body keeps the default page. Running `set` again replaces the settings. On the dashboard, open the app's **Domains** tab and choose **Page and schedule** next to the maintenance toggle.
 
 ### What visitors get, and what it does not do
 
 - Every URL of the domain answers `503` with the page and a `Retry-After` header. Scripts, styles, images and API calls are not served either, so nothing in the page can load from the app.
 - The container is not stopped or restarted, and a deploy during maintenance does not end it: the setting is stored per domain and only you, `until` or the max duration clear it.
-- Alerts and uptime checks are not muted. A probe on any path other than the readiness path gets the `503` and can fire a down alert. To silence them, add an [alert maintenance window](/observability) for the same period.
-- The audit log records who turned it on and off. When a timed end or the max duration switches it off, the system writes `domain_maintenance.ended`.
-- The public status page lists maintenance only when an `until` created a linked window.
+- Turning maintenance on creates a linked alert silence for the app's domain health, DNS, certificate and threshold (down, uptime, error rate) alerts. It is listed under Alerts > Silences as "Created by maintenance", cannot be ended on its own, and is removed when maintenance ends, including an automatic end or an end that happened while the control plane was down. Crashloop and other alerts still fire. A probe on the readiness path still reaches the app unless you turned that off.
+- The audit log records who turned it on (`domain_maintenance.started`) and off (`domain_maintenance.ended`). Both rows carry a `detail` with `started_at`, `duration_seconds`, `actor` and, for the end, `end_reason`: `manual`, `until`, `max_duration` or `domain_removed` (the domain left its app). Automatic ends are written by the system actor.
+- The public status page lists every maintenance. With an `until` it shows the dated window; without one it shows an entry marked **ongoing**, which is resolved (listed as completed) when maintenance ends.
 
 ### Not leaving it on
 
 - Turning it on from the dashboard asks for confirmation: it lists the points above, the end time or max duration that applies, and a live preview of the page, rendered by the server with the same template visitors get.
 - While any domain is in maintenance a banner on every page shows how long it has been on and when it ends, with a one click **End maintenance**. It cannot be dismissed.
 - A domain that has been on longer than `APP_MAINTENANCE_ATTENTION_AFTER` (default `4h`) appears in the [attention center](/attention-center) as a warning. `0` or an unparseable value falls back to the default.
-- `levelrail-cli domains maintenance status` lists every domain in maintenance across all apps and how long each has been on. `levelrail-cli domains maintenance preview` prints the page and headers without enabling anything.
+- `levelrail-cli domains maintenance status` lists every domain in maintenance across all apps, how long each has been on, whether its alerts are silenced and how the status page shows it. `levelrail-cli domains maintenance preview` prints the page and headers without enabling anything.
 
 Worked example: take `app.example.com` down for a database upgrade, keep your office able to check it, and never leave it on past four hours.
 

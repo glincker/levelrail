@@ -548,6 +548,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityRoot: this changes an app's runtime routing behavior, the
 	// same "app lifecycle" tier POST .../stop and .../start already
 	// use, not a credential-bearing change like basic auth.
+	mux.HandleFunc("GET /api/v1/apps/{name}/maintenance", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppMaintenance))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppMaintenance))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearAppMaintenance))
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainMaintenance))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainMaintenance))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainMaintenance))

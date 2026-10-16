@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { DeployMaintenanceNotice } from '../maintenance/DeployMaintenanceNotice'
 import { SmartDeployBody, type DeployMode } from '../deploy/SmartDeployBody'
 import {
   Sheet,
@@ -40,7 +41,8 @@ export function DeploySheet({
           <SheetTitle>{t('title')}</SheetTitle>
           <SheetDescription>{t('description')}</SheetDescription>
         </SheetHeader>
-        <div className="p-4 pt-0">
+        <div className="space-y-3 p-4 pt-0">
+          <DeployMaintenanceNotice appName={appName} />
           {tab ? (
             <SmartDeployBody
               appName={appName}

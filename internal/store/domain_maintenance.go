@@ -31,6 +31,8 @@ type DomainMaintenance struct {
 	StartedAt time.Time
 	// AutoOffAt is the safety cut-off for open ended maintenance, zero when none.
 	AutoOffAt time.Time
+	// Ongoing is true when the linked window is an open ended placeholder.
+	Ongoing bool
 	// windowGone is true when WindowID names a window that no longer exists.
 	windowGone bool
 }
@@ -44,12 +46,12 @@ func (m DomainMaintenance) ActiveAt(now time.Time) bool {
 	if m.WindowID == "" {
 		return true
 	}
-	return !m.windowGone && now.Before(m.EndsAt)
+	return !m.windowGone && (m.Ongoing || now.Before(m.EndsAt))
 }
 
 const domainMaintenanceSelect = `
 	SELECT m.domain, m.title, m.message, m.retry_after_seconds, m.bypass_cidrs, m.bypass_health_check,
-	       m.window_id, w.id, COALESCE(w.ends_at, ''), m.started_at, m.auto_off_at
+	       m.window_id, w.id, COALESCE(w.ends_at, ''), m.started_at, m.auto_off_at, COALESCE(w.ongoing, 0)
 	FROM domain_maintenance m LEFT JOIN maintenance_windows w ON w.id = m.window_id AND m.window_id != ''`
 
 func scanDomainMaintenance(row interface{ Scan(dest ...any) error }) (DomainMaintenance, error) {
@@ -57,11 +59,11 @@ func scanDomainMaintenance(row interface{ Scan(dest ...any) error }) (DomainMain
 		m                DomainMaintenance
 		cidrs, endsAt    string
 		started, autoOff string
-		health           int
+		health, ongoing  int
 		linkedWindowID   sql.NullString
 	)
 	if err := row.Scan(&m.Domain, &m.Title, &m.Message, &m.RetryAfterSeconds, &cidrs, &health,
-		&m.WindowID, &linkedWindowID, &endsAt, &started, &autoOff); err != nil {
+		&m.WindowID, &linkedWindowID, &endsAt, &started, &autoOff, &ongoing); err != nil {
 		return DomainMaintenance{}, err
 	}
 	m.BypassHealthCheck = health != 0
@@ -72,7 +74,10 @@ func scanDomainMaintenance(row interface{ Scan(dest ...any) error }) (DomainMain
 	}
 	if m.WindowID != "" {
 		m.windowGone = !linkedWindowID.Valid
-		m.EndsAt, _ = parseStatusTime(endsAt)
+		m.Ongoing = ongoing != 0
+		if !m.Ongoing {
+			m.EndsAt, _ = parseStatusTime(endsAt)
+		}
 	}
 	return m, nil
 }
@@ -96,7 +101,13 @@ func (db *DB) GetDomainMaintenanceSettings(ctx context.Context, domain string, n
 // SaveDomainMaintenance enables maintenance mode for m.Domain with m's
 // settings, replacing any earlier settings.
 func (db *DB) SaveDomainMaintenance(ctx context.Context, m DomainMaintenance) error {
-	_, err := db.ExecContext(ctx, `
+	return saveDomainMaintenance(ctx, db, m)
+}
+
+func saveDomainMaintenance(ctx context.Context, x interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}, m DomainMaintenance) error {
+	_, err := x.ExecContext(ctx, `
 		INSERT INTO domain_maintenance (domain, title, message, retry_after_seconds, bypass_cidrs, bypass_health_check, window_id, started_at, auto_off_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT (domain) DO UPDATE SET title = excluded.title, message = excluded.message,
@@ -107,6 +118,24 @@ func (db *DB) SaveDomainMaintenance(ctx context.Context, m DomainMaintenance) er
 		formatTimeOrEmpty(m.StartedAt), formatTimeOrEmpty(m.AutoOffAt))
 	if err != nil {
 		return fmt.Errorf("store: save domain maintenance: %w", err)
+	}
+	return nil
+}
+
+// SaveDomainMaintenanceAll saves every row in one transaction, all or none.
+func (db *DB) SaveDomainMaintenanceAll(ctx context.Context, rows []DomainMaintenance) error {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin save domain maintenance: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, m := range rows {
+		if err := saveDomainMaintenance(ctx, tx, m); err != nil {
+			return err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit save domain maintenance: %w", err)
 	}
 	return nil
 }

@@ -51,6 +51,7 @@ func domainsMaintenanceUsage(prog string) string {
   %[1]s domains maintenance get <app> <domain> [flags]     show a domain's maintenance state
   %[1]s domains maintenance set <app> <domain> [flags]     enable maintenance mode (page text, end time, bypass)
   %[1]s domains maintenance clear <app> <domain> [flags]   disable maintenance mode
+  %[1]s domains maintenance <get|set|clear> --app <app>    the same for every domain of the app, all or none
   %[1]s domains maintenance status [flags]                 list every domain in maintenance, with how long
   %[1]s domains maintenance preview [flags]                show the page visitors get, without enabling anything
 
@@ -62,12 +63,17 @@ scripts, styles and images are not served. Pass --for, --until or
 already be one of <app>'s configured domains (see "%[1]s apps get <app>"
 or "%[1]s domains list").
 
+Turning maintenance on also silences the app's down, uptime and certificate
+probe alerts until it ends, and lists open ended maintenance as "ongoing"
+on the public status page. "status" shows both effects.
+
 Run "%[1]s domains maintenance <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
 func runDomainsMaintenanceGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains maintenance get", domainsMaintenanceJSONUsage, stderr)
+	appWide := fs.Bool("app", false, appWideUsage)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance get <app> <domain> [flags]\n\nShows a domain's currently configured maintenance state.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -78,14 +84,20 @@ func runDomainsMaintenanceGet(prog string, args []string, stdout, stderr io.Writ
 		return exitCode
 	}
 
-	rest, ok := requireArgs(fs, stderr, prog, "domains maintenance get", "an app name and a domain", 2)
+	rest, ok := requireArgs(fs, stderr, prog, "domains maintenance get", maintenanceArgsDesc(*appWide), maintenanceArgCount(*appWide))
 	if !ok {
 		return exitUsage
 	}
-	appName, domain := rest[0], rest[1]
+	appName, domain := rest[0], ""
+	if !*appWide {
+		domain = rest[1]
+	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	if *appWide {
+		return appMaintenanceGet(stdout, stderr, jsonOut, of, client, appName)
+	}
 	m, err := client.GetDomainMaintenance(context.Background(), appName, domain)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get maintenance state for domain %q: %w", domain, err))
@@ -96,6 +108,7 @@ func runDomainsMaintenanceGet(prog string, args []string, stdout, stderr io.Writ
 
 func runDomainsMaintenanceSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains maintenance set", domainsMaintenanceJSONUsage, stderr)
+	appWide := fs.Bool("app", false, appWideUsage)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance set <app> <domain> [flags]\n\nEnables maintenance mode on <domain>. Running it again replaces the settings.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -107,11 +120,14 @@ func runDomainsMaintenanceSet(prog string, args []string, stdout, stderr io.Writ
 		return exitCode
 	}
 
-	rest, ok := requireArgs(fs, stderr, prog, "domains maintenance set", "an app name and a domain", 2)
+	rest, ok := requireArgs(fs, stderr, prog, "domains maintenance set", maintenanceArgsDesc(*appWide), maintenanceArgCount(*appWide))
 	if !ok {
 		return exitUsage
 	}
-	appName, domain := rest[0], rest[1]
+	appName, domain := rest[0], ""
+	if !*appWide {
+		domain = rest[1]
+	}
 
 	req, err := opts.request(time.Now())
 	if err != nil {
@@ -121,6 +137,9 @@ func runDomainsMaintenanceSet(prog string, args []string, stdout, stderr io.Writ
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	if *appWide {
+		return appMaintenanceSet(stdout, stderr, jsonOut, of, client, appName, req)
+	}
 	m, err := client.SetDomainMaintenanceOptions(context.Background(), appName, domain, req)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("enable maintenance mode for domain %q: %w", domain, err))
@@ -131,6 +150,7 @@ func runDomainsMaintenanceSet(prog string, args []string, stdout, stderr io.Writ
 
 func runDomainsMaintenanceClear(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains maintenance clear", domainsMaintenanceJSONUsage, stderr)
+	appWide := fs.Bool("app", false, appWideUsage)
 	fs.Usage = func() {
 		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s domains maintenance clear <app> <domain> [flags]\n\nDisables maintenance mode on <domain>.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
@@ -141,14 +161,20 @@ func runDomainsMaintenanceClear(prog string, args []string, stdout, stderr io.Wr
 		return exitCode
 	}
 
-	rest, ok := requireArgs(fs, stderr, prog, "domains maintenance clear", "an app name and a domain", 2)
+	rest, ok := requireArgs(fs, stderr, prog, "domains maintenance clear", maintenanceArgsDesc(*appWide), maintenanceArgCount(*appWide))
 	if !ok {
 		return exitUsage
 	}
-	appName, domain := rest[0], rest[1]
+	appName, domain := rest[0], ""
+	if !*appWide {
+		domain = rest[1]
+	}
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 
+	if *appWide {
+		return appMaintenanceClear(stdout, stderr, jsonOut, of, client, appName)
+	}
 	m, err := client.ClearDomainMaintenance(context.Background(), appName, domain)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("disable maintenance mode for domain %q: %w", domain, err))
@@ -193,6 +219,22 @@ func printDomainMaintenanceHuman(out io.Writer, m domainMaintenanceResource) {
 		_, _ = fmt.Fprintf(out, "bypass: %s\n", strings.Join(m.Bypass, ", "))
 	}
 	_, _ = fmt.Fprintf(out, "health check bypass: %t\n", m.BypassHealthCheck)
+	printMaintenanceEffects(out, m)
+}
+
+func printMaintenanceEffects(out io.Writer, m domainMaintenanceResource) {
+	alerts := "not silenced"
+	if m.AlertsSilenced {
+		alerts = "silenced (" + m.SilenceID + ")"
+	}
+	page := "not listed"
+	switch {
+	case m.Ongoing:
+		page = "listed as ongoing"
+	case m.WindowID != "":
+		page = "listed as scheduled maintenance"
+	}
+	_, _ = fmt.Fprintf(out, "alerts: %s\nstatus page: %s\n", alerts, page)
 }
 
 // maintenanceSetOptions are the page, end time and bypass flags of set.
@@ -292,6 +334,7 @@ func printFleetMaintenance(out io.Writer, res apiclient.FleetMaintenanceResource
 			warn = "  (longer than expected)"
 		}
 		_, _ = fmt.Fprintf(out, "%s  app=%s  on for %s  %s%s\n", e.Domain, e.App, (time.Duration(e.ElapsedSeconds) * time.Second).Round(time.Minute), ends, warn)
+		printMaintenanceEffects(out, e.DomainMaintenanceResource)
 	}
 }
 

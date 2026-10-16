@@ -21,6 +21,7 @@ import {
   type DeployTab,
 } from '../../components/overview/DeploySheet'
 import { PendingDeployApprovalBanner } from '../../components/PendingDeployApprovalBanner'
+import { AppMaintenanceBanner } from '../../components/maintenance/AppMaintenanceBanner'
 import { TrialAppBanner } from '../../components/TrialAppBanner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -114,6 +115,7 @@ function AppDetailLayout() {
     <>
       {app.is_trial ? <TrialAppBanner app={app} /> : null}
       <PendingDeployApprovalBanner appName={app.name} />
+      <AppMaintenanceBanner appName={app.name} />
     </>
   )
   const content = (

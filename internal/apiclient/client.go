@@ -1202,6 +1202,31 @@ func (c *Client) ClearDomainMaintenance(ctx context.Context, name, domain string
 	return out, err
 }
 
+func appMaintenancePath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/maintenance"
+}
+
+// GetAppMaintenance calls GET /api/v1/apps/{name}/maintenance: the state of every domain of the app.
+func (c *Client) GetAppMaintenance(ctx context.Context, name string) (AppMaintenanceResource, error) {
+	var out AppMaintenanceResource
+	err := c.do(ctx, http.MethodGet, appMaintenancePath(name), nil, &out)
+	return out, err
+}
+
+// SetAppMaintenance calls PUT /api/v1/apps/{name}/maintenance: maintenance on every domain, all or none.
+func (c *Client) SetAppMaintenance(ctx context.Context, name string, req SetDomainMaintenanceRequest) (AppMaintenanceResource, error) {
+	var out AppMaintenanceResource
+	err := c.do(ctx, http.MethodPut, appMaintenancePath(name), req, &out)
+	return out, err
+}
+
+// ClearAppMaintenance calls DELETE /api/v1/apps/{name}/maintenance: ends maintenance on every domain.
+func (c *Client) ClearAppMaintenance(ctx context.Context, name string) (AppMaintenanceResource, error) {
+	var out AppMaintenanceResource
+	err := c.do(ctx, http.MethodDelete, appMaintenancePath(name), nil, &out)
+	return out, err
+}
+
 // domainTLSCertPath builds
 // /api/v1/apps/{name}/domains/{domain}/tls-cert, shared by all three
 // domain BYO TLS certificate methods below, mirroring domainAuthPath's

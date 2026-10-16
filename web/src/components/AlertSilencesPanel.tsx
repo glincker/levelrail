@@ -202,8 +202,18 @@ function CreateSilenceDialog() {
 }
 
 function EndSilenceButton({ silence }: { silence: Silence }) {
+  const { t: tm } = useTranslation('maintenance')
   const expire = useExpireSilence()
   if (silence.status === 'expired') return null
+  if (silence.source === 'maintenance') {
+    return (
+      <span className="text-xs text-muted-foreground">
+        {tm('silence.endsWithMaintenance', {
+          domain: silence.maintenance_domain ?? '',
+        })}
+      </span>
+    )
+  }
   return (
     <Button
       type="button"
@@ -228,6 +238,7 @@ export function AlertSilencesPanel() {
   const { data, isLoading, error } = useSilences(showExpired)
   const silences = data ?? []
   const { t } = useTranslation('common')
+  const { t: tm } = useTranslation('maintenance')
   const columns = useMemo<ResponsiveColumn<Silence>[]>(
     () => [
       {
@@ -276,11 +287,15 @@ export function AlertSilencesPanel() {
         header: 'Created by',
         priority: 3,
         cell: (s) => (
-          <span className="text-muted-foreground">{s.created_by || '-'}</span>
+          <span className="text-muted-foreground">
+            {s.source === 'maintenance'
+              ? tm('silence.createdByMaintenance')
+              : s.created_by || '-'}
+          </span>
         ),
       },
     ],
-    [],
+    [tm],
   )
 
   return (

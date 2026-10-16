@@ -471,6 +471,9 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/pipelines/{pname}/webhook/rotate | AbilityWriteSensitive | handleRotatePipelineWebhook |
 | GET | /api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries | AbilityRead | handleListPipelineWebhookDeliveries |
 | POST | /api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries/{did}/replay | AbilityDeploy | handleReplayPipelineWebhookDelivery |
+| GET | /api/v1/apps/{name}/maintenance | AbilityRead | handleGetAppMaintenance |
+| PUT | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleSetAppMaintenance |
+| DELETE | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleClearAppMaintenance |
 
 </Accordion>
 

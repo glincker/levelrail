@@ -62,7 +62,7 @@ The uptime bars are built from the samples the control plane itself records whil
 
 Post an incident with an impact (`none`, `minor`, `major`, `critical`) and the affected components. Minor impact marks those components degraded and major or critical marks them as an outage, on top of what probes report, until the incident is resolved. Each update moves the incident through `investigating`, `identified`, `monitoring`, `resolved` and is added to its timeline.
 
-Maintenance has a start, an end and a status of `scheduled`, `in_progress` or `completed`. Affected components show as "maintenance" while it is active.
+Maintenance has a start, an end and a status of `scheduled`, `in_progress` or `completed`. Affected components show as "maintenance" while it is active. Domain maintenance with no end time appears as an `in_progress` entry marked **ongoing** (`ongoing: true`, no `ends_at`) and moves to `completed` when maintenance ends.
 
 ```bash
 levelrail-cli status-page incidents create --title "Slow payments" --impact minor --component sc_abc --body "We are **investigating** elevated latency."

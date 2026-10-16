@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { GlobeIcon } from '@phosphor-icons/react/dist/ssr'
 import { useApp } from '../../../queries/apps'
 import { certificatesQueryOptions } from '../../../queries/certificates'
+import { AppMaintenanceToggle } from '../../../components/maintenance/AppMaintenanceToggle'
 import { DomainEditor } from '../../../components/DomainEditor'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,7 +21,12 @@ function DomainsSection() {
   const { name } = Route.useParams()
   const { data: app } = useApp(name)
 
-  return <DomainEditor app={app} />
+  return (
+    <div className="space-y-4">
+      <AppMaintenanceToggle appName={name} />
+      <DomainEditor app={app} />
+    </div>
+  )
 }
 
 // Mirrors DomainEditor's own card: header, a couple of domain rows (input

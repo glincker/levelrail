@@ -712,6 +712,27 @@ type DomainMaintenanceResource struct {
 	BypassHealthCheck bool     `json:"bypass_health_check"`
 	StartedAt         string   `json:"started_at,omitempty"`
 	AutoOffAt         string   `json:"auto_off_at,omitempty"`
+	// Ongoing is true when the status page shows this as ongoing maintenance.
+	Ongoing bool `json:"ongoing,omitempty"`
+	// AlertsSilenced is true while a maintenance silence mutes the app's probe alerts.
+	AlertsSilenced bool   `json:"alerts_silenced"`
+	SilenceID      string `json:"silence_id,omitempty"`
+}
+
+// AppMaintenanceDomain is one domain in AppMaintenanceResource.
+type AppMaintenanceDomain struct {
+	DomainMaintenanceResource
+	ElapsedSeconds int64 `json:"elapsed_seconds,omitempty"`
+}
+
+// AppMaintenanceResource is GET/PUT/DELETE /api/v1/apps/{name}/maintenance.
+type AppMaintenanceResource struct {
+	App     string                 `json:"app"`
+	Enabled bool                   `json:"enabled"`
+	All     bool                   `json:"all"`
+	Total   int                    `json:"total_domains"`
+	Active  int                    `json:"active_domains"`
+	Domains []AppMaintenanceDomain `json:"domains"`
 }
 
 // FleetMaintenanceEntry is one domain in GET /api/v1/maintenance/domains.

@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/maintenance"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -44,6 +43,11 @@ type domainMaintenanceResource struct {
 	StartedAt         string   `json:"started_at,omitempty"`
 	// AutoOffAt is the safety cut-off for open ended maintenance.
 	AutoOffAt string `json:"auto_off_at,omitempty"`
+	// Ongoing is true when the status page lists this maintenance as ongoing (no end time).
+	Ongoing bool `json:"ongoing,omitempty"`
+	// AlertsSilenced is true while a maintenance silence mutes this app's probe alerts.
+	AlertsSilenced bool   `json:"alerts_silenced"`
+	SilenceID      string `json:"silence_id,omitempty"`
 }
 
 // domainMaintenanceRequest is PUT's optional body; an empty body enables the
@@ -63,7 +67,7 @@ type domainMaintenanceRequest struct {
 func toDomainMaintenanceResource(m store.DomainMaintenance) domainMaintenanceResource {
 	res := domainMaintenanceResource{
 		Domain: m.Domain, Enabled: true, Title: m.Title, Message: m.Message,
-		RetryAfterSeconds: m.RetryAfterSeconds, WindowID: m.WindowID,
+		RetryAfterSeconds: m.RetryAfterSeconds, WindowID: m.WindowID, Ongoing: m.Ongoing,
 		Bypass: m.BypassCIDRs, BypassHealthCheck: m.BypassHealthCheck,
 	}
 	if !m.EndsAt.IsZero() {
@@ -100,7 +104,9 @@ func (rt *Router) handleGetDomainMaintenance(w http.ResponseWriter, r *http.Requ
 			writeJSON(w, http.StatusOK, domainMaintenanceResource{Domain: domain})
 			return
 		}
-		writeJSON(w, http.StatusOK, toDomainMaintenanceResource(m))
+		res := toDomainMaintenanceResource(m)
+		rt.decorateMaintenance(r.Context(), &res, time.Now())
+		writeJSON(w, http.StatusOK, res)
 		return
 	}
 	enabled, err := rt.domainMaintenance.GetDomainMaintenance(r.Context(), domain)
@@ -124,8 +130,7 @@ func (rt *Router) handleSetDomainMaintenance(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "invalid JSON body")
 		return
 	}
-	ss, ok := rt.domainMaintenanceSettings()
-	if !ok {
+	if _, ok := rt.domainMaintenanceSettings(); !ok {
 		if err := rt.domainMaintenance.SetDomainMaintenance(r.Context(), domain); err != nil {
 			rt.internalError(w, "api: set domain maintenance failed", err, slog.String("domain", domain))
 			return
@@ -134,54 +139,14 @@ func (rt *Router) handleSetDomainMaintenance(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusOK, domainMaintenanceResource{Domain: domain, Enabled: true})
 		return
 	}
-	now := time.Now().UTC()
-	in := maintenance.DomainInput{
-		Title: req.Title, Message: req.Message, RetryAfterSeconds: req.RetryAfterSeconds,
-		Until: req.Until, Bypass: req.Bypass, BypassHealthCheck: req.BypassHealthCheck == nil || *req.BypassHealthCheck,
-	}
-	m, err := in.Validate(domain, now)
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	rows, fail := rt.enableMaintenance(r.Context(), r.PathValue("name"), []string{domain}, req, rt.maintenanceActor(r))
+	if fail != nil {
+		rt.writeMaintenanceFailure(w, fail)
 		return
 	}
-	prev, wasOn, err := ss.GetDomainMaintenanceSettings(r.Context(), domain, now)
-	if err != nil {
-		rt.internalError(w, "api: set domain maintenance: load previous", err, slog.String("domain", domain))
-		return
-	}
-	var requested *time.Duration
-	if req.MaxDurationSeconds != nil {
-		d := time.Duration(*req.MaxDurationSeconds) * time.Second
-		requested = &d
-	}
-	autoOff, err := maintenance.ResolveAutoOff(now, req.Until, requested, envDuration(envMaintenanceMaxDuration, 0))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
-		return
-	}
-	m.StartedAt, m.AutoOffAt = maintenance.KeepStart(prev, wasOn, now), autoOff
-	if req.Until != nil {
-		if rt.scheduledMaintenance == nil {
-			writeError(w, http.StatusNotImplemented, "an end time needs scheduled maintenance, which is not enabled on this server")
-			return
-		}
-		win, err := rt.scheduledMaintenance.InsertMaintenanceWindow(r.Context(), maintenance.DomainWindow(m, r.PathValue("name"), now, *req.Until))
-		if err != nil {
-			rt.internalError(w, "api: set domain maintenance: create window", err, slog.String("domain", domain))
-			return
-		}
-		m.WindowID, m.EndsAt = win.ID, win.EndsAt
-	}
-	if err := ss.SaveDomainMaintenance(r.Context(), m); err != nil {
-		rt.dropMaintenanceWindow(r.Context(), m.WindowID)
-		rt.internalError(w, "api: set domain maintenance failed", err, slog.String("domain", domain))
-		return
-	}
-	if prev.WindowID != "" && prev.WindowID != m.WindowID {
-		rt.dropMaintenanceWindow(r.Context(), prev.WindowID)
-	}
-	rt.nudgeReconciler()
-	writeJSON(w, http.StatusOK, toDomainMaintenanceResource(m))
+	res := toDomainMaintenanceResource(rows[0])
+	rt.decorateMaintenance(r.Context(), &res, time.Now())
+	writeJSON(w, http.StatusOK, res)
 }
 
 // NudgeReconciler asks for a prompt reconcile pass, for background jobs
@@ -207,17 +172,9 @@ func (rt *Router) handleClearDomainMaintenance(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	var windowID string
-	if ss, ok := rt.domainMaintenanceSettings(); ok {
-		if m, on, err := ss.GetDomainMaintenanceSettings(r.Context(), domain, time.Now()); err == nil && on {
-			windowID = m.WindowID
-		}
-	}
-	if err := rt.domainMaintenance.DeleteDomainMaintenance(r.Context(), domain); err != nil {
+	if err := rt.clearMaintenance(r.Context(), r.PathValue("name"), domain, rt.maintenanceActor(r)); err != nil {
 		rt.internalError(w, "api: clear domain maintenance failed", err, slog.String("domain", domain))
 		return
 	}
-	rt.dropMaintenanceWindow(r.Context(), windowID)
-	rt.nudgeReconciler()
 	writeJSON(w, http.StatusOK, domainMaintenanceResource{Domain: domain, Enabled: false})
 }
