@@ -39,6 +39,10 @@ flowchart TD
 
 The first stage is a table of known classes. When none matches, the runtime cause analysis behind `apps diagnose` is consulted before falling back to `unknown`.
 
+When several classes match one log, the most specific wins (the table is ordered most specific first) and the others are listed in `also_matched`. ANSI colour codes are stripped before matching, and only the last 5000 log lines are scanned. The deploy page timeline shows each stage with its duration and marks the stage that failed; `apps deploys steps <name> <deploy-id>` prints the pipeline steps in the terminal.
+
+To try it, deploy `test/fixtures/failing-build`: it fails with `lockfile_out_of_sync`.
+
 ## Waiting for a deploy
 
 `GET /api/v1/apps/{name}/deploys/{deployId}` also returns an `outcome`: `in_progress`, `healthy`, `failed`, `canceled`, `superseded` or `blocked` (held by a freeze window or an approval). It is keyed on that one deploy: a container that reports serving this deploy's image is healthy, and rollout failures only count for the app's newest deploy, so a later restart or deploy cannot change an earlier deploy's result.
@@ -68,6 +72,15 @@ The build passed its time limit. Retryable. Enable the remote build cache or spl
 
 ### image_pull_failed
 The image could not be pulled: wrong name or tag, or the registry denied access. Check the name and add or refresh the registry credential.
+
+### registry_auth_failed
+The registry rejected the credentials or none was supplied for a private registry (`no basic auth credentials`, `unauthorized: authentication required`). Add or refresh the registry credential for that host and check its token scope and expiry.
+
+### platform_mismatch
+The image targets a different CPU architecture than the node (`exec format error`, `no matching manifest for linux/amd64`). Build for the node's platform or pick a tag that publishes it.
+
+### lockfile_out_of_sync
+A locked install refused to run because the lockfile is missing or stale (`npm ci can only install packages when ... are in sync`, `ERR_PNPM_NO_LOCKFILE`). Run the install locally, commit the lockfile, and keep it out of `.dockerignore`.
 
 ### port_not_listening
 The container started but nothing listens on the configured port. Bind `0.0.0.0` on the spec port (the `PORT` env var is injected) or fix the spec port.

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -142,5 +143,47 @@ func TestOptionsFromEnv(t *testing.T) {
 	got := OptionsFromEnv(func(k string) (string, bool) { v, ok := env[k]; return v, ok })
 	if got.MaxLines != 7 || got.MaxBytes != defaultExcerptBytes {
 		t.Errorf("options = %+v", got)
+	}
+}
+
+func TestEdgeCases(t *testing.T) {
+	ansi := "\x1b[31mnpm ERR!\x1b[0m \x1b[1mno space left on\x1b[0m device"
+	cases := []struct {
+		name string
+		in   Input
+		code string
+		also []string
+	}{
+		{"empty log is unknown", Input{Status: "failed"}, CodeUnknown, nil},
+		{"ansi codes do not hide a signature", Input{Status: "failed", LogLines: []string{"\x1b[31mexec format error\x1b[0m"}}, CodePlatformMismatch, nil},
+		{"ansi split inside a phrase is stripped", Input{Status: "failed", LogLines: []string{ansi}}, CodeDiskFull, nil},
+		{"most specific class wins and others are listed", Input{Status: "failed", FailingStep: "building", Error: "build: x", LogLines: []string{"npm error code EUSAGE", "npm ci can only install packages when your package.json and package-lock.json are in sync"}}, CodeLockfileOutOfSync, []string{CodeDependencyInstall}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := Classify(tc.in, Options{})
+			if !ok || got.Code != tc.code {
+				t.Fatalf("got %+v ok=%v, want code %s", got, ok, tc.code)
+			}
+			if strings.Join(got.AlsoMatched, ",") != strings.Join(tc.also, ",") {
+				t.Errorf("also_matched = %v, want %v", got.AlsoMatched, tc.also)
+			}
+		})
+	}
+}
+
+func TestVeryLongLogStillClassifies(t *testing.T) {
+	logs := make([]string, 0, 200000)
+	for i := 0; i < 199990; i++ {
+		logs = append(logs, "#5 compiling module "+strconv.Itoa(i))
+	}
+	logs = append(logs, "npm ci can only install packages when your package.json and package-lock.json are in sync")
+	start := time.Now()
+	got, _ := Classify(Input{Status: "failed", FailingStep: "building", Error: "build: x", LogLines: logs}, Options{})
+	if got.Code != CodeLockfileOutOfSync {
+		t.Fatalf("code = %s", got.Code)
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Errorf("classification took %s", d)
 	}
 }

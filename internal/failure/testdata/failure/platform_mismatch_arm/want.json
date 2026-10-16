@@ -1,0 +1,5 @@
+{
+  "code": "platform_mismatch",
+  "retryable": false,
+  "excerpt_contains": ["exec format error"]
+}

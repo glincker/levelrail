@@ -3,6 +3,7 @@
 package failure
 
 import (
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ type Failure struct {
 	SuggestedFix string    `json:"suggested_fix"`
 	DocsURL      string    `json:"docs_url"`
 	Retryable    bool      `json:"retryable"`
+	AlsoMatched  []string  `json:"also_matched,omitempty"`
 	DeployID     string    `json:"deploy_id"`
 	App          string    `json:"app"`
 	At           time.Time `json:"at"`
@@ -100,6 +102,12 @@ var RolloutFailureReasons = map[string]bool{
 	deploysafety.ReasonGateTimeout:              true,
 }
 
+var ansiRe = regexp.MustCompile("\x1b\\[[0-9;?]*[A-Za-z]")
+
+// maxScanLines bounds how many trailing log lines are matched, so a
+// multi-million line build log cannot stall classification.
+const maxScanLines = 5000
+
 const (
 	statusFailed   = "failed"
 	statusHeld     = "held"
@@ -120,7 +128,7 @@ func Classify(in Input, opts Options) (Failure, bool) {
 	}
 
 	lines := signalLines(in)
-	cl, pattern := match(in, lines)
+	cl, pattern, also := match(in, lines)
 	if cl == nil {
 		cl = fromDiagnose(in)
 	}
@@ -144,6 +152,7 @@ func Classify(in Input, opts Options) (Failure, bool) {
 	f.SuggestedFix = cl.fix
 	f.DocsURL = docsURL(cl.code)
 	f.Retryable = cl.retryable
+	f.AlsoMatched = also
 	f.LogExcerpt = excerpt(lines, pattern, opts)
 	return f, true
 }
@@ -171,7 +180,11 @@ func signalLines(in Input) []string {
 	if in.Reason != "" {
 		lines = append(lines, in.Reason)
 	}
-	return append(lines, in.LogLines...)
+	logs := in.LogLines
+	if len(logs) > maxScanLines {
+		logs = logs[len(logs)-maxScanLines:]
+	}
+	return append(lines, logs...)
 }
 
 func splitLines(s string) []string {
@@ -189,30 +202,51 @@ func inBuildPhase(in Input) bool {
 	return strings.Contains(in.Error, buildPhaseMark) || strings.Contains(step, "build") || strings.Contains(step, "detect")
 }
 
-func match(in Input, lines []string) (*class, string) {
+// match returns the most specific matching class (classes are ordered most
+// specific first) plus the codes of every other class that also matched.
+func match(in Input, lines []string) (*class, string, []string) {
 	lower := make([]string, len(lines))
 	for i, l := range lines {
-		lower[i] = strings.ToLower(l)
+		lower[i] = strings.ToLower(ansiRe.ReplaceAllString(l, ""))
 	}
 	build := inBuildPhase(in)
 	held := in.Status == statusHeld
+	var best *class
+	var bestPattern string
+	var also []string
 	for i := range classes {
 		c := &classes[i]
 		if c.held != held || (c.buildOnly && !build) || (c.runtimeOnly && build) {
 			continue
 		}
-		for _, p := range c.patterns {
-			for _, l := range lower {
-				if strings.Contains(l, p) {
-					return c, p
-				}
+		p := firstMatch(c.patterns, lower)
+		if p == "" {
+			continue
+		}
+		if best == nil {
+			best, bestPattern = c, p
+		} else {
+			also = append(also, c.code)
+		}
+	}
+	if best != nil {
+		return best, bestPattern, also
+	}
+	if in.Crashloop && !held {
+		return classByCode(CodeContainerCrashed), "", nil
+	}
+	return nil, "", nil
+}
+
+func firstMatch(patterns, lower []string) string {
+	for _, p := range patterns {
+		for _, l := range lower {
+			if strings.Contains(l, p) {
+				return p
 			}
 		}
 	}
-	if in.Crashloop && !held {
-		return classByCode(CodeContainerCrashed), ""
-	}
-	return nil, ""
+	return ""
 }
 
 // fromDiagnose reuses the runtime cause analysis as a second stage.

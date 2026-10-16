@@ -73,6 +73,7 @@
     "appRailpack": "{{directory}} looks like an application, auto-detected from that directory."
   },
   "failureLink": "Check build settings",
+  "failureAlsoMatched": "Also matched: {{codes}}",
   "workspace": {
     "title": "Workspace packages",
     "description": "Each package can run as its own service. Using one sets its directory as the build root and limits pushes to the paths that change it.",
