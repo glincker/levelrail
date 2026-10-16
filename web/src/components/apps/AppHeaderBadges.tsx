@@ -3,12 +3,16 @@ import { useTranslation } from 'react-i18next'
 import {
   ClockCounterClockwiseIcon,
   HardDrivesIcon,
+  MoonIcon,
   PlugsConnectedIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import type { ReactNode } from 'react'
 import { RelativeTime } from '../kit/RelativeTime'
+import { useQuery } from '@tanstack/react-query'
+import { appSleepQueryOptions } from '../../queries/appSleep'
+import { AsleepFor } from '../AsleepFor'
 import { useAppNetwork } from '../../queries/appNetwork'
 import { useDeployAttempts } from '../../queries/deployAttempts'
 import type { AppDetail } from '../../types/appDetail'
@@ -42,6 +46,13 @@ export function AppHeaderBadges({
   attentionCount?: number
 }) {
   const { t } = useTranslation('appAccess')
+  const { t: tSleep } = useTranslation('sleepHistory')
+  const { data: sleep } = useQuery({
+    ...appSleepQueryOptions(app.name),
+    staleTime: 15_000,
+    retry: false,
+  })
+  const asleepSince = sleep?.sleeping ? sleep.since : undefined
   const { data: network } = useAppNetwork(app.name)
   const { data: attempts } = useDeployAttempts(app.name)
   const lastOk = attempts?.find((a) => a.status === 'succeeded')
@@ -61,6 +72,16 @@ export function AppHeaderBadges({
             {t('badges.attention', { count: attentionCount })}
           </Chip>
         </a>
+      ) : null}
+      {asleepSince ? (
+        <Link to="/apps/$name/deploys" params={{ name: app.name }}>
+          <Chip
+            label={tSleep('badge.title')}
+            icon={<MoonIcon aria-hidden="true" />}
+          >
+            <AsleepFor since={asleepSince} />
+          </Chip>
+        </Link>
       ) : null}
       {network?.container_port ? (
         <Link to="/apps/$name/network" params={{ name: app.name }}>

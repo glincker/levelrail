@@ -5,6 +5,7 @@ import type dashboard from '../locales/en/dashboard.json'
 import type auditLog from '../locales/en/auditLog.json'
 import type streams from '../locales/en/streams.json'
 import type networkProxy from '../locales/en/networkProxy.json'
+import type fixit from '../locales/en/fixit.json'
 import type network from '../locales/en/network.json'
 import type databases from '../locales/en/databases.json'
 import type https from '../locales/en/https.json'
@@ -35,6 +36,7 @@ import type observability from '../locales/en/observability.json'
 import type trialApp from '../locales/en/trialApp.json'
 import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
+import type sleepHistory from '../locales/en/sleepHistory.json'
 import type gitBuild from '../locales/en/gitBuild.json'
 import type teams from '../locales/en/teams.json'
 import type compose from '../locales/en/compose.json'
@@ -78,6 +80,7 @@ declare module 'i18next' {
       auditLog: typeof auditLog
       streams: typeof streams
       networkProxy: typeof networkProxy
+      fixit: typeof fixit
       network: typeof network
       databases: typeof databases
       https: typeof https
@@ -107,6 +110,7 @@ declare module 'i18next' {
       observability: typeof observability
       previews: typeof previews
       backups: typeof backups
+      sleepHistory: typeof sleepHistory
       gitBuild: typeof gitBuild
       teams: typeof teams
       compose: typeof compose

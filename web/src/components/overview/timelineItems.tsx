@@ -4,11 +4,13 @@ import {
   ArrowsOutIcon,
   GearIcon,
   KeyIcon,
+  MoonIcon,
   PauseIcon,
   PlayIcon,
   RocketLaunchIcon,
   ShieldWarningIcon,
   SnowflakeIcon,
+  SunIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { Tone } from '@/components/kit'
 import type {
@@ -31,6 +33,8 @@ const KIND_ICON: Record<TimelineKind, React.ReactNode> = {
   scan_gate_override: <ShieldWarningIcon />,
   suspend: <PauseIcon />,
   resume: <PlayIcon />,
+  slept: <MoonIcon />,
+  woke: <SunIcon />,
 }
 
 const STATUS_TONE: Record<TimelineStatus, Tone> = {

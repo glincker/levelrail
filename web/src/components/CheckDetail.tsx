@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button'
 import { HelpLink } from '@/components/HelpLink'
 import type { DoctorCheck } from '../queries/systemDoctor'
 import { getCheckCta } from './doctorCheckCtas'
+import { FixAction } from './fixit/FixAction'
+import { useFixForCheck } from '../queries/fixit'
 
 // Shared by DoctorCheckRow's full-detail rendering (system status page) and
 // the setup wizard's collapsed rows, so the CTA copy and fix command only
@@ -47,6 +49,8 @@ function FixCommand({ fix, docsPath }: { fix: string; docsPath?: string }) {
 /** CheckDetail renders a check's actionable next step: the CTA message plus a copyable fix command, when either exists. Renders nothing otherwise. */
 export function CheckDetail({ check }: { check: DoctorCheck }) {
   const cta = getCheckCta(check)
+  const engineFix = useFixForCheck(check.code)
+  if (engineFix) return <FixAction fix={engineFix} />
   if (!cta && !check.fix) return null
   return (
     <div className="mt-2 space-y-2">
