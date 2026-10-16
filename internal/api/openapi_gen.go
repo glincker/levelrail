@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1190 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1193 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1090,6 +1090,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPreviewEnabled", Description: "Preview environments per pull request (preview_environments.go/ preview_environments_handlers.go): opt-in per app, off by default. AbilityWriteSensitive for the toggle, matching PUT .../git-source's own tier since it's the same connect-time-adjacent configuration surface; AbilityRead for the list, matching GET .../git-source; AbilityDeploy for the manual teardown, the same lifecycle-action tier POST .../restart and POST .../stop already use."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPreviewEnvironments", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/approve", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleApprovePreviewEnvironment", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/previews/{number}/env", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPRPreviewEnv", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/env", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPRPreviewEnv", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/previews/{number}/env/{id}", Ability: "AbilityWrite", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDeletePRPreviewEnv", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/extend", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleExtendPreviewEnvironment", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/teardown", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleTeardownPreviewEnvironment", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/secrets", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListSecrets", Description: "List known secret keys (never values) and toggle a key's lock. GET at AbilityRead, matching GET .../git-source's own GET=Read/PUT=WriteSensitive split just below: a key NAME is no more sensitive than a git-source's connection config."},

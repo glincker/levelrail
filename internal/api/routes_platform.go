@@ -101,6 +101,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/previews", rt.requireAbility(AbilityRead, rt.handleListAllPreviews))
 	mux.HandleFunc("GET /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPreviewPolicy))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/preview-policy", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPreviewPolicy))
+	mux.HandleFunc("GET /api/v1/apps/{name}/previews/{number}/env", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPRPreviewEnv))
+	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/env", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPRPreviewEnv))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/previews/{number}/env/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeletePRPreviewEnv))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/extend", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleExtendPreviewEnvironment))
 	mux.HandleFunc("POST /api/v1/apps/{name}/previews/{number}/approve", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleApprovePreviewEnvironment))
 

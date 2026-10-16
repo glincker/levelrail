@@ -223,6 +223,23 @@ type AppBranchEnvOverride struct {
 	UpdatedAt     string `json:"updated_at"`
 }
 
+// setPRPreviewEnvRequest mirrors internal/api's setPRPreviewEnvRequest.
+type setPRPreviewEnvRequest struct {
+	Key    string `json:"key"`
+	Value  string `json:"value"`
+	Secret bool   `json:"secret"`
+}
+
+// PRPreviewEnvOverride mirrors internal/api's prPreviewEnvResource: one env
+// override for a single pull request's preview. Value is "" for a secret.
+type PRPreviewEnvOverride struct {
+	ID        string `json:"id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	Secret    bool   `json:"secret"`
+	UpdatedAt string `json:"updated_at"`
+}
+
 // AppVolumeResource mirrors internal/api's appVolumeResource
 // (app_volumes.go): one of an app's named Docker volumes, identified by
 // its logical name (what an operator wrote in app.yaml), not the

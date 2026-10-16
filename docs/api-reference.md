@@ -506,6 +506,9 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/secrets/{key}/rotation | AbilityWriteSensitive | handleDeleteSecretRotation |
 | POST | /api/v1/apps/{name}/secrets/{key}/rotation/rotate | AbilityWriteSensitive | handleRotateSecretNow |
 | POST | /api/v1/apps/{name}/git-source/affected | AbilityRead | handleGitSourceAffected |
+| GET | /api/v1/apps/{name}/previews/{number}/env | AbilityRead | handleListPRPreviewEnv |
+| POST | /api/v1/apps/{name}/previews/{number}/env | AbilityWriteSensitive | handleSetPRPreviewEnv |
+| DELETE | /api/v1/apps/{name}/previews/{number}/env/{id} | AbilityWrite | handleDeletePRPreviewEnv |
 
 ## Telemetry
 

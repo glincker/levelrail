@@ -619,6 +619,30 @@ func (c *Client) DeleteAppBranchEnv(ctx context.Context, name, id string) error 
 	return c.do(ctx, http.MethodDelete, "/api/v1/apps/"+PathEscape(name)+"/branch-env/"+PathEscape(id), nil, nil)
 }
 
+// ListPRPreviewEnv calls GET /api/v1/apps/{name}/previews/{pr}/env.
+func (c *Client) ListPRPreviewEnv(ctx context.Context, name string, pr int) ([]PRPreviewEnvOverride, error) {
+	var out []PRPreviewEnvOverride
+	err := c.do(ctx, http.MethodGet, prPreviewEnvPath(name, pr), nil, &out)
+	return out, err
+}
+
+// SetPRPreviewEnv calls POST /api/v1/apps/{name}/previews/{pr}/env: declares
+// (or replaces) one env var for that pull request's next preview deploy.
+func (c *Client) SetPRPreviewEnv(ctx context.Context, name string, pr int, key, value string, secret bool) (PRPreviewEnvOverride, error) {
+	var out PRPreviewEnvOverride
+	err := c.do(ctx, http.MethodPost, prPreviewEnvPath(name, pr), setPRPreviewEnvRequest{Key: key, Value: value, Secret: secret}, &out)
+	return out, err
+}
+
+// DeletePRPreviewEnv calls DELETE /api/v1/apps/{name}/previews/{pr}/env/{id}.
+func (c *Client) DeletePRPreviewEnv(ctx context.Context, name string, pr int, id string) error {
+	return c.do(ctx, http.MethodDelete, prPreviewEnvPath(name, pr)+"/"+PathEscape(id), nil, nil)
+}
+
+func prPreviewEnvPath(name string, pr int) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/previews/" + strconv.Itoa(pr) + "/env"
+}
+
 // DeployCompose posts composeYAML as the raw body with Content-Type text/yaml.
 // The handler reads the body verbatim, so it must not be JSON-marshaled the way do() does.
 // Content-Type: text/yaml instead of do()'s hardcoded application/json.

@@ -115,6 +115,7 @@ var Tree = map[string]*Node{
 		"vault-env":          {Subs: map[string]*Node{"set": nil, "clear": nil}},
 		"preview-env":        {Subs: map[string]*Node{"set": nil, "clear": nil}},
 		"branch-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil}},
+		"pr-env":             {Subs: map[string]*Node{"list": nil, "set": nil, "clear": nil}},
 		"tag":                nil,
 		"untag":              nil,
 		"egress":             {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},

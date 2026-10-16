@@ -207,6 +207,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsPreviewEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "branch-env":
 		return runAppsBranchEnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "pr-env":
+		return runAppsPREnv(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "tag":
 		return runAppsTag(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "untag":
@@ -328,6 +330,7 @@ func appsUsage(prog string) string {
   %[1]s apps vault-env <verb> [flags]   declare/remove an env var resolved live from an external Vault instance
   %[1]s apps preview-env <verb> [flags]   declare/remove a preview-specific env var override, applied only when a preview is created
   %[1]s apps branch-env <verb> [flags]    declare/remove a branch-scoped env var override, applied only when a preview's own branch matches
+  %[1]s apps pr-env <verb> [flags]        declare/remove an env var override for one pull request's preview
   %[1]s apps tag <name> <tag> [flags]     attach a tag (by name) to an app, creating it first if new
   %[1]s apps untag <name> <tag> [flags]   detach a tag (by name) from an app
   %[1]s apps egress <verb> [flags]        get/set/clear an app's outbound network allowlist

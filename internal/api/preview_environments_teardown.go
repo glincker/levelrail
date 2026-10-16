@@ -20,6 +20,10 @@ import (
 func (rt *Router) teardownPullRequestPreview(ctx context.Context, appName string, prNumber int) (int, string) {
 	preview, err := rt.previewEnvironments.GetPreviewEnvironmentByAppAndPR(ctx, appName, prNumber)
 	if errors.Is(err, store.ErrPreviewEnvironmentNotFound) {
+		// An override set before the PR opened must not outlive a PR that never got a preview.
+		if label := rt.clearPRPreviewEnv(ctx, appName, prNumber); label != "" {
+			return http.StatusMultiStatus, fmt.Sprintf("preview cleanup partially failed: %s\n", label)
+		}
 		return http.StatusOK, fmt.Sprintf("ignored: no preview environment found for pr #%d\n", prNumber)
 	}
 	if err != nil {
@@ -48,6 +52,9 @@ func (rt *Router) teardownPreviewRecordReason(ctx context.Context, preview store
 	failed = append(failed, rt.teardownPreviewApp(ctx, preview.PreviewAppID)...)
 	failed = append(failed, rt.teardownPreviewEphemeralDatabases(ctx, preview.ID)...)
 	failed = append(failed, rt.teardownPreviewDatabaseIsolations(ctx, preview.ID)...)
+	if label := rt.clearPRPreviewEnv(ctx, preview.AppName, preview.PRNumber); label != "" {
+		failed = append(failed, label)
+	}
 	if len(failed) > 0 {
 		preview.Status = store.PreviewStatusFailed
 		preview.StatusReason = fmt.Sprintf("teardown left %d resource(s) undeleted: %s", len(failed), strings.Join(failed, ", "))
@@ -93,16 +100,53 @@ func (rt *Router) teardownPreviewApp(ctx context.Context, previewAppID string) [
 	}
 
 	var failed []string
+	// Recorded before any delete so a retry still knows what to remove.
+	var volumes []string
+	for _, svc := range services {
+		if rt.isLocalNode(svc.NodeID) {
+			for _, v := range svc.Volumes {
+				volumes = append(volumes, v.Name)
+			}
+		}
+	}
+	if err := rt.previewEnvironments.AddPreviewPendingVolumes(ctx, previewAppID, volumes); err != nil {
+		rt.logger.Error("api: teardown preview app: record volumes failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
+		return []string{previewAppID + ":volumes"}
+	}
 	for _, svc := range services {
 		if err := rt.apps.DeleteDesiredService(ctx, svc.Name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
 			rt.logger.Error("api: teardown preview app: delete service failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
 			failed = append(failed, svc.Name)
 			continue
 		}
-		rt.teardownServiceContainers(svc.Name, svc.NodeID)
+		if len(svc.Volumes) == 0 || !rt.isLocalNode(svc.NodeID) {
+			rt.teardownServiceContainers(svc.Name, svc.NodeID)
+			continue
+		}
+		// Containers must be gone before their volumes can be removed.
+		if err := rt.teardownServiceContainersSync(ctx, svc); err != nil {
+			rt.logger.Error("api: teardown preview app: remove containers failed", slog.String("error", err.Error()), slog.String("service", svc.Name))
+			failed = append(failed, svc.Name)
+			continue
+		}
 	}
 	if len(failed) > 0 {
 		return failed
+	}
+	volumes, err = rt.previewEnvironments.ListPreviewPendingVolumes(ctx, previewAppID)
+	if err != nil {
+		rt.logger.Error("api: teardown preview app: list pending volumes failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
+		return []string{previewAppID + ":volumes"}
+	}
+	if owned, err := rt.previewOwnedVolumes(ctx, volumes); err != nil {
+		rt.logger.Error("api: teardown preview app: resolve volumes failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
+		return []string{previewAppID + ":volumes"}
+	} else if volFailed := rt.removeExistingVolumes(ctx, owned); len(volFailed) > 0 {
+		return volFailed
+	}
+	if err := rt.previewEnvironments.ClearPreviewPendingVolumes(ctx, previewAppID); err != nil {
+		rt.logger.Error("api: teardown preview app: clear pending volumes failed", slog.String("error", err.Error()), slog.String("preview_app_id", previewAppID))
+		return []string{previewAppID + ":volumes"}
 	}
 
 	if err := rt.appGroups.DeleteApp(ctx, app.ID); err != nil && !errors.Is(err, store.ErrAppNotFound) {
