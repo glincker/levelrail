@@ -30,21 +30,30 @@ reach_json="$(go list -e -json ./... | jq -c --argjson changed "$changed_json" -
 	| map(select(([.ImportPath] + (.Deps | arr)) as $all | any($all[]; $set[.] == true)) | .ImportPath)
 ')" || { echo ALL; exit 0; }
 
-file_imports() {
-	{ sed -n '/^import (/,/^)/p' "$1"; grep -E '^import "' "$1" 2>/dev/null; } | grep -oE '"[^"]+"' | tr -d '"'
-}
+#
+# One jq call, then bash membership: a jq spawn per import was ~30s of runtime.
+reach_lines=$'\n'"$(jq -r '.[]' <<<"$reach_json")"$'\n'
 
 declare -A affected=()
-for f in "${api_files[@]}"; do
-	path="$api_dir/$f"
-	while IFS= read -r imp; do
-		[ -n "$imp" ] || continue
-		if jq -e --arg p "$imp" 'index($p) != null' <<<"$reach_json" >/dev/null 2>&1; then
-			affected["$path"]=1
-			break
-		fi
-	done < <(file_imports "$path")
-done
+# One awk pass over every api file's import block (path<TAB>import per line):
+# a sed, grep and tr pipeline per file was most of this script's runtime.
+while IFS=$'\t' read -r path imp; do
+	[ -n "$imp" ] || continue
+	[ -n "${affected[$path]+x}" ] && continue
+	case "$reach_lines" in
+	*$'\n'"$imp"$'\n'*) affected["$path"]=1 ;;
+	esac
+done < <(awk '
+	/^import \(/ { inblock = 1; next }
+	inblock && /^\)/ { inblock = 0; next }
+	inblock || /^import "/ {
+		line = $0
+		while (match(line, /"[^"]+"/)) {
+			print FILENAME "\t" substr(line, RSTART + 1, RLENGTH - 2)
+			line = substr(line, RSTART + RLENGTH)
+		}
+	}
+' "${api_files[@]/#/$api_dir/}")
 [ "${#affected[@]}" -gt 0 ] || { echo ALL; exit 0; }
 
 # Is $1 (a field name from a composite-literal line) read anywhere in the

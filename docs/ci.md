@@ -352,6 +352,45 @@ scripts/ci-changes.sh <base-sha> <head-sha>
 scripts/ci-go-plan.sh <base-sha> <head-sha>
 ```
 
+## Measured timings
+
+Baseline: the last 60 `ci.yml` runs (48 of them on pull requests). Median
+wall time per job, from the run and step timestamps.
+
+| Job | Median | p90 |
+| --- | --- | --- |
+| Whole PR run | 491 s | 622 s |
+| `Test (api-1..4)` (internal/api shards) | about 390 s | about 450 s |
+| `Test (e2e)` / `e2e-fleet` / `e2e-reconcile` | 382 s / 468 s / 475 s | 412 s / 490 s / 525 s |
+| `Test (rest)` / `Test (docker)` | 223 s / 182 s | 283 s / 217 s |
+| `Build, vet` (planner table tests about 128 s of it) | 221 s | 266 s |
+| `Lint` | 183 s | 237 s |
+| `Web (tsc, eslint)` (`vitest related` has rare outliers) | 152 s | 375 s |
+| `Plan Go work`, `Coverage gate`, `CI required` | 49 s, 12 s, 3 s | |
+
+The first job starts 2 to 57 s after the run is created. Go build and
+module caches hit on PR runs. The tsc build-info cache never hits, because
+`tsc -b` re-checks the whole project on every run (about 31 s) and
+`web/tsconfig.app.json` sets no `incremental`.
+
+Local hooks, one small sample diff each on a warm cache (seconds):
+
+| Stage | Before | After |
+| --- | --- | --- |
+| pre-commit, Go file only | 2.3 | 0.7 (warm cache both runs, so not a gain of this change) |
+| pre-commit, one web file | 35.3 | 29.5 (eslint and prettier now run beside `tsc -b`) |
+| pre-push, Go file (`internal/brand`) | 59.4 | 33.8 |
+| pre-push, web file only | 21.0 | 1.7 (`go build ./...` skipped when nothing Go-affecting changed) |
+| internal/api narrowing (`affected-api-tests.sh`) | 36 | 13 |
+
+A fresh worktree has no `web/src/routeTree.gen.ts` (gitignored, written by
+`vite build`), so pre-commit used to fail on every web change there. It now
+runs `vite build` once when the file is missing, about 20 s.
+
+pre-push bounds every `go test` it runs with `-timeout`, default `30m`,
+overridable with `LEVELRAIL_PUSH_TEST_TIMEOUT`. The default `go test`
+timeout of 10 minutes is shorter than a whole internal/api run.
+
 ## Runners
 
 Every job reads `runs-on` from the `CI_RUNNER` repository variable and falls
