@@ -88,20 +88,16 @@ func TestComposeHealthcheck_Live_GatesDeploySuccess(t *testing.T) {
 			t.Error("condition Message is empty, want the probe's own failure reason surfaced")
 		}
 
-		// This is the exact failure mode a deploy platform's worst
-		// failures come from: the container the controller created is
-		// genuinely still running (it never became unhealthy, it
-		// simply never answers the declared path), so a caller that
-		// only checked "is something running" rather than Reconcile's
-		// own error and False condition would wrongly call this a
-		// successful deploy.
+		// A candidate that fails its readiness gate must not stay Up
+		// serving traffic; abortHandoff stops it and keeps the exited
+		// container for log collection.
 		target := application.ContainerName(serviceName, res.Tag, "")
 		state, err := runtime.InspectByName(ctx, target)
 		if err != nil {
 			t.Fatalf("InspectByName(%q) error = %v", target, err)
 		}
-		if state == nil || !state.Running {
-			t.Fatalf("InspectByName(%q) = %+v, want the container to exist and be running despite the failed readiness gate", target, state)
+		if state == nil || state.Running {
+			t.Fatalf("InspectByName(%q) = %+v, want the failed candidate to exist but be stopped", target, state)
 		}
 	})
 
