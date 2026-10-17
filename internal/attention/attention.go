@@ -72,32 +72,33 @@ type Input struct {
 // Item kinds that block on a person, ranked ahead of other items of the
 // same severity.
 const (
-	KindNodeReenroll        = "node_reenroll"
-	KindDeviceLogin         = "device_login"
-	KindDeviceLoginResolved = "device_login_resolved"
-	KindApproval            = "approval"
-	KindTokenExpiring       = "token_expiring" //nolint:gosec // item kind name, not a credential
-	KindTokenExpired        = "token_expired"  //nolint:gosec // item kind name, not a credential
-	KindDataCopy            = "data_copy"
-	KindBackupOverdue       = "backup_overdue"
-	KindInvites             = "invites"
-	KindLoginCode           = "login_code"
-	KindLoginApproval       = "login_approval"
-	KindLoginAnomaly        = "login_anomaly"
-	KindAccountFlagged      = "account_flagged"
-	KindTokenUnused         = "token_unused" //nolint:gosec // item kind name, not a credential
-	KindDBSecurityUpdates   = "db_security_updates"
-	KindDBEOL               = "db_eol"
-	KindDBUpgradeFailed     = "db_upgrade_failed"
-	KindDockerGuard         = "docker_guard"
-	KindUpgradeBlocked      = "upgrade_blocked"
-	KindResourceAdvice      = "resource_advice"
-	KindSecretRotationDue   = "secret_rotation_due"
-	KindSecretRotationFail  = "secret_rotation_failed"
-	KindQuotaNearLimit      = "quota_near_limit"
-	KindAccessReviewOverdue = "access_review_overdue"
-	KindMaintenanceLong     = "maintenance_long"
-	KindGitHostUnreachable  = "git_host_unreachable"
+	KindNodeReenroll            = "node_reenroll"
+	KindDeviceLogin             = "device_login"
+	KindDeviceLoginResolved     = "device_login_resolved"
+	KindApproval                = "approval"
+	KindTokenExpiring           = "token_expiring" //nolint:gosec // item kind name, not a credential
+	KindTokenExpired            = "token_expired"  //nolint:gosec // item kind name, not a credential
+	KindDataCopy                = "data_copy"
+	KindBackupOverdue           = "backup_overdue"
+	KindInvites                 = "invites"
+	KindLoginCode               = "login_code"
+	KindLoginApproval           = "login_approval"
+	KindLoginAnomaly            = "login_anomaly"
+	KindAccountFlagged          = "account_flagged"
+	KindTokenUnused             = "token_unused" //nolint:gosec // item kind name, not a credential
+	KindDBSecurityUpdates       = "db_security_updates"
+	KindDBEOL                   = "db_eol"
+	KindDBUpgradeFailed         = "db_upgrade_failed"
+	KindDockerGuard             = "docker_guard"
+	KindUpgradeBlocked          = "upgrade_blocked"
+	KindResourceAdvice          = "resource_advice"
+	KindSecretRotationDue       = "secret_rotation_due"
+	KindSecretRotationFail      = "secret_rotation_failed"
+	KindQuotaNearLimit          = "quota_near_limit"
+	KindAccessReviewOverdue     = "access_review_overdue"
+	KindMaintenanceLong         = "maintenance_long"
+	KindGitHostUnreachable      = "git_host_unreachable"
+	KindFirewallAttackSuggested = "firewall_attack_suggested"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {

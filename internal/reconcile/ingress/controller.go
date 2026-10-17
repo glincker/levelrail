@@ -274,6 +274,7 @@ type Controller struct {
 
 	serverName     string
 	requestStats   bool
+	firewall       bool
 	listenAddr     string
 	httpListenAddr string
 	httpRedirect   bool
@@ -391,6 +392,11 @@ func (c *Controller) isLocalNode(nodeID string) bool {
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithFirewall puts the instance firewall in front of every route.
+func WithFirewall() Option {
+	return func(ctrl *Controller) { ctrl.firewall = true }
+}
 
 // WithRequestStats makes every proxied route count requests for the
 // per-app request metrics.
@@ -1049,6 +1055,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		DNSProvider:          c.resolveDNSProvider(ctx),
 		TLSCertificates:      tlsCertOverrides,
 		RequestStats:         c.requestStats,
+		Firewall:             c.firewall,
 		Streams:              streamRoutes,
 	})
 	if err != nil {

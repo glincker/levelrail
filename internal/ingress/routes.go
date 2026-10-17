@@ -463,6 +463,8 @@ type RoutesOptions struct {
 	// RequestStats, if true, wraps every proxy and static route in the
 	// request_stats handler (per-app request rate, errors, latency).
 	RequestStats bool
+	// Firewall puts the instance firewall handler in front of every host route.
+	Firewall bool
 	// Hardening, if non-nil, applies server limits, failover defaults and the
 	// friendly 503 page. Nil keeps the legacy bare config.
 	Hardening *Hardening
@@ -681,9 +683,13 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		allHosts = append(allHosts, r.Hosts...)
 	}
 
+	routes = exactHostsFirst(routes)
+	if opts.Firewall {
+		routes = append([]Route{{Handle: []any{NewFirewallHandler()}}}, routes...)
+	}
 	server := &Server{
 		Listen: []string{opts.ListenAddr},
-		Routes: exactHostsFirst(routes),
+		Routes: routes,
 	}
 	if opts.Inherited.Active() {
 		server.Listen = opts.Inherited.listenAddrs()

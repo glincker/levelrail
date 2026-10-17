@@ -1,0 +1,312 @@
+{
+  "cancel": "Cancel",
+  "save": "Save",
+  "retry": "Try again",
+  "page": {
+    "title": "Firewall",
+    "description": "Filter web requests before they reach your apps. Rule changes apply right away, with no redeploy.",
+    "sections": "Firewall sections",
+    "scope": "Host",
+    "allHosts": "All hosts",
+    "range": "Time range",
+    "ranges": { "1h": "Past hour", "6h": "Past 6 hours", "24h": "Past day" },
+    "tabs": {
+      "overview": "Overview",
+      "traffic": "Traffic",
+      "rules": "Rules",
+      "audit": "Audit log"
+    }
+  },
+  "outcome": {
+    "allowed": "Allowed",
+    "denied": "Denied",
+    "challenged": "Challenged",
+    "logged": "Logged",
+    "rate_limited": "Rate limited"
+  },
+  "action": {
+    "allow": "Bypass",
+    "deny": "Deny",
+    "challenge": "Challenge",
+    "log": "Log",
+    "rate_limit": "Rate limit"
+  },
+  "actionHint": {
+    "allow": "Skips every later rule, ban and bot check. Use it for trusted clients.",
+    "deny": "Refuses the request with a 403.",
+    "challenge": "Asks the browser to solve a short proof of work before it gets through.",
+    "log": "Counts the request and lets it continue. Use it to test a rule before enforcing it.",
+    "rate_limit": "Lets this many matching requests through per client, then answers 429 until the window ends."
+  },
+  "mode": {
+    "off": "Off",
+    "log": "Log only",
+    "challenge": "Challenge",
+    "block": "Block"
+  },
+  "field": {
+    "path": "Request path",
+    "host": "Host",
+    "method": "Method",
+    "header": "Header",
+    "query": "Query parameter",
+    "user_agent": "User agent",
+    "ip": "IP address or range",
+    "country": "Country"
+  },
+  "op": {
+    "equals": "Equals",
+    "starts_with": "Starts with",
+    "contains": "Contains",
+    "glob": "Matches pattern",
+    "in_cidr": "Is in",
+    "exists": "Exists"
+  },
+  "placeholder": {
+    "path": "/api/users",
+    "host": "app.example.com",
+    "method": "POST",
+    "header": "value",
+    "query": "value",
+    "user_agent": "curl",
+    "ip": "203.0.113.0/24",
+    "country": "DE",
+    "paramName": "Name"
+  },
+  "rateLimit": {
+    "count": "Requests allowed",
+    "countUnit": "requests per",
+    "window": "Window",
+    "windowUnit": "seconds"
+  },
+  "reason": {
+    "rule": "A rule",
+    "rate_rule": "A rate limit rule",
+    "ban": "Temporary ban",
+    "bot": "Bad bot list",
+    "ai_bot": "AI crawler list",
+    "attack_mode": "Attack mode",
+    "shield_rate": "Domain rate limit",
+    "shield_concurrency": "Domain connection cap",
+    "shield_bot": "Domain bot list",
+    "shield_body": "Domain body size limit"
+  },
+  "actions": {
+    "failed": "That did not work",
+    "blockIp": "Block this IP",
+    "allowIp": "Always allow this IP",
+    "createRule": "Create a rule from this",
+    "blocked": "Blocked {{ip}}",
+    "allowed": "{{ip}} now bypasses the firewall"
+  },
+  "lockout": {
+    "title": "This would block you",
+    "description": "{{ip}} is the address you are using right now. Blocking it will lock you out of this control plane until the entry is removed from the server.",
+    "ruleDescription": "This rule matches the address you are using right now. Saving it will lock you out of this control plane until the rule is removed from the server.",
+    "confirm": "Block it anyway"
+  },
+  "error": {
+    "loadFailed": "Could not load the firewall.",
+    "forbiddenTitle": "You cannot see this part of the firewall",
+    "forbiddenHelp": "Client addresses need the read:sensitive permission. Ask an administrator to add it to your role or token."
+  },
+  "status": {
+    "activeTitle": "Firewall is active",
+    "activeSubtitle": "All systems normal",
+    "attackTitle": "Attack mode is on",
+    "attackUntil": "Limits are tightened until {{time}}",
+    "spikeTitle": "Blocked traffic is spiking",
+    "spikeSubtitle": "Check the traffic tab, or turn on attack mode",
+    "attackMode": "Attack mode",
+    "customRules": "Rules enabled",
+    "botProtection": "Bad bots",
+    "aiBots": "AI crawlers",
+    "on": "On",
+    "off": "Off"
+  },
+  "chart": {
+    "legend": "Requests by outcome",
+    "label": "Requests by firewall outcome over the {{range}} range",
+    "none": "none",
+    "empty": "No requests seen yet in this range. Counts appear as soon as traffic reaches a host."
+  },
+  "alerts": {
+    "title": "Alerts",
+    "noneTitle": "No active alerts",
+    "noneHelp": "One appears here if blocked or challenged requests pass {{threshold}} per minute.",
+    "spikeTitle": "Blocked traffic is spiking",
+    "spikeHelp": "{{rate}} blocked or challenged requests per minute over the last {{minutes}} minutes (alert at {{threshold}}).",
+    "turnOn": "Turn on attack mode",
+    "attackOn": "Attack mode is on. It ends"
+  },
+  "topList": {
+    "actionsFor": "Actions for {{key}}",
+    "spark": "Requests over the last hour for {{key}}"
+  },
+  "traffic": {
+    "note": "Top tables are approximate and cover the last {{minutes}} minutes. They are kept in memory only, so they reset when the control plane restarts. Countries, networks and client fingerprints are not shown.",
+    "lastHour": "Last hour",
+    "ips": "Top IP addresses",
+    "ipsEmpty": "No requests seen in the last hour. Addresses appear here as traffic arrives.",
+    "deniedIps": "Denied IPs",
+    "deniedEmpty": "Nothing denied, challenged or rate limited in the last hour.",
+    "userAgents": "Top user agents",
+    "userAgentsEmpty": "No requests seen in the last hour.",
+    "paths": "Top request paths",
+    "pathsEmpty": "No requests seen in the last hour.",
+    "hosts": "Top hosts",
+    "hostsEmpty": "No requests seen in the last hour."
+  },
+  "bans": {
+    "title": "Temporary bans",
+    "description": "Clients that keep getting denied are blocked for a while.",
+    "retention": "A client denied {{strikes}} times within {{window}} is banned for {{duration}}. Bans live in memory and end on restart.",
+    "emptyTitle": "No active bans",
+    "emptyHelp": "A client that keeps getting denied is banned here automatically, with a button to lift it.",
+    "loadFailed": "Could not load temporary bans.",
+    "ip": "IP address",
+    "reason": "Caused by",
+    "requests": "Blocked",
+    "started": "Started",
+    "ends": "Ends",
+    "lift": "Lift",
+    "liftFor": "Lift the ban on {{ip}}",
+    "lifted": "Ban on {{ip}} lifted"
+  },
+  "rules": {
+    "title": "Rules",
+    "manage": "Manage",
+    "new": "New rule",
+    "customTitle": "Custom rules",
+    "customHelp": "Checked in this order. The first rule that allows, denies or challenges ends the check. Changes apply without a redeploy.",
+    "emptyTitle": "No custom rules yet",
+    "emptyHelp": "Add a rule to deny, challenge, log or rate limit requests that match a path, header, user agent or address.",
+    "edit": "Edit",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "delete": "Delete",
+    "deleteTitle": "Delete {{name}}?",
+    "deleteHelp": "Traffic it matched is no longer filtered. This cannot be undone.",
+    "enabledFor": "Enabled: {{name}}",
+    "actionsFor": "Actions for {{name}}",
+    "hitsTitle": "Matches since the control plane started",
+    "hitsSpark": "Matches over the last hour for {{name}}"
+  },
+  "ipList": {
+    "blockTitle": "IP blocking",
+    "blockHelp": "Deny an address or range on every host, or only the host selected above.",
+    "bypassTitle": "Always allow",
+    "bypassHelp": "These addresses skip every other rule, ban and bot check.",
+    "ipLabel": "IP address or CIDR range",
+    "noteLabel": "Note",
+    "notePlaceholder": "Why (optional)",
+    "block": "Block",
+    "bypass": "Allow",
+    "required": "Enter an IP address or CIDR range.",
+    "removeFor": "Remove {{ip}}",
+    "removed": "Removed {{ip}}",
+    "blockEmptyTitle": "No blocked addresses",
+    "blockEmptyHelp": "Add an address above, or block one from the Traffic tab.",
+    "bypassEmptyTitle": "No always-allowed addresses",
+    "bypassEmptyHelp": "Add your office or monitoring addresses so a rule can never lock them out.",
+    "scopeNote": "New entries apply to {{scope}} only.",
+    "allHostsNote": "New entries apply to every host."
+  },
+  "bots": {
+    "title": "Bot management",
+    "description": "Turn the curated lists into log, challenge or block. Challenge shows a short browser check.",
+    "badBots": "Bad bots",
+    "badBotsHelp": "Scrapers and scanners from the shipped list. Edit that list with the bot list setting on the server.",
+    "aiBots": "AI crawlers",
+    "aiBotsHelp": "Crawlers that collect content for AI models. The list below is data you can edit.",
+    "editList": "Edit list",
+    "customList_one": "{{count}} custom entry",
+    "customList_other": "{{count}} custom entries",
+    "shippedList_one": "Shipped list, {{count}} entry",
+    "shippedList_other": "Shipped list, {{count}} entries",
+    "bans": "Automatic bans",
+    "bansHelp": "Ban a client for a while after it keeps getting denied.",
+    "bansDetail": "Ban a client for {{duration}} after {{strikes}} denials within {{window}}.",
+    "saved": "Bot settings saved",
+    "listTitle": "AI crawler list",
+    "listHelp": "One user agent substring per line, matched without regard to case. Remove everything and save to go back to the shipped list.",
+    "listLabel": "AI crawler user agents",
+    "listReset": "Reset to shipped list",
+    "listCount_one": "{{count}} entry",
+    "listCount_other": "{{count}} entries",
+    "listTooMany": "At most {{max}} entries.",
+    "verifiedNote": "Matching is by user agent only. Crawler identity is not verified, so a client can pretend to be a browser or a well-known bot."
+  },
+  "attack": {
+    "title": "Danger zone",
+    "description": "Changes that affect every visitor of every host. They switch off by themselves.",
+    "switchTitle": "Attack mode",
+    "switchHelp": "Tightens rate and connection limits and refuses the bad bot list on every host. Optionally challenges every visitor with a browser check.",
+    "duration": "Duration",
+    "minutes_one": "{{count}} minute",
+    "minutes_other": "{{count}} minutes",
+    "challenge": "Challenge every visitor",
+    "turnOn": "Turn on attack mode",
+    "turnOff": "Turn off",
+    "endsIn": "Ends",
+    "confirmTitle": "Turn on attack mode?",
+    "confirmHelp": "It stays on for {{minutes}} minutes unless you turn it off sooner.",
+    "consequenceLimits": "Every client gets a low request rate and connection limit.",
+    "consequenceBots": "Bots on the bad bot list are refused.",
+    "consequenceChallenge": "Every visitor must pass a short browser check, including API clients.",
+    "onToast": "Attack mode is on",
+    "offToast": "Attack mode is off"
+  },
+  "limits": {
+    "title": "Limits for {{domain}}",
+    "description": "Per-domain rate, connection and body size limits, bot list and allowlist. These run after the firewall rules above.",
+    "unknownDomain": "This host is not configured here, so it has no per-domain limits."
+  },
+  "audit": {
+    "title": "Firewall changes",
+    "emptyTitle": "No firewall changes yet",
+    "emptyHelp": "Creating or changing a rule, an IP entry, bot handling or attack mode is recorded here with who did it.",
+    "actions": {
+      "rule_created": "Rule created",
+      "rule_updated": "Rule changed",
+      "rule_deleted": "Rule deleted",
+      "rules_reordered": "Rules reordered",
+      "ip_blocked": "IP blocked",
+      "ip_allowed": "IP always allowed",
+      "ban_lifted": "Ban lifted",
+      "settings_changed": "Bot settings changed",
+      "attack_mode_on": "Attack mode turned on",
+      "attack_mode_off": "Attack mode turned off"
+    }
+  },
+  "editor": {
+    "newTitle": "New firewall rule",
+    "editTitle": "Edit firewall rule",
+    "description": "A rule matches when all its conditions do. Rules are checked in order, so add several rules for OR.",
+    "back": "All rules",
+    "create": "Create rule",
+    "save": "Save rule",
+    "saving": "Saving",
+    "created": "Rule created",
+    "updated": "Rule saved",
+    "missing": "This rule no longer exists.",
+    "namePlaceholder": "Block old admin paths",
+    "notePlaceholder": "What this rule is for",
+    "scope": "Applies to",
+    "scopeHelp": "All hosts, or one host."
+  },
+  "validation": {
+    "nameRequired": "Give the rule a name of up to 80 characters.",
+    "noteTooLong": "Keep the description under 200 characters.",
+    "actionRequired": "Choose what the rule does.",
+    "rateCount": "Enter a whole number of requests from 1 to 1,000,000.",
+    "rateWindow": "Enter a whole number of seconds from 1 to 3,600.",
+    "paramName": "Enter a name of letters, digits, dashes or underscores.",
+    "valueRequired": "Enter a value of up to 256 characters.",
+    "ipInvalid": "Enter an IP address or a CIDR range such as 203.0.113.0/24.",
+    "methodInvalid": "Enter an HTTP method such as GET or POST.",
+    "countryInvalid": "Enter a two letter country code such as DE.",
+    "pathSlash": "A path starts with /.",
+    "wildcards": "Use at most 8 wildcards."
+  }
+}

@@ -10,6 +10,7 @@ import {
   GlobeIcon,
   UserIcon,
   ShieldIcon,
+  ShieldCheckIcon,
   KeyIcon,
   PlugsConnectedIcon,
   CloudArrowUpIcon,
@@ -134,6 +135,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
   nav('nav-dns', 'DNS zones', <GlobeHemisphereWestIcon />, '/dns'),
+  nav('nav-firewall', 'Firewall', <ShieldCheckIcon />, '/firewall'),
   nav(
     'nav-loadbalancers',
     'Load balancers',

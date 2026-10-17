@@ -192,6 +192,7 @@
       "dns": "DNS",
       "proxy": "Proxy",
       "loadbalancers": "Load balancers",
+      "firewall": "Firewall",
       "nodes": "Nodes",
       "network": "Topology",
       "cdn": "CDN and caches",

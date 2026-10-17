@@ -72,6 +72,7 @@ export type GlobalTo =
   | '/domains'
   | '/dns'
   | '/loadbalancers'
+  | '/firewall'
   | '/models'
   | '/ai-assistant'
   | '/terminal'
@@ -225,17 +226,17 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         badge: 'proxy-attention',
       },
       {
+        id: 'firewall',
+        label: 'Firewall',
+        to: '/firewall',
+        icon: <ShieldCheckIcon />,
+      },
+      {
         id: 'loadbalancers',
         label: 'Load balancers',
         to: '/loadbalancers',
         icon: <ArrowsSplitIcon />,
         feature: 'load-balancer',
-      },
-      {
-        id: 'network',
-        label: 'Topology',
-        to: '/network',
-        icon: <ShareNetworkIcon />,
       },
       {
         id: 'cdn',
@@ -250,6 +251,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Fleet',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'network',
+        label: 'Topology',
+        to: '/network',
+        icon: <ShareNetworkIcon />,
+      },
       {
         id: 'node-providers',
         label: 'Cloud providers',
