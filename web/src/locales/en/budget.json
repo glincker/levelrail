@@ -1,0 +1,93 @@
+{
+  "title": "Budget",
+  "description": "Cap this app's monthly egress and cost. You are alerted as usage climbs, and the app can be throttled or paused when the limit is reached. Counters reset on the first of each month (UTC).",
+  "loading": "Loading budget",
+  "loadError": "Could not load this app's budget.",
+  "retry": "Try again",
+  "empty": {
+    "title": "No budget set",
+    "body": "Without a budget, heavy traffic can run up egress and cost with no warning. Set a limit to get alerts at 50, 80 and 100 percent.",
+    "action": "Set a budget"
+  },
+  "status": {
+    "resets": "Resets {{date}}",
+    "month": "Month {{period}}"
+  },
+  "reason": {
+    "WithinBudget": "Within budget",
+    "ThresholdReached": "Alert level reached",
+    "LimitReachedAlertOnly": "Limit reached, alert only",
+    "Throttled": "Throttled",
+    "Paused": "Paused",
+    "EnforcementPending": "Applying"
+  },
+  "usage": {
+    "egress": "Egress",
+    "cost": "Cost",
+    "ofLimit": "{{used}} of {{limit}}",
+    "costOfLimit": "{{used}} of {{limit}}",
+    "notPriced": "No prices are configured, so cost reads zero and its ceiling cannot fire. Set prices on the Usage and cost page."
+  },
+  "summary": {
+    "alerts": "Alerts at {{levels}}",
+    "action": {
+      "none": "At 100 percent: alert only, the app keeps serving",
+      "throttle": "At 100 percent: each client is limited to {{rps}} requests per second",
+      "pause": "At 100 percent: the app is paused with a maintenance response"
+    }
+  },
+  "actions": {
+    "edit": "Edit budget",
+    "remove": "Remove budget"
+  },
+  "form": {
+    "egress": "Monthly egress limit (GiB)",
+    "egressHelp": "HTTP response bytes served by ingress. Leave empty for no egress limit.",
+    "cost": "Monthly cost ceiling",
+    "costHelp": "Uses the prices on the Usage and cost page. Leave empty for no cost ceiling.",
+    "thresholds": "Alert levels (percent)",
+    "thresholdsHelp": "Comma separated, 1 to 100. Default 50, 80, 100.",
+    "action": "When the limit is reached",
+    "actionNone": "Alert only",
+    "actionNoneHelp": "The app keeps serving.",
+    "actionThrottle": "Throttle",
+    "actionThrottleHelp": "Limit each client to a number of requests per second. This slows heavy callers but is not a bandwidth cap.",
+    "actionPause": "Pause",
+    "actionPauseHelp": "Serve a maintenance response until next month or until you raise the limit.",
+    "rps": "Requests per second per client",
+    "save": "Save budget",
+    "saving": "Saving",
+    "cancel": "Cancel",
+    "needLimit": "Set an egress limit, a cost ceiling, or both.",
+    "badNumber": "Enter a number of zero or more.",
+    "badThresholds": "Use whole percents from 1 to 100, separated by commas."
+  },
+  "remove": {
+    "title": "Remove this budget?",
+    "description": "The app is no longer limited or alerted on.",
+    "consequences": {
+      "lift": "Any throttle or pause in force is lifted.",
+      "history": "The history of what happened is kept."
+    },
+    "confirm": "Remove budget",
+    "pending": "Removing"
+  },
+  "history": {
+    "title": "History",
+    "empty": "Nothing has happened yet. Alerts, throttles, pauses and monthly resets are listed here.",
+    "loadError": "Could not load the history.",
+    "kind": {
+      "threshold": "Alert level reached",
+      "enforced": "Action applied",
+      "released": "Action lifted",
+      "rollover": "Month reset",
+      "configured": "Budget changed",
+      "cleared": "Budget removed"
+    }
+  },
+  "toast": {
+    "saved": "Budget saved",
+    "removed": "Budget removed",
+    "errorTitle": "Budget request failed"
+  }
+}

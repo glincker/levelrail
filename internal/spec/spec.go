@@ -98,6 +98,10 @@ type Service struct {
 	// (internal/loadbalancer). Nil keeps the plain single-upstream route.
 	LoadBalancer *loadbalancer.Config `yaml:"loadbalancer,omitempty"`
 
+	// Budget caps this service's monthly egress and cost. Nil leaves any
+	// budget set from the dashboard or CLI alone.
+	Budget *Budget `yaml:"budget,omitempty"`
+
 	// DependsOn names sibling services: keys (within this same Spec, or
 	// within the same compose file for a compose-expanded service, see
 	// internal/compose.ExpandBuildService) this service waits on before

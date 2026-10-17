@@ -98,6 +98,7 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](/load-balancing). |
+| `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
 
 ### `Build`
@@ -218,6 +219,18 @@ All fields are optional. Durations are Go duration strings such as `500ms`, `5s`
 | `request_timeout` | duration | Upstream response header timeout. |
 | `rate_limit` | object | `rps` (required), `burst`. Per client address. |
 | `upstream_tls` | object | `server_name`, `insecure_skip_verify`. Speak HTTPS to replicas. |
+
+### `Budget`
+
+All fields are optional, but at least one of `egress` and `cost` is required. See [Spend caps](/spend-caps) for behavior.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `egress` | string | Monthly egress limit such as `500GiB` (binary) or `2TB` (decimal). |
+| `cost` | number | Monthly cost ceiling in the configured currency. |
+| `action` | string | What happens at 100 percent: `none` (default, alert only), `throttle` or `pause`. |
+| `thresholds` | list of integer | Alert levels in percent, 1 to 100, at most eight. Default `[50, 80, 100]`. |
+| `throttle_rps` | integer | Requests per second per client while throttled. Default 5. |
 
 ### `Hooks`
 

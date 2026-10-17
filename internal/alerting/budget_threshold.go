@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/spendcap"
 	"github.com/GLINCKER/levelrail/internal/usagecost"
 )
 
@@ -13,6 +14,12 @@ import (
 // Router satisfies it.
 type BudgetSource interface {
 	BudgetStatuses(ctx context.Context) ([]usagecost.BudgetStatus, error)
+}
+
+// SpendCapSource is optional on a BudgetSource: per-app spend caps add their
+// crossed thresholds to the same rule.
+type SpendCapSource interface {
+	SpendCapBreaches(ctx context.Context) ([]spendcap.Breach, error)
 }
 
 // EvaluateBudgetThreshold runs one KindBudgetThreshold rule: it fires while
@@ -33,6 +40,16 @@ func EvaluateBudgetThreshold(ctx context.Context, src BudgetSource, r Rule, now 
 		}
 		if s.SpentPct > worst {
 			worst = s.SpentPct
+		}
+	}
+	if caps, ok := src.(SpendCapSource); ok {
+		breaches, err := caps.SpendCapBreaches(ctx)
+		if err != nil {
+			return r, nil, nil, fmt.Errorf("alerting: evaluate rule %q: spend caps: %w", r.ID, err)
+		}
+		for _, b := range breaches {
+			notices = append(notices, b.Text)
+			keys = append(keys, b.Key)
 		}
 	}
 	next := r

@@ -78,6 +78,7 @@ export const NAMESPACES = [
   'deployPolicies',
   'deployDetail',
   'pipelines',
+  'budget',
 ] as const
 
 void i18n
