@@ -59,9 +59,11 @@ func TestHostReportPBRoundTrip(t *testing.T) {
 		MemoryTotalBytes: 8 << 30, MemoryAvailableBytes: 3 << 30, AgentRSSBytes: 40 << 20,
 		OtherContainersMemoryBytes: 512 << 20,
 		OtherContainers:            []UnmanagedContainer{{Name: "proxy", MemoryBytes: 512 << 20}},
+		CPUCores:                   8, DiskTotalBytes: 100 << 30, DiskFreeBytes: 40 << 30,
 	}
 	out := hostReportFromPB(hostReportToPB(in))
-	if out.MemoryTotalBytes != in.MemoryTotalBytes || out.AgentRSSBytes != in.AgentRSSBytes ||
+	if out.CPUCores != 8 || out.DiskTotalBytes != in.DiskTotalBytes || out.DiskFreeBytes != in.DiskFreeBytes ||
+		out.MemoryTotalBytes != in.MemoryTotalBytes || out.AgentRSSBytes != in.AgentRSSBytes ||
 		out.OtherContainersMemoryBytes != in.OtherContainersMemoryBytes ||
 		len(out.OtherContainers) != 1 || out.OtherContainers[0] != in.OtherContainers[0] {
 		t.Fatalf("round trip = %+v, want %+v", out, in)

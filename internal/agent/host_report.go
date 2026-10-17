@@ -2,6 +2,7 @@ package agent
 
 import (
 	"context"
+	"runtime"
 	"sort"
 	"sync"
 	"time"
@@ -28,13 +29,16 @@ type UnmanagedContainer struct {
 }
 
 // HostReport is one node's host memory split as the agent reads it.
-// MemoryTotalBytes is zero when the host total could not be read.
+// MemoryTotalBytes, DiskTotalBytes and DiskFreeBytes are zero when unreadable.
 type HostReport struct {
 	MemoryTotalBytes           uint64
 	MemoryAvailableBytes       uint64
 	AgentRSSBytes              uint64
 	OtherContainersMemoryBytes uint64
 	OtherContainers            []UnmanagedContainer
+	CPUCores                   uint32
+	DiskTotalBytes             uint64
+	DiskFreeBytes              uint64
 }
 
 // HostProbe reads the node's current host report.
@@ -49,9 +53,13 @@ func WithHostProbe(p HostProbe) SessionOption {
 // NewHostProbe reads host memory, this process's RSS and the unmanaged
 // running containers rt can see. A runtime without stats support yields no
 // container breakdown.
-func NewHostProbe(rt docker.Runtime) HostProbe {
+func NewHostProbe(rt docker.Runtime, diskPath string) HostProbe {
 	return func(ctx context.Context) HostReport {
-		out := HostReport{AgentRSSBytes: telemetry.SelfRSSBytes()}
+		out := HostReport{AgentRSSBytes: telemetry.SelfRSSBytes(), CPUCores: uint32(max(runtime.NumCPU(), 0))} //nolint:gosec // NumCPU is small and positive
+		if total, used, err := telemetry.HostDiskBytes(diskPath); err == nil && total > 0 {
+			out.DiskTotalBytes = uint64(total)
+			out.DiskFreeBytes = uint64(max(total-used, 0))
+		}
 		if total, avail, err := telemetry.HostMemoryBytes(); err == nil && total > 0 {
 			out.MemoryTotalBytes = uint64(total)
 			out.MemoryAvailableBytes = uint64(max(avail, 0))
@@ -118,6 +126,9 @@ func hostReportToPB(r HostReport) *agentpb.HostReport {
 		MemoryAvailableBytes:       r.MemoryAvailableBytes,
 		AgentRssBytes:              r.AgentRSSBytes,
 		OtherContainersMemoryBytes: r.OtherContainersMemoryBytes,
+		CpuCores:                   r.CPUCores,
+		DiskTotalBytes:             r.DiskTotalBytes,
+		DiskFreeBytes:              r.DiskFreeBytes,
 	}
 	for _, c := range r.OtherContainers {
 		out.OtherContainers = append(out.OtherContainers, &agentpb.UnmanagedContainer{Name: c.Name, MemoryBytes: c.MemoryBytes})
@@ -131,6 +142,9 @@ func hostReportFromPB(r *agentpb.HostReport) HostReport {
 		MemoryAvailableBytes:       r.GetMemoryAvailableBytes(),
 		AgentRSSBytes:              r.GetAgentRssBytes(),
 		OtherContainersMemoryBytes: r.GetOtherContainersMemoryBytes(),
+		CPUCores:                   r.GetCpuCores(),
+		DiskTotalBytes:             r.GetDiskTotalBytes(),
+		DiskFreeBytes:              r.GetDiskFreeBytes(),
 	}
 	for _, c := range r.GetOtherContainers() {
 		out.OtherContainers = append(out.OtherContainers, UnmanagedContainer{Name: c.GetName(), MemoryBytes: c.GetMemoryBytes()})

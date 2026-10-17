@@ -485,6 +485,7 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/budget | AbilityDeploy | handleDeleteSpendCap |
 | GET | /api/v1/apps/{name}/budget/history | AbilityRead | handleSpendCapHistory |
 | POST | /api/v1/apps/{name}/deploys/from-cache | AbilityDeploy | handleDeployFromCache |
+| GET | /api/v1/apps/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
 
 </Accordion>
 
@@ -656,6 +657,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
 | PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
 | GET | /api/v1/databases/{name}/engine-stats | AbilityReadSensitive | handleGetDatabaseEngineStats |
+| GET | /api/v1/databases/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
 
 ## Projects / Organizations / Environments
 
@@ -755,6 +757,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/security | AbilityRoot | handleGetNodeTrust |
 | GET | /api/v1/nodes/{id}/security/events | AbilityRoot | handleListNodeSecurityEvents |
 | POST | /api/v1/nodes/{id}/cert/renew | AbilityRoot | handleRenewNodeCert |
+| GET | /api/v1/nodes/allocations | AbilityRoot | handleNodeAllocations |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

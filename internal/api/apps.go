@@ -552,7 +552,8 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 	// true when that pick actually lands somewhere other than local. A
 	// domain-bearing app prefers the control plane's own node, since
 	// ingress has no mesh path to a worker node yet (CrossNodeIngress).
-	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, len(req.Domains) > 0, "api: create app") {
+	cp := &createPlacement{Kind: store.NodeMoveKindApp, Name: req.Name, Needs: serviceRequests(req.Resources, req.Replicas)}
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, len(req.Domains) > 0, cp, "api: create app") {
 		return
 	}
 	if !rt.settleGPUCreatePlacement(w, r, body, &req) {
@@ -644,6 +645,7 @@ func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, "internal error")
 			return
 		}
+		rt.recordCreatePlacement(r.Context(), cp, req.NodeID)
 	}
 
 	// Every app gets a store.App row, single-service or not: see

@@ -362,7 +362,7 @@ func (e *moveExecutor) PickTarget(ctx context.Context, res nodemove.Resource, fr
 		}
 		return explicit, nil
 	}
-	target, err := e.rt.spreadTarget(ctx, res.Kind, res.Name, fromNodeID)
+	target, err := e.rt.spreadTarget(ctx, res.Kind, res.Name, fromNodeID, placementTriggerDrain)
 	if err != nil {
 		return "", &nodemove.BlockedError{Reason: err.Error()}
 	}
@@ -384,7 +384,7 @@ func (e *moveExecutor) followDatabase(ctx context.Context, svc *store.DesiredSer
 
 func (e *moveExecutor) pickGPU(ctx context.Context, fromNodeID, explicit string, claim gpu.Claim) (string, error) {
 	placer := &drainPlacer{rt: e.rt, fromID: fromNodeID, explicit: explicit != "", target: explicit}
-	target, err := placer.next(ctx, &claim)
+	target, err := placer.next(ctx, &claim, drainRef{})
 	var noGPU *errNoGPUTarget
 	if errors.As(err, &noGPU) {
 		return "", &nodemove.BlockedError{Reason: noGPU.reason}

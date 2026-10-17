@@ -3,108 +3,57 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"net/http"
-	"sort"
+	"strings"
 
-	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/placement"
 )
 
-// nodePlacementLoad is one eligible node's current app+database placement
-// count, the input selectLeastLoadedNode ranks.
-type nodePlacementLoad struct {
-	NodeID string
-	Count  int
+// createPlacement carries one create request's placement through
+// resolveCreateNodePlacement and back to the handler that records it.
+type createPlacement struct {
+	Kind     string
+	Name     string
+	Needs    placement.Resources
+	decision *placement.Decision
 }
 
-// selectLeastLoadedNode returns the node with the fewest resources
-// already placed on it, tie-broken by the lexicographically smallest
-// node ID, the same deterministic tie-break build.SelectBuildNode already
-// uses for the same reason (this project's stated non-goal against
-// bin-packing or affinity-aware scheduling in v1). Returns "" (the
-// local-node sentinel) when candidates is empty.
-func selectLeastLoadedNode(candidates []nodePlacementLoad) string {
-	if len(candidates) == 0 {
-		return ""
-	}
-	sort.Slice(candidates, func(i, j int) bool {
-		if candidates[i].Count != candidates[j].Count {
-			return candidates[i].Count < candidates[j].Count
-		}
-		return candidates[i].NodeID < candidates[j].NodeID
-	})
-	return candidates[0].NodeID
-}
-
-// autoPlaceNode picks a placement target for a new app or database whose
-// create request omitted node_id entirely: the least-loaded, schedulable,
-// online registered node, or "" (local) when disabled or none eligible
-// (CLAUDE.md section 6's "simple spread scheduling"); an explicit node_id
-// (at create time, or PUT .../node) always overrides this.
-// preferLocalIngress instead picks the control plane's own node, since
-// ingress has no mesh path to a worker node yet (CrossNodeIngress); a
-// no-op when the local node isn't itself a live candidate.
-func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool) (string, error) {
+// autoPlaceNode picks a node for a new app or database whose create request
+// omitted node_id: the eligible node with the most headroom, spread by
+// load on a tie. It returns "" (local) when auto-placement is off or no
+// node is registered or usable, and an error when nodes exist but none has
+// room, so a full cluster fails the create instead of overloading a node.
+// preferLocalIngress favors the control plane's own node when it fits,
+// since ingress has no mesh path to a worker node yet (CrossNodeIngress).
+func (rt *Router) autoPlaceNode(ctx context.Context, preferLocalIngress bool, needs placement.Resources) (string, *placement.Decision, error) {
 	if !rt.autoPlacementEnabled {
-		return "", nil
+		return "", nil, nil
 	}
-	nodes, err := rt.nodes.ListNodes(ctx)
+	inv, err := rt.loadPlacementInventory(ctx)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	if len(nodes) == 0 {
-		return "", nil
+	if len(inv.nodes) == 0 {
+		return "", nil, nil
 	}
-
-	services, err := rt.apps.ListDesiredServices(ctx)
+	cands, err := rt.candidatesFrom(ctx, inv)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	databases, err := rt.databases.ListDesiredDatabases(ctx)
-	if err != nil {
-		return "", err
+	req := placement.Request{Needs: needs, Policy: rt.placementPolicy}
+	if preferLocalIngress {
+		req.Prefer = rt.localNodeID
 	}
-	counts := make(map[string]int, len(nodes))
-	for _, s := range services {
-		counts[s.NodeID]++
+	d, err := placement.Spread(cands, req)
+	switch {
+	case err == nil:
+		return d.NodeID, &d, nil
+	case d.CapacityBlocked():
+		return "", &d, err
 	}
-	for _, d := range databases {
-		counts[d.NodeID]++
-	}
-
-	candidates := make([]nodePlacementLoad, 0, len(nodes))
-	localEligible := false
-	for _, n := range nodes {
-		if !n.Schedulable || n.Status != store.NodeStatusOnline {
-			continue
-		}
-		candidates = append(candidates, nodePlacementLoad{NodeID: n.ID, Count: counts[n.ID]})
-		if preferLocalIngress && rt.localNodeID != "" && n.ID == rt.localNodeID {
-			localEligible = true
-		}
-	}
-	if localEligible {
-		return rt.localNodeID, nil
-	}
-	return selectLeastLoadedNode(candidates), nil
-}
-
-// selectLeastLoadedNodeExcluding is autoPlaceNode's per-resource sibling
-// for handleDrainNode: same schedulable+online eligibility and the same
-// least-loaded ranking, but excludes excludeNodeID (the node being
-// drained) so a resource is never "moved" back onto itself. counts is
-// read, not mutated: callers bump the picked node's count themselves so
-// repeated calls within one drain spread resources across candidates
-// instead of all landing on the same one.
-func selectLeastLoadedNodeExcluding(nodes []store.Node, counts map[string]int, excludeNodeID string) string {
-	candidates := make([]nodePlacementLoad, 0, len(nodes))
-	for _, n := range nodes {
-		if n.ID == excludeNodeID || !n.Schedulable || n.Status != store.NodeStatusOnline {
-			continue
-		}
-		candidates = append(candidates, nodePlacementLoad{NodeID: n.ID, Count: counts[n.ID]})
-	}
-	return selectLeastLoadedNode(candidates)
+	return "", nil, nil
 }
 
 // nodeIDKeyPresent reports whether body's top-level JSON object includes
@@ -128,24 +77,31 @@ func nodeIDKeyPresent(body []byte) bool {
 // resolveCreateNodePlacement is handleCreateApp/handleCreateDatabase's
 // shared node_id resolution: an explicit node_id in the body (even "")
 // is validated as a placement override and left untouched in *nodeID/
-// *autoPlaced; node_id omitted entirely lets autoPlaceNode pick one via
-// simple spread scheduling, writing its result into both. hasDomains
-// forwards to autoPlaceNode's preferLocalIngress (callers pass
-// len(req.Domains) > 0; databases, which have none, always pass false).
-// logContext names the calling handler ("api: create app"/"api: create
-// database") for its own error log lines. ok is false once it has
-// already written the full HTTP response itself; the caller should
-// return immediately.
-func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Request, body []byte, nodeID *string, autoPlaced *bool, hasDomains bool, logContext string) (ok bool) {
+// *autoPlaced; node_id omitted entirely lets autoPlaceNode pick one by
+// headroom, writing its result into both. When nothing fits it answers 409
+// with the shortfall per node. cp.decision is set for the caller to
+// record once the create is saved. ok is false once the full HTTP response
+// has been written; the caller should return immediately.
+func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Request, body []byte, nodeID *string, autoPlaced *bool, hasDomains bool, cp *createPlacement, logContext string) (ok bool) {
 	if nodeIDKeyPresent(body) {
 		if err := rt.authorizePlacementTarget(r, *nodeID); err != nil {
 			rt.respondPlacementValidationError(w, err, *nodeID, logContext+": validate node failed")
 			return false
 		}
+		if *nodeID != "" {
+			if cands, err := rt.placementCandidates(r.Context()); err == nil {
+				d := placement.Pinned(cands, placement.Request{Needs: cp.Needs, Policy: rt.placementPolicy}, *nodeID)
+				cp.decision = &d
+			}
+		}
 		return true
 	}
 
-	placed, err := rt.autoPlaceNode(r.Context(), hasDomains)
+	placed, d, err := rt.autoPlaceNode(r.Context(), hasDomains, cp.Needs)
+	if errors.Is(err, placement.ErrNoEligibleNode) {
+		writeError(w, http.StatusConflict, strings.TrimPrefix(err.Error(), "placement: ")+". Free capacity, add a node, or pass node_id to place it on a node anyway.")
+		return false
+	}
 	if err != nil {
 		rt.logger.Error(logContext+": auto-place node failed", slog.String("error", err.Error()))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -153,5 +109,15 @@ func (rt *Router) resolveCreateNodePlacement(w http.ResponseWriter, r *http.Requ
 	}
 	*nodeID = placed
 	*autoPlaced = placed != ""
+	cp.decision = d
 	return true
+}
+
+// recordCreatePlacement stores the decision once the resource exists, and
+// only when the node it was made for is the node the resource ended on.
+func (rt *Router) recordCreatePlacement(ctx context.Context, cp *createPlacement, finalNodeID string) {
+	if cp.decision == nil || cp.decision.NodeID != finalNodeID {
+		return
+	}
+	rt.recordPlacement(ctx, cp.Kind, cp.Name, placementTriggerCreate, *cp.decision)
 }

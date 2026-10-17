@@ -108,6 +108,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/importplan"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -687,6 +688,8 @@ type Router struct {
 	// to disable it, the same "this package never reads the environment
 	// directly" convention WithSessionTTL's own doc comment establishes.
 	autoPlacementEnabled bool
+	placementPolicy      placement.Policy
+	decisions            PlacementDecisionStore
 
 	// doctorHTTPClient is the http.Client method surface GET
 	// /api/v1/system/doctor's network checks (public_ip,
@@ -876,6 +879,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		aiChat:                      s,
 		aiControl:                   s,
 		autoPlacementEnabled:        true,
+		placementPolicy:             placement.DefaultPolicy(),
 	}
 	// Bound method values, so they must be assigned after rt exists
 	// rather than in the struct literal above; same reasoning as

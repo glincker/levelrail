@@ -179,6 +179,7 @@
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",
+              "resource-aware-placement",
               "node-provisioning",
               "multi-cloud-provisioning",
               "network-topology",

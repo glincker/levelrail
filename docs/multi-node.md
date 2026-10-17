@@ -326,19 +326,19 @@ A `NodeDrain` carries `status` (`running`, `succeeded`, `failed`), an `error`, t
 - Otherwise idempotent: deleting an already-deleted node ID succeeds.
 - Closes the node's live agent session, so a deleted node's agent is disconnected.
 
-## Simple spread placement (auto-placement)
+## Resource-aware placement (auto-placement)
 
 When you create an app or database without specifying a node, the server decides placement.
 
 - `APP_AUTO_PLACEMENT` (default enabled): if `false`, always place on the local node.
-- If enabled, `autoPlaceNode` picks the schedulable, online node with the fewest resources (apps plus databases). Ties go to the lexicographically smallest node ID.
-- With no eligible remote node, it falls back to the local node.
+- If enabled, it filters out nodes that are cordoned, offline, missing a selector label, or cannot fit the workload's CPU and memory requests, then picks the node that keeps the most headroom. Ties go to the node with fewer resources, then to the lexicographically smallest node ID.
+- When nodes exist but none has room, the create fails with `409` and the shortfall per node. With no usable node at all, it falls back to the local node.
 - An explicit `node_id` (or an explicit empty string meaning "local, on purpose") always overrides auto-placement and is validated against cordoned and unknown-node checks.
 - Create responses carry `auto_placed: true` with the `node_id` picked, and the dashboard shows a toast, so it is never a silent decision.
 
-<Warning>
-This is simple spread counting, not bin-packing. It counts resources only, never CPU, memory or disk headroom.
-</Warning>
+<Note>
+This is a fit check plus a spread, not bin-packing, and there are no affinity rules. Capacity, the overcommit policy, unknown-capacity handling and the "why here" explanation are in [Resource-aware placement](/resource-aware-placement).
+</Note>
 
 GPU apps: a new app with `resources.gpu` is only auto-placed on a node with a working nvidia runtime and enough free GPUs (least loaded among those), falling back to the local host if it fits. If none fits, the create is refused with `409` and the reason per node; pass `node_id` to override. See [GPU scheduling](/ai-models#gpu-scheduling).
 
@@ -408,7 +408,7 @@ levelrail-cli nodes placement database main disk=ssd
 
 ### The spread scheduler
 
-When a move or a drain has no explicit target, the scheduler picks the least loaded eligible node, breaking ties by node id. A node is not eligible when it is cordoned, offline, or missing a label the selector requires.
+When a move or a drain has no explicit target, the scheduler picks the eligible node with the most headroom, breaking ties by load and then node id. A node is not eligible when it is cordoned, offline, missing a label the selector requires, or short of the CPU or memory the resource requests. See [Resource-aware placement](/resource-aware-placement).
 
 ## Moving an app with its volumes
 
@@ -992,9 +992,9 @@ levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 ## Not built yet
 
 <AccordionGroup>
-<Accordion title="Resource-aware scheduling">
+<Accordion title="Bin-packing and affinity rules">
 
-The spread scheduler counts placements and filters on cordon, status and labels, never CPU, memory or disk headroom. Resource-aware scheduling is not built. Bin-packing and affinity rules are a deliberate non-goal.
+Placement is resource-aware (see [Resource-aware placement](/resource-aware-placement)), but it is a fit check plus a spread. Bin-packing and affinity rules are a deliberate non-goal until a measured need appears.
 
 </Accordion>
 <Accordion title="Agent self-update">

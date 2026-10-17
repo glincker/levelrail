@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/gpu"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -27,17 +28,18 @@ type drainPlacer struct {
 
 	loaded     bool
 	nodes      []store.Node
+	cands      []placement.Candidate
 	counts     map[string]int
 	planner    *gpuPlanner
 	autoPlaced bool
-	pending    func()
+	pending    func(context.Context)
 }
 
 // commit records the last next() pick as occupied. Call it only after the
 // placement update succeeded, so a failed move holds no capacity.
-func (p *drainPlacer) commit() {
+func (p *drainPlacer) commit(ctx context.Context) {
 	if p.pending != nil {
-		p.pending()
+		p.pending(ctx)
 		p.pending = nil
 	}
 }
@@ -46,7 +48,11 @@ func (p *drainPlacer) load(ctx context.Context) error {
 	if p.loaded {
 		return nil
 	}
-	nodes, counts, err := p.rt.placementCounts(ctx)
+	inv, err := p.rt.loadPlacementInventory(ctx)
+	if err != nil {
+		return err
+	}
+	cands, err := p.rt.candidatesFrom(ctx, inv)
 	if err != nil {
 		return err
 	}
@@ -54,13 +60,21 @@ func (p *drainPlacer) load(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	p.nodes, p.counts, p.planner, p.loaded = nodes, counts, planner, true
+	p.nodes, p.counts, p.cands, p.planner, p.loaded = inv.nodes, inv.counts, cands, planner, true
 	return nil
 }
 
+// drainRef names the resource being placed and what it asks for.
+type drainRef struct {
+	kind  string
+	name  string
+	needs placement.Resources
+}
+
 // next returns the node for one resource. claim is nil unless the
-// resource asks for GPUs; a *errNoGPUTarget means it must stay put.
-func (p *drainPlacer) next(ctx context.Context, claim *gpu.Claim) (string, error) {
+// resource asks for GPUs; a *errNoGPUTarget means it must stay put. A
+// resource no node has room for returns an error naming each shortfall.
+func (p *drainPlacer) next(ctx context.Context, claim *gpu.Claim, ref drainRef) (string, error) {
 	p.pending = nil
 	if claim != nil && p.rt.models != nil {
 		return p.nextGPU(ctx, *claim)
@@ -74,12 +88,24 @@ func (p *drainPlacer) next(ctx context.Context, claim *gpu.Claim) (string, error
 	if err := p.load(ctx); err != nil {
 		return "", err
 	}
-	picked := selectLeastLoadedNodeExcluding(p.nodes, p.counts, p.fromID)
-	if picked != "" {
-		p.pending = func() {
-			p.counts[picked]++
-			p.autoPlaced = true
+	d, err := placement.Spread(p.cands, placement.Request{Exclude: p.fromID, Needs: ref.needs, Policy: p.rt.placementPolicy})
+	if err != nil {
+		if d.CapacityBlocked() {
+			return "", err
 		}
+		return "", nil
+	}
+	picked := d.NodeID
+	p.pending = func(ctx context.Context) {
+		p.counts[picked]++
+		p.autoPlaced = true
+		for i := range p.cands {
+			if p.cands[i].ID == picked {
+				p.cands[i].Load++
+				p.cands[i].Requested = p.cands[i].Requested.Add(ref.needs)
+			}
+		}
+		p.rt.recordPlacement(ctx, ref.kind, ref.name, placementTriggerDrain, d)
 	}
 	return picked, nil
 }
@@ -110,7 +136,7 @@ func (p *drainPlacer) nextGPU(ctx context.Context, claim gpu.Claim) (string, err
 		}
 		auto = true
 	}
-	p.pending = func() {
+	p.pending = func(context.Context) {
 		if auto {
 			p.counts[target]++
 			p.autoPlaced = p.autoPlaced || target != ""

@@ -165,6 +165,42 @@
     "movedHere": "Now placed on this server.",
     "moveFailed": "Could not move it to this server."
   },
+  "allocation": {
+    "title": "Capacity",
+    "description": "What the apps and databases on this node request, against what the node can allocate.",
+    "dimension": {
+      "cpu": "CPU",
+      "memory": "Memory",
+      "disk": "Disk"
+    },
+    "requestedOf": "{{used}} requested of {{total}} ({{pct}}%)",
+    "usedOf": "{{used}} used of {{total}} usable ({{pct}}%)",
+    "barLabel": "{{name}} {{pct}} percent allocated",
+    "unknown": "Not reported yet. Placement treats this as unknown, not as empty or unlimited.",
+    "policy": "{{workloads}} workloads. Allocatable is {{cpu}}% of CPU and {{memory}}% of memory, with {{disk}}% of disk kept free.",
+    "loadFailed": "Could not load node capacity.",
+    "empty": "This node is not in the allocation list yet."
+  },
+  "decision": {
+    "recordedTitle": "Why it was placed here",
+    "previewTitle": "If it were placed now",
+    "noneRecorded": "No placement decision was recorded for this one. It was placed before decisions were kept, or it runs on the local server by default.",
+    "winner": "Chosen: {{node}}.",
+    "nothingFits": "No node has room for it right now. Free capacity, add a node, or pick a node yourself.",
+    "loadFailed": "Could not load the placement decision.",
+    "dimensionFree": "{{name}} {{free}} free",
+    "dimensionUnknown": "{{name}} unknown",
+    "state": {
+      "fits": "has room",
+      "unverified": "capacity unknown, ranked last",
+      "refused": "refused"
+    },
+    "trigger": {
+      "create": "Placed at create",
+      "move": "Placed by a move",
+      "drain": "Placed by a drain"
+    }
+  },
   "connectivity": {
     "title": "Node connectivity",
     "description": "How every node's WireGuard view of every other node looks, one row per pair.",

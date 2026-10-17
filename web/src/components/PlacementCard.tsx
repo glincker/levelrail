@@ -24,6 +24,7 @@ import {
 import type { NodeMoveKind, Placement } from '../types/nodeMoves'
 import { MoveToNodeDialog } from './MoveToNodeDialog'
 import { LabelRowsEditor } from './nodes/LabelRowsEditor'
+import { PlacementDecisionPanel } from './nodes/PlacementDecisionPanel'
 import { useNodeNames } from './nodes/useNodeNames'
 import { MoveToThisServerButton, PlacementLabel } from './PlacementLabel'
 import { useNodeListOptional } from '../queries/nodes'
@@ -108,6 +109,7 @@ export function PlacementCard({
             placement={placement.data}
           />
         )}
+        <PlacementDecisionPanel kind={kind} name={name} />
       </CardContent>
     </Card>
   )

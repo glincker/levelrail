@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
+	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -91,7 +93,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 
 	t.Run("no nodes registered: local", func(t *testing.T) {
 		rt, _ := newTestRouter(t)
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -104,7 +106,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		rt, db := newTestRouter(t)
 		rt.autoPlacementEnabled = false
 		seedOnlineNode(t, db, "node_a", "alpha", true)
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -116,7 +118,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 	t.Run("one cordoned node, none eligible: local", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedOnlineNode(t, db, "node_a", "alpha", false)
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -128,7 +130,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 	t.Run("pending (not yet online) node excluded: local", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedNode(t, db, "node_a", "alpha") // seedNode defaults to NodeStatusPending
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -141,7 +143,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedOnlineNode(t, db, "node_a", "alpha", true)
 		seedOnlineNode(t, db, "node_b", "bravo", false)
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -162,7 +164,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 			t.Fatalf("UpdateServiceNode: %v", err)
 		}
 
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -183,7 +185,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 			t.Fatalf("UpdateDatabaseNode: %v", err)
 		}
 
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -209,7 +211,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 			t.Fatalf("UpdateServiceNode: %v", err)
 		}
 
-		got, err := rt.autoPlaceNode(ctx, true)
+		got, _, err := rt.autoPlaceNode(ctx, true, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -223,6 +225,9 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		rt.localNodeID = "node_local"
 		seedOnlineNode(t, db, "node_local", "control-plane", true)
 		seedOnlineNode(t, db, "node_worker", "worker", true)
+		reports := agent.NewHostReportStore()
+		reports.SetNodeHostReport("node_worker", agent.HostReport{CPUCores: 2, MemoryTotalBytes: 1 << 30, DiskTotalBytes: 100 << 30, DiskFreeBytes: 100 << 30})
+		rt.SetNodeHostReports(reports)
 
 		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "svc1", Image: "img:1", Port: 80}); err != nil {
 			t.Fatalf("SaveDesiredService: %v", err)
@@ -231,7 +236,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 			t.Fatalf("UpdateServiceNode: %v", err)
 		}
 
-		got, err := rt.autoPlaceNode(ctx, false)
+		got, _, err := rt.autoPlaceNode(ctx, false, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -245,7 +250,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		rt.localNodeID = "node_local" // mesh-enabled, but this node row doesn't exist
 		seedOnlineNode(t, db, "node_worker", "worker", true)
 
-		got, err := rt.autoPlaceNode(ctx, true)
+		got, _, err := rt.autoPlaceNode(ctx, true, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -260,7 +265,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 		seedOnlineNode(t, db, "node_local", "control-plane", false)
 		seedOnlineNode(t, db, "node_worker", "worker", true)
 
-		got, err := rt.autoPlaceNode(ctx, true)
+		got, _, err := rt.autoPlaceNode(ctx, true, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
@@ -272,7 +277,7 @@ func TestRouter_AutoPlaceNode(t *testing.T) {
 	t.Run("preferLocalIngress in single-node/non-mesh setup: no-op", func(t *testing.T) {
 		rt, db := newTestRouter(t)
 		seedOnlineNode(t, db, "node_a", "alpha", true)
-		got, err := rt.autoPlaceNode(ctx, true)
+		got, _, err := rt.autoPlaceNode(ctx, true, placement.Resources{})
 		if err != nil {
 			t.Fatalf("autoPlaceNode() error = %v", err)
 		}
