@@ -72,7 +72,8 @@ func attentionUsage(prog string) string {
 
 Lists everything that needs attention right now: failing apps, failed
 deploys from the last 24 hours, low disk space (warn under 10 percent free,
-critical under 5), offline nodes, expired or expiring certificates,
+critical under 5), offline nodes, nodes that must be re-enrolled, agent certificates
+whose renewal is failing (with the agent's last error), expired or expiring certificates,
 doctor warnings or failures, CLI logins waiting, expired or denied, API
 tokens about to expire, failed data copies, overdue backups and pending
 invitations. A token only sees what its abilities allow.

@@ -17,6 +17,15 @@ export interface NodeCertResource {
   revoked_at?: string
   warning_days: number
   critical_days: number
+  renewal?: NodeCertRenewal
+}
+
+// The agent's last reported renewal failure, already bounded by the server.
+export interface NodeCertRenewal {
+  last_error: string
+  failed_at?: string
+  next_retry_at?: string
+  consecutive_failures: number
 }
 
 export interface NodeAgentResource {

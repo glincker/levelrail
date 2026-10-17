@@ -279,6 +279,32 @@ func (db *DB) GetNodeTrustState(ctx context.Context, nodeID string) (NodeTrustSt
 	return s, nil
 }
 
+// ListNodeRenewalStates returns every node's stored renewal report in one
+// query, keyed by node id, for list paths that must not read per node.
+func (db *DB) ListNodeRenewalStates(ctx context.Context) (map[string]NodeTrustState, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT node_id, renew_last_error, renew_failed_at, renew_next_retry_at, renew_consecutive_fails
+		FROM node_trust_state WHERE renew_last_error != '' OR renew_consecutive_fails > 0`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list node renewal states: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	out := map[string]NodeTrustState{}
+	for rows.Next() {
+		var s NodeTrustState
+		var failed, retry sql.NullInt64
+		if err := rows.Scan(&s.NodeID, &s.RenewLastError, &failed, &retry, &s.RenewConsecutiveFails); err != nil {
+			return nil, fmt.Errorf("store: scan node renewal state: %w", err)
+		}
+		s.RenewFailedAt, s.RenewNextRetryAt = msPtr(failed), msPtr(retry)
+		out[s.NodeID] = s
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("store: list node renewal states: %w", err)
+	}
+	return out, nil
+}
+
 // SetNodeCAPin records the CA pin state an agent reported at enrollment.
 func (db *DB) SetNodeCAPin(ctx context.Context, nodeID, state string, now time.Time) error {
 	_, err := db.ExecContext(ctx, `

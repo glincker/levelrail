@@ -28,9 +28,15 @@ import type { NodeResource } from '../types/nodeDetail'
 
 // Generates a re-enrollment token for an existing node and shows the
 // command once, the same shape as AddNodeDialog.
-export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
+export function ReenrollNodeDialog({
+  node,
+  defaultOpen = false,
+}: {
+  node: NodeResource
+  defaultOpen?: boolean
+}) {
   const { t } = useTranslation('nodes')
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [created, setCreated] = useState<NodeReenrollTokenResponse | null>(null)
   const [copied, setCopied] = useState(false)
   const [controlPlaneAddr, setControlPlaneAddr] = useState(

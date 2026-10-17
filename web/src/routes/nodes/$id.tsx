@@ -65,6 +65,13 @@ export const Route = createFileRoute('/nodes/$id')({
       queryClient.ensureQueryData(nodeHealthQueryOptions(id)),
       queryClient.ensureQueryData(nodeListQueryOptions()),
     ]),
+  validateSearch: (search: Record<string, unknown>): { reenroll?: boolean } =>
+    search.reenroll === true ||
+    search.reenroll === 'true' ||
+    search.reenroll === 1 ||
+    search.reenroll === '1'
+      ? { reenroll: true }
+      : {},
   component: NodeDetailPage,
   pendingComponent: NodeDetailSkeleton,
   errorComponent: NodeDetailError,
@@ -79,6 +86,7 @@ function formatNodeDate(iso?: string): string {
 
 function NodeDetailPage() {
   const { id } = Route.useParams()
+  const { reenroll } = Route.useSearch()
   const { data: node } = useNode(id)
   const { data: conditions } = useNodeHealth(id)
   const setWorkloads = useSetNodeWorkloads()
@@ -124,7 +132,7 @@ function NodeDetailPage() {
 
       <NodeRegionCard key={node.id} node={node} />
 
-      <NodeAgentCard node={node} />
+      <NodeAgentCard node={node} openReenroll={reenroll === true} />
 
       <Card>
         <CardHeader>
