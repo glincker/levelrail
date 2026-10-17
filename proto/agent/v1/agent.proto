@@ -302,6 +302,8 @@ message AgentResponse {
     RotateMeshKeyResponse rotate_mesh_key = 12;
     StatsResponse stats = 13;
     MeshStatusResponse mesh_status = 14;
+    // ArchiveStat acknowledges a copy-out ExecRequest with the path stat.
+    ArchiveStat archive_stat = 15;
   }
 }
 
@@ -588,6 +590,27 @@ message ExecRequest {
   // Env is extra environment for the exec'd process, on top of whatever
   // the container itself was created with. A terminal needs TERM here.
   repeated string env = 6;
+  // Archive turns this exec into a tar copy through the container archive
+  // API (no command runs): copy-out streams ExecOutput frames, copy-in
+  // consumes ExecInput frames. Same windowing and cancel as any exec.
+  ArchiveOp archive = 7;
+}
+
+// ArchiveOp describes a tar copy carried on an exec stream. copy_in sets
+// the direction; path is the container path to read, or the directory to
+// extract into. max_bytes caps the tar stream (0 means no cap).
+message ArchiveOp {
+  bool copy_in = 1;
+  string path = 2;
+  int64 max_bytes = 3;
+}
+
+// ArchiveStat is the path stat Docker returns beside a copy-out stream.
+message ArchiveStat {
+  string name = 1;
+  int64 size = 2;
+  uint32 mode = 3;
+  string link_target = 4;
 }
 
 message ExecTTYSize {

@@ -63,6 +63,8 @@ type agentExec struct {
 	out       io.ReadCloser
 	tty       docker.ExecSession // nil unless the request asked for a PTY
 	cancelled bool
+	// stat is the copy-out path stat, sent in the acknowledgment.
+	stat *agentpb.ArchiveStat
 }
 
 // attach records the local exec's output stream so a later cancel can
@@ -137,7 +139,7 @@ func (r *ExecRelay) Start(ctx context.Context, execID string, req *agentpb.ExecR
 	var stdinR *io.PipeReader
 	// A PTY is inherently interactive, so it always has a stdin side
 	// whether or not the request bothered to say so.
-	if req.GetAttachStdin() || req.GetTty() {
+	if req.GetAttachStdin() || req.GetTty() || req.GetArchive().GetCopyIn() {
 		stdinR, ex.stdin = io.Pipe()
 	}
 
@@ -167,7 +169,7 @@ func (r *ExecRelay) run(ctx context.Context, execID string, ex *agentExec, req *
 	}
 
 	r.send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Response{
-		Response: &agentpb.AgentResponse{RequestId: execID, Result: emptyResult()},
+		Response: ackResponse(execID, ex),
 	}})
 
 	r.relayOutput(ctx, execID, ex, rc)
@@ -182,6 +184,9 @@ func (r *ExecRelay) run(ctx context.Context, execID string, ex *agentExec, req *
 // with a nil error means the control plane cancelled while the attach
 // was still in flight, which attachLocal has already cleaned up after.
 func (r *ExecRelay) attachLocal(ctx context.Context, ex *agentExec, req *agentpb.ExecRequest, stdinR *io.PipeReader) (io.ReadCloser, error) {
+	if req.GetArchive() != nil {
+		return r.attachArchive(ctx, ex, req, stdinR)
+	}
 	if req.GetTty() {
 		return r.attachTTY(ctx, ex, req, stdinR)
 	}

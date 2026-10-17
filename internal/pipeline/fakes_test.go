@@ -33,6 +33,33 @@ type fakeRuntime struct {
 	scripts    []string
 	handler    func(script string) execResult
 	failCreate error
+	// copyOut and copyIn fake the archive API; restores records what copyIn read.
+	copyOut  func(ctx context.Context, cid, path string, maxBytes int64) (io.ReadCloser, docker.PathStat, error)
+	copyIn   func(dir string, r io.Reader) error
+	restores [][]byte
+}
+
+func (f *fakeRuntime) CopyFromContainer(ctx context.Context, cid string, path string, maxBytes int64) (io.ReadCloser, docker.PathStat, error) {
+	if f.copyOut == nil {
+		return nil, docker.PathStat{}, fmt.Errorf("%w: %s", docker.ErrArchivePathNotFound, path)
+	}
+	rc, st, err := f.copyOut(ctx, cid, path, maxBytes)
+	if err != nil {
+		return nil, st, err
+	}
+	return docker.CapReadCloser(rc, maxBytes), st, nil
+}
+
+func (f *fakeRuntime) CopyToContainer(_ context.Context, _ string, dir string, content io.Reader, maxBytes int64) error {
+	content = docker.CapReader(content, maxBytes)
+	if f.copyIn != nil {
+		return f.copyIn(dir, content)
+	}
+	b, err := io.ReadAll(content)
+	f.mu.Lock()
+	f.restores = append(f.restores, b)
+	f.mu.Unlock()
+	return err
 }
 
 func newFakeRuntime(h func(string) execResult) *fakeRuntime {

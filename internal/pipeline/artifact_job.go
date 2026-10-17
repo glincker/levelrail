@@ -1,9 +1,13 @@
 package pipeline
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"path"
 	"slices"
 	"strings"
 
@@ -56,22 +60,9 @@ func (jr *jobRun) collectArtifacts(ctx context.Context, k int) error {
 	if err != nil {
 		return err
 	}
-	rc, err := jr.rt.ExecWithInput(ctx, cid, []string{"sh", "-s"}, strings.NewReader(collectScript(paths)))
-	if err != nil {
+	if err := jr.packPaths(ctx, cid, paths, w, st.Limits()); err != nil {
 		w.Abort()
-		return fmt.Errorf("exec: %w", err)
-	}
-	stop := context.AfterFunc(ctx, func() { _ = rc.Close() })
-	diag, rerr := readCollected(rc, w)
-	stop()
-	_ = rc.Close()
-	if rerr != nil {
-		w.Abort()
-		return jr.collectFailure(ctx, rerr, diag, st.Limits())
-	}
-	if err := jr.verifyArchive(w); err != nil {
-		w.Abort()
-		return err
+		return jr.collectFailure(ctx, err, st.Limits())
 	}
 	rel, size, sum, err := w.Commit()
 	if err != nil {
@@ -90,34 +81,54 @@ func (jr *jobRun) collectArtifacts(ctx context.Context, k int) error {
 	return nil
 }
 
-func (jr *jobRun) collectFailure(ctx context.Context, rerr error, diag []string, lim ArtifactLimits) error {
-	if ctx.Err() != nil {
-		return ctx.Err()
+// packPaths copies each declared path out of the container through the
+// archive API and writes one gzip tar to w as it streams, so nothing is
+// buffered and a cap hit stops the copy early.
+func (jr *jobRun) packPaths(ctx context.Context, cid string, paths []string, w *ArtifactWriter, lim ArtifactLimits) error {
+	gz := gzip.NewWriter(w)
+	tw := tar.NewWriter(gz)
+	pl := packLimits{MaxUnpacked: lim.MaxUnpackedBytes, MaxEntries: lim.MaxEntries, Secrets: jr.mask.values()}
+	pk := newPacker(tw, pl)
+	for _, p := range paths {
+		if err := jr.packOne(ctx, cid, p, pk, pl.streamCap()); err != nil {
+			return err
+		}
 	}
-	for _, d := range diag {
-		jr.sink.Line(0, "stderr", "[artifacts] "+d)
+	if err := tw.Close(); err != nil {
+		return err
 	}
-	switch {
-	case errors.Is(rerr, ErrArtifactTooLarge):
-		return fmt.Errorf("artifact upload failed: archive is larger than the %d byte limit", lim.MaxBytes)
-	}
-	var ee *docker.ExecExitError
-	if errors.As(rerr, &ee) && len(diag) > 0 {
-		return fmt.Errorf("artifact upload failed: %s", diag[0])
-	}
-	return fmt.Errorf("artifact upload failed: %w", rerr)
+	return gz.Close()
 }
 
-func (jr *jobRun) verifyArchive(w *ArtifactWriter) error {
-	f, err := openRead(w.Path())
+func (jr *jobRun) packOne(ctx context.Context, cid, p string, pk *packer, streamCap int64) error {
+	rc, stat, err := jr.rt.CopyFromContainer(ctx, cid, path.Join(workspaceDir, p), streamCap)
 	if err != nil {
-		return fmt.Errorf("artifact check failed: %w", err)
+		if errors.Is(err, docker.ErrArchivePathNotFound) || strings.Contains(err.Error(), docker.ErrArchivePathNotFound.Error()) {
+			return fmt.Errorf("path not found: %s", p)
+		}
+		return err
 	}
-	defer func() { _ = f.Close() }()
-	if err := validateArchive(f, jr.mask.values(), jr.e.cfg.Artifacts.Limits().MaxUnpackedBytes); err != nil {
+	defer func() { _ = rc.Close() }()
+	return pk.add(p, rc, stat.Mode, stat.LinkTarget)
+}
+
+func (jr *jobRun) collectFailure(ctx context.Context, err error, lim ArtifactLimits) error {
+	if ctx.Err() != nil {
+		jr.e.cfg.Logger.Warn("pipeline: artifact upload cancelled", slog.String("run_id", jr.run.ID), slog.String("job_id", jr.row.ID))
+		return ctx.Err()
+	}
+	jr.e.cfg.Logger.Warn("pipeline: artifact upload failed", slog.String("run_id", jr.run.ID), slog.String("job_id", jr.row.ID), slog.String("error", err.Error()))
+	switch {
+	case errors.Is(err, ErrArtifactTooLarge):
+		return fmt.Errorf("artifact upload failed: archive is larger than the %d byte limit", lim.MaxBytes)
+	case errors.Is(err, docker.ErrArchiveTooLarge):
+		return fmt.Errorf("artifact upload failed: files expand past the %d byte limit", lim.MaxUnpackedBytes)
+	}
+	var secret errSecretInArtifact
+	if errors.As(err, &secret) {
 		return fmt.Errorf("artifact rejected: %w", err)
 	}
-	return nil
+	return fmt.Errorf("artifact upload failed: %w", err)
 }
 
 // restoreArtifacts unpacks the artifacts of every needed job that stored
@@ -165,35 +176,21 @@ func findArtifact(list []store.PipelineArtifact, jobKey string) (store.PipelineA
 }
 
 func (jr *jobRun) restoreOne(ctx context.Context, k int, cid string, meta store.PipelineArtifact) error {
-	f, err := jr.e.cfg.Artifacts.Open(meta)
-	if errors.Is(err, ErrArtifactCorrupt) {
-		return fmt.Errorf("artifact of job %s failed its sha256 check, refusing to restore it", meta.JobKey)
-	}
+	f, err := jr.e.cfg.Artifacts.OpenVerified(meta)
 	if err != nil {
 		return fmt.Errorf("artifact of job %s is unavailable: %w", meta.JobKey, err)
 	}
 	defer func() { _ = f.Close() }()
-	in := restoreStream(f)
-	defer func() { _ = in.Close() }()
-	rc, err := jr.rt.ExecWithInput(ctx, cid, []string{"sh", "-s"}, in)
-	if err != nil {
-		return fmt.Errorf("exec: %w", err)
-	}
-	stop := context.AfterFunc(ctx, func() { _ = rc.Close() })
-	defer func() {
-		stop()
-		_ = rc.Close()
-	}()
-	readErr := readLines(rc, func(line string) { jr.sink.Line(k, "stdout", strings.TrimPrefix(line, collectErr)) })
+	copyErr := jr.rt.CopyToContainer(ctx, cid, workspaceDir, f, meta.SizeBytes)
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-	if readErr != nil {
-		var ee *docker.ExecExitError
-		if errors.As(readErr, &ee) {
-			return fmt.Errorf("restoring artifacts of job %s exited with code %d", meta.JobKey, ee.ExitCode)
-		}
-		return fmt.Errorf("restoring artifacts of job %s: %w", meta.JobKey, readErr)
+	if verr := f.Verify(); errors.Is(verr, ErrArtifactCorrupt) {
+		jr.e.cfg.Logger.Error("pipeline: artifact failed its sha256 check during restore", slog.String("run_id", jr.run.ID), slog.String("job_id", jr.row.ID), slog.String("artifact_id", meta.ID))
+		return fmt.Errorf("artifact of job %s failed its sha256 check while restoring, the job was stopped", meta.JobKey)
+	}
+	if copyErr != nil {
+		return fmt.Errorf("restoring artifacts of job %s: %w", meta.JobKey, copyErr)
 	}
 	jr.sink.Line(k, "stdout", fmt.Sprintf("restored artifacts of job %s (%d bytes, sha256 %s)", meta.JobKey, meta.SizeBytes, meta.SHA256))
 	return nil

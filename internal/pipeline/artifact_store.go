@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash"
 	"io"
 	"os"
 	"path/filepath"
@@ -29,6 +30,8 @@ type ArtifactLimits struct {
 	// expands to, so a small archive cannot fill the restore workspace.
 	MaxBytes         int64
 	MaxUnpackedBytes int64
+	// MaxEntries caps the files, directories and links in one archive.
+	MaxEntries int
 	// MaxRunBytes caps all archives of one run together.
 	MaxRunBytes int64
 	Retention   time.Duration
@@ -132,9 +135,6 @@ func (a *ArtifactWriter) Abort() {
 	_ = os.Remove(a.tmp)
 }
 
-// Path is the temporary file, for validating the archive before Commit.
-func (a *ArtifactWriter) Path() string { return a.tmp }
-
 // Commit closes the file and moves it into place, returning its relative
 // path, size, and sha256.
 func (a *ArtifactWriter) Commit() (rel string, size int64, sum string, err error) {
@@ -230,10 +230,65 @@ func (s *ArtifactStore) Sweep(ctx context.Context, idx ArtifactIndex, runExists 
 	return removed, errors.Join(errs...)
 }
 
-func openRead(path string) (*os.File, error) {
-	f, err := os.Open(path) //nolint:gosec // callers pass the store's own temp file path
-	if err != nil {
-		return nil, fmt.Errorf("pipeline: open %s: %w", filepath.Base(path), err)
+// VerifiedReader streams a stored archive while hashing it, so the sha256
+// is checked without reading the file twice. Verify must run after the
+// consumer is done: it drains whatever the consumer left unread and
+// reports ErrArtifactCorrupt on a size or hash mismatch.
+type VerifiedReader struct {
+	f    *os.File
+	h    hash.Hash
+	meta store.PipelineArtifact
+	n    int64
+	done bool
+	err  error
+}
+
+func (v *VerifiedReader) Read(p []byte) (int, error) {
+	if v.err != nil {
+		return 0, v.err
 	}
-	return f, nil
+	n, err := v.f.Read(p)
+	v.h.Write(p[:n])
+	v.n += int64(n)
+	if errors.Is(err, io.EOF) {
+		v.done = true
+		if cerr := v.check(); cerr != nil {
+			return n, cerr
+		}
+	}
+	return n, err
+}
+
+func (v *VerifiedReader) check() error {
+	if v.n != v.meta.SizeBytes || hex.EncodeToString(v.h.Sum(nil)) != v.meta.SHA256 {
+		v.err = ErrArtifactCorrupt
+	}
+	return v.err
+}
+
+// Verify finishes the hash and returns ErrArtifactCorrupt on a mismatch.
+func (v *VerifiedReader) Verify() error {
+	if !v.done && v.err == nil {
+		if _, err := io.Copy(io.Discard, v); err != nil {
+			return err
+		}
+	}
+	return v.err
+}
+
+// Close releases the file.
+func (v *VerifiedReader) Close() error { return v.f.Close() }
+
+// OpenVerified opens meta's archive for streaming with the sha256 checked
+// as the bytes are read, not before.
+func (s *ArtifactStore) OpenVerified(meta store.PipelineArtifact) (*VerifiedReader, error) {
+	full, err := s.resolve(meta.StoragePath)
+	if err != nil {
+		return nil, err
+	}
+	f, err := os.Open(full) //nolint:gosec // full comes from resolve(), which confines it to the store directory
+	if err != nil {
+		return nil, fmt.Errorf("pipeline: open artifact: %w", err)
+	}
+	return &VerifiedReader{f: f, h: sha256.New(), meta: meta}, nil
 }

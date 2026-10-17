@@ -2,13 +2,19 @@ package pipeline
 
 import (
 	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"context"
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -44,26 +50,30 @@ func newArtifactStoreT(t *testing.T, lim ArtifactLimits) *ArtifactStore {
 	return s
 }
 
-func artifactHandler(archive []byte, buildExit int) func(string) execResult {
+func artifactHandler(buildExit int) func(string) execResult {
 	return func(s string) execResult {
-		switch {
-		case strings.Contains(s, collectBegin):
-			return execResult{Output: collectOutput(archive)}
-		case strings.Contains(s, "make"):
+		if strings.Contains(s, "make") {
 			return execResult{Output: "build output\n", Exit: buildExit}
 		}
 		return execResult{Output: "ok\n"}
 	}
 }
 
-func goodArchive(t *testing.T) []byte {
-	return makeTarGz(t, []tarEntry{{name: "dist/", typ: tar.TypeDir}, {name: "dist/app", body: "binary"}})
+func goodTar(t *testing.T) []byte {
+	return dockerTar(t, []tarEntry{{name: "dist/", typ: tar.TypeDir}, {name: "dist/app", body: "binary"}})
+}
+
+func serveTar(rt *fakeRuntime, b []byte) {
+	rt.copyOut = func(_ context.Context, _, _ string, _ int64) (io.ReadCloser, docker.PathStat, error) {
+		return io.NopCloser(bytes.NewReader(b)), docker.PathStat{Name: "dist", Mode: os.ModeDir | 0o755}, nil
+	}
 }
 
 func TestArtifactHandoffBetweenJobs(t *testing.T) {
 	t.Parallel()
 	arts := newArtifactStoreT(t, ArtifactLimits{})
-	h := newHarnessWithArtifacts(t, artifactHandler(goodArchive(t), 0), arts)
+	h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+	serveTar(h.rt, goodTar(t))
 	run := h.start(h.save(artifactFlow), StartOptions{})
 	if got := h.done(run.ID); got.Status != store.PipelineStatusSucceeded {
 		t.Fatalf("run = %s %q\n%s", got.Status, got.Reason, h.dump(run.ID))
@@ -72,41 +82,92 @@ func TestArtifactHandoffBetweenJobs(t *testing.T) {
 	if err != nil || len(rows) != 1 || rows[0].JobKey != "build" || len(rows[0].SHA256) != 64 {
 		t.Fatalf("artifact rows = %+v, %v", rows, err)
 	}
-	if n := h.rt.ran("base64 -d <<'" + restoreData + "'"); n != 1 {
-		t.Errorf("restore ran %d times, want 1 (only the job that needs build)", n)
+	if len(h.rt.restores) != 1 {
+		t.Fatalf("restore ran %d times, want 1 (only the job that needs build)", len(h.rt.restores))
+	}
+	stored, _ := os.ReadFile(filepath.Join(arts.dir, filepath.FromSlash(rows[0].StoragePath)))
+	if !bytes.Equal(h.rt.restores[0], stored) {
+		t.Error("restored bytes differ from the stored archive")
 	}
 	if !strings.Contains(h.logs(run.ID), "restored artifacts of job build") {
 		t.Errorf("logs missing restore line:\n%s", h.logs(run.ID))
 	}
-	f, err := arts.Open(rows[0])
-	if err != nil {
-		t.Fatalf("stored archive fails its own hash: %v", err)
+	if h.rt.ran("base64") != 0 || h.rt.ran("tar ") != 0 {
+		t.Error("artifact transfer shelled out inside the job container")
 	}
-	_ = f.Close()
+	if names := storedNames(t, stored); strings.Join(names, ",") != "dist/,dist/app" {
+		t.Errorf("stored entries = %v", names)
+	}
+}
+
+func storedNames(t *testing.T, gzTar []byte) []string {
+	t.Helper()
+	gz, err := gzip.NewReader(bytes.NewReader(gzTar))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tr := tar.NewReader(gz)
+	var names []string
+	for {
+		h, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			return names
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		names = append(names, h.Name)
+	}
 }
 
 func TestArtifactUploadFailureFailsJobAndSkipsDownstream(t *testing.T) {
 	t.Parallel()
+	boom := errors.New("connection reset")
 	tests := []struct {
-		name    string
-		lim     ArtifactLimits
-		archive func(*testing.T) []byte
-		want    string
+		name  string
+		lim   ArtifactLimits
+		serve func(t *testing.T, rt *fakeRuntime)
+		want  string
 	}{
-		{"over the size cap", ArtifactLimits{MaxBytes: 20}, goodArchive, "larger than the 20 byte limit"},
-		{"symlink escape", ArtifactLimits{}, func(t *testing.T) []byte {
-			return makeTarGz(t, []tarEntry{{name: "dist/link", typ: tar.TypeSymlink, target: "../../../etc/shadow"}})
+		{"over the size cap", ArtifactLimits{MaxBytes: 20}, func(t *testing.T, rt *fakeRuntime) {
+			serveTar(rt, dockerTar(t, []tarEntry{{name: "dist/big", body: strings.Repeat("abcdefghij", 5000)}}))
+		}, "larger than the 20 byte limit"},
+		{"unpacked cap on the raw stream", ArtifactLimits{MaxUnpackedBytes: 10, MaxEntries: 1}, func(t *testing.T, rt *fakeRuntime) {
+			serveTar(rt, dockerTar(t, []tarEntry{{name: "dist/big", body: strings.Repeat("a", 20000)}}))
+		}, "expands past the 10 byte limit"},
+		{"too many files", ArtifactLimits{MaxEntries: 1}, func(t *testing.T, rt *fakeRuntime) { serveTar(rt, goodTar(t)) }, "more than 1 files"},
+		{"symlink escape", ArtifactLimits{}, func(t *testing.T, rt *fakeRuntime) {
+			serveTar(rt, dockerTar(t, []tarEntry{{name: "dist/link", typ: tar.TypeSymlink, target: "../../../etc/shadow"}}))
 		}, "points outside the workspace"},
-		{"path traversal entry", ArtifactLimits{}, func(t *testing.T) []byte {
-			return makeTarGz(t, []tarEntry{{name: "../../etc/cron.d/x", body: "x"}})
+		{"path traversal entry", ArtifactLimits{}, func(t *testing.T, rt *fakeRuntime) {
+			serveTar(rt, dockerTar(t, []tarEntry{{name: "../../etc/cron.d/x", body: "x"}}))
 		}, "leaves the workspace"},
-		{"archive not gzip", ArtifactLimits{}, func(*testing.T) []byte { return []byte("plain text") }, "not a gzip archive"},
+		{"device entry", ArtifactLimits{}, func(t *testing.T, rt *fakeRuntime) {
+			serveTar(rt, dockerTar(t, []tarEntry{{name: "dist/null", typ: tar.TypeChar}}))
+		}, "unsupported type"},
+		{"path not found", ArtifactLimits{}, func(*testing.T, *fakeRuntime) {}, "path not found: dist"},
+		{"stream dies mid entry", ArtifactLimits{}, func(t *testing.T, rt *fakeRuntime) {
+			full := dockerTar(t, []tarEntry{{name: "dist/app", body: strings.Repeat("z", 4000)}})
+			rt.copyOut = func(context.Context, string, string, int64) (io.ReadCloser, docker.PathStat, error) {
+				return io.NopCloser(io.MultiReader(bytes.NewReader(full[:1200]), &errReader{boom})), docker.PathStat{}, nil
+			}
+		}, "connection reset"},
+		{"stream ends short", ArtifactLimits{}, func(t *testing.T, rt *fakeRuntime) {
+			full := dockerTar(t, []tarEntry{{name: "dist/app", body: strings.Repeat("z", 4000)}})
+			serveTar(rt, full[:1500])
+		}, "unexpected EOF"},
+		{"archive api refused", ArtifactLimits{}, func(_ *testing.T, rt *fakeRuntime) {
+			rt.copyOut = func(context.Context, string, string, int64) (io.ReadCloser, docker.PathStat, error) {
+				return nil, docker.PathStat{}, docker.ErrArchiveUnsupported
+			}
+		}, "does not support archive copy"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			arts := newArtifactStoreT(t, tc.lim)
-			h := newHarnessWithArtifacts(t, artifactHandler(tc.archive(t), 0), arts)
+			h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+			tc.serve(t, h.rt)
 			run := h.start(h.save(artifactFlow), StartOptions{})
 			got := h.done(run.ID)
 			if got.Status != store.PipelineStatusFailed {
@@ -143,7 +204,8 @@ func assertNoStoredFiles(t *testing.T, s *ArtifactStore) {
 func TestArtifactFailedUpstreamSkipsDownstreamWithReason(t *testing.T) {
 	t.Parallel()
 	arts := newArtifactStoreT(t, ArtifactLimits{})
-	h := newHarnessWithArtifacts(t, artifactHandler(goodArchive(t), 2), arts)
+	h := newHarnessWithArtifacts(t, artifactHandler(2), arts)
+	serveTar(h.rt, goodTar(t))
 	run := h.start(h.save(artifactFlow), StartOptions{})
 	if got := h.done(run.ID); got.Status != store.PipelineStatusFailed {
 		t.Fatalf("run = %s", got.Status)
@@ -152,14 +214,14 @@ func TestArtifactFailedUpstreamSkipsDownstreamWithReason(t *testing.T) {
 	if jobs["test"].Reason != "needed job build failed" {
 		t.Errorf("test reason = %q", jobs["test"].Reason)
 	}
-	if h.rt.ran(collectBegin) != 0 {
-		t.Error("artifacts were collected from a failed job")
+	if len(h.rt.restores) != 0 {
+		t.Error("artifacts were restored from a failed job")
 	}
 }
 
 func TestArtifactStorageNotConfigured(t *testing.T) {
 	t.Parallel()
-	h := newHarness(t, artifactHandler(nil, 0))
+	h := newHarness(t, artifactHandler(0))
 	run := h.start(h.save(artifactFlow), StartOptions{})
 	if got := h.done(run.ID); got.Status != store.PipelineStatusFailed {
 		t.Fatalf("run = %s", got.Status)
@@ -172,8 +234,8 @@ func TestArtifactStorageNotConfigured(t *testing.T) {
 func TestArtifactSecretInArchiveIsRefused(t *testing.T) {
 	t.Parallel()
 	arts := newArtifactStoreT(t, ArtifactLimits{})
-	archive := makeTarGz(t, []tarEntry{{name: "dist/env", body: "TOKEN=s3cr3t-value"}})
-	h := newHarnessWithArtifacts(t, artifactHandler(archive, 0), arts)
+	h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+	serveTar(h.rt, dockerTar(t, []tarEntry{{name: "dist/env", body: "TOKEN=s3cr3t-value"}}))
 	yaml := strings.Replace(artifactFlow, "      - run: make\n", "      - run: make\n        secrets: [TOKEN]\n", 1)
 	run := h.start(h.save(yaml), StartOptions{})
 	h.done(run.ID)
@@ -188,7 +250,8 @@ func TestArtifactSecretInArchiveIsRefused(t *testing.T) {
 func TestArtifactHashMismatchBlocksRestore(t *testing.T) {
 	t.Parallel()
 	arts := newArtifactStoreT(t, ArtifactLimits{})
-	h := newHarnessWithArtifacts(t, artifactHandler(goodArchive(t), 0), arts)
+	h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+	serveTar(h.rt, goodTar(t))
 	yaml := strings.Replace(artifactFlow, "      - run: ls dist\n", "      - uses: approval\n        with: { message: wait }\n      - run: ls dist\n", 1)
 	run := h.start(h.save(yaml), StartOptions{})
 	h.until(run.ID, func(store.PipelineRun) bool {
@@ -207,7 +270,7 @@ func TestArtifactHashMismatchBlocksRestore(t *testing.T) {
 	if got := h.done(run.ID); got.Status != store.PipelineStatusFailed {
 		t.Fatalf("run = %s", got.Status)
 	}
-	if r := h.jobs(run.ID)["test"].Reason; !strings.Contains(r, "failed its sha256 check") {
+	if r := h.jobs(run.ID)["test"].Reason; !strings.Contains(r, "failed its sha256 check while restoring") {
 		t.Errorf("test reason = %q", r)
 	}
 	if h.rt.ran("ls dist") != 0 {
@@ -218,14 +281,22 @@ func TestArtifactHashMismatchBlocksRestore(t *testing.T) {
 func TestArtifactCancelDuringUploadLeavesNothing(t *testing.T) {
 	t.Parallel()
 	arts := newArtifactStoreT(t, ArtifactLimits{})
-	h := newHarnessWithArtifacts(t, func(s string) execResult {
-		if strings.Contains(s, collectBegin) {
-			return execResult{Block: true}
-		}
-		return execResult{Output: "ok\n"}
-	}, arts)
+	h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+	started := make(chan struct{})
+	var once sync.Once
+	h.rt.copyOut = func(ctx context.Context, _, _ string, _ int64) (io.ReadCloser, docker.PathStat, error) {
+		once.Do(func() { close(started) })
+		return &blockingReader{ctx: ctx}, docker.PathStat{}, nil
+	}
 	run := h.start(h.save(artifactFlow), StartOptions{})
-	h.until(run.ID, func(store.PipelineRun) bool { return h.rt.ran(collectBegin) > 0 })
+	h.until(run.ID, func(store.PipelineRun) bool {
+		select {
+		case <-started:
+			return true
+		default:
+			return false
+		}
+	})
 	if err := h.e.Cancel(context.Background(), run.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -237,6 +308,85 @@ func TestArtifactCancelDuringUploadLeavesNothing(t *testing.T) {
 	}
 	h.e.Wait()
 	assertNoStoredFiles(t, arts)
+}
+
+func TestArtifactRestoreFailureKeepsStoredArtifact(t *testing.T) {
+	t.Parallel()
+	arts := newArtifactStoreT(t, ArtifactLimits{})
+	h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+	serveTar(h.rt, goodTar(t))
+	h.rt.copyIn = func(_ string, r io.Reader) error {
+		_, _ = io.CopyN(io.Discard, r, 10)
+		return errors.New("daemon closed the connection")
+	}
+	run := h.start(h.save(artifactFlow), StartOptions{})
+	if got := h.done(run.ID); got.Status != store.PipelineStatusFailed {
+		t.Fatalf("run = %s", got.Status)
+	}
+	if r := h.jobs(run.ID)["test"].Reason; !strings.Contains(r, "restoring artifacts of job build") || !strings.Contains(r, "daemon closed") {
+		t.Errorf("test reason = %q", r)
+	}
+	if h.jobs(run.ID)["build"].Status != store.PipelineStatusSucceeded {
+		t.Errorf("build = %s, an upload that worked must stay succeeded", h.jobs(run.ID)["build"].Status)
+	}
+	rows, _ := h.db.ListPipelineArtifacts(context.Background(), run.ID)
+	if len(rows) != 1 {
+		t.Fatalf("artifact rows = %+v", rows)
+	}
+	f, err := arts.Open(rows[0])
+	if err != nil {
+		t.Fatalf("stored artifact damaged by a failed restore: %v", err)
+	}
+	_ = f.Close()
+}
+
+const parallelArtifactFlow = `
+version: 1
+jobs:
+  a:
+    image: alpine
+    artifacts: [dist]
+    steps:
+      - run: make
+  b:
+    image: alpine
+    artifacts: [dist]
+    steps:
+      - run: make
+  join:
+    needs: [a, b]
+    image: alpine
+    steps:
+      - run: ls dist
+`
+
+func TestArtifactConcurrentCollection(t *testing.T) {
+	t.Parallel()
+	arts := newArtifactStoreT(t, ArtifactLimits{})
+	h := newHarnessWithArtifacts(t, artifactHandler(0), arts)
+	h.rt.copyOut = func(_ context.Context, cid, _ string, _ int64) (io.ReadCloser, docker.PathStat, error) {
+		b := dockerTar(t, []tarEntry{{name: "dist/app", body: "built in " + cid + strings.Repeat("x", 100000)}})
+		return io.NopCloser(bytes.NewReader(b)), docker.PathStat{}, nil
+	}
+	run := h.start(h.save(parallelArtifactFlow), StartOptions{})
+	if got := h.done(run.ID); got.Status != store.PipelineStatusSucceeded {
+		t.Fatalf("run = %s %q\n%s", got.Status, got.Reason, h.dump(run.ID))
+	}
+	rows, _ := h.db.ListPipelineArtifacts(context.Background(), run.ID)
+	if len(rows) != 2 || rows[0].SHA256 == rows[1].SHA256 || rows[0].StoragePath == rows[1].StoragePath {
+		t.Fatalf("rows = %+v, want two distinct artifacts", rows)
+	}
+	if len(h.rt.restores) != 2 {
+		t.Errorf("restores = %d, want 2", len(h.rt.restores))
+	}
+	for _, r := range rows {
+		f, err := arts.Open(r)
+		if err != nil {
+			t.Errorf("artifact %s: %v", r.ID, err)
+			continue
+		}
+		_ = f.Close()
+	}
 }
 
 func TestArtifactValidationRejectsBadDeclarations(t *testing.T) {
