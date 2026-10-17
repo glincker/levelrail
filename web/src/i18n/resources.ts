@@ -1,4 +1,6 @@
 import type common from '../locales/en/common.json'
+import type firewall from '../locales/en/firewall.json'
+import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
 import type dashboard from '../locales/en/dashboard.json'
@@ -156,6 +158,8 @@ declare module 'i18next' {
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies
       deployDetail: typeof deployDetail
+      firewall: typeof firewall
+      rules: typeof rules
     }
   }
 }

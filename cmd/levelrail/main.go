@@ -584,6 +584,7 @@ func run(logger *slog.Logger) error {
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
 	configureNodeCerts(apiRouter, agentServer, agentServer)
+	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
@@ -2893,6 +2894,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
 			ingressreconcile.WithRequestStats(),
+			ingressreconcile.WithFirewall(),
 			ingressreconcile.WithRouteCheck(deps.routeCheck),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),

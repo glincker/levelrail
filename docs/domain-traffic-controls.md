@@ -21,7 +21,7 @@ None of these needs a second proxy or a container restart. A change is stored, a
 <Tabs>
 <Tab title="Dashboard">
 
-On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Shield, Cache, Redirects, Ports and Danger zone. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
+On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Cache, Redirects, Ports and Danger zone. The abuse shield moved to [Firewall](firewall): select the host under Rules, or use the Firewall limits button on the domain page. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
 
 </Tab>
 <Tab title="CLI">
@@ -214,7 +214,7 @@ A scraper or bot flood should not be able to run up your bandwidth or take an ap
 
 Rate and concurrency rejections return `429` with `Retry-After`. Verifying good bots by reverse DNS is not part of the shield, so add search engine ranges to `allow` if you need them.
 
-The bot denylist ships as data (`internal/trafficpolicy/shield_bots.txt`, shown on the Shield tab and by `levelrail-cli domains shield bots`). Point `APP_SHIELD_BOT_LIST_FILE` at your own file (one lower case fragment per line, `#` comments) to replace it; changes apply when the ingress config next reloads.
+The bot denylist ships as data (`internal/trafficpolicy/shield_bots.txt`, shown in Firewall under Rules and by `levelrail-cli domains shield bots`). Point `APP_SHIELD_BOT_LIST_FILE` at your own file (one lower case fragment per line, `#` comments) to replace it; changes apply when the ingress config next reloads.
 
 **Under attack mode** is one switch for an emergency. It clamps the rate, burst and concurrency to `APP_SHIELD_ATTACK_RATE_PER_MINUTE`, `APP_SHIELD_ATTACK_BURST` and `APP_SHIELD_ATTACK_MAX_CONCURRENT` (or keeps your limits when they are already tighter) and refuses listed bots. It works even when the shield is off, lasts `APP_SHIELD_ATTACK_DEFAULT_DURATION` unless you pass a duration (at most `APP_SHIELD_ATTACK_MAX_DURATION`), and ends on its own with no further action.
 

@@ -56,6 +56,17 @@ func NewBotMatcher(l Limits, extra []string) (*BotMatcher, error) {
 	return &BotMatcher{patterns: base}, nil
 }
 
+// NewBotMatcherFrom builds a matcher over exactly patterns.
+func NewBotMatcherFrom(patterns []string) *BotMatcher {
+	out := make([]string, 0, len(patterns))
+	for _, p := range patterns {
+		if p = strings.ToLower(strings.TrimSpace(p)); p != "" {
+			out = append(out, p)
+		}
+	}
+	return &BotMatcher{patterns: out}
+}
+
 // Match reports whether userAgent contains a denylisted substring.
 func (m *BotMatcher) Match(userAgent string) bool {
 	if m == nil || userAgent == "" {

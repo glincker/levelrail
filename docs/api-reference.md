@@ -1478,6 +1478,23 @@ Routes that do not fit an existing group.
 | POST | /api/v1/plugin-keys | AbilityRoot | handleAddPluginKey |
 | DELETE | /api/v1/plugin-keys/{id} | AbilityRoot | handleRemovePluginKey |
 | GET | /api/v1/cdn/overview | AbilityRead | handleCDNOverview |
+| GET | /api/v1/firewall/edge/status | AbilityRead | handleFirewallEdgeStatus |
+| GET | /api/v1/firewall/edge/series | AbilityRead | handleFirewallEdgeSeries |
+| GET | /api/v1/firewall/edge/traffic | AbilityReadSensitive | handleFirewallEdgeTraffic |
+| GET | /api/v1/firewall/edge/rules | AbilityRead | handleListFirewallEdgeRules |
+| POST | /api/v1/firewall/edge/rules | AbilityDeploy | handleCreateFirewallEdgeRule |
+| POST | /api/v1/firewall/edge/rules/order | AbilityDeploy | handleReorderFirewallEdgeRules |
+| PUT | /api/v1/firewall/edge/rules/{id} | AbilityDeploy | handleUpdateFirewallEdgeRule |
+| DELETE | /api/v1/firewall/edge/rules/{id} | AbilityDeploy | handleDeleteFirewallEdgeRule |
+| POST | /api/v1/firewall/edge/block | AbilityDeploy | handleFirewallIPEntry |
+| POST | /api/v1/firewall/edge/allow | AbilityDeploy | handleFirewallIPEntry |
+| GET | /api/v1/firewall/edge/bans | AbilityReadSensitive | handleListFirewallEdgeBans |
+| DELETE | /api/v1/firewall/edge/bans/{ip} | AbilityDeploy | handleLiftFirewallEdgeBan |
+| GET | /api/v1/firewall/edge/settings | AbilityRead | handleGetFirewallEdgeSettings |
+| PUT | /api/v1/firewall/edge/settings | AbilityDeploy | handleSetFirewallEdgeSettings |
+| POST | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStartFirewallEdgeAttack |
+| DELETE | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStopFirewallEdgeAttack |
+| GET | /api/v1/firewall/edge/audit | AbilityRead | handleFirewallEdgeAudit |
 
 ## See also
 

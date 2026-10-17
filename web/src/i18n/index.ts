@@ -82,6 +82,8 @@ export const NAMESPACES = [
   'pipelines',
   'budget',
   'autoscale',
+  'firewall',
+  'rules',
 ] as const
 
 void i18n

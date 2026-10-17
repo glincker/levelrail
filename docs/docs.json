@@ -177,6 +177,7 @@
               "dns",
               "domain-traffic-controls",
               "cdn-and-caching",
+              "firewall",
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",

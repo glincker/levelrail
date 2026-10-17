@@ -102,6 +102,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/edgefw"
 	"github.com/GLINCKER/levelrail/internal/email"
 	"github.com/GLINCKER/levelrail/internal/exposure"
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
@@ -240,6 +241,7 @@ type Router struct {
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
 	cachePurges            CachePurgeStore             // purge history, cache_app.go
+	edgeFW                 edgeFirewallDeps            // ingress firewall rules, settings and live engine, firewall_edge.go
 	domainErrorPages       DomainErrorPagesStore       // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
 	masterKeyRotator       MasterKeyRotator            // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
 	secretBinder           SecretBinder                // nil is valid: the secrets binding routes return 501
@@ -777,6 +779,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainSearchVisibility:      s,
 		domainPolicy:                domainPolicyDeps{store: s},
 		cachePurges:                 s,
+		edgeFW:                      edgeFirewallDeps{store: s, engine: edgefw.Default()},
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
 		traffic:                     newTrafficState(),

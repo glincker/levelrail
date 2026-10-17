@@ -1,0 +1,29 @@
+# AI crawler user-agent list: one case-insensitive substring per line.
+# Edit the active list from the Firewall rules page; this file is the default and the reset target.
+gptbot
+chatgpt-user
+oai-searchbot
+claudebot
+claude-web
+claude-user
+claude-searchbot
+anthropic-ai
+ccbot
+perplexitybot
+perplexity-user
+bytespider
+amazonbot
+meta-externalagent
+meta-externalfetcher
+facebookbot
+cohere-ai
+cohere-training-data-crawler
+diffbot
+imagesiftbot
+omgilibot
+youbot
+timpibot
+ai2bot
+mistralai-user
+duckassistbot
+webzio
