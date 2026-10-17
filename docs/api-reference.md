@@ -1458,6 +1458,16 @@ Routes that do not fit an existing group.
 | POST | /api/v1/hooks/pipeline/{id}/{token} | Public | handlePipelineWebhook |
 | GET | /api/v1/ai/usage | AbilityRead | handleAIUsage |
 | GET | /api/v1/model-catalog | AbilityRead | handleModelCatalog |
+| GET | /api/v1/plugins | AbilityRoot | handleListPlugins |
+| GET | /api/v1/plugins/{name} | AbilityRoot | handleGetPlugin |
+| POST | /api/v1/plugins | AbilityRoot | handleInstallPlugin |
+| POST | /api/v1/plugins/{name}/approve | AbilityRoot | handleApprovePlugin |
+| POST | /api/v1/plugins/{name}/enable | AbilityRoot | handleEnablePlugin |
+| POST | /api/v1/plugins/{name}/disable | AbilityRoot | handleDisablePlugin |
+| DELETE | /api/v1/plugins/{name} | AbilityRoot | handleRemovePlugin |
+| GET | /api/v1/plugin-keys | AbilityRoot | handleListPluginKeys |
+| POST | /api/v1/plugin-keys | AbilityRoot | handleAddPluginKey |
+| DELETE | /api/v1/plugin-keys/{id} | AbilityRoot | handleRemovePluginKey |
 
 ## See also
 

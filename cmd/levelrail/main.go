@@ -833,10 +833,14 @@ func run(logger *slog.Logger) error {
 		}
 	}()
 
+	pluginMgr := setupPlugins(ctx, logger, b, db, client, agentDataDir)
 	var restartRequested atomic.Bool
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {
 		wh.UseSourceCache(apiRouter.SourceCache())
+	}
+	if pluginMgr != nil {
+		apiRouter.SetPluginManager(pluginMgr)
 	}
 	apiRouter.SetRestarter(api.Restarter{
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
@@ -1059,8 +1063,9 @@ func run(logger *slog.Logger) error {
 	}()
 
 	alertingFederator := telemetry.NewLocalFederator(telemetryDB)
+	pluginSender := pluginSenderFor(pluginMgr)
 	alertingNewNotifier := func(r alerting.Rule) alerting.Notifier {
-		return alerting.NewNotifier(notifyClient, emailSender, pushSender, r)
+		return alerting.NewNotifierWithPlugins(notifyClient, emailSender, pushSender, pluginSender, r)
 	}
 	// db (the same *store.DB every other cert-storage reader in this
 	// function uses) satisfies alerting.CertSource structurally, so a

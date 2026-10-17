@@ -272,6 +272,9 @@ type deployGenericPayload struct {
 // An unknown or empty NotifyKind falls back to the generic JSON shape so the notification still goes out.
 // so a notification still goes out somewhere.
 func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, t DeployTarget, ev DeployOutcome) error {
+	if IsPluginKind(t.NotifyKind) {
+		return ErrPluginChannelUnsupported
+	}
 	if IsMaskedNotifyTarget(t.NotifyURL) {
 		return ErrChannelSecretNotRevealed
 	}

@@ -150,6 +150,12 @@ export const settingsNavSections: SettingsNavSection[] = [
         feature: 'mobile-api',
       },
       {
+        id: 'plugins',
+        to: '/settings/plugins',
+        icon: PlugsConnectedIcon,
+        feature: 'plugins',
+      },
+      {
         id: 'audit-log',
         to: '/settings/audit-log',
         icon: ClockCounterClockwiseIcon,

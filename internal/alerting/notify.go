@@ -153,6 +153,9 @@ func NewNotifier(client *http.Client, sender email.Sender, pushSender PushSender
 	if client == nil {
 		client = netguard.NewClient()
 	}
+	if IsPluginKind(r.NotifyKind) {
+		return pluginNotifier{plugin: PluginName(r.NotifyKind)}
+	}
 	if r.NotifyKind == NotifyEmail {
 		return emailNotifier{sender: sender, to: r.NotifyURL}
 	}

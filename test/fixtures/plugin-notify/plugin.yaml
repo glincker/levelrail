@@ -1,0 +1,9 @@
+api_version: 1
+name: example-notify
+version: 0.1.0
+kind: notification_channel
+publisher: Example Org
+description: Logs each alert event. A starting point for your own channel plugin.
+image: registry.example.com/example/plugin-notify@sha256:0000000000000000000000000000000000000000000000000000000000000000
+abilities: [read]
+outbound_hosts: []

@@ -35,6 +35,8 @@ const (
 	DefaultPidsLimit int64 = 4096
 
 	securityOptNoNewPrivileges = "no-new-privileges"
+
+	hardenedTmpfsOpts = "rw,noexec,nosuid,nodev,size=16m"
 )
 
 // MinimalCapabilities is what ordinary images need to start after a
@@ -159,6 +161,19 @@ func (h HardeningConfig) Report() HardeningReport {
 
 // apply hardens hc in enforce mode; spec.CapAdd survives the drop-all.
 func (h HardeningConfig) apply(hc *container.HostConfig, spec ContainerSpec) {
+	if spec.Hardened {
+		hc.CapDrop = []string{"ALL"}
+		hc.CapAdd = nil
+		hc.SecurityOpt = append(hc.SecurityOpt, securityOptNoNewPrivileges)
+		if hc.PidsLimit == nil {
+			limit := DefaultPidsLimit
+			if h.PidsLimit > 0 {
+				limit = h.PidsLimit
+			}
+			hc.PidsLimit = &limit
+		}
+		return
+	}
 	if !h.enforced() {
 		return
 	}
