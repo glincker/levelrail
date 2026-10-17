@@ -227,26 +227,11 @@ func (rt *Router) autoPlaceGPU(ctx context.Context, planner *gpuPlanner, claim g
 // placementCounts returns the registered nodes and how many services and
 // databases each hosts.
 func (rt *Router) placementCounts(ctx context.Context) ([]store.Node, map[string]int, error) {
-	nodes, err := rt.nodes.ListNodes(ctx)
+	inv, err := rt.loadPlacementInventory(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
-	services, err := rt.apps.ListDesiredServices(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	databases, err := rt.databases.ListDesiredDatabases(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	counts := make(map[string]int, len(nodes))
-	for _, s := range services {
-		counts[s.NodeID]++
-	}
-	for _, d := range databases {
-		counts[d.NodeID]++
-	}
-	return nodes, counts, nil
+	return inv.nodes, inv.counts, nil
 }
 
 // doctorCheckGPUPlacement raises a warning per GPU app or model that no

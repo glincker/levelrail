@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/spec"
@@ -560,6 +561,9 @@ func TestHandleCreateApp_AutoPlacement(t *testing.T) {
 		cookie := loginTestSession(t, rt, db)
 		seedOnlineNode(t, db, "node_local", "control-plane", true)
 		seedOnlineNode(t, db, "node_worker", "worker", true)
+		reports := agent.NewHostReportStore()
+		reports.SetNodeHostReport("node_worker", agent.HostReport{CPUCores: 2, MemoryTotalBytes: 1 << 30, DiskTotalBytes: 100 << 30, DiskFreeBytes: 100 << 30})
+		rt.SetNodeHostReports(reports)
 		if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "existing", Image: "img:1", Port: 80}); err != nil {
 			t.Fatalf("seed existing service: %v", err)
 		}

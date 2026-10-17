@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1231 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1234 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -256,6 +256,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook/rotate", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRotatePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/placement", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPlacement", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/placement", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetPlacement", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/placement/decision", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPlacementDecision", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/preflight", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePreflightApp", Description: "Preflight checks (preflight.go): read-only probes of an existing app's stored config (AbilityRead, resource-scoped), or of a not yet created app described in the body (AbilityWrite, since the body names hosts the server will contact)."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPreview", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutPreview", Description: ""},
@@ -533,6 +534,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/databases/{name}/pitr-restores", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListPITRRestoreHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacement", Description: ""},
 	{Method: "PUT", Path: "/api/v1/databases/{name}/placement", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleSetPlacement", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/placement/decision", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetPlacementDecision", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/query", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseQuery", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleClearDatabaseQueryHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/query-history", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseQueryHistory", Description: ""},
@@ -682,6 +684,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/settings/vault", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetVaultSettings", Description: "External HashiCorp Vault (instance-level, one connection per control plane): same GET AbilityRead / PUT+DELETE AbilityRoot tier as Cloudflare Tunnel above."},
 	{Method: "PUT", Path: "/api/v1/settings/vault", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateVaultSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodes", Description: "Nodes: fleet-level infrastructure, not scoped to any one app, so every route here requires AbilityRoot specifically rather than AbilityRead/AbilityWrite: minting a join token or removing a node is a materially more sensitive operation than editing one app's config, the same reasoning secrets.go's AbilityWriteSensitive already applies one level down at the per-app layer."},
+	{Method: "GET", Path: "/api/v1/nodes/allocations", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAllocations", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/join-tokens", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeJoinToken", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/provision", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/resource-usage", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFleetResourceUsage", Description: "Fleet-wide latest CPU/memory/disk snapshot plus rollup (node_resource_usage.go), the node-scoped counterpart to GET /apps/resource-usage above: registered as a literal path segment under /nodes/, which Go's net/http mux matches ahead of the /nodes/{id} wildcard above regardless of registration order, the same precedent apps/resource-usage already relies on."},

@@ -397,13 +397,15 @@ func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 
 	// Databases carry no domains, so placement never prefers the local
 	// node for ingress reasons here.
-	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, false, "api: create database") {
+	cp := &createPlacement{Kind: store.NodeMoveKindDatabase, Name: req.Name}
+	if !rt.resolveCreateNodePlacement(w, r, body, &req.NodeID, &req.AutoPlaced, false, cp, "api: create database") {
 		return
 	}
 
 	if !rt.createDesiredDatabase(w, r, req) {
 		return
 	}
+	rt.recordCreatePlacement(r.Context(), cp, req.NodeID)
 	rt.nudgeReconciler()
 	writeJSON(w, http.StatusCreated, req)
 }

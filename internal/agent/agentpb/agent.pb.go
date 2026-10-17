@@ -2733,8 +2733,12 @@ type HostReport struct {
 	// other_containers lists only the largest few.
 	OtherContainersMemoryBytes uint64                `protobuf:"varint,4,opt,name=other_containers_memory_bytes,json=otherContainersMemoryBytes,proto3" json:"other_containers_memory_bytes,omitempty"`
 	OtherContainers            []*UnmanagedContainer `protobuf:"bytes,5,rep,name=other_containers,json=otherContainers,proto3" json:"other_containers,omitempty"`
-	unknownFields              protoimpl.UnknownFields
-	sizeCache                  protoimpl.SizeCache
+	// cpu_cores, disk_total_bytes and disk_free_bytes are zero when unreadable.
+	CpuCores       uint32 `protobuf:"varint,6,opt,name=cpu_cores,json=cpuCores,proto3" json:"cpu_cores,omitempty"`
+	DiskTotalBytes uint64 `protobuf:"varint,7,opt,name=disk_total_bytes,json=diskTotalBytes,proto3" json:"disk_total_bytes,omitempty"`
+	DiskFreeBytes  uint64 `protobuf:"varint,8,opt,name=disk_free_bytes,json=diskFreeBytes,proto3" json:"disk_free_bytes,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *HostReport) Reset() {
@@ -2800,6 +2804,27 @@ func (x *HostReport) GetOtherContainers() []*UnmanagedContainer {
 		return x.OtherContainers
 	}
 	return nil
+}
+
+func (x *HostReport) GetCpuCores() uint32 {
+	if x != nil {
+		return x.CpuCores
+	}
+	return 0
+}
+
+func (x *HostReport) GetDiskTotalBytes() uint64 {
+	if x != nil {
+		return x.DiskTotalBytes
+	}
+	return 0
+}
+
+func (x *HostReport) GetDiskFreeBytes() uint64 {
+	if x != nil {
+		return x.DiskFreeBytes
+	}
+	return 0
 }
 
 type ContainerState struct {
@@ -6669,14 +6694,17 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\x11runtime_installed\x18\x04 \x01(\bR\x10runtimeInstalled\"K\n" +
 	"\x12UnmanagedContainer\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12!\n" +
-	"\fmemory_bytes\x18\x02 \x01(\x04R\vmemoryBytes\"\xae\x02\n" +
+	"\fmemory_bytes\x18\x02 \x01(\x04R\vmemoryBytes\"\x9d\x03\n" +
 	"\n" +
 	"HostReport\x12,\n" +
 	"\x12memory_total_bytes\x18\x01 \x01(\x04R\x10memoryTotalBytes\x124\n" +
 	"\x16memory_available_bytes\x18\x02 \x01(\x04R\x14memoryAvailableBytes\x12&\n" +
 	"\x0fagent_rss_bytes\x18\x03 \x01(\x04R\ragentRssBytes\x12A\n" +
 	"\x1dother_containers_memory_bytes\x18\x04 \x01(\x04R\x1aotherContainersMemoryBytes\x12Q\n" +
-	"\x10other_containers\x18\x05 \x03(\v2&.levelrail.agent.v1.UnmanagedContainerR\x0fotherContainers\"\x9b\x01\n" +
+	"\x10other_containers\x18\x05 \x03(\v2&.levelrail.agent.v1.UnmanagedContainerR\x0fotherContainers\x12\x1b\n" +
+	"\tcpu_cores\x18\x06 \x01(\rR\bcpuCores\x12(\n" +
+	"\x10disk_total_bytes\x18\a \x01(\x04R\x0ediskTotalBytes\x12&\n" +
+	"\x0fdisk_free_bytes\x18\b \x01(\x04R\rdiskFreeBytes\"\x9b\x01\n" +
 	"\x0eContainerState\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n" +

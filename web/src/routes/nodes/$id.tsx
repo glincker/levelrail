@@ -20,6 +20,7 @@ import { NodeCapacityForecastCard } from '../../components/NodeCapacityForecastC
 import { NodeGpuCard } from '../../components/NodeGpuCard'
 import { NodeDrainsCard } from '../../components/NodeDrainsCard'
 import { NodeLabelsCard } from '../../components/NodeLabelsCard'
+import { NodeAllocationCard } from '../../components/nodes/NodeAllocationCard'
 import { NodeMeshCard } from '../../components/NodeMeshCard'
 import { NodeMetricsDashboard } from '../../components/NodeMetricsDashboard'
 import { NodePatchStatusCard } from '../../components/NodePatchStatusCard'
@@ -231,6 +232,7 @@ function NodeDetailPage() {
 
       <NodeMeshCard nodeId={id} nodeName={node.name} />
 
+      <NodeAllocationCard nodeId={id} />
       <NodeLabelsCard nodeId={id} />
       <NodeDrainsCard nodeId={id} />
 

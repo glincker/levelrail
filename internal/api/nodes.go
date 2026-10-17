@@ -546,7 +546,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 		if c, ok := models.ServiceClaim(svc); ok {
 			claim = &c
 		}
-		target, err := placer.next(r.Context(), claim)
+		target, err := placer.next(r.Context(), claim, drainRef{kind: store.NodeMoveKindApp, name: svc.Name, needs: serviceRequests(svc.Resources, svc.Replicas)})
 		var blocked *errNoGPUTarget
 		if errors.As(err, &blocked) {
 			resp.Blocked = append(resp.Blocked, drainBlocked{Kind: "app", Name: svc.Name, Reason: blocked.reason})
@@ -563,12 +563,12 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			resp.Errors = append(resp.Errors, fmt.Sprintf("service %s: %s", svc.Name, err.Error()))
 			continue
 		}
-		placer.commit()
+		placer.commit(r.Context())
 		resp.MovedServices = append(resp.MovedServices, svc.Name)
 		rt.teardownServiceContainers(svc.Name, id)
 	}
 	for _, d := range databases {
-		target, err := placer.next(r.Context(), nil)
+		target, err := placer.next(r.Context(), nil, drainRef{kind: store.NodeMoveKindDatabase, name: d.Name})
 		if err != nil {
 			rt.logger.Error("api: drain node: select placement failed", slog.String("error", err.Error()), slog.String("node_id", id), slog.String("database", d.Name))
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
@@ -579,7 +579,7 @@ func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
 			resp.Errors = append(resp.Errors, fmt.Sprintf("database %s: %s", d.Name, err.Error()))
 			continue
 		}
-		placer.commit()
+		placer.commit(r.Context())
 		resp.MovedDatabases = append(resp.MovedDatabases, d.Name)
 		rt.teardownDatabaseContainer(d.Name, id)
 	}

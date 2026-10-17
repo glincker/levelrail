@@ -165,6 +165,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSetProject(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-project":
 		return runAppsClearProject(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "placement":
+		return runAppsPlacement(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "set-node":
 		return runAppsSetNode(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-node":
@@ -312,6 +314,7 @@ func appsUsage(prog string) string {
   %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
   %[1]s apps set-project <name> <project-id> [flags]   move an app into a project
   %[1]s apps clear-project <name> [flags]   remove an app's project assignment
+  %[1]s apps placement <name> [--database] [flags]   explain why an app runs on its node and what each node offered
   %[1]s apps set-node <name> <node-id> [--with-volumes] [flags]   move an app to another node, optionally taking its named volumes with it
   %[1]s apps clear-node <name> [--with-volumes] [flags]   move an app back to this control plane's own local node
   %[1]s apps previews <verb> [flags]   manage preview environments per pull request

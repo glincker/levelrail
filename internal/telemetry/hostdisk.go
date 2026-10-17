@@ -38,6 +38,11 @@ func diskSpaceBytes(path string) (total, used int64, err error) {
 	return total, used, nil
 }
 
+// HostDiskBytes reads path's filesystem total and used bytes.
+func HostDiskBytes(path string) (total, used int64, err error) {
+	return diskSpaceBytes(path)
+}
+
 // HostDiskCollector polls one filesystem path's capacity on an interval
 // and writes disk_total_bytes/disk_used_bytes samples under one
 // resource ID, the host-level counterpart to Collector's per-container

@@ -180,7 +180,7 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 	if meshCfg != nil {
 		opts = append(opts, agent.WithMesh(holder.Current().NodeID, meshCfg.sink))
 	}
-	opts = append(opts, agent.WithHostProbe(agent.NewHostProbe(rt)))
+	opts = append(opts, agent.WithHostProbe(agent.NewHostProbe(rt, agentDataDir())))
 	if rl, ok := rt.(gpu.RuntimeLister); ok {
 		opts = append(opts, agent.WithGPUProbe(func(ctx context.Context) gpu.Info {
 			return gpu.Detect(ctx, gpu.ExecRunner{}, rl)
@@ -338,13 +338,17 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 	return id, nil
 }
 
+func agentDataDir() string {
+	if d := os.Getenv("APP_DATA_DIR"); d != "" {
+		return d
+	}
+	return filepath.Dir(identityFilePath())
+}
+
 // bootAgentDockerGuard puts the same Docker API guard the control plane runs
 // in front of this node's daemon. Denials go to a node-local audit file.
 func bootAgentDockerGuard(ctx context.Context, logger *slog.Logger) (dockerguard.Booted, error) {
-	dataDir := os.Getenv("APP_DATA_DIR")
-	if dataDir == "" {
-		dataDir = filepath.Dir(identityFilePath())
-	}
+	dataDir := agentDataDir()
 	b, err := dockerguard.Boot(ctx, dockerguard.BootConfig{
 		DataDir:         dataDir,
 		ResolveSymlinks: !dockerguard.RunningInContainer(),
