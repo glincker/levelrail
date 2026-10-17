@@ -59,6 +59,7 @@ export const NAMESPACES = [
   'traces',
   'errors',
   'edgeAccess',
+  'trafficDetail',
   'betaFeatures',
   'newApp',
   'getStarted',

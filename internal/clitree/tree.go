@@ -240,6 +240,7 @@ var Tree = map[string]*Node{
 		"topology":       nil,
 		"traffic":        nil,
 	}},
+	"traffic":                  nil,
 	"status":                   nil,
 	"version":                  nil,
 	"changelog":                nil,

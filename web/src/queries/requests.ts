@@ -2,7 +2,7 @@
 // (internal/api/requests.go): ingress request rate, error rates and
 // latency percentiles for one app.
 
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, queryOptions, useQuery } from '@tanstack/react-query'
 import type { RequestSeries } from '../types/requests'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
@@ -33,6 +33,8 @@ export interface RequestRangeParams {
   step?: string
   maxPoints?: number
   compare?: boolean
+  // Keeps the previous series on screen while a moving window refetches.
+  live?: boolean
 }
 
 export async function fetchRequestSeries(
@@ -81,6 +83,7 @@ export function requestSeriesQueryOptions(
       range.compare,
     ),
     queryFn: () => fetchRequestSeries(appName, range),
+    placeholderData: range.live ? keepPreviousData : undefined,
   })
 }
 

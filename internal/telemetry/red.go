@@ -60,6 +60,10 @@ type RequestWindow struct {
 	// breakdown; they are stored in request_breakdown, not as samples.
 	Routes   map[string]RouteStat
 	Statuses map[int]uint64
+	// Upstreams and Sampled are the bounded per-replica histograms and the
+	// slow or failed request sample, stored in their own tables.
+	Upstreams map[string]UpstreamStat
+	Sampled   []RequestSample
 }
 
 // Samples renders the window as non-zero metric samples for resourceID.
@@ -98,6 +102,7 @@ func (w *RequestWindow) Add(o RequestWindow) {
 		w.Latency[i] += o.Latency[i]
 	}
 	w.mergeBreakdown(o)
+	w.mergeDetail(o)
 }
 
 // RecordRequests writes the per-app windows as samples at time at.
@@ -112,7 +117,10 @@ func (db *DB) RecordRequests(ctx context.Context, byApp map[string]RequestWindow
 	if err := db.WriteSamples(ctx, rows); err != nil {
 		return fmt.Errorf("telemetry: record requests: %w", err)
 	}
-	return db.recordBreakdown(ctx, byApp, at)
+	if err := db.recordBreakdown(ctx, byApp, at); err != nil {
+		return err
+	}
+	return db.recordTrafficDetail(ctx, byApp, at)
 }
 
 // PercentileFromBuckets estimates the q-quantile (0..1) in milliseconds from

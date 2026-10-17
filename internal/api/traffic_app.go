@@ -1,0 +1,269 @@
+package api
+
+import (
+	"context"
+	"log/slog"
+	"net/http"
+	"os"
+	"sort"
+	"strconv"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/telemetry"
+)
+
+const (
+	// EnvTrafficSlowRouteMin is the fewest requests a route needs in the
+	// window before it can rank among the slowest routes.
+	EnvTrafficSlowRouteMin = "APP_TRAFFIC_SLOW_ROUTE_MIN"
+
+	defaultTrafficSlowRouteMin = 5
+	trafficTopRoutes           = 10
+	trafficSampleLimit         = 50
+)
+
+var trafficWindows = map[string]time.Duration{
+	"5m":  5 * time.Minute,
+	"1h":  time.Hour,
+	"24h": 24 * time.Hour,
+}
+
+type trafficStatusClasses struct {
+	Status2xx float64 `json:"2xx"`
+	Status3xx float64 `json:"3xx"`
+	Status4xx float64 `json:"4xx"`
+	Status5xx float64 `json:"5xx"`
+}
+
+type trafficLatency struct {
+	P50Ms float64 `json:"p50_ms"`
+	P95Ms float64 `json:"p95_ms"`
+	P99Ms float64 `json:"p99_ms"`
+}
+
+type trafficReplica struct {
+	Upstream       string  `json:"upstream"`
+	Requests       float64 `json:"requests"`
+	RatePerSec     float64 `json:"rate_per_sec"`
+	ErrorRate4xx   float64 `json:"error_rate_4xx"`
+	ErrorRate5xx   float64 `json:"error_rate_5xx"`
+	UpstreamErrors float64 `json:"upstream_errors"`
+	trafficLatency
+}
+
+type trafficRoute struct {
+	Route        string  `json:"route"`
+	Requests     float64 `json:"requests"`
+	ErrorRate4xx float64 `json:"error_rate_4xx"`
+	ErrorRate5xx float64 `json:"error_rate_5xx"`
+	AvgMs        float64 `json:"avg_ms"`
+}
+
+type trafficSLO struct {
+	Objective       string  `json:"objective"`
+	Target          float64 `json:"target"`
+	LatencyMs       float64 `json:"latency_ms,omitempty"`
+	BurnRate        float64 `json:"burn_rate"`
+	BudgetRemaining float64 `json:"budget_remaining"`
+}
+
+type trafficResponse struct {
+	App            string                    `json:"app"`
+	Window         string                    `json:"window"`
+	From           time.Time                 `json:"from"`
+	To             time.Time                 `json:"to"`
+	HasTraffic     bool                      `json:"has_traffic"`
+	Requests       float64                   `json:"requests"`
+	RatePerSec     float64                   `json:"rate_per_sec"`
+	Statuses       trafficStatusClasses      `json:"status_classes"`
+	ErrorRate4xx   float64                   `json:"error_rate_4xx"`
+	ErrorRate5xx   float64                   `json:"error_rate_5xx"`
+	UpstreamErrors float64                   `json:"upstream_errors"`
+	Latency        trafficLatency            `json:"latency"`
+	Replicas       []trafficReplica          `json:"replicas"`
+	SlowRoutes     []trafficRoute            `json:"slow_routes"`
+	Samples        []telemetry.RequestSample `json:"samples"`
+	SLO            *trafficSLO               `json:"slo,omitempty"`
+}
+
+func trafficSlowRouteMin() float64 {
+	if n, err := strconv.Atoi(os.Getenv(EnvTrafficSlowRouteMin)); err == nil && n > 0 {
+		return float64(n)
+	}
+	return defaultTrafficSlowRouteMin
+}
+
+func ratio(n, d float64) float64 {
+	if d <= 0 {
+		return 0
+	}
+	return n / d
+}
+
+func replicaRows(rows []telemetry.UpstreamRow, window time.Duration) []trafficReplica {
+	out := make([]trafficReplica, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, trafficReplica{
+			Upstream:       r.Upstream,
+			Requests:       r.Requests,
+			RatePerSec:     r.Requests / window.Seconds(),
+			ErrorRate4xx:   ratio(r.Errors4xx, r.Requests),
+			ErrorRate5xx:   ratio(r.Errors5xx, r.Requests),
+			UpstreamErrors: r.UpstreamErrors,
+			trafficLatency: trafficLatency{
+				P50Ms: telemetry.PercentileFromBuckets(r.Latency, 0.50),
+				P95Ms: telemetry.PercentileFromBuckets(r.Latency, 0.95),
+				P99Ms: telemetry.PercentileFromBuckets(r.Latency, 0.99),
+			},
+		})
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Requests != out[j].Requests {
+			return out[i].Requests > out[j].Requests
+		}
+		return out[i].Upstream < out[j].Upstream
+	})
+	return out
+}
+
+func slowRoutes(b telemetry.Breakdown, minRequests float64, n int) []trafficRoute {
+	rows := make([]trafficRoute, 0, len(b.Routes))
+	for _, r := range b.Routes {
+		if r.Requests < minRequests || r.Route == telemetry.OverflowRoute {
+			continue
+		}
+		rows = append(rows, trafficRoute{
+			Route:        r.Route,
+			Requests:     r.Requests,
+			ErrorRate4xx: ratio(r.Errors4xx, r.Requests),
+			ErrorRate5xx: ratio(r.Errors5xx, r.Requests),
+			AvgMs:        r.LatencyMSSum / r.Requests,
+		})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].AvgMs != rows[j].AvgMs {
+			return rows[i].AvgMs > rows[j].AvgMs
+		}
+		return rows[i].Route < rows[j].Route
+	})
+	if len(rows) > n {
+		rows = rows[:n]
+	}
+	return rows
+}
+
+func sumMetric(ctx context.Context, q telemetry.MetricsQuerier, app, metric string, from, to time.Time) float64 {
+	samples, err := q.QueryMetrics(ctx, "service:"+app, metric, from, to)
+	if err != nil && len(samples) == 0 {
+		return 0
+	}
+	var t float64
+	for _, s := range samples {
+		if s.Value > 0 {
+			t += s.Value
+		}
+	}
+	return t
+}
+
+func (rt *Router) trafficSLO(ctx context.Context, app string, from, to time.Time) *trafficSLO {
+	if rt.alertRules == nil {
+		return nil
+	}
+	rules, err := rt.alertRules.ListRulesForResource(ctx, resourceIDForApp(app))
+	if err != nil {
+		rt.logger.Warn("api: traffic: slo rules unavailable", slog.String("error", err.Error()), slog.String("name", app))
+		return nil
+	}
+	for _, rule := range rules {
+		if rule.Kind != alerting.KindSLOBurn || rule.SLO == nil || !rule.Enabled {
+			continue
+		}
+		counts, err := alerting.CountRequests(ctx, rt.telemetry, app, from, to, *rule.SLO)
+		if err != nil {
+			rt.logger.Warn("api: traffic: slo counts unavailable", slog.String("error", err.Error()), slog.String("name", app))
+			return nil
+		}
+		return &trafficSLO{
+			Objective:       rule.SLO.Objective,
+			Target:          rule.SLO.Target,
+			LatencyMs:       rule.SLO.LatencyMs,
+			BurnRate:        alerting.BurnRate(counts.Bad, counts.Total, rule.SLO.Target),
+			BudgetRemaining: alerting.BudgetRemaining(counts.Bad, counts.Total, rule.SLO.Target),
+		}
+	}
+	return nil
+}
+
+// handleAppTraffic handles GET /api/v1/apps/{name}/traffic: RED totals,
+// per-replica breakdown, slowest route templates, recent slow or failed
+// request samples and the SLO error-budget burn, over window=5m|1h|24h.
+func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
+	if rt.telemetry == nil {
+		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
+		return
+	}
+	name := r.PathValue("name")
+	if _, found, err := rt.lookupAppResource(r.Context(), name); err != nil {
+		rt.internalError(w, "api: traffic: load app", err)
+		return
+	} else if !found {
+		writeError(w, http.StatusNotFound, "app not found")
+		return
+	}
+	label := r.URL.Query().Get("window")
+	if label == "" {
+		label = "5m"
+	}
+	window, ok := trafficWindows[label]
+	if !ok {
+		writeError(w, http.StatusBadRequest, "window must be 5m, 1h or 24h")
+		return
+	}
+	ctx := r.Context()
+	to := time.Now().UTC()
+	from := to.Add(-window)
+	resp := trafficResponse{
+		App: name, Window: label, From: from, To: to,
+		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, Samples: []telemetry.RequestSample{},
+	}
+
+	points, err := telemetry.QueryRequests(ctx, rt.telemetry, name, from, to, window+time.Second)
+	if err != nil && points == nil {
+		rt.internalError(w, "api: traffic: query requests", err)
+		return
+	}
+	if len(points) > 0 {
+		p := points[0]
+		resp.HasTraffic = true
+		resp.Requests, resp.RatePerSec = p.Requests, p.RatePerSec
+		resp.ErrorRate4xx, resp.ErrorRate5xx = p.ErrorRate4xx, p.ErrorRate5xx
+		resp.UpstreamErrors = p.UpstreamErrors
+		resp.Latency = trafficLatency{P50Ms: p.P50Ms, P95Ms: p.P95Ms, P99Ms: p.P99Ms}
+		resp.Statuses = trafficStatusClasses{
+			Status2xx: sumMetric(ctx, rt.telemetry, name, telemetry.MetricHTTPResponses2xx, from, to),
+			Status3xx: sumMetric(ctx, rt.telemetry, name, telemetry.MetricHTTPResponses3xx, from, to),
+			Status4xx: sumMetric(ctx, rt.telemetry, name, telemetry.MetricHTTPResponses4xx, from, to),
+			Status5xx: sumMetric(ctx, rt.telemetry, name, telemetry.MetricHTTPResponses5xx, from, to),
+		}
+	}
+
+	rid := resourceIDForApp(name)
+	if src, ok := rt.telemetry.(telemetry.BreakdownSource); ok {
+		if b, berr := src.QueryBreakdown(ctx, rid, from, to); berr == nil {
+			resp.SlowRoutes = slowRoutes(b, trafficSlowRouteMin(), trafficTopRoutes)
+		}
+	}
+	if src, ok := rt.telemetry.(telemetry.TrafficDetailSource); ok {
+		if rows, uerr := src.QueryUpstreams(ctx, rid, from, to); uerr == nil {
+			resp.Replicas = replicaRows(rows, window)
+		}
+		if samples, serr := src.QueryRequestSamples(ctx, rid, from, to, trafficSampleLimit); serr == nil && samples != nil {
+			resp.Samples = samples
+		}
+	}
+	resp.SLO = rt.trafficSLO(ctx, name, from, to)
+	w.Header().Set("Cache-Control", "no-store")
+	writeJSON(w, http.StatusOK, resp)
+}

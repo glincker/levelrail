@@ -478,6 +478,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/maintenance | AbilityRead | handleGetAppMaintenance |
 | PUT | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleSetAppMaintenance |
 | DELETE | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleClearAppMaintenance |
+| GET | /api/v1/apps/{name}/traffic | AbilityRead | handleAppTraffic |
 
 </Accordion>
 
