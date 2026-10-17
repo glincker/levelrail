@@ -1162,11 +1162,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppLogDrain))
 
 	// BYOK AI assistant settings (ai_settings.go): GET is AbilityRead;
-	// PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/
+	// PUT is AbilityRoot, the same tier PUT /api/v1/settings/
 	// email uses for any other platform-wide credential-bearing config.
 	mux.HandleFunc("GET /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRead, rt.handleGetAIAssistantSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleUpdateAIAssistantSettings))
-	mux.HandleFunc("DELETE /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleDeleteAIAssistantSettings))
 	mux.HandleFunc("GET /api/v1/settings/ai-assistant/providers", rt.requireAbility(AbilityRead, rt.handleListAIProviders))
 	mux.HandleFunc("PUT /api/v1/settings/ai-assistant/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleSetAIProvider))
 	mux.HandleFunc("POST /api/v1/settings/ai-assistant/providers/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestAIProvider))

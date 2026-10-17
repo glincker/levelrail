@@ -32,12 +32,11 @@ func (p errProvider) Complete(_ context.Context, _ ChatRequest, onText TextDelta
 }
 
 func engineFor(db *store.DB, p Provider, tools ToolExecutor) *Engine {
-	return NewEngine(db, &fakeSecrets{key: "k", exists: true}, tools, func(_, _ string) (Provider, error) { return p, nil }, "")
+	return NewEngine(db, staticChain{p: p}, tools, "")
 }
 
 func TestEngine_HalfSucceededStreamKeepsSessionConsistent(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	cut := &ProviderError{Provider: "anthropic", Class: ClassStreamCut}
@@ -68,7 +67,6 @@ func TestEngine_HalfSucceededStreamKeepsSessionConsistent(t *testing.T) {
 
 func TestEngine_NoTextSavedWhenNothingStreamed(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	e := engineFor(db, errProvider{err: &ProviderError{Class: ClassInvalidKey, Provider: "anthropic"}}, &fakeToolExecutor{})
@@ -89,7 +87,6 @@ func TestEngine_NoTextSavedWhenNothingStreamed(t *testing.T) {
 
 func TestEngine_MaxStepsStopsLoop(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	call := TurnResult{ToolCalls: []ToolUseCall{{ID: "t", Name: "list_apps", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse}
@@ -109,7 +106,6 @@ func TestEngine_MaxStepsStopsLoop(t *testing.T) {
 
 func TestEngine_InvalidAndUnknownToolCallsNeverRun(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	schema := json.RawMessage(`{"type":"object","required":["name"],"properties":{"name":{"type":"string"}}}`)
@@ -137,7 +133,6 @@ func TestEngine_ApprovalGateHoldsForEveryProviderKind(t *testing.T) {
 	for _, kind := range []string{"anthropic", "openai_compat", "gemini"} {
 		t.Run(kind, func(t *testing.T) {
 			db := openTestDB(t)
-			configureTestDB(t, db)
 			ctx := context.Background()
 			sid := newTestSession(ctx, t, db)
 			var srvBody string
@@ -176,7 +171,6 @@ func TestEngine_ApprovalGateHoldsForEveryProviderKind(t *testing.T) {
 
 func TestEngine_HugeToolOutputTruncated(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	fp := &fakeProvider{turns: []TurnResult{
@@ -219,7 +213,6 @@ func (m *memUsage) SumAITokensSince(_ context.Context, _ time.Time) (int64, erro
 
 func TestEngine_BudgetBlocksNewTurns(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	fp := &fakeProvider{turns: []TurnResult{{Text: "x", StopReason: StopReasonEndTurn}}}
@@ -248,11 +241,6 @@ func TestEngine_BudgetBlocksNewTurns(t *testing.T) {
 	}
 }
 
-type chainResolver struct{ p Provider }
-
-func (c chainResolver) Configured(context.Context) (bool, error) { return true, nil }
-func (c chainResolver) Chain(context.Context) (Provider, error)  { return c.p, nil }
-
 func TestEngine_RecordsUsagePerAttempt(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
@@ -261,8 +249,7 @@ func TestEngine_RecordsUsagePerAttempt(t *testing.T) {
 		{Provider: "a", Model: "ma", Backend: &scriptedProvider{errs: []error{&ProviderError{Class: ClassRateLimited}}}},
 		{Provider: "b", Model: "mb", Backend: &scriptedProvider{}},
 	}}
-	e := NewEngine(db, &fakeSecrets{}, &fakeToolExecutor{}, nil, "")
-	e.SetProviders(chainResolver{chain})
+	e := NewEngine(db, staticChain{p: chain}, &fakeToolExecutor{}, "")
 	usage := &memUsage{}
 	e.SetUsage(usage)
 	if err := e.RunTurn(ctx, sid, "hi", &fakeSink{}); err != nil {
@@ -275,7 +262,6 @@ func TestEngine_RecordsUsagePerAttempt(t *testing.T) {
 
 func TestEngine_ConcurrentTurnsAcrossSessions(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	var wg sync.WaitGroup
 	errs := make(chan error, 8)
@@ -299,7 +285,6 @@ func TestEngine_ConcurrentTurnsAcrossSessions(t *testing.T) {
 
 func TestStepTimeoutCancelsSlowProvider(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sid := newTestSession(ctx, t, db)
 	slow := blockingProvider{}

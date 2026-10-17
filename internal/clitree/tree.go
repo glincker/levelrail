@@ -319,7 +319,7 @@ var Tree = map[string]*Node{
 		"email":         {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil}},
-		"ai-assistant": {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "use": nil, "usage": nil,
+		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
 			"providers": {Subs: map[string]*Node{"list": nil, "set": nil, "test": nil, "remove": nil, "models": nil}},
 			"fallback":  {Subs: map[string]*Node{"set": nil}}}},
 		"updates":           {Subs: map[string]*Node{"get": nil, "set": nil}},

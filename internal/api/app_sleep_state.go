@@ -132,9 +132,6 @@ func (rt *Router) sleepResource(ctx context.Context, fleet *appsleep.Fleet, svc 
 	res := toAppSleepResource(setting)
 	elig := appsleep.Evaluate(fleet.Facts(svc, setting, rt.sleepPortWake))
 	res.Blockers, res.Warnings, res.Eligible = toSleepItems(elig.Blockers), toSleepItems(elig.Warnings), elig.Eligible()
-	if len(elig.Blockers) > 0 {
-		res.BlockedReason = elig.Blockers[0].Detail
-	}
 	ignore := setting.IgnorePaths
 	if ignore == nil {
 		ignore = []string{}

@@ -333,7 +333,6 @@ type (
 	dashboardURLResource               = apiclient.DashboardURLResource
 	updateSettingsResource             = apiclient.UpdateSettingsResource
 	aiAssistantSettingsResource        = apiclient.AIAssistantSettingsResource
-	updateAIAssistantSettingsRequest   = apiclient.UpdateAIAssistantSettingsRequest
 	appStorageResource                 = apiclient.AppStorageResource
 	certificateResource                = apiclient.CertificateResource
 	renewCertificateResource           = apiclient.RenewCertificateResource

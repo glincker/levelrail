@@ -12,15 +12,12 @@ import (
 	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
-// SecretsAPIKeyEnvKey is the internal/secrets envKey the BYOK LLM API
-// key is stored under, keyed by store.AIAssistantSecretsKey(). Shared
-// between this package (reading it back for a call) and
-// internal/api/ai_settings.go (writing it on PUT), so there is exactly
-// one definition of the envKey string.
+// SecretsAPIKeyEnvKey is the internal/secrets envKey every provider's API
+// key is stored under, shared by the vault and the API handlers.
 const SecretsAPIKeyEnvKey = "api_key" //nolint:gosec // an envKey name, not a credential value
 
 var (
-	// ErrNotConfigured means no provider/model/key has been saved yet.
+	// ErrNotConfigured means no provider has been configured yet.
 	// Callers (internal/api) map this to 501, the same "not configured"
 	// shape WithEmailSecrets' absence produces.
 	ErrNotConfigured = errors.New("ai: assistant is not configured")
@@ -61,14 +58,6 @@ type Store interface {
 	GetAIChatConfirmation(ctx context.Context, id string) (store.AIChatConfirmation, error)
 	ResolveAIChatConfirmation(ctx context.Context, id, status string, result json.RawMessage, resolvedAt time.Time) error
 	ListPendingAIChatConfirmations(ctx context.Context, messageID string) ([]store.AIChatConfirmation, error)
-	GetAIAssistantSettings(ctx context.Context) (store.AIAssistantSettings, error)
-}
-
-// SecretsResolver is the narrow internal/secrets.Manager surface Engine
-// needs to fetch the BYOK key at call time; never cached across turns.
-type SecretsResolver interface {
-	Resolve(ctx context.Context, serviceName, envKey string) (string, error)
-	Exists(ctx context.Context, serviceName, envKey string) (bool, error)
 }
 
 // ToolExecutor is the narrow ToolCaller surface Engine needs; *ToolCaller
@@ -77,23 +66,6 @@ type SecretsResolver interface {
 type ToolExecutor interface {
 	ListTools(ctx context.Context) ([]ToolSpec, error)
 	Call(ctx context.Context, name string, args json.RawMessage) (result string, isError bool, err error)
-}
-
-// ProviderFactory builds a Provider for one BYOK call, given the
-// resolved provider name and API key. Swappable in tests to avoid a real
-// network call.
-type ProviderFactory func(provider, apiKey string) (Provider, error)
-
-// DefaultProviderFactory supports store.AIProviderAnthropic only today;
-// see that constant's own doc comment on why this switch is structured
-// to make adding another provider a small addition, not a rewrite.
-func DefaultProviderFactory(provider, apiKey string) (Provider, error) {
-	switch provider {
-	case store.AIProviderAnthropic:
-		return NewAnthropicProvider(apiKey, nil), nil
-	default:
-		return nil, fmt.Errorf("ai: unsupported provider %q", provider)
-	}
 }
 
 // defaultPlatformName is NewEngine's brandName fallback when the caller
@@ -119,10 +91,8 @@ const systemPromptTemplate = "You are the AI assistant embedded in %s. " +
 // reply with no further tool calls.
 type Engine struct {
 	store        Store
-	secrets      SecretsResolver
 	tools        ToolExecutor
 	factory      ToolFactory
-	provider     ProviderFactory
 	systemPrompt string
 
 	resolver ProviderResolver
@@ -132,8 +102,7 @@ type Engine struct {
 	now      func() time.Time
 }
 
-// ProviderResolver supplies the provider chain for a turn. When set it
-// replaces the single-provider settings path.
+// ProviderResolver supplies the provider chain for a turn.
 type ProviderResolver interface {
 	Configured(ctx context.Context) (bool, error)
 	Chain(ctx context.Context) (Provider, error)
@@ -145,9 +114,6 @@ type UsageStore interface {
 	SumAITokensSince(ctx context.Context, since time.Time) (int64, error)
 }
 
-// SetProviders switches the engine to the multi-provider chain.
-func (e *Engine) SetProviders(r ProviderResolver) { e.resolver = r }
-
 // SetUsage enables metering and the monthly budget.
 func (e *Engine) SetUsage(u UsageStore) { e.usage = u }
 
@@ -157,43 +123,24 @@ func (e *Engine) SetLimits(l Limits) { e.limits = l }
 // SetLogger sets the engine logger.
 func (e *Engine) SetLogger(l *slog.Logger) { e.logger = l }
 
-// NewEngine builds an Engine. provider defaults to DefaultProviderFactory
-// if nil. brandName names the platform in the system prompt (the
+// NewEngine builds an Engine. brandName names the platform in the system prompt (the
 // caller's own brand.Brand.Name, per section 3 of CLAUDE.md); "" falls
 // back to defaultPlatformName rather than a hardcoded product name.
-func NewEngine(s Store, secrets SecretsResolver, tools ToolExecutor, provider ProviderFactory, brandName string) *Engine {
-	if provider == nil {
-		provider = DefaultProviderFactory
-	}
+func NewEngine(s Store, resolver ProviderResolver, tools ToolExecutor, brandName string) *Engine {
 	if brandName == "" {
 		brandName = defaultPlatformName
 	}
 	return &Engine{
-		store: s, secrets: secrets, tools: tools, provider: provider,
+		store: s, resolver: resolver, tools: tools,
 		systemPrompt: fmt.Sprintf(systemPromptTemplate, brandName),
 		limits:       LimitsFromEnv(), logger: slog.Default(), now: time.Now,
 	}
 }
 
-// IsConfigured reports whether a provider, model, and key have all been
-// saved, so the API layer can return 501 before ever starting an SSE
-// response, rather than mid-stream.
+// IsConfigured reports whether a provider chain is usable, so the API
+// layer can return 501 before starting an SSE response.
 func (e *Engine) IsConfigured(ctx context.Context) (bool, error) {
-	if e.resolver != nil {
-		return e.resolver.Configured(ctx)
-	}
-	settings, err := e.store.GetAIAssistantSettings(ctx)
-	if err != nil {
-		return false, fmt.Errorf("ai: is configured: %w", err)
-	}
-	if settings.Provider == "" || settings.Model == "" {
-		return false, nil
-	}
-	ok, err := e.secrets.Exists(ctx, store.AIAssistantSecretsKey(), SecretsAPIKeyEnvKey)
-	if err != nil {
-		return false, fmt.Errorf("ai: is configured: check key: %w", err)
-	}
-	return ok, nil
+	return e.resolver.Configured(ctx)
 }
 
 // RunTurn appends userContent as a new user message and runs the turn
@@ -219,7 +166,7 @@ func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sin
 	if err := e.checkBudget(ctx, sink); err != nil {
 		return err
 	}
-	llm, model, err := e.newLLM(ctx)
+	llm, err := e.newLLM(ctx)
 	if err != nil {
 		return err
 	}
@@ -235,7 +182,7 @@ func (e *Engine) RunTurn(ctx context.Context, sessionID, userContent string, sin
 		return fmt.Errorf("ai: run turn: save user message: %w", err)
 	}
 
-	return e.continueTurn(ctx, tools, sessionID, model, llm, sink)
+	return e.continueTurn(ctx, tools, sessionID, llm, sink)
 }
 
 // ResolveConfirmation executes (approve=true) or rejects (approve=false)
@@ -278,11 +225,11 @@ func (e *Engine) ResolveConfirmation(ctx context.Context, sessionID, confirmatio
 		return nil
 	}
 
-	llm, model, err := e.newLLM(ctx)
+	llm, err := e.newLLM(ctx)
 	if err != nil {
 		return err
 	}
-	return e.continueTurn(ctx, tools, sessionID, model, llm, sink)
+	return e.continueTurn(ctx, tools, sessionID, llm, sink)
 }
 
 func (e *Engine) executeConfirmation(ctx context.Context, tools ToolExecutor, conf store.AIChatConfirmation, approve bool) (status string, result json.RawMessage, isError bool, attr ToolAttribution) {
@@ -325,26 +272,11 @@ func (e *Engine) applyConfirmationResult(ctx context.Context, conf store.AIChatC
 	return nil
 }
 
-func (e *Engine) resolveSettings(ctx context.Context) (store.AIAssistantSettings, string, error) {
-	settings, err := e.store.GetAIAssistantSettings(ctx)
-	if err != nil {
-		return store.AIAssistantSettings{}, "", fmt.Errorf("ai: resolve settings: %w", err)
-	}
-	if settings.Provider == "" || settings.Model == "" {
-		return store.AIAssistantSettings{}, "", ErrNotConfigured
-	}
-	apiKey, err := e.secrets.Resolve(ctx, store.AIAssistantSecretsKey(), SecretsAPIKeyEnvKey)
-	if err != nil {
-		return store.AIAssistantSettings{}, "", fmt.Errorf("ai: resolve settings: resolve key: %w", err)
-	}
-	return settings, apiKey, nil
-}
-
 // continueTurn calls the model once, auto-executes every read-only tool
 // call it requests, pauses every mutating one for confirmation, and
 // loops back for another model call only when a full round of read-only
 // calls resolved with nothing left pending.
-func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID, model string, llm Provider, sink Sink) error {
+func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID string, llm Provider, sink Sink) error {
 	for step := 0; ; step++ {
 		if e.limits.MaxSteps > 0 && step >= e.limits.MaxSteps {
 			return e.stopAtMaxSteps(ctx, sessionID, sink)
@@ -365,7 +297,7 @@ func (e *Engine) continueTurn(ctx context.Context, tools ToolExecutor, sessionID
 		stepCtx, cancel := e.stepContext(ctx)
 		stepCtx = WithAttemptObserver(stepCtx, func(a Attempt) { e.recordAttempt(ctx, sessionID, msgID, a) })
 		turn, err := llm.Complete(stepCtx, ChatRequest{
-			System: e.systemPrompt, Messages: mergeAdjacent(buildProviderMessages(rows)), Tools: specs, Model: model,
+			System: e.systemPrompt, Messages: mergeAdjacent(buildProviderMessages(rows)), Tools: specs,
 		}, sink.TextDelta)
 		cancel()
 		if err != nil {

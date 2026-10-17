@@ -309,18 +309,6 @@ func (v *Vault) Set(ctx context.Context, id string, in SetInput, privateAllowed 
 	return pv, SetResult{PrivateBaseURL: check.Private}, err
 }
 
-// SetKeyUnvalidated stores an Anthropic key without a network check, for the
-// legacy PUT /settings/ai-assistant body that never validated.
-func (v *Vault) SetKeyUnvalidated(ctx context.Context, id, key string) error {
-	if _, ok := LookupProvider(id); !ok {
-		return ErrUnknownProvider
-	}
-	if err := v.secrets.SetValue(ctx, store.AIProviderSecretsKey(id), SecretsAPIKeyEnvKey, key); err != nil {
-		return fmt.Errorf("ai: store key for %s: %w", id, err)
-	}
-	return nil
-}
-
 func (v *Vault) existingKey(ctx context.Context, id string) (string, error) {
 	has, err := v.secrets.Exists(ctx, store.AIProviderSecretsKey(id), SecretsAPIKeyEnvKey)
 	if err != nil || !has {

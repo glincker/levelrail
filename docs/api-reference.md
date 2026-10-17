@@ -142,7 +142,6 @@ Endpoints for:
 | DELETE | /api/v1/auth/tokens/{id} | Session | handleRevokeToken |
 | GET | /api/v1/settings/ai-assistant | AbilityRead | handleGetAIAssistantSettings |
 | PUT | /api/v1/settings/ai-assistant | AbilityRoot | handleUpdateAIAssistantSettings |
-| DELETE | /api/v1/settings/ai-assistant | AbilityRoot | handleDeleteAIAssistantSettings |
 | GET | /api/v1/settings/deploy-freeze | AbilityRead | handleGetGlobalDeployFreeze |
 | PUT | /api/v1/settings/deploy-freeze | AbilityRoot | handlePutGlobalDeployFreeze |
 | GET | /api/v1/settings/push-subscriptions/vapid-public-key | Session | handleGetPushVAPIDPublicKey |

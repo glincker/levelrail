@@ -633,21 +633,19 @@ type Router struct {
 	deviceNotifier               DeviceLoginNotifier          // nil is valid: no outbound notice for a waiting CLI login
 	deviceNotices                deviceNoticeGate
 	deviceExpiryNotices          deviceNoticeGate
-	publicDashboardURL           string                   // configured dashboard base URL for notice links; empty means no link
-	hookRuns                     HookRunStore             // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
-	deployApprovals              DeployApprovalStore      // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
-	deployApprovalTTL            time.Duration            // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
-	invites                      InviteStore              // always set, same "core Store interface" shape as passwordResetTokens above
-	inviteTTL                    time.Duration            // 0 means "use defaultInviteTTL", set via WithInviteTTL
-	aiSettings                   AIAssistantSettingsStore // always set, same shape as emailSettings above: the provider/model row always exists (migrations/0106's own seeded row)
-	aiSecrets                    AIAssistantSecrets       // nil is valid: PUT/DELETE /api/v1/settings/ai-assistant return 501, same shape as emailSecrets above
-	aiControl                    AIControlStore           // always set: the AI control gate (ai_control_gate.go) and /settings/ai-control routes
-	aiControlCache               aiControlCache           // short lived per process copy of the AI control row, invalidated on PUT
-	aiChat                       AIChatStore              // always set, same "core Store interface" shape as backupTargets above
-	aiVault                      AIVault                  // nil is valid: provider routes return 501, settings keep the single-provider shape
-	aiUsage                      AIUsageStore             // nil is valid: GET /api/v1/ai/usage returns 501
-	aiEngine                     AIEngine                 // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
-	aiTurns                      aiTurnRegistry           // live per-turn assistant tokens, keyed by token id
+	publicDashboardURL           string              // configured dashboard base URL for notice links; empty means no link
+	hookRuns                     HookRunStore        // always set, same "core Store interface" shape as policies above: service_hook_runs always exists, empty is a valid, non-error result
+	deployApprovals              DeployApprovalStore // always set, same "core Store interface" shape as hookRuns above: deploy_approvals always exists, empty is a valid, non-error result
+	deployApprovalTTL            time.Duration       // 0 means "use defaultDeployApprovalTTL", set via WithDeployApprovalTTL
+	invites                      InviteStore         // always set, same "core Store interface" shape as passwordResetTokens above
+	inviteTTL                    time.Duration       // 0 means "use defaultInviteTTL", set via WithInviteTTL
+	aiControl                    AIControlStore      // always set: the AI control gate (ai_control_gate.go) and /settings/ai-control routes
+	aiControlCache               aiControlCache      // short lived per process copy of the AI control row, invalidated on PUT
+	aiChat                       AIChatStore         // always set, same "core Store interface" shape as backupTargets above
+	aiVault                      AIVault             // nil is valid: the ai-assistant routes return 501
+	aiUsage                      AIUsageStore        // nil is valid: GET /api/v1/ai/usage returns 501
+	aiEngine                     AIEngine            // nil is valid: every /api/v1/ai/... session route returns 501, same shape as builder above
+	aiTurns                      aiTurnRegistry      // live per-turn assistant tokens, keyed by token id
 
 	roles RoleStore
 	// sso is the platform side of SAML and SCIM; nil answers 501 (sso_glue.go).
@@ -875,7 +873,6 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		policies:                    s,
 		invites:                     s,
 		roles:                       s,
-		aiSettings:                  s,
 		aiChat:                      s,
 		aiControl:                   s,
 		autoPlacementEnabled:        true,

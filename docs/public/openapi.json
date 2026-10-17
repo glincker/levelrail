@@ -78948,74 +78948,8 @@
       }
     },
     "/api/v1/settings/ai-assistant": {
-      "delete": {
-        "description": "Requires the `root` ability.",
-        "operationId": "handleDeleteAIAssistantSettings",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful response. The body shape is not described in this document."
-          },
-          "401": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Missing or invalid credentials."
-          },
-          "403": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "The token lacks the required ability."
-          },
-          "4XX": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Client error."
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            },
-            "description": "Error response."
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": [
-              "root"
-            ]
-          }
-        ],
-        "summary": "Delete AI Assistant Settings",
-        "tags": [
-          "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
-        ],
-        "x-required-ability": "root"
-      },
       "get": {
-        "description": "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config.\n\nRequires the `read` ability.",
+        "description": "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT is AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config.\n\nRequires the `read` ability.",
         "operationId": "handleGetAIAssistantSettings",
         "responses": {
           "200": {
@@ -79074,7 +79008,7 @@
             ]
           }
         ],
-        "summary": "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config.",
+        "summary": "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT is AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config.",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],

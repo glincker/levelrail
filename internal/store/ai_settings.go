@@ -6,21 +6,14 @@ import (
 	"fmt"
 )
 
-// AIProviderAnthropic is the provider id whose key keeps the legacy secrets slot.
+// AIProviderAnthropic is the provider id whose key lives in the AIAssistantSecretsKey slot.
 const AIProviderAnthropic = "anthropic"
 
-// AIAssistantSecretsKey is the internal/secrets serviceName the BYOK LLM
-// API key is stored under (envKey "api_key"), the same sentinel-service
-// pattern EmailSettingsSecretsKey already establishes for platform-wide,
-// non-app credentials.
+// AIAssistantSecretsKey is the internal/secrets serviceName holding the
+// Anthropic key (envKey "api_key"). Secrets are bound to their slot, so the
+// name cannot change without re-encrypting stored keys.
 func AIAssistantSecretsKey() string {
 	return "ai-assistant"
-}
-
-// AIInternalTokenSecretsKey is where older releases stored the assistant's
-// persistent root token; boot deletes it, turns now mint per-sender tokens.
-func AIInternalTokenSecretsKey() string {
-	return "ai-assistant-internal-token"
 }
 
 // AIAssistantSettings is the single platform-wide AI assistant config
@@ -65,13 +58,4 @@ func (db *DB) UpdateAIAssistantSettings(ctx context.Context, s AIAssistantSettin
 		return fmt.Errorf("store: update ai assistant settings: %w", err)
 	}
 	return nil
-}
-
-// ClearAIAssistantSettings resets provider/model to empty, the DELETE
-// counterpart to UpdateAIAssistantSettings. Callers also delete the
-// underlying secret separately (internal/secrets.Manager has no
-// per-key delete, only DeleteAll for a whole serviceName), matching how
-// this sentinel service holds exactly one secret value.
-func (db *DB) ClearAIAssistantSettings(ctx context.Context) error {
-	return db.UpdateAIAssistantSettings(ctx, AIAssistantSettings{})
 }

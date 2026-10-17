@@ -13,7 +13,7 @@ func TestClient_GetAIAssistantSettings(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod, gotPath = r.Method, r.URL.Path
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(AIAssistantSettingsResource{Configured: true, Provider: "anthropic", Model: "claude-sonnet-5"})
+		_ = json.NewEncoder(w).Encode(AIAssistantSettingsResource{Configured: true, Active: &AIModelRef{Provider: "anthropic", Model: "claude-sonnet-5"}})
 	}))
 	defer srv.Close()
 
@@ -25,59 +25,32 @@ func TestClient_GetAIAssistantSettings(t *testing.T) {
 	if gotMethod != http.MethodGet || gotPath != "/api/v1/settings/ai-assistant" {
 		t.Errorf("method/path = %s %s, want GET /api/v1/settings/ai-assistant", gotMethod, gotPath)
 	}
-	if !got.Configured || got.Model != "claude-sonnet-5" {
-		t.Errorf("GetAIAssistantSettings() = %+v, want Configured=true Model=claude-sonnet-5", got)
+	if !got.Configured || got.Active == nil || got.Active.Model != "claude-sonnet-5" {
+		t.Errorf("GetAIAssistantSettings() = %+v, want Configured=true Active.Model=claude-sonnet-5", got)
 	}
 }
 
-func TestClient_UpdateAIAssistantSettings(t *testing.T) {
+func TestClient_SetAIChoice(t *testing.T) {
 	var gotMethod, gotPath string
-	var gotBody UpdateAIAssistantSettingsRequest
+	var gotBody AIChoiceRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotMethod, gotPath = r.Method, r.URL.Path
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(AIAssistantSettingsResource{Configured: true, Provider: gotBody.Provider, Model: gotBody.Model})
+		_ = json.NewEncoder(w).Encode(AIAssistantSettingsResource{Configured: true, Active: gotBody.Active})
 	}))
 	defer srv.Close()
 
 	client := NewClient(srv.URL, "test-token")
-	got, err := client.UpdateAIAssistantSettings(context.Background(), UpdateAIAssistantSettingsRequest{
-		Provider: "anthropic", Model: "claude-sonnet-5", APIKey: "sk-test",
-	})
+	got, err := client.SetAIChoice(context.Background(), AIChoiceRequest{Active: &AIModelRef{Provider: "anthropic", Model: "claude-sonnet-5"}})
 	if err != nil {
-		t.Fatalf("UpdateAIAssistantSettings() error = %v", err)
+		t.Fatalf("SetAIChoice() error = %v", err)
 	}
 	if gotMethod != http.MethodPut || gotPath != "/api/v1/settings/ai-assistant" {
 		t.Errorf("method/path = %s %s, want PUT /api/v1/settings/ai-assistant", gotMethod, gotPath)
 	}
-	if gotBody.APIKey != "sk-test" {
-		t.Errorf("request body = %+v, want APIKey=sk-test", gotBody)
-	}
-	if !got.Configured {
-		t.Errorf("UpdateAIAssistantSettings() = %+v, want Configured=true", got)
-	}
-}
-
-func TestClient_DeleteAIAssistantSettings(t *testing.T) {
-	var gotMethod, gotPath string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotMethod, gotPath = r.Method, r.URL.Path
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(AIAssistantSettingsResource{Configured: false})
-	}))
-	defer srv.Close()
-
-	client := NewClient(srv.URL, "test-token")
-	got, err := client.DeleteAIAssistantSettings(context.Background())
-	if err != nil {
-		t.Fatalf("DeleteAIAssistantSettings() error = %v", err)
-	}
-	if gotMethod != http.MethodDelete || gotPath != "/api/v1/settings/ai-assistant" {
-		t.Errorf("method/path = %s %s, want DELETE /api/v1/settings/ai-assistant", gotMethod, gotPath)
-	}
-	if got.Configured {
-		t.Errorf("DeleteAIAssistantSettings() = %+v, want Configured=false", got)
+	if gotBody.Active == nil || gotBody.Active.Model != "claude-sonnet-5" || !got.Configured {
+		t.Errorf("body = %+v, got = %+v, want the active model echoed back", gotBody, got)
 	}
 }
 

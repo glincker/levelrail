@@ -50,7 +50,7 @@ func providerRouter(t *testing.T) (*Router, *store.DB, *vaultSecrets) {
 			return ai.DefaultBackendFactory(info, cfg)
 		}))
 	logger := slog.New(slog.NewTextHandler(discardWriter{}, nil))
-	return NewRouter(logger, testBrand(), db, WithAIVault(vault), WithAIUsage(db), WithAIAssistantSecrets(sec)), db, sec
+	return NewRouter(logger, testBrand(), db, WithAIVault(vault), WithAIUsage(db)), db, sec
 }
 
 func upstream(t *testing.T) *httptest.Server {
@@ -121,14 +121,12 @@ func TestAIProviders_Lifecycle(t *testing.T) {
 		t.Errorf("active without key: %d", rec.Code)
 	}
 
-	// Legacy PUT must not wipe the fallback chain.
-	_ = db.SetAIFallbackChain(context.Background(), []store.AIModelRef{{Provider: "vllm", Model: "m"}})
 	rec = aiDo(t, rt, cookie, http.MethodPut, base, `{"provider":"anthropic","model":"claude-sonnet-5-5","api_key":"sk-ant-x"}`)
-	if rec.Code != 200 {
-		t.Fatalf("legacy put: %d %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusBadRequest {
+		t.Errorf("single-key body: %d, want 400", rec.Code)
 	}
-	if fb, _ := db.GetAIFallbackChain(context.Background()); len(fb) != 1 {
-		t.Errorf("legacy PUT dropped the fallback chain: %v", fb)
+	if len(sec.m) != 1 {
+		t.Errorf("single-key body wrote a secret: %v", sec.m)
 	}
 
 	rec = aiDo(t, rt, cookie, http.MethodDelete, base+"/providers/vllm", "")
@@ -144,6 +142,9 @@ func TestAIUsageEndpoint(t *testing.T) {
 	rt, db, _ := providerRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
+	if rec := aiDo(t, rt, cookie, http.MethodGet, "/api/v1/ai/usage?days=30", ""); !strings.Contains(rec.Body.String(), `"days":[]`) {
+		t.Errorf("empty usage = %s, want an empty days array", rec.Body.String())
+	}
 	now := time.Now()
 	_ = db.RecordAIUsage(ctx, store.AIUsageRecord{CreatedAt: now, Provider: "openai", Model: "m", PromptTokens: 10, CompletionTokens: 5})
 	_ = db.RecordAIUsage(ctx, store.AIUsageRecord{CreatedAt: now, Provider: "openai", Model: "m", ErrorClass: "rate_limited"})

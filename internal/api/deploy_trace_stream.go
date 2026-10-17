@@ -198,9 +198,9 @@ func (rt *Router) persistStep(id, step, status string) {
 	}
 }
 
-// legacyBuildSteps are written by both the live recorder and the stored
+// coarseBuildSteps are written by both the live recorder and the stored
 // trace; the live stream gets them from the recorder only.
-var legacyBuildSteps = map[string]bool{"detecting": true, "building": true, "pushing": true, "deploying": true, "failed": true}
+var coarseBuildSteps = map[string]bool{"detecting": true, "building": true, "pushing": true, "deploying": true, "failed": true}
 
 // writeTraceExtras writes stored trace rows that changed since sent, except
 // the build steps the recorder already streams. It reports whether it wrote.
@@ -209,7 +209,7 @@ func (rt *Router) writeTraceExtras(ctx context.Context, w http.ResponseWriter, a
 	wrote := false
 	for _, r := range rows {
 		sig := stepSignature(r)
-		if legacyBuildSteps[r.Step] {
+		if coarseBuildSteps[r.Step] {
 			sent[r.Key] = sig
 			continue
 		}

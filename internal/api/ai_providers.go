@@ -14,9 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// AIVault is the internal/ai.Vault surface the provider routes need.
-// nil is valid: the provider routes return 501 and settings keep the
-// single-provider legacy behaviour.
+// AIVault is the internal/ai.Vault surface the provider and settings routes need.
+// nil is valid: those routes return 501.
 type AIVault interface {
 	List(ctx context.Context) ([]ai.ProviderView, error)
 	Set(ctx context.Context, id string, in ai.SetInput, privateAllowed bool) (ai.ProviderView, ai.SetResult, error)
@@ -192,12 +191,8 @@ type aiLimitsResource struct {
 	MonthlyTokenBudget int64 `json:"monthly_token_budget,omitempty"`
 }
 
-// aiAssistantSettingsV2Resource keeps the legacy provider and model fields so
-// older clients keep working.
-type aiAssistantSettingsV2Resource struct {
+type aiAssistantSettingsResource struct {
 	Configured     bool                 `json:"configured"`
-	Provider       string               `json:"provider"`
-	Model          string               `json:"model"`
 	Active         *aiModelRefResource  `json:"active,omitempty"`
 	Fallback       []aiModelRefResource `json:"fallback"`
 	Limits         aiLimitsResource     `json:"limits"`
@@ -209,19 +204,18 @@ func monthStart(now time.Time) time.Time {
 	return time.Date(n.Year(), n.Month(), 1, 0, 0, 0, 0, time.UTC)
 }
 
-func (rt *Router) aiSettingsV2(ctx context.Context) (aiAssistantSettingsV2Resource, error) {
+func (rt *Router) aiSettingsResource(ctx context.Context) (aiAssistantSettingsResource, error) {
 	s, err := rt.aiVault.Settings(ctx)
 	if err != nil {
-		return aiAssistantSettingsV2Resource{}, err
+		return aiAssistantSettingsResource{}, err
 	}
 	lim := ai.LimitsFromEnv()
-	out := aiAssistantSettingsV2Resource{
+	out := aiAssistantSettingsResource{
 		Configured: s.Configured, Fallback: []aiModelRefResource{},
 		Limits: aiLimitsResource{MaxSteps: lim.MaxSteps, MonthlyTokenBudget: lim.MonthlyTokenBudget},
 	}
 	if s.Active != nil {
 		out.Active = &aiModelRefResource{Provider: s.Active.Provider, Model: s.Active.Model}
-		out.Provider, out.Model = s.Active.Provider, s.Active.Model
 	}
 	for _, f := range s.Fallback {
 		out.Fallback = append(out.Fallback, aiModelRefResource{Provider: f.Provider, Model: f.Model})
@@ -229,7 +223,7 @@ func (rt *Router) aiSettingsV2(ctx context.Context) (aiAssistantSettingsV2Resour
 	if rt.aiUsage != nil {
 		used, err := rt.aiUsage.SumAITokensSince(ctx, monthStart(time.Now()))
 		if err != nil {
-			return aiAssistantSettingsV2Resource{}, err
+			return aiAssistantSettingsResource{}, err
 		}
 		out.TokenUsageMont = &used
 	}
@@ -245,7 +239,7 @@ func toStoreRef(r aiModelRefResource) store.AIModelRef {
 	return store.AIModelRef{Provider: r.Provider, Model: r.Model}
 }
 
-// updateAIChoice handles the new PUT /settings/ai-assistant body.
+// updateAIChoice applies a PUT /settings/ai-assistant body.
 func (rt *Router) updateAIChoice(w http.ResponseWriter, r *http.Request, req aiChoiceRequest) {
 	var active *store.AIModelRef
 	if req.Active != nil {
@@ -264,7 +258,7 @@ func (rt *Router) updateAIChoice(w http.ResponseWriter, r *http.Request, req aiC
 		rt.writeAIVaultError(w, "api: set ai choice failed", err, "")
 		return
 	}
-	out, err := rt.aiSettingsV2(r.Context())
+	out, err := rt.aiSettingsResource(r.Context())
 	if err != nil {
 		rt.writeAIVaultError(w, "api: get ai settings failed", err, "")
 		return
@@ -305,6 +299,9 @@ func (rt *Router) handleAIUsage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rt.internalError(w, "api: ai usage failed", err)
 		return
+	}
+	if rows == nil {
+		rows = []store.AIUsageDay{}
 	}
 	out := aiUsageResource{Days: rows}
 	for _, d := range rows {

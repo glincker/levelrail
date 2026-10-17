@@ -55,22 +55,9 @@ func reportError(sink Sink, err error) {
 	}
 }
 
-// newLLM returns the provider to call and the model to request. With a
-// resolver the chain names its own models, so model is empty.
-func (e *Engine) newLLM(ctx context.Context) (Provider, string, error) {
-	if e.resolver != nil {
-		llm, err := e.resolver.Chain(ctx)
-		return llm, "", err
-	}
-	settings, apiKey, err := e.resolveSettings(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	llm, err := e.provider(settings.Provider, apiKey)
-	if err != nil {
-		return nil, "", fmt.Errorf("ai: build provider: %w", err)
-	}
-	return llm, settings.Model, nil
+// newLLM returns the provider chain; each entry names its own model.
+func (e *Engine) newLLM(ctx context.Context) (Provider, error) {
+	return e.resolver.Chain(ctx)
 }
 
 // checkBudget blocks a new turn once the month's tokens reach the budget.

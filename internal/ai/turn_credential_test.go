@@ -21,9 +21,8 @@ func (s *attributedSink) ToolResultAttributed(toolUseID, toolName string, result
 func turnFactoryEngine(t *testing.T, fp *fakeProvider, tools *fakeToolExecutor, tokens *[]string) (*Engine, string) {
 	t.Helper()
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	sessionID := newTestSession(context.Background(), t, db)
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, nil, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, nil, "")
 	engine.SetToolFactory(func(_ context.Context, token string) (ToolExecutor, error) {
 		*tokens = append(*tokens, token)
 		return tools, nil

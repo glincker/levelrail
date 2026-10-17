@@ -3891,15 +3891,12 @@ type SetupStatusResource struct {
 
 // AIAssistantSettingsResource mirrors internal/api's
 // aiAssistantSettingsResource (internal/api/ai_settings.go): the shape
-// of GET/PUT/DELETE /api/v1/settings/ai-assistant. Configured reports
-// whether a key has actually been saved; the key itself never round-trips.
+// of GET/PUT /api/v1/settings/ai-assistant. Keys never round-trip.
 type AIAssistantSettingsResource struct {
 	Configured     bool         `json:"configured"`
-	Provider       string       `json:"provider,omitempty"`
-	Model          string       `json:"model,omitempty"`
 	Active         *AIModelRef  `json:"active,omitempty"`
-	Fallback       []AIModelRef `json:"fallback,omitempty"`
-	Limits         *AILimits    `json:"limits,omitempty"`
+	Fallback       []AIModelRef `json:"fallback"`
+	Limits         AILimits     `json:"limits"`
 	TokenUsageMont *int64       `json:"token_usage_month,omitempty"`
 }
 
@@ -3981,16 +3978,6 @@ type AIUsageResource struct {
 		Requests         int64 `json:"requests"`
 		Errors           int64 `json:"errors"`
 	} `json:"totals"`
-}
-
-// UpdateAIAssistantSettingsRequest mirrors internal/api's
-// updateAIAssistantSettingsRequest: PUT
-// /api/v1/settings/ai-assistant's request body. Provider must be
-// "anthropic" server-side; all three fields are required.
-type UpdateAIAssistantSettingsRequest struct {
-	Provider string `json:"provider"`
-	Model    string `json:"model"`
-	APIKey   string `json:"api_key"`
 }
 
 // AIChatSessionCreatedResource mirrors internal/api's

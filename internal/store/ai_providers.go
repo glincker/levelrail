@@ -43,8 +43,8 @@ type AIProviderConfig struct {
 }
 
 // AIProviderSecretsKey is the internal/secrets service name holding a
-// provider's API key under envKey "api_key". Anthropic keeps the legacy
-// name so keys saved by older releases keep working.
+// provider's API key under envKey "api_key". Anthropic uses the
+// AIAssistantSecretsKey slot.
 func AIProviderSecretsKey(providerID string) string {
 	if providerID == AIProviderAnthropic {
 		return AIAssistantSecretsKey()

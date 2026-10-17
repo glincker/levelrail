@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1217 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1216 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -416,8 +416,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/security/sessions", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListSecuritySessions", Description: ""},
 	{Method: "POST", Path: "/api/v1/security/sessions/revoke-others", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeOtherSecuritySessions", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/security/sessions/{id}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRevokeSecuritySession", Description: ""},
-	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIAssistantSettings", Description: ""},
-	{Method: "GET", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIAssistantSettings", Description: "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config."},
+	{Method: "GET", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAIAssistantSettings", Description: "BYOK AI assistant settings (ai_settings.go): GET is AbilityRead; PUT is AbilityRoot, the same tier PUT /api/v1/settings/ email uses for any other platform-wide credential-bearing config."},
 	{Method: "PUT", Path: "/api/v1/settings/ai-assistant", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateAIAssistantSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ai-assistant/providers", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListAIProviders", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/ai-assistant/providers/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAIProvider", Description: ""},

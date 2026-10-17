@@ -44,17 +44,13 @@ type appSleepResource struct {
 	// Since is when the app went to sleep, present only while it is asleep.
 	Since *time.Time `json:"since,omitempty"`
 	// HoldRequests is function mode: a request that wakes the app waits for it.
-	HoldRequests bool `json:"hold_requests"`
-	// BlockedReason is the first blocker's detail, kept for old clients.
-	//
-	// Deprecated: read Blockers.
-	BlockedReason string            `json:"blocked_reason,omitempty"`
-	Blockers      []sleepItem       `json:"blockers"`
-	Warnings      []sleepItem       `json:"warnings"`
-	Eligible      bool              `json:"eligible"`
-	Settings      sleepSettings     `json:"settings"`
-	PortWake      sleepPortWake     `json:"port_wake"`
-	Activity      sleepActivityView `json:"activity"`
+	HoldRequests bool              `json:"hold_requests"`
+	Blockers     []sleepItem       `json:"blockers"`
+	Warnings     []sleepItem       `json:"warnings"`
+	Eligible     bool              `json:"eligible"`
+	Settings     sleepSettings     `json:"settings"`
+	PortWake     sleepPortWake     `json:"port_wake"`
+	Activity     sleepActivityView `json:"activity"`
 	// ColdStartMsP50 is the median wake time from sleep history, null with no wakes.
 	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
 	// EstimatedMemoryFreedBytes is the app's memory limit, null when it has none.
@@ -69,7 +65,15 @@ type appSleepRequest struct {
 }
 
 func toAppSleepResource(a store.AppSleep) appSleepResource {
-	res := appSleepResource{Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests, Blockers: []sleepItem{}, Warnings: []sleepItem{}}
+	ignore := a.IgnorePaths
+	if ignore == nil {
+		ignore = []string{}
+	}
+	res := appSleepResource{
+		Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests,
+		Blockers: []sleepItem{}, Warnings: []sleepItem{}, PortWake: sleepPortWake{Ports: []int{}},
+		Settings: sleepSettings{IdleMinutes: a.IdleMinutes, HoldRequests: a.HoldRequests, IgnorePaths: ignore, PortWake: a.PortWake},
+	}
 	if a.Sleeping {
 		since := a.Since
 		res.Since = &since

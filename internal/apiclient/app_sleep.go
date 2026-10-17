@@ -16,15 +16,13 @@ type AppSleepResource struct {
 	// Since is when the app went to sleep, set only while it is asleep.
 	Since *time.Time `json:"since,omitempty"`
 	// HoldRequests is function mode: a request that wakes the app waits for it.
-	HoldRequests bool `json:"hold_requests"`
-	// BlockedReason is deprecated: read Blockers.
-	BlockedReason string        `json:"blocked_reason,omitempty"`
-	Blockers      []SleepItem   `json:"blockers"`
-	Warnings      []SleepItem   `json:"warnings"`
-	Eligible      bool          `json:"eligible"`
-	Settings      SleepSettings `json:"settings"`
-	PortWake      SleepPortWake `json:"port_wake"`
-	Activity      SleepActivity `json:"activity"`
+	HoldRequests bool          `json:"hold_requests"`
+	Blockers     []SleepItem   `json:"blockers"`
+	Warnings     []SleepItem   `json:"warnings"`
+	Eligible     bool          `json:"eligible"`
+	Settings     SleepSettings `json:"settings"`
+	PortWake     SleepPortWake `json:"port_wake"`
+	Activity     SleepActivity `json:"activity"`
 	// ColdStartMsP50 is nil when the app has no recorded wakes.
 	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
 	// EstimatedMemoryFreedBytes is nil when the app has no memory limit.

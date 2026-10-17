@@ -3996,21 +3996,6 @@ func (c *Client) GetAIAssistantSettings(ctx context.Context) (AIAssistantSetting
 	return out, err
 }
 
-// UpdateAIAssistantSettings calls PUT /api/v1/settings/ai-assistant.
-func (c *Client) UpdateAIAssistantSettings(ctx context.Context, req UpdateAIAssistantSettingsRequest) (AIAssistantSettingsResource, error) {
-	var out AIAssistantSettingsResource
-	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant", req, &out)
-	return out, err
-}
-
-// DeleteAIAssistantSettings calls DELETE /api/v1/settings/ai-assistant:
-// clears the stored key and resets provider/model in one step.
-func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
-	var out AIAssistantSettingsResource
-	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant", nil, &out)
-	return out, err
-}
-
 // ListAIProviders calls GET /api/v1/settings/ai-assistant/providers.
 func (c *Client) ListAIProviders(ctx context.Context) ([]AIProviderResource, error) {
 	var out []AIProviderResource
@@ -4046,7 +4031,7 @@ func (c *Client) ListAIProviderModels(ctx context.Context, id string) ([]AIModel
 	return out, err
 }
 
-// SetAIChoice calls PUT /api/v1/settings/ai-assistant with the active/fallback body.
+// SetAIChoice calls PUT /api/v1/settings/ai-assistant.
 func (c *Client) SetAIChoice(ctx context.Context, req AIChoiceRequest) (AIAssistantSettingsResource, error) {
 	var out AIAssistantSettingsResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant", req, &out)
