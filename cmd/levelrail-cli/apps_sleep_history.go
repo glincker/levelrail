@@ -50,6 +50,7 @@ func printSleepHistory(out io.Writer, h apiclient.SleepHistory, now time.Time) {
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", humanAgo(e.At, now), e.Kind, dashIfEmpty(e.Reason), sleepEventMeasure(e), sleepEventDetail(e))
 	}
 	_ = tw.Flush()
+	_, _ = fmt.Fprintf(out, "wake time: %s\n", wakeTimingText(h.WakeTiming))
 }
 
 func sleepEventMeasure(e apiclient.SleepEvent) string {

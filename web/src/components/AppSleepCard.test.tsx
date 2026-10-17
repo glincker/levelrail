@@ -83,6 +83,8 @@ const off = {
   activity: { open_connections: 0, idle_for_seconds: 0 },
   cold_start_ms_p50: null,
   estimated_memory_freed_bytes: null,
+  wake_timing: { samples: 0 },
+  idle_limits: { min_minutes: 5, max_minutes: 10080, default_minutes: 30 },
 }
 const pinned = {
   code: 'pinned_port',
@@ -229,6 +231,7 @@ describe('AppSleepCard', () => {
         enabled: true,
         idle_minutes: 30,
         cold_start_ms_p50: 4000,
+        wake_timing: { samples: 6, ready_p50_ms: 4200, ready_p95_ms: 9100 },
         estimated_memory_freed_bytes: 536870912,
         activity: {
           open_connections: 2,
@@ -241,7 +244,9 @@ describe('AppSleepCard', () => {
     expect(await screen.findByTestId('sleep-countdown')).toHaveTextContent(
       '12 min',
     )
-    expect(screen.getByText(/about 4s/)).toBeInTheDocument()
+    expect(screen.getByTestId('sleep-wake-timing')).toHaveTextContent(
+      'Usually wakes in about 4.2 s (p95 9.1 s).',
+    )
     expect(
       screen.getByText('Frees about 512 MiB while asleep'),
     ).toBeInTheDocument()
@@ -252,6 +257,16 @@ describe('AppSleepCard', () => {
       /^(30|29) sec/,
     )
     vi.useRealTimers()
+  })
+
+  it('says plainly when no wake has been measured', async () => {
+    fetchMock.mockResolvedValue(
+      json({ ...off, enabled: true, idle_minutes: 30 }),
+    )
+    renderCard()
+    expect(await screen.findByTestId('sleep-wake-timing')).toHaveTextContent(
+      'No wakes measured yet',
+    )
   })
 
   it('animates only behind motion-safe', async () => {

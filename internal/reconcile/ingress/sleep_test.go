@@ -31,8 +31,8 @@ func TestController_Sleep_SleepingAppGetsWakeRoute(t *testing.T) {
 	if !ok || rp.Upstreams[0].Dial != "127.0.0.1:8080" {
 		t.Fatalf("second handler = %+v", routes[0].Handle[1])
 	}
-	if len(rp.HandleResponse) != 1 || rp.HandleResponse[0].Match == nil || len(rp.HandleResponse[0].Match.StatusCode) != 1 || rp.HandleResponse[0].Match.StatusCode[0] != 204 {
-		t.Errorf("the waking page must replace only the 204, a 307 replay must pass through: %+v", rp.HandleResponse)
+	if len(rp.HandleResponse) != 0 {
+		t.Errorf("the hook's waking page and 307 replay must pass through untouched: %+v", rp.HandleResponse)
 	}
 	set := rp.Headers.Request.Set
 	if set[ingress.WakeTokenHeader][0] != "tok" || set[ingress.WakeAppHeader][0] != "web" {

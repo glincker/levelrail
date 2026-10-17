@@ -14,7 +14,6 @@ import { useSleepHistory, type SleepEvent } from '../queries/sleepHistory'
 import { buildSleepSegments, formatSleepDuration } from '../lib/sleepTimeline'
 
 const WINDOW_MS = 7 * 24 * 3600 * 1000
-const DEFAULT_IDLE_MINUTES = 30
 const EVENT_ROWS = 20
 
 function SleepTimelineBar({
@@ -131,7 +130,7 @@ export function SleepHistoryCard({
             disabled={setIdle.isPending}
             onClick={() =>
               setIdle.mutate(
-                { idle_minutes: DEFAULT_IDLE_MINUTES },
+                { idle_minutes: history.idle_limits.default_minutes },
                 {
                   onSuccess: () => void query.refetch(),
                   onError: (error) =>

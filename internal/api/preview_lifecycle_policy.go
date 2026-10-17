@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -50,8 +51,8 @@ func (rt *Router) applyPreviewPolicyLifecycleFields(ctx context.Context, appName
 		s.CPULimit = *req.CPULimit
 	}
 	if req.IdleSleepMinutes != nil {
-		if *req.IdleSleepMinutes != 0 && (*req.IdleSleepMinutes < minSleepIdleMinutes || *req.IdleSleepMinutes > maxSleepIdleMinutes) {
-			return "idle_sleep_minutes must be 0 (platform default) or between 5 and 10080"
+		if lo, hi := sleepIdleBounds(); *req.IdleSleepMinutes != 0 && (*req.IdleSleepMinutes < lo || *req.IdleSleepMinutes > hi) {
+			return fmt.Sprintf("idle_sleep_minutes must be 0 (platform default) or between %d and %d", lo, hi)
 		}
 		s.IdleSleepMinutes = *req.IdleSleepMinutes
 	}

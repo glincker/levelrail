@@ -1,9 +1,7 @@
-import type { AppSleep } from '../queries/appSleep'
+import type { AppSleep, IdleLimits, WakeTiming } from '../queries/appSleep'
 
 export type SleepUiState = 'ready' | 'blocked' | 'awake' | 'sleeping' | 'waking'
 
-export const MIN_IDLE_MINUTES = 5
-export const MAX_IDLE_MINUTES = 10080
 export const IDLE_PRESETS = [5, 15, 30, 60] as const
 
 /** deriveSleepState maps an API response, plus a client-side wake in flight, to one UI state. */
@@ -35,11 +33,28 @@ export function sleepCountdown(
   return { unit: 'minutes', value: Math.ceil(seconds / 60) }
 }
 
-/** isValidIdleMinutes reports whether a custom idle time is within the API range. */
-export function isValidIdleMinutes(value: number): boolean {
+/** isValidIdleMinutes reports whether a custom idle time is within the server's range. */
+export function isValidIdleMinutes(value: number, limits: IdleLimits): boolean {
   return (
     Number.isInteger(value) &&
-    value >= MIN_IDLE_MINUTES &&
-    value <= MAX_IDLE_MINUTES
+    value >= limits.min_minutes &&
+    value <= limits.max_minutes
   )
+}
+
+export interface WakeEstimate {
+  typicalMs: number
+  p95Ms: number | null
+}
+
+/** wakeEstimate returns the measured wake time, or null while nothing is measured. */
+export function wakeEstimate(timing: WakeTiming): WakeEstimate | null {
+  if (timing.samples === 0 || timing.ready_p50_ms === undefined) return null
+  return { typicalMs: timing.ready_p50_ms, p95Ms: timing.ready_p95_ms ?? null }
+}
+
+/** formatWakeMs renders a wake time as ms below a second, else seconds with one decimal. */
+export function formatWakeMs(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)} ms`
+  return `${(ms / 1000).toFixed(1)} s`
 }

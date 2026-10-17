@@ -4,12 +4,7 @@ import { PlusIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
-import {
-  IDLE_PRESETS,
-  MAX_IDLE_MINUTES,
-  MIN_IDLE_MINUTES,
-  isValidIdleMinutes,
-} from '../../lib/sleepState'
+import { IDLE_PRESETS, isValidIdleMinutes } from '../../lib/sleepState'
 import type { AppSleep, SleepUpdate } from '../../queries/appSleep'
 
 type Patch = Partial<Omit<SleepUpdate, 'idle_minutes'>> & {
@@ -128,7 +123,7 @@ export function SleepSettingsForm({
   const { idle_minutes: idle, hold_requests: hold } = sleep.settings
   const [custom, setCustom] = useState(String(idle))
   const customValue = Number(custom)
-  const customValid = isValidIdleMinutes(customValue)
+  const customValid = isValidIdleMinutes(customValue, sleep.idle_limits)
   const portWake = sleep.port_wake
   return (
     <div className="space-y-3">
@@ -162,13 +157,13 @@ export function SleepSettingsForm({
           ))}
           <label className="space-y-1 text-xs text-muted-foreground">
             {t('appSleep.minutesLabel', {
-              min: MIN_IDLE_MINUTES,
-              max: MAX_IDLE_MINUTES,
+              min: sleep.idle_limits.min_minutes,
+              max: sleep.idle_limits.max_minutes,
             })}
             <Input
               type="number"
-              min={MIN_IDLE_MINUTES}
-              max={MAX_IDLE_MINUTES}
+              min={sleep.idle_limits.min_minutes}
+              max={sleep.idle_limits.max_minutes}
               value={custom}
               aria-invalid={!customValid}
               className="w-28"

@@ -27,6 +27,9 @@ type AppSleepResource struct {
 	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
 	// EstimatedMemoryFreedBytes is nil when the app has no memory limit.
 	EstimatedMemoryFreedBytes *int64 `json:"estimated_memory_freed_bytes"`
+	// WakeTiming has Samples 0 when the app has no timed wakes.
+	WakeTiming WakeTiming      `json:"wake_timing"`
+	IdleLimits SleepIdleLimits `json:"idle_limits"`
 }
 
 // Fix kinds a SleepFix can carry.
@@ -133,6 +136,7 @@ type SleepFleetApp struct {
 	Sleeping         bool       `json:"sleeping"`
 	MemoryLimitBytes int64      `json:"memory_limit_bytes"`
 	Since            *time.Time `json:"since,omitempty"`
+	WakeTiming       WakeTiming `json:"wake_timing"`
 }
 
 // SleepFleet mirrors internal/api's sleepFleetResource.
@@ -192,6 +196,9 @@ type SleepHistory struct {
 	Sleeping bool         `json:"sleeping"`
 	Events   []SleepEvent `json:"events"`
 	Stats    SleepStats   `json:"stats"`
+	// WakeTiming covers the app's most recent timed wakes, not the requested window.
+	WakeTiming WakeTiming      `json:"wake_timing"`
+	IdleLimits SleepIdleLimits `json:"idle_limits"`
 }
 
 // GetSleepHistory calls GET /api/v1/apps/{name}/sleep/history. since is a

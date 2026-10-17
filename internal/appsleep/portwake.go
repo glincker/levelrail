@@ -30,6 +30,10 @@ type latencyStore interface {
 	SetSleepEventLatency(ctx context.Context, id int64, ms int64) error
 }
 
+type releasedStore interface {
+	SetSleepEventReleased(ctx context.Context, id, ms int64) error
+}
+
 // PortWakeManager holds a sleeping app's pinned ports and wakes it on the first
 // connection. The listener is released before the start so Docker can publish
 // the port; Sync rebuilds listeners from stored state, so restarts lose nothing.
@@ -349,7 +353,11 @@ func (m *PortWakeManager) wakeAndServe(a *portApp, port int) {
 		return
 	}
 	if ls, ok := m.Events.(latencyStore); ok && eventID != 0 {
-		_ = ls.SetSleepEventLatency(context.Background(), eventID, m.now().Sub(start).Milliseconds())
+		ms := m.now().Sub(start).Milliseconds()
+		_ = ls.SetSleepEventLatency(context.Background(), eventID, ms)
+		if rs, ok := m.Events.(releasedStore); ok {
+			_ = rs.SetSleepEventReleased(context.Background(), eventID, ms)
+		}
 	}
 	m.mu.Lock()
 	waiting := a.waiting

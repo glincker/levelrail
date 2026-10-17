@@ -674,13 +674,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if len(r.Hosts) == 0 || r.Dial == "" {
 			return nil, fmt.Errorf("ingress: build routes config: wake route %d needs hosts and a dial", i)
 		}
-		hold := DefaultHardening()
-		if opts.Hardening != nil {
-			hold = *opts.Hardening
-		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: r.handlers(hold),
+			Handle: r.handlers(),
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

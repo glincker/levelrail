@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -14,11 +15,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
-)
-
-const (
-	minSleepIdleMinutes = 5
-	maxSleepIdleMinutes = 7 * 24 * 60
 )
 
 // AppSleepStore is the store surface the sleep routes need.
@@ -53,6 +49,10 @@ type appSleepResource struct {
 	Activity     sleepActivityView `json:"activity"`
 	// ColdStartMsP50 is the median wake time from sleep history, null with no wakes.
 	ColdStartMsP50 *int64 `json:"cold_start_ms_p50"`
+	// WakeTiming summarises the app's recent wakes; samples is 0 with no history.
+	WakeTiming wakeTimingResource `json:"wake_timing"`
+	// IdleLimits are the allowed and default idle minutes on this server.
+	IdleLimits sleepIdleLimits `json:"idle_limits"`
 	// EstimatedMemoryFreedBytes is the app's memory limit, null when it has none.
 	EstimatedMemoryFreedBytes *int64 `json:"estimated_memory_freed_bytes"`
 }
@@ -71,7 +71,7 @@ func toAppSleepResource(a store.AppSleep) appSleepResource {
 	}
 	res := appSleepResource{
 		Enabled: a.IdleMinutes > 0, IdleMinutes: a.IdleMinutes, Sleeping: a.Sleeping, HoldRequests: a.HoldRequests,
-		Blockers: []sleepItem{}, Warnings: []sleepItem{}, PortWake: sleepPortWake{Ports: []int{}},
+		Blockers: []sleepItem{}, Warnings: []sleepItem{}, PortWake: sleepPortWake{Ports: []int{}}, IdleLimits: currentIdleLimits(),
 		Settings: sleepSettings{IdleMinutes: a.IdleMinutes, HoldRequests: a.HoldRequests, IgnorePaths: ignore, PortWake: a.PortWake},
 	}
 	if a.Sleeping {
@@ -113,8 +113,8 @@ func (rt *Router) handleSetAppSleep(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.IdleMinutes != 0 && (req.IdleMinutes < minSleepIdleMinutes || req.IdleMinutes > maxSleepIdleMinutes) {
-		writeError(w, http.StatusBadRequest, "idle_minutes must be 0 (off) or between 5 and 10080")
+	if lo, hi := sleepIdleBounds(); req.IdleMinutes != 0 && (req.IdleMinutes < lo || req.IdleMinutes > hi) {
+		writeError(w, http.StatusBadRequest, fmt.Sprintf("idle_minutes must be 0 (off) or between %d and %d", lo, hi))
 		return
 	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)
@@ -254,6 +254,9 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	}
 	name := r.Header.Get(ingress.WakeAppHeader)
 	setting, _ := rt.appSleep.GetAppSleep(r.Context(), name)
+	timing := rt.wakeTiming(r.Context(), name)
+	cfg := appsleep.ConfigFromEnv(nil)
+	hold := cfg.HoldTimeout(timing.ReadyP95Ms)
 	start := time.Now()
 	woke, err := appsleep.Wake(r.Context(), rt.appSleep, rt.apps, rt.reconcileNudger, name, start)
 	var eventID int64
@@ -266,10 +269,19 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	case woke:
 		eventID = rt.recordSleepEvent(r.Context(), wakeRequestEvent(r, name, setting.Since, start))
 	}
-	if setting.HoldRequests && setting.Sleeping {
-		ready := rt.holdUntilReady(r.Context(), name, start)
-		rt.finishWake(r.Context(), name, eventID, start, ready, store.SleepReasonRequest)
+	// A request that arrives while the wake is already running is held too, up
+	// to what is left of the hold window, not answered with the waking page.
+	wakeStart, remaining := start, hold
+	if !setting.Sleeping && !setting.Since.IsZero() {
+		wakeStart = setting.Since
+		remaining = hold - start.Sub(setting.Since)
+	}
+	holding := setting.HoldRequests && err == nil && remaining > 0 && (setting.Sleeping || start.Sub(setting.Since) < hold)
+	if holding {
+		ready := rt.holdUntilReady(r.Context(), name, wakeStart, remaining, cfg.WakeProbeInterval)
+		rt.finishWake(r.Context(), name, eventID, wakeStart, hold, ready, store.SleepReasonRequest)
 		if ready {
+			rt.markWakeReleased(r.Context(), eventID, wakeStart)
 			if loc := wakeRedirectURL(r); loc != "" {
 				http.Redirect(w, r, loc, http.StatusTemporaryRedirect)
 				return
@@ -278,24 +290,22 @@ func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	} else {
 		rt.watchWake(name, eventID, start, store.SleepReasonRequest)
 	}
-	w.WriteHeader(http.StatusNoContent)
+	rt.writeWakingResponse(w, r, name, timing)
 }
 
-// Variables, not constants, so tests can shorten them.
-var (
-	wakeHoldTimeout   = 30 * time.Second
-	wakeHoldPoll      = 250 * time.Millisecond
-	wakeIngressSettle = 200 * time.Millisecond
-)
+// wakeIngressSettle lets the ingress route settle after the app is ready. A
+// variable so tests can shorten it.
+var wakeIngressSettle = 200 * time.Millisecond
 
-// holdUntilReady waits for a Ready=True condition on the app recorded after
-// since (a Ready from before it slept does not count), then for an ingress
-// reconcile pass recorded after that, so the route already points at the new
-// container, then a brief settle. false means it timed out.
-func (rt *Router) holdUntilReady(ctx context.Context, name string, since time.Time) bool {
-	ctx, cancel := context.WithTimeout(ctx, wakeHoldTimeout)
+// holdUntilReady waits up to timeout for a Ready=True condition on the app
+// recorded after since (a Ready from before it slept does not count), then for
+// an ingress reconcile pass recorded after that, so the route already points
+// at the new container, then a brief settle. It checks every poll, the short
+// wake interval, and returns on the first ready signal. false means it timed out.
+func (rt *Router) holdUntilReady(ctx context.Context, name string, since time.Time, timeout, poll time.Duration) bool {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	ticker := time.NewTicker(wakeHoldPoll)
+	ticker := time.NewTicker(poll)
 	defer ticker.Stop()
 	var readyAt time.Time
 	for {

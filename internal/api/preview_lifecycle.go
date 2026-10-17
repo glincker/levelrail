@@ -56,8 +56,8 @@ func previewIdleSleepMinutes(s store.PreviewAppSettings) int {
 		return s.IdleSleepMinutes
 	}
 	if v, err := strconv.Atoi(os.Getenv(envPreviewIdleSleep)); err == nil && v >= 0 {
-		if v > 0 && v < minSleepIdleMinutes {
-			return minSleepIdleMinutes
+		if lo, _ := sleepIdleBounds(); v > 0 && v < lo {
+			return lo
 		}
 		return v
 	}
