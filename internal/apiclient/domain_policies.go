@@ -148,20 +148,25 @@ type GeoStatus struct {
 
 // CacheBucket is one minute of cache activity.
 type CacheBucket struct {
-	Minute int64  `json:"minute"`
-	Hits   uint64 `json:"hits"`
-	Misses uint64 `json:"misses"`
+	Minute    int64  `json:"minute"`
+	Hits      uint64 `json:"hits"`
+	Misses    uint64 `json:"misses"`
+	HitBytes  uint64 `json:"hit_bytes"`
+	MissBytes uint64 `json:"miss_bytes"`
 }
 
 // CacheStats is one domain's in-process cache activity.
 type CacheStats struct {
-	Hits     uint64        `json:"hits"`
-	Misses   uint64        `json:"misses"`
-	Bypasses uint64        `json:"bypasses"`
-	Stale    uint64        `json:"stale"`
-	Entries  int           `json:"entries"`
-	Bytes    int64         `json:"bytes"`
-	Series   []CacheBucket `json:"series"`
+	Hits     uint64 `json:"hits"`
+	Misses   uint64 `json:"misses"`
+	Bypasses uint64 `json:"bypasses"`
+	Stale    uint64 `json:"stale"`
+	// HitBytes were served from the cache, OriginBytes fetched from the app.
+	HitBytes    uint64        `json:"hit_bytes"`
+	OriginBytes uint64        `json:"origin_bytes"`
+	Entries     int           `json:"entries"`
+	Bytes       int64         `json:"bytes"`
+	Series      []CacheBucket `json:"series"`
 }
 
 // PolicyLimits are the instance caps for traffic controls.

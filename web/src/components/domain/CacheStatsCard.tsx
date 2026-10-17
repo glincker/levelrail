@@ -1,14 +1,8 @@
-import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BroomIcon } from '@phosphor-icons/react/dist/ssr'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  useDomainCacheStats,
-  usePurgeCache,
-} from '../../queries/domainPolicies'
+import { useDomainCacheStats } from '../../queries/domainPolicies'
 import type { CacheBucket } from '../../queries/domainPolicyTypes'
-import { FieldMessage, NativeSelect, Section } from './PolicyShared'
+import { PurgePanel } from '../cdn/PurgePanel'
+import { Section } from './PolicyShared'
 
 // Sparkline draws hits (solid) and misses (muted) per minute in a fixed
 // viewBox, so it scales with its container without inline styles.
@@ -67,9 +61,6 @@ export function CacheStatsCard({
 }) {
   const { t } = useTranslation('domainPolicies')
   const { data: stats } = useDomainCacheStats(app, domain)
-  const purge = usePurgeCache(app, domain)
-  const [scope, setScope] = useState<'url' | 'prefix' | 'all'>('url')
-  const [value, setValue] = useState('')
   const total = stats ? stats.hits + stats.misses : 0
   const ratio = stats && total > 0 ? Math.round((stats.hits / total) * 100) : 0
 
@@ -96,52 +87,7 @@ export function CacheStatsCard({
       ) : (
         <p className="text-sm text-muted-foreground">{t('cache.noStats')}</p>
       )}
-      <form
-        className="flex flex-wrap items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          purge.mutate(scope === 'all' ? { scope } : { scope, value })
-        }}
-      >
-        <NativeSelect
-          id="purge-scope"
-          label={t('cache.purgeScope')}
-          value={scope}
-          options={[
-            { value: 'url', label: t('cache.purgeUrl') },
-            { value: 'prefix', label: t('cache.purgePrefix') },
-            { value: 'all', label: t('cache.purgeAll') },
-          ]}
-          onChange={(v) => setScope(v as 'url' | 'prefix' | 'all')}
-        />
-        {scope !== 'all' ? (
-          <label className="flex flex-1 flex-col gap-1 text-xs">
-            <span className="text-muted-foreground">
-              {t('cache.purgeValue')}
-            </span>
-            <Input
-              value={value}
-              placeholder="/blog/post?id=1"
-              onChange={(e) => setValue(e.target.value)}
-            />
-          </label>
-        ) : null}
-        <Button
-          type="submit"
-          size="sm"
-          variant="outline"
-          disabled={purge.isPending}
-        >
-          <BroomIcon />
-          {t('cache.purge')}
-        </Button>
-      </form>
-      {purge.isSuccess ? (
-        <p className="text-xs text-muted-foreground" aria-live="polite">
-          {t('cache.purged', { count: purge.data.purged })}
-        </p>
-      ) : null}
-      <FieldMessage message={purge.error?.message} />
+      <PurgePanel app={app} domain={domain} />
     </Section>
   )
 }

@@ -245,6 +245,7 @@ var Tree = map[string]*Node{
 		"traffic":        nil,
 	}},
 	"traffic":                  nil,
+	"cache":                    {Subs: map[string]*Node{"status": nil, "rules": {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}}, "purge": nil, "history": nil}},
 	"status":                   nil,
 	"version":                  nil,
 	"changelog":                nil,

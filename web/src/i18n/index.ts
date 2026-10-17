@@ -73,6 +73,7 @@ export const NAMESPACES = [
   'maintenance',
   'buildPerformance',
   'sso',
+  'cdn',
   'models',
   'templates',
   'trialApp',

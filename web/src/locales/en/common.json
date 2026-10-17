@@ -194,6 +194,7 @@
       "loadbalancers": "Load balancers",
       "nodes": "Nodes",
       "network": "Topology",
+      "cdn": "CDN and caches",
       "registry": "Container registry",
       "registry-credentials": "Credentials",
       "network-shares": "Network shares",

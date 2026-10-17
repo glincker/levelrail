@@ -86,6 +86,7 @@ System endpoints for:
 | GET | /api/v1/system/networks | AbilityRead | handleGetSystemNetworks |
 | POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
 | GET | /api/v1/system/shield/bots | AbilityRead | handleShieldBotList |
+| GET | /api/v1/system/cache | AbilityRead | handleSystemCache |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -490,6 +491,10 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/autoscale | AbilityDeploy | handlePutAutoscale |
 | DELETE | /api/v1/apps/{name}/autoscale | AbilityDeploy | handleDeleteAutoscale |
 | GET | /api/v1/apps/{name}/autoscale/history | AbilityRead | handleAutoscaleHistory |
+| GET | /api/v1/apps/{name}/cache | AbilityRead | handleGetAppCache |
+| POST | /api/v1/apps/{name}/cache/purge | AbilityDeploy | handlePurgeAppCache |
+| GET | /api/v1/apps/{name}/cache/purges | AbilityRead | handleListCachePurges |
+| POST | /api/v1/apps/{name}/cache/preset | AbilityDeploy | handleApplyCachePreset |
 
 </Accordion>
 
@@ -1472,6 +1477,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/plugin-keys | AbilityRoot | handleListPluginKeys |
 | POST | /api/v1/plugin-keys | AbilityRoot | handleAddPluginKey |
 | DELETE | /api/v1/plugin-keys/{id} | AbilityRoot | handleRemovePluginKey |
+| GET | /api/v1/cdn/overview | AbilityRead | handleCDNOverview |
 
 ## See also
 

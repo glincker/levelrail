@@ -235,7 +235,8 @@ Caching is per domain and off by default. Each rule matches a path (prefix, exac
 - TTL: the app's `s-maxage`, then `max-age`, then the rule's `ttl_seconds`. With `override_upstream`, the rule's TTL always wins. A TTL of 0 means "do not store". TTLs are capped by `APP_INGRESS_CACHE_MAX_TTL`.
 - Stale while revalidate: after an entry expires, the first request fetches a fresh copy from the app, and requests arriving while that fetch is running get the expired copy, marked `STALE`, for up to `stale_while_revalidate_seconds`.
 - Key: the request host, path and query, `Accept-Encoding`, and the rule's `vary` headers. Entries from one host are never served for another.
-- Every response on a cached path carries `X-Cache: HIT`, `MISS`, `STALE` or `BYPASS`, and a hit has an `Age` header. A hit answers `If-None-Match` with `304` when the ETag matches.
+- Every response on a cached path carries `X-Cache: HIT`, `MISS`, `STALE` or `BYPASS`, and a hit has an `Age` header. A hit answers `If-None-Match` or `If-Modified-Since` with `304` when the validators match.
+- More rule options: `never` (do not cache these paths), `stale_if_error_seconds`, `ignore_query_params`, `key_cookies` (needs `cache_with_cookies`). Purge also works by cache tag, and the **Cache static assets** preset adds a ready made rule. See [CDN and caching](/cdn-and-caching).
 
 The cache lives in the control plane's memory: a least recently used store capped by `APP_INGRESS_CACHE_MAX_BYTES` (default 64 MiB) across every domain, with single responses capped by `APP_INGRESS_CACHE_MAX_OBJECT_BYTES` (default 2 MiB) or the domain's own lower `max_object_bytes`. It is per instance, starts empty after a restart, and is not shared between nodes.
 
@@ -243,6 +244,7 @@ The cache lives in the control plane's memory: a least recently used store cappe
 levelrail-cli domains cache add my-app example.com --path /static --ttl 3600
 levelrail-cli domains cache purge my-app example.com --prefix /static
 levelrail-cli domains cache purge my-app example.com --url "/pricing?plan=pro"
+levelrail-cli cache purge my-app --tag blog
 levelrail-cli domains cache stats my-app example.com
 ```
 

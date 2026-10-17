@@ -1691,6 +1691,17 @@ levelrail-cli static-sites list [flags]
 ```
 Lists every `build.type: static` app served directly through the embedded Caddy ingress, with no container involved.
 
+## Response cache
+
+```bash
+levelrail-cli cache status [<app>] [flags]
+levelrail-cli cache rules show|set|clear <app> [--domain D] [flags]
+levelrail-cli cache purge <app> (--url PATH | --prefix PATH | --tag NAME | --all) [flags]
+levelrail-cli cache history <app> [flags]
+```
+
+- `cache status` shows the hit rate and bandwidth saved for one app, or the instance table without a name. `cache rules set --preset static` adds the static assets rule; `--file` replaces the policy from JSON. Purges are recorded in `cache history`. See [CDN and caching](/cdn-and-caching).
+
 ## Related
 
 <CardGroup cols={2}>
