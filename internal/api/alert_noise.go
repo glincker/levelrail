@@ -508,7 +508,7 @@ func (rt *Router) annotateSilenced(ctx context.Context, app string, rules []aler
 	}
 	nodeID, nodeName := rt.appNode(ctx, app)
 	for i, rl := range rules {
-		ac := alerting.AlertContext{RuleID: rl.ID, Kind: string(rl.Kind), Labels: rl.Labels, Severity: rl.Severity}
+		ac := alerting.AlertContext{RuleID: rl.ID, Kind: string(rl.Kind), Metric: rl.Metric, Labels: rl.Labels, Severity: rl.Severity}
 		if !alerting.IsPlatformKind(rl.Kind) {
 			ac.App, ac.NodeID, ac.NodeName = app, nodeID, nodeName
 		}

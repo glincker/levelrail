@@ -10,6 +10,7 @@ export interface SilenceMatchers {
   nodes?: string[]
   labels?: Record<string, string>
   severities?: Severity[]
+  metrics?: string[]
 }
 
 export type SilenceStatus = 'pending' | 'active' | 'expired'

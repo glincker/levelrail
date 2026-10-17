@@ -3,6 +3,7 @@ package maintenance
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
@@ -21,12 +22,18 @@ const (
 	silenceListLimit = 1000
 )
 
-// silencedKinds are the alert kinds that probe a domain or its readiness, so
-// the maintenance 503 would trip them. Crashloops still alert: a real crash is not maintenance.
+// silencedKinds are the alert kinds that probe a domain or its request path, so
+// the maintenance 503 would trip them. Threshold rules are narrowed to
+// request-path metrics (alerting.RequestPathMetrics); crashloops, CPU, memory and disk still alert.
 var silencedKinds = []string{
 	string(alerting.KindDomainHealth), string(alerting.KindDomainNotResolving),
 	string(alerting.KindCertExpiry), string(alerting.KindCertExpiring), string(alerting.KindCertRenewalStalled),
 	string(alerting.KindThreshold),
+}
+
+// DesiredMatcher is the matcher every maintenance silence for app must carry.
+func DesiredMatcher(app string) alerting.SilenceMatcher {
+	return alerting.SilenceMatcher{Apps: []string{app}, Kinds: silencedKinds, Metrics: alerting.RequestPathMetrics()}
 }
 
 // SilenceStore is the part of *alerting.DB the coupling needs.
@@ -60,7 +67,7 @@ func (s *Silencer) Open(ctx context.Context, m store.DomainMaintenance, app stri
 		return "", fmt.Errorf("maintenance: %w", err)
 	}
 	sil := alerting.Silence{
-		ID: id, Matchers: alerting.SilenceMatcher{Apps: []string{app}, Kinds: silencedKinds},
+		ID: id, Matchers: DesiredMatcher(app),
 		StartsAt: now, EndsAt: SilenceEnd(m, now), CreatedBy: SilenceCreatorPrefix + m.Domain,
 		Reason: "Maintenance on " + m.Domain, CreatedAt: now,
 	}
@@ -120,7 +127,7 @@ func (s *Silencer) Sync(ctx context.Context, active []store.DomainMaintenance, a
 	for _, m := range active {
 		live[m.Domain] = true
 		app, ok := apps[m.Domain]
-		if !ok || silenceCurrent(owned[m.Domain], m, now) {
+		if !ok || silenceCurrent(owned[m.Domain], m, DesiredMatcher(app), now) {
 			continue
 		}
 		id, err := s.Open(ctx, m, app, now)
@@ -143,8 +150,8 @@ func (s *Silencer) Sync(ctx context.Context, active []store.DomainMaintenance, a
 	return firstErr
 }
 
-func silenceCurrent(list []alerting.Silence, m store.DomainMaintenance, now time.Time) bool {
-	if len(list) != 1 {
+func silenceCurrent(list []alerting.Silence, m store.DomainMaintenance, want alerting.SilenceMatcher, now time.Time) bool {
+	if len(list) != 1 || !reflect.DeepEqual(list[0].Matchers, want) {
 		return false
 	}
 	end := list[0].EndsAt

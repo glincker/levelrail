@@ -5,7 +5,7 @@ description: Announce planned downtime ahead of time with a dashboard banner, a 
 
 A maintenance window is a one-off period you plan in advance. Users see it coming, the public status page lists it as scheduled maintenance, and your notification channels hear about it once, a lead time you choose before it starts.
 
-This is different from [alert maintenance windows](/observability), which are recurring cron silences that mute alerts. A scheduled maintenance window announces and, if you ask, freezes deploys. It does not mute alerts. Domain maintenance mode is the exception: turning it on also creates its own alert silence, see [maintenance mode](/domains-and-ingress#maintenance-mode).
+This is different from [alert maintenance windows](/observability), which are recurring cron silences that mute alerts. A scheduled maintenance window announces and, if you ask, freezes deploys. It does not mute alerts. Domain maintenance mode is the exception: turning it on also creates its own alert silence for down, DNS, certificate and request error or latency alerts only (CPU, memory, disk, restart and crash alerts still fire), see [maintenance mode](/domains-and-ingress#maintenance-mode).
 
 ## What a window does
 
