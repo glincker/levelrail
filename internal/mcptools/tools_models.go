@@ -62,7 +62,7 @@ type modelActionResult struct {
 func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_models",
-		Description: "List AI models deployed on GPU nodes: engine, model, node, and reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode, and so on) with progress detail. Read-only.",
+		Description: "List AI models deployed on GPU nodes: engine, model, node, and reconcile status (Downloading, Loading, ModelLoaded, NoGPUOnNode, and so on) with progress detail.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.ModelResource, error) {
 		out, err := client.ListModels(ctx)
 		if err != nil {
@@ -84,7 +84,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_gpu_nodes",
-		Description: "List nodes that report NVIDIA GPUs: driver version, per-GPU VRAM total and used, utilization, whether Docker has the nvidia container runtime, the fix when it does not, how many models run there, and GPU reservations: reserved and free GPU counts plus which apps and models hold them (a workload only places on a node with enough free GPUs). Read-only.",
+		Description: "List nodes that report NVIDIA GPUs: driver version, per-GPU VRAM total and used, utilization, whether Docker has the nvidia container runtime, the fix when it does not, how many models run there, and GPU reservations: reserved and free GPU counts plus which apps and models hold them (a workload only places on a node with enough free GPUs).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GPUNodeResource, error) {
 		out, err := client.ListGPUNodes(ctx)
 		if err != nil {
@@ -162,7 +162,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_model_keys",
-		Description: "List a model's named API keys: prefix, status (active, rotating, expired, revoked), limits, expiry and last use. Key material is never returned. Read-only.",
+		Description: "List a model's named API keys: prefix, status (active, rotating, expired, revoked), limits, expiry and last use. Key material is never returned.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelNameInput) (*mcp.CallToolResult, []apiclient.ModelKeyResource, error) {
 		out, err := client.ListModelKeys(ctx, in.Name)
 		if err != nil {
@@ -183,7 +183,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_usage",
-		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, input and output tokens, average latency and time to first byte, hourly series and a per key breakdown. Tokens only cover responses that carried a usage object; the note field says so. Read-only.",
+		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, input and output tokens, average latency and time to first byte, hourly series and a per key breakdown. Tokens only cover responses that carried a usage object; the note field says so.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelUsageInput) (*mcp.CallToolResult, apiclient.ModelUsageReport, error) {
 		var since time.Duration
 		if in.Since != "" {
@@ -202,7 +202,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preflight_model",
-		Description: "Check a HuggingFace repository before deploying a model: whether it exists, gated access and the next step, license, download size, GGUF quantizations with sizes and fit verdicts against the node's free VRAM, a recommended quantization, free disk on the node, and which engine can load the weights. GPU fit numbers are estimates. Queries the public Hub and persists nothing. Read-only.",
+		Description: "Check a HuggingFace repository before deploying a model: whether it exists, gated access and the next step, license, download size, GGUF quantizations with sizes and fit verdicts against the node's free VRAM, a recommended quantization, free disk on the node, and which engine can load the weights. GPU fit numbers are estimates. Queries the public Hub and persists nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in preflightModelInput) (*mcp.CallToolResult, apiclient.ModelPreflightResult, error) {
 		out, err := client.PreflightModel(ctx, apiclient.ModelPreflightRequest{
 			Repo: in.Repo, Engine: in.Engine, Quant: in.Quant, File: in.File, NodeID: in.NodeID, HFToken: in.HFToken,

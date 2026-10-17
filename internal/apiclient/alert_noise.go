@@ -16,6 +16,7 @@ type SilenceMatchers struct {
 	Nodes      []string          `json:"nodes,omitempty"`
 	Labels     map[string]string `json:"labels,omitempty"`
 	Severities []string          `json:"severities,omitempty"`
+	Metrics    []string          `json:"metrics,omitempty"`
 }
 
 // SilenceResource mirrors internal/api's silenceResource.

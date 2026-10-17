@@ -116,7 +116,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_status_page",
-		Description: "Get the public status page settings and a preview of what it currently shows (component names, statuses, uptime). Read only.",
+		Description: "Get the public status page settings and a preview of what it currently shows (component names, statuses, uptime).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, statusPageOutput, error) {
 		settings, err := client.GetStatusPage(ctx)
 		if err != nil {
@@ -131,7 +131,7 @@ func registerAlertNoiseTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_status_incidents",
-		Description: "List operator-authored status page incidents and maintenance announcements with their updates. Read only.",
+		Description: "List operator-authored status page incidents and maintenance announcements with their updates.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StatusIncident, error) {
 		out, err := client.ListStatusIncidents(ctx)
 		if err != nil {

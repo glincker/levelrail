@@ -195,9 +195,9 @@ func nodeAgentItems(n apiclient.NodeResource, now time.Time) []Item {
 		case "expired":
 			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expired "+expires+": re-enroll the node"))
 		case "critical":
-			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal())))
+			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal)))
 		case "expiring":
-			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal())))
+			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal)))
 		case "revoked":
 			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate revoked: re-enroll or delete the node"))
 		}

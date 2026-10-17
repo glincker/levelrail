@@ -13,7 +13,7 @@ const globalEnvironmentsGroup = "global-environments"
 func registerGlobalEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_global_environments",
-		Description: "List every environment (dev, test, uat, production, custom, preview) with kind, protected flag and app and database counts. Read-only.",
+		Description: "List every environment (dev, test, uat, production, custom, preview) with kind, protected flag and app and database counts.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GlobalEnvironmentResource, error) {
 		envs, err := client.ListAllEnvironments(ctx)
 		if err != nil {

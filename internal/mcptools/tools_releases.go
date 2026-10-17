@@ -38,7 +38,7 @@ func asObject(v any) (map[string]any, error) {
 func registerReleaseTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_releases",
-		Description: "Last 5 control plane releases with a database schema compatibility verdict each. Read-only.",
+		Description: "Last 5 control plane releases with a database schema compatibility verdict each.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in releaseHistoryInput) (*mcp.CallToolResult, map[string]any, error) {
 		res, err := client.GetReleaseHistory(ctx, in.Channel)
 		if err != nil {
