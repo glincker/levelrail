@@ -264,6 +264,13 @@ type ContainerSpec struct {
 	OomScoreAdj int
 	// PidsLimit overrides the hardening pids limit when positive.
 	PidsLimit int64
+	// Hardened forces the strictest container profile whatever the global
+	// hardening mode: read-only root filesystem, every capability dropped
+	// with none added back, no-new-privileges, a PID limit and a small
+	// noexec /tmp. Used for untrusted workloads such as plugins.
+	Hardened bool
+	// User runs the container process as this uid[:gid]. Empty keeps the image's user.
+	User string
 }
 
 // RegistryAuth is a plaintext username/password pair for pulling a

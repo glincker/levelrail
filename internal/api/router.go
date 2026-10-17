@@ -109,6 +109,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
 	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/placement"
+	"github.com/GLINCKER/levelrail/internal/plugin"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/registrycatalog"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -152,6 +153,7 @@ type Router struct {
 	organizations          OrganizationStore
 	environments           EnvironmentStore
 	envProtect             envProtection
+	plugins                *plugin.Manager                     // plugin runtime, nil until SetPluginManager, see plugins.go
 	cliConsole             *cliConsoleState                    // web CLI console limits and config, see cli_console.go
 	mobile                 *mobileState                        // phone pairing rate limits, see mobile.go
 	secrets                SecretSetter                        // nil is valid: a control plane with no master key configured serves everything except secret-setting

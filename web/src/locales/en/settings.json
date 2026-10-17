@@ -436,6 +436,10 @@
         "title": "Mobile devices",
         "description": "Pair a phone with a QR code and revoke paired phones."
       },
+      "plugins": {
+        "title": "Plugins",
+        "description": "Install signed plugins, approve what they may do and trust publisher keys."
+      },
       "agents": {
         "title": "Agents",
         "description": "Connect an AI agent over MCP and manage its tokens."

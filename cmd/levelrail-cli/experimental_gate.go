@@ -18,6 +18,7 @@ var experimentalCommands = map[string]experimental.Feature{
 	"cloudflare-tunnel": experimental.CloudflareTunnel,
 	"roles":             experimental.AccessRoles,
 	"environments":      experimental.GlobalEnvironments,
+	"plugins":           experimental.Plugins,
 }
 
 // experimentalFeatureFor returns the gated feature a command line invokes.

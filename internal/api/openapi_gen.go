@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1234 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1244 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -957,6 +957,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/pipelines/schema", Ability: "AbilityRead", Group: "Other", Handler: "handlePipelineSchema", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipelines/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineSummary", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/validate", Ability: "AbilityRead", Group: "Other", Handler: "handleValidatePipeline", Description: ""},
+	{Method: "GET", Path: "/api/v1/plugin-keys", Ability: "AbilityRoot", Group: "Other", Handler: "handleListPluginKeys", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugin-keys", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddPluginKey", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/plugin-keys/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemovePluginKey", Description: ""},
+	{Method: "GET", Path: "/api/v1/plugins", Ability: "AbilityRoot", Group: "Other", Handler: "handleListPlugins", Description: "Plugins run third-party code beside the control plane, so every route is AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/plugins", Ability: "AbilityRoot", Group: "Other", Handler: "handleInstallPlugin", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/plugins/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemovePlugin", Description: ""},
+	{Method: "GET", Path: "/api/v1/plugins/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetPlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/{name}/approve", Ability: "AbilityRoot", Group: "Other", Handler: "handleApprovePlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/{name}/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisablePlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/{name}/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnablePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/preflight", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreflightNew", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-vendors", Ability: "AbilityRead", Group: "Other", Handler: "handleListRegistryVendors", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/findings", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorFindings", Description: ""},

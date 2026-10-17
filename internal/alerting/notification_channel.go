@@ -190,6 +190,9 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 }
 
 func sendTextNotification(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, kind NotifyKind, notifyURL, testText string) error {
+	if IsPluginKind(kind) {
+		return ErrPluginChannelUnsupported
+	}
 	if IsMaskedNotifyTarget(notifyURL) {
 		return ErrChannelSecretNotRevealed
 	}

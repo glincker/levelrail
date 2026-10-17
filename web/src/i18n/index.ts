@@ -55,6 +55,7 @@ export const NAMESPACES = [
   'fixit',
   'envEditor',
   'resourceAdvisor',
+  'plugins',
   'help',
   'traces',
   'errors',

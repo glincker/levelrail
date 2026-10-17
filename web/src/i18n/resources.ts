@@ -53,6 +53,7 @@ import type pipelines from '../locales/en/pipelines.json'
 import type budget from '../locales/en/budget.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
+import type plugins from '../locales/en/plugins.json'
 import type help from '../locales/en/help.json'
 import type traces from '../locales/en/traces.json'
 import type errors from '../locales/en/errors.json'
@@ -128,6 +129,7 @@ declare module 'i18next' {
       budget: typeof budget
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
+      plugins: typeof plugins
       help: typeof help
       traces: typeof traces
       errors: typeof errors
