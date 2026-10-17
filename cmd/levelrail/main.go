@@ -653,7 +653,9 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}
-	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
+	edgeInfo := edge.doctorInfo()
+	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
+	apiRouter.SetDoctorIngressEdge(edgeInfo)
 	proxySyncer := newProxySyncer(b, db, logger)
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
