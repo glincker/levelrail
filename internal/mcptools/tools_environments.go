@@ -11,7 +11,7 @@ import (
 func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_environments",
-		Description: "List a project's staging/production-style environment labels: name and whether it's protected (deploying into a protected environment requires the caller to pass confirm=true to deploy_app/rollback_app). Read-only; does not create, edit, or delete an environment.",
+		Description: "List a project's staging/production-style environment labels: name and whether it's protected (deploying into a protected environment requires the caller to pass confirm=true to deploy_app/rollback_app).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in projectIDInput) (*mcp.CallToolResult, []apiclient.EnvironmentResource, error) {
 		environments, err := client.ListEnvironments(ctx, in.ProjectID)
 		if err != nil {

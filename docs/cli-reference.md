@@ -874,7 +874,7 @@ Top-level commands for muting, scheduling and reviewing alerts. The rules themse
 
 ```
 levelrail-cli alerts silences list [--all]
-levelrail-cli alerts silences create --for DURATION [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--label k=v] [--reason TEXT]
+levelrail-cli alerts silences create --for DURATION [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--metric M] [--label k=v] [--reason TEXT]
 levelrail-cli alerts silences delete <id>
 levelrail-cli alerts silence <app> <rule-id> [--for 1h] [--reason TEXT]
 levelrail-cli alerts maintenance list

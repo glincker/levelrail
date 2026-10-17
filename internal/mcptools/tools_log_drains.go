@@ -15,7 +15,7 @@ import (
 func registerLogDrainTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_log_drain",
-		Description: "Get an app's configured external log drain, if any: sink type (http or syslog), target, and whether forwarding is enabled. This is additive to the built-in node-local log store, not a replacement, so a missing or disabled drain does not mean logs aren't being collected at all. Read-only; does not configure or clear a drain.",
+		Description: "Get an app's configured external log drain, if any: sink type (http or syslog), target, and whether forwarding is enabled. This is additive to the built-in node-local log store, not a replacement, so a missing or disabled drain does not mean logs aren't being collected at all.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.LogDrainResource, error) {
 		drain, err := client.GetLogDrain(ctx, in.Name)
 		if err != nil {

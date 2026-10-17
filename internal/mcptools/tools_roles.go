@@ -11,7 +11,7 @@ import (
 func registerRoleTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_roles",
-		Description: "List stored roles: id, name, abilities, visibility (all or granted), builtin, user_count. Read-only.",
+		Description: "List stored roles: id, name, abilities, visibility (all or granted), builtin, user_count.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.RoleResource, error) {
 		roles, err := client.ListRoles(ctx)
 		if err != nil {

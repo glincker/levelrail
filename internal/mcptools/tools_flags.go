@@ -16,7 +16,7 @@ import (
 func registerFeatureFlagTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_feature_flags",
-		Description: "List an app's feature flags: key, name, enabled state, and rollout percentage. Read-only; does not create, edit, or toggle a flag.",
+		Description: "List an app's feature flags: key, name, enabled state, and rollout percentage.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.FeatureFlagResource, error) {
 		flags, err := client.ListFeatureFlags(ctx, in.Name)
 		if err != nil {
@@ -27,7 +27,7 @@ func registerFeatureFlagTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_feature_flag",
-		Description: "Get one feature flag's full metadata: key, name, description, enabled state, rollout percentage. Read-only; does not create, edit, or toggle a flag.",
+		Description: "Get one feature flag's full metadata: key, name, description, enabled state, rollout percentage.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in featureFlagInput) (*mcp.CallToolResult, apiclient.FeatureFlagResource, error) {
 		flag, err := client.GetFeatureFlag(ctx, in.Name, in.ID)
 		if err != nil {

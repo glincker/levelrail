@@ -11,7 +11,7 @@ import (
 func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_domains",
-		Description: "List every routed domain across all apps, with the owning app. Read-only.",
+		Description: "List every routed domain across all apps, with the owning app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.DomainResource, error) {
 		domains, err := client.ListDomains(ctx)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_network",
-		Description: "Get an app's live traffic path: the declared port, the Docker-assigned host port Caddy proxies to, and whether the container is running. Useful when a domain isn't reaching an app. Read-only.",
+		Description: "Get an app's live traffic path: the declared port, the Docker-assigned host port Caddy proxies to, and whether the container is running. Useful when a domain isn't reaching an app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.NetworkResource, error) {
 		network, err := client.GetAppNetwork(ctx, in.Name)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_maintenance_status",
-		Description: "Get whether one of an app's domains has maintenance mode enabled (a static page instead of the app), since when, and when it switches off. Read-only.",
+		Description: "Get whether one of an app's domains has maintenance mode enabled (a static page instead of the app), since when, and when it switches off.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainMaintenanceResource, error) {
 		status, err := client.GetDomainMaintenance(ctx, in.Name, in.Domain)
 		if err != nil {
@@ -55,7 +55,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_error_pages",
-		Description: "Get every custom error page currently configured for one of an app's domains: the status codes (404, 500, 502, 503) that have a custom HTML body, and that body's content. Served by the embedded Caddy ingress instead of Caddy's bare default error text or whatever the backend itself returned. Read-only; does not set or clear an error page.",
+		Description: "Get every custom error page currently configured for one of an app's domains: the status codes (404, 500, 502, 503) that have a custom HTML body, and that body's content. Served by the embedded Caddy ingress instead of Caddy's bare default error text or whatever the backend itself returned.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainErrorPagesResource, error) {
 		pages, err := client.GetDomainErrorPages(ctx, in.Name, in.Domain)
 		if err != nil {
@@ -66,7 +66,7 @@ func registerDomainTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "check_domain_dns",
-		Description: "Run a real DNS lookup for one of an app's domains and report whether it currently resolves to this control plane's own advertised address: status is one of connected, not_resolving, resolves_elsewhere, or unconfigured (no APP_PUBLIC_HOST and no usable request host to infer one from). The concrete diagnose-why-this-isn't-working tool for a domain that isn't reaching its app. Read-only.",
+		Description: "Run a real DNS lookup for one of an app's domains and report whether it currently resolves to this control plane's own advertised address: status is one of connected, not_resolving, resolves_elsewhere, or unconfigured (no APP_PUBLIC_HOST and no usable request host to infer one from). The concrete diagnose-why-this-isn't-working tool for a domain that isn't reaching its app.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainCheckResource, error) {
 		result, err := client.CheckDomain(ctx, in.Name, in.Domain)
 		if err != nil {

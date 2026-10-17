@@ -312,7 +312,6 @@ func annotationsFor(name string) (*mcp.ToolAnnotations, map[string]any) {
 	}
 	open := m.Outbound()
 	a := &mcp.ToolAnnotations{
-		Title:         titleFor(name),
 		ReadOnlyHint:  m.Class == ClassRead,
 		OpenWorldHint: &open,
 	}
@@ -334,17 +333,16 @@ func annotationsFor(name string) (*mcp.ToolAnnotations, map[string]any) {
 	return a, meta
 }
 
-func titleFor(name string) string {
-	words := strings.Split(name, "_")
-	words[0] = strings.ToUpper(words[0][:1]) + words[0][1:]
-	return strings.Join(words, " ")
-}
-
 // addTool registers a tool with annotations derived from toolTable.
 func addTool[In, Out any](s *mcp.Server, t *mcp.Tool, h mcp.ToolHandlerFor[In, Out]) {
 	t.Annotations, t.Meta = annotationsFor(t.Name)
 	if m, ok := toolTable[t.Name]; ok && m.Untrusted() {
 		h = wrapUntrustedResult(t.Name, h)
+	}
+	if t.OutputSchema == nil {
+		if slim := slimOutputSchema[Out](t.Name); slim != nil {
+			t.OutputSchema = slim
+		}
 	}
 	mcp.AddTool(s, t, withAgentClient(h))
 }

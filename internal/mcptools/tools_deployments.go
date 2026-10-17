@@ -41,7 +41,7 @@ func splitList(s string) []string {
 func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_deployments",
-		Description: "List deployments across every app the caller can read, newest first, with status, trigger, commit, branch, image digest, duration and rollback links. Filter by status, app, branch, trigger, environment, time range, text, live or pull request; page with cursor. Read-only.",
+		Description: "List deployments across every app the caller can read, newest first, with status, trigger, commit, branch, image digest, duration and rollback links. Filter by status, app, branch, trigger, environment, time range, text, live or pull request; page with cursor.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeploymentsInput) (*mcp.CallToolResult, apiclient.DeploymentList, error) {
 		opts := apiclient.DeploymentListOptions{
 			Statuses: splitList(in.Status), Triggers: splitList(in.Trigger), App: in.App, Branch: in.Branch,
@@ -60,7 +60,7 @@ func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deployments_summary",
-		Description: "Summarize deployments across the apps the caller can read: counts by status in a window, in-progress and needs-attention counts, 24h failure rate, median and p95 duration, and deploys per day for 14 days. Read-only.",
+		Description: "Summarize deployments across the apps the caller can read: counts by status in a window, in-progress and needs-attention counts, 24h failure rate, median and p95 duration, and deploys per day for 14 days.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deploymentsSummaryInput) (*mcp.CallToolResult, apiclient.DeploymentSummary, error) {
 		s, err := client.GetDeploymentsSummary(ctx, in.Window)
 		if err != nil {

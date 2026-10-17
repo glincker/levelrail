@@ -11,7 +11,7 @@ import (
 func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_git_source",
-		Description: "Get an app's connected git source, if any: repo URL, branch, build type/path, the webhook URL to configure at the provider, and whether a deploy token is stored (never the token or webhook secret itself). Explains why a push isn't triggering a deploy. Read-only; does not connect, edit, or disconnect a source.",
+		Description: "Get an app's connected git source, if any: repo URL, branch, build type/path, the webhook URL to configure at the provider, and whether a deploy token is stored (never the token or webhook secret itself). Explains why a push isn't triggering a deploy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.GitSourceResource, error) {
 		source, err := client.GetGitSource(ctx, in.Name)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_hook_runs",
-		Description: "Get the most recent outcome of an app's pre-deploy and post-deploy hooks, if configured: exit code, success, and captured output for each. A hook that has never run comes back absent, not an empty result. Read-only; does not run a hook.",
+		Description: "Get the most recent outcome of an app's pre-deploy and post-deploy hooks, if configured: exit code, success, and captured output for each. A hook that has never run comes back absent, not an empty result.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, apiclient.AppHookRunsResource, error) {
 		runs, err := client.GetAppHookRuns(ctx, in.Name)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerAppConfigTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_domain_tls_cert_status",
-		Description: "Get whether one of an app's domains has an operator-supplied (BYO) TLS certificate uploaded in place of Caddy's automatic ACME issuance, and when it was uploaded/expires. Neither the certificate nor the private key is ever returned. Read-only; does not upload or clear a certificate.",
+		Description: "Get whether one of an app's domains has an operator-supplied (BYO) TLS certificate uploaded in place of Caddy's automatic ACME issuance, and when it was uploaded/expires. Neither the certificate nor the private key is ever returned.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appDomainInput) (*mcp.CallToolResult, apiclient.DomainTLSCertResource, error) {
 		status, err := client.GetDomainTLSCert(ctx, in.Name, in.Domain)
 		if err != nil {

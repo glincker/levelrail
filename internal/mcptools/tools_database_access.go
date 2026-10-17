@@ -46,7 +46,7 @@ type databaseAccessOutput struct {
 func registerDatabaseAccessTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_database_users",
-		Description: "List a managed Postgres database's roles: login, preset, limit, expiry, live connections. No passwords. Read-only.",
+		Description: "List a managed Postgres database's roles: login, preset, limit, expiry, live connections. No passwords.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, databaseUsersOutput, error) {
 		users, err := client.ListDatabaseUsers(ctx, in.Name)
 		if err != nil {
@@ -61,7 +61,7 @@ func registerDatabaseAccessTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_database_access",
-		Description: "Who can reach a managed database: users and tokens with effective abilities, IAM policies that touch it, active temporary logins (no secrets). Read-only.",
+		Description: "Who can reach a managed database: users and tokens with effective abilities, IAM policies that touch it, active temporary logins (no secrets).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, databaseAccessOutput, error) {
 		who, err := client.GetDatabaseWho(ctx, in.Name)
 		if err != nil {
@@ -86,7 +86,7 @@ func registerDatabaseAccessTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_database_reachability",
-		Description: "Explain how a managed database can be reached: verdict, networks, connecting apps, published port and exposure, allowed sources with drift, network scope, TLS. Read-only.",
+		Description: "Explain how a managed database can be reached: verdict, networks, connecting apps, published port and exposure, allowed sources with drift, network scope, TLS.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, reachabilityOutput, error) {
 		n, err := client.GetDatabaseNetwork(ctx, in.Name)
 		if err != nil {

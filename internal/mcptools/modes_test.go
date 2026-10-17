@@ -40,7 +40,7 @@ func TestEveryToolClassified(t *testing.T) {
 			continue
 		}
 		a := tool.Annotations
-		if a == nil || a.OpenWorldHint == nil || a.Title == "" {
+		if a == nil || a.OpenWorldHint == nil {
 			t.Errorf("tool %q is missing annotations", tool.Name)
 			continue
 		}

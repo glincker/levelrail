@@ -11,7 +11,7 @@ import (
 func registerRegistryCredentialTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_registry_credentials",
-		Description: "List every private image registry credential connected to the control plane: host, username, and an expiry_status of healthy/expiring_soon/expired when an expiry was set. No password field, ever. Read-only; does not create, edit, delete, or test a credential.",
+		Description: "List every private image registry credential connected to the control plane: host, username, and an expiry_status of healthy/expiring_soon/expired when an expiry was set. No password field, ever.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.RegistryCredentialResource, error) {
 		creds, err := client.ListRegistryCredentials(ctx)
 		if err != nil {

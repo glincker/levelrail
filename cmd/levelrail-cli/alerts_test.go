@@ -33,14 +33,14 @@ func recordingServer(t *testing.T, status int, reply any) (*httptest.Server, *re
 
 func TestAlertsSilencesCreate(t *testing.T) {
 	srv, rec := recordingServer(t, http.StatusCreated, apiclient.SilenceResource{ID: "sil_1", Status: "active"})
-	stdout, _ := runCLIExpectOK(t, []string{"alerts", "silences", "create", "--app", "web", "--severity", "warning", "--label", "team=core",
+	stdout, _ := runCLIExpectOK(t, []string{"alerts", "silences", "create", "--app", "web", "--severity", "warning", "--label", "team=core", "--metric", "cpu_percent",
 		"--for", "4h", "--reason", "deploy", "--api-url", srv.URL})
 	if rec.method != http.MethodPost || rec.path != "/api/v1/alert-silences" {
 		t.Fatalf("call = %+v", rec)
 	}
 	var got apiclient.CreateSilenceRequest
 	_ = json.Unmarshal([]byte(rec.body), &got)
-	if got.Duration != "4h" || got.Reason != "deploy" || got.Matchers.Apps[0] != "web" || got.Matchers.Labels["team"] != "core" || got.Matchers.Severities[0] != "warning" {
+	if got.Duration != "4h" || got.Reason != "deploy" || got.Matchers.Apps[0] != "web" || got.Matchers.Labels["team"] != "core" || got.Matchers.Severities[0] != "warning" || len(got.Matchers.Metrics) != 1 || got.Matchers.Metrics[0] != "cpu_percent" {
 		t.Errorf("request = %+v", got)
 	}
 	if !strings.Contains(stdout, "sil_1") {

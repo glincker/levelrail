@@ -10,8 +10,7 @@ import (
 
 func reenrollNode(left time.Duration, now time.Time, state string, r *apiclient.NodeCertRenewal) apiclient.NodeResource {
 	na := now.Add(left)
-	c := &apiclient.NodeCertResource{State: state, NotAfter: &na, KeyOrigin: "reenroll_required", WarningDays: 21, CriticalDays: 7}
-	c.SetRenewal(r)
+	c := &apiclient.NodeCertResource{State: state, NotAfter: &na, KeyOrigin: "reenroll_required", WarningDays: 21, CriticalDays: 7, Renewal: r}
 	return apiclient.NodeResource{ID: "a", Name: "a", Status: "online", Cert: c}
 }
 

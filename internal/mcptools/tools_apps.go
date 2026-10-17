@@ -173,7 +173,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy",
-		Description: "Get one deploy attempt (deploy_id, or \"latest\") with its status, image, commit and, when it failed or is blocked, the structured failure object: code, cause, failing_step, a capped and redacted log_excerpt, suggested_fix, docs_url, retryable, deploy_id, app and at. Use this to explain a failed build or deploy. Read-only.",
+		Description: "Get one deploy attempt (deploy_id, or \"latest\") with its status, image, commit and, when it failed or is blocked, the structured failure object: code, cause, failing_step, a capped and redacted log_excerpt, suggested_fix, docs_url, retryable, deploy_id, app and at. Use this to explain a failed build or deploy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getDeployInput) (*mcp.CallToolResult, apiclient.DeployAttemptResource, error) {
 		id := in.DeployID
 		if id == "" {

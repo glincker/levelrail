@@ -11,7 +11,7 @@ import (
 func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_iam_policies",
-		Description: "List every IAM policy on the control plane: resource-scoped Allow/Deny documents attachable to a user or token, additive on top of a token's flat abilities. Read-only; does not create, edit, delete, attach, or detach a policy.",
+		Description: "List every IAM policy on the control plane: resource-scoped Allow/Deny documents attachable to a user or token, additive on top of a token's flat abilities.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.PolicyResource, error) {
 		policies, err := client.ListPolicies(ctx)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_iam_policy",
-		Description: "Get one IAM policy's full document (name, description, the Allow/Deny statements themselves). Read-only; does not create, edit, delete, attach, or detach a policy.",
+		Description: "Get one IAM policy's full document (name, description, the Allow/Deny statements themselves).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in policyIDInput) (*mcp.CallToolResult, apiclient.PolicyResource, error) {
 		policy, err := client.GetPolicy(ctx, in.ID)
 		if err != nil {
@@ -33,7 +33,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_policy_templates",
-		Description: "List ready-made IAM policy templates (read-only, guest-one-environment, deployer-nonprod, ai-operator-nonprod, production-approver) with their parameters and documents. Read-only; does not create or attach a policy.",
+		Description: "List ready-made IAM policy templates (read-only, guest-one-environment, deployer-nonprod, ai-operator-nonprod, production-approver) with their parameters and documents.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.PolicyTemplateList, error) {
 		list, err := client.ListPolicyTemplates(ctx)
 		if err != nil {
@@ -55,7 +55,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_iam_effective_permissions",
-		Description: "Show what a user or token can do on every app and database, grouped by ability, with how much comes from policies. Read-only.",
+		Description: "Show what a user or token can do on every app and database, grouped by ability, with how much comes from policies.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in principalInput) (*mcp.CallToolResult, apiclient.IAMEffective, error) {
 		eff, err := client.IAMEffectivePermissions(ctx, in.PrincipalType, in.PrincipalID)
 		if err != nil {
@@ -66,7 +66,7 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "analyze_iam_policies",
-		Description: "Run static checks over IAM policies, attachments and tokens: a score and findings with severity and a one line fix. Read-only.",
+		Description: "Run static checks over IAM policies, attachments and tokens: a score and findings with severity and a one line fix.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.IAMAnalysis, error) {
 		res, err := client.AnalyzeIAM(ctx)
 		if err != nil {
