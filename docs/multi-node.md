@@ -269,7 +269,7 @@ The keepalive is configured with `APP_NODE_KEEPALIVE_TIME` and `APP_NODE_KEEPALI
 
 On the Network page the control plane's own server is always the first card, **This server (control plane)**, whether or not the mesh is on. Apps and databases with an empty placement, or placed on the control plane's own node ID, belong to it. The **Unplaced** card only appears for resources placed on a node ID the control plane does not know.
 
-The local node uses the same health system: it heartbeats itself rather than through gRPC, and is never permanently `online` by fiat.
+The local node uses the same health system: it heartbeats itself rather than through gRPC, and is never permanently `online` by fiat. It runs inside the control plane process, so there is no network link to secure and no agent certificate: its node page says so, shows the control plane's own version and platform, and has no certificate, fingerprint, renewal or revoke controls.
 
 <Note>
 Cordon is tracked as a separate `schedulable` flag, not a status value. A node can be `online` and cordoned, or `offline` and schedulable.
@@ -653,6 +653,71 @@ This does not move databases or app streams onto the mesh, and auto-placement st
 
 </Accordion>
 
+## How agent trust works
+
+An agent dials out to the control plane; nothing connects in. Trust is established once, by the operator, and then checked on every connection.
+
+1. **Join token.** The operator mints a single-use token (15 minutes). It is stored hashed and spent before anything else happens, so a failed enrollment never leaves it reusable. Only the token's id is ever logged or shown in security events, never the token.
+2. **CA fingerprint pin.** Before the agent sends the token it can check the control plane's CA against the SHA-256 fingerprint the join command carries (`APP_CA_FINGERPRINT`). With a pin, an impostor control plane is refused before it sees the token. Without one the agent trusts the control plane on first use and says so in its log; the node page shows **Not pinned**.
+3. **Agent-side key.** The agent generates its own private key and sends a certificate request. The control plane signs it and never sees the key.
+4. **Mutual TLS on every connection.** The agent verifies the control plane against the CA it stored at enrollment. The control plane verifies the agent's certificate on every handshake (chain to its CA, client auth usage, validity window), then again when the session opens, and checks that the certificate's fingerprint is the one recorded for that node (or the previous one, inside the renewal overlap). A revoked node is refused here too.
+5. **Renewal.** At a fraction of the certificate's lifetime the agent renews over its authenticated connection (see [Automatic renewal](#automatic-renewal)).
+6. **Revocation.** Revoking sets a flag the control plane checks on every connection and closes the live session at once. There is no CRL or OCSP: the control plane is the only verifier, so a flag is enough.
+
+### Seeing what was verified
+
+The node page's Agent card (root accounts) shows the control plane CA fingerprint, the agent certificate's fingerprint, serial, issue and expiry time with a lifetime bar, the next scheduled renewal, the last renewal and any renewal failure with its next retry, who generated the private key, and a 24 hour count of accepted and rejected connection checks. The status line is computed from recent real events: it reads **Connection verified: mutual TLS, certificate matches this node** only while the node is online and its newest accepted connection presented a certificate the node record still accepts.
+
+Below it, a timeline lists security events, newest first, with a **Rejected only** filter. The same is available from the CLI:
+
+```bash
+levelrail-cli nodes security <id> [--rejected] [--limit N]
+levelrail-cli nodes cert renew <id>
+```
+
+To compare the CA fingerprint by hand, read it from the node page and compare it with `APP_CA_FINGERPRINT` in the agent's environment, or the value its enrollment command printed. They must match exactly.
+
+Events recorded, each with a source address and a reason:
+
+| Event | Outcome | Notes |
+| --- | --- | --- |
+| Enrollment and re-enrollment | accepted or rejected | Join token id, never the token. A refused token is recorded without a node. |
+| CA pin at enrollment | accepted, warning | `pinned and verified`, `verified against the CA already on the node`, or `not pinned` (warning). |
+| Connection check | accepted or rejected | Rejected reasons: `expired`, `not yet valid`, `certificate from a different CA`, `fingerprint does not match this node's record`, `unknown node`, `revoked`, `no certificate presented`. |
+| Certificate issued | info | Serial, not before, not after and fingerprint, at enrollment, renewal and re-enrollment. |
+| Renewal failed | failed | Recorded when the control plane refuses or fails to sign a renewal. |
+| Revoke, renew requested, re-enroll token issued | info | The operator who did it. |
+
+The log is bounded. Identical events inside `APP_NODE_SECURITY_COALESCE_WINDOW` (default `10m`) merge into one row with a count, a burst of identical rejections costs a handful of database writes however fast it arrives, each node keeps at most `APP_NODE_SECURITY_EVENTS_PER_NODE` rows (default `500`), and rows older than `APP_NODE_SECURITY_EVENT_RETENTION` (default `720h`) are deleted.
+
+### When a fingerprint mismatch appears
+
+- **The agent refuses to enroll and logs a CA fingerprint mismatch.** It aborted before sending its join token, so the token is still valid. Check that the fingerprint in the command is the one on the node page, that the agent is dialing the address you expect, and that nothing sits between them rewriting TLS. Do not remove the pin to make it work.
+- **A connection is rejected as `fingerprint does not match this node's record`.** A certificate that chains to your CA but is not the one the node record holds reached the control plane. After a renewal the previous certificate is accepted for `APP_AGENT_CERT_RENEW_GRACE` (default `24h`), so a mismatch past that window means a stale identity file restored from a backup, or a copy of the identity on another machine. Re-enroll the node, which retires every earlier certificate.
+- **Rejected as `certificate from a different CA`.** The control plane's CA was regenerated, or something else is presenting a certificate. Compare the CA fingerprint with the agent's.
+- **Rejected as `not yet valid`.** The agent's clock is more than about an hour behind. Fix the clock.
+- **Repeated rejections from an address you do not know.** They are coalesced and counted; nothing about them needs action unless the node itself stops connecting.
+
+### Security note: what is and is not verified
+
+Verified:
+
+- The control plane's CA against the pinned fingerprint at enrollment, when a pin is given.
+- The agent's certificate on every handshake: chain to the control plane's CA, client authentication usage, validity window. This is checked again when the session opens, independent of how the listener is configured.
+- That the presented certificate's SHA-256 fingerprint is the node's current one, or its previous one inside the renewal overlap, and that the node is not revoked.
+- The new certificate on renewal, by the agent, before it replaces the old one: it must name the node, match the local key, chain to the CA, and pass a test connection.
+
+Not verified, or only partly:
+
+- **Without a pin, enrollment is trust on first use.** An attacker in the path at that moment can impersonate the control plane.
+- **The pin result is the agent's own report.** The control plane records what the agent says it checked and cannot prove it. A pin mismatch is only visible in the agent's log, because the agent aborts before sending anything the control plane could record.
+- **Hostnames are not checked at enrollment.** The pinned CA is the trust anchor, not the address.
+- **An open session is not re-verified.** Expiry is checked at the handshake, so a session that outlives its certificate stays open until it reconnects. Revocation does close the live session.
+- **Rejections before the chain verifies are attributed by the certificate's claimed name.** That name is attacker controlled; a name that is not a known node is recorded without a node.
+- **The security log is operational history, not a tamper-evident audit trail.** It lives in the control plane database; use the audit log for who did what.
+- **Legacy key generation.** `APP_AGENT_REQUIRE_CSR=false` lets an old agent get a control-plane-generated key. It is off by default and the node page says which side generated each key.
+- **Clock skew.** Certificates are issued valid from one hour before issue time, so an agent clock up to about an hour behind still verifies them. Further behind, the agent refuses a new certificate (keeping the old one) and the control plane rejects the connection as not yet valid.
+
 ## Agent certificates: renewal and re-enrollment
 
 Each agent authenticates with a client certificate issued by the control plane's own CA (90 days by default, `APP_AGENT_CERT_VALIDITY` on the control plane). The design and its rejected alternatives are in [ADR 021](https://github.com/glincker/levelrail/blob/main/adr/021-agent-cert-lifecycle.md).
@@ -661,7 +726,7 @@ Each agent authenticates with a client certificate issued by the control plane's
 
 | Where | What you get |
 | --- | --- |
-| Dashboard | Every node row shows "Cert expires in N days", amber inside the warning window and red once critical, expired or revoked. The node page's Agent card shows expiry, last renewal, key origin, fingerprint, agent version, platform and commit. |
+| Dashboard | Every node row shows "Cert expires in N days", amber inside the warning window and red once critical, expired or revoked. The node page's Agent card (root accounts) shows the trust panel described in [How agent trust works](#how-agent-trust-works); the control plane's own node shows only its version and platform, because it has no agent certificate. |
 | CLI | `nodes list` has `CERT` and `AGENT` columns; `nodes get` shows the details. |
 | API | `GET /api/v1/nodes` and `GET /api/v1/nodes/{id}` carry `cert` (`state` is `ok`, `expiring`, `critical`, `expired`, `revoked` or `unknown`, plus `days_remaining`, `not_after`, `renewed_at`, `generation`, `key_origin`) and `agent` (`version`, `commit`, `os`, `arch`, `outdated`). |
 | Alerts | A `node_cert_expiring` rule fires while any node's certificate is inside `APP_NODE_CERT_EXPIRY_WARNING` (default `504h`, 21 days; a rule's `for_duration` overrides it) or has expired. `APP_NODE_CERT_EXPIRY_CRITICAL` (default `168h`) sets when the badge turns red. |
@@ -671,11 +736,15 @@ Healthy agents renew with about 30 days left, so either alert firing means renew
 
 ### Automatic renewal
 
-When a certificate is two thirds of the way through its lifetime (`APP_AGENT_CERT_RENEW_FRACTION` on the agent, default `0.67`, plus random jitter so nodes enrolled together do not renew together), the agent generates a fresh key and asks the control plane to sign it over its existing authenticated connection. Nothing needs restarting.
+When a certificate is two thirds of the way through its lifetime (`APP_AGENT_CERT_RENEW_FRACTION` on the agent, default `0.67`, plus up to 5% of the lifetime in jitter so nodes enrolled together do not renew together), the agent generates a fresh key and asks the control plane to sign it over its existing authenticated connection. Nothing needs restarting.
+
+The schedule is derived from the certificate on disk, and the jitter from its serial number, so an agent restart, a reconnect or a control plane restart resumes the same schedule instead of starting over. After a successful renewal the agent never renews again sooner than one minute, so a misconfigured lifetime cannot turn into a renewal loop. **Renew now** on the node page (root accounts), `levelrail-cli nodes cert renew <id>` or `POST /api/v1/nodes/{id}/cert/renew` asks a connected agent to renew immediately; the request is audited and shown in the node's security events.
 
 1. The control plane signs the request and records the new certificate. The previous one stays accepted for a grace window (`APP_AGENT_CERT_RENEW_GRACE`, default `24h`), so a lost response or a control plane restart never locks the node out.
 2. The agent writes the new identity next to the old one (temp file, fsync, rename, the old one kept as `<identity file>.prev`) and tests it with a separate connection.
-3. If the test passes the agent switches over and drops the backup. If it fails it restores the old identity and retries with backoff (1 minute doubling to 1 hour).
+3. If the test passes the agent switches over and drops the backup. If it fails it restores the old identity and retries with backoff (1 minute doubling to 1 hour). The agent never runs without a valid certificate: the old one stays in use until the new one has passed its test connection.
+
+The agent reports its next scheduled renewal and any failure (error, time, consecutive failures, next retry) to the control plane, so the node page shows them. A renewal that keeps failing is also what makes the `node_cert_expiring` alert and the attention item fire once the certificate is inside the warning window.
 
 An agent stopped mid-renewal settles it on its next start: it keeps whichever identity the control plane accepts.
 
@@ -851,6 +920,9 @@ Node routes require the `root` ability, not `read` or `write`, because node mana
 | `GET` | `/api/v1/network/topology` | `read` |
 | `POST` | `/api/v1/nodes/{id}/reenroll-token` | `root` (scoped to `node:{id}`) |
 | `POST` | `/api/v1/nodes/{id}/revoke-cert` | `root` (scoped to `node:{id}`) |
+| `GET` | `/api/v1/nodes/{id}/security` | `root` (scoped to `node:{id}`) |
+| `GET` | `/api/v1/nodes/{id}/security/events` | `root` (scoped to `node:{id}`) |
+| `POST` | `/api/v1/nodes/{id}/cert/renew` | `root` (scoped to `node:{id}`) |
 | `GET` | `/api/v1/mesh` | `root` |
 | `GET` | `/api/v1/mesh/connectivity` | `root` |
 | `POST` | `/api/v1/apps/{name}/move` | `root` |
@@ -907,6 +979,8 @@ levelrail-cli nodes rotate-key <id> [flags]
 levelrail-cli nodes rejoin-mesh <id> [flags]
 levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
+levelrail-cli nodes security <id> [--rejected] [--limit N] [flags]
+levelrail-cli nodes cert renew <id> [flags]
 levelrail-cli apps set-node <name> <node-id> [--with-volumes] [flags]
 levelrail-cli apps clear-node <name> [--with-volumes] [flags]
 ```

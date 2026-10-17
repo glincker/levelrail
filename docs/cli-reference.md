@@ -1160,6 +1160,8 @@ levelrail-cli nodes delete <id> [flags]
 levelrail-cli nodes join-token [flags]
 levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
+levelrail-cli nodes security <id> [--rejected] [--limit N] [flags]
+levelrail-cli nodes cert renew <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
@@ -1188,7 +1190,7 @@ levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --p
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
 ```
 
-- `delete` fails while the node still has placements; drain it first. `join-token` mints a one-time enrollment token, shown once. `reenroll-token` mints a one-time token that re-issues a node's agent certificate, keeping its identity, and prints the command to run on the node. `revoke-cert` revokes the certificate and closes the node's session; only a re-enroll token brings it back.
+- `delete` fails while the node still has placements; drain it first. `join-token` mints a one-time enrollment token, shown once. `reenroll-token` mints a one-time token that re-issues a node's agent certificate, keeping its identity, and prints the command to run on the node. `revoke-cert` revokes the certificate and closes the node's session; only a re-enroll token brings it back. `security` prints how the control plane verifies the node (CA and certificate fingerprints, renewal schedule and last failure, 24 hour check counts) and its recent security events; `cert renew` asks a connected node to renew its certificate now.
 - `cordon` marks a node unschedulable without evacuating it; `uncordon` reverses that; `drain` moves every service and database off a node.
 - `list` shows each node's certificate state and days left (CERT) and agent version (AGENT); `get` adds expiry, last renewal, key origin, platform and commit.
 - `resource-usage` shows every node's latest CPU, memory and disk usage plus a fleet rollup; `capacity-forecast` projects disk and memory usage forward, roughly how many days until full.
