@@ -27,6 +27,22 @@ trap 'rm -f "$coverage_out" "$push_log"' EXIT
 # Captured for reuse as the PR-comment body below.
 exec > >(tee -a "$push_log") 2>&1
 
+# Compare against the nearest integration branch (an open release branch or main),
+# not always main: a release line far ahead of main would make every push look huge.
+base_ref="${LEVELRAIL_PUSH_BASE:-}"
+if [ -z "$base_ref" ]; then
+	best_n=""
+	for r in $(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/release/*') origin/main; do
+		mb="$(git merge-base HEAD "$r" 2>/dev/null)" || continue
+		n="$(git rev-list --count "$mb..HEAD")"
+		if [ -z "$best_n" ] || [ "$n" -lt "$best_n" ]; then
+			base_ref="$r"
+			best_n="$n"
+		fi
+	done
+	base_ref="${base_ref:-origin/main}"
+fi
+
 echo "pre-push: migration version collisions"
 if ! scripts/check-migration-versions.sh; then
 	fail=1
@@ -35,11 +51,11 @@ fi
 scope="ALL"
 if [ "$fail" -eq 0 ] && command -v jq >/dev/null 2>&1; then
 	# Best-effort: a fetch failure (offline, no network) just means the
-	# affected-set is computed against whatever origin/main is already
+	# affected-set is computed against whatever the base ref is already
 	# known locally, which only risks over-selecting, never under.
-	git fetch origin main --quiet 2>/dev/null || true
-	if git rev-parse --verify --quiet origin/main >/dev/null; then
-		affected_out="$(scripts/affected-go-packages.sh origin/main 2>/dev/null || echo ALL)"
+	git fetch origin "${base_ref#origin/}" --quiet 2>/dev/null || true
+	if git rev-parse --verify --quiet $base_ref >/dev/null; then
+		affected_out="$(scripts/affected-go-packages.sh $base_ref 2>/dev/null || echo ALL)"
 		if [ -z "$affected_out" ]; then
 			scope="NONE"
 		elif [ "$affected_out" != "ALL" ]; then
@@ -64,7 +80,7 @@ fi
 go_test_timeout="${LEVELRAIL_PUSH_TEST_TIMEOUT:-30m}"
 
 if [ "$fail" -eq 0 ] && [ "$scope" = "NONE" ]; then
-	echo "pre-push: go test skipped, no Go-affecting changes vs origin/main"
+	echo "pre-push: go test skipped, no Go-affecting changes vs $base_ref"
 elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	# Fast lane (default): test only the packages this branch edited, never
 	# their dependents, and skip test/e2e. internal/api is the slowest
@@ -73,7 +89,7 @@ elif [ "$fail" -eq 0 ] && [ "$push_scope" = "fast" ]; then
 	# dependent that no longer builds; dependents' behavior and the coverage
 	# gate are CI's job (ci.yml) and nightly.yml's. Set
 	# LEVELRAIL_PUSH_SCOPE=affected to get the old dependents-included run.
-	changed_files="$(git diff --name-only origin/main...HEAD -- '*.go' 2>/dev/null)"
+	changed_files="$(git diff --name-only $base_ref...HEAD -- '*.go' 2>/dev/null)"
 	fast_pkgs=""
 	for d in $(printf '%s\n' "$changed_files" | xargs -n1 dirname 2>/dev/null | sort -u); do
 		case "$d" in test/e2e* | internal/api | kit | kit/* | terraform-provider | terraform-provider/* | tools | tools/*) continue ;; esac
@@ -145,7 +161,7 @@ if [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
 		# changed-line gate CI's own coverage-gate job runs on PRs
 		# instead, keeping local and CI semantics identical.
 		echo "pre-push: coverage gate (changed lines under internal/, 50%)"
-		if ! scripts/check-changed-file-coverage.sh "$coverage_out" origin/main internal/ 50; then
+		if ! scripts/check-changed-file-coverage.sh "$coverage_out" $base_ref internal/ 50; then
 			fail=1
 		fi
 	fi
@@ -153,15 +169,15 @@ fi
 
 # kit/ is a nested module: `go test ./...` above never reaches it. It is small,
 # so run the whole module whenever the branch touched it.
-if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet origin/main >/dev/null \
-	&& [ -n "$(git diff --name-only origin/main...HEAD -- kit/ 2>/dev/null)" ]; then
+if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet $base_ref >/dev/null \
+	&& [ -n "$(git diff --name-only $base_ref...HEAD -- kit/ 2>/dev/null)" ]; then
 	kit_cov="$(mktemp -t levelrail-kit-coverage.XXXXXX)"
 	echo "pre-push: go test -short (kit)"
 	if ! go -C kit test -short -coverprofile="$kit_cov" ./... 2>&1; then
 		fail=1
 	elif ! scripts/check-coverage.sh "$kit_cov" kit/ 70; then
 		fail=1
-	elif ! scripts/check-changed-file-coverage.sh "$kit_cov" origin/main kit/ 50; then
+	elif ! scripts/check-changed-file-coverage.sh "$kit_cov" $base_ref kit/ 50; then
 		fail=1
 	fi
 	rm -f "$kit_cov"
@@ -170,8 +186,8 @@ fi
 # Web tests related to the changed files: vitest's related mode runs every test
 # that imports them, which catches a sibling test the change broke. A
 # name-filtered run cannot, and CI's Web job was the first to see it.
-if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet origin/main >/dev/null && [ -d web/node_modules ]; then
-	web_files="$(git diff --name-only --diff-filter=ACMR origin/main...HEAD -- 'web/src/*.ts' 'web/src/*.tsx' 2>/dev/null | sed 's#^web/##' | grep -v 'routeTree.gen')"
+if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet $base_ref >/dev/null && [ -d web/node_modules ]; then
+	web_files="$(git diff --name-only --diff-filter=ACMR $base_ref...HEAD -- 'web/src/*.ts' 'web/src/*.tsx' 2>/dev/null | sed 's#^web/##' | grep -v 'routeTree.gen')"
 	if [ -n "$web_files" ]; then
 		echo "pre-push: vitest related (changed web files)"
 		# shellcheck disable=SC2086 # web_files is a newline-joined list of repo paths, word-splitting is intended
