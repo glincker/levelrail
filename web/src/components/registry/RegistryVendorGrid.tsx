@@ -15,13 +15,21 @@ function VendorTile({ vendor }: { vendor: RegistryVendor }) {
   const dialog = useUrlDialog(vendor.id)
   return (
     <li className="flex items-center gap-3 rounded-lg border border-border p-3">
-      <BrandTile name={vendor.brand} label={vendor.name} labelled />
+      <BrandTile name={vendor.brand} label={vendor.name} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{vendor.name}</p>
+        {(vendor.default_host ?? vendor.host_hint) && (
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            {vendor.default_host ?? vendor.host_hint}
+          </p>
+        )}
+      </div>
       <Button
         ref={triggerRef}
         type="button"
         variant="outline"
         size="sm"
-        className="ml-auto"
+        className="shrink-0"
         aria-label={t('registryVendors.connectFor', { vendor: vendor.name })}
         onClick={() => dialog.open()}
       >
