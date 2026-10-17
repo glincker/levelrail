@@ -1,98 +1,61 @@
 import { useState } from 'react'
-import { ProhibitIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useTranslation } from 'react-i18next'
+import { ProhibitIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from '@/components/ui/toast'
 import { useRevokeNodeCert } from '../queries/nodeCert'
 import type { NodeResource } from '../types/nodeDetail'
 
 export function RevokeNodeCertDialog({ node }: { node: NodeResource }) {
+  const { t } = useTranslation('nodes')
   const [open, setOpen] = useState(false)
   const revoke = useRevokeNodeCert()
-
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      revoke.reset()
-    }
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={node.cert?.state === 'revoked'}
-          />
-        }
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={node.cert?.state === 'revoked'}
+        onClick={() => {
+          setOpen(true)
+        }}
       >
         <ProhibitIcon className="size-3.5" aria-hidden="true" />
-        Revoke certificate
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5">
-            <WarningIcon
-              className="size-4 text-destructive"
-              aria-hidden="true"
-            />
-            Revoke &ldquo;{node.name}&rdquo;&apos;s certificate?
-          </DialogTitle>
-          <DialogDescription>
-            The control plane refuses this node&apos;s certificate from now on
-            and closes its session. Workloads already running there keep running
-            but can no longer be managed. Only re-enrolling the node brings it
-            back.
-          </DialogDescription>
-        </DialogHeader>
-        {revoke.isError ? (
-          <Alert variant="destructive">
-            <WarningIcon />
-            <AlertDescription>{revoke.error.message}</AlertDescription>
-          </Alert>
-        ) : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              handleOpenChange(false)
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            disabled={revoke.isPending}
-            onClick={() => {
-              revoke.mutate(node.id, {
-                onSuccess: () => {
-                  setOpen(false)
-                  toast.add({
-                    title: `Certificate for "${node.name}" revoked.`,
-                    type: 'success',
-                  })
-                },
+        {t('revoke.trigger')}
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next)
+          if (!next) revoke.reset()
+        }}
+        title={t('revoke.title', { name: node.name })}
+        description={t('revoke.description')}
+        consequences={[
+          t('revoke.consequenceRefused'),
+          t('revoke.consequenceSession'),
+          t('revoke.consequenceWorkloads'),
+          t('revoke.consequenceReenroll'),
+        ]}
+        tone="destructive"
+        confirmLabel={t('revoke.confirm')}
+        pendingLabel={t('revoke.pending')}
+        pending={revoke.isPending}
+        error={revoke.isError ? revoke.error.message : null}
+        onConfirm={() => {
+          revoke.mutate(node.id, {
+            onSuccess: () => {
+              setOpen(false)
+              toast.add({
+                title: t('revoke.done', { name: node.name }),
+                type: 'success',
               })
-            }}
-          >
-            {revoke.isPending ? 'Revoking...' : 'Revoke certificate'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            },
+          })
+        }}
+      />
+    </>
   )
 }

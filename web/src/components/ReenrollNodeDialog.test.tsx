@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { NodesI18n } from '../test/nodesI18n'
 import { ReenrollNodeDialog } from './ReenrollNodeDialog'
 import type { NodeResource } from '../types/nodeDetail'
 import type { NodeReenrollTokenResponse } from '../types/nodeCert'
@@ -39,7 +40,11 @@ describe('ReenrollNodeDialog', () => {
         })
       },
     )
-    render(<ReenrollNodeDialog node={node} />)
+    render(
+      <NodesI18n>
+        <ReenrollNodeDialog node={node} />
+      </NodesI18n>,
+    )
     fireEvent.click(screen.getByRole('button', { name: /Re-enroll node/ }))
     fireEvent.click(
       screen.getByRole('button', { name: 'Generate re-enroll token' }),
