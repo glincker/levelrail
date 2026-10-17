@@ -10,8 +10,8 @@ export interface NodeCertResource {
   days_remaining?: number
   renewed_at?: string
   generation: number
-  // 'agent' when the node generated its own key, 'server' for nodes
-  // enrolled before that; they switch at their next renewal.
+  // 'agent' when the node generated its own key, 'reenroll_required' when
+  // an early beta had the control plane make it.
   key_origin: string
   previous_valid_until?: string
   revoked_at?: string

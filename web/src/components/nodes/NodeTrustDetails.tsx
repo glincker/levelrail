@@ -80,7 +80,9 @@ export function NodeTrustDetails({
         </TrustItem>
       ) : null}
       <TrustItem label={t('trust.privateKey')} wide>
-        {t(`trust.key.${cert?.key_origin === 'server' ? 'server' : 'agent'}`)}
+        {t(
+          `trust.key.${cert?.key_origin === 'reenroll_required' ? 'reenroll_required' : 'agent'}`,
+        )}
       </TrustItem>
       {validation ? (
         <TrustItem
