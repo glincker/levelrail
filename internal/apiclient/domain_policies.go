@@ -166,14 +166,15 @@ type CacheStats struct {
 
 // PolicyLimits are the instance caps for traffic controls.
 type PolicyLimits struct {
-	MaxHeaderRules    int   `json:"max_header_rules"`
-	MaxForwarders     int   `json:"max_forwarders"`
-	MaxCacheRules     int   `json:"max_cache_rules"`
-	MaxRegexLen       int   `json:"max_regex_len"`
-	MaxHeaderValueLen int   `json:"max_header_value_len"`
-	CacheMaxObject    int64 `json:"cache_max_object_bytes"`
-	CacheTotalBytes   int64 `json:"cache_total_bytes"`
-	ForwardTimeoutSec int   `json:"forward_timeout_seconds"`
+	MaxHeaderRules    int          `json:"max_header_rules"`
+	MaxForwarders     int          `json:"max_forwarders"`
+	MaxCacheRules     int          `json:"max_cache_rules"`
+	MaxRegexLen       int          `json:"max_regex_len"`
+	MaxHeaderValueLen int          `json:"max_header_value_len"`
+	CacheMaxObject    int64        `json:"cache_max_object_bytes"`
+	CacheTotalBytes   int64        `json:"cache_total_bytes"`
+	ForwardTimeoutSec int          `json:"forward_timeout_seconds"`
+	Shield            ShieldLimits `json:"shield"`
 }
 
 // DomainPoliciesResource is GET .../domains/{domain}/policies.

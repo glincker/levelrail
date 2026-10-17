@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1220 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1226 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -637,6 +637,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/redirects/canonical", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainCanonical", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/search-visibility", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainSearchVisibility", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/search-visibility", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainSearchVisibility", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/shield", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDeleteDomainPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/shield", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainPolicy", Description: "Per-client rate, concurrency, body size and bad bot limits, with an emergency under-attack switch that expires on its own."},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/shield", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainPolicy", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/shield/under-attack", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleStopUnderAttack", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/domains/{domain}/shield/under-attack", Ability: "AbilityDeploy", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleStartUnderAttack", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleClearDomainTLSCert", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetDomainTLSCert", Description: "BYO TLS certificate upload (domain_tls_cert.go): an operator- supplied certificate/key pair used in place of Caddy's automatic ACME/internal issuance for one app-owned domain, enforced on the next ingress reconcile pass. GET is AbilityRead, matching the auth routes' own passive-visibility tier. PUT/DELETE are AbilityRoot, the same \"real infrastructure, high blast radius\" tier PUT/DELETE .../domains/{domain}/auth already reserves for a credential-bearing change."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/domains/{domain}/tls-cert", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleSetDomainTLSCert", Description: ""},
@@ -1210,6 +1215,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/secrets/rebind", Ability: "AbilityRoot", Group: "System", Handler: "handleRebindSecrets", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/server-address", Ability: "AbilityRead", Group: "System", Handler: "handleGetServerAddress", Description: "The address DNS records must point at. Reading is AbilityRead; the manual override changes DNS checks for every domain, so it is root."},
 	{Method: "PUT", Path: "/api/v1/system/server-address", Ability: "AbilityRoot", Group: "System", Handler: "handleSetServerAddress", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/shield/bots", Ability: "AbilityRead", Group: "System", Handler: "handleShieldBotList", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/status", Ability: "AbilityRead", Group: "System", Handler: "handleSystemStatus", Description: "System status (General settings page): configured/not-configured signals plus disk usage, AbilityRead like everything else an authenticated operator can passively view."},
 	{Method: "GET", Path: "/api/v1/system/volumes/orphaned", Ability: "AbilityRead", Group: "System", Handler: "handleListOrphanedVolumes", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/volumes/orphaned/cleanup", Ability: "AbilityRoot", Group: "System", Handler: "handleCleanupOrphanedVolumes", Description: ""},

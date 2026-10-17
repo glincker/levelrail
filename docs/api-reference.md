@@ -85,6 +85,7 @@ System endpoints for:
 | GET | /api/v1/system/cli-console/session | AbilityRoot | handleCLIConsoleSession |
 | GET | /api/v1/system/networks | AbilityRead | handleGetSystemNetworks |
 | POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
+| GET | /api/v1/system/shield/bots | AbilityRead | handleShieldBotList |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -856,6 +857,11 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRoot | handleClearDomainAuthGate |
 | GET | /api/v1/apps/{name}/domains/{domain}/auth-gate/events | AbilityReadSensitive | handleListAuthGateEvents |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions | AbilityRoot | handleRevokeAuthGateSessions |
+| GET | /api/v1/apps/{name}/domains/{domain}/shield | AbilityRead | handleGetDomainPolicy |
+| PUT | /api/v1/apps/{name}/domains/{domain}/shield | AbilityDeploy | handleSetDomainPolicy |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/shield | AbilityDeploy | handleDeleteDomainPolicy |
+| POST | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStartUnderAttack |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStopUnderAttack |
 
 </Accordion>
 

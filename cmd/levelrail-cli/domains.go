@@ -71,6 +71,8 @@ func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runDomainsForwarders(prog, args[1:], stdout, stderr, lookupEnv)
 	case "geo":
 		return runDomainsGeo(prog, args[1:], stdout, stderr, lookupEnv)
+	case "shield":
+		return runDomainsShield(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cache":
 		return runDomainsCache(prog, args[1:], stdout, stderr, lookupEnv)
 	case "redirects":

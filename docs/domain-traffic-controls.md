@@ -21,7 +21,7 @@ None of these needs a second proxy or a container restart. A change is stored, a
 <Tabs>
 <Tab title="Dashboard">
 
-On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Cache, Redirects, Ports and Danger zone. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
+On the **Domains** page, click a domain name. The domain page has tabs for Overview, Headers, Forwarding, Access, Shield, Cache, Redirects, Ports and Danger zone. Each editor keeps an unsaved draft per tab, shows the difference before you save, and a "rules preview" lists in order what happens to a sample request.
 
 </Tab>
 <Tab title="CLI">
@@ -30,6 +30,7 @@ On the **Domains** page, click a domain name. The domain page has tabs for Overv
 levelrail-cli domains headers <verb> <app> <domain>
 levelrail-cli domains forwarders <verb> <app> <domain>
 levelrail-cli domains geo <verb> <app> <domain>
+levelrail-cli domains shield <verb> <app> <domain>
 levelrail-cli domains cache <verb> <app> <domain>
 levelrail-cli domains redirects <verb> <app> <domain>
 levelrail-cli domains ports <verb> <app> <domain>
@@ -46,6 +47,9 @@ POST   /api/v1/apps/{name}/domains/{domain}/policies/preview   walk a request th
 GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/headers
 GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/forwarders
 GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/geo
+GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/shield
+POST/DELETE    /api/v1/apps/{name}/domains/{domain}/shield/under-attack
+GET    /api/v1/system/shield/bots
 GET/PUT/DELETE /api/v1/apps/{name}/domains/{domain}/cache
 POST   /api/v1/apps/{name}/domains/{domain}/cache/purge
 GET    /api/v1/apps/{name}/domains/{domain}/cache/stats
@@ -66,13 +70,14 @@ A rejected change returns `400` with a `fields` list (`{"field": "rules[2].name"
 
 For a request to a domain with controls configured, the ingress runs, in order:
 
-1. Redirects (lower case host, force HTTPS, trailing slash)
-2. Geo rule
-3. Headers: request rules, CORS, then response rules and presets
-4. The existing WAF, rate limit and basic auth, if configured
-5. Cache lookup
-6. Forwarders, first match wins
-7. The domain's own app
+1. Abuse shield (allowlist, bad bots, body size, per-client rate and concurrency)
+2. Redirects (lower case host, force HTTPS, trailing slash)
+3. Geo rule
+4. Headers: request rules, CORS, then response rules and presets
+5. The existing WAF, rate limit and basic auth, if configured
+6. Cache lookup
+7. Forwarders, first match wins
+8. The domain's own app
 
 Maintenance mode and a whole-domain redirect still take precedence over everything above, exactly as before.
 
@@ -193,6 +198,34 @@ levelrail-cli domains geo set my-app example.com --mode deny --countries RU,KP -
 levelrail-cli domains geo set my-app shop.example.com --mode allow --countries US,CA --action redirect --redirect-url https://example.com/unavailable
 ```
 
+## Bot and abuse shield
+
+A scraper or bot flood should not be able to run up your bandwidth or take an app down. The shield limits what one client can cost a domain, at the ingress, before the request reaches your app. It never shows a challenge page.
+
+| Field | Meaning |
+|---|---|
+| `rate_per_minute`, `burst` | Sustained per client IP request rate and bucket size (burst defaults to a sixth of the rate) |
+| `max_concurrent` | Requests one client IP may have in flight |
+| `max_body_bytes` | Larger request bodies are refused with `413` |
+| `block_bots`, `bot_agents` | Refuse user agents on the denylist plus your own fragments with `403` |
+| `allow` | IPs and CIDR ranges the shield never touches |
+| `retry_after_seconds` | Sent with `429` for rate and concurrency rejections |
+| `tarpit_ms` | Hold a rejected request this long before answering, capped by `APP_SHIELD_TARPIT_MAX`, and only while a tarpit slot is free |
+
+Rate and concurrency rejections return `429` with `Retry-After`. Verifying good bots by reverse DNS is not part of the shield, so add search engine ranges to `allow` if you need them.
+
+The bot denylist ships as data (`internal/trafficpolicy/shield_bots.txt`, shown on the Shield tab and by `levelrail-cli domains shield bots`). Point `APP_SHIELD_BOT_LIST_FILE` at your own file (one lower case fragment per line, `#` comments) to replace it; changes apply when the ingress config next reloads.
+
+**Under attack mode** is one switch for an emergency. It clamps the rate, burst and concurrency to `APP_SHIELD_ATTACK_RATE_PER_MINUTE`, `APP_SHIELD_ATTACK_BURST` and `APP_SHIELD_ATTACK_MAX_CONCURRENT` (or keeps your limits when they are already tighter) and refuses listed bots. It works even when the shield is off, lasts `APP_SHIELD_ATTACK_DEFAULT_DURATION` unless you pass a duration (at most `APP_SHIELD_ATTACK_MAX_DURATION`), and ends on its own with no further action.
+
+```bash
+levelrail-cli domains shield set web example.com --rate 120 --max-concurrent 20 --block-bots
+levelrail-cli domains shield under-attack web example.com --minutes 60
+levelrail-cli domains shield stand-down web example.com
+```
+
+Client addresses live only in a per-domain in-memory table capped by `APP_SHIELD_MAX_TRACKED_IPS` (least recently seen evicted first). They are never logged or stored. Only counts by reason are kept, and the app **Traffic** tab, `GET /api/v1/apps/{name}/traffic` and `levelrail-cli traffic` show them as `shield`.
+
 ## Caching
 
 Caching is per domain and off by default. Each rule matches a path (prefix, exact or regex) and says how long to keep a response.
@@ -286,6 +319,18 @@ Every cap has a default and an environment override on the control plane.
 | `APP_INGRESS_CACHE_MAX_BYTES` | 67108864 | Whole in-memory cache |
 | `APP_INGRESS_CACHE_MAX_OBJECT_BYTES` | 2097152 | One cached response |
 | `APP_INGRESS_CACHE_MAX_TTL` | 168h | Any cache TTL |
+| `APP_SHIELD_MAX_TRACKED_IPS` | 20000 | Client addresses tracked per domain |
+| `APP_SHIELD_RETRY_AFTER_SECONDS` | 30 | Default `Retry-After` |
+| `APP_SHIELD_MAX_RETRY_AFTER_SECONDS` | 3600 | Largest configurable `Retry-After` |
+| `APP_SHIELD_TARPIT_MAX` | 5s | Longest rejection delay |
+| `APP_SHIELD_TARPIT_SLOTS` | 256 | Rejections that may be delayed at once |
+| `APP_SHIELD_MAX_BOT_AGENTS` | 128 | Extra bot fragments per domain |
+| `APP_SHIELD_ATTACK_RATE_PER_MINUTE` | 60 | Per client rate ceiling under attack |
+| `APP_SHIELD_ATTACK_BURST` | 10 | Burst ceiling under attack |
+| `APP_SHIELD_ATTACK_MAX_CONCURRENT` | 4 | Concurrency ceiling under attack |
+| `APP_SHIELD_ATTACK_DEFAULT_DURATION` | 1h | Under attack default length |
+| `APP_SHIELD_ATTACK_MAX_DURATION` | 24h | Longest under attack window |
+| `APP_SHIELD_BOT_LIST_FILE` | none | Replaces the shipped bot denylist |
 
 ## Permissions and audit
 

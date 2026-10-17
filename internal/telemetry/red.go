@@ -21,6 +21,10 @@ const (
 	MetricHTTPBytesIn        = "http_bytes_in"
 	MetricHTTPBytesOut       = "http_bytes_out"
 
+	metricHTTPShieldPrefix = "http_shield_"
+	// ShieldReasonCount mirrors trafficpolicy.ShieldReasonCount; a test in
+	// internal/ingress keeps the two in step without an import.
+	ShieldReasonCount       = 4
 	metricHTTPPrefix        = "http_"
 	metricHTTPLatencyBucket = "http_latency_bucket_"
 )
@@ -56,6 +60,8 @@ type RequestWindow struct {
 	BytesIn        uint64
 	BytesOut       uint64
 	Latency        [LatencyBucketCount]uint64
+	// Shield counts requests the abuse shield turned away, by reason.
+	Shield [ShieldReasonCount]uint64
 	// Routes and Statuses are the bounded per-route and exact-status
 	// breakdown; they are stored in request_breakdown, not as samples.
 	Routes   map[string]RouteStat
@@ -85,7 +91,18 @@ func (w RequestWindow) Samples(resourceID string, at time.Time) []Sample {
 	for i, n := range w.Latency {
 		add(LatencyBucketMetric(i), n)
 	}
+	for i, n := range w.Shield {
+		add(ShieldMetric(i), n)
+	}
 	return out
+}
+
+// ShieldReasons are the metric suffixes, indexed like trafficpolicy.ShieldReason.
+var ShieldReasons = [ShieldReasonCount]string{"rate_limit", "concurrency", "bad_bot", "body_too_large"}
+
+// ShieldMetric is the metric name counting requests turned away for reason i.
+func ShieldMetric(i int) string {
+	return metricHTTPShieldPrefix + ShieldReasons[i]
 }
 
 // Add merges o into w.
@@ -100,6 +117,9 @@ func (w *RequestWindow) Add(o RequestWindow) {
 	w.BytesOut += o.BytesOut
 	for i := range w.Latency {
 		w.Latency[i] += o.Latency[i]
+	}
+	for i := range w.Shield {
+		w.Shield[i] += o.Shield[i]
 	}
 	w.mergeBreakdown(o)
 	w.mergeDetail(o)

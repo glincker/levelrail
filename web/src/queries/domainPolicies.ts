@@ -63,7 +63,7 @@ export function fieldErrorsFor(
   return out
 }
 
-function base(app: string, domain: string): string {
+export function base(app: string, domain: string): string {
   return `/api/v1/apps/${encodeURIComponent(app)}/domains/${encodeURIComponent(domain)}`
 }
 
@@ -79,7 +79,7 @@ export const domainPolicyKeys = {
   geoLookup: (ip: string) => ['system', 'geoip', ip] as const,
 }
 
-async function request<T>(
+export async function request<T>(
   url: string,
   init: RequestInit | undefined,
   fallback: string,
@@ -89,7 +89,7 @@ async function request<T>(
   return (await res.json()) as T
 }
 
-function jsonInit(method: string, body: unknown): RequestInit {
+export function jsonInit(method: string, body: unknown): RequestInit {
   return {
     method,
     headers: { 'Content-Type': 'application/json' },

@@ -22,6 +22,14 @@ func (rt *Router) registerDomainPolicyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/geo", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainPolicy(trafficpolicy.KindGeo)))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/geo", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainPolicy(trafficpolicy.KindGeo)))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/geo", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainPolicy(trafficpolicy.KindGeo)))
+	// Per-client rate, concurrency, body size and bad bot limits, with an
+	// emergency under-attack switch that expires on its own.
+	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/shield", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainPolicy(trafficpolicy.KindShield)))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/shield", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainPolicy(trafficpolicy.KindShield)))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/shield", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainPolicy(trafficpolicy.KindShield)))
+	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/shield/under-attack", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStartUnderAttack))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/shield/under-attack", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStopUnderAttack))
+	mux.HandleFunc("GET /api/v1/system/shield/bots", rt.requireAbility(AbilityRead, rt.handleShieldBotList))
 	// Ingress response cache rules, purge and per-domain stats.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/cache", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainPolicy(trafficpolicy.KindCache)))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainPolicy(trafficpolicy.KindCache)))

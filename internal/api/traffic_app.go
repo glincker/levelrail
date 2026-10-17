@@ -85,6 +85,7 @@ type trafficResponse struct {
 	SlowRoutes     []trafficRoute            `json:"slow_routes"`
 	Samples        []telemetry.RequestSample `json:"samples"`
 	SLO            *trafficSLO               `json:"slo,omitempty"`
+	Shield         trafficShield             `json:"shield"`
 }
 
 func trafficSlowRouteMin() float64 {
@@ -264,6 +265,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	resp.SLO = rt.trafficSLO(ctx, name, from, to)
+	resp.Shield = shieldCounts(ctx, rt.telemetry, name, from, to)
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, resp)
 }
