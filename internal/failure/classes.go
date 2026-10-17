@@ -24,6 +24,8 @@ const (
 	CodeScanGateBlocked    = "scan_gate_blocked"
 	CodeRollbackTargetGone = "rollback_target_gone"
 	CodeDockerUnreachable  = "docker_unreachable"
+	CodeGitHostUnreachable = "git_host_unreachable"
+	CodeSourceNotCached    = "source_not_cached"
 	CodeUnknown            = "unknown"
 
 	docsPagePath = "/deploy-failures"
@@ -56,6 +58,18 @@ var classes = []class{
 		cause:    "The deploy is waiting for an approval before it can proceed.",
 		fix:      "Ask an approver to approve or reject the pending deploy approval, then the deploy continues.",
 		patterns: []string{"approval", "awaiting", "held"},
+	},
+	{
+		code: CodeGitHostUnreachable, retryable: true,
+		cause:    "The git host could not be reached and this commit is not in the local source cache.",
+		fix:      "Redeploy a commit that was deployed before (it needs no git host), roll back, or use \"Deploy from cache\". A push waiting on the host is retried automatically when it answers again.",
+		patterns: []string{"git host unreachable"},
+	},
+	{
+		code:     CodeSourceNotCached,
+		cause:    "Deploy from cache was requested but the source cache does not hold this commit.",
+		fix:      "Deploy once while the git host is reachable so the commit is cached, or raise APP_SOURCE_CACHE_MAX_BYTES and APP_SOURCE_CACHE_MAX_AGE if it was pruned.",
+		patterns: []string{"not in the source cache"},
 	},
 	{
 		code:     CodeRollbackTargetGone,

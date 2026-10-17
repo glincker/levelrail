@@ -57,6 +57,7 @@ func (rt *Router) attentionFeedItems(r *http.Request, abilities []string, now ti
 	items = append(items, rt.backupCoverageAttentionItems(r, abilities)...)
 	items = append(items, rt.quotaAttentionItems(r, abilities)...)
 	items = append(items, rt.maintenanceAttentionItems(r, abilities, now)...)
+	items = append(items, rt.gitHostAttentionItems(abilities)...)
 	return items
 }
 

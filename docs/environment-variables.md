@@ -46,6 +46,20 @@ The control plane builds images with BuildKit. By default each build starts from
 | `APP_BUILD_TIMEOUT` | `30m` | How long one build may run before it is stopped and marked timed out. A Go duration such as `45m`; `0` means no limit. A value saved in the dashboard or with `apps build-limits set` wins. Control plane. |
 | `APP_BUILD_MAX_CONCURRENT` | `2` | Builds allowed to run at once; the rest wait in a queue. `0` means no limit. A saved override wins. Control plane. |
 
+## Source cache and git fetches
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_SOURCE_CACHE_MAX_BYTES` | `5368709120` | Total size cap of the local git mirror. Control plane. |
+| `APP_SOURCE_CACHE_MAX_AGE` | `720h` | Mirrors unused for longer than this are pruned. Control plane. |
+| `APP_GIT_FETCH_TIMEOUT` | `10m` | Time limit of one fetch attempt. Control plane. |
+| `APP_GIT_FETCH_RETRIES` | `2` | Retries after a network or server error. Control plane. |
+| `APP_GIT_FETCH_BACKOFF` | `2s` | First wait between retries, doubled each time. Control plane. |
+| `APP_GIT_RECOVERY_INTERVAL` | `30s` | How often a failing git host is probed. Control plane. |
+| `APP_GIT_REPLAY_WINDOW` | `24h` | How old a push may be and still be replayed once the host recovers. Control plane. |
+
+See [Deploying through git host outages](/git-host-outages).
+
 ## Git webhook (single repository mode)
 
 These variables turn on the control plane's own `POST /webhook` receiver for a single repository. They are separate from the per-app webhooks and GitHub App flow in [Git integrations](/git-integrations). The three required variables must all be set. If any is missing, the control plane still starts and logs a `webhook not configured` warning, and only this receiver is unavailable.

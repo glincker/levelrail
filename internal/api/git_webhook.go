@@ -9,16 +9,12 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
-
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/webhook"
@@ -35,68 +31,6 @@ import (
 // target a private repo, so it's the first one that needs to carry a
 // token through to the actual clone.
 type gitSourceFetchFunc func(ctx context.Context, repoURL, sha, token string) (dir string, cleanup func(), err error)
-
-// gitCheckoutWithToken is the real gitSourceFetchFunc implementation,
-// mirroring internal/webhook's own cloneAndCheckout (full clone, then
-// checkout the exact commit hash, not ResolveRevision: see that
-// function's own doc comment for why a full clone, not shallow, and
-// why an exact hash, not an arbitrary revision, is correct for a
-// webhook's pushed SHA specifically). The one real difference: when
-// token is non-empty, the clone authenticates over HTTPS Basic auth,
-// GitHub's (and GitLab's, and Bitbucket's) own documented scheme for a
-// personal access token: any non-empty username, the token itself as
-// the password.
-//
-// checkoutRef is a literal commit hash for every ordinary push (ev.After
-// out of webhook.PushEvent), or a "refs/tags/<name>" ref
-// (parseGitHubReleaseEvent's own tag_name) for a GitHub "release" event,
-// whose payload carries no commit SHA of its own: PlainCloneContext's
-// default CloneOptions already fetches every tag (go-git's own
-// AllTags default), so the tag ref resolves locally with no extra API
-// call.
-func gitCheckoutWithToken(ctx context.Context, repoURL, checkoutRef, token string) (dir string, cleanup func(), err error) {
-	dir, err = os.MkdirTemp("", "levelrail-git-source-*")
-	if err != nil {
-		return "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
-	}
-	cleanup = func() {
-		if rmErr := os.RemoveAll(dir); rmErr != nil {
-			slog.Default().Error("api: failed to remove temp checkout dir", slog.String("dir", dir), slog.String("error", rmErr.Error()))
-		}
-	}
-
-	cloneOpts := &git.CloneOptions{URL: repoURL}
-	if token != "" {
-		cloneOpts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
-	}
-	repo, err := git.PlainCloneContext(ctx, dir, false, cloneOpts)
-	if err != nil {
-		cleanup()
-		return "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		cleanup()
-		return "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
-	}
-
-	checkoutOpts := &git.CheckoutOptions{}
-	if strings.HasPrefix(checkoutRef, "refs/") {
-		checkoutOpts.Branch = plumbing.ReferenceName(checkoutRef)
-	} else {
-		checkoutOpts.Hash = plumbing.NewHash(checkoutRef)
-	}
-	if err := wt.Checkout(checkoutOpts); err != nil {
-		cleanup()
-		if errors.Is(err, plumbing.ErrObjectNotFound) {
-			return "", nil, fmt.Errorf("api: checkout %q at %q: %w", repoURL, checkoutRef, errGitCommitNotFound)
-		}
-		return "", nil, fmt.Errorf("api: checkout %q at %q: %w", repoURL, checkoutRef, err)
-	}
-
-	return dir, cleanup, nil
-}
 
 // handleGitPushWebhook handles POST /api/v1/webhooks/github/{name}: the
 // multi-app-aware evolution of internal/webhook.Handler (see that
@@ -502,6 +436,10 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		finishFetchAttempt(fmt.Errorf("fetch source: %w", err))
 		if errors.Is(err, errGitCommitNotFound) {
 			return http.StatusUnprocessableEntity, "commit not found"
+		}
+		if errors.Is(err, sourcecache.ErrHostUnreachable) {
+			rt.noteGitHostBlocked(gs.RepoURL, name, err)
+			return http.StatusServiceUnavailable, sourcecache.ErrHostUnreachable.Error()
 		}
 		return http.StatusInternalServerError, "deploy failed"
 	}

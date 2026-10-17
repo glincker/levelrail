@@ -29,6 +29,7 @@ import {
 } from '../lib/deployAttemptPresentation'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { CancelDeployDialog } from './CancelDeployDialog'
+import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { ActionMenu, InfoTip, RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
 import { cn } from '@/lib/utils'
@@ -480,6 +481,9 @@ function DeployAttemptRow({
                 <p className="mt-0.5 line-clamp-2 text-xs break-words text-muted-foreground">
                   {attempt.failure.suggested_fix}
                 </p>
+              ) : null}
+              {attempt.failure?.code === 'git_host_unreachable' ? (
+                <DeployFromCacheButton appName={appName} />
               ) : null}
             </div>
           </div>

@@ -356,7 +356,7 @@ func (rt *Router) replayManualBuild(ctx context.Context, name string, hr deploy.
 	}
 	buildReq := manualBuildRequest(name, *existing, req, buildType)
 	run := rt.beginManualBuild(ctx, *existing, buildReq, buildType, store.DeployAttemptSourceManual, req.DetectedFramework, hr.FreezeNote, hr.AllowPrivateRepoAuth)
-	run.repoURL, run.ref = req.RepoURL, req.Ref
+	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache
 	rt.runManualBuild(run)
 	return nil
 }

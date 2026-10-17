@@ -484,6 +484,7 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/budget | AbilityDeploy | handlePutSpendCap |
 | DELETE | /api/v1/apps/{name}/budget | AbilityDeploy | handleDeleteSpendCap |
 | GET | /api/v1/apps/{name}/budget/history | AbilityRead | handleSpendCapHistory |
+| POST | /api/v1/apps/{name}/deploys/from-cache | AbilityDeploy | handleDeployFromCache |
 
 </Accordion>
 

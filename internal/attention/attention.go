@@ -97,6 +97,7 @@ const (
 	KindQuotaNearLimit      = "quota_near_limit"
 	KindAccessReviewOverdue = "access_review_overdue"
 	KindMaintenanceLong     = "maintenance_long"
+	KindGitHostUnreachable  = "git_host_unreachable"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {
