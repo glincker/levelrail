@@ -65,7 +65,7 @@ export function updatesQueryOptions() {
 export type UpgradeCheckStatus =
   'ok' | 'warn' | 'fail' | 'unknown' | 'pending' | 'skipped'
 
-export type UpgradeFixAction = 'backup_now' | 'recheck' | 'command'
+export type UpgradeFixAction = 'backup_now' | 'recheck'
 
 export interface UpgradeCheck {
   code: string
@@ -76,7 +76,7 @@ export interface UpgradeCheck {
   retryable?: boolean
   protects?: string
   hint?: string
-  fix?: { action: UpgradeFixAction; command?: string }
+  fix?: { action: UpgradeFixAction }
 }
 
 export interface UpdatePreflight {
@@ -91,7 +91,6 @@ export interface UpdatePreflight {
   release_published_at?: string
   upgrade_command: string
   rollback_command: string
-  cosign_command: string
   release_kind?: ReleaseKind
   channel?: UpdateChannel
   edge?: EdgeGuidance

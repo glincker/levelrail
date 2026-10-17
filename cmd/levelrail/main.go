@@ -572,6 +572,7 @@ func run(logger *slog.Logger) error {
 	pluginMgr := setupPlugins(ctx, logger, b, db, client, agentDataDir)
 	var restartRequested atomic.Bool
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
+	apiRouter.WarmTrustRoot()
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {
 		wh.UseSourceCache(apiRouter.SourceCache())
 	}
@@ -1819,6 +1820,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	if dataDir == "" {
 		dataDir = defaultDataDir
 	}
+	trustRoot := selfupgrade.NewTrustRoot(selfupgrade.TUFCacheDir(dataDir), logger)
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
 		api.WithStaticRootDir(filepath.Join(dataDir, "static")),
@@ -1858,6 +1860,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
+		api.WithTrustRoot(trustRoot),
 		api.WithSourceCache(sourcecache.New(sourcecache.ConfigFromEnv(filepath.Join(dataDir, "source-cache")), logger)),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		multiNodeOption(db),

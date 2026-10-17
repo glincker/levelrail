@@ -42,11 +42,7 @@ export function UpgradePreflight({
       ) : null}
       <ul className="space-y-3" aria-label={t('preflight.checksLabel')}>
         {data.checks.map((c) => (
-          <UpgradeCheckRow
-            key={c.code}
-            check={c}
-            cosignCommand={data.cosign_command}
-          />
+          <UpgradeCheckRow key={c.code} check={c} />
         ))}
       </ul>
       {data.waiting ? (
