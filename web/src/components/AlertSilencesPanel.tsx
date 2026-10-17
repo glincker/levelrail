@@ -42,6 +42,7 @@ function describeMatchers(m: SilenceMatchers): string {
   add('node', m.nodes)
   add('kind', m.kinds)
   add('severity', m.severities)
+  add('metric', m.metrics)
   for (const [k, v] of Object.entries(m.labels ?? {})) parts.push(`${k}=${v}`)
   return parts.join(' / ')
 }

@@ -76,7 +76,7 @@
     "assets": "Scripts, styles, images and API calls are not served either, so the page cannot load anything from the app.",
     "running": "The container keeps running and is not restarted.",
     "deploys": "A deploy during maintenance completes and maintenance stays on until you end it.",
-    "alerts": "Down, uptime and certificate alerts for this app are muted until maintenance ends. Other alerts still fire.",
+    "alerts": "Down, DNS, certificate and request error or latency alerts for this app are muted until maintenance ends. CPU, memory, disk, restart and crash alerts still fire.",
     "endsAt": "It ends automatically on {{date}}.",
     "autoOff": "It switches off by itself after {{hours}} hours.",
     "noEnd": "It has no automatic end. Set an end time or a maximum duration so it cannot be left on.",
@@ -92,7 +92,7 @@
   "appBanner": {
     "title_one": "Maintenance is on for {{count}} domain of this app",
     "title_other": "Maintenance is on for {{count}} of {{total}} domains of this app",
-    "body": "Visitors get the maintenance page on those domains. Down, uptime and certificate alerts are muted, and a deploy completes without ending maintenance.",
+    "body": "Visitors get the maintenance page on those domains. Down, DNS, certificate and request error or latency alerts are muted, while CPU, memory, disk, restart and crash alerts still fire. A deploy completes without ending maintenance.",
     "end": "End for all domains",
     "ending": "Ending...",
     "ended": "Maintenance ended for every domain of this app"
@@ -115,11 +115,11 @@
     "tooltip": "This app is in maintenance. The deploy will complete and maintenance stays on."
   },
   "silence": {
-    "createdByMaintenance": "Created by maintenance",
+    "createdByMaintenance": "Created by maintenance (down, DNS, certificate and request alerts only)",
     "endsWithMaintenance": "Ends when maintenance on {{domain}} ends"
   },
   "effects": {
-    "alertsSilenced": "Alerts muted",
+    "alertsSilenced": "Down, DNS, certificate and request alerts muted",
     "statusOngoing": "Status page: ongoing"
   }
 }

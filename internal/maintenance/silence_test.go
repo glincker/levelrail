@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -108,6 +109,19 @@ func TestSilencer_OpenSettleSync(t *testing.T) {
 				t.Fatalf("active=%d total=%d", m.active(later), len(m.list))
 			}
 		}},
+		{"old broad silence is replaced by the narrow one", func(t *testing.T, s *Silencer, m *memSilences) {
+			m.list = append(m.list, alerting.Silence{ID: "sil_old", CreatedBy: SilenceCreatorPrefix + row.Domain, StartsAt: sT0, EndsAt: sT0.Add(openEndedSilence),
+				Matchers: alerting.SilenceMatcher{Apps: []string{"web"}, Kinds: silencedKinds}})
+			if err := s.Sync(ctx, []store.DomainMaintenance{row}, apps, sT0); err != nil {
+				t.Fatal(err)
+			}
+			if m.active(sT0) != 1 || len(m.list) != 2 || m.list[0].ExpiredAt == nil {
+				t.Fatalf("active=%d total=%d", m.active(sT0), len(m.list))
+			}
+			if !reflect.DeepEqual(m.list[1].Matchers, DesiredMatcher("web")) {
+				t.Fatalf("matcher = %+v", m.list[1].Matchers)
+			}
+		}},
 		{"manual silences are never touched", func(t *testing.T, s *Silencer, m *memSilences) {
 			m.list = append(m.list, alerting.Silence{ID: "sil_x", CreatedBy: "ada", StartsAt: sT0, EndsAt: sT0.Add(time.Hour)})
 			_ = s.Sync(ctx, nil, apps, sT0)
@@ -192,4 +206,53 @@ func (f *fakeOwnerStore) DeleteDomainMaintenance(ctx context.Context, d string) 
 	}
 	f.active = kept
 	return f.fakeExpiryStore.DeleteDomainMaintenance(ctx, d)
+}
+
+func TestDesiredMatcher_MutesOnlyAvailabilitySignals(t *testing.T) {
+	tests := []struct {
+		name string
+		c    alerting.AlertContext
+		want bool
+	}{
+		{"down", alerting.AlertContext{App: "web", Kind: "domain_health"}, true},
+		{"dns", alerting.AlertContext{App: "web", Kind: "domain_not_resolving"}, true},
+		{"cert expiry", alerting.AlertContext{App: "web", Kind: "cert_expiry"}, true},
+		{"cert renewal", alerting.AlertContext{App: "web", Kind: "cert_renewal_stalled"}, true},
+		{"error rate", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "http_responses_5xx"}, true},
+		{"latency bucket", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "http_latency_bucket_500"}, true},
+		{"cpu", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "cpu_percent"}, false},
+		{"memory", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "memory_usage_bytes"}, false},
+		{"disk", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "disk_used_bytes"}, false},
+		{"restarts", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "container_restart_count"}, false},
+		{"unknown metric", alerting.AlertContext{App: "web", Kind: "threshold", Metric: "novel"}, false},
+		{"crashloop", alerting.AlertContext{App: "web", Kind: "crashloop"}, false},
+		{"other app", alerting.AlertContext{App: "api", Kind: "domain_health"}, false},
+	}
+	m := DesiredMatcher("web")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := m.Matches(tt.c); got != tt.want {
+				t.Fatalf("Matches = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSilencer_AppWideSeveralDomains(t *testing.T) {
+	ctx := context.Background()
+	m := &memSilences{}
+	s := &Silencer{Store: m}
+	rows := []store.DomainMaintenance{{Domain: "a.example.com", StartedAt: sT0}, {Domain: "b.example.com", StartedAt: sT0}}
+	apps := map[string]string{"a.example.com": "web", "b.example.com": "web"}
+	for i := 0; i < 2; i++ {
+		if err := s.Sync(ctx, rows, apps, sT0); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if m.active(sT0) != 2 {
+		t.Fatalf("active = %d, want one per domain", m.active(sT0))
+	}
+	if err := s.Sync(ctx, rows[:1], apps, sT0); err != nil || m.active(sT0) != 1 {
+		t.Fatalf("err=%v active=%d", err, m.active(sT0))
+	}
 }

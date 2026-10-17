@@ -100,7 +100,7 @@ type alertScope struct {
 }
 
 func (n *NoiseControl) describe(ctx context.Context, r Rule) alertScope {
-	sc := alertScope{ac: AlertContext{RuleID: r.ID, Kind: string(r.Kind), Labels: r.Labels, Severity: severityOrDefault(r.Severity)}}
+	sc := alertScope{ac: AlertContext{RuleID: r.ID, Kind: string(r.Kind), Metric: r.Metric, Labels: r.Labels, Severity: severityOrDefault(r.Severity)}}
 	if IsPlatformKind(r.Kind) {
 		return sc
 	}

@@ -57,6 +57,7 @@ func decodeLabels(raw string) map[string]string {
 type AlertContext struct {
 	RuleID   string
 	Kind     string
+	Metric   string
 	App      string
 	NodeID   string
 	NodeName string
@@ -73,18 +74,23 @@ type SilenceMatcher struct {
 	Nodes      []string          `json:"nodes,omitempty"`
 	Labels     map[string]string `json:"labels,omitempty"`
 	Severities []string          `json:"severities,omitempty"`
+	// Metrics narrows rules that carry a metric (threshold rules); rules without one are not constrained by it.
+	Metrics []string `json:"metrics,omitempty"`
 }
 
 // IsEmpty reports whether the matcher has no criteria at all.
 func (m SilenceMatcher) IsEmpty() bool {
 	return len(m.RuleIDs) == 0 && len(m.Kinds) == 0 && len(m.Apps) == 0 &&
-		len(m.Nodes) == 0 && len(m.Labels) == 0 && len(m.Severities) == 0
+		len(m.Nodes) == 0 && len(m.Labels) == 0 && len(m.Severities) == 0 && len(m.Metrics) == 0
 }
 
 // Validate rejects a matcher that would match everything or names an unknown severity.
 func (m SilenceMatcher) Validate() error {
 	if m.IsEmpty() {
 		return errors.New("silence needs at least one matcher (rule_ids, kinds, apps, nodes, labels or severities)")
+	}
+	if len(m.Metrics) > 0 && len(m.Kinds) == 0 {
+		return errors.New("metrics needs kinds, otherwise it would match every rule without a metric")
 	}
 	for _, s := range m.Severities {
 		if !validSeverity(s) {
@@ -112,6 +118,9 @@ func (m SilenceMatcher) Matches(c AlertContext) bool {
 		if !containsString(m.Nodes, c.NodeID) && !containsString(m.Nodes, c.NodeName) {
 			return false
 		}
+	}
+	if len(m.Metrics) > 0 && c.Metric != "" && !containsString(m.Metrics, c.Metric) {
+		return false
 	}
 	for k, v := range m.Labels {
 		if got, ok := c.Labels[k]; !ok || got != v {
