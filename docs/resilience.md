@@ -58,6 +58,42 @@ The restarted control plane runs a reconcile pass immediately on startup, withou
 - Ingress resumes once the ingress controller reconciles again, which happens on that same first pass. The domain starts routing without touching the container behind it.
 - If the container is on a remote node whose agent has not reconnected yet, that service is skipped for the pass instead of erroring or being torn down (logged as "skipping service for this reconcile pass: node transport unavailable"). It picks back up on its own once the agent's reconnect loop finds the control plane again. You do not need to restart the agent.
 
+## What happens to traffic when the control plane restarts
+
+Worked out from the code, not measured on a live box (no Docker or Caddy was available when this was written, see the end of this section). Ingress is one embedded Caddy inside the control plane process, on every install, including multi-node ones: remote nodes run agents and containers, never a proxy. Apps on a remote node are reached through the control plane's Caddy over the WireGuard mesh, so they are exactly as available as the control plane's ingress.
+
+| Part | Control plane stopped or restarting | Why |
+| --- | --- | --- |
+| App containers, local and remote | keep running and serving on their own ports | Docker and the agent own them |
+| Listening sockets 80 and 443 | held by systemd with socket activation, otherwise closed | ADR 025 |
+| Requests that arrive in the gap | queued in the socket backlog (socket activation) or refused | kernel, not Caddy |
+| Established keep-alive and WebSocket connections | closed: 3s grace for in-flight requests, then cut. Clients must reconnect. | the connection lives in the dying process; no design here passes an open connection to a new process |
+| Caddy routes | gone with the process; rebuilt from the database | Caddy keeps its config in memory only |
+| TLS certificates | stored in SQLite, so they are not lost; loaded again when Caddy starts | certificate storage is the database |
+| Waking and held requests (sleeping app, `503` hold window) | lost, the hold window restarts empty | `HoldTracker` is in memory, and the wake hook is served by the control plane itself |
+| Remote node agents | keep their containers, reconnect with backoff | see above |
+
+Where traffic dropped even with socket activation, in order:
+
+1. **Process stop to process start.** Requests queue. This is the 1.3s (local) to 4s (small droplet) wait in the table below.
+2. **Process start to the first ingress apply.** Caddy used to start only when the ingress controller first ran, which is after the store opens, every optional subsystem is built and the engine's first pass reaches the ingress controller (it runs in the dynamic set, after the fixed controllers), a delay that grows with the number of apps. Until then the sockets were held but nobody accepted: connections hung. This is the part that scales with the install, and the part this release removes.
+3. **TLS handshakes in flight at the instant the old process stops.** A handful, unchanged (see below).
+
+### Route snapshot
+
+Every applied Caddy config is also written to `ingress-snapshot.bin` in the data directory (atomic write, mode 0600). The config carries DNS tokens, imported private keys and basic auth hashes, so the file is sealed with AES-GCM under a key derived from the master key and is unreadable without it. At startup, right after the store opens and before any reconcile, the control plane loads the snapshot into Caddy. Established routes are served from the previous process's last good table while the first pass runs; the first pass then replaces it in place (Caddy reloads without closing listeners), or skips the reload when nothing changed.
+
+The snapshot is ignored, never trusted blindly, when it is missing, truncated, tampered with, sealed with another master key, built for a different listener setup (socket activation switched on or off), or rejected by Caddy (for example after a downgrade). The control plane then does what it always did and waits for the first pass. A snapshot can be stale by the downtime: a route to an app deleted meanwhile serves until the first pass, which is seconds. The wake token and hold routes in it are likewise replaced by the first pass.
+
+`levelrail-cli doctor` and the System status page report `ingress_survives_control_plane`: ok when systemd holds the sockets and a snapshot is saved, a warning with the exact command when it does not (`LEVELRAIL_SOCKET_ACTIVATION=1 ./install.sh upgrade`), or the reason when the snapshot cannot be written (no master key, full disk).
+
+### What is still not covered
+
+- **One ingress process.** If the host or the whole control plane process stays down, routing stops for every app, including apps on healthy remote nodes. Independence from a host loss needs several ingress nodes sharing certificate state (ADR 033, the next step). It is not built here, and a second proxy process on the same host would not help, because it shares the host's fate and the certificate lock with the first.
+- **Self-upgrade hand-off without systemd.** An upgrade is a restart; with socket activation it is covered. Without systemd (Docker Compose, dev runs) there is no process that outlives the control plane to hold the sockets, and passing listeners between two overlapping processes was rejected in ADR 025. Those installs still refuse connections for the length of a restart.
+- **Open connections and WebSockets** are cut on every restart.
+- **Not proven live.** The snapshot logic (round trip, corruption, truncation, wrong key, listener mismatch, startup before the first reconcile, Caddy rejecting it) is covered by unit tests with a fake config loader. Nothing here was run against real Docker and Caddy. To prove it on a Linux box with socket activation on: deploy an app, run `levelrail-cli bench run --url https://APP/ --rate 500 --duration 90s --restart-control-plane --json`, and read `ingress_kept_serving` and `dropped_requests`. Compare with `LEVELRAIL_SOCKET_ACTIVATION=0` to see the refused-connection case.
+
 ## Ingress availability windows (measured)
 
 Measured locally on an Apple silicon laptop (real Docker, a real `traefik/whoami` container, the embedded Caddy over HTTPS with HTTP/2) with a load generator sending 200 requests per second. The same scenarios on the 2 vCPU droplets earlier were slower (about 4s for a restart, 1s for a kill). Read these numbers for the shape and the relative improvement, not as what a small VPS will give you.

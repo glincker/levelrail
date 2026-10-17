@@ -69,6 +69,10 @@ type Driver struct {
 	mu          sync.Mutex
 	listenPorts map[int]bool
 	lastApplied []byte
+
+	snapshot            *SnapshotStore
+	snapshotFingerprint string
+	snapStatus          SnapshotStatus
 }
 
 // New builds a Driver. A nil logger falls back to slog.Default(), matching
@@ -116,6 +120,7 @@ func (d *Driver) Apply(ctx context.Context, cfg *Config) error {
 	d.listenPorts = listenPortsOf(cfg)
 	d.lastApplied = payload
 	d.mu.Unlock()
+	d.saveSnapshot(payload)
 
 	d.logger.InfoContext(ctx, "ingress config applied",
 		slog.Int("config_bytes", len(payload)),

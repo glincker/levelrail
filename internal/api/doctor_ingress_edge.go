@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 )
 
 // DoctorIngressEdge is the ingress edge policy GET /api/v1/system/doctor reports.
@@ -13,6 +15,8 @@ type DoctorIngressEdge struct {
 	TrustedProxies   int
 	MaxBodyBytes     int64
 	RetryWindow      time.Duration
+	// Snapshot reports the ingress route snapshot; nil means the control plane has none.
+	Snapshot func() ingressdriver.SnapshotStatus
 }
 
 // SetDoctorIngressEdge makes doctor report the ingress edge policy. Call it
