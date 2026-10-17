@@ -1316,7 +1316,7 @@ levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 
 
 ## AI assistant
 
-Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider, model and key set with `settings ai-assistant set`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
+Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider key saved with `settings ai-assistant providers set` and a model chosen with `settings ai-assistant use`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
 
 ```
 levelrail-cli ai chat "<message>" [--session ID] [flags]
@@ -1617,7 +1617,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup.
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
-- `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the current settings (the key itself is never returned, only whether one is stored), `set --model NAME --api-key KEY` configures the assistant, and `clear` clears the stored key and resets provider and model.
+- `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the active model, the fallback chain and the limits (keys are never returned), `providers list|set|test|remove|models` manages provider keys, `use <provider> <model>` picks the active model, `fallback set` sets the fallback chain, and `usage` shows token use.
 
 ## Git integrations
 

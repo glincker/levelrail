@@ -110,7 +110,6 @@ The assistant built into the dashboard has no standing credential of its own. Ev
 - Each tool call row in the chat shows who it ran as and which abilities the API checked for that call, for example "Acting as alice@example.com with read". `levelrail-cli ai chat` and `ai sessions show` print the same.
 - Audit entries made by a turn token carry `on_behalf_of` (`user:<id>`) next to the `ai-assistant` agent name.
 - Chat sessions belong to the principal that created them. Another user or token, even one holding `root`, gets 404 for them. Sessions created before this release have no owner and are no longer listed.
-- Older releases kept a persistent `root` token for the assistant in the secrets store. The control plane deletes and revokes it at boot.
 
 ## Generating and scoping a token
 

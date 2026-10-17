@@ -66,7 +66,9 @@ levelrail-cli settings ai-assistant providers models openai
 levelrail-cli settings ai-assistant use openai gpt-4.1
 ```
 
-`levelrail-cli settings ai-assistant get` reports the active provider, the fallback chain and whether a key is configured. The old `settings ai-assistant set --model ... --api-key ...` form still works and configures Anthropic.
+`levelrail-cli settings ai-assistant get` reports the active provider, the fallback chain and whether a key is configured.
+
+Over the API, `GET /api/v1/settings/ai-assistant` returns `configured`, `active`, `fallback`, `limits` and `token_usage_month`, and `PUT` takes `active` and/or `fallback` (each `{provider, model}`). Keys are saved per provider with `PUT /api/v1/settings/ai-assistant/providers/{id}` and removed with `DELETE` on the same path.
 
 </Tab>
 <Tab title="Dashboard">

@@ -209,9 +209,8 @@ its time asleep in the app header.
 (`idle_minutes`, `hold_requests`, `ignore_paths`, `port_wake`), `port_wake`,
 `activity` (last request and network activity, open connections, idle seconds,
 `will_sleep_at`), `cold_start_ms_p50` and `estimated_memory_freed_bytes`.
-`blocked_reason` is deprecated, read `blockers`. `PUT` takes `idle_minutes` and
-optionally `hold_requests`, `ignore_paths` and `port_wake`, and answers 409 with
-`blockers` when sleep cannot be turned on. `GET /api/v1/apps/sleep/overview`
+`PUT` takes `idle_minutes` and optionally `hold_requests`, `ignore_paths` and
+`port_wake`, and answers 409 with `blockers` when sleep cannot be turned on. `GET /api/v1/apps/sleep/overview`
 summarises every app that has sleep on or could. `PUT` and the wake route need
 the `deploy` ability, `GET` needs `read`. See the
 [API reference](/api-reference).
