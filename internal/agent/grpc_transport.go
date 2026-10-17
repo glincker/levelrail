@@ -228,15 +228,21 @@ func (t *GRPCTransport) ExecTTY(ctx context.Context, containerID string, opts do
 // execAttach is startExec's set of exec-shape options, grouped rather
 // than passed as a run of bare booleans at the call site.
 type execAttach struct {
-	stdin bool
-	tty   bool
-	opts  docker.ExecTTYOptions
+	archive *agentpb.ArchiveOp
+	stdin   bool
+	tty     bool
+	opts    docker.ExecTTYOptions
 }
 
 func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd []string, stdin io.Reader, attach execAttach) (io.ReadCloser, error) {
+	rc, _, err := t.startExecAck(ctx, containerID, cmd, stdin, attach)
+	return rc, err
+}
+
+func (t *GRPCTransport) startExecAck(ctx context.Context, containerID string, cmd []string, stdin io.Reader, attach execAttach) (io.ReadCloser, *agentpb.AgentResponse, error) {
 	execID, err := randomRequestID()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Subscribe before issuing the call: the agent starts relaying output
@@ -244,7 +250,7 @@ func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd [
 	// seen the acknowledgment.
 	sub := t.mux.subscribeExec(execID)
 	if sub == nil {
-		return nil, ErrSessionClosed
+		return nil, nil, ErrSessionClosed
 	}
 
 	req := &agentpb.ExecRequest{
@@ -252,21 +258,23 @@ func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd [
 		Cmd:         cmd,
 		AttachStdin: attach.stdin,
 		Tty:         attach.tty,
+		Archive:     attach.archive,
 	}
 	if attach.tty {
 		req.Env = attach.opts.Env
 		req.TtySize = ttySizeToPB(attach.opts.Size)
 	}
 
-	if _, callErr := t.mux.CallWithID(ctx, execID, &agentpb.AgentRequest{
+	ack, callErr := t.mux.CallWithID(ctx, execID, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_Exec{Exec: req},
-	}); callErr != nil {
+	})
+	if callErr != nil {
 		t.mux.unsubscribeExec(execID)
 		// The acknowledgment may have failed only on this side (a caller
 		// whose ctx expired mid-attach), so tell the agent to drop the
 		// exec rather than leave it running for nobody.
 		_ = t.mux.sendExecCancel(execID)
-		return nil, callErr
+		return nil, nil, callErr
 	}
 
 	s := &execStream{mux: t.mux, execID: execID, sub: sub, ctx: ctx, done: make(chan struct{})}
@@ -274,7 +282,7 @@ func (t *GRPCTransport) startExec(ctx context.Context, containerID string, cmd [
 	if attach.stdin {
 		go s.pumpStdin(stdin)
 	}
-	return s, nil
+	return s, ack, nil
 }
 
 // errExecStreamClosed is what a Read blocked on a stream the caller
