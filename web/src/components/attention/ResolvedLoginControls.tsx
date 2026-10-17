@@ -1,10 +1,9 @@
-import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { XIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
-import { CopyCommand } from '../settings/CopyCommand'
+import { FixCli } from '../fixit/FixCli'
 import { useDismissAttentionItem } from '../../queries/deviceAuth'
 
 export const DEVICE_LOGIN_COMMAND = 'levelrail-cli auth login --device'
@@ -21,21 +20,9 @@ export function ResolvedLoginControls({
 }) {
   const { t } = useTranslation('attention', { useSuspense: false })
   const dismiss = useDismissAttentionItem()
-  const [startOver, setStartOver] = useState(false)
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          aria-expanded={startOver}
-          onClick={() => {
-            setStartOver((v) => !v)
-          }}
-        >
-          {t('deviceLogin.startOver')}
-        </Button>
         <Button
           size="sm"
           variant="ghost"
@@ -68,14 +55,16 @@ export function ResolvedLoginControls({
           <XIcon />
         </Button>
       </div>
-      {startOver ? (
-        <div className="w-full">
-          <CopyCommand
-            label={t('deviceLogin.startOverHint')}
-            command={DEVICE_LOGIN_COMMAND}
-          />
-        </div>
-      ) : null}
+      <div className="w-full">
+        <FixCli
+          steps={[
+            {
+              label: t('deviceLogin.startOverHint'),
+              command: DEVICE_LOGIN_COMMAND,
+            },
+          ]}
+        />
+      </div>
     </>
   )
 }

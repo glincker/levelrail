@@ -1,57 +1,38 @@
 import { useState } from 'react'
-import { CopyIcon, CheckIcon } from '@phosphor-icons/react/dist/ssr'
-import { Button } from '@/components/ui/button'
+import { useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { HelpLink } from '@/components/HelpLink'
 import type { DoctorCheck } from '../queries/systemDoctor'
+import { systemDoctorKeys } from '../queries/systemDoctor'
+import { isShellCommand } from '../lib/shellCommand'
 import { getCheckCta } from './doctorCheckCtas'
-import { FixAction } from './fixit/FixAction'
+import { FixAction, ManualFix } from './fixit/FixAction'
 import { useFixForCheck } from '../queries/fixit'
 
 // Shared by DoctorCheckRow's full-detail rendering (system status page) and
-// the setup wizard's collapsed rows, so the CTA copy and fix command only
+// the setup wizard's collapsed rows, so the CTA copy and fix controls only
 // have one place to render, not two drifting copies.
 
-function FixCommand({ fix, docsPath }: { fix: string; docsPath?: string }) {
-  const [copied, setCopied] = useState(false)
-
-  function copyFix() {
-    void navigator.clipboard.writeText(fix).then(() => {
-      setCopied(true)
-    })
-  }
-
-  return (
-    <div className="rounded-md bg-muted/50 p-2.5">
-      <div className="flex items-start gap-2">
-        <code className="min-w-0 flex-1 overflow-x-auto whitespace-pre-wrap break-all text-xs">
-          {fix}
-        </code>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="shrink-0"
-          onClick={copyFix}
-        >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-          {copied ? 'Copied' : 'Copy'}
-        </Button>
-      </div>
-      {docsPath ? (
-        <div className="mt-1.5">
-          <HelpLink path={docsPath} label="Learn more" variant="inline" />
-        </div>
-      ) : null}
-    </div>
-  )
-}
-
-/** CheckDetail renders a check's actionable next step: the CTA message plus a copyable fix command, when either exists. Renders nothing otherwise. */
+/** CheckDetail renders a failing check's next step: a typed fix when one exists, else a Re-check button with any command collapsed. Renders nothing otherwise. */
 export function CheckDetail({ check }: { check: DoctorCheck }) {
+  const { t } = useTranslation('fixit')
   const cta = getCheckCta(check)
   const engineFix = useFixForCheck(check.code)
-  if (engineFix) return <FixAction fix={engineFix} />
+  const qc = useQueryClient()
+  const [pending, setPending] = useState(false)
+  if (engineFix) return <FixAction fix={engineFix} autoApply />
   if (!cta && !check.fix) return null
+  const fixIsCommand = check.fix ? isShellCommand(check.fix) : false
+
+  function recheck() {
+    setPending(true)
+    void qc
+      .invalidateQueries({ queryKey: systemDoctorKeys.all })
+      .finally(() => {
+        setPending(false)
+      })
+  }
+
   return (
     <div className="mt-2 space-y-2">
       {cta ? (
@@ -61,7 +42,19 @@ export function CheckDetail({ check }: { check: DoctorCheck }) {
         </div>
       ) : null}
       {check.fix ? (
-        <FixCommand fix={check.fix} docsPath={check.docs_path} />
+        <ManualFix
+          message={fixIsCommand ? undefined : check.fix}
+          command={fixIsCommand ? check.fix : undefined}
+          pending={pending}
+          onRecheck={recheck}
+        />
+      ) : null}
+      {check.docs_path ? (
+        <HelpLink
+          path={check.docs_path}
+          label={t('learnMore')}
+          variant="inline"
+        />
       ) : null}
     </div>
   )

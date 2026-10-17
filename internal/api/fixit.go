@@ -171,7 +171,35 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 			WarnPercent: networkPoolWarnPercent,
 			PoolEnv:     docker.EnvNetworkPool,
 		}),
+		fixit.ControlPlaneBackupFix(fixit.BackupDeps{
+			Check: func(context.Context) (fixit.CheckState, error) {
+				c := rt.doctorCheckControlPlaneBackup()
+				return fixit.CheckState{Failing: c.Status == doctorStatusWarn, Detail: c.Message}, nil
+			},
+			Create: rt.fixitCreateBackup,
+		}),
+		fixit.GuidedCheckFix(fixit.GuidedDeps{
+			ID: "host.firewall.open_web_ports", CheckID: "firewall", Subject: "host",
+			Title: "Open ports 80 and 443 in the host firewall",
+			Why:   "Certificates and visitors reach this server on ports 80 and 443. The host firewall is blocking them.",
+			Risk:  fixit.RiskExposes,
+			Check: func(ctx context.Context) (fixit.Finding, error) {
+				c := doctorCheckFirewallCtx(ctx)
+				return fixit.Finding{Failing: c.Status == doctorStatusWarn, Detail: c.Message, Command: c.Fix}, nil
+			},
+		}),
 	}
+}
+
+func (rt *Router) fixitCreateBackup(ctx context.Context) (string, error) {
+	if rt.cpBackups == nil {
+		return "", fixit.ErrCannotFixHere
+	}
+	info, err := rt.cpBackups.Create(ctx)
+	if err != nil {
+		return "", err
+	}
+	return info.Name, nil
 }
 
 func (rt *Router) addressCandidates(ctx context.Context) []fixit.Option {

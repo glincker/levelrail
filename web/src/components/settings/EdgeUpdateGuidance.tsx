@@ -10,7 +10,7 @@ import {
   type EdgeGuidance,
   type UpdateChannel,
 } from '../../queries/updates'
-import { CopyCommand } from './CopyCommand'
+import { FixCli, type CliStep } from '../fixit/FixCli'
 
 // What the edge channel means for this install. Edge is a moving container
 // image, so a container gets the exact pull and recreate commands and a host
@@ -48,6 +48,20 @@ export function EdgeUpdateGuidance({
     )
   }
 
+  const edgeSteps: CliStep[] = []
+  if (edge.pull_command) {
+    edgeSteps.push({ label: t('edge.pull'), command: edge.pull_command })
+  }
+  if (edge.recreate_command) {
+    edgeSteps.push({
+      label: t('edge.recreate'),
+      command: edge.recreate_command,
+    })
+  }
+  if (edge.compose_snippet) {
+    edgeSteps.push({ label: t('edge.compose'), command: edge.compose_snippet })
+  }
+
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{t('edge.intro')}</p>
@@ -71,23 +85,7 @@ export function EdgeUpdateGuidance({
       </p>
       {edge.installable ? (
         updateAvailable ? (
-          <div className="space-y-3">
-            {edge.pull_command ? (
-              <CopyCommand label={t('edge.pull')} command={edge.pull_command} />
-            ) : null}
-            {edge.recreate_command ? (
-              <CopyCommand
-                label={t('edge.recreate')}
-                command={edge.recreate_command}
-              />
-            ) : null}
-            {edge.compose_snippet ? (
-              <CopyCommand
-                label={t('edge.compose')}
-                command={edge.compose_snippet}
-              />
-            ) : null}
-          </div>
+          <FixCli steps={edgeSteps} />
         ) : null
       ) : (
         <Alert>

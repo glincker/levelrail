@@ -145,7 +145,7 @@ describe('DeviceLoginBanner', () => {
     expect(denyMutate).toHaveBeenCalledTimes(1)
   })
 
-  it('shows an expired login as a dismissable strip with the start over command', () => {
+  it('shows an expired login as a dismissable strip with the start over command collapsed', () => {
     requests = []
     activity = [
       {
@@ -165,7 +165,6 @@ describe('DeviceLoginBanner', () => {
     ]
     renderBanner()
     expect(screen.getByText(/ci-box expired/)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Start over' }))
     expect(
       screen.getByText('levelrail-cli auth login --device'),
     ).toBeInTheDocument()
