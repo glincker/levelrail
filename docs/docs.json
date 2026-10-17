@@ -180,6 +180,7 @@
               "multi-node",
               "multi-node-quickstart",
               "resource-aware-placement",
+              "autoscaling",
               "node-provisioning",
               "multi-cloud-provisioning",
               "network-topology",

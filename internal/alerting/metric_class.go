@@ -49,6 +49,10 @@ var metricClasses = map[string]MetricClass{
 	telemetry.MetricDeployCount:           MetricClassResource,
 	telemetry.MetricBuildDuration:         MetricClassResource,
 	telemetry.MetricLBUpstreamsTotal:      MetricClassResource,
+	telemetry.MetricAutoscaleCurrent:      MetricClassResource,
+	telemetry.MetricAutoscaleDesired:      MetricClassResource,
+	telemetry.MetricAutoscaleNoCapacity:   MetricClassResource,
+	telemetry.MetricAutoscaleFlaps1h:      MetricClassResource,
 }
 
 func init() {

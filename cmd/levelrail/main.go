@@ -33,6 +33,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
+	"github.com/GLINCKER/levelrail/internal/autoscale"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
@@ -1099,6 +1100,7 @@ func run(logger *slog.Logger) error {
 	alertingEngine.SetBudgets(apiRouter)
 	go runUsageRollup(ctx, apiRouter)
 	go runSpendCaps(ctx, apiRouter)
+	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
 	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))
 	go func() {
@@ -2184,6 +2186,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithVaultConfigChecker(db),
 		deploy.WithLoadBalancerStore(db),
 		deploy.WithSpendCapStore(db),
+		deploy.WithAutoscaleStore(db, autoscale.CeilingFromEnv(autoscale.OSEnv)),
 		deploy.WithJobStore(db),
 		deploy.WithOrderedStore(db),
 		deploy.WithAttemptRecorder(db),

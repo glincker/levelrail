@@ -14,6 +14,7 @@ import { AutoRollbackCard } from '../../../../components/AutoRollbackCard'
 import { AutoRollbackSLOBurnCard } from '../../../../components/AutoRollbackSLOBurnCard'
 import { ImageAutoUpdateCard } from '../../../../components/ImageAutoUpdateCard'
 import { AppSleepCard } from '../../../../components/AppSleepCard'
+import { AppAutoscaleCard } from '../../../../components/AppAutoscaleCard'
 import { AppBudgetCard } from '../../../../components/AppBudgetCard'
 import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
 import { CanaryCard } from '../../../../components/CanaryCard'
@@ -78,6 +79,7 @@ function DeploysSection() {
       <BuildTrendCard appName={name} />
       <AppSleepCard appName={name} />
       <SleepHistoryCard appName={name} hideWhenOff />
+      <AppAutoscaleCard appName={name} />
       <AppBudgetCard appName={name} />
       <Collapsible>
         <CollapsibleTrigger className="group/deploy-settings flex items-center gap-2 text-sm font-medium text-foreground">

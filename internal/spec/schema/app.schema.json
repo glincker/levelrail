@@ -62,11 +62,30 @@
         "egress": { "$ref": "#/$defs/egress" },
         "loadbalancer": { "$ref": "#/$defs/loadbalancer" },
         "budget": { "$ref": "#/$defs/budget" },
+        "autoscale": { "$ref": "#/$defs/autoscale" },
         "dependsOn": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
         }
+      }
+    },
+    "autoscale": {
+      "type": "object",
+      "required": ["max", "metric", "target"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "integer", "minimum": 1 },
+        "max": { "type": "integer", "minimum": 1 },
+        "metric": { "enum": ["cpu_percent", "memory_percent", "requests_per_replica"] },
+        "target": { "type": "number", "exclusiveMinimum": 0 },
+        "scale_up_tolerance": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "scale_down_tolerance": { "type": "integer", "minimum": 1, "maximum": 99 },
+        "scale_up_cooldown": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "scale_down_cooldown": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "stabilization": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "max_step_up": { "type": "integer", "minimum": 1 },
+        "max_step_down": { "type": "integer", "minimum": 1 }
       }
     },
     "budget": {

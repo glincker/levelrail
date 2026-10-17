@@ -195,7 +195,10 @@ type Pipeline struct {
 
 	loadBalancers LoadBalancerStore // nil is valid: the loadbalancer: block is then ignored
 	spendCaps     SpendCapStore     // nil is valid: the budget: block is then ignored
-	jobs          JobStore          // nil is valid: the jobs: list is then ignored
+	autoscale     AutoscaleStore    // nil is valid: the autoscale: block is then ignored
+
+	autoscaleCeiling int
+	jobs             JobStore // nil is valid: the jobs: list is then ignored
 
 	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
 
@@ -378,6 +381,9 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := p.saveSpendCap(ctx, req); err != nil {
 		return "", err
 	}
+	if err := p.saveAutoscale(ctx, req); err != nil {
+		return "", err
+	}
 	if err := p.saveJobs(ctx, req); err != nil {
 		return "", err
 	}
@@ -424,6 +430,9 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", err
 	}
 	if err := p.saveSpendCap(ctx, req); err != nil {
+		return "", err
+	}
+	if err := p.saveAutoscale(ctx, req); err != nil {
 		return "", err
 	}
 	if err := p.saveJobs(ctx, req); err != nil {

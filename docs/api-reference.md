@@ -486,6 +486,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/budget/history | AbilityRead | handleSpendCapHistory |
 | POST | /api/v1/apps/{name}/deploys/from-cache | AbilityDeploy | handleDeployFromCache |
 | GET | /api/v1/apps/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
+| GET | /api/v1/apps/{name}/autoscale | AbilityRead | handleGetAutoscale |
+| PUT | /api/v1/apps/{name}/autoscale | AbilityDeploy | handlePutAutoscale |
+| DELETE | /api/v1/apps/{name}/autoscale | AbilityDeploy | handleDeleteAutoscale |
+| GET | /api/v1/apps/{name}/autoscale/history | AbilityRead | handleAutoscaleHistory |
 
 </Accordion>
 
