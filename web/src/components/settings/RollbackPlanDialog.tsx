@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { StatusPill, type Tone } from '@/components/kit'
 import {
@@ -17,7 +18,7 @@ import {
   type RollbackPlan,
 } from '../../queries/releases'
 import type { UpgradeCheckStatus } from '../../queries/updates'
-import { CopyCommand } from './CopyCommand'
+import { FixCli, type CliStep } from '../fixit/FixCli'
 import { ReleaseNotes } from './ReleaseNotes'
 
 const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
@@ -104,6 +105,30 @@ function DataLossBlock({ plan }: { plan: RollbackPlan }) {
       </AlertDescription>
     </Alert>
   )
+}
+
+function rollbackSteps(plan: RollbackPlan, t: TFunction<'updates'>): CliStep[] {
+  const steps: CliStep[] = []
+  if (plan.fetch_command) {
+    steps.push({
+      label: t('plan.commands.fetch'),
+      command: plan.fetch_command,
+    })
+  }
+  if (plan.restore_required) {
+    if (plan.restore_command) {
+      steps.push({
+        label: t('plan.commands.restore'),
+        command: plan.restore_command,
+      })
+    }
+  } else {
+    steps.push({
+      label: t('plan.commands.apply', { version: plan.target.version }),
+      command: plan.command,
+    })
+  }
+  return steps
 }
 
 function PlanBody({ plan }: { plan: RollbackPlan }) {
@@ -195,29 +220,7 @@ function PlanBody({ plan }: { plan: RollbackPlan }) {
         </div>
       ) : null}
 
-      {!plan.blocked ? (
-        <div className="space-y-3">
-          {plan.fetch_command ? (
-            <CopyCommand
-              label={t('plan.commands.fetch')}
-              command={plan.fetch_command}
-            />
-          ) : null}
-          {plan.restore_required ? (
-            plan.restore_command ? (
-              <CopyCommand
-                label={t('plan.commands.restore')}
-                command={plan.restore_command}
-              />
-            ) : null
-          ) : (
-            <CopyCommand
-              label={t('plan.commands.apply', { version: plan.target.version })}
-              command={plan.command}
-            />
-          )}
-        </div>
-      ) : null}
+      {!plan.blocked ? <FixCli steps={rollbackSteps(plan, t)} /> : null}
     </div>
   )
 }
@@ -230,7 +233,7 @@ export function RollbackPlanDialog({
   onClose: () => void
 }) {
   const { t } = useTranslation('updates')
-  const { data, isPending, isError, error, refetch } = useQuery(
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery(
     rollbackPlanQueryOptions(version),
   )
   return (
@@ -269,6 +272,16 @@ export function RollbackPlanDialog({
           <PlanBody plan={data} />
         )}
         <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => {
+              void refetch()
+            }}
+          >
+            {isFetching ? t('plan.rechecking') : t('plan.recheck')}
+          </Button>
           <Button type="button" variant="outline" onClick={onClose}>
             {t('plan.close')}
           </Button>

@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
-  CheckIcon,
-  CopyIcon,
+  CheckCircleIcon,
+  WarningCircleIcon,
   WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +11,8 @@ import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Input } from '@/components/ui/input'
 import { useIsRoot } from '../../hooks/useIsRoot'
+import { claimAutoApply } from '../../lib/fixAutoApply'
+import { FixCli } from './FixCli'
 import { formatBytes } from '../../lib/format'
 import {
   useApplyFix,
@@ -26,36 +28,18 @@ const RISK_VARIANT: Record<FixRisk, 'success' | 'warning' | 'destructive'> = {
   exposes: 'destructive',
 }
 
-function CommandBlock({ command }: { command: string }) {
-  const { t } = useTranslation('fixit')
-  const [copied, setCopied] = useState(false)
-  return (
-    <div className="rounded-md bg-muted/50 p-2.5">
-      <p className="mb-1 text-xs text-muted-foreground">{t('command')}</p>
-      <div className="flex items-start gap-2">
-        <code className="min-w-0 flex-1 overflow-x-auto text-xs whitespace-pre-wrap break-all">
-          {command}
-        </code>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="shrink-0"
-          onClick={() => {
-            void navigator.clipboard.writeText(command).then(() => {
-              setCopied(true)
-            })
-          }}
-        >
-          {copied ? <CheckIcon /> : <CopyIcon />}
-          {copied ? t('copied') : t('copy')}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-export function FixAction({ fix }: { fix: Fix }) {
+/**
+ * FixAction anatomy: a primary button (Fix now, or Re-check for a step done
+ * elsewhere), a result line, and a collapsed Fix via CLI option. autoApply
+ * runs a safe auto fix once per subject per session on first render.
+ */
+export function FixAction({
+  fix,
+  autoApply = false,
+}: {
+  fix: Fix
+  autoApply?: boolean
+}) {
   const { t } = useTranslation('fixit')
   const isRoot = useIsRoot()
   const apply = useApplyFix()
@@ -66,6 +50,29 @@ export function FixAction({ fix }: { fix: Fix }) {
   const auto = fix.kind === 'auto'
   const rateLimited = fix.state === 'rate_limited'
   const params = fix.param ? { [fix.param.name]: param } : undefined
+
+  const autoTried = useRef(false)
+  const canAutoApply =
+    autoApply &&
+    isRoot &&
+    auto &&
+    fix.risk === 'safe' &&
+    fix.reversible &&
+    fix.state === 'offer' &&
+    !fix.param
+  useEffect(() => {
+    if (!canAutoApply || autoTried.current) return
+    autoTried.current = true
+    if (!claimAutoApply(fix.id, fix.subject)) return
+    apply.mutate(
+      { id: fix.id },
+      {
+        onSuccess: (r) => {
+          setResult(r)
+        },
+      },
+    )
+  }, [canAutoApply, fix.id, fix.subject, apply])
 
   function run() {
     apply.mutate(
@@ -111,8 +118,6 @@ export function FixAction({ fix }: { fix: Fix }) {
           </ul>
         </div>
       ) : null}
-
-      {fix.command && !auto ? <CommandBlock command={fix.command} /> : null}
 
       {fix.blocked && !rateLimited ? (
         <p className="text-xs text-muted-foreground">{fix.blocked}</p>
@@ -180,10 +185,9 @@ export function FixAction({ fix }: { fix: Fix }) {
           {apply.error.message}
         </p>
       ) : null}
-      {result ? (
-        <p role="status" className="text-xs text-foreground">
-          {t(`outcome.${result.outcome}`, { detail: result.detail })}
-        </p>
+      {result ? <FixResultLine result={result} /> : null}
+      {fix.command && !auto ? (
+        <FixCli steps={[{ command: fix.command }]} />
       ) : null}
 
       <ConfirmDialog
@@ -204,9 +208,57 @@ export function FixAction({ fix }: { fix: Fix }) {
   )
 }
 
+function FixResultLine({ result }: { result: FixResult }) {
+  const { t } = useTranslation('fixit')
+  const good = result.outcome === 'fixed' || result.outcome === 'skipped'
+  const Icon = good ? CheckCircleIcon : WarningCircleIcon
+  return (
+    <p
+      role="status"
+      className={`flex items-start gap-1.5 text-xs ${good ? 'text-foreground' : 'text-destructive'}`}
+    >
+      <Icon className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+      {t(`outcome.${result.outcome}`, { detail: result.detail })}
+    </p>
+  )
+}
+
+/** ManualFix is the anatomy for a check with no typed fix: Re-check first, the command collapsed. */
+export function ManualFix({
+  message,
+  command,
+  pending,
+  onRecheck,
+}: {
+  message?: string
+  command?: string
+  pending: boolean
+  onRecheck: () => void
+}) {
+  const { t } = useTranslation('fixit')
+  return (
+    <div className="space-y-2">
+      {message ? (
+        <p className="text-xs text-muted-foreground">{message}</p>
+      ) : null}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={pending}
+        onClick={onRecheck}
+      >
+        <ArrowsClockwiseIcon />
+        {pending ? t('rechecking') : t('recheck')}
+      </Button>
+      {command ? <FixCli steps={[{ command }]} /> : null}
+    </div>
+  )
+}
+
 /** CheckFix renders the engine's fix for a failing check id, or nothing. */
 export function CheckFix({ checkId }: { checkId: string }) {
   const fix = useFixForCheck(checkId)
   if (!fix) return null
-  return <FixAction fix={fix} />
+  return <FixAction fix={fix} autoApply />
 }

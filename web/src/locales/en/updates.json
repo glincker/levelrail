@@ -129,6 +129,8 @@
       "incompatible": "Too new for this release",
       "noneCompatible": "No backup on this host is compatible with {{version}}."
     },
+    "recheck": "Re-check",
+    "rechecking": "Checking...",
     "commands": {
       "fetch": "1. Stage the verified release on the server",
       "apply": "2. Roll back on the server (you will be asked to type {{version}})",
