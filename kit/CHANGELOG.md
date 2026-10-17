@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/glincker/levelrail/compare/kit/v0.2.1...kit/v0.3.0) (2026-10-17)
+
+
+### Features
+
+* release notes between deploys, monorepo detection, and build performance stats ([#1253](https://github.com/glincker/levelrail/issues/1253)) ([af1a9db](https://github.com/glincker/levelrail/commit/af1a9db81b4346b16dfde1a98f06bd19f7266364))
+
 ## [0.2.1](https://github.com/glincker/levelrail/compare/kit/v0.2.0...kit/v0.2.1) (2026-10-12)
 
 
