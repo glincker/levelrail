@@ -3,6 +3,7 @@
 # 0.10: docker, telemetry and netguard gained dependents from tracing, error tracking, budgets and the network pool.
 # 0.11: deploytrace and the GitHub Actions reporter are new packages, each adds one dependent to what it imports.
 # 0.11: the CPU model downloader (netguard, diskspace) adds one dependent each.
+# 0.12: spendcap is a new pure package imported by store and spec, so it inherits their dependents.
 internal/bindaddr 90
 internal/bindmount 92
 internal/build 21
@@ -21,6 +22,7 @@ internal/quota 88
 internal/reconcile 89
 internal/reconcile/database 27
 internal/spec 89
+internal/spendcap 90
 internal/store 87
 internal/telemetry 28
 internal/usagecost 88

@@ -480,6 +480,10 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleSetAppMaintenance |
 | DELETE | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleClearAppMaintenance |
 | GET | /api/v1/apps/{name}/traffic | AbilityRead | handleAppTraffic |
+| GET | /api/v1/apps/{name}/budget | AbilityRead | handleGetSpendCap |
+| PUT | /api/v1/apps/{name}/budget | AbilityDeploy | handlePutSpendCap |
+| DELETE | /api/v1/apps/{name}/budget | AbilityDeploy | handleDeleteSpendCap |
+| GET | /api/v1/apps/{name}/budget/history | AbilityRead | handleSpendCapHistory |
 
 </Accordion>
 

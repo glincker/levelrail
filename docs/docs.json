@@ -258,6 +258,7 @@
               "command-palette",
               "cost-estimate",
               "usage-and-cost",
+              "spend-caps",
               "integrations",
               "cloud-integrations",
               "rollback",

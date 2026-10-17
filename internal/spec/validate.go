@@ -107,6 +107,9 @@ func (svc *Service) validate(name string) error {
 	if err := svc.LoadBalancer.Validate(); err != nil {
 		return fmt.Errorf("spec: service %q: %w", name, err)
 	}
+	if err := svc.Budget.Validate(name); err != nil {
+		return err
+	}
 	return svc.validateVolumes(name)
 }
 

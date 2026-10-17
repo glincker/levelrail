@@ -40,6 +40,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStatusPageRoutes(mux)
 	rt.registerResourceAdvisorRoutes(mux)
 	rt.registerUsageCostRoutes(mux)
+	rt.registerSpendCapRoutes(mux)
 	rt.registerPreviewRoutes(mux)
 	rt.registerSupplyChainRoutes(mux)
 	rt.registerSecretScanRoutes(mux)

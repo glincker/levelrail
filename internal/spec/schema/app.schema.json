@@ -61,11 +61,27 @@
         },
         "egress": { "$ref": "#/$defs/egress" },
         "loadbalancer": { "$ref": "#/$defs/loadbalancer" },
+        "budget": { "$ref": "#/$defs/budget" },
         "dependsOn": {
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
         }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "egress": { "type": "string", "pattern": "^[0-9.]+ ?([kKmMgGtT]i?[bB]?|[bB])?$" },
+        "cost": { "type": "number", "minimum": 0 },
+        "action": { "enum": ["none", "throttle", "pause"] },
+        "thresholds": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "maxItems": 8
+        },
+        "throttle_rps": { "type": "integer", "minimum": 1 }
       }
     },
     "loadbalancer": {
