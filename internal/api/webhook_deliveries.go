@@ -179,18 +179,7 @@ func (rt *Router) handleReplayWebhookDelivery(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	header := http.Header{}
-	for k, v := range delivery.HeaderFields {
-		if v != "" {
-			header.Set(k, v)
-		}
-	}
-
-	pctx, outcome := withWebhookOutcome(withWebhookReplay(r.Context()))
-	status, message := rt.processGitPushWebhookPayload(pctx, name, *gs, delivery.Payload, header)
-	if outcome.AttemptID != "" {
-		rt.kickDeployQueue(r.Context())
-	}
+	status, message := rt.replayDelivery(r.Context(), name, *gs, delivery)
 	rt.logger.Info("api: replayed webhook delivery", slog.String("name", name), slog.String("delivery_id", id), slog.Int("status", status))
 	writeJSON(w, http.StatusOK, replayWebhookDeliveryResult{Status: status, Message: message})
 }

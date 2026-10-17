@@ -144,6 +144,7 @@
               "pages",
               "deploy-safety",
               "deploy-failures",
+              "git-host-outages",
               "deploy-trace",
               "build-performance",
               "scheduled-deploys",

@@ -64,7 +64,7 @@ func TestCloneAndCheckout_Live(t *testing.T) {
 	}
 
 	var progressed []build.ProgressEvent
-	dir, cleanup, err := cloneAndCheckout(context.Background(), srcDir, firstHash.String(), func(ev build.ProgressEvent) {
+	dir, cleanup, err := newCloneTestHandler().cloneAndCheckout(context.Background(), srcDir, firstHash.String(), func(ev build.ProgressEvent) {
 		progressed = append(progressed, ev)
 	})
 	if err != nil {
@@ -122,7 +122,7 @@ func TestCloneAndCheckout_Live_BadSHA(t *testing.T) {
 	// special case go-git treats as "no hash given" rather than "look
 	// this commit up"), but not a commit that exists in the repo.
 	nonexistentSHA := "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-	dir, cleanup, err := cloneAndCheckout(context.Background(), srcDir, nonexistentSHA, nil)
+	dir, cleanup, err := newCloneTestHandler().cloneAndCheckout(context.Background(), srcDir, nonexistentSHA, nil)
 	if err == nil {
 		cleanup()
 		t.Fatal("cloneAndCheckout() error = nil, want an error for a nonexistent SHA")
@@ -137,4 +137,8 @@ func writeFile(t *testing.T, dir, name, content string) {
 	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o600); err != nil {
 		t.Fatalf("write %s: %v", name, err)
 	}
+}
+
+func newCloneTestHandler() *Handler {
+	return New(testConfig(), &fakeDeployer{}, nil, nil, nil, nil, nil)
 }

@@ -15,9 +15,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
-// errGitCommitNotFound marks a checkout of a SHA the repository does not have.
-var errGitCommitNotFound = errors.New("commit not found")
-
 const (
 	webhookNoteDuplicate = "duplicate delivery"
 	webhookNoteDeployed  = "deployed"

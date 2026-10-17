@@ -106,6 +106,12 @@ The host ran out of disk, or the build disk preflight found less free space than
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
 
+### git_host_unreachable
+The git host could not be reached and the commit is not in the source cache. Retryable: redeploy a known commit, roll back, or use **Deploy from cache**. See [Deploying through git host outages](/git-host-outages).
+
+### source_not_cached
+Deploy from cache was requested but the cache does not hold the commit. Deploy it once while the git host is reachable, or raise `APP_SOURCE_CACHE_MAX_BYTES` and `APP_SOURCE_CACHE_MAX_AGE` if it was pruned.
+
 ### freeze_window_hold
 The deploy is held by a freeze window. Retryable: it is released when the window ends, or redeploy with an explicit override and a reason.
 

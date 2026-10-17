@@ -14,6 +14,22 @@ type sourceDeployFlags struct {
 	commit string
 	latest bool
 	branch string
+	// fromCache rebuilds from the control plane's source cache only.
+	fromCache bool
+}
+
+// deployFromCache rebuilds the app from the control plane's source cache, the
+// path that still works while the git host is down.
+func deployFromCache(prog string, client *Client, name, commit string, extra deployExtraFlags, stdout, stderr io.Writer, jsonOut bool, of outputFlags) int {
+	result, err := client.DeployFromCache(context.Background(), name, apiclient.DeployFromCacheRequest{
+		Commit: commit, OverrideFreeze: extra.overrideFreeze, OverrideReason: extra.overrideReason,
+	})
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy app %q from cache: %w", name, err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, result, func() {
+		_, _ = fmt.Fprintf(stdout, "deploying app %q from the source cache, deploy attempt %q (follow with \"%s apps deploys logs %s %s\")\n", name, result.ID, prog, name, result.ID)
+	})
 }
 
 // deployFromSource builds the connected repository at a commit through the

@@ -76,6 +76,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/secrets"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"log/slog"
 	"net"
 	"net/http"
@@ -439,6 +440,7 @@ type Router struct {
 	// WithCapacityForecastLookback.
 	capacityForecastLookback     time.Duration
 	builder                      Builder                      // nil is valid: POST /apps/{name}/builds returns 501, same shape as secrets/telemetry/alertRules above
+	sourceCache                  *sourcecache.Cache           // git mirror and git host health; never nil after NewRouter
 	fetch                        fetchFunc                    // git source fetcher for handleTriggerBuild; always non-nil, defaulted to gitCheckout in NewRouter, overridable in this package's own tests
 	listBranches                 listBranchesFunc             // remote branch lister for handleListGitBranches; always non-nil, defaulted to listRemoteBranches in NewRouter, overridable in this package's own tests
 	importFiles                  func() importplan.FileSource // per-request repo file reader for handleImportPlan; defaulted in NewRouter, overridable in tests
@@ -814,11 +816,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		gitlabApp:                   s,
 		gitlabAppClient:             gitlabapp.NewClient(),
 		gitlabAppState:              newPendingState(),
-		fetch:                       gitCheckout,
 		listBranches:                listRemoteBranches,
 		detect:                      build.Detect,
 		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
-		gitSourceFetch:              gitCheckoutWithToken,
 		mfaPending:                  newMFAPendingStore(),
 		passkeyLogin:                newLoginLimiter(),
 		mfaVerify:                   newLoginLimiter(),
@@ -882,6 +882,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	// rt.sessions below. Both are overridable directly by this
 	// package's own tests, no Option needed.
 	rt.dnsRecordManager = rt.resolveDNSRecordManager
+	rt.fetch = rt.gitCheckout
+	rt.gitSourceFetch = rt.gitCheckoutWithToken
 	if g, ok := any(s).(SetupGuideStore); ok {
 		rt.setupGuide = g
 	}
@@ -899,6 +901,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dash = newDashboardCache(0, 0)
 	for _, opt := range opts {
 		opt(rt)
+	}
+	if rt.sourceCache == nil {
+		rt.sourceCache = sourcecache.New(sourcecache.ConfigFromEnv(""), logger)
 	}
 	rt.warmDashboardCaches()
 	// sessions is built after options are applied, not in the struct

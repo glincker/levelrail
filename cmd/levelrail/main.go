@@ -74,6 +74,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/selfupgrade"
 	"github.com/GLINCKER/levelrail/internal/sharedenv"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/supplychain"
@@ -834,6 +835,9 @@ func run(logger *slog.Logger) error {
 
 	var restartRequested atomic.Bool
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
+	if wh, ok := webhookHandler.(*webhook.Handler); ok {
+		wh.UseSourceCache(apiRouter.SourceCache())
+	}
 	apiRouter.SetRestarter(api.Restarter{
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { restartRequested.Store(true); stop() },
@@ -2513,6 +2517,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
+		api.WithSourceCache(sourcecache.New(sourcecache.ConfigFromEnv(filepath.Join(dataDir, "source-cache")), logger)),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		multiNodeOption(db),
 		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),

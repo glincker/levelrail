@@ -82,6 +82,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		fs.StringVar(&src.commit, "commit", "", "deploy this commit of the connected git source (builds it, no --image needed)")
 		fs.BoolVar(&src.latest, "latest", false, "deploy the newest commit of the connected branch")
 		fs.StringVar(&src.branch, "branch", "", "with --latest: branch to take the newest commit from (default: the connected branch)")
+		fs.BoolVar(&src.fromCache, "from-cache", false, "rebuild from the control plane's source cache without contacting the git host (default commit: the last successful source deploy)")
 	}
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
@@ -101,6 +102,12 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if src.fromCache {
+		if image != "" || src.latest || src.branch != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--from-cache takes only an optional --commit"))
+		}
+		return deployFromCache(prog, client, name, src.commit, extra, stdout, stderr, jsonOut, of)
+	}
 	if src.commit != "" || src.latest {
 		if image != "" || (src.commit != "" && src.latest) {
 			return reportError(stdout, stderr, jsonOut, newValidationError("use exactly one of --image, --commit, or --latest"))
@@ -165,6 +172,8 @@ Flags:
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
   --commit string            build and deploy this commit of the app's connected git source
   --latest                   build and deploy the newest commit of the connected branch (with --branch to pick another)
+  --from-cache               rebuild from the source cache without contacting the git host, for a git host outage
+                             (default commit: the last successful source deploy; --commit picks another)
   --pull                     re-resolve the tag against its registry, failing rather than deploying a cached
                              image; without --image, redeploys the app's current tag at its newest digest
   --override-freeze          deploy even though a deploy freeze window is active
