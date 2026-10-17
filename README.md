@@ -28,7 +28,7 @@
 
 <p>
   <a href="https://docs.levelrail.com">Docs</a> ·
-  <a href="#try-it-in-two-commands">Quickstart</a> ·
+  <a href="#quick-start">Quickstart</a> ·
   <a href="#what-you-get">Features</a> ·
   <a href="#how-it-compares">Compare</a> ·
   <a href="docs/roadmap.md">Roadmap</a> ·
@@ -39,38 +39,41 @@
 
 </div>
 
-Levelrail is an open source, self-hosted deployment platform that turns one or more Linux servers into a private cloud: push to a git repo and get a running app with HTTPS, logs, metrics, and one-click rollback. It ships as a single Go binary for the control plane, uses Docker as the runtime, and is licensed under Apache 2.0.
-
-It is built for people running 3 to 50 services on 1 to 10 machines who do not want to learn Kubernetes. Each server runs a small agent that talks to Docker's Engine API directly, so there is no SSH and no shelling out to the `docker` CLI. Metrics and logs are part of the core, not a Grafana you install afterwards.
-
-> [!TIP]
-> Every feature is labelled stable or beta, with the evidence behind it, on the [feature status](docs/feature-status.md) page. New here? Start with [Try it in two commands](#try-it-in-two-commands).
+Levelrail is open source (Apache 2.0) and ships as one Go binary that uses Docker as the runtime. It turns Linux servers you already own into a private cloud, without Kubernetes.
 
 ## Why Levelrail
 
-| You want | Levelrail gives you |
-| --- | --- |
-| Heroku or Vercel style deploys on your own servers | Push to git, get HTTPS, previews and one-click rollback. [Deploying apps](docs/deploying-apps.md) |
-| To know why an app was slow at 3am | Logs, traces, errors and metrics built in, with deploy markers. No Grafana stack to run. [Observability](docs/observability.md) |
-| Small servers that stay cheap | Idle apps sleep and wake on the next request. [Sleep when idle](docs/sleep-when-idle.md) |
-| More machines without opening ports | Agents dial out over mTLS. No SSH, no inbound ports. [Multi-node](docs/multi-node.md) |
-| AI tools that can help safely | A CLI, an MCP server and an agent skill, all over one permissioned API. [For AI agents](#for-ai-agents-and-crawlers) |
+- **Push to deploy.** Webhooks from GitHub, GitLab, Bitbucket or Gitea start a build, and the app is served over HTTPS with automatic certificates.
+- **Safe rollback.** Deploys wait for a readiness probe, and prior images are pinned, so one click rolls back and garbage collection cannot remove the target.
+- **Logs, metrics and traces built in.** Each node keeps its own metrics (15 second resolution) and searchable logs, with deploy markers. Traces are opt-in per app. No Grafana stack to install.
+- **Previews per pull request.** Stable on GitHub, beta on GitLab and Bitbucket.
+- **Add servers without opening ports.** Agents dial out over mTLS. Multi-node is beta.
 
-## Try it in two commands
+> **Status: early.** Single node is the most tested path, and multi-node is beta. Each feature is labelled stable or beta, with the evidence, on the [feature status](docs/feature-status.md) page.
+
+## Quick start
 
 You need a Linux server (`amd64` or `arm64`) with systemd, root access, and ports 80 and 443 open. Docker is installed for you if it is missing.
 
-```
-curl -fsSL https://levelrail.com/install.sh | sudo sh
-```
+1. **Install on the server.**
 
-The installer checks the host, starts Levelrail as a systemd service, and prints a dashboard URL with a one-time setup token. Open it, choose a password, and the setup wizard walks you through a domain, a git provider, and your first app. Then deploy a repository from the CLI the installer put on the box:
+   ```
+   curl -fsSL https://levelrail.com/install.sh | sudo sh
+   ```
 
-```
-levelrail-cli import https://github.com/your-org/your-app --deploy
-```
+   The installer prints a dashboard URL with a one-time setup token.
 
-Without `--deploy` it prints the deployment plan and stops. Prefer containers, a pinned version, or a source build? See [Installing](docs/installing.md) and [Docker](docs/docker.md). Full walkthrough: [Getting started](docs/getting-started.md).
+2. **Finish setup in the browser.** Open the URL, choose a password, and follow the setup wizard for a domain, a git provider and your first app.
+
+3. **Deploy a repository from the CLI.**
+
+   ```
+   levelrail-cli import https://github.com/your-org/your-app --deploy
+   ```
+
+   Without `--deploy` it prints the deployment plan and stops.
+
+Next: [Getting started](docs/getting-started.md) for the full walkthrough, then [Deploying apps](docs/deploying-apps.md) and [Observability](docs/observability.md). Prefer containers, a pinned version or a source build? See [Installing](docs/installing.md) and [Docker](docs/docker.md).
 
 <table>
   <tr>
@@ -84,6 +87,14 @@ Without `--deploy` it prints the deployment plan and stops. Prefer containers, a
     </td>
   </tr>
 </table>
+
+## Why not Coolify or Dokploy?
+
+Coolify manages servers over SSH, and Dokploy builds on Docker Swarm. Levelrail makes different architecture choices:
+
+- **Agents dial out over mTLS.** Each node runs an agent that talks to Docker's Engine API directly. There is no SSH, no inbound port, and no shelling out to the `docker` CLI.
+- **Observability is part of the core.** Metrics, logs and alerting ship in the same binary, so there is no separate stack to install.
+- **Metrics and logs stay on each node.** The control plane queries them on demand instead of collecting them into a central store.
 
 ## What you get
 
