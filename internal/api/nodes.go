@@ -222,6 +222,7 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		nodes, total = all, len(all)
 	}
 	gpus := rt.nodeGPUResources(r.Context())
+	renewal := rt.renewalStates(r.Context())
 	now := time.Now()
 	out := make([]nodeResource, 0, len(nodes))
 	for _, n := range nodes {
@@ -229,7 +230,7 @@ func (rt *Router) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		res.IsLocal = n.ID == rt.localNodeID
 		res.StatusReason = nodeStatusReason(n, now, nodePendingStaleAfter())
 		res.GPU = gpus[n.ID]
-		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now)
+		res.Cert, res.Agent = rt.nodeCertAndAgent(n, now, renewal)
 		out = append(out, res)
 	}
 	w.Header().Set("X-Total-Count", strconv.Itoa(total))
@@ -259,7 +260,7 @@ func (rt *Router) handleGetNode(w http.ResponseWriter, r *http.Request) {
 	res.IsLocal = n.ID == rt.localNodeID
 	res.StatusReason = nodeStatusReason(*n, time.Now(), nodePendingStaleAfter())
 	res.GPU = rt.nodeGPUResources(r.Context())[n.ID]
-	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now())
+	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now(), rt.renewalStates(r.Context()))
 	if rt.telemetry != nil {
 		th := rt.nodeAlertThresholds
 		status := alerting.CheckNodeAlertStatus(r.Context(), *n, rt.apps, rt.telemetry,

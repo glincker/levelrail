@@ -74,3 +74,17 @@ func TestNodeTrustState_PinAndRenewalReportAreDeletedWithTheNode(t *testing.T) {
 		t.Fatalf("state survived node deletion: %+v", got)
 	}
 }
+
+func TestListNodeRenewalStates_OnlyFailingNodes(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	now := time.Now()
+	_ = db.SetNodeCAPin(ctx, "pinned", CAPinPinned, now)
+	if err := db.SetNodeRenewalReport(ctx, NodeTrustState{NodeID: "bad", RenewLastError: "down", RenewConsecutiveFails: 3}, now); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.ListNodeRenewalStates(ctx)
+	if err != nil || len(got) != 1 || got["bad"].RenewLastError != "down" || got["bad"].RenewConsecutiveFails != 3 {
+		t.Fatalf("states = %+v (%v)", got, err)
+	}
+}

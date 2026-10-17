@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { NodeResource } from '../types/nodeDetail'
 import type { NodeCertState } from '../types/nodeCert'
 import { nodeAgentAttentionItems } from './nodeAgentAttention'
-import { buildAttentionItems } from './attention'
+import { buildAttentionItems, type AttentionItem } from './attention'
 
 const node = (state?: NodeCertState, outdated = false) =>
   ({
@@ -55,5 +55,33 @@ describe('nodeAgentAttentionItems', () => {
   it('feeds the dashboard attention list', () => {
     const items = buildAttentionItems({ nodes: [node('expired')] })
     expect(items.map((i) => i.id)).toEqual(['node-cert:n1'])
+  })
+})
+
+describe('reenroll_required nodes', () => {
+  const reenrollNode = (state: NodeCertState) => {
+    const n = node(state)
+    n.cert = { ...n.cert!, key_origin: 'reenroll_required' }
+    return n
+  }
+
+  it('leaves the reenroll item to the waiting builder and hides the renewal-failing one', () => {
+    expect(nodeAgentAttentionItems(reenrollNode('critical'))).toEqual([])
+    expect(nodeAgentAttentionItems(reenrollNode('revoked'))).toHaveLength(1)
+  })
+
+  it('shows the agent last renewal error on the renewal-failing item', () => {
+    const n = node('expiring')
+    n.cert = {
+      ...n.cert!,
+      renewal: {
+        last_error: 'dial refused',
+        next_retry_at: '2026-10-17T00:00:00Z',
+        consecutive_failures: 2,
+      },
+    }
+    const item = nodeAgentAttentionItems(n)[0] as AttentionItem
+    expect(item.detail).toContain('Last error: dial refused')
+    expect(item.detail).toContain('Next retry 2026-10-17T00:00:00Z')
   })
 })

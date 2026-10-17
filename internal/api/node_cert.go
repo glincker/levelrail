@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"math"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/kit/semver"
@@ -76,6 +78,37 @@ type nodeCertResource struct {
 	RevokedAt          *time.Time `json:"revoked_at,omitempty"`
 	WarningDays        int        `json:"warning_days"`
 	CriticalDays       int        `json:"critical_days"`
+	// Renewal is set when the agent last reported a failed renewal.
+	Renewal *nodeCertRenewal `json:"renewal,omitempty"`
+}
+
+// nodeCertRenewal is the agent's last reported renewal failure.
+type nodeCertRenewal struct {
+	LastError           string     `json:"last_error"`
+	FailedAt            *time.Time `json:"failed_at,omitempty"`
+	NextRetryAt         *time.Time `json:"next_retry_at,omitempty"`
+	ConsecutiveFailures int        `json:"consecutive_failures"`
+}
+
+// nodeRenewalLister is the optional NodeStore extension that reads every
+// node's renewal report in one query.
+type nodeRenewalLister interface {
+	ListNodeRenewalStates(ctx context.Context) (map[string]store.NodeTrustState, error)
+}
+
+// renewalStates loads all renewal reports with one query; a failure only
+// drops the enrichment.
+func (rt *Router) renewalStates(ctx context.Context) map[string]store.NodeTrustState {
+	l, ok := rt.nodes.(nodeRenewalLister)
+	if !ok {
+		return nil
+	}
+	m, err := l.ListNodeRenewalStates(ctx)
+	if err != nil {
+		rt.logger.Warn("api: list node renewal states failed", slog.String("error", err.Error()))
+		return nil
+	}
+	return m
 }
 
 // nodeAgentResource is what the node's agent reported about itself.
@@ -92,7 +125,7 @@ type nodeAgentResource struct {
 	ControlPlaneVersion string `json:"control_plane_version"`
 }
 
-func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time) (*nodeCertResource, *nodeAgentResource) {
+func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time, renewal map[string]store.NodeTrustState) (*nodeCertResource, *nodeAgentResource) {
 	if rt.isLocalNodeRecord(&n) {
 		return nil, &nodeAgentResource{Version: version.Version, OS: runtime.GOOS, Arch: runtime.GOARCH, ControlPlaneVersion: version.Version}
 	}
@@ -102,6 +135,12 @@ func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time) (*nodeCertResour
 		State: string(state), NotAfter: n.CertNotAfter, RenewedAt: n.CertRenewedAt, Generation: n.CertGeneration,
 		KeyOrigin: n.CertKeyOrigin, RevokedAt: n.CertRevokedAt,
 		WarningDays: int(warning.Hours() / 24), CriticalDays: int(critical.Hours() / 24),
+	}
+	if st, ok := renewal[n.ID]; ok && st.RenewLastError != "" {
+		cert.Renewal = &nodeCertRenewal{
+			LastError: attention.SafeErrorText(st.RenewLastError), FailedAt: st.RenewFailedAt,
+			NextRetryAt: st.RenewNextRetryAt, ConsecutiveFailures: st.RenewConsecutiveFails,
+		}
 	}
 	if n.CertNotAfter != nil && state != alerting.NodeCertRevoked {
 		days := int(math.Floor(left.Hours() / 24))
@@ -210,7 +249,7 @@ func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 	}
 	res := toNodeResource(*n)
 	res.IsLocal = n.ID == rt.localNodeID
-	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now())
+	res.Cert, res.Agent = rt.nodeCertAndAgent(*n, time.Now(), nil)
 	writeJSON(w, http.StatusOK, res)
 }
 

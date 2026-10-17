@@ -72,6 +72,7 @@ type Input struct {
 // Item kinds that block on a person, ranked ahead of other items of the
 // same severity.
 const (
+	KindNodeReenroll        = "node_reenroll"
 	KindDeviceLogin         = "device_login"
 	KindDeviceLoginResolved = "device_login_resolved"
 	KindApproval            = "approval"
@@ -179,9 +180,13 @@ func diskItem(s apiclient.SystemStatusResource) (Item, bool) {
 
 // nodeAgentItems flags a node's agent certificate (ADR 021) and an agent
 // older than the control plane's minimum version.
-func nodeAgentItems(n apiclient.NodeResource) []Item {
+func nodeAgentItems(n apiclient.NodeResource, now time.Time) []Item {
 	var items []Item
-	if c := n.Cert; c != nil {
+	reenroll := n.Cert != nil && n.Cert.KeyOrigin == keyOriginReenroll
+	if reenroll {
+		items = append(items, nodeReenrollItem(n, now))
+	}
+	if c := n.Cert; c != nil && (!reenroll || c.State == "revoked") {
 		expires := ""
 		if c.NotAfter != nil {
 			expires = c.NotAfter.Format("2006-01-02")
@@ -190,9 +195,9 @@ func nodeAgentItems(n apiclient.NodeResource) []Item {
 		case "expired":
 			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expired "+expires+": re-enroll the node"))
 		case "critical":
-			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"))
+			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal())))
 		case "expiring":
-			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"))
+			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal())))
 		case "revoked":
 			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate revoked: re-enroll or delete the node"))
 		}
@@ -248,7 +253,7 @@ func Build(in Input) []Item {
 			}
 			items = append(items, newItem(Critical, "node", n.Name, detail))
 		}
-		items = append(items, nodeAgentItems(n)...)
+		items = append(items, nodeAgentItems(n, now)...)
 	}
 	for _, c := range in.Certs {
 		if c.ExpiryClass != ClassIncident {

@@ -17,6 +17,8 @@ Some states block on a person and used to be visible only if you went looking. T
 | Backup overdue | A scheduled backup later than its schedule allows | Open the database and run a backup |
 | Invitations waiting | Pending or expired, unaccepted invitations | Open Users and resend or revoke |
 | Certificate renewal stalled | A certificate that should have renewed by now, with the CA's last error | Open Domains, read the CA error |
+| Node needs to be re-enrolled | A node enrolled by an early beta whose key was made by the control plane. It works until its certificate expires, then cannot renew. Severity follows the time left, using `APP_NODE_CERT_EXPIRY_WARNING` and `APP_NODE_CERT_EXPIRY_CRITICAL`. It clears when the node re-enrolls. | Open the node and use **Re-enroll** (the item links straight to it) |
+| Agent certificate renewal failing | A node certificate in its warning or critical window. The item carries the agent's last renewal error (shortened, never key material) and the next retry time. | Read the error, fix the node or network, or renew now |
 | Node joined but never connected | An enrolled node whose agent never reported in | Check the agent logs and network path |
 
 Existing items (failing apps, failed deploys, offline nodes, disk pressure, expiring certificates, doctor warnings, updates) appear in the same list. Items that wait on a person sort ahead of other warnings, critical items always come first, and informational items (resolved logins) come last.

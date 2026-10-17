@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -19,6 +20,37 @@ type NodeCertResource struct {
 	RevokedAt          *time.Time `json:"revoked_at,omitempty"`
 	WarningDays        int        `json:"warning_days"`
 	CriticalDays       int        `json:"critical_days"`
+	// renewal is unexported so the MCP output schemas, which are derived from
+	// this type and have almost no token headroom, do not grow.
+	renewal *NodeCertRenewal
+}
+
+// UnmarshalJSON reads the wire form, including the renewal block.
+func (c *NodeCertResource) UnmarshalJSON(b []byte) error {
+	type plain NodeCertResource
+	aux := struct {
+		*plain
+		Renewal *NodeCertRenewal `json:"renewal"`
+	}{plain: (*plain)(c)}
+	if err := json.Unmarshal(b, &aux); err != nil {
+		return err //nolint:wrapcheck // thin decoder wrapper, caller adds context
+	}
+	c.renewal = aux.Renewal
+	return nil
+}
+
+// Renewal returns the agent's last reported renewal failure, or nil.
+func (c *NodeCertResource) Renewal() *NodeCertRenewal { return c.renewal }
+
+// SetRenewal sets the renewal block, for building values in tests.
+func (c *NodeCertResource) SetRenewal(r *NodeCertRenewal) { c.renewal = r }
+
+// NodeCertRenewal mirrors internal/api's nodeCertRenewal.
+type NodeCertRenewal struct {
+	LastError           string     `json:"last_error"`
+	FailedAt            *time.Time `json:"failed_at,omitempty"`
+	NextRetryAt         *time.Time `json:"next_retry_at,omitempty"`
+	ConsecutiveFailures int        `json:"consecutive_failures"`
 }
 
 // NodeAgentResource mirrors internal/api's nodeAgentResource.

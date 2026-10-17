@@ -1,6 +1,13 @@
 import type { AttentionItem } from './attention'
 import type { NodeResource } from '../types/nodeDetail'
+import type { NodeCertRenewal } from '../types/nodeCert'
 import { nodeCertLabel } from './nodeCertLabel'
+
+function renewalSuffix(r?: NodeCertRenewal): string {
+  if (!r?.last_error) return ''
+  const retry = r.next_retry_at ? `. Next retry ${r.next_retry_at}` : ''
+  return `. Last error: ${r.last_error}${retry}`
+}
 
 // Mirrors internal/attention's nodeAgentItems: failing certificate
 // renewal, expired or revoked certificates, and outdated agents.
@@ -8,7 +15,8 @@ export function nodeAgentAttentionItems(node: NodeResource): AttentionItem[] {
   const items: AttentionItem[] = []
   const target = { kind: 'node' as const, id: node.id }
   const cert = node.cert
-  if (cert) {
+  const reenroll = cert?.key_origin === 'reenroll_required'
+  if (cert && !(reenroll && cert.state !== 'revoked')) {
     const renewalFailing = 'renewal is not succeeding'
     switch (cert.state) {
       case 'expired':
@@ -26,7 +34,7 @@ export function nodeAgentAttentionItems(node: NodeResource): AttentionItem[] {
           id: `node-cert:${node.id}`,
           severity: cert.state === 'critical' ? 'critical' : 'warning',
           title: `Node ${node.name}: ${nodeCertLabel(cert).toLowerCase()}`,
-          detail: `Certificate ${renewalFailing}`,
+          detail: `Certificate ${renewalFailing}${renewalSuffix(cert.renewal)}`,
           target,
         })
         break

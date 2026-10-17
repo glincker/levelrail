@@ -97,6 +97,8 @@ export function buildWaitingItems({
   }
 
   for (const n of nodes) {
+    const reenroll = reenrollItem(n, now, t)
+    if (reenroll) items.push(reenroll)
     if (n.status_reason === 'enrolled_never_connected') {
       items.push({
         id: `node-enroll:${n.id}`,
@@ -111,6 +113,35 @@ export function buildWaitingItems({
   items.push(...feedItems(feed, t))
 
   return items
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// A node whose key an early beta made on the control plane. Severity
+// follows the time left, mirroring internal/attention's nodeReenrollItem.
+function reenrollItem(
+  n: NodeResource,
+  now: number,
+  t: AttentionT,
+): AttentionItem | null {
+  const cert = n.cert
+  if (!cert || cert.key_origin !== 'reenroll_required') return null
+  const left = cert.not_after ? Date.parse(cert.not_after) - now : Infinity
+  const date = shortDate(cert.not_after)
+  let severity: AttentionItem['severity'] = 'info'
+  if (left <= cert.critical_days * DAY_MS) severity = 'critical'
+  else if (left <= cert.warning_days * DAY_MS) severity = 'warning'
+  return {
+    id: `node_reenroll:${n.id}`,
+    severity,
+    title: t('items.nodeReenrollTitle', { name: n.name }),
+    detail:
+      left <= 0
+        ? t('items.nodeReenrollExpired', { date })
+        : t('items.nodeReenrollDetail', { date }),
+    target: { kind: 'path', to: `/nodes/${n.id}?reenroll=1` },
+    class: severity === 'info' ? 'recommendation' : 'incident',
+  }
 }
 
 // Expired and denied CLI logins stay visible for the server's window as

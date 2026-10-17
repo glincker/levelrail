@@ -167,6 +167,13 @@ function ItemActions({ item }: { item: AttentionItem }) {
       />
     )
   }
+  if (target.kind === 'path' && item.id.startsWith('node_reenroll:')) {
+    return (
+      <Button size="sm" variant="outline" render={<Link to={target.to} />}>
+        {t('items.reenrollNode')}
+      </Button>
+    )
+  }
   if (target.kind === 'path') {
     return (
       <Button size="sm" variant="outline" render={<Link to={target.to} />}>

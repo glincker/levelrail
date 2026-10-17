@@ -15,7 +15,13 @@ import { RevokeNodeCertDialog } from './RevokeNodeCertDialog'
 // Agent identity on the node detail page. The control plane's own node has
 // no agent link to secure and gets a plain explanation; every other node
 // shows what the control plane actually verified, from real events.
-export function NodeAgentCard({ node }: { node: NodeResource }) {
+export function NodeAgentCard({
+  node,
+  openReenroll = false,
+}: {
+  node: NodeResource
+  openReenroll?: boolean
+}) {
   const { t } = useTranslation('nodes')
   const isRoot = useIsRoot()
   const trust = useNodeTrust(node.id, isRoot && !node.is_local)
@@ -33,7 +39,7 @@ export function NodeAgentCard({ node }: { node: NodeResource }) {
         {isRoot ? (
           <div className="flex flex-wrap items-center gap-2">
             <RenewNowDialog node={node} />
-            <ReenrollNodeDialog node={node} />
+            <ReenrollNodeDialog node={node} defaultOpen={openReenroll} />
             <RevokeNodeCertDialog node={node} />
           </div>
         ) : null}
