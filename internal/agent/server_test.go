@@ -143,17 +143,17 @@ func TestServer_Enroll_Success(t *testing.T) {
 	}
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "plaintext-token", time.Hour)
-	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
+	srv := NewServer(ca, st, NewRegistry(), nil)
 
-	resp, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-1"})
+	resp, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "plaintext-token", NodeName: "worker-1"})
 	if err != nil {
 		t.Fatalf("Enroll() error = %v", err)
 	}
 	if resp.GetNodeId() == "" {
 		t.Error("NodeId is empty")
 	}
-	if len(resp.GetClientCertPem()) == 0 || len(resp.GetClientKeyPem()) == 0 || len(resp.GetCaCertPem()) == 0 {
-		t.Errorf("resp = %+v, want all three PEM fields populated", resp)
+	if len(resp.GetClientCertPem()) == 0 || len(resp.GetCaCertPem()) == 0 {
+		t.Errorf("resp = %+v, want the certificate and CA populated", resp)
 	}
 	verifyChain(t, resp.GetCaCertPem(), resp.GetClientCertPem())
 
@@ -177,9 +177,9 @@ func TestServer_Enroll_Success(t *testing.T) {
 
 func TestServer_Enroll_InvalidToken(t *testing.T) {
 	ca, _ := GenerateCA()
-	srv := NewServer(ca, newFakeEnrollStore(), NewRegistry(), nil, WithRequireCSR(false))
+	srv := NewServer(ca, newFakeEnrollStore(), NewRegistry(), nil)
 
-	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "nonexistent", NodeName: "worker-1"})
+	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "nonexistent", NodeName: "worker-1"})
 	if status.Code(err) != codes.Unauthenticated {
 		t.Errorf("Enroll() error = %v, want codes.Unauthenticated", err)
 	}
@@ -189,9 +189,9 @@ func TestServer_Enroll_ExpiredToken(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "plaintext-token", -time.Hour) // already expired
-	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
+	srv := NewServer(ca, st, NewRegistry(), nil)
 
-	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-1"})
+	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "plaintext-token", NodeName: "worker-1"})
 	if status.Code(err) != codes.Unauthenticated {
 		t.Errorf("Enroll() error = %v, want codes.Unauthenticated", err)
 	}
@@ -201,12 +201,12 @@ func TestServer_Enroll_AlreadyUsedToken(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "plaintext-token", time.Hour)
-	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
+	srv := NewServer(ca, st, NewRegistry(), nil)
 
-	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-1"}); err != nil {
+	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "plaintext-token", NodeName: "worker-1"}); err != nil {
 		t.Fatalf("first Enroll() error = %v", err)
 	}
-	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "plaintext-token", NodeName: "worker-2"})
+	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "plaintext-token", NodeName: "worker-2"})
 	if status.Code(err) != codes.Unauthenticated {
 		t.Errorf("second Enroll() (reused token) error = %v, want codes.Unauthenticated", err)
 	}
@@ -217,12 +217,12 @@ func TestServer_Enroll_DuplicateNodeName(t *testing.T) {
 	st := newFakeEnrollStore()
 	seedJoinToken(st, "token-1", time.Hour)
 	seedJoinToken(st, "token-2", time.Hour)
-	srv := NewServer(ca, st, NewRegistry(), nil, WithRequireCSR(false))
+	srv := NewServer(ca, st, NewRegistry(), nil)
 
-	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "token-1", NodeName: "worker-1"}); err != nil {
+	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "token-1", NodeName: "worker-1"}); err != nil {
 		t.Fatalf("first Enroll() error = %v", err)
 	}
-	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "token-2", NodeName: "worker-1"})
+	_, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "token-2", NodeName: "worker-1"})
 	if status.Code(err) != codes.AlreadyExists {
 		t.Errorf("Enroll() with a taken name error = %v, want codes.AlreadyExists", err)
 	}
@@ -235,7 +235,7 @@ func TestServer_Enroll_MissingFields(t *testing.T) {
 	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{NodeName: "worker-1"}); status.Code(err) != codes.InvalidArgument {
 		t.Errorf("missing join_token: error = %v, want codes.InvalidArgument", err)
 	}
-	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{JoinToken: "x"}); status.Code(err) != codes.InvalidArgument {
+	if _, err := srv.Enroll(context.Background(), &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "x"}); status.Code(err) != codes.InvalidArgument {
 		t.Errorf("missing node_name: error = %v, want codes.InvalidArgument", err)
 	}
 }
@@ -287,9 +287,9 @@ func ctxWithPeerCert(certPEM []byte) context.Context {
 func TestServer_Session_Success(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
-	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	certPEM, _, err := issueClientCert(ca, "node-1")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	fp, err := certFingerprintFromPEM(certPEM)
 	if err != nil {
@@ -360,9 +360,9 @@ func TestServer_Session_Success(t *testing.T) {
 func TestServer_NotifyShutdown_SendsGoAway(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
-	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	certPEM, _, err := issueClientCert(ca, "node-1")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	fp, err := certFingerprintFromPEM(certPEM)
 	if err != nil {
@@ -431,9 +431,9 @@ func heartbeatFrame() *agentpb.AgentMessage {
 func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
-	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	certPEM, _, err := issueClientCert(ca, "node-1")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	fp, err := certFingerprintFromPEM(certPEM)
 	if err != nil {
@@ -504,9 +504,9 @@ func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 func TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
-	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	certPEM, _, err := issueClientCert(ca, "node-1")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	fp, err := certFingerprintFromPEM(certPEM)
 	if err != nil {
@@ -577,9 +577,9 @@ func TestServer_Session_NoPeerInfo_Rejected(t *testing.T) {
 
 func TestServer_Session_UnknownNode_Rejected(t *testing.T) {
 	ca, _ := GenerateCA()
-	certPEM, _, err := ca.IssueClientCert("node-ghost", time.Hour)
+	certPEM, _, err := issueClientCert(ca, "node-ghost")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	srv := NewServer(ca, newFakeEnrollStore(), NewRegistry(), nil) // no node saved
 
@@ -593,9 +593,9 @@ func TestServer_Session_UnknownNode_Rejected(t *testing.T) {
 func TestServer_Session_FingerprintMismatch_Rejected(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
-	certPEM, _, err := ca.IssueClientCert("node-1", time.Hour)
+	certPEM, _, err := issueClientCert(ca, "node-1")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	now := time.Now()
 	// The stored fingerprint doesn't match this certificate at all: a

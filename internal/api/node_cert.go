@@ -69,8 +69,8 @@ type nodeCertResource struct {
 	DaysRemaining *int       `json:"days_remaining,omitempty"`
 	RenewedAt     *time.Time `json:"renewed_at,omitempty"`
 	Generation    int        `json:"generation"`
-	// KeyOrigin is "agent" when the node generated its own key, "server"
-	// for nodes enrolled before that; they switch at their next renewal.
+	// KeyOrigin is "agent" when the node generated its own key, or
+	// "reenroll_required" when an early beta had the control plane make it.
 	KeyOrigin          string     `json:"key_origin"`
 	PreviousValidUntil *time.Time `json:"previous_valid_until,omitempty"`
 	RevokedAt          *time.Time `json:"revoked_at,omitempty"`

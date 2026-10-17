@@ -141,16 +141,6 @@ func (ca *CA) KeyPEM() []byte {
 	return pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: der})
 }
 
-// IssueClientCert issues a client certificate identifying commonName
-// (a node's store.Node.ID), signed by ca, for the enrollment
-// flow. validFor has no auto-renewal built in here: certificate
-// rotation on a schedule is real, named Phase 3 scope (ADR 003's
-// Consequences section), a caller-level concern layered on top of this
-// primitive, not solved by this one function alone.
-func (ca *CA) IssueClientCert(commonName string, validFor time.Duration) (certPEM, keyPEM []byte, err error) {
-	return ca.issueLeaf(commonName, nil, x509.ExtKeyUsageClientAuth, validFor)
-}
-
 // IssueServerCert issues the control plane's own gRPC listener TLS
 // certificate, signed by ca, valid for the given hostnames/IPs agents
 // will dial. Not agent-facing in the enrollment response the way
@@ -161,10 +151,12 @@ func (ca *CA) IssueServerCert(hosts []string, validFor time.Duration) (certPEM, 
 	if len(hosts) == 0 {
 		return nil, nil, fmt.Errorf("agent: issue server cert: at least one host is required")
 	}
-	return ca.issueLeaf(hosts[0], hosts, x509.ExtKeyUsageServerAuth, validFor)
+	return ca.issueServerLeaf(hosts, validFor)
 }
 
-func (ca *CA) issueLeaf(commonName string, hosts []string, usage x509.ExtKeyUsage, validFor time.Duration) (certPEM, keyPEM []byte, err error) {
+// issueServerLeaf is only for the control plane's own listener key; agent
+// keys are never generated here.
+func (ca *CA) issueServerLeaf(hosts []string, validFor time.Duration) (certPEM, keyPEM []byte, err error) {
 	pub, priv, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("agent: generate leaf key: %w", err)
@@ -177,11 +169,11 @@ func (ca *CA) issueLeaf(commonName string, hosts []string, usage x509.ExtKeyUsag
 
 	tmpl := &x509.Certificate{
 		SerialNumber: serial,
-		Subject:      pkix.Name{CommonName: commonName},
+		Subject:      pkix.Name{CommonName: hosts[0]},
 		NotBefore:    time.Now().Add(-time.Hour),
 		NotAfter:     time.Now().Add(validFor),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{usage},
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}
 	for _, h := range hosts {
 		if ip := net.ParseIP(h); ip != nil {
@@ -193,12 +185,12 @@ func (ca *CA) issueLeaf(commonName string, hosts []string, usage x509.ExtKeyUsag
 
 	der, err := x509.CreateCertificate(rand.Reader, tmpl, ca.cert, pub, ca.key)
 	if err != nil {
-		return nil, nil, fmt.Errorf("agent: create leaf certificate for %q: %w", commonName, err)
+		return nil, nil, fmt.Errorf("agent: create leaf certificate for %q: %w", hosts[0], err)
 	}
 
 	keyDER, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
-		return nil, nil, fmt.Errorf("agent: marshal leaf private key for %q: %w", commonName, err)
+		return nil, nil, fmt.Errorf("agent: marshal leaf private key for %q: %w", hosts[0], err)
 	}
 
 	certPEM = pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})

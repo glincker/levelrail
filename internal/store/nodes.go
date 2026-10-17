@@ -141,7 +141,7 @@ func (db *DB) SaveNode(ctx context.Context, n Node) error {
 		n.ID, n.Name, n.Address, string(n.Status), n.CertFingerprint,
 		formatTimePtr(n.JoinedAt), formatTimePtr(n.LastSeenAt),
 		boolToInt(n.AcceptsAppWorkloads), boolToInt(n.AcceptsBuildWorkloads),
-		formatTimePtr(n.CertNotAfter), n.CertSerial, certKeyOriginOrDefault(n.CertKeyOrigin),
+		formatTimePtr(n.CertNotAfter), n.CertSerial, n.CertKeyOrigin,
 		formatTime(n.CreatedAt), formatTime(n.UpdatedAt),
 	)
 	if err == nil {

@@ -66,9 +66,8 @@ message EnrollRequest {
   // (store.ErrNodeNameTaken) the same way it would for any other
   // SaveNode caller.
   string node_name = 2;
-  // csr_der is a PKCS#10 request for the agent's own key. When set the
-  // control plane signs it and never sees the private key; when empty
-  // (agents older than ADR 021) the control plane generates the key.
+  // csr_der is a PKCS#10 request for the agent's own key (required). The
+  // control plane signs it and never sees the private key.
   bytes csr_der = 3;
   AgentInfo agent = 4;
   // ca_pin_state is what the agent checked before sending this request:
@@ -84,13 +83,11 @@ message EnrollResponse {
   // completes (the cert's own CommonName already encodes it too, this
   // is the same value spelled out for the agent's own local bookkeeping).
   string node_id = 1;
-  // ClientCertPEM/ClientKeyPEM are this node's new mTLS identity.
-  // ClientKeyPEM never leaves this one response: it isn't persisted by
-  // the control plane, isn't logged, and isn't retrievable again,
-  // matching every other "shown once" credential in this codebase
-  // (API tokens, node join tokens themselves).
+  // client_cert_pem is this node's new mTLS certificate. The private key
+  // is generated on the agent and never crosses the wire.
+  reserved 3;
+  reserved "client_key_pem";
   bytes client_cert_pem = 2;
-  bytes client_key_pem = 3;
   // CACertPEM is the control plane's own CA certificate, so the agent
   // can verify the control plane's TLS server certificate on every
   // future connection without trusting the system root store (this is

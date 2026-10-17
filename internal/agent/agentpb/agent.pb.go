@@ -100,9 +100,8 @@ type EnrollRequest struct {
 	// (store.ErrNodeNameTaken) the same way it would for any other
 	// SaveNode caller.
 	NodeName string `protobuf:"bytes,2,opt,name=node_name,json=nodeName,proto3" json:"node_name,omitempty"`
-	// csr_der is a PKCS#10 request for the agent's own key. When set the
-	// control plane signs it and never sees the private key; when empty
-	// (agents older than ADR 021) the control plane generates the key.
+	// csr_der is a PKCS#10 request for the agent's own key (required). The
+	// control plane signs it and never sees the private key.
 	CsrDer []byte     `protobuf:"bytes,3,opt,name=csr_der,json=csrDer,proto3" json:"csr_der,omitempty"`
 	Agent  *AgentInfo `protobuf:"bytes,4,opt,name=agent,proto3" json:"agent,omitempty"`
 	// ca_pin_state is what the agent checked before sending this request:
@@ -185,14 +184,8 @@ type EnrollResponse struct {
 	// reconnects can identify themselves before the mTLS handshake even
 	// completes (the cert's own CommonName already encodes it too, this
 	// is the same value spelled out for the agent's own local bookkeeping).
-	NodeId string `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
-	// ClientCertPEM/ClientKeyPEM are this node's new mTLS identity.
-	// ClientKeyPEM never leaves this one response: it isn't persisted by
-	// the control plane, isn't logged, and isn't retrievable again,
-	// matching every other "shown once" credential in this codebase
-	// (API tokens, node join tokens themselves).
+	NodeId        string `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
 	ClientCertPem []byte `protobuf:"bytes,2,opt,name=client_cert_pem,json=clientCertPem,proto3" json:"client_cert_pem,omitempty"`
-	ClientKeyPem  []byte `protobuf:"bytes,3,opt,name=client_key_pem,json=clientKeyPem,proto3" json:"client_key_pem,omitempty"`
 	// CACertPEM is the control plane's own CA certificate, so the agent
 	// can verify the control plane's TLS server certificate on every
 	// future connection without trusting the system root store (this is
@@ -245,13 +238,6 @@ func (x *EnrollResponse) GetNodeId() string {
 func (x *EnrollResponse) GetClientCertPem() []byte {
 	if x != nil {
 		return x.ClientCertPem
-	}
-	return nil
-}
-
-func (x *EnrollResponse) GetClientKeyPem() []byte {
-	if x != nil {
-		return x.ClientKeyPem
 	}
 	return nil
 }
@@ -6489,13 +6475,12 @@ const file_proto_agent_v1_agent_proto_rawDesc = "" +
 	"\acsr_der\x18\x03 \x01(\fR\x06csrDer\x123\n" +
 	"\x05agent\x18\x04 \x01(\v2\x1d.levelrail.agent.v1.AgentInfoR\x05agent\x12 \n" +
 	"\fca_pin_state\x18\x05 \x01(\tR\n" +
-	"caPinState\"\xd0\x01\n" +
+	"caPinState\"\xc0\x01\n" +
 	"\x0eEnrollResponse\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12&\n" +
-	"\x0fclient_cert_pem\x18\x02 \x01(\fR\rclientCertPem\x12$\n" +
-	"\x0eclient_key_pem\x18\x03 \x01(\fR\fclientKeyPem\x12\x1e\n" +
+	"\x0fclient_cert_pem\x18\x02 \x01(\fR\rclientCertPem\x12\x1e\n" +
 	"\vca_cert_pem\x18\x04 \x01(\fR\tcaCertPem\x127\n" +
-	"\tnot_after\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\bnotAfter\"a\n" +
+	"\tnot_after\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\bnotAfterJ\x04\b\x03\x10\x04R\x0eclient_key_pem\"a\n" +
 	"\tAgentInfo\x12\x18\n" +
 	"\aversion\x18\x01 \x01(\tR\aversion\x12\x16\n" +
 	"\x06commit\x18\x02 \x01(\tR\x06commit\x12\x0e\n" +

@@ -8,11 +8,12 @@ import (
 	"time"
 )
 
-// Certificate key origins: who generated the private key behind a node's
-// current certificate.
+// Certificate key origins. A node with no certificate has an empty origin.
+// Migration 0970 moved certificates whose key the control plane generated
+// to CertKeyOriginReenrollRequired: they are never renewed.
 const (
-	CertKeyOriginServer = "server"
-	CertKeyOriginAgent  = "agent"
+	CertKeyOriginAgent            = "agent"
+	CertKeyOriginReenrollRequired = "reenroll_required"
 )
 
 // ErrNodeCertNotAccepted is returned when the presented certificate is
@@ -84,7 +85,7 @@ func (db *DB) RotateNodeCert(ctx context.Context, id, presentedFingerprint strin
 			updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE id = ? AND cert_fingerprint = ? AND cert_revoked_at IS NULL
 	`, presentedFingerprint, formatTime(prevUntil),
-		c.Fingerprint, c.Serial, formatTime(c.NotAfter), certKeyOriginOrDefault(c.KeyOrigin),
+		c.Fingerprint, c.Serial, formatTime(c.NotAfter), c.KeyOrigin,
 		formatTime(now), id, n.CertFingerprint)
 	if err != nil {
 		return fmt.Errorf("store: rotate cert for node %q: %w", id, err)
@@ -103,7 +104,7 @@ func (db *DB) ReenrollNodeCert(ctx context.Context, id string, c NodeCert, now t
 			cert_renewed_at = ?, cert_generation = cert_generation + 1,
 			updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 		WHERE id = ?
-	`, c.Fingerprint, c.Serial, formatTime(c.NotAfter), certKeyOriginOrDefault(c.KeyOrigin), formatTime(now), id)
+	`, c.Fingerprint, c.Serial, formatTime(c.NotAfter), c.KeyOrigin, formatTime(now), id)
 	if err != nil {
 		return fmt.Errorf("store: re-enroll cert for node %q: %w", id, err)
 	}
@@ -161,13 +162,6 @@ func requireOneRow(res sql.Result, notFound error, op string) error {
 		return notFound
 	}
 	return nil
-}
-
-func certKeyOriginOrDefault(origin string) string {
-	if origin == "" {
-		return CertKeyOriginServer
-	}
-	return origin
 }
 
 // nodeCertTimeCount is the number of nullable timestamp columns scanNode

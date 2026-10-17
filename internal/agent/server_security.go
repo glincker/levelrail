@@ -10,6 +10,7 @@ import (
 	"errors"
 	"log/slog"
 
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
@@ -79,6 +80,18 @@ func (s *Server) recordTokenRefusal(ctx context.Context, kind, nodeID string, er
 	s.sec.record(store.NodeSecurityEvent{
 		NodeID: nodeID, Kind: kind, Outcome: store.SecurityOutcomeRejected, Reason: store.SecurityReasonEnrollRefused, SourceIP: peerIP(ctx),
 		Detail: store.NodeSecurityDetail{Message: status.Convert(err).Message()},
+	}, true)
+}
+
+// errAgentUpgradeRequired is what an agent that cannot send a CSR sees. It
+// is static: nothing about the token or the node leaks into it.
+var errAgentUpgradeRequired = status.Error(codes.FailedPrecondition,
+	"this agent is too old to enroll: it must generate its own key. Upgrade the agent, then enroll again")
+
+func (s *Server) recordUpgradeRequired(ctx context.Context, kind, nodeID string) {
+	s.sec.record(store.NodeSecurityEvent{
+		NodeID: nodeID, Kind: kind, Outcome: store.SecurityOutcomeRejected, Reason: store.SecurityReasonUpgradeRequired, SourceIP: peerIP(ctx),
+		Detail: store.NodeSecurityDetail{Message: "no certificate signing request: agent must be upgraded"},
 	}, true)
 }
 
