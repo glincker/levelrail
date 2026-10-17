@@ -6,11 +6,6 @@ import (
 	"io"
 )
 
-// runRegistryCredentialsTags implements "registry-credentials tags <id>
-// <repository>": GET
-// /api/v1/registry-credentials/{id}/tags?repository=<name>, the same
-// browsing shape runRegistryCredentialsRepositories establishes for one
-// specific repository.
 func runRegistryCredentialsTags(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry-credentials tags", "print tags as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsTagsUsage(prog)) }

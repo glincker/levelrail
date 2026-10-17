@@ -16,12 +16,7 @@ type migrateCaproverFlags struct {
 	jsonOut             bool
 }
 
-// runMigrateCaprover implements "migrate caprover", mirroring
-// runMigrateDokploy (migrate_dokploy.go): same flag surface, same
-// file-vs-apply modes, same report shape. --token is CapRover's own login
-// password: unlike Coolify and Dokploy's static tokens, CapRover
-// authenticates via a login exchange (CaproverClient.Login), not a bearer
-// token passed straight through.
+// CapRover authenticates by login exchange, so --token is the login password, not a bearer token.
 func runMigrateCaprover(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" migrate caprover", flag.ContinueOnError)
 	fs.SetOutput(stderr)

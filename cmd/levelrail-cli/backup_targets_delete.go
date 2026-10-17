@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runBackupTargetsDelete implements "backup-targets delete <id>": DELETE
-// /api/v1/backup-targets/{id}. Blocked (409) server-side while any
-// backup_history row still references this target, the same foreign-key
-// guard DeleteBackupTarget's own doc comment describes.
+// Returns 409 while any backup still references this target.
 func runBackupTargetsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupTargetsDeleteUsage(prog)) }

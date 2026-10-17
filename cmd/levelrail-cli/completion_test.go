@@ -127,14 +127,7 @@ func TestSanitizeIdent(t *testing.T) {
 	}
 }
 
-// TestCommandTree_MatchesDispatchSwitches parses every non-test .go file
-// in this package for "switch args[0] { case \"x\": ... }" dispatch
-// blocks (the shape every run* function in this CLI uses, confirmed by
-// this being the sole shape found) and compares the flattened set of
-// case strings against cliCommandTree. cliCommandTree is a hand-written
-// second source of truth for completion.go's generators; this test is
-// the guardrail that keeps it honest as the dispatch tree grows, failing
-// loudly instead of letting completions silently go stale.
+// TestCommandTree_MatchesDispatchSwitches fails when cliCommandTree drifts from the switch cases, since completion depends on it.
 func TestCommandTree_MatchesDispatchSwitches(t *testing.T) {
 	dispatched := extractDispatchedVerbs(t)
 

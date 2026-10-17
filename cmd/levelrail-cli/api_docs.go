@@ -7,11 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runAPIDocs implements "api-docs": GET /api/v1/openapi.json, the same
-// route metadata the web dashboard's Settings > API explorer renders.
-// There is no interactive "try it" here, a terminal isn't the right
-// place for that; this just dumps the route table for scripting or a
-// quick lookup without opening a browser.
+// Dumps route metadata for scripting; the web explorer's interactive try-it has no terminal form.
 func runAPIDocs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "api-docs", "print the route table as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, apiDocsUsage(prog)) }

@@ -6,10 +6,6 @@ import (
 	"io"
 )
 
-// runSettingsUpdates dispatches "settings updates <verb> [flags]" to one
-// of get/set: the release channel and auto-update-check toggle
-// (internal/api/updates_settings.go), the CLI counterpart of the
-// dashboard's own Settings > Updates page.
 func runSettingsUpdates(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, settingsUpdatesUsage(prog))

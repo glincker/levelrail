@@ -8,23 +8,8 @@ import (
 	"strings"
 )
 
-// resolveRestoreConfirmation is runBackupsRestore's confirmation gate,
-// factored out as a pure-ish function (its only I/O is the prompt/read
-// pair, both taken as parameters) so it's directly table-driven
-// testable without a real terminal or a fake HTTP server: exactly what
-// the task's own requirement asks for ("a missing/mismatched --confirm
-// value refuses to call the API at all").
-//
-// Mirrors the web frontend's own destructive-confirmation pattern
-// (web/src/components/RestoreBackupDialog.tsx: "Type ‘{databaseName}’ to
-// confirm", the confirm action stays disabled until the typed text
-// matches exactly): confirmFlag given must equal databaseName exactly,
-// case-sensitively, no trimming beyond what the caller's shell already
-// did to its own argument; confirmFlag omitted falls back to the same
-// exact-match check against one line read interactively from stdin, so
-// a script that doesn't pass --confirm at all is asked, not silently
-// allowed through, and a human runs the exact same "type the name"
-// motion the web UI already trained them on.
+// Refuses before any network call unless the confirmation matches databaseName exactly.
+// EOF on stdin counts as refusal, so a script without --confirm is never silently allowed.
 func resolveRestoreConfirmation(databaseName, confirmFlag string, stdin io.Reader, stderr io.Writer) error {
 	if confirmFlag != "" {
 		if confirmFlag != databaseName {
@@ -37,11 +22,7 @@ func resolveRestoreConfirmation(databaseName, confirmFlag string, stdin io.Reade
 	_, _ = fmt.Fprintf(stderr, "Type %q to confirm: ", databaseName)
 	line, err := bufio.NewReader(stdin).ReadString('\n')
 	if err != nil && line == "" {
-		// No confirmation was ever obtained (EOF on stdin, e.g. a
-		// script that ran this without --confirm and with no
-		// terminal attached): the same "refuse, don't hang, don't
-		// guess" outcome a mismatched --confirm gets, classified as a
-		// validationError for the same reason, not a network failure.
+		// EOF on stdin is refused, not hung on or guessed, and reported as a validation error.
 		return newValidationError("read confirmation: %v", err)
 	}
 	typed := strings.TrimSpace(line)
@@ -51,17 +32,7 @@ func resolveRestoreConfirmation(databaseName, confirmFlag string, stdin io.Reade
 	return nil
 }
 
-// runBackupsRestore implements "backups restore <database> --backup ID
-// --confirm NAME": POST /api/v1/databases/{name}/restore
-// (internal/api/restore.go's own handleTriggerRestore), AbilityRoot-
-// gated server-side, the same tier node management and placement use,
-// because this is the single most destructive endpoint in the whole
-// API: it overwrites a live database's real data in place, with no undo
-// beyond restoring again from a different backup (handleTriggerRestore's
-// own doc comment). resolveRestoreConfirmation above is checked, and can
-// refuse, before this ever builds a Client or reaches the network: a
-// caller who gets the confirmation wrong never sends a byte to the
-// server.
+// Overwrites live data in place, so it needs the root tier and the exact confirmation above.
 func runBackupsRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, confirm string

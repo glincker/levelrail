@@ -1,31 +1,7 @@
 package main
 
-// mesh.go wires the WireGuard mesh into the control plane, gated
-// behind APP_MESH_ENABLED (default off).
-//
-// It is opt-in rather than always-on because a control plane process
-// that never set APP_MESH_ENABLED=1 should see nothing different at all,
-// not a new TUN device and DNS server it did not ask for; it is not
-// opt-in because of any remaining functional gap. internal/network.ConfigSink's
-// gRPC arm now exists (internal/agent.GRPCSink, dispatched over the
-// agent Session stream, proto/agent/v1/agent.proto's ApplyMesh/
-// RotateMeshKey ops), so setupMesh below builds a
-// network.MultiSink that routes this node's own config through
-// network.LocalSink (in-process, as before) and every enrolled remote
-// node's config through GRPCSink, over that node's own live agent
-// connection when it has one. A remote node with no live connection
-// simply fails that one pass's NodeResult (ConfigSink.ApplyMesh's own
-// per-node contract), the same as any other transient node-unreachable
-// state elsewhere in this codebase; the next reconcile pass tries again.
-//
-// A node running the control plane needs a real row in the nodes table
-// for any of this to work at all: internal/reconcile/mesh.Controller
-// reads its whole inventory from Store.ListNodes, and
-// internal/network.Plan errors with ErrUnknownNode for a selfID absent
-// from that inventory. There is nothing elsewhere in this codebase that
-// creates such a row today (desired_services.node_id's own "" sentinel
-// means "local" without ever needing a nodes row to back it), so
-// bootstrapLocalNode below is new, not a reuse of an existing path.
+// Opt-in via APP_MESH_ENABLED so a default control plane sees no new TUN device or DNS server.
+// bootstrapLocalNode must create this node's row, since the mesh planner errors on an unknown self ID.
 
 import (
 	"context"
@@ -71,12 +47,7 @@ func meshEnabled(ctx context.Context, db *store.DB, logger *slog.Logger) bool {
 	return on
 }
 
-// meshDNSAddr reads APP_MESH_DNS_ADDR, defaulting to a high, unprivileged
-// port: :53 would need root on most systems, and this server is not yet
-// what containers actually query (see this file's own top-of-file note
-// on what "opt-in" currently gets you), so defaulting to something a
-// developer can bind without sudo matters more than matching the
-// well-known DNS port.
+// Defaults to an unprivileged port so the process can bind without root.
 func meshDNSAddr() string {
 	if v := os.Getenv("APP_MESH_DNS_ADDR"); v != "" {
 		return v
@@ -84,13 +55,7 @@ func meshDNSAddr() string {
 	return defaultMeshDNSAddr
 }
 
-// meshCIDR reads APP_MESH_CIDR, or leaves the zero value for
-// network.NewCoordinator to fill in with network.DefaultMeshCIDR: an
-// operator with no opinion about addressing should get a working mesh,
-// not an error about a field they never set, the same reasoning
-// NewCoordinator's own doc comment gives for accepting a zero PlanOptions
-// in the first place. An invalid override is treated as absent rather
-// than fatal: this control plane must still start.
+// An invalid override is treated as absent so the control plane still starts.
 func meshCIDR(logger *slog.Logger) netip.Prefix {
 	raw := os.Getenv("APP_MESH_CIDR")
 	if raw == "" {
@@ -104,17 +69,7 @@ func meshCIDR(logger *slog.Logger) netip.Prefix {
 	return p
 }
 
-// loadOrGenerateMeshKey loads this node's persisted WireGuard private key
-// from dataDir, or generates and persists a fresh one if none exists yet,
-// the identical read-or-generate-then-persist shape
-// loadOrGenerateAgentCA uses for the agent CA. Regenerating on every
-// restart instead of persisting would change this node's mesh identity
-// (and therefore its address and every peer's record of it) on every
-// reboot for no reason.
-//
-// Stored as network.Key.String()'s base64 form, the same form the
-// control plane already stores and ships elsewhere (Key.String's own doc
-// comment), not the UAPI hex form.
+// The key is persisted because regenerating on restart would change this node's mesh identity.
 func loadOrGenerateMeshKey(dataDir string) (network.Key, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return network.Key{}, err
@@ -140,13 +95,7 @@ func loadOrGenerateMeshKey(dataDir string) (network.Key, error) {
 	return key, nil
 }
 
-// persistMeshKey writes key to dataDir's mesh key file, the same location
-// and format loadOrGenerateMeshKey itself reads and (on first run)
-// writes. Factored out so network.WithKeyPersistFunc's callback (wired in
-// setupMesh below) and a fresh node's first-run generation share exactly
-// one write path: a key rotation that persisted through a second,
-// slightly different code path would be the kind of divergence that only
-// shows up the day the two disagree.
+// Shared by first-run generation and key rotation so both write the key the same way.
 func persistMeshKey(dataDir string, key network.Key) error {
 	path := filepath.Join(dataDir, meshKeyFilename)
 	if err := os.WriteFile(path, []byte(key.String()), 0o600); err != nil { //nolint:gosec // operator-controlled data directory path, not user input
@@ -155,16 +104,7 @@ func persistMeshKey(dataDir string, key network.Key) error {
 	return nil
 }
 
-// loadOrGenerateLocalNodeID loads this node's persisted node ID from
-// dataDir, or generates and persists a fresh one, same shape as
-// loadOrGenerateMeshKey immediately above and for the same reason: this
-// ID is this node's primary key in the nodes table and the DNS zone's
-// ".node." label, both of which must survive a restart unchanged.
-//
-// A dedicated generator rather than reusing internal/agent's own
-// (unexported) node-ID generator, the same "long-lived and
-// externally-visible deserves its own generator" reasoning that
-// function's own doc comment gives for not sharing with a request ID.
+// The ID is the nodes table key and DNS label, so it must survive restarts unchanged.
 func loadOrGenerateLocalNodeID(dataDir string) (string, error) {
 	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled startup config, not user input
 		return "", err
@@ -196,26 +136,7 @@ func readLocalNodeID(dataDir string) string {
 	return strings.TrimSpace(string(raw))
 }
 
-// bootstrapLocalNode ensures id has a row in the nodes table, the same
-// idempotent "GetNode, SaveNode only if missing" shape bootstrapAdmin
-// uses for the admin account: safe to call on every start, a no-op once
-// the row exists.
-//
-// The name prefers the machine's hostname, for the same reason an
-// operator-facing node list should say something recognizable rather
-// than an opaque ID; a hostname collision with an already-enrolled
-// remote node (store.ErrNodeNameTaken) falls back to the ID itself,
-// which is always unique by construction, rather than failing startup
-// over a cosmetic conflict.
-//
-// LastSeenAt is set to now, not left nil. A remote node's Status only
-// ever reaches Online through Server.Session, which always touches
-// LastSeenAt first, so a nil LastSeenAt on an Online node is exactly the
-// "not expected in practice" case lastSeenAge's own doc comment
-// (internal/reconcile/nodehealth) says it treats as stale: without this,
-// the local node reads Offline from the moment it is created until
-// localNodeHeartbeat's first tick, which is a real, user-visible
-// regression for a control plane that was never actually down.
+// LastSeenAt is set now, or the local node reads Offline until its first heartbeat.
 func bootstrapLocalNode(ctx context.Context, db *store.DB, id string) error {
 	_, err := db.GetNode(ctx, id)
 	if err == nil {
@@ -275,13 +196,7 @@ func markLocalNodeOnline(ctx context.Context, db *store.DB, id string) error {
 	return nil
 }
 
-// localNodeHeartbeat touches id's last_seen_at on interval until ctx is
-// canceled, the local-node equivalent of Server.heartbeatLoop for a
-// remote agent's session. Without this, internal/reconcile/nodehealth
-// (nothing else touches last_seen_at for a node with no gRPC session)
-// flips the local node Offline heartbeatTimeout after boot and it never
-// recovers, since nothing else about this node's health is transient the
-// way a real connectivity problem is.
+// Without this, nodehealth marks the local node Offline after boot and it never recovers.
 func localNodeHeartbeat(ctx context.Context, db *store.DB, id string, interval time.Duration, logger *slog.Logger) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -301,49 +216,20 @@ func localNodeHeartbeat(ctx context.Context, db *store.DB, id string, interval t
 	}
 }
 
-// meshSetup is what setupMesh hands back to run: the pieces
-// dynamicSource needs to add a mesh controller to every reconcile pass,
-// plus a close func that tears down the device and DNS server on
-// shutdown. A nil *meshSetup (setupMesh's error-free "disabled" return)
-// is dynamicSource's signal to build no mesh controller at all, the same
-// nil-means-absent shape secretsManager already uses for
-// application.WithSecretResolver.
+// A nil *meshSetup means mesh is disabled and no mesh controller is built.
 type meshSetup struct {
 	localNodeID string
 	coordinator *network.Coordinator
 	resolver    *network.Resolver
-	// device is this node's own live Mesh handle: internal/api's mesh
-	// status route (internal/api/mesh.go) reads Status() straight off it
-	// for real, UAPI-backed peer/handshake data, the same handle the
-	// reconcile loop itself applies configs through via the coordinator's
-	// sink. Never nil when meshSetup itself is non-nil: NewDevice's own
-	// contract is that it always returns a usable Mesh (a real Device or a
-	// *Disabled), never a nil interface value or an error, for exactly
-	// this reason.
+	// Never nil when meshSetup is non-nil: NewDevice always returns a usable Mesh.
 	device network.Mesh
-	// dnsAddr is the mesh DNS server's actual bound address (host, not
-	// container-reachable, port only meaningful once combined with a
-	// resolved bridge gateway, see containerDNSAddr): DNSServer.Addr's
-	// own doc comment on why a caller needs the port it actually bound
-	// rather than assuming it matches the configured addr verbatim.
+	// Use the actually bound address, which can differ from the configured one.
 	dnsAddr netip.AddrPort
 	close   func()
 }
 
-// setupMesh brings up this node's mesh device, DNS server, and
-// coordinator, and bootstraps its own nodes row, all gated by
-// meshEnabled. Returns (nil, nil) when disabled, not an error: an
-// operator who has not opted in should see nothing different at all, not
-// a log line about a feature they did not ask for.
-//
-// The device itself never fails startup even when this process cannot
-// actually mesh: network.NewDevice's own doc comment establishes that an
-// unprivileged process gets a *network.Disabled, not an error, "a node
-// that cannot mesh must still run." Every other step here can fail the
-// whole control plane, though, because they are this function's own
-// responsibility, not the mesh library's: a bad mesh key file, a taken
-// DNS port, or a broken local-node bootstrap are configuration problems
-// worth failing loudly on rather than starting in a half-wired state.
+// Returns (nil, nil) when disabled, so an operator who did not opt in sees nothing new.
+// Device failures never fail startup, but config errors (bad key, taken DNS port) do.
 func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string, agentRegistry *agent.Registry, logger *slog.Logger) (*meshSetup, error) {
 	if !meshEnabled(ctx, db, logger) {
 		return nil, nil
@@ -376,11 +262,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		_ = device.Close()
 		return nil, fmt.Errorf("build local mesh sink: %w", err)
 	}
-	// GRPCSink dispatches every node but localNodeID over that node's own
-	// live agent Session (internal/agent.GRPCSink, resolved per call
-	// through agentRegistry); MultiSink is what lets Coordinator hold the
-	// two of them as the single ConfigSink its own constructor requires.
-	// See mesh.go's own header for why this used to be LocalSink alone.
+	// GRPCSink serves remote nodes and LocalSink serves this node, combined via MultiSink.
 	sink := network.NewMultiSink(localNodeID, localSink, agent.NewGRPCSink(agentRegistry))
 	coordinator := network.NewCoordinator(sink, network.PlanOptions{MeshCIDR: meshCIDR(logger)},
 		network.WithCoordinatorLogger(logger))
@@ -392,11 +274,7 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 		logger.Warn("mesh hub endpoint unknown: set APP_AGENT_ADVERTISE_HOST to this server's public host so agents can reach it on UDP " + strconv.Itoa(network.DefaultListenPort))
 	}
 
-	// Lowercased explicitly: Resolver.Authoritative compares a normalized
-	// (lowercased) query name against this zone verbatim, so a
-	// brand.yaml short_name with any uppercase (the common case, brand
-	// names are typically title-cased) would never match a single real
-	// query otherwise.
+	// Lowercased because Resolver.Authoritative compares lowercased query names verbatim.
 	zone := strings.ToLower(b.ShortName)
 	if zone == "" {
 		zone = defaultLocalNodeName
@@ -434,58 +312,11 @@ func setupMesh(ctx context.Context, db *store.DB, b *brand.Brand, dataDir string
 	}, nil
 }
 
-// dockerNameserverPort is the only port a container's resolver ever
-// actually queries. Docker's DNS HostConfig field (--dns) and every
-// container's resulting /etc/resolv.conf "nameserver" line both carry a
-// bare IP, never IP:port: confirmed against a real daemon while building
-// this function, ContainerCreate accepts an "ip:port" string without
-// complaint (it isn't validated at create time), but the *start* call
-// that follows rejects it outright ("bad nameserver address ...:5390:
-// ParseAddr(...): unexpected character (at \":5390\")"), which would fail
-// every single container this control plane creates the moment mesh is
-// enabled with the default (non-53) DNS port. There is no resolv.conf
-// syntax or Docker flag that requests a non-standard nameserver port
-// either, so a mesh DNS server bound to anything but 53 cannot be wired
-// into a container's resolver at all, full stop; see containerDNSAddr's
-// own doc comment for what that means in practice.
+// Docker rejects an ip:port nameserver at container start, so containers can only use port 53.
 const dockerNameserverPort = 53
 
-// containerDNSAddr computes the nameserver IP the reconcile controllers
-// should point every container they create at, so it resolves this
-// node's mesh DNS zone (internal/network/dns_server.go), or "" if that
-// isn't possible right now.
-//
-// setupMesh above does now address the WireGuard mesh interface
-// (network.SystemLinkConfigurator, wired via network.WithLinkConfigurator),
-// but that address is only reachable from the host, not from inside a
-// container: docker.Client.Create attaches every container to Docker's
-// default "bridge" network with no NetworkingConfig, a separate, still
-// out-of-scope gap from the mesh interface itself. The address that is
-// reachable from inside a container is that bridge network's own gateway
-// IP, queried live from the Docker daemon rather than hardcoded
-// (dockerd's bip config can change it).
-//
-// That gateway IP is only useful, though, if the mesh DNS server is
-// actually listening on port 53 at it: dockerNameserverPort's own doc
-// comment is the live-verified reason there is no way to express "query
-// port 5390 instead" anywhere a container's resolver looks. APP_MESH_DNS_ADDR
-// defaults to :5390 specifically so an unprivileged process can bind it
-// (meshDNSAddr's own doc comment), which means in the common,
-// zero-configuration case this function's real job is refusing to wire
-// anything up, correctly, rather than handing every container a
-// nameserver entry that fails to start it. An operator who wants this
-// feature live has to set APP_MESH_DNS_ADDR to bind :53 (and grant the
-// process permission to do so), a real operational tradeoff this
-// function does not paper over.
-//
-// Every other failure (no mesh running, no bound DNS address yet, the
-// bridge gateway lookup itself failing) logs a warning and returns "",
-// never fails the caller: every controller this feeds
-// (application.WithMeshDNSAddr, database.WithMeshDNSAddr,
-// nginxdemo.WithMeshDNSAddr) already treats an empty address as "no DNS
-// override at all," so the mesh-disabled and lookup-failed paths both
-// stay byte-identical to this code's behavior before the mesh DNS field
-// existed: containers fall back to Docker's own embedded resolver.
+// Returns "" when no usable address exists; controllers treat "" as no DNS override.
+// The default high DNS port therefore means no override, since containers cannot reach it.
 func containerDNSAddr(ctx context.Context, client *docker.Client, meshCfg *meshSetup, logger *slog.Logger) string {
 	if meshCfg == nil || !meshCfg.dnsAddr.IsValid() {
 		return ""

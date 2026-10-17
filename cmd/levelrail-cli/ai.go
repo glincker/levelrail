@@ -5,12 +5,7 @@ import (
 	"io"
 )
 
-// runAI dispatches "ai <verb> [args...]" to one of chat/sessions: the
-// CLI surface for the in-app AI assistant chat feature
-// (internal/api/ai_chat.go), gated behind the same ai-chat experimental
-// flag as the dashboard panel and "settings ai-assistant" (see
-// experimental_gate.go). A BYOK provider/model/key must also already be
-// configured via "settings ai-assistant providers set", independent of the flag.
+// Gated by the ai-chat experimental flag, independent of BYOK provider config.
 func runAI(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, aiUsage(prog))

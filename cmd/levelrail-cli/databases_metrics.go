@@ -7,12 +7,6 @@ import (
 	"time"
 )
 
-// runDatabasesMetrics implements "databases metrics <name> --metric
-// NAME": GET /api/v1/databases/{name}/metrics
-// (internal/api/database_metrics.go's handleQueryDatabaseMetrics), the
-// database-kind counterpart to "apps metrics" (apps_metrics.go). See
-// runMetricsCommand (metrics_cmd.go) for the flag parsing and rendering
-// shared between the two.
 func runDatabasesMetrics(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runMetricsCommand(prog, args, stdout, stderr, lookupEnv, metricsCommandConfig{
 		cmdLabel: "databases metrics",

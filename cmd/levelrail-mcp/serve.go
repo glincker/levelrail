@@ -18,10 +18,7 @@ import (
 // closed.
 const shutdownTimeout = 5 * time.Second
 
-// newAuthedHandler builds the MCP Streamable HTTP handler for server,
-// wrapped so every request must carry token as a bearer credential. Split
-// out from serveHTTP so tests can drive it with httptest.NewServer
-// instead of a real net.Listen.
+// newAuthedHandler wraps the MCP handler so every request needs token as a bearer credential. Split out so tests can use httptest.
 func newAuthedHandler(server *mcp.Server, token string) http.Handler {
 	handler := mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
 		return server
@@ -35,10 +32,7 @@ func newAuthedHandler(server *mcp.Server, token string) http.Handler {
 	return auth.RequireBearerToken(bearerTokenVerifier(token), authOpts)(handler)
 }
 
-// serveHTTP runs server over the MCP Streamable HTTP transport, bound to
-// listenAddr, rejecting any request that doesn't carry token as a bearer
-// credential. It blocks until ctx is canceled, then shuts the listener
-// down gracefully.
+// serveHTTP serves server over MCP Streamable HTTP on listenAddr, requiring the bearer token. Blocks until ctx is canceled.
 func serveHTTP(ctx context.Context, server *mcp.Server, listenAddr, token string, logger *slog.Logger) error {
 	httpServer := &http.Server{
 		Addr:              listenAddr,
@@ -66,10 +60,7 @@ func serveHTTP(ctx context.Context, server *mcp.Server, listenAddr, token string
 	}
 }
 
-// bearerTokenVerifier checks an incoming bearer token against want using a
-// constant-time comparison: want is the same static API token this process
-// already uses for its own outbound REST calls (see config.go's
-// resolveToken), not a credential the verifier looks up or parses.
+// bearerTokenVerifier compares the bearer token in constant time against the process's own static API token.
 func bearerTokenVerifier(want string) auth.TokenVerifier {
 	return func(_ context.Context, got string, _ *http.Request) (*auth.TokenInfo, error) {
 		if subtle.ConstantTimeCompare([]byte(got), []byte(want)) != 1 {

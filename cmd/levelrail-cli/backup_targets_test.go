@@ -9,10 +9,7 @@ import (
 	"testing"
 )
 
-// newBackupTargetEchoServer starts a test server that decodes a create or
-// update request into gotBody and responds with a backup target resource
-// built from the request plus id, recording the request path and method
-// when the caller passes non-nil pointers.
+// Test helper that echoes a backup target built from the request.
 func newBackupTargetEchoServer(t *testing.T, id string, gotPath, gotMethod *string) (*httptest.Server, *createBackupTargetRequest) {
 	t.Helper()
 	gotBody := &createBackupTargetRequest{}

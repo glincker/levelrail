@@ -67,10 +67,6 @@ func TestRun_AppsClearNode(t *testing.T) {
 	}
 }
 
-// TestRun_AppsSetNode_WithVolumes_Immediate covers the server returning
-// 200 with an already-succeeded move record (the no-volumes/same-node
-// shortcut server-side): the CLI must not poll in that case, one request
-// is enough.
 func TestRun_AppsSetNode_WithVolumes_Immediate(t *testing.T) {
 	var calls int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

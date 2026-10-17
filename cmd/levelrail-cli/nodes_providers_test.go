@@ -133,11 +133,7 @@ func TestRun_NodesProvidersSetCredential_AWS_MissingSecretAccessKey(t *testing.T
 	}
 }
 
-// TestRun_NodesProvidersSetCredential_AWS_SecretFromStdinOrPrompt covers
-// the fix for the secret access key being exposed in CLI arguments: like
-// --provider-token, --secret-access-key now falls back to a protected
-// stdin/prompt read when the flag is omitted, instead of being required as
-// a flag value visible in shell history and the process list.
+// TestRun_NodesProvidersSetCredential_AWS_SecretFromStdinOrPrompt checks the secret access key is read from stdin or a prompt, not a flag.
 func TestRun_NodesProvidersSetCredential_AWS_SecretFromStdinOrPrompt(t *testing.T) {
 	stubNodeProviderSecret(t, "piped-secret", nil)
 	var gotBody setNodeProviderCredentialRequest

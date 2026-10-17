@@ -6,14 +6,7 @@ import (
 	"io"
 )
 
-// runAppsEgress dispatches "apps egress <verb> [flags]" to one of
-// get/set/clear, the CLI counterpart of internal/api/apps_egress.go's own
-// GET/PUT/DELETE /api/v1/apps/{name}/egress-policy routes: an app's
-// outbound network allowlist, enforced by an egress sidecar
-// (internal/reconcile/application's reconcileEgress). Unconfigured
-// (the default, and the only state every app had before this feature
-// existed) means unrestricted egress; opting in is per-app, never
-// implicit.
+// Unconfigured egress means unrestricted; an app opts into an allowlist explicitly, never implicitly.
 func runAppsEgress(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsEgressUsage(prog))

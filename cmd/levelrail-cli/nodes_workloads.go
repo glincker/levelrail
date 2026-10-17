@@ -7,15 +7,8 @@ import (
 	"io"
 )
 
-// runNodesWorkloads implements "nodes workloads <id> --accepts-app
-// --accepts-build": PUT /api/v1/nodes/{id}/workloads. The API takes a
-// full replace of both flags, not a per-field patch
-// (setNodeWorkloadsRequest's own doc comment), so both flags are
-// required here rather than defaulting an omitted one to false: an
-// operator who means "leave build workloads as they are" would
-// otherwise silently disable them. fs.Visit after Parse is what tells
-// "flag omitted" apart from "flag explicitly set to false", a
-// distinction plain BoolVar defaults alone can't make.
+// Both flags are required: the API replaces both, so an omitted flag must not default to false.
+// fs.Visit distinguishes an omitted flag from an explicit false.
 func runNodesWorkloads(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes workloads", "print the updated node as JSON to stdout and nothing else", stderr)
 	var acceptsApp, acceptsBuild bool

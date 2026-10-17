@@ -6,18 +6,7 @@ import (
 	"io"
 )
 
-// runBackupsDelete implements "backups delete <database> <backup-id>":
-// DELETE /api/v1/databases/{name}/backups/{historyId}
-// (internal/api/backup_delete.go's own handleDeleteBackup),
-// AbilityWriteSensitive-gated server-side, the same tier
-// "backup-targets delete" already uses. That command's own precedent is
-// this one's model: naming the exact resource id is itself the
-// deliberate, unambiguous signal this destroys, the same reasoning
-// backup_targets_delete.go's own doc comment gives, rather than adding a
-// second --confirm flag on top of an id the caller already had to look up
-// and type correctly. AbilityRoot routes (restore) ask for more because
-// they act on a *name* an operator could otherwise fat-finger into the
-// wrong live resource; a backup id has no such ambiguity to guard against.
+// No --confirm: the backup id is already a deliberate target, unlike restore's name-based routes.
 func runBackupsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsDeleteUsage(prog)) }

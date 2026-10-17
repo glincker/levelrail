@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runInvitesCreate implements "invites create": POST /api/v1/invites,
-// AbilityRoot-gated server-side (internal/api/invites.go's own doc
-// comment on handleCreateInvite). Exactly one of --role/--abilities must
-// be set, the same mutually-exclusive precedence "users create" uses.
-// The response always carries the accept link, even when no SMTP is
-// configured server-side, so this command is a complete way to invite
-// someone with no email capability at all.
+// The response always carries the accept link, so this works without SMTP configured.
 func runInvitesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "invites create", "print the created invite (including its accept link) as JSON to stdout and nothing else", stderr)
 	var email, role, abilitiesFlag string

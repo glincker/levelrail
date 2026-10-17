@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runInvitesRevoke implements "invites revoke <id>": DELETE
-// /api/v1/invites/{id}. Refused (400) server-side for an invite already
-// accepted or already revoked (handleRevokeInvite's own doc comment),
-// surfaced here as-is.
+// Returns 400 for an invite already accepted or revoked.
 func runInvitesRevoke(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "invites revoke", "print {\"revoked\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, invitesRevokeUsage(prog)) }

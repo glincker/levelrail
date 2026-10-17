@@ -11,12 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// protectedEnvironmentError reports whether err is the 409
-// internal/api's checkEnvironmentProtection/environmentNeedsConfirmation
-// return when a deploy, rollback, or promote targets a protected
-// environment with confirm not already true: the only 409 those three
-// endpoints ever return, so the status code alone disambiguates it from
-// a validation or not-found failure.
+// A 409 from these endpoints only ever means the protected-environment gate, so the status alone identifies it.
 func protectedEnvironmentError(err error) (*apiclient.APIError, bool) {
 	var apiErr *apiclient.APIError
 	if errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusConflict {
@@ -25,10 +20,7 @@ func protectedEnvironmentError(err error) (*apiclient.APIError, bool) {
 	return nil, false
 }
 
-// resolveProtectedEnvironmentConfirmation prompts on stderr and reads
-// one line from stdin, mirroring resolveRestoreConfirmation's own
-// EOF-refuses-cleanly behavior (backups_restore.go) for a script with no
-// terminal attached: it must fail closed, not hang or silently proceed.
+// Fails closed on EOF so a script with no terminal never proceeds or hangs.
 func resolveProtectedEnvironmentConfirmation(message string, stdin io.Reader, stderr io.Writer) (bool, error) {
 	_, _ = fmt.Fprintf(stderr, "%s\nType \"yes\" to proceed: ", message)
 	line, err := bufio.NewReader(stdin).ReadString('\n')
@@ -38,16 +30,7 @@ func resolveProtectedEnvironmentConfirmation(message string, stdin io.Reader, st
 	return strings.TrimSpace(line) == "yes", nil
 }
 
-// confirmProtectedEnvironment runs attempt(confirm) once. If it fails
-// because the target is tagged with a protected environment and confirm
-// was already false, it prompts interactively and retries once with
-// confirm=true when the operator confirms; otherwise it returns
-// attempt's own result and error unchanged. Shared by "apps
-// deploy"/"apps rollback"/"apps promote", which all hit this same
-// protected-environment gate through a different underlying call. Even
-// a confirm=true retry may come back with PendingApproval set instead of
-// an applied app (deployTriggerResult, deploys.go): that is not this
-// function's concern, the caller decides how to present it.
+// PendingApproval can come back even after a confirmed retry, so callers must check it.
 func confirmProtectedEnvironment(confirm bool, stdin io.Reader, stderr io.Writer, attempt func(confirm bool) (deployTriggerResult, error)) (deployTriggerResult, error) {
 	result, err := attempt(confirm)
 	if confirm || err == nil {

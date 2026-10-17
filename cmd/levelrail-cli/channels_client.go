@@ -7,10 +7,7 @@ import "net/url"
 // internal/alerting/notify.go's own parsePushoverCreds convention.
 const pushoverEndpoint = "https://api.pushover.net/1/messages.json"
 
-// buildPushoverNotifyURL packs a Pushover user key and API token into
-// the notify_url shape the control plane expects, so an operator can
-// pass the two Pushover credentials as separate flags instead of
-// hand-building a query string.
+// Packs the user key and token into the notify_url query the control plane expects.
 func buildPushoverNotifyURL(userKey, apiToken string) string {
 	q := url.Values{}
 	q.Set("token", apiToken)

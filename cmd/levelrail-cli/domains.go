@@ -5,16 +5,7 @@ import (
 	"io"
 )
 
-// runDomains dispatches "domains <verb> [flags]": "list" (a read-only
-// aggregation of every app's own service_domains rows,
-// internal/api/ingress_settings.go's own handleListDomains doc comment;
-// domain assignment itself happens through "apps create"/an app's own
-// domains: field, not through this command) and "cloudflare-dns"/
-// "route53-dns" (the two supported ACME DNS-01 providers a wildcard
-// domain, e.g. "*.example.com", needs: internal/ingress.IsWildcardDomain
-// is the only thing that marks a domain wildcard-eligible, there is no
-// separate flag for it. Only one provider is ever active at once;
-// Cloudflare takes precedence if both are configured).
+// Wildcard domains need an ACME DNS-01 provider (cloudflare-dns or route53-dns); only one is active, Cloudflare first.
 func runDomains(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, domainsUsage(prog))

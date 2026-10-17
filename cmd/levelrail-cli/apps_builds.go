@@ -6,16 +6,7 @@ import (
 	"io"
 )
 
-// runAppsBuilds dispatches "apps builds <verb> [flags]" to trigger: POST
-// /api/v1/apps/{name}/builds (internal/api/builds.go's own
-// handleTriggerBuild), building an image from a git source and
-// deploying it. Asynchronous, like a webhook-triggered deploy: the
-// response is only a deploy_attempts id (beginBuildDeployAttempt), the
-// fetch and build run in the background. There is no separate
-// build-history listing: a triggered build's progress and outcome show
-// up in the same deploy-attempts history "apps deploys list"/"apps
-// deploys logs" already surface, so history stays on "apps deploys"
-// rather than a second, redundant command here.
+// Builds are async like webhook deploys: the response is a deploy attempt id, and progress shows in deploys history.
 func runAppsBuilds(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsBuildsUsage(prog))

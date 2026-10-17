@@ -10,11 +10,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsEnvironments dispatches "apps environments <verb> [flags]" to
-// one of create/list/delete, the CLI counterpart of
-// internal/api/environments.go's own routes. An environment is a
-// staging/production-style label scoped to one project, tagged onto an
-// app via "apps set-environment".
 func runAppsEnvironments(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsEnvironmentsUsage(prog))
@@ -125,10 +120,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsEnvironmentsUpdate implements "apps environments update <id>
-// --protected=true|false": PATCH /api/v1/environments/{id}
-// (internal/api/environments.go's handleUpdateEnvironment). The only
-// field this ever changes today, matching the API's own scope.
+// protected is the only updatable field today.
 func runAppsEnvironmentsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments update", "print the updated environment as JSON to stdout and nothing else", stderr)
 	var protected bool
@@ -370,10 +362,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsEnvironmentsEnvDiff implements "apps environments env-diff
-// <project-id> <env-a> <env-b>": GET .../environments/compare
-// (internal/api/environment_compare.go's handleCompareEnvironmentEnv).
-// A secret-marked value is never shown, on either side or in the diff.
+// Secret-marked values are never shown, on either side of the diff.
 func runAppsEnvironmentsEnvDiff(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments env-diff", "print the comparison as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsEnvironmentsEnvDiffUsage(prog)) }

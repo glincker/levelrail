@@ -14,10 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// runApproveSignIn implements `<binary> approve-signin <request-id> --match N`.
-// It opens the data directory directly, so root on the host is the approver:
-// no session, token or email is needed. The number is the one the waiting
-// browser shows, and a wrong one denies the request like the dashboard does.
+// Opens the data directory directly, so root on the host is the approver; no session is needed.
+// A wrong --match number denies the request, as the dashboard does.
 func runApproveSignIn(ctx context.Context, logger *slog.Logger, args []string, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
 	fs := flag.NewFlagSet("approve-signin", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)

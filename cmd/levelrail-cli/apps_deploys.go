@@ -76,14 +76,6 @@ Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
-// runAppsDeploysList implements "apps deploys list <name>": GET
-// /api/v1/apps/{name}/deploy-attempts (internal/api/deploy_attempts.go's
-// handleListDeployAttempts), the real row-per-trigger-call history the
-// dashboard's own DeployAttemptsList.tsx already renders. Existed at the
-// API layer with no CLI command reaching it at all until now: apps
-// deploys compare's own doc comment used to point a caller here with
-// "--json elsewhere" as the only way to actually get an ID, since there
-// was no "elsewhere" in this CLI to point at.
 func runAppsDeploysList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys list", "print the attempt list as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysListUsage(prog)) }
@@ -121,16 +113,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsDeploysCompare implements "apps deploys compare <name> --from ID
-// [--to ID]": GET /api/v1/apps/{name}/deploys/compare
-// (internal/api/deploy_compare.go's handleCompareDeploys). --to is
-// optional; omitting it compares --from against the app's current live
-// desired state, the same "compare to current" shortcut the web
-// frontend's comparison view offers. Deploy attempt IDs aren't looked up
-// by this command (no client-side history-listing endpoint exists yet in
-// this CLI, see apps_deploy.go's own doc comment on the same gap for
-// rollback); find them via the dashboard's deploy history page or GET
-// .../deploy-attempts with --json elsewhere.
+// Omitting --to compares --from against the app's current desired state.
 func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys compare", "print the comparison as JSON to stdout and nothing else", stderr)
 	var from, to string
@@ -169,10 +152,7 @@ func runAppsDeploysCompare(prog string, args []string, stdout, stderr io.Writer,
 	return exitOK
 }
 
-// printDeployCompareHuman renders cmp as a readable before/after summary:
-// each side's identity line, the fields that actually changed, and the
-// explicit not-tracked note so a terminal user gets the same honesty the
-// JSON response and the web UI both carry.
+// Always prints the not-tracked note, so terminal output matches the JSON and web views.
 func printDeployCompareHuman(w io.Writer, cmp deployCompareResource) {
 	_, _ = fmt.Fprintf(w, "%s\n", cmp.ServiceName)
 	_, _ = fmt.Fprintf(w, "  from: %s\n", deployCompareSideLabel(cmp.From))
@@ -231,22 +211,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsDeploysLogs implements "apps deploys logs <name> <deploy-id>":
-// GET /api/v1/apps/{name}/deploys/{deployId}/logs/download
-// (internal/api/deploy_log_download.go's handleDownloadDeployLog),
-// writing the attempt's raw build/log output straight to stdout. No
-// --json/--output/--query here: unlike this command group's other two
-// subcommands, there is no structured alternative to a deploy's own log
-// text, so shell redirection ("> file.txt") is the intended way to
-// save it, the same convention "apps logs" already leaves to the shell
-// rather than adding its own --download-to flag.
-//
-// --follow switches to a live tail instead: GET
-// /api/v1/apps/{name}/deploys/{deployId}/logs
-// (internal/api/deploy_attempts.go's handleDeployLogStream), the same SSE
-// connection the dashboard's deploy log page opens, the exact live-tail
-// shape "apps logs --follow" already establishes for the app-log
-// equivalent.
+// Without --follow this prints the saved log, so redirect the shell to save it.
 func runAppsDeploysLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys logs", "with --follow, print one JSON object per line instead of raw log text; not applicable otherwise", stderr)
 	var follow bool
@@ -279,13 +244,7 @@ func runAppsDeploysLogs(prog string, args []string, stdout, stderr io.Writer, lo
 	return exitOK
 }
 
-// runAppsDeploysLogsFollow implements "apps deploys logs <name>
-// <deploy-id> --follow", mirroring runAppsLogsFollow (apps_logs.go): opens
-// client.StreamDeployLog and prints each line as it arrives until ctx is
-// canceled (Ctrl+C or SIGTERM) or the server closes the connection
-// (the attempt finished and this was a live tail, or it was already
-// finished and this was just a one-shot replay of the persisted log; see
-// handleDeployLogStream's own doc comment for which).
+// Returns on ctx cancel or server close, which also happens when the attempt already finished.
 func runAppsDeploysLogsFollow(client *Client, name, deployID string, stdout, stderr io.Writer, jsonOut bool) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

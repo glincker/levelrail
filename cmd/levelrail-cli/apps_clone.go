@@ -9,10 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsClone implements "apps clone <name> <new-name>": POST
-// /api/v1/apps/{name}/clone. Domains, secret values, and node placement
-// never carry over to the clone (internal/api/apps_clone.go's own doc
-// comment); the caller re-sets those explicitly afterward.
+// Domains, secret values, and node placement are not copied to the clone; callers must set them again.
 func runAppsClone(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps clone", "print the cloned app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsCloneUsage(prog)) }

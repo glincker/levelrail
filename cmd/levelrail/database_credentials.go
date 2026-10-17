@@ -9,24 +9,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 )
 
-// postgresCredentialsFor returns the Postgres credentials
-// database.WithPostgresCredentials needs for dbName, generating and
-// persisting a random password on first call and returning the same
-// one on every subsequent call, so a reconcile pass never rotates a
-// running database's password out from under it (envelope encryption
-// is exactly what makes "persisted, but only this process can read it
-// back" possible here).
-//
-// Returns (nil, nil), not an error, when mgr is nil: secrets support
-// is itself optional (no APP_MASTER_KEY configured),
-// and a Postgres database on an instance without secrets configured
-// stays exactly as blocked as it already was, database.Controller's own
-// credentialsBlockedResult condition explains why to the operator.
-//
-// The username is dbName itself, not a generated or brand-derived
-// value: Postgres' own "role name equals database name" convention,
-// and it never needs envelope encryption since it isn't a secret, only
-// the password is.
+// Generated once and persisted, so a reconcile pass never rotates a running database's password.
+// Returns nil credentials, not an error, when mgr is nil (no APP_MASTER_KEY), leaving the database blocked.
+// The username is dbName, Postgres's role-name-equals-database-name convention; only the password is secret.
 func postgresCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.PostgresCredentials, error) {
 	if mgr == nil {
 		return nil, nil
@@ -57,12 +42,7 @@ func postgresCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName st
 	return &database.PostgresCredentials{Username: dbName, Password: password}, nil
 }
 
-// mysqlCredentialsFor is postgresCredentialsFor's exact counterpart for
-// database.WithMySQLCredentials: same generate-once-persist-forever
-// shape, same "nil manager means nil credentials, not an error" contract,
-// its own storage key (database.MySQLPasswordEnvKey) so it never collides with a
-// postgres database of the same name. See postgresCredentialsFor's own
-// doc comment for the full reasoning, unchanged here.
+// Same contract as postgresCredentialsFor, with its own storage key so same-named databases do not collide.
 func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MySQLCredentials, error) {
 	if mgr == nil {
 		return nil, nil
@@ -93,13 +73,7 @@ func mysqlCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 	return &database.MySQLCredentials{Username: dbName, Password: password}, nil
 }
 
-// mongoCredentialsFor is postgresCredentialsFor's exact counterpart for
-// database.WithMongoDBCredentials: same generate-once-persist-forever
-// shape, same "nil manager means nil credentials, not an error"
-// contract, its own storage key (database.MongoPasswordEnvKey) so it never
-// collides with a same-named database of a different engine. See
-// postgresCredentialsFor's own doc comment for the full reasoning,
-// unchanged here.
+// Same contract as postgresCredentialsFor, with its own storage key so same-named databases do not collide.
 func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MongoDBCredentials, error) {
 	if mgr == nil {
 		return nil, nil
@@ -130,13 +104,7 @@ func mongoCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName strin
 	return &database.MongoDBCredentials{Username: dbName, Password: password}, nil
 }
 
-// mariadbCredentialsFor is postgresCredentialsFor's exact counterpart
-// for database.WithMariaDBCredentials: same generate-once-persist-
-// forever shape, same "nil manager means nil credentials, not an error"
-// contract, its own storage key (database.MariaDBPasswordEnvKey) so it never
-// collides with a mysql database of the same name. See
-// postgresCredentialsFor's own doc comment for the full reasoning,
-// unchanged here.
+// Same contract as postgresCredentialsFor, with its own storage key so same-named databases do not collide.
 func mariadbCredentialsFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.MariaDBCredentials, error) {
 	if mgr == nil {
 		return nil, nil

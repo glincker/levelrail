@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsSchedule dispatches "app-volume-backups schedule
-// <verb> <app> <volume> [flags]" to one of set/clear, mirroring
-// runBackupsSchedule's exact dispatch shape (backups_schedule.go) for
-// the volume resource kind.
+// runAppVolumeBackupsSchedule dispatches set/clear for an app volume's backup schedule.
 func runAppVolumeBackupsSchedule(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appVolumeBackupsScheduleUsage(prog))

@@ -1,19 +1,5 @@
-// Command levelrail-agent is the node agent binary (the
-// repo layout names it, this is the first pass to actually build it).
-// Dials out to the control plane (ADR 003, never
-// accepts an inbound connection), enrolls once using a one-time join
-// token, persists the resulting identity, then holds one persistent
-// Session open for as long as it runs, serving every incoming request
-// against this node's own local Docker daemon (internal/docker, the
-// exact "never shell the CLI" invariant the control plane's own Docker
-// access already follows).
-//
-// This binary is a thin main(): every real behavior (enrollment, the
-// Session loop, request dispatch against docker.Runtime) lives in
-// internal/agent, already tested there without a real process or
-// network connection. What's here is env/flag parsing, identity file
-// persistence, and the reconnect loop ADR 003's Consequences section
-// calls out as real, standing Phase 3 work.
+// Thin main: every behavior (enrollment, Session loop, Docker dispatch) lives in internal/agent.
+// This file only parses flags and env, persists identity, and runs the reconnect loop.
 package main
 
 import (
@@ -44,11 +30,7 @@ const (
 	// plane's own agent-ca.{crt,key}.pem (cmd/levelrail/main.go).
 	defaultIdentityFile = "./levelrail-agent-identity.json"
 
-	// reconnectBaseDelay/reconnectMaxDelay bound RunSession's own
-	// per-attempt failures with exponential backoff, so a control plane
-	// that's briefly unreachable doesn't get hammered with reconnect
-	// attempts, but a genuinely transient blip still recovers in
-	// seconds, not minutes.
+	// Exponential backoff on RunSession failures, so a briefly unreachable control plane is not hammered.
 	reconnectBaseDelay = 1 * time.Second
 	reconnectMaxDelay  = 30 * time.Second
 
@@ -115,10 +97,7 @@ func run(logger *slog.Logger) error {
 
 	meshCfg, err := setupAgentMesh(ctx, id.NodeID, logger)
 	if err != nil {
-		// Not fatal, same reasoning cmd/levelrail's own setupMesh call
-		// site already applies: a misconfigured, opted-in mesh
-		// (APP_MESH_ENABLED=1) should not stop this node from serving
-		// Docker operations, which is this binary's actual job.
+		// Non-fatal: a misconfigured mesh must not stop this node from serving Docker operations.
 		logger.Warn("mesh not configured", slog.String("error", err.Error()))
 	}
 	if meshCfg != nil {
@@ -132,11 +111,7 @@ func run(logger *slog.Logger) error {
 	return nil
 }
 
-// loadBuildRunner connects to this node's own BuildKit, so the control
-// plane can dispatch builds here once an operator marks this node
-// build-capable. Non-fatal: a node whose BuildKit is unreachable still
-// serves every container operation, and a dispatched build fails with a
-// clear reason rather than the agent refusing to start.
+// Non-fatal: an unreachable BuildKit still leaves container operations working.
 func loadBuildRunner(ctx context.Context, logger *slog.Logger, guardHost string) (agent.BuildRunner, func() error) {
 	rawOpts := []dockerclient.Opt{dockerclient.FromEnv, dockerclient.WithAPIVersionNegotiation()}
 	if guardHost != "" {
@@ -167,10 +142,7 @@ func loadBuildRunner(ctx context.Context, logger *slog.Logger, guardHost string)
 	}
 }
 
-// runReconnectLoop calls agent.RunSession repeatedly with exponential
-// backoff between attempts, until ctx is cancelled. It never gives up on
-// its own: a reverse-dialed agent that stops retrying would be worse than
-// the SSH-per-command tools ADR 003 rejected.
+// Retries until ctx is cancelled: a reverse-dialed agent that gives up is unreachable.
 func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, file *agent.IdentityFile, rt docker.Runtime, builder agent.BuildRunner, meshCfg *meshAgentSetup, logger *slog.Logger) {
 	holder := renewer.Holder()
 	opts := []agent.SessionOption{agent.WithRenewer(renewer)}
@@ -288,11 +260,7 @@ func runReenroll(ctx context.Context, addr, path string, logger *slog.Logger) er
 	return nil
 }
 
-// loadOrEnroll loads a previously persisted identity from path, or, if
-// none exists yet, enrolls with the control plane using APP_JOIN_TOKEN
-// and persists the result. A node only ever enrolls once in its
-// lifetime; every subsequent run of this binary against the same
-// identity file just loads what's already there.
+// Enrolls only when no identity file exists yet; a node enrolls once per lifetime.
 func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (*agent.Identity, error) {
 	file := agent.NewIdentityFile(path)
 	id, err := file.ResolveStaged(ctx, agent.CheckIdentityAt(addr))
@@ -369,14 +337,7 @@ func identityFilePath() string {
 	return p
 }
 
-// heartbeatIntervalFromEnv reads APP_NODE_HEARTBEAT_INTERVAL, the same
-// env var name cmd/levelrail's own main.go reads for the control
-// plane's local-node self-heartbeat, so one setting governs both
-// cadences by default: how often this agent sends an unprompted
-// Heartbeat frame up its Session stream (internal/agent.WithHeartbeatInterval).
-// A zero return means unset or unparseable: runReconnectLoop leaves
-// agent.RunSession's own default in place rather than passing a zero
-// duration through.
+// Zero means unset or unparseable, so RunSession's default interval applies.
 func heartbeatIntervalFromEnv() time.Duration {
 	raw := os.Getenv("APP_NODE_HEARTBEAT_INTERVAL")
 	if raw == "" {
@@ -389,11 +350,7 @@ func heartbeatIntervalFromEnv() time.Duration {
 	return d
 }
 
-// keepaliveFromEnv reads APP_NODE_KEEPALIVE_TIME/APP_NODE_KEEPALIVE_TIMEOUT,
-// the same env var names cmd/levelrail's own main.go reads for the agent
-// gRPC server's side of this connection's HTTP/2 PING keepalive
-// (internal/agent.WithKeepalive). Either returning zero means
-// runReconnectLoop leaves agent.RunSession's own defaults in place.
+// Zero from either variable means RunSession keeps its own keepalive defaults.
 func keepaliveFromEnv() (t, timeout time.Duration) {
 	if raw := os.Getenv("APP_NODE_KEEPALIVE_TIME"); raw != "" {
 		if d, err := time.ParseDuration(raw); err == nil {

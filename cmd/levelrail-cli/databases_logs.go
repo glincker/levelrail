@@ -11,13 +11,6 @@ import (
 	"time"
 )
 
-// runDatabasesLogs implements "databases logs <name>": GET
-// /api/v1/databases/{name}/logs (internal/api/database_logs.go's
-// handleQueryDatabaseLogs), the database counterpart to "apps logs"
-// (apps_logs.go). --follow switches to a live tail instead: GET
-// /api/v1/databases/{name}/logs/stream (handleLiveDatabaseLogStream),
-// the same query/stream split and the same client-side --tail trim
-// "apps logs" already establishes.
 func runDatabasesLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases logs", "print entries as a JSON array to stdout and nothing else", stderr)
 	var since, from, to, query string

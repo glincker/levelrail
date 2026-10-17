@@ -39,13 +39,7 @@ func runNodesPatchStatus(prog string, args []string, stdout, stderr io.Writer, l
 	return exitOK
 }
 
-// formatPatchStatusHuman renders a nodePatchStatusResource the way an
-// operator reads it at a glance: "unknown, not checked" when
-// HostPatchCollector has never written a sample for this node (no
-// supported package manager, or the collector hasn't run yet), "up to
-// date" for a checked, genuinely empty count, otherwise the total with a
-// security count called out separately since that's the number an
-// operator actually needs to act on urgently.
+// Unchecked and up to date are distinct: a never-sampled node is not the same as zero updates.
 func formatPatchStatusHuman(status nodePatchStatusResource) string {
 	if !status.Checked {
 		return "unknown, not checked"

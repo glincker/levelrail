@@ -7,12 +7,7 @@ import (
 	"io"
 )
 
-// runSettingsIngress dispatches "settings ingress <verb> [flags]" to one
-// of get/set, the singleton primary-domain/ACME configuration
-// (internal/api/ingress_settings.go). This is the CLI counterpart of the
-// dashboard's own Domains page ingress card; a domain check
-// (GET /api/v1/settings/ingress/check) stays dashboard-only for now,
-// since it exists to render a visual DNS status, not to script setup.
+// The domain check stays dashboard-only: it renders a visual DNS status, not a scriptable setup step.
 func runSettingsIngress(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, settingsIngressUsage(prog))

@@ -6,11 +6,6 @@ import (
 	"io"
 )
 
-// runAuthTwoFactorSetup implements "auth 2fa setup": POST
-// /api/v1/auth/2fa/setup, minting a fresh unconfirmed TOTP secret. Run
-// "auth 2fa enable --code CODE" next with a live code from an
-// authenticator app seeded from the printed secret or provisioning URI
-// to finish enrollment.
 func runAuthTwoFactorSetup(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth 2fa setup", "print the secret and provisioning URI as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authTwoFactorSetupUsage(prog)) }

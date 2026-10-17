@@ -27,10 +27,8 @@ func (p storagePutter) PutObject(ctx context.Context, targetID, key string, body
 	return client.Put(ctx, key, bytes.NewReader(body), contentType, "")
 }
 
-// setupDataExport starts the opt-in log, audit and metric exporters and
-// enables the export routes and the /metrics scrape endpoint. Without a
-// master key, destinations that need a header or signing key cannot be
-// saved, but unauthenticated ones and the scrape endpoint still work.
+// Without a master key, destinations needing a header or signing key cannot be saved.
+// Unauthenticated destinations and the scrape endpoint still work.
 func setupDataExport(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, logs *telemetry.LogBroadcaster, router *api.Router) {
 	deps := dataexport.Deps{
 		Store:    db,

@@ -6,11 +6,7 @@ import (
 	"io"
 )
 
-// runNetworkSharesUpdate implements "network-shares update <id>": PUT
-// /api/v1/network-shares/{id}, a full replace of
-// name/protocol/host/remote-path/mount-options/username. --password is
-// optional here, unlike "network-shares create": omitted, the share
-// keeps its existing stored password; given, it rotates it.
+// runNetworkSharesUpdate implements "network-shares update <id>": PUT /api/v1/network-shares/{id}. Omitting --password keeps the stored one.
 func runNetworkSharesUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "network-shares update", "print the updated network share as JSON to stdout and nothing else", stderr)
 	var name, protocol, host, remotePath, mountOptions, username, password string

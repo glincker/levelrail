@@ -10,10 +10,7 @@ import (
 	"time"
 )
 
-// newRegistryCredentialEchoServer starts a test server that decodes a
-// create or update request into gotBody and responds with a registry
-// credential resource built from the request plus id, recording the
-// request path and method when the caller passes non-nil pointers.
+// Echoes the request back as a credential, recording the path and method when pointers are given.
 func newRegistryCredentialEchoServer(t *testing.T, id string, gotPath, gotMethod *string) (*httptest.Server, *createRegistryCredentialRequest) {
 	t.Helper()
 	gotBody := &createRegistryCredentialRequest{}

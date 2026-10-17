@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-// runDatabases dispatches "databases <verb> [flags]" to one of
-// create/list/get, the same three-verb shape "apps" started with (see
-// apps.go's own doc comment on why create/list/get is the minimal set:
-// create is the point, list/get are companions for verifying it worked).
 func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))

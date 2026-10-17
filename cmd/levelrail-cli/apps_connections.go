@@ -8,14 +8,7 @@ import (
 	"text/tabwriter"
 )
 
-// This file: "apps connect"/"apps disconnect"/"apps connections
-// list|suggest", the CLI counterpart of internal/api's
-// POST/GET/DELETE /api/v1/apps/{name}/connections[/{env_var}] and
-// GET /api/v1/apps/{name}/connectable-databases (apps_connections.go):
-// letting an app declare more than one managed database connection
-// (store.DesiredService.DatabaseEnv) without app.yaml, the multi-
-// connection sibling of "apps database set/clear" (apps_database.go's
-// single-attachment shape).
+// apps connect, disconnect and connections are the CLI counterpart of the /api/v1/apps/{name}/connections routes.
 
 // runAppsConnect dispatches "apps connect <app> <database> [flags]":
 // POST /api/v1/apps/{name}/connections.

@@ -7,14 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runGitProviders implements "git-providers": GET /api/v1/git-providers
-// (internal/api/git_providers.go), a capability summary for every git
-// provider (github, gitlab, bitbucket, gitea) in one call, replacing
-// four separate "github-app status"/"gitlab-app status"/"bitbucket-app
-// status"/"gitea-app status" round-trips when a caller just wants an
-// overview. Read-only,
-// no subcommand, the same flat shape "containers" and "status" already
-// use for a single GET with no verb of its own.
+// Read-only flat GET: one call replaces the four per-provider status commands.
 func runGitProviders(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "git-providers", "print providers as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, gitProvidersUsage(prog)) }

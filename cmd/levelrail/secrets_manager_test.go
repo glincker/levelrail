@@ -70,12 +70,7 @@ func TestLoadOrGenerateMasterKey_ReadErrorIsNotTreatedAsMissing(t *testing.T) {
 		t.Fatalf("seed a real persisted key: %v", err)
 	}
 
-	// Write-only, no read: os.ReadFile fails (not os.ErrNotExist), but
-	// os.WriteFile still succeeds, since it only needs write access to an
-	// already-existing file. This is exactly the shape of the real bug:
-	// the buggy code fell through to "no key yet" on ANY read error, then
-	// successfully generated and wrote a brand-new key over the real one
-	// without ever failing at all.
+	// Write-only file: ReadFile fails but WriteFile succeeds. Regression: any read error was treated as 'no key yet' and overwrote the real key.
 	if err := os.Chmod(keyPath, 0o200); err != nil {
 		t.Fatalf("chmod key file write-only: %v", err)
 	}

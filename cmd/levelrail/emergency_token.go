@@ -82,11 +82,7 @@ func randomEmergencyID(prefix string) (string, error) {
 	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// runEmergencyToken implements `<binary> emergency-token [--username U] [--ttl 1h]`.
-// It needs the same host access as recover-admin (the data directory), mints a
-// short-lived root API token through the auth engine, mirrors it into the
-// platform table so it is listed and revocable like any other, and records an
-// audit entry. The secret is printed once and never stored in plaintext.
+// Needs the same host access as recover-admin; the secret is printed once and never stored in plaintext.
 func runEmergencyToken(ctx context.Context, logger *slog.Logger, args []string, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
 	username, ttl, err := parseEmergencyTokenArgs(args, os.LookupEnv)
 	if err != nil {

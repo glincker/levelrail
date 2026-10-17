@@ -6,22 +6,12 @@ import (
 	"io"
 )
 
-// validSLOBurnAutoRollbackModes mirrors internal/api's own
-// validSLOBurnAutoRollbackModes (deploys.go): the server validates too,
-// this just gives a usage error before making a request for an obviously
-// wrong value.
+// Mirrors the server's mode check so an obviously wrong value fails before a request.
 var validSLOBurnAutoRollbackModes = map[string]bool{
 	"off": true, "auto": true, "dry_run": true, "pause_for_human": true,
 }
 
-// runAppsAutoRollbackSLOBurn dispatches "apps auto-rollback-slo-burn
-// <verb> [flags]" to one of set/status, the CLI counterpart of
-// internal/api/deploys.go's own GET/PUT
-// /api/v1/apps/{name}/auto-rollback-slo-burn routes: how an app reacts
-// the next time a kind=slo_burn alert rule fires for it. "off" by
-// default, mirroring "apps auto-rollback" (apps_auto_rollback.go) but a
-// set <mode> verb rather than enable/disable, since there are four modes
-// to choose between, not two.
+// Dispatches set/status; the mode defaults to off.
 func runAppsAutoRollbackSLOBurn(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsAutoRollbackSLOBurnUsage(prog))

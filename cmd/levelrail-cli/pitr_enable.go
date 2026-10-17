@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runPITREnable implements "pitr enable <database>": POST
-// /api/v1/databases/{name}/pitr (internal/api/pitr.go's own
-// handleEnablePITR), AbilityWriteSensitive-gated. Returns 400 if the
-// database's engine isn't postgres, the only engine PITR supports today.
+// Returns 400 for non-postgres engines, the only engine PITR supports.
 func runPITREnable(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr enable", `print {"status": "enabled"} as JSON to stdout on success and nothing else`, stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, pitrEnableUsage(prog)) }

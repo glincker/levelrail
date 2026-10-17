@@ -10,10 +10,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// TestResolveProtectedEnvironmentConfirmation is a pure, table-driven
-// test of the interactive prompt itself: no HTTP, no flag parsing,
-// mirroring resolveRestoreConfirmation's own test shape
-// (backups_restore_test.go).
 func TestResolveProtectedEnvironmentConfirmation(t *testing.T) {
 	tests := []struct {
 		name    string

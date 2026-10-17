@@ -7,13 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runAppsMoves dispatches "apps moves <verb> [flags]" to one of
-// list/get: GET /api/v1/apps/{name}/moves and .../moves/{id}
-// (internal/api/apps_move_with_volumes.go), every "apps set-node
-// --with-volumes"/"apps clear-node --with-volumes" attempt's own
-// history. "apps set-node --with-volumes" already polls
-// GET .../moves/{id} internally while a move is running; this is the
-// standalone surface for inspecting past attempts afterward.
 func runAppsMoves(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsMovesUsage(prog))

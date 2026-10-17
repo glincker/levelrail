@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runNodesJoinToken implements "nodes join-token": POST
-// /api/v1/nodes/join-tokens. handleCreateNodeJoinToken's response
-// returns the plaintext token exactly once (its own doc comment: "the
-// only way to redeem a token", never recoverable from the server
-// again), the same one-time-secret contract "tokens create" already
-// prints with an explicit note that it will not be shown again.
+// The plaintext token is returned once and never recoverable, so it is printed with a warning.
 func runNodesJoinToken(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes join-token", "print the new join token as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesJoinTokenUsage(prog)) }

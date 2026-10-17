@@ -8,26 +8,8 @@ import (
 	"slices"
 )
 
-// runTokensCreate implements "tokens create --name NAME --abilities
-// LIST": POST /api/v1/auth/tokens (internal/api/tokens.go's own
-// handleCreateToken), authenticated with a freshly established session
-// (username/password, prompted if omitted), the same reason and the
-// same login step "auth login" performs (auth_login.go's own doc
-// comment). Unlike "auth login", this command does not write the
-// credentials file: it is for minting a token for something else to
-// use (a CI job, a scoped MCP credential), not for this CLI's own
-// future calls, so nothing about the caller's own local setup should
-// change as a side effect of running it.
-//
-// handleCreateToken's response returns the plaintext token exactly
-// once (confirmed by reading that handler directly: createTokenResponse
-// embeds tokenResource plus a Token field, and handleListTokens's own
-// response type never includes it, matching that handler's own doc
-// comment "never returns a token secret... once a token is minted, its
-// plaintext is gone from this API's world entirely"). This command
-// prints it once, with an explicit note that it will not be shown
-// again, the same GitHub PAT convention the server's own doc comments
-// describe.
+// Prints the plaintext token once; it is not retrievable afterwards.
+// Does not write the local credentials file.
 func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens create", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var name, abilitiesFlag, agentName, agentDescription, presetFlag string

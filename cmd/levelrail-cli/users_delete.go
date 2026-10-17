@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runUsersDelete implements "users delete <id>": DELETE
-// /api/v1/users/{id}. Refused (400) for the caller's own user and for
-// the last remaining user, both enforced server-side
-// (handleDeleteUser's own doc comment), surfaced here as-is.
+// The server refuses deleting your own user or the last user, so the CLI does not check.
 func runUsersDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "users delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, usersDeleteUsage(prog)) }

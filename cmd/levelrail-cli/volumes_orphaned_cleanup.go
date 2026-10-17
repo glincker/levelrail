@@ -6,18 +6,8 @@ import (
 	"io"
 )
 
-// runVolumesOrphanedCleanup implements "volumes-orphaned-cleanup": POST
-// /api/v1/system/volumes/orphaned/cleanup
-// (internal/api/volumes_orphaned.go). --names is required and takes a
-// comma-separated list of exact volume names, the CLI's own equivalent
-// of the confirm-before-delete flow the dashboard's own dialog gives an
-// operator: there is no "--all" shorthand that deletes every currently
-// orphaned volume sight unseen, an operator must name what "%[1]s
-// volumes-orphaned" showed them was actually safe to remove. The control
-// plane still re-confirms each name is genuinely orphaned right now
-// before removing it (the request can be run well after the list was
-// reviewed), reporting anything that no longer qualifies back as
-// skipped rather than failing the whole call.
+// Names must be given explicitly, with no --all shorthand, so an operator confirms each removal.
+// The server re-checks each name is still orphaned and reports any that no longer qualify as skipped.
 func runVolumesOrphanedCleanup(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "volumes-orphaned-cleanup", "print the cleanup result as JSON to stdout and nothing else", stderr)
 	namesFlag := fs.String("names", "", "comma-separated list of exact orphaned volume names to remove (required)")

@@ -6,13 +6,6 @@ import (
 	"io"
 )
 
-// runBackupsDownload implements "backups download <database> <backup-id>":
-// GET /api/v1/databases/{name}/backups/{historyId}/download
-// (internal/api/backup_download.go's own handleDownloadBackup), writing
-// the backup's raw object bytes straight to stdout, the same
-// "no --json/--output/--query, redirect to save a copy" convention
-// "apps deploys logs" already establishes for its own raw-bytes download
-// (apps_deploys.go's runAppsDeploysLogs).
 func runBackupsDownload(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups download", "not applicable, the response body is always the raw backup file", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupsDownloadUsage(prog)) }

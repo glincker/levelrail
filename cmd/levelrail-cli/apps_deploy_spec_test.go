@@ -231,10 +231,7 @@ services:
 	}
 }
 
-// TestRun_AppsDeploySpec_SecretEnvNoValue covers declaring a secret's
-// NAME with no --secret value at all: the request must still carry
-// Secret/Required so the app can be created, with the value set later
-// via "apps secrets set" or a follow-up "apps deploy-spec --secret" run.
+// TestRun_AppsDeploySpec_SecretEnvNoValue checks a secret name with no value still sends Secret and Required.
 func TestRun_AppsDeploySpec_SecretEnvNoValue(t *testing.T) {
 	yaml := `version: 1
 services:

@@ -9,12 +9,7 @@ import (
 	"strings"
 )
 
-// engineParam* mirror internal/store's own Engine* constants
-// (internal/store/database.go), the engines validateDatabaseResource
-// (internal/api/databases.go) accepts today. Redeclared here rather
-// than imported, the same documented-wire-contract-only boundary
-// client.go's own wire-shape types already keep: this binary must
-// depend on what the API accepts, not on internal/store's Go constants.
+// Redeclared rather than imported, so this binary depends only on the wire contract the API accepts.
 const (
 	engineParamPostgres    = "postgres"
 	engineParamRedis       = "redis"
@@ -49,18 +44,12 @@ var supportedEngineParams = []string{
 	engineParamMemcached,
 }
 
-// createDatabaseFlags is runDatabasesCreate's raw, unvalidated input;
-// planDatabaseCreate's plain-data counterpart to apps_create.go's own
-// createFlags/planFromFlags split, kept separate so validation is a pure
-// function over plain data, testable without a flag.FlagSet in the loop.
+// Pure validation over plain data, so it is testable without a flag.FlagSet.
 type createDatabaseFlags struct {
 	name    string
 	engine  string
 	version string
-	// nodeID/nodeIDSet back --node-id, the database-kind counterpart to
-	// apps_create.go's own createFlags.nodeID/nodeIDSet: see that field's
-	// doc comment for the full "explicit override vs omitted triggers
-	// auto-placement" reasoning.
+	// An explicit --node-id overrides placement; omitting it triggers auto-placement.
 	nodeID    string
 	nodeIDSet bool
 	// existingVolume is "", "reuse" or "discard": what to do with the data
@@ -68,10 +57,7 @@ type createDatabaseFlags struct {
 	existingVolume string
 }
 
-// planDatabaseCreate validates f and builds the exact databaseResource
-// runDatabasesCreate will POST, mirroring
-// internal/api/databases.go's own validateDatabaseResource so a bad
-// --engine is reported here, not as a round trip to the server.
+// Mirrors the API's validateDatabaseResource so a bad --engine fails before any round trip.
 func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 	var missing []string
 	if f.name == "" {
@@ -98,27 +84,14 @@ func planDatabaseCreate(f createDatabaseFlags) (databaseResource, error) {
 		return databaseResource{}, newValidationError("--existing-volume must be reuse or discard")
 	}
 	plan := databaseResource{Name: f.name, Engine: f.engine, Version: f.version, ExistingVolume: f.existingVolume}
-	// --node-id is an explicit override; left unset, NodeID stays "" and,
-	// since DatabaseResource.NodeID carries `omitempty`, is
-	// indistinguishable on the wire from an explicit --node-id "": the
-	// control plane sees a genuinely omitted field either way and may
-	// auto-place this database, see DatabaseResource's own NodeID field
-	// doc comment (internal/apiclient/types.go).
+	// Left unset, NodeID is omitted on the wire, so the control plane may auto-place the database.
 	if f.nodeIDSet {
 		plan.NodeID = f.nodeID
 	}
 	return plan, nil
 }
 
-// runDatabasesCreate implements "databases create": POST
-// /api/v1/databases (internal/api/databases.go's own handleCreateDatabase).
-// Kept to exactly the fields that endpoint accepts (name, engine,
-// version); no --file path like "apps create" has, since there is no
-// databases: block support to parse here beyond what internal/spec
-// already covers for app.yaml's own services, and adding one would be
-// scope this command doesn't need to carry. --interactive/-i runs a
-// step-by-step wizard instead (databases_create_interactive.go); stdin
-// is only ever read from when that flag is given.
+// Sends only the fields the endpoint accepts; stdin is read only with --interactive.
 func runDatabasesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs := flag.NewFlagSet(prog+" databases create", flag.ContinueOnError)
 	fs.SetOutput(stderr)

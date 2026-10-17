@@ -2,30 +2,17 @@ package main
 
 import "time"
 
-// defaultTimeRangeWindow mirrors internal/api's own defaultQueryWindow
-// (internal/api/metrics.go), the lookback the server applies when a
-// caller omits "from". Shared by every command that queries a from/to
-// window (apps logs, apps/databases/nodes metrics) so they can't drift
-// from each other or from the server's own default. Every request still
-// sends an explicit "from", so a future change to the server's own
-// default only affects what these commands show with no window flags
-// given, never a silent disagreement about what "no window" means.
+// Always sent explicitly as from, so a server default change only affects runs with no window flags.
 const defaultTimeRangeWindow = time.Hour
 
-// timeRangeFlags is resolveTimeRange's raw, unvalidated input: exactly
-// what flag.FlagSet parsed for --since/--from/--to, no time math done
-// yet. Kept separate so resolveTimeRange is a pure function over plain
-// data, testable without a flag.FlagSet or the real clock in the loop.
+// Raw flag input; resolveTimeRange does the time math so it stays testable without a FlagSet.
 type timeRangeFlags struct {
 	since string
 	from  string
 	to    string
 }
 
-// resolveTimeRange turns f into the concrete [from, to] window a query
-// request sends, applying the --since > --from > default-window
-// precedence the flags' own usage text documents. now stands in for
-// time.Now() so this is deterministic and testable.
+// --since takes precedence over --from, then the default window. now is injected for tests.
 func resolveTimeRange(f timeRangeFlags, now time.Time) (from, to time.Time, err error) {
 	if f.since != "" && f.from != "" {
 		return time.Time{}, time.Time{}, newValidationError("--since and --from are mutually exclusive")
@@ -58,10 +45,7 @@ func resolveTimeRange(f timeRangeFlags, now time.Time) (from, to time.Time, err 
 	return from, to, nil
 }
 
-// parseStepFlag parses --step's optional Go duration string (e.g.
-// "60s"), matching internal/api's own parseStep contract (metrics.go):
-// empty means step<=0, raw unaggregated samples rather than a bucketed
-// aggregation.
+// Empty means step 0, which returns raw samples instead of buckets.
 func parseStepFlag(step string) (time.Duration, error) {
 	if step == "" {
 		return 0, nil

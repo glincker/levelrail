@@ -6,12 +6,6 @@ import (
 	"io"
 )
 
-// runAuditPurge implements "audit-purge": POST /api/v1/audit-log/purge
-// (internal/api/audit_retention.go), AbilityRoot-gated same as
-// "audit-log". Deletes every entry older than the control plane's own
-// configured retention window right now, for an operator who wants old
-// entries cleared immediately rather than waiting for the next
-// automatic sweep.
 func runAuditPurge(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-purge", "print the purge result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, auditPurgeUsage(prog)) }

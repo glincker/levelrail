@@ -14,47 +14,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// authSessionClient is a minimal HTTP client for the session-cookie-only
-// routes internal/api/router.go deliberately never accepts a bearer
-// token on: POST /api/v1/auth/login, GET /api/v1/auth/session, and
-// every /api/v1/auth/tokens route ("session-only, deliberately never
-// bearer-token authenticated... only an interactive human session can
-// manage the token set", router.go's own comment on that registration).
-//
-// This is a separate type from client.go's own Client on purpose:
-// Client's entire contract is "one bearer token, no session state" (see
-// its own doc comment), the right shape for every other command in this
-// CLI, and bolting a cookie jar onto it for the sake of the two commands
-// that need the opposite (auth login, tokens *) would blur that
-// contract for everyone else. A cookiejar.Jar is what makes the second
-// request in a login-then-mint-token sequence actually carry the first
-// request's Set-Cookie response: net/http.Client does nothing with a
-// response's cookies unless a Jar is attached.
-//
-// Real, load-bearing gap this inherits rather than works around: the
-// login response's session cookie is Secure (auth.go's handleLogin, by
-// design: "a session cookie is exactly the kind of value that must
-// never be sent back over a plain connection"), and Go's cookiejar
-// correctly refuses to attach a Secure cookie to a plain-http request.
-// Against the common local-dev target (defaultAPIURL, http://
-// localhost:8080, no TLS-terminating Caddy in front yet), the cookie
-// jar will accept the cookie but never send it back, so the
-// token-minting step of "auth login" fails with a 401 there. That
-// matches handleLogin's own documented caveat for direct plain-HTTP
-// access, not a bug in this client: working around it by manually
-// resending the cookie over http would defeat the Secure flag's actual
-// purpose, so this client doesn't do that.
+// Session-cookie-only client, kept apart from the bearer-token Client.
+// Secure login cookies are never sent over plain http, so token minting on local dev fails with 401 by design.
 type authSessionClient struct {
 	baseURL string
 	hc      *http.Client
 }
 
-// newAuthSessionClient builds an authSessionClient with its own cookie
-// jar, scoped to one call site's lifetime (one login, immediately
-// followed by whatever session-only calls that login was for). Never
-// shared across CLI invocations: this project's credentials file only
-// ever persists a bearer token (config.go's writeCredentialsFile), never
-// a session cookie, so there is nothing to reuse a jar across runs for.
+// Jar is scoped to one call: credentials store only a bearer token, never a session cookie.
 func newAuthSessionClient(baseURL string) (*authSessionClient, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {

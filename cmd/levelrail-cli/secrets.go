@@ -14,10 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 )
 
-// runSecrets dispatches "secrets <verb> [flags]": control-plane-wide
-// envelope encryption maintenance, distinct from "apps secrets".
-// Rotation deliberately has no MCP tool, to keep key material out of
-// agent processes; binding status reaches MCP through the doctor check.
+// Rotation has no MCP tool on purpose: key material stays out of agent processes.
 func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, secretsUsage(prog))

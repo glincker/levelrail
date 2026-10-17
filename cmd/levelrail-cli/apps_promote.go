@@ -9,19 +9,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsPromote implements "apps promote <name> --to <environment-id>
-// [--target <app-name>] [--preview]": moves name's current image onto a
-// sibling app tagged with --to within the same project
-// (internal/api/promote.go's own doc comment on why that, not "the same
-// logical app in another environment", is the real constraint), through
-// the same deploy path "apps deploy"/"apps rollback" already use.
-// --target disambiguates when more than one app in --to belongs to the
-// project; omit it to let the server auto-discover the sole candidate.
-//
-// --confirm/interactive-prompt behavior when --to is protected mirrors
-// apps_deploy.go's own doc comment: same server-side gate
-// (environmentNeedsConfirmation, internal/api/promote.go), same
-// client-side interactive fallback (resolveProtectedEnvironmentConfirmation).
+// --target is only needed when more than one app in --to belongs to the project.
+// Protected-environment confirmation matches apps deploy.
 func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps promote", "print the result as JSON to stdout and nothing else", stderr)
 	var to, target string
@@ -89,10 +78,7 @@ func runAppsPromote(prog string, args []string, stdout, stderr io.Writer, lookup
 	return exitOK
 }
 
-// printPromotePreviewHuman renders a promotion preview: which two apps
-// are involved, what would change, and the same explicit not-tracked
-// note printDeployCompareHuman (apps_deploys.go) prints, since this diff
-// carries the identical honest limitation, only image is ever compared.
+// Only image is compared, so the preview states that limitation explicitly.
 func printPromotePreviewHuman(w io.Writer, prev promotePreviewResource) {
 	_, _ = fmt.Fprintf(w, "promote %q -> %q (environment %q)\n", prev.SourceApp, prev.TargetApp, prev.Environment.Name)
 	_, _ = fmt.Fprintf(w, "  from: %s (image %s)\n", prev.From.AppName, prev.From.Image)

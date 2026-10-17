@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runAppsStop implements "apps stop <name>": POST /api/v1/apps/{name}/stop
-// (internal/api/apps.go's own handleStopApp), AbilityDeploy-gated, no
-// request body. Marks the service suspended so the reconciler stops its
-// container on the next pass; "apps start" clears the flag again.
+// Stop only sets a suspended flag; the reconciler stops the container on its next pass.
 func runAppsStop(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps stop", "print the app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsStopUsage(prog)) }

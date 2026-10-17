@@ -8,10 +8,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runPITRStatus implements "pitr status <database>": GET
-// /api/v1/databases/{name}/pitr (internal/api/pitr.go's own
-// handleGetPITRStatus), AbilityRead-gated: whether PITR is enabled and,
-// if so, the currently recoverable window a restore can target.
+// Reports whether PITR is enabled and the restore window it currently allows.
 func runPITRStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr status", "print pitr status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, pitrStatusUsage(prog)) }

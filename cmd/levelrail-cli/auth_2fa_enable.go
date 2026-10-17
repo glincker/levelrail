@@ -5,10 +5,7 @@ import (
 	"io"
 )
 
-// runAuthTwoFactorEnable implements "auth 2fa enable --code CODE": POST
-// /api/v1/auth/2fa/confirm, the second half of setup. On success the
-// server returns a fresh set of recovery codes in plaintext, shown here
-// exactly once, never recoverable from the server again afterward.
+// Recovery codes come back once in plaintext and are never recoverable from the server.
 func runAuthTwoFactorEnable(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth 2fa enable", "print the recovery codes as a JSON array to stdout and nothing else", stderr)
 	var code string

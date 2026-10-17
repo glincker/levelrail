@@ -7,10 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runChannelsDeliveries implements "channels deliveries <id>": GET
-// /api/v1/notification-channels/{id}/deliveries, this channel's send
-// history (deploy outcomes, alert rules, and test-send clicks alike),
-// newest first.
 func runChannelsDeliveries(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels deliveries", "print deliveries as a JSON array to stdout and nothing else", stderr)
 	var limit int

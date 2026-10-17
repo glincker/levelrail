@@ -39,10 +39,7 @@ func (m stringMapFlag) Set(s string) error {
 	return nil
 }
 
-// vaultEnvFlag is a flag.Value for a repeatable "KEY=path#field" flag
-// (--vault-secret), the vault-sourced counterpart to stringMapFlag's
-// literal-value shape above: the value is a Vault KV v2 path and a field
-// name within it, never a value itself.
+// Value is a path#field reference into Vault, never a secret value itself.
 type vaultEnvFlag map[string]appVaultEnvRef
 
 func (m vaultEnvFlag) String() string {
@@ -56,10 +53,7 @@ func (m vaultEnvFlag) String() string {
 	return strings.Join(pairs, ",")
 }
 
-// Set splits s on the first "=" into a key and a "path#field" value,
-// then splits that on the last "#" into path and field: a Vault KV path
-// itself may legitimately contain "#", so splitting from the right
-// keeps a path like "secret/data/my#app" intact.
+// Splits on the last '#' so a Vault KV path containing '#' stays intact.
 func (m vaultEnvFlag) Set(s string) error {
 	key, ref, ok := strings.Cut(s, "=")
 	if !ok || key == "" {
@@ -77,11 +71,7 @@ func (m vaultEnvFlag) Set(s string) error {
 	return nil
 }
 
-// egressAllowFlag is a flag.Value for a repeatable "host:port" flag
-// (--allow), accumulating into a slice: an app's egress allowlist is an
-// ordered list of entries, not a map, so this mirrors stringMapFlag's
-// "repeatable flag, stdlib has no native support" shape rather than its
-// map storage.
+// Ordered list, not a map: an egress allowlist is a sequence of entries.
 type egressAllowFlag []appEgressAllow
 
 func (f *egressAllowFlag) String() string {
@@ -95,10 +85,7 @@ func (f *egressAllowFlag) String() string {
 	return strings.Join(parts, ",")
 }
 
-// Set splits s on the last ":" into a host and a port: a bare hostname
-// never contains ":", so splitting from the right keeps this correct
-// without needing to special-case IPv6 literals, which app.yaml's own
-// egress.allow schema doesn't accept as a host either.
+// Splits on the last ':' so hosts never need IPv6 special-casing, matching the egress.allow schema.
 func (f *egressAllowFlag) Set(s string) error {
 	sep := strings.LastIndex(s, ":")
 	if sep < 0 {
@@ -116,12 +103,7 @@ func (f *egressAllowFlag) Set(s string) error {
 	return nil
 }
 
-// apiFlagSet builds a FlagSet named prog+" "+cmdLabel with the
-// --token/--api-url/--profile/--json/--output/--query flags most
-// subcommands take, so each command only wires up the flags unique to
-// itself. --json is kept as shorthand for --output json (see
-// resolveOutputFormat) so existing scripts built against it keep
-// working unchanged.
+// --json stays as shorthand for --output json so existing scripts keep working.
 func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, tokenFlag, apiURLFlag, profileFlag *string, jsonOut *bool, outputFlag, queryFlag *string) {
 	fs = flag.NewFlagSet(prog+" "+cmdLabel, flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -133,32 +115,20 @@ func apiFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.Fl
 	return fs, tokenFlag, apiURLFlag, profileFlag, jsonOut, outputFlag, queryFlag
 }
 
-// bindOutputQueryFlags registers --output and --query on fs. Split out
-// of apiFlagSet so the handful of commands that build their own
-// FlagSet by hand (rather than through apiFlagSet/sessionFlagSet) can
-// still get both flags with one call instead of duplicating the flag
-// descriptions.
+// Split out so hand-built FlagSets can share the output flags without duplicating descriptions.
 func bindOutputQueryFlags(fs *flag.FlagSet) (outputFlag, queryFlag *string) {
 	outputFlag = fs.String("output", "", "output format: json, table, or text (default table; --json is shorthand for --output json)")
 	queryFlag = fs.String("query", "", "JMESPath expression to filter the result before printing (e.g. \"[?status=='running'].name\")")
 	return outputFlag, queryFlag
 }
 
-// apiClientFromFlags builds the API client from resolved
-// --token/--api-url/--profile flag values, the
-// NewClient(resolveAPIURL(...), resolveToken(...)) call most
-// subcommands make.
 func apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag string, lookupEnv func(string) (string, bool)) *Client {
 	profile := resolveProfile(profileFlag, lookupEnv)
 	applyScope(prog, profile, lookupEnv)
 	return NewClient(resolveAPIURL(apiURLFlag, lookupEnv, prog, profile), resolveToken(tokenFlag, lookupEnv, prog, profile))
 }
 
-// credentialFlags bundles the raw, still-unresolved --token/--api-url/
-// --profile flag values a caller passes down together, keeping
-// functions like runAppsCreateWizard and runWizardCreateViaAPI under
-// golangci-lint's parameter-count limit the same way apiFlagPtrs does
-// for their pre-parse pointer counterparts.
+// Bundled to keep parameter counts under golangci-lint's limit.
 type credentialFlags struct {
 	Token, APIURL, Profile string
 }
@@ -169,11 +139,7 @@ func apiClientFromCredentialFlags(prog string, cf credentialFlags, lookupEnv fun
 	return apiClientFromFlags(prog, cf.APIURL, cf.Token, cf.Profile, lookupEnv)
 }
 
-// sessionFlagSet builds a FlagSet named prog+" "+cmdLabel with the
-// --username/--password/--api-url/--profile/--json/--output/--query
-// flags every session-authenticated command (tokens create/list/revoke,
-// all session-only per tokens.go's own doc comment, never bearer-token
-// based) needs, the session-auth counterpart of apiFlagSet.
+// Session-auth counterpart of apiFlagSet; these commands never accept bearer tokens.
 func sessionFlagSet(prog, cmdLabel, jsonUsage string, stderr io.Writer) (fs *flag.FlagSet, username, password, apiURLFlag, profileFlag *string, jsonOut *bool, outputFlag, queryFlag *string) {
 	fs = flag.NewFlagSet(prog+" "+cmdLabel, flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -193,13 +159,7 @@ type sessionFlags struct {
 	username, password, apiURLFlag, profileFlag string
 }
 
-// loggedInSessionClient resolves username/password (prompting if either
-// was omitted, see resolveLoginCredentials), builds a session client
-// against sf's resolved API URL, and logs in. Every session-
-// authenticated command needs exactly this sequence before its own
-// request logic diverges. Returns the server's own login response
-// (which callers like "auth login" print the username from) alongside
-// the now-authenticated client.
+// Returns the login response too, since callers like auth login print the username from it.
 func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lookupEnv func(string) (string, bool), stdin io.Reader, stderr io.Writer) (*authSessionClient, loginResponse, error) {
 	readPassword := func() (string, error) {
 		b, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -226,10 +186,6 @@ func loggedInSessionClient(ctx context.Context, sf sessionFlags, prog string, lo
 	return sessionClient, loginResp, nil
 }
 
-// requireArgs extracts fs's exactly n required positional arguments,
-// labeled argsLabel in the usage error a subcommand like "apps
-// scheduled-tasks delete <app> <id>" prints when the count doesn't
-// match (e.g. "an app name and a task id").
 func requireArgs(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argsLabel string, n int) ([]string, bool) {
 	rest := fs.Args()
 	if len(rest) != n {
@@ -251,37 +207,20 @@ func requireOneArg(fs *flag.FlagSet, stderr io.Writer, prog, cmdLabel, argLabel 
 	return rest[0], true
 }
 
-// apiFlagPtrs bundles apiFlagSet's six pointer outputs (still
-// unresolved: read only after fs.Parse succeeds) so functions like
-// parseSingleArgClient and parseEnvironmentIDCommand stay under
-// golangci-lint's parameter-count limit.
+// Pointers are read only after fs.Parse succeeds.
 type apiFlagPtrs struct {
 	token, apiURL, profile *string
 	jsonOut                *bool
 	output, query          *string
 }
 
-// outputFlags bundles a command's resolved --output/--query values
-// (Format already folds in the old --json boolean, see
-// resolveOutputFormat), keeping functions like runAppsCreateWizard and
-// writeScheduledTaskResult under golangci-lint's parameter-count limit
-// the same way credentialFlags does for --token/--api-url/--profile.
+// Format already folds in the legacy --json flag, see resolveOutputFormat.
 type outputFlags struct {
 	Format outputFormat
 	Query  string
 }
 
-// parseAPIFlags runs fs.Parse (reordering flags before any positional
-// arguments first, a no-op when a command takes none) and, on success,
-// resolves flags' pointers into plain values, including reconciling
-// --json/--output into a single outputFlags. ok is false once fs.Parse,
-// --help, or an invalid/conflicting --output has already written its
-// own message to stderr (or produced exitOK for -h); the caller should
-// return exitCode unchanged in that case. This is the parse-then-deref
-// sequence every apiFlagSet caller needs before its own request logic
-// diverges, shared here rather than repeated inline (this exact block
-// was flagged as duplicated code across dozens of commands before this
-// function existed).
+// ok is false when parsing, --help, or a bad --output already wrote to stderr; return exitCode unchanged.
 func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer) (tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
@@ -297,12 +236,7 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog stri
 	return *flags.token, *flags.apiURL, *flags.profile, *flags.jsonOut, outputFlags{format, *flags.query}, 0, true
 }
 
-// parseSessionFlags is parseAPIFlags' sessionFlagSet counterpart: the
-// identical fs.Parse-then-resolve-output-format block every "auth 2fa
-// <verb>" subcommand repeated before this function existed. ok is false
-// once fs.Parse, --help, or an invalid --output has already written its
-// own message to stderr (or produced exitOK for -h); the caller should
-// return exitCode unchanged in that case.
+// Same contract as parseAPIFlags: ok false means the caller returns exitCode unchanged.
 func parseSessionFlags(fs *flag.FlagSet, args []string, jsonOutP *bool, outputFlagP, queryFlagP *string, prog string, stderr io.Writer) (jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	if err := fs.Parse(args); err != nil {
 		if err == flag.ErrHelp {
@@ -319,11 +253,7 @@ func parseSessionFlags(fs *flag.FlagSet, args []string, jsonOutP *bool, outputFl
 	return jsonOut, outputFlags{format, *queryFlagP}, 0, true
 }
 
-// buildSessionClient logs in (or reuses a persisted session) and returns
-// a ready client, the ctx/loggedInSessionClient/err-report sequence every
-// "auth 2fa <verb>" subcommand repeats right after resolving its own
-// output format. ok is false once the login failure has already been
-// reported via reportError; the caller should return exitCode unchanged.
+// ok is false once the login failure has been reported; return exitCode unchanged.
 func buildSessionClient(ctx context.Context, sf sessionFlags, prog string, lookupEnv func(string) (string, bool), stdin io.Reader, stdout, stderr io.Writer, jsonOut bool) (client *authSessionClient, exitCode int, ok bool) {
 	sessionClient, _, err := loggedInSessionClient(ctx, sf, prog, lookupEnv, stdin, stderr)
 	if err != nil {
@@ -332,34 +262,17 @@ func buildSessionClient(ctx context.Context, sf sessionFlags, prog string, looku
 	return sessionClient, 0, true
 }
 
-// sessionFlagPtrs bundles sessionFlagSet's returned flag pointers,
-// keeping requireCodeAndSessionClient under golangci-lint's parameter-
-// count limit, the same "bundle related params into one value" pattern
-// apiFlagPtrs/credentialFlags already establish.
 type sessionFlagPtrs struct {
 	username, password, apiURL, profile *string
 	jsonOut                             *bool
 	output, query                       *string
 }
 
-// singleArgCmd bundles a single-positional-argument command's own
-// identity (prog, its cmdLabel, and what that one argument is called in
-// a usage message, e.g. "app name" or "policy id") into one value,
-// keeping parseSingleArgClient under golangci-lint's parameter-count
-// limit.
 type singleArgCmd struct {
 	prog, cmdLabel, argLabel string
 }
 
-// parseSingleArgClient runs the parse-flags-then-require-one-arg-then-
-// build-client sequence every "verb <name> [flags]" subcommand needs
-// before its own request logic diverges (apps get/status/network/
-// diagnose/resource-recommendation, apps git-source get/set/delete,
-// databases get/resource-recommendation, iam policies get/delete/
-// attachments, the identical shape many other single-argument commands
-// already share). ok is false once fs.Parse, --help, or the missing-arg
-// check has already written its own message to stderr; the caller
-// should return exitCode unchanged in that case.
+// ok is false once parsing or the missing-arg check has reported; return exitCode unchanged.
 func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, cmd singleArgCmd, lookupEnv func(string) (string, bool)) (client *Client, name string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, cmd.prog, stderr)
 	if !ok {
@@ -374,23 +287,11 @@ func parseSingleArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, st
 	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), name, jsonOut, of, exitOK, true
 }
 
-// twoArgCmd is singleArgCmd's two-positional-argument counterpart:
-// bundles a command's own identity plus what its two arguments are
-// called together in a usage message (e.g. "an app name and an env var
-// key"), keeping parseTwoArgClient under golangci-lint's parameter-count
-// limit.
 type twoArgCmd struct {
 	prog, cmdLabel, argsLabel string
 }
 
-// parseTwoArgClient is parseSingleArgClient's two-positional-argument
-// counterpart: the parse-flags-then-require-two-args-then-build-client
-// sequence every "<group> set|clear <name> <key> [flags]" subcommand
-// needs before its own request logic diverges (apps vault-env set/clear,
-// apps preview-env set/clear, the identical shape both share). ok is
-// false once fs.Parse, --help, or the missing-args check has already
-// written its own message to stderr; the caller should return exitCode
-// unchanged in that case.
+// Same ok contract as parseSingleArgClient.
 func parseTwoArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stderr io.Writer, cmd twoArgCmd, lookupEnv func(string) (string, bool)) (client *Client, first, second string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, cmd.prog, stderr)
 	if !ok {
@@ -405,11 +306,7 @@ func parseTwoArgClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, stder
 	return apiClientFromFlags(cmd.prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), positional[0], positional[1], jsonOut, of, exitOK, true
 }
 
-// parseListClient is parseSingleArgClient's zero-positional-argument
-// counterpart: the parse-flags-then-build-client sequence every "list"
-// subcommand needs before its own request logic diverges. ok is false
-// once fs.Parse, --help, or an invalid --output has already written its
-// own message to stderr; the caller should return exitCode unchanged.
+// Same ok contract as parseSingleArgClient.
 func parseListClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer, lookupEnv func(string) (string, bool)) (client *Client, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, flags, prog, stderr)
 	if !ok {
@@ -418,21 +315,9 @@ func parseListClient(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog st
 	return apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv), jsonOut, of, exitOK, true
 }
 
-// reorderArgsFlagsFirst rewrites args so every flag (and its value, if
-// it takes one) is moved before any positional argument, then hands
-// back a slice fs.Parse can consume normally.
-//
-// This works around a real stdlib flag.FlagSet limitation: Parse stops
-// consuming flags at the first non-flag token, so a natural, common
-// invocation shape like "apps get web --json" (name first, flags after,
-// the same order `docker inspect <id> --format` or `git show <sha>
-// --stat` accept) would otherwise leave --json sitting unparsed in
-// fs.Args() instead of setting the flag, silently producing the wrong
-// behavior rather than an error. fs must already have every flag it
-// will accept defined (via StringVar/BoolVar/etc.) before this is
-// called, since that's how this function tells a boolean flag (no
-// value token follows it) from a value flag (the next token belongs to
-// it, not to the positional arguments).
+// flag.FlagSet stops parsing at the first positional, so 'apps get web --json' would silently ignore --json.
+// fs must define all flags first, so boolean flags can be told apart from value flags.
+// This is why the rewrite is needed at all.
 func reorderArgsFlagsFirst(fs *flag.FlagSet, args []string) []string {
 	var flags, positional []string
 	for i := 0; i < len(args); i++ {

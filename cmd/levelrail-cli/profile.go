@@ -7,11 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runProfile dispatches "profile <verb> [flags]" to one of list, the CLI
-// counterpart of the named-profile sections config.go's
-// resolveToken/resolveAPIURL read from the credentials file (see
-// internal/apiclient's own ReadCredentialsFile/WriteCredentialsFile doc
-// comments).
 func runProfile(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, profileUsage(prog))
@@ -44,10 +39,7 @@ Run "%[1]s profile <subcommand> -h" for a subcommand's own flags.
 `, prog, envAPIURL, envAPIToken, envProfile, defaultProfile)
 }
 
-// runProfileList implements "profile list": every profile section in
-// prog's credentials file, its name and API URL, never its token (this
-// CLI's standing "never print a secret" rule, the same reason "auth
-// login" only ever shows a freshly minted token once and nowhere else).
+// Prints profile names and API URLs only, never tokens.
 func runProfileList(prog string, args []string, stdout, stderr io.Writer, _ func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" profile list", flag.ContinueOnError)
 	fs.SetOutput(stderr)

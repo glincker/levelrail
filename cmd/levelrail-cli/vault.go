@@ -11,11 +11,7 @@ import (
 // settings shape.
 const vaultJSONUsage = "print the settings as JSON to stdout and nothing else"
 
-// runVault dispatches "vault <verb> [flags]" to one of get/set/
-// disconnect, mirroring runCloudflareTunnel's own get/set/disconnect
-// dispatch shape. Not nested under "settings": Cloudflare Tunnel, the
-// other instance-level external-integration credential, is its own
-// top-level command too.
+// runVault dispatches get/set/disconnect. It is a top-level command, not under "settings", like Cloudflare Tunnel.
 func runVault(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, vaultUsage(prog))

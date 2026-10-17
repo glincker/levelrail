@@ -9,11 +9,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runNodesResourceUsage implements "nodes resource-usage": GET
-// /api/v1/nodes/resource-usage (internal/api/node_resource_usage.go),
-// the node-scoped counterpart to "apps resource-usage". Table output
-// prints one row per node plus a trailing FLEET summary row; --json
-// preserves the server's own nodes+fleet shape for scripting.
 func runNodesResourceUsage(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes resource-usage", "print fleet resource usage as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
@@ -96,11 +91,7 @@ func formatDiskUsage(used, total *float64) string {
 	return fmt.Sprintf("%s / %s", usedStr, formatRecommendationBytes(int64(*total)))
 }
 
-// formatFleetPercent renders a rollup percentage alongside how many of
-// the fleet's nodes actually contributed a capacity reading, the same
-// coverage caveat FleetResourceUsageRollup's own doc comment requires
-// callers to surface rather than showing the percentage as if it covered
-// every node.
+// Shows how many nodes contributed a reading, so the percentage is not taken as covering every node.
 func formatFleetPercent(pct *float64, nodesWithCapacity, nodeCount int) string {
 	if pct == nil {
 		return "-"

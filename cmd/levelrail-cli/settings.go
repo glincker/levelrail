@@ -5,15 +5,7 @@ import (
 	"io"
 )
 
-// runSettings dispatches "settings <resource> <verb> [flags]" to one of
-// oauth/email/ingress, the three instance-wide settings resources that
-// had a dashboard page and an API route but no CLI surface at all: a
-// headless, browser-less first-run setup (install.sh plus this CLI) had
-// no way to touch OAuth sign-in, SMTP/SES, or ingress/ACME config before
-// this. Each resource keeps its own file (settings_oauth.go,
-// settings_email.go, settings_ingress.go), the same "one file per
-// sub-resource" shape apps_git_source.go/apps_log_drain.go already
-// establish for a nested dispatch group.
+// Covers oauth, email, and ingress, which a headless first-run setup otherwise cannot reach.
 func runSettings(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, settingsUsage(prog))

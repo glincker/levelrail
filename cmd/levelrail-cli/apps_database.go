@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runAppsDatabase dispatches "apps database <verb> [flags]" to one of
-// set/clear: PUT/DELETE /api/v1/apps/{name}/database
-// (internal/api/apps_database.go), attaching or detaching an
-// already-created managed database as an app's connection-env-var
-// source, the same "set/clear, no get" shape apps_storage.go's own
-// "apps storage" already establishes (the currently attached database
-// already shows up on "apps get <name>").
+// No get subcommand: the attached database already shows on 'apps get'.
 func runAppsDatabase(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsDatabaseUsage(prog))

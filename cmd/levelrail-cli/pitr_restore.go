@@ -6,18 +6,7 @@ import (
 	"io"
 )
 
-// runPITRRestore implements "pitr restore <database> --base-backup ID
-// --target-time RFC3339 [--confirm NAME]": POST
-// /api/v1/databases/{name}/pitr-restore (internal/api/pitr.go's own
-// handleTriggerPITRRestore), AbilityRoot-gated server-side, the same
-// tier "backups restore" uses and for the identical reason
-// (backups_restore.go's own doc comment): this overwrites a live
-// database's real data in place, with no undo beyond restoring again.
-// resolveRestoreConfirmation (backups_restore.go) is reused as-is, the
-// same "type the database's exact name" gate that command already
-// establishes: databaseName is the only thing being confirmed, the
-// destructive-restore shape doesn't change just because the source is a
-// timestamp instead of a specific backup ID.
+// Overwrites live data in place, so it is root-gated and confirmed by typing the database name.
 func runPITRRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
 	var baseBackupID, targetTime, confirm string

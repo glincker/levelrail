@@ -11,14 +11,7 @@ import (
 // the same settings shape.
 const registryJSONUsage = "print the settings as JSON to stdout and nothing else"
 
-// runRegistry dispatches "registry <verb> [flags]" to one of
-// status/enable/disable, mirroring runCloudflareTunnel's own get/set/
-// disconnect dispatch shape for the API's other platform-singleton
-// settings resource. Named "registry", not "registry-settings" or
-// similar: "registry-credentials" (cmd/levelrail-cli/registry_credentials.go)
-// is a distinct, already-established command group for credentials to an
-// external registry an operator already runs elsewhere, so this word is
-// free for Levelrail's own built-in one.
+// The name avoids "registry-credentials", which is a separate command group.
 func runRegistry(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, registryUsage(prog))

@@ -8,14 +8,7 @@ import (
 	"text/tabwriter"
 )
 
-// runGitHubApp dispatches "github-app <verb> [flags]" to one of
-// status/disconnect/repos/branches/use-as-source: internal/api/github_app.go
-// and github_app_repos.go/github_app_use_as_source.go's routes, wired
-// into the CLI. The initial OAuth/manifest connect (PUT-equivalent,
-// register/callback/installed) stays dashboard-only deliberately: it's a
-// real, full-page browser navigation through GitHub's own manifest
-// flow, not something a scriptable client can drive. status (GET) and
-// disconnect (DELETE) need no browser at all, so those are CLI-reachable.
+// The initial OAuth/manifest connect stays dashboard-only: it is a full-page browser redirect through GitHub.
 func runGitHubApp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, githubAppUsage(prog))
@@ -191,13 +184,7 @@ func runGitHubAppUseAsSource(prog string, args []string, stdout, stderr io.Write
 	})
 }
 
-// runGitHubAppInstallations dispatches "github-app installations <verb>"
-// to list/add/remove: internal/api/github_app_installations.go's
-// routes, wired into the CLI the same way the connection's own
-// repos/branches routes are above. "add" never drives GitHub's install
-// flow itself (another real, full-page browser redirect), it only
-// prints the URL to start it, the same reasoning connecting the App
-// itself stays dashboard-only for.
+// add only prints the install URL: GitHub's install flow is a browser redirect.
 func runGitHubAppInstallations(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, githubAppInstallationsUsage(prog))

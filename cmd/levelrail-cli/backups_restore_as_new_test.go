@@ -9,10 +9,7 @@ import (
 	"testing"
 )
 
-// TestRun_BackupsRestoreAsNew_CallsAPI is the positive case: the request
-// reaches the server with the shape this command is supposed to send, no
-// confirmation gate involved (unlike backups restore, see
-// backups_restore_as_new.go's own doc comment for why).
+// No confirmation gate is involved, unlike backups restore.
 func TestRun_BackupsRestoreAsNew_CallsAPI(t *testing.T) {
 	var gotPath string
 	var gotBody triggerCloneRestoreRequest

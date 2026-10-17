@@ -11,15 +11,7 @@ import (
 	"testing"
 )
 
-// fakeControlPlane wires up a real httptest.Server implementing the
-// two real endpoints "auth login" calls in sequence: POST
-// /api/v1/auth/login (sets a session cookie) and POST
-// /api/v1/auth/tokens (only honored when that cookie is present, the
-// same session-only gate router.go's real registration enforces),
-// mirroring auth.go's handleLogin and tokens.go's handleCreateToken
-// closely enough to exercise this CLI's two-step flow honestly,
-// including the part where a missing cookie on the second call is a
-// real 401, not a client bug.
+// Enforces the session cookie on token creation, as the real router does.
 func fakeControlPlane(t *testing.T, wantAbilities []string) *httptest.Server {
 	t.Helper()
 	const cookieName = "session_token"
@@ -66,12 +58,7 @@ func fakeControlPlane(t *testing.T, wantAbilities []string) *httptest.Server {
 	return srv
 }
 
-// TestRun_AuthLogin_MintsAndPersistsToken exercises "auth login" end to
-// end: it must actually call POST /api/v1/auth/login, carry the
-// resulting session cookie into POST /api/v1/auth/tokens (only a real
-// cookie jar makes that happen, see authclient.go's own doc comment),
-// and then write the returned token to the credentials file config.go's
-// resolveToken/readCredentialsFile pair later reads.
+// The session cookie from login must carry into token creation, then the token is persisted.
 func TestRun_AuthLogin_MintsAndPersistsToken(t *testing.T) {
 	srv := fakeControlPlane(t, []string{"root"})
 
@@ -149,12 +136,7 @@ func TestRun_AuthLogin_MissingUsername(t *testing.T) {
 	t.Setenv("HOME", home)
 
 	var stdout, stderr bytes.Buffer
-	// Calls runAuthLogin directly (not through run(), which always
-	// wires the real os.Stdin) so an empty stdin.Reader is fully
-	// controlled: promptUsername reads a line, gets EOF immediately
-	// (no line ever typed), and this asserts that failure is reported
-	// as a real error, never a hang or a silent empty-string login
-	// attempt.
+	// An empty stdin must surface as an error, not a hang or a blank-username login attempt.
 	got := runAuthLogin("levelrail-cli-test-auth-login-nouser", []string{"--password", "x"}, &stdout, &stderr, envMap(), strings.NewReader(""))
 	if got == exitOK {
 		t.Fatalf("exit = %d, want a failure (stdout=%q stderr=%q)", got, stdout.String(), stderr.String())

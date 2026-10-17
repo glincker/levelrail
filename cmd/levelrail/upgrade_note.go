@@ -55,10 +55,7 @@ func parseUpgradeNoteFlags(args []string) (upgradeNoteFlags, error) {
 	return f, nil
 }
 
-// runUpgradeNote implements "levelrail upgrade-note": it records who swapped
-// the binary by hand, for the next boot to put in upgrade history. The marker
-// names this binary's own version, so run it after replacing the file and
-// before the restart.
+// Run after replacing the binary and before the restart so the marker names the new version.
 func runUpgradeNote(args []string, stdout io.Writer, now time.Time) error {
 	f, err := parseUpgradeNoteFlags(args)
 	if err != nil {

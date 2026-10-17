@@ -6,11 +6,7 @@ import (
 	"io"
 )
 
-// runAppsSetProject implements "apps set-project <name> <project-id>":
-// PUT /api/v1/apps/{name}/project. The app's current project_id is
-// already visible on "apps get <name>", the same reasoning
-// runAppsSetEnvironment's own doc comment gives for having no separate
-// "get" subcommand here.
+// No get subcommand: the current project_id already shows on 'apps get'.
 func runAppsSetProject(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps set-project", "print the updated app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsSetProjectUsage(prog)) }

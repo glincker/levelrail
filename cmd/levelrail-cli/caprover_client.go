@@ -11,11 +11,7 @@ import (
 	"time"
 )
 
-// caproverEnvVar mirrors one entry of a CapRover AppDefinition's envVars
-// array (github.com/caprover/caprover, src/models/AppDefinition.ts).
-// Unlike Coolify, CapRover's app-definition endpoint has no documented
-// redaction gate: any caller that can list apps gets real values back
-// here, the same trust model dokployApplication.Env already documents.
+// CapRover returns real env values to any caller that can list apps, with no redaction gate.
 type caproverEnvVar struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -43,17 +39,8 @@ type caproverCustomDomain struct {
 	HasSsl       bool   `json:"hasSsl"`
 }
 
-// caproverAppDefinition mirrors the subset of CapRover's own AppDefinition
-// model (src/models/AppDefinition.ts, returned by GET
-// /api/v2/user/apps/appDefinitions) that field mapping reads. CapRover has
-// no per-app CPU/memory limit feature at all, so unlike coolifyApplication
-// and dokployApplication there is no limits field here to map.
-//
-// CaptainDefinitionRelativeFilePath points at a captain-definition file
-// (schemaVersion, plus one of dockerfilePath/templateId/dockerfileLines)
-// whose contents this read-only listing endpoint does not expose, so the
-// actual build method cannot be determined from this API alone; see
-// mapCaproverBuildConfig.
+// CapRover has no per-app CPU or memory limits, so no limits field is mapped.
+// The build method is not in this response, so see mapCaproverBuildConfig.
 type caproverAppDefinition struct {
 	AppName                           string                 `json:"appName"`
 	HasPersistentData                 bool                   `json:"hasPersistentData"`
@@ -67,11 +54,7 @@ type caproverAppDefinition struct {
 	CustomDomain                      []caproverCustomDomain `json:"customDomain"`
 }
 
-// caproverEnvelope is the response shape every CapRover API call returns,
-// success or failure alike, always under HTTP 200
-// (src/api/ApiStatusCodes.ts): the real result lives in Status/Description,
-// not the HTTP status line. Unverified against a live instance; see
-// caprover_client.go's package-level assumptions in the migration report.
+// Every CapRover response is HTTP 200; the real result is in Status and Description.
 type caproverEnvelope struct {
 	Status      int             `json:"status"`
 	Description string          `json:"description"`
@@ -93,11 +76,7 @@ func (e *caproverAPIError) Error() string {
 	return fmt.Sprintf("caprover api returned status %d: %s", e.Status, e.Description)
 }
 
-// CaproverClient is a minimal, read-only client for CapRover's dashboard
-// API. CapRover authenticates with a login exchange, not a static bearer
-// token: POST /api/v2/login trades a password for a short-lived JWT
-// (Login), sent back as the x-captain-auth header on every later request.
-// This migration tool never writes back to the source CapRover instance.
+// CaproverClient is a read-only client for CapRover's dashboard API, authenticated by a JWT login.
 type CaproverClient struct {
 	baseURL  string
 	password string
@@ -140,19 +119,13 @@ func (c *CaproverClient) Login(ctx context.Context) error {
 	return nil
 }
 
-// caproverListAppsData is GET /api/v2/user/apps/appDefinitions's data
-// payload. RootDomain is required to reconstruct an app's default
-// subdomain (appName + "." + rootDomain), since AppDefinition itself
-// carries no field for it.
+// RootDomain rebuilds each app's default subdomain, since AppDefinition has no field for it.
 type caproverListAppsData struct {
 	AppDefinitions []caproverAppDefinition `json:"appDefinitions"`
 	RootDomain     string                  `json:"rootDomain"`
 }
 
-// ListApplications calls GET /api/v2/user/apps/appDefinitions, which
-// returns every app's full definition (env vars, volumes, ports, domains)
-// in one call: unlike Coolify and Dokploy, CapRover has no separate
-// per-app detail or per-app env/domain endpoint to fetch afterward.
+// ListApplications returns every app's full definition in one call; CapRover has no per-app endpoint.
 func (c *CaproverClient) ListApplications(ctx context.Context) ([]caproverAppDefinition, string, error) {
 	var data caproverListAppsData
 	if err := c.do(ctx, http.MethodGet, "/user/apps/appDefinitions", nil, &data); err != nil {

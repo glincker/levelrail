@@ -140,10 +140,7 @@ func TestRunRecoverAdmin_GeneratesAndPrintsPasswordWhenOmitted(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
 	var stdout bytes.Buffer
 
-	// runRecoverAdmin closes whatever *store.DB openStore hands it, the
-	// same lifecycle main.go's run() uses for its own openStore call, so
-	// each invocation here opens (and this test later reopens) the same
-	// on-disk file rather than sharing one live handle across both.
+	// Each call reopens the same file, since runRecoverAdmin closes the store it is handed.
 	err := runRecoverAdmin(ctx, logger, []string{"--username", "admin"}, &stdout, func(ctx context.Context) (*store.DB, error) {
 		return store.Open(ctx, dbPath)
 	})
@@ -167,10 +164,7 @@ func TestRunRecoverAdmin_GeneratesAndPrintsPasswordWhenOmitted(t *testing.T) {
 		t.Errorf("stdout = %q, want it to mention the username", output)
 	}
 
-	// The generated password must appear in stdout and must actually
-	// verify against the hash written to the store: that round trip is
-	// the entire point of a recovery command someone runs after being
-	// locked out.
+	// The printed password must verify against the stored hash; that round trip is the point of recovery.
 	marker := "password: "
 	idx := strings.Index(output, marker)
 	if idx == -1 {

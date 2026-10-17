@@ -6,11 +6,7 @@ import (
 	"io"
 )
 
-// runDatabasesSetNode implements "databases set-node <name> <node-id>":
-// client.SetDatabaseNode, the database counterpart to "apps set-node"
-// (apps_set_node.go). Unlike the app version, there is no --with-volumes
-// option: PUT /api/v1/databases/{name}/node has no move-with-volumes
-// counterpart server-side.
+// Unlike apps set-node there is no --with-volumes: the server has no move-with-volumes route for databases.
 func runDatabasesSetNode(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runDatabasesMoveNode(prog, args, stdout, stderr, lookupEnv, databaseMoveNodeConfig{
 		cmdLabel:  "databases set-node",

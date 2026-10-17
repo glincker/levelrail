@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runAppsAutoRollback dispatches "apps auto-rollback <verb> [flags]" to
-// one of enable/disable/status, the CLI counterpart of
-// internal/api/deploys.go's own GET/PUT /api/v1/apps/{name}/auto-rollback
-// routes: whether internal/alerting.MaybeAutoRollback rolls an app back
-// automatically the next time a crashloop alert rule fires for it. Off
-// by default, the same opt-in shape "apps previews enable/disable"
-// already establishes.
+// Off by default: a crashloop alert rolls back only after an explicit enable.
 func runAppsAutoRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsAutoRollbackUsage(prog))

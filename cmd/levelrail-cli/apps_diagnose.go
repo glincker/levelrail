@@ -8,10 +8,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsDiagnose implements "apps diagnose <name> [--deploy <id>]
-// [--apply-fix N]": the read-only, deterministic explanation from GET
-// /api/v1/apps/{name}/diagnose, plus optionally applying one of its numbered
-// fixes through the ordinary app update path.
 func runAppsDiagnose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps diagnose", "print the diagnosis as JSON to stdout and nothing else", stderr)
 	var deployFlag string

@@ -5,13 +5,7 @@ import (
 	"io"
 )
 
-// runIAM dispatches "iam policies <verb> [flags]": IAM-style resource-scoped
-// Allow/Deny policy documents (internal/api/iam.go/iam_handlers.go),
-// additive on top of a user's or token's flat --abilities list ("tokens
-// create"/"users set-abilities"). "policies" is the only resource under
-// "iam" today; the two-level shape (iam <resource> <verb>) mirrors AWS
-// CLI's own "aws iam <verb>-policy" tree so a second IAM resource can be
-// added later without a dispatch reshape.
+// Policies are additive on top of flat --abilities lists; policies is the only iam resource today.
 func runIAM(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, iamUsage(prog))

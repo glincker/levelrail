@@ -9,44 +9,11 @@ import (
 	"time"
 )
 
-// defaultTokenAbility is the ability set "auth login" mints its token
-// with when --abilities is omitted. A session (username/password) is
-// always implicitly root, the single-admin-identity model
-// internal/api/auth.go's own requireAbility doc comment describes
-// ("there is exactly one human identity, the admin"); minting anything
-// narrower by default here would silently hand the caller a less capable
-// credential than the session they just proved they have, for a command
-// whose whole point is "give me a token that can do what I can do."
-// --abilities exists precisely for the caller who wants a narrower one
-// on purpose (a CI job that should only ever deploy, say).
+// Defaults to root because a session is always root, so a narrower default would silently weaken the token.
+// Use --abilities for a deliberately narrower credential.
 var defaultTokenAbility = []string{"root"}
 
-// runAuthLogin implements "auth login": authenticates against
-// POST /api/v1/auth/login with a username and password (prompted
-// interactively, without echo for the password, when not given as
-// flags), then, using that same freshly established session, mints a
-// real API token via POST /api/v1/auth/tokens and persists it to this
-// CLI's own credentials file (config.go's writeCredentialsFile) so every
-// later command's resolveToken finds it.
-//
-// This two-step shape is not a design choice this command had latitude
-// over: it is the only way to get a bearer token out of this API at
-// all. router.go registers every /api/v1/auth/tokens route as
-// session-only ("deliberately never bearer-token authenticated... only
-// an interactive human session can manage the token set"), so there is
-// no direct "exchange a username/password for a token" endpoint to call
-// instead.
-//
-// Real, load-bearing gap this inherits: the session cookie
-// POST /api/v1/auth/login sets is Secure (auth.go's handleLogin, by
-// design), and a plain-http control plane (defaultAPIURL,
-// http://localhost:8080, the common local-dev target with no
-// TLS-terminating Caddy in front yet) never gets that cookie sent back
-// on the follow-up token-mint request, so this command's second step
-// fails there with a real 401. See authclient.go's own doc comment for
-// why this client does not work around that. Point --api-url at an
-// https target (a real deployment's embedded Caddy ingress) for this
-// command to complete.
+// The login cookie is Secure, so the token mint fails over plain http; use an https --api-url.
 func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var tokenName, abilitiesFlag, clientNameFlag string

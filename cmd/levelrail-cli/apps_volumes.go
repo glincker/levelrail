@@ -6,14 +6,7 @@ import (
 	"io"
 )
 
-// runAppsVolumes dispatches "apps volumes <verb> [flags]" to one of
-// get/attach/detach, the CLI counterpart of
-// internal/api/apps_volumes_attach.go's own PUT /api/v1/apps/{name}/volumes
-// route: attach or remove a named Docker volume on an app that already
-// exists, without hand-editing app.yaml and redeploying. The mount only
-// takes effect at the service's next container create (a redeploy or
-// restart), the same "baked in at create time" contract env vars already
-// have.
+// runAppsVolumes dispatches get/attach/detach for an existing app's volumes. The mount applies at the next container create.
 func runAppsVolumes(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsVolumesUsage(prog))

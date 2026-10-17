@@ -9,12 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsBranchEnv dispatches "apps branch-env <verb> [flags]" to one of
-// list/set/clear: GET/POST/DELETE /api/v1/apps/{name}/branch-env(/{id})
-// (internal/api/apps_branch_env.go). A branch-scoped sibling of "apps
-// preview-env": that command's override applies to every preview
-// unconditionally, this one only when the preview's own branch matches
-// a declared pattern.
+// Unlike apps preview-env, the override applies only when the preview branch matches a pattern.
 func runAppsBranchEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsBranchEnvUsage(prog))

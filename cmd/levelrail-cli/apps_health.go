@@ -95,10 +95,7 @@ var healthPresetPaths = map[string]string{
 
 const healthPresetNames = "healthz, health, api-health, ping, status"
 
-// healthPresetTiming mirrors healthCheckDefaults.ts's probeTimingDefaults:
-// readiness gates one deploy's cutover (short interval/timeout, no failure
-// count), liveness restarts a hung container (longer interval, a few
-// failures first). timeoutSeconds 0 means "leave it unset".
+// timeoutSeconds 0 means leave the field unset.
 func healthPresetTiming(which string) (intervalSeconds, timeoutSeconds, failures int) {
 	if which == "liveness" {
 		return 30, 0, 3
@@ -276,11 +273,7 @@ func runAppsHealthClear(prog string, args []string, stdout, stderr io.Writer, lo
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { printHealthHuman(stdout, result.Health) })
 }
 
-// runAppsHealthDiscover implements "apps health discover <name>", the
-// CLI side of POST /api/v1/apps/{name}/health/discover: actively probes
-// a fixed set of well-known paths against the app's own running
-// container and prints each one's real outcome. Never guesses: nothing
-// here is reported as working without having actually been tried.
+// Reports only probes that were actually run, never a guessed result.
 func runAppsHealthDiscover(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps health discover", "print the probe attempts as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

@@ -84,11 +84,7 @@ func TestRun_AppsBuilds_Trigger_BuildArgs(t *testing.T) {
 	}
 }
 
-// TestRun_AppsBuilds_Trigger_DetectsFramework covers F-018's CLI side
-// for a manual rebuild: "apps builds trigger" runs the same pre-flight
-// framework detection the web wizard runs and forwards the result as
-// detected_framework, so a rebuild triggered from the CLI records a
-// FRAMEWORK value too.
+// Manual rebuilds record the same detected framework the web wizard does.
 func TestRun_AppsBuilds_Trigger_DetectsFramework(t *testing.T) {
 	var gotBody buildTriggerRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

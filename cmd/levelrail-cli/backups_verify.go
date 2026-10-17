@@ -6,15 +6,7 @@ import (
 	"io"
 )
 
-// runBackupsVerify implements "backups verify <database> --backup ID":
-// POST /api/v1/databases/{name}/backups/{historyId}/verify
-// (internal/api/backup_verify.go's own handleVerifyBackup),
-// AbilityWriteSensitive-gated. Asynchronous, the same shape "backups
-// trigger" already establishes: this returns as soon as the attempt is
-// recorded and under way (202 Accepted server-side), not once the
-// re-download and checks actually finish; use "backups verifications
-// <database> --backup ID" to see whether it passed. Never attempts a live
-// restore against a running database.
+// Asynchronous: returns once the attempt is recorded. Never runs a live restore.
 func runBackupsVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups verify", "print the started verification attempt as JSON to stdout and nothing else", stderr)
 	var backupID string

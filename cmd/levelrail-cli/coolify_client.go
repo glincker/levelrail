@@ -9,12 +9,7 @@ import (
 	"time"
 )
 
-// coolifyApplication mirrors the subset of Coolify's own Application
-// model, matching Coolify's own public OpenAPI schema
-// (#/components/schemas/Application), that field mapping actually reads.
-// Deliberately partial: this client depends on Coolify's documented wire
-// contract, not a full reimplementation of a model this project doesn't
-// own.
+// Partial mirror of Coolify's Application schema: only the fields the mapping reads.
 type coolifyApplication struct {
 	UUID                string `json:"uuid"`
 	Name                string `json:"name"`
@@ -35,13 +30,7 @@ type coolifyApplication struct {
 	LimitsCPUs          string `json:"limits_cpus"`
 }
 
-// coolifyEnvVar mirrors Coolify's EnvironmentVariable model. Value is
-// what GET .../envs returns without elevated ability (Coolify's API
-// redacts it in that case); RealValue is only ever populated with a
-// genuine plaintext value when the calling token carries the
-// read:sensitive ability. Neither field is trusted by mapEnv unless the
-// caller explicitly asked for real values (--include-secret-values), see
-// coolify_map.go's mapEnv.
+// Value is redacted without elevated ability; RealValue is only trusted when real values were requested.
 type coolifyEnvVar struct {
 	UUID      string `json:"uuid"`
 	Key       string `json:"key"`
@@ -53,10 +42,7 @@ type coolifyErrorBody struct {
 	Message string `json:"message"`
 }
 
-// coolifyAPIError is returned by CoolifyClient methods for a non-2xx
-// response: a real reply from Coolify, as opposed to a network-level
-// failure, the same distinction apiError (client.go) draws for the
-// Levelrail control plane's own API.
+// A non-2xx reply from Coolify, distinct from a network failure.
 type coolifyAPIError struct {
 	StatusCode int
 	Message    string
@@ -66,10 +52,7 @@ func (e *coolifyAPIError) Error() string {
 	return fmt.Sprintf("coolify api returned %d: %s", e.StatusCode, e.Message)
 }
 
-// CoolifyClient is a minimal, read-only HTTP client for Coolify's REST
-// API, bearer-token authenticated per Coolify's own public OpenAPI
-// spec. This migration tool never writes back to the source Coolify
-// instance.
+// CoolifyClient is a read-only, bearer-authenticated client for Coolify's REST API.
 type CoolifyClient struct {
 	baseURL string
 	token   string

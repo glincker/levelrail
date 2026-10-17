@@ -837,10 +837,7 @@ func TestParseCreateFlags_AttachDatabase(t *testing.T) {
 	}
 }
 
-// TestParseCreateFlags_NodeID covers the fs.Visit-based distinction
-// runAppsCreate relies on: --node-id omitted must not be confused with
-// --node-id "" explicitly given, the same "flag omitted vs explicitly
-// set" concern nodes_workloads.go's own doc comment explains.
+// TestParseCreateFlags_NodeID guards the fs.Visit check between an omitted and an empty --node-id.
 func TestParseCreateFlags_NodeID(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -974,10 +971,7 @@ func TestParseCreateFlags_VaultSecret_Invalid(t *testing.T) {
 	}
 }
 
-// TestRun_AppsCreate_VaultSecretFlag covers the full
-// "apps create --vault-secret" path end to end: the reference reaches
-// POST /api/v1/apps's request body (CreateBody.VaultEnv), never a value
-// since there is none to send.
+// TestRun_AppsCreate_VaultSecretFlag checks the vault reference reaches VaultEnv and no secret value is sent.
 func TestRun_AppsCreate_VaultSecretFlag(t *testing.T) {
 	var gotMethod string
 	var gotBody appResource
@@ -1041,11 +1035,6 @@ func TestToServiceResources_SwapEqualToMemoryAccepted(t *testing.T) {
 	}
 }
 
-// TestTriggerCreatePlanBuild_DetectsFramework covers F-018's CLI side: a
-// git-triggered "apps create" runs the same pre-flight framework
-// detection the web wizard runs and forwards the result as
-// detected_framework on the build trigger request, so the app's first
-// deploy attempt gets a real FRAMEWORK value instead of always blank.
 func TestTriggerCreatePlanBuild_DetectsFramework(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -1133,10 +1122,7 @@ func TestTriggerCreatePlanBuild_NilBuildIsNoop(t *testing.T) {
 	}
 }
 
-// TestAttachPlanVolumes covers runAppsCreate's post-create volume wiring:
-// app.yaml's volumes: block used to be silently dropped by "apps create
-// --file" (appResource.Volumes is response-only on POST /apps), so this
-// exercises the follow-up PUT .../volumes call directly.
+// TestAttachPlanVolumes covers the follow-up PUT, since volumes are response-only on POST /apps.
 func TestAttachPlanVolumes(t *testing.T) {
 	var gotReq setAppVolumesRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -1161,10 +1147,7 @@ func TestAttachPlanVolumes(t *testing.T) {
 	}
 }
 
-// TestAttachPlanVolumes_HostPathRejected covers a hostPath bind mount:
-// PUT .../volumes has no field for one (name+path only), so it must be
-// rejected with a clear error rather than silently dropped or sent
-// mangled, and no HTTP call should be made at all.
+// TestAttachPlanVolumes_HostPathRejected checks hostPath mounts error out, since PUT has no field for them.
 func TestAttachPlanVolumes_HostPathRejected(t *testing.T) {
 	called := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

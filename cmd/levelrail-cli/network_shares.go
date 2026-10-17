@@ -5,11 +5,7 @@ import (
 	"io"
 )
 
-// runNetworkShares dispatches "network-shares <verb> [flags]" to one of
-// list/get/create/update/delete/test: managing the NFS/CIFS mounts
-// internal/api/network_shares.go exposes (Settings -> Network shares in
-// the web UI), the same shares an app's own volume mount can later
-// reference by name.
+// Shares are global; an app volume mount references one by name.
 func runNetworkShares(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, networkSharesUsage(prog))

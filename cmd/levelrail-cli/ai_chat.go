@@ -13,19 +13,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// errAIChatDone stops the SSE loop once the server sends "done"; the
-// connection closes on its own right after (handleCreateAIChatMessage
-// returns immediately following sink.done()), but breaking here is
-// still cheaper than waiting on that close, the same defensive pattern
-// apps_deploys_steps.go's errStepsDone uses.
+// Stop on "done" rather than waiting for the server to close the stream right after it.
 var errAIChatDone = errors.New("ai chat turn finished")
 
-// runAIChat implements "ai chat <message> [--session ID]": sends one
-// message and streams the assistant's reply to stdout as it arrives.
-// Mutating tool calls the model proposes pause for confirmation, same as
-// the dashboard; this command only reports them (see "ai sessions
-// resolve -h" to act on one), it never auto-approves anything, matching
-// CLAUDE.md's "AI is a read-and-suggest layer... nothing more".
+// Mutating tool calls are only reported, never auto-approved, matching the dashboard's confirmation gate.
 func runAIChat(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "ai chat", "print one JSON object per stream event instead of text", stderr)
 	var sessionFlag string
@@ -78,12 +69,7 @@ func runAIChat(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 	return exitOK
 }
 
-// printAIChatEventHuman renders one AIChatSSEEvent the way a human at a
-// terminal wants it: assistant text streamed inline with no added
-// newlines (so a sentence doesn't get broken across text_delta chunks),
-// everything else as a bracketed notice on its own line. sawText tracks
-// whether any text_delta has printed yet, so the caller knows whether a
-// trailing newline is owed.
+// Text deltas print without added newlines so sentences are not split across chunks.
 func printAIChatEventHuman(stdout, stderr io.Writer, ev apiclient.AIChatSSEEvent, sawText *bool) {
 	switch ev.Type {
 	case "text_delta":

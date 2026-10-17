@@ -16,13 +16,7 @@ type cliContext struct {
 	client  *Client
 }
 
-// runSharedEnv dispatches "shared-env <verb> [flags]" to one of
-// list/set/delete: project/organization/environment-scoped variables
-// every app filed under that scope inherits automatically
-// (internal/reconcile/application's resolveEnv), without copy-pasting
-// the same value into each app's own env editor. See
-// internal/api/project_env.go, organization_env.go, environment_env.go,
-// and shared_env_secrets.go for the routes these wrap.
+// Scoped variables are inherited by every app under the scope, not copied into each app's env.
 func runSharedEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, sharedEnvUsage(prog))
@@ -219,13 +213,7 @@ func runSharedEnvDelete(prog string, args []string, stdout, stderr io.Writer, lo
 	)
 }
 
-// applySharedEnvKey runs the secret-or-plain shared var write shared by
-// runSharedEnvSet and runSharedEnvDelete: dispatches to the encrypted
-// single-key route when secret is set, otherwise performs the plain
-// read-merge-write documented on setPlainSharedEnv above, applying mutate
-// to the current map before writing it back. errVerb names the operation
-// for wrapped error text (e.g. "set", "delete"), resultVerb for the
-// success message (e.g. "set", "removed").
+// Secret values use the encrypted single-key route; plain values use a read-merge-write.
 func applySharedEnvKey(c cliContext, scope, id, key, errVerb, resultVerb string, secret bool, secretOp func() error, mutate func(map[string]string)) int {
 	if secret {
 		if err := secretOp(); err != nil {

@@ -47,10 +47,7 @@ func drillIdentities(logger *slog.Logger) []age.Identity {
 	return ids
 }
 
-// escrowMaterialReader returns the serialized master key from its file, or from
-// APP_MASTER_KEY when the key is env-sourced, plus the agent CA files that live
-// beside the database. After rotating an env-sourced key, update the env value
-// before building a new escrow bundle.
+// After rotating an env-sourced key, update the env value before building a new escrow bundle.
 func escrowMaterialReader(masterKeyFilePath, dataDir string, getenv func(string) string) api.EscrowMaterialReader {
 	return func() (cpbackup.EscrowMaterial, error) {
 		key, err := readMasterKey(masterKeyFilePath, getenv)

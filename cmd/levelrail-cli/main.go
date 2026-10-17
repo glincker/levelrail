@@ -1,38 +1,6 @@
-// Command levelrail-cli is a thin, scriptable HTTP client for the
-// control plane's versioned API (internal/api, mounted at /api/v1), the
-// first command-line surface this project has (cmd/levelrail is the
-// control plane server, cmd/levelrail-agent is the node agent, neither
-// is meant to be typed at by an operator).
-//
-// It is designed the way this platform's own API is meant to be:
-// "AI-ready" from the start. Concretely, per the
-// competitive research direction this command was built against
-// (flyctl launch, railway up, vercel):
-//
-//   - Every required input has a flag. Supplying all of them skips every
-//     prompt, so a missing required flag is reported as an immediate,
-//     actionable error rather than a hang on stdin: safe to drive from
-//     CI or an agent with no TTY at all. "apps create --interactive" is
-//     the one deliberate exception, a step-by-step wizard for a human
-//     at a real terminal (see apps_create_interactive.go).
-//   - --json switches every command's stdout to a single parseable JSON
-//     value (the result, or {"error": "..."} on failure) and nothing
-//     else; diagnostics always go to stderr, in both modes. --output
-//     json|table|text is the more general form --json is shorthand for
-//     (--json means --output json); --query takes a JMESPath expression
-//     and filters the result before it's printed, in any of the three
-//     formats, e.g. `apps list --query "[?node_id=='node-1'].name"`.
-//   - Exit codes are real and distinct (see output.go's exitOK/
-//     exitUsage/exitValidation/exitNetwork/exitAPIError), not just 0/1,
-//     so a caller can branch on *why* a call failed.
-//
-// No product name is hardcoded anywhere in this command: "prog" (the
-// string every usage message is built from) always comes from
-// filepath.Base(os.Args[0]), matching this project's standing rule that
-// a CLI's command name comes from os.Args[0], not a literal, and
-// APP_API_TOKEN/APP_API_URL follow
-// this project's existing APP_* env-var-prefix convention (see
-// internal/brand's own envPrefix), not a name-specific one.
+// Command levelrail-cli is a scriptable HTTP client for the control plane's /api/v1 API.
+// Every required input has a flag, so CI or an agent with no TTY never hangs on a prompt.
+// With --json, stdout is a single JSON value; diagnostics always go to stderr.
 package main
 
 import (
@@ -49,11 +17,7 @@ func main() {
 	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
 }
 
-// run is main's testable core: every command function below returns an
-// int exit code rather than calling os.Exit directly (flag.ContinueOnError
-// throughout, never flag.ExitOnError), so the whole CLI's dispatch and
-// flag-parsing logic can be exercised by table-driven tests without
-// forking a subprocess.
+// run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)

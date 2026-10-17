@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runAppsStart implements "apps start <name>": POST
-// /api/v1/apps/{name}/start (internal/api/apps.go's own handleStartApp),
-// AbilityDeploy-gated, no request body. Clears the suspended flag "apps
-// stop" set, letting the reconciler bring the container back.
+// Clears the suspended flag set by apps stop, so the reconciler restarts the container.
 func runAppsStart(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps start", "print the app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsStartUsage(prog)) }

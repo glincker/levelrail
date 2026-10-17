@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runAppsTag implements "apps tag <name> <tag>": POST
-// /api/v1/apps/{name}/tags. tag is a name, not an ID, creating it first
-// if this is the first time it's been used (see internal/api's
-// attachAppTagRequest own doc comment).
+// tag is a name, not an ID; the server creates it on first use.
 func runAppsTag(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps tag", "print the attached tag as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsTagUsage(prog)) }
