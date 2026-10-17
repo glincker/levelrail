@@ -827,6 +827,7 @@
               "feature-status",
               "experimental-features",
               "performance",
+              "benchmarks",
               "changelog",
               "upgrade-history"
             ],
