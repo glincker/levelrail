@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.6.0](https://github.com/glincker/levelrail/compare/v0.5.1...v0.6.0) (2026-10-17)
+
+
+### Features
+
+* add container and registry files for levelrail-mcp ([#1251](https://github.com/glincker/levelrail/issues/1251)) ([97b62b9](https://github.com/glincker/levelrail/commit/97b62b9d5c3232c2cdbae32f51a54c913c2848ec))
+* CPU models, pipeline artifacts and triggers, maintenance alert silencing and AI providers ([#1256](https://github.com/glincker/levelrail/issues/1256)) ([6801959](https://github.com/glincker/levelrail/commit/68019590a34c04b6d05ecc0a55313e3505ba5713))
+* **nodes:** flag nodes that must re-enroll and show why renewal fails ([#1261](https://github.com/glincker/levelrail/issues/1261)) ([d714e06](https://github.com/glincker/levelrail/commit/d714e06862bf1536d7381b388a3e84ba954fd247))
+* release notes between deploys, monorepo detection, and build performance stats ([#1253](https://github.com/glincker/levelrail/issues/1253)) ([af1a9db](https://github.com/glincker/levelrail/commit/af1a9db81b4346b16dfde1a98f06bd19f7266364))
+* stream pipeline artifacts through the Docker archive API ([#1259](https://github.com/glincker/levelrail/issues/1259)) ([7082779](https://github.com/glincker/levelrail/commit/70827794123316824d3da5b0cd262ed25ba447d9))
+
+
+### Bug Fixes
+
+* agents always make their own key at enrollment ([#1258](https://github.com/glincker/levelrail/issues/1258)) ([c56db13](https://github.com/glincker/levelrail/commit/c56db130a4dbe79007a8b1c8cc7533f329424e4c))
+* **maintenance:** keep CPU, memory, disk and crash alerts firing ([#1260](https://github.com/glincker/levelrail/issues/1260)) ([e33c371](https://github.com/glincker/levelrail/commit/e33c3710970c6b6b142983e8681e4b5f5d9ada1a))
+
+
+### Documentation
+
+* **adr:** record scale-out roadmap and plugin architecture ([#1262](https://github.com/glincker/levelrail/issues/1262)) ([2323d3f](https://github.com/glincker/levelrail/commit/2323d3f75f35bdbeb6b8e774ca8be2206cad065d))
+* correct Pages guide and stale release notes, add discovery files ([#1249](https://github.com/glincker/levelrail/issues/1249)) ([91b6b87](https://github.com/glincker/levelrail/commit/91b6b876501106965758bc3b6cd8795ca54588e2))
+* redesign README as a quickstart-first front door ([#1238](https://github.com/glincker/levelrail/issues/1238)) ([1bfd126](https://github.com/glincker/levelrail/commit/1bfd12693684474bba4c6adb7e1fcb51a492e81f))
+
 ## [0.5.1](https://github.com/glincker/levelrail/compare/v0.5.0...v0.5.1) (2026-10-16)
 
 
