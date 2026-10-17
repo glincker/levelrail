@@ -335,11 +335,21 @@ jobs:
 
 When `build` succeeds, the listed paths are archived out of its workspace and stored on the control plane. Any job that `needs` it starts with those files restored into its own `/workspace` (after checkout), on any node. The paths are literal files or directories relative to the workspace; globs, absolute paths, and `..` are rejected when the file is saved.
 
-- **Storage.** Archives live under `APP_PIPELINE_ARTIFACT_DIR` (default `<data dir>/pipeline-artifacts`), one file per job, with a sha256 recorded when stored and checked again before every restore and download. A mismatch refuses the restore or download instead of serving damaged files.
-- **Limits.** `APP_PIPELINE_ARTIFACT_MAX_BYTES` (256 MiB) caps one archive, `APP_PIPELINE_ARTIFACT_MAX_RUN_BYTES` (1 GiB) all archives of a run, and `APP_PIPELINE_ARTIFACT_MAX_UNPACKED_BYTES` (1 GiB) what an archive may expand to.
+- **Storage.** Archives live under `APP_PIPELINE_ARTIFACT_DIR` (default `<data dir>/pipeline-artifacts`), one gzip tar per job, with a sha256 recorded when stored and checked again while every restore and download streams. A mismatch fails the restore or download instead of serving damaged files.
+- **Limits.** `APP_PIPELINE_ARTIFACT_MAX_BYTES` (256 MiB) caps one stored archive, `APP_PIPELINE_ARTIFACT_MAX_RUN_BYTES` (1 GiB) all archives of a run, `APP_PIPELINE_ARTIFACT_MAX_UNPACKED_BYTES` (1 GiB) what an archive may expand to, and `APP_PIPELINE_ARTIFACT_MAX_ENTRIES` (100000) the files, directories and links in one archive. Caps are enforced while the bytes stream, so a job that goes over stops early and leaves no partial file.
 - **Retention.** `APP_PIPELINE_ARTIFACT_RETENTION` (168h) after the upload. Expired archives, and archives of pruned runs, are deleted.
-- **Safety.** A path that resolves outside the workspace (including through a symlink) fails the upload. Archives containing absolute or `..` paths, links that point outside the workspace, device files, or a value of a secret the job used are rejected, and the job fails with the reason instead of reporting success without its artifacts.
-- **Download.** The run page lists each artifact with its size and checksum, and `levelrail-cli pipelines artifacts my-app <run-id> --download build` fetches one. Downloads need the `read` ability.
+- **Safety.** Every entry of the tar is checked as it streams. Absolute or `..` names, entries outside the declared path, symlinks or hard links that point outside the workspace, writes through a symlink, device, pipe and sparse entries, or a value of a secret the job used are rejected, and the job fails with the reason instead of reporting success without its artifacts. Permissions are normalised (setuid, setgid and sticky bits are dropped) and extended attributes are not kept.
+- **Download.** The run page lists each artifact with its size and checksum, and `levelrail-cli pipelines artifacts my-app <run-id> --download build` fetches one. The server streams the file from disk with its `Content-Length` and an `X-Content-SHA256` header, and the CLI writes to a temporary file, checks the hash, and only then renames it into place. Downloads need the `read` ability.
+
+#### How artifacts move
+
+Artifacts travel through the Docker Engine archive endpoints (`GET` and `PUT /containers/{id}/archive`), not through a shell inside the job image. The job image needs no `tar`, `base64`, `realpath` or `mktemp`, and can be `scratch`-based as long as the files exist.
+
+1. After a job succeeds, the control plane asks the node's runtime for the tar of each declared path under `/workspace`. Docker names the top entry after the last path element, so entries are rebased to their workspace path.
+2. Each entry is validated and rewritten into one gzip tar that is written straight to a temporary file while the sha256 and the size are counted. The caps are checked per write, a violation deletes the temporary file, and success renames it into place.
+3. To restore, the stored file is streamed into the next job's container with the archive `PUT` at `/workspace`, hashing as it is read. The sha256 is verified at the end of the stream: a mismatch fails the job step with a clear reason. The bytes read before the mismatch was known were already unpacked into that job's workspace, which is discarded with the failed job. Nothing is extracted through a shell.
+4. On a remote node the same two operations ride the existing agent session as a new archive mode of the exec frame stream. It reuses its chunked frames, windowed credit (backpressure), cancel on context end, and the node's mTLS identity, and carries the size cap to the agent so the cap also stops the stream on the node. Local and remote nodes share one runtime interface, so the engine has a single code path.
+5. The stored artifact is never modified by a restore. If the restore fails after a good upload, the job that needed it fails with the reason and the artifact stays for download and for a re-run.
 
 The `artifact-upload` and `artifact-download` steps remain for moving files between steps of one run on the same node, through a per-run volume. Their paths must also stay inside the workspace.
 
@@ -518,6 +528,7 @@ Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default
 - The `build` step clones the repository itself instead of reading the job workspace, so files created by earlier steps are not part of the build context.
 - The `artifact-upload` and `artifact-download` steps are per node. Use the job-level `artifacts` list to hand files to a job on another node.
 - Artifacts are stored on the control plane's disk, not in S3, and are included in no backup.
+- Copy-out and copy-in have so far only run against fakes and a loopback mTLS session, never against a real Docker daemon. Still to be checked on a real node: a multi-gigabyte archive, a symlink and hard links produced inside a real image, file ownership after restore (entries keep the numeric uid and gid they had), and a rootless Docker.
 - Workspace and artifact volumes are removed automatically on the local node; on remote nodes they are left for the volume cleanup.
 - `deploy`, `promote`, and `rollback` refuse services in a protected environment.
 - Re-running only the failed jobs of a run is not available. **Re-run** starts a new run from the beginning: approval decisions are per run, so resuming inside a finished run would reuse stale approvals.
