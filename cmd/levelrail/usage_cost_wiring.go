@@ -50,3 +50,21 @@ func runSpendCaps(ctx context.Context, r spendCapTicker) {
 		}
 	}
 }
+
+type autoscaleTicker interface {
+	AutoscaleTick(ctx context.Context)
+}
+
+// runAutoscaler re-derives every autoscaled app's replica count until ctx ends.
+func runAutoscaler(ctx context.Context, r autoscaleTicker, interval time.Duration) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			r.AutoscaleTick(ctx)
+		}
+	}
+}

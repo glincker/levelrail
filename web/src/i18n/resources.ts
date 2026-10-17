@@ -51,6 +51,7 @@ import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
 import type pipelines from '../locales/en/pipelines.json'
 import type budget from '../locales/en/budget.json'
+import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
 import type plugins from '../locales/en/plugins.json'
@@ -127,6 +128,7 @@ declare module 'i18next' {
       jobs: typeof jobs
       pipelines: typeof pipelines
       budget: typeof budget
+      autoscale: typeof autoscale
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
       plugins: typeof plugins

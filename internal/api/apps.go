@@ -874,6 +874,10 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !rt.keepAutoscaledReplicas(w, r, name, existing, &req) {
+		return
+	}
+
 	// imageChanged also makes this PUT a real redeploy (see
 	// recordPlainDeployAttempt below), so it clears EnvDirty the same way
 	// RestartService/handleTriggerDeploy do; otherwise EnvDirty latches

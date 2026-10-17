@@ -80,6 +80,7 @@ export const NAMESPACES = [
   'deployDetail',
   'pipelines',
   'budget',
+  'autoscale',
 ] as const
 
 void i18n

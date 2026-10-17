@@ -21,6 +21,8 @@ func TestClassifyMetric(t *testing.T) {
 		{"lb_upstreams_healthy", MetricClassRequestPath},
 		{"lb_active_requests", MetricClassRequestPath},
 		{"cpu_percent", MetricClassResource},
+		{"autoscale_no_capacity", MetricClassResource},
+		{"autoscale_flaps_1h", MetricClassResource},
 		{"memory_usage_bytes", MetricClassResource},
 		{"network_rx_bytes", MetricClassResource},
 		{"disk_write_bytes", MetricClassResource},
