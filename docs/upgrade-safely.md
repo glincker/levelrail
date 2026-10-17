@@ -128,7 +128,7 @@ Three defaults became stricter. Each has an override, so a deployment that relie
 | Default | Was | Is now | Keep the old behavior |
 | --- | --- | --- | --- |
 | Docker API guard (`APP_DOCKER_GUARD`) | `audit`: record, never block | `enforce`: a request a rule denies gets `403` | `APP_DOCKER_GUARD=audit`, or `off`. A mode saved from the dashboard is kept as is. |
-| Agent enrollment without a CSR (`APP_AGENT_REQUIRE_CSR`) | accepted: the control plane generated the agent's key | refused with an error naming the override | `APP_AGENT_REQUIRE_CSR=false` on the control plane until every agent is upgraded. Enrolled nodes are unaffected. |
+| Agent enrollment without a CSR | accepted: the control plane generated the agent's key | refused for good: the agent must be upgraded. Nodes holding a control-plane key show "re-enroll required" and are not renewed. | None. Upgrade the agent, then Re-enroll the node. |
 | Dashboard listener (`APP_HTTP_ADDR`) | `:8080`, all interfaces | `127.0.0.1:8080` only for a bare binary outside a container whose `APP_DASHBOARD_URL` is an `https://` URL; `:8080` everywhere else, with a one-time warning when it is reachable beyond this host | `APP_HTTP_ADDR=:8080` |
 
 `install.sh` and the container image set `APP_HTTP_ADDR` themselves, so neither changes. After upgrading, `levelrail-cli doctor` shows the guard mode and any request it denied.

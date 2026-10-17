@@ -21,14 +21,9 @@ build a node runs.
    subject, SANs and extensions are ignored: the control plane alone sets
    CN (the node ID) and client-auth usage. ed25519 (what the CA already
    uses) and ECDSA P-256/P-384 are accepted, RSA is not.
-   *Compatibility:* an old agent that sends no CSR still gets a
-   server-generated key, and a new agent talking to an old control plane
-   uses the key the response carries. `APP_AGENT_REQUIRE_CSR=true` closes
-   the legacy path once every agent is upgraded. Nodes enrolled before this
-   move to an agent-generated key at their first renewal
-   (`cert_key_origin` records which).
-   *Rejected:* a clean break (strands agents mid-upgrade for no security
-   gain the opt-in flag does not also give); keeping server key generation
+   *Compatibility:* superseded by ADR 032, which removed the legacy path
+   (CSR-less enrollment, `APP_AGENT_REQUIRE_CSR`) before any stable release.
+   *Rejected:* keeping server key generation
    (the key crosses the wire and sits in control plane memory).
 
 2. **Renewal is a unary `Renew` RPC authenticated by the current
