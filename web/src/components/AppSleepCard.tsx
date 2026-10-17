@@ -15,8 +15,6 @@ import { SleepEligibilityList } from './sleep/SleepEligibilityList'
 import { SleepSettingsForm } from './sleep/SleepSettingsForm'
 import { SleepStatusHeader } from './sleep/SleepStatusHeader'
 
-const DEFAULT_IDLE_MINUTES = 30
-
 /** AppSleepCard explains whether sleep can work for an app, why not, and offers one-click fixes. */
 export function AppSleepCard({ appName }: { appName: string }) {
   const { t } = useTranslation('deploys')
@@ -37,7 +35,7 @@ export function AppSleepCard({ appName }: { appName: string }) {
 
   function save(patch: Partial<SleepUpdate>, success: string) {
     const body: SleepUpdate = {
-      idle_minutes: idle > 0 ? idle : DEFAULT_IDLE_MINUTES,
+      idle_minutes: idle > 0 ? idle : sleep.idle_limits.default_minutes,
       ...patch,
     }
     setIdle.mutate(body, {
@@ -148,7 +146,9 @@ export function AppSleepCard({ appName }: { appName: string }) {
                   ? t('appSleep.turnOnBlocked', {
                       titles: blockers.map((b) => b.title).join(', '),
                     })
-                  : t('appSleep.turnOnHint', { minutes: DEFAULT_IDLE_MINUTES })}
+                  : t('appSleep.turnOnHint', {
+                      minutes: sleep.idle_limits.default_minutes,
+                    })}
               </p>
             </div>
           </>

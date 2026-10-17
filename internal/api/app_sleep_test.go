@@ -58,8 +58,8 @@ func TestAppSleepSettingAndWake(t *testing.T) {
 	if svc, _ := db.GetDesiredService(ctx, "web"); !svc.Suspended {
 		t.Fatal("a request with the wrong token woke the app")
 	}
-	if got := wake("tok"); got != http.StatusNoContent {
-		t.Fatalf("wake = %d, want 204", got)
+	if got := wake("tok"); got != http.StatusServiceUnavailable {
+		t.Fatalf("wake = %d, want 503 (the waking response)", got)
 	}
 	svc, _ := db.GetDesiredService(ctx, "web")
 	if svc.Suspended {
@@ -68,8 +68,8 @@ func TestAppSleepSettingAndWake(t *testing.T) {
 	if a, _ := db.GetAppSleep(ctx, "web"); a.Sleeping {
 		t.Error("sleeping flag survived the wake")
 	}
-	if got := wake("tok"); got != http.StatusNoContent {
-		t.Errorf("repeat wake = %d, want 204", got)
+	if got := wake("tok"); got != http.StatusServiceUnavailable {
+		t.Errorf("repeat wake = %d, want 503", got)
 	}
 
 	if rec := sleepPut(t, rt.handleSetAppSleep, `{"idle_minutes":0}`); rec.Code != http.StatusOK {
@@ -150,10 +150,7 @@ func TestWakeHookHoldsRequestsInFunctionMode(t *testing.T) {
 	if err := db.UpsertConditions(ctx, "application/fn", ready); err != nil {
 		t.Fatal(err)
 	}
-	wakeHoldTimeout, wakeHoldPoll, wakeIngressSettle = 5*time.Second, 20*time.Millisecond, 10*time.Millisecond
-	t.Cleanup(func() {
-		wakeHoldTimeout, wakeHoldPoll, wakeIngressSettle = 30*time.Second, 250*time.Millisecond, 200*time.Millisecond
-	})
+	shortWakeHold(t, 5*time.Second)
 	time.Sleep(20 * time.Millisecond)
 	go func() {
 		time.Sleep(300 * time.Millisecond)
@@ -173,8 +170,8 @@ func TestWakeHookHoldsRequestsInFunctionMode(t *testing.T) {
 	if svc, _ := db.GetDesiredService(ctx, "fn"); svc.Suspended {
 		t.Error("the app was not woken")
 	}
-	if rec := wakeHook(rt, "plain", "/run"); rec.Code != http.StatusNoContent {
-		t.Errorf("without hold = %d, want 204", rec.Code)
+	if rec := wakeHook(rt, "plain", "/run"); rec.Code != http.StatusServiceUnavailable || rec.Header().Get("Retry-After") == "" {
+		t.Errorf("without hold = %d, want 503 with Retry-After", rec.Code)
 	}
 	if rec := wakeHook(rt, "fn", "//evil.example/x"); rec.Code == http.StatusTemporaryRedirect {
 		t.Error("a protocol-relative path must never become a redirect")
@@ -200,13 +197,10 @@ func TestWakeHookHoldTimesOutWithoutReady(t *testing.T) {
 	if err := db.SetAppSleeping(ctx, "fn", true, time.Now()); err != nil {
 		t.Fatal(err)
 	}
-	wakeHoldTimeout, wakeHoldPoll, wakeIngressSettle = 150*time.Millisecond, 20*time.Millisecond, 10*time.Millisecond
-	t.Cleanup(func() {
-		wakeHoldTimeout, wakeHoldPoll, wakeIngressSettle = 30*time.Second, 250*time.Millisecond, 200*time.Millisecond
-	})
+	shortWakeHold(t, 150*time.Millisecond)
 
-	if rec := wakeHook(rt, "fn", "/run"); rec.Code != http.StatusNoContent {
-		t.Fatalf("never ready = %d, want 204 (the waking-up page), not a redirect loop", rec.Code)
+	if rec := wakeHook(rt, "fn", "/run"); rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("never ready = %d, want 503 (the waking-up page), not a redirect loop", rec.Code)
 	}
 }
 

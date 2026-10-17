@@ -21,6 +21,8 @@ type sleepFleetApp struct {
 	MemoryLimitBytes int64 `json:"memory_limit_bytes"`
 	// Since is when it went to sleep, present only while asleep.
 	Since *time.Time `json:"since,omitempty"`
+	// WakeTiming is how long this app usually takes to wake; samples is 0 with no history.
+	WakeTiming wakeTimingResource `json:"wake_timing"`
 }
 
 type sleepFleetResource struct {
@@ -50,6 +52,9 @@ func (rt *Router) handleSleepFleet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := buildSleepFleet(rows, svcs, canRead)
+	for i := range out.Apps {
+		out.Apps[i].WakeTiming = toWakeTimingResource(rt.wakeTiming(r.Context(), out.Apps[i].Name))
+	}
 	rt.logger.Debug("api: sleep fleet", slog.Int("enabled", out.Enabled), slog.Int("sleeping", out.Sleeping))
 	writeJSON(w, http.StatusOK, out)
 }

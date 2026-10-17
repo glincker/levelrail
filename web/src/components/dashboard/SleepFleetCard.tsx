@@ -7,12 +7,14 @@ import { toast } from '@/components/ui/toast'
 import { useAppSleepActions } from '../../queries/appSleep'
 import { useSleepFleet, type SleepFleetApp } from '../../queries/sleepFleet'
 import { formatSize } from '../../lib/format'
+import { formatWakeMs, wakeEstimate } from '../../lib/sleepState'
 
 const LIST_LIMIT = 5
 
 function SleepingRow({ app }: { app: SleepFleetApp }) {
   const { t } = useTranslation('deploys')
   const { wake } = useAppSleepActions(app.name)
+  const estimate = wakeEstimate(app.wake_timing)
   return (
     <li className="flex items-center justify-between gap-3 py-1.5">
       <span className="flex min-w-0 items-center gap-2">
@@ -29,6 +31,18 @@ function SleepingRow({ app }: { app: SleepFleetApp }) {
         </Link>
       </span>
       <span className="flex shrink-0 items-center gap-3">
+        <span className="text-xs tabular-nums text-muted-foreground">
+          {estimate === null
+            ? t('appSleep.wakeTiming.noneShort')
+            : estimate.p95Ms === null
+              ? t('appSleep.wakeTiming.short', {
+                  typical: formatWakeMs(estimate.typicalMs),
+                })
+              : t('appSleep.wakeTiming.shortWithP95', {
+                  typical: formatWakeMs(estimate.typicalMs),
+                  p95: formatWakeMs(estimate.p95Ms),
+                })}
+        </span>
         {app.memory_limit_bytes > 0 ? (
           <span className="text-xs tabular-nums text-muted-foreground">
             {formatSize(app.memory_limit_bytes)}

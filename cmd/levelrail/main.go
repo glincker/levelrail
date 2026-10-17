@@ -4012,6 +4012,7 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithDeployRecorder(deps.telemetryDB),
 		application.WithHookRunRecorder(deps.db),
 		application.WithProbeAttemptRecorder(deps.db),
+		application.WithWakeProbe(deps.db, appsleep.ConfigFromEnv(os.Getenv).WakeProbeInterval),
 		application.WithStorageTargets(deps.db),
 		application.WithDatabaseAttachments(deps.db),
 		application.WithDatabaseScope(deps.db),

@@ -85,7 +85,7 @@ func wakeRequestEvent(r *http.Request, name string, slept, now time.Time) store.
 
 // finishWake stamps the wake's latency once the app is healthy, or records a
 // wake_failed row when it never became ready within the hold timeout.
-func (rt *Router) finishWake(ctx context.Context, name string, id int64, start time.Time, ready bool, reason string) {
+func (rt *Router) finishWake(ctx context.Context, name string, id int64, start time.Time, hold time.Duration, ready bool, reason string) {
 	s := rt.sleepEvents()
 	if s == nil || id == 0 {
 		return
@@ -96,7 +96,7 @@ func (rt *Router) finishWake(ctx context.Context, name string, id int64, start t
 		}
 		return
 	}
-	rt.recordSleepEvent(ctx, store.SleepEvent{ServiceName: name, Kind: store.SleepEventWakeFailed, At: time.Now(), Reason: reason, Detail: "app was not healthy within " + wakeHoldTimeout.String(), Actor: "system"})
+	rt.recordSleepEvent(ctx, store.SleepEvent{ServiceName: name, Kind: store.SleepEventWakeFailed, At: time.Now(), Reason: reason, Detail: "app was not healthy within " + hold.String(), Actor: "system"})
 }
 
 // watchWake measures a wake's latency in the background for callers that
@@ -105,9 +105,11 @@ func (rt *Router) watchWake(name string, id int64, start time.Time, reason strin
 	if id == 0 {
 		return
 	}
+	cfg := appsleep.ConfigFromEnv(nil)
+	hold := cfg.HoldTimeout(rt.wakeTiming(context.Background(), name).ReadyP95Ms)
 	go func() {
 		ctx := context.Background()
-		rt.finishWake(ctx, name, id, start, rt.holdUntilReady(ctx, name, start), reason)
+		rt.finishWake(ctx, name, id, start, hold, rt.holdUntilReady(ctx, name, start, hold, cfg.WakeProbeInterval), reason)
 	}()
 }
 
@@ -144,6 +146,9 @@ type sleepHistoryResource struct {
 	Sleeping bool                 `json:"sleeping"`
 	Events   []sleepEventResource `json:"events"`
 	Stats    sleepStatsResource   `json:"stats"`
+	// WakeTiming covers the app's most recent timed wakes, not the requested window.
+	WakeTiming wakeTimingResource `json:"wake_timing"`
+	IdleLimits sleepIdleLimits    `json:"idle_limits"`
 }
 
 func toSleepStatsResource(st store.SleepStats, memLimit int64) sleepStatsResource {
@@ -228,7 +233,7 @@ func (rt *Router) handleAppSleepHistory(w http.ResponseWriter, r *http.Request) 
 	if svc, err := rt.apps.GetDesiredService(r.Context(), name); err == nil && svc.Resources != nil {
 		memLimit = svc.Resources.MemoryBytes
 	}
-	out := sleepHistoryResource{Enabled: setting.IdleMinutes > 0, Sleeping: setting.Sleeping, Events: make([]sleepEventResource, 0, len(events)), Stats: toSleepStatsResource(stats, memLimit)}
+	out := sleepHistoryResource{Enabled: setting.IdleMinutes > 0, Sleeping: setting.Sleeping, Events: make([]sleepEventResource, 0, len(events)), Stats: toSleepStatsResource(stats, memLimit), WakeTiming: toWakeTimingResource(rt.wakeTiming(r.Context(), name)), IdleLimits: currentIdleLimits()}
 	for _, e := range events {
 		out.Events = append(out.Events, toSleepEventResource(e))
 	}

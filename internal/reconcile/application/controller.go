@@ -215,36 +215,38 @@ const (
 // from ServiceStore on every Reconcile, never cached) to a running
 // container.
 type Controller struct {
-	serviceName     string
-	conditions      ConditionReader
-	store           ServiceStore
-	runtime         docker.Runtime
-	httpClient      *http.Client
-	probeLimits     probe.Limits
-	readyBudget     time.Duration
-	secretResolver  SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
-	deployRecorder  DeployRecorder // nil is valid: deploy frequency just isn't recorded
-	meshDNSAddr     string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
-	meshDB          *MeshDatabaseConfig
-	meshZone        string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
-	nodeGPU         NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
-	storageTargets  StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
-	projectEnv      ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
-	orgEnv          OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
-	environmentEnv  EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
-	appIntegrations AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
-	networkPrefix   string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
-	registryCreds   RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
-	databaseScope   DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
-	databases       DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
-	vaultSettings   VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
-	vaultResolver   VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
-	hookRuns        HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
-	traceStore      TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
-	probeAttempts   ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
-	hookTimeout     time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
-	liveness        *LivenessTracker        // per-container liveness failure counts, in memory only, see LivenessTracker
-	instanceID      string                  // empty means no instance-ownership check, see WithInstanceID
+	serviceName       string
+	conditions        ConditionReader
+	store             ServiceStore
+	runtime           docker.Runtime
+	httpClient        *http.Client
+	probeLimits       probe.Limits
+	readyBudget       time.Duration
+	secretResolver    SecretResolver // nil is valid: a service with no secret-backed env vars never needs one
+	deployRecorder    DeployRecorder // nil is valid: deploy frequency just isn't recorded
+	meshDNSAddr       string         // empty is valid: no mesh DNS server is running, or it hasn't resolved a container-reachable address, see WithMeshDNSAddr
+	meshDB            *MeshDatabaseConfig
+	meshZone          string                  // empty is valid: resolveDatabaseField falls back to the database's container name, see WithMeshZone
+	nodeGPU           NodeGPUChecker          // nil is valid: no GPU placement check, see WithNodeGPU
+	storageTargets    StorageTargetStore      // nil is valid: a service with no StorageTargetID never needs one, see WithStorageTargets
+	projectEnv        ProjectEnvStore         // nil is valid: project vars are just skipped, see WithProjectEnv
+	orgEnv            OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
+	environmentEnv    EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
+	appIntegrations   AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
+	networkPrefix     string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
+	registryCreds     RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
+	databaseScope     DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
+	databases         DatabaseAttachmentStore // nil is valid: a service with no DatabaseEnv/DatabaseAttachment never needs one, see WithDatabaseAttachments
+	vaultSettings     VaultSettingsStore      // nil is valid: a service with no VaultEnv never needs one, see WithVaultSettings
+	vaultResolver     VaultResolver           // nil is valid: a service with no VaultEnv never needs one, see WithVaultResolver
+	hookRuns          HookRunRecorder         // nil is valid: a hook run's outcome just isn't persisted, see WithHookRunRecorder
+	traceStore        TraceStore              // nil is valid: no deploy trace is written, see WithTraceStore
+	probeAttempts     ProbeAttemptRecorder    // nil is valid: individual probe attempts just aren't persisted, see WithProbeAttemptRecorder
+	hookTimeout       time.Duration           // defaults to defaultHookTimeout, see WithHookTimeout
+	wakeWindow        WakeWindowReader        // nil is valid: no short probe interval after a wake, see WithWakeProbe
+	wakeProbeInterval time.Duration
+	liveness          *LivenessTracker // per-container liveness failure counts, in memory only, see LivenessTracker
+	instanceID        string           // empty means no instance-ownership check, see WithInstanceID
 	// egressReadyBudget/egressReadyPollInterval override
 	// defaultEgressReadyBudget/defaultEgressReadyPollInterval (egress.go);
 	// zero means "use the default", see effectiveEgressReadyBudget and
@@ -2083,7 +2085,7 @@ func (c *Controller) waitReady(ctx context.Context, state *docker.ContainerState
 	probeCtx, cancel := context.WithTimeout(ctx, c.effectiveReadyBudget(desired))
 	defer cancel()
 
-	cfg := readiness.ProbeConfig()
+	cfg := c.wakeProbeConfig(ctx, desired, readiness.ProbeConfig())
 
 	readyErr := make(chan error, 1)
 	go func() { readyErr <- c.deployProber(ctx, desired).WaitReady(probeCtx, target, cfg) }()
