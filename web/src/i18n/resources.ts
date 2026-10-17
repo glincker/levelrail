@@ -50,12 +50,16 @@ import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type jobs from '../locales/en/jobs.json'
 import type pipelines from '../locales/en/pipelines.json'
+import type budget from '../locales/en/budget.json'
+import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
+import type plugins from '../locales/en/plugins.json'
 import type help from '../locales/en/help.json'
 import type traces from '../locales/en/traces.json'
 import type errors from '../locales/en/errors.json'
 import type edgeAccess from '../locales/en/edgeAccess.json'
+import type trafficDetail from '../locales/en/trafficDetail.json'
 import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
@@ -123,12 +127,16 @@ declare module 'i18next' {
       deploySafety: typeof deploySafety
       jobs: typeof jobs
       pipelines: typeof pipelines
+      budget: typeof budget
+      autoscale: typeof autoscale
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor
+      plugins: typeof plugins
       help: typeof help
       traces: typeof traces
       errors: typeof errors
       edgeAccess: typeof edgeAccess
+      trafficDetail: typeof trafficDetail
       betaFeatures: typeof betaFeatures
       newApp: typeof newApp
       getStarted: typeof getStarted

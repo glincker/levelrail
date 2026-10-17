@@ -7,12 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runAppsImages implements "apps images <name>": GET
-// /api/v1/apps/{name}/images, every locally-present tag under name's
-// current image's repo, newest first. Always succeeds with an empty
-// list rather than an error when nothing is found
-// (internal/api/images.go's handleListImages own doc comment), so an
-// empty result here means "nothing to suggest," not a failure.
+// An empty list, not an error, means no local tags were found.
 func runAppsImages(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps images", "print image tags as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsImagesUsage(prog)) }

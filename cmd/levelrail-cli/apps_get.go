@@ -6,11 +6,6 @@ import (
 	"io"
 )
 
-// runAppsGet implements "apps get <name>": GET /api/v1/apps/{name},
-// printed as human-readable fields or as JSON. The other minimal
-// companion command alongside "apps list", useful for an agent to check
-// an app's current state (its real, post-build image tag in particular)
-// before acting on it further.
 func runAppsGet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps get", "print the app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

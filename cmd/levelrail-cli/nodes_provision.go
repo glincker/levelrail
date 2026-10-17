@@ -66,13 +66,7 @@ func runNodesProvision(prog string, args []string, stdout, stderr io.Writer, loo
 	return exitOK
 }
 
-// defaultControlPlaneAddr derives a best-effort control plane agent
-// address from the resolved --api-url's own hostname, port 9443 (the
-// fixed agent gRPC listener port, cmd/levelrail/main.go's
-// defaultAgentAddr), the same fallback AddNodeDialog.tsx's own manual
-// join-token flow pre-fills and lets the operator override. Empty if the
-// URL can't be parsed, so the caller can require an explicit flag
-// instead.
+// Derived from the API URL host plus the fixed agent port 9443; empty if the URL does not parse.
 func defaultControlPlaneAddr(apiURLFlag string, lookupEnv func(string) (string, bool), prog, profileFlag string) string {
 	profile := resolveProfile(profileFlag, lookupEnv)
 	resolved := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)

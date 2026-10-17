@@ -9,12 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestBuildCacheOptions exercises the env-var-to-build.Option mapping
-// as pure logic: no docker daemon, no BuildKit connection, just
-// which options get returned for a given set of env vars. The actual
-// options' effect is internal/build's own responsibility, already
-// covered there (cache_test.go, solve_test.go); this only checks
-// buildCacheOptions wires the right env var to the right option.
+// Pure mapping test: env vars in, build options out, with no Docker or BuildKit.
 func TestBuildCacheOptions(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -85,10 +80,7 @@ func TestBuildCacheOptions(t *testing.T) {
 	}
 }
 
-// TestBuildCacheOptions_BuiltinRegistry_AutoWired proves an enabled
-// built-in registry with a Host set gets wired into the build cache
-// automatically when no explicit APP_BUILD_CACHE_REGISTRY override is
-// set, and that an explicit override always wins over it.
+// An explicit APP_BUILD_CACHE_REGISTRY always overrides the built-in registry auto-wiring.
 func TestBuildCacheOptions_BuiltinRegistry_AutoWired(t *testing.T) {
 	for _, key := range []string{"APP_BUILD_CACHE_DIR", "APP_BUILD_CACHE_REGISTRY", "APP_BUILD_CACHE_REGISTRY_INSECURE"} {
 		t.Setenv(key, "")

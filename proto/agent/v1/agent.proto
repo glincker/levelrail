@@ -413,6 +413,10 @@ message HostReport {
   // other_containers lists only the largest few.
   uint64 other_containers_memory_bytes = 4;
   repeated UnmanagedContainer other_containers = 5;
+  // cpu_cores, disk_total_bytes and disk_free_bytes are zero when unreadable.
+  uint32 cpu_cores = 6;
+  uint64 disk_total_bytes = 7;
+  uint64 disk_free_bytes = 8;
 }
 
 message ContainerState {

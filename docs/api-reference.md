@@ -85,6 +85,7 @@ System endpoints for:
 | GET | /api/v1/system/cli-console/session | AbilityRoot | handleCLIConsoleSession |
 | GET | /api/v1/system/networks | AbilityRead | handleGetSystemNetworks |
 | POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
+| GET | /api/v1/system/shield/bots | AbilityRead | handleShieldBotList |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
@@ -478,6 +479,17 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/maintenance | AbilityRead | handleGetAppMaintenance |
 | PUT | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleSetAppMaintenance |
 | DELETE | /api/v1/apps/{name}/maintenance | AbilityDeploy | handleClearAppMaintenance |
+| GET | /api/v1/apps/{name}/traffic | AbilityRead | handleAppTraffic |
+| GET | /api/v1/apps/{name}/budget | AbilityRead | handleGetSpendCap |
+| PUT | /api/v1/apps/{name}/budget | AbilityDeploy | handlePutSpendCap |
+| DELETE | /api/v1/apps/{name}/budget | AbilityDeploy | handleDeleteSpendCap |
+| GET | /api/v1/apps/{name}/budget/history | AbilityRead | handleSpendCapHistory |
+| POST | /api/v1/apps/{name}/deploys/from-cache | AbilityDeploy | handleDeployFromCache |
+| GET | /api/v1/apps/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
+| GET | /api/v1/apps/{name}/autoscale | AbilityRead | handleGetAutoscale |
+| PUT | /api/v1/apps/{name}/autoscale | AbilityDeploy | handlePutAutoscale |
+| DELETE | /api/v1/apps/{name}/autoscale | AbilityDeploy | handleDeleteAutoscale |
+| GET | /api/v1/apps/{name}/autoscale/history | AbilityRead | handleAutoscaleHistory |
 
 </Accordion>
 
@@ -649,6 +661,7 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/placement | AbilityRead | handleGetPlacement |
 | PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
 | GET | /api/v1/databases/{name}/engine-stats | AbilityReadSensitive | handleGetDatabaseEngineStats |
+| GET | /api/v1/databases/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
 
 ## Projects / Organizations / Environments
 
@@ -748,6 +761,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/security | AbilityRoot | handleGetNodeTrust |
 | GET | /api/v1/nodes/{id}/security/events | AbilityRoot | handleListNodeSecurityEvents |
 | POST | /api/v1/nodes/{id}/cert/renew | AbilityRoot | handleRenewNodeCert |
+| GET | /api/v1/nodes/allocations | AbilityRoot | handleNodeAllocations |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -855,6 +869,11 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate | AbilityRoot | handleClearDomainAuthGate |
 | GET | /api/v1/apps/{name}/domains/{domain}/auth-gate/events | AbilityReadSensitive | handleListAuthGateEvents |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/auth-gate/sessions | AbilityRoot | handleRevokeAuthGateSessions |
+| GET | /api/v1/apps/{name}/domains/{domain}/shield | AbilityRead | handleGetDomainPolicy |
+| PUT | /api/v1/apps/{name}/domains/{domain}/shield | AbilityDeploy | handleSetDomainPolicy |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/shield | AbilityDeploy | handleDeleteDomainPolicy |
+| POST | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStartUnderAttack |
+| DELETE | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStopUnderAttack |
 
 </Accordion>
 
@@ -1443,6 +1462,16 @@ Routes that do not fit an existing group.
 | POST | /api/v1/hooks/pipeline/{id}/{token} | Public | handlePipelineWebhook |
 | GET | /api/v1/ai/usage | AbilityRead | handleAIUsage |
 | GET | /api/v1/model-catalog | AbilityRead | handleModelCatalog |
+| GET | /api/v1/plugins | AbilityRoot | handleListPlugins |
+| GET | /api/v1/plugins/{name} | AbilityRoot | handleGetPlugin |
+| POST | /api/v1/plugins | AbilityRoot | handleInstallPlugin |
+| POST | /api/v1/plugins/{name}/approve | AbilityRoot | handleApprovePlugin |
+| POST | /api/v1/plugins/{name}/enable | AbilityRoot | handleEnablePlugin |
+| POST | /api/v1/plugins/{name}/disable | AbilityRoot | handleDisablePlugin |
+| DELETE | /api/v1/plugins/{name} | AbilityRoot | handleRemovePlugin |
+| GET | /api/v1/plugin-keys | AbilityRoot | handleListPluginKeys |
+| POST | /api/v1/plugin-keys | AbilityRoot | handleAddPluginKey |
+| DELETE | /api/v1/plugin-keys/{id} | AbilityRoot | handleRemovePluginKey |
 
 ## See also
 

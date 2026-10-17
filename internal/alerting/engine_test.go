@@ -54,18 +54,12 @@ func (f *fakeRuleStore) get(id string) Rule {
 	return f.rules[id]
 }
 
-// RecordNotificationDelivery is a no-op: none of fakeRuleStore's own
-// tests exercise a ChannelID-attached rule (see
-// TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch's own comment
-// on why that case runs against a real *DB instead).
+// RecordNotificationDelivery is a no-op: fakeRuleStore tests never use ChannelID-attached rules.
 func (f *fakeRuleStore) RecordNotificationDelivery(_ context.Context, _ NotificationDelivery) error {
 	return nil
 }
 
-// UpsertCertExpiryObservation/ListCertExpiryObservations satisfy
-// RuleStore for tests that don't exercise a cert_expiry rule
-// (cert_expiry_test.go uses a dedicated fakeCertExpiryObservationStore
-// instead, since those tests need real per-domain state).
+// Satisfies RuleStore for tests that do not exercise cert_expiry rules; those use a dedicated fake.
 func (f *fakeRuleStore) UpsertCertExpiryObservation(_ context.Context, _ CertExpiryObservation) error {
 	return nil
 }
@@ -267,14 +261,8 @@ func TestEngine_Tick_CrashloopFires_AutoRollback_FiresOncePerBadDeploy(t *testin
 	}
 }
 
-// TestEngine_Tick_CrashloopFires_AutoRollback_RearmsOnNewBadDeploy
-// reproduces the field-found gap end to end through Engine.Tick: a first
-// bad deploy gets auto-rolled-back, then a second, genuinely different
-// bad image lands while the crashloop rule is still continuously Firing
-// (its RestartWindow is generous enough that the first episode's restarts
-// never age out before the second episode's restarts start), so the rule
-// never produces a second becameFiring transition. Both episodes must
-// still get rolled back.
+// A second bad deploy while the crashloop rule stays firing must still roll back,
+// since the rule never produces a second becameFiring transition.
 func TestEngine_Tick_CrashloopFires_AutoRollback_RearmsOnNewBadDeploy(t *testing.T) {
 	r := Rule{ID: "cl1", Kind: KindCrashloop, ResourceID: "service:web",
 		RestartCountThreshold: 1, RestartWindow: time.Hour, Enabled: true}
@@ -303,10 +291,7 @@ func TestEngine_Tick_CrashloopFires_AutoRollback_RearmsOnNewBadDeploy(t *testing
 		t.Fatalf("after tick 1: savedServices = %+v, want one save with image web:good", rollbackStore.savedServices)
 	}
 
-	// A genuinely new, different bad image is deployed. The rule's own
-	// restart-count window still covers episode 1's restarts (RestartWindow
-	// is 1h, no new observations even needed to stay above threshold), so
-	// without the fix this second bad deploy would never be seen at all.
+	// Episode 1's restarts still fall inside RestartWindow, so without the fix this second bad deploy is never seen.
 	rollbackStore.svc.Image = "web:badB"
 	rollbackStore.attempts = append([]store.DeployAttempt{{Image: "web:badB", Status: store.DeployAttemptStatusSucceeded}}, rollbackStore.attempts...)
 
@@ -350,12 +335,7 @@ func TestEngine_Tick_CrashloopFires_AutoRollbackNotConfigured_NoOp(t *testing.T)
 	}
 }
 
-// heavyBurnFake returns an sloFake with an hour of samples burning error
-// budget heavily enough to page immediately, not through the shared
-// addMinutes (slo_escalation_test.go): that helper's own from parameter
-// is a fixed 0 at every one of its call sites, so a new one here would
-// trip golangci-lint's unparam check on a file this PR doesn't otherwise
-// touch.
+// Not the shared addMinutes helper: a new from argument there would trip unparam.
 func heavyBurnFake() *sloFake {
 	f := &sloFake{}
 	now := time.Now()
@@ -367,11 +347,7 @@ func heavyBurnFake() *sloFake {
 	return f
 }
 
-// TestEngine_Tick_SLOBurnFires_AutoRollback_FiresOncePerBadDeploy mirrors
-// TestEngine_Tick_CrashloopFires_AutoRollback_FiresOncePerBadDeploy for
-// KindSLOBurn: a becameFiring transition triggers one rollback, a second
-// tick that's merely stillFiring (same incident, desired image unchanged)
-// must not trigger a second one.
+// A stillFiring tick for the same incident must not trigger a second rollback.
 func TestEngine_Tick_SLOBurnFires_AutoRollback_FiresOncePerBadDeploy(t *testing.T) {
 	rule := Rule{ID: "slo1", Name: "web slo", Kind: KindSLOBurn, ResourceID: "service:web", Enabled: true,
 		SLO: &SLOConfig{Objective: SLOAvailability, Target: 99.9}}
@@ -499,13 +475,7 @@ func TestEngine_Tick_MetricsQueryError_OtherRulesStillEvaluated(t *testing.T) {
 	}
 }
 
-// TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch proves a
-// legacy (no ChannelID) rule and a channel-attached rule both fire from
-// one Tick, each resolving its own NotifyURL correctly, mirroring
-// TestDeployDispatcher_Dispatch_MixedLegacyAndChannelTargets. Uses the
-// real *DB as RuleStore, not fakeRuleStore, since the channel resolution
-// under test happens in the SQL join, not in Go logic a fake could
-// stand in for.
+// Uses a real DB so the channel resolution under test happens in the SQL join.
 func TestEngine_Tick_MixedLegacyAndChannelRules_BothDispatch(t *testing.T) {
 	db := newTestDB(t)
 	ctx := context.Background()
@@ -634,10 +604,7 @@ func TestEngine_Dispatch_RecordsFailedDeliveryOnResolve(t *testing.T) {
 	}
 }
 
-// TestEngine_Tick_DisabledChannel_SilencesRule proves a rule attached to
-// a disabled channel still evaluates (state is tracked) but never
-// dispatches, mirroring the deploy-target silencing property at the
-// evaluator level rather than just the DB-read level.
+// A rule on a disabled channel still evaluates and tracks state, but never dispatches.
 func TestEngine_Tick_DisabledChannel_SilencesRule(t *testing.T) {
 	db := newTestDB(t)
 	ctx := context.Background()

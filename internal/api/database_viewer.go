@@ -12,10 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// viewerTarget resolves a database's running container into a console
-// target. Credentials stay in the container: the control plane only execs
-// the engine's own client there. Writes the error response and reports
-// false on failure.
+// Credentials stay in the container: the control plane only execs the engine's own client there.
 func (rt *Router) viewerTarget(w http.ResponseWriter, r *http.Request, wantKV bool) (dbviewer.Target, *store.DesiredDatabase, bool) {
 	name := r.PathValue("name")
 	desired, err := rt.databases.GetDesiredDatabase(r.Context(), name)

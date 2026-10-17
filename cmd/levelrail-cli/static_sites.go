@@ -8,13 +8,6 @@ import (
 	"text/tabwriter"
 )
 
-// runStaticSites implements "static-sites list": GET /api/v1/static-sites
-// (internal/api/static_sites.go's handleListStaticSites), a filtered,
-// read-only view of build.type: static apps. Flat, single-verb, the same
-// shape "domains certificates" uses for a different read-only view: "apps
-// list" already surfaces these same apps, this exists only for a quick
-// "which of my apps are plain static sites, and what domains do they
-// answer on" filter without hand-filtering "apps list" output.
 func runStaticSites(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, staticSitesUsage(prog))

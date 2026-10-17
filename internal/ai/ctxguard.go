@@ -45,11 +45,7 @@ type GuardReport struct {
 	DroppedMessages    int
 }
 
-// GuardContext shrinks msgs to fit window tokens: oldest tool results are
-// replaced by a placeholder first, then the oldest whole exchanges are
-// dropped. The system prompt, tools and the latest user turn are never
-// touched. It returns a ProviderError of class context_too_long when even
-// that is not enough.
+// GuardContext shrinks msgs to fit window without touching the system prompt, tools, or latest user turn, and errors with context_too_long if that is not enough.
 func GuardContext(system string, tools []ToolSpec, msgs []Message, window int) ([]Message, GuardReport, error) {
 	var rep GuardReport
 	budget := window - outputReserveTokens

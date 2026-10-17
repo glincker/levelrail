@@ -66,10 +66,7 @@ func runMigrateDokploy(prog string, args []string, stdout, stderr io.Writer, loo
 	}, prog, stdout, stderr, lookupEnv)
 }
 
-// fetchAndMapDokployApplication loads one Dokploy application's full
-// detail and domains and maps it. A fetch failure for this one app is
-// reported as a blocking issue on that app alone, matching
-// fetchAndMapApplication's own reasoning in migrate_coolify.go.
+// A fetch failure is a blocking issue for this one app only, not the whole migration.
 func fetchAndMapDokployApplication(ctx context.Context, dokploy *DokployClient, summary dokployApplicationSummary, includeSecretValues bool) mappedApp {
 	full, err := dokploy.GetApplication(ctx, summary.ApplicationID)
 	if err != nil {

@@ -171,12 +171,7 @@ func TestMySQLCredentialsFor_DifferentDatabasesGetDifferentPasswords(t *testing.
 }
 
 func TestMySQLCredentialsFor_SamedDatabaseName_DistinctFromPostgresCredentials(t *testing.T) {
-	// mysqlCredentialsFor and postgresCredentialsFor must use distinct
-	// secrets-store keys for the same dbName: a database named "main"
-	// could theoretically exist as one engine now and be recreated as
-	// the other later (or, more realistically, this just proves the two
-	// helpers don't accidentally share storage and silently overwrite
-	// each other's password for the same name).
+	// Distinct secrets-store keys so the two engines cannot overwrite each other's password for one name.
 	mgr := newTestSecretsManager(t)
 	ctx := context.Background()
 
@@ -332,10 +327,6 @@ func TestMariaDBCredentialsFor_DifferentDatabasesGetDifferentPasswords(t *testin
 }
 
 func TestMariaDBCredentialsFor_SameDatabaseName_DistinctFromMySQLCredentials(t *testing.T) {
-	// mariadbCredentialsFor and mysqlCredentialsFor must use distinct
-	// secrets-store keys for the same dbName, the same reasoning
-	// TestMySQLCredentialsFor_SamedDatabaseName_DistinctFromPostgresCredentials
-	// already establishes for mysql vs postgres.
 	mgr := newTestSecretsManager(t)
 	ctx := context.Background()
 

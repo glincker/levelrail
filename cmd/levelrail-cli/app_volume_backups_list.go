@@ -8,11 +8,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppVolumeBackupsList implements "app-volume-backups list <app>
-// <volume>": GET /api/v1/apps/{name}/volumes/{volume}/backups
-// (internal/api/app_volume_backups.go's own handleListVolumeBackupHistory),
-// mirroring runBackupsList's exact shape (backups_list.go) for the
-// volume resource kind.
 func runAppVolumeBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int

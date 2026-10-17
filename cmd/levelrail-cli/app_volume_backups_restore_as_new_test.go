@@ -9,11 +9,7 @@ import (
 	"testing"
 )
 
-// TestRun_AppVolumeBackupsRestoreAsNew_CallsAPI is the positive case: the
-// request reaches the server with the shape this command is supposed to
-// send, no confirmation gate involved, the same reasoning
-// runBackupsRestoreAsNew's own test file establishes for the database
-// resource kind.
+// TestRun_AppVolumeBackupsRestoreAsNew_CallsAPI checks the request reaches the server in the expected shape, with no confirmation gate.
 func TestRun_AppVolumeBackupsRestoreAsNew_CallsAPI(t *testing.T) {
 	var gotPath string
 	var gotBody triggerVolumeCloneRestoreRequest

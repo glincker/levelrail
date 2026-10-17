@@ -7,10 +7,7 @@ import (
 	"slices"
 )
 
-// ValidateToolArgs checks a model-supplied argument object against a tool's
-// JSON Schema before the tool runs: it must be an object, carry every
-// required property, and match declared primitive types and enums. It is a
-// guard against malformed model output, not a full JSON Schema validator.
+// ValidateToolArgs checks model-supplied tool arguments against a JSON Schema subset before the tool runs.
 func ValidateToolArgs(schema, args json.RawMessage) error {
 	if len(bytes.TrimSpace(args)) == 0 {
 		args = json.RawMessage(`{}`)

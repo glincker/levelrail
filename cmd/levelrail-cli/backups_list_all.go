@@ -9,14 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runBackupsListAll implements "backups list-all": GET /api/v1/backups
-// (internal/api/backups.go's own handleListAllBackups), the instance-wide
-// counterpart of "backups list <database>" (backups_list.go) and
-// "app-volume-backups list <app> <volume>" (app_volume_backups_list.go).
-// Named list-all rather than reusing "list" bare: "backups list" already
-// takes a required database-name argument, so overloading it based on
-// argument count would make the same subcommand mean two different
-// queries depending on how many args a caller happened to pass.
+// Named list-all because bare list already takes a required database argument.
 func runBackupsListAll(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups list-all", "print backup history as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int
@@ -53,10 +46,7 @@ func runBackupsListAll(prog string, args []string, stdout, stderr io.Writer, loo
 	return exitOK
 }
 
-// printAllBackupHistoryTable is printBackupHistoryTable's instance-wide
-// counterpart: an extra RESOURCE column since, unlike a per-resource
-// list, the caller doesn't already know which database or app volume
-// each row belongs to.
+// Like printBackupHistoryTable, plus a RESOURCE column since rows span resources.
 func printAllBackupHistoryTable(out io.Writer, history []backupHistoryResource) {
 	if len(history) == 0 {
 		_, _ = fmt.Fprintln(out, "no backups")

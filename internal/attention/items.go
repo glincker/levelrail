@@ -70,6 +70,7 @@ var kindInfos = map[string]kindInfo{
 	KindSecretRotationFail:  {"Rotation of secret %s needs attention", "Open the app environment, read the reason and retry", linkApps, false},
 	KindQuotaNearLimit:      {"A resource quota is nearly used up", "Raise the limit or free up resources", linkTeams, false},
 	KindMaintenanceLong:     {"%s has been in maintenance for a long time", "End maintenance if the work is done, or let it switch off on its own", linkDomains, false},
+	KindGitHostUnreachable:  {"Git host %s is unreachable", "Redeploy a known commit from cache, or wait: queued pushes retry when the host answers", linkApps, false},
 	KindAccessReviewOverdue: {"Access review %s is overdue", "Open the compliance tab and finish the review", linkCenter + "?tab=compliance", false},
 }
 

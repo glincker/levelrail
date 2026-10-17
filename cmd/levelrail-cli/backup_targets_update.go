@@ -6,11 +6,7 @@ import (
 	"io"
 )
 
-// runBackupTargetsUpdate implements "backup-targets update <id>": PUT
-// /api/v1/backup-targets/{id}, a full replace of name/provider/endpoint/
-// region/bucket. --access-key-id/--secret-access-key are optional here,
-// unlike "backup-targets create": omitted, the target keeps its existing
-// stored credentials; given together, they rotate them in place.
+// Unlike create, omitted credentials keep the stored ones; given together they rotate them.
 func runBackupTargetsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets update", "print the updated backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string

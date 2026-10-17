@@ -195,6 +195,7 @@ levelrail-cli apps schedule get <app> [flags]
 levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
+levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
 levelrail-cli functions deploy|list|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
@@ -292,7 +293,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
-- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget` is an alias for `usage budgets`.
+- `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget set|delete project|team ID` is an alias for `usage budgets`. `budget show|set|clear APP` manages a per-app egress and cost cap, see [spend caps](/spend-caps).
 - `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](/resource-advisor). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
 - `apps log-drain` forwards container logs to an external HTTP or syslog sink, in addition to the built-in node-local log store.
@@ -874,7 +875,7 @@ Top-level commands for muting, scheduling and reviewing alerts. The rules themse
 
 ```
 levelrail-cli alerts silences list [--all]
-levelrail-cli alerts silences create --for DURATION [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--label k=v] [--reason TEXT]
+levelrail-cli alerts silences create --for DURATION [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--metric M] [--label k=v] [--reason TEXT]
 levelrail-cli alerts silences delete <id>
 levelrail-cli alerts silence <app> <rule-id> [--for 1h] [--reason TEXT]
 levelrail-cli alerts maintenance list

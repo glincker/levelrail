@@ -9,13 +9,7 @@ import (
 	"testing"
 )
 
-// TestRun_AppsRollback exercises "apps rollback <name> --image <ref>" end to
-// end against a fake control plane. Rollback has no dedicated backend
-// endpoint (see apps_rollback.go's own doc comment): it sends the exact same
-// POST /api/v1/apps/{name}/deploys request "apps deploy" does, an older,
-// already-known image tag standing in for a newer one, so this test asserts
-// the request that lands on the wire is indistinguishable from a deploy's,
-// only the CLI's own framing (usage text, human-mode message) differs.
+// TestRun_AppsRollback checks the wire request matches a deploy's, since rollback posts to /deploys too.
 func TestRun_AppsRollback(t *testing.T) {
 	var gotMethod, gotPath string
 	var gotBody deployTriggerRequest
@@ -111,10 +105,6 @@ func TestRun_AppsRollback_APIError(t *testing.T) {
 	}
 }
 
-// TestRun_AppsRollback_ProtectedEnvironment_InteractivePromptConfirms
-// mirrors apps_deploy_test.go's own confirm-retry coverage: rollback
-// sends the exact same request, so the exact same 409/confirm/retry
-// mechanics apply.
 func TestRun_AppsRollback_ProtectedEnvironment_InteractivePromptConfirms(t *testing.T) {
 	srv, calls := protectedEnvironmentDeployServer(t)
 	defer srv.Close()

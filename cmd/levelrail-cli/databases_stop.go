@@ -6,12 +6,8 @@ import (
 	"io"
 )
 
-// runDatabasesStop implements "databases stop <name>": POST
-// /api/v1/databases/{name}/stop (internal/api/database_stop_start.go's
-// own handleStopDatabase), no request body. Marks the database
-// suspended so the reconciler removes its container on the next pass,
-// without touching its data volume; "databases start" clears the flag
-// again.
+// Removes the container on the next reconcile but keeps the data volume.
+// "databases start" clears the suspended flag.
 func runDatabasesStop(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases stop", "print the database as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, databasesStopUsage(prog)) }

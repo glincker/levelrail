@@ -18,7 +18,7 @@ import (
 func registerScheduledTaskTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_scheduled_tasks",
-		Description: "List an app's scheduled tasks: command, cron schedule, enabled state, and the most recent run's outcome (status, exit code, consecutive failures). Read-only; does not create, edit, delete, or run a task.",
+		Description: "List an app's scheduled tasks: command, cron schedule, enabled state, and the most recent run's outcome (status, exit code, consecutive failures).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.ScheduledTaskResource, error) {
 		tasks, err := client.ListScheduledTasks(ctx, in.Name)
 		if err != nil {
@@ -29,7 +29,7 @@ func registerScheduledTaskTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_scheduled_task",
-		Description: "Get one scheduled task's full detail: command, cron schedule, enabled state, and the most recent run's status, exit code, and captured output. Read-only; does not create, edit, delete, or run a task.",
+		Description: "Get one scheduled task's full detail: command, cron schedule, enabled state, and the most recent run's status, exit code, and captured output.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in scheduledTaskInput) (*mcp.CallToolResult, apiclient.ScheduledTaskResource, error) {
 		task, err := client.GetScheduledTask(ctx, in.Name, in.ID)
 		if err != nil {

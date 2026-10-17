@@ -18,6 +18,7 @@ import { HeadersTab } from './HeadersTab'
 import { OverviewTab } from './OverviewTab'
 import { PortsTab } from './PortsTab'
 import { RedirectsTab } from './RedirectsTab'
+import { ShieldTab } from './ShieldTab'
 import { DOMAIN_TABS, type DomainTab } from './domainTabs'
 
 export function DomainPolicyPage({
@@ -150,6 +151,9 @@ export function DomainPolicyPage({
         </TabsContent>
         <TabsContent value="access" className="pt-2">
           <AccessTab app={app} domain={domain} policies={data} />
+        </TabsContent>
+        <TabsContent value="shield" className="pt-2">
+          <ShieldTab app={app} domain={domain} policies={data} />
         </TabsContent>
         <TabsContent value="cache" className="pt-2">
           <CacheTab app={app} domain={domain} policies={data} />

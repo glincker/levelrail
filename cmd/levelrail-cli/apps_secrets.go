@@ -10,12 +10,6 @@ import (
 	"text/tabwriter"
 )
 
-// runAppsSecrets dispatches "apps secrets <verb> [flags]" to one of
-// list/set/lock, mirroring runAppsLogDrain's own dispatch shape. Standalone
-// commands for internal/api/secrets.go's three routes: before this, PUT
-// .../secrets/{key} was only reachable via "migrate coolify apply"'s
-// import flow, and GET .../secrets / POST .../secrets/{key}/lock had no
-// CLI command at all.
 func runAppsSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsSecretsUsage(prog))
@@ -161,11 +155,7 @@ func runAppsSecretsDelete(prog string, args []string, stdout, stderr io.Writer, 
 	return afterConfigWrite(context.Background(), client, prog, name, apply, stdout, stderr)
 }
 
-// runAppsSecretsSetEnvFile reads path as a .env-format file and sets each
-// key it contains as its own secret via client.SetSecret, one API call per
-// key. Values from the file are never printed: only key names appear in
-// stdout/stderr output, matching the rest of this subcommand's "never echo
-// a value back" rule.
+// Only key names are printed, never values.
 func runAppsSecretsSetEnvFile(client *Client, name, path string, overwriteLocked bool, stdout, stderr io.Writer) int {
 	data, err := os.ReadFile(path) //nolint:gosec // operator-supplied local path, same trust boundary as every other --file flag in this CLI
 	if err != nil {

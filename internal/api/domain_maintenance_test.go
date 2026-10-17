@@ -115,11 +115,7 @@ func TestHandleClearDomainMaintenance_Idempotent(t *testing.T) {
 	}
 }
 
-// TestDomainMaintenanceWriteRoutes_PlainWriteToken_Forbidden proves PUT/
-// DELETE .../domains/{domain}/maintenance sit behind AbilityDeploy, not
-// just AbilityWrite, mirroring
-// TestDomainBasicAuthWriteRoutes_PlainWriteToken_Forbidden's identical
-// shape for the sibling route.
+// PUT and DELETE on maintenance require AbilityDeploy, not just AbilityWrite.
 func TestDomainMaintenanceWriteRoutes_PlainWriteToken_Forbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 	seedAppWithDomain(t, db)

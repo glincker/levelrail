@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/spendcap"
 	"github.com/GLINCKER/levelrail/internal/usagecost"
 )
 
@@ -15,10 +16,14 @@ type BudgetSource interface {
 	BudgetStatuses(ctx context.Context) ([]usagecost.BudgetStatus, error)
 }
 
-// EvaluateBudgetThreshold runs one KindBudgetThreshold rule: it fires while
-// any budget has crossed its warn level, its limit, or is forecast to
-// overrun. It returns one notice per breach and the breach keys, which the
-// engine uses to notify again only when a new threshold is crossed.
+// SpendCapSource is optional on a BudgetSource: per-app spend caps add their
+// crossed thresholds to the same rule.
+type SpendCapSource interface {
+	SpendCapBreaches(ctx context.Context) ([]spendcap.Breach, error)
+}
+
+// EvaluateBudgetThreshold fires while any budget is over its warn level, its limit, or a forecast overrun.
+// It returns one notice per breach and the breach keys used to decide when to notify again.
 func EvaluateBudgetThreshold(ctx context.Context, src BudgetSource, r Rule, now time.Time) (Rule, []string, []string, error) {
 	statuses, err := src.BudgetStatuses(ctx)
 	if err != nil {
@@ -33,6 +38,16 @@ func EvaluateBudgetThreshold(ctx context.Context, src BudgetSource, r Rule, now 
 		}
 		if s.SpentPct > worst {
 			worst = s.SpentPct
+		}
+	}
+	if caps, ok := src.(SpendCapSource); ok {
+		breaches, err := caps.SpendCapBreaches(ctx)
+		if err != nil {
+			return r, nil, nil, fmt.Errorf("alerting: evaluate rule %q: spend caps: %w", r.ID, err)
+		}
+		for _, b := range breaches {
+			notices = append(notices, b.Text)
+			keys = append(keys, b.Key)
 		}
 	}
 	next := r

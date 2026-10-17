@@ -6,10 +6,6 @@ import (
 	"io"
 )
 
-// runVersion implements "version": GET /api/v1/updates, the same
-// endpoint routes/settings/updates.tsx already reads from, reporting the
-// control plane's running version against GitHub's latest published
-// release.
 func runVersion(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "version", "print version info as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, versionUsage(prog)) }

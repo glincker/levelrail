@@ -6,17 +6,7 @@ import (
 	"os"
 )
 
-// runTokens dispatches "tokens <verb> [flags]" to one of
-// create/list/revoke. Every one of these needs a live session, not a
-// bearer token: see tokens_create.go's own doc comment for the specific
-// server-side reason (router.go registers every /api/v1/auth/tokens
-// route session-only, "a token cannot mint or revoke another token on
-// its own behalf"). That is why every subcommand under this one takes
-// --username/--password (prompted if omitted) instead of the
-// --token/APP_API_TOKEN/credentials-file resolution every other command
-// in this CLI uses: there is no bearer token that could ever
-// successfully call these routes, scoped however broadly, so offering
-// --token here would be an option that can never work.
+// runTokens dispatches create/list/revoke. These routes are session-only, so every subcommand takes --username and --password, not a bearer token.
 func runTokens(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, tokensUsage(prog))

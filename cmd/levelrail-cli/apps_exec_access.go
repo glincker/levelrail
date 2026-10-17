@@ -6,15 +6,7 @@ import (
 	"io"
 )
 
-// runAppsExecAccess dispatches "apps exec-access <verb> [flags]" to one
-// of enable/disable/status, the CLI counterpart of internal/api/exec.go's
-// own GET/PUT /api/v1/apps/{name}/exec-access routes: whether
-// handleExecApp/handleAppTerminal even attempt to reach this app's
-// container, independent of whatever IAM abilities the caller's own
-// token has. On by default, the opposite shape "apps auto-rollback
-// enable/disable/status" establishes for its own opt-in feature: exec is
-// available today with no equivalent gate, so this starts on for every
-// app and an operator explicitly turns it off per app.
+// runAppsExecAccess dispatches enable/disable/status for exec access. Exec is on by default for every app.
 func runAppsExecAccess(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsExecAccessUsage(prog))

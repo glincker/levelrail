@@ -9,10 +9,8 @@ import (
 	"text/tabwriter"
 )
 
-// runTokensList implements "tokens list": GET /api/v1/auth/tokens,
-// authenticated with a freshly established session, the same reason
-// "tokens create" is (tokens_create.go's own doc comment). Never
-// includes a token secret, matching the server's own contract.
+// Token endpoints accept only a session cookie, so this establishes one first.
+// Never returns token secrets.
 func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens list", "print tokens as a JSON array to stdout and nothing else", stderr)
 	tokenFlagP := fs.String("token", "", "API token with root ability (skips the password prompt; overrides "+envAPIToken+" and the credentials file)")

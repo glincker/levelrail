@@ -133,15 +133,7 @@ func toDeploySpecProbe(p *spec.Probe) *apiclient.DeploySpecServiceProbe {
 	}
 }
 
-// applyDeploySpecSecrets sets Value on every { secret: true } env entry
-// services declares whose key has a matching value in secretValues:
-// app.yaml itself can never carry a secret value (spec.EnvVar's own YAML
-// shape has no value field alongside secret), so this is the only way a
-// declared name gets a value as part of the same "apps deploy-spec" call,
-// the multi-service equivalent of apps_create.go's --secret flag. A
-// service key not declared { secret: true } is left untouched even if
-// its own env var name happens to match: only names the app.yaml itself
-// marked secret ever accept a --secret value.
+// Only names app.yaml marks { secret: true } accept a value, since app.yaml never carries one.
 func applyDeploySpecSecrets(services map[string]deploySpecService, secretValues map[string]string) {
 	if len(secretValues) == 0 {
 		return

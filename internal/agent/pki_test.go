@@ -165,17 +165,7 @@ func TestCertFingerprint_DeterministicAndDistinct(t *testing.T) {
 	}
 }
 
-// TestPKI_Live_MutualTLSHandshake is this file's real end-to-end proof:
-// not just that x509.Verify accepts the certificate chains in isolation
-// (every test above), but that a real net.Listener performing a real
-// TLS handshake, both directions authenticated, actually succeeds with
-// exactly the certificate shapes this package issues, and actually
-// fails when a client presents a certificate from a different,
-// unrelated CA. This is the literal mechanism ADR 003's mTLS enrollment
-// depends on: if this passes, Enroll's issued client certificate is
-// provably usable to open a real mTLS connection to a real server using
-// this CA's own issued server certificate, not just "signature
-// verifies as a value."
+// Proves a real mutual TLS handshake succeeds with the issued cert shapes and fails for a cert from an unrelated CA.
 func TestPKI_Live_MutualTLSHandshake(t *testing.T) {
 	ca, err := GenerateCA()
 	if err != nil {

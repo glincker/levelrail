@@ -8,10 +8,6 @@ import (
 	"time"
 )
 
-// runNodesSSHProvisions dispatches "nodes ssh-provisions <verb> [flags]"
-// to one of list/show: internal/api/node_ssh_provision.go's provision-
-// tracking routes, the same two-level shape runNodesProvisions
-// establishes for the cloud path.
 func runNodesSSHProvisions(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, nodesSSHProvisionsUsage(prog))

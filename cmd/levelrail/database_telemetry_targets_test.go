@@ -12,11 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeInspectRuntime is a minimal docker.Runtime fake for
-// databaseTelemetryTargets/databaseLogTargets: only InspectByName is
-// exercised by either function, so every other method panics if called,
-// making an unexpected dependency on them a loud test failure rather
-// than a silent nil-return.
+// Other methods panic if called, so an unexpected dependency fails the test loudly.
 type fakeInspectRuntime struct {
 	byName map[string]*docker.ContainerState
 }

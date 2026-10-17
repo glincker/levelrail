@@ -57,10 +57,7 @@ Run "%[1]s domains waf <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
-// domainWAFResolveArgs collapses the parseAPIFlags/requireArgs/
-// apiClientFromFlags preamble every domains waf subcommand below needs
-// into one place: fs must already have any subcommand-specific flags
-// (e.g. runDomainsWAFSet's --waf/--mode/--rps/--burst) registered on it.
+// domainWAFResolveArgs runs the shared parse, require and client setup for domains waf subcommands. fs must already hold their flags.
 func domainWAFResolveArgs(
 	fs *flag.FlagSet, args []string, ptrs apiFlagPtrs,
 	prog, cmdLabel string, stderr io.Writer, lookupEnv func(string) (string, bool),

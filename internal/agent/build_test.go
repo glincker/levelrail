@@ -16,16 +16,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 )
 
-// A dispatched build, like exec, is an agreement between two halves that
-// cannot be tested apart: context framing, progress and image framing,
-// flow control in both directions, and cancellation. So these tests run a
-// real mux and a real serveSession against each other over the same
-// in-memory loopback exec_test.go uses, with only the build runner faked.
+// Runs a real mux and serveSession over loopback with only the build runner faked, since the halves cannot be tested apart.
 
-// fakeBuildRunner stands in for a real *build.Client on the agent side.
-// It records the context it was handed, emits whatever progress and image
-// bytes the test asked for, and can block mid-build so a test can sever
-// the session or cancel underneath it.
+// Can block mid-build so a test can sever the session or cancel underneath it.
 type fakeBuildRunner struct {
 	progress []build.ProgressEvent
 	image    []byte
@@ -154,12 +147,7 @@ func (c *collectBuildProgress) all() []build.ProgressEvent {
 	return append([]build.ProgressEvent(nil), c.events...)
 }
 
-// TestBuildOnNode_RoundTrip is the whole protocol in one test: a build
-// context larger than the flow-control window travels up, the build runs
-// against it on the agent side, and progress plus an image tar larger
-// than the window travel back. Both payloads deliberately exceed
-// buildWindowFrames*buildChunkBytes so neither direction can pass by
-// accident without its credit refunds working.
+// Payloads exceed the flow-control window so neither direction can pass without credit refunds working.
 func TestBuildOnNode_RoundTrip(t *testing.T) {
 	contextDir := t.TempDir()
 	bigSource := strings.Repeat("levelrail-remote-build-context\n", 200_000)
@@ -246,10 +234,7 @@ func TestBuildOnNode_RunnerFailureSurfacesWithItsReason(t *testing.T) {
 	}
 }
 
-// TestBuildOnNode_UnsupportedProviderStaysTyped matters because
-// internal/deploy branches on this error with errors.As to tell an
-// operator which provider Railpack actually detected; a flattened string
-// would silently degrade that message for dispatched builds only.
+// Keeps the typed error: internal/deploy uses errors.As to name the detected provider.
 func TestBuildOnNode_UnsupportedProviderStaysTyped(t *testing.T) {
 	runner := newFakeBuildRunner()
 	runner.err = &build.UnsupportedProviderError{Provider: "python"}
@@ -284,10 +269,7 @@ func TestBuildOnNode_AgentWithoutBuildKitRejectsTheBuild(t *testing.T) {
 	}
 }
 
-// TestBuildOnNode_NodeGoesOfflineMidBuild is the failure an operator will
-// actually hit: the build node drops off while its build is running. It
-// has to end the build with a distinguishable error, not hang and not
-// look like a build failure of its own.
+// The build must end with a distinguishable error, not hang or look like a build failure.
 func TestBuildOnNode_NodeGoesOfflineMidBuild(t *testing.T) {
 	runner := newFakeBuildRunner()
 	runner.release = make(chan struct{})
@@ -348,10 +330,7 @@ func TestBuildOnNode_CallerGivingUpStopsTheRemoteBuild(t *testing.T) {
 	}
 }
 
-// TestBuildRelay_PeerOverrunningItsWindowFailsTheBuild drives BuildRelay
-// directly, since the real control plane honors its credit and so can
-// never produce this: a peer that ignores the window has to fail its own
-// build rather than be allowed unbounded buffering on the build node.
+// The real control plane honors credit, so only a direct drive can exercise an overrunning peer.
 func TestBuildRelay_PeerOverrunningItsWindowFailsTheBuild(t *testing.T) {
 	var (
 		mu     sync.Mutex

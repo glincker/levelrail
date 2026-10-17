@@ -7,10 +7,7 @@ import (
 	"io"
 )
 
-// runAuthTwoFactor dispatches "auth 2fa <verb> [flags]" to one of
-// status/setup/enable/disable/recovery-codes: internal/api/twofactor.go's
-// account-security routes, session-only like every route under "auth"
-// (see auth.go's own doc comment), never bearer-token authenticated.
+// Session-only like every route under "auth", never bearer-token authenticated.
 func runAuthTwoFactor(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, authTwoFactorUsage(prog))
@@ -38,11 +35,7 @@ func runAuthTwoFactor(prog string, args []string, stdout, stderr io.Writer, look
 	}
 }
 
-// requireCodeAndSessionClient is "auth 2fa enable"/"auth 2fa
-// recovery-codes"'s shared prelude: parse flags, require --code (both
-// subcommands need a live authenticator code and nothing else), then log
-// in. ok is false once it has already returned the caller's exitCode;
-// the caller should return immediately in that case.
+// ok is false when the caller should return its exitCode immediately.
 func requireCodeAndSessionClient(fs *flag.FlagSet, args []string, codeP *string, flags sessionFlagPtrs, prog string, lookupEnv func(string) (string, bool), stdin io.Reader, stdout, stderr io.Writer) (ctx context.Context, client *authSessionClient, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	jsonOut, of, exitCode, ok = parseSessionFlags(fs, args, flags.jsonOut, flags.output, flags.query, prog, stderr)
 	if !ok {

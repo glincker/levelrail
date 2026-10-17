@@ -29,31 +29,17 @@ const (
 // query anything itself.
 type Event struct {
 	Rule Rule
-	// Resolved is true when this event is "the rule stopped firing,"
-	// false when it's "the rule started firing." Sending a resolved
-	// notification (not just a firing one) is deliberate: an operator
-	// who only ever hears about problems starting, never ending, learns
-	// to distrust the channel or mute it, exactly the alert-fatigue
-	// failure mode a useful alerting feature has to avoid.
+	// Resolved events are sent too, so operators do not learn to mute a channel that only reports problems starting.
 	Resolved bool
 	// LogLines is populated only for a firing (not resolved) crashloop
 	// event: the last up-to-200 lines of the failing container's logs.
 	// Nil for threshold rules and for resolved events.
 	LogLines []string
-	// CertNotices is populated only for a firing (not resolved)
-	// cert_expiry event: one line per non-healthy certificate, from
-	// EvaluateCertExpiry, flagging a stalled-looking renewal specially.
-	// Nil for every other rule kind and for resolved events.
+	// CertNotices is set only on a firing cert_expiry event.
 	CertNotices []string
-	// PatchNotices is populated only for a firing (not resolved)
-	// patch_status event: one line per node over its security-patch
-	// threshold, from EvaluatePatchStatus. Nil for every other rule kind
-	// and for resolved events.
+	// PatchNotices is set only on a firing patch_status event.
 	PatchNotices []string
-	// DiskSpaceNotices is populated only for a firing (not resolved)
-	// node_disk_space event: one line per node over its disk-usage
-	// threshold, from EvaluateNodeDiskSpace. Nil for every other rule
-	// kind and for resolved events.
+	// DiskSpaceNotices is set only on a firing node_disk_space event.
 	DiskSpaceNotices []string
 	// NodeOfflineNotices is populated only for a firing node_offline
 	// event: one line per offline node, from EvaluateNodeOffline.
@@ -61,31 +47,15 @@ type Event struct {
 	// NodeCertNotices is populated only for a firing node_cert_expiring
 	// event: one line per node whose agent certificate needs attention.
 	NodeCertNotices []string
-	// ResourceUsageNotices is populated only for a firing (not resolved)
-	// node_resource_usage event: one line per node over its CPU and/or
-	// memory threshold, from EvaluateNodeResourceUsage. Nil for every
-	// other rule kind and for resolved events.
+	// ResourceUsageNotices is set only on a firing node_resource_usage event.
 	ResourceUsageNotices []string
-	// TaskFailureNotice is populated only for a firing (not resolved)
-	// scheduled_task_failure event: the failing task's command,
-	// consecutive-failure count, and last status, from
-	// EvaluateScheduledTaskFailure. Empty for every other rule kind and
-	// for resolved events.
+	// TaskFailureNotice is set only on a firing scheduled_task_failure event.
 	TaskFailureNotice string
-	// DomainHealthNotices is populated only for a firing (not resolved)
-	// domain_health event: one line per unhealthy domain on this rule's
-	// own app, from EvaluateDomainHealth. Nil for every other rule kind
-	// and for resolved events.
+	// DomainHealthNotices is set only on a firing domain_health event.
 	DomainHealthNotices []string
-	// BackupMissingNotice is populated only for a firing (not resolved)
-	// backup_missing event: the watched database's or service volume's
-	// overdue summary, from EvaluateBackupMissing. Empty for every other
-	// rule kind and for resolved events.
+	// BackupMissingNotice is set only on a firing backup_missing event.
 	BackupMissingNotice string
-	// VersionSkewNotice is populated only for a firing (not resolved)
-	// version_skew event: the running version vs. the configured
-	// channel's latest, from EvaluateVersionSkew. Empty for every other
-	// rule kind and for resolved events.
+	// VersionSkewNotice is set only on a firing version_skew event.
 	VersionSkewNotice string
 	// BudgetNotices is populated only for a firing budget_threshold event:
 	// one line per budget that crossed a threshold.
@@ -133,25 +103,18 @@ func (n httpNotifier) Notify(ctx context.Context, ev Event) error {
 	return n.build(ctx, n.client, n.url, ev)
 }
 
-// PushSender sends one browser push notification to every subscription
-// registered on this control plane. Narrow, consumer-defined interface
-// mirroring email.Sender exactly; *webpush.Sender satisfies it
-// structurally (internal/alerting has no import on internal/webpush, the
-// same "consumer defines the interface it needs" shape as every other
-// Secrets-flavored interface in this codebase).
+// PushSender sends one browser push to every registered subscription; *webpush.Sender satisfies it.
 type PushSender interface {
 	Send(ctx context.Context, title, body string) error
 }
 
-// NewNotifier builds the right Notifier for r.NotifyKind. An unknown or
-// empty NotifyKind falls back to NotifyGeneric rather than erroring, so a
-// typo'd notify_kind still notifies someone, diagnosable from the
-// payload shape. sender may be nil, in which case an email-kind rule
-// fails with a clear "not configured" error; pushSender may be nil with
-// the identical failure shape for a webpush-kind rule.
+// NewNotifier picks the Notifier for r.NotifyKind, falling back to generic so a mistyped kind still notifies someone.
 func NewNotifier(client *http.Client, sender email.Sender, pushSender PushSender, r Rule) Notifier {
 	if client == nil {
 		client = netguard.NewClient()
+	}
+	if IsPluginKind(r.NotifyKind) {
+		return pluginNotifier{plugin: PluginName(r.NotifyKind)}
 	}
 	if r.NotifyKind == NotifyEmail {
 		return emailNotifier{sender: sender, to: r.NotifyURL}
@@ -196,10 +159,7 @@ func NewNotifier(client *http.Client, sender email.Sender, pushSender PushSender
 	return httpNotifier{client: client, url: r.NotifyURL, build: build}
 }
 
-// genericPayload is the JSON body notifyGeneric sends: a plain,
-// complete machine-readable description of the event, for any webhook
-// receiver that isn't Slack or Discord specifically (a custom
-// integration, a paging system, a log aggregator).
+// genericPayload is the full machine-readable event, for webhook receivers that are not Slack or Discord.
 type genericPayload struct {
 	RuleID               string     `json:"rule_id"`
 	RuleName             string     `json:"rule_name"`
@@ -260,11 +220,7 @@ func notifyGeneric(ctx context.Context, client *http.Client, url string, ev Even
 	return postJSON(ctx, client, url, payload)
 }
 
-// slackPayload is Slack's incoming-webhook shape: a top-level "text"
-// field is all a receiver actually requires, blocks/attachments are a
-// richer optional layer this pass doesn't build (a real follow-up if a
-// nicer-formatted message is wanted later, not required for the
-// notification to work).
+// slackPayload needs only the top-level text field; blocks and attachments are optional.
 type slackPayload struct {
 	Text string `json:"text"`
 }
@@ -289,23 +245,13 @@ func notifyDiscord(ctx context.Context, client *http.Client, url string, ev Even
 	return postJSON(ctx, client, url, discordPayload{Content: summaryTextCapped(ev, discordMaxContent)})
 }
 
-// telegramPayload is the Telegram Bot API's sendMessage body. chat_id is
-// required in the body itself (Telegram does not reliably merge it in
-// from a query string), so notifyTelegram below parses it out of
-// r.NotifyURL rather than relying on undocumented API behavior.
+// chat_id goes in the body, since Telegram does not reliably read it from a query string.
 type telegramPayload struct {
 	ChatID string `json:"chat_id"`
 	Text   string `json:"text"`
 }
 
-// notifyTelegram sends via Telegram's Bot API, a plain HTTP POST like
-// Slack/Discord above, "not much heavier than the existing webhooks."
-// r.NotifyURL is the full sendMessage endpoint including the bot token
-// in its path (e.g. "https://api.telegram.org/bot<TOKEN>/sendMessage"),
-// exactly as an operator gets it from @BotFather's setup instructions,
-// plus one required addition this package expects: a "chat_id" query
-// parameter naming the destination chat, which this function extracts
-// and moves into the JSON body Telegram actually requires it in.
+// rawURL is the full sendMessage endpoint with the bot token in its path; chat_id is moved from the query into the body.
 func notifyTelegram(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
 	chatID, err := parseTelegramChatID(rawURL)
 	if err != nil {
@@ -324,10 +270,7 @@ type pushoverPayload struct {
 	Title   string `json:"title,omitempty"`
 }
 
-// notifyPushover parses token/user out of rawURL's query string, the
-// same convention notifyTelegram uses for chat_id, then posts to rawURL
-// (Pushover's fixed messages.json endpoint, carrying those two query
-// params) exactly as notifyTelegram posts to its own rawURL.
+// Token and user come from rawURL's query string, the same way notifyTelegram reads chat_id.
 func notifyPushover(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
 	token, user, err := parsePushoverCreds(rawURL)
 	if err != nil {
@@ -369,11 +312,7 @@ type pagerDutyDetails struct {
 	Severity string `json:"severity"`
 }
 
-// notifyPagerDuty always posts to pagerDutyEventsURL, not rawURL:
-// rawURL here is the channel's Integration/Routing Key, not a webhook
-// URL, the same "NotifyURL is generically 'the destination'" convention
-// notifyTelegram and notifyPushover already establish for their own
-// non-URL query parameters.
+// Always posts to the fixed Events URL; rawURL carries the routing key, not a destination.
 func notifyPagerDuty(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
 	if rawURL == "" {
 		return fmt.Errorf("alerting: notify: no notify_url (pagerduty routing key) configured")
@@ -410,11 +349,7 @@ func notifyTeams(ctx context.Context, client *http.Client, url string, ev Event)
 	})
 }
 
-// mattermostPayload is Mattermost's incoming-webhook body, the same
-// shape family as Slack's own incoming webhook (Mattermost documents its
-// webhook format as Slack-compatible). Username/IconOverrideURL are
-// omitted here: leaving them unset keeps whatever the webhook itself was
-// configured with in Mattermost's admin console.
+// Mattermost's webhook is Slack-compatible; username and icon are left unset so the webhook's own config applies.
 type mattermostPayload struct {
 	Text     string `json:"text"`
 	Username string `json:"username,omitempty"`
@@ -442,13 +377,7 @@ func notifyLark(ctx context.Context, client *http.Client, url string, ev Event) 
 	return postJSON(ctx, client, url, larkPayload{MsgType: "text", Content: larkContent{Text: summaryText(ev)}})
 }
 
-// rocketChatPayload is Rocket.Chat's incoming-webhook body
-// (https://docs.rocket.chat/docs/integrations#incoming-webhook-script), a
-// superset of Slack's own shape rather than a byte-identical copy of it
-// (unlike Mattermost's, which Mattermost itself documents as
-// Slack-compatible): alias/emoji override the bot's posted name and
-// avatar per message, fields this package uses to mark a firing event
-// distinctly from a resolved one without needing a second payload shape.
+// Rocket.Chat is a superset of Slack's shape; alias and emoji override the posted name and avatar per message.
 type rocketChatPayload struct {
 	Text  string `json:"text"`
 	Alias string `json:"alias,omitempty"`
@@ -463,11 +392,7 @@ func notifyRocketChat(ctx context.Context, client *http.Client, url string, ev E
 	return postJSON(ctx, client, url, rocketChatPayload{Text: summaryText(ev), Alias: "Levelrail", Emoji: emoji})
 }
 
-// webexPayload is a Cisco Webex Teams incoming webhook's message body
-// (https://developer.webex.com/messaging/docs/api/guides/webhooks):
-// markdown renders as Markdown in the space, letting summaryText's own
-// code-fenced log lines and bullet lists actually format instead of
-// showing up as literal backticks.
+// markdown makes code fences and bullets render in the space instead of showing as literal backticks.
 type webexPayload struct {
 	Markdown string `json:"markdown"`
 }
@@ -500,12 +425,7 @@ type opsgeniePayload struct {
 	Priority    string `json:"priority,omitempty"`
 }
 
-// notifyOpsgenie always posts to opsgenieAPIURL, not rawURL: rawURL here
-// packs the channel's API key as a query parameter against that fixed
-// endpoint, the same "NotifyURL packs credentials, not a destination"
-// convention notifyResend already establishes; see parseOpsgenieCreds.
-// The key travels in Opsgenie's own "GenieKey <key>" Authorization
-// scheme, not Bearer.
+// Always posts to the fixed Opsgenie URL; rawURL carries the API key. Auth uses the GenieKey scheme, not Bearer.
 func notifyOpsgenie(ctx context.Context, client *http.Client, rawURL string, ev Event) error {
 	key, err := parseOpsgenieCreds(rawURL)
 	if err != nil {
@@ -534,12 +454,7 @@ func parseOpsgenieCreds(rawURL string) (key string, err error) {
 	return key, nil
 }
 
-// gotifyPayload is Gotify's message API body
-// (https://gotify.net/docs/pushmsg). rawURL for this kind is the whole
-// "<server>/message?token=<apptoken>" endpoint, a real, literal query
-// parameter Gotify's own API expects there, not a packed convention like
-// Pushover's or Resend's: no parsing needed, notifyGotify posts to it
-// directly.
+// rawURL is the full Gotify message endpoint including its token, so notifyGotify posts to it directly.
 type gotifyPayload struct {
 	Title    string `json:"title,omitempty"`
 	Message  string `json:"message"`
@@ -554,11 +469,7 @@ func notifyGotify(ctx context.Context, client *http.Client, url string, ev Event
 	return postJSON(ctx, client, url, gotifyPayload{Title: ev.Rule.Name, Message: summaryText(ev), Priority: priority})
 }
 
-// ntfyPayload is ntfy's publish API body (https://docs.ntfy.sh/publish/).
-// Topic isn't included here: rawURL already names the topic
-// (https://ntfy.sh/<topic> or a self-hosted equivalent), so ntfy infers
-// it from the request path the same way a plain-text POST to that URL
-// would.
+// The topic lives in rawURL's path, so it is not repeated in the body.
 type ntfyPayload struct {
 	Title    string `json:"title,omitempty"`
 	Message  string `json:"message"`
@@ -583,10 +494,7 @@ func notifyNtfy(ctx context.Context, client *http.Client, rawURL string, ev Even
 	return postJSONWithAuth(ctx, client, cleanURL, payload, bearerPrefix+token)
 }
 
-// extractNtfyToken pulls an optional "auth" query parameter (an access
-// token for a protected ntfy topic) out of rawURL, returning the token
-// and rawURL with that parameter removed. No token present is not an
-// error: most ntfy topics, including the public ntfy.sh ones, need none.
+// Pulls the optional auth token out of rawURL; most ntfy topics need none.
 func extractNtfyToken(rawURL string) (token, cleanURL string, err error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -636,11 +544,7 @@ func notifyResend(ctx context.Context, client *http.Client, rawURL string, ev Ev
 	return postJSONWithAuth(ctx, client, resendAPIURL, payload, bearerPrefix+key)
 }
 
-// parseResendCreds extracts the key/to/from query parameters a Resend
-// notify_url must carry (see notifyResend's own doc comment for why they
-// travel this way). from defaults to resendDefaultFrom when absent, so a
-// channel only has to supply the two credentials that actually vary per
-// account.
+// from defaults to resendDefaultFrom, so a channel only supplies the per-account credentials.
 func parseResendCreds(rawURL string) (key, to, from string, err error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -659,14 +563,7 @@ func parseResendCreds(rawURL string) (key, to, from string, err error) {
 	return key, to, from, nil
 }
 
-// parseTelegramChatID extracts the chat_id query parameter a Telegram
-// notify_url must carry (notifyTelegram's own doc comment explains why
-// it lives in the query string rather than the body Telegram actually
-// wants it in). Shared by notifyTelegram (alert-rule notifications,
-// this file) and deploy_notify.go's own Telegram send (deploy-outcome
-// notifications): both need the identical parse, and duplicating it
-// would risk the two silently drifting apart on what counts as a valid
-// Telegram notify_url.
+// Shared with deploy_notify.go's Telegram send, so both parse notify_url identically.
 func parseTelegramChatID(rawURL string) (chatID string, err error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -679,10 +576,7 @@ func parseTelegramChatID(rawURL string) (chatID string, err error) {
 	return chatID, nil
 }
 
-// summaryText is the human-readable line every simple channel here
-// (Slack, Discord, Telegram, email's body) sends: they're all
-// fundamentally "one text field," so one summary builder serves all of
-// them rather than duplicating this per channel.
+// One text summary serves every simple channel (Slack, Discord, Telegram, email body).
 func summaryText(ev Event) string {
 	return summaryBody(ev) + changesSuffix(ev)
 }
@@ -780,24 +674,13 @@ func postJSON(ctx context.Context, client *http.Client, url string, payload any)
 	return postJSONWithAuth(ctx, client, url, payload, "")
 }
 
-// notifyMaxAttempts bounds postJSONWithAuth's retry loop: 3, not
-// unbounded, since Engine.Tick evaluates every firing rule in one
-// sequential pass (engine.go's own Tick), so a channel stuck retrying
-// delays every rule notified after it in that same pass, not just its
-// own.
+// Kept small because Engine.Tick notifies rules sequentially, so retries delay every later rule in the pass.
 const notifyMaxAttempts = 3
 
-// notifyRetryBaseDelay is the first retry's wait, doubled on each
-// subsequent attempt (500ms, 1s for 3 total attempts). A var, not a
-// const, so a test can shrink it and keep a retry-path test fast
-// without a real multi-second sleep.
+// A var so tests can shrink it and keep retry-path tests fast.
 var notifyRetryBaseDelay = 500 * time.Millisecond
 
-// notifyHTTPError carries the receiver's actual response status, so
-// postJSONWithAuth's retry loop can tell a transient failure (5xx, 429:
-// worth retrying) from a permanent one (any other 4xx: a malformed
-// payload or a bad credential fails identically on every attempt, so
-// retrying it only delays surfacing the real, fixable problem).
+// notifyHTTPError carries the status so retries apply only to 5xx and 429, not to permanent 4xx errors.
 type notifyHTTPError struct {
 	statusCode int
 }
@@ -806,11 +689,7 @@ func (e *notifyHTTPError) Error() string {
 	return fmt.Sprintf("alerting: notify: receiver returned status %d", e.statusCode)
 }
 
-// isRetryableNotifyError reports whether err is worth a retry: any
-// transport-level failure (err is not a *notifyHTTPError at all - DNS,
-// TLS, connection refused, a client-side timeout) is a transient
-// network condition and always worth one, a 5xx or 429 response usually
-// resolves itself, and anything else (4xx) will not.
+// Transport errors and 5xx/429 are retried; other 4xx responses fail identically on every attempt.
 func isRetryableNotifyError(err error) bool {
 	var httpErr *notifyHTTPError
 	if errors.As(err, &httpErr) {
@@ -819,17 +698,8 @@ func isRetryableNotifyError(err error) bool {
 	return true
 }
 
-// postJSONWithAuth is postJSON plus an optional Authorization header,
-// needed by the two kinds (Resend, and ntfy on a protected topic) that
-// authenticate via a bearer header rather than a field in the JSON body
-// itself. authHeader is skipped entirely when empty, so postJSON above
-// is just this with no header to set.
-//
-// Retries up to notifyMaxAttempts times on a transient failure
-// (isRetryableNotifyError), with a short exponential backoff between
-// attempts: previously a single transient hiccup from Slack, Discord,
-// or any other receiver permanently dropped that notification with no
-// second chance, indistinguishable from a genuinely broken channel.
+// Adds an optional Authorization header for Resend and protected ntfy topics.
+// Retries transient failures with exponential backoff, so one hiccup does not drop a notification.
 func postJSONWithAuth(ctx context.Context, client *http.Client, url string, payload any, authHeader string) error {
 	if url == "" {
 		return fmt.Errorf("alerting: notify: no notify_url configured")
@@ -886,16 +756,10 @@ func postJSONAttempt(ctx context.Context, client *http.Client, url string, body 
 	return nil
 }
 
-// emailNotifier sends one Event as a plain-text email via an
-// email.Sender. Unlike every other Notifier here, its transport isn't
-// HTTP: it doesn't fit httpNotifier's notifyFunc shape (a URL plus a
-// JSON body), so it implements Notifier directly instead.
+// emailNotifier implements Notifier directly: its transport is SMTP, not an HTTP URL plus JSON body.
 type emailNotifier struct {
 	sender email.Sender // nil means "no email capability configured"
-	// to is r.NotifyURL: not a URL for this channel, the destination
-	// email address, the same "NotifyURL is generically 'the
-	// destination', interpreted per channel" reasoning notifyTelegram
-	// above already establishes for its chat_id.
+	// NotifyURL is the destination email address for this channel.
 	to string
 }
 
@@ -917,11 +781,7 @@ func (n emailNotifier) Notify(ctx context.Context, ev Event) error {
 	return nil
 }
 
-// webpushNotifier sends one Event as a browser push notification via a
-// PushSender. Unlike every other Notifier here, its destination isn't
-// r.NotifyURL at all: every registered browser subscription receives it,
-// so like emailNotifier it implements Notifier directly rather than
-// fitting httpNotifier's notifyFunc shape.
+// webpushNotifier implements Notifier directly: every registered subscription receives the push, not r.NotifyURL.
 type webpushNotifier struct {
 	sender PushSender // nil means "no browser push capability configured"
 }
@@ -943,16 +803,7 @@ func (n webpushNotifier) Notify(ctx context.Context, ev Event) error {
 	return nil
 }
 
-// isRetryableEmailError classifies an email.Sender error the same way
-// isRetryableNotifyError classifies an HTTP one, adapted to SMTP's
-// inverted status-code convention: a transport-level failure (no SMTP
-// reply at all - DNS, dial, TLS handshake, a client-side timeout, or any
-// non-SMTP backend such as SES) is always worth a retry, an SMTP 4xx
-// reply is a transient negative completion per RFC 5321 S4.2.1 (mailbox
-// busy, server temporarily unavailable) and usually resolves itself, and
-// an SMTP 5xx reply is permanent (bad recipient, bad auth, policy
-// rejection) and retrying it only delays surfacing the real, fixable
-// problem.
+// Transport failures and SMTP 4xx replies are retried; 5xx replies are permanent, and retrying them only delays the fix.
 func isRetryableEmailError(err error) bool {
 	var protoErr *textproto.Error
 	if errors.As(err, &protoErr) {
@@ -961,13 +812,7 @@ func isRetryableEmailError(err error) bool {
 	return true
 }
 
-// sendEmailWithRetry sends one email through sender, retrying up to
-// notifyMaxAttempts times on a transient failure (isRetryableEmailError)
-// with postJSONWithAuth's identical exponential backoff: previously a
-// single transient SMTP hiccup permanently dropped an email notification
-// with no second chance, unlike every HTTP-based channel, which is
-// exactly the "Email is not yet covered (different transport and
-// semantics)" gap docs/roadmap.md used to call out.
+// Retries transient SMTP failures with the same backoff as the HTTP channels.
 func sendEmailWithRetry(ctx context.Context, sender email.Sender, to, subject, body string) error {
 	var lastErr error
 	delay := notifyRetryBaseDelay

@@ -6,16 +6,7 @@ import (
 	"os"
 )
 
-// runBackups dispatches "backups <verb> <database> [flags]" to one of
-// list/trigger/restore/restore-as-new. All routes are requireAbility-gated
-// (internal/api/backups.go, internal/api/restore.go, internal/api/
-// database_clone_restore.go), not session-only, so unlike "auth"/"tokens"
-// these use the normal bearer token --token/APP_API_TOKEN/credentials-file
-// resolution every other command in this CLI uses, provided the token
-// actually carries the ability the route needs (write:sensitive for
-// trigger and restore-as-new, root for restore, see backups_restore.go's
-// own doc comment on why restore's gate is root specifically and
-// backups_restore_as_new.go's own doc comment on why restore-as-new isn't).
+// Each verb needs a token ability: write:sensitive for trigger and restore-as-new, root for restore.
 func runBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, backupsUsage(prog))

@@ -10,14 +10,8 @@ import (
 	"time"
 )
 
-// dokployApplication mirrors the subset of Dokploy's Application model
-// (docs.dokploy.com/docs/api/reference-application) that field mapping
-// reads. Verified against Dokploy's public API reference only, not a live
-// instance: memoryLimit/cpuLimit are documented as raw bytes / nanoCPUs
-// respectively (docs.dokploy.com/docs/core/applications/advanced) even
-// though the update-endpoint schema types them as strings, and the exact
-// nested shape returned by project.one for its application list could not
-// be confirmed live, see dokployProjectDetail below.
+// memoryLimit and cpuLimit are raw bytes and nanoCPUs, though the update schema types them as strings.
+// Field mapping is checked against Dokploy's docs only, not a live instance.
 type dokployApplication struct {
 	ApplicationID string `json:"applicationId"`
 	Name          string `json:"name"`
@@ -45,11 +39,7 @@ type dokployApplication struct {
 	CustomGitURL    string `json:"customGitUrl"`
 	CustomGitBranch string `json:"customGitBranch"`
 
-	// Env is a single newline-delimited KEY=VALUE blob, Dokploy's UI has
-	// one textarea for env rather than Coolify's list of discrete
-	// objects. Unlike Coolify, Dokploy's API has no documented
-	// read:sensitive-style redaction: any caller with access to the app
-	// gets real values back here.
+	// One KEY=VALUE blob, not a list. Any caller with app access gets real values back.
 	Env string `json:"env"`
 
 	MemoryLimit string `json:"memoryLimit"`
@@ -76,12 +66,7 @@ type dokployApplicationSummary struct {
 	Name          string `json:"name"`
 }
 
-// dokployProjectDetail mirrors GET /api/project.one. Dokploy has no
-// documented application.all (list-all) endpoint: applications live
-// inside projects, so ListApplications walks project.all then
-// project.one for each. The Applications field name and nesting here
-// follow Dokploy's UI data model (a project owns its applications) but
-// could not be verified against a live instance.
+// Applications nesting is unverified live; ListApplications walks project.all then project.one.
 type dokployProjectDetail struct {
 	ProjectID    string                      `json:"projectId"`
 	Applications []dokployApplicationSummary `json:"applications"`
@@ -105,12 +90,7 @@ func (e *dokployAPIError) Error() string {
 	return fmt.Sprintf("dokploy api returned %d: %s", e.StatusCode, e.Message)
 }
 
-// DokployClient is a minimal, read-only HTTP client for Dokploy's REST
-// API. Dokploy's API is generated from its tRPC routers
-// (docs.dokploy.com/api-reference/introduction): endpoints follow
-// GET /api/<router>.<procedure>, authenticated with a single
-// "x-api-key" header rather than a Bearer token. This migration tool
-// never writes back to the source Dokploy instance.
+// DokployClient is a read-only client for Dokploy's REST API, authenticated by an x-api-key header.
 type DokployClient struct {
 	baseURL string
 	apiKey  string

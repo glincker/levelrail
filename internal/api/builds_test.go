@@ -1260,7 +1260,7 @@ func commitTestFile(t *testing.T, repo *git.Repository, dir, content string) str
 func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
 	dir, branch, first := initTestGitRepo(t)
 
-	_, commit, cleanup, err := gitCheckout(context.Background(), dir, branch, "")
+	_, commit, cleanup, err := testGitCheckout(context.Background(), dir, branch)
 	if err != nil {
 		t.Fatalf("gitCheckout: %v", err)
 	}
@@ -1275,7 +1275,7 @@ func TestGitCheckout_ResolvesBranchToCommit(t *testing.T) {
 	}
 	second := commitTestFile(t, repo, dir, "second")
 
-	_, commit2, cleanup2, err := gitCheckout(context.Background(), dir, branch, "")
+	_, commit2, cleanup2, err := testGitCheckout(context.Background(), dir, branch)
 	if err != nil {
 		t.Fatalf("gitCheckout (second): %v", err)
 	}
@@ -1321,7 +1321,7 @@ func TestGitCheckout_ResolvesNonDefaultBranchFromRemoteTrackingRef(t *testing.T)
 		t.Fatalf("Checkout back to %q: %v", head.Name(), err)
 	}
 
-	_, commit, cleanup, err := gitCheckout(context.Background(), dir, branch, "")
+	_, commit, cleanup, err := testGitCheckout(context.Background(), dir, branch)
 	if err != nil {
 		t.Fatalf("gitCheckout: %v", err)
 	}
@@ -1377,7 +1377,7 @@ func TestGitCheckout_ResolveRefTable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, commit, cleanup, err := gitCheckout(context.Background(), dir, tt.ref, "")
+			_, commit, cleanup, err := testGitCheckout(context.Background(), dir, tt.ref)
 			if tt.wantErr {
 				if err == nil {
 					cleanup()

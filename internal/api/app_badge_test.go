@@ -12,10 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestHandleBadgeSettings_GetDefaultOffAndSetToggles proves the one
-// place this endpoint deliberately differs from GET/PUT .../exec-access:
-// default false, not true, so an app that never touches its badge
-// setting stays unexposed on GET .../badge.svg.
+// Pins the one deliberate difference from exec-access: badge defaults to off, so an untouched app stays unexposed.
 func TestHandleBadgeSettings_GetDefaultOffAndSetToggles(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -115,11 +112,7 @@ func TestHandlePublicAppBadge_404sWhenDisabledOrMissing(t *testing.T) {
 	}
 }
 
-// TestHandlePublicAppBadge_RendersStatusAndColor proves the public SVG
-// reflects the real latest deploy attempt: success renders green,
-// failed renders red, and an app with badge enabled but no deploy
-// attempts yet still renders a valid "no deploys" badge rather than
-// erroring.
+// Success renders green, failure red, and an app with no deploys yet still gets a valid badge.
 func TestHandlePublicAppBadge_RendersStatusAndColor(t *testing.T) {
 	rt, db := newTestRouter(t)
 	ctx := context.Background()

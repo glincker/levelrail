@@ -1,0 +1,83 @@
+{
+  "title": "Traffic",
+  "subtitle": "Rate, errors and duration for requests served through the ingress, with no app changes.",
+  "windowLabel": "Time window",
+  "windows": {
+    "5m": "5 minutes",
+    "1h": "1 hour",
+    "24h": "24 hours"
+  },
+  "kpi": {
+    "rate": "Requests per second",
+    "requests": "{{count}} requests in window",
+    "error5xx": "Server errors (5xx)",
+    "error4xx": "Client errors (4xx)",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99 latency",
+    "upstreamErrors": "{{count}} upstream failures"
+  },
+  "slo": {
+    "title": "Error budget",
+    "objective": "{{objective}} target {{target}}%",
+    "burn": "Burn rate",
+    "burnHint": "1.0x spends the budget exactly over the SLO period",
+    "remaining": "Budget remaining",
+    "none": "No SLO is set for this app. Add an SLO burn alert to see the error budget here.",
+    "noneAction": "Set up an SLO alert"
+  },
+  "replicas": {
+    "title": "Replicas",
+    "hint": "Measured per upstream address at the ingress.",
+    "upstream": "Replica",
+    "requests": "Requests",
+    "rate": "Req/s",
+    "error5xx": "5xx",
+    "error4xx": "4xx",
+    "p50": "p50",
+    "p95": "p95",
+    "p99": "p99",
+    "empty": "No per replica data yet. It appears once requests reach a container through the ingress."
+  },
+  "routes": {
+    "title": "Slowest routes",
+    "hint": "Route templates only. Ids and query strings are never stored.",
+    "route": "Route",
+    "requests": "Requests",
+    "avg": "Avg duration",
+    "error5xx": "5xx",
+    "empty": "No route has enough traffic in this window to rank."
+  },
+  "samples": {
+    "title": "Slow and failed requests",
+    "hint": "A sample of requests that failed or ran slow, kept on the node that served them.",
+    "empty": "No slow or failed requests were sampled in this window.",
+    "requestId": "Request id"
+  },
+  "empty": {
+    "title": "No traffic in this window",
+    "description": "Requests show up here once the app is serving through a domain. Try a longer window or check that a domain points at this app.",
+    "action": "Check domains"
+  },
+  "error": {
+    "title": "Traffic is unavailable",
+    "description": "{{message}}",
+    "retry": "Try again"
+  },
+  "charts": {
+    "title": "Live charts"
+  },
+  "shield": {
+    "title": "Bot and abuse shield",
+    "action": "Adjust protections",
+    "blocked_one": "{{count}} request turned away",
+    "blocked_other": "{{count}} requests turned away",
+    "none": "Nothing was turned away in this window. Add per-client limits and a bot blocklist on the domain page to keep scrapers from running up bandwidth.",
+    "reasons": {
+      "rate_limit": "Rate limited",
+      "concurrency": "Too many open requests",
+      "bad_bot": "Bad bot",
+      "body_too_large": "Body too large"
+    }
+  }
+}

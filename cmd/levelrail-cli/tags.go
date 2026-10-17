@@ -7,11 +7,7 @@ import (
 	"net/http"
 )
 
-// runTags dispatches "tags <verb> [flags]" to one of list/create/delete,
-// the CLI counterpart of internal/api/tags.go's own /api/v1/tags routes.
-// Attaching/detaching a tag to/from an app lives under "apps tag"/"apps
-// untag" instead (apps_tag.go), the same per-app-scoping
-// apps_alerts.go's own routes establish for a different child resource.
+// runTags dispatches list/create/delete for /api/v1/tags. Attaching a tag to an app lives under "apps tag".
 func runTags(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, tagsUsage(prog))
@@ -55,10 +51,7 @@ Run "%[1]s tags <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
-// resolveTagIDByName looks up name against the full tag list and
-// returns its ID. Every remaining ID-only tag endpoint (delete, apps,
-// untag) needs this one extra round trip so a user never has to look
-// up an ID by hand before typing a tag identifier.
+// resolveTagIDByName looks up a tag's ID by name, so users never have to type IDs by hand.
 func resolveTagIDByName(ctx context.Context, client *Client, name string) (string, error) {
 	tags, err := client.ListTags(ctx)
 	if err != nil {

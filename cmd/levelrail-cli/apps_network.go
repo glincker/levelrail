@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runAppsNetwork implements "apps network <name>": GET
-// /api/v1/apps/{name}/network (internal/api/network.go's
-// handleGetAppNetwork), the live traffic path, container's declared port
-// plus whatever host port Docker currently has bound. A separate command
-// from "apps get" for the same reason "apps status" is: this is observed
-// state, not the desired appResource contract "apps get --json" already
-// promises callers.
+// runAppsNetwork implements "apps network <name>": observed traffic and bound host port, separate from the desired state.
 func runAppsNetwork(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps network", "print the network status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

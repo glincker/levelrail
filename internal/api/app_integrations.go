@@ -34,10 +34,7 @@ type integrationCatalogEnvVar struct {
 	Placeholder string `json:"placeholder,omitempty"`
 }
 
-// integrationCatalogEntry is GET /api/v1/integrations' wire shape: the
-// full internal/integrations.Catalog, static and in-memory, no store
-// involved, the same "no store at all" shape handleListServiceTemplates
-// already establishes for a different static catalog.
+// integrationCatalogEntry is the wire shape for one entry of the static integration catalog.
 type integrationCatalogEntry struct {
 	Key         string                     `json:"key"`
 	Name        string                     `json:"name"`
@@ -77,13 +74,7 @@ func (rt *Router) handleListIntegrationCatalog(w http.ResponseWriter, _ *http.Re
 	writeJSON(w, http.StatusOK, out)
 }
 
-// appIntegrationResource is the wire shape for one app's attached
-// integration. Name is the catalog's display name, a convenience for
-// the attached-list UI so it doesn't need a second lookup against the
-// catalog for every row; it is never a persisted field. Field values
-// (DSN, API key) are never included here, matching the "names only,
-// never a value" convention handleListSecrets already establishes for
-// the same secrets store.
+// Name is display-only and never persisted; field values are never returned, only names.
 type appIntegrationResource struct {
 	ID             string    `json:"id"`
 	AppName        string    `json:"app_name,omitempty"`
@@ -104,11 +95,7 @@ func toAppIntegrationResource(ai store.AppIntegration, displayName string) appIn
 	}
 }
 
-// integrationDisplayName returns key's catalog display name, or key
-// itself if the catalog entry was removed after an app already attached
-// it: an attachment must keep listing even if its catalog entry
-// disappears, the same "skip, don't fail" resilience resolveIntegrationEnv
-// (internal/reconcile/application) already gives this same lookup.
+// Falls back to the raw key when the catalog entry was removed, so an attachment still lists.
 func integrationDisplayName(key string) string {
 	if def, ok := integrations.Get(key); ok {
 		return def.Name
@@ -142,24 +129,13 @@ func (rt *Router) handleListAppIntegrations(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, out)
 }
 
-// attachAppIntegrationRequest is handleAttachAppIntegration's request
-// body. Fields maps a catalog env var name (e.g. "SENTRY_DSN") to the
-// value the operator typed; a field the catalog marks optional with a
-// Default may be left out entirely.
+// Fields maps catalog env var names to operator-entered values.
 type attachAppIntegrationRequest struct {
 	IntegrationKey string            `json:"integration_key"`
 	Fields         map[string]string `json:"fields"`
 }
 
-// handleAttachAppIntegration handles POST
-// /api/v1/apps/{name}/integrations: attaches a catalog integration to
-// this app, storing its field values through the same envelope
-// encryption every other app secret uses
-// (store.AppIntegrationSecretsKey), never a second, parallel secret
-// store. internal/reconcile/application's resolveIntegrationEnv resolves
-// those values into the app's env at its next container start, ahead of
-// the app's own literal env (so an operator's own same-named env var
-// still wins).
+// Values are stored with the same envelope encryption as app secrets; an app's own literal env var still wins over an integration's.
 func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Request) {
 	if rt.secrets == nil {
 		writeError(w, http.StatusNotImplemented, "integrations are not configured on this control plane (no master key set)")
@@ -235,10 +211,7 @@ func (rt *Router) handleAttachAppIntegration(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusCreated, toAppIntegrationResource(ai, def.Name))
 }
 
-// loadOwnedAppIntegration loads the app integration with this id and
-// verifies it actually belongs to appName, the same ownership check
-// loadOwnedScheduledTask already establishes for a different globally-
-// unique-ID child resource.
+// loadOwnedAppIntegration checks that the integration actually belongs to appName.
 func (rt *Router) loadOwnedAppIntegration(w http.ResponseWriter, r *http.Request, appName, id, op string) (store.AppIntegration, bool) {
 	ai, err := rt.appIntegrations.GetAppIntegration(r.Context(), id)
 	if errors.Is(err, store.ErrAppIntegrationNotFound) {
@@ -257,11 +230,7 @@ func (rt *Router) loadOwnedAppIntegration(w http.ResponseWriter, r *http.Request
 	return ai, true
 }
 
-// handleDetachAppIntegration handles DELETE
-// /api/v1/apps/{name}/integrations/{id}: removes the attachment row and
-// every field value stored under its namespace in one request, so a
-// detached integration's env vars are gone by the app's next container
-// start, not left as orphaned secret rows.
+// Detach removes the attachment and its stored field values together, so no orphaned secrets remain.
 func (rt *Router) handleDetachAppIntegration(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	id := r.PathValue("id")
@@ -291,10 +260,7 @@ func (rt *Router) handleDetachAppIntegration(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// randomAppIntegrationID mirrors randomScheduledTaskID's exact shape (9
-// random bytes, URL-safe base64, a short type prefix). Duplicated rather
-// than shared, the same "different resource, different ID space"
-// reasoning randomScheduledTaskID's own doc comment gives.
+// Duplicated from randomScheduledTaskID on purpose: each resource has its own ID space.
 func randomAppIntegrationID() (string, error) {
 	buf := make([]byte, 9)
 	if _, err := rand.Read(buf); err != nil {

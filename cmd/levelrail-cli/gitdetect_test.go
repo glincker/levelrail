@@ -52,10 +52,7 @@ func TestDetectLocalGit_WithOriginAndBranch(t *testing.T) {
 	if _, err := wt.Commit("init", &git.CommitOptions{Author: sig}); err != nil {
 		t.Fatalf("Commit: %v", err)
 	}
-	// Create and switch to "develop" from the commit just made, whatever
-	// go-git's default initial branch name is: this only needs *a*
-	// current branch with a real name to detect, not to know that
-	// default in advance.
+	// Any real branch name works, so this does not depend on go-git's default branch.
 	if err := wt.Checkout(&git.CheckoutOptions{Branch: plumbing.NewBranchReferenceName("develop"), Create: true}); err != nil {
 		t.Fatalf("Checkout(create develop): %v", err)
 	}

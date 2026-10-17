@@ -20,7 +20,8 @@
     "geo": "Geolocation",
     "cache": "Cache",
     "ports": "Ports",
-    "danger": "Danger zone"
+    "danger": "Danger zone",
+    "shield": "Shield"
   },
   "common": {
     "moveUp": "Move up",
@@ -259,5 +260,47 @@
     "reset": "Reset",
     "confirm": "Reset now",
     "cancel": "Cancel"
+  },
+  "shield": {
+    "title": "Bot and abuse shield",
+    "help": "Per-client limits applied at the ingress before a request reaches your app. Limits are per client IP and cost nothing when traffic is normal.",
+    "enabled": "Enable the shield for this domain",
+    "on": "On",
+    "off": "Off",
+    "rate": "Requests per minute",
+    "burst": "Burst size",
+    "burstDefault": "Rate / 6",
+    "concurrent": "Open requests at once",
+    "body": "Largest request body (bytes)",
+    "retryAfter": "Retry-After (seconds)",
+    "tarpit": "Delay rejections (ms, max {{max}})",
+    "blockBots": "Refuse bad bot user agents",
+    "botAgents": "Extra user agent fragments to refuse, one per line (max {{max}})",
+    "allow": "Never limit these addresses or CIDR ranges, one per line",
+    "perClient": "Client addresses are held only in memory, capped at {{count}} per domain, and are never logged or stored. Only counts are kept.",
+    "privacy": "Rejected requests get 429 with Retry-After (rate and open request limits), 403 (bad bots) or 413 (large bodies). No challenge page is shown.",
+    "attack": {
+      "title": "Under attack mode",
+      "help": "One switch that tightens limits to {{rate}} requests per minute (burst {{burst}}), {{concurrent}} open requests per client, and refuses listed bots. It ends by itself.",
+      "active": "Under attack mode is on until {{time}}. Limits are tightened and listed bots are refused.",
+      "idle": "Off. Turn it on when a flood starts; it works even if the shield is not enabled.",
+      "duration": "Stay on for",
+      "minutes_one": "{{count}} minute",
+      "minutes_other": "{{count}} minutes",
+      "start": "Turn on",
+      "standDown": "Stand down now"
+    },
+    "bots": {
+      "title": "Bot denylist",
+      "help": "Case-insensitive fragments matched against the user agent. Replace the list with APP_SHIELD_BOT_LIST_FILE, or add fragments for this domain above.",
+      "loading": "Loading the bot list",
+      "failed": "The bot list could not be loaded",
+      "emptyTitle": "The bot list is empty",
+      "emptyHelp": "Add fragments for this domain above, or point APP_SHIELD_BOT_LIST_FILE at a list.",
+      "shipped_one": "{{count}} shipped entry",
+      "shipped_other": "{{count}} shipped entries",
+      "custom_one": "{{count}} entry from your list file",
+      "custom_other": "{{count}} entries from your list file"
+    }
   }
 }

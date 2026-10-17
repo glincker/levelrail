@@ -98,6 +98,8 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `command` | list of string | no | none | Overrides the image's own default `CMD`. A plain argv list, never shell-interpreted. |
 | `egress` | `Egress` | no | open egress | Limits outbound traffic to an allowlist of host and port pairs. See [`Egress`](#egress). |
 | `loadbalancer` | `LoadBalancer` | no | none | Balances traffic across the service's replicas. See [Load balancing](/load-balancing). |
+| `budget` | `Budget` | no | none | Monthly egress and cost cap with alerts and an optional throttle or pause. See [`Budget`](#budget). |
+| `autoscale` | `Autoscale` | no | none | Scales replicas on CPU, memory or request load between a minimum and maximum. Cannot be combined with `replicas`. See [`Autoscale`](#autoscale). |
 | `dependsOn` | list of string | no | none | Sibling `services:` keys this service waits on: the reconciler does not create this service's container until every named dependency has at least one running container. Start order only, real Docker Compose's own default `depends_on:` semantic (`service_started`), not a wait for the dependency's own readiness or health check. Each entry must name a real sibling service with a single running container (not `static` or `compose`), and a cycle between services fails validation. |
 
 ### `Build`
@@ -218,6 +220,36 @@ All fields are optional. Durations are Go duration strings such as `500ms`, `5s`
 | `request_timeout` | duration | Upstream response header timeout. |
 | `rate_limit` | object | `rps` (required), `burst`. Per client address. |
 | `upstream_tls` | object | `server_name`, `insecure_skip_verify`. Speak HTTPS to replicas. |
+
+### `Budget`
+
+All fields are optional, but at least one of `egress` and `cost` is required. See [Spend caps](/spend-caps) for behavior.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `egress` | string | Monthly egress limit such as `500GiB` (binary) or `2TB` (decimal). |
+| `cost` | number | Monthly cost ceiling in the configured currency. |
+| `action` | string | What happens at 100 percent: `none` (default, alert only), `throttle` or `pause`. |
+| `thresholds` | list of integer | Alert levels in percent, 1 to 100, at most eight. Default `[50, 80, 100]`. |
+| `throttle_rps` | integer | Requests per second per client while throttled. Default 5. |
+
+### `Autoscale`
+
+`max`, `metric` and `target` are required. `autoscale` owns the replica count, so `replicas` must be left out. See [Autoscaling](/autoscaling) for behavior.
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `min` | integer | `1` | Fewest replicas. |
+| `max` | integer | none | Most replicas, at most the operator's `APP_AUTOSCALE_MAX_REPLICAS` (default 20). |
+| `metric` | string | none | `cpu_percent`, `memory_percent` or `requests_per_replica`. |
+| `target` | number | none | Value to hold the metric at. Percent of the limit for CPU and memory, requests per second for `requests_per_replica`. |
+| `scale_up_tolerance` | integer | `10` | Scale up only when the metric is this many percent above `target`. |
+| `scale_down_tolerance` | integer | `30` | Scale down only when the metric is this many percent below `target`. |
+| `scale_up_cooldown` | duration | `1m` | Minimum wait between scale ups. |
+| `scale_down_cooldown` | duration | `10m` | Minimum wait after any change before scaling down. |
+| `stabilization` | duration | `5m` | A lower count must be recommended this long before it is applied. |
+| `max_step_up` | integer | `4` | Most replicas added in one step. |
+| `max_step_down` | integer | `1` | Most replicas removed in one step. |
 
 ### `Hooks`
 

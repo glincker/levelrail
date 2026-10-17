@@ -1,0 +1,73 @@
+// Wire contract between the control plane and an out-of-process plugin (ADR 034).
+// The plugin serves this over a unix socket mounted into its container; the
+// control plane is always the client. Contract version 1.
+syntax = "proto3";
+
+package levelrail.plugin.v1;
+
+option go_package = "github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpb";
+
+import "google/protobuf/timestamp.proto";
+
+// PluginService is served by every plugin whatever kinds it implements.
+service PluginService {
+  // Describe is the first call. The host offers the contract versions it
+  // speaks; the plugin answers with the one it will use or an error.
+  rpc Describe(DescribeRequest) returns (DescribeResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+// NotificationChannelService is served by plugins whose kind is notification_channel.
+service NotificationChannelService {
+  rpc Send(SendRequest) returns (SendResponse);
+}
+
+message DescribeRequest {
+  repeated uint32 host_contract_versions = 1;
+}
+
+message DescribeResponse {
+  uint32 contract_version = 1;
+  string name = 2;
+  string version = 3;
+  // Extension kind, for example "notification_channel".
+  string kind = 4;
+  // Abilities the plugin asks for, in the platform ability vocabulary.
+  repeated string requested_abilities = 5;
+  // JSON Schema (as text) for the plugin's own non-secret config.
+  string config_schema = 6;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  bool ok = 1;
+  string detail = 2;
+}
+
+message Event {
+  string id = 1;
+  string title = 2;
+  string body = 3;
+  // "firing" or "resolved".
+  string status = 4;
+  string severity = 5;
+  string resource_id = 6;
+  string link = 7;
+  google.protobuf.Timestamp occurred_at = 8;
+}
+
+message SendRequest {
+  Event event = 1;
+  // The plugin's own non-secret config (JSON), stored at install.
+  string config_json = 2;
+  // The credential for this one call (for example a token or webhook URL).
+  // It must not be persisted or logged by the plugin.
+  string secret = 3;
+}
+
+message SendResponse {
+  bool delivered = 1;
+  string detail = 2;
+  bool retryable = 3;
+}

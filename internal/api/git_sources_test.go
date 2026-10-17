@@ -13,11 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeGitSourceSecrets is a hand-written fake for GitSourceSecrets, the
-// same pattern fakeSecretSetter/fakeBackupSecretsSetter already
-// establish, extended with Resolve/Exists (this interface, unlike those
-// two, is genuinely read back within this package: see GitSourceSecrets'
-// own doc comment).
+// Hand-written fake for GitSourceSecrets. Unlike the other secret fakes, Resolve and Exists are read back in this package.
 type fakeGitSourceSecrets struct {
 	mu     sync.Mutex
 	values map[string]map[string]string
@@ -132,10 +128,7 @@ func TestHandleSetGitSource_RejectsComposeBuildType(t *testing.T) {
 	}
 }
 
-// TestHandleSetGitSource_RejectsImageBuildType proves a persistent git
-// source cannot be pointed at build.type: image: a pinned image has no
-// build to redeploy on the next push, so this must fail loudly rather
-// than silently connect a webhook that would never do anything useful.
+// A pinned image has no build to redeploy on push, so connecting a webhook to it must fail loudly.
 func TestHandleSetGitSource_RejectsImageBuildType(t *testing.T) {
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	cookie := loginTestSession(t, rt, db)
@@ -235,11 +228,7 @@ func TestHandleSetGitSource_RejectsUnsupportedDatabaseEngine(t *testing.T) {
 	}
 }
 
-// TestHandleSetGitSource_Databases_RoundTrip proves Databases persists
-// and reads back through the connect route, the same round-trip
-// TestHandleSetGitSource_AdditionalServices_RoundTrip already proves for
-// AdditionalServices, including EphemeralInPreviews since that's the
-// one field the ephemeral-preview-database feature actually reads.
+// Databases must persist and read back through the connect route, including EphemeralInPreviews, which the preview feature reads.
 func TestHandleSetGitSource_Databases_RoundTrip(t *testing.T) {
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	cookie := loginTestSession(t, rt, db)
@@ -271,10 +260,7 @@ func TestHandleSetGitSource_Databases_RoundTrip(t *testing.T) {
 	}
 }
 
-// TestHandleSetGitSource_RejectsServicesAndAdditionalServicesTogether
-// proves validateGitSourceServices's own mutual-exclusion rule: setting
-// both would leave a webhook push with two plausible fan-out targets for
-// the same push, so it is a 400 rather than a silent pick of one.
+// Setting both services and additionalServices would leave one push with two fan-out targets, so it is a 400, not a silent pick.
 func TestHandleSetGitSource_RejectsServicesAndAdditionalServicesTogether(t *testing.T) {
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
 	cookie := loginTestSession(t, rt, db)
@@ -390,11 +376,7 @@ func TestHandleSetGitSource_Create_Success(t *testing.T) {
 	}
 }
 
-// TestHandleSetGitSource_WebhookURL_AbsoluteWhenPrimaryDomainConfigured
-// covers F-020: once the control plane has a public origin configured
-// (store.IngressSettings.PrimaryDomain), both the create and the GET
-// response return an absolute webhook URL, not the bare relative path a
-// caller would otherwise have to guess a base URL for.
+// Once a primary domain is configured, create and GET return an absolute webhook URL, not a relative path.
 func TestHandleSetGitSource_WebhookURL_AbsoluteWhenPrimaryDomainConfigured(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)

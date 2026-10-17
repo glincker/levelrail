@@ -1,10 +1,6 @@
 package agent
 
-// This file: building grpc TransportCredentials for the control plane's
-// own gRPC listener. Factored out of cmd/levelrail/
-// main.go so it's directly testable and reusable wherever a second
-// listener needs the identical shape (this package's own live test, in
-// particular).
+// Builds gRPC TransportCredentials for the control plane's listener, so a second listener can reuse them.
 
 import (
 	"crypto/tls"
@@ -19,26 +15,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// NewServerCredentials issues a fresh server certificate from ca
-// (covering hosts) and returns grpc TransportCredentials configured for
-// this package's mTLS model: a client certificate is verified when
-// presented but not required (VerifyClientCertIfGiven), because Enroll
-// (ADR 003's join-token exchange) is called with no client certificate
-// at all, by design (DialEnroll's own doc comment explains why), while
-// Session always presents one, verified against ca when it does.
-//
-// Must be passed to grpc.NewServer via grpc.Creds, not used to build a
-// raw tls.Listener handed to Serve directly: grpc-go's own peer-info
-// extraction (what Server.Session's peerIdentity relies on to read the
-// client certificate back out of a request's context) only populates
-// correctly when grpc's credentials layer performs the handshake
-// itself. A raw tls.Listener does the TLS handshake transparently at
-// the net.Conn level, which works for plain data transfer but leaves
-// grpc with no TLS state to attach to the connection's context,
-// confirmed the hard way: an earlier version of this wiring, tested
-// against a real listener, failed with "no peer TLS info on this
-// connection" on every real mTLS connection until this file switched
-// to grpc.Creds.
+// NewServerCredentials returns mTLS credentials that verify a client certificate when presented but do not require one.
+// Must go to grpc.Creds, not a raw tls.Listener: grpc only sees the peer TLS state when it performs the handshake.
 func NewServerCredentials(ca *CA, hosts []string, validFor time.Duration, opts ...CredentialOption) (credentials.TransportCredentials, error) {
 	var co credentialConfig
 	for _, opt := range opts {
@@ -61,12 +39,7 @@ func NewServerCredentials(ca *CA, hosts []string, validFor time.Duration, opts .
 	}
 	base := &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		// The client certificate is requested, not required (Enroll has none),
-		// and verified by verifyClientChain below on every handshake. Doing
-		// it there, not in crypto/tls, is what lets a rejection name the
-		// node and source address. No ClientCAs, so a client holding a
-		// certificate from another CA still sends it and gets a named
-		// rejection instead of silently arriving without one.
+		// Client certs are requested, not required, and verified in verifyClientChain so a rejection can name the node.
 		ClientAuth: tls.RequestClientCert,
 		// grpc-go >= 1.67 enforces ALPN negotiation; without this, every
 		// real connection fails with an opaque "missing selected ALPN

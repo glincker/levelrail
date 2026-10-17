@@ -11,7 +11,7 @@ import (
 func registerBackupVerificationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_backup_verifications",
-		Description: "List a database backup's verification attempt history, newest first: checksum match, size match, format validity for each attempt. Read-only; does not trigger a new verification.",
+		Description: "List a database backup's verification attempt history, newest first: checksum match, size match, format validity for each attempt.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupVerificationsInput) (*mcp.CallToolResult, []apiclient.BackupVerificationResource, error) {
 		verifications, err := client.ListBackupVerifications(ctx, in.Name, in.BackupID)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerBackupVerificationTools(server *mcp.Server, client *apiclient.Clien
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_latest_backup_verification",
-		Description: "Get the most recent verification attempt for a database backup, or an empty result if none has ever been run. Read-only; does not trigger a new verification.",
+		Description: "Get the most recent verification attempt for a database backup, or an empty result if none has ever been run.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in backupVerificationsInput) (*mcp.CallToolResult, apiclient.BackupVerificationResource, error) {
 		verifications, err := client.ListBackupVerifications(ctx, in.Name, in.BackupID)
 		if err != nil {

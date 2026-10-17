@@ -73,6 +73,12 @@
     "appRailpack": "{{directory}} looks like an application, auto-detected from that directory."
   },
   "failureLink": "Check build settings",
+  "fromCache": {
+    "action": "Deploy from cache",
+    "pending": "Starting",
+    "started": "Deploy from the source cache started",
+    "failed": "Could not deploy from cache"
+  },
   "failureAlsoMatched": "Also matched: {{codes}}",
   "workspace": {
     "title": "Workspace packages",

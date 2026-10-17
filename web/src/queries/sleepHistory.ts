@@ -4,6 +4,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { IdleLimits } from './appSleep'
 
 export type SleepEventKind =
   'slept' | 'woke' | 'enabled' | 'disabled' | 'wake_failed'
@@ -40,6 +41,7 @@ export interface SleepHistory {
   sleeping: boolean
   events: SleepEvent[]
   stats: SleepStats
+  idle_limits: IdleLimits
 }
 
 const HISTORY_REFETCH_MS = 30_000

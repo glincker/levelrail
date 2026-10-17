@@ -31,10 +31,7 @@ func buildRequestToPB(req build.RemoteRequest) (*agentpb.BuildRequest, error) {
 	}, nil
 }
 
-// buildRequestFromPB rebuilds the dispatched request agent-side. It
-// leaves ContextDir empty: the build node fills in its own unpacked
-// context directory, which is the one thing that cannot travel over the
-// wire as a path.
+// ContextDir is left empty: the build node fills in its own unpacked directory, since a path cannot cross the wire.
 func buildRequestFromPB(req *agentpb.BuildRequest) (build.RemoteRequest, error) {
 	kind, err := buildKindFromPB(req.GetKind())
 	if err != nil {

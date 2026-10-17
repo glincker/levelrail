@@ -187,11 +187,7 @@ func TestWriteQueriedTable_UniformObjectList(t *testing.T) {
 	}
 }
 
-// TestRun_AppsList_Query is an end-to-end regression test through the
-// same "apps list" command the getting-started docs use, proving --query
-// filters a real multi-item HTTP response exactly the way an AWS CLI
-// user would expect (no "apps" wrapper key: ListApps' wire response is a
-// bare JSON array, so the expression indexes straight into it).
+// The wire response is a bare array, so the query indexes straight into it with no wrapper key.
 func TestRun_AppsList_Query(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -255,10 +251,7 @@ func TestRun_AppsList_OutputText(t *testing.T) {
 	}
 }
 
-// TestRun_AppsList_JSONBackwardCompat is a regression test proving
-// --json still behaves exactly as it did before --output/--query
-// existed: a bare JSON array on stdout, nothing else, same as always.
-// Existing scripts built against --json must keep working unchanged.
+// Guards that --json output stays a bare array for existing scripts.
 func TestRun_AppsList_JSONBackwardCompat(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

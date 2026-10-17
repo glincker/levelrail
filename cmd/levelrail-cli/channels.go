@@ -5,11 +5,7 @@ import (
 	"io"
 )
 
-// runChannels dispatches "channels <verb> [flags]" to one of
-// list/create/delete/test: managing the global, connect-once
-// notification channels internal/api/notification_channels.go exposes
-// (Settings -> Notification channels in the web UI), the same resource
-// apps attach to for deploy-outcome notifications by channel ID.
+// Channels are global, not per-app; apps reference them by ID.
 func runChannels(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, channelsUsage(prog))

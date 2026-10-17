@@ -165,11 +165,7 @@ func TestHandleListAppScheduleHistory_EmptyByDefault(t *testing.T) {
 	}
 }
 
-// TestTriggerScheduledDeploy_DeploysLatestCommitOnBranch proves
-// TriggerScheduledDeploy resolves the branch's head commit (via the
-// resolveBranchSHA seam, no real network) and deploys through the same
-// git-source path a webhook push uses, stamped
-// store.DeployAttemptSourceSchedule.
+// TestTriggerScheduledDeploy_DeploysLatestCommitOnBranch checks the branch head is deployed through the git-source path.
 func TestTriggerScheduledDeploy_DeploysLatestCommitOnBranch(t *testing.T) {
 	db := openTestDB(t)
 	rt := NewRouter(discardLogger(), testBrand(), db, WithGitSourceSecrets(newFakeGitSourceSecrets()))

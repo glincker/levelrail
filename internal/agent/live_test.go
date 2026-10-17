@@ -1,19 +1,6 @@
 package agent
 
-// TestLive_EnrollAndSession is the real end-to-end proof:
-// not mux/GRPCTransport/Execute/Server tested in isolation against
-// fakes (every other test file in this package), but a real join token
-// minted through a real store, a real self-signed CA, a real TLS
-// listener on a real TCP port, a real gRPC server running Server's
-// Enroll and Session handlers, a real agent.DialEnroll exchange, a real
-// agent.RunSession holding a real mTLS connection open, and a real
-// Docker container inspected through the entire stack: control plane
-// caller -> mux -> gRPC -> mTLS -> gRPC -> agent recv loop -> Execute ->
-// a real docker.Runtime -> the real Docker daemon, and the response
-// travels the same path back. If this test passes, ADR 003's "the
-// reconciler... never knows whether it's talking to a local in-process
-// agent or a remote one over mTLS" is provably true for a remote one,
-// not just designed to be.
+// Full stack against a real Docker daemon: join token, mTLS, gRPC, Execute, and the response back.
 
 import (
 	"context"
@@ -195,10 +182,7 @@ func TestLive_EnrollAndSession(t *testing.T) {
 		t.Fatalf("transport.RemoveNetwork() error = %v", err)
 	}
 
-	// Events: a real Docker event (stopping the container), relayed
-	// from the agent's own local event stream, through the same
-	// physical connection, back to this test as a real docker.Event,
-	// not a request/response pair at all.
+	// Events are relayed from the agent as a server stream, not a request/response pair.
 	eventsCtx, eventsCancel := context.WithTimeout(longCtx, 10*time.Second)
 	defer eventsCancel()
 	events, errs := transport.Events(eventsCtx)
@@ -241,10 +225,7 @@ func startTestAgentServer(t *testing.T, ca *CA, st EnrollStore, registry *Regist
 	if err != nil {
 		t.Fatalf("NewServerCredentials() error = %v", err)
 	}
-	// A plain TCP listener, not a raw tls.Listener: grpc.Creds below is
-	// what performs the TLS handshake and populates the peer info
-	// Server.Session's peerIdentity depends on, credentials.go's own doc
-	// comment explains why a raw tls.Listener handed to Serve doesn't.
+	// A plain TCP listener: grpc.Creds performs the TLS handshake that populates peer identity.
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("net.Listen() error = %v", err)

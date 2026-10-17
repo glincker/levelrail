@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runPITRDisable implements "pitr disable <database>": DELETE
-// /api/v1/databases/{name}/pitr (internal/api/pitr.go's own
-// handleDisablePITR), AbilityWriteSensitive-gated. Existing base backups
-// and already-archived WAL are kept; only new archiving stops.
+// Existing base backups and archived WAL are kept; only new archiving stops.
 func runPITRDisable(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr disable", `print {"status": "disabled"} as JSON to stdout on success and nothing else`, stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, pitrDisableUsage(prog)) }

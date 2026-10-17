@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -22,6 +24,8 @@ import (
 // handlers below, unlike the async dispatch paths elsewhere in this
 // package which tolerate a slow target.
 const notificationChannelTestTimeout = 10 * time.Second
+
+var pluginKindName = regexp.MustCompile(`^[a-z][a-z0-9-]{1,39}$`)
 
 // NotificationChannels is the store surface the channel handlers need.
 // *alerting.DB satisfies this structurally.
@@ -127,6 +131,12 @@ var validNotifyKinds = []alerting.NotifyKind{
 // routes below.
 func validateNotifyKind(kind string) (alerting.NotifyKind, error) {
 	k := alerting.NotifyKind(kind)
+	if alerting.IsPluginKind(k) {
+		if !experimental.Enabled(experimental.Plugins) || !pluginKindName.MatchString(alerting.PluginName(k)) {
+			return "", errors.New("plugin channel kinds need the plugins feature and the form plugin:<name>")
+		}
+		return k, nil
+	}
 	for _, valid := range validNotifyKinds {
 		if k == valid {
 			return k, nil
@@ -140,6 +150,15 @@ func validateNotifyKind(kind string) (alerting.NotifyKind, error) {
 var kindsWithoutDestinationURL = map[alerting.NotifyKind]bool{
 	alerting.NotifyEmail: true, alerting.NotifyPagerDuty: true, alerting.NotifyOpsgenie: true,
 	alerting.NotifyResend: true, alerting.NotifyWebpush: true,
+}
+
+// validateChannelDestination is validateNotifyDestination plus the plugin check: a plugin
+// channel's notify_url is an opaque credential for the plugin, not a URL this process dials.
+func (rt *Router) validateChannelDestination(ctx context.Context, kind alerting.NotifyKind, notifyURL string) error {
+	if alerting.IsPluginKind(kind) {
+		return rt.pluginKindError(ctx, kind)
+	}
+	return validateNotifyDestination(ctx, kind, notifyURL)
 }
 
 // validateNotifyDestination refuses, at save time, a webhook URL the SSRF
@@ -250,7 +269,7 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 
 	channel, err := req.toChannel(id, "")
 	if err == nil {
-		err = validateNotifyDestination(r.Context(), channel.Kind, channel.NotifyURL)
+		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
 	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -307,7 +326,7 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	}
 	channel, err := req.toChannel(id, existing.InteractiveSecret)
 	if err == nil {
-		err = validateNotifyDestination(r.Context(), channel.Kind, channel.NotifyURL)
+		err = rt.validateChannelDestination(r.Context(), channel.Kind, channel.NotifyURL)
 	}
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

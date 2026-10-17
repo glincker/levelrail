@@ -7,11 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runGiteaApp dispatches "gitea-app <verb> [flags]" to one of
-// repos/branches/use-as-source: internal/api/gitea_app_repos.go's three
-// routes, the Gitea counterpart of runGitHubApp/runGitLabApp/
-// runBitbucketApp. Connecting the Gitea OAuth Application itself stays
-// dashboard-only, same reasoning as the other three providers.
+// Connecting the Gitea OAuth app stays dashboard-only: it needs a full-page browser redirect.
 func runGiteaApp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, giteaAppUsage(prog))

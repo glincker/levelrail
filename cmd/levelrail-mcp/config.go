@@ -2,13 +2,7 @@ package main
 
 import "github.com/GLINCKER/levelrail/internal/apiclient"
 
-// cliProg is cmd/levelrail-cli's own conventional binary name (the
-// basename `go build`/`go run` give it absent an explicit -o): checked
-// as a second credentials-file location, after this binary's own, so an
-// operator who already ran "levelrail-cli auth login" doesn't have to
-// configure this server separately. If the CLI binary was renamed at
-// build time, this fallback simply finds nothing, and the flag/env-var
-// path (identical names, apiclient.EnvAPIToken/EnvAPIURL) still works.
+// Fallback to the CLI's default credentials file. A renamed CLI binary finds nothing here, but the flags and env vars still work.
 const cliProg = "levelrail-cli"
 
 // resolveProfile picks the active profile name by precedence:

@@ -8,8 +8,11 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { formatBytes } from '../../lib/format'
-import { formatSleepDuration } from '../../lib/sleepTimeline'
-import type { SleepUiState } from '../../lib/sleepState'
+import {
+  formatWakeMs,
+  wakeEstimate,
+  type SleepUiState,
+} from '../../lib/sleepState'
 import type { AppSleep } from '../../queries/appSleep'
 
 const BADGE_VARIANT = {
@@ -55,13 +58,7 @@ export function SleepStatusHeader({
   actions?: ReactNode
 }) {
   const { t } = useTranslation('deploys')
-  const coldStart = sleep.cold_start_ms_p50
-  const explain =
-    coldStart === null
-      ? t('appSleep.explain.generic')
-      : t('appSleep.explain.withCold', {
-          duration: formatSleepDuration(coldStart / 1000),
-        })
+  const wake = wakeEstimate(sleep.wake_timing)
   const freed = sleep.estimated_memory_freed_bytes
   return (
     <div className="space-y-2">
@@ -83,7 +80,21 @@ export function SleepStatusHeader({
         </div>
         {actions}
       </div>
-      <p className="text-sm text-muted-foreground">{explain}</p>
+      <p className="text-sm text-muted-foreground">
+        {t('appSleep.explain.generic')}
+      </p>
+      <p className="text-sm text-foreground" data-testid="sleep-wake-timing">
+        {wake === null
+          ? t('appSleep.wakeTiming.none')
+          : wake.p95Ms === null
+            ? t('appSleep.wakeTiming.typical', {
+                typical: formatWakeMs(wake.typicalMs),
+              })
+            : t('appSleep.wakeTiming.typicalWithP95', {
+                typical: formatWakeMs(wake.typicalMs),
+                p95: formatWakeMs(wake.p95Ms),
+              })}
+      </p>
       {freed !== null && freed > 0 ? (
         <p className="text-sm text-foreground">
           {t('appSleep.frees', { size: formatBytes(freed) })}

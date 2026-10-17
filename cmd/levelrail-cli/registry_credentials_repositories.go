@@ -6,11 +6,6 @@ import (
 	"io"
 )
 
-// runRegistryCredentialsRepositories implements "registry-credentials
-// repositories <id>": GET
-// /api/v1/registry-credentials/{id}/repositories, browsing a stored
-// external registry credential's own catalog the same way "registry
-// repositories" (registry.go) browses the built-in one.
 func runRegistryCredentialsRepositories(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry-credentials repositories", "print repositories as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, registryCredentialsRepositoriesUsage(prog)) }

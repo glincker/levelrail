@@ -7,10 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runAppsDeployNotifyTargets dispatches "apps deploy-notify-targets <verb>
-// [flags]" to one of list/create/delete, the CLI counterpart of
-// internal/api/deploy_notify_targets.go's own
-// /api/v1/apps/{name}/deploy-notify-targets routes.
 func runAppsDeployNotifyTargets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsDeployNotifyTargetsUsage(prog))

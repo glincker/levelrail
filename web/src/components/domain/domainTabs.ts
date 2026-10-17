@@ -4,6 +4,7 @@ export const DOMAIN_TABS = [
   'headers',
   'forwarding',
   'access',
+  'shield',
   'cache',
   'ports',
   'danger',

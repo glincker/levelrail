@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runChannelsUpdate implements "channels update <id> --name NAME --kind
-// KIND": PUT /api/v1/notification-channels/{id}, a full replace using
-// the exact same flags "channels create" accepts. Every field the
-// channel should keep must be passed again on this call, the same
-// convention "registry-credentials update" already establishes: fixing a
-// typo'd --notify-url no longer requires disconnecting and reconnecting
-// the channel (which would also drop its delivery history).
+// Full replace: every field to keep must be passed again, as with registry-credentials update.
 func runChannelsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels update", "print the updated channel as JSON to stdout and nothing else", stderr)
 	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string

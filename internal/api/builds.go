@@ -8,12 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
-
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
-	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -48,64 +43,6 @@ type Builder interface {
 // branch name moves, and reusing it as a tag silently retags it onto
 // newer content, orphaning the previous build as a rollback target.
 type fetchFunc func(ctx context.Context, repoURL, ref, token string) (dir string, commit string, cleanup func(), err error)
-
-// gitCheckout is the real fetchFunc implementation, the manual-build
-// counterpart to internal/webhook's own cloneAndCheckout (see that
-// function's own doc comment for why a full clone, not shallow). token
-// authenticates the same way gitCheckoutWithToken does (git_webhook.go):
-// GitHub's "any username, token as password" scheme, empty meaning an
-// unauthenticated clone.
-func gitCheckout(ctx context.Context, repoURL, ref, token string) (dir string, commit string, cleanup func(), err error) {
-	dir, err = os.MkdirTemp("", "levelrail-build-*")
-	if err != nil {
-		return "", "", nil, fmt.Errorf("api: create temp checkout dir: %w", err)
-	}
-	cleanup = func() {
-		if rmErr := os.RemoveAll(dir); rmErr != nil {
-			slog.Default().Error("api: failed to remove temp checkout dir", slog.String("dir", dir), slog.String("error", rmErr.Error()))
-		}
-	}
-
-	cloneOpts := &git.CloneOptions{URL: repoURL}
-	if token != "" {
-		cloneOpts.Auth = &githttp.BasicAuth{Username: "x-access-token", Password: token}
-	}
-	repo, err := git.PlainCloneContext(ctx, dir, false, cloneOpts)
-	if err != nil {
-		cleanup()
-		return "", "", nil, fmt.Errorf("api: clone %q: %w", repoURL, err)
-	}
-
-	// ResolveRevision (not plumbing.NewHash) so ref can be a branch name,
-	// tag, or short/full commit hash: NewHash would silently zero-pad
-	// anything that isn't already valid 40-character hex, turning a
-	// branch name like "main" into a nonexistent hash instead of a clear
-	// error.
-	hash, err := repo.ResolveRevision(plumbing.Revision(ref))
-	if err != nil {
-		// A plain clone only creates refs/heads/* for the remote's default
-		// branch; every other branch exists solely as refs/remotes/origin/*,
-		// which ResolveRevision does not fall back to on its own.
-		hash, err = repo.ResolveRevision(plumbing.Revision("refs/remotes/origin/" + ref))
-	}
-	if err != nil {
-		cleanup()
-		return "", "", nil, fmt.Errorf("api: resolve ref %q in %q: %w", ref, repoURL, err)
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		cleanup()
-		return "", "", nil, fmt.Errorf("api: get worktree for %q: %w", repoURL, err)
-	}
-
-	if err := wt.Checkout(&git.CheckoutOptions{Hash: *hash}); err != nil {
-		cleanup()
-		return "", "", nil, fmt.Errorf("api: checkout %q at ref %q (resolved %s): %w", repoURL, ref, hash, err)
-	}
-
-	return dir, hash.String(), cleanup, nil
-}
 
 // triggerBuildBuildInput is the build.* sub-object of
 // triggerBuildRequest, matching the same fields app.yaml's own build:
@@ -182,6 +119,9 @@ type triggerBuildRequest struct {
 	// the resulting deploy_attempts row (see handleDetectFramework's own
 	// doc comment): this handler never re-runs detection itself.
 	DetectedFramework string `json:"detected_framework,omitempty"`
+	// FromCache builds from the local source cache only and never contacts
+	// the git host; it fails when the ref is not cached.
+	FromCache bool `json:"from_cache,omitempty"`
 	freezeOverride
 }
 
@@ -370,6 +310,10 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "build.base_directory is not meaningful for build.type \"image\"")
 			return
 		}
+		if req.FromCache {
+			writeError(w, http.StatusBadRequest, "from_cache needs a git source, not build.type \"image\"")
+			return
+		}
 	} else {
 		if req.RepoURL == "" {
 			writeError(w, http.StatusBadRequest, "repo_url is required")
@@ -428,7 +372,7 @@ func (rt *Router) handleTriggerBuild(w http.ResponseWriter, r *http.Request) {
 	run := rt.beginManualBuild(r.Context(), *existing, buildReq, buildType, source, req.DetectedFramework, freezeNote, allowPrivateRepoAuth)
 	rt.buildStartMu.Unlock()
 
-	run.repoURL, run.ref = req.RepoURL, req.Ref
+	run.repoURL, run.ref, run.fromCache = req.RepoURL, req.Ref, req.FromCache
 	go rt.runManualBuild(run) //nolint:gosec // the build outlives the request; runManualBuild derives its own context
 
 	writeJSON(w, http.StatusAccepted, triggerBuildResponse{ID: run.id})

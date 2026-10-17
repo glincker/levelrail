@@ -17,22 +17,9 @@ import (
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
-// This file is deploy-outcome notifications: a ping fired once,
-// synchronously, when a deploy attempt reaches a terminal status.
-// Unlike this package's threshold/crashloop alert rules, there is no
-// "firing" or "resolved" here, only "this attempt just succeeded or
-// failed." Kept in this package, reusing notify.go's payload shapes and
-// postJSON/parseTelegramChatID helpers directly, rather than forcing a
-// deploy outcome through alerting.Event/Rule.
+// Deploy outcomes are one-shot pings, not firing or resolved alerts, so they live beside rules rather than in them.
 
-// DeployTarget is a notify destination for deploy-outcome events,
-// scoped to one app (ResourceID, matching Rule.ResourceID's own
-// "service:<name>" convention) via internal/api's own resourceIDForApp.
-// Deliberately much narrower than Rule: no metric/comparator/threshold,
-// no restart-count/window, no evaluation state
-// (pending_since/firing/firing_since/last_evaluated_at/last_value),
-// because none of that describes anything about "where to send a
-// deploy's outcome."
+// DeployTarget is a deploy-outcome notify destination scoped to one app.
 type DeployTarget struct {
 	ID         string
 	ResourceID string
@@ -49,11 +36,7 @@ type DeployTarget struct {
 // adapted to this table.
 const deployTargetIDPrefix = "dnt_"
 
-// NewDeployTargetID generates a random, URL-safe deploy-target
-// identifier, the same shape NewRuleID already mints for alert_rules:
-// exported so internal/api can assign one when creating a target from a
-// request body that doesn't include one, the identical "ID is never
-// caller-chosen data" reasoning NewRuleID's own doc comment gives.
+// NewDeployTargetID generates a random, URL-safe deploy target identifier.
 func NewDeployTargetID() (string, error) {
 	b := make([]byte, 12)
 	if _, err := rand.Read(b); err != nil {
@@ -114,13 +97,7 @@ func (db *DB) GetDeployTarget(ctx context.Context, id string) (*DeployTarget, er
 	return t, nil
 }
 
-// ListDeployTargetsForResource returns every deploy target scoped to
-// resourceID, ordered by created_at, regardless of enabled state: the
-// same "list everything, let the caller decide what to show or use"
-// shape ListRulesForResource already establishes, used both by
-// internal/api's CRUD handlers (list including disabled targets, so an
-// operator can see and re-enable a paused one) and by Dispatch below
-// (which filters to enabled targets itself).
+// ListDeployTargetsForResource returns every deploy target for resourceID, enabled or not.
 func (db *DB) ListDeployTargetsForResource(ctx context.Context, resourceID string) ([]DeployTarget, error) {
 	rows, err := db.QueryContext(ctx, deployTargetSelectColumns+` WHERE t.resource_id = ? ORDER BY t.created_at`, resourceID)
 	if err != nil {
@@ -181,17 +158,9 @@ func scanDeployTarget(scan func(dest ...any) error) (*DeployTarget, error) {
 	return &t, nil
 }
 
-// DeployOutcome is what Dispatch sends: one finished deploy attempt's
-// terminal outcome, everything summaryDeployText and deployGenericPayload
-// need to describe it. Deliberately not alerting.Event: see this file's
-// own package-level doc comment for why forcing this through
-// Event/Rule would be the wrong fit.
+// DeployOutcome is one finished deploy attempt's terminal result, as sent by Dispatch.
 type DeployOutcome struct {
-	// AppName is the deploy's service name (store.DeployAttempt.ServiceName),
-	// used both in the message text and to look up which DeployTarget
-	// rows apply (resourceIDForApp(AppName) is computed by the caller,
-	// internal/api and internal/webhook, the same way it already is for
-	// alert rules; this package only ever sees the resulting resource ID).
+	// AppName is the service name; the caller computes the resource ID used for lookup.
 	AppName string
 	// Image is the tag this attempt deployed or tried to deploy
 	// (store.DeployAttempt.Image).
@@ -250,14 +219,7 @@ func summaryDeployText(ev DeployOutcome) string {
 	return msg
 }
 
-// deployGenericPayload is the JSON body a generic-webhook DeployTarget
-// receives: app name, image/tag, success flag, error detail. Not
-// genericPayload (notify.go): the two events describe fundamentally
-// different things (an evaluated alert rule's state vs. one finished
-// deploy attempt), and forcing them into one JSON shape would mean
-// either leaking meaningless firing/threshold/value fields into
-// deploy-outcome payloads or meaningless image/succeeded fields into
-// alert-rule payloads.
+// Separate from genericPayload: alert and deploy fields would otherwise leak into each other's JSON.
 type deployGenericPayload struct {
 	AppName   string `json:"app_name"`
 	Image     string `json:"image"`
@@ -272,6 +234,9 @@ type deployGenericPayload struct {
 // An unknown or empty NotifyKind falls back to the generic JSON shape so the notification still goes out.
 // so a notification still goes out somewhere.
 func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, t DeployTarget, ev DeployOutcome) error {
+	if IsPluginKind(t.NotifyKind) {
+		return ErrPluginChannelUnsupported
+	}
 	if IsMaskedNotifyTarget(t.NotifyURL) {
 		return ErrChannelSecretNotRevealed
 	}
@@ -397,21 +362,12 @@ func sendDeployOutcome(ctx context.Context, client *http.Client, sender email.Se
 		}
 		return nil
 	default: // NotifyGeneric and any unknown/typo'd kind
-		// deployGenericPayload has the identical field names/types/order
-		// as DeployOutcome (only its json struct tags differ, which a
-		// struct conversion ignores), so a direct conversion here is both
-		// valid and, per staticcheck's S1016, preferred over a literal
-		// that just repeats every field name.
+		// Identical field layout, so a direct conversion is valid and preferred over a field-by-field literal.
 		return postJSON(ctx, client, t.NotifyURL, deployGenericPayload(ev))
 	}
 }
 
-// DeployDispatcher sends a deploy-outcome notification to every enabled
-// DeployTarget scoped to one app. Built once in cmd/levelrail/main.go
-// (mirroring how alertingNewNotifier is built once and shared by
-// alerting.Engine) and shared by reference into internal/webhook and
-// internal/api, the three real deploy-trigger call sites this task's own
-// task description names.
+// DeployDispatcher sends deploy-outcome notifications to the enabled targets of one app.
 type DeployDispatcher struct {
 	db         *DB
 	client     *http.Client
@@ -463,10 +419,7 @@ func (d *DeployDispatcher) attachLogs(ctx context.Context, resourceID string, ev
 	ev.LogLines = lines
 }
 
-// NewDeployDispatcher builds a DeployDispatcher. client and logger
-// default if nil; sender may be nil (an email-kind target then fails
-// with a clear "not configured" error), and pushSender may be nil with
-// the identical failure shape for a webpush-kind target.
+// NewDeployDispatcher builds a DeployDispatcher; nil senders fail sends with a 'not configured' error.
 func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, pushSender PushSender, logger *slog.Logger) *DeployDispatcher {
 	if client == nil {
 		client = netguard.NewClient()
@@ -477,27 +430,8 @@ func NewDeployDispatcher(db *DB, client *http.Client, sender email.Sender, pushS
 	return &DeployDispatcher{db: db, client: client, sender: sender, pushSender: pushSender, logger: logger}
 }
 
-// Dispatch sends ev to every enabled DeployTarget scoped to
-// resourceIDForApp(ev.AppName)'s resource ID (resourceID, computed by
-// the caller: this package has no dependency on internal/api's own
-// resourceIDForApp helper, matching how it already has none on that
-// package for alert rules). Must only be called once a deploy attempt
-// has reached a terminal status (succeeded or failed), never for
-// "running": there is nothing sensible to notify about an attempt that
-// is still in progress, and none of the three real call sites
-// (internal/webhook's beginDeployAttempt finish closure,
-// internal/api/deploys.go's recordPlainDeployAttempt,
-// internal/api/builds.go's beginBuildDeployAttempt finish closure) ever
-// call this before FinishDeployAttempt has already persisted a terminal
-// status.
-//
-// A lookup failure or an individual target's send failure is logged,
-// never returned: the deploy attempt this notification describes has
-// already finished and already been persisted by the time Dispatch
-// runs, so a notification failing to send must never be surfaced as if
-// the deploy itself had failed, the identical "must never block the
-// real operation" reasoning Engine.dispatch's own doc comment gives one
-// layer up for alert rules.
+// Dispatch sends ev to every enabled DeployTarget for its app. Call it only once the attempt is terminal.
+// Failures are logged, never returned: the deploy has already finished and must not look failed.
 func (d *DeployDispatcher) Dispatch(ctx context.Context, resourceID string, ev DeployOutcome) {
 	d.attachLogs(ctx, resourceID, &ev)
 	targets, err := d.db.ListDeployTargetsForResource(ctx, resourceID)

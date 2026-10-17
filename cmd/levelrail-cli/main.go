@@ -1,38 +1,6 @@
-// Command levelrail-cli is a thin, scriptable HTTP client for the
-// control plane's versioned API (internal/api, mounted at /api/v1), the
-// first command-line surface this project has (cmd/levelrail is the
-// control plane server, cmd/levelrail-agent is the node agent, neither
-// is meant to be typed at by an operator).
-//
-// It is designed the way this platform's own API is meant to be:
-// "AI-ready" from the start. Concretely, per the
-// competitive research direction this command was built against
-// (flyctl launch, railway up, vercel):
-//
-//   - Every required input has a flag. Supplying all of them skips every
-//     prompt, so a missing required flag is reported as an immediate,
-//     actionable error rather than a hang on stdin: safe to drive from
-//     CI or an agent with no TTY at all. "apps create --interactive" is
-//     the one deliberate exception, a step-by-step wizard for a human
-//     at a real terminal (see apps_create_interactive.go).
-//   - --json switches every command's stdout to a single parseable JSON
-//     value (the result, or {"error": "..."} on failure) and nothing
-//     else; diagnostics always go to stderr, in both modes. --output
-//     json|table|text is the more general form --json is shorthand for
-//     (--json means --output json); --query takes a JMESPath expression
-//     and filters the result before it's printed, in any of the three
-//     formats, e.g. `apps list --query "[?node_id=='node-1'].name"`.
-//   - Exit codes are real and distinct (see output.go's exitOK/
-//     exitUsage/exitValidation/exitNetwork/exitAPIError), not just 0/1,
-//     so a caller can branch on *why* a call failed.
-//
-// No product name is hardcoded anywhere in this command: "prog" (the
-// string every usage message is built from) always comes from
-// filepath.Base(os.Args[0]), matching this project's standing rule that
-// a CLI's command name comes from os.Args[0], not a literal, and
-// APP_API_TOKEN/APP_API_URL follow
-// this project's existing APP_* env-var-prefix convention (see
-// internal/brand's own envPrefix), not a name-specific one.
+// Command levelrail-cli is a scriptable HTTP client for the control plane's /api/v1 API.
+// Every required input has a flag, so CI or an agent with no TTY never hangs on a prompt.
+// With --json, stdout is a single JSON value; diagnostics always go to stderr.
 package main
 
 import (
@@ -49,11 +17,7 @@ func main() {
 	os.Exit(run(prog, os.Args[1:], os.Stdout, os.Stderr, os.LookupEnv))
 }
 
-// run is main's testable core: every command function below returns an
-// int exit code rather than calling os.Exit directly (flag.ContinueOnError
-// throughout, never flag.ExitOnError), so the whole CLI's dispatch and
-// flag-parsing logic can be exercised by table-driven tests without
-// forking a subprocess.
+// run returns an int exit code instead of calling os.Exit, so tests can drive dispatch directly.
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)
@@ -103,6 +67,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runTokens(prog, args[1:], stdout, stderr, lookupEnv)
 	case "mobile":
 		return runMobile(prog, args[1:], stdout, stderr, lookupEnv)
+	case "plugins":
+		return runPlugins(prog, args[1:], stdout, stderr, lookupEnv)
 	case "dns":
 		return runDNS(prog, args[1:], stdout, stderr, lookupEnv)
 	case "domains":
@@ -155,6 +121,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deployments":
 		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
+	case "traffic":
+		return runTraffic(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
 	case "preview":
@@ -201,6 +169,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "fixes":
 		return runFixes(prog, args[1:], stdout, stderr, lookupEnv)
+	case "bench":
+		return runBench(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
@@ -228,7 +198,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "budget":
-		return runUsageBudgets(prog, args[1:], stdout, stderr, lookupEnv)
+		return runBudget(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned":
 		return runVolumesOrphaned(prog, args[1:], stdout, stderr, lookupEnv)
 	case "volumes-orphaned-cleanup":
@@ -338,6 +308,7 @@ Usage:
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
+  %[1]s traffic <app> [--window 5m|1h|24h] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
   %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules
@@ -377,8 +348,10 @@ Usage:
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
-  %[1]s budget [set|delete] [flags]                            alias for usage budgets
+  %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
+  %[1]s budget [set|delete] project|team ID [flags]            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
+  %[1]s bench run --url URL [flags]                           load and failover benchmark: open-loop rate, latency percentiles, ingress overhead
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
@@ -411,6 +384,7 @@ Usage:
   %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s mobile pair|devices [flags]   pair a phone with the mobile app and manage paired phones
+  %[1]s plugins list|show|install|approve|enable|disable|remove|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"

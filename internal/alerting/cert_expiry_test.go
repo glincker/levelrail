@@ -210,10 +210,7 @@ func TestEvaluateCertExpiry_ExpiringSoon_FiresImmediately(t *testing.T) {
 
 func TestEvaluateCertExpiry_ExactlyAtWindowBoundary_DoesNotFireEarly(t *testing.T) {
 	certs := newFakeCertSource()
-	// X.509 (ASN.1 UTCTime) only encodes second precision, so notAfter
-	// must be truncated the same way before comparing, or the round
-	// trip through genCertPEM below loses sub-second precision and
-	// flips a value meant to land exactly on the boundary.
+	// X.509 encodes second precision only, so truncate notAfter before comparing.
 	now := time.Now().Truncate(time.Second)
 	window := 14 * 24 * time.Hour
 	// Exactly at the boundary is still "healthy" (CertExpiryStatus's own
@@ -379,10 +376,7 @@ func TestDeleteCertificateForDomain_NoMatchReturnsFoundFalse(t *testing.T) {
 func TestDeleteCertificateForDomain_MatchesSAN(t *testing.T) {
 	certs := newFakeCertSource()
 	now := time.Now()
-	// seed stores a CommonName-and-single-SAN cert named for domain; a
-	// request for that exact SAN (not just the CommonName) must still
-	// match, the same certVisible (internal/api) convention this
-	// function mirrors for the delete side.
+	// An exact SAN match, not only the CommonName, must still match, as in certVisible.
 	certs.seed(t, "multi.example.com", now.Add(-24*time.Hour), now.Add(60*24*time.Hour))
 
 	found, err := DeleteCertificateForDomain(context.Background(), certs, certs, "MULTI.EXAMPLE.COM")

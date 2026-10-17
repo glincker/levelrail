@@ -43,10 +43,7 @@ func blockingIssue(field, detail string) *migrationIssue {
 	return &i
 }
 
-// mappedApp is one Coolify application's migration result: either a
-// generated service (Blocking false) or a reason it can't be migrated at
-// all (Blocking true, e.g. build_pack: dockercompose), plus every issue
-// found along the way either way.
+// mappedApp is one migrated Coolify app: a generated service, or a blocking reason it cannot be migrated.
 type mappedApp struct {
 	SourceName  string           `json:"source_name"`
 	ServiceName string           `json:"service_name,omitempty"`
@@ -77,13 +74,7 @@ type mappedService struct {
 	Memory    string        `json:"memory,omitempty"`
 	CPU       float64       `json:"cpu,omitempty"`
 	EnvKeys   []string      `json:"env_keys,omitempty"`
-	// EnvLiteral holds a real fetched value for a subset of EnvKeys, set
-	// only when includeSecretValues was requested and Coolify returned
-	// one. Never serialized: a --json migration report must never leak
-	// live secret material, and never written into a generated app.yaml
-	// either (see coolify_yaml.go's buildAppYAML doc comment); it is only
-	// ever consumed by writeSecretsEnvFile or applyMigration's
-	// PUT .../secrets/{key} calls.
+	// EnvLiteral is set only when includeSecretValues was requested; it is never serialized or written to app.yaml.
 	EnvLiteral map[string]string `json:"-"`
 }
 
@@ -96,10 +87,7 @@ type mappedHealth struct {
 
 var invalidNameChars = regexp.MustCompile(`[^a-z0-9-]+`)
 
-// sanitizeServiceName turns a Coolify application name into something
-// internal/spec's own nameLike pattern accepts (lowercase alphanumeric
-// and hyphens, starting with a letter): Coolify names are free text, an
-// app.yaml service key is not.
+// sanitizeServiceName maps free-text Coolify names onto the lowercase, hyphenated form app.yaml accepts.
 func sanitizeServiceName(name string) string {
 	s := invalidNameChars.ReplaceAllString(strings.ToLower(strings.TrimSpace(name)), "-")
 	for strings.Contains(s, "--") {
@@ -273,10 +261,7 @@ func parseDockerMemoryBytes(s string) (int64, error) {
 	return int64(num * multiplier), nil
 }
 
-// formatMemoryMiGi mirrors internal/api/builds.go's own formatMemoryBytes
-// (Gi when it divides evenly, Mi otherwise), except it rounds up to the
-// nearest whole Mi rather than truncating: under-reporting a migrated
-// app's resource limit is a worse failure mode than over-reporting it.
+// Rounds up to whole Mi: under-reporting a migrated app's memory limit is the worse failure.
 func formatMemoryMiGi(bytes int64) string {
 	const mi = 1024 * 1024
 	const gi = mi * 1024
@@ -291,13 +276,7 @@ type numericLimit interface {
 	~int64 | ~float64
 }
 
-// parseNumericLimit implements the shared "blank/zero means unset, parse,
-// review-issue on failure, non-positive means unset" skeleton behind
-// mapMemory, mapCPU, mapDokployMemory, and mapDokployCPU. When
-// issueOnNonPositive is true, a successfully parsed non-positive value is
-// reported the same as a parse failure; when false it is silently treated
-// as unset. The two providers disagree on this, so it stays a parameter
-// rather than a shared assumption.
+// The two providers disagree on whether a non-positive value is a review issue, so this is a parameter.
 func parseNumericLimit[T numericLimit](raw, field string, issues []migrationIssue, parse func(string) (T, error), issueOnNonPositive bool, detail func(raw string, err error) string) (T, []migrationIssue) {
 	var zero T
 	raw = strings.TrimSpace(raw)
@@ -336,10 +315,7 @@ func mapCPU(raw string, issues []migrationIssue) (float64, []migrationIssue) {
 		})
 }
 
-// mapEnv always returns every Coolify env var's key. Real values are
-// only ever populated in the returned map when includeSecretValues is
-// set and Coolify actually returned one; see coolifyEnvVar's own doc
-// comment for why that's not guaranteed even when asked for.
+// Values are populated only when includeSecretValues is set and Coolify returned one.
 func mapEnv(envs []coolifyEnvVar, includeSecretValues bool, issues []migrationIssue) ([]string, map[string]string, []migrationIssue) {
 	if len(envs) == 0 {
 		return nil, nil, issues

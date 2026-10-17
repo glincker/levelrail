@@ -6,11 +6,6 @@ import (
 	"io"
 )
 
-// deployOrRollbackConfig holds the wording that differs between "apps
-// deploy" and "apps rollback", which otherwise send the identical
-// request (client.DeployApp) and share every other line of logic; see
-// runAppsDeploy's own doc comment for why there are two commands for
-// one underlying mechanism at all.
 type deployOrRollbackConfig struct {
 	cmdLabel      string
 	imageHelp     string
@@ -25,35 +20,8 @@ type deployOrRollbackConfig struct {
 	fromSource bool
 }
 
-// runAppsDeploy implements "apps deploy <name> --image <ref>": POST
-// /api/v1/apps/{name}/deploys (internal/api/deploys.go's own
-// handleTriggerDeploy). Points the app's desired image at a new tag and
-// returns as soon as that's saved; the application controller's next
-// reconcile is what actually converges a running container to it, so
-// this command does not wait for that to finish, matching the server's
-// own 202 Accepted response. Use "apps status" to watch the reconcile.
-//
-// There is no dedicated rollback endpoint: handleTriggerDeploy's own doc
-// comment documents rollback as exactly this same mechanism run with an
-// older tag ("pointing desired.Image back at an older tag and
-// reconciling converges to it the same way any other redeploy does"),
-// and there is no image-history endpoint this CLI could use to look up
-// "the previous tag" on the caller's behalf, so a caller who wants to
-// roll back must already know the tag either way. "apps rollback"
-// (apps_rollback.go) exists anyway, as a thin, discoverability-only
-// wrapper around this same command for a caller who wants to type
-// "rollback" and get rollback-framed output, the same distinction the
-// web frontend's DeployAttemptsList.tsx already draws between its
-// deploy form and its "Rollback to this build" button (both call the
-// same mutation). runAppsDeployOrRollback below is their shared
-// implementation, parameterized by only the wording that differs.
-//
-// If name is tagged with a protected environment, the server rejects an
-// unconfirmed deploy with a 409; --confirm skips straight past that,
-// and omitting it falls back to an interactive "yes" prompt on stdin
-// (resolveProtectedEnvironmentConfirmation), the same interactive-vs-
-// scripted shape backups_restore.go's own resolveRestoreConfirmation
-// uses for a destructive database restore.
+// The reconcile converges the container asynchronously, so this returns once the 202 is saved.
+// Rollback is the same call with an older tag, since the server has no separate rollback endpoint.
 func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	return runAppsDeployOrRollback(prog, args, stdout, stderr, lookupEnv, stdin, deployOrRollbackConfig{
 		cmdLabel:      "apps deploy",
@@ -82,6 +50,7 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 		fs.StringVar(&src.commit, "commit", "", "deploy this commit of the connected git source (builds it, no --image needed)")
 		fs.BoolVar(&src.latest, "latest", false, "deploy the newest commit of the connected branch")
 		fs.StringVar(&src.branch, "branch", "", "with --latest: branch to take the newest commit from (default: the connected branch)")
+		fs.BoolVar(&src.fromCache, "from-cache", false, "rebuild from the control plane's source cache without contacting the git host (default commit: the last successful source deploy)")
 	}
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, cfg.usage(prog)) }
 
@@ -101,6 +70,12 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if src.fromCache {
+		if image != "" || src.latest || src.branch != "" {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--from-cache takes only an optional --commit"))
+		}
+		return deployFromCache(prog, client, name, src.commit, extra, stdout, stderr, jsonOut, of)
+	}
 	if src.commit != "" || src.latest {
 		if image != "" || (src.commit != "" && src.latest) {
 			return reportError(stdout, stderr, jsonOut, newValidationError("use exactly one of --image, --commit, or --latest"))
@@ -165,6 +140,8 @@ Flags:
   --confirm                  confirm deploying into a protected environment, skipping the interactive prompt
   --commit string            build and deploy this commit of the app's connected git source
   --latest                   build and deploy the newest commit of the connected branch (with --branch to pick another)
+  --from-cache               rebuild from the source cache without contacting the git host, for a git host outage
+                             (default commit: the last successful source deploy; --commit picks another)
   --pull                     re-resolve the tag against its registry, failing rather than deploying a cached
                              image; without --image, redeploys the app's current tag at its newest digest
   --override-freeze          deploy even though a deploy freeze window is active

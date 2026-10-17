@@ -7,14 +7,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// The dns field was added to the generated descriptor by hand
-// (protoc-gen-go was unavailable in the environment that made this
-// change). internal/agent/convert_test.go's own round-trip test only
-// exercises containerSpecToPB/FromPB at the Go-struct level, which
-// would still pass even if the rawDesc byte string were subtly
-// malformed. This test proves the field survives a real wire-format
-// marshal/unmarshal and a real protojson marshal/unmarshal, the two
-// paths that would actually surface a broken descriptor edit.
+// Exercises real wire and protojson marshaling, which a broken hand-edited descriptor would fail.
 func TestDNSFieldSurvivesRealWireRoundTrip(t *testing.T) {
 	spec := &ContainerSpec{
 		Name:  "test",

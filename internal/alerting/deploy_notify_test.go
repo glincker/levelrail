@@ -471,12 +471,7 @@ func TestSendDeployOutcome_ReceiverErrorStatus_Errors(t *testing.T) {
 	}
 }
 
-// fakeDeployTargetStore-free: DeployDispatcher.Dispatch is exercised
-// against a real *DB (same "real, not mocked" convention this package's
-// own engine_test.go uses for RuleStore) rather than a fake, since the
-// interesting behavior here (loading targets scoped to a resource,
-// skipping disabled ones) is genuinely a database query, not logic worth
-// faking around.
+// Uses a real DB rather than a fake: target loading is a database query, so a fake would test nothing real.
 
 func TestDeployDispatcher_Dispatch_SendsToEnabledTargetsOnly(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
@@ -555,11 +550,7 @@ func TestDeployDispatcher_Dispatch_NoTargets_NoPanic(t *testing.T) {
 	dispatcher.Dispatch(context.Background(), "service:web", DeployOutcome{AppName: "web", Image: "web:1", Succeeded: true})
 }
 
-// TestDeployDispatcher_Dispatch_RecordsDeliveryForChannelAttachedTarget
-// proves a real deploy-outcome send writes delivery history for a
-// channel-attached target, and that a legacy (no ChannelID) target
-// writes none: there is no channel-scoped history to write to for a
-// legacy target.
+// A legacy target without a ChannelID writes no delivery history, since there is no channel to scope it to.
 func TestDeployDispatcher_Dispatch_RecordsDeliveryForChannelAttachedTarget(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
 	ctx := context.Background()

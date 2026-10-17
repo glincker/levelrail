@@ -753,6 +753,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	claimedHosts := make(map[string]string, len(services)+len(staticSites)) // host -> owning service/static site, this pass only
 	canaries := c.activeCanaries(ctx, services)
 	envDomainSets := c.environmentDomainSets(ctx)
+	maintenanceSettings, err = c.applySpendCaps(ctx, services, envDomainSets, settings.FallbackDomainsDisabled, now, maintenanceByDomain, maintenanceSettings, wafByDomain)
+	if err != nil {
+		return notReady("StoreError", err), fmt.Errorf("ingress: apply spend caps: %w", err)
+	}
 	for _, svc := range services {
 		if store.IsCanaryService(svc.Name) {
 			continue

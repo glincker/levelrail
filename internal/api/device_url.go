@@ -15,10 +15,7 @@ const (
 	deviceCLIPath     = "/settings/cli-access"
 )
 
-// deviceVerificationBase returns the scheme and host the CLI's own request
-// reached, so the printed link works through a tunnel, proxy or custom port.
-// APP_DASHBOARD_URL wins when set. X-Forwarded-Host is honoured only from a
-// loopback peer or one listed in APP_INGRESS_TRUSTED_PROXIES.
+// APP_DASHBOARD_URL wins when set; X-Forwarded-Host is trusted only from loopback or listed proxies.
 func deviceVerificationBase(r *http.Request) string {
 	if base := configuredDashboardURL(); base != "" {
 		return base

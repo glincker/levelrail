@@ -6,11 +6,7 @@ import (
 	"io"
 )
 
-// runNetworkSharesTest implements "network-shares test <id>": POST
-// /api/v1/network-shares/{id}/test, dialing the share's host on its
-// protocol's standard port. Reachability only, never an authentication
-// check: a closed port makes any later mount fail regardless of
-// whether a cifs credential is correct.
+// Checks reachability only, not authentication: a closed port fails any mount regardless of credentials.
 func runNetworkSharesTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "network-shares test", "print {\"ok\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, networkSharesTestUsage(prog)) }

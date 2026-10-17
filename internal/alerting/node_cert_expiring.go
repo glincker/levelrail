@@ -50,11 +50,7 @@ func ClassifyNodeCert(n store.Node, warning, critical time.Duration, now time.Ti
 	return NodeCertOK, left
 }
 
-// EvaluateNodeCertExpiring runs one KindNodeCertExpiring rule: it fires
-// while any node's agent certificate is inside the warning window (the
-// rule's ForDuration, else warning) or already expired. Revoked nodes are
-// left out: that was an operator's decision, not a failure. LastValue is
-// the fewest days left across the flagged nodes.
+// EvaluateNodeCertExpiring fires while any node's agent certificate is inside its warning window or expired; revoked nodes are skipped.
 func EvaluateNodeCertExpiring(ctx context.Context, nodes NodeSource, r Rule, warning, critical time.Duration, now time.Time) (Rule, []string, error) {
 	if r.ForDuration > 0 {
 		warning = r.ForDuration

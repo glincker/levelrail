@@ -10,13 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsProjects dispatches "apps projects <verb> [flags]" to one of
-// create/list/get/delete/env-get/env-set, the CLI counterpart of
-// internal/api/projects.go's own routes. A project groups apps and
-// databases (internal/api/projects.go's own doc comment); there is no
-// update route, since a project's name isn't an addressing key and every
-// other field (org_id) has its own dedicated route (see "apps
-// organizations set-project"/"clear-project").
+// No update route: the name is not an addressing key, and org_id has its own routes.
 func runAppsProjects(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsProjectsUsage(prog))
@@ -302,13 +296,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsProjectsRestart implements "apps projects restart <id>": POST
-// /api/v1/projects/{id}/restart (internal/api/project_restart.go's own
-// handleRestartProject), AbilityDeploy-gated, no request body. Forces
-// every app filed under the project to have its running container
-// recreated with no image change, the project-scoped counterpart of
-// "apps restart <name>"; one app failing doesn't stop the rest, see the
-// response's own Failed field.
+// One app failing does not stop the rest; check the response's Failed field.
 func runAppsProjectsRestart(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps projects restart", "print the restart result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsProjectsRestartUsage(prog)) }

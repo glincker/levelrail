@@ -7,11 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runDeployApprovals dispatches "deploy-approvals <verb> [args] [flags]"
-// to one of list/get/approve/reject: the CLI surface for the two-person
-// approval gate a deploy/promote into a protected environment now goes
-// through (internal/api/deploy_approvals.go), replacing the old
-// same-actor confirm flag.
 func runDeployApprovals(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, deployApprovalsUsage(prog))
@@ -274,11 +269,7 @@ func printDeployApprovalHuman(out io.Writer, a deployApprovalResource) {
 	}
 }
 
-// printDeployApprovalPendingHuman is apps_deploy.go/apps_promote.go's own
-// output when a deploy/promote came back as a pending approval instead of
-// applying: distinct from printAppHuman so a caller scripting on --json
-// still gets a normal deployApprovalResource, and a human at a terminal
-// sees plainly that nothing has actually deployed yet.
+// Pending approval is printed plainly so a human does not assume the deploy already happened.
 func printDeployApprovalPendingHuman(out io.Writer, prog string, a deployApprovalResource) {
 	_, _ = fmt.Fprintf(out, "deploy of %q to image %q is pending approval (id %s)\n", a.ServiceName, a.Image, a.ID)
 	_, _ = fmt.Fprintln(out, "the target environment is protected: a different, sufficiently privileged user must approve it before it deploys.")

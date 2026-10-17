@@ -1,10 +1,5 @@
 package agent
 
-// This file: focused tests for convert.go's pure Go<->proto mapping,
-// covering the field this task added (docker.ContainerSpec.DNS <->
-// agentpb.ContainerSpec.Dns) round-trip, table-driven per this
-// codebase's own testing convention.
-
 import (
 	"reflect"
 	"testing"
@@ -102,11 +97,7 @@ func TestResourcesRoundTrip(t *testing.T) {
 	}
 }
 
-// TestContainerSpecFromPB_NilDoesNotPanic matches this file's every
-// other from-PB conversion's own nil-safety contract (see
-// containerStateFromPB, resourcesFromPB): a nil *agentpb.ContainerSpec
-// must produce the zero value, not panic, since a caller can legitimately
-// receive one over the wire (an unset oneof field, for instance).
+// A nil ContainerSpec can arrive over the wire as an unset oneof, so it must yield the zero value.
 func TestContainerSpecFromPB_NilDoesNotPanic(t *testing.T) {
 	got := containerSpecFromPB(nil)
 	if !reflect.DeepEqual(got, docker.ContainerSpec{}) {

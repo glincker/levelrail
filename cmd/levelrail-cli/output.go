@@ -14,10 +14,7 @@ import (
 	"github.com/jmespath/go-jmespath"
 )
 
-// Exit codes. Distinct on purpose (per the CLI's own design brief: "real,
-// distinct exit codes... with the actual error message on stderr either
-// way"), so a script or an AI agent driving this CLI can branch on
-// *why* a call failed without parsing stderr text.
+// Distinct exit codes so scripts and agents can branch on why a call failed without parsing stderr.
 const (
 	exitOK            = 0
 	exitUsage         = 1 // unknown command, missing positional argument, bad flag syntax
@@ -29,10 +26,7 @@ const (
 	exitDeployTimeout = 6 // "apps wait": gave up before the deploy converged either way
 )
 
-// exitCodeForError classifies err into one of the exit codes above.
-// errors.As unwraps through fmt.Errorf("...: %w", ...) wrapping, so a
-// *apiError still classifies correctly however many layers of context
-// client.go's own do() and its callers added on the way up.
+// errors.As unwraps wrapped errors, so classification survives any added context.
 func exitCodeForError(err error) int {
 	var apiErr *apiError
 	if errors.As(err, &apiErr) {
@@ -45,10 +39,7 @@ func exitCodeForError(err error) int {
 	return exitNetwork
 }
 
-// validationError marks a failure as "the request itself is invalid"
-// (a bad flag combination, an app.yaml this CLI can't yet turn into a
-// request), as opposed to a network or API failure: a usage mistake vs.
-// something failing downstream.
+// A usage mistake, not a network or API failure.
 type validationError struct{ msg string }
 
 func (e *validationError) Error() string { return e.msg }
@@ -68,10 +59,7 @@ func writeJSONValue(out io.Writer, v any) error {
 	return err
 }
 
-// writeJSONLine marshals v as one unindented line of JSON followed by a
-// newline (JSON Lines), for a live stream (apps logs --follow) that has
-// no complete result set to marshal as one JSON array the way
-// writeJSONValue's --json mode does for every other command.
+// One unindented line per value, for live streams with no complete result set.
 func writeJSONLine(out io.Writer, v any) error {
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -90,11 +78,7 @@ const (
 	outputText  outputFormat = "text"
 )
 
-// resolveOutputFormat reconciles the old --json boolean with the newer
-// --output flag: --json is shorthand for --output json, kept so scripts
-// written against it before --output existed still work unchanged. An
-// --output that contradicts an explicit --json is a usage error rather
-// than a silent pick between the two.
+// --json is shorthand for --output json; a contradicting pair is a usage error, not a silent pick.
 func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) {
 	switch outputFlag {
 	case "":
@@ -112,10 +96,7 @@ func resolveOutputFormat(jsonOut bool, outputFlag string) (outputFormat, error) 
 	}
 }
 
-// toGenericJSON round-trips v through encoding/json so it becomes the
-// map[string]any/[]any/float64/... shape jmespath.Search and the
-// generic text/table renderers below operate on, rather than v's
-// original Go struct type.
+// Normalizes to generic JSON values so jmespath and the generic renderers see one shape.
 func toGenericJSON(v any) (any, error) {
 	data, err := json.Marshal(v)
 	if err != nil {
@@ -143,13 +124,7 @@ func applyQuery(query string, v any) (any, error) {
 	return result, nil
 }
 
-// renderResult prints data according to format/query. renderTable is
-// only called on the plain default path (table format, no --query), so
-// every existing command's hand-written table printer keeps producing
-// exactly its current output when neither new flag is used; --query and
-// --output text/json instead go through the generic renderers below,
-// which is what lets every command gain both flags from this one
-// function instead of each command implementing its own projection.
+// The default table path stays on each command's own printer; --query and --output use the generic renderers.
 func renderResult(stdout io.Writer, format outputFormat, query string, data any, renderTable func()) error {
 	value := data
 	switch {
@@ -180,11 +155,7 @@ func renderResult(stdout io.Writer, format outputFormat, query string, data any,
 	}
 }
 
-// writeTextValue prints v in --output text's shape: one line per row, tab
-// separated fields, no headers or alignment, meant for further piping
-// through awk/cut. This is AWS CLI's own distinction between --output
-// table (boxed, human-oriented) and --output text (raw, script-oriented):
-// a list prints one row per element, anything else prints as a single row.
+// Raw tab-separated rows for piping through awk or cut; no headers.
 func writeTextValue(out io.Writer, v any) error {
 	rows, ok := v.([]any)
 	if !ok {
@@ -225,10 +196,7 @@ func flattenText(v any, out *[]string) {
 	}
 }
 
-// scalarText renders one JSON scalar (as produced by encoding/json's
-// decode-into-any: string, bool, float64, or nil) the way --output
-// text/table print it: no surrounding quotes, integers without a
-// trailing ".0".
+// Strings unquoted, and whole floats printed without a trailing .0.
 func scalarText(v any) string {
 	switch t := v.(type) {
 	case nil:
@@ -251,12 +219,7 @@ func scalarText(v any) string {
 	}
 }
 
-// writeQueriedTable renders a --query result as a table when it is a
-// uniform, non-empty list of objects (one row per element, columns from
-// the shared keys); any other shape (a scalar, a single object, a
-// ragged list) isn't table-shaped, so it falls back to JSON rather than
-// guessing a layout, matching AWS CLI's own caveat that --output table
-// needs table-shaped data.
+// Falls back to JSON for non-table shapes rather than guessing a layout.
 func writeQueriedTable(out io.Writer, v any) error {
 	rows, ok := v.([]any)
 	if !ok || len(rows) == 0 {
@@ -493,11 +456,7 @@ func formatRecommendationNanoCPUs(nanoCPUs int64) string {
 	return fmt.Sprintf("%.2f cores", float64(nanoCPUs)/1e9)
 }
 
-// formatSecretAge renders an RFC3339 timestamp (SecretKeyResource.UpdatedAt,
-// SharedEnvVarResource.UpdatedAt) as a relative "N days ago" style string
-// for a table column, mirroring web/src/lib/format.ts's formatAge. An
-// empty or unparseable timestamp (a plain shared var never carries one)
-// renders as "-".
+// Empty or unparseable timestamps render as '-'.
 func formatSecretAge(iso string) string {
 	if iso == "" {
 		return "-"
@@ -553,10 +512,7 @@ func printAppNetworkHuman(out io.Writer, n networkResource) {
 	}
 }
 
-// printLogEntriesHuman prints "apps logs" output: one line per entry,
-// oldest first (the order handleQueryLogs' underlying store returns
-// them in), timestamp and stream prefixed so stdout/stderr lines are
-// distinguishable without needing --json.
+// Oldest first, as the store returns them.
 func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	if len(entries) == 0 {
 		_, _ = fmt.Fprintln(out, "no log entries in range")
@@ -567,10 +523,7 @@ func printLogEntriesHuman(out io.Writer, entries []logEntryResource) {
 	}
 }
 
-// printMetricPointsHuman prints "apps metrics"/"databases metrics"/
-// "nodes metrics" output: one row per aggregated bucket, oldest first
-// (the order telemetry.Aggregate returns them in), the same table shape
-// every other list command in this package uses.
+// Rows are oldest first, the order telemetry.Aggregate returns them.
 func printMetricPointsHuman(out io.Writer, metric string, points []metricPointResource) {
 	_, _ = fmt.Fprintf(out, "metric: %s\n", metric)
 	if len(points) == 0 {
@@ -585,10 +538,7 @@ func printMetricPointsHuman(out io.Writer, metric string, points []metricPointRe
 	_ = tw.Flush()
 }
 
-// printSlowQueryEntriesHuman prints "databases slow-queries" output: one
-// row per entry, already sorted by duration descending (the server's own
-// order), truncating a long query to keep the table readable; --output
-// json/--query is how a caller gets the untruncated text.
+// Long queries are truncated here; --output json or --query returns the full text.
 func printSlowQueryEntriesHuman(out io.Writer, entries []slowQueryEntryResource, total int) {
 	if len(entries) == 0 {
 		_, _ = fmt.Fprintln(out, "no slow query entries in range")
@@ -725,10 +675,7 @@ func printDatabasesTable(out io.Writer, dbs []databaseResource) {
 	_ = tw.Flush()
 }
 
-// printSystemStatusHuman prints "status" output. docker is the headline
-// line since an unreachable daemon is the single most fundamental
-// prerequisite this platform has: everything else here degrades
-// gracefully, Docker being down does not.
+// Docker is printed first: it is the one prerequisite everything else depends on.
 func printSystemStatusHuman(out io.Writer, s systemStatusResource) {
 	if s.DockerConnected {
 		_, _ = fmt.Fprintln(out, "docker:              connected")
@@ -765,10 +712,7 @@ func printSystemDoctorHuman(out io.Writer, d systemDoctorResource) {
 	}
 }
 
-// printSystemDoctorFixes prints each check's concrete Fix command below
-// the summary table, the same information system-status.tsx renders as
-// a copyable code block: an operator running the CLI headless has no
-// dashboard to see that block in.
+// Headless operators have no dashboard, so fixes print here too.
 func printSystemDoctorFixes(out io.Writer, checks []doctorCheckResource) {
 	var printedHeader bool
 	for _, c := range checks {

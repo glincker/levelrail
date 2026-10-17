@@ -8,6 +8,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -30,10 +31,8 @@ func manualBuildRequest(name string, existing store.DesiredService, req triggerB
 	}
 }
 
-// defaultImageRepo keeps a rebuild or push deploy in the repo the app's builds already
-// use (a pending placeholder or a commit-sha tag), so earlier tags stay
-// listed as rollback targets. Any other image falls back to the app name,
-// never a registry image's repo.
+// Keeps a rebuild or push deploy in the repo the app's builds already use, so earlier tags stay rollback targets.
+// Other images fall back to the app name.
 func defaultImageRepo(name, current string) string {
 	current, _, _ = strings.Cut(current, "@")
 	i := strings.LastIndex(current, ":")
@@ -59,6 +58,7 @@ type manualBuildRun struct {
 	finish               func(error)
 	setCommit            func(context.Context, string)
 	allowPrivateRepoAuth bool
+	fromCache            bool
 }
 
 // beginManualBuild records the attempt row and wires cancellation into the
@@ -87,7 +87,11 @@ func (rt *Router) runManualBuild(m manualBuildRun) {
 	if m.buildType != spec.BuildImage {
 		rt.emitStep(id, "detecting", "running")
 		token := rt.tokenForRepo(ctx, name, m.repoURL, m.allowPrivateRepoAuth)
-		sourceDir, commit, cleanup, err := rt.fetch(ctx, m.repoURL, m.ref, token)
+		fetchCtx := ctx
+		if m.fromCache {
+			fetchCtx = sourcecache.WithOffline(ctx)
+		}
+		sourceDir, commit, cleanup, err := rt.fetch(fetchCtx, m.repoURL, m.ref, token)
 		if err != nil {
 			rt.logger.Error("api: trigger build: fetch source failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("repo_url", redactURLCredentials(m.repoURL)), slog.String("ref", m.ref))
 			rt.emitStep(id, "detecting", "failed")

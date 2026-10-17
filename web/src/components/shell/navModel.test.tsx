@@ -68,6 +68,7 @@ const EXPECTED_APP = [
   'log-pipeline',
   'requests',
   'traces',
+  'traffic',
   'errors',
   'alerts',
   'exec',

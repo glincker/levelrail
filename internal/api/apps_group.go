@@ -9,28 +9,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// appGroupResource is GET /api/v1/apps/{name}/group's wire shape: stage
-// 1 of multi-service apps (migrations/0039_apps.sql), a service plus
-// its sibling services under the same store.App, and one rollup status
-// across all of them. A new, additive endpoint rather than a change to
-// appResource/GET /api/v1/apps/{name}: that endpoint's existing callers
-// depend on its single-service shape unchanged.
+// appGroupResource is the GET /api/v1/apps/{name}/group response: a service, its siblings, and one rollup status.
 type appGroupResource struct {
 	AppID    string           `json:"app_id,omitempty"`
 	Services []appResource    `json:"services"`
 	Status   appStatusSummary `json:"status"`
 }
 
-// handleGetAppGroup handles GET /api/v1/apps/{name}/group. name is
-// ordinarily a member service's own name (the only identifier that
-// existed before stage 2 added the "appName-serviceKey" convention), but
-// every multi-service-creating endpoint (handleDeployCompose,
-// handleDeploySpec) hands the caller back the app's own name instead
-// (composeDeployResponse.AppID, deploySpecResponse.AppID), so a caller
-// that naturally tries that name here first falls back to an app lookup
-// rather than a misleading 404: see appGroupByName. A service with no
-// AppID (created after migrations/0039_apps.sql, before any stage-1+
-// caller assigns one) is its own one-service group, not a 404.
+// handleGetAppGroup also accepts an app name, since multi-service deploys return that instead of a service name.
 func (rt *Router) handleGetAppGroup(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -56,12 +42,7 @@ func (rt *Router) handleGetAppGroup(w http.ResponseWriter, r *http.Request) {
 	rt.writeAppGroup(w, r, svc.AppID, services)
 }
 
-// appGroupByName is handleGetAppGroup's fallback once name doesn't match
-// any single service: name might still be the store.App itself (App.ID
-// == App.Name, the convention every multi-service deploy path already
-// uses), in which case its member services are exactly what a caller
-// asking for "the group named X" actually wants. A name that matches
-// neither a service nor an app is a genuine 404 either way.
+// appGroupByName resolves a group by app name when no single service matches.
 func (rt *Router) appGroupByName(w http.ResponseWriter, r *http.Request, name string) {
 	app, err := rt.appGroups.GetAppByName(r.Context(), name)
 	if errors.Is(err, store.ErrAppNotFound) {

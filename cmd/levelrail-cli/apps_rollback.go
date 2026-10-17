@@ -21,11 +21,8 @@ func runAppsRollback(prog string, args []string, stdout, stderr io.Writer, looku
 	})
 }
 
-// checkRollbackTarget rejects image when it shares the app's image repo but
-// is neither a locally present tag nor a tag from the app's deploy history.
-// A history tag is resolved to its recorded digest so the request names the
-// exact image. A different repo, or an empty or unreadable tag list (a
-// remote node, a registry image), is let through unchanged.
+// A history tag resolves to its recorded digest so the request names the exact image.
+// Other repos, and unreadable tag lists (remote or registry images), pass through unchanged.
 func checkRollbackTarget(ctx context.Context, client *Client, prog, name, image string) (string, error) {
 	images, err := client.ListAppImages(ctx, name)
 	if err != nil || len(images) == 0 {

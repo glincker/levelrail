@@ -75,7 +75,7 @@ func NewLiveBuildEnv(t *testing.T) LiveBuildEnv {
 		}
 	})
 
-	return LiveBuildEnv{DockerCli: dockerCli, BuildClient: buildClient, Runtime: runtime}
+	return LiveBuildEnv{DockerCli: dockerCli, BuildClient: buildClient, Runtime: withPullRetry(t, runtime)}
 }
 
 // ReconcileUntilAppReady calls ctrl.Reconcile repeatedly until it

@@ -2,6 +2,15 @@
 
 Status: Proposed (direction approved by the owner 2026-10-17; contract details open)
 
+Decided for slice 1 (notification channels, behind the `plugins` experimental flag):
+
+- Transport: gRPC over a unix socket in a host directory bind-mounted into the plugin container. No network exposure. Remote plugins over the mesh stay open.
+- Packaging: an OCI image reference pinned by digest, plus a `plugin.yaml` manifest shipped alongside it at install. Archive packages and a manifest in an image label are later.
+- Signing: ed25519 detached signature over the manifest bytes and the image digest, verified against an operator-managed trust list kept in the database. The default list is empty, so nothing third party loads until the operator adds a key.
+- Abilities: only `read` and `read:sensitive` are grantable. Approval is always an explicit operator step, never implied by install, and is re-checked on every call. Plugins get no API token in this slice.
+- Network: a plugin with no declared outbound hosts runs with no network. Declared hosts join a dedicated bridge network, shown at approval but not yet enforced per host.
+- Governance, signing roots, marketplace and remote placement stay open.
+
 Date: 2026-10-17
 
 ## Context

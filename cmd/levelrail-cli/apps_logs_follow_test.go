@@ -8,12 +8,7 @@ import (
 	"testing"
 )
 
-// sseLogTestServer starts a server that answers any request on
-// .../logs/stream with rawBody (already SSE-framed), records the request
-// path, and closes the connection once rawBody is flushed: the same
-// finite-then-EOF shape internal/apiclient's own sseServer test helper
-// uses, letting runAppsLogsFollow's loop finish deterministically without
-// depending on a real Ctrl+C.
+// Serves a finite SSE body then EOF, so the follow loop ends without a real Ctrl+C.
 func sseLogTestServer(t *testing.T, gotPath *string, rawBody string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

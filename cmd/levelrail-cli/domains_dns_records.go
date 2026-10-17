@@ -14,11 +14,7 @@ import (
 // per-domain resource.
 const domainsDNSJSONUsage = "print the dns records result as JSON to stdout and nothing else"
 
-// runDomainsDNS dispatches "domains dns <verb> [flags]" to one of
-// list/add/remove: editing a record in place is a dashboard-only
-// action (DomainDnsRecordsControl), since an edit is really a delete
-// plus an add under the hood and the CLI exposes those two primitives
-// directly instead of a third verb that just composes them.
+// Editing a record is dashboard-only: it is a delete plus an add, which these verbs already expose.
 func runDomainsDNS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, domainsDNSUsage(prog))

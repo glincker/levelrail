@@ -17,13 +17,7 @@ import (
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
-// TestMain shrinks notifyRetryBaseDelay to keep every test in this
-// package fast: without this, TestNotify_ReceiverErrorStatus_Errors and
-// the retry-specific tests below would each take upward of a second and
-// a half waiting out postJSONWithAuth's real backoff between attempts.
-// It also opts into internal addresses, since every receiver here is an
-// httptest server on loopback; TestNewNotifier_DefaultClient_BlocksInternal
-// turns that back off.
+// TestMain shortens retry backoff and allows loopback receivers so the package's tests stay fast.
 func TestMain(m *testing.M) {
 	notifyRetryBaseDelay = time.Millisecond
 	if err := os.Setenv(netguard.AllowPrivateEnv, "true"); err != nil {
@@ -531,10 +525,7 @@ func TestNewNotifier_Email_NoDestinationAddress_Errors(t *testing.T) {
 }
 
 func TestNewNotifier_Email_UnreachableServer_ErrorPropagates(t *testing.T) {
-	// Not a real send: no SMTP fixture here, this only proves
-	// emailNotifier actually calls through to email.Sender.Send and
-	// wraps whatever it returns, rather than silently swallowing a
-	// connection failure.
+	// Proves emailNotifier wraps Send's error instead of swallowing a connection failure.
 	sender := mustSMTPSender(t, email.SMTPConfig{Addr: "127.0.0.1:1", Host: "127.0.0.1", From: "alerts@example.com"})
 	r := Rule{ID: "r1", Name: "high cpu", NotifyURL: "ops@example.com", NotifyKind: NotifyEmail}
 	notifier := NewNotifier(nil, sender, nil, r)
@@ -548,11 +539,7 @@ func TestNewNotifier_Email_UnreachableServer_ErrorPropagates(t *testing.T) {
 	}
 }
 
-// fakeEmailSender is an email.Sender test double whose Send behavior is
-// driven by errs: attempt N (1-indexed) returns errs[N-1], or nil once N
-// exceeds len(errs), letting a test script "fails twice, then succeeds"
-// the same way TestNotify_TransientServerError_RetriesThenSucceeds
-// scripts an httptest.Server's response sequence for the HTTP retry path.
+// fakeEmailSender.Send returns errs[N-1] on attempt N, then nil, to script fail-then-succeed sequences.
 type fakeEmailSender struct {
 	errs     []error
 	attempts atomic.Int32
@@ -1128,10 +1115,7 @@ func TestNewNotifier_AllValidKinds_Recognized(t *testing.T) {
 	}
 }
 
-// fakePushSender is a minimal alerting.PushSender for tests: it records
-// every call and can be told to fail, the same "narrow fake over a
-// consumer-defined interface" shape mustSMTPSender's real email.Sender
-// doesn't need but a non-HTTP channel's own tests otherwise would.
+// fakePushSender records each call and can be told to fail.
 type fakePushSender struct {
 	err    error
 	title  string

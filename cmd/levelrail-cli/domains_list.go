@@ -7,11 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runDomainsList implements "domains list": GET /api/v1/domains
-// (internal/api/ingress_settings.go's own handleListDomains).
-// AbilityRead server-side, so the normal bearer-token
-// --token/APP_API_TOKEN/credentials-file resolution every other
-// non-tokens/auth command in this CLI uses applies here unchanged.
 func runDomainsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains list", "print domains as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsListUsage(prog)) }

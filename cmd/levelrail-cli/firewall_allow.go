@@ -12,10 +12,7 @@ func runFirewallAllow(prog string, args []string, stdout, stderr io.Writer, look
 	return runFirewallCreate(prog, "allow", "allow", args, stdout, stderr, lookupEnv)
 }
 
-// runFirewallDeny implements "firewall deny": POST /api/v1/firewall-rules
-// with action=deny. A deny rule, or an allow rule scoped to a source
-// CIDR, targeting a port this control plane itself needs is refused by
-// the server with a clear error, same as the dashboard.
+// The server refuses deny rules that would block a port the control plane itself needs.
 func runFirewallDeny(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runFirewallCreate(prog, "deny", "deny", args, stdout, stderr, lookupEnv)
 }

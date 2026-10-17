@@ -5,10 +5,7 @@ import (
 	"strings"
 )
 
-// zshCompletionScript renders a zsh completion script for prog. It uses
-// the compsys "words"/"CURRENT" state directly rather than the
-// _arguments state-machine helpers, walking the same flattened
-// cliCommandTree renderChildrenFunc already emits for bash.
+// Uses the compsys words/CURRENT state directly, not the _arguments helpers.
 func zshCompletionScript(prog string) string {
 	ident := sanitizeIdent(prog)
 	var b strings.Builder

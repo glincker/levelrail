@@ -90,7 +90,7 @@ func (rt *Router) handleStartMove(kind string) http.HandlerFunc {
 		}
 		target := req.NodeID
 		if target == "" {
-			target, err = rt.spreadTarget(r.Context(), kind, name, from)
+			target, err = rt.spreadTarget(r.Context(), kind, name, from, placementTriggerMove)
 		} else {
 			err = rt.checkPlacement(r.Context(), kind, name, target)
 		}
@@ -121,6 +121,9 @@ func (rt *Router) handleStartMove(kind string) http.HandlerFunc {
 		case err != nil:
 			rt.internalError(w, "api: start move failed", err, slog.String("name", name))
 			return
+		}
+		if req.NodeID != "" {
+			rt.recordPinned(r.Context(), kind, name, req.NodeID, placementTriggerMove)
 		}
 		rt.logger.Info("api: node move started", slog.String("move_id", m.ID), slog.String("kind", kind), slog.String("name", name),
 			slog.String("from_node_id", from), slog.String("to_node_id", target))

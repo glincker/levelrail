@@ -9,11 +9,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsWebhookDeliveries dispatches "apps webhook-deliveries <verb>
-// [flags]" to one of list/replay, the CLI counterpart of
-// internal/api/webhook_deliveries.go's own routes: real visibility into
-// what a git provider actually sent to this app's webhook URL, and a
-// manual replay of a stored delivery once whatever was wrong is fixed.
 func runAppsWebhookDeliveries(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsWebhookDeliveriesUsage(prog))

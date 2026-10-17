@@ -7,12 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runSettingsOAuth dispatches "settings oauth <verb> [flags]" to one of
-// list/set, mirroring runRegistry's own get/set-style dispatch shape for
-// the API's other platform-singleton-ish settings resource.
-// GET /api/v1/settings/oauth (internal/api/oauth_settings.go's
-// handleListOAuthSettings) always returns every provider at once, so
-// "list" reads as an array; PUT is per provider, so "set" takes one.
 func runSettingsOAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, settingsOAuthUsage(prog))

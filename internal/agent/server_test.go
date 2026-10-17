@@ -34,12 +34,7 @@ type fakeEnrollStore struct {
 
 	updateStatusMu []store.NodeStatus // records every UpdateNodeStatus call, in order
 
-	// touchMu guards lastTouchedID and touchCount: unlike every other
-	// field here, TouchNodeLastSeen is called both synchronously
-	// (Session's own initial touch) and from Server.heartbeatLoop's own
-	// background goroutine, driven by mux.go's onHeartbeat callback
-	// firing every time a real Heartbeat frame arrives, so concurrent
-	// access is real here, not theoretical.
+	// touchMu guards lastTouchedID and touchCount; TouchNodeLastSeen runs from both Session and the heartbeat goroutine.
 	touchMu       sync.Mutex
 	lastTouchedID string
 	touchCount    int
@@ -240,10 +235,7 @@ func TestServer_Enroll_MissingFields(t *testing.T) {
 	}
 }
 
-// fakeAgentSessionServer is a hand-written fake for the full
-// agentpb.AgentService_SessionServer interface (sessionStream's two
-// methods plus grpc.ServerStream's), so Session can be tested without a
-// real network connection.
+// Hand-written fake of the Session stream, so Session runs without a network connection.
 type fakeAgentSessionServer struct {
 	ctx     context.Context
 	recv    chan *agentpb.AgentMessage
@@ -269,10 +261,7 @@ func (f *fakeAgentSessionServer) SetTrailer(metadata.MD)       {}
 func (f *fakeAgentSessionServer) SendMsg(any) error            { return nil }
 func (f *fakeAgentSessionServer) RecvMsg(any) error            { return nil }
 
-// ctxWithPeerCert builds a context carrying gRPC peer info for a real
-// leaf certificate, the same shape a real mTLS-authenticated
-// connection's stream.Context() carries, so Session's peerIdentity
-// extraction is exercised for real rather than mocked at that boundary.
+// Attaches real peer info so peerIdentity extraction runs for real instead of being mocked.
 func ctxWithPeerCert(certPEM []byte) context.Context {
 	block, _ := pem.Decode(certPEM)
 	cert, err := x509.ParseCertificate(block.Bytes)
@@ -352,11 +341,7 @@ func TestServer_Session_Success(t *testing.T) {
 	}
 }
 
-// TestServer_NotifyShutdown_SendsGoAway is the regression test for the
-// remaining gap docs-local/upgrade-downtime-findings-2026-10-04.md
-// flagged: NotifyShutdown must reach every live session's stream so an
-// agent can close its own end instead of waiting out the control
-// plane's bounded GracefulStop timeout.
+// TestServer_NotifyShutdown_SendsGoAway checks NotifyShutdown reaches every live session, so agents close early.
 func TestServer_NotifyShutdown_SendsGoAway(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
@@ -421,13 +406,7 @@ func heartbeatFrame() *agentpb.AgentMessage {
 	return &agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Heartbeat{Heartbeat: &agentpb.Heartbeat{}}}
 }
 
-// TestServer_Session_HeartbeatFrame_TouchesLastSeen is the real point of
-// this fix: TouchNodeLastSeen must be driven by actual Heartbeat frames
-// arriving on the stream, not by a server-side timer that fires for as
-// long as the stream object merely exists. Without this, a frozen agent
-// process (SIGSTOP'd, deadlocked) whose TCP/TLS connection is still
-// technically open would keep looking healthy forever, exactly the bug
-// this test guards against.
+// TestServer_Session_HeartbeatFrame_TouchesLastSeen checks last_seen_at advances only on real Heartbeat frames.
 func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
@@ -458,15 +437,7 @@ func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 	// before any frame is ever read, so wait for exactly that first.
 	waitForTouchCount(t, st, 1)
 
-	// Sending three real Heartbeat frames, one at a time, each waited out
-	// before the next is sent (heartbeatLoop's own delivery channel
-	// deliberately coalesces a heartbeat signal that arrives while one is
-	// already pending, the same non-blocking backpressure discipline
-	// deliverEvent's own doc comment documents, so sending them
-	// back-to-back without waiting could legitimately collapse into
-	// fewer touches), must produce three more touches on top of the
-	// connect-time one, proving last_seen_at is actually keyed off the
-	// frames arriving, not off a timer.
+	// Frames are sent one at a time because heartbeat delivery coalesces back-to-back signals.
 	for i := 1; i <= 3; i++ {
 		stream.recv <- heartbeatFrame()
 		waitForTouchCount(t, st, 1+i)
@@ -490,17 +461,7 @@ func TestServer_Session_HeartbeatFrame_TouchesLastSeen(t *testing.T) {
 	}
 }
 
-// TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance is the
-// direct regression test for the hard-disconnect-detection bug: an open
-// stream that never sends another Heartbeat frame after the initial
-// connect (a frozen agent process, or one that hung before its first
-// heartbeat tick) must not have its last_seen_at advanced just because
-// the stream object is still allocated and no Recv error has fired yet.
-// Before this fix, Server ran its own ticker regardless of anything the
-// agent actually sent, which is exactly what let a SIGSTOP'd agent
-// report healthy for minutes: internal/reconcile/nodehealth's staleness
-// timeout can only do its job if last_seen_at genuinely stops advancing
-// when the agent stops responding.
+// TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance checks a silent open stream does not advance last_seen_at.
 func TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance(t *testing.T) {
 	ca, _ := GenerateCA()
 	st := newFakeEnrollStore()
@@ -529,11 +490,7 @@ func TestServer_Session_NoHeartbeatFrames_LastSeenDoesNotAdvance(t *testing.T) {
 
 	waitForTouchCount(t, st, 1)
 
-	// Simulate a frozen agent: the stream stays open (nothing closes
-	// stream.recv, no error), but the agent side never sends another
-	// frame. touchCount must stay at the connect-time value the whole
-	// time this test waits, proving there is no hidden server-side timer
-	// still advancing last_seen_at on its own.
+	// touchCount must not move here, proving there is no hidden server-side timer.
 	time.Sleep(150 * time.Millisecond)
 	if _, count := st.touchStats(); count != 1 {
 		t.Errorf("touchCount = %d after a silent-but-open stream, want 1 (no touch beyond connect-time without a real Heartbeat frame)", count)

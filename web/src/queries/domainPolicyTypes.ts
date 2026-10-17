@@ -1,6 +1,6 @@
 // Wire types mirroring internal/trafficpolicy and internal/api/domain_policies*.go.
 
-export type PolicyKind = 'headers' | 'forwarders' | 'geo' | 'cache'
+export type PolicyKind = 'headers' | 'forwarders' | 'geo' | 'cache' | 'shield'
 
 export interface HeaderRule {
   side: 'request' | 'response'
@@ -96,11 +96,44 @@ export interface RedirectSettings {
   lowercase_host?: boolean
 }
 
+export interface ShieldSpec {
+  enabled: boolean
+  rate_per_minute?: number
+  burst?: number
+  max_concurrent?: number
+  max_body_bytes?: number
+  block_bots?: boolean
+  bot_agents?: string[]
+  allow?: string[]
+  retry_after_seconds?: number
+  tarpit_ms?: number
+  under_attack_until?: string
+}
+
+export interface ShieldLimits {
+  max_bot_agents: number
+  max_retry_after_seconds: number
+  default_retry_after_seconds: number
+  tarpit_max_ms: number
+  attack_rate_per_minute: number
+  attack_burst: number
+  attack_max_concurrent: number
+  attack_default_minutes: number
+  attack_max_minutes: number
+  max_tracked_ips: number
+}
+
+export interface ShieldBotList {
+  agents: string[]
+  custom: boolean
+}
+
 export interface SpecByKind {
   headers: HeadersSpec
   forwarders: ForwardersSpec
   geo: GeoSpec | null
   cache: CacheSpec
+  shield: ShieldSpec
 }
 
 export interface PolicyDraft {
@@ -109,6 +142,7 @@ export interface PolicyDraft {
   geo?: GeoSpec
   cache?: CacheSpec
   redirects?: RedirectSettings
+  shield?: ShieldSpec
 }
 
 export interface FieldError {
@@ -176,6 +210,7 @@ export interface PolicyLimits {
   cache_max_object_bytes: number
   cache_total_bytes: number
   forward_timeout_seconds: number
+  shield: ShieldLimits
 }
 
 export interface DomainPolicies {

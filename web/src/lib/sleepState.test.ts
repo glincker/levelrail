@@ -24,6 +24,8 @@ const base: AppSleep = {
   activity: { open_connections: 0, idle_for_seconds: 0 },
   cold_start_ms_p50: null,
   estimated_memory_freed_bytes: null,
+  wake_timing: { samples: 0 },
+  idle_limits: { min_minutes: 5, max_minutes: 10080, default_minutes: 30 },
 }
 const issue = { code: 'pinned_port', title: 't', detail: 'd' }
 
@@ -67,6 +69,7 @@ describe('sleepCountdown', () => {
 })
 
 describe('isValidIdleMinutes', () => {
+  const limits = { min_minutes: 5, max_minutes: 10080, default_minutes: 30 }
   it.each([
     [4, false],
     [5, true],
@@ -74,6 +77,6 @@ describe('isValidIdleMinutes', () => {
     [10081, false],
     [7.5, false],
   ])('%s', (v, want) => {
-    expect(isValidIdleMinutes(v)).toBe(want)
+    expect(isValidIdleMinutes(v, limits)).toBe(want)
   })
 })

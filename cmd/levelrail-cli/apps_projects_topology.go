@@ -7,12 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runAppsProjectsTopology implements "apps projects topology <id>": GET
-// /api/v1/projects/{id}/topology, a diagram-ready graph of one
-// project's apps, databases, and shared volumes, derived from already
-// stored desired state. Every edge traces to one real stored field
-// (database binding, depends_on, volume attachment, egress allow); see
-// docs/service-topology-graph.md for what each edge kind means.
+// Every edge traces to a stored field; docs/service-topology-graph.md defines the edge kinds.
 func runAppsProjectsTopology(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps projects topology", "print the topology graph as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsProjectsTopologyUsage(prog)) }

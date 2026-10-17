@@ -145,11 +145,7 @@ func TestHandleDeleteAppStream(t *testing.T) {
 	}
 }
 
-// TestHandleDeleteAppStream_WrongApp404s confirms a stream ID that
-// exists but belongs to a different app is refused as not found, not
-// silently deleted: the {name} path segment scopes the delete, the same
-// per-resource ownership check AbilityWriteSensitive's own appResourceFromPath
-// is meant to enforce.
+// A stream ID belonging to another app must 404, not delete: the {name} segment scopes the delete.
 func TestHandleDeleteAppStream_WrongApp404s(t *testing.T) {
 	rt, _, cookie := newTimelineRouter(t)
 

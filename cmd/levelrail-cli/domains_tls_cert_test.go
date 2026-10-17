@@ -11,11 +11,7 @@ import (
 	"testing"
 )
 
-// writeTLSCertFixtureFiles writes fake cert/key PEM text to two files
-// under t.TempDir() and returns their paths, the fixture every
-// --cert-file/--key-file test below needs: this command reads PEM from
-// disk, never accepts it as a command-line argument (see
-// domains_tls_cert.go's own doc comment on why).
+// Fixture PEM goes in files, never on the command line: the command only reads PEM from disk.
 func writeTLSCertFixtureFiles(t *testing.T) (certFile, keyFile string) {
 	t.Helper()
 	dir := t.TempDir()

@@ -23,10 +23,7 @@ type upgradeApplyOptions struct {
 	watch  bool
 }
 
-// runUpgradeApply implements "upgrade --apply": show the breaking changes
-// between the running version and the target, refuse until the flagged ones
-// are acknowledged, then ask the control plane to run the host upgrade and
-// follow the attempt to its outcome.
+// Refuses to upgrade until the flagged breaking changes are acknowledged.
 func runUpgradeApply(ctx context.Context, client *Client, opts upgradeApplyOptions, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
 	plan, err := client.GetSelfUpgradePlan(ctx, opts.target)
 	if err != nil {

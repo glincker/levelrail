@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runAppsResourceRecommendation implements "apps resource-recommendation
-// <name>": GET /api/v1/apps/{name}/resource-recommendation
-// (internal/api/resource_recommendation.go's own
-// handleAppResourceRecommendation), a read-only, deterministic memory/CPU
-// right-sizing suggestion derived from the app's own historical usage.
-// Never writes anything and never applies a suggestion; the same
-// read-and-suggest layer runAppsDiagnose already establishes.
+// Read-only: returns a suggestion and never applies it.
 func runAppsResourceRecommendation(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps resource-recommendation", "print the recommendation as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

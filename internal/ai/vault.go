@@ -237,10 +237,7 @@ func saveErrorFor(pe *ProviderError) *SaveError {
 	return &SaveError{Code: code, Message: msg, Fix: fix}
 }
 
-// Set validates and stores a provider's key, base URL and default model.
-// privateAllowed says the caller is root and may point an openai_compat
-// provider at a private or loopback host. A key that fails validation is
-// not stored.
+// Set validates and stores a provider's key, base URL and default model; an invalid key is never stored.
 func (v *Vault) Set(ctx context.Context, id string, in SetInput, privateAllowed bool) (ProviderView, SetResult, error) {
 	info, ok := LookupProvider(id)
 	if !ok {

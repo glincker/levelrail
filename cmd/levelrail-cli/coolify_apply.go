@@ -8,20 +8,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// applyMigration creates each non-blocking app in report.Apps directly
-// on the target Levelrail instance via client.CreateApp (POST
-// /api/v1/apps), the same call apps_create.go's own existing-image path
-// makes, reusing pendingImageTag for the same reason it does there: no
-// build has run yet, but validateAppResource requires a non-empty image
-// at creation time.
-//
-// Secret env vars are never sent as part of the create body:
-// appResource has no field for them at all (internal/api/apps.go's own
-// appResource, confirmed no SecretEnv/secret_env field), the same gap
-// apps_create.go's own planFromFile already documents and works around
-// by creating without secrets and setting each one afterward via
-// PUT .../secrets/{key}. This mirrors that exact, already-established
-// workaround rather than inventing a new one.
+// Secrets cannot go in the create body (appResource has no field for them), so they are set afterward.
+// validateAppResource needs a non-empty image at create time, so pendingImageTag stands in before any build.
 func applyMigration(ctx context.Context, client *Client, report *migrationReport) {
 	for i := range report.Apps {
 		a := &report.Apps[i]

@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runBackupsTrigger implements "backups trigger <database> --target
-// ID": POST /api/v1/databases/{name}/backups (internal/api/backups.go's
-// own handleTriggerBackup), AbilityWriteSensitive-gated. Asynchronous,
-// same as the server-side handler's own doc comment: this returns as
-// soon as the attempt is recorded and under way (202 Accepted
-// server-side), not once the real dump and upload actually finish; use
-// "backups list <database>" to see whether it did.
+// Asynchronous: returns once the attempt is recorded, so check backups list for the outcome.
 func runBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
 	var targetID string

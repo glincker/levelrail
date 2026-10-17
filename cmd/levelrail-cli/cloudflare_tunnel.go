@@ -11,12 +11,7 @@ import (
 // each returns the same settings shape.
 const cloudflareTunnelJSONUsage = "print the settings as JSON to stdout and nothing else"
 
-// runCloudflareTunnel dispatches "cloudflare-tunnel <verb> [flags]" to
-// one of get/set/disconnect, mirroring runDomainsCloudflareDNS's own
-// get/set/clear dispatch shape for the API's other settings-scoped
-// Cloudflare resource. This one is not nested under "domains": it runs
-// the cloudflared container that exposes the whole control plane, not a
-// per-domain DNS-01 credential.
+// Not under domains: this manages the cloudflared container for the whole control plane, not per-domain credentials.
 func runCloudflareTunnel(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, cloudflareTunnelUsage(prog))

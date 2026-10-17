@@ -1,15 +1,7 @@
 package agent
 
-// This file: pure conversions between internal/network's Go types and
-// internal/agent/agentpb's generated mesh proto types, the same
-// field-for-field mirror convert.go already establishes for
-// internal/docker. Kept in its own file rather than appended to
-// convert.go: network.Key and netip.Prefix round-trip through text
-// (base64, CIDR string) rather than convert.go's largely numeric/struct
-// fields, different enough conversion shape to read better on its own,
-// and this file is where a reviewer checking "does a private key ever
-// cross this boundary" looks first, which convert.go's much longer
-// docker-shape list would bury it in.
+// Pure conversions between internal/network and agentpb mesh types.
+// Kept in its own file so the private-key boundary is easy to review.
 
 import (
 	"fmt"
@@ -21,11 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
-// deviceConfigToPB converts cfg for the wire. cfg.PrivateKey is never
-// read here: ApplyMeshRequest's own DeviceConfig message has no field to
-// put it in (see that message's doc comment), so a caller that
-// accidentally populated PrivateKey before calling this has it silently
-// and structurally dropped, not merely conventionally omitted.
+// PrivateKey is never read: the DeviceConfig message has no field for it, so it is structurally dropped.
 func deviceConfigToPB(cfg network.DeviceConfig) *agentpb.DeviceConfig {
 	out := &agentpb.DeviceConfig{
 		NodeId:     cfg.NodeID,
@@ -41,13 +29,7 @@ func deviceConfigToPB(cfg network.DeviceConfig) *agentpb.DeviceConfig {
 	return out
 }
 
-// deviceConfigFromPB converts a wire DeviceConfig back to network's own
-// type. Malformed address/prefix text (a peer past a protocol version
-// mismatch, or a bug on the sender) is skipped rather than failing the
-// whole config: one bad peer entry must not make every other, valid peer
-// in the same config unreachable, the same "one node's problem, never the
-// fleet's" principle Coordinator's own NodeResult.Err doc comment states
-// for a different failure mode at a different layer.
+// Malformed peer addresses are skipped, not fatal, so one bad peer cannot make the whole config unreachable.
 func deviceConfigFromPB(cfg *agentpb.DeviceConfig) (network.DeviceConfig, error) {
 	if cfg == nil {
 		return network.DeviceConfig{}, fmt.Errorf("network: apply mesh: request carried no config")

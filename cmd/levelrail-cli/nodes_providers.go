@@ -12,11 +12,7 @@ import (
 	"golang.org/x/term"
 )
 
-// runNodesProviders dispatches "nodes providers <verb> [flags]" to one
-// of list/set-credential: internal/api/node_provision.go's cloud
-// provider credential routes, the two-level shape "nodes <resource>
-// <verb>" iam.go's own doc comment already establishes for "iam
-// policies".
+// Dispatches list/set-credential; the two-level verb shape matches iam policies.
 func runNodesProviders(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, nodesProvidersUsage(prog))
@@ -268,25 +264,15 @@ var (
 	readNodeProviderSecret = defaultReadNodeProviderSecret
 )
 
-// nodeProviderStdinReader is shared across both defaultReadNodeProviderToken
-// and defaultReadNodeProviderSecret so a piped, non-terminal stdin can carry
-// two lines (access key id, then secret access key) without the second read
-// losing bytes the first read had already buffered from the pipe.
+// Shared so piped stdin can carry two lines without the second read losing buffered bytes.
 var nodeProviderStdinReader = bufio.NewReader(os.Stdin)
 
-// defaultReadNodeProviderToken resolves the token when --provider-token
-// was omitted: a piped, non-terminal stdin is read directly (one line,
-// trimmed, the same "docker login --password-stdin" shape), a real
-// terminal gets a no-echo prompt instead so the token is never displayed
-// either way.
+// Reads a piped token from stdin, or prompts without echo on a terminal, so it never shows in output.
 func defaultReadNodeProviderToken(stderr io.Writer) (string, error) {
 	return readNodeProviderProtectedValue(stderr, "Provider token: ", "provider token")
 }
 
-// defaultReadNodeProviderSecret resolves --secret-access-key the same way
-// defaultReadNodeProviderToken resolves --provider-token: a protected input
-// path so the AWS secret access key never has to be passed as a flag, where
-// it would be visible in shell history and the process list.
+// Protected input, so the secret never has to be passed as a flag visible in shell history.
 func defaultReadNodeProviderSecret(stderr io.Writer) (string, error) {
 	return readNodeProviderProtectedValue(stderr, "Secret access key: ", "secret access key")
 }

@@ -7,15 +7,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// mapCaproverApplication translates one CapRover app definition into a
-// Levelrail service. Pure: no I/O, no network, fully covered by
-// table-driven tests (caprover_map_test.go). Reuses mappedApp,
-// mappedService, migrationIssue, issueSeverity, and sanitizeServiceName
-// from coolify_map.go, same as mapDokployApplication.
-//
-// CapRover exposes no git repo/branch on this endpoint at all (a deploy's
-// source is a one-time push, not stored state), so out.RepoURL/Ref are
-// always left blank, unlike Coolify and Dokploy.
+// Pure, no I/O. CapRover exposes no repo or branch, so RepoURL and Ref stay empty.
 func mapCaproverApplication(app caproverAppDefinition, rootDomain string, includeSecretValues bool) mappedApp {
 	out := mappedApp{SourceName: app.AppName}
 
@@ -32,12 +24,7 @@ func mapCaproverApplication(app caproverAppDefinition, rootDomain string, includ
 	return out
 }
 
-// mapCaproverBuildConfig always maps to spec.BuildDockerfile at the repo
-// root: every CapRover deploy ultimately builds a Docker image, but the
-// captain-definition file it deploys from (schemaVersion plus one of
-// dockerfilePath/templateId/dockerfileLines) is not exposed by the
-// appDefinitions listing this client reads, so the actual build method
-// cannot be confirmed from the API alone.
+// The build method isn't exposed by the listing, so this always assumes a root Dockerfile.
 func mapCaproverBuildConfig(app caproverAppDefinition, issues []migrationIssue) (string, []migrationIssue) {
 	path := app.CaptainDefinitionRelativeFilePath
 	if path == "" {
@@ -49,10 +36,7 @@ func mapCaproverBuildConfig(app caproverAppDefinition, issues []migrationIssue) 
 	return spec.BuildDockerfile, issues
 }
 
-// mapCaproverDomains combines the app's default subdomain
-// (appName.rootDomain, present unless NotExposeAsWebApp) with every
-// explicit custom domain. app.yaml's one domains list per service can
-// hold more than one host, so nothing here is dropped.
+// Includes the default subdomain plus every custom domain, since app.yaml takes a list.
 func mapCaproverDomains(app caproverAppDefinition, rootDomain string) []string {
 	var domains []string
 	if !app.NotExposeAsWebApp && rootDomain != "" {
@@ -95,10 +79,7 @@ func mapCaproverVolumes(app caproverAppDefinition, issues []migrationIssue) []mi
 	return issues
 }
 
-// mapCaproverInstanceCount reports a scale-out count above 1: mappedService
-// carries no replicas field today (neither Coolify nor Dokploy's own app
-// models expose an instance count for this tool to map either), so the
-// generated app.yaml defaults to spec.DefaultReplicas regardless.
+// mappedService has no replica field, so the generated app.yaml uses the default count.
 func mapCaproverInstanceCount(instanceCount int, issues []migrationIssue) []migrationIssue {
 	if instanceCount > 1 {
 		issues = appendIssue(issues, "instanceCount", issueReview, fmt.Sprintf(

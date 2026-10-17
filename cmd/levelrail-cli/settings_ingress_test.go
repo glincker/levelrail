@@ -52,11 +52,7 @@ func TestRun_SettingsIngress_Set(t *testing.T) {
 	}
 }
 
-// TestRun_SettingsIngress_Set_PreservesUnsetFields proves the fix for a
-// real bug found live: PUT replaces the whole resource, so setting only
-// --primary-domain used to silently clear an already-configured
-// acme_enabled/acme_email. set now fetches current settings first and
-// merges in only the flags actually given.
+// TestRun_SettingsIngress_Set_PreservesUnsetFields guards against clearing unset fields: PUT replaces the whole resource, so set merges current settings first.
 func TestRun_SettingsIngress_Set_PreservesUnsetFields(t *testing.T) {
 	current := ingressSettingsResource{PrimaryDomain: "old.example.com", ACMEEnabled: true, ACMEEmail: "ops@example.com"}
 	var gotPut ingressSettingsResource

@@ -8,19 +8,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// buildAppYAML renders m as a Levelrail app.yaml document with a single
-// service, m.ServiceName. Built as a yaml.Node tree rather than
-// yaml.Marshal(spec.Spec{...}) directly: spec.EnvVar has no MarshalYAML,
-// so marshaling it as a plain Go struct would emit every zero-value
-// field (value/from/secret/required) alongside secret: true, violating
-// the schema's additionalProperties: false on envValue's object shape.
-//
-// Env values are never written literally here, regardless of whether
-// real values were fetched from Coolify: every key becomes
-// { secret: true }. A real fetched value lives only in
-// mappedService.EnvLiteral, consumed by writeSecretsEnvFile (a separate
-// file, never app.yaml) or applyMigration's PUT .../secrets/{key} calls,
-// never by this function.
+// buildAppYAML renders m as a single-service app.yaml, built as a yaml.Node tree because spec.EnvVar has no MarshalYAML.
+// Every env value is written as { secret: true }; real values never go into app.yaml.
 func buildAppYAML(m mappedApp) ([]byte, error) {
 	svc := m.Service
 

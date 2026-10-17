@@ -9,44 +9,23 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 )
 
-// detectFunc runs Railpack's own detection (no build, no image) against
-// a git source, the seam handleDetectFramework calls through so tests
-// can substitute a fake without a real network clone. Defaulted to
-// build.Detect in NewRouter.
+// Seam so tests can swap in a fake for the real clone-and-detect call.
 type detectFunc func(ctx context.Context, req build.DetectRequest) (*build.DetectResult, error)
 
-// detectFrameworkRequest is POST /api/v1/build/detect's body: the same
-// repo_url/ref shape gitBranchesRequest and triggerBuildRequest already
-// use, so the wizard can call this with the exact values it already has
-// once a repo and branch are picked, before any app exists to attach a
-// build to.
+// Same repo_url and ref shape as the branches and build requests, so the wizard reuses its values.
 type detectFrameworkRequest struct {
 	RepoURL string `json:"repo_url"`
 	Ref     string `json:"ref,omitempty"`
 }
 
-// detectFrameworkResponse is POST /api/v1/build/detect's success body.
-// Detected is false whenever FrameworkName is empty, spelled out
-// explicitly rather than left for the caller to infer from an empty
-// string, since "" is also JSON's natural absent-value encoding.
+// Detected is explicit, since an empty FrameworkName is also JSON's absent-value encoding.
 type detectFrameworkResponse struct {
 	Provider      string `json:"provider,omitempty"`
 	FrameworkName string `json:"framework_name,omitempty"`
 	Detected      bool   `json:"detected"`
 }
 
-// handleDetectFramework handles POST /api/v1/build/detect: a fast,
-// build-free pre-flight check of what Railpack would detect for a git
-// source, so the create-app-from-git wizard can show "Detected: Next.js"
-// before the operator commits to a build type. Gated at AbilityDeploy,
-// the same tier POST /api/v1/git/branches already requires for the same
-// "not scoped to an existing app yet" reason (routes.go).
-//
-// A repo that can't be cloned, or against which Railpack detects
-// nothing buildable, is not an error: it responds 200 with
-// detected: false, so the wizard falls back to its existing manual
-// build-type picker rather than surfacing a scary failure for what is
-// often just an unsupported stack.
+// An unclonable or undetectable repo returns 200 with detected: false, so the wizard falls back to manual picking.
 func (rt *Router) handleDetectFramework(w http.ResponseWriter, r *http.Request) {
 	var req detectFrameworkRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

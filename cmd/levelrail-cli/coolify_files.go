@@ -8,12 +8,7 @@ import (
 	"sort"
 )
 
-// writeMigrationFiles writes one app.yaml per non-blocking app in
-// report.Apps into outDir, and a companion *.secrets.env file for any
-// app whose EnvLiteral was populated (--include-secret-values). A
-// generation failure (buildAppYAML's own schema validation) demotes that
-// one app to blocking rather than aborting the whole run, so one bad
-// mapping doesn't lose every other app's already-generated file.
+// A generation failure demotes only that app to blocking, not the whole run.
 func writeMigrationFiles(outDir string, report *migrationReport) error {
 	if err := os.MkdirAll(outDir, 0o750); err != nil {
 		return fmt.Errorf("create out-dir %s: %w", outDir, err)
@@ -48,11 +43,7 @@ func writeMigrationFiles(outDir string, report *migrationReport) error {
 	return nil
 }
 
-// writeSecretsEnvFile writes real env var values fetched from Coolify to
-// a plain KEY=VALUE file, mode 0600: this is live credential material,
-// deliberately kept out of the generated app.yaml (see buildAppYAML's
-// own doc comment) so an operator who commits their migrated app.yaml
-// directory doesn't also commit its secrets by accident.
+// Mode 0600 and kept out of app.yaml so a committed migration directory leaks no secrets.
 func writeSecretsEnvFile(path string, values map[string]string) error {
 	keys := make([]string, 0, len(values))
 	for k := range values {

@@ -11,10 +11,7 @@ import (
 // returns the same settings shape.
 const domainsRoute53DNSJSONUsage = "print the settings as JSON to stdout and nothing else"
 
-// runDomainsRoute53DNS dispatches "domains route53-dns <verb> [flags]"
-// to one of get/set/clear, mirroring runDomainsCloudflareDNS's own
-// top-level dispatch shape for this second, independent ACME DNS-01
-// provider.
+// Route53 is a second, independent ACME DNS-01 provider with the same dispatch shape as Cloudflare.
 func runDomainsRoute53DNS(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, domainsRoute53DNSUsage(prog))
@@ -104,14 +101,7 @@ func runDomainsRoute53DNSClear(prog string, args []string, stdout, stderr io.Wri
 	})
 }
 
-// runRoute53DNSSimple runs the parseAPIFlags-through-render tail shared
-// by "get" and "clear": neither registers flags beyond the common set
-// or needs validation before calling its single client action ("set"
-// needs both, so it stays separate and calls runRoute53DNSAction
-// directly). Factored out because get and clear were otherwise
-// byte-identical apart from which client method action calls, which
-// this repo's own duplication gate (unlike domains_cloudflare_dns.go,
-// which predates that gate) flags within a single file.
+// Shared tail for get and clear, which register no flags beyond the common set.
 func runRoute53DNSSimple(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), verb, usage string, action func(*Client) (route53DNSResource, error)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains route53-dns "+verb, domainsRoute53DNSJSONUsage, stderr)
 	fs.Usage = func() {
@@ -127,10 +117,6 @@ func runRoute53DNSSimple(prog string, args []string, stdout, stderr io.Writer, l
 	return runRoute53DNSAction(prog, stdout, stderr, lookupEnv, apiURLFlag, tokenFlag, profileFlag, jsonOut, of, verb, action)
 }
 
-// runRoute53DNSAction runs the client-build/call/render tail every
-// domains route53-dns subcommand shares once its own flags are parsed:
-// build the API client, invoke action, then report or render the
-// result.
 func runRoute53DNSAction(prog string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), apiURLFlag, tokenFlag, profileFlag string, jsonOut bool, of outputFlags, verb string, action func(*Client) (route53DNSResource, error)) int {
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 

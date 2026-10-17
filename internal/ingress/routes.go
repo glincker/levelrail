@@ -608,7 +608,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			}}
 		}
 		// Traffic controls, front side: redirects, geo and headers run first.
-		handle = r.Policy.wrapFront(handle)
+		handle = r.Policy.wrapFront(r.Hosts[0], handle)
 		if r.Maintenance != nil {
 			handle = r.Maintenance.wrap(handle)
 		}
@@ -674,13 +674,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 		if len(r.Hosts) == 0 || r.Dial == "" {
 			return nil, fmt.Errorf("ingress: build routes config: wake route %d needs hosts and a dial", i)
 		}
-		hold := DefaultHardening()
-		if opts.Hardening != nil {
-			hold = *opts.Hardening
-		}
 		routes = append(routes, Route{
 			Match:  []Matcher{{Host: r.Hosts}},
-			Handle: r.handlers(hold),
+			Handle: r.handlers(),
 		})
 		allHosts = append(allHosts, r.Hosts...)
 	}

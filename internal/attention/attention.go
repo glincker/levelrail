@@ -97,6 +97,7 @@ const (
 	KindQuotaNearLimit      = "quota_near_limit"
 	KindAccessReviewOverdue = "access_review_overdue"
 	KindMaintenanceLong     = "maintenance_long"
+	KindGitHostUnreachable  = "git_host_unreachable"
 )
 
 func deviceLoginItems(devices []apiclient.DevicePendingLogin, now time.Time) []Item {
@@ -195,9 +196,9 @@ func nodeAgentItems(n apiclient.NodeResource, now time.Time) []Item {
 		case "expired":
 			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expired "+expires+": re-enroll the node"))
 		case "critical":
-			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal())))
+			items = append(items, newItem(Critical, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal)))
 		case "expiring":
-			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal())))
+			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate expires "+expires+", renewal is failing"+renewalDetail(c.Renewal)))
 		case "revoked":
 			items = append(items, newItem(Warning, "node_cert", n.Name, "agent certificate revoked: re-enroll or delete the node"))
 		}

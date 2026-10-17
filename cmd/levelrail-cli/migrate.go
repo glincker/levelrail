@@ -53,11 +53,7 @@ Run "%[1]s migrate <source> -h" for a source's own flags.
 `, prog)
 }
 
-// blockingFetchIssue builds a mappedApp reporting sourceName as blocking
-// because a required fetch during migration failed. Shared by
-// migrate_coolify.go and migrate_dokploy.go's own fetch-and-map
-// functions, whose only difference at this point is which fetch call
-// failed and how detail was worded.
+// blockingFetchIssue reports sourceName as blocking because a required migration fetch failed.
 func blockingFetchIssue(sourceName, detail string) mappedApp {
 	return mappedApp{
 		SourceName: sourceName,
@@ -89,10 +85,6 @@ func runMigrationPipeline(ctx context.Context, report *migrationReport, f migrat
 	return exitOK
 }
 
-// migratePipelineFlags is the subset of a migrate subcommand's flags that
-// runMigrationPipeline needs, kept as its own type so callers can build it
-// from either migrateCoolifyFlags or migrateDokployFlags plus their local
-// target-instance flag variables.
 type migratePipelineFlags struct {
 	apply         bool
 	outDir        string

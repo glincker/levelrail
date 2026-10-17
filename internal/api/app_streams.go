@@ -93,10 +93,7 @@ func (rt *Router) handleListAppStreams(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleCreateAppStream handles POST /api/v1/apps/{name}/streams.
-// AbilityWriteSensitive, the same tier as a firewall rule. Bumps the
-// owning service's RestartNonce on success so the next container
-// recreation publishes the new port promptly (see
-// internal/reconcile/application's streamPortBindings doc comment).
+// Restart-bumps the owning service so the new port is published on the next recreate.
 func (rt *Router) handleCreateAppStream(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	if _, err := rt.apps.GetDesiredService(r.Context(), name); err != nil {
@@ -148,10 +145,7 @@ func (rt *Router) handleCreateAppStream(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if err := rt.apps.RestartService(r.Context(), name); err != nil && !errors.Is(err, store.ErrServiceNotFound) {
-		// The stream is saved; a restart-bump failure only delays when the
-		// new port is actually published, picked up by this service's next
-		// ordinary deploy or restart regardless. Logged, not fatal to this
-		// request.
+		// A failed restart bump only delays publishing the port until the next deploy or restart, so it is logged, not returned.
 		rt.logger.Warn("api: create app stream: restart bump failed", slog.String("error", err.Error()), slog.String("name", name))
 	}
 
@@ -164,10 +158,7 @@ func (rt *Router) handleCreateAppStream(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusCreated, toAppStreamResource(stream))
 }
 
-// handleDeleteAppStream handles DELETE /api/v1/apps/{name}/streams/{id}.
-// AbilityWriteSensitive, same tier as create. Restart-bumps the owning
-// service on success, the same reasoning handleCreateAppStream's own doc
-// comment gives.
+// handleDeleteAppStream handles DELETE /api/v1/apps/{name}/streams/{id}, restart-bumping the owning service.
 func (rt *Router) handleDeleteAppStream(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	id := r.PathValue("id")

@@ -11,7 +11,7 @@ import (
 func registerBackupTargetTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_backup_targets",
-		Description: "List every connected S3-compatible backup destination on the control plane: name, provider, endpoint, region, bucket. No credential fields, ever. Read-only; does not create, edit, delete, or test a target.",
+		Description: "List every connected S3-compatible backup destination on the control plane: name, provider, endpoint, region, bucket. No credential fields, ever.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.BackupTargetResource, error) {
 		targets, err := client.ListBackupTargets(ctx)
 		if err != nil {

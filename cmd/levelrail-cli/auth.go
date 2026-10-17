@@ -6,12 +6,7 @@ import (
 	"os"
 )
 
-// runAuth dispatches "auth <verb> [flags]" to one of login/whoami. Both
-// subcommands are session-cookie-adjacent in a way none of this CLI's
-// other commands are (see auth_login.go and auth_whoami.go's own doc
-// comments for the specific, real gaps that follow from that), so they
-// get their own top-level command rather than living under an existing
-// one.
+// Own top-level command because it needs session-cookie routes, unlike the bearer-token commands.
 func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, authUsage(prog))

@@ -1,24 +1,5 @@
-// Package agent is the transport boundary: the interface
-// ADR 003 describes ("the reconciler and everything above the transport
-// boundary never knows whether it's talking to a local in-process agent
-// or a remote one over mTLS") but that Phase 1 never actually built,
-// confirmed directly against this repo before writing this package:
-// every reconcile controller (internal/reconcile/application,
-// internal/reconcile/database) takes a bare docker.Runtime, and
-// cmd/levelrail/main.go's dynamicSource hands every controller the same
-// single local docker.Runtime with no node concept anywhere. There is
-// exactly one implicit node today.
-//
-// This package makes that boundary explicit without moving it: Transport
-// has exactly docker.Runtime's method set (see the type below for why),
-// so nothing above this package changes shape yet. Wiring
-// internal/reconcile controllers to actually route through a Transport
-// selected per node, instead of the single shared docker.Runtime
-// dynamicSource still hands out today, is separate work, once
-// placement (which service runs on which node) exists to select by.
-// The real gRPC implementation of Transport, reached over the reverse-
-// dialed mTLS connection ADR 003 describes, is GRPCTransport
-// (grpc_transport.go).
+// Package agent is the transport boundary between reconcile controllers and the node they run on.
+// Local is the in-process form; GRPCTransport (grpc_transport.go) is the remote form.
 package agent
 
 import (
@@ -31,33 +12,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// Transport is what a reconcile controller needs from whichever node a
-// resource is placed on. Deliberately identical in shape to
-// docker.Runtime (embedded, not duplicated field by field, so the two
-// can never silently drift apart) rather than a new, narrower interface:
-// docker.Runtime is already the exact narrow surface
-// scoped down to "what a reconcile controller needs from Docker," and
-// Transport's whole point is "the same thing, now reachable on a
-// specific node," not a different capability set. An RPC surface an
-// agent exposes beyond container operations stays off this interface and
-// is advertised as an optional capability instead (see RemoteBuilder,
-// build_dispatch.go), so a Local transport does not have to pretend to
-// implement something only a remote agent can do.
+// Transport is what a reconcile controller needs from the node a resource is placed on.
+// It embeds docker.Runtime so the two cannot drift; optional agent capabilities go in separate interfaces like RemoteBuilder.
 type Transport interface {
 	docker.Runtime
 }
 
-// Local adapts a docker.Runtime this process already has open (this
-// machine's own Docker socket, via docker.NewClient) into a Transport
-// for this process's own node. This is the node-communication design's
-// "single-node mode... in-memory transport that implements the same
-// interface the gRPC transport implements," made real: every method
-// call happens in-process, no network, no serialization, and (because
-// Transport is exactly docker.Runtime's shape) any docker.Runtime
-// value already satisfies Transport structurally without needing this
-// wrapper type at all. Local exists anyway, as a named, documented
-// adapter, so call sites read "this is a node transport" rather than
-// relying on Go's structural typing to make that intent legible.
+// Local adapts this process's own docker.Runtime into a Transport for the local node, with no network hop.
 type Local struct {
 	docker.Runtime
 }
@@ -78,10 +39,7 @@ func (l Local) ExecTTY(ctx context.Context, containerID string, opts docker.Exec
 	return tty.ExecTTY(ctx, containerID, opts)
 }
 
-// InspectExitState implements docker.ExitStateInspector by forwarding to
-// the wrapped runtime, which the embedded docker.Runtime interface would
-// otherwise hide even when the concrete value behind it can inspect exit
-// state.
+// InspectExitState forwards to the wrapped runtime, since embedding would hide the optional ExitStateInspector.
 func (l Local) InspectExitState(ctx context.Context, name string) (*docker.ExitState, error) {
 	inspector, ok := l.Runtime.(docker.ExitStateInspector)
 	if !ok {
@@ -144,16 +102,7 @@ func (l Local) Stats(ctx context.Context, containerID string) (docker.ContainerS
 // node ID.
 var ErrNodeNotRegistered = errors.New("agent: node not registered in this transport registry")
 
-// Registry resolves a node ID to the Transport that reaches it. A
-// single-node deployment registers exactly one entry (its own Local
-// transport, dynamicSource's own local docker.Runtime wrapped per
-// Local's doc comment); a multi-node deployment
-// registers one entry per enrolled node, most of them real gRPC
-// transports. Registry itself has no opinion on how a node's transport
-// got built or how long it should live, only "given an ID, hand back
-// the Transport for it," the same "pure lookup, not a decision" shape
-// GetAPITokenByHash establishes for a different resource in
-// internal/store.
+// Registry resolves a node ID to the Transport that reaches it.
 type Registry struct {
 	mu       sync.RWMutex
 	byID     map[string]Transport

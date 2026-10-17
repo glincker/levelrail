@@ -9,10 +9,7 @@ import (
 	"testing"
 )
 
-// runSystemPruneCommand starts an httptest server that encodes result as
-// the prune API's JSON response, runs "system-prune" with extraArgs, and
-// requires exitOK. Returns stdout and the request path/method the server
-// observed, for each test's own assertions.
+// Returns stdout and the observed request path and method; requires exitOK.
 func runSystemPruneCommand(t *testing.T, result systemPruneResult, extraArgs ...string) (stdout, gotPath, gotMethod string) {
 	t.Helper()
 	var path, method string

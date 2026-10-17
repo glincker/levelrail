@@ -13,10 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeVolumeCloneRestoreRunner is a hand-written fake for
-// VolumeCloneRestoreRunner, the same pattern fakeCloneRestoreRunner
-// (database_clone_restore_test.go) already establishes for the database
-// resource kind.
+// Hand-written fake for VolumeCloneRestoreRunner, mirroring the database kind's fake.
 type fakeVolumeCloneRestoreRunner struct {
 	err   error
 	calls chan volumeCloneRestoreRunCall
@@ -53,10 +50,7 @@ func newTestRouterWithVolumeCloneRestoreRunner(t *testing.T, runner VolumeCloneR
 	return NewRouter(logger, testBrand(), db, WithVolumeCloneRestoreRunner(runner)), db
 }
 
-// seedSucceededVolumeBackupForCloneRestore seeds a succeeded backup of
-// "web"'s volumeName (every test in this file uses seedServiceWithVolume's
-// own fixed service name), the volume counterpart of
-// seedSucceededBackupForCloneRestore (database_clone_restore_test.go).
+// Seeds a succeeded backup of web's volume, since every test here uses the fixed service name.
 func seedSucceededVolumeBackupForCloneRestore(t *testing.T, db *store.DB, volumeName string) store.BackupHistory {
 	t.Helper()
 	const serviceName = "web"
@@ -176,11 +170,7 @@ func TestHandleVolumeCloneRestore_BackupNotSucceeded(t *testing.T) {
 	}
 }
 
-// TestHandleVolumeCloneRestore_Success_DefaultsNewVolumeName is the core
-// happy path with no new_volume_name supplied: the server mints one
-// itself (defaultVolumeCloneName), and the source service/volume are
-// never touched (there is nothing for this handler to write to them:
-// only rt.backupHistory.GetBackupHistory is ever read).
+// Covers the server-minted default name; the source volume is never written to.
 func TestHandleVolumeCloneRestore_Success_DefaultsNewVolumeName(t *testing.T) {
 	runner := newFakeVolumeCloneRestoreRunner()
 	rt, db := newTestRouterWithVolumeCloneRestoreRunner(t, runner)

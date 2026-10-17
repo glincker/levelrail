@@ -6,17 +6,8 @@ import (
 	"io"
 )
 
-// runBackupsRestoreAsNew implements "backups restore-as-new <database>
-// --backup ID --new-name NAME": POST /api/v1/databases/{name}/restore-as-new
-// (internal/api/database_clone_restore.go's own handleCloneRestore),
-// write:sensitive-gated server-side, not root: unlike "backups restore"
-// this never touches <database>'s own live data, it only creates a new
-// database and restores the named backup into it, the same sensitivity
-// tier "backups trigger" already uses (real work against a real bucket
-// with a real stored credential). No --confirm gate the way
-// resolveRestoreConfirmation guards the in-place restore: there is
-// nothing here for a misclick to destroy, since the worst case is an
-// extra database the operator can delete like any other.
+// Never touches the source database's data, so no --confirm gate is needed.
+// The worst case is an extra database the operator can delete.
 func runBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups restore-as-new", "print the started clone-restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, newName, version, projectID string

@@ -9,17 +9,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/secrets"
 )
 
-// tlsMaterialFor generates and persists dbName's self-signed TLS
-// certificate/key on first call, the same generate-once-persist-forever
-// shape postgresCredentialsFor and its siblings already establish, and
-// returns the same one on every subsequent call so a reconcile pass
-// never rotates a running database's certificate out from under it.
-//
-// Returns (nil, nil), not an error, when mgr is nil, identical to
-// postgresCredentialsFor's own reasoning: TLS is gated on the same
-// secrets master key every credentialed database engine already
-// requires, so a control plane without one reconciles every database
-// exactly as it did before this feature existed.
+// Generate once, persist forever, so a reconcile pass never rotates a running database's certificate.
+// Returns nil, nil when mgr is nil: TLS needs the same secrets master key as credentialed engines.
 func tlsMaterialFor(ctx context.Context, mgr *secrets.Manager, dbName string) (*database.TLSMaterial, error) {
 	if mgr == nil {
 		return nil, nil

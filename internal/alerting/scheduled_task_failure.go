@@ -16,21 +16,8 @@ type ScheduledTaskSource interface {
 	GetScheduledTask(ctx context.Context, id string) (store.ScheduledTask, error)
 }
 
-// EvaluateScheduledTaskFailure runs one KindScheduledTaskFailure rule
-// against r.ScheduledTaskID's current ConsecutiveFailures count and
-// returns its updated evaluation state plus, when firing, a
-// human-readable notice line for Engine to attach to the outgoing Event.
-//
-// Polls the task's own persisted counter rather than tracking anything
-// itself, the same "read current state, no local history" shape
-// EvaluateCertExpiry already uses: the counter is maintained by
-// store.RecordScheduledTaskRun at the moment a run actually happens,
-// decoupled from how often Engine.Tick itself runs.
-//
-// Fires the instant ConsecutiveFailures crosses RestartCountThreshold,
-// with no ForDuration debounce: requiring N consecutive failures is
-// already the debounce, the same reasoning EvaluateCrashloop's own doc
-// comment gives for RestartWindow.
+// EvaluateScheduledTaskFailure reads the task's persisted ConsecutiveFailures counter and fires at RestartCountThreshold.
+// No ForDuration debounce: the consecutive-failure count is already the debounce.
 func EvaluateScheduledTaskFailure(ctx context.Context, tasks ScheduledTaskSource, r Rule, now time.Time) (Rule, string, error) {
 	next := r
 	next.LastEvaluatedAt = &now

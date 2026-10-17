@@ -14,12 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runNodesSSHProvision implements "nodes ssh-provision": POST
-// /api/v1/nodes/ssh-provision. Adopts a machine the operator already has
-// (any VPS, home server, Raspberry Pi) by dialing it over SSH and
-// installing the node agent there; poll "nodes ssh-provisions show <id>"
-// for progress, the same shape "nodes provision" establishes for the
-// cloud-VM path.
+// Adopts an existing machine over SSH; poll nodes ssh-provisions show for progress.
 func runNodesSSHProvision(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes ssh-provision", "print the new provision as JSON to stdout and nothing else", stderr)
 	var host, username, keyFile, passphrase, name, role, controlPlaneAddr string
@@ -156,13 +151,7 @@ func defaultConfirmSSHHostKey(stderr io.Writer, key string) error {
 	return nil
 }
 
-// readSSHPassword resolves --password's actual value: a piped,
-// non-terminal stdin is read directly (one line, trimmed, the same
-// "docker login --password-stdin" shape defaultReadNodeProviderToken
-// already establishes), a real terminal gets a no-echo prompt instead so
-// the password is never displayed either way, and never taken as the
-// flag's own value so it can't land in shell history or the process
-// list.
+// Never taken as a flag value, so the password stays out of shell history and the process list.
 var readSSHPassword = defaultReadSSHPassword
 
 func defaultReadSSHPassword(stderr io.Writer) (string, error) {

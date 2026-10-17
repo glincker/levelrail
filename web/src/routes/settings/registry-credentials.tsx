@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { pickStringSearch } from '../../lib/urlDialog'
 import { RegistryVendorGrid } from '../../components/registry/RegistryVendorGrid'
+import { BuiltInRegistryCard } from '../../components/registry/BuiltInRegistryCard'
 import { PackageRegistriesCard } from '../../components/registry/PackageRegistriesCard'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
@@ -77,6 +78,7 @@ function RegistryCredentialsPage() {
       banners={banner}
     >
       <div className="space-y-8">
+        <BuiltInRegistryCard />
         <RegistryVendorGrid />
         <RegistryCredentialTable
           credentials={credentials}

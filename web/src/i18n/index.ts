@@ -55,10 +55,12 @@ export const NAMESPACES = [
   'fixit',
   'envEditor',
   'resourceAdvisor',
+  'plugins',
   'help',
   'traces',
   'errors',
   'edgeAccess',
+  'trafficDetail',
   'betaFeatures',
   'newApp',
   'getStarted',
@@ -77,6 +79,8 @@ export const NAMESPACES = [
   'deployPolicies',
   'deployDetail',
   'pipelines',
+  'budget',
+  'autoscale',
 ] as const
 
 void i18n

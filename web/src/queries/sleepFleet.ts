@@ -3,12 +3,14 @@
 
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
+import type { WakeTiming } from './appSleep'
 
 export interface SleepFleetApp {
   name: string
   idle_minutes: number
   sleeping: boolean
   memory_limit_bytes: number
+  wake_timing: WakeTiming
 }
 
 export interface SleepFleet {

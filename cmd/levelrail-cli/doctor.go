@@ -30,11 +30,7 @@ func runDoctor(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return exitCodeForError(err)
 	}
 	if of.Format == outputTable && !report.OK {
-		// doctor's own exit contract ("0 all ok, 1 any check failed") is a
-		// report on the checks themselves, not a request-classification
-		// code, so it reuses exitUsage's numeric value (1) as the generic
-		// "not all clean" signal rather than adding a second,
-		// unused-elsewhere constant for the same number.
+		// Reuses exitUsage's value (1) as the generic not-all-clean exit code.
 		return exitUsage
 	}
 	return exitOK

@@ -11,7 +11,7 @@ const (
 )
 
 // WakeRoute is a sleeping app's domains: any request starts the app and gets
-// the friendly retrying page instead of an error.
+// the control plane's waking response instead of an error.
 type WakeRoute struct {
 	Hosts []string
 	// Dial is the control plane's own listener, Token its shared wake secret.
@@ -28,8 +28,7 @@ type RewriteHandler struct {
 	Method  string `json:"method,omitempty"`
 }
 
-func (r WakeRoute) handlers(h Hardening) []any {
-	page := h.UnavailableResponse("Waking up", "This app was asleep and is starting now. This page will retry on its own.")
+func (r WakeRoute) handlers() []any {
 	proxy := NewReverseProxyHandler(r.Dial)
 	proxy.Headers = &ProxyHeaders{Request: &HeaderOps{Set: map[string][]string{
 		WakeTokenHeader: {r.Token},
@@ -37,8 +36,7 @@ func (r WakeRoute) handlers(h Hardening) []any {
 		// Caddy fills this per request; the rewrite above replaced the path.
 		WakeURIHeader: {"{http.request.orig_uri}"},
 	}}}
-	// Only the 204 (not asleep or no hold) becomes the retrying page; the hook's
-	// 307 replay must reach the client untouched.
-	proxy.HandleResponse = []ResponseHandler{{Match: &ResponseMatcher{StatusCode: []int{204}}, Routes: []Route{{Handle: []any{page}}}}}
+	// The hook answers the waking page (503) or the 307 replay itself, so its
+	// response passes through untouched.
 	return []any{RewriteHandler{Handler: "rewrite", URI: WakePath, Method: "GET"}, proxy}
 }

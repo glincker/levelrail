@@ -33,10 +33,7 @@ func newTestAlertingDB(t *testing.T) *alerting.DB {
 	return db
 }
 
-// newTestRouterWithAlerting is newTestRouter plus a wired AlertRules and
-// NotificationChannels, the same pairing
-// newTestRouterWithDeployNotifyTargets uses: creating a rule with a
-// channel_id needs the channel registry to validate against.
+// newTestRouterWithAlerting wires AlertRules and NotificationChannels, since channel_id validation needs the registry.
 func newTestRouterWithAlerting(t *testing.T) (*Router, *store.DB, *alerting.DB) {
 	t.Helper()
 	db := openTestDB(t)
@@ -159,10 +156,7 @@ func TestHandleCreateAlertRule_CrashloopSuccess(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_CertExpirySuccess checks that a
-// kind=cert_expiry rule needs none of the threshold/crashloop fields:
-// EvaluateCertExpiry (internal/alerting/cert_expiry.go) watches every
-// stored certificate platform-wide, not this rule's own ResourceID.
+// Platform-wide kinds like cert_expiry need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_CertExpirySuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -184,11 +178,7 @@ func TestHandleCreateAlertRule_CertExpirySuccess(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_PatchStatusSuccess checks that a
-// kind=patch_status rule needs none of the threshold/crashloop fields
-// either: EvaluatePatchStatus (internal/alerting/patch_status.go) watches
-// every node platform-wide, not this rule's own ResourceID, the same
-// shape kind=cert_expiry already uses.
+// Platform-wide kinds like patch_status need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_PatchStatusSuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -210,11 +200,7 @@ func TestHandleCreateAlertRule_PatchStatusSuccess(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_NodeDiskSpaceSuccess checks that a
-// kind=node_disk_space rule needs none of the threshold/crashloop fields
-// either: EvaluateNodeDiskSpace (internal/alerting/disk_space.go) watches
-// every node's disk usage platform-wide, not this rule's own
-// ResourceID, the same shape kind=cert_expiry/patch_status already use.
+// Platform-wide kinds like node_disk_space need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_NodeDiskSpaceSuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -236,12 +222,7 @@ func TestHandleCreateAlertRule_NodeDiskSpaceSuccess(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_NodeResourceUsageSuccess checks that a
-// kind=node_resource_usage rule needs none of the threshold/crashloop
-// fields either: EvaluateNodeResourceUsage
-// (internal/alerting/node_resource_usage.go) watches every node's
-// summed CPU/memory usage platform-wide, not this rule's own
-// ResourceID, the same shape kind=node_disk_space already uses.
+// Platform-wide kinds like node_resource_usage need no threshold or crashloop fields.
 func TestHandleCreateAlertRule_NodeResourceUsageSuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -276,11 +257,7 @@ func TestHandleCreateAlertRule_NodeOfflineSuccess(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_ScheduledTaskFailureSuccess checks that a
-// kind=scheduled_task_failure rule requires and accepts a
-// scheduled_task_id belonging to this app, reusing
-// restart_count_threshold as its consecutive-failure threshold (see
-// alerting.Rule's own doc comment).
+// scheduled_task_failure reuses restart_count_threshold as its consecutive-failure threshold.
 func TestHandleCreateAlertRule_ScheduledTaskFailureSuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -306,10 +283,6 @@ func TestHandleCreateAlertRule_ScheduledTaskFailureSuccess(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID checks
-// toRule's own validation: a scheduled_task_failure rule needs a
-// scheduled_task_id, the same way a crashloop rule needs a
-// restart_count_threshold.
 func TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -323,11 +296,7 @@ func TestHandleCreateAlertRule_ScheduledTaskFailure_MissingTaskID(t *testing.T) 
 	}
 }
 
-// TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp
-// checks the ownership guard: a scheduled_task_id from a different app
-// must be rejected, the same information-hiding reasoning
-// handleDeleteAlertRule's own doc comment gives for its ResourceID
-// check.
+// A scheduled_task_id from another app must be rejected, so ownership cannot leak.
 func TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -346,10 +315,7 @@ func TestHandleCreateAlertRule_ScheduledTaskFailure_TaskBelongsToOtherApp(t *tes
 	}
 }
 
-// TestHandleCreateAlertRule_BackupMissingDatabaseSuccess checks that a
-// kind=backup_missing rule watching a database requires and accepts a
-// real backup_database_name, reusing for_duration as its overdue grace
-// period (see alerting.Rule's own doc comment).
+// backup_missing reuses for_duration as its overdue grace period.
 func TestHandleCreateAlertRule_BackupMissingDatabaseSuccess(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -420,10 +386,7 @@ func TestHandleCreateAlertRule_BackupMissing_UnknownDatabase(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_BackupMissing_UnconfiguredVolume checks the
-// volume counterpart: a backup_service_name/backup_volume_name pair with
-// no service_volume_backups row at all must be rejected too, the same
-// "watched thing must already exist" guard the database branch enforces.
+// An unconfigured volume backup target must be rejected, as the database branch does.
 func TestHandleCreateAlertRule_BackupMissing_UnconfiguredVolume(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -453,10 +416,7 @@ func TestHandleCreateAlertRule_BackupMissing_MissingResourceKind(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable checks that a
-// caller-supplied resource_id in the request body is discarded in favor
-// of resourceIDForApp(name): a rule created through /apps/web/alerts is
-// always scoped to service:web, regardless of what the body claims.
+// A caller-supplied resource_id is ignored in favor of resourceIDForApp(name).
 func TestHandleCreateAlertRule_ResourceIDNotCallerSuppliable(t *testing.T) {
 	rt, db, _ := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -499,10 +459,7 @@ func TestHandleCreateAlertRule_IDNotCallerSuppliable(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAlertRule_ChannelIDSuccess mirrors
-// TestHandleCreateDeployNotifyTarget_Success: creating a rule with a
-// channel_id resolves notify_url/notify_kind from that channel in the
-// response.
+// channel_id resolves notify_url and notify_kind from the saved channel.
 func TestHandleCreateAlertRule_ChannelIDSuccess(t *testing.T) {
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -666,10 +623,7 @@ func TestHandleUpdateAlertRule_Success(t *testing.T) {
 	}
 }
 
-// TestHandleUpdateAlertRule_PreservesEvaluationState checks SaveRule's own
-// contract (rules.go's doc comment): editing a rule's configuration must
-// not reset its current firing state, only the evaluator (UpdateState)
-// ever touches that.
+// Editing a rule's config must not reset its firing state; only the evaluator changes that.
 func TestHandleUpdateAlertRule_PreservesEvaluationState(t *testing.T) {
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -713,10 +667,7 @@ func TestHandleUpdateAlertRule_NotFound(t *testing.T) {
 	}
 }
 
-// TestHandleUpdateAlertRule_OwnershipMismatch mirrors
-// TestHandleDeleteAlertRule_OwnershipMismatch: a rule belonging to
-// service:worker must not be editable by guessing its ID through
-// service:web's URL.
+// A rule of service:worker cannot be edited through service:web's URL.
 func TestHandleUpdateAlertRule_OwnershipMismatch(t *testing.T) {
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)
@@ -775,11 +726,7 @@ func TestHandleUpdateAlertRule_ValidationFailures(t *testing.T) {
 	}
 }
 
-// TestHandleUpdateAlertRule_RequiresWriteAbility checks the same ability
-// gate handleCreateAlertRule's own route registration uses (AbilityWrite):
-// a read-only token must be rejected, the same shape
-// assertPlainWriteTokenForbidden (apps_test.go) uses for its own
-// ability-gating checks.
+// Read-only tokens are rejected, since the route is gated by AbilityWrite.
 func TestHandleUpdateAlertRule_RequiresWriteAbility(t *testing.T) {
 	rt, db, adb := newTestRouterWithAlerting(t)
 	seedApp(t, db, "web")
@@ -837,10 +784,7 @@ func TestHandleDeleteAlertRule_NotFound(t *testing.T) {
 	}
 }
 
-// TestHandleDeleteAlertRule_OwnershipMismatch is the key security case:
-// a rule belonging to service:worker must not be deletable by guessing
-// its ID through service:web's URL, even though both apps exist and the
-// caller is authenticated with write access.
+// A rule of service:worker cannot be deleted through service:web's URL, even with write access.
 func TestHandleDeleteAlertRule_OwnershipMismatch(t *testing.T) {
 	rt, db, adb := newTestRouterWithAlerting(t)
 	cookie := loginTestSession(t, rt, db)

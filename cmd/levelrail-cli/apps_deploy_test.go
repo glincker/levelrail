@@ -70,10 +70,7 @@ func TestRun_AppsDeploy_Help(t *testing.T) {
 	}
 }
 
-// protectedEnvironmentDeployServer fails every request with a 409 naming
-// a protected environment until confirm: true arrives on the request
-// body, then succeeds: the fake control plane behind every
-// confirm-retry test in this file (deploy, rollback, promote).
+// protectedEnvironmentDeployServer 409s until confirm: true arrives, then succeeds.
 func protectedEnvironmentDeployServer(t *testing.T) (*httptest.Server, *int) {
 	t.Helper()
 	calls := 0
@@ -97,10 +94,6 @@ func protectedEnvironmentDeployServer(t *testing.T) (*httptest.Server, *int) {
 	return srv, &calls
 }
 
-// TestRun_AppsDeploy_ProtectedEnvironment_ConfirmFlagSkipsPrompt covers
-// the scripted path: --confirm sends confirm: true on the very first
-// call, so the server never has a reason to 409 and the prompt is never
-// reached.
 func TestRun_AppsDeploy_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing.T) {
 	srv, calls := protectedEnvironmentDeployServer(t)
 	defer srv.Close()
@@ -115,10 +108,6 @@ func TestRun_AppsDeploy_ProtectedEnvironment_ConfirmFlagSkipsPrompt(t *testing.T
 	}
 }
 
-// TestRun_AppsDeploy_ProtectedEnvironment_InteractivePromptConfirms
-// covers the interactive path: no --confirm, the first call 409s, the
-// prompt reads "yes" from stdin, and the retry with confirm: true
-// succeeds.
 func TestRun_AppsDeploy_ProtectedEnvironment_InteractivePromptConfirms(t *testing.T) {
 	srv, calls := protectedEnvironmentDeployServer(t)
 	defer srv.Close()

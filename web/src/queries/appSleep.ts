@@ -28,6 +28,25 @@ export interface AppSleep {
   cold_start_ms_p50: number | null
   // Null when the app has no memory limit.
   estimated_memory_freed_bytes: number | null
+  wake_timing: WakeTiming
+  idle_limits: IdleLimits
+}
+
+/** WakeTiming summarises recent wakes in ms; every figure is absent while samples is 0. */
+export interface WakeTiming {
+  samples: number
+  ready_last_ms?: number
+  ready_p50_ms?: number
+  ready_p95_ms?: number
+  released_last_ms?: number
+  released_p50_ms?: number
+  released_p95_ms?: number
+}
+
+export interface IdleLimits {
+  min_minutes: number
+  max_minutes: number
+  default_minutes: number
 }
 
 export type SleepFixKind =

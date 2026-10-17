@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runNodesDelete implements "nodes delete <id>": DELETE
-// /api/v1/nodes/{id}. Refused with a 409 while any service or database
-// is still placed on the node (handleDeleteNode's own doc comment):
-// reportError below surfaces that response's real message as-is, which
-// already tells the operator to drain first, rather than replacing it
-// with a generic failure string.
+// The server refuses with 409 while services or databases are placed on the node; its message is shown as-is.
 func runNodesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesDeleteUsage(prog)) }

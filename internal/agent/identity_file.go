@@ -10,11 +10,8 @@ import (
 	"strings"
 )
 
-// IdentityFile persists an agent Identity as JSON (0600). Writes go to a
-// temp file that is fsynced and renamed over the target, so a crash leaves
-// either the old or the new identity on disk, never a torn one. During a
-// renewal the previous identity is kept beside it as <path>.prev until the
-// new certificate has been proven to work.
+// IdentityFile is the on-disk agent identity; writes are atomic, so a crash never leaves a torn one.
+// The previous identity is kept as <path>.prev until a renewed certificate is proven to work.
 type IdentityFile struct {
 	Path string
 

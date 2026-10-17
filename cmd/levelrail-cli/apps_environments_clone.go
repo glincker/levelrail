@@ -10,12 +10,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsEnvironmentsClonePreview implements "apps environments
-// clone-preview <id> --new-name NAME": GET
-// /api/v1/environments/{id}/clone/preview
-// (internal/api/environment_clone.go), a read-only look at what cloning
-// id into a new environment named --new-name would create, before
-// running "apps environments clone" for real.
 func runAppsEnvironmentsClonePreview(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments clone-preview", "print the preview as JSON to stdout and nothing else", stderr)
 	var newName string
@@ -88,14 +82,6 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsEnvironmentsClone implements "apps environments clone <id>
-// --new-name NAME [--app-rename SOURCE=NEWNAME ...] [--domain
-// SOURCE=domain1,domain2 ...] [--copy-secret-values]": POST
-// /api/v1/environments/{id}/clone (internal/api/environment_clone.go).
-// Creates a new environment in <id>'s own project plus a real, deployed
-// copy of every app tagged with <id>. --app-rename/--domain only need to
-// be given for apps whose default (auto-suggested name, no domains)
-// isn't what's wanted; every other tagged app clones with its default.
 func runAppsEnvironmentsClone(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps environments clone", "print the created environment and apps as JSON to stdout and nothing else", stderr)
 	var newName string

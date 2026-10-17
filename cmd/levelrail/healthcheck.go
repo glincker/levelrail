@@ -10,11 +10,7 @@ import (
 
 const healthcheckTimeout = 3 * time.Second
 
-// runHealthcheck GETs /api/v1/brand (or /readyz when ready is true) on the
-// control plane's own loopback address and returns an error on anything
-// but a 2xx response. It exists
-// so `levelrail healthcheck` can back a Docker HEALTHCHECK/compose probe
-// on the distroless image, which has no shell and no curl/wget.
+// Used as a Docker HEALTHCHECK on the distroless image, which has no shell, curl, or wget.
 func runHealthcheck(ctx context.Context, out io.Writer, ready bool) error {
 	ctx, cancel := context.WithTimeout(ctx, healthcheckTimeout)
 	defer cancel()

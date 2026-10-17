@@ -6,13 +6,6 @@ import (
 	"io"
 )
 
-// runAppsPreviewEnv dispatches "apps preview-env <verb> [flags]" to one
-// of set/clear: PUT/DELETE /api/v1/apps/{name}/preview-env/{key}
-// (internal/api/apps_preview_env.go), declaring or removing one env
-// var's preview-specific value on an app that already exists. Mirrors
-// runAppsVaultEnv's own set/clear dispatch shape: one entry per env var
-// key, both subcommands take an env var key as a second positional
-// argument.
 func runAppsPreviewEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsPreviewEnvUsage(prog))

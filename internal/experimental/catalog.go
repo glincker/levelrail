@@ -35,6 +35,7 @@ var catalog = map[Feature]Info{
 	ResourceAdvisor:    {Name: "Resource advisor", Summary: "Limit, tuning and idle suggestions. It only suggests, never changes anything on its own.", DocsPath: "/resource-advisor", Maturity: MaturityBeta},
 	CLIConsole:         {Name: "CLI console", Summary: "A web console for the platform CLI in the dashboard (never a host shell).", DocsPath: docsPath, Maturity: MaturityBeta},
 	MobileAPI:          {Name: "Mobile API", Summary: "Phone pairing, device tokens and the mobile overview endpoint.", DocsPath: docsPath, Maturity: MaturityBeta},
+	Plugins:            {Name: "Plugins", Summary: "Run signed, operator-approved plugins in locked-down containers. Starts with notification channels.", DocsPath: "/plugins", Maturity: MaturityExperimental},
 	SAMLSCIM:           {Name: "SAML and SCIM", Summary: "Interim SAML single sign-on and SCIM provisioning.", DocsPath: "/sso-saml", Maturity: MaturityBeta},
 }
 

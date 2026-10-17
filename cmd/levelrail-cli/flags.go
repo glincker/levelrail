@@ -8,14 +8,7 @@ import (
 	"text/tabwriter"
 )
 
-// runFlags dispatches "flags <verb> [flags]" to one of
-// create/list/get/set/delete: managing feature flags
-// (internal/api/feature_flags.go), the boolean-plus-rollout-percentage
-// value a running app's own code reads live via GET
-// /api/v1/flags/evaluate/{key}, never baked into a container at create
-// time. CRUD is scoped to an owning app the same way "apps
-// scheduled-tasks" is, so every verb but "create" takes <app> as its
-// first positional argument.
+// Flag values are read live by the app, never baked into a container. Every verb but create takes <app> first.
 func runFlags(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, flagsUsage(prog))
@@ -366,10 +359,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// writeFeatureFlagResult prints value according to of's resolved
-// format/query, falling back to plainOut for the plain default path,
-// the same success-output shape writeScheduledTaskResult establishes
-// for a sibling command group.
+// Same success output shape as writeScheduledTaskResult.
 func writeFeatureFlagResult(stdout, stderr io.Writer, of outputFlags, value any, plainOut func()) int {
 	if err := renderResult(stdout, of.Format, of.Query, value, func() { plainOut() }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)

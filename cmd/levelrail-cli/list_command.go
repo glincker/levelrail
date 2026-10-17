@@ -7,19 +7,7 @@ import (
 	"io"
 )
 
-// listCommandParams bundles a read-only, zero-positional-argument
-// subcommand's fixed inputs: the "parse the standard api flags, build a
-// client, fetch, render" skeleton every such subcommand in this package
-// otherwise repeats verbatim (apiFlagSet/parseAPIFlags/apiClientFromFlags/
-// reportError/writeScheduledTaskResult, in that order). Shared here
-// rather than left inline in each new call site added alongside it
-// (settings oauth list, settings email/ingress get, github-app repos,
-// gitlab-app projects, bitbucket-app repos, templates list, static-sites
-// list, domains certificates): that boilerplate is already duplicated
-// dozens of times across this package's older, pre-existing commands,
-// but concentrating nine more near-identical copies into one PR is what
-// actually trips a duplication check, so it gets factored out here
-// instead of repeated a ninth-plus time.
+// listCommandParams holds the fixed inputs of a read-only, zero-argument list subcommand.
 type listCommandParams[T any] struct {
 	cmdLabel  string
 	jsonUsage string
@@ -52,10 +40,6 @@ func runListCommand[T any](prog string, args []string, stdout, stderr io.Writer,
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { p.print(stdout, result) })
 }
 
-// twoArgListParams is listCommandParams' counterpart for a read-only
-// subcommand taking exactly two positional arguments (an owner/repo or
-// workspace/repo-slug pair): github-app/bitbucket-app's own "branches"
-// subcommands share this exact shape.
 type twoArgListParams[T any] struct {
 	cmdLabel  string
 	jsonUsage string
@@ -96,13 +80,7 @@ func runTwoArgList[T any](prog string, args []string, stdout, stderr io.Writer, 
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { p.print(stdout, result) })
 }
 
-// twoArgUseAsSourceParams is twoArgListParams' counterpart for the
-// "use-as-source" mutation every git provider App integration exposes at
-// an owner/repo (or workspace/repo-slug) path: github-app and
-// bitbucket-app share this exact shape, differing only in their fetch
-// call and response type. gitlab-app takes a single numeric project ID
-// instead of two strings, so it stays its own, non-generic
-// implementation rather than being forced into this shape.
+// gitlab-app takes a numeric project ID, so it does not share this shape.
 type twoArgUseAsSourceParams[T any] struct {
 	cmdLabel  string
 	usageText string
@@ -147,10 +125,6 @@ func runTwoArgUseAsSource[T any](prog string, args []string, stdout, stderr io.W
 	return writeScheduledTaskResult(stdout, stderr, of, result, func() { p.print(stdout, result) })
 }
 
-// bindUseAsSourceFlags registers the five flags every provider's own
-// use-as-source subcommand shares (app-name/branch/build-type/build-path/
-// trigger-mode), the same request shape internal/api's
-// useRepoAsSourceRequest defines for all three providers.
 func bindUseAsSourceFlags(fs *flag.FlagSet) *useRepoAsSourceRequest {
 	req := &useRepoAsSourceRequest{}
 	fs.StringVar(&req.AppName, "app-name", "", "app to connect this repo to (required)")

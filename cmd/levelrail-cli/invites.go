@@ -5,11 +5,7 @@ import (
 	"io"
 )
 
-// runInvites dispatches "invites <verb> [args] [flags]" to one of
-// create/list/revoke. Every route these subcommands call is
-// requireAbility-gated server-side (internal/api/routes.go) at
-// AbilityRoot, the same tier "users create" itself requires: an invite
-// is a deferred version of that same "hand out access" action.
+// Routes are requireAbility-gated at root, the same tier as user creation.
 func runInvites(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, invitesUsage(prog))

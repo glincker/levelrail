@@ -5,11 +5,7 @@ import (
 	"io"
 )
 
-// runRegistryCredentials dispatches "registry-credentials <verb> [flags]"
-// to one of list/get/create/update/delete: managing the pull credentials
-// internal/api/registry_credentials.go exposes (Settings -> Registry
-// credentials in the web UI), the same credentials app.yaml's
-// build.registryCredential field references by name.
+// These are the credentials app.yaml's build.registryCredential references by name.
 func runRegistryCredentials(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, registryCredentialsUsage(prog))

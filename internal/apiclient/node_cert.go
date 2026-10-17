@@ -2,7 +2,6 @@ package apiclient
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -10,40 +9,18 @@ import (
 // NodeCertResource mirrors internal/api's nodeCertResource.
 type NodeCertResource struct {
 	// State is ok, expiring, critical, expired, revoked, or unknown.
-	State              string     `json:"state"`
-	NotAfter           *time.Time `json:"not_after,omitempty"`
-	DaysRemaining      *int       `json:"days_remaining,omitempty"`
-	RenewedAt          *time.Time `json:"renewed_at,omitempty"`
-	Generation         int        `json:"generation"`
-	KeyOrigin          string     `json:"key_origin"`
-	PreviousValidUntil *time.Time `json:"previous_valid_until,omitempty"`
-	RevokedAt          *time.Time `json:"revoked_at,omitempty"`
-	WarningDays        int        `json:"warning_days"`
-	CriticalDays       int        `json:"critical_days"`
-	// renewal is unexported so the MCP output schemas, which are derived from
-	// this type and have almost no token headroom, do not grow.
-	renewal *NodeCertRenewal
+	State              string           `json:"state"`
+	NotAfter           *time.Time       `json:"not_after,omitempty"`
+	DaysRemaining      *int             `json:"days_remaining,omitempty"`
+	RenewedAt          *time.Time       `json:"renewed_at,omitempty"`
+	Generation         int              `json:"generation"`
+	KeyOrigin          string           `json:"key_origin"`
+	PreviousValidUntil *time.Time       `json:"previous_valid_until,omitempty"`
+	RevokedAt          *time.Time       `json:"revoked_at,omitempty"`
+	WarningDays        int              `json:"warning_days"`
+	CriticalDays       int              `json:"critical_days"`
+	Renewal            *NodeCertRenewal `json:"renewal,omitempty"`
 }
-
-// UnmarshalJSON reads the wire form, including the renewal block.
-func (c *NodeCertResource) UnmarshalJSON(b []byte) error {
-	type plain NodeCertResource
-	aux := struct {
-		*plain
-		Renewal *NodeCertRenewal `json:"renewal"`
-	}{plain: (*plain)(c)}
-	if err := json.Unmarshal(b, &aux); err != nil {
-		return err //nolint:wrapcheck // thin decoder wrapper, caller adds context
-	}
-	c.renewal = aux.Renewal
-	return nil
-}
-
-// Renewal returns the agent's last reported renewal failure, or nil.
-func (c *NodeCertResource) Renewal() *NodeCertRenewal { return c.renewal }
-
-// SetRenewal sets the renewal block, for building values in tests.
-func (c *NodeCertResource) SetRenewal(r *NodeCertRenewal) { c.renewal = r }
 
 // NodeCertRenewal mirrors internal/api's nodeCertRenewal.
 type NodeCertRenewal struct {

@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runAppsHealthScore implements "apps health-score <name>": GET
-// /api/v1/apps/{name}/health-score, the same pass/warn/fail synthesis
-// AppHealthScorePanel renders. A separate command from "apps health"
-// (apps_health.go, probe get/set/clear) rather than a new verb under
-// it: a different resource entirely, a computed verdict not stored
-// probe config, same "different shape, different command" reasoning
-// as apps_status.go vs "apps get".
+// Shows the computed pass/warn/fail verdict, separate from apps health probe config.
 func runAppsHealthScore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps health-score", "print the health score as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

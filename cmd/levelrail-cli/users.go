@@ -5,13 +5,7 @@ import (
 	"io"
 )
 
-// runUsers dispatches "users <verb> [args] [flags]" to one of
-// list/create/set-abilities/delete/roles. Every route these subcommands
-// call is requireAbility-gated server-side (internal/api/routes.go), not
-// session-only like "tokens", so like "nodes" these use the normal
-// bearer token resolution every other command in this CLI uses, provided
-// the token actually carries the required ability (AbilityRoot for
-// create/set-abilities/delete, AbilityRead for list/roles).
+// Dispatches list/create/set-abilities/delete/roles; the bearer token must carry the route's required ability.
 func runUsers(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, usersUsage(prog))

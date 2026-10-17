@@ -6,14 +6,6 @@ import (
 	"io"
 )
 
-// runAppsVaultEnv dispatches "apps vault-env <verb> [flags]" to one of
-// set/clear: PUT/DELETE /api/v1/apps/{name}/vault-env/{key}
-// (internal/api/apps_vault_env.go), declaring or removing one env var as
-// resolving live from the platform's configured external Vault instance,
-// for an app that already exists. Mirrors runAppsStorage's own set/clear
-// dispatch shape; unlike storage there is one entry per env var key, not
-// a single attachment, so both subcommands take an env var key as a
-// second positional argument.
 func runAppsVaultEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsVaultEnvUsage(prog))

@@ -13,22 +13,8 @@ import (
 // Kind distinguishes what a Rule evaluates.
 type Kind string
 
-// The nine rule kinds this package evaluates; see Rule's own doc
-// comment for which fields each uses. KindCertExpiry, KindPatchStatus,
-// KindNodeDiskSpace, and KindNodeResourceUsage use none of Rule's
-// threshold/crashloop fields: they watch every certificate
-// (cert_expiry.go), every node's patch status (patch_status.go), every
-// node's disk usage (disk_space.go), or every node's CPU/memory usage
-// (node_resource_usage.go) platform-wide, not a single Metric or
-// RestartWindow, so ResourceID on any of the four is only ever a
-// display label, not something their evaluator filters by.
-// KindDomainHealth is app-scoped like KindThreshold/KindCrashloop
-// (ResourceID picks out a real app), but watches every domain currently
-// configured on that app rather than a single Metric; see
-// domain_health.go. KindBackupMissing watches one specific database's or
-// service volume's scheduled backup cadence, picked out by the
-// Backup*-prefixed fields below rather than ResourceID; see
-// backup_missing.go.
+// Kinds other than threshold and crashloop ignore the threshold fields and watch platform-wide or backup-schedule resources.
+// For most of them ResourceID is only a display label.
 const (
 	KindThreshold            Kind = "threshold"
 	KindCrashloop            Kind = "crashloop"
@@ -84,20 +70,7 @@ const (
 // NotifyKind selects the notification payload shape (notify.go).
 type NotifyKind string
 
-// The eighteen payload shapes NewNotifier knows how to build; an unknown
-// or empty NotifyKind falls back to NotifyGeneric. NotifyEmail is the one
-// exception to "NotifyURL is a webhook URL": see emailNotifier's doc
-// comment in notify.go. NotifyPagerDuty is another: NotifyURL there
-// holds a routing key, not a URL, per notifyPagerDuty's own comment.
-// NotifyResend is a third: it needs both an API key and a destination
-// address, so NotifyURL there packs both as query parameters against a
-// fixed endpoint, the same convention NotifyPushover already uses for
-// its own two credentials; see parseResendCreds in notify.go.
-// NotifyOpsgenie is a fourth: it needs only an API key, packed the same
-// way against its own fixed endpoint; see parseOpsgenieCreds in notify.go.
-// NotifyWebpush is a fifth: NotifyURL is unused entirely, the destination
-// is every browser subscription this control plane holds, not something
-// a single channel row can name; see webpushNotifier in notify.go.
+// NotifyKind payload shapes. Kinds whose NotifyURL is not a webhook URL (email, PagerDuty, Resend, Opsgenie, Webpush) are documented in notify.go.
 const (
 	NotifyGeneric    NotifyKind = "generic"
 	NotifySlack      NotifyKind = "slack"
@@ -119,12 +92,7 @@ const (
 	NotifyWebpush    NotifyKind = "webpush"
 )
 
-// Rule is one alert rule: either a threshold check (Kind ==
-// KindThreshold, using Metric/Comparator/Threshold/ForDuration) or a
-// crashloop check (Kind == KindCrashloop, using
-// RestartCountThreshold/RestartWindow), plus its own current
-// evaluation state. See migrations/0001_alert_rules.sql for why the two
-// kinds share one table instead of two.
+// Rule is one alert rule, either a threshold check or a crashloop check, plus its current evaluation state.
 type Rule struct {
 	ID         string
 	Name       string
@@ -137,11 +105,7 @@ type Rule struct {
 	Threshold   float64
 	ForDuration time.Duration
 
-	// Crashloop-kind fields. RestartCountThreshold is also reused, with
-	// the same "N events triggers firing" meaning, by a
-	// KindScheduledTaskFailure rule: there it counts consecutive failed
-	// runs (store.ScheduledTask.ConsecutiveFailures) rather than restarts
-	// within RestartWindow, which that kind leaves unused.
+	// RestartCountThreshold also means consecutive failed runs for KindScheduledTaskFailure, where RestartWindow is unused.
 	RestartCountThreshold int
 	RestartWindow         time.Duration
 
@@ -150,18 +114,7 @@ type Rule struct {
 	// every other kind.
 	ScheduledTaskID string
 
-	// KindBackupMissing-only fields: which backup schedule this rule
-	// watches, mirroring store.BackupHistory's own database-vs-volume
-	// identity shape (ResourceKind/DatabaseName vs ServiceName/VolumeName,
-	// mutually exclusive). BackupResourceKind is
-	// store.BackupResourceKindDatabase or store.BackupResourceKindVolume;
-	// BackupDatabaseName is set for the former, BackupServiceName/
-	// BackupVolumeName for the latter. Empty for every other kind.
-	// ForDuration above is reused here as the grace period past a
-	// schedule's expected interval before a missing backup counts as
-	// overdue, the same "field means something slightly different per
-	// kind" reuse RestartCountThreshold already establishes for
-	// KindScheduledTaskFailure.
+	// Backup* fields pick the schedule a KindBackupMissing rule watches. ForDuration is the grace period past the expected interval.
 	BackupResourceKind string
 	BackupDatabaseName string
 	BackupServiceName  string
@@ -205,11 +158,7 @@ type Rule struct {
 // ErrRuleNotFound is returned by GetRule when no rule has that ID.
 var ErrRuleNotFound = errors.New("alerting: rule not found")
 
-// NewRuleID generates a random, URL-safe rule identifier. Exported so
-// internal/api can assign one when creating a rule from a request body
-// that doesn't include one, matching how a rule's ID is never
-// caller-chosen data (avoids a client picking a colliding or
-// predictable ID).
+// NewRuleID returns a random URL-safe rule ID, so callers never choose one and cannot collide or predict it.
 func NewRuleID() (string, error) {
 	b := make([]byte, 12)
 	if _, err := rand.Read(b); err != nil {
@@ -218,10 +167,7 @@ func NewRuleID() (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// SaveRule creates or fully replaces a rule's configuration. Does not
-// touch evaluation state (Firing/FiringSince/etc.): those are only ever
-// written by UpdateState, so an operator editing a rule's threshold
-// doesn't accidentally reset its current firing status.
+// SaveRule creates or replaces a rule's configuration. It never touches evaluation state, which only UpdateState writes.
 func (db *DB) SaveRule(ctx context.Context, r Rule) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	_, err := db.ExecContext(ctx, `
@@ -311,10 +257,7 @@ func (db *DB) ListRules(ctx context.Context) ([]Rule, error) {
 	return out, nil
 }
 
-// ListEnabledRules is what the evaluator (evaluate.go, crashloop.go)
-// actually loops over each tick: a disabled rule is skipped entirely,
-// not evaluated-but-not-notified, so a paused rule doesn't even pay for
-// a metrics query.
+// ListEnabledRules returns only enabled rules; disabled ones are skipped before any metrics query.
 func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
 	rows, err := db.QueryContext(ctx, ruleSelectColumns+` WHERE r.enabled = 1 ORDER BY r.name`)
 	if err != nil {
@@ -336,12 +279,7 @@ func (db *DB) ListEnabledRules(ctx context.Context) ([]Rule, error) {
 	return out, nil
 }
 
-// ListRulesForResource returns every rule scoped to resourceID, ordered
-// by name, regardless of enabled state. internal/api's alert-rule
-// handlers use this to list only one app's own rules
-// rather than every rule in the database; alert_rules already carries
-// idx_alert_rules_resource (migrations/0001_alert_rules.sql) for
-// exactly this lookup.
+// ListRulesForResource returns every rule scoped to resourceID, enabled or not, ordered by name.
 func (db *DB) ListRulesForResource(ctx context.Context, resourceID string) ([]Rule, error) {
 	rows, err := db.QueryContext(ctx, ruleSelectColumns+` WHERE r.resource_id = ? ORDER BY r.name`, resourceID)
 	if err != nil {
@@ -397,10 +335,7 @@ func (db *DB) UpdateState(ctx context.Context, id string, pendingSince, firingSi
 	return nil
 }
 
-// ruleSelectColumns resolves the *effective* notify_url/notify_kind via
-// COALESCE, mirroring deployTargetSelectColumns (deploy_notify.go)
-// exactly: the attached channel's values when set, this row's own
-// columns otherwise (legacy rows, or a deleted channel).
+// Effective notify_url and notify_kind come from the attached channel when set, else from the row's own columns (legacy rows or a deleted channel).
 const ruleSelectColumns = `
 	SELECT r.id, r.name, r.kind, r.resource_id,
 		r.metric, r.comparator, r.threshold, r.for_duration_seconds,

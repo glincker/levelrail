@@ -6,13 +6,7 @@ import (
 	"os"
 )
 
-// runAppVolumeBackups dispatches "app-volume-backups <verb> <app>
-// <volume> [flags]" to one of list/trigger/restore/schedule/verify/
-// verifications, mirroring runBackups' exact verb set (backups.go) for
-// an app service's own named Docker volume instead of a managed
-// database. <volume> is the logical name declared in that app's
-// app.yaml volumes: field (see "levelrail-cli apps get <app>" to list
-// them), not the resolved, platform-prefixed Docker volume name.
+// <volume> is the logical name from app.yaml volumes:, not the platform-prefixed Docker volume name.
 func runAppVolumeBackups(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appVolumeBackupsUsage(prog))

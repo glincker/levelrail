@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runAppsCostEstimate implements "apps cost <name>": GET
-// /api/v1/apps/{name}/cost-estimate (internal/api/cost_estimate.go's
-// handleAppCostEstimate), a read-only, deterministic "what this would
-// cost elsewhere" estimate derived from the app's declared or observed
-// CPU/memory. Not a real bill: the same read-and-suggest layer
-// runAppsResourceRecommendation already establishes.
+// Read-only estimate of what the app would cost elsewhere, not a real bill.
 func runAppsCostEstimate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps cost", "print the estimate as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

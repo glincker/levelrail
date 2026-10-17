@@ -1,5 +1,6 @@
-// Package placement is the multi-node scheduler: node label selectors plus
-// a simple spread over eligible nodes. No bin-packing, by design.
+// Package placement is the multi-node scheduler: label selectors, a fit
+// check against node CPU, memory and disk headroom, then a spread that
+// prefers the most headroom. No bin-packing and no affinity rules, by design.
 package placement
 
 import (
@@ -22,6 +23,10 @@ type Candidate struct {
 	Online      bool
 	// Load is how many apps and databases already run there.
 	Load int
+	// Capacity is what the node reported; Requested is what workloads
+	// already placed on it asked for.
+	Capacity  Capacity
+	Requested Resources
 }
 
 // Selector is a set of key=value pairs a node's labels must all carry.
@@ -92,6 +97,11 @@ type Request struct {
 	Selector Selector
 	// Exclude is skipped outright, typically the node being drained.
 	Exclude string
+	// Needs are the workload's total requests; zero asks for nothing.
+	Needs  Resources
+	Policy Policy
+	// Prefer wins when it is eligible, e.g. the node that serves ingress.
+	Prefer string
 }
 
 // Rejection says why one candidate was filtered out.
@@ -100,10 +110,25 @@ type Rejection struct {
 	Reason string `json:"reason"`
 }
 
-// Decision is the chosen node, plus every rejected candidate's reason.
+// Decision is the chosen node and the full account of how it was chosen.
 type Decision struct {
-	NodeID   string
-	Rejected []Rejection
+	NodeID     string       `json:"node_id"`
+	Why        string       `json:"why"`
+	Needs      Resources    `json:"needs"`
+	Policy     Policy       `json:"policy"`
+	Considered []Evaluation `json:"considered"`
+	Rejected   []Rejection  `json:"rejected"`
+	Warnings   []string     `json:"warnings,omitempty"`
+}
+
+// CapacityBlocked reports whether any node was refused for lack of room.
+func (d Decision) CapacityBlocked() bool {
+	for _, e := range d.Considered {
+		if e.Capacity {
+			return true
+		}
+	}
+	return false
 }
 
 // Filter returns why c may not take req, or "" when it may.
@@ -121,29 +146,55 @@ func Filter(c Candidate, req Request) string {
 	return ""
 }
 
-// Spread picks the least loaded eligible candidate, ties broken by ID so
-// the choice is deterministic.
+// Spread filters out nodes that cannot take req, then picks the one that
+// keeps the most headroom. Nodes whose capacity is unknown rank after every
+// verified node; ties fall to load, then node id, so the choice is stable.
 func Spread(cands []Candidate, req Request) (Decision, error) {
-	var d Decision
-	eligible := make([]Candidate, 0, len(cands))
-	for _, c := range cands {
-		if reason := Filter(c, req); reason != "" {
-			d.Rejected = append(d.Rejected, Rejection{NodeID: c.ID, Reason: reason})
-			continue
-		}
-		eligible = append(eligible, c)
-	}
-	if len(eligible) == 0 {
+	d := newDecision(cands, req)
+	ranked := rank(d.Considered)
+	if len(ranked) == 0 {
 		return d, fmt.Errorf("%w: %s", ErrNoEligibleNode, summarize(d.Rejected))
 	}
-	sort.Slice(eligible, func(i, j int) bool {
-		if eligible[i].Load != eligible[j].Load {
-			return eligible[i].Load < eligible[j].Load
+	prefer := false
+	for i, e := range ranked {
+		if req.Prefer != "" && e.NodeID == req.Prefer {
+			ranked[0], ranked[i] = ranked[i], ranked[0]
+			prefer = true
+			break
 		}
-		return eligible[i].ID < eligible[j].ID
-	})
-	d.NodeID = eligible[0].ID
+	}
+	d.NodeID = ranked[0].NodeID
+	d.Why = explainWinner(ranked, prefer)
+	if ranked[0].Unverified {
+		d.Warnings = append(d.Warnings, "capacity is unknown on the chosen node, so the fit could not be verified")
+	}
 	return d, nil
+}
+
+// Pinned records an operator's explicit choice. It is honored even when the
+// node lacks room, and the shortfall is carried as a warning.
+func Pinned(cands []Candidate, req Request, nodeID string) Decision {
+	d := newDecision(cands, req)
+	d.NodeID = nodeID
+	d.Why = "pinned by the operator"
+	for _, e := range d.Considered {
+		if e.NodeID == nodeID && !e.Eligible {
+			d.Warnings = append(d.Warnings, "the pinned node does not currently fit: "+e.Reason)
+		}
+	}
+	return d
+}
+
+func newDecision(cands []Candidate, req Request) Decision {
+	d := Decision{Needs: req.Needs, Policy: req.Policy.withDefaults(), Considered: make([]Evaluation, 0, len(cands))}
+	for _, c := range cands {
+		e := Evaluate(c, req)
+		d.Considered = append(d.Considered, e)
+		if !e.Eligible {
+			d.Rejected = append(d.Rejected, Rejection{NodeID: c.ID, Reason: e.Reason})
+		}
+	}
+	return d
 }
 
 // Check validates an explicit target against req, the manual-assignment path.
@@ -170,7 +221,7 @@ func summarize(rej []Rejection) string {
 		if r.Reason == "excluded" {
 			continue
 		}
-		parts = append(parts, r.NodeID+" "+r.Reason)
+		parts = append(parts, r.NodeID+": "+r.Reason)
 	}
 	if len(parts) == 0 {
 		return "no other node is registered"

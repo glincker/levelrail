@@ -6,11 +6,7 @@ import (
 	"sort"
 )
 
-// migrationReport is a "migrate <source>" command's full result: every
-// application the source reported, either successfully mapped or flagged
-// as needing manual review, plus whether --apply was used. Shared by
-// migrate_coolify.go, migrate_dokploy.go, and migrate_caprover.go; exactly
-// one of CoolifyURL/DokployURL/CaproverURL is set per run.
+// Exactly one of CoolifyURL, DokployURL, or CaproverURL is set per run.
 type migrationReport struct {
 	CoolifyURL  string      `json:"coolify_url,omitempty"`
 	DokployURL  string      `json:"dokploy_url,omitempty"`
@@ -63,13 +59,7 @@ func (r migrationReport) blockingApps() []mappedApp {
 	return out
 }
 
-// printMigrationReportHuman prints "migrate coolify"'s non-JSON output:
-// what migrated cleanly, what needs manual review, and for every
-// migrated app with a git source, the exact follow-up command to build
-// and deploy it, since git repo/branch identity is not itself persisted
-// Levelrail state (internal/api/builds.go's own triggerBuildRequest doc
-// comment: "no app in this codebase has a stored git or build config
-// today").
+// Prints the follow-up build command per git-sourced app, since repo and branch are not stored in Levelrail state.
 func printMigrationReportHuman(out io.Writer, r migrationReport, prog, outDir string) {
 	clean := r.cleanApps()
 	blocking := r.blockingApps()

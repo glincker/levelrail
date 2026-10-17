@@ -16,49 +16,34 @@ type MetricsSource interface {
 	QueryMetrics(ctx context.Context, resourceID, metric string, from, to time.Time) ([]telemetry.Sample, error)
 }
 
-// EvaluateThreshold runs one KindThreshold rule against source and
-// returns its updated evaluation state, to be persisted via
-// DB.UpdateState by the caller (engine.go). Pure with respect to
-// persistence: this function never writes to the database itself, so
-// its state-machine logic (the part actually worth testing precisely)
-// is testable without a real DB.
-//
-// Semantics: the rule's condition must hold continuously, checked on
-// every evaluation tick, for at least ForDuration before it graduates
-// from "pending" to "firing" (avoiding a single noisy sample flapping
-// a brand-new alert into existence). Once firing, it stays firing until
-// a tick observes the condition no longer holding, at which point it
-// resets to not-pending/not-firing immediately: there's no separate
-// "resolving" debounce, a single good sample is enough to consider it
-// recovered, asymmetric on purpose since false-positive resolution
-// (briefly saying "recovered" when it isn't) is a much smaller problem
-// than false-positive firing (paging someone for a blip).
+// EvaluateThreshold returns the rule's updated state and never writes to the database itself.
+// The condition must hold for ForDuration before firing, but one good sample resolves it at once, on purpose: a false resolve is less harmful than a false page.
 func EvaluateThreshold(ctx context.Context, source MetricsSource, r Rule, now time.Time) (Rule, error) {
-	// A short lookback (twice the collection interval Collector.Run
-	// uses in cmd/levelrail/main.go would be the ideal value to share,
-	// but this package doesn't depend on cmd/levelrail; 60s comfortably
-	// covers the 15s collection tick with margin for a slow write) is
-	// enough to find "the latest sample," not the whole evaluation
-	// window: ForDuration governs how long the condition must have been
-	// true, tracked via PendingSince across ticks, not by requesting a
-	// ForDuration-wide range and inspecting every sample in it.
+	// The short lookback finds only the latest sample; ForDuration is tracked across ticks via PendingSince, not by scanning its range.
 	const lookback = 60 * time.Second
 
-	samples, err := source.QueryMetrics(ctx, r.ResourceID, r.Metric, now.Add(-lookback), now)
-	if err != nil {
-		return r, fmt.Errorf("alerting: evaluate rule %q: query metrics: %w", r.ID, err)
+	var samples []telemetry.Sample
+	if IsRequestSignal(r.Metric) {
+		v, ok, err := requestSignalValue(ctx, source, r, now)
+		if err != nil {
+			return r, fmt.Errorf("alerting: evaluate rule %q: request signal: %w", r.ID, err)
+		}
+		if ok {
+			samples = []telemetry.Sample{{ResourceID: r.ResourceID, Metric: r.Metric, Timestamp: now, Value: v}}
+		}
+	} else {
+		var err error
+		samples, err = source.QueryMetrics(ctx, r.ResourceID, r.Metric, now.Add(-lookback), now)
+		if err != nil {
+			return r, fmt.Errorf("alerting: evaluate rule %q: query metrics: %w", r.ID, err)
+		}
 	}
 
 	next := r
 	next.LastEvaluatedAt = &now
 
 	if len(samples) == 0 {
-		// No recent data: neither confirms nor denies the condition.
-		// Treat like "condition not satisfied" for pending/firing
-		// purposes (a service that stopped reporting shouldn't keep an
-		// old firing alert artificially alive forever), but leave
-		// LastValue as whatever it last was rather than clearing it, so
-		// an operator can still see the last real reading.
+		// No recent data counts as not satisfied, so a silent service does not keep a firing alert alive. LastValue is kept so the last reading stays visible.
 		next.PendingSince = nil
 		next.Firing = false
 		next.FiringSince = nil
@@ -71,12 +56,8 @@ func EvaluateThreshold(ctx context.Context, source MetricsSource, r Rule, now ti
 	return advanceState(next, r, satisfies(latest.Value, r.Comparator, r.Threshold), r.ForDuration, now), nil
 }
 
-// advanceState is the pending/firing state machine shared by
-// EvaluateThreshold and EvaluateCrashloop (crashloop.go): both reduce to
-// "is the condition satisfied on this tick," then apply the identical
-// debounce-in, clear-immediately-out logic documented on
-// EvaluateThreshold. next already has LastEvaluatedAt/LastValue set by
-// the caller; this only touches Pending/Firing/FiringSince.
+// advanceState is the pending/firing state machine shared by EvaluateThreshold and EvaluateCrashloop.
+// Callers set LastEvaluatedAt and LastValue before calling it.
 func advanceState(next, prev Rule, satisfied bool, forDuration time.Duration, now time.Time) Rule {
 	if !satisfied {
 		next.PendingSince = nil

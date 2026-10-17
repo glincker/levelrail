@@ -9,10 +9,6 @@ import (
 	"testing"
 )
 
-// TestResolveRestoreConfirmation is a pure, table-driven test of the
-// confirmation gate itself: no HTTP, no flag parsing, exactly the
-// "structure the destructive check as its own testable function"
-// resolveRestoreConfirmation's own doc comment describes.
 func TestResolveRestoreConfirmation(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -40,10 +36,7 @@ func TestResolveRestoreConfirmation(t *testing.T) {
 	}
 }
 
-// TestRun_BackupsRestore_MismatchedConfirmNeverCallsAPI is the
-// integration-level version of the same requirement: a wrong --confirm
-// value must refuse before ever reaching the network. The fake server
-// fails the test outright if it receives any request at all.
+// The fake server fails on any request, so a wrong --confirm must not reach the network.
 func TestRun_BackupsRestore_MismatchedConfirmNeverCallsAPI(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		t.Fatalf("unexpected request to the API: %s %s", r.Method, r.URL.Path)

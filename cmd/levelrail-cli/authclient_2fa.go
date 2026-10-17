@@ -64,18 +64,12 @@ type twoFactorDisableRequest struct {
 	RecoveryCode string `json:"recovery_code,omitempty"`
 }
 
-// DisableTwoFactor calls POST /api/v1/auth/2fa/disable, re-verifying the
-// second factor itself (a live code or a recovery code) rather than the
-// account password, same reasoning handleDisableTwoFactor's own doc
-// comment gives.
+// DisableTwoFactor calls POST /api/v1/auth/2fa/disable, re-verifying the second factor, not the password.
 func (c *authSessionClient) DisableTwoFactor(ctx context.Context, code, recoveryCode string) error {
 	return c.do(ctx, http.MethodPost, "/api/v1/auth/2fa/disable", twoFactorDisableRequest{Code: code, RecoveryCode: recoveryCode}, nil)
 }
 
-// RegenerateRecoveryCodes calls
-// POST /api/v1/auth/2fa/recovery-codes/regenerate: replaces the whole
-// set, invalidating every previously issued code. Gated on a live TOTP
-// code specifically, never a recovery code, same as the server route.
+// RegenerateRecoveryCodes replaces the whole recovery code set and requires a live TOTP code.
 func (c *authSessionClient) RegenerateRecoveryCodes(ctx context.Context, code string) (twoFactorRecoveryCodesResponse, error) {
 	var out twoFactorRecoveryCodesResponse
 	err := c.do(ctx, http.MethodPost, "/api/v1/auth/2fa/recovery-codes/regenerate", twoFactorCodeRequest{Code: code}, &out)

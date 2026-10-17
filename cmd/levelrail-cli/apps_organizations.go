@@ -10,11 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsOrganizations dispatches "apps organizations <verb> [flags]" to
-// one of create/list/get/delete/set-project/clear-project, the CLI
-// counterpart of internal/api/organizations.go's own routes. An
-// organization groups projects (internal/api/organizations.go's own doc
-// comment); it has no direct app or database membership of its own.
+// An organization groups projects and has no direct app or database membership.
 func runAppsOrganizations(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsOrganizationsUsage(prog))

@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsDelete implements
-// "app-volume-backups delete <app> <volume> <backup-id>": DELETE
-// /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}, the app
-// service volume counterpart of runBackupsDelete (backups_delete.go). See
-// that function's own doc comment for why this needs no separate
-// --confirm flag beyond the backup id itself.
+// No --confirm flag: the backup id is the confirmation, as in runBackupsDelete.
 func runAppVolumeBackupsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsDeleteUsage(prog)) }

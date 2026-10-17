@@ -13,10 +13,7 @@ type envFileEntry struct {
 	Value string
 }
 
-// parseEnvFileBytes parses .env-format text into entries in file order
-// (duplicates preserved, the caller decides which wins). It handles
-// comments, an "export " prefix, single and double quotes, multiline
-// quoted values, inline " #" comments on unquoted values, and CRLF.
+// Duplicates are preserved; the caller decides which one wins.
 func parseEnvFileBytes(data []byte) []envFileEntry {
 	s := strings.ReplaceAll(strings.TrimPrefix(string(data), "\xef\xbb\xbf"), "\r\n", "\n")
 	var entries []envFileEntry

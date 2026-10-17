@@ -42,6 +42,9 @@ type multiNodeState struct {
 func WithMultiNode(s PlacementStore, cfg nodemove.Config, meshPortMin, meshPortMax int) Option {
 	return func(rt *Router) {
 		exec := &moveExecutor{rt: rt}
+		if ds, ok := s.(PlacementDecisionStore); ok {
+			rt.decisions = ds
+		}
 		rt.multiNode = &multiNodeState{
 			store:   s,
 			runner:  nodemove.NewRunner(s, exec, cfg, rt.logger, nodemove.WithDrainPlanner(exec)),
@@ -76,28 +79,11 @@ func (rt *Router) requireMultiNode(w http.ResponseWriter) bool {
 
 // placementCandidates is every registered node as the scheduler sees it.
 func (rt *Router) placementCandidates(ctx context.Context) ([]placement.Candidate, error) {
-	nodes, counts, err := rt.placementCounts(ctx)
+	inv, err := rt.loadPlacementInventory(ctx)
 	if err != nil {
 		return nil, err
 	}
-	labels := map[string]map[string]string{}
-	if rt.multiNode != nil {
-		if labels, err = rt.multiNode.store.ListNodeLabels(ctx); err != nil {
-			return nil, err
-		}
-	}
-	out := make([]placement.Candidate, 0, len(nodes))
-	for _, n := range nodes {
-		load := counts[n.ID]
-		if n.ID == rt.localNodeID {
-			load += counts[""]
-		}
-		out = append(out, placement.Candidate{
-			ID: n.ID, Name: n.Name, Labels: labels[n.ID], Schedulable: n.Schedulable,
-			Online: n.Status == store.NodeStatusOnline, Load: load,
-		})
-	}
-	return out, nil
+	return rt.candidatesFrom(ctx, inv)
 }
 
 func (rt *Router) selectorFor(ctx context.Context, kind, name string) (placement.Selector, error) {
@@ -131,8 +117,9 @@ func (rt *Router) checkPlacement(ctx context.Context, kind, name, nodeID string)
 	return fmt.Errorf("%w: node %s is not registered", placement.ErrNoEligibleNode, nodeID)
 }
 
-// spreadTarget picks the least loaded eligible node for kind/name, never exclude.
-func (rt *Router) spreadTarget(ctx context.Context, kind, name, exclude string) (string, error) {
+// spreadTarget picks the eligible node with the most headroom for kind/name,
+// never exclude, and records why.
+func (rt *Router) spreadTarget(ctx context.Context, kind, name, exclude, trigger string) (string, error) {
 	cands, err := rt.placementCandidates(ctx)
 	if err != nil {
 		return "", err
@@ -141,7 +128,14 @@ func (rt *Router) spreadTarget(ctx context.Context, kind, name, exclude string) 
 	if err != nil {
 		return "", err
 	}
-	d, err := placement.Spread(cands, placement.Request{Selector: sel, Exclude: exclude})
+	needs, err := rt.resourceNeeds(ctx, kind, name)
+	if err != nil {
+		return "", err
+	}
+	d, err := placement.Spread(cands, placement.Request{Selector: sel, Exclude: exclude, Needs: needs, Policy: rt.placementPolicy})
+	if err == nil {
+		rt.recordPlacement(ctx, kind, name, trigger, d)
+	}
 	return d.NodeID, err
 }
 
@@ -243,9 +237,13 @@ func (rt *Router) placementView(ctx context.Context, kind, name string) (placeme
 	if out.NodeSelector == nil {
 		out.NodeSelector = map[string]string{}
 	}
+	needs, err := rt.resourceNeeds(ctx, kind, name)
+	if err != nil {
+		return placementResource{}, err
+	}
 	for _, c := range cands {
-		if reason := placement.Filter(c, placement.Request{Selector: sel}); reason != "" {
-			out.Rejected = append(out.Rejected, placement.Rejection{NodeID: c.ID, Reason: reason})
+		if e := placement.Evaluate(c, placement.Request{Selector: sel, Needs: needs, Policy: rt.placementPolicy}); !e.Eligible {
+			out.Rejected = append(out.Rejected, placement.Rejection{NodeID: c.ID, Reason: e.Reason})
 		} else {
 			out.Eligible = append(out.Eligible, c.ID)
 		}

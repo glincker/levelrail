@@ -8,11 +8,6 @@ import (
 	"text/tabwriter"
 )
 
-// runAuditLog implements "audit-log": GET /api/v1/audit-log
-// (internal/api/audit.go), AbilityRoot-gated same as the API route
-// itself. --format csv switches to the same endpoint's ?format=csv
-// export, written to stdout or, with --output, to a file, for
-// compliance/record-keeping use rather than live dashboard viewing.
 func runAuditLog(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "audit-log", "print audit log entries as a JSON array to stdout and nothing else", stderr)
 	var limitFlag int

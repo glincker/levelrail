@@ -11,11 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// costEstimateObservedLookback is how far back handleAppCostEstimate
-// looks for usage history when an app has no declared resource limit to
-// estimate from, the same 7-day window defaultResourceRecommendationLookback
-// uses for the same reason: long enough to see a real p95, short enough
-// to still reflect current behavior.
+// Seven days: long enough to see a real p95, short enough to reflect current behavior.
 const costEstimateObservedLookback = 7 * 24 * time.Hour
 
 type costEstimateProviderResource struct {
@@ -65,13 +61,7 @@ func toCostEstimateResource(res costestimate.Result) costEstimateResource {
 	}
 }
 
-// handleAppCostEstimate handles GET /api/v1/apps/{name}/cost-estimate: a
-// read-only, deterministic "what would this app cost elsewhere" estimate
-// (internal/costestimate) derived from the app's declared CPU/memory
-// limits, falling back to observed usage history only when no limit is
-// configured. Unlike resource-recommendation, this never requires
-// telemetry: an app with explicit resources: in app.yaml gets an
-// estimate even on a control plane with telemetry turned off.
+// Uses declared limits first; unlike resource-recommendation it needs no telemetry.
 func (rt *Router) handleAppCostEstimate(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := r.Context()

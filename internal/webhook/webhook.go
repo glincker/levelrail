@@ -40,17 +40,14 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"os"
 	"strings"
 	"time"
-
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/build"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -212,7 +209,7 @@ func (c Config) TargetRef() string {
 // already carries, so a caller can feed clone output into the same
 // recorder/SSE path build progress already uses. Overridable in tests so
 // dispatch-logic tests don't need real network or git I/O; see
-// cloneAndCheckout for the real implementation.
+// Handler.cloneAndCheckout for the real implementation.
 type fetchFunc func(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error)
 
 // Handler is an http.Handler that receives GitHub push event payloads,
@@ -247,6 +244,7 @@ type Handler struct {
 	nudger ReconcileNudger
 	log    *slog.Logger
 	fetch  fetchFunc
+	cache  *sourcecache.Cache
 }
 
 // New builds a Handler. attempts and recorder may both be nil (see
@@ -256,7 +254,9 @@ func New(cfg Config, deployer Deployer, attempts AttemptStore, recorder *deployl
 	if log == nil {
 		log = slog.Default()
 	}
-	return &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, nudger: nudger, log: log, fetch: cloneAndCheckout}
+	h := &Handler{cfg: cfg, deployer: deployer, attempts: attempts, recorder: recorder, notifier: notifier, nudger: nudger, log: log, cache: sourcecache.New(sourcecache.ConfigFromEnv(""), log)}
+	h.fetch = h.cloneAndCheckout
+	return h
 }
 
 // nudgeReconciler calls h.nudger.Nudge() if one is configured, mirroring
@@ -720,69 +720,23 @@ func VerifySignature(secret, body []byte, header string) bool {
 	return hmac.Equal(sig, expected)
 }
 
-// cloneAndCheckout fetches repoURL to a new temp directory and checks out
-// sha specifically, returning the directory and a cleanup func that
-// removes it. Callers must call cleanup once done with the directory,
-// deploy attempt succeeded or failed, so repeated webhook calls don't
-// leak disk.
-//
-// progress, if non-nil, receives a log line when the clone starts and
-// when it finishes (success or failure): before this, a push-triggered
-// deploy produced no visible output at all until BuildKit started, which
-// on a large repo could be the majority of an operator's wait with
-// nothing on screen to show why.
-//
-// This does a full clone rather than a shallow (depth 1) one. A depth-1
-// clone only fetches the tip of history for whatever ref it targets, and
-// the pushed SHA is not guaranteed to still be that tip by the time this
-// runs (a later push, or a fetch that lands mid-force-push, can move it),
-// so a shallow clone can fail to find the commit at all. A full clone
-// costs more bandwidth per webhook call, but guarantees the target commit
-// is reachable without needing ref-guessing or retry logic. Fetching just
-// the one commit (a targeted `git fetch <sha>`, when the remote and
-// protocol support it) would avoid that cost, but adds real complexity
-// (not every remote allows fetching arbitrary SHAs) for a tradeoff that
-// doesn't matter yet at Phase 1's single-app, single-repo scale. Revisit
-// if a real repo's clone time becomes a measured problem.
-func cloneAndCheckout(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error) {
+// UseSourceCache routes this handler's fetches through the shared source
+// mirror, so a known commit needs no git host and an outage fails fast.
+func (h *Handler) UseSourceCache(c *sourcecache.Cache) { h.cache = c }
+
+// cloneAndCheckout checks sha of repoURL out into a temp directory through
+// the source cache and returns a cleanup func that removes it. Callers must
+// call cleanup once done, deploy succeeded or failed.
+func (h *Handler) cloneAndCheckout(ctx context.Context, repoURL, sha string, progress func(build.ProgressEvent)) (dir string, cleanup func(), err error) {
 	if progress == nil {
 		progress = func(build.ProgressEvent) {}
 	}
-
-	dir, err = os.MkdirTemp("", "levelrail-webhook-*")
+	progress(build.ProgressEvent{Log: fmt.Sprintf("Fetching %s...", repoURL), Stream: "stdout"})
+	co, err := h.cache.Checkout(ctx, repoURL, sha, "")
 	if err != nil {
-		return "", nil, fmt.Errorf("webhook: create temp checkout dir: %w", err)
+		progress(build.ProgressEvent{Log: fmt.Sprintf("Fetch failed: %s", err), Stream: "stderr"})
+		return "", nil, fmt.Errorf("webhook: fetch %q at %q: %w", repoURL, sha, err)
 	}
-	cleanup = func() {
-		if rmErr := os.RemoveAll(dir); rmErr != nil {
-			slog.Default().Error("webhook: failed to remove temp checkout dir", "dir", dir, "error", rmErr)
-		}
-	}
-
-	progress(build.ProgressEvent{Log: fmt.Sprintf("Cloning %s...", repoURL), Stream: "stdout"})
-
-	repo, err := git.PlainCloneContext(ctx, dir, false, &git.CloneOptions{
-		URL: repoURL,
-	})
-	if err != nil {
-		progress(build.ProgressEvent{Log: fmt.Sprintf("Clone failed: %s", err), Stream: "stderr"})
-		cleanup()
-		return "", nil, fmt.Errorf("webhook: clone %q: %w", repoURL, err)
-	}
-
-	wt, err := repo.Worktree()
-	if err != nil {
-		progress(build.ProgressEvent{Log: fmt.Sprintf("Clone failed: %s", err), Stream: "stderr"})
-		cleanup()
-		return "", nil, fmt.Errorf("webhook: get worktree for %q: %w", repoURL, err)
-	}
-
-	if err := wt.Checkout(&git.CheckoutOptions{Hash: plumbing.NewHash(sha)}); err != nil {
-		progress(build.ProgressEvent{Log: fmt.Sprintf("Checkout of %s failed: %s", sha, err), Stream: "stderr"})
-		cleanup()
-		return "", nil, fmt.Errorf("webhook: checkout %q at %q: %w", repoURL, sha, err)
-	}
-
 	progress(build.ProgressEvent{Log: fmt.Sprintf("Checked out %s", sha), Stream: "stdout"})
-	return dir, cleanup, nil
+	return co.Dir, co.Cleanup, nil
 }

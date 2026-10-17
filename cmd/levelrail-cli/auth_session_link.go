@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runAuthSessionLink implements "auth session-link": POST
-// /api/v1/auth/session-links via client.go's own Client.MintSessionLink,
-// the same resolved-token auth every other command in this CLI uses.
-// Requires the token to hold AbilityRoot, enforced server-side. Prints
-// the ready-to-open URL and nothing else: opening it signs the browser
-// in without any further command.
+// runAuthSessionLink mints a session link via POST /api/v1/auth/session-links. The server requires AbilityRoot.
 func runAuthSessionLink(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "auth session-link", "print the new session link as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authSessionLinkUsage(prog)) }

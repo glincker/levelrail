@@ -24,6 +24,9 @@ func Explain(p Policy, method, path string) []Step {
 		path = "/" + path
 	}
 	var steps []Step
+	if sh := p.Shield; sh != nil {
+		steps = append(steps, Step{Stage: KindShield, Outcome: shieldText(*sh)})
+	}
 	if r := p.Redirects; r != nil {
 		if r.LowercaseHost {
 			steps = append(steps, Step{Stage: KindRedirects, Outcome: "a host with upper case letters is redirected to its lower case form"})
@@ -176,4 +179,24 @@ func lastSegment(path string) string {
 		return path[i+1:]
 	}
 	return path
+}
+
+func shieldText(s Shield) string {
+	var parts []string
+	if s.RatePerMinute > 0 {
+		parts = append(parts, fmt.Sprintf("%d requests per minute per client", s.RatePerMinute))
+	}
+	if s.MaxConcurrent > 0 {
+		parts = append(parts, fmt.Sprintf("%d concurrent requests per client", s.MaxConcurrent))
+	}
+	if s.MaxBodyBytes > 0 {
+		parts = append(parts, fmt.Sprintf("request bodies up to %d bytes", s.MaxBodyBytes))
+	}
+	if s.BlockBots {
+		parts = append(parts, "bad bot user agents are refused")
+	}
+	if len(parts) == 0 {
+		parts = append(parts, "no limit set")
+	}
+	return "abuse shield: " + strings.Join(parts, "; ") + fmt.Sprintf("; %d allowlisted entries always pass", len(s.Allow))
 }

@@ -23,11 +23,7 @@ type LogsSource interface {
 	QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]telemetry.LogEntry, error)
 }
 
-// RuleStore is the narrow store surface Engine needs: list what to
-// evaluate, persist the result. *DB satisfies this structurally. The
-// two CertExpiry methods are what a kind=cert_expiry rule uses to
-// remember its per-domain state across ticks (EvaluateCertExpiry,
-// cert_expiry.go); every other rule kind never calls them.
+// RuleStore is the narrow store surface Engine needs; *DB satisfies it structurally.
 type RuleStore interface {
 	ListEnabledRules(ctx context.Context) ([]Rule, error)
 	UpdateState(ctx context.Context, id string, pendingSince, firingSince *time.Time, firing bool, evaluatedAt time.Time, value *float64) error
@@ -40,18 +36,10 @@ type RuleStore interface {
 // container's logs.
 const crashloopLogLines = 200
 
-// crashloopLogLookback bounds how far back Engine searches for those
-// 200 lines. A crashlooping container's logs from the last 15 minutes
-// are what's actually useful to see; going back further risks pulling
-// in an earlier, unrelated incident's output instead.
+// crashloopLogLookback is 15 minutes, so the tail comes from this incident and not an earlier unrelated one.
 const crashloopLogLookback = 15 * time.Minute
 
-// Engine evaluates every enabled rule on an interval, persists each
-// rule's updated state, and notifies only on a firing/resolved
-// transition, never on every tick a rule stays in the same state
-// (the same reasoning already documented on Event.Resolved:
-// repeated identical notifications train an operator to ignore the
-// channel).
+// Engine evaluates enabled rules each tick and notifies only on firing or resolved transitions, never on repeats.
 type Engine struct {
 	rules          RuleStore
 	metrics        MetricsSource
@@ -68,21 +56,12 @@ type Engine struct {
 	newNotifier    func(Rule) Notifier
 	logger         *slog.Logger
 
-	// autoRollback/autoRollbackNudger back MaybeAutoRollback
-	// (crashloop.go), set via SetAutoRollback. Both nil (the default)
-	// means the feature is off platform-wide regardless of any
-	// individual app's own opt-in, the same "absence degrades, never
-	// errors" shape every other optional Engine dependency above follows.
+	// Both nil (the default) disables crashloop auto-rollback platform-wide.
 	autoRollback        AutoRollbackStore
 	autoRollbackNudger  deploy.ReconcileNudger
 	autoRollbackTracker *AutoRollbackTracker
 
-	// sloAutoRollback/sloAutoRollbackNudger/sloAutoRollbackHistory back
-	// MaybeAutoRollbackOnSLOBurn (slo_burn_rollback.go), set via
-	// SetSLOBurnAutoRollback. A separate tracker from autoRollbackTracker
-	// above: crashloop and SLO-burn rollback are independent opt-ins
-	// (different DesiredService fields), so one kind's dedup state must
-	// never suppress the other's.
+	// Kept separate from autoRollbackTracker: the two opt-ins are independent, so one must not suppress the other.
 	sloAutoRollback        SLOAutoRollbackStore
 	sloAutoRollbackNudger  deploy.ReconcileNudger
 	sloAutoRollbackHistory SLOBurnHistoryRecorder
@@ -131,28 +110,8 @@ type Engine struct {
 	logRule logRuleRuntime
 }
 
-// NewEngine builds an Engine. newNotifier defaults to a Notifier with no
-// email capability configured if nil; a real caller passes a closure
-// capturing an email.Sender instead. certs may be nil if no cert
-// storage is configured; a kind=cert_expiry rule then logs a warning and
-// is skipped each tick rather than evaluated. nodes and scheduledTasks
-// may likewise be nil, in which case a kind=patch_status or
-// kind=scheduled_task_failure rule is skipped the same way.
-// certExpiryWarningWindow and certRenewalStalledThreshold fall back to
-// DefaultCertExpiryWarningWindow/DefaultCertRenewalStalledThreshold when
-// passed as 0; patchStatusThreshold falls back to
-// DefaultPatchStatusThreshold, nodeDiskSpaceThreshold falls back to
-// DefaultNodeDiskSpaceThresholdPercent, and nodeCPUThreshold/
-// nodeMemoryThreshold fall back to DefaultNodeCPUThresholdPercent/
-// DefaultNodeMemoryThresholdBytes, all the same way. nodeServices may be
-// nil, in which case a kind=node_resource_usage rule is skipped the same
-// way a kind=patch_status rule is when nodes is nil. domainApps and
-// domainChecker may likewise be nil, in which case a kind=domain_health
-// rule is skipped the same way; domainHealthCheckInterval falls back to
-// DefaultDomainHealthCheckInterval when passed as 0. backups may likewise
-// be nil, in which case a kind=backup_missing rule is skipped the same
-// way; backupMissingGracePeriod falls back to
-// DefaultBackupMissingGracePeriod when passed as 0.
+// NewEngine builds an Engine; a nil optional dependency disables only the rule kinds that need it.
+// Zero thresholds fall back to their Default constants.
 func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker *RestartTracker, certs CertSource, scheduledTasks ScheduledTaskSource, certExpiryWarningWindow, certRenewalStalledThreshold time.Duration, nodes NodeSource, patchStatusThreshold, nodeDiskSpaceThreshold float64, nodeServices NodeServiceSource, nodeCPUThreshold, nodeMemoryThreshold float64, domainApps AppDomainSource, domainChecker DomainCheckSource, domainHealthCheckInterval time.Duration, backups BackupSource, backupMissingGracePeriod time.Duration, newNotifier func(Rule) Notifier, logger *slog.Logger) *Engine {
 	if newNotifier == nil {
 		newNotifier = func(r Rule) Notifier { return NewNotifier(nil, nil, nil, r) }
@@ -200,28 +159,13 @@ func NewEngine(rules RuleStore, metrics MetricsSource, logs LogsSource, tracker 
 	}
 }
 
-// SetAutoRollback wires crashloop auto-rollback into e: once set, a
-// KindCrashloop rule that transitions to firing, or stays firing across a
-// desired-image change, checks its app's own AutoRollbackOnCrashloop
-// opt-in and, if set, rolls back automatically (MaybeAutoRollback,
-// crashloop.go). A setter rather than a NewEngine parameter deliberately:
-// this keeps every existing call site and test unaffected by an optional
-// dependency most callers don't need, the same "nil until explicitly
-// wired" shape st/nudger already have inside MaybeAutoRollback itself.
+// SetAutoRollback enables crashloop auto-rollback; a setter so optional wiring leaves NewEngine's signature alone.
 func (e *Engine) SetAutoRollback(st AutoRollbackStore, nudger deploy.ReconcileNudger) {
 	e.autoRollback = st
 	e.autoRollbackNudger = nudger
 }
 
-// SetSLOBurnAutoRollback wires SLO-burn auto-rollback into e: once set, a
-// KindSLOBurn rule that transitions to firing, or stays firing across a
-// desired-image change, checks its app's own AutoRollbackOnSLOBurn mode
-// and acts accordingly (MaybeAutoRollbackOnSLOBurn,
-// slo_burn_rollback.go). A setter rather than a NewEngine parameter, and
-// history a separate argument from st, for the same reasons SetAutoRollback
-// already documents plus one more: st and history are always two
-// different *DB instances in this codebase (store.DB vs alerting.DB, see
-// alerting.DB's own doc comment on why they're separate databases).
+// SetSLOBurnAutoRollback enables SLO-burn auto-rollback; history must be a separate *DB from st.
 func (e *Engine) SetSLOBurnAutoRollback(st SLOAutoRollbackStore, nudger deploy.ReconcileNudger, history SLOBurnHistoryRecorder) {
 	e.sloAutoRollback = st
 	e.sloAutoRollbackNudger = nudger
@@ -242,10 +186,7 @@ func (e *Engine) SetLogArchive(src LogArchiveSource) { e.logArchive = src }
 // SetRestoreDrills enables kind=restore_drill_failed rules.
 func (e *Engine) SetRestoreDrills(src RestoreDrillSource) { e.restoreDrills = src }
 
-// SetVersionSkew enables kind=version_skew rules: settings supplies the
-// configured update channel, fetchers is the shared GitHub lookup
-// (kit/upgrade), the same one GET /api/v1/updates and
-// internal/updatecheck.Scheduler both use.
+// SetVersionSkew enables kind=version_skew rules using the shared GitHub update lookup.
 func (e *Engine) SetVersionSkew(settings VersionSkewSettingsSource, fetchers upgrade.Fetchers) {
 	e.versionSkewSettings = settings
 	e.versionSkewFetchers = fetchers
@@ -280,12 +221,7 @@ func (e *Engine) SetChanges(src ChangeSource, link func(app string) string) {
 // history. Unset, every transition notifies directly.
 func (e *Engine) SetNoiseControl(n *NoiseControl) { e.noise = n }
 
-// Tick evaluates every enabled rule once. Errors from individual rules
-// (a metrics query failing, a notification failing to send) are
-// collected and joined, never stopping evaluation of the remaining
-// rules: the same "one broken resource must not block the rest"
-// principle reconcile.Engine.ReconcileAll already applies to
-// controllers, applied here to alert rules.
+// Tick evaluates every enabled rule once; one rule's error is joined into the result and never stops the others.
 func (e *Engine) Tick(ctx context.Context) error {
 	rules, err := e.rules.ListEnabledRules(ctx)
 	if err != nil {
@@ -556,24 +492,12 @@ func (e *Engine) Tick(ctx context.Context) error {
 			if r.Kind == KindSLOBurn && e.sloEscalated(r.ID, next.Severity) {
 				e.dispatch(ctx, next, false, nil, nil, nil, nil, nil, nil, "", "", sloNotice, "")
 			}
-			// No dispatch here: a rule that's still firing sends no repeat
-			// notification (see dispatch's own doc comment on why). But a
-			// second, genuinely different bad deploy inside the same
-			// RestartWindow never produces its own becameFiring transition,
-			// so auto-rollback still needs a chance to re-examine this rule
-			// on every tick it stays firing. Gated on autoRollbackTracker
-			// already having an entry for this resourceID (armed): a
-			// service that has never auto-rolled-back has nothing new for
-			// MaybeAutoRollback to detect here, and skipping the check
-			// avoids a store round trip for every other still-firing rule.
+			// A still-firing rule sends no repeat notification, so re-check auto-rollback each tick for a new bad deploy.
+			// Gated on an existing autoRollbackTracker entry to skip a store round trip for other rules.
 			if r.Kind == KindCrashloop && e.autoRollback != nil && e.autoRollbackTracker.armed(next.ResourceID) {
 				MaybeAutoRollback(ctx, e.autoRollback, e.autoRollbackNudger, e.autoRollbackTracker, next.ResourceID, e.logger)
 			}
-			// Same reasoning as the crashloop check above: a still-firing
-			// SLO-burn rule sends no repeat notification, but a second,
-			// genuinely different bad deploy inside the same firing
-			// episode never produces its own becameFiring transition, so
-			// this still needs a chance to re-examine the rule each tick.
+			// Same as the crashloop check above, for SLO-burn rules.
 			if r.Kind == KindSLOBurn && e.sloAutoRollback != nil && e.sloAutoRollbackTracker.armed(next.ResourceID) {
 				MaybeAutoRollbackOnSLOBurn(ctx, e.sloAutoRollback, e.sloAutoRollbackHistory, e.sloAutoRollbackNudger, e.sloAutoRollbackTracker, next, sloNotice, e.logger)
 			}
@@ -600,12 +524,7 @@ func (e *Engine) sloForget(id string) {
 	delete(e.sloSeverity, id)
 }
 
-// dispatch sends one notification for r's transition. Failures are
-// logged, not returned: a notification failing to send must never stop
-// evaluation of other rules, and the rule's own state was already
-// persisted successfully before dispatch is called, so a lost
-// notification doesn't leave the rule's stored state inconsistent with
-// reality, only the operator momentarily uninformed.
+// dispatch logs send failures rather than returning them, so one failed notification never stops other rules.
 func (e *Engine) dispatch(ctx context.Context, r Rule, resolved bool, certNotices, patchNotices, diskSpaceNotices, resourceUsageNotices, domainHealthNotices, nodeNotices []string, taskFailureNotice, backupMissingNotice, sloNotice, versionSkewNotice string) {
 	// r.Enabled is already resolved against its attached channel
 	// (scanRule): a disabled channel silences the rule the same way
@@ -730,11 +649,7 @@ func (e *Engine) revealRuleTarget(ctx context.Context, r *Rule) error {
 	return nil
 }
 
-// fetchRecentLogLines returns the most recent up to crashloopLogLines
-// messages for resourceID, oldest of that tail first (matching how a
-// log viewer reads top-to-bottom). A query failure returns nil, logged,
-// not propagated: a firing crashloop notification without log lines
-// attached is still far more useful than no notification at all.
+// A query failure returns nil and is logged: a firing notification without log lines still beats none.
 func (e *Engine) fetchRecentLogLines(ctx context.Context, resourceID string) []string {
 	now := time.Now()
 	entries, err := e.logs.QueryLogs(ctx, resourceID, now.Add(-crashloopLogLookback), now, "")

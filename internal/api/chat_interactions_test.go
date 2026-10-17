@@ -139,10 +139,7 @@ func discordInteractionRequest(t *testing.T, priv ed25519.PrivateKey, customID s
 	return req
 }
 
-// newTestRouterForChatApprovals wires notification channels (needed by
-// both the chat-interaction handlers and requestDeployApproval's own
-// best-effort chat notify) the same way newTestRouterWithNotificationChannels
-// does, reused here under this file's own name for clarity at call sites.
+// Wires notification channels the same way newTestRouterWithNotificationChannels does.
 func newTestRouterForChatApprovals(t *testing.T) (*Router, *store.DB, *alerting.DB) {
 	return newTestRouterWithNotificationChannels(t)
 }
@@ -249,12 +246,7 @@ func TestHandleSlackInteraction_InvalidSignatureRejected(t *testing.T) {
 	}
 }
 
-// TestHandleSlackInteraction_ReplayCannotDoubleApprove proves a second,
-// identically-valid interaction for an already-decided approval cannot
-// apply again: DecideDeployApproval's own compare-and-swap
-// (WHERE status = 'pending') is what actually enforces this, exercised
-// here through the real HTTP path a replayed or retried Slack delivery
-// would take.
+// A replayed approval cannot apply twice: DecideDeployApproval's status compare-and-swap enforces it.
 func TestHandleSlackInteraction_ReplayCannotDoubleApprove(t *testing.T) {
 	rt, db, adb := newTestRouterForChatApprovals(t)
 	requester := loginTestSession(t, rt, db)
@@ -277,10 +269,7 @@ func TestHandleSlackInteraction_ReplayCannotDoubleApprove(t *testing.T) {
 
 	second := httptest.NewRecorder()
 	rt.Handler().ServeHTTP(second, slackInteractionRequest(t, secret, alerting.SlackApprovalActionApprove, id))
-	// The replay is still a verified, well-formed interaction, so the
-	// handler responds 200 (there is no HTTP-status channel back to the
-	// original approver to retry against); what must not happen is a
-	// second apply.
+	// A replay still gets 200, since there is no channel back to the approver; the second apply must not happen.
 	if second.Code != http.StatusOK {
 		t.Fatalf("replayed approve: status = %d, want %d; body = %s", second.Code, http.StatusOK, second.Body.String())
 	}

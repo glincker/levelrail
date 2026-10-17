@@ -15,10 +15,7 @@ type channelSecretSealer interface {
 	CountPlaintextNotificationChannels(ctx context.Context) (int, error)
 }
 
-// setupNotificationChannelSecrets seals channel credentials under the
-// envelope manager and encrypts any plaintext rows left from older
-// releases. Never fatal: without a master key channels keep working and
-// the doctor warns instead.
+// setupNotificationChannelSecrets seals channel credentials and encrypts plaintext rows from older releases. Never fatal: without a master key, doctor warns.
 func setupNotificationChannelSecrets(ctx context.Context, logger *slog.Logger, db channelSecretSealer, mgr *secrets.Manager) {
 	if mgr == nil {
 		if n, err := db.CountPlaintextNotificationChannels(ctx); err == nil && n > 0 {

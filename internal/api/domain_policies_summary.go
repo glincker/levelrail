@@ -13,14 +13,15 @@ import (
 
 // policyLimitsResource is the caps the dashboard shows next to each editor.
 type policyLimitsResource struct {
-	MaxHeaderRules    int   `json:"max_header_rules"`
-	MaxForwarders     int   `json:"max_forwarders"`
-	MaxCacheRules     int   `json:"max_cache_rules"`
-	MaxRegexLen       int   `json:"max_regex_len"`
-	MaxHeaderValueLen int   `json:"max_header_value_len"`
-	CacheMaxObject    int64 `json:"cache_max_object_bytes"`
-	CacheTotalBytes   int64 `json:"cache_total_bytes"`
-	ForwardTimeoutSec int   `json:"forward_timeout_seconds"`
+	MaxHeaderRules    int                  `json:"max_header_rules"`
+	MaxForwarders     int                  `json:"max_forwarders"`
+	MaxCacheRules     int                  `json:"max_cache_rules"`
+	MaxRegexLen       int                  `json:"max_regex_len"`
+	MaxHeaderValueLen int                  `json:"max_header_value_len"`
+	CacheMaxObject    int64                `json:"cache_max_object_bytes"`
+	CacheTotalBytes   int64                `json:"cache_total_bytes"`
+	ForwardTimeoutSec int                  `json:"forward_timeout_seconds"`
+	Shield            shieldLimitsResource `json:"shield"`
 }
 
 // domainPoliciesResource is GET .../policies: every section plus the
@@ -72,6 +73,7 @@ func (rt *Router) handleGetDomainPolicies(w http.ResponseWriter, r *http.Request
 			MaxHeaderRules: l.MaxHeaderRules, MaxForwarders: l.MaxForwarders, MaxCacheRules: l.MaxCacheRules,
 			MaxRegexLen: l.MaxRegexLen, MaxHeaderValueLen: l.MaxHeaderValueLen, CacheMaxObject: l.CacheMaxObject,
 			CacheTotalBytes: ingress.DefaultResponseCache().MaxBytes(), ForwardTimeoutSec: int(l.ForwardTimeout.Seconds()),
+			Shield: newShieldLimits(l),
 		},
 		Preview:  trafficpolicy.Explain(p, "GET", "/"),
 		Warnings: warnings,
@@ -134,6 +136,9 @@ func (rt *Router) handlePreviewDomainPolicies(w http.ResponseWriter, r *http.Req
 		}
 		if d.Redirects != nil {
 			merged.Redirects = d.Redirects
+		}
+		if d.Shield != nil {
+			merged.Shield = d.Shield
 		}
 	}
 	resp := policyPreviewResponse{Steps: trafficpolicy.Explain(merged, strings.ToUpper(req.Method), req.Path)}

@@ -29,12 +29,8 @@ type PlacementSource interface {
 // SendFunc delivers one event to its channel.
 type SendFunc func(ctx context.Context, ev Event) error
 
-// NoiseControl sits between rule evaluation and notification. It applies
-// consecutive-failure thresholds, flapping detection, silences,
-// maintenance windows, node-down inhibition, grouping and per-channel
-// rate limits, and records every decision in alert history. State is
-// in memory: a control plane restart forgets pending groups, streaks and
-// suppressed fires (rule firing state itself is persisted by the engine).
+// NoiseControl sits between evaluation and notification and applies debounce, flapping, silences, and rate limits.
+// Its state is in memory, so a restart forgets pending groups and streaks.
 type NoiseControl struct {
 	cfg       NoiseConfig
 	store     NoiseStore

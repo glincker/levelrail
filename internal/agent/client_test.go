@@ -192,13 +192,7 @@ func TestServeSession_WatchEvents_EmitsProxiedEvent(t *testing.T) {
 	}
 }
 
-// TestServeSession_DispatchesMeshRequests exercises the same path a real
-// control plane connection uses (WithMesh -> serveSession's own
-// ApplyMesh/RotateMeshKey branches, mesh_dispatch.go), rather than
-// calling handleApplyMesh/handleRotateMeshKey directly the way
-// mesh_dispatch_test.go does: this is the end-to-end proof that a
-// mesh-enabled Session actually reaches the applier, not just that the
-// handlers work in isolation.
+// TestServeSession_DispatchesMeshRequests proves a mesh-enabled session reaches the applier, not just that the handlers work.
 func TestServeSession_DispatchesMeshRequests(t *testing.T) {
 	stream := newFakeAgentClientStream()
 	applier := &fakeMeshApplier{
@@ -253,10 +247,7 @@ func TestServeSession_DispatchesMeshRequests(t *testing.T) {
 	}
 }
 
-// TestServeSession_MeshRequests_NoMeshApplier_ReturnsErrMeshUnavailable
-// confirms a Session started with no WithMesh option (an agent whose
-// node has mesh networking disabled, or predates mesh support) answers
-// clearly rather than hanging or panicking.
+// TestServeSession_MeshRequests_NoMeshApplier_ReturnsErrMeshUnavailable checks a session without mesh answers rather than hangs.
 func TestServeSession_MeshRequests_NoMeshApplier_ReturnsErrMeshUnavailable(t *testing.T) {
 	stream := newFakeAgentClientStream()
 

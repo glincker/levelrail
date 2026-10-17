@@ -32,10 +32,7 @@ func TestRestartTracker_SubsequentStarts_CountAsRestarts(t *testing.T) {
 	}
 }
 
-// fakeRestartRecorder is a RestartRecorder test double: it just remembers
-// every (serviceName, at) pair it was asked to persist, optionally
-// returning a canned error so Observe's "log and continue" behavior on a
-// failed write can be exercised too.
+// Can return a canned error to exercise Observe's log-and-continue path.
 type fakeRestartRecorder struct {
 	calls []fakeRestartRecord
 	err   error
@@ -78,10 +75,7 @@ func TestRestartTracker_WithRecorder_PersistsEachRealRestart(t *testing.T) {
 }
 
 func TestRestartTracker_NoRecorder_ObserveStillWorks(t *testing.T) {
-	// Every other test in this file constructs NewRestartTracker() with
-	// no WithRecorder call at all; this just makes that "nil recorder is
-	// safe" contract explicit rather than only implied by every other
-	// test happening to pass.
+	// A nil recorder must be safe, which the other tests rely on implicitly.
 	tr := NewRestartTracker()
 	base := time.Now()
 	tr.Observe("service:web", "web-abc12345", base)
@@ -280,10 +274,7 @@ func TestRestartTracker_Run_ResolvesAndTracksRealEvents(t *testing.T) {
 	}
 }
 
-// fakeAutoRollbackStore is an in-memory AutoRollbackStore for
-// MaybeAutoRollback's own tests: one service, its deploy attempt
-// history, and a record of every SaveDesiredService/SaveDeployAttempt
-// call so a test can assert whether a rollback was actually triggered.
+// Records each save so a test can assert whether a rollback was triggered.
 type fakeAutoRollbackStore struct {
 	svc            store.DesiredService
 	getErr         error
@@ -311,13 +302,7 @@ func (f *fakeAutoRollbackStore) ListDeployAttempts(_ context.Context, _ string) 
 	return f.attempts, nil
 }
 
-// SaveDesiredService both records the call (for assertions) and applies
-// it to f.svc, mirroring a real store: GetDesiredService must reflect the
-// image a prior rollback just set, or a test can't exercise the rearm
-// path (a second MaybeAutoRollback call re-reading the same stale image).
-// A non-nil saveErr fails before recording or applying anything, the
-// half-succeeded-at-the-earliest-point case (TriggerImageDeploy itself
-// fails, desired state never moves).
+// Applies the save to svc so a rearm test re-reads the rolled-back image; a non-nil saveErr fails before anything is recorded.
 func (f *fakeAutoRollbackStore) SaveDesiredService(_ context.Context, svc store.DesiredService) error {
 	if f.saveErr != nil {
 		return f.saveErr
@@ -327,11 +312,7 @@ func (f *fakeAutoRollbackStore) SaveDesiredService(_ context.Context, svc store.
 	return nil
 }
 
-// SaveDeployAttempt both records the call and prepends a to f.attempts
-// (ListDeployAttempts' own newest-first order), so a rollback triggered
-// through TriggerImageDeploy is itself visible to a later
-// PreviousKnownGoodImage scan, the same as it would be against a real
-// store.
+// Prepends to attempts, newest first, so a rollback is visible to PreviousKnownGoodImage.
 func (f *fakeAutoRollbackStore) SaveDeployAttempt(_ context.Context, a store.DeployAttempt) error {
 	f.savedAttempts = append(f.savedAttempts, a)
 	if f.saveAttemptErr != nil {
@@ -341,10 +322,7 @@ func (f *fakeAutoRollbackStore) SaveDeployAttempt(_ context.Context, a store.Dep
 	return nil
 }
 
-// FinishDeployAttempt updates the matching attempt's status in place
-// (mirroring how recordImageDeployAttempt marks its own attempt succeeded
-// immediately), so a rollback's own attempt reads back as succeeded, not
-// its initial running status, for anything that lists attempts afterward.
+// Marks the matching attempt's status in place, so a rollback's attempt reads back as succeeded.
 func (f *fakeAutoRollbackStore) FinishDeployAttempt(_ context.Context, id, status string, _ time.Time, _ string) error {
 	f.finishedIDs = append(f.finishedIDs, id)
 	for i := range f.attempts {
@@ -379,12 +357,7 @@ func TestMaybeAutoRollback_Enabled_RollsBackToPreviousImage(t *testing.T) {
 	}
 }
 
-// TestMaybeAutoRollback_AttemptRecordFails_DesiredStateStillMovesAndTrackerStillRecords
-// covers the half-succeeded case: recordImageDeployAttempt
-// (internal/deploy/rollback.go) only logs a SaveDeployAttempt failure, it
-// never fails Deploy, because the desired-state write already landed by
-// that point. MaybeAutoRollback must still nudge the reconciler and mark
-// the incident handled, exactly as if the attempt record had saved fine.
+// Covers a SaveDeployAttempt failure after the desired state already moved: the tracker must still be marked handled.
 func TestMaybeAutoRollback_AttemptRecordFails_DesiredStateStillMovesAndTrackerStillRecords(t *testing.T) {
 	st := &fakeAutoRollbackStore{
 		svc: store.DesiredService{Name: "web", Image: "web:v3", AutoRollbackOnCrashloop: true},
@@ -491,16 +464,7 @@ func TestAutoRollbackTracker_RecordThenAlreadyHandled(t *testing.T) {
 	}
 }
 
-// TestMaybeAutoRollback_Rearm_NewDeployAfterRollback_FiresAgain reproduces
-// the field bug directly at MaybeAutoRollback's own level: a first
-// crashloop episode gets auto-rolled-back, then a second, genuinely
-// different bad image is deployed before anything re-reads the store in
-// between (mirroring the real gap: the crashloop rule stays continuously
-// Firing because the first episode's restarts are still inside its
-// RestartWindow, so Engine.Tick never sees a fresh becameFiring
-// transition). MaybeAutoRollback must still roll back the second episode
-// when called again with the same tracker, and must target an image that
-// is not the one that just caused it.
+// Reproduces the field bug: a second bad image deployed while the rule stays Firing must still roll back.
 func TestMaybeAutoRollback_Rearm_NewDeployAfterRollback_FiresAgain(t *testing.T) {
 	st := &fakeAutoRollbackStore{
 		svc: store.DesiredService{Name: "web", Image: "web:badA", AutoRollbackOnCrashloop: true},
@@ -518,10 +482,7 @@ func TestMaybeAutoRollback_Rearm_NewDeployAfterRollback_FiresAgain(t *testing.T)
 		t.Fatalf("after episode 1: savedServices = %+v, want one save with image web:good", st.savedServices)
 	}
 
-	// Rule stays Firing without ever resolving (the real bug's exact
-	// condition), but a genuinely different bad image is deployed:
-	// something outside MaybeAutoRollback changes the desired image and
-	// records its own deploy attempt, the same as a real deploy would.
+	// The rule never resolves, but a different bad image is deployed, so the rollback must fire again.
 	st.svc.Image = "web:badB"
 	st.attempts = append([]store.DeployAttempt{{Image: "web:badB", Status: store.DeployAttemptStatusSucceeded}}, st.attempts...)
 

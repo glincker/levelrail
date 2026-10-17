@@ -45,7 +45,7 @@ Run "%[1]s alerts <subcommand> -h" for its flags.
 func alertsSilencesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s alerts silences list [--all]
-  %[1]s alerts silences create --for DURATION [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--label k=v] [--reason TEXT]
+  %[1]s alerts silences create --for DURATION [--rule ID] [--app NAME] [--node NAME] [--kind KIND] [--severity S] [--metric M] [--label k=v] [--reason TEXT]
   %[1]s alerts silences delete <id>
 
 A silence keeps matching alerts evaluating and recorded in history but
@@ -83,8 +83,8 @@ func silenceListCommand() apiCmd {
 
 func silenceCreateCommand() apiCmd {
 	var (
-		rules, apps, nodes, kinds, severities, labels stringList
-		dur, reason                                   string
+		rules, apps, nodes, kinds, severities, labels, metrics stringList
+		dur, reason                                            string
 	)
 	return apiCmd{
 		label: "alerts silences create",
@@ -95,6 +95,7 @@ func silenceCreateCommand() apiCmd {
 			fs.Var(&nodes, "node", "match alerts of apps on this node, by name or ID (repeatable)")
 			fs.Var(&kinds, "kind", "match this rule kind (repeatable)")
 			fs.Var(&severities, "severity", "match info, warning or critical (repeatable)")
+			fs.Var(&metrics, "metric", "match threshold rules on this metric (repeatable)")
 			fs.Var(&labels, "label", "match a rule label, key=value (repeatable)")
 			fs.StringVar(&dur, "for", "", "how long the silence lasts, e.g. 1h, 4h, 24h (required)")
 			fs.StringVar(&reason, "reason", "", "why (shown in the dashboard)")
@@ -107,7 +108,7 @@ func silenceCreateCommand() apiCmd {
 			if err != nil {
 				return nil, nil, err
 			}
-			m := apiclient.SilenceMatchers{RuleIDs: rules, Apps: apps, Nodes: nodes, Kinds: kinds, Severities: severities, Labels: lm}
+			m := apiclient.SilenceMatchers{RuleIDs: rules, Apps: apps, Nodes: nodes, Kinds: kinds, Severities: severities, Labels: lm, Metrics: metrics}
 			s, err := c.CreateAlertSilence(ctx, apiclient.CreateSilenceRequest{Matchers: m, Duration: dur, Reason: reason})
 			return s, func(w io.Writer) {
 				_, _ = fmt.Fprintf(w, "silence %s active until %s\n", s.ID, s.EndsAt.Format(time.RFC3339))
@@ -159,6 +160,7 @@ func describeMatchers(m apiclient.SilenceMatchers) string {
 	add("node", m.Nodes)
 	add("kind", m.Kinds)
 	add("severity", m.Severities)
+	add("metric", m.Metrics)
 	for k, v := range m.Labels {
 		parts = append(parts, k+"="+v)
 	}

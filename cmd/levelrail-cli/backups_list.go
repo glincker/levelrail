@@ -9,10 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runBackupsList implements "backups list <database>": GET
-// /api/v1/databases/{name}/backups (internal/api/backups.go's own
-// handleListBackupHistory), AbilityRead-gated: passive visibility into
-// attempts already made.
+// runBackupsList implements "backups list <database>": read-only, gated by AbilityRead.
 func runBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups list", "print backup history as a JSON array to stdout and nothing else", stderr)
 	var beforeFlag string

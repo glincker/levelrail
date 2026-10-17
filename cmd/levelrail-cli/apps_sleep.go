@@ -95,8 +95,8 @@ func printSleepEligibility(w io.Writer, app string, r appSleepResource) {
 			_, _ = fmt.Fprintf(w, "  will sleep at: %s\n", a.WillSleepAt.Local().Format(time.RFC3339))
 		}
 	}
-	if r.ColdStartMsP50 != nil {
-		_, _ = fmt.Fprintf(w, "cold start p50: %d ms\n", *r.ColdStartMsP50)
+	if r.Enabled || r.WakeTiming.Samples > 0 {
+		_, _ = fmt.Fprintf(w, "wake time: %s\n", wakeTimingText(r.WakeTiming))
 	}
 }
 
@@ -227,7 +227,7 @@ func runAppsSleepList(prog string, args []string, stdout, stderr io.Writer, look
 		}
 		_, _ = fmt.Fprintf(stdout, "%d of %d apps asleep, %d MiB of memory limits not in use\n", fleet.Sleeping, fleet.Enabled, fleet.ReclaimedBytes>>20)
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "APP\tSTATE\tAFTER\tSINCE\tLAST WOKE")
+		_, _ = fmt.Fprintln(tw, "APP\tSTATE\tAFTER\tSINCE\tLAST WOKE\tUSUALLY WAKES")
 		for _, a := range fleet.Apps {
 			state, since := "awake", "-"
 			if a.Sleeping {
@@ -240,7 +240,7 @@ func runAppsSleepList(prog string, args []string, stdout, stderr io.Writer, look
 			if t, ok := lastWoke[a.Name]; ok {
 				woke = humanAgo(t, time.Now())
 			}
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%d min\t%s\t%s\n", a.Name, state, a.IdleMinutes, since, woke)
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%d min\t%s\t%s\t%s\n", a.Name, state, a.IdleMinutes, since, woke, wakeTimingShort(a.WakeTiming))
 		}
 		_ = tw.Flush()
 	})

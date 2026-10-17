@@ -7,12 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runPushSubscriptions dispatches "push-subscriptions <verb> [flags]" to
-// list or revoke: the admin-side view of browser push registrations
-// (Settings -> Notification channels -> Browser push in the web UI), the
-// delivery target for the "webpush" notification-channel kind. No
-// "register" subcommand here: a subscription's endpoint/keys come from
-// the browser's own Push API, not something a CLI session can produce.
+// runPushSubscriptions dispatches list/revoke for browser push registrations. There is no register: endpoint and keys come from the browser.
 func runPushSubscriptions(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, pushSubscriptionsUsage(prog))

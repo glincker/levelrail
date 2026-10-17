@@ -6,10 +6,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// lastServingImage returns the image of the newest attempt the controller
-// confirmed serving, when the app's newest attempt has not reached that
-// state yet (rolling out or failed readiness). ok is false when the desired
-// image is already the serving one or there is nothing to fall back to.
+// lastServingImage returns the image of the newest confirmed-serving attempt, for when the newest attempt is not serving yet.
 func (rt *Router) lastServingImage(ctx context.Context, svc store.DesiredService) (image string, ok bool) {
 	if rt.deployAttempts == nil {
 		return "", false

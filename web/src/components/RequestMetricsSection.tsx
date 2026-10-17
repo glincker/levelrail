@@ -42,6 +42,7 @@ export function RequestMetricsSection({
   range,
   markers,
   compare = false,
+  live = false,
   selectedAt,
   onSelectTime,
   onMarkerClick,
@@ -50,6 +51,7 @@ export function RequestMetricsSection({
   range: ResolvedTimeRange
   markers: ChartMarker[]
   compare?: boolean
+  live?: boolean
   selectedAt?: number
   onSelectTime?: (t: number) => void
   onMarkerClick?: (marker: ChartMarker) => void
@@ -60,6 +62,7 @@ export function RequestMetricsSection({
     to: range.to,
     maxPoints: MAX_CHART_POINTS,
     compare,
+    live,
   })
   const points = useMemo(() => data?.points ?? [], [data])
   const previous = data?.previous_points

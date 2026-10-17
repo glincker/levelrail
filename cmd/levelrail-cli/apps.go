@@ -47,6 +47,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSchedule(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-rollback":
 		return runAppsAutoRollback(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as below
+	case "autoscale":
+		return runAppsAutoscale(prog, args[1:], stdout, stderr, lookupEnv)
 	case "auto-update":
 		return runAppsAutoUpdate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "sleep":
@@ -165,6 +167,8 @@ func runApps(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAppsSetProject(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-project":
 		return runAppsClearProject(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
+	case "placement":
+		return runAppsPlacement(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "set-node":
 		return runAppsSetNode(prog, args[1:], stdout, stderr, lookupEnv) //nolint:gosec // same guard as above
 	case "clear-node":
@@ -249,6 +253,7 @@ func appsUsage(prog string) string {
   %[1]s apps freeze set|show|clear <name> [flags]   deploy freeze windows: hold automatic deploys on a cron schedule
   %[1]s apps schedule set|get|history <name> [flags]   recurring redeploy of a branch's latest commit on a cron schedule
   %[1]s apps cancel-superseded enable|disable|status <name> [flags]   let a newer queued deploy replace older queued ones of the same branch
+  %[1]s apps autoscale show|set|clear|history <name> [flags]   scale replicas on CPU, memory or request load within a minimum and maximum
   %[1]s apps auto-rollback enable|disable|status <name> [flags]   opt an app into (or out of) automatic rollback when a crashloop alert fires
   %[1]s apps deploy-safety show|set|targets <name> [flags]   readiness gate, drain and post-deploy watch thresholds, and pinned rollback targets
   %[1]s apps sleep enable|disable|status|wake|now|history <name> [flags]   stop an idle app and wake it on the next request
@@ -312,6 +317,7 @@ func appsUsage(prog string) string {
   %[1]s apps clear-environment <name> [flags]   remove an app's environment tag
   %[1]s apps set-project <name> <project-id> [flags]   move an app into a project
   %[1]s apps clear-project <name> [flags]   remove an app's project assignment
+  %[1]s apps placement <name> [--database] [flags]   explain why an app runs on its node and what each node offered
   %[1]s apps set-node <name> <node-id> [--with-volumes] [flags]   move an app to another node, optionally taking its named volumes with it
   %[1]s apps clear-node <name> [--with-volumes] [flags]   move an app back to this control plane's own local node
   %[1]s apps previews <verb> [flags]   manage preview environments per pull request

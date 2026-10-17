@@ -41,7 +41,7 @@ func TestNodeCertResource_DecodesRenewal(t *testing.T) {
 	if err := json.Unmarshal([]byte(`{"state":"expiring","key_origin":"agent","renewal":{"last_error":"refused","consecutive_failures":2}}`), &c); err != nil {
 		t.Fatal(err)
 	}
-	if c.State != "expiring" || c.Renewal() == nil || c.Renewal().LastError != "refused" || c.Renewal().ConsecutiveFailures != 2 {
-		t.Fatalf("decoded %+v renewal %+v", c, c.Renewal())
+	if c.State != "expiring" || c.Renewal == nil || c.Renewal.LastError != "refused" || c.Renewal.ConsecutiveFailures != 2 {
+		t.Fatalf("decoded %+v renewal %+v", c, c.Renewal)
 	}
 }

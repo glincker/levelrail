@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runSystemPrune implements "system-prune": POST /api/v1/system/prune
-// (internal/api/system_prune.go), AbilityRoot-gated. Removes every
-// stopped container, dangling image, and unused volume or build cache
-// the reconciler's current desired state doesn't need, fleet-wide.
+// Fleet-wide and root-gated: removes only what the reconciler's desired state does not need.
 func runSystemPrune(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "system-prune", "print the prune result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, systemPruneUsage(prog)) }

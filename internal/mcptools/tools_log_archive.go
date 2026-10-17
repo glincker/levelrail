@@ -40,7 +40,7 @@ type archivedLogsInput struct {
 func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_storage_destinations",
-		Description: "List connected S3-compatible storage destinations (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, custom): name, provider preset, bucket, region, and how many log archive policies use each. No credential fields, ever. Read-only.",
+		Description: "List connected S3-compatible storage destinations (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, custom): name, provider preset, bucket, region, and how many log archive policies use each. No credential fields, ever.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StorageDestination, error) {
 		out, err := client.ListStorageDestinations(ctx)
 		if err != nil {
@@ -62,7 +62,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_log_archive_policies",
-		Description: "List log archive policies (which apps ship node-local logs to which storage destination, how often, retention) with each one's last success and last error. Read-only.",
+		Description: "List log archive policies (which apps ship node-local logs to which storage destination, how often, retention) with each one's last success and last error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.LogArchivePolicy, error) {
 		out, err := client.ListLogArchivePolicies(ctx)
 		if err != nil {
@@ -97,7 +97,7 @@ func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_log_archive_runs",
-		Description: "List recent log archive runs (scheduled and manual dumps) with status, object and line counts, and any error. Read-only.",
+		Description: "List recent log archive runs (scheduled and manual dumps) with status, object and line counts, and any error.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in logArchiveRunsInput) (*mcp.CallToolResult, []apiclient.LogArchiveRun, error) {
 		out, err := client.ListLogArchiveRuns(ctx, in.AppName, in.AppName == "")
 		if err != nil {

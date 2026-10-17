@@ -9,20 +9,12 @@ import (
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
-// VersionSkewSettingsSource is the narrow store surface
-// EvaluateVersionSkew needs: the configured update channel
-// (migrations/0258_update_settings.sql). *store.DB satisfies this
-// structurally.
+// VersionSkewSettingsSource is the narrow store surface EvaluateVersionSkew needs.
 type VersionSkewSettingsSource interface {
 	GetUpdateSettings(ctx context.Context) (store.UpdateSettings, error)
 }
 
-// EvaluateVersionSkew runs one KindVersionSkew rule: it fires while
-// currentVersion is behind the configured channel's latest release.
-// cache is checked before calling fetchers, so a rule enabled alongside
-// Engine's own short evaluation interval never hits GitHub more often
-// than upgrade.DefaultCacheTTL, the same cadence GET /api/v1/updates and
-// updatecheck.Scheduler already hold themselves to.
+// EvaluateVersionSkew fires a KindVersionSkew rule while currentVersion is behind the configured channel's latest release.
 func EvaluateVersionSkew(ctx context.Context, settings VersionSkewSettingsSource, fetchers upgrade.Fetchers, cache *upgrade.Cache, r Rule, currentVersion string, now time.Time) (Rule, string, error) {
 	s, err := settings.GetUpdateSettings(ctx)
 	if err != nil {

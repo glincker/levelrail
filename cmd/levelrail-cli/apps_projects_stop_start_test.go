@@ -9,11 +9,6 @@ import (
 	"testing"
 )
 
-// TestRun_AppsProjectsStartStop covers "apps projects start" and "apps
-// projects stop", table-driven since the two commands are structurally
-// identical (same request shape, same success/error paths), differing
-// only in verb and URL suffix, mirroring TestRun_AppsStartStop's own
-// shape for the single-app counterpart.
 func TestRun_AppsProjectsStartStop(t *testing.T) {
 	tests := []struct {
 		action string

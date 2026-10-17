@@ -23,17 +23,9 @@ type NotificationChannel struct {
 	Kind      NotifyKind
 	NotifyURL string
 	Enabled   bool
-	// InteractiveApprovals opts this channel into Approve/Deny buttons on
-	// a deploy-approval-requested message (chat_approval.go), Slack and
-	// Discord kinds only. Off by default: it needs InteractiveSecret set,
-	// and a real Slack app or Discord application configured on the
-	// other end, not just an incoming-webhook URL.
+	// Off by default: it needs InteractiveSecret and a real Slack app or Discord application, not just a webhook URL.
 	InteractiveApprovals bool
-	// InteractiveSecret verifies an inbound button click really came
-	// from this channel's own configured app: a Slack signing secret
-	// (HMAC-SHA256 over the request) for NotifySlack, or a Discord
-	// application's Ed25519 public key (hex) for NotifyDiscord. Empty
-	// for every other kind.
+	// Verifies inbound button clicks came from this channel's app: a Slack signing secret or a Discord Ed25519 public key.
 	InteractiveSecret string
 	// NotifyDeviceLogin opts this channel into a link-only notice when a CLI
 	// device login awaits approval. The notice never carries the code.
@@ -60,10 +52,7 @@ func NewNotificationChannelID() (string, error) {
 	return notificationChannelIDPrefix + hex.EncodeToString(b), nil
 }
 
-// SaveNotificationChannel creates or fully replaces a channel's
-// configuration, the same upsert shape SaveDeployTarget already uses.
-// With channel secrets configured, credentials are sealed and only their
-// masked form is written; a masked value passed back keeps the sealed one.
+// SaveNotificationChannel creates or replaces a channel's configuration; secrets are sealed and a masked value keeps the stored one.
 func (db *DB) SaveNotificationChannel(ctx context.Context, c NotificationChannel) error {
 	if cs := db.secretsOrNil(); cs != nil {
 		urlCol, secretCol, err := db.sealChannel(ctx, cs, c)
@@ -190,6 +179,9 @@ func sendTestNotification(ctx context.Context, client *http.Client, sender email
 }
 
 func sendTextNotification(ctx context.Context, client *http.Client, sender email.Sender, pushSender PushSender, kind NotifyKind, notifyURL, testText string) error {
+	if IsPluginKind(kind) {
+		return ErrPluginChannelUnsupported
+	}
 	if IsMaskedNotifyTarget(notifyURL) {
 		return ErrChannelSecretNotRevealed
 	}
@@ -286,10 +278,7 @@ func sendTextNotification(ctx context.Context, client *http.Client, sender email
 	}
 }
 
-// SendTest fires a real test notification through kind/notifyURL,
-// reusing this dispatcher's own HTTP client and email sender so a
-// passing test predicts a real deploy notification will send the same
-// way.
+// SendTest reuses the dispatcher's HTTP client and email sender, so a passing test predicts a real send.
 func (d *DeployDispatcher) SendTest(ctx context.Context, kind NotifyKind, notifyURL string) error {
 	return sendTestNotification(ctx, d.client, d.sender, d.pushSender, kind, notifyURL)
 }

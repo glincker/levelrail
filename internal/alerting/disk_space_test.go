@@ -11,11 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// perMetricSource is a NodeSource-paired MetricsSource keyed by
-// resourceID and metric name, unlike patch_status_test.go's
-// perResourceMetricsSource (which ignores the metric argument entirely):
-// EvaluateNodeDiskSpace queries two different metrics per node, so a
-// useful test needs to tell disk_used_bytes and disk_total_bytes apart.
+// perMetricSource keys by metric name, since disk evaluation queries used and total bytes separately.
 type perMetricSource struct {
 	samples       map[string]map[string][]telemetry.Sample
 	errByResource map[string]error

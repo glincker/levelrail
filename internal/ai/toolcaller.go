@@ -11,12 +11,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// ToolCaller runs tool calls against the platform's own MCP tool
-// surface, connected in-process: no subprocess, no network transport.
-// It builds the same *mcp.Server internal/mcptools.NewServer gives
-// cmd/levelrail-mcp and connects an MCP client to it over
-// mcp.NewInMemoryTransports, the SDK's own in-process test harness,
-// reused here as a real (not test-only) transport.
+// ToolCaller runs tool calls against the platform's MCP tool surface in-process, over in-memory transports.
 type ToolCaller struct {
 	session *mcp.ClientSession
 }
@@ -28,10 +23,7 @@ func NewToolCaller(ctx context.Context, client *apiclient.Client) (*ToolCaller, 
 	server := mcptools.NewServer(client)
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
 
-	// Deliberately context.Background(), not ctx: the server goroutine
-	// must outlive this constructor call for as long as the session is
-	// open, ending on session.Close() (Close below), not on ctx's own
-	// cancellation.
+	// Background, not ctx: the server goroutine must outlive this constructor until Close.
 	go func() { _ = server.Run(context.Background(), serverTransport) }() //nolint:gosec // see comment above
 
 	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "levelrail-ai-assistant", Version: "1"}, nil)
@@ -72,10 +64,7 @@ func (tc *ToolCaller) ListTools(ctx context.Context) ([]ToolSpec, error) {
 	return out, nil
 }
 
-// Call invokes name with args (a JSON object), returning its result as
-// text (every real tool here returns JSON structured content, joined
-// from TextContent blocks the same way cmd/levelrail-mcp's own tests
-// already extract a result) and whether the call itself errored.
+// Call invokes the named tool with args and returns its text result and whether the call errored.
 func (tc *ToolCaller) Call(ctx context.Context, name string, args json.RawMessage) (result string, isError bool, err error) {
 	var arguments any
 	if len(args) > 0 {

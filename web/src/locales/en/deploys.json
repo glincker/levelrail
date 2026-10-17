@@ -175,8 +175,15 @@
       "waking": "Waking"
     },
     "explain": {
-      "generic": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits for a cold start.",
-      "withCold": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits about {{duration}} for the cold start."
+      "generic": "When nobody uses this app for a while it is stopped to free memory and CPU. The next visitor starts it again and waits for a cold start."
+    },
+    "wakeTiming": {
+      "none": "No wakes measured yet, so there is no estimate of how long a wake takes.",
+      "typical": "Usually wakes in about {{typical}}.",
+      "typicalWithP95": "Usually wakes in about {{typical}} (p95 {{p95}}).",
+      "noneShort": "No wake data yet",
+      "short": "Wakes in about {{typical}}",
+      "shortWithP95": "Wakes in about {{typical}} (p95 {{p95}})"
     },
     "frees": "Frees about {{size}} while asleep",
     "checklistLabel": "Sleep eligibility",

@@ -6,11 +6,7 @@ import (
 	"io"
 )
 
-// runNodesCapacityForecast implements "nodes capacity-forecast <id>":
-// GET /api/v1/nodes/{id}/capacity-forecast, a rough "days until full at
-// the current trend" projection for this node's disk and memory, from a
-// deterministic linear-trend fit over recent usage history (never an
-// external model, never applied automatically).
+// The projection is a linear trend fit, never applied automatically.
 func runNodesCapacityForecast(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes capacity-forecast", "print the capacity forecast as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesCapacityForecastUsage(prog)) }
@@ -41,12 +37,6 @@ func runNodesCapacityForecast(prog string, args []string, stdout, stderr io.Writ
 	return exitOK
 }
 
-// printCapacityForecastHuman renders a nodeCapacityForecastResource the
-// way an operator reads it at a glance: one line per resource that
-// actually has a growing trend, "no concerning trend" when neither does
-// (the same "absence means nothing to warn about" contract the API
-// response itself commits to), and the honesty disclaimer last so it
-// doesn't get lost above the numbers.
 func printCapacityForecastHuman(out io.Writer, f nodeCapacityForecastResource) {
 	_, _ = fmt.Fprintf(out, "Lookback window: %s\n", f.LookbackWindow)
 	if f.Disk == nil && f.Memory == nil {

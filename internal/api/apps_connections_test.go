@@ -108,10 +108,7 @@ func TestHandleCreateAppConnection_DefaultEnvVar(t *testing.T) {
 	}
 }
 
-// TestHandleCreateAppConnection_DefaultEnvVarCollision covers the
-// collision-safe suffixing defaultConnectionEnvVar's own doc comment
-// promises: a second connection to the same database+field must not
-// silently overwrite the first's env var.
+// A second connection to the same database field must suffix its env var, not overwrite the first.
 func TestHandleCreateAppConnection_DefaultEnvVarCollision(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -228,10 +225,7 @@ func TestHandleListAppConnections(t *testing.T) {
 	}
 }
 
-// TestHandleListAppConnections_SkipsDeletedDatabase covers the "one
-// entry's problem, not the caller's" tolerance this handler's own doc
-// comment promises: a DatabaseEnv entry referencing a since-deleted
-// database is skipped, not a 500 for the whole list.
+// A connection to a deleted database is skipped, so one stale entry does not fail the whole list.
 func TestHandleListAppConnections_SkipsDeletedDatabase(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

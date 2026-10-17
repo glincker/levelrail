@@ -11,12 +11,7 @@ import (
 
 const waitTimelineLimit = 20
 
-// rolloutOutcome is what "apps wait" actually needs to know about a
-// deploy attempt's roll-out: has it converged yet, and if so, did it
-// succeed. Ports web/src/lib/deployStages.ts's own computeRolloutStage
-// to Go, since the CLI has no way to share that TypeScript and needs
-// the identical convergence rule to give a CI caller the same answer
-// the dashboard would show.
+// Mirrors web/src/lib/deployStages.ts computeRolloutStage so CI gets the dashboard's answer.
 type rolloutOutcome struct {
 	// state is "pending" (still converging), "succeeded", or "failed".
 	state     string
@@ -56,10 +51,7 @@ type timelineFetcher interface {
 	GetAppTimeline(ctx context.Context, name string, limit int, before string) (apiclient.TimelineResponse, error)
 }
 
-// summarizeRollout decides what a succeeded rollout of attempt did. attempts
-// is newest first. A restart recorded after the attempt finished wins; a
-// fresh "Deployed" reason means a rollout; otherwise the attempt is a
-// rollout only if it changed the image or digest from the previous one.
+// attempts is newest first.
 func summarizeRollout(attempts []deployAttemptResource, attempt deployAttemptResource, cond *conditionResource, timeline []apiclient.TimelineItem) string {
 	if attempt.FinishedAt != nil {
 		for _, it := range timeline {
@@ -92,13 +84,8 @@ func summarizeRollout(attempts []deployAttemptResource, attempt deployAttemptRes
 	return rolloutRolledOut
 }
 
-// rolloutFailureReasons and rolloutDoneReasons mirror deployStages.ts's
-// own ROLLOUT_FAILURE_REASONS/ROLLOUT_DONE_REASONS exactly: every reason
-// string internal/reconcile/application/controller.go's
-// ensureReplicaRunning can actually report. Keep these two lists and
-// that file's own reason strings in sync; see deployStages.ts's own
-// comment on the bug that let this list and the reconciler's actual
-// reasons drift apart once already.
+// Keep in sync with the reason strings in internal/reconcile/application/controller.go
+// and deployStages.ts; they have drifted before.
 var rolloutFailureReasons = map[string]bool{
 	"CreateFailed":             true,
 	"StartFailed":              true,
@@ -118,20 +105,7 @@ var rolloutDoneReasons = map[string]bool{
 	"StaticSitePublished": true,
 }
 
-// computeRolloutOutcome decides attempt's rollout outcome from
-// conditions, the app's current reconcile conditions. Pure and
-// side-effect-free, matching computeRolloutStage's own shape:
-//   - attempt.Status == "failed" (the build itself failed, an image-
-//     source attempt never has this): rollout never started, reported
-//     as failed here too since apps wait has no separate "skipped"
-//     concept a CI caller would act on differently.
-//   - attempt.Status == "running": still building, pending.
-//   - attempt.FinishedAt == nil: shouldn't happen once status is
-//     terminal, treated as pending defensively.
-//   - otherwise: a failure-reason condition transitioning at or after
-//     FinishedAt wins over a done-reason one (checked first, matching
-//     computeRolloutStage), else a done-reason condition at or after
-//     FinishedAt means success, else still pending.
+// Pure: a failure reason at or after FinishedAt beats a done reason; no FinishedAt means pending.
 func computeRolloutOutcome(attempt deployAttemptResource, conditions []conditionResource) rolloutOutcome {
 	if attempt.Status == "failed" || attempt.Status == "canceled" || attempt.Status == "superseded" {
 		return rolloutOutcome{state: "failed"}
@@ -162,12 +136,7 @@ func computeRolloutOutcome(attempt deployAttemptResource, conditions []condition
 	return rolloutOutcome{state: "pending"}
 }
 
-// deployAttemptFetcher is waitForRollout's dependency, satisfied by
-// *Client in production and a fake in tests: fetching both resources
-// every poll (not just conditions) is what lets computeRolloutOutcome
-// tell "converged" apart from "the reconciler hasn't caught up to this
-// exact attempt yet," the same reasoning useDeployProgress.ts's own doc
-// comment gives for polling both queries.
+// Both resources are fetched each poll so convergence is checked against this exact attempt.
 type deployAttemptFetcher interface {
 	ListDeployAttempts(ctx context.Context, name string) ([]deployAttemptResource, error)
 	GetDeployStatus(ctx context.Context, name string) ([]conditionResource, error)
@@ -180,12 +149,7 @@ type rolloutWaitConfig struct {
 	OnTick       func(rolloutOutcome)
 }
 
-// waitForRollout polls client every pollInterval until name's target
-// attempt (attemptID, or the latest attempt if empty) converges, ctx is
-// done, or an API call fails. onTick, if non-nil, is called once per
-// poll with the current outcome (including "pending" ones), so a caller
-// can print live progress without waitForRollout itself owning any
-// output.
+// onTick receives every poll's outcome, pending included, so callers can print progress.
 func waitForRollout(ctx context.Context, client deployAttemptFetcher, config rolloutWaitConfig) (rolloutOutcome, error) {
 	ticker := time.NewTicker(config.PollInterval)
 	defer ticker.Stop()
@@ -253,14 +217,7 @@ func findDeployAttempt(attempts []deployAttemptResource, attemptID string) (depl
 	return deployAttemptResource{}, false
 }
 
-// runAppsWait implements "apps wait <name>": polls until the app's
-// latest deploy attempt (or a specific one via --attempt-id) has
-// actually converged, succeeded or failed, and exits accordingly.
-// "apps deploy" itself returns the instant its desired-state write
-// lands (202 Accepted), well before the reconciler has run even once
-// (see apps_deploy.go's own doc comment); a CI job that wants to know
-// whether a deploy genuinely succeeded, not just that the trigger call
-// was accepted, needs this command as its own step afterward.
+// apps deploy returns before the reconciler runs, so CI needs this to confirm success.
 func runAppsWait(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps wait", "print the final outcome as JSON to stdout and nothing else", stderr)
 	var attemptID, timeoutStr, pollIntervalStr string

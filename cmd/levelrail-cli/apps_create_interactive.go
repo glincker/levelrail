@@ -33,11 +33,7 @@ const (
 	wizardOutputAPI
 )
 
-// wizardAnswers is everything runInteractiveWizard collects, converted
-// to a real app spec by toSpec. Kept separate from the prompt loop
-// itself so the spec-building and plan-building logic below is a pure
-// function over plain data, table-driven testable with no io.Reader in
-// the loop at all, the same separation createFlags/planFromFlags use.
+// Plain data, so spec and plan building stay table-testable without stdin.
 type wizardAnswers struct {
 	serviceName string
 	sourceKind  wizardSourceKind
@@ -50,32 +46,16 @@ type wizardAnswers struct {
 	memory      string
 	cpu         float64
 	outputMode  wizardOutputMode
-	// imageRepo is only collected (and only meaningful) for the git
-	// source combined with the API output mode: app.yaml has no field
-	// for it (spec.Build has no ImageRepo), but a real build trigger
-	// request does, see buildTriggerRequest.
+	// Only used for git source with API output: app.yaml has no field for it.
 	imageRepo string
-	// extra holds every service beyond the first one, collected by the
-	// wizard's "add another service?" loop. Empty (the common case)
-	// means a single-service app, keeping every existing single-service
-	// code path (toCreatePlan, the plain CreateApp+build trigger) byte
-	// for byte unchanged.
+	// Services beyond the first; empty keeps the single-service code paths unchanged.
 	extra []wizardService
-	// appName and imageRepoBase are only collected, and only meaningful,
-	// when extra is non-empty and outputMode is API: a multi-service
-	// deploy goes through POST /api/v1/apps/{name}/deploy-spec instead
-	// of CreateApp, which needs an app-level name distinct from any one
-	// service's name plus its own optional image tag prefix.
+	// Only used by multi-service API deploys, which need an app name distinct from any service.
 	appName       string
 	imageRepoBase string
 }
 
-// wizardService is one additional service collected by the wizard's
-// "add another service?" loop: the same shape as wizardAnswers' own
-// primary-service fields, minus the ones only meaningful for the
-// single-service CreateApp path (repoURL/ref/imageRepo), plus
-// baseDirectory for a monorepo service built from the shared repo a
-// multi-service deploy-spec request already carries at the top level.
+// Same fields as the primary service, minus the single-service-only repo fields.
 type wizardService struct {
 	serviceName   string
 	sourceKind    wizardSourceKind
@@ -112,11 +92,7 @@ func (s wizardService) toSpecService() spec.Service {
 	return svc
 }
 
-// toSpec builds the single-service app spec wizardAnswers describes,
-// validating it the same way a hand-written app.yaml would be
-// (spec.Spec.Validate, the semantic-rules layer Parse itself runs after
-// schema validation) before any caller writes it out or sends it
-// anywhere.
+// toSpec builds the single-service spec, validated like a hand-written app.yaml.
 func (a wizardAnswers) toSpec() (*spec.Spec, error) {
 	primary := wizardService{
 		serviceName: a.serviceName, sourceKind: a.sourceKind, image: a.image,
@@ -134,12 +110,7 @@ func (a wizardAnswers) toSpec() (*spec.Spec, error) {
 	return s, nil
 }
 
-// toDeploySpecRequest builds the POST /api/v1/apps/{name}/deploy-spec
-// body for a multi-service wizard run (len(a.extra) > 0): the same
-// services map toSpec builds, converted service by service with
-// apps_deploy_spec.go's own toDeploySpecService so a wizard-driven
-// multi-service deploy converts exactly like "apps deploy-spec --file"
-// does; the wizard never collects a { secret: true } env var itself.
+// Builds the deploy-spec body for multi-service runs, converted like apps deploy-spec --file.
 func (a wizardAnswers) toDeploySpecRequest() (deploySpecRequest, error) {
 	s, err := a.toSpec()
 	if err != nil {
@@ -155,11 +126,7 @@ func (a wizardAnswers) toDeploySpecRequest() (deploySpecRequest, error) {
 	return req, nil
 }
 
-// appYAML renders a.toSpec() as app.yaml bytes, round-tripped through
-// spec.Parse (schema validation plus the semantic checks Validate
-// already ran) before being handed to a caller: the same
-// build-then-validate shape coolify_yaml.go's buildAppYAML uses for the
-// migration command's generated app.yaml.
+// appYAML renders toSpec output as app.yaml, round-tripped through spec.Parse.
 func (a wizardAnswers) appYAML() ([]byte, error) {
 	s, err := a.toSpec()
 	if err != nil {
@@ -175,11 +142,7 @@ func (a wizardAnswers) appYAML() ([]byte, error) {
 	return data, nil
 }
 
-// toCreatePlan turns a into the same createPlan the --file path builds,
-// by handing a synthetic single-service spec.Spec to planFromFile: this
-// is the reuse point for toServiceResources/toServiceHealth and every
-// other rule already encoded there (missing-port messages and so on),
-// rather than a second copy of that logic here.
+// Reuses the --file plan path via a synthetic single-service spec, so rules stay in one place.
 func (a wizardAnswers) toCreatePlan() (createPlan, error) {
 	s, err := a.toSpec()
 	if err != nil {
@@ -194,12 +157,7 @@ func (a wizardAnswers) toCreatePlan() (createPlan, error) {
 	return planFromFile(f, s, detectedGit{})
 }
 
-// wizardPrompter drives the interactive question loop over a plain
-// bufio.Scanner: no interactive-prompt library is a dependency of this
-// module today (see go.mod), and a step-by-step wizard is simple enough
-// that a stdin-based scan loop covers it without adding one just for
-// this. All output goes to stderr, this CLI's diagnostics stream, so a
-// script that pipes stdout for --json is never polluted by a prompt.
+// Prompts go to stderr so --json stdout stays clean.
 type wizardPrompter struct {
 	scanner *bufio.Scanner
 	stderr  io.Writer
@@ -209,11 +167,7 @@ func newWizardPrompter(stdin io.Reader, stderr io.Writer) *wizardPrompter {
 	return &wizardPrompter{scanner: bufio.NewScanner(stdin), stderr: stderr}
 }
 
-// readLine writes prompt and reads one line. An EOF on stdin (a script
-// that ran --interactive with no terminal attached, or simply ran out
-// of scripted answers) is reported as a validationError, the same
-// "refuse, don't hang, don't guess" outcome authprompt.go's own
-// promptUsername gives for the identical case.
+// EOF means no answers are coming: refuse instead of hanging or guessing.
 func (p *wizardPrompter) readLine(prompt string) (string, error) {
 	_, _ = fmt.Fprint(p.stderr, prompt)
 	if !p.scanner.Scan() {
@@ -264,11 +218,7 @@ func (p *wizardPrompter) readInt(prompt string) (int, error) {
 	}
 }
 
-// readOptionalInt is readInt with a default for a blank answer instead of
-// requiring a positive value: blank means def (used by the databases
-// wizard's backup retain/retain-days prompts, where 0 means "no limit",
-// the same convention backups schedule set's own --retain/--retain-days
-// flags already use).
+// Blank means def; 0 means no limit, matching backups schedule set flags.
 func (p *wizardPrompter) readOptionalInt(prompt string, def int) (int, error) {
 	for {
 		v, err := p.readLine(prompt)
@@ -308,13 +258,7 @@ func (p *wizardPrompter) readChoice(prompt, def string, options ...string) (stri
 	}
 }
 
-// runInteractiveWizard is the wizard's question loop: app name, source
-// (git repo or Docker image), port, domain, health check path, resource
-// limits, an optional "add another service?" loop for a multi-service
-// app, then where to send the result. detected is the current
-// directory's best-effort local git info (same detectLocalGit the
-// flag-driven path already uses), offered as a default so a caller
-// standing inside a checkout doesn't have to retype its own remote URL.
+// detected seeds the repo URL default from the current checkout.
 func runInteractiveWizard(p *wizardPrompter, detected detectedGit) (wizardAnswers, error) {
 	var a wizardAnswers
 
@@ -397,12 +341,7 @@ func runInteractiveWizard(p *wizardPrompter, detected detectedGit) (wizardAnswer
 		return a, nil
 	}
 
-	// A multi-service create goes through POST .../deploy-spec instead
-	// of CreateApp: it needs an app-level name distinct from any one
-	// service's name, and (see handleDeploySpec, internal/api/
-	// apps_multi.go) a repo_url/ref pair unconditionally, even when
-	// every service happens to be build.type: image, which a git-source
-	// primary service already collected above.
+	// Multi-service creates go through deploy-spec, which needs a repo_url and ref even for image services.
 	appName, err := p.readRequired("App name (the app's identifier on the control plane, distinct from any one service's name): ")
 	if err != nil {
 		return wizardAnswers{}, err
@@ -503,13 +442,7 @@ func readCommonServiceAnswers(p *wizardPrompter, portPrompt, domainPrompt string
 	return c, nil
 }
 
-// readExtraService prompts for one service beyond the first, ordinal
-// being its 1-based position among all services (2, 3, ...) for the
-// prompt text. Unlike the primary service, its git-vs-image choice
-// never asks for a repository: a multi-service deploy always builds
-// every git-sourced service from the one shared repo/ref collected once
-// for the whole app (see the appName/imageRepoBase block above), so this
-// only needs the subdirectory within it.
+// Git services share the repo and ref collected once for the app, so only a subdirectory is asked.
 func readExtraService(p *wizardPrompter, ordinal int) (wizardService, error) {
 	var s wizardService
 
@@ -625,10 +558,7 @@ func runWizardCreateViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credent
 	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
 }
 
-// runWizardCreateMultiServiceViaAPI is runWizardCreateViaAPI's path for
-// a multi-service wizard run: POST .../deploy-spec instead of CreateApp,
-// the same call "apps deploy-spec" itself makes, printed the same way
-// (printDeploySpecResultHuman) so the two surfaces read identically.
+// Same call and output as apps deploy-spec, so both surfaces read identically.
 func runWizardCreateMultiServiceViaAPI(a wizardAnswers, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
 	jsonOut := of.Format == outputJSON
 	req, err := a.toDeploySpecRequest()

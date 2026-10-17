@@ -28,3 +28,43 @@ func runUsageRollup(ctx context.Context, r usageRoller) {
 		}
 	}
 }
+
+// spendCapInterval is how often per-app spend caps are re-evaluated.
+const spendCapInterval = 2 * time.Minute
+
+type spendCapTicker interface {
+	SpendCapTick(ctx context.Context)
+}
+
+// runSpendCaps re-derives every app's cap enforcement until ctx ends.
+func runSpendCaps(ctx context.Context, r spendCapTicker) {
+	r.SpendCapTick(ctx)
+	t := time.NewTicker(spendCapInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			r.SpendCapTick(ctx)
+		}
+	}
+}
+
+type autoscaleTicker interface {
+	AutoscaleTick(ctx context.Context)
+}
+
+// runAutoscaler re-derives every autoscaled app's replica count until ctx ends.
+func runAutoscaler(ctx context.Context, r autoscaleTicker, interval time.Duration) {
+	t := time.NewTicker(interval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			r.AutoscaleTick(ctx)
+		}
+	}
+}

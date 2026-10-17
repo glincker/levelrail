@@ -194,12 +194,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// validateAppsAlertsCreateKind checks the kind-specific flag
-// requirements runAppsAlertsCreate's own usage text documents, split
-// out purely to keep that function's own cognitive complexity low: a
-// flag.FlagSet's worth of registration plus this switch in one function
-// was the actual source of the overage, not any single case's own
-// logic.
+// Split out of runAppsAlertsCreate to keep its cognitive complexity under the lint limit.
 func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountThreshold int, restartWindow, scheduledTaskID, backupResourceKind, backupDatabaseName, backupVolumeName string) error {
 	switch kind {
 	case "threshold":
@@ -217,12 +212,7 @@ func validateAppsAlertsCreateKind(kind, metric, comparator string, restartCountT
 			return newValidationError("--restart-window is required for --kind crashloop")
 		}
 	case "cert_expiry", "patch_status", "node_disk_space", "node_resource_usage", "node_offline", "node_cert_expiring":
-		// No kind-specific flags: a cert_expiry rule watches every
-		// certificate on the control plane, a patch_status rule watches
-		// every node's pending OS security patches, a node_disk_space rule
-		// watches every node's disk usage, and a node_resource_usage rule
-		// watches every node's summed CPU and memory usage, none tied to
-		// this app's own metrics.
+		// These kinds watch platform-wide resources, so no app-specific flags apply.
 	case "scheduled_task_failure":
 		if scheduledTaskID == "" {
 			return newValidationError("--scheduled-task-id is required for --kind scheduled_task_failure")
@@ -269,11 +259,7 @@ func registerBackupMissingFlags(fs *flag.FlagSet) (resourceKind, databaseName, v
 	return &rk, &db, &vol
 }
 
-// backupMissingRequestFields computes the four backup_missing-specific
-// request fields shared by createAlertRuleRequest and
-// updateAlertRuleRequest, so "apps alerts create" and "apps alerts
-// update" don't each carry their own copy of the same "resolve the
-// volume's owning service to appName" logic.
+// Shared by create and update so both resolve the volume's owning service the same way.
 type backupMissingRequestFields struct {
 	ResourceKind, DatabaseName, ServiceName, VolumeName string
 }
@@ -439,12 +425,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runAppsAlertsUpdate implements "apps alerts update <app> <id>": PUT
-// /api/v1/apps/{name}/alerts/{id}, a full replace of the rule's
-// configuration using the same flags as "apps alerts create". Every
-// field the rule should keep must be passed again on this call, the same
-// full-replace convention "registry-credentials update" and "flags set"
-// already establish in this CLI: there is no partial-update variant.
+// Full replace: every field the rule keeps must be passed again, there is no partial update.
 func runAppsAlertsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps alerts update", "print the updated rule as JSON to stdout and nothing else", stderr)
 	var (

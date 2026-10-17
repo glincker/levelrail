@@ -7,12 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runNodesTopology implements "nodes topology": GET
-// /api/v1/network/topology, a read-only, whole-mesh summary (nodes,
-// apps, databases, load balancers, app-to-database connections) backing
-// the Network topology dashboard page. Takes no positional argument,
-// the same no-argument shape "nodes mesh" uses: there is only ever one
-// live topology to ask for.
 func runNodesTopology(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes topology", "print the topology summary as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesTopologyUsage(prog)) }

@@ -7,11 +7,7 @@ import (
 	"os"
 )
 
-// runAppsDeployCompose implements "apps deploy-compose <name> --file
-// <compose.yaml>": POST /api/v1/apps/{name}/compose
-// (internal/api/apps_compose.go's handleDeployCompose) with the file's
-// raw bytes as the request body. Fans one compose.yaml out into one app
-// plus its member services, all in a single synchronous call.
+// One compose file creates one app plus its member services in a single call.
 func runAppsDeployCompose(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploy-compose", "print the full deploy result as JSON to stdout and nothing else", stderr)
 	var file string

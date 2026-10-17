@@ -1,55 +1,6 @@
-// Command levelrail-mcp is an MCP (Model Context Protocol) server that
-// lets an AI agent manage a control plane deployment through the same
-// versioned REST API (internal/api, mounted at /api/v1) cmd/levelrail-cli
-// already drives: see internal/apiclient's own doc comment, and
-// internal/store/tokens.go's APIToken doc comment on why a bearer token
-// was always meant to authenticate "a CLI, an MCP server, or a
-// third-party integration" alike. Every tool below is a thin wrapper
-// around one REST call; there is no special internal access, and a
-// token scoped to fewer abilities than a tool needs gets back the same
-// 403 the REST API itself would return (internal/api/router.go's own
-// comment on why the scoped-ability token system exists).
-//
-// # Configuring an MCP client
-//
-// Add this to Claude Desktop's/Claude Code's MCP server config, using an
-// API token minted via "levelrail-cli auth login" or "levelrail-cli
-// tokens create":
-//
-//	{
-//	  "mcpServers": {
-//	    "levelrail": {
-//	      "command": "levelrail-mcp",
-//	      "args": [],
-//	      "env": {
-//	        "APP_API_TOKEN": "<your API token>",
-//	        "APP_API_URL": "http://localhost:8080"
-//	      }
-//	    }
-//	  }
-//	}
-//
-// If levelrail-cli has already been configured on the same machine (its
-// own "auth login" writes ~/.config/levelrail-cli/credentials), this
-// server picks up the same token and URL automatically and the env
-// block above can be omitted entirely; --token/--api-url flags and the
-// APP_API_TOKEN/APP_API_URL env vars still take precedence when set,
-// exactly like the CLI's own resolution order.
-//
-// # Write tools
-//
-// Confirm-gated write tools are hidden unless --allow-write (or
-// APP_MCP_ALLOW_WRITE=1) is set; see docs/mcp.md for the threat model.
-// --readonly refuses to start with a token that can change anything.
-//
-// # Running over the network
-//
-// --transport=http runs the MCP Streamable HTTP transport instead of
-// stdio, for a client that cannot spawn this as a local subprocess (a
-// remotely hosted AI assistant, for instance). It binds to loopback only
-// by default (--listen overrides this) and requires the same API token
-// this process already uses outbound, presented as a bearer token on
-// every incoming request; see docs/ai-assistant.md.
+// Command levelrail-mcp is an MCP server that lets an AI agent manage a control plane through its /api/v1 REST API.
+// Each tool wraps one REST call, so a token with fewer abilities gets the same 403 the API returns.
+// Write tools stay hidden unless --allow-write is set, and --transport=http binds loopback only by default.
 package main
 
 import (

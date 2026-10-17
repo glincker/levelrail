@@ -188,10 +188,7 @@ func TestEvaluateBackupMissing_OnlyFailedAttempts_FiresUsingOldestAsAnchor(t *te
 	}
 }
 
-// TestEvaluateBackupMissing_PerRuleForDurationOverridesDefault checks
-// that r.ForDuration, when set, takes priority over the passed-in
-// engine-wide default grace period (Rule's own doc comment on why
-// ForDuration is reused for this kind).
+// TestEvaluateBackupMissing_PerRuleForDurationOverridesDefault checks that a rule's ForDuration overrides the engine-wide grace period.
 func TestEvaluateBackupMissing_PerRuleForDurationOverridesDefault(t *testing.T) {
 	now := time.Now().UTC()
 	source := newFakeBackupSource()

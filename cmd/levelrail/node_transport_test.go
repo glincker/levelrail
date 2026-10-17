@@ -6,14 +6,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 )
 
-// Reproduces the bug: a single-node install with mesh enabled assigns
-// auto-placed services the local node's own real mesh ID instead of the
-// "" sentinel (ListNodes includes the local node as an eligible,
-// schedulable, online candidate). resolveNodeTransport only special-cases
-// "", so without runtimeNodeID's translation this looked up the local
-// node's real ID in the remote agent registry, found nothing (only
-// remote agents register there via enrollment), and the service was
-// silently skipped every reconcile pass.
+// Regression: auto-placed services got the local node's real mesh ID, which resolveNodeTransport does not translate, so they were silently skipped.
 func TestRuntimeNodeID(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -37,11 +30,7 @@ func TestRuntimeNodeID(t *testing.T) {
 	}
 }
 
-// End-to-end through resolveNodeTransport: the actual call appControllersFor/
-// databaseControllersFor make, proving a service placed on the local node's
-// real mesh ID resolves to the local runtime instead of erroring against an
-// empty remote registry. fakeInspectRuntime (database_telemetry_targets_test.go)
-// is reused as a docker.Runtime stand-in; no method on it is called here.
+// Proves a service placed on the local node resolves to the local runtime, not an error against an empty remote registry.
 func TestResolveNodeTransport_LocalNodeRealID_ResolvesToLocal(t *testing.T) {
 	localRuntime := &fakeInspectRuntime{}
 	registry := agent.NewRegistry()

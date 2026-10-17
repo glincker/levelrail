@@ -31,10 +31,8 @@ type analyzeImportRequest struct {
 	Token          string `json:"token,omitempty"`
 }
 
-// handleAnalyzeImport handles POST /api/v1/imports/analyze: reads a bounded
-// set of files from the repository through the provider API (never a clone
-// onto the host for GitHub, GitLab and Gitea) and returns pre-filled
-// suggestions with evidence. Nothing is created.
+// Reads a bounded set of files through the provider API, never a host clone, and returns suggestions with evidence.
+// Creates nothing.
 func (rt *Router) handleAnalyzeImport(w http.ResponseWriter, r *http.Request) {
 	var req analyzeImportRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, analyzeBodyLimit)).Decode(&req); err != nil {

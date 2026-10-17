@@ -7,11 +7,7 @@ import (
 	"time"
 )
 
-// runRegistryCredentialsUpdate implements "registry-credentials update
-// <id>": PUT /api/v1/registry-credentials/{id}, a full replace of name/
-// registry_host/username. --password is optional here, unlike
-// "registry-credentials create": omitted, the credential keeps its
-// existing stored password; given, it rotates it.
+// Full replace; an omitted --password keeps the stored one, a given one rotates it.
 func runRegistryCredentialsUpdate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "registry-credentials update", "print the updated registry credential as JSON to stdout and nothing else", stderr)
 	var name, registryHost, username, password, expiresAt string

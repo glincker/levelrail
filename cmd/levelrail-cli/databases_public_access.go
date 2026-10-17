@@ -39,11 +39,7 @@ Run "%[1]s databases public-access <subcommand> -h" for a subcommand's own flags
 `, prog)
 }
 
-// runDatabasesPublicAccessSet implements "databases public-access set
-// <database>": PUT /api/v1/databases/{name}/public-access
-// (internal/api/database_public_access.go). --bind-address chooses which
-// network interface the assigned port binds to; omitted, the control
-// plane defaults to "private" (loopback only), never a silent "public".
+// An omitted --bind-address defaults to private (loopback), never public.
 func runDatabasesPublicAccessSet(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases public-access set", "print the updated public-access state as JSON to stdout and nothing else", stderr)
 	var port int

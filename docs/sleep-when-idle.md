@@ -10,7 +10,7 @@ again. Off by default, per app.
 ## How it works
 
 - A check runs every minute. An app sleeps only when, for the whole idle time
-  you chose (5 minutes to 7 days), it had no real request, no network traffic
+  you chose (5 minutes to 7 days by default, see Tuning), it had no real request, no network traffic
   above a small floor, and no open connection. The window starts at the later
   of turning sleep on, the last wake, and when the control plane began
   watching, so a control plane restart never sleeps an app on missing data.
@@ -23,14 +23,62 @@ again. Off by default, per app.
   secrets and volumes stay.
 - While asleep, the app's domains answer a short "Waking up" page that retries
   on its own. The first request starts the app, so the first visitor waits for
-  the cold start (the container start plus its readiness time, usually a few
-  seconds to a minute).
+  the cold start.
+- Expect seconds, not milliseconds. A wake starts a stopped container, so the
+  time is dominated by how long your app takes to boot (a small Go or Node app
+  is a second or two, a JVM or framework-heavy app is often over ten). Levelrail
+  measures every wake and shows the real figure per app, see
+  [Wake time](#wake-time).
 - Starting the app by hand clears the sleeping state. Turning sleep off wakes
   the app first.
 
 For API callers that cannot retry an error page, turn on **hold requests while
 waking** (`apps sleep enable --hold`): the request waits for the start and is
 replayed. See [Functions](/functions).
+
+## Wake time
+
+Every wake is timed from the moment the request arrives to the first ready
+signal (the app passed its readiness check). When held requests are let go, that
+moment is recorded too. The newest 50 timed wakes per app feed the figures, so
+they follow the app as it changes.
+
+- The app's Sleep when idle card, the Sleeping apps card and
+  `apps sleep status` show "Usually wakes in about 4.2 s (p95 9.1 s)".
+- With no timed wake yet they say so plainly ("No wakes measured yet"). No number
+  is guessed.
+- `apps sleep list` has a USUALLY WAKES column, `apps sleep history` ends with a
+  wake time line.
+- The API returns `wake_timing` with `samples`, `ready_last_ms`, `ready_p50_ms`,
+  `ready_p95_ms` and the same three `released_*` figures, on the sleep resource,
+  the history response and each app of `GET /api/v1/sleep`.
+
+### Hold limit and the waking page
+
+How long a request is held while its app wakes follows the app's own p95 wake
+time: p95 times a headroom factor, never below the floor and never above the cap.
+With no history the default hold applies. A request that arrives while a wake is
+already running is held for what is left of the same window, not turned away.
+
+When the hold limit passes (or hold is off), the visitor gets the waking page
+instead of a bare 502 or 504:
+
+- Browsers (`Accept: text/html`) get a 503 page titled "Waking up" with the
+  platform brand, the typical wake time when known, and a meta refresh, so it
+  reloads on its own.
+- API clients (`Accept: application/json`) get a 503 with
+  `{"error":"app is waking up","retry_after_seconds":N}`; everything else gets a
+  plain text 503.
+- All of them carry `Retry-After` (half the typical wake, 1 to 10 seconds, 3 with
+  no history) and `Cache-Control: no-store`.
+
+While an app wakes, its readiness is probed every
+`APP_SLEEP_WAKE_PROBE_INTERVAL` (250 ms by default) instead of the app's own
+interval, and held requests are released on the first ready signal. The normal
+interval applies again afterwards.
+
+Pausing a container instead of stopping it could wake in milliseconds, but it
+keeps the memory in use and has not been benchmarked here, so it is not offered.
 
 ## Running many apps on a small server
 
@@ -132,7 +180,15 @@ Error: sleep when idle cannot be turned on:
 | --- | --- | --- |
 | `APP_SLEEP_NETWORK_FLOOR_BYTES_PER_MIN` | `4096` | Container traffic (in plus out) below this per minute counts as idle, so keepalives and probes do not hold an app awake |
 | `APP_SLEEP_WAKE_COOLDOWN` | `5m` | No sleep this soon after a wake |
-| `APP_SLEEP_PORT_WAKE_TIMEOUT` | `30s` | How long a held connection waits for the app |
+| `APP_SLEEP_IDLE_MIN_MINUTES` | `5` | Shortest idle time that can be set |
+| `APP_SLEEP_IDLE_MAX_MINUTES` | `10080` | Longest idle time that can be set (7 days) |
+| `APP_SLEEP_IDLE_DEFAULT_MINUTES` | `30` | Idle time used when sleep is turned on without one |
+| `APP_SLEEP_HOLD_MIN` | `10s` | Shortest a request is held while its app wakes |
+| `APP_SLEEP_HOLD_MAX` | `120s` | Longest a request is held while its app wakes |
+| `APP_SLEEP_HOLD_DEFAULT` | `30s` | Hold limit for an app with no wake history |
+| `APP_SLEEP_HOLD_HEADROOM` | `1.5` | Hold limit is the app's p95 wake times this factor (at least 1) |
+| `APP_SLEEP_WAKE_PROBE_INTERVAL` | `250ms` | Readiness probe interval while an app wakes |
+| `APP_SLEEP_PORT_WAKE_TIMEOUT` | `30s` | How long a held port connection waits for the app |
 | `APP_SLEEP_PORT_WAKE_COLLECT` | `250ms` | How long the port stays open after the first connection to hold a burst |
 | `APP_SLEEP_PORT_WAKE_RETRY` | `2s` | How often a missing port wake listener is retried |
 | `APP_SLEEP_PORT_WAKE_MIN_PORT` | `1024` | Lowest port port wake will bind |
@@ -173,7 +229,7 @@ A wake caused by a request also stores the request path and a coarse source:
 the host that was asked for, or `health probe` or `bot` when the request looks
 automated. Client addresses are never stored. A `woke` event carries how long
 the app had slept and, once the app is healthy, how long the wake took. If the
-app does not become healthy within 30 seconds a `wake_failed` event records it.
+app does not become healthy within its hold limit (see Wake time) a `wake_failed` event records it.
 
 `levelrail-cli apps sleep status` also prints when the app last slept and woke
 and how long it was asleep in the last 7 days. `apps sleep list` adds a SINCE
@@ -204,7 +260,7 @@ its time asleep in the app header.
 ## API
 
 `GET` and `PUT /api/v1/apps/{name}/sleep` and `POST /api/v1/apps/{name}/sleep/wake`.
-`GET` returns the setting plus `blockers`, `warnings` (each with a `code`, `title`,
+`GET` returns the setting plus `wake_timing`, `idle_limits` (the allowed and default idle minutes on this server), `blockers`, `warnings` (each with a `code`, `title`,
 `detail` and an optional `fix` naming the API call), `eligible`, `settings`
 (`idle_minutes`, `hold_requests`, `ignore_paths`, `port_wake`), `port_wake`,
 `activity` (last request and network activity, open connections, idle seconds,
@@ -235,11 +291,11 @@ the `deploy` ability, `GET` needs `read`. See the
 
 ### A request to a sleeping app returns 503
 
-**Likely cause:** This is the waking-up page, by design. The first request starts the app and the page retries on its own. Scripts and API clients do not retry an HTML page.
+**Likely cause:** This is the waking response, by design. The first request starts the app and the page retries on its own. Scripts and API clients get a plain or JSON 503 with a `Retry-After` header and must retry themselves.
 
-**How to confirm:** `levelrail-cli apps sleep status <name>` reports the app as asleep before the request, and awake a few seconds to a minute later.
+**How to confirm:** `levelrail-cli apps sleep status <name>` reports the app as asleep before the request, and shows how long its wakes usually take.
 
-**Fix:** For callers that cannot retry, turn on hold mode: `levelrail-cli apps sleep enable <name> --after 30m --hold`. The request then waits for the app and gets one `307` redirect back to the same URL once it is ready, so the client must follow redirects (`curl -L`, and most HTTP libraries do for GET).
+**Fix:** For callers that cannot retry, turn on hold mode: `levelrail-cli apps sleep enable <name> --after 30m --hold`. The request then waits for the app (up to its adaptive hold limit) and gets one `307` redirect back to the same URL once it is ready, so the client must follow redirects (`curl -L`, and most HTTP libraries do for GET).
 
 ### The app sleeps while people are using it
 
@@ -251,7 +307,7 @@ the `deploy` ability, `GET` needs `read`. See the
 
 ### The app wakes but requests still fail
 
-**Likely cause:** The app did not become ready in time. Hold mode waits up to 30 seconds, after which the visitor gets the waking-up page again while the start continues.
+**Likely cause:** The app did not become ready in time. Hold mode waits up to the app's hold limit (its p95 wake times 1.5, between 10 and 120 seconds), after which the visitor gets the waking page again while the start continues.
 
 **How to confirm:** `levelrail-cli apps logs <name>` shows the app's startup output. The Deploys tab shows its readiness condition.
 

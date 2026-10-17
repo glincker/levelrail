@@ -9,10 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
-// testMeshKey builds a deterministic, distinguishable Key from seed, the
-// same shape internal/network's own testKey (key_test.go) uses: a real
-// GeneratePrivateKey would work too, but a fixed input keeps assertions
-// on a specific expected key value stable across runs.
+// testMeshKey returns a fixed, distinguishable Key so assertions on the expected value stay stable.
 func testMeshKey(t *testing.T, seed byte) network.Key {
 	t.Helper()
 	var k network.Key

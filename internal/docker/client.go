@@ -405,6 +405,7 @@ func (c *Client) Create(ctx context.Context, spec ContainerSpec) (string, error)
 			Labels:       c.withInstanceLabel(spec.Labels),
 			Cmd:          spec.Command,
 			Entrypoint:   spec.Entrypoint,
+			User:         spec.User,
 		},
 		hostConfig,
 		toNetworkingConfig(spec.Network), nil,
@@ -629,6 +630,10 @@ func buildHostConfig(spec ContainerSpec, portBindings nat.PortMap) *container.Ho
 	}
 	if spec.NetworkMode != "" {
 		hostConfig.NetworkMode = container.NetworkMode(spec.NetworkMode)
+	}
+	if spec.Hardened {
+		hostConfig.ReadonlyRootfs = true
+		hostConfig.Tmpfs = map[string]string{"/tmp": hardenedTmpfsOpts}
 	}
 	return hostConfig
 }
