@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -105,20 +106,51 @@ func bypassReason(r *http.Request, rule trafficpolicy.CacheRule) string {
 	return ""
 }
 
-// cacheKey never mixes hosts: the request host leads the key, and every
-// Vary header (plus Accept-Encoding, which upstreams compress by) follows.
-func cacheKey(host string, r *http.Request, vary []string) string {
+// cacheKey never mixes hosts: the request host leads the key, then the
+// path and query (minus ignored params), every Vary header (plus
+// Accept-Encoding, which upstreams compress by) and any keyed cookies.
+// It also returns the normalized URI the entry is stored and purged under.
+func cacheKey(host string, r *http.Request, rule trafficpolicy.CacheRule) (key, uri string) {
+	uri = normalizedURI(r, rule.IgnoreQueryParams)
 	var b strings.Builder
 	b.WriteString(host)
 	b.WriteByte('\n')
-	b.WriteString(r.URL.RequestURI())
-	for _, h := range append([]string{"Accept-Encoding"}, vary...) {
+	b.WriteString(uri)
+	for _, h := range append([]string{"Accept-Encoding"}, rule.Vary...) {
 		b.WriteByte('\n')
 		b.WriteString(http.CanonicalHeaderKey(h))
 		b.WriteByte('=')
 		b.WriteString(strings.Join(r.Header.Values(h), ","))
 	}
-	return b.String()
+	for _, name := range rule.KeyCookies {
+		b.WriteString("\ncookie:")
+		b.WriteString(name)
+		b.WriteByte('=')
+		if c, err := r.Cookie(name); err == nil {
+			b.WriteString(c.Value)
+		}
+	}
+	return b.String(), uri
+}
+
+func normalizedURI(r *http.Request, ignore []string) string {
+	if len(ignore) == 0 || r.URL.RawQuery == "" {
+		return r.URL.RequestURI()
+	}
+	var kept []string
+	for _, part := range strings.Split(r.URL.RawQuery, "&") {
+		name, _, _ := strings.Cut(part, "=")
+		if n, err := url.QueryUnescape(name); err == nil {
+			name = n
+		}
+		if !slices.Contains(ignore, name) {
+			kept = append(kept, part)
+		}
+	}
+	if len(kept) == 0 {
+		return r.URL.EscapedPath()
+	}
+	return r.URL.EscapedPath() + "?" + strings.Join(kept, "&")
 }
 
 func requestHost(r *http.Request) string {
@@ -129,9 +161,31 @@ func requestHost(r *http.Request) string {
 	return strings.ToLower(host)
 }
 
+func parseTags(values []string) []string {
+	var tags []string
+	for _, v := range values {
+		for _, t := range strings.FieldsFunc(v, func(c rune) bool { return c == ',' || c == ' ' }) {
+			if len(t) <= maxCacheTagLen && len(tags) < maxCacheTags && !slices.Contains(tags, t) {
+				tags = append(tags, t)
+			}
+		}
+	}
+	return tags
+}
+
+func (m *cacheModule) waitForFetch(r *http.Request, ch <-chan struct{}) {
+	t := time.NewTimer(envDuration(EnvCacheCoalesceWait, defaultCacheCoalesceWait))
+	defer t.Stop()
+	select {
+	case <-ch:
+	case <-r.Context().Done():
+	case <-t.C:
+	}
+}
+
 func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
 	rule, ok := m.rule(r)
-	if !ok {
+	if !ok || rule.Never {
 		return next.ServeHTTP(w, r)
 	}
 	host := requestHost(r)
@@ -140,44 +194,117 @@ func (m *cacheModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next cad
 		w.Header().Set(CacheStatusHeader, cacheBypass)
 		return next.ServeHTTP(w, r)
 	}
-	key := cacheKey(host, r, rule.Vary)
+	key, uri := cacheKey(host, r, rule)
 	noCache := hasDirective(r.Header.Values("Cache-Control"), "no-cache") || r.Header.Get("Pragma") == "no-cache"
-	if !noCache {
-		if e, fresh, stale := m.store.lookup(key); e != nil {
-			outcome := cacheHit
-			if stale && !fresh {
-				outcome = cacheStale
+	leader, waited := false, false
+	for {
+		if !noCache {
+			if e, fresh, stale := m.store.lookup(key); e != nil {
+				outcome := cacheHit
+				if stale && !fresh {
+					outcome = cacheStale
+				}
+				m.serveCached(w, r, host, e, outcome)
+				return nil
 			}
-			m.store.record(host, outcome)
-			serveEntry(w, r, e, outcome, m.store.now())
-			return nil
 		}
+		if leader = m.store.beginRefresh(key); leader || noCache || waited {
+			break
+		}
+		if ch := m.store.inflight(key); ch != nil {
+			m.waitForFetch(r, ch)
+		}
+		waited = true
 	}
-	m.store.record(host, cacheMiss)
-	refreshing := m.store.beginRefresh(key)
-	if refreshing {
+	if leader {
 		defer m.store.endRefresh(key)
 	}
-	rec := &cacheRecorder{ResponseWriterWrapper: &caddyhttp.ResponseWriterWrapper{ResponseWriter: w}, max: m.MaxObjectBytes}
+	m.store.record(host, cacheMiss)
+
+	now := m.store.now()
+	var old *cacheEntry
+	if e := m.store.peek(key); e != nil && !e.fresh(now) {
+		old = e
+	}
+	guard := old != nil && old.servableOnError(now)
+	revalidate := old != nil && old.hasValidator() && r.Header.Get("If-None-Match") == "" && r.Header.Get("If-Modified-Since") == ""
+	if revalidate {
+		if etag := old.header.Get("Etag"); etag != "" {
+			r.Header.Set("If-None-Match", etag)
+		}
+		if lm := old.header.Get("Last-Modified"); lm != "" {
+			r.Header.Set("If-Modified-Since", lm)
+		}
+	}
+
+	rec := &cacheRecorder{ResponseWriterWrapper: &caddyhttp.ResponseWriterWrapper{ResponseWriter: w}, max: m.MaxObjectBytes, hold5xx: guard, hold304: revalidate}
 	err := next.ServeHTTP(rec, r)
+	if revalidate {
+		r.Header.Del("If-None-Match")
+		r.Header.Del("If-Modified-Since")
+	}
+	if rec.held && rec.status == http.StatusNotModified && revalidate {
+		m.refreshFromNotModified(rule, old, rec.Header())
+		clearHeader(w.Header())
+		m.serveCached(w, r, host, old, cacheHit)
+		return nil
+	}
+	if (rec.held || (err != nil && rec.status == 0)) && guard {
+		clearHeader(w.Header())
+		m.serveCached(w, r, host, old, cacheStale)
+		return nil
+	}
 	if err == nil && rec.status == 0 {
 		// Nothing written: the server sends an implicit empty 200.
 		rec.Header().Set(CacheStatusHeader, cacheMiss)
 		rec.status = http.StatusOK
 	}
+	m.store.recordBytes(host, false, rec.total)
 	if err != nil || r.Method != http.MethodGet || rec.skip {
 		return err
 	}
 	ttl, stale, storable := m.freshness(rule, rec.status, rec.Header())
 	if storable {
-		now := m.store.now()
+		stored := m.store.now()
 		m.store.put(&cacheEntry{
-			key: key, host: host, uri: r.URL.RequestURI(), status: rec.status,
+			key: key, host: host, uri: uri, origURI: r.URL.RequestURI(), status: rec.status,
+			tags:   parseTags(rec.Header().Values(cacheTagHeader())),
 			header: storedHeader(rec.Header()), body: rec.buf.Bytes(),
-			stored: now, expires: now.Add(ttl), stale: stale,
+			stored: stored, expires: stored.Add(ttl), stale: stale,
+			onError: time.Duration(rule.StaleIfErrorSeconds) * time.Second,
 		})
 	}
 	return nil
+}
+
+func clearHeader(h http.Header) {
+	for k := range h {
+		delete(h, k)
+	}
+}
+
+func (m *cacheModule) serveCached(w http.ResponseWriter, r *http.Request, host string, e *cacheEntry, outcome string) {
+	m.store.record(host, outcome)
+	n := serveEntry(w, r, e, outcome, m.store.now())
+	m.store.recordBytes(host, true, n)
+}
+
+// refreshFromNotModified extends old's life after the app confirmed it with 304.
+func (m *cacheModule) refreshFromNotModified(rule trafficpolicy.CacheRule, old *cacheEntry, fresh http.Header) {
+	h := old.header.Clone()
+	for _, k := range []string{"Cache-Control", "Expires", "Etag", "Last-Modified"} {
+		if v := fresh.Values(k); len(v) > 0 {
+			h[k] = slices.Clone(v)
+		}
+	}
+	ttl, stale, ok := m.freshness(rule, old.status, h)
+	if !ok {
+		return
+	}
+	now := m.store.now()
+	next := *old
+	next.header, next.stored, next.expires, next.stale = h, now, now.Add(ttl), stale
+	m.store.put(&next)
 }
 
 // freshness decides whether a response may be stored and for how long.
@@ -252,21 +379,36 @@ func storedHeader(h http.Header) http.Header {
 	return out
 }
 
-func serveEntry(w http.ResponseWriter, r *http.Request, e *cacheEntry, outcome string, now time.Time) {
+func serveEntry(w http.ResponseWriter, r *http.Request, e *cacheEntry, outcome string, now time.Time) int64 {
 	dst := w.Header()
 	for k, v := range e.header {
 		dst[k] = slices.Clone(v)
 	}
 	dst.Set(CacheStatusHeader, outcome)
 	dst.Set("Age", strconv.Itoa(int(now.Sub(e.stored).Seconds())))
-	if etag := e.header.Get("Etag"); etag != "" && r.Header.Get("If-None-Match") == etag {
+	if notModified(r, e) {
 		w.WriteHeader(http.StatusNotModified)
-		return
+		return 0
 	}
 	w.WriteHeader(e.status)
-	if r.Method != http.MethodHead {
-		_, _ = w.Write(e.body)
+	if r.Method == http.MethodHead {
+		return 0
 	}
+	n, _ := w.Write(e.body)
+	return int64(n)
+}
+
+func notModified(r *http.Request, e *cacheEntry) bool {
+	if inm := r.Header.Get("If-None-Match"); inm != "" {
+		etag := e.header.Get("Etag")
+		return etag != "" && inm == etag
+	}
+	ims, err := http.ParseTime(r.Header.Get("If-Modified-Since"))
+	if err != nil {
+		return false
+	}
+	lm, err := http.ParseTime(e.header.Get("Last-Modified"))
+	return err == nil && !lm.After(ims)
 }
 
 // cacheRecorder streams the response to the client while keeping a copy
@@ -277,11 +419,20 @@ type cacheRecorder struct {
 	status int
 	buf    bytes.Buffer
 	skip   bool
+	total  int64
+	// hold5xx and hold304 swallow that response so the handler can answer
+	// from a stored copy instead; held records that it happened.
+	hold5xx, hold304 bool
+	held             bool
 }
 
 func (c *cacheRecorder) WriteHeader(code int) {
 	if c.status == 0 && code >= 200 {
 		c.status = code
+		if (c.hold5xx && code >= 500) || (c.hold304 && code == http.StatusNotModified) {
+			c.held = true
+			return
+		}
 		c.Header().Set(CacheStatusHeader, cacheMiss)
 		if strings.HasPrefix(c.Header().Get("Content-Type"), "text/event-stream") {
 			c.skip = true
@@ -297,6 +448,10 @@ func (c *cacheRecorder) Write(p []byte) (int, error) {
 	if c.status == 0 {
 		c.WriteHeader(http.StatusOK)
 	}
+	if c.held {
+		return len(p), nil
+	}
+	c.total += int64(len(p))
 	if !c.skip {
 		if int64(c.buf.Len()+len(p)) > c.max {
 			c.skip = true
@@ -316,3 +471,12 @@ var (
 	_ caddyhttp.MiddlewareHandler = (*cacheModule)(nil)
 	_ caddy.Provisioner           = (*cacheModule)(nil)
 )
+
+func (c *cacheRecorder) Flush() {
+	if c.held {
+		return
+	}
+	if f, ok := c.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
+}

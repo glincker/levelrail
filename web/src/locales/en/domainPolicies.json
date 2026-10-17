@@ -227,14 +227,14 @@
     "size": "{{entries}} entries, {{bytes}}",
     "sparkline": "Hits and misses over the last 30 minutes",
     "noStats": "No cache activity yet.",
-    "purgeScope": "Purge",
-    "purgeUrl": "One URL",
-    "purgePrefix": "Path prefix",
-    "purgeAll": "Everything",
-    "purgeValue": "Path",
-    "purge": "Purge",
-    "purged_one": "Removed {{count}} entry.",
-    "purged_other": "Removed {{count}} entries."
+    "never": "Never cache these paths",
+    "staleIfError": "Serve stale on error (s)",
+    "ignoreQuery": "Ignore query parameters",
+    "keyCookies": "Cookies in the key",
+    "preset": "Cache static assets",
+    "presetHelp": "Adds one rule for images, scripts, styles and fonts and turns caching on. Your app's own Cache-Control still wins.",
+    "presetDone": "Static assets rule added.",
+    "presetAlready": "Static assets are already cached."
   },
   "ports": {
     "title": "Ports",

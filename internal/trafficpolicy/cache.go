@@ -3,7 +3,10 @@ package trafficpolicy
 import (
 	"fmt"
 	"net/http"
+	"strings"
 )
+
+const maxCacheKeyNames = 16
 
 // CacheRule selects responses to keep in the ingress cache.
 type CacheRule struct {
@@ -22,6 +25,17 @@ type CacheRule struct {
 	// CacheWithCookies keeps caching when the request carries a Cookie.
 	// Off by default: a cookie usually means a personalised page.
 	CacheWithCookies bool `json:"cache_with_cookies,omitempty"`
+	// Never marks paths that must not be cached: the first matching rule
+	// wins, so list these before broader cache rules.
+	Never bool `json:"never,omitempty"`
+	// StaleIfErrorSeconds serves an expired entry, marked STALE, when the
+	// app answers 5xx or cannot be reached.
+	StaleIfErrorSeconds int `json:"stale_if_error_seconds,omitempty"`
+	// IgnoreQueryParams are dropped from the cache key (tracking params).
+	IgnoreQueryParams []string `json:"ignore_query_params,omitempty"`
+	// KeyCookies adds these cookies' values to the cache key; requires
+	// CacheWithCookies.
+	KeyCookies []string `json:"key_cookies,omitempty"`
 }
 
 // Cache is a domain's cache policy.
@@ -59,6 +73,9 @@ func (c *Cache) Validate(l Limits) error {
 	for i, r := range c.Rules {
 		f := fmt.Sprintf("rules[%d]", i)
 		validateMatch(col, f+".match", r.Match, l, cacheMethods)
+		if r.Never {
+			continue
+		}
 		if r.TTLSeconds < 0 || r.TTLSeconds > maxTTL {
 			col.add(f+".ttl_seconds", "must be between 0 and %d", maxTTL)
 		}
@@ -67,6 +84,28 @@ func (c *Cache) Validate(l Limits) error {
 		}
 		if r.StaleWhileRevalidateSeconds < 0 || r.StaleWhileRevalidateSeconds > maxTTL {
 			col.add(f+".stale_while_revalidate_seconds", "must be between 0 and %d", maxTTL)
+		}
+		if r.StaleIfErrorSeconds < 0 || r.StaleIfErrorSeconds > maxTTL {
+			col.add(f+".stale_if_error_seconds", "must be between 0 and %d", maxTTL)
+		}
+		if len(r.IgnoreQueryParams) > maxCacheKeyNames {
+			col.add(f+".ignore_query_params", "at most %d names", maxCacheKeyNames)
+		}
+		for j, q := range r.IgnoreQueryParams {
+			if q == "" || len(q) > 64 || strings.ContainsAny(q, "&=#") {
+				col.add(fmt.Sprintf("%s.ignore_query_params[%d]", f, j), "must be a bare parameter name")
+			}
+		}
+		if len(r.KeyCookies) > maxCacheKeyNames {
+			col.add(f+".key_cookies", "at most %d names", maxCacheKeyNames)
+		}
+		if len(r.KeyCookies) > 0 && !r.CacheWithCookies {
+			col.add(f+".key_cookies", "requires cache_with_cookies")
+		}
+		for j, c := range r.KeyCookies {
+			if !IsToken(c) {
+				col.add(fmt.Sprintf("%s.key_cookies[%d]", f, j), "must be a cookie name")
+			}
 		}
 		for j, s := range r.StatusCodes {
 			if !cacheableStatuses[s] {
@@ -84,4 +123,16 @@ func (c *Cache) Validate(l Limits) error {
 		}
 	}
 	return col.err()
+}
+
+// StaticAssetsPreset caches common static file types for an hour when the
+// app sends no Cache-Control of its own; an app's max-age or s-maxage wins,
+// so fingerprinted assets sent as immutable keep their long lifetime.
+func StaticAssetsPreset() []CacheRule {
+	return []CacheRule{{
+		Match:                       Match{Kind: MatchRegex, Path: `(?i)\.(css|js|mjs|map|png|jpe?g|gif|webp|avif|svg|ico|woff2?|ttf|otf|eot|mp4|webm|mp3|wasm)$`, Methods: []string{http.MethodGet, http.MethodHead}},
+		TTLSeconds:                  3600,
+		StaleWhileRevalidateSeconds: 60,
+		StaleIfErrorSeconds:         86400,
+	}}
 }

@@ -176,6 +176,7 @@
               "standalone-domains",
               "dns",
               "domain-traffic-controls",
+              "cdn-and-caching",
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",

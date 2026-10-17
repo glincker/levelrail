@@ -239,6 +239,7 @@ type Router struct {
 	domainRedirect         DomainRedirectStore         // always set, same "core Store interface" shape as domainMaintenance above; no secrets dependency either
 	domainSearchVisibility DomainSearchVisibilityStore // always set, core Store
 	domainPolicy           domainPolicyDeps            // per-domain traffic controls, domain_policies.go
+	cachePurges            CachePurgeStore             // purge history, cache_app.go
 	domainErrorPages       DomainErrorPagesStore       // always set, same "core Store interface" shape as domainWAF above; no secrets dependency either
 	masterKeyRotator       MasterKeyRotator            // nil is valid: POST /system/master-key/rotate returns 501, same shape as domainBasicAuthSecrets above
 	secretBinder           SecretBinder                // nil is valid: the secrets binding routes return 501
@@ -775,6 +776,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		domainErrorPages:            s,
 		domainSearchVisibility:      s,
 		domainPolicy:                domainPolicyDeps{store: s},
+		cachePurges:                 s,
 		lookupHost:                  defaultLookupHost,
 		domainChecks:                newDomainCheckCache(),
 		traffic:                     newTrafficState(),

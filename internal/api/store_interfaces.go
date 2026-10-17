@@ -565,6 +565,7 @@ type Store interface {
 	DomainErrorPagesStore
 	DomainSearchVisibilityStore
 	DomainTrafficPolicyStore
+	CachePurgeStore
 	GitSourceStore
 	AppScheduleStore
 	AppGitHubActionsStore

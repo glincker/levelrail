@@ -19,6 +19,8 @@ import {
   GitBranchIcon,
   GitPullRequestIcon,
   GlobeIcon,
+  GlobeHemisphereWestIcon,
+  LightningIcon,
   ListBulletsIcon,
   HardDrivesIcon,
   HeartbeatIcon,
@@ -66,6 +68,7 @@ export type GlobalTo =
   | '/usage'
   | '/network'
   | '/network/proxy'
+  | '/cdn'
   | '/domains'
   | '/dns'
   | '/loadbalancers'
@@ -234,6 +237,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/network',
         icon: <ShareNetworkIcon />,
       },
+      {
+        id: 'cdn',
+        label: 'CDN and caches',
+        to: '/cdn',
+        icon: <GlobeHemisphereWestIcon />,
+      },
     ],
   },
   {
@@ -387,6 +396,7 @@ export type AppTo =
   | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
+  | '/apps/$name/cache'
   | '/apps/$name/environment'
   | '/apps/$name/services'
   | '/apps/$name/resources'
@@ -485,6 +495,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         'load-balancer',
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
+      item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
     ],
   },
   {

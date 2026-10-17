@@ -187,8 +187,9 @@ func splitValidation(err error) []trafficpolicy.FieldError {
 }
 
 type purgeRequest struct {
-	Scope string `json:"scope"`
-	Value string `json:"value,omitempty"`
+	Scope  string `json:"scope"`
+	Value  string `json:"value,omitempty"`
+	Domain string `json:"domain,omitempty"`
 }
 
 type purgeResponse struct {
@@ -206,18 +207,12 @@ func (rt *Router) handlePurgeDomainCache(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	switch req.Scope {
-	case ingress.PurgeAll:
-	case ingress.PurgeURL, ingress.PurgePrefix:
-		if !strings.HasPrefix(req.Value, "/") || len(req.Value) > 2048 {
-			writeError(w, http.StatusBadRequest, "value must be a path starting with / (a URL path and query for scope url)")
-			return
-		}
-	default:
-		writeError(w, http.StatusBadRequest, "scope must be url, prefix or all")
+	if msg := validatePurge(req.Scope, req.Value); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
 		return
 	}
-	writeJSON(w, http.StatusOK, purgeResponse{Domain: domain, Purged: ingress.DefaultResponseCache().Purge(domain, req.Scope, req.Value)})
+	res := rt.purgeDomains(r, r.PathValue("name"), []string{domain}, req.Scope, req.Value)
+	writeJSON(w, http.StatusOK, purgeResponse{Domain: domain, Purged: res.Removed})
 }
 
 func (rt *Router) handleGetDomainCacheStats(w http.ResponseWriter, r *http.Request) {

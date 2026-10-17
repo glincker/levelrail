@@ -25,6 +25,7 @@ const EXPECTED_GLOBAL = [
   '/usage',
   '/network',
   '/network/proxy',
+  '/cdn',
   '/domains',
   '/dns',
   '/loadbalancers',
@@ -55,6 +56,7 @@ const EXPECTED_APP = [
   'loadbalancer',
   'streams',
   'network',
+  'cache',
   'environment',
   'services',
   'resources',
@@ -86,7 +88,7 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('groups Domains, DNS, Proxy, Load balancers and Topology under Networking', () => {
+  it('groups Domains, DNS, Proxy, Load balancers and Topology and CDN under Networking', () => {
     const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
     expect(net?.label).toBe('Networking')
     expect(net?.items.map((i) => i.label)).toEqual([
@@ -95,6 +97,7 @@ describe('global nav model', () => {
       'Proxy',
       'Load balancers',
       'Topology',
+      'CDN and caches',
     ])
   })
 
