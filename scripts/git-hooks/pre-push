@@ -43,6 +43,10 @@ if [ -z "$base_ref" ]; then
 	base_ref="${base_ref:-origin/main}"
 fi
 
+# Coverage and web tests are CI's job (the required gate); opt in locally with =on.
+cov_on="${LEVELRAIL_PUSH_COVERAGE:-off}"
+web_tests_on="${LEVELRAIL_PUSH_WEB_TESTS:-off}"
+
 echo "pre-push: migration version collisions"
 if ! scripts/check-migration-versions.sh; then
 	fail=1
@@ -144,12 +148,15 @@ elif [ "$fail" -eq 0 ]; then
 		test_targets="$scope"
 	fi
 	# shellcheck disable=SC2086 # test_targets is intentionally word-split: either "./..." or a newline-joined package list
-	if ! go test $test_targets -short -timeout "$go_test_timeout" -coverprofile="$coverage_out" 2>&1; then
+	cov_args=""
+	[ "$cov_on" = on ] && cov_args="-coverprofile=$coverage_out"
+	# shellcheck disable=SC2086 # cov_args is empty or one flag
+	if ! go test $test_targets -short -timeout "$go_test_timeout" $cov_args 2>&1; then
 		fail=1
 	fi
 fi
 
-if [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
+if [ "$cov_on" = on ] && [ "$fail" -eq 0 ] && [ -f "$coverage_out" ] && [ -s "$coverage_out" ]; then
 	if [ "$scope" = "ALL" ] || [ "$scope" = "NONE" ]; then
 		echo "pre-push: coverage gate (internal/, 70% aggregate)"
 		if ! scripts/check-coverage.sh "$coverage_out" internal/ 70; then
@@ -175,9 +182,9 @@ if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet $base_ref >/dev/null \
 	echo "pre-push: go test -short (kit)"
 	if ! go -C kit test -short -coverprofile="$kit_cov" ./... 2>&1; then
 		fail=1
-	elif ! scripts/check-coverage.sh "$kit_cov" kit/ 70; then
+	elif [ "$cov_on" = on ] && ! scripts/check-coverage.sh "$kit_cov" kit/ 70; then
 		fail=1
-	elif ! scripts/check-changed-file-coverage.sh "$kit_cov" $base_ref kit/ 50; then
+	elif [ "$cov_on" = on ] && ! scripts/check-changed-file-coverage.sh "$kit_cov" $base_ref kit/ 50; then
 		fail=1
 	fi
 	rm -f "$kit_cov"
@@ -186,7 +193,7 @@ fi
 # Web tests related to the changed files: vitest's related mode runs every test
 # that imports them, which catches a sibling test the change broke. A
 # name-filtered run cannot, and CI's Web job was the first to see it.
-if [ "$fail" -eq 0 ] && git rev-parse --verify --quiet $base_ref >/dev/null && [ -d web/node_modules ]; then
+if [ "$web_tests_on" = on ] && [ "$fail" -eq 0 ] && git rev-parse --verify --quiet $base_ref >/dev/null && [ -d web/node_modules ]; then
 	web_files="$(git diff --name-only --diff-filter=ACMR $base_ref...HEAD -- 'web/src/*.ts' 'web/src/*.tsx' 2>/dev/null | sed 's#^web/##' | grep -v 'routeTree.gen')"
 	if [ -n "$web_files" ]; then
 		echo "pre-push: vitest related (changed web files)"
