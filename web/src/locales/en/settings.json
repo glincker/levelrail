@@ -1279,9 +1279,98 @@
   },
   "aiAssistantPage": {
     "title": "AI Assistant",
-    "description": "Bring your own LLM API key to chat with an assistant that reads logs, metrics, and deploy history through the platform's MCP tools. It always pauses for your approval before any action that changes state.",
+    "description": "Bring your own LLM API key to chat with an assistant that reads logs, metrics and deploy history, and always pauses for your approval before any change.",
     "configured": "Configured",
-    "notConfigured": "Not configured"
+    "notConfigured": "Not configured",
+    "reassurance": "Your key never leaves this server and is never shown again.",
+    "rootOnly": "Only the root account can connect providers, change keys or pick models. You can still see what is connected.",
+    "loadError": "Could not load AI providers.",
+    "retry": "Try again",
+    "header": {
+      "ready": "Ready",
+      "attention": "Needs attention"
+    },
+    "pill": {
+      "not_connected": "Not connected",
+      "connected": "Connected",
+      "invalid_key": "Invalid key",
+      "unreachable": "Unreachable",
+      "quota_exhausted": "Out of credits"
+    },
+    "groups": {
+      "hosted": "Hosted providers",
+      "selfHosted": "Self-hosted"
+    },
+    "card": {
+      "open": "Open {{name}} settings",
+      "active": "Active",
+      "manage": "Manage",
+      "connect": "Add a key to connect"
+    },
+    "model": {
+      "loading": "Loading models...",
+      "context": "{{size}} context"
+    },
+    "fallback": {
+      "title": "Fallback order",
+      "hint": "If the active model hits a rate limit or an outage, the next one in this list takes over. A bad key never triggers fallback.",
+      "empty": "No fallback models yet. Open a connected provider and choose Add as fallback.",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "remove": "Remove {{name}} from fallback"
+    },
+    "usage": {
+      "title": "Usage, last 30 days",
+      "emptyTitle": "No usage yet",
+      "emptyBody": "Token counts show up here after the assistant answers its first question.",
+      "unavailable": "Usage is not available on this server version yet.",
+      "ofBudget": "{{used}} of {{budget}} tokens this month ({{pct}}%)",
+      "total": "{{used}} tokens",
+      "last30": "Last 30 days",
+      "sparkline": "Tokens per day for the last 30 days",
+      "model": "Model",
+      "tokens": "Tokens",
+      "requests": "Requests",
+      "errors": "Errors"
+    },
+    "test": {
+      "ok": "Connection works",
+      "untested": "Not tested yet",
+      "invalid_key": "The provider rejected this key",
+      "unreachable": "Could not reach the provider",
+      "quota_exhausted": "The account is out of credits",
+      "latency": "{{ms}} ms"
+    },
+    "drawer": {
+      "description": "Your key is encrypted on this server and only used to call this provider.",
+      "apiKey": "API key",
+      "keyPlaceholder": "Paste your API key",
+      "keySavedPlaceholder": "Saved. Paste a new key to replace it",
+      "keyKept": "A key is saved and hidden. Leave blank to keep it.",
+      "keyNever": "Stored encrypted. Never shown again after saving.",
+      "showKey": "Show key",
+      "hideKey": "Hide key",
+      "getKey": "Get a key",
+      "baseUrl": "Base URL",
+      "baseUrlNote": "Private and local addresses are allowed for self-hosted endpoints. Changes are recorded in the audit log.",
+      "baseUrlInvalid": "Enter a full http or https URL.",
+      "model": "Model",
+      "modelHelp": "Pick from the list or type any model id.",
+      "modelFree": "Type the model id to use.",
+      "test": "Test connection",
+      "testing": "Testing...",
+      "save": "Save",
+      "saving": "Saving...",
+      "savedShort": "Saved",
+      "saved": "{{name}} saved.",
+      "disconnect": "Disconnect",
+      "disconnected": "{{name}} disconnected.",
+      "disconnectTitle": "Disconnect {{name}}?",
+      "disconnectBody": "The saved key is deleted from this server. If this provider is active, the assistant stops answering until you pick another.",
+      "useModel": "Use this model",
+      "addFallback": "Add as fallback",
+      "nowActive": "{{name}} is now the active provider."
+    }
   },
   "observabilityPage": {
     "title": "Observability",

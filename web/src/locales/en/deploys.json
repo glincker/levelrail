@@ -168,7 +168,6 @@
     "fleetMore": "and {{count}} more asleep",
     "fleetNoLimits": "These apps have no memory limit, so the memory they free cannot be estimated. Set a limit on each app to see it here.",
     "status": {
-      "off": "Off",
       "ready": "Ready to turn on",
       "blocked": "Blocked",
       "awake": "On, awake",
@@ -185,12 +184,6 @@
     "warnPrefix": "Warning: ",
     "whatThisMeans": "What this means:",
     "allClear": "Nothing blocks sleep for this app.",
-    "legacy": {
-      "pinned_port": {
-        "title": "Pinned host port",
-        "detail": "Traffic on a pinned host port would not wake the app, so it cannot sleep."
-      }
-    },
     "turnOn": "Turn on sleep when idle",
     "turnOff": "Turn off sleep when idle",
     "turnOnHint": "Sleeps after {{minutes}} minutes without use. You can change this afterwards.",

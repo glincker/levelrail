@@ -81,6 +81,7 @@ export function gpuSummary(model: ModelResource): string {
   if (model.gpu_device_ids && model.gpu_device_ids.length > 0) {
     return `GPU ${model.gpu_device_ids.join(', ')}`
   }
+  if (model.compute === 'cpu') return 'CPU only'
   return model.gpu_count < 0 ? 'all GPUs' : `${model.gpu_count} GPU`
 }
 

@@ -52,6 +52,10 @@ levelrail-cli apps git-source affected web --files services/api/index.js,pnpm-lo
 
 `test/fixtures/monorepo` is a pnpm workspace with two tiny services and a Dockerfile each.
 
+## One app per package
+
+In the New app wizard, a monorepo lists its packages. Select several and press **Create an app for each selected package**: each app gets the package directory as its build root and its watch paths. `levelrail-cli apps analyze REPO_URL` lists the packages too. See [Import a repository](/import-a-repo).
+
 ## Limits
 
 - Dependencies are followed for Node packages only; Go modules are matched by directory and root files.

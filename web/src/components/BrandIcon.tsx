@@ -1,4 +1,18 @@
 import type { ComponentType, SVGProps } from 'react'
+import OpenAiLogo from '@thesvg/react/openai'
+import ClaudeLogo from '@thesvg/react/claude'
+import GeminiLogo from '@thesvg/react/google-gemini'
+import MistralLogo from '@thesvg/react/mistral'
+import GroqLogo from '@thesvg/react/groq'
+import TogetherAiLogo from '@thesvg/react/together-ai'
+import OpenRouterLogo from '@thesvg/react/openrouter'
+import DeepseekLogo from '@thesvg/react/deepseek'
+import XaiLogo from '@thesvg/react/xai'
+import FireworksLogo from '@thesvg/react/fireworks'
+import OllamaLogo from '@thesvg/react/ollama'
+import PerplexityLogo from '@thesvg/react/perplexity'
+import VllmLogo from '@thesvg/react/vllm'
+import LmStudioLogo from '@thesvg/react/lm-studio'
 import BitbucketLogo from '@thesvg/react/bitbucket'
 import Auth0Logo from '@thesvg/react/auth0'
 import AuthentikLogo from '@thesvg/react/authentik'
@@ -208,6 +222,20 @@ export type BrandIconName =
   | 'linux'
   | 'android'
   | 'curl'
+  | 'openai'
+  | 'anthropic'
+  | 'google-gemini'
+  | 'mistral'
+  | 'groq'
+  | 'together-ai'
+  | 'openrouter'
+  | 'deepseek'
+  | 'xai'
+  | 'fireworks'
+  | 'ollama'
+  | 'perplexity'
+  | 'vllm'
+  | 'lm-studio'
 
 const BRAND_ICONS: Record<
   BrandIconName,
@@ -315,6 +343,20 @@ const BRAND_ICONS: Record<
   linux: LinuxLogo,
   android: AndroidLogo,
   curl: CurlLogo,
+  openai: OpenAiLogo,
+  anthropic: ClaudeLogo,
+  'google-gemini': GeminiLogo,
+  mistral: MistralLogo,
+  groq: GroqLogo,
+  'together-ai': TogetherAiLogo,
+  openrouter: (p) => <OpenRouterLogo variant="light" {...p} />,
+  deepseek: DeepseekLogo,
+  xai: XaiLogo,
+  fireworks: FireworksLogo,
+  ollama: OllamaLogo,
+  perplexity: PerplexityLogo,
+  vllm: VllmLogo,
+  'lm-studio': LmStudioLogo,
 }
 
 // All names in BRAND_ICONS, for callers that need to enumerate the
@@ -424,6 +466,20 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'linux',
   'android',
   'curl',
+  'openai',
+  'anthropic',
+  'google-gemini',
+  'mistral',
+  'groq',
+  'together-ai',
+  'openrouter',
+  'deepseek',
+  'xai',
+  'fireworks',
+  'ollama',
+  'perplexity',
+  'vllm',
+  'lm-studio',
 ]
 
 type SvgComponent = ComponentType<SVGProps<SVGSVGElement>>

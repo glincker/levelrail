@@ -93,7 +93,7 @@ func TestAppSleepGetContract(t *testing.T) {
 		t.Fatal(err)
 	}
 	res := sleepGet(t, rt, "web")
-	if !res.Eligible || len(res.Blockers) != 0 || res.BlockedReason != "" {
+	if !res.Eligible || len(res.Blockers) != 0 {
 		t.Fatalf("pinned app with port wake must be eligible: %+v", res)
 	}
 	codes := map[string]bool{}
@@ -120,7 +120,7 @@ func TestAppSleepGetContract(t *testing.T) {
 	}
 
 	rt.sleepPortWake = nil
-	if res := sleepGet(t, rt, "web"); res.Eligible || res.BlockedReason == "" || res.Blockers[0].Code != appsleep.CodePinnedPort {
+	if res := sleepGet(t, rt, "web"); res.Eligible || len(res.Blockers) == 0 || res.Blockers[0].Code != appsleep.CodePinnedPort {
 		t.Errorf("without port wake: %+v", res)
 	}
 }

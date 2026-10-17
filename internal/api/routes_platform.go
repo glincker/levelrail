@@ -473,6 +473,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// Agent certificate lifecycle (node_cert.go, ADR 021).
 	mux.HandleFunc("POST /api/v1/nodes/{id}/reenroll-token", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleCreateNodeReenrollToken))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/revoke-cert", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRevokeNodeCert))
+	// Trust panel (node_trust.go): what was verified and when.
+	mux.HandleFunc("GET /api/v1/nodes/{id}/security", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleGetNodeTrust))
+	mux.HandleFunc("GET /api/v1/nodes/{id}/security/events", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleListNodeSecurityEvents))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/cert/renew", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRenewNodeCert))
 	rt.registerMultiNodeRoutes(mux)
 
 	// Certificates (TLS renewal visibility): this project treats
@@ -548,6 +552,9 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// AbilityRoot: this changes an app's runtime routing behavior, the
 	// same "app lifecycle" tier POST .../stop and .../start already
 	// use, not a credential-bearing change like basic auth.
+	mux.HandleFunc("GET /api/v1/apps/{name}/maintenance", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppMaintenance))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetAppMaintenance))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearAppMaintenance))
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainMaintenance))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetDomainMaintenance))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/maintenance", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleClearDomainMaintenance))
@@ -1159,11 +1166,16 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleClearAppLogDrain))
 
 	// BYOK AI assistant settings (ai_settings.go): GET is AbilityRead;
-	// PUT/DELETE are AbilityRoot, the same tier PUT /api/v1/settings/
+	// PUT is AbilityRoot, the same tier PUT /api/v1/settings/
 	// email uses for any other platform-wide credential-bearing config.
 	mux.HandleFunc("GET /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRead, rt.handleGetAIAssistantSettings))
 	mux.HandleFunc("PUT /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleUpdateAIAssistantSettings))
-	mux.HandleFunc("DELETE /api/v1/settings/ai-assistant", rt.requireAbility(AbilityRoot, rt.handleDeleteAIAssistantSettings))
+	mux.HandleFunc("GET /api/v1/settings/ai-assistant/providers", rt.requireAbility(AbilityRead, rt.handleListAIProviders))
+	mux.HandleFunc("PUT /api/v1/settings/ai-assistant/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleSetAIProvider))
+	mux.HandleFunc("POST /api/v1/settings/ai-assistant/providers/{id}/test", rt.requireAbility(AbilityRoot, rt.handleTestAIProvider))
+	mux.HandleFunc("DELETE /api/v1/settings/ai-assistant/providers/{id}", rt.requireAbility(AbilityRoot, rt.handleDeleteAIProvider))
+	mux.HandleFunc("GET /api/v1/settings/ai-assistant/providers/{id}/models", rt.requireAbility(AbilityRoot, rt.handleListAIProviderModels))
+	mux.HandleFunc("GET /api/v1/ai/usage", rt.requireAbility(AbilityRead, rt.handleAIUsage))
 	mux.HandleFunc("GET /api/v1/settings/ai-control", rt.requireAbility(AbilityRead, rt.handleGetAIControl))
 	mux.HandleFunc("PUT /api/v1/settings/ai-control", rt.requireAbility(AbilityRoot, rt.handleUpdateAIControl))
 	mux.HandleFunc("POST /api/v1/settings/ai-control/revoke-agent-tokens", rt.requireAbility(AbilityRoot, rt.handleRevokeAgentTokens))

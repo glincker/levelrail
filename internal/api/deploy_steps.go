@@ -30,7 +30,7 @@ type sseStepEvent struct {
 	Status    string `json:"status"`
 	Timestamp string `json:"timestamp"`
 	// The fields below are set for traced steps only (deploytrace), so a
-	// legacy build step keeps its original three-field shape.
+	// build step keeps its original three-field shape.
 	Key        string `json:"key,omitempty"`
 	Reason     string `json:"reason,omitempty"`
 	Detail     string `json:"detail,omitempty"`

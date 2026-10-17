@@ -609,7 +609,6 @@ type Store interface {
 	PolicyStore
 	HookRunStore
 	DeployApprovalStore
-	AIAssistantSettingsStore
 	AIChatStore
 	RoleStore
 	AIControlStore

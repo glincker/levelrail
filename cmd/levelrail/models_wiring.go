@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
@@ -34,14 +35,17 @@ func gpuCollectInterval(logger *slog.Logger) time.Duration {
 	return d
 }
 
-// modelImageOverrides reads APP_MODEL_IMAGE_OLLAMA, APP_MODEL_IMAGE_VLLM
-// and APP_MODEL_IMAGE_LLAMACPP.
+// modelImageOverrides reads APP_MODEL_IMAGE_OLLAMA, APP_MODEL_IMAGE_VLLM,
+// APP_MODEL_IMAGE_LLAMACPP and APP_MODEL_IMAGE_LLAMACPP_CPU.
 func modelImageOverrides() map[string]string {
 	out := map[string]string{}
 	for _, name := range models.EngineNames() {
 		if v := os.Getenv("APP_MODEL_IMAGE_" + strings.ToUpper(name)); v != "" {
 			out[name] = v
 		}
+	}
+	if v := os.Getenv("APP_MODEL_IMAGE_LLAMACPP_CPU"); v != "" {
+		out[models.ImageKeyLlamaCppCPU] = v
 	}
 	return out
 }
@@ -93,7 +97,7 @@ func (n modelNodes) NodeInfo(ctx context.Context, nodeID string) (models.NodeInf
 	if err != nil {
 		return models.NodeInfo{}, err
 	}
-	out := models.NodeInfo{GPU: info, BindIP: "127.0.0.1", DialHost: "127.0.0.1"}
+	out := models.NodeInfo{GPU: info, BindIP: "127.0.0.1", DialHost: "127.0.0.1", Local: n.isLocal(nodeID)}
 	if n.isLocal(nodeID) {
 		return out, nil
 	}
@@ -116,6 +120,24 @@ type modelDeps struct {
 	prober *models.HTTPProber
 	hosts  *models.HostResolver
 	images map[string]string
+
+	weightsOnce sync.Once
+	weightsDL   *models.Downloader
+}
+
+// weights returns the shared weights downloader, which keeps in-flight
+// downloads across reconcile passes and records progress on the model row.
+func (d *modelDeps) weights(db *store.DB, logger *slog.Logger) *models.Downloader {
+	d.weightsOnce.Do(func() {
+		d.weightsDL = models.NewDownloader(models.LoadDownloadConfig(), logger, func(name string, done, total int64) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := db.SetModelDownload(ctx, name, done, total); err != nil {
+				logger.Warn("record model download progress failed", slog.String("model", name), slog.Any("error", err))
+			}
+		})
+	})
+	return d.weightsDL
 }
 
 func newModelDeps() *modelDeps {
@@ -129,7 +151,8 @@ func modelControllersFor(deps dynamicSourceDeps, list []store.Model) []reconcile
 		return nil
 	}
 	nodes := modelNodes{db: deps.db, localNodeID: localNodeIDOf(deps)}
-	opts := []models.Option{models.WithContainerPrefix(deps.networkPrefix), models.WithImages(deps.models.images)}
+	opts := []models.Option{models.WithContainerPrefix(deps.networkPrefix), models.WithImages(deps.models.images),
+		models.WithWeights(deps.models.weights(deps.db, deps.logger))}
 	if deps.secretsManager != nil {
 		opts = append(opts, models.WithSecrets(deps.secretsManager))
 	}

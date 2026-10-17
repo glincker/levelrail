@@ -15,7 +15,7 @@ import (
 func runModelsFit(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "models fit", "print the fit report as JSON to stdout and nothing else", stderr)
 	var req apiclient.ModelFitRequest
-	var name, gpus, devices, node string
+	var name, gpus, devices, node, compute string
 	fs.StringVar(&name, "name", "", "rate an already deployed model against every GPU node")
 	fs.StringVar(&req.Engine, "engine", "", "inference engine: ollama, vllm or llamacpp")
 	fs.StringVar(&req.Model, "model", "", "model reference: an Ollama tag (llama3.1:8b) or a HuggingFace repo (org/name)")
@@ -25,13 +25,20 @@ func runModelsFit(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.IntVar(&req.ContextLength, "context", 0, "context length in tokens (0 assumes the default)")
 	fs.StringVar(&req.Quantization, "quantization", "", "vllm quantization method")
 	fs.Int64Var(&req.WeightsBytes, "weights-bytes", 0, "exact download size in bytes, from a preflight (default: estimated from the name)")
+	fs.StringVar(&compute, "compute", "", "gpu (default) or cpu: rate against the node's CPUs and memory")
+	fs.StringVar(&req.CatalogID, "catalog", "", "rate a curated local model by id (implies --compute cpu)")
+	fs.Float64Var(&req.CPUs, "cpus", 0, "cpu mode: CPU cap to rate (default min(2, half the node's CPUs))")
+	fs.IntVar(&req.MemoryMiB, "memory-mib", 0, "cpu mode: memory cap in MiB to rate (default 25% of the node's RAM)")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s models fit --engine ENGINE --model MODEL [flags]\n  %[1]s models fit --name NAME\n\nEstimates whether a model fits in each node's free VRAM: weights plus KV cache plus\nengine overhead. The result is an estimate, not a guarantee.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %[1]s models fit --engine ENGINE --model MODEL [flags]\n  %[1]s models fit --name NAME\n  %[1]s models fit --compute cpu (--catalog ID | --model REPO[:QUANT]) [--cpus N --memory-mib M]\n\nEstimates whether a model fits in each node's free VRAM: weights plus KV cache plus\nengine overhead. The result is an estimate, not a guarantee.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	if compute == "cpu" || req.CatalogID != "" {
+		return runModelsFitCPU(prog, stdout, stderr, jsonOut, of, req, node, fs.Lookup("node").Value.String() != "", apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	}
 	if name == "" && (req.Engine == "" || req.Model == "") {
 		return reportError(stdout, stderr, jsonOut, newValidationError("give --name of a deployed model, or both --engine and --model"))

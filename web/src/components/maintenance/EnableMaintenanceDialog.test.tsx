@@ -50,7 +50,7 @@ describe('EnableMaintenanceDialog', () => {
       await screen.findByText('Put app.test into maintenance?'),
     ).toBeVisible()
     expect(screen.getByText(/Scripts, styles, images/)).toBeVisible()
-    expect(screen.getByText(/keeps maintenance on/)).toBeVisible()
+    expect(screen.getByText(/maintenance stays on/)).toBeVisible()
     expect(screen.getByText(/after 2 hours/)).toBeVisible()
     expect(screen.getByText('preview frame')).toBeVisible()
     await userEvent.click(

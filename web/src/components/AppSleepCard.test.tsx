@@ -70,6 +70,19 @@ const off = {
   idle_minutes: 0,
   sleeping: false,
   hold_requests: false,
+  eligible: true,
+  blockers: [],
+  warnings: [],
+  settings: {
+    idle_minutes: 0,
+    hold_requests: false,
+    ignore_paths: [],
+    port_wake: false,
+  },
+  port_wake: { supported: false, active: false, ports: [] },
+  activity: { open_connections: 0, idle_for_seconds: 0 },
+  cold_start_ms_p50: null,
+  estimated_memory_freed_bytes: null,
 }
 const pinned = {
   code: 'pinned_port',
@@ -123,15 +136,6 @@ describe('AppSleepCard', () => {
     expect(screen.getAllByText(/Pinned host port/).length).toBeGreaterThan(1)
     expect(screen.getByText('Blocked')).toBeInTheDocument()
     expect(toast.add).not.toHaveBeenCalled()
-  })
-
-  it('treats a legacy blocked_reason as one blocker', async () => {
-    fetchMock.mockResolvedValue(json({ ...off, blocked_reason: 'pinned_port' }))
-    renderCard()
-    expect(
-      await screen.findByRole('button', { name: 'Turn on sleep when idle' }),
-    ).toBeDisabled()
-    expect(screen.getAllByText('Pinned host port').length).toBeGreaterThan(0)
   })
 
   it('runs the fix endpoint, then refetches eligibility', async () => {

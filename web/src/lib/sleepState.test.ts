@@ -3,7 +3,6 @@ import type { AppSleep } from '../queries/appSleep'
 import {
   deriveSleepState,
   isValidIdleMinutes,
-  sleepBlockers,
   sleepCountdown,
 } from './sleepState'
 
@@ -12,22 +11,28 @@ const base: AppSleep = {
   idle_minutes: 0,
   sleeping: false,
   hold_requests: false,
+  eligible: true,
+  blockers: [],
+  warnings: [],
+  settings: {
+    idle_minutes: 0,
+    hold_requests: false,
+    ignore_paths: [],
+    port_wake: false,
+  },
+  port_wake: { supported: false, active: false, ports: [] },
+  activity: { open_connections: 0, idle_for_seconds: 0 },
+  cold_start_ms_p50: null,
+  estimated_memory_freed_bytes: null,
 }
 const issue = { code: 'pinned_port', title: 't', detail: 'd' }
 
 describe('deriveSleepState', () => {
   const cases: [string, AppSleep, boolean, string][] = [
-    ['missing new fields', base, false, 'off'],
     ['eligible', { ...base, eligible: true, blockers: [] }, false, 'ready'],
     [
       'blockers',
       { ...base, eligible: false, blockers: [issue] },
-      false,
-      'blocked',
-    ],
-    [
-      'legacy blocked_reason',
-      { ...base, blocked_reason: 'pinned_port' },
       false,
       'blocked',
     ],
@@ -43,19 +48,6 @@ describe('deriveSleepState', () => {
   ]
   it.each(cases)('%s', (_name, sleep, wakePending, want) => {
     expect(deriveSleepState(sleep, wakePending)).toBe(want)
-  })
-})
-
-describe('sleepBlockers', () => {
-  it('prefers blockers over the legacy reason', () => {
-    expect(
-      sleepBlockers({ ...base, blockers: [], blocked_reason: 'x' }),
-    ).toEqual([])
-  })
-  it('wraps the legacy reason as one blocker', () => {
-    expect(sleepBlockers({ ...base, blocked_reason: 'pinned_port' })).toEqual([
-      { code: 'pinned_port', title: '', detail: '' },
-    ])
   })
 })
 

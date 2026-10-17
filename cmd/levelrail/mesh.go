@@ -219,7 +219,7 @@ func readLocalNodeID(dataDir string) string {
 func bootstrapLocalNode(ctx context.Context, db *store.DB, id string) error {
 	_, err := db.GetNode(ctx, id)
 	if err == nil {
-		return nil
+		return recoverLocalNode(ctx, db, id)
 	}
 	if !errors.Is(err, store.ErrNodeNotFound) {
 		return fmt.Errorf("look up local node: %w", err)
@@ -249,6 +249,32 @@ func bootstrapLocalNode(ctx context.Context, db *store.DB, id string) error {
 	return nil
 }
 
+// recoverLocalNode refreshes an existing local node on startup so a restart
+// that outlasted the heartbeat timeout does not leave it Offline.
+func recoverLocalNode(ctx context.Context, db *store.DB, id string) error {
+	if err := db.TouchNodeLastSeen(ctx, id); err != nil {
+		return fmt.Errorf("refresh local node heartbeat: %w", err)
+	}
+	return markLocalNodeOnline(ctx, db, id)
+}
+
+// markLocalNodeOnline sets the local node Online when it is not. The node-health
+// controller only ever flips Online to Offline, and the local node has no agent
+// session that would flip it back, so a fresh heartbeat must restore it here.
+func markLocalNodeOnline(ctx context.Context, db *store.DB, id string) error {
+	n, err := db.GetNode(ctx, id)
+	if err != nil {
+		return fmt.Errorf("look up local node: %w", err)
+	}
+	if n.Status == store.NodeStatusOnline {
+		return nil
+	}
+	if err := db.UpdateNodeStatus(ctx, id, store.NodeStatusOnline); err != nil {
+		return fmt.Errorf("mark local node online: %w", err)
+	}
+	return nil
+}
+
 // localNodeHeartbeat touches id's last_seen_at on interval until ctx is
 // canceled, the local-node equivalent of Server.heartbeatLoop for a
 // remote agent's session. Without this, internal/reconcile/nodehealth
@@ -266,6 +292,10 @@ func localNodeHeartbeat(ctx context.Context, db *store.DB, id string, interval t
 		case <-ticker.C:
 			if err := db.TouchNodeLastSeen(ctx, id); err != nil {
 				logger.Error("local node heartbeat failed", slog.String("error", err.Error()))
+				continue
+			}
+			if err := markLocalNodeOnline(ctx, db, id); err != nil {
+				logger.Error("local node status recovery failed", slog.String("node_id", id), slog.String("error", err.Error()))
 			}
 		}
 	}

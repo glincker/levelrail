@@ -213,13 +213,20 @@ type harness struct {
 	rt  *fakeRuntime
 	act *fakeActions
 	e   *Engine
-	seq int
-	mu  sync.Mutex
+	// artifacts, when set before newEngine runs, enables artifact storage.
+	artifacts *ArtifactStore
+	seq       int
+	mu        sync.Mutex
 }
 
 func newHarness(t *testing.T, h func(string) execResult) *harness {
 	t.Helper()
-	hs := &harness{t: t, db: openStore(t), rt: newFakeRuntime(h), act: &fakeActions{}}
+	return newHarnessWithArtifacts(t, h, nil)
+}
+
+func newHarnessWithArtifacts(t *testing.T, h func(string) execResult, arts *ArtifactStore) *harness {
+	t.Helper()
+	hs := &harness{t: t, db: openStore(t), rt: newFakeRuntime(h), act: &fakeActions{}, artifacts: arts}
 	hs.e = hs.newEngine()
 	t.Cleanup(func() { hs.e.Close() })
 	return hs
@@ -227,7 +234,7 @@ func newHarness(t *testing.T, h func(string) execResult) *harness {
 
 func (h *harness) newEngine() *Engine {
 	return New(Config{
-		Store: h.db, Actions: h.act, Secrets: fakeSecrets{"TOKEN": "s3cr3t-value"}, NamePrefix: "t",
+		Store: h.db, Actions: h.act, Secrets: fakeSecrets{"TOKEN": "s3cr3t-value"}, NamePrefix: "t", Artifacts: h.artifacts,
 		Runtime: func(string) (Runtime, error) { return h.rt, nil },
 		NewID: func() string {
 			h.mu.Lock()

@@ -21,6 +21,15 @@ func (rt *Router) registerPipelineRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/rerun", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleRerunPipelineRun))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/approvals/{approval}", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDecidePipelineApproval))
 	mux.HandleFunc("POST /api/v1/apps/{name}/pipeline-runs/{id}/hold", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDecidePipelineRunHold))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs/{id}/artifacts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPipelineRunArtifacts))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-runs/{id}/artifacts/{aid}/download", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDownloadPipelineArtifact))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipelines/{pname}/webhook", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPipelineWebhook))
+	mux.HandleFunc("PUT /api/v1/apps/{name}/pipelines/{pname}/webhook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetPipelineWebhook))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/pipelines/{pname}/webhook", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeletePipelineWebhook))
+	mux.HandleFunc("POST /api/v1/apps/{name}/pipelines/{pname}/webhook/rotate", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotatePipelineWebhook))
+	mux.HandleFunc("GET /api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPipelineWebhookDeliveries))
+	mux.HandleFunc("POST /api/v1/apps/{name}/pipelines/{pname}/webhook/deliveries/{did}/replay", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleReplayPipelineWebhookDelivery))
+	mux.HandleFunc("POST /api/v1/hooks/pipeline/{id}/{token}", rt.handlePipelineWebhook)
 	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-triggers", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListPipelineTriggers))
 	mux.HandleFunc("GET /api/v1/apps/{name}/pipeline-sync", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetPipelineSync))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/pipeline-sync", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleSetPipelineSync))
@@ -39,5 +48,6 @@ func WithPipelines(st PipelineStore, runner PipelineRunner) Option {
 	return func(rt *Router) {
 		rt.pipelineStore = st
 		rt.pipelineRunner = runner
+		rt.pipelineExtras, _ = st.(PipelineExtraStore)
 	}
 }

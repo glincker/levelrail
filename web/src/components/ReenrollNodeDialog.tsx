@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowsClockwiseIcon,
   CheckIcon,
@@ -28,6 +29,7 @@ import type { NodeResource } from '../types/nodeDetail'
 // Generates a re-enrollment token for an existing node and shows the
 // command once, the same shape as AddNodeDialog.
 export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
+  const { t } = useTranslation('nodes')
   const [open, setOpen] = useState(false)
   const [created, setCreated] = useState<NodeReenrollTokenResponse | null>(null)
   const [copied, setCopied] = useState(false)
@@ -52,30 +54,27 @@ export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
         render={<Button type="button" variant="outline" size="sm" />}
       >
         <ArrowsClockwiseIcon className="size-3.5" aria-hidden="true" />
-        Re-enroll node
+        {t('reenroll.trigger')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Re-enroll &ldquo;{node.name}&rdquo;</DialogTitle>
-          <DialogDescription>
-            Issues this node a new agent certificate while keeping its identity,
-            placements and history. Use it when the node was offline past its
-            certificate&apos;s expiry, or after revoking its certificate.
-          </DialogDescription>
+          <DialogTitle>{t('reenroll.title', { name: node.name })}</DialogTitle>
+          <DialogDescription>{t('reenroll.description')}</DialogDescription>
         </DialogHeader>
 
         {created ? (
           <>
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-900/20 dark:text-amber-200">
+            <div className="flex items-start gap-2 rounded-lg border border-tone-warning-border bg-tone-warning-soft p-2.5 text-tone-warning">
               <WarningIcon className="mt-0.5 size-4 shrink-0" />
               <p className="text-sm">
-                This token will not be shown again. It works once and expires at{' '}
-                {new Date(created.expires_at).toLocaleTimeString()}.
+                {t('reenroll.shownOnce', {
+                  time: new Date(created.expires_at).toLocaleTimeString(),
+                })}
               </p>
             </div>
             <Field>
               <FieldLabel htmlFor="reenroll-control-plane-addr">
-                Control plane address
+                {t('reenroll.addrLabel')}
               </FieldLabel>
               <Input
                 id="reenroll-control-plane-addr"
@@ -86,14 +85,11 @@ export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
                 }}
                 className="font-mono text-xs"
               />
-              <FieldDescription>
-                Host and port the node reaches this control plane on, port 9443
-                by default.
-              </FieldDescription>
+              <FieldDescription>{t('reenroll.addrHint')}</FieldDescription>
             </Field>
             <Field>
               <FieldLabel htmlFor="reenroll-command">
-                Run on the node
+                {t('reenroll.runOnNode')}
               </FieldLabel>
               <div className="flex items-start gap-2 rounded-lg border border-input bg-muted/50 p-2">
                 <code
@@ -113,13 +109,10 @@ export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
                   }}
                 >
                   {copied ? <CheckIcon /> : <CopyIcon />}
-                  {copied ? 'Copied' : 'Copy'}
+                  {copied ? t('reenroll.copied') : t('reenroll.copy')}
                 </Button>
               </div>
-              <FieldDescription>
-                A running agent picks up the new certificate at its next
-                reconnect; otherwise start the agent after this command.
-              </FieldDescription>
+              <FieldDescription>{t('reenroll.afterHint')}</FieldDescription>
             </Field>
             <DialogFooter>
               <Button
@@ -128,7 +121,7 @@ export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
                   handleOpenChange(false)
                 }}
               >
-                Done
+                {t('reenroll.done')}
               </Button>
             </DialogFooter>
           </>
@@ -149,8 +142,8 @@ export function ReenrollNodeDialog({ node }: { node: NodeResource }) {
                 }}
               >
                 {createToken.isPending
-                  ? 'Generating...'
-                  : 'Generate re-enroll token'}
+                  ? t('reenroll.generating')
+                  : t('reenroll.generate')}
               </Button>
             </DialogFooter>
           </>

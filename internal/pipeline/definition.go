@@ -41,6 +41,7 @@ const (
 	TriggerManual      = "manual"
 	TriggerSchedule    = "schedule"
 	TriggerAPI         = "api"
+	TriggerWebhook     = "webhook"
 )
 
 // Duration is a time.Duration that unmarshals from a Go duration string.
@@ -86,10 +87,12 @@ func (l *StringList) UnmarshalYAML(n *yaml.Node) error {
 
 // Definition is a parsed pipeline file.
 type Definition struct {
-	Version     int               `yaml:"version" json:"version"`
-	Name        string            `yaml:"name" json:"name"`
-	On          Triggers          `yaml:"on" json:"on"`
-	Stages      []string          `yaml:"stages,omitempty" json:"stages,omitempty"`
+	Version int      `yaml:"version" json:"version"`
+	Name    string   `yaml:"name" json:"name"`
+	On      Triggers `yaml:"on" json:"on"`
+	Stages  []string `yaml:"stages,omitempty" json:"stages,omitempty"`
+	// Parameters declares the values a manual run, API call, or webhook may set.
+	Parameters  []Parameter       `yaml:"parameters,omitempty" json:"parameters,omitempty"`
 	Env         map[string]string `yaml:"env,omitempty" json:"env,omitempty"`
 	Concurrency *Concurrency      `yaml:"concurrency,omitempty" json:"concurrency,omitempty"`
 	// ReportStatus posts run state back to the forge as a commit status.
@@ -111,7 +114,13 @@ type Triggers struct {
 	Manual      *ManualTrigger     `yaml:"manual,omitempty" json:"manual,omitempty"`
 	Schedule    []string           `yaml:"schedule,omitempty" json:"schedule,omitempty"`
 	API         bool               `yaml:"api,omitempty" json:"api,omitempty"`
+	// Webhook accepts runs from the pipeline's inbound webhook trigger.
+	Webhook *WebhookTrigger `yaml:"webhook,omitempty" json:"webhook,omitempty"`
 }
+
+// WebhookTrigger opts the pipeline into inbound webhook runs. The URL token
+// and signature mode are managed through the API, not the file.
+type WebhookTrigger struct{}
 
 // MergeGroupTrigger filters merge queue events by the branch they merge into.
 type MergeGroupTrigger struct {
@@ -170,10 +179,14 @@ type ManualTrigger struct {
 
 // Input is one manual-run parameter.
 type Input struct {
-	Description string   `yaml:"description,omitempty" json:"description,omitempty"`
-	Default     string   `yaml:"default,omitempty" json:"default,omitempty"`
-	Required    bool     `yaml:"required,omitempty" json:"required,omitempty"`
-	Options     []string `yaml:"options,omitempty" json:"options,omitempty"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	Default     string `yaml:"default,omitempty" json:"default,omitempty"`
+	Required    bool   `yaml:"required,omitempty" json:"required,omitempty"`
+	Type        string `yaml:"type,omitempty" json:"type,omitempty"`
+	// Choices lists the allowed values of a choice input; Options is the
+	// older spelling of the same field.
+	Choices []string `yaml:"choices,omitempty" json:"choices,omitempty"`
+	Options []string `yaml:"options,omitempty" json:"options,omitempty"`
 }
 
 // Concurrency serializes runs sharing a group; CancelInProgress cancels the
@@ -244,7 +257,10 @@ type Job struct {
 	Checkout        *bool             `yaml:"checkout,omitempty" json:"checkout,omitempty"`
 	Cache           []CacheSpec       `yaml:"cache,omitempty" json:"cache,omitempty"`
 	OIDC            *OIDCRequest      `yaml:"oidc,omitempty" json:"oidc,omitempty"`
-	Steps           []Step            `yaml:"steps" json:"steps"`
+	// Artifacts lists workspace paths stored when the job succeeds and
+	// restored into the workspace of every job that needs this one.
+	Artifacts StringList `yaml:"artifacts,omitempty" json:"artifacts,omitempty"`
+	Steps     []Step     `yaml:"steps" json:"steps"`
 }
 
 // Step is one unit of work. Exactly one of Run or Uses is set.

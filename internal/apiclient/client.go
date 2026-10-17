@@ -1202,6 +1202,31 @@ func (c *Client) ClearDomainMaintenance(ctx context.Context, name, domain string
 	return out, err
 }
 
+func appMaintenancePath(name string) string {
+	return "/api/v1/apps/" + PathEscape(name) + "/maintenance"
+}
+
+// GetAppMaintenance calls GET /api/v1/apps/{name}/maintenance: the state of every domain of the app.
+func (c *Client) GetAppMaintenance(ctx context.Context, name string) (AppMaintenanceResource, error) {
+	var out AppMaintenanceResource
+	err := c.do(ctx, http.MethodGet, appMaintenancePath(name), nil, &out)
+	return out, err
+}
+
+// SetAppMaintenance calls PUT /api/v1/apps/{name}/maintenance: maintenance on every domain, all or none.
+func (c *Client) SetAppMaintenance(ctx context.Context, name string, req SetDomainMaintenanceRequest) (AppMaintenanceResource, error) {
+	var out AppMaintenanceResource
+	err := c.do(ctx, http.MethodPut, appMaintenancePath(name), req, &out)
+	return out, err
+}
+
+// ClearAppMaintenance calls DELETE /api/v1/apps/{name}/maintenance: ends maintenance on every domain.
+func (c *Client) ClearAppMaintenance(ctx context.Context, name string) (AppMaintenanceResource, error) {
+	var out AppMaintenanceResource
+	err := c.do(ctx, http.MethodDelete, appMaintenancePath(name), nil, &out)
+	return out, err
+}
+
 // domainTLSCertPath builds
 // /api/v1/apps/{name}/domains/{domain}/tls-cert, shared by all three
 // domain BYO TLS certificate methods below, mirroring domainAuthPath's
@@ -3971,18 +3996,52 @@ func (c *Client) GetAIAssistantSettings(ctx context.Context) (AIAssistantSetting
 	return out, err
 }
 
-// UpdateAIAssistantSettings calls PUT /api/v1/settings/ai-assistant.
-func (c *Client) UpdateAIAssistantSettings(ctx context.Context, req UpdateAIAssistantSettingsRequest) (AIAssistantSettingsResource, error) {
+// ListAIProviders calls GET /api/v1/settings/ai-assistant/providers.
+func (c *Client) ListAIProviders(ctx context.Context) ([]AIProviderResource, error) {
+	var out []AIProviderResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-assistant/providers", nil, &out)
+	return out, err
+}
+
+// SetAIProvider calls PUT /api/v1/settings/ai-assistant/providers/{id}.
+func (c *Client) SetAIProvider(ctx context.Context, id string, req SetAIProviderRequest) (AIProviderResource, error) {
+	var out AIProviderResource
+	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id), req, &out)
+	return out, err
+}
+
+// TestAIProvider calls POST /api/v1/settings/ai-assistant/providers/{id}/test.
+func (c *Client) TestAIProvider(ctx context.Context, id string) (AIProviderTestResource, error) {
+	var out AIProviderTestResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id)+"/test", nil, &out)
+	return out, err
+}
+
+// DeleteAIProvider calls DELETE /api/v1/settings/ai-assistant/providers/{id}.
+func (c *Client) DeleteAIProvider(ctx context.Context, id string) (AIProviderResource, error) {
+	var out AIProviderResource
+	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id), nil, &out)
+	return out, err
+}
+
+// ListAIProviderModels calls GET /api/v1/settings/ai-assistant/providers/{id}/models.
+func (c *Client) ListAIProviderModels(ctx context.Context, id string) ([]AIModelResource, error) {
+	var out []AIModelResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/settings/ai-assistant/providers/"+url.PathEscape(id)+"/models", nil, &out)
+	return out, err
+}
+
+// SetAIChoice calls PUT /api/v1/settings/ai-assistant.
+func (c *Client) SetAIChoice(ctx context.Context, req AIChoiceRequest) (AIAssistantSettingsResource, error) {
 	var out AIAssistantSettingsResource
 	err := c.do(ctx, http.MethodPut, "/api/v1/settings/ai-assistant", req, &out)
 	return out, err
 }
 
-// DeleteAIAssistantSettings calls DELETE /api/v1/settings/ai-assistant:
-// clears the stored key and resets provider/model in one step.
-func (c *Client) DeleteAIAssistantSettings(ctx context.Context) (AIAssistantSettingsResource, error) {
-	var out AIAssistantSettingsResource
-	err := c.do(ctx, http.MethodDelete, "/api/v1/settings/ai-assistant", nil, &out)
+// GetAIUsage calls GET /api/v1/ai/usage?days=N.
+func (c *Client) GetAIUsage(ctx context.Context, days int) (AIUsageResource, error) {
+	var out AIUsageResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/ai/usage?days="+strconv.Itoa(days), nil, &out)
 	return out, err
 }
 

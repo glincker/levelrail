@@ -63,6 +63,11 @@ type Server struct {
 
 	sessionsMu sync.Mutex
 	sessions   map[string]*liveSession
+
+	caPool   *x509.CertPool
+	secStore SecurityStore
+	secCfg   SecurityConfig
+	sec      *securityRecorder
 }
 
 type liveSession struct {
@@ -117,6 +122,7 @@ func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, 
 	for _, opt := range opts {
 		opt(s)
 	}
+	s.initSecurity()
 	return s
 }
 
@@ -135,7 +141,9 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.FailedPrecondition, "this control plane requires agents to generate their own key: upgrade the agent, or set APP_AGENT_REQUIRE_CSR=false on the control plane to accept old agents")
 	}
 
-	if _, err := s.redeemToken(ctx, req.GetJoinToken(), store.NodeJoinTokenPurposeEnroll); err != nil {
+	tok, err := s.redeemToken(ctx, req.GetJoinToken(), store.NodeJoinTokenPurposeEnroll)
+	if err != nil {
+		s.recordTokenRefusal(ctx, store.SecurityKindEnroll, "", err)
 		return nil, err
 	}
 
@@ -164,6 +172,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
+	s.recordEnrolled(ctx, store.SecurityKindEnroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 
 	s.logger.Info("agent: node enrolled", slog.String("node_id", nodeID), slog.String("name", req.GetNodeName()), slog.String("key_origin", origin))
 
@@ -263,6 +272,7 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		return err
 	}
 	nodeID := node.ID
+	s.recordAccepted(ctx, nodeID, peerCert)
 	if fp := CertFingerprint(peerCert.Raw); fp == node.CertFingerprint {
 		if err := s.store.SyncNodeCertDetails(ctx, nodeID, fp, certSerial(peerCert), peerCert.NotAfter); err != nil {
 			s.logger.Warn("agent: session: sync cert details failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
@@ -295,6 +305,9 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 		},
 		hello: func(info *agentpb.AgentInfo) {
 			go s.recordAgentInfo(context.Background(), nodeID, info)
+		},
+		renewal: func(r *agentpb.RenewalReport) {
+			go s.recordRenewalReport(context.Background(), nodeID, r)
 		},
 	})
 	s.registry.Register(nodeID, newGRPCTransport(m))
@@ -329,13 +342,23 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 // may act as, rejecting unknown nodes, revoked certificates, and any
 // certificate that is neither current nor inside the renewal overlap.
 func (s *Server) authenticatePeer(ctx context.Context) (*store.Node, *x509.Certificate, error) {
-	cert, err := peerCertificate(ctx)
+	chain, err := peerChain(ctx)
 	if err != nil {
+		s.recordRejected(ctx, "", "", store.SecurityReasonNoCertificate, "")
 		return nil, nil, status.Errorf(codes.Unauthenticated, "%v", err)
 	}
+	cert := chain[0]
 	nodeID := cert.Subject.CommonName
+	fp := CertFingerprint(cert.Raw)
+	// The handshake already verified the chain; checking again keeps this
+	// decision independent of how the listener is configured.
+	if verr := verifyClientChain(chain, s.caPool, s.now()); verr != nil {
+		s.recordRejected(ctx, "", nodeID, rejectReason(verr, s.now()), fp)
+		return nil, nil, status.Errorf(codes.Unauthenticated, "client certificate refused")
+	}
 	node, err := s.store.GetNode(ctx, nodeID)
 	if errors.Is(err, store.ErrNodeNotFound) {
+		s.recordRejected(ctx, "", nodeID, store.SecurityReasonUnknownNode, fp)
 		return nil, nil, status.Errorf(codes.Unauthenticated, "unknown node %q", nodeID)
 	}
 	if err != nil {
@@ -343,9 +366,11 @@ func (s *Server) authenticatePeer(ctx context.Context) (*store.Node, *x509.Certi
 		return nil, nil, status.Error(codes.Internal, "internal error")
 	}
 	if node.CertRevokedAt != nil {
+		s.recordRejected(ctx, nodeID, nodeID, store.SecurityReasonRevoked, fp)
 		return nil, nil, status.Errorf(codes.PermissionDenied, "certificate for node %q was revoked: re-enroll the node", nodeID)
 	}
-	if !node.AcceptsCert(CertFingerprint(cert.Raw), s.now()) {
+	if !node.AcceptsCert(fp, s.now()) {
+		s.recordRejected(ctx, nodeID, nodeID, store.SecurityReasonFingerprintMismatch, fp)
 		return nil, nil, status.Errorf(codes.Unauthenticated, "certificate fingerprint mismatch for node %q", nodeID)
 	}
 	return node, cert, nil
@@ -444,9 +469,9 @@ func (s *Server) heartbeatLoop(nodeID string, heartbeats <-chan struct{}, done <
 	}
 }
 
-// peerCertificate returns the verified client certificate on ctx's
-// connection. Its CommonName is the node ID it was issued to.
-func peerCertificate(ctx context.Context) (*x509.Certificate, error) {
+// peerChain returns the client certificate chain on ctx's connection,
+// leaf first. The leaf's CommonName is the node ID it was issued to.
+func peerChain(ctx context.Context) ([]*x509.Certificate, error) {
 	p, ok := peer.FromContext(ctx)
 	if !ok || p.AuthInfo == nil {
 		return nil, fmt.Errorf("no peer TLS info on this connection")
@@ -458,7 +483,7 @@ func peerCertificate(ctx context.Context) (*x509.Certificate, error) {
 	if len(tlsInfo.State.PeerCertificates) == 0 {
 		return nil, fmt.Errorf("no client certificate presented")
 	}
-	return tlsInfo.State.PeerCertificates[0], nil
+	return tlsInfo.State.PeerCertificates, nil
 }
 
 func hashJoinToken(plaintext string) string {

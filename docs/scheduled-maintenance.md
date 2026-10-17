@@ -5,7 +5,7 @@ description: Announce planned downtime ahead of time with a dashboard banner, a 
 
 A maintenance window is a one-off period you plan in advance. Users see it coming, the public status page lists it as scheduled maintenance, and your notification channels hear about it once, a lead time you choose before it starts.
 
-This is different from [alert maintenance windows](/observability), which are recurring cron silences that mute alerts. A scheduled maintenance window announces and, if you ask, freezes deploys. It does not mute alerts.
+This is different from [alert maintenance windows](/observability), which are recurring cron silences that mute alerts. A scheduled maintenance window announces and, if you ask, freezes deploys. It does not mute alerts. Domain maintenance mode is the exception: turning it on also creates its own alert silence, see [maintenance mode](/domains-and-ingress#maintenance-mode).
 
 ## What a window does
 
@@ -70,3 +70,7 @@ levelrail-cli maintenance delete mw_0123456789abcdef
 - Putting a domain into [maintenance mode](/domains-and-ingress#maintenance-mode) with an end time creates a window for it. The domain stays in maintenance exactly as long as that window: when it ends, or you cancel it here, the domain's maintenance page goes away too.
 - The lead-time notice is sent once. If no channel accepts it, it is retried every minute until the window ends.
 - A domain in maintenance mode without an end time has no window. Use `--max-duration` or `APP_MAINTENANCE_MAX_DURATION` so it switches off on its own; see [maintenance mode](/domains-and-ingress#maintenance-mode).
+
+## Windows created by domain maintenance
+
+Domain maintenance mode links a window to itself so the status page and banner see it. With an end time the window is dated and ends maintenance. Without one the window is marked ongoing: the public status page shows it as in progress with no end, and it becomes completed the moment maintenance ends, whatever the cause. Ongoing windows have a placeholder end a year out that is never shown.

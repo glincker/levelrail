@@ -26,6 +26,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 // defaultHeartbeatInterval is how often RunSession sends an unprompted
@@ -88,6 +89,19 @@ type enrollConfig struct {
 	caPEM         []byte
 }
 
+// pinState is what the agent tells the control plane about how it verified
+// the CA: the operator's fingerprint, the CA from a prior enrollment, or
+// neither.
+func (c enrollConfig) pinState() string {
+	switch {
+	case c.caFingerprint != "":
+		return store.CAPinPinned
+	case len(c.caPEM) > 0:
+		return store.CAPinTrustedCA
+	}
+	return store.CAPinUnpinned
+}
+
 // WithPinnedCAFingerprint makes DialEnroll refuse any control plane whose
 // CA certificate's SHA-256 (hex, colons optional) is not fingerprint.
 func WithPinnedCAFingerprint(fingerprint string) EnrollOption {
@@ -122,10 +136,11 @@ func DialEnroll(ctx context.Context, addr, joinToken, nodeName string, opts ...E
 	defer func() { _ = conn.Close() }()
 
 	resp, err := agentpb.NewAgentServiceClient(conn).Enroll(ctx, &agentpb.EnrollRequest{
-		JoinToken: joinToken,
-		NodeName:  nodeName,
-		CsrDer:    csrDER,
-		Agent:     LocalAgentInfo(),
+		JoinToken:  joinToken,
+		NodeName:   nodeName,
+		CsrDer:     csrDER,
+		Agent:      LocalAgentInfo(),
+		CaPinState: cfg.pinState(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("agent: enroll: %w", err)
@@ -167,7 +182,7 @@ func DialReenroll(ctx context.Context, addr, token, nodeID string, opts ...Enrol
 	defer func() { _ = conn.Close() }()
 
 	resp, err := agentpb.NewAgentServiceClient(conn).Reenroll(ctx, &agentpb.ReenrollRequest{
-		ReenrollToken: token, NodeId: nodeID, CsrDer: csrDER, Agent: LocalAgentInfo(),
+		ReenrollToken: token, NodeId: nodeID, CsrDer: csrDER, Agent: LocalAgentInfo(), CaPinState: cfg.pinState(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("agent: re-enroll: %w", err)
@@ -321,10 +336,14 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 	if err := stream.Send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_Hello{Hello: LocalAgentInfo()}}); err != nil {
 		return fmt.Errorf("agent: send hello: %w", err)
 	}
+	var sessionStream agentClientStream = stream
 	if cfg.renewer != nil {
 		renewCtx, stopRenew := context.WithCancel(ctx)
 		defer stopRenew()
+		rs := &renewalStream{inner: stream, r: cfg.renewer}
+		sessionStream = rs
 		go cfg.renewer.Run(renewCtx, client)
+		go reportRenewals(renewCtx, cfg.renewer, func(m *agentpb.AgentMessage) error { return rs.Send(m) })
 	}
 
 	heartbeatInterval := defaultHeartbeatInterval
@@ -332,7 +351,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		heartbeatInterval = cfg.heartbeatInterval
 	}
 
-	return serveSession(ctx, stream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, cfg.gpuProbe, logger, cfg.hostProbe)
+	return serveSession(ctx, sessionStream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, cfg.gpuProbe, logger, cfg.hostProbe)
 }
 
 // sessionConfig holds RunSession's optional wiring.

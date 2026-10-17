@@ -61,10 +61,12 @@ func (rt *Router) fleetMaintenance(ctx context.Context, now time.Time) ([]fleetM
 	}
 	out := make([]fleetMaintenanceEntry, 0, len(active))
 	for _, m := range active {
-		out = append(out, fleetMaintenanceEntry{
+		entry := fleetMaintenanceEntry{
 			App: app[m.Domain], domainMaintenanceResource: toDomainMaintenanceResource(m),
 			ElapsedSeconds: int64(maintenance.Elapsed(m.StartedAt, now).Seconds()),
-		})
+		}
+		rt.decorateMaintenance(ctx, &entry.domainMaintenanceResource, now)
+		out = append(out, entry)
 	}
 	return out, nil
 }
@@ -118,6 +120,7 @@ func (rt *Router) handlePreviewMaintenance(w http.ResponseWriter, r *http.Reques
 
 // maintenanceAttentionItems raises domains that have been in maintenance
 // longer than APP_MAINTENANCE_ATTENTION_AFTER, so a site is not left down.
+// Only domains of apps the caller can read are raised; unowned ones need root.
 func (rt *Router) maintenanceAttentionItems(r *http.Request, abilities []string, now time.Time) []attention.Item {
 	if !hasAbility(abilities, AbilityRead) {
 		return nil
@@ -128,8 +131,17 @@ func (rt *Router) maintenanceAttentionItems(r *http.Request, abilities []string,
 		rt.logger.Warn("api: attention feed: list maintenance failed", slog.String("error", err.Error()))
 		return nil
 	}
+	canSee, err := rt.appVisibilityFilter(r)
+	if err != nil {
+		rt.logger.Warn("api: attention feed: resolve app visibility failed", slog.String("error", err.Error()))
+		return nil
+	}
+	root := hasAbility(abilities, AbilityRoot)
 	var out []attention.Item
 	for _, e := range items {
+		if e.App == "" && !root || e.App != "" && !canSee(e.App) {
+			continue
+		}
 		if time.Duration(e.ElapsedSeconds)*time.Second <= threshold {
 			continue
 		}

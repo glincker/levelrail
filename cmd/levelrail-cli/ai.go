@@ -10,7 +10,7 @@ import (
 // (internal/api/ai_chat.go), gated behind the same ai-chat experimental
 // flag as the dashboard panel and "settings ai-assistant" (see
 // experimental_gate.go). A BYOK provider/model/key must also already be
-// configured via "settings ai-assistant set", independent of the flag.
+// configured via "settings ai-assistant providers set", independent of the flag.
 func runAI(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, aiUsage(prog))
@@ -41,7 +41,7 @@ Talks to the in-app AI assistant (read-and-suggest only: it never
 deploys, rolls back, or restarts anything without an explicit approval,
 see "%[1]s ai sessions resolve -h"). Requires the ai-chat experimental
 flag (see "%[1]s settings ai-assistant -h") and a configured provider/
-model/key ("%[1]s settings ai-assistant set").
+model/key ("%[1]s settings ai-assistant providers set").
 
 Run "%[1]s ai <subcommand> -h" for a subcommand's own flags.
 `, prog)

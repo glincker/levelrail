@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -12,6 +13,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/kit/semver"
 )
+
+const errLocalNodeNoCert = "the control plane's own node runs in-process and has no agent certificate"
 
 // NodeSessionCloser ends a node's live agent session. *agent.Server
 // satisfies it; nil means a revoked node is only refused at its next
@@ -26,6 +29,7 @@ type nodeCertConfig struct {
 	warning, critical time.Duration
 	minAgentVersion   string
 	sessions          NodeSessionCloser
+	trust             NodeTrustControl
 }
 
 // WithNodeCertThresholds sets when a node's agent certificate is reported
@@ -89,6 +93,9 @@ type nodeAgentResource struct {
 }
 
 func (rt *Router) nodeCertAndAgent(n store.Node, now time.Time) (*nodeCertResource, *nodeAgentResource) {
+	if rt.isLocalNodeRecord(&n) {
+		return nil, &nodeAgentResource{Version: version.Version, OS: runtime.GOOS, Arch: runtime.GOARCH, ControlPlaneVersion: version.Version}
+	}
 	warning, critical := rt.nodeCerts.thresholds()
 	state, left := alerting.ClassifyNodeCert(n, warning, critical, now)
 	cert := &nodeCertResource{
@@ -132,6 +139,10 @@ type reenrollTokenResponse struct {
 // while keeping its identity, for a node offline past expiry or revoked.
 func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if rt.localNodeID != "" && id == rt.localNodeID {
+		writeError(w, http.StatusBadRequest, errLocalNodeNoCert)
+		return
+	}
 	if _, err := rt.nodes.GetNode(r.Context(), id); errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
@@ -162,6 +173,7 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	rt.recordOperatorEvent(r, id, store.SecurityKindReenroll, "token_issued")
 	rt.logger.Info("api: node re-enrollment token issued", slog.String("node_id", id))
 	writeJSON(w, http.StatusCreated, reenrollTokenResponse{
 		Token: plaintext, NodeID: id, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint, AgentBinary: rt.brand.BinaryName + "-agent",
@@ -173,6 +185,10 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 // Only a re-enrollment token brings it back.
 func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
+	if rt.localNodeID != "" && id == rt.localNodeID {
+		writeError(w, http.StatusBadRequest, errLocalNodeNoCert)
+		return
+	}
 	if err := rt.nodes.RevokeNodeCert(r.Context(), id, time.Now()); errors.Is(err, store.ErrNodeNotFound) {
 		writeError(w, http.StatusNotFound, "node not found")
 		return
@@ -184,6 +200,7 @@ func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 	if rt.nodeCerts.sessions != nil {
 		rt.nodeCerts.sessions.Disconnect(id)
 	}
+	rt.recordOperatorEvent(r, id, store.SecurityKindRevoke, "revoked_by_operator")
 	rt.logger.Warn("api: node certificate revoked", slog.String("node_id", id))
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {

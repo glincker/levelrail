@@ -24,9 +24,9 @@ func deployStepsTerminal(ev deployStepEvent) bool {
 // stepSummary is the closing step every traced deploy ends with.
 const stepSummary = "deploy_summary"
 
-// legacyBuildSteps are the coarse steps a build deploy emits before the
+// coarseBuildSteps are the coarse steps a build deploy emits before the
 // reconciler's own trace starts.
-var legacyBuildSteps = map[string]bool{"detecting": true, "building": true, "pushing": true, "deploying": true, "failed": true}
+var coarseBuildSteps = map[string]bool{"detecting": true, "building": true, "pushing": true, "deploying": true, "failed": true}
 
 // deployStepsFinal reports whether ev ends the whole trace, and whether it
 // ended in failure. A failed reconcile step is not final on its own: the
@@ -35,7 +35,7 @@ func deployStepsFinal(ev deployStepEvent) (final, failed bool) {
 	switch {
 	case ev.Step == stepSummary && ev.Status != "running":
 		return true, ev.Status == "failed"
-	case legacyBuildSteps[ev.Step] && ev.Status == "failed":
+	case coarseBuildSteps[ev.Step] && ev.Status == "failed":
 		return true, true
 	}
 	return false, false

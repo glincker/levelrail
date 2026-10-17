@@ -21,7 +21,7 @@ func startScheduledMaintenance(ctx context.Context, logger *slog.Logger, db *sto
 			logger.Error("maintenance announcer stopped", slog.String("error", err.Error()))
 		}
 	}()
-	expirer := &maintenance.DomainExpirer{Store: db, Nudge: router.NudgeReconciler, Logger: logger}
+	expirer := &maintenance.DomainExpirer{Store: db, Silencer: &maintenance.Silencer{Store: channels}, Nudge: router.NudgeReconciler, Logger: logger}
 	go func() {
 		if err := expirer.Run(ctx, maintenance.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("domain maintenance expiry stopped", slog.String("error", err.Error()))

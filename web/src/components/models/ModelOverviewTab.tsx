@@ -6,6 +6,7 @@ import { gpuSummary, nodeLabel } from '../../lib/models'
 import { chatCurlExample } from '../../lib/modelPresentation'
 import type { ModelResource } from '../../types/models'
 import { ModelEnginePanel } from './ModelEnginePanel'
+import { ModelCpuPanel } from './ModelCpuPanel'
 import { ModelFitCard } from './ModelFitCard'
 import { ModelResidencyCard } from './ModelResidencyCard'
 
@@ -55,7 +56,10 @@ export function ModelOverviewTab({ model }: { model: ModelResource }) {
         <Fact label="Engine" value={model.engine} />
         <Fact label="Model" value={model.model} />
         <Fact label="Node" value={nodeLabel(model.node_id)} />
-        <Fact label="GPU" value={gpuSummary(model)} />
+        <Fact
+          label={model.compute === 'cpu' ? 'Compute' : 'GPU'}
+          value={gpuSummary(model)}
+        />
         <Fact
           label="Context length"
           value={
@@ -70,7 +74,11 @@ export function ModelOverviewTab({ model }: { model: ModelResource }) {
         key={`${model.residency}-${String(model.idle_ttl_seconds)}`}
         model={model}
       />
-      <ModelFitCard modelName={model.name} />
+      {model.compute === 'cpu' ? (
+        <ModelCpuPanel model={model} />
+      ) : (
+        <ModelFitCard modelName={model.name} />
+      )}
       <ModelEnginePanel modelName={model.name} engine={model.engine} />
       <section aria-label="Endpoint" className="space-y-2">
         <h3 className="text-sm font-semibold">Endpoint</h3>

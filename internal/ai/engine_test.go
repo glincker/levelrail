@@ -22,15 +22,6 @@ func openTestDB(t *testing.T) *store.DB {
 	return db
 }
 
-func configureTestDB(t *testing.T, db *store.DB) {
-	t.Helper()
-	if err := db.UpdateAIAssistantSettings(context.Background(), store.AIAssistantSettings{
-		Provider: store.AIProviderAnthropic, Model: "claude-test",
-	}); err != nil {
-		t.Fatalf("UpdateAIAssistantSettings() error = %v", err)
-	}
-}
-
 // newTestSession creates a chat session row under ctx, for tests that
 // need a valid session id but don't exercise session creation itself.
 func newTestSession(ctx context.Context, t *testing.T, db *store.DB) string {
@@ -65,8 +56,17 @@ func (f *fakeProvider) Complete(_ context.Context, _ ChatRequest, onText TextDel
 	return turn, nil
 }
 
-func fakeProviderFactory(fp *fakeProvider) ProviderFactory {
-	return func(_, _ string) (Provider, error) { return fp, nil }
+// staticChain is a ProviderResolver returning one fixed provider; a nil p
+// reports the assistant as not configured.
+type staticChain struct{ p Provider }
+
+func (c staticChain) Configured(context.Context) (bool, error) { return c.p != nil, nil }
+
+func (c staticChain) Chain(context.Context) (Provider, error) {
+	if c.p == nil {
+		return nil, ErrNotConfigured
+	}
+	return c.p, nil
 }
 
 // fakeToolExecutor is a scripted ToolExecutor: Call returns a canned
@@ -92,22 +92,6 @@ func (f *fakeToolExecutor) Call(_ context.Context, name string, _ json.RawMessag
 	}
 	return r.text, r.isError, nil
 }
-
-// fakeSecrets is a scripted SecretsResolver: a single, fixed key, either
-// present or absent.
-type fakeSecrets struct {
-	key    string
-	exists bool
-}
-
-func (f *fakeSecrets) Resolve(_ context.Context, _, _ string) (string, error) {
-	if !f.exists {
-		return "", errors.New("fakeSecrets: not found")
-	}
-	return f.key, nil
-}
-
-func (f *fakeSecrets) Exists(_ context.Context, _, _ string) (bool, error) { return f.exists, nil }
 
 type proposedCall struct {
 	confirmationID, toolUseID, toolName string
@@ -139,12 +123,11 @@ func (f *fakeSink) ToolResult(toolUseID, toolName string, result json.RawMessage
 
 func TestEngine_RunTurn_NoToolCalls(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 	sessionID := newTestSession(ctx, t, db)
 
 	fp := &fakeProvider{turns: []TurnResult{{Text: "hello there", StopReason: StopReasonEndTurn}}}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, &fakeToolExecutor{}, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, &fakeToolExecutor{}, "")
 
 	sink := &fakeSink{}
 	if err := engine.RunTurn(ctx, sessionID, "hi", sink); err != nil {
@@ -175,7 +158,6 @@ func TestEngine_RunTurn_NoToolCalls(t *testing.T) {
 
 func TestEngine_RunTurn_AutoExecutesReadOnlyTool(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 
 	sessionID := newTestSession(ctx, t, db)
@@ -188,7 +170,7 @@ func TestEngine_RunTurn_AutoExecutesReadOnlyTool(t *testing.T) {
 		tools:   []ToolSpec{{Name: "list_apps", Description: "list apps", Traits: ToolTraits{Known: true, ReadOnly: true}}},
 		results: map[string]fakeToolResult{"list_apps": {text: `[{"name":"web"},{"name":"api"}]`}},
 	}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, tools, "")
 
 	sink := &fakeSink{}
 	if err := engine.RunTurn(ctx, sessionID, "how many apps", sink); err != nil {
@@ -222,7 +204,6 @@ func TestEngine_RunTurn_AutoExecutesReadOnlyTool(t *testing.T) {
 
 func TestEngine_RunTurn_ProposesMutatingTool_PausesForConfirmation(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 
 	sessionID := newTestSession(ctx, t, db)
@@ -231,7 +212,7 @@ func TestEngine_RunTurn_ProposesMutatingTool_PausesForConfirmation(t *testing.T)
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "deploy_app", Input: json.RawMessage(`{"name":"web","image":"web:2"}`)}}, StopReason: StopReasonToolUse},
 	}}
 	tools := &fakeToolExecutor{tools: []ToolSpec{{Name: "deploy_app"}}}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, tools, "")
 
 	sink := &fakeSink{}
 	if err := engine.RunTurn(ctx, sessionID, "deploy web to 2", sink); err != nil {
@@ -267,7 +248,6 @@ func TestEngine_RunTurn_ProposesMutatingTool_PausesForConfirmation(t *testing.T)
 
 func TestEngine_ResolveConfirmation_ApproveContinuesTurn(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 
 	sessionID := newTestSession(ctx, t, db)
@@ -280,7 +260,7 @@ func TestEngine_ResolveConfirmation_ApproveContinuesTurn(t *testing.T) {
 		tools:   []ToolSpec{{Name: "deploy_app"}},
 		results: map[string]fakeToolResult{"deploy_app": {text: `{"status":"ok"}`}},
 	}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, tools, "")
 
 	proposeSink := &fakeSink{}
 	if err := engine.RunTurn(ctx, sessionID, "deploy web", proposeSink); err != nil {
@@ -325,7 +305,6 @@ func TestEngine_ResolveConfirmation_ApproveContinuesTurn(t *testing.T) {
 
 func TestEngine_ResolveConfirmation_Reject(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 
 	sessionID := newTestSession(ctx, t, db)
@@ -335,7 +314,7 @@ func TestEngine_ResolveConfirmation_Reject(t *testing.T) {
 		{Text: "ok, left it running", StopReason: StopReasonEndTurn},
 	}}
 	tools := &fakeToolExecutor{tools: []ToolSpec{{Name: "restart_app"}}}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, tools, "")
 
 	proposeSink := &fakeSink{}
 	if err := engine.RunTurn(ctx, sessionID, "restart web", proposeSink); err != nil {
@@ -366,7 +345,6 @@ func TestEngine_ResolveConfirmation_Reject(t *testing.T) {
 
 func TestEngine_ResolveConfirmation_AlreadyResolved(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 
 	sessionID := newTestSession(ctx, t, db)
@@ -376,7 +354,7 @@ func TestEngine_ResolveConfirmation_AlreadyResolved(t *testing.T) {
 		{Text: "done", StopReason: StopReasonEndTurn},
 	}}
 	tools := &fakeToolExecutor{tools: []ToolSpec{{Name: "restart_app"}}}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, tools, "")
 
 	proposeSink := &fakeSink{}
 	_ = engine.RunTurn(ctx, sessionID, "restart web", proposeSink)
@@ -392,7 +370,6 @@ func TestEngine_ResolveConfirmation_AlreadyResolved(t *testing.T) {
 
 func TestEngine_ResolveConfirmation_WrongSession(t *testing.T) {
 	db := openTestDB(t)
-	configureTestDB(t, db)
 	ctx := context.Background()
 
 	sessionA := newTestSession(ctx, t, db)
@@ -402,7 +379,7 @@ func TestEngine_ResolveConfirmation_WrongSession(t *testing.T) {
 		{ToolCalls: []ToolUseCall{{ID: "t1", Name: "restart_app", Input: json.RawMessage(`{}`)}}, StopReason: StopReasonToolUse},
 	}}
 	tools := &fakeToolExecutor{tools: []ToolSpec{{Name: "restart_app"}}}
-	engine := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, tools, fakeProviderFactory(fp), "")
+	engine := NewEngine(db, staticChain{p: fp}, tools, "")
 
 	proposeSink := &fakeSink{}
 	_ = engine.RunTurn(ctx, sessionA, "restart web", proposeSink)
@@ -417,7 +394,7 @@ func TestEngine_IsConfigured(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 
-	engine := NewEngine(db, &fakeSecrets{exists: false}, &fakeToolExecutor{}, nil, "")
+	engine := NewEngine(db, staticChain{}, &fakeToolExecutor{}, "")
 	ok, err := engine.IsConfigured(ctx)
 	if err != nil {
 		t.Fatalf("IsConfigured() error = %v", err)
@@ -425,9 +402,7 @@ func TestEngine_IsConfigured(t *testing.T) {
 	if ok {
 		t.Error("IsConfigured() = true before provider/model/key are set, want false")
 	}
-
-	configureTestDB(t, db)
-	engineWithKey := NewEngine(db, &fakeSecrets{key: "sk-test", exists: true}, &fakeToolExecutor{}, nil, "")
+	engineWithKey := NewEngine(db, staticChain{p: &fakeProvider{}}, &fakeToolExecutor{}, "")
 	ok, err = engineWithKey.IsConfigured(ctx)
 	if err != nil {
 		t.Fatalf("IsConfigured() error = %v", err)

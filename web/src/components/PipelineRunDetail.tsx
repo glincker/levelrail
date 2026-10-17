@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   ArrowClockwiseIcon,
   StopIcon,
@@ -22,7 +23,10 @@ import {
 import type { PipelineApproval, PipelineRun } from '../types/pipelines'
 import { formatDuration } from '../lib/pipelineStatus'
 import { PipelineRunGraph } from './PipelineRunGraph'
+import { PipelineArtifactsPanel } from './PipelineArtifactsPanel'
+import { PipelineFailureSummary } from './PipelineFailureSummary'
 import { PipelineHoldGate } from './PipelineHoldGate'
+import { PipelineRunMeta } from './PipelineRunMeta'
 import { PipelineReportLink } from './PipelineReportLink'
 import { PipelineRunLogs } from './PipelineRunLogs'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
@@ -37,6 +41,7 @@ function ApprovalGate({
   runId: string
   approval: PipelineApproval
 }) {
+  const { t } = useTranslation('pipelines')
   const [comment, setComment] = useState('')
   const decide = useDecidePipelineApproval(app, runId)
   const act = (decision: 'approved' | 'rejected') =>
@@ -49,15 +54,17 @@ function ApprovalGate({
       <div className="min-w-48 flex-1">
         <p className="font-medium text-foreground">{approval.message}</p>
         <p className="text-xs text-muted-foreground">
-          Job {approval.job} waits for someone with the{' '}
-          {approval.required_ability} ability.
+          {t('detail.approvalWaits', {
+            job: approval.job,
+            ability: approval.required_ability,
+          })}
         </p>
       </div>
       <Input
         value={comment}
         onChange={(e) => setComment(e.target.value)}
-        placeholder="Comment (optional)"
-        aria-label="Approval comment"
+        placeholder={t('detail.approvalCommentPlaceholder')}
+        aria-label={t('detail.approvalComment')}
         className="w-48"
       />
       <Button
@@ -66,7 +73,7 @@ function ApprovalGate({
         onClick={() => act('approved')}
       >
         <ThumbsUpIcon aria-hidden="true" />
-        Approve
+        {t('detail.approve')}
       </Button>
       <Button
         size="sm"
@@ -75,13 +82,14 @@ function ApprovalGate({
         onClick={() => act('rejected')}
       >
         <ThumbsDownIcon aria-hidden="true" />
-        Reject
+        {t('detail.reject')}
       </Button>
     </div>
   )
 }
 
 function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
+  const { t } = useTranslation('pipelines')
   const cancel = useCancelPipelineRun(app)
   const rerun = useRerunPipelineRun(app)
   const navigate = useNavigate()
@@ -94,8 +102,18 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
           <PipelineStatusBadge status={run.status} />
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          {run.trigger}
-          {run.actor ? ` by ${run.actor}` : ''}
+          {run.actor
+            ? t('detail.trigger', {
+                trigger: t(`trigger.${run.trigger}`, {
+                  defaultValue: run.trigger,
+                }),
+                actor: run.actor,
+              })
+            : t('detail.triggerNoActor', {
+                trigger: t(`trigger.${run.trigger}`, {
+                  defaultValue: run.trigger,
+                }),
+              })}
           {run.ref ? ` on ${run.ref}` : ''}
           {run.commit_sha ? ` at ${run.commit_sha.slice(0, 8)}` : ''}
           {run.started_at
@@ -124,7 +142,7 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
             }
           >
             <StopIcon aria-hidden="true" />
-            Cancel
+            {t('detail.cancel')}
           </Button>
         ) : null}
         <Button
@@ -143,7 +161,7 @@ function RunHeader({ app, run }: { app: string; run: PipelineRun }) {
           }
         >
           <ArrowClockwiseIcon aria-hidden="true" />
-          Re-run
+          {t('detail.rerun')}
         </Button>
       </div>
     </div>
@@ -163,6 +181,7 @@ export function PipelineRunDetail({
   step?: number
   onPick: (job: string, step?: number) => void
 }) {
+  const { t } = useTranslation('pipelines')
   const { data: run, isLoading, error, refetch } = usePipelineRun(app, runId)
 
   if (isLoading) {
@@ -172,8 +191,8 @@ export function PipelineRunDetail({
     return (
       <EmptyState
         icon={<WarningCircleIcon className="size-5" />}
-        title={error ? 'Run could not be loaded' : 'Run not found'}
-        description={error?.message ?? 'This run no longer exists.'}
+        title={error ? t('detail.loadFailed') : t('detail.notFound')}
+        description={error?.message ?? t('detail.gone')}
         action={
           error ? (
             <Button
@@ -183,7 +202,7 @@ export function PipelineRunDetail({
                 void refetch()
               }}
             >
-              Retry
+              {t('detail.retry')}
             </Button>
           ) : undefined
         }
@@ -199,6 +218,9 @@ export function PipelineRunDetail({
     ''
   const selected = jobs.find((j) => j.key === selectedKey)
   const pending = (run.approvals ?? []).filter((a) => !a.decision)
+  const usesArtifacts = jobs.some((j) =>
+    j.steps.some((s) => s.kind === 'artifact-collect'),
+  )
 
   return (
     <section className="space-y-4 rounded-lg border border-border p-4">
@@ -208,7 +230,7 @@ export function PipelineRunDetail({
           params={{ name: app }}
           className="text-muted-foreground underline underline-offset-2"
         >
-          All pipelines
+          {t('detail.allPipelines')}
         </Link>
       </p>
       <RunHeader app={app} run={run} />
@@ -218,6 +240,7 @@ export function PipelineRunDetail({
       {pending.map((a) => (
         <ApprovalGate key={a.id} app={app} runId={run.id} approval={a} />
       ))}
+      <PipelineFailureSummary run={run} onOpen={(key) => onPick(key)} />
       {jobs.length > 0 ? (
         <PipelineRunGraph
           jobs={jobs}
@@ -225,7 +248,7 @@ export function PipelineRunDetail({
           onSelect={(key) => onPick(key)}
         />
       ) : (
-        <p className="text-sm text-muted-foreground">Waiting to start.</p>
+        <p className="text-sm text-muted-foreground">{t('detail.waiting')}</p>
       )}
       {selected ? (
         <div className="space-y-3">
@@ -252,6 +275,12 @@ export function PipelineRunDetail({
           />
         </div>
       ) : null}
+      <div className="grid gap-4 border-t border-border pt-4 lg:grid-cols-2">
+        <PipelineRunMeta run={run} />
+        {usesArtifacts ? (
+          <PipelineArtifactsPanel app={app} runId={run.id} />
+        ) : null}
+      </div>
     </section>
   )
 }

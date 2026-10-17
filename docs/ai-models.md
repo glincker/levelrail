@@ -1,7 +1,7 @@
 ---
 title: "AI models"
 tag: "Experimental"
-description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes as a first-class resource, with an OpenAI-compatible endpoint protected by an API key.
+description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, as a first-class resource with an OpenAI-compatible endpoint protected by an API key.
 ---
 
 A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. You can manage it from the dashboard (**AI models**), the CLI (`levelrail-cli models`), the REST API (`/api/v1/models`) and the MCP server.
@@ -144,6 +144,99 @@ Prune removes only volumes that no model owns, that no container mounts, and tha
 
 Only the control plane's own host is inspected today; remote nodes are listed as not yet supported. The MCP tool `list_model_cache` is read-only; the API is `GET /api/v1/model-cache` and `POST /api/v1/model-cache/prune`.
 
+## CPU models
+
+A small model can run on the server's CPU, with no GPU. It is the same resource as a GPU model (endpoint, keys, residency, usage), with `compute: cpu`, hard resource limits, a curated list and a download that Levelrail performs itself. Use it for short tasks on a modest server, not for chat at GPU speed.
+
+```sh
+levelrail-cli models catalog
+levelrail-cli models fit --compute cpu --catalog granite-4.1-3b
+levelrail-cli models deploy --compute cpu --catalog granite-4.1-3b --cpus 2 --memory-mib 4096
+levelrail-cli models benchmark granite-4-1-3b
+```
+
+In the dashboard, **Deploy model** has a **Run on CPU** option: the curated models as cards (size, memory, licence, tier, estimated speed), CPU and memory sliders with the verdict updating as you move them, a plain warning of what it will use, a download progress bar, and a **Benchmark** button on the model page.
+
+### What it runs
+
+llama.cpp's official CPU server image (`ghcr.io/ggml-org/llama.cpp:server`). Override it with `APP_MODEL_IMAGE_LLAMACPP_CPU` (the GPU image stays `APP_MODEL_IMAGE_LLAMACPP`). Only llama.cpp supports CPU mode today; Ollama and vLLM models stay GPU only. The command has no `-ngl`, and these flags come from the limits:
+
+| Flag | Value |
+| --- | --- |
+| `-t`, `-tb` | the whole CPUs of the cap (at least 1) |
+| `-np` | `1`: one request at a time, so memory use stays predictable |
+| `-c` | the context size of the resource (default `APP_MODEL_CPU_DEFAULT_CONTEXT`, 4096) |
+| `-cram` | `APP_MODEL_CPU_CACHE_PERCENT` (5) of the memory cap, between 64 MiB and `APP_MODEL_CPU_CACHE_MAX_MIB` (512). llama.cpp's own default is 8192 MiB, which would eat a small server |
+| `--no-mmap` | only when the cap leaves less than `APP_MODEL_CPU_MMAP_HEADROOM_MIB` (1024) beyond the weights, or when `APP_MODEL_CPU_MMAP=off` |
+
+Memory mapping is the default: the kernel can drop weight pages when the whole host is short, and loading needs no second copy. With a cap barely above the weights, mapped pages would thrash the disk and slow every app sharing it, so the weights are read into memory instead and a too-small cap shows up as a clear out-of-memory kill. `APP_MODEL_CPU_MMAP=on` or `off` forces either.
+
+### Limits
+
+Every CPU model container is created with hard limits, so it cannot starve the apps next to it:
+
+| Limit | Value |
+| --- | --- |
+| CPU | `NanoCPUs` from the cpu cap |
+| Memory | the memory cap, with swap equal to memory (no swap) |
+| CPU weight | `APP_MODEL_CPU_SHARES` (128, against Docker's 1024), so apps win under contention |
+| OOM score | `APP_MODEL_CPU_OOM_SCORE_ADJ` (800): the kernel kills the model before app containers |
+| Processes | `APP_MODEL_CPU_PIDS_LIMIT` (256) |
+
+The caps come from the resource. Left empty they default to the smaller of 2 CPUs and half the node's CPUs (`APP_MODEL_CPU_DEFAULT_CPUS` overrides the 2), and `APP_MODEL_CPU_DEFAULT_MEMORY_PERCENT` (25) of the node's RAM. A request is refused above `APP_MODEL_CPU_MAX_CPU_PERCENT` (75) of the CPUs or `APP_MODEL_CPU_MAX_MEMORY_PERCENT` (60) of the RAM, or when the cap would leave less than `APP_MODEL_CPU_FREE_RAM_FLOOR_MIB` (1024) of the node's RAM. Only the control plane's own host reports its CPUs and RAM; for a remote node you must pass both caps. The CPU weight, OOM score and pids limit are applied on the local node only; they are not carried over the agent transport yet, the CPU and memory caps are.
+
+### Preflight
+
+`levelrail-cli models fit --compute cpu`, `POST /api/v1/models/fit` with `compute: cpu`, and the live panel in the deploy dialog return:
+
+- Memory: weights plus KV cache at the chosen context plus overhead, against the cap.
+- Disk: the weights download, with a free disk check.
+- Speed: a range of tokens per second, always labelled an estimate. Generation is limited by memory bandwidth, so the range scales with the CPUs you allow (`APP_MODEL_CPU_BW_GBS_PER_CPU`, `APP_MODEL_CPU_BW_GBS_MAX`).
+- A verdict, with the reason: `fits_comfortably` (at most `APP_MODEL_CPU_COMFORT_PERCENT` of the cap, 85), `tight`, `wont_fit` or `unknown` (the size cannot be read, never guessed), and a smaller context or model to try.
+
+Deploying a model that will not fit is refused. A tight one is allowed with the warning.
+
+### Curated list
+
+The list is data (`internal/models/catalog_local.json`, embedded in the binary), not code. Only Apache-2.0 and MIT models are listed; the loader rejects any other licence. Sizes, licences, repositories and sha256 digests were read from the Hugging Face API on the date shown in the catalog. Levelrail never ships or mirrors weights: your server downloads them from Hugging Face when you deploy.
+
+| Id | Tier | Download | Licence |
+| --- | --- | --- | --- |
+| `granite-4.0-1b` | light | 1.0 GB | Apache-2.0 |
+| `qwen3.5-2b` | light | 1.3 GB | Apache-2.0 |
+| `nomic-embed-text-v1.5` (embeddings) | light | 0.1 GB | Apache-2.0 |
+| `granite-4.1-3b` | default | 2.1 GB | Apache-2.0 |
+| `qwen3.5-4b` | plus | 2.7 GB | Apache-2.0 |
+| `gemma-4-e4b` | plus | 5.0 GB | Apache-2.0 |
+
+The list is provisional: the entries were checked against the Hub, not run on a CPU server here. Qwen3.5 thinks before answering by default, which is slow on CPU; Granite 4.1 does not.
+
+Any other repository goes through the custom repository field (`--model org/name-GGUF:Q4_K_M`, plus `--weights-file` if the suffix does not pick one file). It shows its licence as read from the Hub with a notice that Levelrail did not review it, and the deploy is refused until you acknowledge it (`--accept-license`, or the checkbox). Gemma 3 and older, and Llama licences, are reachable only this way.
+
+### Download
+
+For a CPU model on the control plane's own host, Levelrail downloads the GGUF file itself into `$APP_DATA_DIR/model-weights/<name>/` (`APP_MODEL_WEIGHTS_DIR` overrides it) and mounts it read-only into the engine. This assumes the control plane runs as a process on the host, so the directory is visible to Docker; a control plane running inside a container needs `APP_MODEL_WEIGHTS_DIR` pointing at a path that is the same on the host. The weights are never baked into an image.
+
+- Only `huggingface.co`, `hf.co` and their subdomains are allowed, over HTTPS, including every redirect (Hugging Face serves files from a CDN). Internal addresses are refused by the outbound guard.
+- Interrupted downloads resume with an HTTP `Range` request. A server that ignores `Range` restarts from zero.
+- The sha256 is verified: from the catalog, else from the digest the Hub reports. A mismatch discards the file and fails with `checksum_mismatch`.
+- Limits: `APP_MODEL_DOWNLOAD_MAX_BYTES` (16 GiB), free disk plus `APP_MODEL_DISK_HEADROOM_PERCENT`.
+- Progress (bytes done and total) is in the resource status: the model page, `models get` and `GET /api/v1/models/{name}` (`download`).
+
+Failures are stated plainly in the status: `gated` (accept the licence on huggingface.co and set a token), `not_found`, `disk_full` (the partial file is kept), `interrupted` (resumes), `checksum_mismatch`, `too_large`, `host_not_allowed`. If the download finishes but the engine fails to start, the weights stay on disk and the next attempt reuses them. Deleting the model keeps the weights, like the GPU volume. On a remote node the engine pulls the weights itself and there is no progress; Ollama progress is not exposed either.
+
+### Benchmark
+
+`POST /api/v1/models/{name}/benchmark`, `levelrail-cli models benchmark <name>` or the **Benchmark** button runs three short fixed prompts through the running server and stores the last result: generation and prompt tokens per second, time to first token, and peak memory read from the container. It has a hard time cap (`APP_MODEL_BENCH_TIMEOUT_SECONDS`, 120), allows one run at a time, is rate limited per model (`APP_MODEL_BENCH_MIN_INTERVAL_SECONDS`, 300; the API answers `429` with `Retry-After`), never wakes a stopped model, and never runs on its own. The dashboard shows the measured speed next to the estimate.
+
+### Idle unload
+
+Use `--residency on_demand` (the dashboard default for CPU models). After the idle time (`--idle-ttl`, `APP_MODEL_IDLE_TTL`) the engine stops and frees its memory and CPU; weights stay on disk, so the next request only waits for the model to load again.
+
+### Estimated and unverified
+
+Everything here was tested against fakes and unit tests: flag and limit generation, verdicts, the downloader against a local HTTP server, the controller against a fake Docker client. No container was started and no model was run. The tokens per second range, the memory needed for each model and the quality of each model on a CPU are estimates. The model names postdate what was verified beyond the Hub listing. Run the benchmark on your server before relying on any number.
+
 ## Lifecycle and status
 
 A model has one `Ready` condition whose reason tells you where it is:
@@ -152,7 +245,9 @@ A model has one `Ready` condition whose reason tells you where it is:
 | --- | --- |
 | `Starting` | The container is being created or started. |
 | `Downloading` | The weights are downloading. Ollama reports percent and bytes; vLLM and llama.cpp download on start, follow `levelrail-cli models logs <name> --follow`. |
-| `Loading` | The model is being loaded into VRAM. |
+| `Loading` | The model is being loaded into VRAM (or memory, for a CPU model). |
+| `DownloadFailed` | A CPU model's weights download failed. The message says why; retryable failures resume on their own. |
+| `CPULimitsMissing` | A CPU model has no cpu or memory cap. Redeploy it with limits. |
 | `ModelLoaded` | The model is loaded and serving. This is the readiness signal. |
 | `Idle` | An on-demand model whose engine was stopped after its idle time. It starts on the first request (see On-demand residency). |
 | `WakingUp` | An on-demand model's engine is starting or loading after a wake. |
@@ -348,7 +443,7 @@ Listing and reading models and GPUs needs the `read` ability. Deleting and resta
 
 ## Not in version 1
 
-AMD and Apple GPUs, MIG partitioning, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, swap groups, and a Prometheus endpoint for usage.
+AMD and Apple GPUs, MIG partitioning, CPU mode for Ollama and vLLM, control plane downloads for remote nodes, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, swap groups, and a Prometheus endpoint for usage.
 
 ## GPU in Compose templates
 

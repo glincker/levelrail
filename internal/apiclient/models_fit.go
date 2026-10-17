@@ -16,6 +16,12 @@ type ModelFitRequest struct {
 	GPUDeviceIDs  []string `json:"gpu_device_ids,omitempty"`
 	WeightsBytes  int64    `json:"weights_bytes,omitempty"`
 	NodeID        *string  `json:"node_id,omitempty"`
+
+	// Compute "cpu" (or CatalogID) rates the model against CPUs and memory.
+	Compute   string  `json:"compute,omitempty"`
+	CatalogID string  `json:"catalog_id,omitempty"`
+	CPUs      float64 `json:"cpus,omitempty"`
+	MemoryMiB int     `json:"memory_mib,omitempty"`
 }
 
 // NodeFit mirrors internal/models.NodeFit.

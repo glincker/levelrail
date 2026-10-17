@@ -94,6 +94,8 @@ type IncidentView struct {
 	ResolvedAt *time.Time   `json:"resolved_at,omitempty"`
 	Components []string     `json:"components,omitempty"`
 	Updates    []UpdateView `json:"updates"`
+	// Ongoing marks maintenance with no end time yet.
+	Ongoing bool `json:"ongoing,omitempty"`
 }
 
 // UpdateView is one timeline entry.

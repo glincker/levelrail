@@ -2,12 +2,14 @@ package agent
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"log/slog"
-	"math/rand/v2"
+	"sync"
 	"time"
 
 	"google.golang.org/grpc"
@@ -79,7 +81,23 @@ type Renewer struct {
 
 	now   func() time.Time
 	after func(time.Duration) <-chan time.Time
-	jit   func() float64
+	// jit overrides the per-certificate jitter, for tests.
+	jit func() float64
+
+	trigger chan struct{}
+	updates chan struct{}
+	mu      sync.Mutex
+	st      RenewalStatus
+}
+
+// RenewalStatus is the renewer's schedule and last failure, reported to the
+// control plane so the node page can show it.
+type RenewalStatus struct {
+	NextRenewAt         time.Time
+	LastError           string
+	LastFailedAt        time.Time
+	NextRetryAt         time.Time
+	ConsecutiveFailures int
 }
 
 // NewRenewer builds a Renewer. check defaults to CheckIdentityAt(addr)
@@ -90,8 +108,47 @@ func NewRenewer(holder *IdentityHolder, persist IdentityPersister, check Identit
 	}
 	return &Renewer{
 		holder: holder, persist: persist, check: check, cfg: cfg.withDefaults(), logger: logger,
-		now: time.Now, after: time.After, jit: rand.Float64, //nolint:gosec // scheduling jitter, not a secret
+		now: time.Now, after: time.After,
+		trigger: make(chan struct{}, 1), updates: make(chan struct{}, 1),
 	}
+}
+
+// Status returns the current schedule and failure state.
+func (r *Renewer) Status() RenewalStatus {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.st
+}
+
+// Updates signals (coalesced) that Status changed.
+func (r *Renewer) Updates() <-chan struct{} { return r.updates }
+
+// RenewNow makes Run attempt a renewal immediately, skipping any wait.
+func (r *Renewer) RenewNow() {
+	select {
+	case r.trigger <- struct{}{}:
+	default:
+	}
+}
+
+func (r *Renewer) setStatus(f func(*RenewalStatus)) {
+	r.mu.Lock()
+	f(&r.st)
+	r.mu.Unlock()
+	select {
+	case r.updates <- struct{}{}:
+	default:
+	}
+}
+
+// jitterFor is stable per certificate, so a restart recomputes the same
+// renewal time from the certificate on disk instead of re-rolling it.
+func (r *Renewer) jitterFor(leaf *x509.Certificate) float64 {
+	if r.jit != nil {
+		return r.jit()
+	}
+	sum := sha256.Sum256(leaf.SerialNumber.Bytes())
+	return float64(binary.BigEndian.Uint64(sum[:8])>>11) / float64(1<<53)
 }
 
 // Holder returns the identity holder the renewer updates.
@@ -105,41 +162,62 @@ func (r *Renewer) RenewAt(id *Identity) (time.Time, error) {
 		return time.Time{}, err
 	}
 	life := leaf.NotAfter.Sub(leaf.NotBefore)
-	offset := time.Duration(float64(life) * (r.cfg.Fraction + r.cfg.Jitter*r.jit()))
+	offset := time.Duration(float64(life) * (r.cfg.Fraction + r.cfg.Jitter*r.jitterFor(leaf)))
 	return leaf.NotBefore.Add(offset), nil
 }
 
 // Run renews whenever the current certificate reaches its renewal time,
-// retrying with capped backoff, until ctx is done.
+// retrying with capped backoff, until ctx is done. A RenewNow call skips
+// the wait. The schedule comes from the certificate, so a restart resumes it.
 func (r *Renewer) Run(ctx context.Context, client agentpb.AgentServiceClient) {
 	retry := r.cfg.RetryMin
+	justRenewed := false
 	for {
 		wait := r.cfg.RetryMin
 		if at, err := r.RenewAt(r.holder.Current()); err == nil {
 			wait = at.Sub(r.now())
+			r.setStatus(func(s *RenewalStatus) { s.NextRenewAt = at; s.NextRetryAt = time.Time{} })
 		}
-		if wait > 0 {
-			select {
-			case <-ctx.Done():
-				return
-			case <-r.after(wait):
-			}
+		// A certificate issued already past its renewal point (tiny lifetime,
+		// skewed clock) must not turn into a renewal loop against the server.
+		if justRenewed {
+			wait = max(wait, r.cfg.RetryMin)
+		}
+		if wait > 0 && !r.sleep(ctx, wait) {
+			return
 		}
 		err := r.RenewOnce(ctx, client)
 		if err == nil {
-			retry = r.cfg.RetryMin
+			retry, justRenewed = r.cfg.RetryMin, true
 			continue
 		}
+		justRenewed = false
 		if ctx.Err() != nil {
 			return
 		}
 		r.logRenewFailure(err)
-		select {
-		case <-ctx.Done():
+		r.setStatus(func(s *RenewalStatus) {
+			s.LastError, s.LastFailedAt = err.Error(), r.now()
+			s.NextRetryAt = r.now().Add(retry)
+			s.ConsecutiveFailures++
+		})
+		if !r.sleep(ctx, retry) {
 			return
-		case <-r.after(retry):
 		}
 		retry = min(retry*2, r.cfg.RetryMax)
+	}
+}
+
+// sleep waits d, returning early with true on RenewNow and false when ctx
+// is done.
+func (r *Renewer) sleep(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-r.trigger:
+		return true
+	case <-r.after(d):
+		return true
 	}
 }
 
@@ -188,6 +266,9 @@ func (r *Renewer) RenewOnce(ctx context.Context, client agentpb.AgentServiceClie
 		return fmt.Errorf("agent: renew: new certificate failed its test connection, kept the old one: %w", err)
 	}
 	r.holder.Set(next)
+	r.setStatus(func(s *RenewalStatus) {
+		s.LastError, s.LastFailedAt, s.NextRetryAt, s.ConsecutiveFailures = "", time.Time{}, time.Time{}, 0
+	})
 	if err := r.persist.Confirm(); err != nil {
 		r.logger.Warn("agent: renew: drop identity backup failed", slog.String("error", err.Error()))
 	}

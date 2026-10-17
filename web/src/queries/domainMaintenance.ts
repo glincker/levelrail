@@ -30,6 +30,11 @@ export interface DomainMaintenance {
   started_at?: string
   // auto_off_at is the safety cut-off for open ended maintenance.
   auto_off_at?: string
+  // ongoing: the public status page lists this as ongoing (no end time).
+  ongoing?: boolean
+  // alerts_silenced: a maintenance silence mutes the app's probe alerts.
+  alerts_silenced?: boolean
+  silence_id?: string
 }
 
 // SetDomainMaintenanceRequest is PUT's optional body; omit it for defaults.

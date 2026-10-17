@@ -42,6 +42,11 @@ type PipelineRun struct {
 	ReportState    string
 	ReportURL      string
 	ReportWarning  string
+	// TriggerPayload and TriggerContentType hold the body of the inbound
+	// webhook that started the run. They are data for jobs to read, never
+	// executed.
+	TriggerPayload     string
+	TriggerContentType string
 }
 
 // Run hold states.
@@ -53,7 +58,8 @@ const (
 
 const pipelineRunCols = `id, pipeline_id, app_name, number, trigger_kind, trigger_actor, ref, commit_sha, inputs, definition,
 	concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, started_at, finished_at,
-	hold_state, hold_reason, hold_by, hold_at, report_provider, report_state, report_url, report_warning`
+	hold_state, hold_reason, hold_by, hold_at, report_provider, report_state, report_url, report_warning,
+	trigger_payload, trigger_content_type`
 
 func scanPipelineRun(scan func(...any) error) (PipelineRun, error) {
 	var r PipelineRun
@@ -62,7 +68,7 @@ func scanPipelineRun(scan func(...any) error) (PipelineRun, error) {
 	if err := scan(&r.ID, &r.PipelineID, &r.AppName, &r.Number, &r.TriggerKind, &r.TriggerActor, &r.Ref, &r.CommitSHA,
 		&r.InputsJSON, &r.Definition, &r.ConcurrencyGroup, &r.CancelInProgress, &r.Status, &r.Reason, &r.CancelRequested,
 		&created, &started, &finished, &r.HoldState, &r.HoldReason, &r.HoldBy, &holdAt,
-		&r.ReportProvider, &r.ReportState, &r.ReportURL, &r.ReportWarning); err != nil {
+		&r.ReportProvider, &r.ReportState, &r.ReportURL, &r.ReportWarning, &r.TriggerPayload, &r.TriggerContentType); err != nil {
 		return PipelineRun{}, err
 	}
 	var err error
@@ -98,10 +104,11 @@ func (db *DB) CreatePipelineRun(ctx context.Context, r PipelineRun) (PipelineRun
 	r.Status = PipelineStatusQueued
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO pipeline_runs (id, pipeline_id, app_name, number, trigger_kind, trigger_actor, ref, commit_sha, inputs, definition,
-			concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, hold_state, hold_reason)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
+			concurrency_group, cancel_in_progress, status, reason, cancel_requested, created_at, hold_state, hold_reason,
+			trigger_payload, trigger_content_type)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)
 	`, r.ID, r.PipelineID, r.AppName, r.Number, r.TriggerKind, r.TriggerActor, r.Ref, r.CommitSHA, r.InputsJSON, r.Definition,
-		r.ConcurrencyGroup, r.CancelInProgress, r.Status, r.Reason, formatTime(r.CreatedAt), r.HoldState, r.HoldReason); err != nil {
+		r.ConcurrencyGroup, r.CancelInProgress, r.Status, r.Reason, formatTime(r.CreatedAt), r.HoldState, r.HoldReason, r.TriggerPayload, r.TriggerContentType); err != nil {
 		return PipelineRun{}, fmt.Errorf("store: insert pipeline run: %w", err)
 	}
 	if err := tx.Commit(); err != nil {

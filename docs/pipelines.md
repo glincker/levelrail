@@ -121,10 +121,9 @@ on:
   tag:
     patterns: ["v*"]
   schedule: ["0 3 * * *"]
-  manual:
-    inputs:
-      env: { default: staging, options: [staging, production] }
+  manual: {}
   api: true
+  webhook: {}
 ```
 
 | Trigger | Starts a run when |
@@ -134,10 +133,58 @@ on:
 | `tag` | a tag matching a pattern is pushed |
 | `merge_group` | GitHub's merge queue asks for checks on a queued group |
 | `schedule` | a five-field cron expression comes due (missed runs are not replayed) |
-| `manual` | someone starts it from the dashboard or CLI, with the declared inputs |
+| `manual` | someone starts it from the dashboard or CLI, with the declared parameters |
 | `api` | an API token starts it |
+| `webhook` | another system POSTs to the pipeline's secret webhook URL |
 
 A trigger key with no value (`push:`) means "on, any branch". A file with no `on` block is manual and API only. Branch and tag filters accept `*` (within one path segment) and `**`. A `pull_request` trigger's `branches` filter matches the pull request's target branch.
+
+### Parameters
+
+A pipeline declares the values a run may set. Manual runs, API calls, and webhooks all use the same list, and the server validates every value before a run is queued.
+
+```yaml
+parameters:
+  - { name: environment, type: choice, choices: [staging, production], default: staging }
+  - { name: skip_tests, type: boolean, default: false }
+  - { name: release_note, required: true, description: Shown in the deploy notification }
+```
+
+| Field | Meaning |
+| --- | --- |
+| `name` | Letters, digits, and underscores, starting with a letter |
+| `type` | `string` (the default), `choice` (value must be one of `choices`), or `boolean` (`true` or `false`) |
+| `default` | Used when the run does not set the value |
+| `required` | The run is rejected when the value is empty |
+| `description` | Shown under the field in the **Run with parameters** dialog |
+
+The older `on.manual.inputs` map still works and accepts the same fields (`options` is the older spelling of `choices`). A value that is not declared, not one of the choices, not `true` or `false` for a boolean, or longer than `APP_PIPELINE_INPUT_MAX_BYTES` (4096) is rejected with a 400 and nothing is queued.
+
+Parameters are recorded on the run and shown on the run page. Scripts read them as <span v-pre>`${{ inputs.name }}`</span> (passed as data, like every attacker-influenced value) or as the environment variable `PIPELINE_INPUT_<NAME>`.
+
+```
+levelrail-cli pipelines run my-app ship --param environment=production --param skip_tests=true
+```
+
+### Webhook triggers
+
+`webhook: {}` under `on` lets another system start the pipeline by POSTing to a secret URL. Turn the trigger on from the **Webhook** button on the pipeline row, or with the CLI:
+
+```
+levelrail-cli pipelines triggers my-app ship --enable --hmac
+levelrail-cli pipelines triggers my-app ship --deliveries
+levelrail-cli pipelines triggers my-app ship --replay <delivery-id>
+levelrail-cli pipelines triggers my-app ship --rotate
+```
+
+The URL is `POST /api/v1/hooks/pipeline/{pipeline-id}/{token}`. It needs no session: the token is the credential. It is shown once when created or rotated and only its sha256 is stored, so a lost token is replaced with **Rotate**, which invalidates the old URL at once. A wrong token, an unknown pipeline, and a disabled trigger all answer the same 404.
+
+- **Signatures.** With `--hmac` the caller must also send `X-Hub-Signature-256: sha256=<hex>`, the HMAC SHA-256 of the raw body under the signing secret (shown once, held in the encrypted secrets store). This is the same scheme GitHub uses, so GitHub webhooks can point at the URL directly.
+- **Body.** The body must be `application/json` (valid JSON), `application/x-www-form-urlencoded`, or `text/plain`, and at most `APP_PIPELINE_WEBHOOK_MAX_BODY` bytes (65536). It is stored on the run and exposed to jobs as `PIPELINE_WEBHOOK_PAYLOAD` and `PIPELINE_WEBHOOK_CONTENT_TYPE`. It is data only: it is never interpolated into a script or executed.
+- **Parameters.** Query-string values set declared parameters (`?environment=production`). `ref` and `sha` set the run's ref and commit.
+- **Retries.** Send an `Idempotency-Key` header (GitHub's `X-GitHub-Delivery` also works). A repeated key returns the first run with `"status": "duplicate"` and starts nothing.
+- **Limits.** Requests are rate limited per client and pipeline (`APP_WEBHOOK_RATE_LIMIT_RPM`).
+- **History.** Every authenticated delivery is kept (`APP_PIPELINE_WEBHOOK_DELIVERIES_KEEP`, 100 per pipeline) with its outcome and reason. **Replay** starts a new run from an accepted delivery's stored body and query. Deliveries rejected for a bad signature, content type, or size cannot be replayed.
 
 ### Path filters
 
@@ -270,7 +317,82 @@ Templates are expanded when the file is parsed. A template cannot use another te
 
 ### Artifacts and caches
 
-Artifacts are stored in a per-run volume and are shared between jobs that run on the same node. A `cache` entry mounts a named volume that survives between runs of the same app, keyed by `key`.
+A job can keep files for later jobs and for download:
+
+```yaml
+jobs:
+  build:
+    image: golang:1.23
+    artifacts: [bin, dist/report.html]
+    steps:
+      - run: go build -o bin/app ./cmd/app
+  test:
+    needs: [build]
+    image: golang:1.23
+    steps:
+      - run: ./bin/app --self-test
+```
+
+When `build` succeeds, the listed paths are archived out of its workspace and stored on the control plane. Any job that `needs` it starts with those files restored into its own `/workspace` (after checkout), on any node. The paths are literal files or directories relative to the workspace; globs, absolute paths, and `..` are rejected when the file is saved.
+
+- **Storage.** Archives live under `APP_PIPELINE_ARTIFACT_DIR` (default `<data dir>/pipeline-artifacts`), one file per job, with a sha256 recorded when stored and checked again before every restore and download. A mismatch refuses the restore or download instead of serving damaged files.
+- **Limits.** `APP_PIPELINE_ARTIFACT_MAX_BYTES` (256 MiB) caps one archive, `APP_PIPELINE_ARTIFACT_MAX_RUN_BYTES` (1 GiB) all archives of a run, and `APP_PIPELINE_ARTIFACT_MAX_UNPACKED_BYTES` (1 GiB) what an archive may expand to.
+- **Retention.** `APP_PIPELINE_ARTIFACT_RETENTION` (168h) after the upload. Expired archives, and archives of pruned runs, are deleted.
+- **Safety.** A path that resolves outside the workspace (including through a symlink) fails the upload. Archives containing absolute or `..` paths, links that point outside the workspace, device files, or a value of a secret the job used are rejected, and the job fails with the reason instead of reporting success without its artifacts.
+- **Download.** The run page lists each artifact with its size and checksum, and `levelrail-cli pipelines artifacts my-app <run-id> --download build` fetches one. Downloads need the `read` ability.
+
+The `artifact-upload` and `artifact-download` steps remain for moving files between steps of one run on the same node, through a per-run volume. Their paths must also stay inside the workspace.
+
+A `cache` entry mounts a named volume that survives between runs of the same app, keyed by `key`.
+
+### A worked example: build, test, deploy
+
+The full file is [`test/fixtures/pipelines/ship-with-artifact.yaml`](https://github.com/glincker/levelrail/blob/main/test/fixtures/pipelines/ship-with-artifact.yaml).
+
+```yaml
+version: 1
+name: ship
+on:
+  push:
+    branches: [main]
+  manual: {}
+  webhook: {}
+parameters:
+  - { name: environment, type: choice, choices: [staging, production], default: staging }
+  - { name: skip_tests, type: boolean, default: false }
+  - { name: release_note, description: Shown in the deploy notification }
+stages: [build, test, deploy]
+jobs:
+  build:
+    stage: build
+    image: golang:1.23
+    artifacts: [bin]
+    steps:
+      - run: go build -o bin/app ./cmd/app
+      - uses: build
+        id: image
+  test:
+    stage: test
+    image: golang:1.23
+    steps:
+      - run: ./bin/app --self-test
+      - run: go test ./...
+        if: success() && inputs.skip_tests != 'true'
+  deploy:
+    stage: deploy
+    steps:
+      - uses: approval
+        with:
+          message: Deploy to ${{ inputs.environment }}?
+      - uses: deploy
+        with:
+          strategy: blue-green
+      - uses: notify
+        with:
+          message: ${{ inputs.release_note }}
+```
+
+`build` compiles the binary, keeps `bin/` as an artifact, and builds the image. `test` starts with `bin/app` already in its workspace, so it tests the exact binary that was built, and skips the unit tests when `skip_tests` is true. `deploy` waits for approval, then deploys the image `build` produced. If `build` fails, `test` and `deploy` are skipped and the run page says `needed job build failed`.
 
 ## Dependencies, stages, and matrix
 
@@ -353,15 +475,18 @@ Runs that share a group run one at a time, oldest first. With `cancel_in_progres
 ## Running and watching
 
 ```
-levelrail-cli pipelines run my-app release --ref refs/heads/main --input env=staging --follow
+levelrail-cli pipelines run my-app release --ref refs/heads/main --param env=staging --follow
 levelrail-cli pipelines runs my-app
 levelrail-cli pipelines runs my-app <run-id>
 levelrail-cli pipelines logs my-app <run-id> --job "test[go=1.23]" --follow
 levelrail-cli pipelines approve my-app <run-id> --comment "ship it"
 levelrail-cli pipelines cancel my-app <run-id>
+levelrail-cli pipelines artifacts my-app <run-id> --download build --out build.tar.gz
 ```
 
-The run page in the dashboard draws the jobs as a dependency graph: columns by depth, a curved edge from each job to the jobs that need it, one node per matrix job with a row per combination, and a status icon and duration on every job. Click a job, or move between jobs with the arrow keys and press Enter, to see its steps and output. Status animation stops when the system asks for reduced motion.
+The run page in the dashboard draws the jobs as a dependency graph: columns by depth, a curved edge from each job to the jobs that need it, one node per matrix job with a row per combination, and a status icon and duration on every job. Click a job, or move between jobs with the arrow keys and press Enter, to see its steps and output. Status animation stops when the system asks for reduced motion. A skipped job shows why (`needed job build failed`).
+
+When a run fails, a summary at the top names the failed job, the failing step and its exit code, and the reason, and lists the jobs skipped because of it. Below the logs, the page shows how the run started (git push, manual, API, schedule, or webhook, and who), the parameters it ran with, the size of a webhook body if there was one, and the artifacts the jobs stored with a download button for each.
 
 Below the graph, every step shows its status and duration. Click a step to narrow the log to that step (click it again for the whole job). The log has a text filter, a stderr toggle, and a level filter. The link button on a step copies a URL that opens the run on that job and step (`?job=...&step=...`). The page streams a running job's output live and offers **Approve**, **Reject**, **Cancel**, and **Re-run**. Log lines are capped per job, and old runs are pruned to the newest 100 per pipeline.
 
@@ -373,7 +498,9 @@ The MCP server exposes `list_pipeline_runs`, `list_all_pipeline_runs` (runs acro
 | --- | --- |
 | Read pipelines, runs, and logs | `read` |
 | Create, edit, delete a pipeline | `write` |
-| Start, cancel, or re-run a run | `deploy` |
+| Start, cancel, or re-run a run, or replay a webhook delivery | `deploy` |
+| List and download a run's artifacts, see webhook deliveries | `read` |
+| Create, rotate, or delete a pipeline's webhook trigger | `write:sensitive` |
 | Decide an approval gate | `deploy`, plus the gate's own `approvers` ability |
 | Release or reject a run held for approval | `deploy` |
 | Sync pipeline files, or change the source-of-truth setting | `write` |
@@ -382,17 +509,18 @@ The MCP server exposes `list_pipeline_runs`, `list_all_pipeline_runs` (runs acro
 
 The engine stores every run, job, and step in the database with a status and a reason, and re-derives what to do from that state on each pass. If the control plane restarts, jobs recorded as running are picked up again: leftover containers are removed, finished steps are skipped, and the interrupted step runs again. Write steps so that running them twice is safe.
 
-Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default 4), `APP_PIPELINE_MAX_LOG_LINES` (50000 per job), `APP_PIPELINE_STEP_TIMEOUT` (30m), `APP_PIPELINE_JOB_TIMEOUT` (1h), `APP_PIPELINE_APPROVAL_TIMEOUT` (72h), `APP_PIPELINE_KEEP_RUNS` (100), `APP_PIPELINE_GIT_IMAGE` (the image used for checkout, default `alpine/git`), and `APP_PIPELINE_TICK_INTERVAL`.
+Environment variables tune the engine: `APP_PIPELINE_MAX_PARALLEL_JOBS` (default 4), `APP_PIPELINE_MAX_LOG_LINES` (50000 per job), `APP_PIPELINE_STEP_TIMEOUT` (30m), `APP_PIPELINE_JOB_TIMEOUT` (1h), `APP_PIPELINE_APPROVAL_TIMEOUT` (72h), `APP_PIPELINE_KEEP_RUNS` (100), `APP_PIPELINE_GIT_IMAGE` (the image used for checkout, default `alpine/git`), and `APP_PIPELINE_TICK_INTERVAL`. Artifact, parameter, and webhook limits are listed in their own sections above.
 
 ## Current limits
 
 - There is no pipeline-level `finally` block yet. For cleanup after a failure, end the job with a step that has `if: always()`.
 - Checkout and `build` need a git source connected to the app. Without one, container jobs run with an empty workspace.
 - The `build` step clones the repository itself instead of reading the job workspace, so files created by earlier steps are not part of the build context.
-- Artifacts are per node. Jobs that exchange artifacts must run on the same node.
+- The `artifact-upload` and `artifact-download` steps are per node. Use the job-level `artifacts` list to hand files to a job on another node.
+- Artifacts are stored on the control plane's disk, not in S3, and are included in no backup.
 - Workspace and artifact volumes are removed automatically on the local node; on remote nodes they are left for the volume cleanup.
 - `deploy`, `promote`, and `rollback` refuse services in a protected environment.
-- Re-running only the failed jobs of a run is not available. **Re-run** starts a new run from the beginning: approval decisions and artifacts are per run, so resuming inside a finished run would reuse stale approvals and lose its artifacts.
+- Re-running only the failed jobs of a run is not available. **Re-run** starts a new run from the beginning: approval decisions are per run, so resuming inside a finished run would reuse stale approvals.
 - Sync reads the tracked branch only, and only over HTTPS (with the deploy token when one is set).
 
 ## Next steps

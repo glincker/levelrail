@@ -120,6 +120,8 @@ func TestParseAnthropicStream_MultipleToolCalls_OrderPreserved(t *testing.T) {
 		`event: message_delta`,
 		`data: {"type":"message_delta","delta":{"stop_reason":"tool_use"}}`,
 		``,
+		`data: {"type":"message_stop"}`,
+		``,
 	}, "\n")
 
 	result, err := parseAnthropicStream(strings.NewReader(sse), nil)

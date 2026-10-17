@@ -125,8 +125,7 @@ export function SleepSettingsForm({
   onSave: (patch: Patch, success: string) => void
 }) {
   const { t } = useTranslation('deploys')
-  const idle = sleep.settings?.idle_minutes ?? sleep.idle_minutes
-  const hold = sleep.settings?.hold_requests ?? sleep.hold_requests
+  const { idle_minutes: idle, hold_requests: hold } = sleep.settings
   const [custom, setCustom] = useState(String(idle))
   const customValue = Number(custom)
   const customValid = isValidIdleMinutes(customValue)
@@ -199,7 +198,7 @@ export function SleepSettingsForm({
           }
         />
       </Setting>
-      {portWake?.supported ? (
+      {portWake.supported ? (
         <Setting
           title={t('appSleep.portWake.title')}
           help={t('appSleep.portWake.help', {
@@ -207,7 +206,7 @@ export function SleepSettingsForm({
           })}
         >
           <Switch
-            checked={sleep.settings?.port_wake ?? portWake.active}
+            checked={sleep.settings.port_wake}
             disabled={pending}
             aria-label={t('appSleep.portWake.aria')}
             onCheckedChange={(next) =>
@@ -216,15 +215,13 @@ export function SleepSettingsForm({
           />
         </Setting>
       ) : null}
-      {sleep.settings ? (
-        <IgnorePaths
-          paths={sleep.settings.ignore_paths}
-          disabled={pending}
-          onChange={(next) =>
-            onSave({ ignore_paths: next }, t('appSleep.toast.ignoreUpdated'))
-          }
-        />
-      ) : null}
+      <IgnorePaths
+        paths={sleep.settings.ignore_paths}
+        disabled={pending}
+        onChange={(next) =>
+          onSave({ ignore_paths: next }, t('appSleep.toast.ignoreUpdated'))
+        }
+      />
     </div>
   )
 }

@@ -85,12 +85,14 @@ func WithEmailSecrets(s EmailSecretsStore) Option {
 	return func(rt *Router) { rt.emailSecrets = s }
 }
 
-// WithAIAssistantSecrets enables PUT/DELETE
-// /api/v1/settings/ai-assistant. Without one configured (the default),
-// both return 501; GET works regardless, the same shape WithEmailSecrets
-// establishes.
-func WithAIAssistantSecrets(s AIAssistantSecrets) Option {
-	return func(rt *Router) { rt.aiSecrets = s }
+// WithAIVault enables the routes under /api/v1/settings/ai-assistant.
+func WithAIVault(v AIVault) Option {
+	return func(rt *Router) { rt.aiVault = v }
+}
+
+// WithAIUsage enables GET /api/v1/ai/usage and the monthly token count.
+func WithAIUsage(u AIUsageStore) Option {
+	return func(rt *Router) { rt.aiUsage = u }
 }
 
 // WithAIEngine enables every /api/v1/ai/... chat session route. Without

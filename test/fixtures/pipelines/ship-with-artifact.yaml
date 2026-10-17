@@ -1,0 +1,40 @@
+version: 1
+name: ship
+on:
+  push:
+    branches: [main]
+  manual: {}
+  webhook: {}
+parameters:
+  - { name: environment, type: choice, choices: [staging, production], default: staging }
+  - { name: skip_tests, type: boolean, default: false }
+  - { name: release_note, description: Shown in the deploy notification }
+stages: [build, test, deploy]
+jobs:
+  build:
+    stage: build
+    image: golang:1.23
+    artifacts: [bin]
+    steps:
+      - run: go build -o bin/app ./cmd/app
+      - uses: build
+        id: image
+  test:
+    stage: test
+    image: golang:1.23
+    steps:
+      - run: ./bin/app --self-test
+      - run: go test ./...
+        if: success() && inputs.skip_tests != 'true'
+  deploy:
+    stage: deploy
+    steps:
+      - uses: approval
+        with:
+          message: Deploy to ${{ inputs.environment }}?
+      - uses: deploy
+        with:
+          strategy: blue-green
+      - uses: notify
+        with:
+          message: ${{ inputs.release_note }}

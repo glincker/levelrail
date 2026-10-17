@@ -33,3 +33,31 @@ func TestWithWindowsListsMaintenanceWithoutTarget(t *testing.T) {
 		t.Fatalf("an active all-scope window must mark components, got %s / %s", v.Components[0].Status, v.Status)
 	}
 }
+
+func TestWithWindowsOngoingLifecycle(t *testing.T) {
+	now := time.Date(2026, 10, 16, 12, 0, 0, 0, time.UTC)
+	start := now.Add(-2 * time.Hour)
+	tests := []struct {
+		name        string
+		w           store.MaintenanceWindow
+		wantStatus  string
+		wantOngoing bool
+		wantEnd     bool
+	}{
+		{"ongoing", store.MaintenanceWindow{ID: "mw_1", Title: "Maintenance on a", Scope: store.MaintenanceScopeApp, StartsAt: start, EndsAt: start.Add(365 * 24 * time.Hour), Ongoing: true}, StatusInProgress, true, false},
+		{"resolved", store.MaintenanceWindow{ID: "mw_1", Title: "Maintenance on a", Scope: store.MaintenanceScopeApp, StartsAt: start, EndsAt: now.Add(-time.Minute)}, StatusCompleted, false, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Service{windows: fakeWindows{tt.w}}
+			v := s.withWindows(context.Background(), View{}, now)
+			if len(v.Maintenance) != 1 {
+				t.Fatalf("entries = %d", len(v.Maintenance))
+			}
+			m := v.Maintenance[0]
+			if m.Status != tt.wantStatus || m.Ongoing != tt.wantOngoing || (m.EndsAt != nil) != tt.wantEnd {
+				t.Fatalf("entry = %+v", m)
+			}
+		})
+	}
+}

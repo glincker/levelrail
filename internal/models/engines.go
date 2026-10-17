@@ -82,7 +82,16 @@ type Spec struct {
 	GPUDeviceIDs  []string
 	ContextLength int
 	Quantization  string
+	// Compute is "" or ComputeGPU (default) or ComputeCPU.
+	Compute string
 }
+
+// CPUImageDefault is the official llama.cpp CPU server image, used for
+// CPU models. APP_MODEL_IMAGE_LLAMACPP_CPU overrides it.
+const CPUImageDefault = "ghcr.io/ggml-org/llama.cpp:server"
+
+// ImageKeyLlamaCppCPU is the images map key of the CPU llama.cpp image.
+const ImageKeyLlamaCppCPU = EngineLlamaCpp + "-cpu"
 
 // Validate checks s against its engine's rules.
 func (s Spec) Validate() error {
@@ -95,6 +104,18 @@ func (s Spec) Validate() error {
 	}
 	if !e.ref.MatchString(s.ModelRef) {
 		return fmt.Errorf("model %q is not valid for %s: expected %s", s.ModelRef, s.Engine, e.RefHelp)
+	}
+	switch s.Compute {
+	case "", ComputeGPU:
+	case ComputeCPU:
+		if s.Engine != EngineLlamaCpp {
+			return fmt.Errorf("compute cpu is supported for the llamacpp engine only")
+		}
+		if s.GPUCount != 0 || len(s.GPUDeviceIDs) > 0 {
+			return fmt.Errorf("a cpu model cannot request gpus")
+		}
+	default:
+		return fmt.Errorf("compute %q is not supported (gpu or cpu)", s.Compute)
 	}
 	if s.GPUCount < -1 {
 		return fmt.Errorf("gpu count must be -1 (all) or a positive number")

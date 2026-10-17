@@ -483,14 +483,16 @@ levelrail-cli pipelines list <app> [flags]
 levelrail-cli pipelines validate <file> [--json]
 levelrail-cli pipelines save <app> <file-or-repo-dir> [--name N] [--paths G,...] [--paths-ignore G,...] [--report-status=false] [flags]
 levelrail-cli pipelines delete <app> <name> [flags]
-levelrail-cli pipelines run <app> <name> [--ref R] [--sha S] [--input k=v]... [--follow] [flags]
+levelrail-cli pipelines run <app> <name> [--ref R] [--sha S] [--param k=v]... [--follow] [flags]
 levelrail-cli pipelines runs <app> [<run-id>] [--pipeline N] [--limit N] [flags]
 levelrail-cli pipelines runs --all [--status S] [--app A] [--trigger T] [--pipeline N] [--limit N] [flags]
 levelrail-cli pipelines logs <app> <run-id> [--job KEY] [--follow] [flags]
 levelrail-cli pipelines cancel <app> <run-id> [flags]
 levelrail-cli pipelines approve <app> <run-id> [--reject] [--comment TEXT] [--approval ID] [flags]
 levelrail-cli pipelines sync <app> [--repo-truth=true|false] [flags]
+levelrail-cli pipelines artifacts <app> <run-id> [--download JOB] [--out FILE] [flags]
 levelrail-cli pipelines triggers <app> [flags]
+levelrail-cli pipelines triggers <app> <pipeline> [--enable [--hmac]|--disable|--rotate|--delete|--deliveries|--replay ID] [flags]
 levelrail-cli pipelines oidc [flags]
 levelrail-cli pipelines oidc rotate-key [--retire-after D] [flags]
 ```
@@ -498,6 +500,9 @@ levelrail-cli pipelines oidc rotate-key [--retire-after D] [flags]
 - `validate` checks a pipeline file locally with no API call and exits 2 when it has problems.
 - `save` creates or updates pipelines from one file, or from every file in a repository's pipeline directory.
 - `runs` lists runs, or shows one run's jobs, steps and approval gates; `--all` lists runs across every app.
+- `run --param` sets a declared run parameter (`--input` is the older spelling).
+- `artifacts` lists the archives a run stored, or downloads one job's archive.
+- `triggers <app> <pipeline>` manages the pipeline's inbound webhook: the token and signing secret are shown once when created or rotated.
 - `approve` decides approval gates, or releases a run held for approval.
 - `sync` syncs pipeline files from the repository now, or sets the repository as source of truth.
 - `triggers` shows why recent git events did or did not start runs.
@@ -602,6 +607,8 @@ levelrail-cli models residency <name> --mode M [flags]
 levelrail-cli models swap-group <name> --group G [flags]
 levelrail-cli models wake|sleep <name> [flags]
 levelrail-cli models fit --engine E --model M [flags]
+levelrail-cli models catalog [flags]
+levelrail-cli models benchmark <name> [flags]
 levelrail-cli models metrics <name> [flags]
 levelrail-cli models gpus [flags]
 levelrail-cli models preflight <repo> [flags]
@@ -609,7 +616,7 @@ levelrail-cli models cache list [flags]
 levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 ```
 
-- `deploy` runs a model as a container on a GPU node and prints its API key once. Flags: `--engine` (`ollama`, `vllm` or `llamacpp`), `--model`, `--node`, `--gpus` (a count or `all`), `--gpu-devices`, `--context`, `--quantization`, `--domain`, `--hf-token-from-env`, `--residency` (`always` or `on_demand`), `--idle-ttl`, `--swap-group`.
+- `deploy` runs a model as a container on a GPU node and prints its API key once. Flags: `--engine` (`ollama`, `vllm` or `llamacpp`), `--model`, `--node`, `--gpus` (a count or `all`), `--gpu-devices`, `--context`, `--quantization`, `--domain`, `--hf-token-from-env`, `--residency` (`always` or `on_demand`), `--idle-ttl`, `--swap-group`. `--compute cpu` (or `--catalog ID`) runs a small GGUF model on the CPU with hard limits: `--cpus`, `--memory-mib`, `--weights-file`, `--accept-license` (see [AI models](/ai-models#cpu-models)). `catalog` lists the curated CPU models with licence, memory need and an estimated speed on this server. `benchmark` measures a running model. `fit --compute cpu` rates a model against the node's CPUs and memory.
 - `logs` searches a model engine's logs, or `--follow` streams download and load progress live. `delete` keeps the downloaded weights volume. `restart` recreates the engine container.
 - `rotate-key` issues a new API key, printed once; `keys` manages named API keys with limits, expiry and rotation grace; `usage` shows gateway requests, tokens, errors and latency per key.
 - `residency` sets a model always resident or `on_demand` (stopped when idle, started on first request); `wake` and `sleep` start or stop an on demand engine now; `swap-group` lets models share a GPU (`--clear` removes it).
@@ -1153,6 +1160,8 @@ levelrail-cli nodes delete <id> [flags]
 levelrail-cli nodes join-token [flags]
 levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
+levelrail-cli nodes security <id> [--rejected] [--limit N] [flags]
+levelrail-cli nodes cert renew <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
@@ -1181,7 +1190,7 @@ levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --p
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
 ```
 
-- `delete` fails while the node still has placements; drain it first. `join-token` mints a one-time enrollment token, shown once. `reenroll-token` mints a one-time token that re-issues a node's agent certificate, keeping its identity, and prints the command to run on the node. `revoke-cert` revokes the certificate and closes the node's session; only a re-enroll token brings it back.
+- `delete` fails while the node still has placements; drain it first. `join-token` mints a one-time enrollment token, shown once. `reenroll-token` mints a one-time token that re-issues a node's agent certificate, keeping its identity, and prints the command to run on the node. `revoke-cert` revokes the certificate and closes the node's session; only a re-enroll token brings it back. `security` prints how the control plane verifies the node (CA and certificate fingerprints, renewal schedule and last failure, 24 hour check counts) and its recent security events; `cert renew` asks a connected node to renew its certificate now.
 - `cordon` marks a node unschedulable without evacuating it; `uncordon` reverses that; `drain` moves every service and database off a node.
 - `list` shows each node's certificate state and days left (CERT) and agent version (AGENT); `get` adds expiry, last renewal, key origin, platform and commit.
 - `resource-usage` shows every node's latest CPU, memory and disk usage plus a fleet rollup; `capacity-forecast` projects disk and memory usage forward, roughly how many days until full.
@@ -1309,7 +1318,7 @@ levelrail-cli deploy-link --image traefik/whoami:latest --name whoami --port 80 
 
 ## AI assistant
 
-Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider, model and key set with `settings ai-assistant set`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
+Experimental: requires `APP_EXPERIMENTAL=ai-chat`, and a provider key saved with `settings ai-assistant providers set` and a model chosen with `settings ai-assistant use`. The assistant is read and suggest only: a tool call that would change state pauses for an explicit confirmation. See [In-app AI assistant chat](/ai-assistant-chat).
 
 ```
 levelrail-cli ai chat "<message>" [--session ID] [flags]
@@ -1610,7 +1619,7 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup.
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
 - `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
-- `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the current settings (the key itself is never returned, only whether one is stored), `set --model NAME --api-key KEY` configures the assistant, and `clear` clears the stored key and resets provider and model.
+- `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the active model, the fallback chain and the limits (keys are never returned), `providers list|set|test|remove|models` manages provider keys, `use <provider> <model>` picks the active model, `fallback set` sets the fallback chain, and `usage` shows token use.
 
 ## Git integrations
 

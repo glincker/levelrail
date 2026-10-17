@@ -712,6 +712,27 @@ type DomainMaintenanceResource struct {
 	BypassHealthCheck bool     `json:"bypass_health_check"`
 	StartedAt         string   `json:"started_at,omitempty"`
 	AutoOffAt         string   `json:"auto_off_at,omitempty"`
+	// Ongoing is true when the status page shows this as ongoing maintenance.
+	Ongoing bool `json:"ongoing,omitempty"`
+	// AlertsSilenced is true while a maintenance silence mutes the app's probe alerts.
+	AlertsSilenced bool   `json:"alerts_silenced"`
+	SilenceID      string `json:"silence_id,omitempty"`
+}
+
+// AppMaintenanceDomain is one domain in AppMaintenanceResource.
+type AppMaintenanceDomain struct {
+	DomainMaintenanceResource
+	ElapsedSeconds int64 `json:"elapsed_seconds,omitempty"`
+}
+
+// AppMaintenanceResource is GET/PUT/DELETE /api/v1/apps/{name}/maintenance.
+type AppMaintenanceResource struct {
+	App     string                 `json:"app"`
+	Enabled bool                   `json:"enabled"`
+	All     bool                   `json:"all"`
+	Total   int                    `json:"total_domains"`
+	Active  int                    `json:"active_domains"`
+	Domains []AppMaintenanceDomain `json:"domains"`
 }
 
 // FleetMaintenanceEntry is one domain in GET /api/v1/maintenance/domains.
@@ -3870,22 +3891,93 @@ type SetupStatusResource struct {
 
 // AIAssistantSettingsResource mirrors internal/api's
 // aiAssistantSettingsResource (internal/api/ai_settings.go): the shape
-// of GET/PUT/DELETE /api/v1/settings/ai-assistant. Configured reports
-// whether a key has actually been saved; the key itself never round-trips.
+// of GET/PUT /api/v1/settings/ai-assistant. Keys never round-trip.
 type AIAssistantSettingsResource struct {
-	Configured bool   `json:"configured"`
-	Provider   string `json:"provider,omitempty"`
-	Model      string `json:"model,omitempty"`
+	Configured     bool         `json:"configured"`
+	Active         *AIModelRef  `json:"active,omitempty"`
+	Fallback       []AIModelRef `json:"fallback"`
+	Limits         AILimits     `json:"limits"`
+	TokenUsageMont *int64       `json:"token_usage_month,omitempty"`
 }
 
-// UpdateAIAssistantSettingsRequest mirrors internal/api's
-// updateAIAssistantSettingsRequest: PUT
-// /api/v1/settings/ai-assistant's request body. Provider must be
-// "anthropic" server-side; all three fields are required.
-type UpdateAIAssistantSettingsRequest struct {
+// AIModelRef names one provider and model pair.
+type AIModelRef struct {
 	Provider string `json:"provider"`
 	Model    string `json:"model"`
-	APIKey   string `json:"api_key"`
+}
+
+// AILimits mirrors the limits object of GET /api/v1/settings/ai-assistant.
+type AILimits struct {
+	MaxSteps           int   `json:"max_steps"`
+	MonthlyTokenBudget int64 `json:"monthly_token_budget,omitempty"`
+}
+
+// AIChoiceRequest is PUT /api/v1/settings/ai-assistant's multi-provider body.
+type AIChoiceRequest struct {
+	Active   *AIModelRef   `json:"active,omitempty"`
+	Fallback *[]AIModelRef `json:"fallback,omitempty"`
+}
+
+// AIProviderResource mirrors one entry of GET .../ai-assistant/providers.
+type AIProviderResource struct {
+	ID              string `json:"id"`
+	Label           string `json:"label"`
+	Kind            string `json:"kind"`
+	DefaultBaseURL  string `json:"default_base_url"`
+	BaseURLEditable bool   `json:"base_url_editable"`
+	KeyURL          string `json:"key_url"`
+	DefaultModel    string `json:"default_model"`
+	Brand           string `json:"brand"`
+	HasKey          bool   `json:"has_key"`
+	BaseURL         string `json:"base_url,omitempty"`
+	Status          string `json:"status"`
+	StatusDetail    string `json:"status_detail,omitempty"`
+	LastCheckedAt   string `json:"last_checked_at,omitempty"`
+}
+
+// SetAIProviderRequest is PUT .../providers/{id}'s body; empty fields are unchanged.
+type SetAIProviderRequest struct {
+	APIKey       string `json:"api_key,omitempty"`
+	BaseURL      string `json:"base_url,omitempty"`
+	DefaultModel string `json:"default_model,omitempty"`
+}
+
+// AIProviderTestResource is POST .../providers/{id}/test's response.
+type AIProviderTestResource struct {
+	OK           bool   `json:"ok"`
+	Status       string `json:"status"`
+	StatusDetail string `json:"status_detail,omitempty"`
+	LatencyMS    int64  `json:"latency_ms"`
+}
+
+// AIModelResource is one entry of GET .../providers/{id}/models.
+type AIModelResource struct {
+	ID            string `json:"id"`
+	Label         string `json:"label"`
+	ContextWindow int    `json:"context_window,omitempty"`
+	SupportsTools *bool  `json:"supports_tools,omitempty"`
+}
+
+// AIUsageDayResource is one (date, provider, model) row of GET /api/v1/ai/usage.
+type AIUsageDayResource struct {
+	Date             string `json:"date"`
+	Provider         string `json:"provider"`
+	Model            string `json:"model"`
+	PromptTokens     int64  `json:"prompt_tokens"`
+	CompletionTokens int64  `json:"completion_tokens"`
+	Requests         int64  `json:"requests"`
+	Errors           int64  `json:"errors"`
+}
+
+// AIUsageResource is GET /api/v1/ai/usage's response.
+type AIUsageResource struct {
+	Days   []AIUsageDayResource `json:"days"`
+	Totals struct {
+		PromptTokens     int64 `json:"prompt_tokens"`
+		CompletionTokens int64 `json:"completion_tokens"`
+		Requests         int64 `json:"requests"`
+		Errors           int64 `json:"errors"`
+	} `json:"totals"`
 }
 
 // AIChatSessionCreatedResource mirrors internal/api's

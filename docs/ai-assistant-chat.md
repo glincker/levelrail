@@ -1,14 +1,14 @@
 ---
 title: "In-app AI assistant chat"
 tag: "Experimental"
-description: The in-app AI assistant chat, how to enable it behind the ai-chat experimental flag, and the read-and-suggest confirmation gate that bounds what it can do.
+description: The in-app AI assistant chat with your own key for Anthropic, OpenAI compatible, Gemini or self-hosted models, how to enable it behind the ai-chat experimental flag, and the confirmation gate that bounds what it can do.
 ---
 
 This is a chat panel in the dashboard, backed by the control plane's own `internal/ai` engine. It reads your apps, deploys, logs, metrics and diagnostics through the same tool surface the MCP server exposes, and it can propose actions. Every action that would change anything pauses for an explicit confirmation click first. AI in Levelrail only reads and suggests on top of the API, and this chat uses the same engine and confirmation gate described in [AI assistant integration](/ai-assistant#untrusted-text-and-the-assistants-confirmation-gate), as a dashboard panel and a CLI command.
 
 This is separate from `levelrail-mcp`. To point an external MCP client (Claude Desktop, Claude Code, your own) at this control plane, read [AI assistant integration](/ai-assistant) instead.
 
-Source: `internal/ai`, `internal/api/ai_chat.go`, `internal/api/ai_settings.go`, `web/src/components/AiChatPanel.tsx`, `cmd/levelrail-cli/ai.go`.
+Source: `internal/ai`, `internal/api/ai_chat.go`, `internal/api/ai_settings.go`, `internal/api/ai_providers.go`, `web/src/components/AiChatPanel.tsx`, `cmd/levelrail-cli/ai.go`.
 
 ## Quick start in 3 steps
 
@@ -24,9 +24,9 @@ Restart the control plane. The **AI assistant** page now appears in the dashboar
 </Step>
 <Step title="Add your API key">
 
-CLI: `levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-...`
+CLI: `levelrail-cli settings ai-assistant providers set anthropic --api-key-env ANTHROPIC_API_KEY` then `levelrail-cli settings ai-assistant use anthropic claude-sonnet-5-5`
 
-Dashboard: Settings > AI assistant, fill in the form.
+Dashboard: Settings > AI assistant, pick a provider and paste its key.
 
 </Step>
 <Step title="Open the AI assistant page and start chatting">
@@ -54,21 +54,26 @@ With the flag off (the default), every route under `/api/v1/ai/sessions` and `/a
 </Step>
 <Step title="Configure a provider key">
 
-Nothing runs until you bring your own key. Only `anthropic` is supported today. The key is stored with the same envelope encryption as other secrets and is never returned or logged.
+Nothing runs until you bring your own key. Pick a provider from the list under [Providers](#providers), save its key, then choose the active provider and model. The key is checked with the provider before it is stored, kept with the same envelope encryption as other secrets, and never returned, logged, or written to the audit log.
 
 <Tabs>
 <Tab title="CLI">
 
 ```bash
-levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-...
+export OPENAI_API_KEY=sk-...
+levelrail-cli settings ai-assistant providers set openai --api-key-env OPENAI_API_KEY
+levelrail-cli settings ai-assistant providers models openai
+levelrail-cli settings ai-assistant use openai gpt-4.1
 ```
 
-`levelrail-cli settings ai-assistant get` reports only whether a key is configured.
+`levelrail-cli settings ai-assistant get` reports the active provider, the fallback chain and whether a key is configured.
+
+Over the API, `GET /api/v1/settings/ai-assistant` returns `configured`, `active`, `fallback`, `limits` and `token_usage_month`, and `PUT` takes `active` and/or `fallback` (each `{provider, model}`). Keys are saved per provider with `PUT /api/v1/settings/ai-assistant/providers/{id}` and removed with `DELETE` on the same path.
 
 </Tab>
 <Tab title="Dashboard">
 
-Open **Settings → AI assistant** and fill in the form.
+Open **Settings → AI assistant**, pick a provider, paste its key, then choose the active model.
 
 </Tab>
 </Tabs>
@@ -114,13 +119,96 @@ levelrail-cli ai sessions delete aisess_abc123
 
 ### REST API
 
-`POST /api/v1/ai/sessions`, `GET /api/v1/ai/sessions`, `GET`/`DELETE /api/v1/ai/sessions/{id}`, `POST /api/v1/ai/sessions/{id}/messages` (Server-Sent Events: `text_delta`, `tool_call_proposed`, `tool_result`, `done`), and `POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}` (same SSE framing, for resolving a pending call). All of it requires `AbilityRoot`: a confirmed message can execute any mutating tool the platform exposes once approved, the same blast radius a root-scoped token would need to reach those actions directly, so do not hand this surface to a lower-privileged token.
+`POST /api/v1/ai/sessions`, `GET /api/v1/ai/sessions`, `GET`/`DELETE /api/v1/ai/sessions/{id}`, `POST /api/v1/ai/sessions/{id}/messages` (Server-Sent Events: `text_delta`, `tool_call_proposed`, `tool_result`, `error`, `done`), and `POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}` (same SSE framing, for resolving a pending call). All of it requires `AbilityRoot`: a confirmed message can execute any mutating tool the platform exposes once approved, the same blast radius a root-scoped token would need to reach those actions directly, so do not hand this surface to a lower-privileged token.
 
 ## Scope and limits
 
 - Single admin user, no per-user session isolation beyond the root-only gate: anyone who can authenticate as root can see and act on any session.
-- One provider: Anthropic only, with no model routing or fallback.
-- Not yet covered by real-infrastructure testing: `test/e2e/ai_chat_test.go` proves the full session lifecycle (create, send a message with an auto-executed read tool call, get, list, delete, and the flag-off 404) over real HTTP against a real router and a real `ai.Engine`, but with a scripted fake `ai.Provider`, never a live call to Anthropic's API. See [Feature status](/feature-status) for the current evidence tier.
+- One active provider and model at a time, plus an ordered fallback chain used only for transient failures. There is no per-request model routing.
+- Not yet covered by real-infrastructure testing: `test/e2e/ai_chat_test.go` proves the full session lifecycle (create, send a message with an auto-executed read tool call, get, list, delete, and the flag-off 404) over real HTTP against a real router and a real `ai.Engine`, but with a scripted fake `ai.Provider`, never a live call to a provider's API. See [Feature status](/feature-status) for the current evidence tier.
+
+## Providers
+
+Three adapters cover every provider. All are native Go over `net/http`, with no vendor SDK, so keys stay on the control plane and never reach the browser.
+
+| Adapter | Providers |
+| --- | --- |
+| `anthropic` | Anthropic (Messages API, tool use, streaming, prompt caching) |
+| `openai_compat` | OpenAI, Azure OpenAI, OpenRouter, Groq, Together AI, Mistral, DeepSeek, xAI, Fireworks AI, Ollama, vLLM, LM Studio, and "Other (OpenAI compatible)" for any server speaking Chat Completions |
+| `gemini` | Google Gemini (native `generateContent`) |
+
+`levelrail-cli settings ai-assistant providers list` shows each provider, whether a key is saved and the result of its last test. Self-hosted providers (Ollama, vLLM, LM Studio, Other) can be saved without a key. Azure OpenAI needs a base URL (your resource's endpoint) and a key; it authenticates with the `api-key` header.
+
+The model is a validated choice: `providers models <id>` lists what the provider offers (cached for `APP_AI_MODELS_CACHE_TTL`, default 10m), and you can still type any id the provider did not list. Default models in the catalog are suggestions only.
+
+### Self-hosted and private endpoints
+
+A base URL is checked before anything is sent to it:
+
+- Public endpoints must be `https`, so a key is never sent in clear text.
+- Every connection is checked against the resolved IP at dial time, so a public hostname that later resolves to a private address (DNS rebinding) is refused, as is a redirect to a different host.
+- Private, loopback and link-local addresses (Ollama on `localhost`, vLLM on a LAN address) are allowed only for `openai_compat` providers, only for a root caller, and only for the host that caller typed in. Saving such a URL writes an `ai_assistant.private_base_url` audit entry with the provider and host (never the key).
+- Credentials inside the URL are rejected.
+
+### Example: Ollama on a Levelrail GPU node
+
+Deploy the model as described in [AI models](/ai-models), then point the assistant at it:
+
+```bash
+levelrail-cli models deploy --name chat --engine ollama --model llama3.1:8b
+levelrail-cli settings ai-assistant providers set ollama --base-url http://<node-private-address>:11434/v1
+levelrail-cli settings ai-assistant providers models ollama
+levelrail-cli settings ai-assistant use ollama llama3.1:8b
+```
+
+Pick a model that supports tool calling; a model without it can chat but cannot read your apps. If the control plane cannot reach the node address, `providers set` answers with an `unreachable` error and nothing is saved. A hosted `levelrail` model provider is not built in: use this form with the model's endpoint instead.
+
+## Fallback chain
+
+```bash
+levelrail-cli settings ai-assistant fallback set groq:llama-3.3-70b-versatile anthropic:claude-haiku-5-5
+```
+
+When the active provider fails with a rate limit, an overload, a timeout or a network error, or its account is out of quota, the next entry is tried. It never falls back on an invalid key, a content refusal, a too-long conversation or an unknown model, and never after the answer has started streaming, so output is not duplicated. Each provider is also retried first with jittered backoff that honors `Retry-After`. At most 5 entries. Removing a provider's key removes it from the chain.
+
+## Usage and budget
+
+Every model call records prompt and completion tokens, provider, model, latency and error class. `levelrail-cli settings ai-assistant usage --days 30` (or `GET /api/v1/ai/usage?days=30`) aggregates by day, provider and model. Set `APP_AI_MONTHLY_TOKEN_BUDGET` to block new turns once the calendar month's tokens reach it; the default is no budget. A blocked turn is not stored, and the chat shows how many tokens were used.
+
+## Error meanings
+
+| Code | Meaning | Fix |
+| --- | --- | --- |
+| `invalid_key` | The provider rejected the key. | Save a valid key. |
+| `quota_exhausted` | Out of credit or quota. | Add credit, or add a fallback. |
+| `rate_limited` | Too many requests. | Wait, or add a fallback. |
+| `overloaded` | Provider overloaded or down. | Retry, or add a fallback. |
+| `context_too_long` | Conversation exceeds the model's window even after trimming. | Start a new chat or pick a larger model. |
+| `model_not_found` | The provider has no such model. | Pick one from `providers models`. |
+| `network` | Provider unreachable or timed out. | Check outbound network and base URL. |
+| `stream_interrupted` | The connection dropped mid-answer. | Send the message again. |
+| `blocked_address` | The URL failed the address policy. | See the endpoint rules above. |
+| `budget_exhausted` | Monthly token budget used. | Raise the budget or wait. |
+
+The chat stream sends an `error` event with `code`, `message`, `fix`, `provider` and `retryable` just before `done`. A cut-off answer is kept in the session marked as interrupted, and a tool call that never finished streaming is dropped, never run.
+
+## Harness limits
+
+| Variable | Default | Effect |
+| --- | --- | --- |
+| `APP_AI_STEP_TIMEOUT` | `120s` | Longest a single model call may take. |
+| `APP_AI_MAX_STEPS` | `12` | Model calls per turn before it stops. |
+| `APP_AI_TOOL_OUTPUT_MAX_BYTES` | `32768` | Cap per tool result; cut output ends with `[truncated N bytes]`. |
+| `APP_AI_DEFAULT_CONTEXT_TOKENS` | `128000` | Window assumed when the provider does not report one. |
+| `APP_AI_MONTHLY_TOKEN_BUDGET` | none | Monthly token budget. |
+| `APP_AI_RETRY_MAX_ATTEMPTS`, `APP_AI_RETRY_BASE_DELAY`, `APP_AI_RETRY_MAX_DELAY` | `3`, `1s`, `30s` | Retry policy. |
+| `APP_AI_VALIDATE_TIMEOUT` | `10s` | Key check and model list timeout. |
+
+Before each call the oldest tool results are replaced with a placeholder, then the oldest whole exchanges are dropped, until the conversation fits the model's window. The system prompt and your latest message are never dropped. Tool arguments are checked against the tool's schema before it runs, and a malformed or unknown call goes back to the model as an error. Whatever the provider, any tool that is not known read-only still waits for your approval.
+
+## What is unverified
+
+Everything here was tested against fake HTTP servers. No adapter has been run against a live Anthropic, OpenAI, Gemini, Azure, OpenRouter or any other real service, so wire details such as Azure URL shapes, Gemini schema acceptance, Ollama tool-call streaming quirks and the catalog's default model ids and brand marks may need adjusting on first real use. The self-hosted example above has not been run on a real GPU node. Prompt caching is requested for Anthropic but cache hits were not observed.
 
 ## Troubleshooting
 
@@ -134,25 +222,25 @@ Fix: Set `APP_EXPERIMENTAL=ai-chat` on the control plane and restart. Wait 10 se
 
 Still stuck: Check control plane logs for startup errors: `levelrail logs --since 1m | grep -i "ai\|experimental"`.
 
-### "API key not configured" error when starting chat
+### "No usable AI provider is configured" when starting chat
 
-Likely cause: No API key has been set, or the key was not saved correctly.
+Likely cause: No provider key is saved, or the active provider or model is not chosen.
 
-How to confirm: Check if a key is configured: `levelrail-cli settings ai-assistant get` returns "Key: configured" or "Key: not configured". Try setting the key again.
+How to confirm: `levelrail-cli settings ai-assistant get` shows the active provider and whether it is configured. `levelrail-cli settings ai-assistant providers list` shows which providers have a key.
 
-Fix: Add your API key: `levelrail-cli settings ai-assistant set --model claude-sonnet-4-5 --api-key sk-ant-<your-key>`. Wait a moment, then refresh the AI assistant page and try again.
+Fix: `levelrail-cli settings ai-assistant providers set <id> --api-key-env VAR`, then `levelrail-cli settings ai-assistant use <id> <model>`.
 
-Still stuck: Verify the key format starts with `sk-ant-`. Keys are never returned by the API, only whether one exists, so there is no way to check if it is correct without trying it.
+Still stuck: `levelrail-cli settings ai-assistant providers test <id>` re-checks the saved key and reports the status.
 
-### Chat returning errors or models unavailable
+### Chat shows an error with a suggested fix
 
-Likely cause: The API key is invalid, your Anthropic account is out of credits, or the model name is wrong.
+Likely cause: The provider rejected the call. The error shown names the class (see [Error meanings](#error-meanings)) and a fix.
 
-How to confirm: Try the chat: `levelrail-cli ai chat "hello" --session test --json 2>&1 | grep -i error`. The error message will indicate if it is auth, quota or model mismatch.
+How to confirm: `levelrail-cli ai chat "hello" --json` prints the `error` event with its `code`. `levelrail-cli settings ai-assistant usage` shows error counts per provider and model.
 
-Fix: Verify your API key is active in your Anthropic account. Check your credits. If the model was recently renamed (for example, `claude-opus-4-1` became `claude-opus-5`), update it: `levelrail-cli settings ai-assistant set --model claude-opus-5 --api-key sk-ant-...`.
+Fix: Follow the fix in the error. For `invalid_key` or `quota_exhausted`, check the key and credit at the provider; for `model_not_found`, pick a model from `providers models <id>`.
 
-Still stuck: Log into your Anthropic dashboard to verify the key and account status.
+Still stuck: Add a fallback provider so a transient provider problem does not stop the chat.
 
 ### Pending confirmation never resolves or takes too long
 

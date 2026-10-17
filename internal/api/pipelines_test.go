@@ -15,12 +15,23 @@ import (
 
 type fakePipelineRunner struct {
 	started   []store.Pipeline
+	opts      []pipeline.StartOptions
+	startErr  error
 	cancelled []string
 	nudges    int
 }
 
 func (f *fakePipelineRunner) Start(_ context.Context, p store.Pipeline, opt pipeline.StartOptions) (store.PipelineRun, error) {
+	if f.startErr != nil {
+		return store.PipelineRun{}, f.startErr
+	}
+	if def, issues := pipeline.Validate([]byte(p.YAML)); len(issues) == 0 {
+		if _, err := pipeline.ResolveParameters(def, opt.Inputs, 0); err != nil {
+			return store.PipelineRun{}, err
+		}
+	}
 	f.started = append(f.started, p)
+	f.opts = append(f.opts, opt)
 	return store.PipelineRun{ID: "run1", PipelineID: p.ID, AppName: p.AppName, Number: 1, TriggerKind: opt.Trigger, Status: store.PipelineStatusQueued, CreatedAt: time.Now()}, nil
 }
 

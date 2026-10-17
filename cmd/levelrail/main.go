@@ -29,6 +29,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
+	"github.com/GLINCKER/levelrail/internal/ai"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
@@ -602,7 +603,13 @@ func run(logger *slog.Logger) error {
 	if id := readLocalNodeID(agentDataDir); id != "" {
 		agentRegistry.SetLocal(id, agent.NewLocal(client))
 	}
-	agentCreds, err := agent.NewServerCredentials(agentCA, []string{advertiseHostFromStore(ctx, db)}, agentServerCertValidity)
+	var agentServerRef atomic.Pointer[agent.Server]
+	agentCreds, err := agent.NewServerCredentials(agentCA, []string{advertiseHostFromStore(ctx, db)}, agentServerCertValidity,
+		agent.WithRejectObserver(func(r agent.RejectedHandshake) {
+			if srv := agentServerRef.Load(); srv != nil {
+				srv.ObserveRejected(r)
+			}
+		}))
 	if err != nil {
 		return fmt.Errorf("build agent grpc credentials: %w", err)
 	}
@@ -642,7 +649,8 @@ func run(logger *slog.Logger) error {
 	)
 	meshEndpoints := newMeshEndpointBook(logger)
 	hostReports := agent.NewHostReportStore()
-	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	agentServer := agent.NewServer(agentCA, db, agentRegistry, logger, append(agentCertServerOptions(db), agent.WithGPUSink(db), agent.WithHostReportSink(hostReports), agent.WithSessionObserver(meshEndpoints.Observe))...)
+	agentServerRef.Store(agentServer)
 	agentpb.RegisterAgentServiceServer(agentGRPCServer, agentServer)
 	go func() {
 		logger.Info("agent grpc listening", slog.String("addr", agentListener.Addr().String()))
@@ -830,7 +838,7 @@ func run(logger *slog.Logger) error {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
-	configureNodeCerts(apiRouter, agentServer)
+	configureNodeCerts(apiRouter, agentServer, agentServer)
 	apiRouter.SetNodeHostReports(hostReports)
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
@@ -2800,10 +2808,8 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			// nil-interface hazard, the third OAuth-consumer counterpart
 			// alongside the GitHub and GitLab App connections above.
 			api.WithBitbucketAppSecrets(secretsManager),
-			// BYOK LLM API key for the embedded AI assistant: same
-			// secretsManager, same nil-interface hazard as everything
-			// else in this block.
-			api.WithAIAssistantSecrets(secretsManager),
+			api.WithAIVault(ai.NewVault(db, secretsManager, logger)),
+			api.WithAIUsage(db),
 			// Point-in-time restore (baseBackupRunner/pitrRunner just
 			// above): manual base-backup trigger and the actual PITR
 			// restore endpoint.

@@ -13,7 +13,6 @@ import type { SleepUiState } from '../../lib/sleepState'
 import type { AppSleep } from '../../queries/appSleep'
 
 const BADGE_VARIANT = {
-  off: 'muted',
   ready: 'success',
   blocked: 'destructive',
   awake: 'success',
@@ -58,7 +57,7 @@ export function SleepStatusHeader({
   const { t } = useTranslation('deploys')
   const coldStart = sleep.cold_start_ms_p50
   const explain =
-    coldStart === undefined
+    coldStart === null
       ? t('appSleep.explain.generic')
       : t('appSleep.explain.withCold', {
           duration: formatSleepDuration(coldStart / 1000),
@@ -69,7 +68,7 @@ export function SleepStatusHeader({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <MoonSunIcon
-            asleep={state === 'sleeping' || state === 'off'}
+            asleep={state === 'sleeping'}
             waking={state === 'waking'}
           />
           <Badge
@@ -85,7 +84,7 @@ export function SleepStatusHeader({
         {actions}
       </div>
       <p className="text-sm text-muted-foreground">{explain}</p>
-      {freed !== undefined && freed > 0 ? (
+      {freed !== null && freed > 0 ? (
         <p className="text-sm text-foreground">
           {t('appSleep.frees', { size: formatBytes(freed) })}
         </p>

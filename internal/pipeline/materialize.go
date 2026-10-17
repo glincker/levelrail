@@ -9,8 +9,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// KindSetup is the implicit step that prepares the workspace and container.
-const KindSetup = "setup"
+// Implicit step kinds. Setup prepares the workspace and container, restore
+// unpacks needed jobs' artifacts, and collect stores this job's own.
+const (
+	KindSetup           = "setup"
+	KindArtifactRestore = "artifact-restore"
+	KindArtifactCollect = "artifact-collect"
+)
 
 // plannedStep maps a stored step row to a definition step (Def is -1 for
 // the implicit setup step).
@@ -21,16 +26,35 @@ type plannedStep struct {
 }
 
 // planSteps lists a job's stored step rows: the definition steps in order,
-// with a setup step inserted before the first step that needs a container.
-func planSteps(j *Job) []plannedStep {
+// with a setup step (and an artifact restore, when a needed job stores
+// artifacts) inserted before the first step that needs a container, and an
+// artifact collect step last when the job declares artifacts.
+func planSteps(def *Definition, name string, j *Job) []plannedStep {
 	var out []plannedStep
 	setup := false
 	for i, s := range j.Steps {
 		if s.NeedsContainer() && !setup {
 			out = append(out, plannedStep{Kind: KindSetup, Name: "Set up job", Def: -1})
+			if neededArtifactJobs(def, name, j) != nil {
+				out = append(out, plannedStep{Kind: KindArtifactRestore, Name: "Restore artifacts", Def: -1})
+			}
 			setup = true
 		}
 		out = append(out, plannedStep{Kind: s.Kind(), Name: s.DisplayName(), Def: i})
+	}
+	if len(j.Artifacts) > 0 {
+		out = append(out, plannedStep{Kind: KindArtifactCollect, Name: "Upload artifacts", Def: -1})
+	}
+	return out
+}
+
+// neededArtifactJobs returns the base names of needed jobs that declare artifacts.
+func neededArtifactJobs(def *Definition, name string, j *Job) []string {
+	var out []string
+	for _, n := range implicitNeeds(def, name, j) {
+		if nj := def.Jobs[n]; nj != nil && len(nj.Artifacts) > 0 {
+			out = append(out, n)
+		}
 	}
 	return out
 }
@@ -57,7 +81,7 @@ func (e *Engine) materialize(run store.PipelineRun, def *Definition) ([]store.Pi
 				Stage: jd.Stage, NeedsJSON: string(needsJSON), MatrixJSON: string(matrixJSON), NodeID: jd.Node,
 				Status: store.PipelineStatusPending,
 			}
-			for i, p := range planSteps(jd) {
+			for i, p := range planSteps(def, name, jd) {
 				row.Steps = append(row.Steps, store.PipelineStep{Index: i, Name: p.Name, Kind: p.Kind})
 			}
 			rows = append(rows, row)

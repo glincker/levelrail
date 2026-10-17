@@ -283,6 +283,8 @@ The sheet also lists suggestions computed on the control plane, each with a reas
 | Add a health check | The app has no readiness or liveness probe. |
 | Get told when deploys finish | The app has no deploy notification target. |
 
+Not sure what a repository will be detected as? [Import a repository](/import-a-repo) explains the detection and how to preview it with `apps analyze`.
+
 ## Monorepos and build settings
 
 A git source builds from two settings, and both are relative to the repository root:

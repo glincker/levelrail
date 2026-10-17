@@ -17,7 +17,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/experimental"
-	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -25,6 +24,12 @@ const (
 	e2eAIChatAdminUsername = "e2e-ai-chat-admin"
 	e2eAIChatAdminPassword = "e2e-ai-chat-correct-horse" //nolint:gosec // test fixture credential, not a real secret
 )
+
+// fakeAIChatChain resolves every turn to one scripted provider.
+type fakeAIChatChain struct{ p ai.Provider }
+
+func (c fakeAIChatChain) Configured(context.Context) (bool, error)   { return true, nil }
+func (c fakeAIChatChain) Chain(context.Context) (ai.Provider, error) { return c.p, nil }
 
 // fakeAIChatProvider replays a fixed script of turns, one per Complete
 // call, mirroring internal/ai/engine_test.go's own fakeProvider (package
@@ -88,21 +93,6 @@ func TestAIChatSessionLifecycle_Live(t *testing.T) {
 	db := openLiveStore(t)
 	ctx := context.Background()
 
-	masterKey, err := secrets.GenerateMasterKey()
-	if err != nil {
-		t.Fatalf("GenerateMasterKey() error = %v", err)
-	}
-	manager := secrets.NewManager(db, masterKey)
-
-	if err := db.UpdateAIAssistantSettings(ctx, store.AIAssistantSettings{
-		Provider: store.AIProviderAnthropic, Model: "test-model",
-	}); err != nil {
-		t.Fatalf("UpdateAIAssistantSettings() error = %v", err)
-	}
-	if err := manager.SetValue(ctx, store.AIAssistantSecretsKey(), ai.SecretsAPIKeyEnvKey, "sk-test-fake-key"); err != nil {
-		t.Fatalf("SetValue() error = %v", err)
-	}
-
 	// Scripted turn loop: the model first asks to run the read-only
 	// list_apps tool (auto-executed, no confirmation needed), then ends
 	// the turn with a plain reply, proving the tool round trip and the
@@ -111,11 +101,11 @@ func TestAIChatSessionLifecycle_Live(t *testing.T) {
 		{ToolCalls: []ai.ToolUseCall{{ID: "call_1", Name: "list_apps", Input: json.RawMessage(`{}`)}}, StopReason: ai.StopReasonToolUse},
 		{Text: "You have 1 app: web.", StopReason: ai.StopReasonEndTurn},
 	}}
-	engine := ai.NewEngine(db, manager, fakeAIChatTools{}, func(string, string) (ai.Provider, error) { return fp, nil }, "Test Platform")
+	engine := ai.NewEngine(db, fakeAIChatChain{p: fp}, fakeAIChatTools{}, "Test Platform")
 
 	logger := discardTestLogger()
 	b := &brand.Brand{Name: "Test Platform", BinaryName: "testplatform"}
-	router := api.NewRouter(logger, b, db, api.WithAIEngine(engine), api.WithAIAssistantSecrets(manager))
+	router := api.NewRouter(logger, b, db, api.WithAIEngine(engine))
 	ts := newE2ETestServer(t, router)
 
 	if err := api.BootstrapAdmin(ctx, db, e2eAIChatAdminUsername, e2eAIChatAdminPassword); err != nil {

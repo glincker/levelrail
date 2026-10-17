@@ -34,6 +34,7 @@ import { PipelineRunsTable } from './PipelineRunsTable'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
 import { PipelineSyncBar } from './PipelineSyncBar'
 import { PipelineTriggerLog } from './PipelineTriggerLog'
+import { PipelineWebhookDialog } from './PipelineWebhookDialog'
 import { RunPipelineDialog } from './RunPipelineDialog'
 
 function EnabledSwitch({
@@ -182,6 +183,7 @@ function PipelineRow({
       </div>
       <EnabledSwitch appName={appName} pipeline={pipeline} />
       <RunPipelineDialog appName={appName} pipeline={pipeline} />
+      <PipelineWebhookDialog appName={appName} pipeline={pipeline} />
       <Link
         to="/apps/$name/pipelines/$pipeline"
         params={{ name: appName, pipeline: pipeline.name }}

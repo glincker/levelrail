@@ -61,6 +61,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesReenrollToken(prog, rest, stdout, stderr, lookupEnv)
 	case "revoke-cert":
 		return runNodesRevokeCert(prog, rest, stdout, stderr, lookupEnv)
+	case "security":
+		return runNodesSecurity(prog, rest, stdout, stderr, lookupEnv)
+	case "cert":
+		return runNodesCert(prog, rest, stdout, stderr, lookupEnv)
 	case "providers":
 		return runNodesProviders(prog, rest, stdout, stderr, lookupEnv)
 	case "provision":
@@ -124,6 +128,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes rejoin-mesh <id> [flags]                               force an immediate mesh resync for a peer that looks stuck
   %[1]s nodes reenroll-token <id> [flags]                            mint a one-time token to re-issue a node's agent certificate, shown once
   %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
+  %[1]s nodes security <id> [--rejected] [flags]                     show how a node's agent is verified: fingerprints, renewal, recent security events
+  %[1]s nodes cert renew <id> [flags]                                ask a connected node to renew its agent certificate now
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
   %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
