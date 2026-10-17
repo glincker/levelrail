@@ -23,11 +23,7 @@ func verifyBundle(artifactPath, bundlePath, identityRegexp, issuer, cacheDir str
 	if err != nil {
 		return fmt.Errorf("read signature bundle: %w", err)
 	}
-	opts := tuf.DefaultOptions()
-	if cacheDir != "" {
-		opts.CachePath = cacheDir
-	}
-	tr, err := root.FetchTrustedRootWithOptions(opts)
+	tr, err := loadTrustedRoot(cacheDir)
 	if err != nil {
 		return fmt.Errorf("%w: %v", errTrustRoot, err)
 	}
@@ -37,6 +33,14 @@ func verifyBundle(artifactPath, bundlePath, identityRegexp, issuer, cacheDir str
 	}
 	defer func() { _ = f.Close() }()
 	return verifyEntity(b, tr, f, identityRegexp, issuer, verify.WithSignedCertificateTimestamps(1))
+}
+
+func loadTrustedRoot(cacheDir string) (*root.TrustedRoot, error) {
+	opts := tuf.DefaultOptions()
+	if cacheDir != "" {
+		opts.CachePath = cacheDir
+	}
+	return root.FetchTrustedRootWithOptions(opts)
 }
 
 func verifyEntity(entity verify.SignedEntity, tm root.TrustedMaterial, artifact io.Reader, identityRegexp, issuer string, extra ...verify.VerifierOption) error {

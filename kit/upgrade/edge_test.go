@@ -71,9 +71,9 @@ func TestRun_EdgeSkipsSignatureChecks(t *testing.T) {
 		want   string
 	}{
 		{"edge has no checksums and is not blocked", func(in *Inputs) { in.ReleaseKind = KindEdgeImage; in.AssetNames = nil }, "release_signature", StatusSkipped},
-		{"edge does not need cosign", func(in *Inputs) {
+		{"edge does not need a trust root", func(in *Inputs) {
 			in.ReleaseKind = KindEdgeImage
-			in.LookPath = nil
+			in.TrustRoot = nil
 		}, "release_verifier", StatusSkipped},
 		{"plain release still fails without checksums", func(in *Inputs) { in.ReleaseKind = KindRelease; in.AssetNames = nil }, "release_signature", StatusFail},
 	}

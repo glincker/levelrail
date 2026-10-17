@@ -517,6 +517,18 @@ func WithApprovalChatNotifier(n ApprovalChatNotifier) Option {
 	return func(rt *Router) { rt.approvalChatNotifier = n }
 }
 
+// TrustRootProbe reports the Sigstore trust root state without blocking and
+// can start a background refresh.
+type TrustRootProbe interface {
+	State() string
+	Warm()
+}
+
+// WithTrustRoot sets the probe the update preflight uses for release signature verification.
+func WithTrustRoot(p TrustRootProbe) Option {
+	return func(rt *Router) { rt.trustRoot = p }
+}
+
 // WithDataDir enables disk-usage reporting on GET /api/v1/system/status.
 // path should be the same APP_DATA_DIR the control plane itself was
 // started with. Without one configured (the default), the status

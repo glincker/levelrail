@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"os"
-	"os/exec"
 	"syscall"
 	"time"
 
@@ -34,7 +33,6 @@ type updatePreflightResource struct {
 	Waiting         bool   `json:"waiting"`
 	UpgradeCommand  string `json:"upgrade_command"`
 	RollbackCommand string `json:"rollback_command"`
-	CosignCommand   string `json:"cosign_command"`
 	// ReleaseKind is "release" or "edge_image". Edge carries guidance for
 	// this install instead of a release upgrade command, and is never
 	// applied by Upgrade now, a schedule or the automatic policy.
@@ -60,9 +58,8 @@ func (rt *Router) handleUpdatePreflight(w http.ResponseWriter, r *http.Request) 
 func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Release, known bool) updatePreflightResource {
 	out := updatePreflightResource{
 		CurrentVersion:  version.Version,
-		UpgradeCommand:  upgradeCommand("", false),
+		UpgradeCommand:  upgradeCommand(""),
 		RollbackCommand: "levelrail restore-snapshot --list",
-		CosignCommand:   installScriptCommand("install-cosign"),
 		ReleaseKind:     upgrade.KindRelease,
 		Channel:         rt.currentUpdateChannel(ctx),
 	}
@@ -94,18 +91,18 @@ func (rt *Router) evaluatePreflight(ctx context.Context, release *upgrade.Releas
 		ReleaseKnown:       known && release != nil,
 		ReleasePublishedAt: published,
 		ReleaseKind:        kind,
-		LookPath:           exec.LookPath,
+		TrustRoot:          rt.trustRootState(),
 	})
-	verified := checkStatus(out.Checks, "release_verifier") == upgrade.StatusOK
 	if rt.dataDir != "" {
 		_, pinned, _ := selfupgrade.ReadPin(rt.dataDir)
 		out.Checks = append(out.Checks, signaturePinCheck(signaturePinInputs{
-			Pinned: pinned, VerifierOK: verified, ReleaseKnown: known && release != nil,
+			Pinned: pinned, ReleaseKnown: known && release != nil,
 			Edge: kind == upgrade.KindEdgeImage, Assets: assets,
-			FixCommand: out.CosignCommand + " && sudo " + rt.serverBinaryName() + " self-upgrade --latest",
+			TrustRoot: rt.trustRootState(),
 		}))
 	}
-	out.UpgradeCommand = upgradeCommand(upgradeTag, verified)
+	out.UpgradeCommand = upgradeCommand(upgradeTag)
+	rt.warmTrustRoot(out.UpdateAvailable && kind != upgrade.KindEdgeImage)
 	if out.Edge != nil {
 		out.UpgradeCommand = out.Edge.RecreateCommand
 		if out.Edge.Installable {
@@ -230,31 +227,32 @@ func (rt *Router) newestCPBackup() func() (time.Time, bool, error) {
 	}
 }
 
-// upgradeCommand is the command an operator runs. With verify set it also
-// tells the installer to refuse a release whose signature does not check out.
-func upgradeCommand(tag string, verify bool) string {
+// upgradeCommand is the host command that upgrades this install. The server
+// verifies signatures itself, so it never asks the installer to require cosign.
+func upgradeCommand(tag string) string {
 	env := ""
 	if tag != "" {
 		env += " LEVELRAIL_VERSION=" + tag
 	}
-	if verify {
-		env += " APP_INSTALL_VERIFY=require"
-	}
 	return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo" + env + " sh -s upgrade"
 }
 
-// installScriptCommand runs a bare install.sh subcommand as root.
-func installScriptCommand(sub string) string {
-	return "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo sh -s -- " + sub
+// WarmTrustRoot starts the background Sigstore trust data download at startup.
+func (rt *Router) WarmTrustRoot() { rt.warmTrustRoot(true) }
+
+// warmTrustRoot fetches the Sigstore trust data in the background so the
+// first upgrade, and later offline ones, can verify the signature.
+func (rt *Router) warmTrustRoot(updateAvailable bool) {
+	if updateAvailable && rt.trustRoot != nil {
+		rt.trustRoot.Warm()
+	}
 }
 
-func checkStatus(checks []upgrade.Check, code string) string {
-	for _, c := range checks {
-		if c.Code == code {
-			return c.Status
-		}
+func (rt *Router) trustRootState() func() string {
+	if rt.trustRoot == nil {
+		return nil
 	}
-	return ""
+	return rt.trustRoot.State
 }
 
 func truncateRunes(s string, n int) string {

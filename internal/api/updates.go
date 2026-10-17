@@ -157,6 +157,7 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 			resp.ReleaseURL = &url
 			resp.PublishedAt = &published
 			resp.UpdateAvailable = upgrade.UpdateAvailable(version.Version, &upgrade.Release{Tag: tag})
+			rt.warmTrustRoot(resp.UpdateAvailable)
 		}
 		writeJSON(w, http.StatusOK, resp)
 		return
@@ -179,6 +180,7 @@ func (rt *Router) handleGetUpdates(w http.ResponseWriter, r *http.Request) {
 		resp.ReleaseURL = &url
 		resp.PublishedAt = &published
 		resp.UpdateAvailable = upgrade.UpdateAvailable(version.Version, release)
+		rt.warmTrustRoot(resp.UpdateAvailable && !release.IsEdge())
 		resp.ReleaseKind = releaseKind(release)
 		if release.IsEdge() {
 			image := release.Image

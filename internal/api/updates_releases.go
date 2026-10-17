@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -367,7 +366,7 @@ func (rt *Router) rollbackChecks(ctx context.Context, assets []string, retained,
 		Now:           time.Now(),
 		AssetNames:    assets,
 		ReleaseKnown:  known,
-		LookPath:      exec.LookPath,
+		TrustRoot:     rt.trustRootState(),
 	})
 	if retained {
 		for i := range checks {

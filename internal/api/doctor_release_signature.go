@@ -10,13 +10,6 @@ import (
 
 const releaseSignatureDocsPath = "/upgrade-safely#signature-pin"
 
-func (rt *Router) serverBinaryName() string {
-	if rt.brand == nil || rt.brand.BinaryName == "" {
-		return "server"
-	}
-	return rt.brand.BinaryName
-}
-
 // doctorCheckReleaseSignature warns until a release signature has been
 // verified on this host: before that, upgrades accept checksum-only releases.
 func (rt *Router) doctorCheckReleaseSignature() doctorCheckResource {
@@ -31,8 +24,7 @@ func (rt *Router) doctorCheckReleaseSignature() doctorCheckResource {
 	if !ok {
 		return doctorCheckResource{
 			Code: code, Name: name, Status: doctorStatusWarn,
-			Message:  "this install is not signature verified: upgrades still accept releases checked by checksum only. Install cosign and upgrade once to pin signed releases",
-			Fix:      "sudo sh install.sh install-cosign && sudo " + rt.serverBinaryName() + " self-upgrade --latest",
+			Message:  "this install is not signature verified yet: the next upgrade verifies the release signature, then only signed releases are accepted",
 			DocsPath: releaseSignatureDocsPath,
 		}
 	}
@@ -44,9 +36,9 @@ func (rt *Router) doctorCheckReleaseSignature() doctorCheckResource {
 }
 
 type signaturePinInputs struct {
-	Pinned, VerifierOK, ReleaseKnown, Edge bool
-	Assets                                 []string
-	FixCommand                             string
+	Pinned, ReleaseKnown, Edge bool
+	Assets                     []string
+	TrustRoot                  func() string
 }
 
 // signaturePinCheck blocks an upgrade that a pinned host would refuse
@@ -57,19 +49,17 @@ func signaturePinCheck(in signaturePinInputs) upgrade.Check {
 	case in.Edge:
 		c.Status, c.Message = upgrade.StatusSkipped, upgrade.EdgeNoSignatureNote
 	case !in.Pinned:
-		c.Status = upgrade.StatusWarn
-		c.Message = "This install is not signature verified yet, so an upgrade still accepts a release checked by checksum only."
-		c.Hint = "Install cosign and upgrade once: every later upgrade then requires a valid signature."
-		c.Fix = &upgrade.Fix{Action: upgrade.FixCommand, Command: in.FixCommand}
-	case !in.VerifierOK:
-		c.Status = upgrade.StatusFail
-		c.Message = "This host only accepts signed releases, but cosign is not installed, so the upgrade would be refused."
-		c.Hint = "Install cosign on the host, then re-check."
-		c.Fix = &upgrade.Fix{Action: upgrade.FixCommand, Command: in.FixCommand}
+		c.Status = upgrade.StatusOK
+		c.Message = "The next upgrade verifies the release signature, then this host only accepts signed releases."
 	case in.ReleaseKnown && !slices.Contains(in.Assets, upgrade.SignatureAsset):
 		c.Status = upgrade.StatusFail
 		c.Message = "This host only accepts signed releases, and this release publishes no signature."
 		c.Hint = "Pick a signed release. Overriding needs --verify off on the host, which is logged."
+	case in.TrustRoot != nil && in.TrustRoot() == upgrade.TrustRootUnavailable:
+		c.Status = upgrade.StatusFail
+		c.Message = "This host only accepts signed releases, and the Sigstore trust data needed to check one has not been downloaded yet."
+		c.Hint = "This server retries on its own. Re-check once it can reach Sigstore."
+		c.Fix = &upgrade.Fix{Action: upgrade.FixRecheck}
 	default:
 		c.Status, c.Message = upgrade.StatusOK, "Pinned to signed releases: an unsigned release is refused."
 	}

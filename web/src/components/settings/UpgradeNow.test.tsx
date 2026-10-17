@@ -37,7 +37,6 @@ const green: UpdatePreflight = {
   blocked: false,
   upgrade_command: 'sh -s upgrade',
   rollback_command: 'restore-snapshot --list',
-  cosign_command: 'install-cosign',
 }
 
 const staleBackup: UpdatePreflight = {
@@ -182,12 +181,12 @@ afterEach(() => {
 })
 
 describe('UpgradeNow', () => {
-  it('warns that an unpinned install is not signature verified', async () => {
+  it('explains that the next upgrade verifies and pins, with no command to run', async () => {
     setup({ preflight: green, plan: { ...plan, signature_pinned: false } })
     expect(
-      await screen.findByText(/not signature verified yet/),
+      await screen.findByText(/The next upgrade checks the signature/),
     ).toBeInTheDocument()
-    expect(screen.getByText('install-cosign')).toBeInTheDocument()
+    expect(screen.queryByText(/cosign/i)).not.toBeInTheDocument()
   })
 
   it('shows the signed-releases pin once a signature was verified', async () => {

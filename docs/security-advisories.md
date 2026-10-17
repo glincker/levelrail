@@ -139,11 +139,11 @@ Deliveries rejected for a bad signature were stored in full with no per-app limi
 
 **Upgrades fell back to a same-origin checksum when a release signature was missing.** Medium.
 
-Release binaries are signed, but both the installer and the self-upgrade path accepted a release with no signature bundle, or a host with no `cosign`, and continued with only a checksum fetched from the same place as the binary. An attacker able to alter a release or its download path could strip the signature and still pass verification.
+Release binaries are signed, but both the installer and the self-upgrade path accepted a release with no signature bundle, or a host that could not check it, and continued with only a checksum fetched from the same place as the binary. An attacker able to alter a release or its download path could strip the signature and still pass verification.
 
-**Fix.** The first time a release signature verifies, the host is pinned. From then on a missing bundle, a missing `cosign` or a downgrade to an unsigned release is refused with a message that names the explicit, logged override. Before the pin, the dashboard and `levelrail-cli doctor` show the host as "not signature verified" with the one-line fix.
+**Fix.** The first time a release signature verifies, the host is pinned. From then on a missing bundle, missing trust data or a downgrade to an unsigned release is refused with a message that names the explicit, logged override. Before the pin, the dashboard and `levelrail-cli doctor` show the host as "not signature verified" with the one-line fix.
 
-**Action for operators.** Install `cosign` and upgrade once so the host becomes pinned. Hosts that have never verified a signature keep the previous behavior until then.
+**Action for operators.** Upgrade once so the host verifies a signature and becomes pinned. The server verifies signatures itself, so no extra tool is needed. Hosts that have never verified a signature keep the previous behavior until then.
 
 ### Hardening changes (no advisory)
 

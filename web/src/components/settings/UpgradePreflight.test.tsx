@@ -34,7 +34,6 @@ const base: UpdatePreflight = {
   blocked: false,
   upgrade_command: 'sh -s upgrade',
   rollback_command: 'restore-snapshot --list',
-  cosign_command: 'sh -s -- install-cosign',
 }
 
 function renderWith(data: UpdatePreflight) {
@@ -89,38 +88,45 @@ describe('UpgradePreflight', () => {
     expect(screen.queryByText('sh -s upgrade')).not.toBeInTheDocument()
   })
 
-  it('shows the cosign install command only when the verifier is missing', async () => {
-    const view = renderWith({
-      ...base,
-      checks: [
-        {
-          code: 'release_verifier',
-          name: 'Signature verification tool',
-          status: 'warn',
-          message: 'cosign is not installed',
-        },
-      ],
-    })
-    expect(
-      await screen.findByText('sh -s -- install-cosign'),
-    ).toBeInTheDocument()
-    view.unmount()
+  it('shows plain retry copy and no terminal command while the trust root downloads', async () => {
     renderWith({
       ...base,
       checks: [
         {
           code: 'release_verifier',
-          name: 'Signature verification tool',
-          status: 'ok',
-          message: 'cosign is installed',
+          name: 'Release signature verification',
+          status: 'warn',
+          message:
+            'Checking the release signature needs one download from Sigstore. Retrying automatically.',
+          hint: 'This clears on its own once the server can reach Sigstore. You can also re-check.',
+          fix: { action: 'recheck' },
         },
       ],
     })
     expect(
-      await screen.findByText('Signature verification tool'),
+      await screen.findByText(/one download from Sigstore/),
     ).toBeInTheDocument()
+    expect(screen.queryByText(/cosign/i)).not.toBeInTheDocument()
     expect(
-      screen.queryByText('sh -s -- install-cosign'),
-    ).not.toBeInTheDocument()
+      screen.getAllByRole('button', { name: 'Re-check' }).length,
+    ).toBeGreaterThan(0)
+  })
+
+  it('shows a ready verifier without any fix', async () => {
+    renderWith({
+      ...base,
+      checks: [
+        {
+          code: 'release_verifier',
+          name: 'Release signature verification',
+          status: 'ok',
+          message: 'Release signatures are verified by this server.',
+        },
+      ],
+    })
+    expect(
+      await screen.findByText('Release signature verification'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/cosign/i)).not.toBeInTheDocument()
   })
 })

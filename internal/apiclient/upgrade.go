@@ -21,8 +21,7 @@ type UpgradeCheck struct {
 
 // UpgradeFix is the action that can clear a preflight check.
 type UpgradeFix struct {
-	Action  string `json:"action"`
-	Command string `json:"command"`
+	Action string `json:"action"`
 }
 
 // UpdatePreflight is GET /api/v1/updates/preflight's response.
@@ -37,7 +36,6 @@ type UpdatePreflight struct {
 	Waiting         bool           `json:"waiting"`
 	UpgradeCommand  string         `json:"upgrade_command"`
 	RollbackCommand string         `json:"rollback_command"`
-	CosignCommand   string         `json:"cosign_command"`
 	ReleaseKind     string         `json:"release_kind,omitempty"`
 	Channel         string         `json:"channel,omitempty"`
 	Edge            *EdgeGuidance  `json:"edge,omitempty"`

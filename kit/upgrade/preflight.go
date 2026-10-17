@@ -27,12 +27,10 @@ const (
 	StatusSkipped = "skipped"
 )
 
-// Fix actions a check can carry. The dashboard renders each as a button, the
-// CLI prints the matching command.
+// Fix actions a check can carry. The dashboard renders each as a button.
 const (
 	FixBackupNow = "backup_now"
 	FixRecheck   = "recheck"
-	FixCommand   = "command"
 )
 
 // Check kinds that refine a code for callers that act on them.
@@ -45,8 +43,7 @@ const (
 
 // Fix is the one action that can clear a check.
 type Fix struct {
-	Action  string `json:"action"`
-	Command string `json:"command,omitempty"`
+	Action string `json:"action"`
 }
 
 // Check is one preflight result.
@@ -125,8 +122,8 @@ type Inputs struct {
 	// ReleaseKind is Release.Kind of the target; an edge image has no
 	// binaries, so the checksum and signature checks do not apply to it.
 	ReleaseKind string
-	// LookPath finds the signature verifier (cosign) on the host; nil reports unknown.
-	LookPath func(string) (string, error)
+	// TrustRoot reports the Sigstore trust root state without blocking; nil reports unknown.
+	TrustRoot func() string
 }
 
 // Run evaluates every preflight check. It never changes anything.
@@ -199,31 +196,39 @@ func releaseAssetsCheck(in Inputs) Check {
 	return c
 }
 
-// VerifierTool is the program the installer uses to check the release signature.
-const VerifierTool = "cosign"
-
 // EdgeNoSignatureNote explains why release checks are skipped for edge.
 const EdgeNoSignatureNote = "Edge builds are container images, not signed binaries, so there are no checksums to verify."
 
+// Trust root states a TrustRoot input reports.
+const (
+	TrustRootReady       = "ready"
+	TrustRootCached      = "cached"
+	TrustRootChecking    = "checking"
+	TrustRootUnavailable = "unavailable"
+)
+
+const trustRootRetryHint = "Checking the release signature needs one download from Sigstore. Retrying automatically."
+
 func verifierCheck(in Inputs) Check {
-	c := Check{Code: "release_verifier", Name: "Signature verification tool", Protects: "Lets the upgrade verify the release signature in addition to its checksum."}
+	c := Check{Code: "release_verifier", Name: "Release signature verification", Protects: "Lets the upgrade verify the release signature in addition to its checksum."}
 	if in.ReleaseKind == KindEdgeImage {
 		c.Status, c.Message = StatusSkipped, EdgeNoSignatureNote
 		return c
 	}
-	if in.LookPath == nil {
-		c.Status, c.Message = StatusUnknown, "could not look for "+VerifierTool
+	if in.TrustRoot == nil {
+		c.Status, c.Message = StatusUnknown, "release signature verification is not configured"
 		return c
 	}
-	if _, err := in.LookPath(VerifierTool); err != nil {
-		c.Status = StatusWarn
-		c.Message = VerifierTool + " is not installed on this host, so an upgrade can only check the SHA-256 checksum, not the release signature. Install " + VerifierTool + " to verify both."
-		c.Protects = "Lets the upgrade verify the release signature in addition to its checksum."
-		c.Hint = "Optional: install " + VerifierTool + " on the host, then re-check."
-		c.Fix = &Fix{Action: FixCommand}
-		return c
+	switch in.TrustRoot() {
+	case TrustRootReady:
+		c.Status, c.Message = StatusOK, "Release signatures are verified by this server. The Sigstore trust data is ready."
+	case TrustRootCached:
+		c.Status, c.Message = StatusOK, "Release signatures are verified by this server, using Sigstore trust data saved earlier. No download is needed."
+	default:
+		c.Status, c.Message = StatusWarn, trustRootRetryHint
+		c.Hint = "This clears on its own once the server can reach Sigstore. You can also re-check."
+		c.Fix = &Fix{Action: FixRecheck}
 	}
-	c.Status, c.Message = StatusOK, VerifierTool+" is installed: the upgrade command below refuses a release whose signature does not verify"
 	return c
 }
 
