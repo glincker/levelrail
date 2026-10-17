@@ -201,6 +201,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runInit(prog, args[1:], stdout, stderr, lookupEnv)
 	case "fixes":
 		return runFixes(prog, args[1:], stdout, stderr, lookupEnv)
+	case "bench":
+		return runBench(prog, args[1:], stdout, stderr, lookupEnv)
 	case "doctor":
 		return runDoctor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "setup":
@@ -379,6 +381,7 @@ Usage:
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
   %[1]s budget [set|delete] [flags]                            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
+  %[1]s bench run --url URL [flags]                           load and failover benchmark: open-loop rate, latency percentiles, ingress overhead
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
