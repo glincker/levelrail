@@ -6,17 +6,7 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsRestoreAsNew implements "app-volume-backups
-// restore-as-new <app> <volume> --backup ID [--new-volume-name NAME]":
-// POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new
-// (internal/api/app_volume_clone_restore.go's own handleVolumeCloneRestore),
-// write:sensitive-gated server-side, not root: the app service volume
-// counterpart of runBackupsRestoreAsNew. Unlike "app-volume-backups
-// restore" this never touches <app>/<volume>'s own live contents, it only
-// creates a brand-new, standalone Docker volume and restores the named
-// backup into it. No --confirm gate, the same reasoning
-// runBackupsRestoreAsNew's own doc comment gives: there is nothing here
-// for a misclick to destroy.
+// Creates a new standalone volume and never touches the live one, so no --confirm gate is needed.
 func runAppVolumeBackupsRestoreAsNew(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups restore-as-new", "print the started clone-restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, newVolumeName string

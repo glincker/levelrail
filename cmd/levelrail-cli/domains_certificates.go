@@ -7,13 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runDomainsCertificates implements "domains certificates": GET
-// /api/v1/certificates (internal/api/certificates.go's
-// handleListCertificates), every certificate in this control plane's
-// certmagic storage. Flat, not a get/set/clear dispatch group like
-// domains' other sub-resources: this is a read-only view, there is
-// nothing to configure here (certificates are issued and renewed by the
-// embedded Caddy ingress automatically).
+// Read-only: certificates are issued and renewed automatically by the embedded Caddy ingress.
 func runDomainsCertificates(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runListCommand(prog, args, stdout, stderr, lookupEnv, listCommandParams[[]certificateResource]{
 		cmdLabel:  "domains certificates",

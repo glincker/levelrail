@@ -11,10 +11,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// respondToNextCall reads the next ControlMessage the transport sent,
-// builds an AgentResponse from build (which receives the request so a
-// test can inspect what was actually sent), and feeds it back through
-// the fake stream's recv side, tagged with the right RequestId.
 func respondToNextCall(t *testing.T, stream *fakeSessionStream, build func(req *agentpb.AgentRequest) *agentpb.AgentResponse) *agentpb.AgentRequest {
 	t.Helper()
 	select {

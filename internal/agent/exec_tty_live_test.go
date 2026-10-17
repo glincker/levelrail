@@ -1,10 +1,6 @@
 package agent
 
-// TestLive_ExecTTY is the remote half of internal/docker's own PTY live
-// tests: the same interactive shell, resize, and teardown behavior, but
-// reached through a real enrollment, a real mTLS gRPC session, and the
-// real exec relay, so a terminal on a remote node is proven identical to
-// a local one rather than assumed to be.
+// TestLive_ExecTTY runs the PTY shell checks through a real enrollment, mTLS session, and exec relay.
 
 import (
 	"context"
@@ -24,11 +20,7 @@ import (
 // readUntilTimeout bounds every readUntilRemote in this file.
 const readUntilTimeout = 20 * time.Second
 
-// liveRemoteTransport stands up the whole agent stack against a real
-// Docker daemon and returns a Transport reaching it, plus the ID of a
-// running container to exec into. containerNamePrefix gets a unique
-// suffix per call so a concurrently running test process (same daemon,
-// same fixed name otherwise) can never collide with this container.
+// Unique container name suffix so concurrent test processes on one daemon never collide.
 func liveRemoteTransport(t *testing.T, containerNamePrefix string) (Transport, string) {
 	t.Helper()
 
@@ -174,11 +166,8 @@ func TestLive_ExecTTY_RemoteInteractiveShell(t *testing.T) {
 	}
 }
 
-// TestLive_ExecTTY_RemoteCloseStopsProcess proves closing a remote
-// terminal ends the shell on the node rather than leaking it there,
-// which is the failure mode a browser tab closing would otherwise cause
-// once per session.
-// shellLine matches the exec'd shell only, not nginx's docker-entrypoint.sh.
+// TestLive_ExecTTY_RemoteCloseStopsProcess checks a closed remote terminal ends the node's shell.
+// shellLine matches only the exec'd shell, not nginx's docker-entrypoint.sh.
 var shellLine = regexp.MustCompile(`(?m)^sh$`)
 
 func TestLive_ExecTTY_RemoteCloseStopsProcess(t *testing.T) {

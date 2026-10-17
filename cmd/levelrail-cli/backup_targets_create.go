@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runBackupTargetsCreate implements "backup-targets create": POST
-// /api/v1/backup-targets. --access-key-id/--secret-access-key are always
-// required here, unlike "backup-targets update" where rotating
-// credentials is optional.
+// Unlike update, the access key and secret are required here.
 func runBackupTargetsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets create", "print the created backup target as JSON to stdout and nothing else", stderr)
 	var name, provider, endpoint, region, bucket, accessKeyID, secretAccessKey string

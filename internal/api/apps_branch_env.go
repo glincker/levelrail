@@ -71,20 +71,8 @@ type setAppBranchEnvRequest struct {
 	Secret        bool   `json:"secret"`
 }
 
-// handleSetAppBranchEnv handles POST /api/v1/apps/{name}/branch-env:
-// declares (or replaces) one env var's branch-scoped value on an app
-// that already exists. Resolved only when a preview build's own branch
-// matches BranchPattern (exact name or a shell glob, see
-// branchMatchesPattern), winning over both this app's own
-// Env/SecretEnv/VaultEnv and any unscoped preview-env override
-// (deployPreviewSingle's applyBranchEnvOverrides). Never touches name's
-// own running deploy.
-//
-// When Secret is true, Value is envelope-encrypted under
-// store.BranchEnvOverrideSecretsKey(name, branchPattern) via
-// Router.secrets before the row is written, and the stored row itself
-// never carries the plaintext, the same split every other secret-marked
-// shared env var already uses (handleSetSharedEnvSecret).
+// Branch-scoped env wins over the app's own env and unscoped preview overrides, and applies only when a preview branch matches BranchPattern.
+// Secret values are envelope-encrypted before the row is written, so the row never holds plaintext.
 func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -150,13 +138,7 @@ func (rt *Router) handleSetAppBranchEnv(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, resource)
 }
 
-// handleDeleteAppBranchEnv handles DELETE
-// /api/v1/apps/{name}/branch-env/{id}: removes one branch-scoped
-// override by its opaque id (not by branch name, which may itself
-// contain "/" and can't safely be a path segment). Only the row is
-// removed: any ciphertext a secret-marked override held is left
-// orphaned, the same tolerance handleDeleteSharedEnvSecret already
-// accepts.
+// Deletes by opaque id, since branch names may contain '/'. Only the row is removed; a secret override's ciphertext is left orphaned.
 func (rt *Router) handleDeleteAppBranchEnv(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	id := r.PathValue("id")

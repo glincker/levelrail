@@ -11,10 +11,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// runAppsPreviews dispatches "apps previews <verb> [flags]" to one of
-// list/teardown/enable/disable, the CLI counterpart of
-// internal/api/preview_environments_handlers.go's own routes: preview
-// environments per pull request, opt-in per app.
 func runAppsPreviews(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsPreviewsUsage(prog))
@@ -165,12 +161,7 @@ func previewDatabaseIsolationsSummary(rows []previewDatabaseIsolationResource) s
 	return strings.Join(parts, ", ")
 }
 
-// previewEphemeralDatabasesSummary renders one preview row's own
-// EphemeralDatabases as a compact "name(status)" list, "-" when there
-// are none: a table row has no room for the full detail GET
-// .../previews itself already returns, this is just enough to see at a
-// glance whether a preview has a disposable database and whether it or
-// its teardown needs attention.
+// Compact per-row summary, since a table row has no room for the full preview detail.
 func previewEphemeralDatabasesSummary(dbs []previewEphemeralDatabaseResource) string {
 	if len(dbs) == 0 {
 		return "-"

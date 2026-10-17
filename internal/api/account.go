@@ -15,12 +15,7 @@ type changePasswordRequest struct {
 	NewPassword     string `json:"new_password"`
 }
 
-// handleChangePassword handles PUT /api/v1/auth/password: session-only,
-// the caller's own password. CurrentPassword is required and verified
-// only when the account already has one; an OAuth-only account
-// (PasswordHash nil) skips that check and just sets its first password,
-// the live session already being proof enough. On success every other
-// live session for this user is revoked.
+// An OAuth-only account has no current password to verify; the live session is the proof.
 func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {
@@ -81,10 +76,7 @@ type sessionInfoResponse struct {
 	ExpiresAt   string `json:"expires_at"`
 }
 
-// handleGetSession handles GET /api/v1/auth/session: "signed in as X,
-// until Y." Email stays under the "username" wire key for frontend
-// compatibility. HasPassword lets the account page decide whether
-// "change password" needs a current-password field.
+// Email stays under the 'username' wire key for frontend compatibility.
 func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie(sessionCookieName)
 	if err != nil {

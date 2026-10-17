@@ -65,10 +65,7 @@ func TestResolveAPIURL_Precedence(t *testing.T) {
 	}
 }
 
-// TestResolveToken_FallsBackToCLICredentials is the "operator who
-// already ran levelrail-cli auth login doesn't need to set anything up
-// twice" contract: this server's own credentials file is empty/missing,
-// but the CLI's has a token.
+// Operators who already ran the CLI login need no second setup: its credentials are the fallback.
 func TestResolveToken_FallsBackToCLICredentials(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

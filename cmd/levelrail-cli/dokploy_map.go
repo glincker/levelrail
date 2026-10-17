@@ -9,12 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// mapDokployApplication translates one Dokploy application (plus its
-// domains) into a Levelrail service. Pure: no I/O, no network, fully
-// covered by table-driven tests (dokploy_map_test.go). Reuses mappedApp,
-// mappedService, migrationIssue, issueSeverity, and sanitizeServiceName
-// from coolify_map.go: both migration sources produce the same report
-// and app.yaml shape.
+// Pure mapping with no I/O; reuses coolify_map.go's mapped types so both sources emit the same report.
 func mapDokployApplication(app dokployApplication, domains []dokployDomain, includeSecretValues bool) mappedApp {
 	out := mappedApp{SourceName: app.Name}
 
@@ -40,11 +35,7 @@ func mapDokployApplication(app dokployApplication, domains []dokployDomain, incl
 	return out
 }
 
-// mapDokployBuildConfig has no direct Levelrail equivalent for Dokploy's
-// "docker" (prebuilt image) and "drop" (file upload) source types today:
-// mappedService carries no image field, only build.type/build.path (see
-// coolify_map.go's mappedService), so those sources are reported as
-// needing manual review rather than partially mapped.
+// Dokploy's docker (prebuilt image) and drop (file upload) sources have no image field to map, so they need manual review.
 func mapDokployBuildConfig(app dokployApplication) (buildType, buildPath string, issue *migrationIssue, blocking bool) {
 	switch app.SourceType {
 	case "docker":
@@ -77,12 +68,7 @@ func cleanDokployPath(loc string) string {
 	return loc
 }
 
-// mapDokployRepo builds a repo URL only for providers with an
-// unambiguous public host (github.com, bitbucket.org, or a custom git
-// URL that is already a full URL). GitLab and Gitea are commonly
-// self-hosted and Dokploy's API exposes only owner/repository/branch for
-// them, not the instance host, so those are left for manual review
-// rather than guessing a host that may be wrong.
+// Repo URLs are built only for unambiguous hosts; self-hosted GitLab and Gitea hosts are not in the API response.
 func mapDokployRepo(app dokployApplication, issues []migrationIssue) (repoURL, ref string, out []migrationIssue) {
 	out = issues
 	switch app.SourceType {
@@ -179,11 +165,7 @@ func parseDokployEnv(raw string) map[string]string {
 	return out
 }
 
-// mapDokployEnv always returns every parsed key. Unlike Coolify, Dokploy
-// has no documented redaction ability gate: application.one's env field
-// already carries real values to any caller with access to the app, so
-// includeSecretValues here only controls whether this tool writes/applies
-// those values, not whether Dokploy returned them.
+// Dokploy returns env values to any caller with app access, so includeSecretValues only gates writing them.
 func mapDokployEnv(raw string, includeSecretValues bool, issues []migrationIssue) ([]string, map[string]string, []migrationIssue) {
 	parsed := parseDokployEnv(raw)
 	if len(parsed) == 0 {

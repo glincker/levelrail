@@ -24,14 +24,7 @@ var errExecCancelled = errors.New("agent: exec cancelled by the control plane")
 // this agent's runtime has no interactive exec to offer.
 var ErrTTYUnsupported = errors.New("agent: this node's container runtime does not support interactive exec")
 
-// ExecRelay owns the agent side of every in-flight remote exec on one
-// Session: it runs the command against the local docker.Runtime, streams
-// its output back frame by frame under the control plane's flow-control
-// window, feeds arriving stdin frames into the command as they land, and
-// stops the local exec when the control plane cancels or the session
-// ends. Unlike every other operation, an exec spans many frames in both
-// directions, so it needs per-session state Execute's stateless dispatch
-// cannot hold.
+// ExecRelay owns the agent side of every in-flight remote exec on one Session.
 type ExecRelay struct {
 	rt   docker.Runtime
 	send func(*agentpb.AgentMessage)
@@ -53,10 +46,7 @@ type agentExec struct {
 	in     chan *agentpb.ExecInput
 	credit chan uint32
 	stdin  *io.PipeWriter // nil unless the request attached stdin
-	// resizes carries the newest requested PTY size to this exec's own
-	// resize goroutine. Capacity one, and a full channel has its stale
-	// entry dropped rather than blocking: only the latest size matters,
-	// and Resize runs on the session's receive loop.
+	// Capacity one; a full channel drops the stale size rather than blocking the receive loop.
 	resizes chan docker.TTYSize
 
 	mu        sync.Mutex
@@ -117,18 +107,11 @@ func (e *agentExec) stop() {
 	}
 }
 
-// Start begins the exec identified by execID (the request's own
-// RequestId, which also tags every frame of this exec). It returns
-// immediately: attaching to the container is a Docker round trip, and
-// doing it inline would stall the session's whole receive loop. The
-// acknowledgment, or the error that stopped the exec from attaching, is
-// sent once that round trip finishes.
+// Start begins the exec identified by execID and returns immediately.
+// Attaching is a Docker round trip that must not stall the session receive loop.
 func (r *ExecRelay) Start(ctx context.Context, execID string, req *agentpb.ExecRequest) {
 	execCtx, cancel := context.WithCancel(ctx)
-	// One frame past the window: a control plane honoring its credit can
-	// have execWindowFrames stdin frames outstanding plus the single
-	// terminal one, and this must accept all of them without ever
-	// blocking the session's receive loop.
+	// One past the window so a credit-honoring control plane never blocks the receive loop.
 	ex := &agentExec{
 		cancel:  cancel,
 		in:      make(chan *agentpb.ExecInput, execWindowFrames+1),
@@ -278,12 +261,7 @@ func (r *ExecRelay) Resize(rz *agentpb.ExecResize) {
 	}
 }
 
-// relayOutput streams rc back as ExecOutput frames, sending at most
-// execWindowFrames data frames before waiting for the control plane to
-// credit consumed ones back. Pausing here is what pushes backpressure all
-// the way down to the command: the local exec's own pipe fills once this
-// stops reading, rather than this side buffering a dump the caller is not
-// keeping up with.
+// Stops reading at the window so backpressure reaches the command, not a local buffer.
 func (r *ExecRelay) relayOutput(ctx context.Context, execID string, ex *agentExec, rc io.Reader) {
 	buf := make([]byte, execChunkBytes)
 	credit := uint32(execWindowFrames)
@@ -317,10 +295,7 @@ func (r *ExecRelay) relayOutput(ctx context.Context, execID string, ex *agentExe
 	}
 }
 
-// pumpStdin feeds arriving stdin frames into the local exec's input pipe
-// and credits them back as the command consumes them. It needs its own
-// goroutine because that pipe write blocks until the command reads, which
-// must never happen on the session's receive loop.
+// Own goroutine: the pipe write blocks until the command reads, which must not stall the receive loop.
 func (r *ExecRelay) pumpStdin(ctx context.Context, execID string, ex *agentExec) {
 	consumed := uint32(0)
 
@@ -436,10 +411,7 @@ func (r *ExecRelay) sendOutput(out *agentpb.ExecOutput) {
 	r.send(&agentpb.AgentMessage{Payload: &agentpb.AgentMessage_ExecOutput{ExecOutput: out}})
 }
 
-// terminalOutput turns the error that ended a local exec stream into its
-// one terminal frame. A non-zero exit is carried as structured fields,
-// not just a message, so the control plane can rebuild the typed
-// docker.ExecExitError its own callers branch on.
+// Exit codes travel as structured fields so the control plane can rebuild docker.ExecExitError.
 func terminalOutput(execID string, err error) *agentpb.ExecOutput {
 	if errors.Is(err, io.EOF) {
 		return &agentpb.ExecOutput{ExecId: execID, Eof: true}

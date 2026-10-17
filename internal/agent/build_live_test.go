@@ -14,13 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestLive_RemoteBuildDispatch is the real end-to-end proof for a
-// dispatched build, the build counterpart to TestLive_EnrollAndSession:
-// a real join token, a real mTLS session, a real BuildKit solve run
-// through the agent's own connection, and a real image landing in the
-// dispatching side's image store after travelling back over the wire.
-// Nothing here is faked except the fact that both nodes happen to be this
-// one machine; every frame still crosses a real gRPC connection.
+// Real join token, mTLS session, and BuildKit solve; the only fake is that both nodes are this machine.
 func TestLive_RemoteBuildDispatch(t *testing.T) {
 	rt, err := docker.NewClient()
 	if err != nil {
@@ -142,10 +136,7 @@ func TestLive_RemoteBuildDispatch(t *testing.T) {
 	}
 }
 
-// TestLive_RemoteBuildDispatch_NodeOfflineMidBuild covers the failure an
-// operator hits when a build node drops off: the build has to fail with
-// the session error, over a real connection, not hang until the caller's
-// own timeout.
+// The build must fail with the session error, not hang until the caller's timeout.
 func TestLive_RemoteBuildDispatch_NodeOfflineMidBuild(t *testing.T) {
 	rt, err := docker.NewClient()
 	if err != nil {

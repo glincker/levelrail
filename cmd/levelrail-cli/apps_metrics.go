@@ -7,16 +7,7 @@ import (
 	"time"
 )
 
-// runAppsMetrics implements "apps metrics <name> --metric NAME": GET
-// /api/v1/apps/{name}/metrics (internal/api/metrics.go's own
-// handleQueryMetrics), the same query the dashboard's per-app metrics
-// charts read (client.QueryAppMetrics). The server is the authority on
-// which metric names are valid (cpu_percent, memory_usage_bytes,
-// memory_limit_bytes, network_rx_bytes, network_tx_bytes,
-// disk_read_bytes, disk_write_bytes are the ones collector.go writes
-// today); this command does not maintain its own copy of that list. See
-// runMetricsCommand (metrics_cmd.go) for the flag parsing and rendering
-// shared with "databases metrics"/"nodes metrics".
+// The server decides which metric names are valid, so the CLI keeps no list of them.
 func runAppsMetrics(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if rest, wantRequests := splitRequestsFlag(args); wantRequests {
 		return runAppsRequests(prog, rest, stdout, stderr, lookupEnv)

@@ -18,67 +18,25 @@ type SLOAutoRollbackStore interface {
 	SaveDeployApproval(ctx context.Context, a store.DeployApproval) error
 }
 
-// SLOBurnHistoryRecorder is the narrow alerting.DB surface
-// store.AutoRollbackSLOBurnDryRun mode needs to log a "would have rolled
-// back" event, without threading NoiseControl's full history pipeline
-// through this call. *DB satisfies this structurally.
+// SLOBurnHistoryRecorder is the narrow DB surface needed to log a dry-run would-have-rolled-back event.
 type SLOBurnHistoryRecorder interface {
 	RecordHistory(ctx context.Context, e HistoryEntry) error
 }
 
-// EventSLOBurnWouldRollback is dry-run mode's history event name,
-// distinct from EventFired/EventResolved (a notification transition):
-// this records that MaybeAutoRollbackOnSLOBurn evaluated a firing rule
-// and would have rolled back in auto mode, without writing desired
-// state.
+// EventSLOBurnWouldRollback is the history event for a dry-run rollback that was evaluated but not applied.
 const EventSLOBurnWouldRollback = "slo_burn_would_rollback"
 
-// sloBurnRollbackActorType/sloBurnRollbackActor identify the requester of
-// a pause_for_human approval opened by this file, the same "system," no-
-// human-actor convention internal/api/app_events.go's appEventActorSystem
-// already establishes for an automated action.
+// sloBurnRollbackActorType and sloBurnRollbackActor mark the system as requester of a pause_for_human approval.
 const (
 	sloBurnRollbackActorType = "system"
 	sloBurnRollbackActor     = "alerting"
 )
 
-// defaultSLOBurnApprovalTTL mirrors internal/api's own
-// defaultDeployApprovalTTL (not imported: internal/api already depends on
-// internal/alerting, so the reverse import would cycle). The api
-// package's existing expiry sweep (RunDeployApprovalExpirySweep) acts on
-// whatever ExpiresAt a row carries regardless of which package wrote it,
-// so this only needs to be a sane value, not the same constant.
+// defaultSLOBurnApprovalTTL sets the expiry of approvals opened here. The api expiry sweep acts on whatever ExpiresAt a row carries.
 const defaultSLOBurnApprovalTTL = 24 * time.Hour
 
-// MaybeAutoRollbackOnSLOBurn checks whether r's app has opted into SLO
-// burn auto-rollback (store.DesiredService.AutoRollbackOnSLOBurn) and, if
-// so, acts according to its configured mode:
-//
-//   - store.AutoRollbackSLOBurnAuto: rolls back immediately via
-//     deploy.TriggerImageDeploy, the identical path MaybeAutoRollback
-//     (crashloop.go) already uses for a crashloop.
-//   - store.AutoRollbackSLOBurnDryRun: never deploys, only records a
-//     "would have rolled back" history event.
-//   - store.AutoRollbackSLOBurnPauseForHuman: never deploys directly,
-//     opens a pending store.DeployApproval for the rollback image
-//     instead, so a human approves it through the existing deploy-
-//     approvals flow (internal/api/deploy_approvals.go) exactly like any
-//     other gated deploy.
-//
-// Called both on a KindSLOBurn rule's pending-to-firing transition and on
-// every tick it stays firing (Engine.Tick, mirroring MaybeAutoRollback's
-// own becameFiring/stillFiring wiring there): tracker's alreadyHandled
-// check is what prevents repeating the same action for the same incident
-// in both cases. auto mode records the rollback *target* image (current
-// desired state converges to it, the same dedup MaybeAutoRollback already
-// relies on); dry_run and pause_for_human record the *current* (bad)
-// image instead, since neither one changes desired state, so "nothing
-// has changed since" is what "already handled" has to mean for them.
-//
-// Failures and "nothing to do" cases are logged, never returned: this
-// runs as a side effect of Engine.Tick evaluating one rule among many,
-// see MaybeAutoRollback's own doc comment for why that call must never
-// block or fail evaluation of the rest.
+// MaybeAutoRollbackOnSLOBurn applies the app's SLO burn auto-rollback mode (auto, dry_run or pause_for_human) when a KindSLOBurn rule fires.
+// Failures are logged, never returned, so one rule cannot block evaluation of the rest.
 func MaybeAutoRollbackOnSLOBurn(ctx context.Context, st SLOAutoRollbackStore, history SLOBurnHistoryRecorder, nudger deploy.ReconcileNudger, tracker *AutoRollbackTracker, r Rule, notice string, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()
@@ -107,11 +65,7 @@ func MaybeAutoRollbackOnSLOBurn(ctx context.Context, st SLOAutoRollbackStore, hi
 		logger.Error("alerting: slo burn auto-rollback: list deploy attempts failed", slog.String("name", name), slog.String("error", err.Error()))
 		return
 	}
-	// image is always a tagged reference (deploy attempts never record an
-	// untagged one), and internal/docker's own PruneDanglingImages only
-	// ever removes untagged images, so this rollback target can never be
-	// garbage-collected out from under it; see that function's own doc
-	// comment.
+	// The image is tagged, and PruneDanglingImages only removes untagged images, so this rollback target stays available.
 	image, ok := deploy.PreviousKnownGoodImage(attempts, svc.Image)
 	if !ok {
 		logger.Warn("alerting: slo burn auto-rollback: no older known-good image to fall back to, leaving SLO burn to alert only", slog.String("name", name), slog.String("image", svc.Image))
@@ -144,11 +98,7 @@ func MaybeAutoRollbackOnSLOBurn(ctx context.Context, st SLOAutoRollbackStore, hi
 	}
 }
 
-// recordSLOBurnDryRun logs a would-have-rolled-back event to history. A
-// nil history (SetSLOBurnAutoRollback never called) or a write failure is
-// logged, not propagated: same "notification/log failure must not stop
-// evaluation" reasoning MaybeAutoRollbackOnSLOBurn's own doc comment
-// gives.
+// recordSLOBurnDryRun logs a would-have-rolled-back event. Failures are logged, not propagated, so evaluation continues.
 func recordSLOBurnDryRun(ctx context.Context, history SLOBurnHistoryRecorder, r Rule, app, fromImage, toImage, notice string, logger *slog.Logger) {
 	if history == nil {
 		return

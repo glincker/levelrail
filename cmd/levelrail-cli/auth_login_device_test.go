@@ -105,10 +105,7 @@ func TestRun_AuthLoginDevice_FullFlow(t *testing.T) {
 				VerificationURI: "http://example.invalid/settings/cli-access", ExpiresIn: 600, Interval: 1,
 			})
 		case "/api/v1/auth/device/token":
-			// Granted on the very first poll (no pending bounce): this
-			// test only needs to exercise one real 1-second sleep, since
-			// runAuthLoginDevice uses the real time.Sleep, not the
-			// injectable one pollDeviceAuthUntilGranted's own tests use.
+			// Granted on the first poll, so this test pays one real 1s sleep: runAuthLoginDevice uses time.Sleep.
 			pollCalls++
 			w.WriteHeader(http.StatusOK)
 			_ = json.NewEncoder(w).Encode(deviceTokenResponse{ID: "tok_1", Name: "cli login", Token: "plaintext-value"})

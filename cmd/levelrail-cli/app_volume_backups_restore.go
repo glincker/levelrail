@@ -8,12 +8,7 @@ import (
 	"strings"
 )
 
-// resolveVolumeRestoreConfirmation mirrors resolveRestoreConfirmation's
-// exact shape (backups_restore.go), the app volume counterpart: the
-// value to type is "app/volume", the same composite identifier this
-// codebase's own log labels already use for a service volume
-// (internal/backup.Scheduler's own volumeScheduleKey), since a volume
-// alone has no single global name to type the way a database does.
+// The typed value is "app/volume", since a volume has no global name the way a database does.
 func resolveVolumeRestoreConfirmation(appName, volumeName, confirmFlag string, stdin io.Reader, stderr io.Writer) error {
 	target := appName + "/" + volumeName
 
@@ -37,16 +32,7 @@ func resolveVolumeRestoreConfirmation(appName, volumeName, confirmFlag string, s
 	return nil
 }
 
-// runAppVolumeBackupsRestore implements "app-volume-backups restore
-// <app> <volume> --backup ID --confirm APP/VOLUME":
-// POST /api/v1/apps/{name}/volumes/{volume}/restore
-// (internal/api/app_volume_restore.go's own handleTriggerVolumeRestore),
-// AbilityRoot-gated server-side, the same tier the database restore
-// route uses (see that handler's own doc comment): this overwrites a
-// volume's real data in place, with no undo beyond restoring again from
-// a different backup. resolveVolumeRestoreConfirmation above is checked,
-// and can refuse, before this ever builds a Client or reaches the
-// network.
+// This overwrites live volume data in place, so the confirmation check runs before any network call.
 func runAppVolumeBackupsRestore(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups restore", "print the started restore attempt as JSON to stdout and nothing else", stderr)
 	var backupID, confirm string

@@ -33,10 +33,7 @@ func parseRecoverAdminArgs(args []string) (username, password string, err error)
 	return *usernameFlag, *passwordFlag, nil
 }
 
-// generateRandomPassword returns a URL-safe, high-entropy password for the
-// case where the operator running recover-admin doesn't supply one. 24
-// random bytes, base64-encoded, comfortably exceeds any bcrypt-relevant
-// entropy floor and prints cleanly in a terminal.
+// generateRandomPassword returns a URL-safe password built from 24 random bytes.
 func generateRandomPassword() (string, error) {
 	buf := make([]byte, 24)
 	if _, err := rand.Read(buf); err != nil {
@@ -45,16 +42,8 @@ func generateRandomPassword() (string, error) {
 	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// recoverAdminUser bcrypt-hashes password and writes it directly against
-// the users table, bypassing the HTTP API. username is the login
-// identifier: this resets the password if a matching user already
-// exists (Abilities untouched, whatever that account already had),
-// or creates a new root-scoped, not-first-user account if not, so the
-// operator doesn't need to know in advance which case applies. Root
-// (not some narrower default) because this command's entire purpose is
-// disaster recovery, "I'm locked out of admin access": a recovered
-// account with no abilities at all could log in but do nothing,
-// defeating the point.
+// recoverAdminUser writes a bcrypt hash straight to the users table, bypassing the API. It resets an existing user or creates a root account.
+// Root because this is disaster recovery: a recovered account with no abilities could log in but do nothing.
 func recoverAdminUser(ctx context.Context, db *store.DB, username, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -131,16 +120,8 @@ func newRecoveredUserID() (string, error) {
 	return "user_" + base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
-// runRecoverAdmin is the recover-admin subcommand's entry point, taking
-// openStore as a parameter (rather than calling the package-level
-// openStore directly) so tests can point it at an isolated store without
-// touching APP_DATA_DIR or the filesystem.
-//
-// Known limitation, deliberately not worked around here: this cannot
-// invalidate the running server's in-memory session map, since that map
-// lives in a separate OS process. Restarting the container after recovery
-// is the practical way to revoke sessions established under the old
-// password.
+// runRecoverAdmin takes openStore as a parameter so tests can use an isolated store.
+// It cannot invalidate the running server's in-memory sessions, so restart the container to revoke them.
 func runRecoverAdmin(ctx context.Context, logger *slog.Logger, args []string, stdout io.Writer, openStore func(context.Context) (*store.DB, error)) error {
 	username, password, err := parseRecoverAdminArgs(args)
 	if err != nil {
@@ -181,10 +162,7 @@ func runRecoverAdmin(ctx context.Context, logger *slog.Logger, args []string, st
 		slog.Bool("password_generated", generated),
 	)
 
-	// stdout write failures here are not actionable (the recovery itself
-	// already succeeded and was logged above), so they're deliberately
-	// swallowed rather than turning a successful recovery into a
-	// nonzero exit code.
+	// stdout write failures are ignored on purpose: the recovery already succeeded and was logged.
 	_, _ = fmt.Fprintf(stdout, "admin account %q recovered.\n", username)
 	if generated {
 		_, _ = fmt.Fprintf(stdout, "generated password: %s\n", password)

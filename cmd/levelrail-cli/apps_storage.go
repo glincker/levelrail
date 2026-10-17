@@ -6,14 +6,7 @@ import (
 	"io"
 )
 
-// runAppsStorage dispatches "apps storage <verb> [flags]" to one of
-// set/clear: PUT/DELETE /api/v1/apps/{name}/storage
-// (internal/api/apps_storage.go), attaching or detaching an
-// already-connected backup target (see "backup-targets") as an app's
-// object-storage credential source. There is no "get": the currently
-// attached target already shows up on "apps get <name>" as
-// storage_target_id, the same way node_id/project_id do for their own
-// PUT-only sub-resources.
+// There is no get: the attached target already shows on apps get as storage_target_id.
 func runAppsStorage(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsStorageUsage(prog))

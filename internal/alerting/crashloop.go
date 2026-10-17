@@ -26,36 +26,14 @@ type ServiceLister interface {
 	ListDesiredServices(ctx context.Context) ([]store.DesiredService, error)
 }
 
-// RestartRecorder is the narrow telemetry surface RestartTracker needs
-// to persist each real restart it counts as a queryable metric sample,
-// alongside this tracker's own in-memory crashloop-window bookkeeping.
-// *telemetry.DB satisfies this structurally. Not imported directly
-// (internal/telemetry does not depend on internal/alerting, and this
-// keeps it that way): the same narrow, consumer-defined interface shape
-// EventSource and ServiceLister above already use.
+// RestartRecorder is the narrow store surface RestartTracker needs, defined here so internal/telemetry never imports alerting.
 type RestartRecorder interface {
 	RecordContainerRestart(ctx context.Context, serviceName string, at time.Time) error
 }
 
 const containerHashLen = 8
 
-// RestartTracker watches Docker's event stream and records each "start"
-// event as a restart for whichever service owns that container,
-// keyed the same "service:<name>" way every other telemetry identifier
-// in this codebase is.
-//
-// Counts "start" events, not "die" events: a container dying once is
-// an ordinary crash, what makes it a crashloop is the reconciler
-// repeatedly restarting the same container afterward (containers never
-// carry Docker's own restart policy, the reconciler
-// is the sole authority on bringing a dead container back, so every
-// restart is visible as this process re-issuing Start on the same
-// container ID). The very first start observed for a given container
-// name is never counted as a restart of anything: a fresh deploy
-// produces a brand-new container name (internal/reconcile/application's
-// deterministic per-image naming), so its first start is ordinary
-// startup, not a restart, without needing to special-case "was this a
-// deploy or a crash" any other way.
+// RestartTracker counts each container start after a container's first as a restart, since a crashloop is repeated restarts.
 type RestartTracker struct {
 	mu       sync.Mutex
 	restarts map[string][]time.Time // resourceID -> restart timestamps, oldest first
@@ -64,11 +42,7 @@ type RestartTracker struct {
 	logger   *slog.Logger
 }
 
-// NewRestartTracker builds an empty RestartTracker with no persistence:
-// Observe only updates this tracker's own in-memory crashloop-window
-// state, the behavior every test in this package already exercises.
-// Call WithRecorder to also persist each real restart as a queryable
-// metric sample.
+// NewRestartTracker returns a tracker that keeps only in-memory counts until WithRecorder is called.
 func NewRestartTracker() *RestartTracker {
 	return &RestartTracker{
 		restarts: make(map[string][]time.Time),
@@ -76,16 +50,7 @@ func NewRestartTracker() *RestartTracker {
 	}
 }
 
-// WithRecorder attaches recorder so every restart Observe counts from
-// here on is also persisted via RecordContainerRestart, not just kept
-// in this tracker's own pruned in-memory window. Returns t for chaining
-// at construction (cmd/levelrail/main.go's own call site style). logger
-// defaults to slog.Default() if nil, and is only ever used to log a
-// failed persistence write, never to block or fail Observe itself: a
-// telemetry write failing must not stop crashloop detection, the same
-// "one broken part must not stop the rest" principle
-// telemetry.Collector.CollectOnce's own doc comment already applies to
-// collection.
+// WithRecorder persists each counted restart, and a failed write is logged without stopping Observe.
 func (t *RestartTracker) WithRecorder(recorder RestartRecorder, logger *slog.Logger) *RestartTracker {
 	if logger == nil {
 		logger = slog.Default()
@@ -95,12 +60,7 @@ func (t *RestartTracker) WithRecorder(recorder RestartRecorder, logger *slog.Log
 	return t
 }
 
-// Observe records one "start" event for containerName, owned by
-// resourceID, at time at. Safe for concurrent use. When a recorder is
-// attached (WithRecorder), a genuine restart (not a container's first
-// observed start) is also persisted as a MetricContainerRestartCount
-// sample; a failed persistence write is logged and otherwise ignored,
-// this tracker's own in-memory count is still updated either way.
+// Observe records one start event for containerName, owned by resourceID, and is safe for concurrent use.
 func (t *RestartTracker) Observe(resourceID, containerName string, at time.Time) {
 	t.mu.Lock()
 	if !t.seen[containerName] {
@@ -161,12 +121,7 @@ func (t *RestartTracker) Prune(olderThan time.Time) {
 	}
 }
 
-// Run consumes source's event stream until ctx is done, resolving each
-// "start" event's container name against a service list refreshed
-// every resync tick (services are created/removed over time; a
-// container belonging to a brand-new service must resolve correctly
-// without a process restart, the same level-triggered "re-derive, don't
-// cache forever" principle every reconcile.Controller already follows).
+// Run consumes source's events until ctx is done, re-resolving services on every resync so new services work without a restart.
 func (t *RestartTracker) Run(ctx context.Context, source EventSource, services ServiceLister, resync time.Duration, logger *slog.Logger) error {
 	if logger == nil {
 		logger = slog.Default()
@@ -215,21 +170,10 @@ func (t *RestartTracker) Run(ctx context.Context, source EventSource, services S
 	}
 }
 
-// maxRestartRetention bounds how long RestartTracker keeps a restart
-// timestamp regardless of any single rule's own RestartWindow, so a
-// rule reconfigured to a much longer window later doesn't silently miss
-// restarts this process already discarded. Generous on purpose: this is
-// an in-memory, not persisted, retention (a process restart loses
-// restart history entirely, a real, accepted limitation), so keeping
-// a day of history costs little.
+// Kept generously because restart history is in-memory only and is lost on process restart anyway.
 const maxRestartRetention = 24 * time.Hour
 
-// resolveResourceID reports whether containerName is exactly one of
-// services' own containers (serviceName + "-" + an 8-hex-char image
-// hash), the same exact-match check
-// internal/reconcile/application.ownsContainer already established and
-// for the identical reason: a bare prefix match would let a service
-// named "web" match a container actually belonging to "web-worker".
+// Matches exactly, since a prefix match would make service web claim web-worker's containers.
 func resolveResourceID(services []store.DesiredService, containerName string) (resourceID string, ok bool) {
 	for _, svc := range services {
 		suffix, hasPrefix := strings.CutPrefix(containerName, svc.Name+"-")
@@ -253,14 +197,7 @@ func isHexString(s string) bool {
 	return true
 }
 
-// EvaluateCrashloop runs one KindCrashloop rule against tracker and
-// returns its updated evaluation state, the crashloop equivalent of
-// EvaluateThreshold, sharing the same pending/firing debounce logic via
-// advanceState. Passes forDuration=0: a crashloop rule fires the
-// instant its restart count crosses the threshold, with no additional
-// debounce layered on top, because RestartWindow itself already is the
-// debounce (requiring N restarts within a real time window is already
-// "sustained," unlike a single noisy metric sample).
+// EvaluateCrashloop evaluates one crashloop rule with no extra debounce, since RestartWindow already requires sustained restarts.
 func EvaluateCrashloop(tracker *RestartTracker, r Rule, now time.Time) Rule {
 	count := tracker.CountSince(r.ResourceID, now.Add(-r.RestartWindow))
 
@@ -272,28 +209,7 @@ func EvaluateCrashloop(tracker *RestartTracker, r Rule, now time.Time) Rule {
 	return advanceState(next, r, count >= r.RestartCountThreshold, 0, now)
 }
 
-// AutoRollbackTracker records, per resourceID, the image MaybeAutoRollback
-// most recently rolled a service's desired state back to. A KindCrashloop
-// rule's own Firing bool is *not* enough of a debounce on its own: once a
-// rollback fixes one bad deploy, the rule can stay continuously Firing
-// (never re-transitioning through becameFiring) simply because the prior
-// episode's restarts are still inside RestartWindow, even after a second,
-// genuinely different bad image starts crash-looping. This tracker gives
-// MaybeAutoRollback a second, independent signal for that case: if the
-// service's current desired image no longer matches the image it was last
-// rolled back to, something changed the desired state since (a new
-// deploy), so it is safe, and necessary, to roll back again. If the
-// current image still matches, nothing has changed since the last
-// rollback, the ongoing Firing state is still the same incident, and
-// MaybeAutoRollback must not fire again.
-//
-// In-memory only, the same shape as RestartTracker above: a control-plane
-// restart already zeroes RestartTracker's own counts, which independently
-// forces every crashloop rule back through a fresh pending-to-firing
-// transition before it can fire at all, so losing this map's entries on
-// restart never produces a wrong rollback decision, at worst a rule
-// revisits becameFiring once more before this fast path resumes tracking
-// it.
+// AutoRollbackTracker records the image each service was last auto-rolled back to, so a new bad deploy can trigger another rollback while the rule still fires.
 type AutoRollbackTracker struct {
 	mu     sync.Mutex
 	target map[string]string // resourceID -> image last auto-rolled-back to
@@ -304,11 +220,7 @@ func NewAutoRollbackTracker() *AutoRollbackTracker {
 	return &AutoRollbackTracker{target: make(map[string]string)}
 }
 
-// alreadyHandled reports whether resourceID was already auto-rolled-back
-// to exactly currentImage, meaning nothing has changed since and
-// MaybeAutoRollback must not fire again. A nil tracker (never wired)
-// always reports false, the same "absence degrades, never errors" shape
-// MaybeAutoRollback's other optional dependencies already follow.
+// Reports whether resourceID was already rolled back to currentImage; a nil tracker always reports false.
 func (t *AutoRollbackTracker) alreadyHandled(resourceID, currentImage string) bool {
 	if t == nil {
 		return false
@@ -319,10 +231,7 @@ func (t *AutoRollbackTracker) alreadyHandled(resourceID, currentImage string) bo
 	return ok && last == currentImage
 }
 
-// armed reports whether resourceID has ever had an auto-rollback recorded.
-// Engine.Tick uses this as a cheap in-memory check before deciding whether
-// a still-firing rule is even worth a store round trip to re-examine: a
-// service that has never auto-rolled-back has nothing new to detect here.
+// Lets Engine.Tick skip a store round trip for services that never auto-rolled back.
 func (t *AutoRollbackTracker) armed(resourceID string) bool {
 	if t == nil {
 		return false
@@ -344,39 +253,14 @@ func (t *AutoRollbackTracker) record(resourceID, image string) {
 	t.target[resourceID] = image
 }
 
-// AutoRollbackStore is the narrow store surface MaybeAutoRollback needs:
-// read a service's current desired state (to check the opt-in flag and
-// current image) and its deploy history (to find a prior known-good
-// tag), plus deploy.ImageDeployStore's write surface to actually trigger
-// the rollback through the same path a manual one uses. *store.DB
-// satisfies this structurally.
+// AutoRollbackStore is the narrow store surface MaybeAutoRollback needs, which *store.DB satisfies.
 type AutoRollbackStore interface {
 	deploy.ImageDeployStore
 	GetDesiredService(ctx context.Context, name string) (*store.DesiredService, error)
 	ListDeployAttempts(ctx context.Context, serviceName string) ([]store.DeployAttempt, error)
 }
 
-// MaybeAutoRollback checks whether resourceID's app has opted into
-// automatic crashloop rollback (store.DesiredService.
-// AutoRollbackOnCrashloop) and, if so, triggers a deploy back to the
-// most recent different successful image via deploy.TriggerImageDeploy,
-// the identical path a manual "Rollback to this build" action already
-// uses (see that function's own doc comment). Called both on a
-// KindCrashloop rule's pending-to-firing transition (Engine.Tick's
-// becameFiring) and on every tick a rule stays continuously firing
-// (Engine.Tick's stillFiring, gated on tracker.armed so it only costs a
-// store round trip for a service that has already auto-rolled-back at
-// least once): tracker's alreadyHandled check below is what still
-// prevents firing twice for the same incident in both cases, a rule
-// staying Firing is no longer, by itself, proof that nothing new has
-// happened, since a second bad deploy inside the same RestartWindow never
-// produces a fresh transition.
-//
-// Failures and "nothing to do" cases are logged, never returned: a
-// crashloop rule's own notification already fired regardless of what
-// happens here, and an automatic safety net that panics or blocks
-// evaluation of the next rule would be worse than one that occasionally
-// leaves a crashloop to alert-only.
+// MaybeAutoRollback rolls resourceID back to its previous good image when opted in, and logs rather than returns failures.
 func MaybeAutoRollback(ctx context.Context, st AutoRollbackStore, nudger deploy.ReconcileNudger, tracker *AutoRollbackTracker, resourceID string, logger *slog.Logger) {
 	if logger == nil {
 		logger = slog.Default()

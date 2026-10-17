@@ -2,10 +2,8 @@ package api
 
 import "github.com/GLINCKER/levelrail/internal/store"
 
-// preserveUnsentAppFields carries over stored settings the PUT body cannot
-// express, because SaveDesiredService rewrites every column and would
-// otherwise reset them. secret_env and vault_env apply only when the body
-// carries them: absent keeps the stored set, an empty list or map clears it.
+// Carries stored fields the PUT body cannot express, since SaveDesiredService rewrites every column.
+// secret_env and vault_env apply only when sent: absent keeps them, an empty value clears them.
 func preserveUnsentAppFields(desired *store.DesiredService, existing store.DesiredService, req appResource, imageChanged bool) {
 	desired.DatabaseEnv = existing.DatabaseEnv
 	desired.Volumes = existing.Volumes

@@ -7,13 +7,7 @@ import (
 )
 
 func TestRun_Dispatch(t *testing.T) {
-	// detectLocalGit walks up from the working directory to the nearest
-	// .git (gitdetect.go), so a subtest depending on it finding nothing
-	// ("apps create no flags") is only hermetic if run somewhere with no
-	// ambient repo above it. go test's own working directory is this
-	// package's source directory, which is normally inside a real
-	// checkout; a fresh checkout's "origin" remote (every CI runner has
-	// one) is exactly the case that made this non-hermetic in practice.
+	// detectLocalGit walks up the tree and CI checkouts have an origin remote, so this subtest needs a repo-free run.
 	t.Chdir(t.TempDir())
 
 	tests := []struct {
@@ -38,11 +32,7 @@ func TestRun_Dispatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			// Isolated fake env and prog name: none of these dispatch
-			// tests should reach the network or a real credentials
-			// file, and every one of them returns before doing so
-			// (help, usage errors, and validation errors are all
-			// resolved before any Client is constructed).
+			// These dispatch tests return before any Client is built, so they never reach the network.
 			got := run("levelrail-cli-test", tt.args, &stdout, &stderr, envMap())
 			if got != tt.wantExit {
 				t.Errorf("exit = %d, want %d (stdout=%q stderr=%q)", got, tt.wantExit, stdout.String(), stderr.String())

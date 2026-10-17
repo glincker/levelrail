@@ -144,10 +144,6 @@ func TestRun_AppsAlertsCreate_ScheduledTaskFailureMissingTaskID(t *testing.T) {
 	}
 }
 
-// mustRunAppsAlertsCreate runs "apps alerts create web ..." against srv
-// and fails the test immediately on a non-exitOK result, factored out of
-// the backup_missing tests below since they otherwise repeat this exact
-// invoke-and-check shape.
 func mustRunAppsAlertsCreate(t *testing.T, apiURL string, args ...string) (stdout bytes.Buffer) {
 	t.Helper()
 	var stderr bytes.Buffer
@@ -184,11 +180,7 @@ func TestRun_AppsAlertsCreate_BackupMissingDatabase(t *testing.T) {
 	}
 }
 
-// TestRun_AppsAlertsCreate_BackupMissingVolume checks that a
-// --backup-resource-kind volume rule automatically sets
-// backup_service_name to <app>, with no separate flag for it: a volume's
-// owning service is always this same app in this codebase's
-// single-service-per-app model.
+// A volume rule's backup_service_name is always the app: volumes belong to its single service.
 func TestRun_AppsAlertsCreate_BackupMissingVolume(t *testing.T) {
 	var gotBody createAlertRuleRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

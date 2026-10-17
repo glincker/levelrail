@@ -5,11 +5,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
-// Client and every wire-shape type this file used to define now live in
-// internal/apiclient, the one HTTP client implementation shared with
-// cmd/levelrail-mcp (see that package's own doc comment). These are
-// plain type aliases, not a second implementation: every method call
-// below dispatches straight to *apiclient.Client.
+// Client and the wire types are aliases of internal/apiclient; every call dispatches there.
 type (
 	Client                           = apiclient.Client
 	appResource                      = apiclient.AppResource
@@ -370,20 +366,12 @@ type (
 	nodeCapacityForecastResource = apiclient.NodeCapacityForecastResource
 )
 
-// NewClient builds a Client, identifying every request as this CLI's own
-// (internal/api's clientKindFromUserAgent) so the control plane's audit
-// log can tell a CLI-driven action apart from a script or the MCP
-// server, rather than lumping every bearer-token caller into one bucket.
-// See apiclient.NewClient.
+// NewClient identifies requests as this CLI so the audit log can tell CLI actions apart.
 func NewClient(baseURL, token string) *Client {
 	return apiclient.NewClient(baseURL, token, apiclient.WithUserAgent("levelrail-cli/"+version.Version))
 }
 
-// pathEscape and extractErrorMessage alias apiclient's exported
-// versions: authclient.go's authSessionClient and coolify_client.go's
-// CoolifyClient are each their own distinct HTTP client (neither is a
-// bearer-token control-plane caller), but both reuse this same small,
-// generic URL/error-body helper rather than each defining its own copy.
+// Aliases apiclient's helpers; this and CoolifyClient share one URL and error-body helper.
 func pathEscape(s string) string {
 	return apiclient.PathEscape(s)
 }

@@ -1,13 +1,5 @@
-// Package ai implements the BYOK AI assistant chat feature: a
-// provider-agnostic turn engine (engine.go) that runs a conversation
-// against an LLM (Provider below) with tool use backed by the existing
-// MCP tool surface (toolcaller.go, internal/mcptools), pausing every
-// mutating tool call for an explicit human confirmation click
-// (classify.go). No AI in the reconciliation path: this package only
-// ever calls the platform's own REST API the same way any other MCP
-// client would (internal/apiclient), matching the CLAUDE.md section 2
-// non-goal ("AI is a read-and-suggest layer on top of the API, nothing
-// more").
+// Package ai implements the BYOK assistant chat: a provider-agnostic turn engine.
+// Mutating tool calls pause for explicit human confirmation; no AI runs in the reconciliation path.
 package ai
 
 import (
@@ -16,10 +8,7 @@ import (
 	"net/http"
 )
 
-// Role values for Message, matching Anthropic's own role vocabulary.
-// There is no "tool" role here: a tool result travels as a ContentBlock
-// of type ContentBlockToolResult inside a user-role Message, exactly how
-// the Anthropic Messages API itself expects it.
+// There is no tool role: a tool result is a tool_result block inside a user-role message, as the Messages API requires.
 const (
 	RoleUser      = "user"
 	RoleAssistant = "assistant"
@@ -63,10 +52,7 @@ type Message struct {
 	Content []ContentBlock
 }
 
-// ToolSpec is one callable tool's definition, as ToolCaller.ListTools
-// returns it: name, description, and its input JSON Schema, the same
-// three fields an MCP tool and an Anthropic tool definition both reduce
-// to.
+// ToolSpec is one tool's name, description, and input JSON Schema, as ToolCaller.ListTools returns it.
 type ToolSpec struct {
 	Name        string
 	Description string
@@ -101,10 +87,7 @@ const (
 	StopReasonOther     = "other"
 )
 
-// TurnResult is what Provider.Complete returns once a single model turn
-// finishes: the assistant's full text for this turn (already streamed
-// incrementally via the onText callback, repeated here for storage) plus
-// any tool calls it wants to make.
+// TurnResult is the assistant's full text and requested tool calls for one model turn.
 type TurnResult struct {
 	Text       string
 	ToolCalls  []ToolUseCall
@@ -150,16 +133,10 @@ func (c AdapterConfig) client() *http.Client {
 	return NewHTTPClient(false)
 }
 
-// TextDeltaFunc receives one incremental chunk of assistant text as a
-// Provider streams its response, so a caller (internal/api's SSE
-// handler) can forward it as a text_delta event immediately rather than
-// waiting for the whole turn to finish.
+// TextDeltaFunc receives each streamed text chunk, so the SSE handler can forward it immediately.
 type TextDeltaFunc func(delta string)
 
-// Provider sends one turn of a conversation to an LLM and streams its
-// text back. Implementations: AnthropicProvider (anthropic.go) for the
-// real API; tests substitute a fake satisfying just this interface, no
-// network involved.
+// Provider sends one turn to an LLM and streams its text back. Tests substitute a fake with no network.
 type Provider interface {
 	Complete(ctx context.Context, req ChatRequest, onText TextDeltaFunc) (TurnResult, error)
 }

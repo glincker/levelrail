@@ -1,13 +1,6 @@
 package agent
 
-// This file: the agent-side executor. Pure with respect to networking
-// (no gRPC, no streams): given one AgentRequest and a real
-// docker.Runtime, produce the matching AgentResponse. What runs this
-// against a real Session stream is a thin loop
-// (cmd/levelrail-agent, its remaining wiring), kept
-// separate specifically so this dispatch logic is testable with a
-// hand-written fake docker.Runtime, no real network or real Docker
-// daemon required.
+// Pure dispatch over docker.Runtime with no gRPC, so it is testable with a fake runtime.
 
 import (
 	"context"
@@ -21,25 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// Execute runs one AgentRequest against rt and returns the matching
-// AgentResponse, always carrying req.RequestId. A docker.Runtime
-// failure becomes AgentResponse.Error (a plain string over the wire,
-// deliberately: this is a control-plane-to-agent RPC boundary, not a
-// package boundary within one Go process, so wrapping with %w has
-// nothing left to attach to on the receiving end; GRPCTransport
-// reconstructs a plain error from this string instead), never a Go
-// error return of Execute's own: this function's contract is "always
-// produce exactly one response for exactly one request," success or
-// failure alike, so the caller always has something to send back.
-//
-// ctx is the whole Session's own lifetime, not a fresh per-call one:
-// WatchEvents in particular needs to keep running past this one call
-// returning, for as long as the session itself stays open, and using
-// the same ctx for every other operation keeps "when does this stop"
-// answered identically everywhere in this function rather than
-// inventing a second, shorter-lived context needing its own
-// justification. emitEvent is only ever called from the WatchEvents
-// path, unprompted, for as long as ctx stays alive.
+// Execute returns exactly one AgentResponse per request, carrying req.RequestId, even on failure.
+// Errors travel as plain strings because the gRPC boundary cannot carry %w wrapping.
 func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, emitEvent func(*agentpb.ProxiedEvent)) *agentpb.AgentResponse {
 	resp := &agentpb.AgentResponse{RequestId: req.GetRequestId()}
 
@@ -208,10 +184,7 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 		resp.Error = "agent: build requests are dispatched through BuildRelay, not Execute"
 
 	case *agentpb.AgentRequest_ApplyMesh:
-		// Mesh ops need this node's own ID and a MeshApplier, neither of
-		// which docker.Runtime carries, so serveSession dispatches them
-		// directly (mesh_dispatch.go) before a request ever reaches here,
-		// the same reasoning Exec/Build are special-cased above.
+		// Mesh ops are dispatched in serveSession, since they need the node ID and MeshApplier.
 		resp.Error = "agent: apply-mesh requests are dispatched directly by serveSession, not Execute"
 
 	case *agentpb.AgentRequest_RotateMeshKey:
@@ -224,10 +197,7 @@ func Execute(ctx context.Context, rt docker.Runtime, req *agentpb.AgentRequest, 
 	return resp
 }
 
-// ErrExitStateUnsupported is what an InspectExitState request gets when
-// this node's runtime cannot inspect a container's exit state. Callers
-// treat any error here as "can't tell" and fall back to waiting out the
-// full readiness budget.
+// ErrExitStateUnsupported means the runtime cannot inspect exit state; callers wait out the full readiness budget.
 var ErrExitStateUnsupported = errors.New("agent: this node's container runtime cannot inspect container exit state")
 
 // ErrImageLoadUnsupported is returned when the node runtime cannot load an image archive.
@@ -241,10 +211,7 @@ func emptyResult() *agentpb.AgentResponse_Empty {
 	return &agentpb.AgentResponse_Empty{Empty: &agentpb.Empty{}}
 }
 
-// relayEvents runs rt.Events(ctx) for the life of ctx, translating each
-// docker.Event into a ProxiedEvent tagged with watchID and handing it to
-// emitEvent. ADR 003's "the agent streams Docker events up to the
-// control plane rather than the control plane polling down," made real.
+// Events are pushed up to the control plane as they happen, per ADR 003, rather than polled.
 func relayEvents(ctx context.Context, rt docker.Runtime, watchID string, emitEvent func(*agentpb.ProxiedEvent)) {
 	events, errs := rt.Events(ctx)
 	for {
@@ -265,14 +232,7 @@ func relayEvents(ctx context.Context, rt docker.Runtime, watchID string, emitEve
 			if !ok || err == nil {
 				continue
 			}
-			// A stream error here has no pending AgentRequest to
-			// attach itself to: Execute already returned WatchEvents'
-			// one acknowledgment before this goroutine started. A
-			// dedicated error frame for this case is a real,
-			// documented gap, not solved
-			// in this pass; the watch simply ends, matching
-			// docker.Runtime.Events' own "error channel receives at
-			// most one error, then the event channel closes" contract.
+			// A stream error has no pending request to attach to, so the watch simply ends.
 			return
 		}
 	}

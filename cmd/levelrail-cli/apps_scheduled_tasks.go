@@ -68,10 +68,7 @@ func scheduledTaskFlags(fs *flag.FlagSet, schedule *string, disabled *bool, conc
 	fs.StringVar(concurrencyPolicy, "concurrency-policy", "", "what happens if a previous run is still in flight when this task's next run is due: allow, forbid, or replace (default: allow)")
 }
 
-// parseScheduledTaskArgs splits fs's positional tokens into nArgs
-// leading identifiers (app name, plus a task id where needed) and the
-// trailing command argv. ok is false once help, a parse error, or a
-// missing command has been reported.
+// ok is false once help, a parse error, or a missing command has been reported.
 func parseScheduledTaskArgs(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdLabel string, nArgs int) (leading, command []string, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
 		if err == flag.ErrHelp {
@@ -443,10 +440,6 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// writeScheduledTaskResult prints value according to of's resolved
-// format/query, falling back to plainOut for the plain default path,
-// the success-output shape every apps scheduled-tasks subcommand (and
-// several other resource-scoped subcommands) shares.
 func writeScheduledTaskResult(stdout, stderr io.Writer, of outputFlags, value any, plainOut func()) int {
 	if err := renderResult(stdout, of.Format, of.Query, value, func() { plainOut() }); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)

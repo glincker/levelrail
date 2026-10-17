@@ -10,13 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// fakeRuntime is a minimal hand-written fake for docker.Runtime, the
-// same "hand-written fake, not a mocking framework" convention every
-// other package's tests in this codebase already follow. Only
-// InspectByName is exercised meaningfully here: this package's own job
-// is delegation, not container logic, so one representative method
-// proving the call actually reaches the wrapped Runtime is enough; every
-// other method just needs to compile against the interface.
+// fakeRuntime is a hand-written docker.Runtime fake; only InspectByName matters, since this package only delegates.
 type fakeRuntime struct {
 	inspectCalls int
 	lastName     string

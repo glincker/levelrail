@@ -1,11 +1,5 @@
 package agent
 
-// This file: GRPCTransport, the control-plane side of the
-// reverse-dialed connection. An agent.Transport
-// implemented by dispatching every docker.Runtime-shaped call over a
-// real agent's Session stream via mux (mux.go), instead of Local's
-// direct in-process call.
-
 import (
 	"bytes"
 	"context"
@@ -20,14 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
-// GRPCTransport implements Transport by dispatching every call over an
-// established Session stream to a real, remote agent. Built from a
-// *mux, not a raw stream: the request/response multiplexing this type
-// depends on is already handled underneath it. Unexported constructor
-// (newGRPCTransport): callers get one of these from the control plane's
-// Session handler once an agent's stream is accepted and authenticated
-// (server.go's remaining wiring), never constructed
-// directly.
+// GRPCTransport is the control-plane side of a reverse-dialed agent connection, built on the agent's session mux.
 type GRPCTransport struct {
 	mux *mux
 }
@@ -59,15 +46,7 @@ func (t *GRPCTransport) InspectByName(ctx context.Context, name string) (*docker
 	return containerStateFromPB(got.GetState()), nil
 }
 
-// InspectExitState implements docker.ExitStateInspector over the wire,
-// so a service placed on a remote node gets the same fail-fast-on-crash
-// readiness behavior a locally placed one already had: without it, a
-// container that OOM-killed itself mid-readiness looked merely "not
-// ready yet" until the whole readiness budget expired.
-//
-// An agent too old to know this op answers with an error, which every
-// caller of docker.ExitStateInspector already treats as "can't tell"
-// and degrades to waiting out the full budget.
+// InspectExitState implements docker.ExitStateInspector over the wire; an agent too old to know it is treated as can't-tell.
 func (t *GRPCTransport) InspectExitState(ctx context.Context, name string) (*docker.ExitState, error) {
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_InspectExitState{InspectExitState: &agentpb.InspectExitStateRequest{Name: name}},
@@ -101,11 +80,7 @@ func (t *GRPCTransport) Start(ctx context.Context, id string) error {
 	return err
 }
 
-// Stop implements Transport (docker.Runtime). timeout < 0 (wait
-// indefinitely, docker.Runtime.Stop's own convention) is carried across
-// the wire as TimeoutMs: -1, not clamped to 0, so the agent applies the
-// identical "wait indefinitely" semantics rather than a silently
-// different one.
+// Stop sends timeout < 0 as TimeoutMs -1, so an indefinite wait is not silently clamped to zero.
 func (t *GRPCTransport) Stop(ctx context.Context, id string, timeout time.Duration) error {
 	ms := timeout.Milliseconds()
 	if timeout < 0 {
@@ -158,13 +133,7 @@ func (t *GRPCTransport) ListByPrefix(ctx context.Context, prefix string) ([]dock
 	return containerStatesFromPB(resp.GetListByPrefix().GetContainers()), nil
 }
 
-// Stats implements docker.StatsInspector over the wire: the remote-node
-// half of the control plane's own telemetry.Collector, which otherwise
-// only ever sees this process's own local Docker socket. An agent too
-// old to know this op answers with ErrStatsUnsupported's own string,
-// which the collector's caller treats as "skip this target, try again
-// next tick," the same degrade InspectExitState's doc comment
-// describes for an old agent.
+// Stats implements docker.StatsInspector over the wire; an agent too old for it makes the collector skip this target.
 func (t *GRPCTransport) Stats(ctx context.Context, containerID string) (docker.ContainerStats, error) {
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_Stats{Stats: &agentpb.StatsRequest{ContainerId: containerID}},
@@ -175,20 +144,12 @@ func (t *GRPCTransport) Stats(ctx context.Context, containerID string) (docker.C
 	return containerStatsFromPB(resp.GetStats().GetStats()), nil
 }
 
-// Exec implements Transport (docker.Runtime). The initial round trip is
-// synchronous, matching docker.Client.Exec's own behavior: an exec that
-// cannot attach (no such container, daemon refused) fails here rather
-// than on a later Read. Output arrives afterwards as ExecOutput frames,
-// reassembled by the returned stream.
+// Exec runs its initial round trip synchronously, so a failed attach errors here rather than on a later Read.
 func (t *GRPCTransport) Exec(ctx context.Context, containerID string, cmd []string) (io.ReadCloser, error) {
 	return t.startExec(ctx, containerID, cmd, nil, execAttach{})
 }
 
-// ExecWithInput implements Transport (docker.Runtime). Exec plus a stdin
-// direction: a goroutine drains stdin into ExecInput frames while output
-// frames stream back, the same concurrency docker.Client.ExecWithInput
-// needs locally to keep a command that writes while it reads from
-// deadlocking.
+// ExecWithInput drains stdin concurrently with output, so a command that writes while reading does not deadlock.
 func (t *GRPCTransport) ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error) {
 	if stdin == nil {
 		// The remote command gets a real stdin pipe either way, so it
@@ -198,10 +159,7 @@ func (t *GRPCTransport) ExecWithInput(ctx context.Context, containerID string, c
 	return t.startExec(ctx, containerID, cmd, stdin, execAttach{stdin: true})
 }
 
-// ExecTTY implements docker.TTYRuntime. The PTY lives on the agent's
-// side; this end is the same windowed frame stream every other exec
-// uses, plus a resize frame, so a remote terminal and a local one differ
-// only in how far the bytes travel.
+// ExecTTY runs over the usual exec stream; the PTY lives on the agent and this end only adds resize frames.
 func (t *GRPCTransport) ExecTTY(ctx context.Context, containerID string, opts docker.ExecTTYOptions) (docker.ExecSession, error) {
 	// The caller drives input by calling Write, so the pipe stands in for
 	// the source reader an ordinary exec would have handed startExec, and
@@ -289,10 +247,7 @@ func (t *GRPCTransport) startExecAck(ctx context.Context, containerID string, cm
 // closed returns, distinct from io.EOF (the command's own clean end).
 var errExecStreamClosed = errors.New("agent: exec stream closed")
 
-// execStream is the io.ReadCloser Exec and ExecWithInput return: it
-// reassembles the agent's ExecOutput frames into a byte stream, refunds
-// flow-control credit as it consumes them, and cancels the remote exec
-// if the caller gives up before the command finishes.
+// Cancels the remote exec if the caller gives up early, and refunds flow-control credit as bytes are consumed.
 type execStream struct {
 	mux    *mux
 	execID string
@@ -401,10 +356,7 @@ func (s *execStream) creditOne() {
 	_ = s.mux.sendExecCredit(s.execID, frames)
 }
 
-// pumpStdin drains r into ExecInput frames for as long as the agent's
-// credit allows, then signals end of input. A read failure on r is sent
-// as an explicit error rather than an EOF: a truncated dump must fail
-// the restore, not look like a complete one.
+// A read failure is sent as an explicit error, not EOF, so a truncated restore fails instead of looking complete.
 func (s *execStream) pumpStdin(r io.Reader) {
 	buf := make([]byte, execChunkBytes)
 	credit := uint32(execWindowFrames)
@@ -532,12 +484,7 @@ func (t *GRPCTransport) ListNetworksByPrefix(ctx context.Context, prefix string)
 	return networkInfosFromPB(resp.GetListNetworksByPrefix().GetNetworks()), nil
 }
 
-// ApplyMesh sends cfg to this transport's own node over its Session
-// stream and returns what the node reported back about itself. Part of
-// meshTransport (mesh_sink.go), not Transport itself: mesh operations are
-// not a docker.Runtime concern, so keeping them off Transport's own
-// interface means a caller that only wants container operations never
-// has to know mesh dispatch exists.
+// ApplyMesh lives on meshTransport, not Transport, so container-only callers never see mesh dispatch.
 func (t *GRPCTransport) ApplyMesh(ctx context.Context, cfg network.DeviceConfig) (network.NodeIdentity, error) {
 	resp, err := t.mux.Call(ctx, &agentpb.AgentRequest{
 		Op: &agentpb.AgentRequest_ApplyMesh{ApplyMesh: &agentpb.ApplyMeshRequest{Config: deviceConfigToPB(cfg)}},
@@ -578,22 +525,7 @@ func (t *GRPCTransport) EnsureVolume(ctx context.Context, name string) error {
 	return err
 }
 
-// Events implements Transport (docker.Runtime). The one method that
-// doesn't fit mux.Call's request/response shape: docker.Runtime.Events
-// returns two channels streaming until ctx is cancelled, not one
-// response. This issues a single WatchEvents request (acked immediately
-// like any other Empty-result call, then relays every ProxiedEvent
-// mux.subscribe's channel receives onto a fresh pair of channels this
-// method returns, translating docker.Event's wire shape back and
-// closing both channels once ctx is done or the subscription itself
-// ends (session closed, agent-side stream error). ADR 003's push-not-
-// poll event design, real end to end.
-//
-// Backpressure: mux's eventChanBuffer (64) bounds how far this can fall
-// behind the agent's own event rate before frames start being dropped
-// rather than blocking the shared recvLoop; a caller needing a
-// guarantee stronger than "recent events, best effort" would need a
-// different mechanism, not built here.
+// Events relays WatchEvents over mux and drops events under backpressure rather than blocking the shared recv loop.
 func (t *GRPCTransport) Events(ctx context.Context) (<-chan docker.Event, <-chan error) {
 	events := make(chan docker.Event)
 	errs := make(chan error, 1)
@@ -614,13 +546,7 @@ func (t *GRPCTransport) Events(ctx context.Context) (<-chan docker.Event, <-chan
 		return events, errs
 	}
 
-	// The WatchEvents round trip itself happens inside the goroutine,
-	// not before returning: docker.Client.Events (internal/docker)
-	// returns its channels immediately and subscribes asynchronously,
-	// and callers (internal/telemetry.LogCollector,
-	// internal/reconcile.Engine.Run) rely on that non-blocking contract.
-	// Blocking this call on a network round trip would be a real,
-	// silent behavior change for exactly the same interface.
+	// The WatchEvents round trip runs in the goroutine so this call returns immediately, as callers rely on a non-blocking Events.
 	go func() {
 		defer close(events)
 		defer close(errs)

@@ -59,10 +59,7 @@ func (rt *Router) callerAppVisibility(r *http.Request) (canRead func(string) boo
 	}, len(policies) > 0 || scope.restricted(), nil
 }
 
-// handleListApps handles GET /api/v1/apps with optional q, project,
-// environment, tag (repeatable, AND), limit and offset. Without limit the
-// full filtered set returns as before; X-Total-Count always carries the
-// match count before paging.
+// X-Total-Count is the match count before paging; without limit the full filtered set is returned.
 func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 	fs, ok := rt.apps.(appFilterStore)
 	if !ok {

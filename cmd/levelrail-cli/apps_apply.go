@@ -31,10 +31,8 @@ func describePendingChanges(p apiclient.PendingChanges) string {
 	return strings.Join(parts, "; ")
 }
 
-// afterConfigWrite is what "apps env import" and "apps secrets set" do once
-// a save landed: with apply it restarts the app right away, otherwise it
-// tells the operator that N changes are waiting and how to apply them. It
-// returns a failure exit code only when apply was requested and did not happen.
+// With apply, restarts the app now; otherwise reports the pending changes.
+// Returns a failure code only when apply was requested and did not happen.
 func afterConfigWrite(ctx context.Context, client *Client, prog, name string, apply bool, out, errOut io.Writer) int {
 	pending, err := client.GetPendingChanges(ctx, name)
 	if err != nil {

@@ -13,14 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// This file implements the opt-in, per-app deploy status badge:
-// GET /api/v1/apps/{name}/badge.svg renders a shields.io-style SVG from
-// the app's most recent deploy attempt, for embedding in an operator's
-// own README. Off by default (store.DesiredService.BadgeEnabled,
-// migrations/0278_service_badge_enabled.sql): the route 404s exactly
-// like an unknown route until an operator opts a specific app in via
-// PUT .../badge, the same enabled-vs-404 shape /public/status already
-// establishes (status_page_public.go's servePublicStatus).
+// The badge route 404s until an operator opts an app in, so disabled apps look like unknown ones.
 
 // badgeSettingsRequest is PUT /api/v1/apps/{name}/badge's body.
 type badgeSettingsRequest struct {
@@ -51,12 +44,7 @@ func (rt *Router) handleGetBadgeSettings(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, badgeSettingsResource{Enabled: svc.BadgeEnabled})
 }
 
-// handleSetBadgeSettings handles PUT /api/v1/apps/{name}/badge: opts
-// name into (or out of) the public badge.svg route below. AbilityRoot
-// (routes.go's registration), the same tier exec-access's own PUT sits
-// behind: enabling it hands out an unauthenticated public view of this
-// app's deploy status, an explicit, auditable choice rather than a
-// default.
+// Root-only: enabling it hands out an unauthenticated view of this app's deploy status.
 func (rt *Router) handleSetBadgeSettings(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -78,12 +66,7 @@ func (rt *Router) handleSetBadgeSettings(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, badgeSettingsResource(req))
 }
 
-// handlePublicAppBadge handles GET /api/v1/apps/{name}/badge.svg: the
-// one public, unauthenticated route this file adds. It 404s identically
-// for an unknown app and a real app with BadgeEnabled false, so a
-// prober can never distinguish "no such app" from "app exists, badge
-// off" the same way servePublicStatus already treats an unconfigured
-// status page.
+// 404s identically for unknown apps and disabled badges, so probers cannot tell them apart.
 func (rt *Router) handlePublicAppBadge(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		w.Header().Set("Allow", "GET, HEAD")
@@ -208,10 +191,7 @@ func renderBadgeSVG(label, message, color string) []byte {
 	return []byte(b.String())
 }
 
-// badgeXMLEscape escapes label/message text before it lands in SVG
-// attribute and element content: both ultimately trace back to
-// operator-configured brand/status strings, not request input, but
-// escaping costs nothing and removes the question entirely.
+// Escapes all label text; brand strings are operator-set, but escaping costs nothing.
 func badgeXMLEscape(s string) string {
 	var b strings.Builder
 	_ = xml.EscapeText(&b, []byte(s))

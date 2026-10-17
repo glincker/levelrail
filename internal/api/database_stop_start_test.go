@@ -84,10 +84,7 @@ func TestHandleStartDatabase_UnknownDatabase_NotFound(t *testing.T) {
 	}
 }
 
-// TestHandleStopDatabase_PlainWriteToken_Forbidden proves stop/start sit
-// at the AbilityWriteSensitive tier, same as public-access above them in
-// routes_platform.go, not the plain AbilityWrite a database's ordinary
-// field edits use.
+// TestHandleStopDatabase_PlainWriteToken_Forbidden checks stop and start need the AbilityWriteSensitive tier.
 func TestHandleStopDatabase_PlainWriteToken_Forbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 	ctx := context.Background()

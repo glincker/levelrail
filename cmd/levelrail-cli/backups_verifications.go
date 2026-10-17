@@ -7,12 +7,6 @@ import (
 	"text/tabwriter"
 )
 
-// runBackupsVerifications implements "backups verifications <database>
-// --backup ID": GET /api/v1/databases/{name}/backups/{historyId}/verifications
-// (internal/api/backup_verify.go's own handleListBackupVerifications),
-// AbilityRead-gated: passive visibility into verification attempts
-// already made, the CLI counterpart of the backup history badge in the
-// web dashboard's own backup history table.
 func runBackupsVerifications(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
 	var backupID string
@@ -53,10 +47,7 @@ func printBackupVerificationsTable(out io.Writer, verifications []backupVerifica
 	_ = tw.Flush()
 }
 
-// checkMark renders a single verification check's pass/fail as a
-// terminal-friendly "ok"/"FAIL" rather than a bare "true"/"false", the
-// same "make the failing case visually louder" reasoning the web
-// dashboard's own status badges follow with color instead.
+// Renders pass/fail as 'ok'/'FAIL' so failures stand out.
 func checkMark(ok bool) string {
 	if ok {
 		return "ok"

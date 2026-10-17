@@ -11,17 +11,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TriggerScheduledDeploy resolves serviceName's git source's latest
-// commit on branch (no clone, resolveBranchSHA) and deploys it through
-// the same path a webhook-triggered push uses (deployFromGitSourceAs),
-// tagged store.DeployAttemptSourceSchedule so it shows up under
-// ListDeployments' "schedule" trigger filter. The one difference from a
-// real push: branch may not be gs.Branch, a scheduled redeploy can target
-// any branch, gs is only consulted for repo_url/build config.
-//
-// Satisfies internal/scheduledeploy.Trigger; called only from that
-// package's Scheduler, never directly from an HTTP handler, so it
-// returns a plain error rather than an (int, string) status pair.
+// TriggerScheduledDeploy deploys serviceName's git source at the latest commit on branch, which may differ from gs.Branch.
+// Called only by the scheduler, so it returns a plain error.
 func (rt *Router) TriggerScheduledDeploy(ctx context.Context, serviceName, branch string) (string, error) {
 	gs, err := rt.gitSources.GetGitSource(ctx, serviceName)
 	if err != nil {

@@ -123,10 +123,7 @@ func TestRun_AppsValidate_MissingFile(t *testing.T) {
 	}
 }
 
-// TestRun_AppsValidate_ComposeDependsOn exercises the depends_on
-// reference and cycle checks through the CLI, not just internal/compose
-// directly, so a regression there is caught at the same layer an
-// operator would hit it.
+// Runs through the CLI, not just internal/compose, so the check is covered where operators hit it.
 func TestRun_AppsValidate_ComposeDependsOn(t *testing.T) {
 	tests := []struct {
 		name          string

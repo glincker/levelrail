@@ -7,13 +7,7 @@ import (
 	"strings"
 )
 
-// runAppsGitSource dispatches "apps git-source <verb> [flags]" to one of
-// get/set/delete, mirroring runAppsLogDrain's own dispatch shape. Wires
-// internal/api/git_sources.go's three routes into the CLI for the first
-// time: connecting a repo for auto-deploy-on-push was dashboard-only
-// before this. Multi-service fan-out (Services/AdditionalServices on the
-// wire type) stays dashboard-only; use "apps deploy-spec" for that case
-// from the CLI.
+// Multi-service git sources are dashboard-only; use 'apps deploy-spec' for them from the CLI.
 func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, appsGitSourceUsage(prog))
@@ -148,12 +142,7 @@ func runAppsGitSourceSet(prog string, args []string, stdout, stderr io.Writer, l
 	return exitOK
 }
 
-// runAppsGitSourceRotateSecret mints a fresh webhook secret for an
-// already-connected source, leaving repo_url/branch/build config
-// untouched: the narrow alternative to delete-then-set for an operator
-// who only wants to rotate a compromised or stale secret. The new secret
-// is shown once, here, the same "shown once, at mint time" shape
-// runAppsGitSourceSet's own create-path response already has.
+// Rotate changes only the webhook secret and leaves repo and build config intact. The new secret is shown once.
 func runAppsGitSourceRotateSecret(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps git-source rotate-secret", "print the git source (including the new webhook_secret) as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

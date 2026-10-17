@@ -37,11 +37,7 @@ func testResourceRecommendationJSON(t *testing.T, subject, name string) {
 	}
 }
 
-// testResourceRecommendationHuman runs "<subject> resource-recommendation
-// <name>" and asserts the OOM signal, suggested action, and CPU reason
-// appear in the human-readable output. oomSubject names the resource kind
-// in the expected OOM reason text (e.g. "app" or "database"). It returns
-// stdout so callers can add resource-specific assertions.
+// Returns stdout so callers can add resource-specific assertions.
 func testResourceRecommendationHuman(t *testing.T, subject, name, oomSubject string) string {
 	t.Helper()
 	srv := newListEchoServer(t, nil, resourceRecommendationResource{

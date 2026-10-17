@@ -9,11 +9,7 @@ import (
 	"time"
 )
 
-// NotificationDelivery is one recorded attempt to send through a
-// NotificationChannel. Every real send path (deploy-outcome dispatch,
-// alert-rule dispatch, and the existing test-send routes) records one of
-// these via recordDelivery below, so a channel's delivery history
-// reflects real send attempts, not just test-button clicks.
+// NotificationDelivery is one recorded send attempt through a NotificationChannel, real or test.
 type NotificationDelivery struct {
 	ID        string
 	ChannelID string
@@ -48,10 +44,7 @@ func (db *DB) RecordNotificationDelivery(ctx context.Context, d NotificationDeli
 	return nil
 }
 
-// ListNotificationDeliveries returns up to limit delivery records for
-// channelID, most recent first, cursor-paginated by before (an optional
-// exclusive created_at cutoff), the same shape store.ListAuditEntries
-// already uses. Callers are responsible for clamping limit.
+// ListNotificationDeliveries returns up to limit records for channelID, newest first, paginated by an optional before cutoff.
 func (db *DB) ListNotificationDeliveries(ctx context.Context, channelID string, limit int, before *time.Time) ([]NotificationDelivery, error) {
 	query := `
 		SELECT id, channel_id, trigger_reason, success, error, created_at
@@ -96,12 +89,8 @@ type DeliveryRecorder interface {
 	RecordNotificationDelivery(ctx context.Context, d NotificationDelivery) error
 }
 
-// recordDelivery persists one delivery attempt for channelID, logging
-// (never propagating) a failure to generate an id or write the row: a
-// delivery-history write must never affect whether the underlying send
-// succeeded or block its caller. No-op when channelID is empty, which is
-// a legacy deploy target or alert rule with no attached channel, so
-// there is no channel-scoped history to write to.
+// recordDelivery never returns an error: a history write must not affect whether the send succeeded.
+// An empty channelID is a no-op, for targets and rules with no attached channel.
 func recordDelivery(ctx context.Context, recorder DeliveryRecorder, logger *slog.Logger, channelID, trigger string, sendErr error) {
 	if channelID == "" {
 		return

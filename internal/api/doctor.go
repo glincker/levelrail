@@ -31,11 +31,7 @@ const (
 // APP_DOCTOR_DISK_WARNING_BYTES (WithDoctorDiskWarningBytes).
 const defaultDoctorDiskWarningBytes = 1 << 30 // 1GiB
 
-// defaultDoctorHTTPPort/defaultDoctorHTTPSPort are the ports GET
-// /api/v1/system/doctor's port checks probe when WithDoctorIngressPorts
-// hasn't overridden them: the embedded ingress's own compiled-in
-// defaults (internal/reconcile/ingress's defaultHTTPListenAddr/
-// defaultListenAddr).
+// Defaults match the embedded ingress's compiled-in listen addresses.
 const (
 	defaultDoctorHTTPPort  = 80
 	defaultDoctorHTTPSPort = 443
@@ -45,12 +41,7 @@ const (
 // stuck check must never hang the whole doctor response.
 const doctorPingTimeout = 2 * time.Second
 
-// defaultDoctorMasterKeyRotationWarnAge is the age GET
-// /api/v1/system/doctor's master_key_rotation check warns beyond,
-// overridable via APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS
-// (WithDoctorMasterKeyRotationWarnAge). A soft nudge, never fail: this
-// platform has no way to know whether skipping a rotation is actually
-// unsafe for a given operator.
+// A soft warning, never a failure, since skipping rotation may be safe for some operators.
 const defaultDoctorMasterKeyRotationWarnAge = 365 * 24 * time.Hour
 
 type doctorCheckResource struct {
@@ -58,11 +49,7 @@ type doctorCheckResource struct {
 	Name    string `json:"name"`
 	Status  string `json:"status"`
 	Message string `json:"message"`
-	// Fix is a concrete, copy-pasteable shell command that resolves this
-	// check when it isn't ok, or empty when there's no single command
-	// that would (a database ping failing needs investigation, not a
-	// command). Rendered as a code block by both the CLI and the
-	// dashboard.
+	// Fix is empty when no single command resolves the check, such as a database ping failure.
 	Fix string `json:"fix,omitempty"`
 	// DocsPath is a path relative to this instance's docs site root
 	// (brand.DocsURL), e.g. "/troubleshooting#clock-skew", surfaced as a
@@ -78,13 +65,7 @@ type systemDoctorResponse struct {
 	Checks []doctorCheckResource `json:"checks"`
 }
 
-// handleSystemDoctor handles GET /api/v1/system/doctor: an operator
-// preflight bundle of the individual checks GET /api/v1/system/status
-// already surfaces (Docker, disk, data dir) plus a few doctor-only ones
-// (data dir writability, ingress ports, SQLite reachability). Always
-// 200, same "an unconfigured or failed optional check is a real,
-// reportable status, never a 5xx" shape handleSystemStatus already
-// follows; OK reflects only whether any individual check is fail.
+// Always 200: a failed check is reported in the body, not as a 5xx.
 func (rt *Router) handleSystemDoctor(w http.ResponseWriter, r *http.Request) {
 	resp, err := rt.doctorReport(r.Context())
 	if err != nil {
@@ -261,16 +242,8 @@ type IngressPortOwner interface {
 	OwnsPort(port int) bool
 }
 
-// doctorCheckPort is a best-effort local bind check for the embedded
-// Caddy ingress's listen ports. A bind failure here is not automatically
-// a problem: this handler runs inside the same process as this control
-// plane's own ingress, which is normally already bound to these ports by
-// the time an operator runs doctor against a live instance.
-// rt.ingressPortOwner (nil until wired via WithIngressPortOwner) tells
-// that expected case apart from a port genuinely held by something else,
-// which still reports fail. A permission error (binding <1024 without
-// CAP_NET_BIND_SERVICE) can't distinguish "in use" from "not allowed to
-// check", so it degrades to unknown rather than fail.
+// A bind failure is expected when the in-process ingress already holds the port, so it is not a failure then.
+// Permission errors degrade to unknown, since they cannot tell in-use apart from not-allowed.
 func (rt *Router) doctorCheckPort(port int) doctorCheckResource {
 	code := fmt.Sprintf("port_%d", port)
 	name := fmt.Sprintf("Port %d available", port)
@@ -306,11 +279,7 @@ func (rt *Router) doctorCheckDatabase(ctx context.Context) doctorCheckResource {
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "reachable"}
 }
 
-// doctorCheckMasterKeyRotation surfaces how long it has been since the
-// envelope-encryption master key was last rotated (RotateMasterKey), a
-// soft nudge per section 4.10/10 of this project's own design doc:
-// never fail, since this platform cannot know whether skipping
-// rotation is actually unsafe for a given operator.
+// A soft warning, never a failure, since this platform cannot know whether skipping rotation is unsafe.
 func (rt *Router) doctorCheckMasterKeyRotation(ctx context.Context) doctorCheckResource {
 	const code, name = "master_key_rotation", "Master key rotation"
 	if rt.masterKeyRotator == nil {
@@ -370,15 +339,7 @@ func (rt *Router) doctorCheckControlPlaneBackup() doctorCheckResource {
 	return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: fmt.Sprintf("newest snapshot is %s old", age.Round(time.Minute))}
 }
 
-// doctorCheckStaleSecrets surfaces how many secret-backed values (per-app
-// and shared-env alike) haven't been set or rotated within
-// effectiveSecretRotationWarnAge, a distinct signal from
-// doctorCheckMasterKeyRotation above: that one is about the envelope-
-// encryption master key itself, this one is about the individual secret
-// values it encrypts. A soft nudge, never fail, the same reasoning
-// doctorCheckMasterKeyRotation's own doc comment gives: this platform
-// cannot know whether an old secret is actually unsafe for a given
-// operator.
+// A soft warning like the master key check, but about individual secret values rather than the master key.
 func (rt *Router) doctorCheckStaleSecrets(ctx context.Context) doctorCheckResource {
 	const code, name = "stale_secrets", "Secret rotation"
 	if rt.staleSecretCounter == nil {

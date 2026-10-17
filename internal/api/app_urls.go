@@ -109,10 +109,7 @@ func httpURL(host string, port int) string {
 	return "http://" + net.JoinHostPort(host, strconv.Itoa(port))
 }
 
-// hostPortAddresses derives the local, LAN and public rows from the bound
-// host port. bindIP is the resolved bind address, ips the host's routable
-// IPv4s, publicHost the configured public host and direct whether the app
-// is in direct exposure mode.
+// Derives local, LAN and public rows from the bound host port.
 func hostPortAddresses(hostPort int, running bool, bindIP string, ips []net.IP, publicHost string, direct bool) []appAccessAddress {
 	hint := hintReachable
 	if !running || hostPort == 0 {

@@ -38,10 +38,7 @@ func warnEnvDuration(logger *slog.Logger, name string, def time.Duration) time.D
 	return d
 }
 
-// alertNoiseConfig reads the alert noise control defaults. Zero disables
-// consecutive-failure holding, flapping detection, grouping, the channel
-// rate limit or history pruning respectively; a rule's own fields
-// override the first three.
+// Zero disables that control; a rule's own fields override holding, flapping, and grouping.
 func alertNoiseConfig(logger *slog.Logger) alerting.NoiseConfig {
 	return alerting.NoiseConfig{
 		ConsecutiveFailures: warnEnvInt(logger, "APP_ALERT_CONSECUTIVE_FAILURES", 1),

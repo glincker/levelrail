@@ -32,11 +32,7 @@ func (f *fakeAppDomainSource) GetDesiredService(_ context.Context, name string) 
 	return svc, nil
 }
 
-// fakeDomainCheckSource is an in-memory DomainCheckSource: status is
-// keyed by domain, a domain missing from status defaults to "connected"
-// so a test only has to specify the domains it cares about. calls
-// records every domain actually checked, in order, so a throttle test can
-// assert how many real checks happened.
+// fakeDomainCheckSource reports 'connected' for domains absent from status and records every check made.
 type fakeDomainCheckSource struct {
 	status map[string]string
 	calls  []string

@@ -15,16 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestRootHandler_GitProviderAppSecretsWired is a regression test for the
-// bug where api.WithBitbucketAppSecrets existed and was exercised by
-// internal/api's own router tests, but was never actually called from
-// rootHandler, the wiring run() uses to build the real production
-// server. Because internal/api's tests construct *api.Router directly
-// with the option already applied, none of them could ever catch main.go
-// forgetting to pass it, so this exercises rootHandler itself instead,
-// the same function run() calls. Covers all three git-provider App
-// connections (GitHub, GitLab, Bitbucket) consistently, since they share
-// the identical "nil secrets dependency returns 501" shape.
+// Guards against main.go forgetting to pass the git-provider secrets option, which router tests cannot catch.
 func TestRootHandler_GitProviderAppSecretsWired(t *testing.T) {
 	dataDir := t.TempDir()
 	ctx := context.Background()

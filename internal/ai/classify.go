@@ -32,10 +32,7 @@ func TraitsFromMCP(a *mcp.ToolAnnotations, meta map[string]any) ToolTraits {
 	return t
 }
 
-// RequiresConfirmation reports whether a call must pause for a human
-// click. Anything that is not a known read-only tool always pauses. Once
-// the conversation has ingested untrusted text (tainted), a read-only
-// tool that is outbound or touches secrets pauses too.
+// RequiresConfirmation reports whether a call must pause for a human click; unknown tools always pause.
 func (t ToolTraits) RequiresConfirmation(tainted bool) bool {
 	if !t.Known || !t.ReadOnly {
 		return true

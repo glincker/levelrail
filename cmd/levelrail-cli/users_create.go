@@ -6,14 +6,7 @@ import (
 	"io"
 )
 
-// runUsersCreate implements "users create": POST /api/v1/auth/users,
-// AbilityRoot-gated server-side (internal/api/users.go's own doc
-// comment on handleCreateUser). Exactly one of --role/--abilities must
-// be set, mirroring createUserRequest's own Role-takes-precedence
-// resolution (internal/api/roles.go's resolveAbilities): --role is the
-// convenience path for the curated presets ("%[1]s users roles" lists
-// them), --abilities is the raw, hand-picked list "tokens create" itself
-// already uses.
+// Exactly one of --role or --abilities must be set; --role is the preset path.
 func runUsersCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "users create", "print the created user as JSON to stdout and nothing else", stderr)
 	var email, password, displayName, abilitiesFlag, role string

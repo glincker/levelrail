@@ -20,12 +20,7 @@ func (e *unknownAbilityError) Error() string {
 	return fmt.Sprintf("unknown ability %q", e.ability)
 }
 
-// Ability strings an api_tokens row can be scoped to, adopted from
-// Coolify's own model: a small, legible permission surface an
-// MCP-issued token can be provably scoped to at the token layer itself,
-// not just by convention in what a caller chooses to call. AbilityRoot
-// is exclusive of the rest (checked at mint time, see
-// validateAbilities), not additive with them.
+// Ability strings an api_tokens row can be scoped to. AbilityRoot is exclusive: validateAbilities rejects it combined with others.
 const (
 	AbilityRead           = "read"
 	AbilityReadSensitive  = "read:sensitive"
@@ -52,19 +47,12 @@ func hasSignInApprove(abilities []string) bool {
 	return slices.Contains(abilities, AbilitySignInApprove)
 }
 
-// hasAbility reports whether abilities grants required: either directly,
-// or via AbilityRoot, which implies everything. requireAbility (auth.go)
-// calls this for both a session's user.Abilities and a bearer token's
-// stored abilities, so a non-root user is gated exactly like a scoped
-// token.
+// hasAbility grants required directly or via AbilityRoot, which implies everything.
 func hasAbility(abilities []string, required string) bool {
 	return slices.Contains(abilities, required) || slices.Contains(abilities, AbilityRoot)
 }
 
-// validateAbilities rejects an empty list, an unrecognized ability
-// string, and AbilityRoot combined with anything else (Coolify's own
-// rule: selecting root clears every other ability, root is exclusive,
-// not additive).
+// validateAbilities rejects an empty list, unknown abilities, and AbilityRoot combined with anything else.
 func validateAbilities(abilities []string) error {
 	return validateAbilitiesIn(abilities, validAbilities)
 }

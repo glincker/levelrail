@@ -7,11 +7,7 @@ import (
 	"time"
 )
 
-// fakeGracefulStopper simulates a grpc.Server whose GracefulStop blocks
-// on a live stream (the real-world case: an agent's Session RPC never
-// closes on its own) until Stop is called, matching grpc-go's own
-// GracefulStop behavior of unblocking once Stop closes the connections
-// it was waiting on.
+// fakeGracefulStopper blocks in GracefulStop until Stop, like grpc-go with a live stream.
 type fakeGracefulStopper struct {
 	block        bool
 	stopCalled   atomic.Bool
@@ -53,10 +49,7 @@ func TestStopAgentGRPCServer_DrainsWithoutForcing(t *testing.T) {
 	}
 }
 
-// TestStopAgentGRPCServer_ForcesStopAfterTimeout is the regression test
-// for the bug this fix addresses: a live agent Session stream kept
-// GracefulStop blocked, which stalled process exit until systemd's
-// TimeoutStopSec SIGKILLed it (measured ~90s on a real deploy).
+// TestStopAgentGRPCServer_ForcesStopAfterTimeout checks that a stuck GracefulStop is forced to Stop after the timeout.
 func TestStopAgentGRPCServer_ForcesStopAfterTimeout(t *testing.T) {
 	server := newFakeGracefulStopper(true)
 	logger := slog.New(slog.DiscardHandler)

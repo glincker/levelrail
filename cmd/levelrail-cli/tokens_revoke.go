@@ -7,13 +7,7 @@ import (
 	"io"
 )
 
-// runTokensRevoke implements "tokens revoke <id>": DELETE
-// /api/v1/auth/tokens/{id}, authenticated with a freshly established
-// session, the same reason "tokens create"/"tokens list" are
-// (tokens_create.go's own doc comment). Idempotent server-side
-// (handleRevokeToken's own doc comment: only 404s for an id that never
-// existed, not one already revoked), so this command reports the same
-// success for "revoked just now" and "was already revoked."
+// Idempotent server-side, so an already-revoked token reports the same success.
 func runTokensRevoke(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "tokens revoke", "print a JSON result object to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensRevokeUsage(prog)) }

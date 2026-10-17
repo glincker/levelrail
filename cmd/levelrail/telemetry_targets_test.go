@@ -10,11 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeNodeTransport is a minimal docker.Runtime plus docker.StatsInspector
-// fake, standing in for a remote node's agent.Transport the way
-// fakeInspectRuntime (database_telemetry_targets_test.go) stands in for a
-// local docker.Runtime: only the methods telemetryTargets/
-// multiNodeStatsSource actually call are implemented.
+// Stands in for a remote node's agent.Transport; only the methods telemetryTargets and multiNodeStatsSource call are implemented.
 type fakeNodeTransport struct {
 	fakeInspectRuntime
 	statsCalls []string
@@ -29,12 +25,7 @@ func (f *fakeNodeTransport) Stats(_ context.Context, containerID string) (docker
 	return docker.ContainerStats{MemoryUsageBytes: 999}, nil
 }
 
-// TestTelemetryTargets_RemoteService_RoutesThroughRegisteredAgent proves
-// the actual gap this change closes: a service placed on a remote node
-// (store.DesiredService.NodeID set via UpdateServiceNode) is discovered
-// through that node's own registered Transport, not the control plane's
-// local Docker client, and tagged with the right Target.NodeID for
-// multiNodeStatsSource to route its stats poll correctly too.
+// A service placed on a remote node is discovered through that node's Transport, not the local Docker client.
 func TestTelemetryTargets_RemoteService_RoutesThroughRegisteredAgent(t *testing.T) {
 	db := openCredentialsTestDB(t)
 	ctx := context.Background()
@@ -78,10 +69,7 @@ func TestTelemetryTargets_RemoteService_RoutesThroughRegisteredAgent(t *testing.
 	}
 }
 
-// TestTelemetryTargets_DisconnectedRemoteNode_SkipsServiceNotWholeTick
-// proves a service on an unreachable node doesn't take every other
-// service's metrics down with it this tick (resolveNodeTransport's own
-// "one broken resource must not block others" precedent).
+// A service on an unreachable node must not block other services' metrics for this tick.
 func TestTelemetryTargets_DisconnectedRemoteNode_SkipsServiceNotWholeTick(t *testing.T) {
 	db := openCredentialsTestDB(t)
 	ctx := context.Background()

@@ -9,27 +9,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// appsListPage is "apps list"'s --max-items/--starting-token output
-// shape. Only built when paging is actually requested: the unpaged path
-// below keeps printing the bare array ListApps has always returned, so
-// a script that doesn't ask for paging sees no change at all.
+// Paged output is only used when paging is requested; the unpaged path keeps the bare array.
 type appsListPage struct {
 	Items      []appResource `json:"items"`
 	NextToken  string        `json:"next_token"`
 	TotalCount int           `json:"total_count"`
 }
 
-// runAppsList implements "apps list": GET /api/v1/apps, printed either
-// as a compact table or as JSON. Kept deliberately small (the task this
-// command exists for is verifying "apps create" worked, not being a
-// full-featured resource browser), per this CLI's own scope: apps
-// create is the point, list/get are minimal companions.
-//
-// --max-items/--starting-token are the one exception: a real fleet can
-// run enough apps that fetching all of them every call matters, and
-// internal/api's handleListApps already supports limit/offset server
-// side (X-Total-Count header and all), so this wires that through
-// rather than faking pagination client side.
+// --max-items/--starting-token use server-side limit/offset so large fleets are not fetched whole.
 func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps list", "print apps as a JSON array to stdout and nothing else", stderr)
 	maxItemsFlag := fs.Int("max-items", 0, "cap the number of apps returned by this call (server-side limit, AWS CLI's own --max-items); 0 means every app, same as omitting it")
@@ -68,10 +55,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	offset := 0
 	if *startingTokenFlag != "" {
 		if *maxItemsFlag == 0 {
-			// handleListApps only applies offset when a limit is also
-			// set (internal/api/apps_list.go, internal/store/apps_list.go's
-			// own `if f.Limit > 0` SQL guard): an offset with no limit
-			// would silently be ignored server side and return everything.
+			// The server applies offset only alongside a limit, so offset alone would silently return everything.
 			return reportError(stdout, stderr, jsonOut, newValidationError("apps list: --starting-token requires --max-items (the server only pages a result when a limit is set)"))
 		}
 		n, perr := strconv.Atoi(*startingTokenFlag)

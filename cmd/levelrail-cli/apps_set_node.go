@@ -7,18 +7,10 @@ import (
 	"time"
 )
 
-// moveNodePollInterval is how often "apps set-node --with-volumes" polls
-// GET /api/v1/apps/{name}/moves/{id} while a move is still running,
-// deliberately not a flag (unlike "apps wait --poll-interval"): a volume
-// move is expected to finish in seconds to low minutes, not the long
-// build/deploy windows "apps wait" watches, so there is no real case for
-// tuning it per invocation.
+// moveNodePollInterval is how often "apps set-node --with-volumes" polls a move. Not a flag: volume moves finish in seconds to minutes.
 const moveNodePollInterval = 500 * time.Millisecond
 
-// runAppsSetNode implements "apps set-node <name> <node-id> [--with-volumes]":
-// client.SetAppNode (instant, fresh empty volumes on the new node) without
-// the flag, client.MoveAppWithVolumes (stop, copy each volume, move, resume)
-// with it. See runAppsClearNode for moving back to the local node.
+// runAppsSetNode implements "apps set-node <name> <node-id>". With --with-volumes it runs the stop, copy, move, resume flow.
 func runAppsSetNode(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runAppsMoveNode(prog, args, stdout, stderr, lookupEnv, moveNodeConfig{
 		cmdLabel:  "apps set-node",
@@ -27,10 +19,7 @@ func runAppsSetNode(prog string, args []string, stdout, stderr io.Writer, lookup
 	})
 }
 
-// runAppsClearNode implements "apps clear-node <name> [--with-volumes]":
-// the same move runAppsSetNode makes, with an empty node_id, the store's
-// own "empty node_id means this control plane's own local node"
-// convention (store.DesiredService.NodeID's own doc comment).
+// runAppsClearNode moves an app back to the local node, which is an empty node_id.
 func runAppsClearNode(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runAppsMoveNode(prog, args, stdout, stderr, lookupEnv, moveNodeConfig{
 		cmdLabel:  "apps clear-node",
@@ -39,11 +28,7 @@ func runAppsClearNode(prog string, args []string, stdout, stderr io.Writer, look
 	})
 }
 
-// moveNodeConfig holds what differs between "apps set-node" (an explicit
-// destination node id argument) and "apps clear-node" (none, always
-// moves to local), the same shared-implementation-plus-config shape
-// deployOrRollbackConfig (apps_deploy.go) already establishes for a
-// similar two-commands-one-mechanism pair.
+// moveNodeConfig holds what differs between set-node and clear-node: the destination.
 type moveNodeConfig struct {
 	cmdLabel  string
 	usage     func(string) string
@@ -117,11 +102,7 @@ func runAppsMoveNode(prog string, args []string, stdout, stderr io.Writer, looku
 	})
 }
 
-// lastMoveStepName returns the name of the last step a move record ever
-// attempted, "none" if it never got past starting: what a failed move's
-// error message points a caller at, so "apps set-node --with-volumes"
-// failing mid-flight tells them where to look (e.g. "apps get" or
-// "apps status") rather than just "it failed".
+// lastMoveStepName names the last step a move reached, or "none", for error messages that point at where to look.
 func lastMoveStepName(move appVolumeMoveResource) string {
 	if len(move.Steps) == 0 {
 		return "none"
@@ -129,10 +110,6 @@ func lastMoveStepName(move appVolumeMoveResource) string {
 	return move.Steps[len(move.Steps)-1].Name
 }
 
-// moveNodeFlagsUsage is the "Flags:" block appsSetNodeUsage and
-// appsClearNodeUsage otherwise both spell out verbatim: dest is the only
-// thing that differs between them ("the destination node" vs "the local
-// node").
 func moveNodeFlagsUsage(dest string) string {
 	return fmt.Sprintf(`Flags:
   --with-volumes            archive and restore every named volume onto %s too (app briefly stopped)

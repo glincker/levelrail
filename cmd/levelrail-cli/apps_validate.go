@@ -10,12 +10,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// runAppsValidate implements "apps validate --file <path>": a purely
-// local, no-API-call parse of an app.yaml or a raw Docker Compose file.
-// It tries spec.Parse first; on failure it falls back to compose.Parse
-// plus the same compose.Validate "apps deploy-compose" itself enforces
-// (no git checkout here, so build: entries are rejected the same way
-// that direct-import endpoint rejects them).
+// runAppsValidate implements "apps validate --file": a local parse of app.yaml, falling back to Compose.
+// Compose build: entries are rejected, since there is no checkout.
 func runAppsValidate(prog string, args []string, stdout, stderr io.Writer, _ func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" apps validate", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -59,11 +55,7 @@ type validateFileResult struct {
 	Notices  []string `json:"notices,omitempty"`
 }
 
-// validateAppFile tries spec.Parse first, then falls back to compose
-// parsing; the first one that succeeds decides the file's format. A file
-// that is neither returns spec.Parse's own error, the more likely
-// intended format for an unrecognized file (app.yaml is this platform's
-// primary spec).
+// validateAppFile tries app.yaml first, then Compose. When neither parses, the app.yaml error is returned.
 func validateAppFile(data []byte) (validateFileResult, error) {
 	specResult, specErr := spec.Parse(data)
 	if specErr == nil {

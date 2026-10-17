@@ -9,13 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// gitProviderResource is one entry of GET /api/v1/git-providers: a
-// capability summary for one provider, enough for the git-source picker
-// to decide whether to show a connected repo/branch picker or an
-// unconnected "Connect" row, and whether to render a branch select or a
-// free-text fallback, without a suspense query per provider (see this
-// file's own doc comment on handleListGitProviders for why that
-// mattered).
+// Capability summary for one git provider, enough for the git-source picker to choose its controls without a query per provider.
 type gitProviderResource struct {
 	Provider           string `json:"provider"`
 	Connected          bool   `json:"connected"`
@@ -24,17 +18,7 @@ type gitProviderResource struct {
 	CanAuthClone       bool   `json:"can_auth_clone"`
 }
 
-// handleListGitProviders handles GET /api/v1/git-providers: one call
-// replacing the three separate GET .../github-app, .../gitlab-app,
-// .../bitbucket-app status calls the git-source picker would otherwise
-// need. AbilityReadSensitive, not AbilityRoot like those three status
-// endpoints themselves: this discloses nothing beyond "is provider X
-// connected and what can it do", the same disclosure level GET .../repos
-// already sits at for each provider individually (see
-// handleListGitHubAppRepos's own doc comment). Before this endpoint
-// existed, a non-root deploy-scoped user opening the app creation wizard
-// threw into an error boundary, because the wizard's useSuspenseQuery
-// hooks called those three AbilityRoot endpoints directly.
+// Replaces three separate provider status calls. AbilityReadSensitive, since it discloses only connection state and capabilities.
 func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	out := []gitProviderResource{
@@ -46,15 +30,8 @@ func (rt *Router) handleListGitProviders(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, out)
 }
 
-// githubProviderStatus reports GitHub's entry. Connected means the App
-// is both connected and installed (mintGitHubAppInstallationToken's own
-// precondition for every repo/branch/webhook call): a connection row
-// with no installation yet can't list repos or register a webhook, so
-// it isn't "connected" from the picker's point of view either.
-// CanAuthClone doesn't distinguish github.com from a GitHub Enterprise
-// Server instance: the GHE clone-auth gap (isGitHubHTTPSRepoURL
-// hardcoding github.com) is a separately tracked bug, not this
-// endpoint's concern to model.
+// Connected means the App is connected and installed, since repo, branch, and webhook calls need the installation.
+// CanAuthClone does not distinguish github.com from GitHub Enterprise Server; that clone-auth gap is tracked separately.
 func (rt *Router) githubProviderStatus(ctx context.Context) gitProviderResource {
 	res := gitProviderResource{Provider: "github"}
 	conn, err := rt.githubApp.GetGitHubAppConnection(ctx)
@@ -71,11 +48,7 @@ func (rt *Router) githubProviderStatus(ctx context.Context) gitProviderResource 
 	return res
 }
 
-// gitlabProviderStatus reports GitLab's entry. Connected means the
-// OAuth Application is authorized (an access token exists): a
-// configured-but-not-yet-authorized connection can't list projects
-// either. CanAuthClone stays false: GitLab has no authenticated clone
-// path today.
+// Connected means OAuth is authorized. CanAuthClone stays false: GitLab has no authenticated clone path today.
 func (rt *Router) gitlabProviderStatus(ctx context.Context) gitProviderResource {
 	res := gitProviderResource{Provider: "gitlab"}
 	if _, err := rt.gitlabApp.GetGitLabAppConnection(ctx); err != nil {
@@ -98,10 +71,7 @@ func (rt *Router) gitlabProviderStatus(ctx context.Context) gitProviderResource 
 	return res
 }
 
-// bitbucketProviderStatus reports Bitbucket's entry, the same
-// "connected means authorized" shape gitlabProviderStatus uses.
-// CanAuthClone stays false, matching Bitbucket's own capability table
-// entry (no authenticated clone path today).
+// Connected means authorized. CanAuthClone stays false: Bitbucket has no authenticated clone path today.
 func (rt *Router) bitbucketProviderStatus(ctx context.Context) gitProviderResource {
 	res := gitProviderResource{Provider: "bitbucket"}
 	if _, err := rt.bitbucketApp.GetBitbucketAppConnection(ctx); err != nil {
@@ -124,10 +94,7 @@ func (rt *Router) bitbucketProviderStatus(ctx context.Context) gitProviderResour
 	return res
 }
 
-// giteaProviderStatus reports Gitea's entry, the same "connected means
-// authorized" shape gitlabProviderStatus uses. CanAuthClone stays
-// false: Gitea has no authenticated clone path today, matching
-// GitLab's own capability table entry.
+// Connected means authorized. CanAuthClone stays false: Gitea has no authenticated clone path today.
 func (rt *Router) giteaProviderStatus(ctx context.Context) gitProviderResource {
 	res := gitProviderResource{Provider: "gitea"}
 	if _, err := rt.giteaApp.GetGiteaAppConnection(ctx); err != nil {

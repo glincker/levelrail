@@ -16,23 +16,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// databaseControllerName mirrors
-// internal/reconcile/database.Controller.Name()'s "database/" + dbName
-// convention, the same duplicate-the-string-format tradeoff
-// applicationControllerName's own doc comment explains for apps.
+// databaseControllerName duplicates the controller's name format, so the two must stay in sync.
 func databaseControllerName(dbName string) string {
 	return "database/" + dbName
 }
 
-// databaseResource is the wire shape for a managed database:
-// store.DesiredDatabase plus its name, the same direct-marshal choice
-// appResource makes for services. NodeID is response-only on update, the
-// same boundary appResource's own NodeID field documents; PUT
-// /api/v1/databases/{name}/node (handleSetDatabaseNode) is how an
-// existing database's placement changes. handleCreateDatabase is the one
-// exception, mirroring appResource: an explicit node_id in the create
-// request overrides simple spread scheduling, see that handler's own
-// doc comment.
+// databaseResource NodeID is response-only on update; placement changes go through PUT .../node.
 type databaseResource struct {
 	Name    string `json:"name"`
 	Engine  string `json:"engine"`
@@ -42,46 +31,20 @@ type databaseResource struct {
 	// appResource.
 	NodeName    string `json:"node_name,omitempty"`
 	NodeIsLocal bool   `json:"node_is_local,omitempty"`
-	// AutoPlaced is response-only, set only by handleCreateDatabase: true
-	// when node_id was omitted from the create request and simple spread
-	// scheduling (autoPlaceNode, scheduling.go) picked a non-local node
-	// for it. Every other handler returning a databaseResource leaves
-	// this false.
+	// AutoPlaced is response-only and true only when create picked a non-local node.
 	AutoPlaced bool `json:"auto_placed,omitempty"`
-	// ProjectID: see appResource's own ProjectID field doc comment,
-	// identical response-only-except-at-create-time boundary. Set it on
-	// an existing database via PUT /api/v1/databases/{name}/project
-	// (handleSetDatabaseProject) instead.
+	// ProjectID is response-only except at create; change it via PUT .../project.
 	ProjectID string `json:"project_id,omitempty"`
-	// BackupTargetID, BackupSchedule, BackupRetain: wave-2 roadmap item 6,
-	// scheduled backups. Response-only here, the identical boundary
-	// NodeID/ProjectID already establish: set or clear them via
-	// PUT/DELETE /api/v1/databases/{name}/backup-schedule (backups.go),
-	// never through this resource's own create/update body.
+	// Backup fields are response-only; set them via PUT and DELETE .../backup-schedule.
 	BackupTargetID   string `json:"backup_target_id,omitempty"`
 	BackupSchedule   string `json:"backup_schedule,omitempty"`
 	BackupRetain     int    `json:"backup_retain,omitempty"`
 	BackupRetainDays int    `json:"backup_retain_days,omitempty"`
-	// PubliclyAccessible, PublicPort: response-only, the identical
-	// boundary NodeID/ProjectID/BackupTargetID already establish. Set or
-	// clear them via PUT/DELETE /api/v1/databases/{name}/public-access
-	// (database_public_access.go), never through this resource's own
-	// create/update body.
-	PubliclyAccessible bool `json:"publicly_accessible,omitempty"`
-	PublicPort         int  `json:"public_port,omitempty"`
-	// PublicBindAddress: see databasePublicAccessResource's own
-	// BindAddress field doc comment (database_public_access.go) for what
-	// this holds; same response-only boundary as PubliclyAccessible/
-	// PublicPort above.
-	PublicBindAddress string `json:"public_bind_address,omitempty"`
-	// Resources: unlike NodeID/ProjectID/the backup fields above, this is
-	// ordinary desired state, the same appResource.Resources field
-	// carries for apps, not a response-only/dedicated-route field. There
-	// is no PUT /api/v1/databases/{name} to carry it the way
-	// handleUpdateApp carries appResource.Resources, though, so it is set
-	// through its own dedicated route instead:
-	// PUT /api/v1/databases/{name}/resources (handleSetDatabaseResources),
-	// mirroring the node/project routes' shape rather than appResource's.
+	// Public access fields are response-only; set them via PUT and DELETE .../public-access.
+	PubliclyAccessible bool   `json:"publicly_accessible,omitempty"`
+	PublicPort         int    `json:"public_port,omitempty"`
+	PublicBindAddress  string `json:"public_bind_address,omitempty"`
+	// Resources is set through PUT .../resources, since there is no general update route for databases.
 	Resources *store.ServiceResources `json:"resources,omitempty"`
 	// ExistingVolume is request-only: "reuse" or "discard" what a deleted
 	// database of the same name left behind (see database_leftover_volume.go).
@@ -90,19 +53,9 @@ type databaseResource struct {
 	// doc comment. Only ever set by handleSetDatabaseResources; every
 	// other handler returning a databaseResource leaves it false.
 	ResourcesAppliedLive bool `json:"resources_applied_live,omitempty"`
-	// Suspended: response-only, the identical boundary NodeID/
-	// ProjectID/the backup fields already establish. Set or clear it via
-	// POST /api/v1/databases/{name}/stop and .../start
-	// (database_stop_start.go), mirroring appResource.Suspended.
+	// Suspended is response-only; set it via POST .../stop and .../start.
 	Suspended bool `json:"suspended,omitempty"`
-	// TLSEnabled: response-only, computed fresh on every read rather
-	// than stored (databaseTLSEnabled), true exactly when
-	// internal/reconcile/application's own identically-named check
-	// would resolve this database's connection string with TLS. Not
-	// settable through this or any other resource: TLS activates
-	// automatically at database-creation time (internal/reconcile/
-	// database's WithTLS), never through an operator toggle, so there is
-	// no corresponding request field.
+	// TLSEnabled is computed on read and not settable, since TLS activates automatically at creation.
 	TLSEnabled bool `json:"tls_enabled,omitempty"`
 }
 
@@ -125,12 +78,7 @@ func toDatabaseResource(d store.DesiredDatabase) databaseResource {
 	}
 }
 
-// toDatabaseResourceWithStatus is toDatabaseResource plus TLSEnabled,
-// which needs a secrets lookup (rt.secrets) toDatabaseResource's own
-// pure-function signature has no room for. Every handler that returns a
-// live database's current state uses this; toDesiredDatabase's own
-// create-time caller (handleCreateDatabase) doesn't, since a database's
-// TLS material is only ever generated once it's actually reconciled.
+// toDatabaseResourceWithStatus adds TLSEnabled, which needs a secrets lookup the pure converter cannot do.
 func (rt *Router) toDatabaseResourceWithStatus(ctx context.Context, d store.DesiredDatabase) databaseResource {
 	res := toDatabaseResource(d)
 	rt.placementResolver(ctx).stampDatabase(&res)
@@ -138,13 +86,7 @@ func (rt *Router) toDatabaseResourceWithStatus(ctx context.Context, d store.Desi
 	return res
 }
 
-// databaseTLSEnabled mirrors internal/reconcile/application's own
-// identically-purposed check: true exactly when d's engine
-// database.SupportsTLS and its TLS certificate has actually been
-// generated and persisted (cmd/levelrail's tlsMaterialFor). A lookup
-// error is treated as "not enabled" rather than failing the whole
-// request: this field is a display nicety, never load-bearing for a
-// database's actual reconciled state.
+// A lookup error reports TLS as not enabled rather than failing the request, since this is display-only.
 func (rt *Router) databaseTLSEnabled(ctx context.Context, d store.DesiredDatabase) bool {
 	if rt.secrets == nil || !database.SupportsTLS(d.Engine) {
 		return false
@@ -184,33 +126,21 @@ func (d databaseResource) toDesiredDatabase() store.DesiredDatabase {
 	}
 }
 
-// databaseListResource is GET /api/v1/databases' own wire shape,
-// databaseResource plus a batched status summary, mirroring
-// appListResource's exact reasoning (apps.go): DatabaseRow needs enough
-// to render a status dot without an N+1 GetConditions call per database.
+// databaseListResource batches status so the list needs no per-database conditions call.
 type databaseListResource struct {
 	databaseResource
 	Status   appStatusSummary          `json:"status"`
 	External *externalDatabaseResource `json:"external,omitempty"`
 }
 
-// validateDatabaseResource checks d.Engine against
-// store.SupportedDatabaseEngines' embedded registry rather than a
-// hardcoded postgres/redis/mysql comparison chain: adding a new engine
-// to that registry (internal/store/database_engines.yaml) makes it
-// valid here automatically, no second edit needed in this package.
+// Engines are checked against the embedded registry, so adding an engine needs no change here.
 func validateDatabaseResource(d databaseResource) error {
 	if d.Name == "" {
 		return errors.New("name is required")
 	}
 	supported, err := store.IsSupportedEngine(d.Engine)
 	if err != nil {
-		// The embedded registry failing to parse is a build-time
-		// invariant covered by internal/store's own tests, not a
-		// realistic runtime condition; still checked rather than
-		// ignored, since silently treating a load failure as "any
-		// engine is valid" would be worse than a slightly imprecise
-		// 400 here.
+		// A registry parse failure is a build-time invariant, so it is an error rather than treating every engine as valid.
 		return fmt.Errorf("check supported database engines: %w", err)
 	}
 	if !supported {
@@ -222,10 +152,7 @@ func validateDatabaseResource(d databaseResource) error {
 	return database.ValidateEngineVersion(d.Engine, d.Version)
 }
 
-// handleListDatabases handles GET /api/v1/databases. Status is computed
-// from one batched conditions query (store.GetConditionsForControllers),
-// the same shape handleListApps uses, not a GetConditions call per
-// database; TLSEnabled is computed the same way via databaseTLSStatuses.
+// handleListDatabases batches status and TLS lookups, avoiding a query per database.
 func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	dbs, err := rt.databases.ListDesiredDatabases(r.Context())
 	if err != nil {
@@ -279,27 +206,8 @@ func (rt *Router) handleListDatabases(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// createDesiredDatabase is handleCreateDatabase's own creation body,
-// factored out so handleCloneRestore (database_clone_restore.go) can
-// create a "restore as new database" target through the exact same path
-// rather than a second, duplicated one: same conflict check, same
-// SaveDesiredDatabase call, same trailing project assignment. Writes the
-// HTTP response itself on failure and returns ok=false, the same shape
-// loadDatabaseForRunner already establishes.
-//
-// Creating a postgres database here always succeeds at the store layer:
-// the reconciler (internal/reconcile/database) will refuse to actually
-// start it until credentials exist (envelope-encrypted
-// secrets, not built yet), and reports that refusal as a real condition
-// rather than this endpoint pretending postgres isn't an option. Read it
-// back via GET /api/v1/databases/{name}/status.
-//
-// req.ProjectID is accepted here for the identical reason and through
-// the identical mechanism appResource's own ProjectID field doc comment
-// and handleCreateApp's own doc comment describe: a brand new database
-// has no existing project assignment to clobber, so this handler is
-// allowed to call UpdateDatabaseProject as a trailing step after the
-// create succeeds, while an ordinary PUT-driven update still can't.
+// createDesiredDatabase is shared with restore-as-new so both creates take the same conflict and store path.
+// A postgres database is created even before credentials exist; the reconciler reports that as a condition.
 func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, req databaseResource) bool {
 	if err := validateDatabaseResource(req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -354,12 +262,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	// SaveDesiredDatabase never writes node_id, so an explicit or
-	// auto-placed non-local req.NodeID needs this trailing call, the same
-	// pattern UpdateDatabaseProject just above already establishes for
-	// ProjectID. req.NodeID is always "" for handleCloneRestore's own
-	// caller (database_clone_restore.go never sets it), so this is a
-	// no-op for that path.
+	// SaveDesiredDatabase never writes node_id, so placement needs this trailing update.
 	if req.NodeID != "" {
 		if err := rt.databases.UpdateDatabaseNode(r.Context(), req.Name, req.NodeID); err != nil {
 			rt.logger.Error("api: create database: assign node failed", slog.String("error", err.Error()), slog.String("name", req.Name), slog.String("node_id", req.NodeID))
@@ -370,19 +273,7 @@ func (rt *Router) createDesiredDatabase(w http.ResponseWriter, r *http.Request, 
 	return true
 }
 
-// handleCreateDatabase handles POST /api/v1/databases. Rejects a name
-// that already exists, the same conflict-not-overwrite convention
-// handleCreateApp establishes. See createDesiredDatabase's own doc
-// comment for the actual creation logic.
-//
-// node_id present in the body (even "") is an explicit placement
-// override, validated the same way handleSetAppNode validates one for
-// apps (handleSetDatabaseNode's own check is looser and left as-is, see
-// that handler's own doc comment; this is a new validation path, not a
-// change to an existing one). Omitted entirely lets simple spread
-// scheduling (autoPlaceNode) pick a node when more than one is
-// registered; AutoPlaced only turns true when that pick actually lands
-// somewhere other than local.
+// handleCreateDatabase rejects an existing name and treats an explicit node_id as a placement override.
 func (rt *Router) handleCreateDatabase(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -435,10 +326,7 @@ func (rt *Router) handleGetDatabase(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, rt.toDatabaseResourceWithStatus(r.Context(), *d))
 }
 
-// handleDeleteDatabase handles DELETE /api/v1/databases/{name}. It refuses
-// with 409 while an app still connects to the database unless ?force=true,
-// then removes desired state and stops the container. The data volume is
-// kept so a mistaken delete never destroys data.
+// The data volume is kept on delete, so a mistaken delete never destroys data.
 func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -539,11 +427,7 @@ type setDatabaseNodeRequest struct {
 	NodeID string `json:"node_id"`
 }
 
-// handleSetDatabaseNode handles PUT /api/v1/databases/{name}/node, the
-// database counterpart to handleSetAppNode: same unknown-node-id 400,
-// same empty-string-means-local-node convention, same AbilityRoot
-// gating at the router. UpdateDatabaseNode has existed in the store
-// since the placement work landed; this was the missing route over it.
+// handleSetDatabaseNode is the database counterpart of handleSetAppNode.
 func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -665,15 +549,7 @@ type setDatabaseResourcesRequest struct {
 	Resources *store.ServiceResources `json:"resources"`
 }
 
-// handleSetDatabaseResources handles PUT /api/v1/databases/{name}/resources.
-// databaseResource's own Resources field doc comment explains why this is
-// a dedicated route rather than folded into a general PUT
-// /databases/{name}: no such route exists for databases, unlike
-// handleUpdateApp for apps. SaveDesiredDatabase's own ON CONFLICT clause
-// never touches node_id/project_id/the backup columns (only
-// engine/version/resources/updated_at), so passing existing straight
-// through with only Resources replaced is safe: nothing else on the row
-// moves.
+// Only Resources changes: the store's upsert leaves node, project, and backup columns untouched.
 func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -718,12 +594,7 @@ func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Requ
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// handleDatabaseStatus handles GET /api/v1/databases/{name}/status: the
-// database analogue of handleDeployHistory, surfacing the database
-// controller's stored reconcile conditions (current status, not a
-// history log, same GetConditions semantics). This is the only place a
-// caller can see that a postgres database exists but isn't actually
-// running yet, see handleCreateDatabase's doc comment.
+// Conditions are the only place a postgres database waiting on credentials shows up.
 func (rt *Router) handleDatabaseStatus(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 

@@ -13,10 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestHandleCloneApp_Success covers the fields that do carry over
-// verbatim: image, port, env, secret_env (names only, see the
-// dedicated secret-value test below), resources, health, strategy,
-// replicas.
+// TestHandleCloneApp_Success checks which fields carry over verbatim to the clone.
 func TestHandleCloneApp_Success(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -85,10 +82,7 @@ func TestHandleCloneApp_Success(t *testing.T) {
 	}
 }
 
-// TestHandleCloneApp_NameConflict covers both a clone target that
-// collides with an unrelated existing app and the self-clone case
-// (new_name equal to the source's own name), which must be rejected the
-// same way rather than silently overwriting the source in place.
+// TestHandleCloneApp_NameConflict checks that a name collision, including self-clone, is rejected, not overwritten.
 func TestHandleCloneApp_NameConflict(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -157,11 +151,7 @@ func TestHandleCloneApp_MalformedBody(t *testing.T) {
 	}
 }
 
-// TestHandleCloneApp_DomainsNotCarriedOver: cloning must not attempt to
-// claim the source's domains for the new service (see handleCloneApp's
-// own doc comment for why: the source still owns them, so copying them
-// verbatim would always collide with store.ErrDomainTaken). The clone
-// must succeed domainless, not fail.
+// TestHandleCloneApp_DomainsNotCarriedOver checks the clone succeeds domainless, since the source still owns its domains.
 func TestHandleCloneApp_DomainsNotCarriedOver(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -189,12 +179,7 @@ func TestHandleCloneApp_DomainsNotCarriedOver(t *testing.T) {
 	}
 }
 
-// TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues covers this
-// endpoint's explicit secrets decision: the declared secret-backed env
-// var *names* carry over (so the clone's shape and required-secret
-// validation match the source), but the underlying encrypted value does
-// not, since internal/secrets scopes a DEK per service name and this
-// endpoint never touches the secrets manager at all.
+// TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues checks secret names carry over but values never do.
 func TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -221,20 +206,13 @@ func TestHandleCloneApp_SecretEnvNamesCarryOverWithoutValues(t *testing.T) {
 		t.Errorf("clone secret_env = %v, want [{Name: API_KEY, Required: true}] carried over", clone.SecretEnv)
 	}
 
-	// No DEK or value should exist yet for the clone's own service name:
-	// this endpoint must never touch internal/secrets at all, so nothing
-	// is set under the clone's name until the operator explicitly does
-	// so via PUT /api/v1/apps/{name}/secrets/{key}.
+	// The clone must have no secret DEK or value: the endpoint never touches internal/secrets.
 	if _, err := db.GetServiceDEK(ctx, "web-copy"); !errors.Is(err, store.ErrServiceDEKNotFound) {
 		t.Errorf("GetServiceDEK(web-copy) error = %v, want ErrServiceDEKNotFound: clone must not have generated a DEK or copied a secret value", err)
 	}
 }
 
-// TestHandleCloneApp_ProjectInherited_NodeNot covers this endpoint's
-// other explicit judgment call: project assignment (a pure
-// organizational label) is inherited automatically, node placement (a
-// real capacity/infrastructure decision) is not, matching
-// handleCreateApp's own established boundary for the latter.
+// TestHandleCloneApp_ProjectInherited_NodeNot checks project is inherited but node placement is not.
 func TestHandleCloneApp_ProjectInherited_NodeNot(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

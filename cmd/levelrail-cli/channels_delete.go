@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runChannelsDelete implements "channels delete <id>": DELETE
-// /api/v1/notification-channels/{id}. Never blocked by an app still
-// attached (the server clears channel_id via ON DELETE SET NULL), so
-// unlike a database or backup target this needs no confirmation flag.
+// runChannelsDelete implements "channels delete <id>". It needs no confirmation: the server clears attached apps' channel_id.
 func runChannelsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, channelsDeleteUsage(prog)) }

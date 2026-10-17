@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runUsersSetAbilities implements "users set-abilities <id>": PUT
-// /api/v1/users/{id}/abilities. Same --role/--abilities exclusivity as
-// "users create" (users_create.go's own doc comment); the server also
-// refuses id equal to the caller's own user (the self-lockout guard,
-// handleUpdateUserAbilities's own doc comment), surfaced here as
-// whatever error message the API returns, not duplicated client-side.
+// The server rejects changing the caller's own abilities (self-lockout guard); that error is surfaced as-is.
 func runUsersSetAbilities(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "users set-abilities", "print the updated user as JSON to stdout and nothing else", stderr)
 	var abilitiesFlag, role string

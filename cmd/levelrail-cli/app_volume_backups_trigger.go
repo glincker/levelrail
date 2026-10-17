@@ -6,14 +6,8 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsTrigger implements "app-volume-backups trigger
-// <app> <volume> --target ID": POST /api/v1/apps/{name}/volumes/{volume}/backups
-// (internal/api/app_volume_backups.go's own handleTriggerVolumeBackup),
-// mirroring runBackupsTrigger's exact shape (backups_trigger.go) for the
-// volume resource kind. Asynchronous: returns as soon as the attempt is
-// recorded and under way, not once the archive and upload actually
-// finish; use "app-volume-backups list <app> <volume>" to see whether it
-// did.
+// Asynchronous: returns once the attempt is recorded, not when the upload finishes.
+// Use "app-volume-backups list" to check the outcome.
 func runAppVolumeBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups trigger", "print the started backup attempt as JSON to stdout and nothing else", stderr)
 	var targetID string

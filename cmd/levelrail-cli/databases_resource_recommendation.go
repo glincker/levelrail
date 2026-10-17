@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runDatabasesResourceRecommendation implements "databases
-// resource-recommendation <name>": GET
-// /api/v1/databases/{name}/resource-recommendation
-// (internal/api/database_resource_recommendation.go's own
-// handleDatabaseResourceRecommendation), the database-kind counterpart to
-// runAppsResourceRecommendation (apps_resource_recommendation.go).
+// Database-kind counterpart of runAppsResourceRecommendation.
 func runDatabasesResourceRecommendation(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases resource-recommendation", "print the recommendation as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {

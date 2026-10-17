@@ -135,12 +135,7 @@ func TestHandleListApps(t *testing.T) {
 	}
 }
 
-// TestHandleListApps_Status covers the batched status field
-// (appListResource): one app with a True condition, one with a False
-// condition, and one with no conditions recorded at all, to prove each
-// row gets the right independent category rather than every row
-// collapsing to whatever the first controller's status happened to be
-// (the kind of bug a batched-but-mis-keyed implementation would produce).
+// TestHandleListApps_Status checks each row gets its own status, not the first controller's.
 func TestHandleListApps_Status(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -186,11 +181,7 @@ func TestHandleListApps_Status(t *testing.T) {
 	}
 }
 
-// GET /api/v1/apps and /api/v1/apps-summary must both downgrade a
-// domain-bearing app placed off the control plane's own node away from
-// "Healthy": its own reconcile conditions are all true (the container
-// really is running fine), but nobody outside this node can reach its
-// domain yet (see crossNodeIngressAppCondition).
+// Both list endpoints downgrade a domain-bearing app placed off this node from Healthy, since its domain is unreachable.
 func TestHandleListAppsAndSummary_CrossNodeDomainApp_NotHealthy(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -312,11 +303,7 @@ func TestHandleCreateApp_Command(t *testing.T) {
 	}
 }
 
-// TestHandleCreateApp_WithSecrets_Success covers creating an app with
-// inline secret values in the same POST /api/v1/apps request: each value
-// is stored via SecretSetter under the new app's own name, SecretEnv is
-// derived (declared names union'd with any inline value's own key), and
-// the response never echoes a value back.
+// TestHandleCreateApp_WithSecrets_Success checks inline secret values are stored and never echoed back.
 func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
@@ -365,11 +352,7 @@ func TestHandleCreateApp_WithSecrets_Success(t *testing.T) {
 	}
 }
 
-// TestHandleCreateApp_WithVaultEnv_Success covers creating an app with a
-// vault-backed env var declared in the same POST /api/v1/apps request:
-// unlike Secrets, this never touches the SecretSetter (no value to
-// store, only a { path, key } reference), and round-trips through
-// GetDesiredService intact.
+// TestHandleCreateApp_WithVaultEnv_Success checks a vault-backed env var round-trips as a reference, with no secret write.
 func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)
@@ -403,10 +386,7 @@ func TestHandleCreateApp_WithVaultEnv_Success(t *testing.T) {
 	}
 }
 
-// TestHandleCreateApp_SecretEnvNoValue_StillCreates covers declaring a
-// secret's NAME with no inline value at all: the app still creates, the
-// name is recorded so it shows up as "needs a value", and no
-// SetValueGuarded call happens.
+// TestHandleCreateApp_SecretEnvNoValue_StillCreates checks a declared secret name with no value still creates the app.
 func TestHandleCreateApp_SecretEnvNoValue_StillCreates(t *testing.T) {
 	setter := &fakeSecretSetter{}
 	rt, db := newTestRouterWithSecrets(t, setter)

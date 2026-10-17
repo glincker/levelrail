@@ -9,10 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
-// fakeMeshTransport is a Transport that also implements meshTransport,
-// standing in for a real *GRPCTransport reaching a connected agent. The
-// embedded Transport is nil: no test here calls a docker.Runtime method
-// through it, only ApplyMesh/RotateMeshKey.
+// The embedded Transport is nil, so only ApplyMesh and RotateMeshKey may be called on it.
 type fakeMeshTransport struct {
 	Transport
 
@@ -39,10 +36,7 @@ func (f *fakeMeshTransport) RotateMeshKey(_ context.Context) (network.RotationRe
 	return f.rotateResult, nil
 }
 
-// meshIncapableTransport is a registered Transport that does not
-// implement meshTransport at all, standing in for a test double or a
-// future transport kind GRPCSink's own doc comment says should never
-// happen against a real agent connection but must still fail clearly.
+// Exercises the failure path for a transport without mesh support, which a real agent never produces.
 type meshIncapableTransport struct {
 	docker.Runtime
 }
@@ -103,11 +97,7 @@ func TestGRPCSink_RotateKey_ForwardsToRegisteredTransport_AndSetsNodeID(t *testi
 	transport := &fakeMeshTransport{rotateResult: network.RotationResult{
 		OldPublicKey: testMeshKey(t, 1),
 		NewPublicKey: testMeshKey(t, 2),
-		// NodeID deliberately left zero here: GRPCSink.RotateKey must set
-		// it itself, since the remote node's own RotateMeshKeyResponse
-		// carries no NodeID field to echo back (RotateMeshKeyRequest's
-		// own doc comment: it always means "the node holding this
-		// stream").
+		// RotateKey must set NodeID itself, since the node's response carries no NodeID to echo back.
 	}}
 	registry.Register("node-a", transport)
 

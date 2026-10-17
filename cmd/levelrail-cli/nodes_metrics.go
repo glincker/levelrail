@@ -7,16 +7,7 @@ import (
 	"time"
 )
 
-// runNodesMetrics implements "nodes metrics <id> --metric NAME": GET
-// /api/v1/nodes/{id}/metrics (internal/api/node_metrics.go's own
-// handleQueryNodeMetrics). Most metrics here are a sum across every
-// service currently placed on the node, not a true host-level reading
-// (see that handler's own doc comment); a few (disk usage, OS patches
-// available) are real per-node readings instead. Either way, the server
-// is the sole authority on which metric names it accepts. See
-// runMetricsCommand (metrics_cmd.go) for the flag parsing and rendering
-// shared with "apps metrics"/"databases metrics"; the resource_count
-// line below is the one thing unique to this command.
+// Most metrics sum the services placed on the node, not host readings; the server decides which names are valid.
 func runNodesMetrics(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	return runMetricsCommand(prog, args, stdout, stderr, lookupEnv, metricsCommandConfig{
 		cmdLabel: "nodes metrics",

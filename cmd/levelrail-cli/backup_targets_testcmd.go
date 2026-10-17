@@ -6,10 +6,6 @@ import (
 	"io"
 )
 
-// runBackupTargetsTest implements "backup-targets test <id>": POST
-// /api/v1/backup-targets/{id}/test, probing the target's stored
-// credentials against its configured bucket without uploading or
-// deleting anything.
 func runBackupTargetsTest(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "backup-targets test", "print {\"ok\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, backupTargetsTestUsage(prog)) }

@@ -1,11 +1,6 @@
 package agent
 
-// These run the real GRPCTransport and the real ExecRelay against each
-// other over the same in-memory loopback exec_test.go establishes, with
-// only the PTY itself faked, so the framing a terminal adds on top of
-// exec (tty flag, initial size, resize frames, input while output is
-// still streaming) is proven without needing a Docker daemon. The real
-// PTY behavior is proven separately, live, in exec_tty_live_test.go.
+// Runs the real GRPCTransport and ExecRelay over loopback with only the PTY faked, so no Docker daemon is needed.
 
 import (
 	"context"

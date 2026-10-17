@@ -11,10 +11,7 @@ import (
 	"time"
 )
 
-// tailEntries applies --tail's client-side "last N entries" trim.
-// Extracted from runAppsLogs as its own pure function for the same
-// table-driven-test reason resolveTimeRange is: no client, no flags, no
-// I/O, just a slice transform.
+// tailEntries applies --tail as a client-side trim, since the server has no line-count parameter.
 func tailEntries(entries []logEntryResource, tail int) []logEntryResource {
 	if tail > 0 && len(entries) > tail {
 		return entries[len(entries)-tail:]
@@ -22,23 +19,8 @@ func tailEntries(entries []logEntryResource, tail int) []logEntryResource {
 	return entries
 }
 
-// runAppsLogs implements "apps logs <name>": GET /api/v1/apps/{name}/logs
-// (internal/api/logs.go's own handleQueryLogs), a real, historical
-// full-text search over already-stored log entries, the same endpoint
-// the web frontend's LogSearchPanel reads (web/src/queries/logs.ts).
-//
-// --follow switches to a live tail instead: GET
-// /api/v1/apps/{name}/logs/stream (internal/api/live_logs.go's
-// handleLiveLogStream), the same SSE connection the dashboard's live log
-// viewer opens. It is mutually exclusive with every historical-search
-// flag (--since/--from/--to/--q/--tail): the streaming endpoint takes no
-// query params of its own (a fixed, short backfill plus everything from
-// then on), so those flags would silently do nothing if allowed through.
-//
-// The server has no line-count query param on the historical search
-// (its two filters are the from/to time window and q, a full-text
-// phrase), so --tail is applied client-side, after the real query, by
-// trimming to the last N entries of what the server returned.
+// runAppsLogs implements "apps logs <name>" over the historical search endpoint.
+// --follow switches to the SSE live tail, which takes no query params, so the search flags are rejected with it.
 func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps logs", "print entries as a JSON array to stdout and nothing else", stderr)
 	var since, from, to, query string
@@ -98,16 +80,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	return exitOK
 }
 
-// runAppsLogsFollow implements "apps logs <name> --follow": opens
-// client.StreamLogs and prints each line as it arrives until ctx is
-// canceled (Ctrl+C or SIGTERM, the same signal.NotifyContext shape
-// cmd/levelrail's and cmd/levelrail-agent's own main() use) or the
-// server closes the connection. format == outputJSON prints each entry
-// as its own single-line JSON object (JSON Lines), since a live tail has
-// no complete result set to marshal as one JSON array; every other
-// format prints "STREAM LINE" the same way printLogEntriesHuman does,
-// minus the timestamp column the streaming wire shape doesn't carry (see
-// LogStreamEntry's own doc comment).
+// runAppsLogsFollow streams lines until ctx is canceled or the server closes the stream. JSON output is JSON Lines.
 func runAppsLogsFollow(client *Client, name string, stdout, stderr io.Writer, format outputFormat) int {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

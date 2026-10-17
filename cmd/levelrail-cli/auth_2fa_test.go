@@ -61,10 +61,7 @@ func TestRun_AuthTwoFactorSetup(t *testing.T) {
 	}
 }
 
-// runTwoFactorCommandOK runs the CLI with args and requires an exitOK
-// result, returning stdout for the caller's own assertions. Extracted
-// from the identical run-then-check-exitOK boilerplate every
-// TestRun_AuthTwoFactor* success case repeated.
+// runTwoFactorCommandOK fails the test unless the command returns exitOK.
 func runTwoFactorCommandOK(t *testing.T, args []string) string {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
@@ -107,10 +104,7 @@ func TestRun_AuthTwoFactorEnable_MissingCode(t *testing.T) {
 	}
 }
 
-// TestRun_AuthTwoFactorDisable covers both ways to prove the second
-// factor (a live code or a recovery code): same request/response shape,
-// differing only in which flag is passed and which twoFactorDisableRequest
-// field the server should see set.
+// Covers disabling with a live code and with a recovery code, which differ only in the flag used.
 func TestRun_AuthTwoFactorDisable(t *testing.T) {
 	tests := []struct {
 		name         string

@@ -7,10 +7,7 @@ import (
 	"strings"
 )
 
-// resourceUsageMetrics is every metric handleAppResourceUsage reads,
-// the same permanent vocabulary sampleValues (internal/telemetry/
-// collector.go) writes under. One LatestByMetric call per entry here,
-// each a single indexed SQLite query, not one query per app.
+// One LatestByMetric call per entry, each a single indexed query, not one per app.
 var resourceUsageMetrics = []string{
 	"cpu_percent",
 	"memory_usage_bytes",
@@ -19,12 +16,7 @@ var resourceUsageMetrics = []string{
 	"network_tx_bytes",
 }
 
-// appResourceUsageResource is one app's latest-known resource footprint,
-// the wire shape behind the dashboard's "what's using the most CPU/
-// memory/traffic right now" ranking. Any field can be absent (omitted,
-// not zero) when this control plane's telemetry has never recorded that
-// metric for this app yet, e.g. right after a fresh deploy before the
-// first collection tick.
+// Fields are omitted, not zero, when telemetry has never recorded that metric for the app.
 type appResourceUsageResource struct {
 	Name             string   `json:"name"`
 	CPUPercent       *float64 `json:"cpu_percent,omitempty"`
@@ -34,14 +26,8 @@ type appResourceUsageResource struct {
 	NetworkTxBytes   *float64 `json:"network_tx_bytes,omitempty"`
 }
 
-// handleAppResourceUsage handles GET /api/v1/apps/resource-usage: the
-// latest CPU/memory/network reading for every app in one response, so
-// the dashboard can rank "which app is consuming the most resources
-// right now" without fetching each app's own metrics one at a time (the
-// N+1 shape section 4.12's "never fetch the full resource graph on page
-// load" rule warns against). Returns every app that exists, including
-// ones telemetry has no samples for yet (all fields absent), so a
-// freshly deployed app is a real zero-usage row, not a missing one.
+// handleAppResourceUsage returns every app in one call, so the dashboard avoids per-app fetches.
+// Apps with no samples yet are included with absent fields, not dropped.
 func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request) {
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")
@@ -71,10 +57,7 @@ func (rt *Router) handleAppResourceUsage(w http.ResponseWriter, r *http.Request)
 	for _, metric := range resourceUsageMetrics {
 		samples, err := rt.latestByMetric(r.Context(), metric)
 		if err != nil {
-			// Partial telemetry (one metric's query failing) must not
-			// blank out every other metric that did succeed: the same
-			// "handle partial results gracefully" contract ADR 008
-			// already requires of Federator.QueryMetrics.
+			// A failing metric query must not blank out the metrics that succeeded.
 			rt.logger.Warn("api: app resource usage: query metric failed", slog.String("metric", metric), slog.String("error", err.Error()))
 			continue
 		}

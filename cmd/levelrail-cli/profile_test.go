@@ -80,10 +80,7 @@ func authRecordingServer(t *testing.T) (srv *httptest.Server, gotAuth *string) {
 	return srv, gotAuth
 }
 
-// TestProfileFlag_SelectsNamedProfile confirms --profile NAME resolves
-// that profile's own token/API URL, not "default"'s, and that omitting
-// --profile still falls back to "default": the flag > env > default
-// precedence chain end to end, not just at the apiclient unit level.
+// Guards the flag > env > default precedence end to end.
 func TestProfileFlag_SelectsNamedProfile(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	prog := "levelrail-cli-test"

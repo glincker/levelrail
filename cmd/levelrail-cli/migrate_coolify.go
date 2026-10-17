@@ -16,22 +16,8 @@ type migrateCoolifyFlags struct {
 	jsonOut             bool
 }
 
-// runMigrateCoolify implements "migrate coolify": fetch every
-// application from a live Coolify instance, map each to a Levelrail
-// service, and either write app.yaml files plus a migration report
-// (default) or create the apps directly on a target Levelrail instance
-// (--apply).
-//
-// --token here is Coolify's own API token, matching the founder-approved
-// command signature. The target Levelrail instance's own token/API URL
-// (--apply only) use distinctly-named flags (--target-token,
-// --target-api-url) rather than reusing --token/--api-url: this command
-// is the one place in this CLI that talks to two different APIs in one
-// invocation, so the usual --token/--api-url meaning ("this CLI's own
-// control plane") would be ambiguous here. Both still resolve through
-// the exact same resolveToken/resolveAPIURL precedence chain
-// (APP_API_TOKEN/APP_API_URL, then the credentials file) every other
-// command in this CLI already uses.
+// runMigrateCoolify implements "migrate coolify": writes app.yaml files and a report, or creates apps on a target with --apply.
+// Coolify's token uses --token; the target uses --target-token and --target-api-url, since this command talks to two APIs.
 func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs := flag.NewFlagSet(prog+" migrate coolify", flag.ContinueOnError)
 	fs.SetOutput(stderr)
@@ -79,11 +65,7 @@ func runMigrateCoolify(prog string, args []string, stdout, stderr io.Writer, loo
 	}, prog, stdout, stderr, lookupEnv)
 }
 
-// fetchAndMapApplication loads one Coolify application's full detail and
-// env vars and maps it. A fetch failure for this one app is reported as
-// a blocking issue on that app alone, not a whole-command failure: one
-// application Coolify can't return detail for (deleted mid-migration,
-// permission gap) shouldn't stop every other app from migrating.
+// fetchAndMapApplication maps one Coolify application. A fetch failure is a blocking issue for that app only, not the whole command.
 func fetchAndMapApplication(ctx context.Context, coolify *CoolifyClient, summary coolifyApplication, includeSecretValues bool) mappedApp {
 	full, err := coolify.GetApplication(ctx, summary.UUID)
 	if err != nil {

@@ -5,13 +5,7 @@ import (
 	"io"
 )
 
-// runNodes dispatches "nodes <verb> [args] [flags]" to one of
-// list/get/delete/join-token/cordon/uncordon/drain/health/workloads, the
-// same multi-verb dispatch shape runBackups uses. Every route these
-// subcommands call is AbilityRoot-gated server-side (internal/api/nodes.go),
-// so like "backups" these use the normal bearer token resolution every
-// other command in this CLI uses, provided the token actually carries
-// the root ability.
+// Routes are AbilityRoot-gated server-side, so the token must carry the root ability.
 func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, nodesUsage(prog))

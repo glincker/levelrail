@@ -16,19 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// ensureAppLinked creates-or-reuses a store.App named appName (App.ID ==
-// App.Name, the same convention migrations/0039_apps.sql's own backfill
-// and internal/deploy.Pipeline.DeploySpec's own ensureApp establish) and
-// links serviceName to it. Called from both handleCreateApp (an
-// ordinary single-service app, appName == serviceName) and
-// handleDeploySpec (one call per fanned-out service, same appName,
-// different serviceName each time), so every app this control plane
-// creates, single- or multi-service alike, ends up with a real AppID:
-// internal/reconcile/application's Controller only attaches a
-// per-service container to a Docker network when AppID is set, and
-// skipping that for the common single-service case would mean
-// networking only ever works after an app is upgraded to multi-service,
-// which apps_group.go's own doc comment calls out as the wrong shape.
+// Every app gets an AppID, even single-service ones: the reconciler attaches containers to a network only when it is set.
 func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName string) (string, error) {
 	app, err := rt.appGroups.GetAppByName(ctx, appName)
 	if errors.Is(err, store.ErrAppNotFound) {
@@ -47,11 +35,7 @@ func (rt *Router) ensureAppLinked(ctx context.Context, appName, serviceName stri
 	return app.ID, nil
 }
 
-// deploySpecRequest is POST /api/v1/apps/{name}/deploy-spec's body: a
-// git source (repo_url, ref) plus a full app.yaml services: map,
-// mirroring triggerBuildRequest's own repo_url/ref shape
-// (handleTriggerBuild, builds.go) but for N services fanned out under
-// one app instead of one already-existing app's own rebuild.
+// A git source plus the full app.yaml services map, fanned out under one app.
 type deploySpecRequest struct {
 	RepoURL string `json:"repo_url"`
 	Ref     string `json:"ref"`
@@ -76,37 +60,15 @@ type deploySpecServiceResult struct {
 	Error       string `json:"error,omitempty"`
 }
 
-// deploySpecResponse is POST /api/v1/apps/{name}/deploy-spec's success
-// body: one result per service key, in the same deterministic order
-// DeploySpec itself returns them. A per-key Error does not fail the
-// whole HTTP request (still 200/202): the request as a whole succeeded
-// at fanning out, even if one service's own build failed, matching
-// DeploySpec's own "one broken resource must not block the others" doc
-// comment. AllSucceeded lets a caller check the common case (every
-// service deployed) without walking the Services slice itself.
+// A per-service Error does not fail the request: the fan-out itself succeeded.
 type deploySpecResponse struct {
 	AppID        string                    `json:"app_id"`
 	Services     []deploySpecServiceResult `json:"services"`
 	AllSucceeded bool                      `json:"all_succeeded"`
 }
 
-// handleDeploySpec handles POST /api/v1/apps/{name}/deploy-spec: one
-// app.yaml's services: map becomes N independent builds+deploys under
-// one store.App named {name}. Synchronous and blocking, the same
-// tradeoff handleTriggerBuild's own doc comment already accepts for an
-// identical reason (no build-progress-streaming infrastructure exists
-// yet): every service builds in sequence (DeploySpec's own doc comment:
-// deterministic key order, not concurrent) before this handler
-// responds, so a large multi-service app.yaml is a genuinely slow
-// request, not just a slow build.
-//
-// A build failure for one service key does not fail the request: see
-// deploySpecResponse's own doc comment. This intentionally does not
-// record deploy_attempts history per service (unlike
-// handleTriggerBuild/webhook's single-service paths): a real per-service
-// attempt log for a fanned-out deploy is a store-schema-sized follow-up
-// (one attempt row per service key sharing one trigger), left as a
-// known, documented gap rather than improvised here.
+// Builds run in sequence and block the response, since no build-progress stream exists yet.
+// Per-service deploy_attempts history is not recorded; this is a known gap.
 func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	if rt.builder == nil {
 		writeError(w, http.StatusNotImplemented, "manual build trigger is not configured on this control plane")
@@ -166,12 +128,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "secrets are not configured on this control plane (no master key set)")
 		return
 	}
-	// Set before DeploySpec runs, not after: Pipeline.Deploy's own
-	// validateEnv checks a required secret already exists, so a value
-	// given inline here must be stored before that check runs, not once
-	// the deploy has already finished. svcName mirrors
-	// internal/deploy/multi.go's DeploySpec own naming convention
-	// exactly, including the SingleServiceName override.
+	// Stored before DeploySpec runs, since validateEnv checks required secrets up front.
 	for key, values := range inlineSecrets {
 		svcName := name + "-" + key
 		if req.SingleServiceName != "" {
@@ -195,10 +152,7 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 		imageRepoBase = name
 	}
 
-	// AbilityDeploy alone (this route's own gate) is not enough to
-	// authorize minting a live GitHub App installation token, the same
-	// reasoning handleTriggerBuild's own doc comment gives for the
-	// identical check there.
+	// AbilityDeploy alone does not authorize minting a GitHub App installation token.
 	token := rt.tokenForRepo(r.Context(), name, req.RepoURL, rt.callerHasAbility(r, AbilityReadSensitive))
 
 	sourceDir, commit, cleanup, err := rt.fetch(r.Context(), req.RepoURL, req.Ref, token)
@@ -262,19 +216,8 @@ func (rt *Router) handleDeploySpec(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, status, resp)
 }
 
-// validateDeploySpecServiceTypes rejects any build.type
-// internal/deploy.Pipeline.Deploy's own switch can't handle. Shared by
-// handleDeploySpec (a manual/API-triggered fan-out) and
-// handleSetGitSource (persisting a services: map for a webhook-triggered
-// one, git_sources.go), so the two never validate build types
-// differently. spec.BuildImage needs no build at all
-// (internal/deploy.Pipeline.deployImage), but that doesn't make it
-// invalid here: a sibling service in the same services: map that does
-// need a real build is exactly why a fan-out request still needs
-// repo_url/ref even when every other service is build.type: image.
-// spec.BuildCompose is expanded into real per-service entries before
-// Deploy ever sees it (internal/deploy.Pipeline.DeploySpec's own
-// expandComposeServices), never dispatched to Deploy's switch itself.
+// Shared with handleSetGitSource so the two never validate build types differently.
+// A fan-out still needs repo_url and ref even when every service is build.type: image.
 func validateDeploySpecServiceTypes(services map[string]spec.Service) error {
 	for key, svc := range services {
 		switch svc.Build.Type {
@@ -286,12 +229,7 @@ func validateDeploySpecServiceTypes(services map[string]spec.Service) error {
 	return nil
 }
 
-// deploySpecInlineSecrets extracts every inline secret value services
-// declares (an Env entry with Secret: true and a non-empty Value), keyed
-// by service key then env var name. app.yaml itself can never carry a
-// secret value (internal/spec.EnvVar's YAML decoding has no value field
-// alongside secret), so this only ever fires for a JSON request built by
-// a client, e.g. the CLI's --secret flag.
+// app.yaml cannot carry a secret value, so this only fires for JSON requests such as the CLI's --secret.
 func deploySpecInlineSecrets(services map[string]spec.Service) map[string]map[string]string {
 	var out map[string]map[string]string
 	for key, svc := range services {

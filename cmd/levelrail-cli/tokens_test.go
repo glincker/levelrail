@@ -10,10 +10,7 @@ import (
 	"time"
 )
 
-// fakeSessionAuthServer wires up the login cookie plus one more
-// session-only route ("route"/"method" gate everything else), the same
-// session-establishing shape fakeControlPlane (auth_login_test.go) uses,
-// reused here for tokens list/revoke instead of tokens create.
+// Session-cookie fake for the session-only tokens routes.
 func fakeSessionAuthServer(t *testing.T, method, path string, handler func(w http.ResponseWriter, r *http.Request)) *httptest.Server {
 	t.Helper()
 	const cookieName = "session_token"

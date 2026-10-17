@@ -9,10 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 )
 
-// agentCertServerOptions reads the agent certificate settings (ADR 021):
-// APP_AGENT_CERT_VALIDITY and APP_AGENT_CERT_RENEW_GRACE, plus the security event log bounds
-// APP_NODE_SECURITY_COALESCE_WINDOW, APP_NODE_SECURITY_EVENTS_PER_NODE and
-// APP_NODE_SECURITY_EVENT_RETENTION.
+// agentCertServerOptions reads the agent certificate and security event env vars (ADR 021).
 func agentCertServerOptions(db agent.SecurityStore) []agent.Option {
 	return []agent.Option{
 		agent.WithSecurityLog(db, agent.SecurityConfig{

@@ -6,23 +6,13 @@ import (
 	"io"
 )
 
-// nodesHealthResponse is "nodes health"'s combined --json shape: the
-// stored reconcile conditions plus a live re-check of whether any
-// node-scoped alert kind is currently firing for this specific node, so
-// one command answers "is this node unhealthy right now" without a
-// second, separate query against an app-scoped alerts list.
+// Combines stored reconcile conditions with a live check of node-scoped alerts firing on this node.
 type nodesHealthResponse struct {
 	Conditions  []conditionResource      `json:"conditions"`
 	AlertStatus *nodeAlertStatusResource `json:"alert_status,omitempty"`
 }
 
-// runNodesHealth implements "nodes health <id>": GET
-// /api/v1/nodes/{id}/health for the node health controller's stored
-// reconcile conditions (printed with the same printConditionsHuman table
-// "apps status" already uses), plus GET /api/v1/nodes/{id}'s live
-// alert_status, so this one command covers both "is the node reachable"
-// and "has a platform-wide alert rule actually fired because of this
-// node" in one place.
+// Shows stored reconcile conditions plus the node's live alert status.
 func runNodesHealth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes health", "print conditions and alert status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesHealthUsage(prog)) }

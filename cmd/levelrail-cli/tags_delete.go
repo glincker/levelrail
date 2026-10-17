@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runTagsDelete implements "tags delete <name>": resolves name to its
-// tag ID, then DELETE /api/v1/tags/{id}. Every app currently attached
-// to it just loses that one attachment (migrations/0106_tags.sql's own
-// ON DELETE CASCADE), so unlike a database or backup target this needs
-// no confirmation flag, the same reasoning runChannelsDelete's own doc
-// comment gives.
+// No confirmation flag: deleting a tag only removes its attachments (ON DELETE CASCADE).
 func runTagsDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "tags delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tagsDeleteUsage(prog)) }

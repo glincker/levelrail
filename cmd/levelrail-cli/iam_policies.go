@@ -14,10 +14,7 @@ import (
 // non-JSON iam policies output uses.
 const timestampDisplayFormat = "2006-01-02 15:04:05"
 
-// resolveDocumentFlag reads a policy document flag value: file://path
-// reads and returns that file's contents (AWS CLI's own file:// prefix
-// convention for --policy-document and similar flags), anything else is
-// used verbatim as inline JSON.
+// resolveDocumentFlag reads the contents of a file:// path, or uses the value verbatim as inline JSON.
 func resolveDocumentFlag(raw string) (string, error) {
 	path, ok := strings.CutPrefix(raw, "file://")
 	if !ok {

@@ -1,10 +1,6 @@
 package agent
 
-// This file: the control plane's side of the request/
-// response multiplexer over one Session stream. agent.proto's own
-// header comment already explains why a single physical stream carries
-// many logical request/response pairs; mux is what actually does that
-// matching, keyed by AgentRequest.RequestId.
+// Control plane side of the request/response multiplexer over one Session stream, matched by RequestId.
 
 import (
 	"context"
@@ -18,11 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// sessionStream is the narrow surface mux needs from a Session gRPC
-// stream, so tests can fake it without a real network connection.
-// *grpc.GenericServerStream[AgentMessage, ControlMessage] (the control
-// plane's own side of Session, per agentpb.AgentService_SessionServer)
-// satisfies this structurally.
+// sessionStream is the narrow surface mux needs from a Session stream, so tests can fake it.
 type sessionStream interface {
 	Send(*agentpb.ControlMessage) error
 	Recv() (*agentpb.AgentMessage, error)
@@ -32,27 +24,14 @@ type sessionStream interface {
 // has ended, for any pending or future call.
 var ErrSessionClosed = errors.New("agent: session closed")
 
-// eventChanBuffer bounds each watcher's event channel: recvLoop is the
-// one goroutine reading every frame off the physical stream (responses
-// and events alike), so it must never block delivering an event to a
-// slow watcher, or every pending Call on the same stream would stall
-// behind it too. A full channel drops the event rather than blocking;
-// GRPCTransport.Events' own doc comment names this as a real,
-// documented backpressure choice, not silently lossy behavior nobody
-// decided on.
+// Events are dropped, not blocked on, when a watcher is full: recvLoop reads every frame, and blocking would stall the stream.
 const eventChanBuffer = 64
 
 // execChunkBytes bounds one exec data frame's payload (stdout or stdin).
 const execChunkBytes = 32 << 10
 
-// execWindowFrames is how many unacknowledged exec data frames a sender
-// may have outstanding before it has to wait for an ExecCredit refund,
-// bounding an in-flight exec at execWindowFrames*execChunkBytes (2 MiB)
-// buffered per direction. Exec deliberately does not share
-// eventChanBuffer's drop-on-full behavior above: a dropped event frame
-// costs a missed reconcile trigger the next resync recovers from, while
-// a dropped exec frame is a silently corrupted database dump. So exec
-// makes the sender wait instead, and neither side may exceed its window.
+// Exec data frames are flow-controlled, never dropped: a dropped exec frame silently corrupts a dump.
+// Each side may have at most execWindowFrames unacknowledged frames in flight.
 const execWindowFrames = 64
 
 // execCreditBatch is how many consumed frames accumulate before a
@@ -60,18 +39,10 @@ const execWindowFrames = 64
 // refunding well before the sender's window runs dry.
 const execCreditBatch = execWindowFrames / 2
 
-// ErrExecWindowViolated ends an exec stream whose peer sent more
-// unacknowledged data frames than execWindowFrames allows. Failing the
-// one exec is the only safe response: blocking recvLoop would stall
-// every other call sharing this session, and dropping the frame would
-// corrupt the stream silently.
+// ErrExecWindowViolated fails one exec whose peer exceeded its window; blocking recvLoop would stall the session.
 var ErrExecWindowViolated = errors.New("agent: exec peer exceeded its flow-control window")
 
-// buildChunkBytes and buildWindowFrames are exec's windowing applied to a
-// dispatched build, with a larger frame because a build moves a whole
-// source tree up and a whole image tar back rather than a terminal's
-// worth of output: 64 frames of 64 KiB bounds each direction at 4 MiB in
-// flight.
+// Builds use exec's windowing with larger frames, since a build moves whole source trees and image tars.
 const (
 	buildChunkBytes   = 64 << 10
 	buildWindowFrames = 64
@@ -83,16 +54,8 @@ const (
 // reason ErrExecWindowViolated ends an exec.
 var ErrBuildWindowViolated = errors.New("agent: build peer exceeded its flow-control window")
 
-// mux dispatches AgentRequest/AgentResponse pairs over one Session
-// stream, from the control plane's side (the caller): Call sends a
-// request and blocks until its matching response arrives, is cancelled
-// via ctx, or the stream itself closes. Separately, it fans out
-// unprompted ProxiedEvent frames to whichever watcher subscribed with
-// the matching watch_id (subscribe/unsubscribe), the mechanism
-// GRPCTransport.Events builds its returned channels on top of. A single
-// background goroutine (recvLoop) owns the stream's Recv side, since a
-// gRPC stream is not safe for concurrent Recv calls; Send is serialized
-// separately for the identical reason on the write side.
+// mux matches AgentRequest/AgentResponse pairs by RequestId and fans out unprompted ProxiedEvent frames to watchers.
+// A single recvLoop goroutine owns Recv, since a gRPC stream is not safe for concurrent Recv.
 type mux struct {
 	stream sessionStream
 
@@ -107,15 +70,7 @@ type mux struct {
 
 	closed chan struct{}
 
-	// onHeartbeat, if set, is called from recvLoop every time an
-	// AgentMessage_Heartbeat frame arrives. It is set directly by
-	// Server.Session (same package, unexported field, no constructor
-	// plumbing needed through the many other newMux call sites that never
-	// care about heartbeats) before Recv is ever read, so there is no
-	// race with recvLoop's own goroutine starting in newMux. Must not
-	// block: recvLoop is the one goroutine reading every frame off the
-	// physical stream, the same reasoning eventChanBuffer's own doc
-	// comment gives for deliverEvent never blocking on a slow watcher.
+	// onHeartbeat runs on recvLoop for every heartbeat frame, so it must not block.
 	onHeartbeat func()
 
 	// onGPU, if set, receives each GPUReport frame. Same set-before-recvLoop
@@ -128,12 +83,7 @@ type mux struct {
 	onRenewal    func(*agentpb.RenewalReport)
 }
 
-// frameSub is one in-flight multi-frame operation's control-plane-side
-// delivery point: out carries the agent's data frames, credit carries
-// the agent's refunds of this side's own input window. Only recvLoop
-// ever closes either channel (it is the only sender on both), so a
-// caller abandoning the operation unsubscribes without closing and lets
-// its own done signal wake any blocked reader instead.
+// frameSub delivers one multi-frame operation's frames. Only recvLoop closes its channels, so callers must not.
 type frameSub[T any] struct {
 	out    chan T
 	credit chan uint32
@@ -259,12 +209,7 @@ func (m *mux) deliverEvent(ev *agentpb.ProxiedEvent) {
 	}
 }
 
-// subscribe registers a fresh, buffered channel for watchID, replacing
-// any prior subscription under the same ID (there should never be one:
-// each GRPCTransport.Events call mints its own watchID). Returns nil if
-// the mux is already closed, so a caller that races Events() against
-// the stream ending gets a clear signal instead of a channel that will
-// simply never receive anything.
+// subscribe returns nil once the mux is closed, so a racing caller gets a clear signal, not a channel that never fires.
 func (m *mux) subscribe(watchID string) chan *agentpb.ProxiedEvent {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -290,11 +235,7 @@ func (m *mux) unsubscribe(watchID string) {
 	}
 }
 
-// subscribeExec registers delivery channels for execID (which is the
-// exec's own AgentRequest.RequestId). Returns nil if the mux is already
-// closed. Both channels are sized a frame past the flow-control window
-// so a well-behaved agent's data frames plus its one terminal frame can
-// always be delivered without recvLoop blocking.
+// Channels are sized a frame past the flow-control window, so the terminal frame never blocks recvLoop.
 func (m *mux) subscribeExec(execID string) *execSub {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -309,10 +250,7 @@ func (m *mux) subscribeExec(execID string) *execSub {
 	return sub
 }
 
-// unsubscribeExec stops delivering execID's frames. It deliberately does
-// not close the subscription's channels: recvLoop is their only sender
-// and may be mid-delivery right now, so closing here would race into a
-// send on a closed channel. The abandoning caller wakes its own reader.
+// unsubscribeExec does not close channels: recvLoop may be mid-send, so the caller wakes its own reader instead.
 func (m *mux) unsubscribeExec(execID string) {
 	m.mu.Lock()
 	delete(m.execs, execID)
@@ -366,11 +304,7 @@ func (m *mux) failExec(execID string, err error) {
 	close(sub.credit)
 }
 
-// subscribeBuild registers delivery channels for buildID (which is the
-// build's own AgentRequest.RequestId), the exact shape subscribeExec
-// establishes for an exec, sized a frame past the flow-control window so
-// a well-behaved agent's data frames plus its one terminal frame can
-// always be delivered without recvLoop blocking.
+// subscribeBuild is subscribeExec's shape, sized a frame past the flow-control window for the same reason.
 func (m *mux) subscribeBuild(buildID string) *buildSub {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -505,10 +439,7 @@ func (m *mux) deliver(resp *agentpb.AgentResponse) {
 	// not an error, since there is no one left to deliver it to.
 }
 
-// shutdown ends every pending Call and every active event subscription
-// with err, and marks the mux closed for any future Call or subscribe.
-// Idempotent: only the first caller (recvLoop itself, always, since
-// it's the only caller) actually does anything.
+// shutdown ends pending calls and subscriptions with err and marks the mux closed. It is idempotent.
 func (m *mux) shutdown(err error) {
 	m.mu.Lock()
 	if m.pending == nil {
@@ -545,11 +476,7 @@ func (m *mux) shutdown(err error) {
 	close(m.closed)
 }
 
-// Call sends req (assigning it a fresh RequestId, overwriting whatever
-// was there) down the stream and waits for the matching AgentResponse.
-// A response carrying AgentResponse.Error becomes a plain Go error here
-// (errors.New, not %w-wrapped: see execute.go's own doc comment on why
-// there's nothing meaningful to wrap across this RPC boundary).
+// Call returns a response error as a plain error, not %w-wrapped, since nothing meaningful crosses the RPC boundary.
 func (m *mux) Call(ctx context.Context, req *agentpb.AgentRequest) (*agentpb.AgentResponse, error) {
 	id, err := randomRequestID()
 	if err != nil {
@@ -558,10 +485,7 @@ func (m *mux) Call(ctx context.Context, req *agentpb.AgentRequest) (*agentpb.Age
 	return m.CallWithID(ctx, id, req)
 }
 
-// CallWithID is Call with a caller-chosen RequestId, for an operation
-// whose ID has to exist before the request is sent: an exec subscribes
-// to its own output under that same ID first, so the agent's first
-// output frame can never arrive with nowhere to go.
+// CallWithID lets the caller pick the RequestId, so an exec can subscribe to its output before sending the request.
 func (m *mux) CallWithID(ctx context.Context, id string, req *agentpb.AgentRequest) (*agentpb.AgentResponse, error) {
 	req.RequestId = id
 

@@ -6,14 +6,7 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsVerifications implements "app-volume-backups
-// verifications <app> <volume> --backup ID":
-// GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications
-// (internal/api/app_volume_backup_verify.go's own
-// handleListVolumeBackupVerifications), mirroring
-// runBackupsVerifications's exact shape (backups_verifications.go) for
-// the volume resource kind. Reuses printBackupVerificationsTable
-// (backups_verifications.go) as-is: the table shape is identical.
+// Reuses printBackupVerificationsTable: the table shape matches the app backup one.
 func runAppVolumeBackupsVerifications(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups verifications", "print verification history as a JSON array to stdout and nothing else", stderr)
 	var backupID string

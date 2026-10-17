@@ -214,11 +214,6 @@ func TestRun_AppsDeploysLogs(t *testing.T) {
 	}
 }
 
-// TestRun_AppsDeploysLogs_Follow proves --follow hits the SSE deploy-log
-// route (not the download route TestRun_AppsDeploysLogs above exercises)
-// and prints each streamed line, the same "stream line" text format
-// apps_logs_follow_test.go's TestRun_AppsLogs_Follow already establishes
-// for the app-log equivalent.
 func TestRun_AppsDeploysLogs_Follow(t *testing.T) {
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

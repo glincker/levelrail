@@ -8,11 +8,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// EvaluateNodeOffline runs one KindNodeOffline rule: it fires while any
-// node's status is offline and resolves once every node is back. Like
-// the other platform-wide node kinds it has no debounce, since the
-// heartbeat sweep already applies its own grace before marking a node
-// offline. LastValue is the count of offline nodes.
+// EvaluateNodeOffline fires while any node is offline and resolves once all are back.
+// No debounce: the heartbeat sweep already applies its own grace period.
 func EvaluateNodeOffline(ctx context.Context, nodes NodeSource, r Rule, now time.Time) (Rule, []string, error) {
 	all, err := nodes.ListNodes(ctx)
 	if err != nil {

@@ -9,26 +9,13 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// appVolumeResource is the wire shape for one of an app's named Docker
-// volumes (spec.Service.Volumes, store.ServiceVolume): Name is the
-// logical name an operator wrote in app.yaml, not the resolved,
-// platform-prefixed Docker volume name (store.ServiceVolumeDockerName's
-// own doc comment explains why those differ). Response-only on the
-// general app resource, the same "shown but not settable through this
-// endpoint" boundary appResource's own NodeID/ProjectID fields already
-// establish; apps_volumes_attach.go's dedicated PUT
-// /api/v1/apps/{name}/volumes is the one place this same shape is also
-// a request body, the same split egress-policy and health already have.
+// Name is the logical app.yaml name, not the platform-prefixed Docker volume name; response-only on the app resource.
 type appVolumeResource struct {
 	Name          string `json:"name"`
 	ContainerPath string `json:"container_path"`
 }
 
-// toAppVolumeResources derives each of svc's volumes' logical names back
-// from their resolved store.ServiceVolume.Name, the same fixed-prefix
-// strip store.ServiceVolumeDockerName uses in the opposite direction:
-// nil when svc has none, matching appResource's own omitempty on this
-// field.
+// Strips the store's fixed Docker name prefix to recover logical names; nil when there are no volumes.
 func toAppVolumeResources(svc store.DesiredService) []appVolumeResource {
 	if len(svc.Volumes) == 0 {
 		return nil
@@ -41,12 +28,7 @@ func toAppVolumeResources(svc store.DesiredService) []appVolumeResource {
 	return out
 }
 
-// appBindMountResource is the wire shape for one of an app's bind
-// mounts (store.ServiceBindMount), response-only like appVolumeResource
-// above: a bind mount is only ever set through the compose-import path
-// (POST /apps/{name}/compose, AbilityRoot-gated when the file carries
-// one, see handleDeployCompose's own doc comment), never through this
-// endpoint.
+// Bind mounts are set only via compose import, so this resource is response-only.
 type appBindMountResource struct {
 	HostPath      string `json:"host_path"`
 	ContainerPath string `json:"container_path"`
@@ -67,12 +49,7 @@ func toAppBindMountResources(svc store.DesiredService) []appBindMountResource {
 	return out
 }
 
-// loadServiceVolume resolves {name}/{volume} path values to volumeName's
-// real Docker volume name, writing the 404/500 response itself on
-// failure: the shared shape every volume backup/restore handler in
-// app_volume_backups.go/app_volume_restore.go needs before it can do
-// anything else, the same role loadDatabaseForRunner (backups.go)
-// already plays for the database path.
+// loadServiceVolume resolves {name}/{volume} to a Docker volume name and writes the 404/500 response on failure.
 func (rt *Router) loadServiceVolume(w http.ResponseWriter, r *http.Request, serviceName, volumeName, logContext string) (dockerVolumeName string, ok bool) {
 	svc, err := rt.apps.GetDesiredService(r.Context(), serviceName)
 	if errors.Is(err, store.ErrServiceNotFound) {

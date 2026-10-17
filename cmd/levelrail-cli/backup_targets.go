@@ -5,11 +5,6 @@ import (
 	"io"
 )
 
-// runBackupTargets dispatches "backup-targets <verb> [flags]" to one of
-// list/get/create/update/delete: managing the connected S3-compatible
-// buckets internal/api/backup_targets.go exposes (Settings -> Backup
-// targets in the web UI), the same destinations "backups schedule set
-// --target ID" references by ID.
 func runBackupTargets(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, backupTargetsUsage(prog))

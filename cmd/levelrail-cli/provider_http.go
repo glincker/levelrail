@@ -8,12 +8,7 @@ import (
 	"net/http"
 )
 
-// providerGetJSON performs a GET against rawURL, decodes a 2xx JSON body
-// into out, and turns a non-2xx response into the error returned by
-// newAPIErr. Shared by CoolifyClient.do and DokployClient.do: both are a
-// read-only REST client for a competitor's migration-source API, and the
-// request/response handling is otherwise identical between them, only the
-// URL shape, auth header, and error type differ.
+// Shared by CoolifyClient and DokployClient; only the URL shape, auth header, and error type differ.
 func providerGetJSON(ctx context.Context, hc *http.Client, rawURL, path string, setHeaders func(*http.Request), newAPIErr func(status int, data []byte) error, out any) error {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil) //nolint:gosec // rawURL is the operator-supplied --url target this command exists to call, not attacker-controlled input
 	if err != nil {

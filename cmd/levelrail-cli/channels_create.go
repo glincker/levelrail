@@ -6,16 +6,7 @@ import (
 	"io"
 )
 
-// runChannelsCreate implements "channels create --name NAME --kind
-// KIND": POST /api/v1/notification-channels. Every kind takes
-// --notify-url directly (a webhook URL, a Telegram sendMessage URL with
-// chat_id, an email address, a PagerDuty routing key, ...); --kind
-// pushover additionally accepts --pushover-user-key/--pushover-api-token,
-// --kind pagerduty accepts --pagerduty-routing-key, --kind resend
-// accepts --resend-api-key/--resend-to/--resend-from, and --kind
-// opsgenie accepts --opsgenie-api-key, all convenience aliases so an
-// operator doesn't have to know the API expects them packed into
-// --notify-url (mirroring the web dashboard's connect dialog fields).
+// Provider-specific flags are packed into --notify-url for the API, so operators do not need the wire format.
 func runChannelsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "channels create", "print the created channel as JSON to stdout and nothing else", stderr)
 	var name, kind, notifyURL, pushoverUserKey, pushoverAPIToken, pagerDutyRoutingKey string

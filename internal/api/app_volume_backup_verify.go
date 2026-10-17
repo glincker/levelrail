@@ -9,15 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// handleVerifyVolumeBackup handles
-// POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify,
-// the volume counterpart of handleVerifyBackup (backup_verify.go):
-// reuses the exact same rt.backupVerifier (internal/backup.VerifyRunner
-// is already resource-agnostic), passing engine "" since a volume has no
-// database engine, the same "no engine-specific magic-byte check
-// available, checksum/size checks still run" reasoning
-// Scheduler.runScheduledVolume's own doc comment gives for the identical
-// choice on the scheduled path.
+// handleVerifyVolumeBackup is the volume counterpart of handleVerifyBackup. Engine is empty since a volume has no database engine.
 func (rt *Router) handleVerifyVolumeBackup(w http.ResponseWriter, r *http.Request) {
 	if rt.backupVerifier == nil {
 		writeError(w, http.StatusNotImplemented, "backup verification is not configured on this control plane (no master key set)")
@@ -64,12 +56,7 @@ func (rt *Router) handleVerifyVolumeBackup(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// handleListVolumeBackupVerifications handles
-// GET /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verifications,
-// reusing rt.backupVerifications as-is (ListBackupVerifications is
-// already keyed by backupHistoryID alone, no resource-kind distinction
-// needed): the only new work here is validating the named backup
-// actually belongs to this service/volume before listing.
+// handleListVolumeBackupVerifications lists verifications for a volume backup, after checking it belongs to this volume.
 func (rt *Router) handleListVolumeBackupVerifications(w http.ResponseWriter, r *http.Request) {
 	serviceName := r.PathValue("name")
 	volumeName := r.PathValue("volume")

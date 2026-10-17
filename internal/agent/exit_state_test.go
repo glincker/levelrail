@@ -20,10 +20,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// serveFakeAgent answers every request the transport sends by running
-// Execute against rt, the same dispatch serveSession does for a real
-// agent, so these tests exercise the actual wire encoding in both
-// directions rather than a stubbed response.
+// Uses the same Execute dispatch as serveSession, so tests cover the real wire encoding.
 func serveFakeAgent(t *testing.T, stream *fakeSessionStream, rt docker.Runtime) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
@@ -134,10 +131,7 @@ func TestGRPCTransport_InspectExitState_NotFound(t *testing.T) {
 	}
 }
 
-// TestGRPCTransport_InspectExitState_RuntimeWithoutCapability proves the
-// degraded path stays degraded rather than becoming a false crash
-// report: an agent whose runtime cannot inspect exit state answers with
-// an error, which every caller treats as "can't tell."
+// TestGRPCTransport_InspectExitState_RuntimeWithoutCapability checks an unsupported runtime stays "can't tell", not a crash.
 func TestGRPCTransport_InspectExitState_RuntimeWithoutCapability(t *testing.T) {
 	stream := newFakeSessionStream()
 	tr := newGRPCTransport(newMux(stream))
@@ -176,10 +170,6 @@ func TestLocal_InspectExitState_RuntimeWithoutCapability(t *testing.T) {
 	}
 }
 
-// wireRuntime is a stateful fake docker.Runtime, enough of a container
-// lifecycle for a real application.Controller to deploy against it: the
-// remote-node counterpart of that package's own test fake, reached here
-// only through a GRPCTransport.
 type wireRuntime struct {
 	mu         sync.Mutex
 	containers map[string]*docker.ContainerState
@@ -198,10 +188,7 @@ func newWireRuntime(hostPort int) *wireRuntime {
 	}
 }
 
-// crash records name as exited without clearing its Running flag: the
-// divergence that makes this failure mode dangerous, since Docker's
-// container list still reports a container a real inspect already knows
-// is dead.
+// Leaves Running set, matching the real case where Docker still lists a dead container.
 func (f *wireRuntime) crash(name string, oomKilled bool, exitCode int) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -361,11 +348,7 @@ func serverPort(t *testing.T, srv *httptest.Server) int {
 	return n
 }
 
-// TestController_RemoteNode_FastFailsOnOOMKillDuringReadiness is the
-// whole point of the wire method above: a deploy onto a remote node now
-// surfaces an OOM kill as soon as it happens, instead of waiting out the
-// full readiness budget and reporting a generic timeout, matching what a
-// locally placed service already did.
+// TestController_RemoteNode_FastFailsOnOOMKillDuringReadiness checks an OOM kill surfaces at once, not after the readiness budget.
 func TestController_RemoteNode_FastFailsOnOOMKillDuringReadiness(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)

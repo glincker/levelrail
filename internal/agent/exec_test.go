@@ -14,16 +14,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// The exec protocol is the one operation whose two halves cannot be
-// tested apart: output framing, stdin framing, flow control, and
-// cancellation are all agreements between GRPCTransport and ExecRelay.
-// So these tests run a real mux and a real serveSession against each
-// other over in-memory streams, with only docker.Runtime faked.
+// The exec halves cannot be tested apart, so these run a real mux and serveSession with only docker.Runtime faked.
 
-// loopback connects a control-plane sessionStream to an agent
-// agentClientStream. Its channels are deliberately almost unbuffered:
-// the protocol's own credit window is what has to bound how much is in
-// flight, and a generous buffer here would hide a failure to do that.
+// Channels are nearly unbuffered so the protocol's credit window, not a buffer, bounds frames in flight.
 type loopback struct {
 	toAgent   chan *agentpb.ControlMessage
 	toControl chan *agentpb.AgentMessage
@@ -326,10 +319,7 @@ func TestExec_SlowReader_BlocksTheCommandInsteadOfBuffering(t *testing.T) {
 
 	plateau := waitForPlateau(t, &written)
 
-	// Everything in flight at once: the agent's own send window, the
-	// control plane's undelivered frames, and a frame in each hop
-	// between them. Generous, but orders of magnitude below the 32 MiB
-	// the command is trying to push.
+	// Total in-flight buffering, far below the 32 MiB the command pushes.
 	limit := int64(execWindowFrames*execChunkBytes)*2 + 8*execChunkBytes
 	if plateau > limit {
 		t.Errorf("command wrote %d bytes with nobody reading, want it blocked under %d", plateau, limit)

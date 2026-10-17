@@ -6,17 +6,7 @@ import (
 	"io"
 )
 
-// runAppsStatus implements "apps status <name>": GET
-// /api/v1/apps/{name}/deploys (internal/api/deploys.go's own
-// handleDeployHistory), the application controller's current stored
-// reconcile conditions, the same data the web frontend's ConditionsPanel
-// reads. Deliberately a separate command from "apps get" rather than
-// folded into it: the two endpoints return genuinely different resource
-// shapes (desired app state vs. observed reconcile status), and "apps
-// get --json" already has a stable appResource contract a script might
-// depend on, so changing its shape to also carry conditions would be a
-// breaking change to that contract for no reason a new command doesn't
-// solve just as well.
+// Separate from apps get: its --json shape is a stable script contract that must not gain conditions.
 func runAppsStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps status", "print conditions as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() {

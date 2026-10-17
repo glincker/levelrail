@@ -82,12 +82,7 @@ func TestReorderArgsFlagsFirst(t *testing.T) {
 	}
 }
 
-// TestReorderArgsFlagsFirst_ParsesCorrectly proves the fix actually
-// works end to end against a real flag.FlagSet.Parse call, not just
-// that the reordering looks right: the bug this exists to fix
-// (cmd/levelrail-cli/apps_get.go, discovered live against a real
-// control plane) was "apps get web --json" silently leaving --json
-// unset because stdlib flag stops at the first positional argument.
+// Stdlib flag stops at the first positional, so 'apps get web --json' left --json unset without reordering.
 func TestReorderArgsFlagsFirst_ParsesCorrectly(t *testing.T) {
 	fs := testFlagSet()
 	args := reorderArgsFlagsFirst(fs, []string{"web", "--json", "--token", "t"})

@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runNetworkSharesCreate implements "network-shares create": POST
-// /api/v1/network-shares. --username/--password are required for a
-// cifs share, ignored for nfs (an NFS export authenticates by source
-// IP/export rules on the server side, not by credential).
+// --username and --password apply to cifs only; nfs authenticates by export rules on the server.
 func runNetworkSharesCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "network-shares create", "print the created network share as JSON to stdout and nothing else", stderr)
 	var name, protocol, host, remotePath, mountOptions, username, password string

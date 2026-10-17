@@ -5,10 +5,7 @@ import (
 	"strings"
 )
 
-// fishCompletionScript renders a fish completion script for prog. Unlike
-// bash/zsh it needs only two "complete" registrations total (not one per
-// tree node), since fish's -a accepts a command substitution that is
-// re-evaluated on every completion request.
+// fish's -a re-evaluates its command substitution per request, so two registrations suffice.
 func fishCompletionScript(prog string) string {
 	ident := sanitizeIdent(prog)
 	var b strings.Builder

@@ -72,12 +72,7 @@ func newNoContentEchoServer(t *testing.T) (srv *httptest.Server, gotPath, gotMet
 	return srv, gotPath, gotMethod
 }
 
-// newTagResolveThenServer starts a test server that answers GET
-// /api/v1/tags with a single-tag list mapping tagName to tagID, and
-// delegates every other request to next while recording its path and
-// method. "tags delete", "tags apps", and "apps untag" all resolve a
-// tag name to its ID via one ListTags call before their own action
-// request, so their tests share this two-request shape.
+// Answers the ListTags call that name-to-ID resolution makes before the command's own request.
 func newTagResolveThenServer(t *testing.T, tagName, tagID string, next func(w http.ResponseWriter, r *http.Request)) (srv *httptest.Server, gotPath, gotMethod *string) {
 	t.Helper()
 	gotPath, gotMethod = new(string), new(string)
@@ -93,11 +88,6 @@ func newTagResolveThenServer(t *testing.T, tagName, tagID string, next func(w ht
 	return srv, gotPath, gotMethod
 }
 
-// runStartStopSuccess runs a start/stop lifecycle CLI command against a
-// fake server whose response is built by respond, asserts the request was
-// a POST to wantPath, and returns stdout for the caller's own
-// confirmation-message assertion. Shared by "apps start/stop" and "apps
-// projects start/stop", whose success path is otherwise identical.
 func runStartStopSuccess(t *testing.T, args []string, wantPath string, respond func(w http.ResponseWriter)) string {
 	t.Helper()
 	var gotMethod, gotPath string
@@ -120,11 +110,6 @@ func runStartStopSuccess(t *testing.T, args []string, wantPath string, respond f
 	return stdout
 }
 
-// newCreatedNameEchoServer starts a test server that decodes a JSON
-// request body's "name" field into gotName, records the path and method,
-// and responds 201 Created with a tagResource built from that name and id
-// "tag_1". Shared by runCreateTagLikeSuccess's two callers, whose
-// POST-a-tag-name response shape is identical.
 func newCreatedNameEchoServer(t *testing.T, gotPath, gotMethod, gotName *string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -140,10 +125,6 @@ func newCreatedNameEchoServer(t *testing.T, gotPath, gotMethod, gotName *string)
 	}))
 }
 
-// runCreateTagLikeSuccess runs a POST-a-tag-name CLI command (tags create,
-// apps tag) against a fake server and asserts the request was a POST to
-// wantPath carrying wantName in its body. Shared by TestRun_TagsCreate and
-// TestRun_AppsTag, whose success path is otherwise identical.
 func runCreateTagLikeSuccess(t *testing.T, args []string, wantPath, wantName string) {
 	t.Helper()
 	var gotPath, gotMethod, gotName string
@@ -175,10 +156,6 @@ func newJSONErrorServer(t *testing.T, status int, body string) *httptest.Server 
 	return srv
 }
 
-// newEchoServer starts a test server that records the request method and
-// path (when non-nil) and responds 200 OK with body JSON-encoded. It's the
-// method-aware sibling of newListEchoServer, for mutation verbs (clear,
-// disable, ...) whose test also needs to assert the HTTP method.
 func newEchoServer[T any](t *testing.T, gotMethod, gotPath *string, body T) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -276,10 +253,6 @@ func testEnvSetClearsAll(t *testing.T, cliArgs []string, id, noun string) {
 	}
 }
 
-// testMetricsMissingMetric runs "<cmdArgs...> <id>" (no --metric) and
-// asserts the "--metric is required" validation error every "* metrics"
-// command shares (metrics_cmd.go's own runMetricsCommand), for "apps
-// metrics"/"databases metrics"/"nodes metrics" alike.
 func testMetricsMissingMetric(t *testing.T, cmdArgs []string, id string) {
 	t.Helper()
 	var stdout, stderr strings.Builder
@@ -314,16 +287,7 @@ func testMetricsHelp(t *testing.T, cmdArgs []string, wantSubstr string) {
 	}
 }
 
-// testMetricsQuerySuccess runs "<cmdArgs...> <id> --metric <metric>"
-// against a server returning an AppMetricsResource-shaped body, and
-// asserts the request path/query string and that the metric name and
-// point value both appear in the human table output. Shared by "apps
-// metrics"/"databases metrics" tests, whose success path is otherwise
-// identical: QueryAppMetrics and QueryDatabaseMetrics return the exact
-// same AppMetricsResource wire shape (see internal/apiclient's own doc
-// comment on QueryDatabaseMetrics for why). "nodes metrics" returns the
-// differently-shaped NodeMetricsResource (an extra resource_count field),
-// so it keeps its own test rather than reusing this helper.
+// Nodes metrics keeps its own test because its response shape differs.
 func testMetricsQuerySuccess(t *testing.T, cmdArgs []string, id, wantPath, metric string, value float64, wantValueText string) {
 	t.Helper()
 	var gotPath, gotQuery string

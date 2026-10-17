@@ -92,13 +92,7 @@ func TestPlanDatabaseCreate(t *testing.T) {
 	}
 }
 
-// TestPlanDatabaseCreate_ValidEngines covers every supported engine's
-// happy path: a flat (name, engine, version) tuple list rather than a
-// struct-literal-per-case table, since every one of these cases has the
-// exact same "name/engine/version in, matching databaseResource out"
-// shape and repeating that shape eight times as nested struct literals
-// (the form this test used before) is what triggered a duplication
-// finding.
+// Table of (name, engine, version) tuples covering every supported engine's happy path.
 func TestPlanDatabaseCreate_ValidEngines(t *testing.T) {
 	cases := [][3]string{
 		{"main", "postgres", "16"},

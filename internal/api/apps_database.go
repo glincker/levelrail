@@ -10,30 +10,19 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// defaultDatabaseAttachmentEnvVar and defaultDatabaseAttachmentField are
-// what PUT /api/v1/apps/{name}/database fills in when the request body
-// leaves env_var/field blank: the common case is "give me a full
-// connection string under the conventional name", not an operator
-// choosing a specific sub-field every time.
+// Blank env_var and field default to a full connection string under the conventional name.
 const (
 	defaultDatabaseAttachmentEnvVar = "DATABASE_URL"
 	defaultDatabaseAttachmentField  = "url"
 )
 
-// appDatabaseEnvRef is store.DatabaseEnvRef's wire shape, used both
-// inside appResource.DatabaseEnv (a map) and nowhere else: it carries no
-// app/env-var name of its own, that's the map key or the request's own
-// field.
+// Carries no name of its own; the map key or request field supplies it.
 type appDatabaseEnvRef struct {
 	Database string `json:"database"`
 	Field    string `json:"field"`
 }
 
-// appDatabaseResource is PUT/DELETE /api/v1/apps/{name}/database's
-// response body and appResource.DatabaseAttachment's wire shape:
-// deliberately its own small type, not a reuse of appResource, the same
-// "narrow response, not a full resource echo" shape appStorageResource
-// already establishes for the equivalent storage endpoint.
+// A narrow response shape, not a full appResource echo, matching appStorageResource.
 type appDatabaseResource struct {
 	AppName      string `json:"app_name,omitempty"`
 	DatabaseName string `json:"database_name"`
@@ -41,30 +30,14 @@ type appDatabaseResource struct {
 	Field        string `json:"field"`
 }
 
-// setAppDatabaseRequest is handleSetAppDatabase's request body. EnvVar
-// and Field both default when left blank (defaultDatabaseAttachmentEnvVar/
-// defaultDatabaseAttachmentField), so the common case ("attach this
-// database, give me DATABASE_URL") needs only database_name.
+// Blank env_var and field default, so database_name alone is enough.
 type setAppDatabaseRequest struct {
 	DatabaseName string `json:"database_name"`
 	EnvVar       string `json:"env_var"`
 	Field        string `json:"field"`
 }
 
-// handleSetAppDatabase handles PUT /api/v1/apps/{name}/database: attaches
-// an already-created managed database to this app as a real, persisted
-// connection-env-var source, the UI/CLI-facing equivalent of app.yaml's
-// own { from: "<database>.<field>" } env var syntax (internal/spec.
-// EnvVar.From, resolved by internal/deploy's validateEnv and
-// internal/reconcile/application's resolveDatabaseField) for an app that
-// was created directly rather than deployed from a spec file.
-//
-// The database must already exist, and field (once defaulted) must be
-// one database.SupportsField's engine-aware rules allow for it: both
-// fail loudly here with a 400 rather than silently being written and
-// only surfacing as a reconcile failure later, the same "validate
-// against the real registry first" shape handleSetAppStorage already
-// establishes for storage_target_id.
+// Validates the database and field up front, so bad input fails with 400 rather than at reconcile.
 func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -120,13 +93,7 @@ func (rt *Router) handleSetAppDatabase(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, appDatabaseResource{AppName: name, DatabaseName: req.DatabaseName, EnvVar: envVar, Field: field})
 }
 
-// handleClearAppDatabase handles DELETE /api/v1/apps/{name}/database: the
-// reverse of handleSetAppDatabase, detaching whatever database this app
-// currently resolves its attachment env var from. The next reconcile
-// pass sees the attachment go back to nil and stops injecting that env
-// var into freshly (re)created containers, the same "desired state
-// changes, running containers converge on their own schedule" behavior
-// handleClearAppStorage already documents.
+// Clearing affects only freshly created containers; running ones keep the env var until recreated.
 func (rt *Router) handleClearAppDatabase(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 

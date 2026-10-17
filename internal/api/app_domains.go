@@ -29,10 +29,7 @@ type editDomainsRequest struct {
 	// Environment (ID, name or kind) edits that environment's own domain
 	// set instead of the app's default set.
 	Environment string `json:"environment,omitempty"`
-	// DNS is auto (default), off or preview: whether added domains get their
-	// DNS record created. Replace lets a conflicting A/AAAA/CNAME be
-	// overwritten. RemoveDNS deletes the records Levelrail created for
-	// removed domains. Automation overrides the go-live policy per request.
+	// DNS is auto (default), off, or preview. Automation overrides the go-live policy per request.
 	DNS        string                    `json:"dns,omitempty"`
 	Replace    bool                      `json:"replace,omitempty"`
 	RemoveDNS  bool                      `json:"remove_dns,omitempty"`

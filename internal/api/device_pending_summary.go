@@ -17,10 +17,7 @@ type devicePendingSummaryResponse struct {
 	Pending []devicePendingSummaryItem `json:"pending"`
 }
 
-// handleDevicePendingSummary handles GET /api/v1/auth/device/pending-summary:
-// a read-only view of waiting CLI logins for the attention list, CLI and MCP.
-// It never carries a user code or device code, and no token can approve
-// anything from here (approve and deny stay session-only).
+// Read-only view of waiting CLI logins. It never carries a user or device code, and approve and deny stay session-only.
 func (rt *Router) handleDevicePendingSummary(w http.ResponseWriter, r *http.Request) {
 	pending, err := rt.authLib.device.PendingDevices(r.Context())
 	if err != nil {

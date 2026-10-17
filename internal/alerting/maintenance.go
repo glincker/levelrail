@@ -81,10 +81,7 @@ func (w MaintenanceWindow) tz() string {
 	return w.Timezone
 }
 
-// StateAt evaluates the cron schedule in the window's timezone. Cron
-// fields are matched against wall-clock time, so durations are measured
-// on the wall clock too (a window spanning a DST change keeps its
-// nominal length).
+// StateAt evaluates the window in its timezone, and durations use the wall clock so a DST-spanning window keeps its nominal length.
 func (w MaintenanceWindow) StateAt(now time.Time) (WindowState, error) {
 	sched, err := cronexpr.Parse(w.Cron)
 	if err != nil {

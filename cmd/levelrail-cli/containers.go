@@ -8,14 +8,8 @@ import (
 	"text/tabwriter"
 )
 
-// runContainers dispatches "containers <verb> [flags]". With no verb, or
-// a verb that looks like a flag (e.g. "--json"), it falls back to "list"
-// for backward compatibility with "containers [flags]" from before
-// stop/remove/claim existed. "list" is read-only; stop/remove/claim only
-// ever act on an orphaned container (internal/api/containers_orphaned.go
-// re-confirms this server-side on every call), never a Levelrail-managed
-// one, use "apps stop"/"apps start"/"apps restart"/"apps delete" for
-// those instead, which update desired state correctly.
+// Stop, remove, and claim only act on orphaned containers; use apps stop/start/delete for managed ones.
+// No verb, or a flag-like first argument, falls back to list for older invocations.
 func runContainers(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	sub := "list"
 	rest := args
@@ -98,11 +92,7 @@ func runContainersStop(prog string, args []string, stdout, stderr io.Writer, loo
 	})
 }
 
-// runContainersRemove implements "containers remove <name>": POST
-// /api/v1/system/containers/{name}/remove. Force-removes, including a
-// still-running container; there is no separate confirmation step here,
-// the orphaned-container safety check (409 on a managed container) is
-// the only guard.
+// No confirmation step: the server's orphan check (409 on managed containers) is the only guard.
 func runContainersRemove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "containers remove", "print the result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() {
@@ -125,11 +115,6 @@ func runContainersRemove(prog string, args []string, stdout, stderr io.Writer, l
 	})
 }
 
-// runContainersClaim implements "containers claim <name> [--as
-// app-name]": POST /api/v1/system/containers/{name}/claim, creating a
-// real Levelrail app (build.type: image) from the container's own
-// image. --as overrides the app name the server would otherwise derive
-// from the container's own name.
 func runContainersClaim(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "containers claim", "print the created app as JSON to stdout and nothing else", stderr)
 	var asName string

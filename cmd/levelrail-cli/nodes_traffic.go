@@ -7,11 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runNodesTraffic implements "nodes traffic": GET /api/v1/network/proxy,
-// the Traffic dashboard page's own data source. Joins every app domain
-// with where it actually runs, whether this control plane's own ingress
-// can reach it (internal/reconcile/ingress's CrossNodeIngress condition),
-// and its certificate status. Takes no positional argument.
+// runNodesTraffic implements "nodes traffic": GET /api/v1/network/proxy. It takes no positional argument.
 func runNodesTraffic(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes traffic", "print the traffic/reachability report as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesTrafficUsage(prog)) }

@@ -5,11 +5,7 @@ import (
 	"io"
 )
 
-// runFirewall dispatches "firewall <verb> [flags]" to one of
-// list/allow/deny/delete: managing the declarative host firewall rules
-// internal/api/firewall_rules.go exposes (Settings -> Firewall in the
-// web UI), reconciled onto the control plane's local ufw by
-// internal/reconcile/firewall.
+// Declarative host firewall rules, reconciled onto the control plane's local ufw.
 func runFirewall(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, firewallUsage(prog))

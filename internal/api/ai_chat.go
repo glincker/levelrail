@@ -13,11 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// AIChatStore is the core internal/store surface the chat session routes
-// need: always set, the same "core Store interface" shape certs/
-// staticSites already establish, since a session/message/confirmation
-// row's absence is always a legitimate, queryable "not found", not a
-// "not configured" condition.
+// AIChatStore is the core store surface the chat routes need, always set since missing rows are normal not-found.
 type AIChatStore interface {
 	CreateAIChatSession(ctx context.Context, id, owner string, now time.Time) (store.AIChatSession, error)
 	GetAIChatSession(ctx context.Context, id string) (store.AIChatSession, error)
@@ -27,10 +23,7 @@ type AIChatStore interface {
 	GetAIChatConfirmation(ctx context.Context, id string) (store.AIChatConfirmation, error)
 }
 
-// AIEngine is the internal/ai.Engine surface the chat routes need.
-// nil is valid: every /api/v1/ai/... route returns 501 without one
-// configured, the same "not configured" shape secrets/telemetry's
-// absence already produce elsewhere in this package.
+// AIEngine is the internal/ai.Engine surface the chat routes need; nil makes every /api/v1/ai route return 501.
 type AIEngine interface {
 	IsConfigured(ctx context.Context) (bool, error)
 	RunTurn(ctx context.Context, sessionID, userContent string, sink ai.Sink) error
@@ -189,13 +182,7 @@ type createAIChatMessageRequest struct {
 	Content string `json:"content"`
 }
 
-// handleCreateAIChatMessage handles
-// POST /api/v1/ai/sessions/{id}/messages: appends content as a new user
-// message and streams the assistant's turn over SSE (text_delta,
-// tool_call_proposed, tool_result, done), the same framing convention
-// (a bare "data: <json>\n\n" line, no named SSE event, a "type" field
-// inside the JSON payload discriminates instead) deploy_attempts.go's
-// own sseLogEvent already establishes.
+// Streams the assistant turn as unnamed SSE data events whose JSON type field discriminates them.
 func (rt *Router) handleCreateAIChatMessage(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 	if rt.aiEngine == nil {
@@ -247,11 +234,7 @@ type resolveAIChatConfirmationRequest struct {
 	Approve bool `json:"approve"`
 }
 
-// handleResolveAIChatConfirmation handles
-// POST /api/v1/ai/sessions/{id}/confirmations/{confirmation_id}: executes
-// (approve=true) or rejects (approve=false) a previously-proposed
-// mutating tool call, then streams the turn's continuation over a fresh
-// SSE response, the same event framing handleCreateAIChatMessage uses.
+// Streams the continuation of the turn over a fresh SSE response, using the same framing.
 func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.PathValue("id")
 	confirmationID := r.PathValue("confirmation_id")
@@ -273,10 +256,7 @@ func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	// A confirmation id that exists but belongs to another session is
-	// treated as not-found, the same cross-resource-leak boundary
-	// handleDeployLogStream's own doc comment establishes for a deploy
-	// attempt id under the wrong app.
+	// A confirmation owned by another session reports not-found, not forbidden, to avoid leaking IDs.
 	if conf.SessionID != sessionID {
 		writeError(w, http.StatusNotFound, "confirmation not found")
 		return
@@ -307,11 +287,7 @@ func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http
 	sink.done()
 }
 
-// startAISSE writes the SSE response headers and the "connected" priming
-// byte (same zero-body-flush workaround as deploy_attempts.go's own
-// serveFinishedDeployLog) and returns an aiSSESink ready to stream events.
-// ok is false if the ResponseWriter can't be flushed, matching startSSE's
-// own contract (it has already written the error response in that case).
+// Writes the SSE headers and priming byte; ok is false if the writer cannot flush.
 func (rt *Router) startAISSE(w http.ResponseWriter, sessionID string) (*aiSSESink, bool) {
 	flusher, ok := startSSE(w)
 	if !ok {
@@ -332,10 +308,7 @@ const (
 	aiSSEEventDone             = "done"
 )
 
-// aiSSESink implements ai.Sink by writing each event as one SSE message:
-// "data: <json>\n\n", the payload's own "type" field discriminating which
-// of the four shapes below it is, matching sseLogEvent's "everything
-// arrives as the default message event" convention.
+// aiSSESink writes each event as one unnamed SSE data message, with the JSON type field discriminating.
 type aiSSESink struct {
 	w       http.ResponseWriter
 	flusher http.Flusher

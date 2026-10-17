@@ -7,20 +7,8 @@ import (
 	"text/tabwriter"
 )
 
-// runTemplates dispatches "templates <verb> [flags]" to one of
-// list/get/deploy: internal/api/service_templates.go's curated service
-// catalog (ADR 015), wired into the CLI for the first time. "deploy" is
-// new surface, not just a wire-up of an existing route: it is a thin
-// wrapper around the same POST /api/v1/apps/{name}/compose call "apps
-// deploy-compose" already makes, pre-filled from a catalog entry's own
-// compose body the same way BrowseTemplatesFields.tsx pre-fills the
-// dashboard's create-app wizard, rather than a second deploy mechanism.
-// Deliberately its own command instead of an "apps create --template"
-// flag: "apps deploy-compose" already established that a compose-shaped
-// deploy is its own command, not a mode of "apps create", and apps
-// create's flag surface (name/image/repo/file/interactive) is already
-// large enough that adding a template path to it would blur, not
-// clarify, its usage.
+// deploy is a thin wrapper over the compose deploy call, pre-filled from the catalog entry.
+// It is its own command, not an apps create flag, to keep apps create's flag surface small.
 func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, templatesUsage(prog))
@@ -117,10 +105,7 @@ func gpuColumn(requires bool) string {
 	return "-"
 }
 
-// formatRecommendedMemory renders a Template.RecommendedMemoryBytes value
-// (internal/catalog.Template's own doc comment: a static, pre-deploy
-// advisory, not checked against any node's real available memory) as a
-// human-readable GiB figure, or "-" when a template has none.
+// The recommended memory is a static pre-deploy advisory, not checked against any node's free memory.
 func formatRecommendedMemory(bytes int64) string {
 	if bytes <= 0 {
 		return "-"
@@ -214,12 +199,7 @@ func printCustomTemplatesTable(out io.Writer, templates []customTemplateListItem
 	_ = tw.Flush()
 }
 
-// runTemplatesDelete implements "templates delete <id>": DELETE
-// /api/v1/templates/custom/{id}. Only ever removes an operator-defined
-// template (service_templates_custom.go); the built-in catalog
-// (internal/catalog) is static and has no delete route at all, so an id
-// that resolves there instead fails with a 404 the same as an unknown
-// id.
+// Only operator-defined templates can be deleted; built-in catalog ids return 404 like unknown ids.
 func runTemplatesDelete(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "templates delete", "print {\"deleted\": true} as JSON to stdout on success and nothing else", stderr)
 	fs.Usage = func() {

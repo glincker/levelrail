@@ -12,11 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestHandleTriggerDeploy_RunningAttemptRejected is the regression test
-// for a live race: a rollback issued while a build was still running
-// used to write desired state immediately, then get silently clobbered
-// when the build finished. handleTriggerBuild already guards against
-// this for itself; this proves applyDeploy now does too.
+// TestHandleTriggerDeploy_RunningAttemptRejected guards against a rollback being overwritten when a running build finishes.
 func TestHandleTriggerDeploy_RunningAttemptRejected(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -97,15 +93,7 @@ func TestHandleTriggerDeploy(t *testing.T) {
 	}
 }
 
-// TestHandleTriggerDeploy_ProtectedEnvironment covers the confirm: true
-// gate (environments.go's checkEnvironmentProtection): a deploy
-// targeting an app tagged with a protected environment is rejected with
-// a 409 until confirm is set, and even once confirm is true it does not
-// deploy immediately: it becomes a pending deploy_approvals row
-// (deploy_approvals.go), leaving desired state untouched until a
-// different, sufficiently privileged user approves it (see
-// TestHandleApproveDeployApproval in deploy_approvals_test.go for that
-// second half of the flow).
+// TestHandleTriggerDeploy_ProtectedEnvironment checks a protected deploy is 409 without confirm, then becomes a pending approval.
 func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -165,15 +153,7 @@ func TestHandleTriggerDeploy_ProtectedEnvironment(t *testing.T) {
 	}
 }
 
-// TestHandleTriggerDeploy_RecordsDeployAttempt covers this task's own
-// judgment call for the plain image-tag path: it has no real build step
-// (no Dockerfile build happens, see handleTriggerDeploy's own doc
-// comment), but still deserves a deploy_attempts row for history and
-// rollback purposes, the same way the two build-triggering paths do.
-// Unlike those two, there is no build output to persist, so the attempt
-// is saved and immediately finished as succeeded in the same call,
-// rather than started as "running" and finished later by a background
-// build.
+// TestHandleTriggerDeploy_RecordsDeployAttempt checks the image-tag deploy records a succeeded attempt, since no build runs.
 func TestHandleTriggerDeploy_RecordsDeployAttempt(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -278,12 +258,7 @@ func TestHandleDeployHistory(t *testing.T) {
 	}
 }
 
-// A domain-bearing app placed off the control plane's own node is
-// unreachable (no mesh path yet), but its own reconcile controller never
-// reports that: the ingress controller does, under its own singleton
-// name. handleDeployHistory must inject the synthetic condition itself
-// so the app's status stops reading "Healthy" for an app nobody outside
-// the control plane's own node can reach.
+// The ingress controller reports the unreachable state, not the app's own controller, so handleDeployHistory injects it.
 func TestHandleDeployHistory_CrossNodeDomainApp_AddsUnreachableCondition(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

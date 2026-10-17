@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsDownload implements
-// "app-volume-backups download <app> <volume> <backup-id>": GET
-// /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download, the
-// app service volume counterpart of runBackupsDownload
-// (backups_download.go). See that function's own doc comment for the
-// raw-bytes-to-stdout convention this mirrors.
+// Mirrors runBackupsDownload: raw backup bytes go to stdout, not a file.
 func runAppVolumeBackupsDownload(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups download", "not applicable, the response body is always the raw backup file", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appVolumeBackupsDownloadUsage(prog)) }

@@ -7,14 +7,7 @@ import (
 	"strings"
 )
 
-// runNodesMesh implements "nodes mesh": GET /api/v1/mesh, this control
-// plane's own live WireGuard mesh state and every peer it currently
-// knows about. Unlike cordon/drain/workloads, this is not scoped to one
-// node ID: internal/api/mesh.go's own doc comment explains why there is
-// only ever one live mesh view to ask for today (the control plane's own
-// node), so this subcommand takes no positional argument, matching
-// runNodesJoinToken's own no-argument shape rather than the id-taking
-// commands around it.
+// Takes no node ID: the mesh view is always the control plane's own node.
 func runNodesMesh(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes mesh", "print mesh status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesMeshUsage(prog)) }
@@ -45,12 +38,7 @@ func runNodesMesh(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	return exitOK
 }
 
-// formatMeshStatusHuman renders a meshStatusResource as a short table: one
-// header line for this node's own identity, one line per peer. A peer
-// with Live: false (known to the store, but this node's device has no
-// live entry for it yet) is called out explicitly rather than shown with
-// blank handshake data that would look like a stalled connection instead
-// of a not-yet-established one.
+// Peers with Live: false are called out so a not-yet-established link does not look stalled.
 func formatMeshStatusHuman(s meshStatusResource) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "backend: %s   interface: %s   address: %s   public key: %s\n",

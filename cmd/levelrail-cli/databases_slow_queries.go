@@ -7,13 +7,7 @@ import (
 	"time"
 )
 
-// runDatabasesSlowQueries implements "databases slow-queries <name>": GET
-// /api/v1/databases/{name}/slow-queries
-// (internal/api/database_slow_queries.go's
-// handleQueryDatabaseSlowQueries), the database-kind slow-query-log
-// counterpart to "databases logs" (databases_logs.go). Only Postgres and
-// MySQL databases support this; the server returns 400 for every other
-// engine, surfaced here the same way any other API error is.
+// Postgres and MySQL only; the server returns 400 for every other engine.
 func runDatabasesSlowQueries(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases slow-queries", "print entries as a JSON array to stdout and nothing else", stderr)
 	var since, from, to string

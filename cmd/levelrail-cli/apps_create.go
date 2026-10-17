@@ -13,19 +13,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// createFlags is the raw, unvalidated input to "apps create": exactly
-// what flag.FlagSet parsed, no mode inference or defaulting applied yet.
-// Kept separate from createPlan so planFromFlags (the actual decision
-// logic) is a pure function over plain data, testable without a
-// flag.FlagSet in the loop at all.
+// createFlags is the raw flag input to "apps create", before any mode inference or defaulting.
 type createFlags struct {
 	name  string
 	image string
 	port  int
-	// hostPort backs --host-port: 0 means unset (auto-assign), matching
-	// port's own zero-means-unset convention, since a real host port is
-	// always positive. See toHostPort below for how this becomes
-	// appResource.HostPort's *int.
+	// hostPort backs --host-port; 0 means unset (auto-assign).
 	hostPort int
 	// bindAddress backs --bind-address: "" means unset (falls through to
 	// the server's own default, "private"), matching appResource.BindAddress's
@@ -51,104 +44,47 @@ type createFlags struct {
 	// apps_create_interactive.go's runAppsCreateWizard.
 	interactive bool
 
-	// nodeID/nodeIDSet back --node-id: an explicit placement override,
-	// honored even when nodeID is "" (pins to the local node). Left unset
-	// (nodeIDSet false) omits node_id from the create request entirely,
-	// letting the control plane auto-place this app via simple spread
-	// scheduling when more than one node is registered. See
-	// parseCreateFlags for how nodeIDSet is derived from fs.Visit, the
-	// same "flag omitted vs explicitly set" distinction
-	// nodes_workloads.go's own doc comment explains plain BoolVar/
-	// StringVar defaults alone can't make.
+	// nodeIDSet tells an omitted --node-id (control plane auto-places) apart from an explicit empty one (pins to local).
 	replicas  int
 	strategy  string
 	nodeID    string
 	nodeIDSet bool
 
-	// attachDatabase, attachDatabaseEnvVar, attachDatabaseField back
-	// --attach-database and its two optional refinements: a post-create
-	// call to PUT /api/v1/apps/{name}/database (apiclient's
-	// SetAppDatabaseAttachment), the CLI's own reach into the real
-	// app-to-database attachment internal/api/apps_database.go exposes,
-	// matching this repo's own "UI, CLI, and API together" rule. Not part
-	// of createPlan: unlike CreateBody/Build, this is a separate HTTP
-	// call runAppsCreate makes only once the app itself already exists.
+	// attachDatabase* back --attach-database, applied with a separate PUT once the app exists.
 	attachDatabase       string
 	attachDatabaseEnvVar string
 	attachDatabaseField  string
 
-	// secrets backs --secret (repeatable KEY=VALUE): plaintext values to
-	// store via envelope-encrypted secret storage as part of this same
-	// create call, applied to plan.CreateBody.Secrets after
-	// planFromFlags regardless of which of the three paths built the
-	// plan, the same "apply after planning, not threaded through every
-	// plan* function" shape --node-id already uses (see runAppsCreate).
+	// secrets back --secret; applied to CreateBody after planning, whichever path built the plan.
 	secrets map[string]string
 
-	// vaultSecrets backs --vault-secret (repeatable KEY=path#field): env
-	// vars resolved live from an external Vault instance instead of a
-	// value this platform stores, applied to plan.CreateBody.VaultEnv the
-	// same "apply after planning" way secrets above is.
+	// vaultSecrets back --vault-secret; applied after planning, like secrets.
 	vaultSecrets map[string]appVaultEnvRef
 }
 
-// createPlan is planFromFlags's output: exactly the HTTP requests
-// runAppsCreate needs to make, already validated. Build is nil for the
-// existing-image path, non-nil for the git-build path (whether reached
-// via flags or --file). DeploySpec is set only for a --file build.type:
-// static service (planFromFileStatic): CreateBody and Build are both left
-// zero in that case, since a static site never goes through POST /apps.
+// createPlan is the validated request set runAppsCreate sends. Build is nil for an existing image; CreateBody and Build are zero for a static --file service.
 type createPlan struct {
 	CreateBody appResource
 	Build      *buildTriggerRequest
 	DeploySpec *deploySpecCreatePlan
-	// Volumes is app.yaml's own volumes: block, carried separately from
-	// CreateBody since appResource.Volumes is response-only (POST /apps
-	// never accepts it, see that field's doc comment in
-	// internal/apiclient/types.go): runAppsCreate wires these on with a
-	// follow-up PUT .../volumes after create, the same post-create
-	// pattern --attach-database already uses.
+	// Volumes are sent with a follow-up PUT after create, since POST /apps never accepts them.
 	Volumes []spec.Volume
 }
 
-// deploySpecCreatePlan is planFromFileStatic's output: a single-service
-// POST /apps/{name}/deploy-spec request, the only path that knows how to
-// deploy a build.type: static service (see planFromFileStatic's own doc
-// comment for why POST /apps itself can't be used).
+// deploySpecCreatePlan is a single-service POST /apps/{name}/deploy-spec request, used for static sites.
 type deploySpecCreatePlan struct {
 	AppName    string
 	ServiceKey string
 	Request    deploySpecRequest
 }
 
-// pendingImageTag is the placeholder image value POST /apps is sent for
-// the git-build path (both --repo and --file modes): validateAppResource
-// (internal/api/apps.go) requires a non-empty image at creation time,
-// but a git-build app has no built image yet. deploy.Pipeline's own
-// Deploy call (internal/deploy/deploy.go) overwrites this with the real
-// built tag via SaveDesiredService as soon as POST .../builds succeeds,
-// the same "full replace, not a partial update" semantics that endpoint
-// already documents, so this placeholder never lingers past a
-// successful first build.
+// pendingImageTag is the placeholder image POST /apps requires for git builds; the first successful build overwrites it.
 func pendingImageTag(imageRepo string) string {
 	return imageRepo + spec.PendingImageTag
 }
 
-// planFromFlags decides which of the three creation paths f describes
-// (existing-image, git-build via flags, or --file) and builds the exact
-// request(s) runAppsCreate will send. Pure: fileSpec is an already-parsed
-// app.yaml (nil when --file wasn't given) and detected is an
-// already-computed best-effort local git auto-detection result, so this
-// function does no I/O itself and is fully covered by table-driven
-// tests.
-//
-// An explicit --repo is not the only way into the git-build-via-flags
-// path: a caller with no --file, no --image, and no --repo, standing in
-// a directory detectLocalGit can read a remote from, also selects this
-// path (detected.RepoURL != ""), so "cd into a checkout and run apps
-// create --name x --port y --image-repo z" works without a redundant
-// --repo, the same auto-detection the flags' own usage text
-// (appsCreateUsage) already promises.
+// planFromFlags picks the creation path (existing image, git build, or --file) and builds its requests. Pure, so it is table-tested.
+// A local git remote also selects the git-build path when no --image or --file is given.
 func planFromFlags(f createFlags, fileSpec *spec.Spec, detected detectedGit) (createPlan, error) {
 	switch {
 	case f.file != "":
@@ -414,14 +350,8 @@ func planFromFileImage(f createFlags, key string, svc spec.Service) (createPlan,
 	}, nil
 }
 
-// planFromFileStatic handles a service whose build.type is static: no
-// container, no port, so it cannot go through POST /apps (validateAppResource
-// requires Port > 0). It reuses the same POST /apps/{name}/deploy-spec path
-// "apps deploy-spec" calls (internal/deploy/multi.go's DeploySpec, the only
-// code that knows how to save a store.StaticSite), but sets
-// single_service_name so the deployed site is named after the app itself
-// instead of deploy-spec's own "<app>-<service>" convention (e.g. "site-site"
-// for a single-service app.yaml naming both the app and the service "site").
+// planFromFileStatic handles build.type: static services, which cannot go through POST /apps (it requires a port).
+// single_service_name names the site after the app itself.
 func planFromFileStatic(f createFlags, key string, svc spec.Service, detected detectedGit) (createPlan, error) {
 	var unsupported []string
 	if f.port > 0 {
@@ -552,11 +482,7 @@ func secretEnvKeys(env map[string]spec.EnvVar) []string {
 	return keys
 }
 
-// literalEnv skips { secret: true } and { from: ... } entries: neither
-// carries a plain literal value this endpoint can send as Env (a secret's
-// value goes through Secrets/SecretEnv instead, and a database reference
-// has no field this endpoint accepts at all), mirroring
-// internal/deploy/translate.go's own literalEnv.
+// literalEnv skips secret and from: entries, which have no literal value this endpoint can send.
 func literalEnv(env map[string]spec.EnvVar) map[string]string {
 	if len(env) == 0 {
 		return nil
@@ -594,11 +520,7 @@ func toServiceResources(r *spec.Resources) (*serviceResources, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Docker's MemorySwap is memory+swap combined, not swap on top of
-		// memory, so a value below the memory limit is nonsensical: it
-		// would otherwise surface as a raw Docker API rejection at
-		// container-create time instead of here. Mirrors
-		// internal/deploy/translate.go's toServiceResources.
+		// Docker's MemorySwap is memory plus swap combined, so a value below the memory limit is invalid.
 		if bytes < out.MemoryBytes {
 			return nil, fmt.Errorf("resources.swapMemory (%s) must be at least resources.memory (%s): it is memory+swap combined, not swap alone", r.SwapMemory, r.Memory)
 		}
@@ -669,11 +591,7 @@ func parseDurationOrZero(s string) (time.Duration, error) {
 	return d, nil
 }
 
-// parseMemoryBytes parses app.yaml's "512Mi"/"1Gi" shape into bytes.
-// Deliberately reimplemented here rather than imported from
-// internal/deploy: that package pulls in the BuildKit client and its own
-// heavy transitive dependency tree, which this CLI binary (a thin HTTP
-// client, nothing more) must not link against.
+// parseMemoryBytes parses sizes like "512Mi". Reimplemented, not imported from internal/deploy, to keep BuildKit out of this binary.
 func parseMemoryBytes(s string) (int64, error) {
 	digits := 0
 	for digits < len(s) && s[digits] >= '0' && s[digits] <= '9' {
@@ -696,10 +614,7 @@ func parseMemoryBytes(s string) (int64, error) {
 	}
 }
 
-// runAppsCreate is the I/O shell around planFromFlags: parse flags, read
-// --file and detect local git if needed, execute the plan against a
-// real Client, and print the result. Returns the process exit code.
-// stdin is only ever read from when --interactive is given.
+// runAppsCreate is the I/O shell around planFromFlags. Returns the exit code. stdin is read only with --interactive.
 func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	var tokenFlag, apiURLFlag, profileFlag string
 	f, err := parseCreateFlags(prog, args, stderr, &tokenFlag, &apiURLFlag, &profileFlag)
@@ -745,16 +660,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
 	}
-	// --node-id is an explicit override, applied after planFromFlags so
-	// every path (existing-image, git-build, --file) gets it uniformly
-	// rather than threading it through each plan* function. Left unset,
-	// plan.CreateBody.NodeID stays "" and, since AppResource.NodeID
-	// carries `omitempty`, is indistinguishable on the wire from an
-	// explicit --node-id "": the control plane sees a genuinely omitted
-	// field either way and may auto-place this app, see AppResource's own
-	// NodeID field doc comment (internal/apiclient/types.go). Pinning
-	// back to the local node after auto-placement is available via
-	// PUT /api/v1/apps/{name}/node instead.
+	// --node-id is applied after planning so every creation path honors it the same way.
 	if f.nodeIDSet {
 		plan.CreateBody.NodeID = f.nodeID
 	}
@@ -812,14 +718,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	return fetchAndPrintCreatedApp(ctx, client, created.Name, stdout, stderr, of)
 }
 
-// attachPlanVolumes wires app.yaml's volumes: block onto name with a
-// follow-up PUT .../volumes, the same post-create step --attach-database
-// already takes (POST /apps itself never accepts volumes, see
-// createPlan.Volumes' own doc comment). A volume with hostPath set names a
-// bind mount, which PUT .../volumes has no field for (appVolumeResource is
-// name+path only, the same shape "apps volumes attach" is limited to), so
-// it is rejected here rather than silently dropped the way it was before
-// this existed.
+// attachPlanVolumes wires app.yaml's volumes on with a follow-up PUT. Bind mounts (hostPath) are rejected, since that endpoint takes name and path only.
 func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes []spec.Volume, stderr io.Writer, jsonOut bool) error {
 	resources := make([]appVolumeResource, 0, len(volumes))
 	for _, v := range volumes {
@@ -835,14 +734,7 @@ func attachPlanVolumes(ctx context.Context, client *Client, name string, volumes
 	return err
 }
 
-// triggerCreatePlanBuild triggers plan's build (a no-op returning nil
-// when plan.Build is nil, the existing-image path), shared between the
-// flag-driven and wizard-driven "apps create" I/O shells. Runs the same
-// pre-flight framework detection the "Deploy from git" wizard runs
-// (POST /api/v1/build/detect) so a git-triggered create records a
-// FRAMEWORK column value too, not just a build triggered from the web UI;
-// best-effort, since a failed or inconclusive detection must never block
-// the create that already succeeded.
+// triggerCreatePlanBuild starts plan's build, a no-op for existing images. Framework detection is best effort and never blocks the create.
 func triggerCreatePlanBuild(ctx context.Context, client *Client, created appResource, plan createPlan, stderr io.Writer, jsonOut bool) error {
 	if plan.Build == nil {
 		return nil
@@ -887,12 +779,7 @@ func runAppsCreateStatic(ctx context.Context, client *Client, plan *deploySpecCr
 func fetchAndPrintCreatedApp(ctx context.Context, client *Client, name string, stdout, stderr io.Writer, of outputFlags) int {
 	final, err := client.GetApp(ctx, name)
 	if err != nil {
-		// The app (and, if applicable, its build) already succeeded by
-		// this point; a failure here only means the CLI can't show the
-		// final state, not that anything upstream failed, so this
-		// deliberately doesn't call reportError's "the whole command
-		// failed" path. Still exits non-zero: an agent driving this CLI
-		// should not treat "couldn't confirm the result" as success.
+		// The app already exists here, so a failure only means the final state could not be shown. Still exits non-zero so scripts do not read it as success.
 		_, _ = fmt.Fprintf(stderr, "app %q created, but re-fetching its final state failed: %v\n", name, err)
 		return exitNetwork
 	}
@@ -921,13 +808,7 @@ func printSelfSignedNote(ctx context.Context, client *Client, out io.Writer, aut
 	_, _ = fmt.Fprintln(out, "note:     the auto url uses a self-signed certificate until HTTPS is enabled; plain http gets a 308 redirect to it")
 }
 
-// parseCreateFlags parses "apps create"'s flags, including the common
-// --token/--api-url flags (bound into tokenFlag/apiURLFlag) so -h/--help
-// output lists every flag this command accepts in one place.
-// flag.ContinueOnError (not flag.ExitOnError) throughout this CLI: a
-// library-triggered os.Exit would make every command untestable, so
-// every command function returns an int exit code instead and only
-// main() itself ever calls os.Exit.
+// ContinueOnError, not ExitOnError: a library os.Exit would make commands untestable, so only main() calls os.Exit.
 func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, apiURLFlag, profileFlag *string) (createFlags, error) {
 	fs := flag.NewFlagSet(prog+" apps create", flag.ContinueOnError)
 	fs.SetOutput(errOut)
@@ -981,14 +862,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	return f, nil
 }
 
-// reportError prints err on stderr always, and additionally as a JSON
-// error object on stdout when jsonOut is set (the --json contract:
-// "prints the created app resource (or an error object) as JSON to
-// stdout, no other output in that mode"). Returns the exit code err
-// classifies to. Takes stdout explicitly rather than reaching for
-// os.Stdout, the same "every command function takes its writers as
-// arguments" rule this whole CLI follows so it's testable without
-// touching the real process stdout/stderr.
+// reportError writes err to stderr, and to stdout as a JSON error object when jsonOut is set. Writers are passed in so it is testable.
 func reportError(stdout, stderr io.Writer, jsonOut bool, err error) int {
 	_, _ = fmt.Fprintln(stderr, err)
 	if jsonOut {

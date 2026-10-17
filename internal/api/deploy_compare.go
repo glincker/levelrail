@@ -14,21 +14,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// deployCompareSide is one side of a deploy comparison: either a real
-// deploy attempt (DeployID set) or the app's current live desired state
-// (IsCurrent true, DeployID empty). The current side carries no
-// CommitSHA/Source/Status/timestamps, because DesiredService is live
-// state, not a historical record: there is nothing to show for "now".
-//
-// Port/HostPort/BindAddress/Domains/Resources/Env/Health/Replicas/
-// Strategy/Volumes/Labels are this side's config snapshot (store.DeployAttemptSnapshot,
-// migrations/0086): for a real attempt it's that attempt's own historical
-// snapshot; for the current side it's built fresh from the app's live
-// DesiredService, so both sides carry the identical shape and
-// diffDeployCompareSides/diffDeployCompareEnv work unchanged either way.
-// An attempt recorded before migrations/0086 (or before a given field was
-// added to the snapshot) shows a zero value for it, not a real "port 0" or
-// "no health check": Note spells this caveat out on the wire.
+// The current side has no commit or status, since live desired state is not a historical record.
+// An attempt recorded before a snapshot field existed shows zero for it, not a real value.
 type deployCompareSide struct {
 	DeployID    string     `json:"deploy_id,omitempty"`
 	IsCurrent   bool       `json:"is_current"`
@@ -60,24 +47,14 @@ type deployCompareField struct {
 	To    string `json:"to"`
 }
 
-// Deploy comparison env-change statuses. Never "changed" for a secret- or
-// database-backed key (store.DeployAttemptEnvKindSecret/
-// DeployAttemptEnvKindDatabase): this control plane has no way to detect
-// a value change for either without decrypting a secret or re-resolving
-// a live database reference, and diffDeployCompareEnv deliberately never
-// tries, so such a key present on both sides is left out of the response
-// entirely rather than reported as a possibly-wrong "unchanged".
+// Secret and database env keys are never reported as changed: their values cannot be compared without decrypting or resolving them.
 const (
 	deployCompareEnvAdded   = "added"
 	deployCompareEnvRemoved = "removed"
 	deployCompareEnvChanged = "changed"
 )
 
-// deployCompareEnvChange is one env var key that differs between From and
-// To. From/To are only ever populated for Kind
-// store.DeployAttemptEnvKindLiteral: a secret- or database-backed key's
-// Value is never snapshotted in the first place (store.DeployAttemptEnvKey's
-// own doc comment), so there is nothing to echo back here either.
+// From and To are only populated for literal env keys, since secret and database values are never snapshotted.
 type deployCompareEnvChange struct {
 	Key    string                     `json:"key"`
 	Kind   store.DeployAttemptEnvKind `json:"kind"`
@@ -99,24 +76,12 @@ type deployCompareResource struct {
 	Note                string                   `json:"note"`
 }
 
-// unsnapshottedDeployFields lists DesiredService fields store.DeployAttempt
-// still never captures a per-attempt copy of. Named once so the handler's
-// response and its own doc comment can't drift apart. Empty now that
-// health checks, replica count, strategy, volumes, and labels closed the
-// remaining gap: kept as a field (not removed from the response) so a
-// future field added to DesiredService without a matching snapshot update
-// has somewhere to be listed.
+// Kept as a field so a future DesiredService field without a snapshot has a place to be listed.
 var unsnapshottedDeployFields = []string{}
 
 const deployCompareUnsnapshottedNote = "Deploy attempts record image tag, commit, trigger source, outcome, environment variable keys, ports, bind addresses, domains, resource limits, health check config, replica count, deploy strategy, volumes, and labels at trigger time (attempts recorded before a given field was added show an empty snapshot for it). A secret- or database-backed env var's value is never recorded: only its key, and whether it was added or removed, ever appears in env_changes, since this control plane cannot know if such a value changed without decrypting it."
 
-// handleCompareDeploys handles
-// GET /api/v1/apps/{name}/deploys/compare?from={deployId}&to={deployId}.
-// from is required; to is optional and, when omitted, compares from
-// against the app's current live desired state. See
-// deployCompareUnsnapshottedNote for why the diff is limited to the
-// fields store.DeployAttempt actually captures rather than a fabricated
-// full config diff.
+// Compares only the fields an attempt snapshot captures, not a fabricated full config diff.
 func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -165,10 +130,7 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// currentDeployCompareSide builds the "current live desired state" side
-// from svc, the same snapshot shape a real deploy attempt carries
-// (store.NewDeployAttemptSnapshot), so the from/to diff logic never needs
-// to know which kind of side it's looking at.
+// Shaped like a real attempt snapshot, so the diff logic never needs to know which side is live.
 func currentDeployCompareSide(svc store.DesiredService) deployCompareSide {
 	snap := store.NewDeployAttemptSnapshot(svc)
 	return deployCompareSide{
@@ -221,12 +183,7 @@ func (rt *Router) loadDeployCompareSide(w http.ResponseWriter, r *http.Request, 
 	}, true
 }
 
-// diffDeployCompareSides lists the captured fields that actually differ
-// between from and to. Source is only compared between two real attempts:
-// the current side carries no Source, so including it there would read as
-// "source changed to empty" rather than "unknown". Env is deliberately
-// not in this list: it's key-based, not a single scalar, so it gets its
-// own diffDeployCompareEnv/EnvChanges instead.
+// Source is compared only between real attempts; the current side has none, which would read as a change.
 func diffDeployCompareSides(from, to deployCompareSide) []deployCompareField {
 	var changes []deployCompareField
 	if from.Image != to.Image {
@@ -270,12 +227,7 @@ func diffDeployCompareSides(from, to deployCompareSide) []deployCompareField {
 	return changes
 }
 
-// volumesString renders vols as one comparable string ("name:container_path"
-// pairs, comma-joined), the same "join into a single field" treatment
-// diffDeployCompareSides already gives Domains, since a service's volume
-// list is small and order-stable (DesiredService.Volumes' own storage
-// order) rather than something needing per-item added/removed reporting
-// the way env does.
+// Joined into one field: volume lists are small and order-stable, unlike env.
 func volumesString(vols []store.ServiceVolume) string {
 	parts := make([]string, len(vols))
 	for i, v := range vols {
@@ -284,10 +236,7 @@ func volumesString(vols []store.ServiceVolume) string {
 	return strings.Join(parts, ", ")
 }
 
-// labelsString renders labels as one comparable string ("key=value" pairs,
-// comma-joined, sorted by key for a stable comparison regardless of map
-// iteration order), the same single-field treatment volumesString gives
-// ServiceVolume above.
+// Sorted by key so the comparison does not depend on map iteration order.
 func labelsString(labels map[string]string) string {
 	if len(labels) == 0 {
 		return ""
@@ -304,11 +253,7 @@ func labelsString(labels map[string]string) string {
 	return strings.Join(parts, ", ")
 }
 
-// diffDeployCompareHealth reports one field per readiness/liveness probe
-// sub-field that differs, the same shape diffDeployCompareResources
-// already uses for store.ServiceResources' sub-fields. A nil probe (not
-// configured) is treated as the zero value, matching how a nil Resources
-// side already behaves.
+// A nil probe counts as the zero value, matching how a nil Resources side is treated.
 func diffDeployCompareHealth(from, to *store.ServiceHealth) []deployCompareField {
 	f, t := healthOrZero(from), healthOrZero(to)
 	var changes []deployCompareField
@@ -371,12 +316,7 @@ func probeOrZero(p *store.ServiceProbe) store.ServiceProbe {
 	return *p
 }
 
-// diffDeployCompareResources reports one field per store.ServiceResources
-// sub-field that differs, the same shape internal/api/apps.go's resource
-// limit fields already use on the wire (memory_bytes, nano_cpus,
-// swap_memory_bytes, cpuset_cpus). A nil side (no limit configured) is
-// treated as the type's zero value, matching how an absent limit already
-// behaves everywhere else Resources is read.
+// A nil side counts as the zero value, matching how an absent limit is read elsewhere.
 func diffDeployCompareResources(from, to *store.ServiceResources) []deployCompareField {
 	f, t := resourcesOrZero(from), resourcesOrZero(to)
 	var changes []deployCompareField
@@ -409,11 +349,7 @@ func hostPortString(p *int) string {
 	return strconv.Itoa(*p)
 }
 
-// diffDeployCompareEnv reports every env key that was added, removed, or
-// (for a literal key present on both sides) changed value. A secret- or
-// database-backed key present on both sides is never reported: see
-// deployCompareEnvChanged's own doc comment for why "unchanged" would be
-// a guess this control plane isn't in a position to make.
+// Secret or database keys present on both sides are omitted, not reported as unchanged.
 func diffDeployCompareEnv(from, to []store.DeployAttemptEnvKey) []deployCompareEnvChange {
 	fromByKey := envKeysByName(from)
 	toByKey := envKeysByName(to)

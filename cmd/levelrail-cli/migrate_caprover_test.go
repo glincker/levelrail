@@ -35,11 +35,7 @@ func TestRun_MigrateCaprover_WrongPassword(t *testing.T) {
 	}
 }
 
-// TestRun_MigrateCaprover_FileMode does not use the shared
-// runMigrateFileMode helper: that helper asserts the "apps create --file"
-// repo/ref follow-up is always printed, which never applies to CapRover
-// since it exposes no git source (see mapCaproverApplication's doc
-// comment), unlike Coolify and Dokploy.
+// Skips runMigrateFileMode: CapRover exposes no git source, so the repo/ref follow-up never applies.
 func TestRun_MigrateCaprover_FileMode(t *testing.T) {
 	app := caproverAppDefinition{
 		AppName: "My App", ContainerHTTPPort: 3000,

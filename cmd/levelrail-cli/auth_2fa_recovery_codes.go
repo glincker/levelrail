@@ -5,14 +5,7 @@ import (
 	"io"
 )
 
-// runAuthTwoFactorRecoveryCodes implements "auth 2fa recovery-codes
-// --code CODE": POST /api/v1/auth/2fa/recovery-codes/regenerate,
-// replacing the whole set and invalidating every previously issued code.
-// Gated on a live TOTP code specifically, never a recovery code, so
-// regenerating never consumes one of the codes it's about to throw away.
-// Use "auth 2fa status" to see how many of the current set remain
-// unused; there is no endpoint to view the current codes' plaintext
-// again once shown.
+// Gated on a live TOTP code, never a recovery code, so regenerating cannot spend one it replaces.
 func runAuthTwoFactorRecoveryCodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth 2fa recovery-codes", "print the new recovery codes as a JSON array to stdout and nothing else", stderr)
 	var code string

@@ -10,13 +10,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// handleDatabaseResourceRecommendation handles GET
-// /api/v1/databases/{name}/resource-recommendation: the database-kind
-// counterpart to handleAppResourceRecommendation (resource_recommendation.go).
-// internal/rightsizing.Recommend is resource-type-agnostic (it only needs a
-// usage history and a current limit), so this reuses the exact same engine,
-// toResourceRecommendationResource, toRightsizingSamples, and findOOMEvidence
-// helpers; only the store lookup and the resource ID differ.
+// Database counterpart of handleAppResourceRecommendation; only the store lookup and resource ID differ,
+// since rightsizing is resource-agnostic.
 func (rt *Router) handleDatabaseResourceRecommendation(w http.ResponseWriter, r *http.Request) {
 	if rt.telemetry == nil {
 		writeError(w, http.StatusNotImplemented, "telemetry is not configured on this control plane")

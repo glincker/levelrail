@@ -11,11 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// databaseWizardAnswers is everything runInteractiveDatabaseWizard
-// collects, converted to real API requests by toCreatePlan/toResources.
-// Kept separate from the prompt loop so that conversion logic is a pure
-// function over plain data, table-driven testable with no io.Reader in
-// the loop, the same split wizardAnswers/toSpec establishes for apps.
+// Plain data, so the conversion to API requests is table-testable without stdin.
 type databaseWizardAnswers struct {
 	name    string
 	engine  string
@@ -39,10 +35,7 @@ func (a databaseWizardAnswers) toCreatePlan() (databaseResource, error) {
 	return planDatabaseCreate(createDatabaseFlags{name: a.name, engine: a.engine, version: a.version})
 }
 
-// toResources builds the resource limits request, reusing
-// toServiceResources (apps_create.go) rather than a second copy of the
-// same "512Mi"/cores-to-nano-CPUs conversion: nil, nil means no limits
-// were requested at all.
+// nil, nil means no limits were requested.
 func (a databaseWizardAnswers) toResources() (*serviceResources, error) {
 	if a.memory == "" && a.cpu == 0 {
 		return nil, nil
@@ -72,13 +65,7 @@ func defaultVersionFor(engines []databaseEngineResource, engineID string) string
 	return ""
 }
 
-// runInteractiveDatabaseWizard is the wizard's question loop: database
-// name, engine (from engines, the live registry GET /api/v1/database-engines
-// returned), version (defaulting to the engine's own registry default),
-// resource limits, public accessibility, and an optional backup
-// schedule. engines is fetched once by the I/O shell before this loop
-// starts, so this function stays a pure prompt loop over plain data,
-// the same separation detectedGit gives runInteractiveWizard for apps.
+// engines is fetched by the I/O shell first, so this loop stays pure over plain data.
 func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineResource) (databaseWizardAnswers, error) {
 	var a databaseWizardAnswers
 
@@ -201,20 +188,7 @@ func runInteractiveDatabaseWizard(p *wizardPrompter, engines []databaseEngineRes
 	return a, nil
 }
 
-// runDatabasesCreateWizard is "databases create --interactive"'s I/O
-// shell: load the live engine registry, run the question loop, create
-// the database, then apply whichever optional follow-ups (resource
-// limits, public access, a backup schedule) the answers asked for.
-//
-// Always API-only, unlike apps create's wizard: app.yaml's databases:
-// block (internal/spec.Spec.Databases) has no consumer anywhere in the
-// deploy pipeline today (nothing reads it to provision a real database,
-// unlike services: which planFromFile turns into real requests), and even
-// if it did, its schema only models engine/version/backup, with no field
-// for resources or public access at all. A file this wizard wrote could
-// never round-trip its own answers back into a real database, so there is
-// no file-output mode here, the same reasoning databasesCreateUsage
-// already gives for the flag-driven path's own lack of --file.
+// Always API-only: app.yaml's databases block has no consumer and cannot represent resources or public access.
 func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf credentialFlags, of outputFlags, lookupEnv func(string) (string, bool), prog string) int {
 	jsonOut := of.Format == outputJSON
 	client := apiClientFromCredentialFlags(prog, cf, lookupEnv)
@@ -234,10 +208,7 @@ func runDatabasesCreateWizard(stdin io.Reader, stdout, stderr io.Writer, cf cred
 	return createDatabaseFromWizard(ctx, client, answers, stdout, stderr, of)
 }
 
-// createDatabaseFromWizard executes answers against client: create, then
-// resources/public-access/backup-schedule as separate follow-up calls,
-// since none of those has a field on databaseResource's own create body
-// (see that type's own doc comment in internal/api/databases.go).
+// Resources, public access and backup schedule are follow-up calls, since the create body has no field for them.
 func createDatabaseFromWizard(ctx context.Context, client *Client, a databaseWizardAnswers, stdout, stderr io.Writer, of outputFlags) int {
 	jsonOut := of.Format == outputJSON
 	plan, err := a.toCreatePlan()
@@ -305,10 +276,7 @@ func applyDatabaseWizardPublicAccess(ctx context.Context, client *Client, a data
 	if !jsonOut {
 		_, _ = fmt.Fprintf(stderr, "enabling public access for %q...\n", created.Name)
 	}
-	// "" bind address: the server's own default (private, loopback
-	// only). The wizard has no prompt for this yet; "levelrail-cli
-	// databases public-access" (databases_public_access.go) is the
-	// explicit path for choosing public or a specific interface.
+	// Empty bind address is the server default (private); public access is set via the databases public-access command.
 	if _, err := client.SetDatabasePublicAccess(ctx, created.Name, a.publicPort, ""); err != nil {
 		return fmt.Errorf("database %q was created but enabling public access failed: %w", created.Name, err)
 	}

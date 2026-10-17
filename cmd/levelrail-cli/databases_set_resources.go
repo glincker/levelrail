@@ -8,13 +8,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/spec"
 )
 
-// runDatabasesSetResources implements "databases set-resources <name>
-// [flags]": PUT /api/v1/databases/{name}/resources
-// (client.SetDatabaseResources), applying memory/CPU limits to an
-// already-created database. "databases create --interactive" already
-// calls this same endpoint (applyDatabaseWizardResources,
-// databases_create_interactive.go); this is the standalone surface for
-// an existing database.
+// Same endpoint as the --interactive create wizard, for an existing database.
 func runDatabasesSetResources(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "databases set-resources", "print the updated database as JSON to stdout and nothing else", stderr)
 	var memory, swapMemory, cpuSetCPUs string

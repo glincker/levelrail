@@ -1,11 +1,5 @@
 package main
 
-// "apps exec --interactive": a real terminal on an app's container,
-// over the same WebSocket the dashboard's terminal uses
-// (internal/api/terminal.go). Wire shapes are redeclared here rather
-// than imported, the same convention client.go's own doc comment
-// establishes for every other wire type in this package.
-
 import (
 	"context"
 	"encoding/json"
@@ -97,10 +91,6 @@ func runAppsExecInteractiveFromFlags(args []string, prog string, creds credentia
 	}, stdout, stderr)
 }
 
-// runAppsExecInteractive opens the terminal, puts the local terminal in
-// raw mode so keystrokes reach the container unbuffered, and returns the
-// remote shell's own exit code, the same contract the non-interactive
-// path already has.
 func runAppsExecInteractive(prog, name string, command []string, creds terminalCredentials, stdout, stderr io.Writer) int {
 	fd := int(os.Stdin.Fd())
 	if !term.IsTerminal(fd) {

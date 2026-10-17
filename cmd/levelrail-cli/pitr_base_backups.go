@@ -40,10 +40,7 @@ Run "%[1]s pitr base-backups <subcommand> -h" for a subcommand's own flags.
 `, prog)
 }
 
-// runPITRBaseBackupsList implements "pitr base-backups list
-// <database>": GET /api/v1/databases/{name}/base-backups
-// (internal/api/pitr.go's own handleListBaseBackupHistory), AbilityRead-
-// gated.
+// Read-only listing of a database's base backups.
 func runPITRBaseBackupsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr base-backups list", "print base backup history as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, pitrBaseBackupsListUsage(prog)) }
@@ -99,10 +96,7 @@ Flags:
 `, prog, envAPIToken, envAPIURL, defaultAPIURL)
 }
 
-// runPITRBaseBackupsTrigger implements "pitr base-backups trigger
-// <database> --target ID": POST /api/v1/databases/{name}/base-backups
-// (internal/api/pitr.go's own handleTriggerBaseBackup), AbilityWriteSensitive-
-// gated. Returns 409 if PITR isn't enabled for the database yet.
+// Returns 409 if PITR is not yet enabled for the database.
 func runPITRBaseBackupsTrigger(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "pitr base-backups trigger", "print the started base backup attempt as JSON to stdout and nothing else", stderr)
 	var targetID string

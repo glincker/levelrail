@@ -1,12 +1,6 @@
 package main
 
-// Tests for containerDNSAddr (mesh.go): the function that decides
-// whether a real, Docker-and-resolv.conf-usable nameserver address can
-// be computed for the mesh DNS server right now. See
-// dockerNameserverPort's own doc comment in mesh.go for the live-verified
-// reason a non-53 bound port must never produce a usable address: Docker
-// rejects "ip:port" DNS entries at container start, and no container
-// resolver supports a non-standard nameserver port at all.
+// Port 53 is required: Docker rejects a non-53 nameserver address at container start.
 
 import (
 	"context"
@@ -18,13 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// TestContainerDNSAddr_EarlyReturns covers every branch that must return
-// "" without ever touching client: mesh disabled, mesh enabled but the
-// DNS server hasn't bound an address yet, and (the case this task's own
-// live testing surfaced) a bound address on any port other than 53. A
-// nil *docker.Client would panic if any of these branches reached
-// BridgeGatewayIP, so passing nil doubles as a regression check that
-// they don't.
+// TestContainerDNSAddr_EarlyReturns checks every branch that returns "" without touching the Docker client.
 func TestContainerDNSAddr_EarlyReturns(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 
@@ -52,11 +40,7 @@ func TestContainerDNSAddr_EarlyReturns(t *testing.T) {
 	}
 }
 
-// TestContainerDNSAddr_Live_Port53ResolvesGateway proves the one branch
-// TestContainerDNSAddr_EarlyReturns can't (it needs a real client): a
-// mesh DNS server correctly bound to port 53 makes containerDNSAddr
-// return the real bridge gateway IP, the same address BridgeGatewayIP
-// itself returns directly, verified independently.
+// TestContainerDNSAddr_Live_Port53ResolvesGateway checks that a port-53 mesh DNS server yields the bridge gateway IP.
 func TestContainerDNSAddr_Live_Port53ResolvesGateway(t *testing.T) {
 	client, err := docker.NewClient()
 	if err != nil {

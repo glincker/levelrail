@@ -149,10 +149,7 @@ func (rt *Router) handleAckBackupEncryptionKey(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, rt.encryptionResource(r.Context()))
 }
 
-// coverageResources lists every database and app volume that exists now,
-// flagging preview and canary data as scratch. Schedules come from desired
-// state for databases and from the health rows for volumes, which already
-// join each volume's schedule row.
+// coverageResources lists every database and app volume, flagging preview and canary data as scratch.
 func (rt *Router) coverageResources(ctx context.Context, health []backup.ResourceHealth) ([]backup.CoverageResource, error) {
 	dbs, err := rt.databases.ListDesiredDatabases(ctx)
 	if err != nil {
@@ -302,10 +299,8 @@ type protectAllResponse struct {
 	Failed     []protectFailure  `json:"failed,omitempty"`
 }
 
-// handleProtectAll handles POST /api/v1/backups/protect-all: schedules a
-// backup for every unprotected database and app volume. With apply=false it
-// only returns the plan. The plan is recomputed when applying, never taken
-// from the caller, so a stale preview cannot widen what is changed.
+// handleProtectAll schedules backups for every unprotected database and volume.
+// The plan is recomputed on apply, so a stale preview cannot widen the change.
 func (rt *Router) handleProtectAll(w http.ResponseWriter, r *http.Request) {
 	if rt.backupProtection == nil {
 		writeError(w, http.StatusNotImplemented, "backup coverage is not configured on this control plane")

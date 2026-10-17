@@ -14,10 +14,7 @@ import (
 // reports, matched by callers that assert on default-subdomain mapping.
 const fakeCaproverRootDomain = "example.com"
 
-// fakeCaproverServer answers the login exchange with wantToken, then
-// GET /user/apps/appDefinitions with apps/fakeCaproverRootDomain,
-// rejecting any request whose x-captain-auth header isn't wantToken once
-// issued.
+// fakeCaproverServer answers login with wantToken and rejects any other x-captain-auth value.
 func fakeCaproverServer(t *testing.T, wantPassword, wantToken string, apps []caproverAppDefinition) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

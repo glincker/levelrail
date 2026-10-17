@@ -59,10 +59,7 @@ type failureContextResponse struct {
 	Exit *deployExitResource `json:"exit,omitempty"`
 }
 
-// handleFailureContext handles GET /api/v1/apps/{name}/failure-context: when
-// the app is crashlooping or its newest deploy failed, the last lines of the
-// failing container (or the deploy's build log) so the cause is on the page
-// without opening the log viewer.
+// Returns the last lines of the failing container, or the deploy's build log, so the cause shows without opening the log viewer.
 func (rt *Router) handleFailureContext(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	name := r.PathValue("name")

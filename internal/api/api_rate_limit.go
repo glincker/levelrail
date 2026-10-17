@@ -11,21 +11,13 @@ import (
 	"time"
 )
 
-// apiRateLimitBucket is one actor's token-bucket state: capacity refills
-// continuously at ratePerMinute, so a legitimate burst (a few requests
-// fired back to back) never trips the limiter, only sustained volume
-// above the per-minute rate does.
+// apiRateLimitBucket is one actor's token bucket, refilled continuously so short bursts pass.
 type apiRateLimitBucket struct {
 	tokens     float64
 	lastRefill time.Time
 }
 
-// apiRateLimiter enforces a token-bucket budget per actor key, the same
-// in-memory map-plus-mutex shape loginLimiter (ratelimit.go) and
-// domainCheckCache (domain_check.go) already use for their own per-key
-// throttling. A restart clears every bucket, the same accepted tradeoff
-// those two make: this is a single control-plane process (section 4.7),
-// not a distributed rate-limit store.
+// apiRateLimiter is an in-memory per-actor token bucket. A restart clears all buckets, which is accepted for one control-plane process.
 type apiRateLimiter struct {
 	mu            sync.Mutex
 	buckets       map[string]*apiRateLimitBucket
@@ -143,10 +135,7 @@ type limiterCheck struct {
 	key string
 }
 
-// allowAll admits a request only when every budget has room, and spends
-// from all of them only then, so a rejection by one never drains another.
-// It holds every limiter's lock throughout, taken in creation order so two
-// calls can never deadlock.
+// allowAll spends from every budget only if all have room, so one rejection never drains another. Locks are taken in creation order.
 func allowAll(checks ...limiterCheck) (ok bool, retryAfter time.Duration) {
 	need := make(map[limiterCheck]float64, len(checks))
 	var limiters []*apiRateLimiter
@@ -179,11 +168,7 @@ func allowAll(checks ...limiterCheck) (ok bool, retryAfter time.Duration) {
 	return true, 0
 }
 
-// apiRateLimitTier buckets an ability into the read or write rate-limit
-// budget: AbilityRead is the only read-tier ability, everything else
-// (write, write:sensitive, deploy, root) shares the stricter write
-// budget, since each of those can mutate real infrastructure, not just
-// view it.
+// apiRateLimitTier maps an ability to the read budget (AbilityRead) or the stricter write budget (everything else).
 func apiRateLimitTier(ability string) string {
 	if ability == AbilityRead {
 		return "read"
@@ -191,14 +176,7 @@ func apiRateLimitTier(ability string) string {
 	return "write"
 }
 
-// apiRateLimit is the general per-actor request budget requireAbility
-// enforces on every route it gates: a compromised or leaked API token
-// (or a runaway script) hammering the API surface at unlimited volume is
-// throttled here, at the one seam every session- and token-authenticated
-// request already funnels through, instead of being bolted onto each
-// handler individually. Read-tier and write-tier traffic get independent
-// budgets, keyed the same way, so heavy polling of a read endpoint can
-// never eat into the budget a write endpoint needs.
+// apiRateLimit is the per-actor budget requireAbility enforces on every gated route. Read and write tiers are budgeted independently.
 type apiRateLimit struct {
 	reads  *apiRateLimiter
 	writes *apiRateLimiter
@@ -217,12 +195,7 @@ func (l *apiRateLimit) allow(ability, key string) (ok bool, retryAfter time.Dura
 	return l.writes.allow(key)
 }
 
-// writeRateLimited writes the 429 response a rejected apiRateLimit.allow
-// call produces: a Retry-After header (RFC 9110 form: an integer count
-// of seconds) plus the same {"error": "..."} body shape every other
-// error response uses, so a caller parsing responses programmatically
-// (internal/apiclient, and eventually the MCP layer) needs no
-// status-code-specific parsing to get an actionable message.
+// writeRateLimited writes a 429 with a Retry-After header and the standard JSON error body.
 func writeRateLimited(w http.ResponseWriter, retryAfter time.Duration) {
 	seconds := int(retryAfter.Round(time.Second) / time.Second)
 	if seconds < 1 {

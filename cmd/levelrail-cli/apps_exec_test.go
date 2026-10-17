@@ -9,14 +9,7 @@ import (
 	"testing"
 )
 
-// TestRun_AppsExec_RealExitCode is the requirement this package's task
-// singles out: run()'s returned int (what main() would hand to
-// os.Exit) must be the remote command's own real exit code, not this
-// CLI's usual exitOK/exitAPIError enum, whenever the exec mechanism
-// itself succeeded (a 200 from the server, per internal/api/exec.go's
-// own doc comment on execResponse.ExitCode: "always the command's real
-// exit code... a nonzero ExitCode here means the exec mechanism itself
-// worked fine and the command it ran chose to fail").
+// run() must return the remote command's real exit code, not the CLI's exit enum, when exec itself succeeds.
 func TestRun_AppsExec_RealExitCode(t *testing.T) {
 	tests := []struct {
 		name         string

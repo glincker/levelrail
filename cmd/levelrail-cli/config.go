@@ -2,10 +2,6 @@ package main
 
 import "github.com/GLINCKER/levelrail/internal/apiclient"
 
-// envAPIToken, envAPIURL, envProfile, defaultAPIURL, defaultProfile, and
-// credentialsFileName alias internal/apiclient's exported constants of
-// the same values: see client.go's own doc comment on why this file no
-// longer defines its own credentials logic.
 const (
 	envAPIToken         = apiclient.EnvAPIToken
 	envAPIURL           = apiclient.EnvAPIURL

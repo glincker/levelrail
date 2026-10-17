@@ -7,13 +7,7 @@ import (
 	"time"
 )
 
-// metricsQueryResult is metricsCommandConfig.Query's return shape:
-// Value is the full apiclient resource (what --json/--output json/
-// --query render against, so a node's extra resource_count field still
-// round-trips), Metric/Points are that same resource's own fields
-// pulled out for printMetricPointsHuman's table, and Extra is an
-// optional human-output line (nodes metrics' "resource_count: N") that
-// apps/databases metrics have nothing to add, hence nil.
+// metricsQueryResult keeps the full resource for --json output, with its metric and points split out for the table.
 type metricsQueryResult struct {
 	Value  any
 	Metric string
@@ -21,13 +15,7 @@ type metricsQueryResult struct {
 	Extra  func(io.Writer)
 }
 
-// metricsCommandConfig is runMetricsCommand's per-command input: the
-// wording and the single apiclient call that differ between "apps
-// metrics", "databases metrics", and "nodes metrics", which otherwise
-// share every line of flag parsing, time-range resolution, and
-// --output/--query rendering. See apps_deploy.go's own
-// deployOrRollbackConfig for the same shared-implementation shape
-// applied to a different pair of commands.
+// metricsCommandConfig holds what differs between apps, databases, and nodes metrics; the rest is shared.
 type metricsCommandConfig struct {
 	cmdLabel string
 	argLabel string
@@ -90,15 +78,7 @@ func runMetricsCommand(prog string, args []string, stdout, stderr io.Writer, loo
 	return exitOK
 }
 
-// metricsUsageFlags is the closing --metric/--since/.../-h flags block
-// shared verbatim by "apps metrics"/"databases metrics"/"nodes
-// metrics"'s own usage text: the same kind of footer nearly every other
-// apiFlagSet-based command's usage function already repeats on its own
-// (see nodes_health.go's nodesHealthUsage for one of many precedents).
-// Factored out here specifically because three near-identical copies of
-// it landing in one PR is what pushes new-code duplication over
-// SonarCloud's gate, not because the wider repo-wide pattern itself
-// needs to change.
+// metricsUsageFlags is factored out of three usage texts so the flag footer is defined once.
 func metricsUsageFlags(prog string) string {
 	return fmt.Sprintf(`  --metric string          metric name to query, e.g. cpu_percent, memory_usage_bytes (required)
   --since string          how far back to query, e.g. "1h", "30m" (default: 1h)

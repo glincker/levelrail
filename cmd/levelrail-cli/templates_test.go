@@ -8,12 +8,7 @@ import (
 	"testing"
 )
 
-// newMultiPathEchoServer starts a test server that records every request
-// path it sees (in order) and always responds 200 with a minimal,
-// generically-shaped JSON body: enough for "templates deploy" to decode
-// both its GetServiceTemplate call (a serviceTemplateDetail) and its
-// DeployCompose call (a composeDeployResult) without needing to
-// distinguish the two requests server-side.
+// Returns one generic JSON body for every path, so both template calls decode without per-path routing.
 func newMultiPathEchoServer(t *testing.T, gotPaths *[]string) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

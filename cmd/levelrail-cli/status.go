@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runStatus implements "status": GET /api/v1/system/status, the same
-// endpoint routes/settings/general.tsx's Docker/disk cards already read
-// from and the dashboard-wide health banner polls. Top-level rather than
-// under "nodes", since this reports the control plane's own local Docker
-// reachability, not a per-node signal (see internal/apiclient's
-// SystemStatusResource doc comment).
+// Top-level because it reports the control plane's own Docker reachability, not a per-node signal.
 func runStatus(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "status", "print status as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, statusUsage(prog)) }

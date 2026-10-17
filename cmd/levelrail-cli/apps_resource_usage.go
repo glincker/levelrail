@@ -8,12 +8,7 @@ import (
 	"text/tabwriter"
 )
 
-// runAppsResourceUsage implements "apps resource-usage": GET
-// /api/v1/apps/resource-usage (internal/api/app_resource_usage.go), the
-// same ranking the dashboard's "top resource consumers" panel reads.
-// Sorted by CPU descending by default since that's the common "what's
-// hot right now" question; --json preserves the server's own name
-// ordering for scripting.
+// The table sorts by CPU descending; --json keeps the server's name order.
 func runAppsResourceUsage(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps resource-usage", "print resource usage as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() {

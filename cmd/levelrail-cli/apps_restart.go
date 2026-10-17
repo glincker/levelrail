@@ -6,16 +6,7 @@ import (
 	"io"
 )
 
-// runAppsRestart implements "apps restart <name>": POST
-// /api/v1/apps/{name}/restart (internal/api/apps.go's own
-// handleRestartApp), AbilityDeploy-gated, no request body. Forces a
-// running container to be recreated without an image change (a plain
-// redeploy of the same image tag is otherwise a genuine reconciler
-// no-op, per handleRestartApp's own doc comment), which is useful on its
-// own merit (an app that needs a fresh process without a new image, a
-// stuck container the reconciler hasn't noticed yet) and is a distinct
-// operation from both "apps deploy" and "apps rollback": neither of
-// those change the image, this command never does.
+// Recreates the container without an image change, since a plain redeploy of the same tag is a no-op.
 func runAppsRestart(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps restart", "print the app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsRestartUsage(prog)) }

@@ -182,17 +182,7 @@ func TestHandleDeployLogStream_FinishedAttempt_ReplaysPersistedLog(t *testing.T)
 		t.Fatalf("finish attempt: %v", err)
 	}
 
-	// serveFinishedDeployLog holds the connection open (writing nothing
-	// further) after its one real burst, rather than returning
-	// immediately: see that function's own doc comment for why (a real
-	// EventSource client reconnects on a server-initiated close, and
-	// this task's own live browser verification caught that reconnect
-	// replaying, and re-appending, the entire persisted log on a loop).
-	// So ServeHTTP itself only returns once the request's context is
-	// done; a short timeout here plays the client-disconnect role a
-	// real browser navigating away would, single-goroutine and
-	// synchronous (no separate goroutine/race concern: ServeHTTP simply
-	// blocks this call for up to the timeout, then returns).
+	// Holds the connection open after the burst; a reconnecting EventSource would otherwise replay the whole log.
 	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	req := authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/dep_done/logs", "").WithContext(ctx)
@@ -260,14 +250,7 @@ func TestHandleDeployLogStream_InProgressAttempt_NoRecorderConfigured(t *testing
 	}
 }
 
-// TestHandleDeployLogStream_LiveTail is the one genuinely concurrent
-// test in this file: it exercises the actual live fan-out path end to
-// end (Snapshot's lines-so-far replay, then a new event published after
-// the client subscribed, then Finish closing the stream), over a real
-// HTTP connection (httptest.NewServer, not httptest.NewRecorder) because
-// the handler and this test both read/write the response concurrently,
-// which a shared bytes.Buffer (what NewRecorder backs onto) cannot do
-// without a data race.
+// TestHandleDeployLogStream_LiveTail covers live fan-out end to end, over a real listener since the handler and test touch the response concurrently.
 func TestHandleDeployLogStream_LiveTail(t *testing.T) {
 	db := openTestDB(t)
 	recorder := deploylog.NewRecorder(nil, discardLogger())
@@ -292,15 +275,7 @@ func TestHandleDeployLogStream_LiveTail(t *testing.T) {
 	defer srv.Close()
 	cookie := loginViaServer(t, srv, db)
 
-	// A cancellable request context, not http.NewRequest's default: this
-	// test needs to explicitly end the client side of the connection
-	// once it's done reading, playing the role a real browser tab
-	// closing/navigating away would. That's required now that
-	// serveLiveDeployLog holds the connection open after the live
-	// channel closes (see that function's own doc comment) instead of
-	// returning immediately: without an explicit client-side cancel,
-	// the server would keep waiting on this request's context forever
-	// and this test would hang.
+	// The client must cancel explicitly, since the server holds the stream open after the live channel closes.
 	reqCtx, reqCancel := context.WithCancel(context.Background())
 	defer reqCancel()
 	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, srv.URL+"/api/v1/apps/web/deploys/dep_live/logs", nil)
@@ -339,16 +314,7 @@ func TestHandleDeployLogStream_LiveTail(t *testing.T) {
 
 	recorder.Finish(ctx, "dep_live")
 
-	// The connection must NOT close (and so the client must NOT see an
-	// EOF or get a chance to reconnect) just because the attempt
-	// finished: see serveLiveDeployLog's own doc comment for why a
-	// server-initiated close here is exactly the bug this task's live
-	// browser verification caught (a reconnecting EventSource replaying,
-	// and re-appending, the whole persisted log on a loop). So the
-	// correct behavior is "no more data arrives, but the read does not
-	// return an error either," checked with a bounded wait since there's
-	// no event to synchronize on for a thing that's supposed to *not*
-	// happen.
+	// The stream must stay open after the attempt finishes, so the client must not see EOF and reconnect.
 	readErrCh := make(chan error, 1)
 	go func() {
 		_, readErr := nextSSEData(reader)
@@ -392,10 +358,7 @@ func nextSSEData(r *bufio.Reader) (string, error) {
 	}
 }
 
-// loginViaServer bootstraps the admin account and logs in through a real
-// HTTP round trip against srv, returning the session cookie: needed for
-// TestHandleDeployLogStream_LiveTail since that test talks to the router
-// over a real listener, not httptest.NewRecorder.
+// loginViaServer logs in over a real HTTP round trip, since the live-tail test talks over a listener.
 func loginViaServer(t *testing.T, srv *httptest.Server, db *store.DB) *http.Cookie {
 	t.Helper()
 	bootstrapTestAdmin(t, db)
@@ -436,11 +399,7 @@ func (f *fakeDeployLogQuerier) QueryDeployLog(_ context.Context, attemptID strin
 	return out, nil
 }
 
-// orderCheckAttemptStore wraps a real DeployAttemptStore and, during
-// SaveDeployAttempt, snapshots whether recorder already knows the
-// attempt being saved. A GET can only ever discover an attempt ID after
-// SaveDeployAttempt returns, so this proves beginBuildDeployAttempt calls
-// Recorder.Start strictly before that, not just usually.
+// orderCheckAttemptStore proves Recorder.Start runs before SaveDeployAttempt, since a GET can see the attempt only after save.
 type orderCheckAttemptStore struct {
 	DeployAttemptStore
 	recorder          *deploylog.Recorder

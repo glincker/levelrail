@@ -23,10 +23,7 @@ func (f *fakeNodeSource) ListNodes(_ context.Context) ([]store.Node, error) {
 	return f.nodes, f.err
 }
 
-// perResourceMetricsSource returns samples keyed by resourceID, unlike
-// evaluate_test.go's fakeMetricsSource (which ignores its resourceID
-// argument entirely): EvaluatePatchStatus queries once per node, so a
-// useful test needs different nodes to see different values.
+// perResourceMetricsSource returns per-node values, which the patch status evaluator needs to tell nodes apart.
 type perResourceMetricsSource struct {
 	samples       map[string][]telemetry.Sample
 	err           error

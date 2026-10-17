@@ -5,10 +5,7 @@ import (
 	"strings"
 )
 
-// bashCompletionScript renders a bash completion script for prog that
-// walks COMP_WORDS through cliCommandTree to offer the right verbs at
-// whatever depth the cursor is at, falling back to globalFlags once the
-// tree bottoms out (or a flag has already been typed).
+// Walks cliCommandTree for the verb at the cursor, falling back to globalFlags.
 func bashCompletionScript(prog string) string {
 	ident := sanitizeIdent(prog)
 	var b strings.Builder

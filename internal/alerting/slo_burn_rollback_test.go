@@ -68,12 +68,7 @@ func TestMaybeAutoRollbackOnSLOBurn_Auto_RollsBackToPreviousImage(t *testing.T) 
 	}
 }
 
-// TestMaybeAutoRollbackOnSLOBurn_Auto_TriggerFails_HalfSucceeded covers
-// the half-succeeded case CLAUDE.md requires: TriggerImageDeploy fails
-// mid-rollback (its own SaveDesiredService call failing, the earliest
-// possible failure point) so desired state never moves. The tracker must
-// not record a rollback that never happened, or a later, real attempt
-// would be wrongly suppressed as "already handled."
+// Half-succeeded case: a failed desired-state write must not be recorded as a rollback, or a real retry is suppressed.
 func TestMaybeAutoRollbackOnSLOBurn_Auto_TriggerFails_HalfSucceeded(t *testing.T) {
 	st := &fakeSLOAutoRollbackStore{fakeAutoRollbackStore: fakeAutoRollbackStore{
 		svc: store.DesiredService{Name: "web", Image: "web:v3", AutoRollbackOnSLOBurn: store.AutoRollbackSLOBurnAuto},
@@ -99,11 +94,7 @@ func TestMaybeAutoRollbackOnSLOBurn_Auto_TriggerFails_HalfSucceeded(t *testing.T
 	}
 }
 
-// TestMaybeAutoRollbackOnSLOBurn_Auto_AttemptRecordFails_StillMovesAndRecords
-// mirrors TestMaybeAutoRollback_AttemptRecordFails_DesiredStateStillMovesAndTrackerStillRecords:
-// once the desired-state write lands, a later SaveDeployAttempt failure
-// (logged only, never returned by recordImageDeployAttempt) must not stop
-// the reconciler nudge or the tracker record.
+// A failed attempt-record write is only logged, so the reconciler nudge and tracker record must still happen.
 func TestMaybeAutoRollbackOnSLOBurn_Auto_AttemptRecordFails_StillMovesAndRecords(t *testing.T) {
 	st := &fakeSLOAutoRollbackStore{fakeAutoRollbackStore: fakeAutoRollbackStore{
 		svc: store.DesiredService{Name: "web", Image: "web:v3", AutoRollbackOnSLOBurn: store.AutoRollbackSLOBurnAuto},

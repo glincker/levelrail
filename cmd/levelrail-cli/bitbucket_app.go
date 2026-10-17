@@ -7,11 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runBitbucketApp dispatches "bitbucket-app <verb> [flags]" to one of
-// repos/branches/use-as-source: internal/api/bitbucket_app_repos.go's
-// three routes, the Bitbucket counterpart of runGitHubApp/runGitLabApp.
-// Connecting the Bitbucket OAuth consumer itself stays dashboard-only,
-// same reasoning as the other two providers.
+// Connecting the Bitbucket OAuth consumer stays dashboard-only, like GitHub and GitLab.
 func runBitbucketApp(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	if len(args) == 0 {
 		_, _ = fmt.Fprint(stderr, bitbucketAppUsage(prog))

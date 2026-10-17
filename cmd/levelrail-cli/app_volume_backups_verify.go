@@ -6,12 +6,7 @@ import (
 	"io"
 )
 
-// runAppVolumeBackupsVerify implements "app-volume-backups verify <app>
-// <volume> --backup ID":
-// POST /api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/verify
-// (internal/api/app_volume_backup_verify.go's own handleVerifyVolumeBackup),
-// mirroring runBackupsVerify's exact shape (backups_verify.go) for the
-// volume resource kind. Never attempts a live restore.
+// Verify only checks the backup; it never performs a live restore.
 func runAppVolumeBackupsVerify(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "app-volume-backups verify", "print the started verification attempt as JSON to stdout and nothing else", stderr)
 	var backupID string

@@ -224,10 +224,7 @@ func TestHandleDeleteFeatureFlag_Success(t *testing.T) {
 	}
 }
 
-// seedFlagWithReadToken creates a flag through the session-authed CRUD
-// route, then mints a plain AbilityRead token: the minimally-scoped
-// token an operator would actually inject into a running app as a
-// secret env var, per this feature's own integration model.
+// Mints a plain AbilityRead token, the minimal scope an operator would inject into an app as a secret env var.
 func seedFlagWithReadToken(t *testing.T, rt *Router, db *store.DB, cookie *http.Cookie, key, body string) string {
 	t.Helper()
 	rec := httptest.NewRecorder()
@@ -333,10 +330,7 @@ func TestHandleEvaluateFeatureFlag_HundredPercent_AlwaysTrue(t *testing.T) {
 	}
 }
 
-// TestHandleEvaluateFeatureFlag_ConsistentPerIdentifier is the core
-// determinism guarantee this feature's own spec requires: the same
-// (flag, identifier) pair must land on the same side of a partial
-// rollout on every call, never a coin flip that changes per request.
+// The same (flag, identifier) pair must land on the same side of a partial rollout on every call.
 func TestHandleEvaluateFeatureFlag_ConsistentPerIdentifier(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

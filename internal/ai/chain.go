@@ -36,10 +36,7 @@ type ChainEntry struct {
 	ContextWindow int
 }
 
-// ChainProvider tries entries in order. It moves to the next entry only for
-// failures that do not depend on the key or the content (rate limit,
-// overload, network, quota) and only while nothing has been streamed to the
-// caller, so fallback never duplicates or mixes output.
+// ChainProvider tries entries in order and falls back only on key- and content-independent failures before any output streams.
 type ChainProvider struct {
 	Entries        []ChainEntry
 	DefaultContext int

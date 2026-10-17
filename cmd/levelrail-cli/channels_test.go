@@ -176,10 +176,7 @@ func TestRun_ChannelsCreate_GoogleChatWebhookURL(t *testing.T) {
 		"googlechat", "https://chat.googleapis.com/v1/spaces/x/messages")
 }
 
-// TestRun_ChannelsCreate_ResendFlags proves --resend-api-key/--resend-to
-// pack into notify_url the same way --pushover-user-key/
-// --pushover-api-token do, and that an omitted --resend-from leaves the
-// "from" query parameter unset (the backend defaults it).
+// TestRun_ChannelsCreate_ResendFlags checks --resend-* flags pack into notify_url, and an omitted --resend-from stays unset.
 func TestRun_ChannelsCreate_ResendFlags(t *testing.T) {
 	var gotBody createNotificationChannelRequest
 	srv := newChannelCreateEchoServer(t, "chn_10", &gotBody, nil)
@@ -233,10 +230,7 @@ func TestRun_ChannelsCreate_ResendFromFlag(t *testing.T) {
 	}
 }
 
-// TestRun_ChannelsCreate_OpsgenieFlags proves --opsgenie-api-key packs
-// into notify_url against opsgenieEndpoint, the same convention
-// --resend-api-key/--pagerduty-routing-key already establish for a
-// channel kind that needs more than a bare webhook URL.
+// TestRun_ChannelsCreate_OpsgenieFlags checks --opsgenie-api-key packs into notify_url.
 func TestRun_ChannelsCreate_OpsgenieFlags(t *testing.T) {
 	var gotBody createNotificationChannelRequest
 	srv := newChannelCreateEchoServer(t, "chn_15", &gotBody, nil)

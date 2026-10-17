@@ -6,13 +6,7 @@ import (
 	"io"
 )
 
-// runDomainsCheck implements "domains check <app> <domain>": GET
-// /api/v1/apps/{name}/domains/{domain}/check, a real DNS lookup
-// (internal/api/domain_check.go's handleCheckDomain) reporting whether
-// domain currently resolves to this control plane's own advertised
-// address. Read-only, unlike every other domains subcommand's nested
-// get/set/clear shape: there is nothing to configure here, only a
-// single check to run, so this is a direct top-level verb like "list".
+// Top-level verb rather than get/set/clear: a single read-only DNS check, nothing to configure.
 func runDomainsCheck(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "domains check", "print the check result as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, domainsCheckUsage(prog)) }

@@ -9,12 +9,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestFormatMemoryBytes covers formatMemoryBytes, the reverse of
-// internal/deploy's own parseMemoryBytes (Mi/Gi only). ResourceLimitsEditor.tsx's
-// own comment (web/src/components/ResourceLimitsEditor.tsx) is why every
-// byte count this codebase's UI can actually produce is an exact multiple
-// of 1Mi: "a whole-number MiB field for memory chosen specifically to
-// keep the byte round-trip lossless."
+// Covers formatMemoryBytes, the reverse of parseMemoryBytes (Mi/Gi only).
+// The UI only produces whole-MiB values, so the byte round trip is lossless.
 func TestFormatMemoryBytes(t *testing.T) {
 	const mi = 1024 * 1024
 	const gi = mi * 1024
@@ -37,17 +33,8 @@ func TestFormatMemoryBytes(t *testing.T) {
 	}
 }
 
-// TestSpecServiceFromDesired covers the reconstruction
-// specServiceFromDesired does for a manual build request: everything
-// store.DesiredService can represent (port, domains, literal env, secret
-// env names and their Required bit, resources, health) carried forward
-// into a spec.Service the existing internal/deploy.Pipeline already
-// knows how to build from, plus the caller-supplied Build block layered
-// on top. TOKEN (Required: true) and its optional sibling both prove
-// SecretEnvRef.Required survives the round trip: this used to be a known
-// fidelity loss (see git history), the exact gap that let a
-// build-triggered deploy silently skip app.yaml's own { required: true }
-// check that internal/webhook's fresh app.yaml parse never lost.
+// Covers carrying everything DesiredService stores into a spec.Service for a manual build.
+// SecretEnvRef.Required must survive that round trip, or app.yaml's required check is skipped.
 func TestSpecServiceFromDesired(t *testing.T) {
 	svc := store.DesiredService{
 		Name:    "web",
@@ -119,10 +106,7 @@ func TestSpecServiceFromDesired(t *testing.T) {
 	}
 }
 
-// TestSpecServiceFromDesired_NoOptionalFields covers the zero-value case:
-// an app with no resources/health/env set must not synthesize any of
-// them, so a manual build against a bare-minimum app doesn't fail
-// internal/deploy's own parseMemoryBytes on an empty string or similar.
+// A bare app must not synthesize resources, health, or env, which would break parseMemoryBytes on an empty value.
 func TestSpecServiceFromDesired_NoOptionalFields(t *testing.T) {
 	svc := store.DesiredService{Name: "web", Port: 3000}
 	got := specServiceFromDesired(svc, spec.Build{Type: spec.BuildDockerfile})

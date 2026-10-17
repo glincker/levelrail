@@ -5,10 +5,7 @@ import (
 	"testing"
 )
 
-// TestAliases_PassArgumentsThrough proves each alias passes arguments
-// through exactly to the real command by checking that the same arguments
-// produce the same exit code. This tests with various invalid/help arguments
-// to ensure args are forwarded without modification.
+// Each alias must return the same exit code as the real command for the same args.
 func TestAliases_PassArgumentsThrough(t *testing.T) {
 	tests := []struct {
 		name  string

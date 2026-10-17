@@ -7,13 +7,7 @@ import (
 	"text/tabwriter"
 )
 
-// runVolumesOrphaned implements "volumes-orphaned": GET
-// /api/v1/system/volumes/orphaned (internal/api/volumes_orphaned.go),
-// every named Docker volume this instance created that no current app,
-// database, or storage attachment references any more. Detection only;
-// use "volumes-orphaned-cleanup" to actually remove one, the same
-// list-then-confirm split "system-prune" doesn't need (that command has
-// no selectable candidates, this one does).
+// Detection only: removal is a separate volumes-orphaned-cleanup command.
 func runVolumesOrphaned(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "volumes-orphaned", "print orphaned volumes as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, volumesOrphanedUsage(prog)) }

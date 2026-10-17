@@ -28,10 +28,7 @@ func runPipelinesOIDC(prog string, args []string, stdout, stderr io.Writer, look
 	})
 }
 
-// runPipelinesOIDCRotateKey handles `pipelines oidc rotate-key`: rotates
-// the pipeline OIDC signing key immediately. The previous key stays
-// published in the JWKS (see docs/pipelines-oidc.md) until --retire-after
-// elapses, so tokens it already signed keep verifying.
+// The previous key stays in the JWKS until --retire-after, so tokens it signed still verify.
 func runPipelinesOIDCRotateKey(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	c := newPipelineCmd(prog, "pipelines oidc rotate-key", "print the rotation result as JSON", stdout, stderr)
 	retireAfter := c.fs.String("retire-after", "", "how long the previous signing key stays published in the JWKS (Go duration, e.g. 1h); default 24h")

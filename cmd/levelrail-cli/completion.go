@@ -14,26 +14,13 @@ import (
 // accepts, and any further verbs those verbs themselves dispatch to.
 type cmdNode = clitree.Node
 
-// cliCommandTree mirrors every "switch args[0]" dispatch layer in this
-// package (main.go's run, apps.go, channels.go, ...), by hand: this CLI
-// has no cobra-style registry the dispatch switches and completions can
-// both read from, so the two are two independent sources of truth. Adding
-// or renaming a command means updating both. TestCommandTree_MatchesDispatchSwitches
-// in completion_test.go parses every dispatch switch in this package and
-// fails if this tree and the real switches disagree, so drift is caught
-// at test time rather than silently shipped.
+// Hand-maintained mirror of the dispatch switches; TestCommandTree_MatchesDispatchSwitches catches drift.
 var cliCommandTree = clitree.Tree
 
-// globalFlags lists the flags apiFlagSet registers on nearly every
-// subcommand (flagutil.go), plus the handful main.go's run() itself
-// strips out before dispatch (--debug, see extractDebugFlag), offered as
-// completions at every command depth.
+// Flags offered as completions at every command depth.
 var globalFlags = []string{"--json", "--output", "--query", "--token", "--api-url", "--debug", "-h", "--help"}
 
-// treeEntry is cliCommandTree flattened to one entry per node that has
-// children: path is the space-joined verb sequence leading to that node
-// ("" for the root, "apps" for apps' own verbs, "apps log-drain" for its
-// nested verbs), children is that node's own verb names, sorted.
+// One entry per node with children; path is the space-joined verb sequence.
 type treeEntry struct {
 	path     string
 	children []string
@@ -86,12 +73,7 @@ func completionHidden(prefix, name string) bool {
 	return gated && !experimental.Enabled(f)
 }
 
-// renderChildrenFunc renders a shell function named funcName that maps a
-// space-joined command path (its one argument) to that node's children,
-// space-joined, or an empty line for an unknown path. The "case ... esac"
-// syntax used here is valid in both bash and zsh, so bashCompletionScript
-// and zshCompletionScript share this instead of each hand-rendering their
-// own copy of the tree.
+// The case/esac form works in both bash and zsh, so both scripts share it.
 func renderChildrenFunc(funcName string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "%s() {\n  case \"$1\" in\n", funcName)
@@ -102,10 +84,7 @@ func renderChildrenFunc(funcName string) string {
 	return b.String()
 }
 
-// sanitizeIdent turns prog into a valid shell function-name fragment, so
-// a renamed binary (this project's brand-indirection rule means the
-// binary name is never a fixed literal, see os.Args[0]) still gets
-// completion functions that don't collide with another program's.
+// Binary name comes from os.Args[0], so completion function names must stay valid for any name.
 func sanitizeIdent(prog string) string {
 	var b strings.Builder
 	for _, r := range prog {

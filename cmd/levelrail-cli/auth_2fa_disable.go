@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runAuthTwoFactorDisable implements "auth 2fa disable": POST
-// /api/v1/auth/2fa/disable, re-verifying the second factor itself (a
-// live code or a recovery code) rather than the account password, same
-// reasoning handleDisableTwoFactor's own doc comment gives.
+// Re-verifies the second factor rather than the account password.
 func runAuthTwoFactorDisable(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader) int {
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth 2fa disable", "print a JSON result object to stdout and nothing else", stderr)
 	var code, recoveryCode string

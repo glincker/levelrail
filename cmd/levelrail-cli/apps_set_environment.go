@@ -6,10 +6,7 @@ import (
 	"io"
 )
 
-// runAppsSetEnvironment implements "apps set-environment <name>
-// <environment-id>": PUT /api/v1/apps/{name}/environment. The app's
-// current environment_id is already visible on "apps get <name>", so
-// unlike apps log-drain there is no separate "get" subcommand here.
+// runAppsSetEnvironment implements "apps set-environment": PUT /api/v1/apps/{name}/environment.
 func runAppsSetEnvironment(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps set-environment", "print the updated app as JSON to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsSetEnvironmentUsage(prog)) }

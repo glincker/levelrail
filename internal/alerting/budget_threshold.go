@@ -22,10 +22,8 @@ type SpendCapSource interface {
 	SpendCapBreaches(ctx context.Context) ([]spendcap.Breach, error)
 }
 
-// EvaluateBudgetThreshold runs one KindBudgetThreshold rule: it fires while
-// any budget has crossed its warn level, its limit, or is forecast to
-// overrun. It returns one notice per breach and the breach keys, which the
-// engine uses to notify again only when a new threshold is crossed.
+// EvaluateBudgetThreshold fires while any budget is over its warn level, its limit, or a forecast overrun.
+// It returns one notice per breach and the breach keys used to decide when to notify again.
 func EvaluateBudgetThreshold(ctx context.Context, src BudgetSource, r Rule, now time.Time) (Rule, []string, []string, error) {
 	statuses, err := src.BudgetStatuses(ctx)
 	if err != nil {

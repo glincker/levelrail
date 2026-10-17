@@ -7,11 +7,7 @@ import (
 	"testing"
 )
 
-// This file tests handleDevMode, kept separate from devmode_test.go
-// (which covers the devModeEnabled build-tag gate and the fixture-token
-// seeding logic) since this is purely the HTTP surface: an unauthenticated
-// caller asking "is dev mode active," used by the login screen to offer a
-// one-click dev login instead of typing dev/dev by hand.
+// Tests the unauthenticated HTTP surface of handleDevMode; the build-tag gate itself is tested in devmode_test.go.
 
 func TestHandleDevMode_PublicNoAuthRequired(t *testing.T) {
 	rt, _ := newTestRouter(t)
@@ -26,13 +22,8 @@ func TestHandleDevMode_PublicNoAuthRequired(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	// newTestRouter builds a router the normal way, no dev-mode override,
-	// so in this non-embedweb test build devModeEnabled() reflects
-	// whatever APP_DEV_MODE actually is in the test process's real
-	// environment (unset in CI/normal test runs). This test's job is to
-	// prove the route exists, is unauthenticated, and returns the field
-	// devModeEnabled() would actually produce, not to force a specific
-	// value; see TestHandleDevMode_ReflectsDevModeEnabled below for that.
+	// Runs in the non-embedweb build, so the field reflects the real APP_DEV_MODE env.
+	// This test only proves the route exists and is unauthenticated.
 	if got.Enabled != devModeEnabled() {
 		t.Errorf("Enabled = %v, want %v (devModeEnabled())", got.Enabled, devModeEnabled())
 	}
@@ -49,11 +40,7 @@ func TestHandleDevMode_ReflectsDevModeEnabled(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	// devModeEnabled() itself is build-tag gated (devmode_debug.go vs
-	// devmode_release.go): in this !embedweb test build it reads the env
-	// var directly, so setting APP_DEV_MODE=1 here proves the handler
-	// reflects the real gate rather than a hardcoded value, without this
-	// test needing its own build-tag variant.
+	// Setting APP_DEV_MODE=1 proves the handler reflects the real gate rather than a hardcoded value.
 	if got.Enabled != devModeEnabled() {
 		t.Errorf("Enabled = %v, want %v to match devModeEnabled() with APP_DEV_MODE=1 set", got.Enabled, devModeEnabled())
 	}

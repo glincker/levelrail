@@ -13,12 +13,7 @@ import (
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
 )
 
-// DB wraps a *sql.DB opened against alerting.db, a dedicated SQLite
-// file separate from both internal/store's levelrail.db and
-// internal/telemetry's telemetry.db, the same write-isolation reasoning
-// ADR 009 already applied: alert rule writes (evaluation state updates
-// on every tick) are a different, independent write pattern from
-// either desired-state config or metric/log ingestion.
+// DB wraps alerting.db, kept apart from levelrail.db and telemetry.db because rule evaluation writes on every tick.
 type DB struct {
 	*sql.DB
 

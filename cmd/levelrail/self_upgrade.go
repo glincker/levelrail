@@ -418,10 +418,8 @@ func importSelfUpgradeJournal(ctx context.Context, db *store.DB, logger *slog.Lo
 	}
 }
 
-// recordAttempt copies the journal into the database. It is best effort: the
-// control plane imports it again at its next boot.
-// recordEarlyFailure journals a run that stopped before Apply, so the
-// dashboard shows why instead of silently offering the same upgrade again.
+// recordAttempt is best effort: the control plane imports the journal again at its next boot.
+// recordEarlyFailure journals a run that stopped before Apply, so the dashboard explains it.
 func recordEarlyFailure(ctx context.Context, journal *selfupgrade.Journal, live string, logger *slog.Logger, initiator, target string, cause error) {
 	now := time.Now()
 	a := selfupgrade.Attempt{

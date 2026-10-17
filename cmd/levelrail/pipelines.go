@@ -340,20 +340,8 @@ func (a *pipelineActions) Rollback(ctx context.Context, service string, log func
 	return image, nil
 }
 
-// wireOIDC configures pipeline jobs' `oidc: {audience: ...}` support when
-// an issuer URL is available, and leaves it unconfigured (a job that
-// opts in fails with a clear per-job error) otherwise: minting a token
-// with no real, externally reachable issuer URL would only mislead an
-// operator into thinking cloud federation works when AWS, GCP, or Vault
-// could never actually fetch the JWKS to verify it.
-//
-// It also resolves the address for the runtime "request a token for
-// this audience" endpoint (a job needing more than one audience calls
-// this instead of getting every combination pre-minted), returned so
-// the caller can start the actual listener once the Engine exists. Empty
-// means that endpoint is unavailable this run (oidc unconfigured, or the
-// bridge gateway lookup failed): a job listing oidc.audiences then fails
-// clearly instead of getting an unreachable URL.
+// Leaves OIDC unconfigured without a reachable issuer: a token minted with none would mislead operators.
+// The runtime token endpoint is likewise unavailable then, so jobs fail clearly instead of getting a dead URL.
 func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, secretsManager *secrets.Manager, client *docker.Client, logger *slog.Logger) string {
 	issuerURL := oidcIssuerURL()
 	if issuerURL == "" {
@@ -388,11 +376,8 @@ func wireOIDC(ctx context.Context, cfg *pipeline.Config, apiRouter *api.Router, 
 	return addr
 }
 
-// defaultOIDCTokenRequestPort is where the runtime OIDC token request
-// endpoint listens on the Docker bridge gateway IP, reachable from every
-// job container attached to the default bridge network and nowhere
-// else. An unprivileged port, no relation to any other service in this
-// codebase. Overridable via APP_OIDC_TOKEN_REQUEST_PORT.
+// Listens on the Docker bridge gateway only, so job containers can reach it and nothing else.
+// Overridable via APP_OIDC_TOKEN_REQUEST_PORT.
 const defaultOIDCTokenRequestPort = 9095
 
 func oidcTokenRequestPort() int {
@@ -402,12 +387,7 @@ func oidcTokenRequestPort() int {
 	return defaultOIDCTokenRequestPort
 }
 
-// serveOIDCTokenRequests runs the runtime OIDC token request endpoint
-// (internal/pipeline.Engine.OIDCTokenRequestHandler) on addr until ctx
-// is cancelled. The bearer token a job presents, not network placement
-// alone, is what actually scopes access to that job's own allowed
-// audiences; addr being the bridge gateway IP only keeps it off any
-// externally reachable interface.
+// The job's bearer token scopes its audiences; the gateway address only keeps the endpoint off external interfaces.
 func serveOIDCTokenRequests(ctx context.Context, addr string, engine *pipeline.Engine, logger *slog.Logger) {
 	mux := http.NewServeMux()
 	mux.Handle("/oidc/token", engine.OIDCTokenRequestHandler())
@@ -423,11 +403,7 @@ func serveOIDCTokenRequests(ctx context.Context, addr string, engine *pipeline.E
 	}
 }
 
-// oidcJWKSRateLimit reads APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE; 0 (the
-// default, whether unset or invalid) tells api.Router to apply its own
-// default. A dedicated reader rather than reusing envInt: every one of
-// envInt's other call sites also passes 0, which makes golangci-lint's
-// unparam check flag that parameter as dead across the whole file.
+// Returns 0 when unset or invalid so api applies its default.
 func oidcJWKSRateLimit() int {
 	if v, err := strconv.Atoi(os.Getenv("APP_OIDC_JWKS_RATE_LIMIT_PER_MINUTE")); err == nil && v > 0 {
 		return v
@@ -435,10 +411,7 @@ func oidcJWKSRateLimit() int {
 	return 0
 }
 
-// oidcIssuerURL resolves the "iss" claim and JWKS base URL for pipeline
-// OIDC tokens: APP_OIDC_ISSUER_URL wins, then APP_DASHBOARD_URL (already
-// used for notification links, see alert_changes.go), then publicHost()
-// over HTTPS. Empty means no configured issuer.
+// Order: APP_OIDC_ISSUER_URL, then APP_DASHBOARD_URL, then the public host over HTTPS. Empty means no issuer.
 func oidcIssuerURL() string {
 	if v := strings.TrimRight(strings.TrimSpace(os.Getenv("APP_OIDC_ISSUER_URL")), "/"); v != "" {
 		return v

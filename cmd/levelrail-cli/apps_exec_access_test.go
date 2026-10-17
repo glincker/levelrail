@@ -9,10 +9,6 @@ import (
 	"testing"
 )
 
-// TestRun_AppsExecAccess_EnableAndDisable exercises "apps exec-access
-// enable/disable <name>" end to end against a fake control plane,
-// mirroring apps_rollback_test.go's own shape for the sibling
-// auto-rollback commands this file has no dedicated test for.
 func TestRun_AppsExecAccess_EnableAndDisable(t *testing.T) {
 	tests := []struct {
 		verb        string
