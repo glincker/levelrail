@@ -80,6 +80,7 @@ type AppTrafficResource struct {
 	SlowRoutes     []TrafficRoute       `json:"slow_routes"`
 	Samples        []TrafficSample      `json:"samples"`
 	SLO            *TrafficSLO          `json:"slo,omitempty"`
+	Shield         TrafficShield        `json:"shield"`
 }
 
 // GetAppTraffic calls GET /api/v1/apps/{name}/traffic for window 5m, 1h or 24h.

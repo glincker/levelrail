@@ -44,6 +44,16 @@ export interface TrafficSLO {
   budget_remaining: number
 }
 
+export interface TrafficShieldReason {
+  reason: 'rate_limit' | 'concurrency' | 'bad_bot' | 'body_too_large'
+  count: number
+}
+
+export interface TrafficShield {
+  blocked: number
+  by_reason: TrafficShieldReason[]
+}
+
 export interface TrafficDetail {
   app: string
   window: TrafficWindow
@@ -61,4 +71,5 @@ export interface TrafficDetail {
   slow_routes: TrafficRoute[]
   samples: TrafficSample[]
   slo?: TrafficSLO
+  shield: TrafficShield
 }

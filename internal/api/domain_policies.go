@@ -17,7 +17,7 @@ import (
 )
 
 // DomainTrafficPolicyStore is the store surface for the per-domain traffic
-// controls (headers, forwarders, geo, cache, redirects).
+// controls (headers, forwarders, geo, cache, redirects, shield).
 type DomainTrafficPolicyStore interface {
 	GetDomainTrafficPolicy(ctx context.Context, domain, kind string) (store.DomainTrafficPolicy, bool, error)
 	ListDomainTrafficPoliciesFor(ctx context.Context, domain string) ([]store.DomainTrafficPolicy, error)
@@ -78,6 +78,8 @@ func defaultSpec(kind string) json.RawMessage {
 		return json.RawMessage(`{"enabled":false,"rules":[]}`)
 	case trafficpolicy.KindRedirects:
 		return json.RawMessage(`{"force_https":false}`)
+	case trafficpolicy.KindShield:
+		return json.RawMessage(`{"enabled":false}`)
 	}
 	return json.RawMessage(`null`)
 }
@@ -133,6 +135,9 @@ func decodePolicy(r *http.Request, w http.ResponseWriter, kind string) (trafficp
 	case trafficpolicy.KindRedirects:
 		p.Redirects = &trafficpolicy.Redirects{}
 		target = p.Redirects
+	case trafficpolicy.KindShield:
+		p.Shield = &trafficpolicy.Shield{}
+		target = p.Shield
 	}
 	if err := dec.Decode(target); err != nil {
 		return trafficpolicy.Policy{}, nil, fmt.Errorf("invalid %s policy: %w", kind, err)

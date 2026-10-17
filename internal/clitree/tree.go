@@ -161,6 +161,7 @@ var Tree = map[string]*Node{
 		"headers":              {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "preset": nil, "clear": nil}},
 		"forwarders":           {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "remove": nil, "clear": nil}},
 		"geo":                  {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "lookup": nil}},
+		"shield":               {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "under-attack": nil, "stand-down": nil, "bots": nil}},
 		"cache":                {Subs: map[string]*Node{"show": nil, "set": nil, "add": nil, "purge": nil, "stats": nil, "clear": nil}},
 		"redirects":            {Subs: map[string]*Node{"show": nil, "force-https": nil, "canonical": nil, "alias": nil, "slash": nil, "lowercase": nil, "clear": nil}},
 		"ports":                {Subs: map[string]*Node{"show": nil, "restrict": nil, "unrestrict": nil}},

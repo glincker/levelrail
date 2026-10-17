@@ -140,6 +140,7 @@ func domainsPoliciesUsageLines(prog string) string {
 	return fmt.Sprintf(`  %[1]s domains headers <verb> <app> <domain>      request and response header rules and presets
   %[1]s domains forwarders <verb> <app> <domain>   path rules that forward to another app, a URL, or redirect
   %[1]s domains geo <verb> <app> <domain>          allow or deny visitors by country
+  %[1]s domains shield <verb> <app> <domain>       per-client rate, concurrency, body size and bad bot limits, under-attack mode
   %[1]s domains cache <verb> <app> <domain>        ingress response cache rules, purge and stats
   %[1]s domains redirects <verb> <app> <domain>    force HTTPS, www and apex, aliases, trailing slash
   %[1]s domains ports <verb> <app> <domain>        the app's raw TCP/UDP ports and who may reach them

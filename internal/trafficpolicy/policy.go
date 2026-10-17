@@ -22,7 +22,7 @@ const (
 )
 
 // Kinds lists every policy kind in evaluation order.
-var Kinds = []string{KindRedirects, KindGeo, KindHeaders, KindCache, KindForwarders}
+var Kinds = []string{KindShield, KindRedirects, KindGeo, KindHeaders, KindCache, KindForwarders}
 
 // IsKind reports whether k names a policy kind.
 func IsKind(k string) bool {
@@ -42,11 +42,12 @@ type Policy struct {
 	Geo        *Geo        `json:"geo,omitempty"`
 	Cache      *Cache      `json:"cache,omitempty"`
 	Redirects  *Redirects  `json:"redirects,omitempty"`
+	Shield     *Shield     `json:"shield,omitempty"`
 }
 
 // Empty reports whether no section is configured.
 func (p Policy) Empty() bool {
-	return p.Headers == nil && p.Forwarders == nil && p.Geo == nil && p.Cache == nil && p.Redirects == nil
+	return p.Headers == nil && p.Forwarders == nil && p.Geo == nil && p.Cache == nil && p.Redirects == nil && p.Shield == nil
 }
 
 // FieldError is one validation failure, addressed by a dotted field path
@@ -129,6 +130,8 @@ func (p *Policy) Decode(kind string, raw []byte) error {
 		p.Cache, err = decodeSection(p.Cache, kind, raw)
 	case KindRedirects:
 		p.Redirects, err = decodeSection(p.Redirects, kind, raw)
+	case KindShield:
+		p.Shield, err = decodeSection(p.Shield, kind, raw)
 	default:
 		return fmt.Errorf("trafficpolicy: unknown kind %q", kind)
 	}
@@ -160,6 +163,9 @@ func (p Policy) Validate(l Limits, c Context) error {
 	}
 	if p.Redirects != nil {
 		errs = append(errs, p.Redirects.Validate())
+	}
+	if p.Shield != nil {
+		errs = append(errs, p.Shield.Validate(l))
 	}
 	return errors.Join(errs...)
 }

@@ -20,6 +20,19 @@ const (
 	EnvCacheMaxObject     = "APP_INGRESS_CACHE_MAX_OBJECT_BYTES"
 	EnvCacheMaxTTL        = "APP_INGRESS_CACHE_MAX_TTL"
 	EnvMaxErrorBody       = "APP_DOMAIN_POLICY_MAX_BODY_BYTES"
+
+	EnvShieldMaxTrackedIPs    = "APP_SHIELD_MAX_TRACKED_IPS"
+	EnvShieldRetryAfter       = "APP_SHIELD_RETRY_AFTER_SECONDS"
+	EnvShieldMaxRetryAfter    = "APP_SHIELD_MAX_RETRY_AFTER_SECONDS"
+	EnvShieldTarpitMax        = "APP_SHIELD_TARPIT_MAX"
+	EnvShieldTarpitSlots      = "APP_SHIELD_TARPIT_SLOTS"
+	EnvShieldMaxBotAgents     = "APP_SHIELD_MAX_BOT_AGENTS"
+	EnvShieldAttackRate       = "APP_SHIELD_ATTACK_RATE_PER_MINUTE"
+	EnvShieldAttackBurst      = "APP_SHIELD_ATTACK_BURST"
+	EnvShieldAttackConcurrent = "APP_SHIELD_ATTACK_MAX_CONCURRENT"
+	EnvShieldAttackMax        = "APP_SHIELD_ATTACK_MAX_DURATION"
+	EnvShieldAttackDefault    = "APP_SHIELD_ATTACK_DEFAULT_DURATION"
+	EnvShieldBotListFile      = "APP_SHIELD_BOT_LIST_FILE"
 )
 
 // Limits caps the size of every policy section. Built from the environment
@@ -38,6 +51,19 @@ type Limits struct {
 	ForwardDialTimeout time.Duration
 	CacheMaxObject     int64
 	CacheMaxTTL        time.Duration
+
+	ShieldMaxTrackedIPs    int
+	ShieldRetryAfter       int
+	ShieldMaxRetryAfter    int
+	ShieldTarpitMax        time.Duration
+	ShieldTarpitSlots      int
+	ShieldMaxBotAgents     int
+	ShieldAttackRate       int
+	ShieldAttackBurst      int
+	ShieldAttackConcurrent int
+	ShieldAttackMax        time.Duration
+	ShieldAttackDefault    time.Duration
+	ShieldBotListFile      string
 }
 
 // DefaultLimits are the caps used when no environment override is set.
@@ -56,6 +82,18 @@ func DefaultLimits() Limits {
 		ForwardDialTimeout: 5 * time.Second,
 		CacheMaxObject:     2 << 20,
 		CacheMaxTTL:        7 * 24 * time.Hour,
+
+		ShieldMaxTrackedIPs:    20000,
+		ShieldRetryAfter:       30,
+		ShieldMaxRetryAfter:    3600,
+		ShieldTarpitMax:        5 * time.Second,
+		ShieldTarpitSlots:      256,
+		ShieldMaxBotAgents:     128,
+		ShieldAttackRate:       60,
+		ShieldAttackBurst:      10,
+		ShieldAttackConcurrent: 4,
+		ShieldAttackMax:        24 * time.Hour,
+		ShieldAttackDefault:    time.Hour,
 	}
 }
 
@@ -77,6 +115,18 @@ func LimitsFromEnv(getenv func(string) string) Limits {
 	durVar(getenv, EnvForwardMaxTimeout, &l.ForwardMaxTimeout)
 	durVar(getenv, EnvForwardDialTimeout, &l.ForwardDialTimeout)
 	durVar(getenv, EnvCacheMaxTTL, &l.CacheMaxTTL)
+	intVar(getenv, EnvShieldMaxTrackedIPs, &l.ShieldMaxTrackedIPs)
+	intVar(getenv, EnvShieldRetryAfter, &l.ShieldRetryAfter)
+	intVar(getenv, EnvShieldMaxRetryAfter, &l.ShieldMaxRetryAfter)
+	intVar(getenv, EnvShieldTarpitSlots, &l.ShieldTarpitSlots)
+	intVar(getenv, EnvShieldMaxBotAgents, &l.ShieldMaxBotAgents)
+	intVar(getenv, EnvShieldAttackRate, &l.ShieldAttackRate)
+	intVar(getenv, EnvShieldAttackBurst, &l.ShieldAttackBurst)
+	intVar(getenv, EnvShieldAttackConcurrent, &l.ShieldAttackConcurrent)
+	durVar(getenv, EnvShieldTarpitMax, &l.ShieldTarpitMax)
+	durVar(getenv, EnvShieldAttackMax, &l.ShieldAttackMax)
+	durVar(getenv, EnvShieldAttackDefault, &l.ShieldAttackDefault)
+	l.ShieldBotListFile = getenv(EnvShieldBotListFile)
 	if v, err := strconv.ParseInt(getenv(EnvCacheMaxObject), 10, 64); err == nil && v > 0 {
 		l.CacheMaxObject = v
 	}

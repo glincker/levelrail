@@ -13,6 +13,7 @@ import (
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
 	"github.com/GLINCKER/levelrail/internal/telemetry"
+	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
 
 func init() {
@@ -237,6 +238,27 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 			DurationMS: ms, Upstream: o.Upstream, RequestID: o.RequestID,
 		}, sampleCfg.TickMax)
 	}
+}
+
+// ObserveShield counts one request the abuse shield turned away under key.
+func (s *RequestStats) ObserveShield(key string, reason trafficpolicy.ShieldReason) {
+	if reason < 0 || reason >= trafficpolicy.ShieldReasonCount {
+		return
+	}
+	s.mu.RLock()
+	h := s.hosts[key]
+	s.mu.RUnlock()
+	if h == nil {
+		s.mu.Lock()
+		if h = s.hosts[key]; h == nil {
+			h = &hostCounters{}
+			s.hosts[key] = h
+		}
+		s.mu.Unlock()
+	}
+	h.mu.Lock()
+	h.w.Shield[reason]++
+	h.mu.Unlock()
 }
 
 // upstreamHostport is the replica Caddy's reverse proxy picked for r, empty

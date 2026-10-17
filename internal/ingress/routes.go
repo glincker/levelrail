@@ -608,7 +608,7 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 			}}
 		}
 		// Traffic controls, front side: redirects, geo and headers run first.
-		handle = r.Policy.wrapFront(handle)
+		handle = r.Policy.wrapFront(r.Hosts[0], handle)
 		if r.Maintenance != nil {
 			handle = r.Maintenance.wrap(handle)
 		}

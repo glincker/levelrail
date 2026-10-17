@@ -12,6 +12,7 @@ import { RequestMetricsSection } from '../RequestMetricsSection'
 import { useTrafficDetail } from '../../queries/trafficDetail'
 import type { TrafficDetail, TrafficWindow } from '../../types/trafficDetail'
 import { formatMs, formatPercent, formatRate } from './format'
+import { ShieldBlockedCard } from './ShieldBlockedCard'
 import { ReplicaTable, SampleList, SlowRouteTable } from './TrafficTables'
 
 const WINDOWS: TrafficWindow[] = ['5m', '1h', '24h']
@@ -192,6 +193,7 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
             />
           </div>
           <SloCard app={app} slo={data.slo} />
+          <ShieldBlockedCard app={app} shield={data.shield} />
           {range ? (
             <RequestMetricsSection
               appName={app}

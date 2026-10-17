@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"text/tabwriter"
 	"time"
@@ -85,6 +86,15 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		r.Requests, r.RatePerSec, r.StatusClasses.Status2xx, r.StatusClasses.Status3xx,
 		r.StatusClasses.Status4xx, r.ErrorRate4xx*100, r.StatusClasses.Status5xx, r.ErrorRate5xx*100)
 	_, _ = fmt.Fprintf(out, "latency: p50 %.0fms  p95 %.0fms  p99 %.0fms\n", r.Latency.P50Ms, r.Latency.P95Ms, r.Latency.P99Ms)
+	if r.Shield.Blocked > 0 {
+		parts := make([]string, 0, len(r.Shield.ByReason))
+		for _, b := range r.Shield.ByReason {
+			if b.Count > 0 {
+				parts = append(parts, fmt.Sprintf("%s %.0f", b.Reason, b.Count))
+			}
+		}
+		_, _ = fmt.Fprintf(out, "shield blocked: %.0f (%s)\n", r.Shield.Blocked, strings.Join(parts, ", "))
+	}
 	if r.SLO != nil {
 		_, _ = fmt.Fprintf(out, "slo: %s %.2f%%  burn %.2fx  budget left %.1f%%\n", r.SLO.Objective, r.SLO.Target, r.SLO.BurnRate, r.SLO.BudgetRemaining*100)
 	}

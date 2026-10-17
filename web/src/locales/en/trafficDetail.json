@@ -66,5 +66,18 @@
   },
   "charts": {
     "title": "Live charts"
+  },
+  "shield": {
+    "title": "Bot and abuse shield",
+    "action": "Adjust protections",
+    "blocked_one": "{{count}} request turned away",
+    "blocked_other": "{{count}} requests turned away",
+    "none": "Nothing was turned away in this window. Add per-client limits and a bot blocklist on the domain page to keep scrapers from running up bandwidth.",
+    "reasons": {
+      "rate_limit": "Rate limited",
+      "concurrency": "Too many open requests",
+      "bad_bot": "Bad bot",
+      "body_too_large": "Body too large"
+    }
   }
 }

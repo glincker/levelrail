@@ -90,13 +90,16 @@ func (p *RoutePolicy) wrapBackend(host string, handle []any) []any {
 	return append(out, handle[len(handle)-1])
 }
 
-// wrapFront prepends redirects, geo and header handlers so they run before
-// anything else on the route, WAF and basic auth included.
-func (p *RoutePolicy) wrapFront(handle []any) []any {
+// wrapFront prepends the shield, redirects, geo and header handlers so they
+// run before anything else on the route, WAF and basic auth included.
+func (p *RoutePolicy) wrapFront(host string, handle []any) []any {
 	if p == nil {
 		return handle
 	}
 	var front []any
+	if s := p.Policy.Shield; s != nil {
+		front = append(front, newShieldHandler(host, *s))
+	}
 	if r := p.Policy.Redirects; r != nil {
 		if h, ok := newRedirectsHandler(*r, p.TLSTerminatedUpstream, p.HTTPSPort); ok {
 			front = append(front, h)
