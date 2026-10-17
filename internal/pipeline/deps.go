@@ -43,6 +43,7 @@ type Runtime interface {
 	ListByPrefix(ctx context.Context, prefix string) ([]docker.ContainerState, error)
 	EnsureVolume(ctx context.Context, name string) error
 	ExecWithInput(ctx context.Context, containerID string, cmd []string, stdin io.Reader) (io.ReadCloser, error)
+	docker.ArchiveRuntime
 }
 
 // VolumeRemover is an optional Runtime capability used for best-effort

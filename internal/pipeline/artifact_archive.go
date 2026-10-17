@@ -2,24 +2,22 @@ package pipeline
 
 import (
 	"archive/tar"
-	"bufio"
 	"bytes"
-	"compress/gzip"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"strings"
 )
 
-// Markers the in-container collect script prints around the base64 archive,
-// so stray stderr text can never be mistaken for archive data.
 const (
-	collectBegin = "LRART-BEGIN"
-	collectEnd   = "LRART-END"
-	collectErr   = "LRART-ERR "
-	restoreData  = "LRDATA"
+	workspaceDir = "/workspace"
+	// maxEntryNameBytes bounds one archive entry name or link target.
+	maxEntryNameBytes = 4096
+	// entryOverheadBytes is the tar header and padding allowance per entry
+	// when sizing the raw stream cap.
+	entryOverheadBytes = 4096
 )
 
 // cleanArtifactPath checks one declared workspace path and returns it
@@ -37,6 +35,9 @@ func cleanArtifactPath(p string) (string, error) {
 		return "", fmt.Errorf("artifact path %q must be relative to the workspace", p)
 	}
 	c := path.Clean(p)
+	if c == "." {
+		return "", fmt.Errorf("artifact path %q is the workspace root, list files or directories", p)
+	}
 	if c == ".." || strings.HasPrefix(c, "../") {
 		return "", fmt.Errorf("artifact path %q leaves the workspace", p)
 	}
@@ -55,61 +56,209 @@ func cleanArtifactPaths(paths []string) ([]string, error) {
 	return out, nil
 }
 
-// collectScript archives the declared paths inside the job container. The
-// realpath check catches a path that is itself a symlink out of /workspace.
-func collectScript(paths []string) string {
-	quoted := make([]string, len(paths))
-	for i, p := range paths {
-		quoted[i] = shellQuote("./" + p)
-	}
-	list := strings.Join(quoted, " ")
-	var sb strings.Builder
-	sb.WriteString("cd /workspace || exit 3\n")
-	fmt.Fprintf(&sb, "for p in %s; do\n", list)
-	sb.WriteString(`  if [ ! -e "$p" ] && [ ! -L "$p" ]; then echo "` + collectErr + `path not found: $p"; exit 3; fi
-  r=$(realpath -- "$p" 2>/dev/null) || { echo "` + collectErr + `cannot resolve: $p"; exit 3; }
-  case "$r" in /workspace|/workspace/*) ;; *) echo "` + collectErr + `path leaves the workspace: $p"; exit 3;; esac
-done
-`)
-	fmt.Fprintf(&sb, "t=/tmp/lr-art.$$\ntar -czf \"$t\" -- %s 2>/dev/null || { echo \"%star failed\"; rm -f \"$t\"; exit 4; }\n", list, collectErr)
-	fmt.Fprintf(&sb, "echo %s\nbase64 \"$t\"\necho %s\nrm -f \"$t\"\n", collectBegin, collectEnd)
-	return sb.String()
+// packLimits bound what one packed artifact may hold.
+type packLimits struct {
+	MaxUnpacked int64
+	MaxEntries  int
+	Secrets     []string
 }
 
-// readCollected decodes the marked base64 block of the collect output into
-// w. Text outside the markers is returned as diagnostics for error messages.
-func readCollected(rc io.Reader, w io.Writer) (diag []string, err error) {
-	sc := bufio.NewScanner(rc)
-	sc.Buffer(make([]byte, 0, 64*1024), 1<<20)
-	in, done := false, false
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		switch {
-		case line == collectBegin:
-			in = true
-		case line == collectEnd:
-			in, done = false, true
-		case in:
-			raw, derr := base64.StdEncoding.DecodeString(line)
-			if derr != nil {
-				return diag, fmt.Errorf("archive stream is not valid base64: %w", derr)
-			}
-			if _, werr := w.Write(raw); werr != nil {
-				return diag, werr
-			}
-		default:
-			if len(diag) < 20 && line != "" {
-				diag = append(diag, strings.TrimPrefix(truncate(line, 200), collectErr))
-			}
+// streamCap sizes the raw tar cap handed to the runtime: the unpacked
+// limit plus header overhead for the entry cap. Zero means no cap.
+func (l packLimits) streamCap() int64 {
+	if l.MaxUnpacked <= 0 {
+		return 0
+	}
+	return l.MaxUnpacked + int64(max(l.MaxEntries, 1))*entryOverheadBytes
+}
+
+// packer rewrites the tar streams Docker returns for each declared path
+// into one validated tar: names rebased under their workspace location,
+// permissions normalised, and every entry checked before it is written.
+type packer struct {
+	tw       *tar.Writer
+	lim      packLimits
+	scan     *needleWriter
+	entries  int
+	unpacked int64
+	symlinks map[string]bool
+}
+
+func newPacker(tw *tar.Writer, lim packLimits) *packer {
+	return &packer{tw: tw, lim: lim, scan: newNeedleWriter(lim.Secrets), symlinks: map[string]bool{}}
+}
+
+// entryName rebases a name from Docker's archive of decl onto the
+// workspace-relative path. Docker names the top entry after the last
+// element of decl, so anything else is not part of what was asked for.
+func entryName(decl, raw string) (string, error) {
+	n := path.Clean(strings.TrimPrefix(raw, "./"))
+	if n == "." || n == "" {
+		return "", nil
+	}
+	if strings.ContainsRune(raw, 0) || len(raw) > maxEntryNameBytes {
+		return "", fmt.Errorf("archive entry name %q is invalid", truncate(raw, 80))
+	}
+	if strings.HasPrefix(n, "/") || n == ".." || strings.HasPrefix(n, "../") {
+		return "", fmt.Errorf("archive entry %q leaves the workspace", truncate(raw, 80))
+	}
+	base := path.Base(decl)
+	if n != base && !strings.HasPrefix(n, base+"/") {
+		return "", fmt.Errorf("archive entry %q is outside the requested path %q", truncate(raw, 80), decl)
+	}
+	return path.Join(path.Dir(decl), n), nil
+}
+
+// add copies one declared path's archive into the packed tar.
+func (p *packer) add(decl string, src io.Reader, stat os.FileMode, statLink string) error {
+	if stat&(os.ModeDevice|os.ModeCharDevice|os.ModeNamedPipe|os.ModeSocket|os.ModeIrregular) != 0 {
+		return fmt.Errorf("artifact path %q is a device, pipe or socket", decl)
+	}
+	if stat&os.ModeSymlink != 0 {
+		if err := checkLinkTarget(path.Dir(decl)+"/x", statLink, "symlink"); err != nil {
+			return fmt.Errorf("artifact path %q: %w", decl, err)
 		}
 	}
-	if err := sc.Err(); err != nil {
-		return diag, err
+	tr := tar.NewReader(src)
+	seen := false
+	for {
+		h, err := tr.Next()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("read archive of %q: %w", decl, err)
+		}
+		if h.Typeflag == tar.TypeXGlobalHeader {
+			continue
+		}
+		name, err := entryName(decl, h.Name)
+		if err != nil {
+			return err
+		}
+		if name == "" {
+			continue
+		}
+		seen = true
+		if err := p.addEntry(decl, name, h, tr); err != nil {
+			return err
+		}
 	}
-	if !done {
-		return diag, errors.New("archive stream ended early")
+	if !seen {
+		return fmt.Errorf("archive of %q was empty", decl)
 	}
-	return diag, nil
+	return nil
+}
+
+func (p *packer) addEntry(decl, name string, h *tar.Header, body io.Reader) error {
+	p.entries++
+	if p.lim.MaxEntries > 0 && p.entries > p.lim.MaxEntries {
+		return fmt.Errorf("artifact holds more than %d files", p.lim.MaxEntries)
+	}
+	for parent := path.Dir(name); parent != "."; parent = path.Dir(parent) {
+		if p.symlinks[parent] {
+			return fmt.Errorf("archive entry %q is written through a symlink", name)
+		}
+	}
+	out := &tar.Header{Name: name, ModTime: h.ModTime, Uid: h.Uid, Gid: h.Gid, Mode: h.Mode & 0o777}
+	switch h.Typeflag {
+	case tar.TypeDir:
+		out.Typeflag = tar.TypeDir
+		out.Name = name + "/"
+	case tar.TypeReg:
+		p.unpacked += h.Size
+		if p.lim.MaxUnpacked > 0 && p.unpacked > p.lim.MaxUnpacked {
+			return fmt.Errorf("archive expands past the %d byte limit", p.lim.MaxUnpacked)
+		}
+		out.Typeflag, out.Size = tar.TypeReg, h.Size
+	case tar.TypeSymlink:
+		if err := checkLinkTarget(name, h.Linkname, "symlink"); err != nil {
+			return err
+		}
+		p.symlinks[name] = true
+		out.Typeflag, out.Linkname = tar.TypeSymlink, h.Linkname
+	case tar.TypeLink:
+		target, err := entryName(decl, h.Linkname)
+		if err != nil || target == "" {
+			return fmt.Errorf("archive hard link %q points outside the requested path", name)
+		}
+		out.Typeflag, out.Linkname = tar.TypeLink, target
+	default:
+		return fmt.Errorf("archive entry %q has an unsupported type", name)
+	}
+	if err := p.tw.WriteHeader(out); err != nil {
+		return err
+	}
+	if out.Typeflag != tar.TypeReg {
+		return nil
+	}
+	p.scan.reset(name)
+	if _, err := io.Copy(io.MultiWriter(p.tw, p.scan), body); err != nil {
+		return err
+	}
+	return nil
+}
+
+// checkLinkTarget refuses a link target that is absolute or resolves
+// outside the workspace, judged lexically from the link's own location.
+func checkLinkTarget(linkPath, target, kind string) error {
+	if len(target) > maxEntryNameBytes || strings.ContainsRune(target, 0) {
+		return fmt.Errorf("archive %s %q has an invalid target", kind, linkPath)
+	}
+	resolved := path.Clean(path.Join(path.Dir(linkPath), target)) //nolint:gosec // lexical check of a header; nothing is extracted here
+	if path.IsAbs(target) || resolved == ".." || strings.HasPrefix(resolved, "../") {
+		return fmt.Errorf("archive %s %q points outside the workspace", kind, linkPath)
+	}
+	return nil
+}
+
+// errSecretInArtifact is what the scan reports when a file holds a secret value.
+type errSecretInArtifact struct{ entry string }
+
+func (e errSecretInArtifact) Error() string {
+	return fmt.Sprintf("archive entry %q contains a secret value", e.entry)
+}
+
+// needleWriter flags any secret value in the bytes written through it,
+// keeping an overlap between writes so a match split across chunks is found.
+type needleWriter struct {
+	needles [][]byte
+	keep    int
+	tail    []byte
+	entry   string
+}
+
+func newNeedleWriter(secrets []string) *needleWriter {
+	nw := &needleWriter{}
+	for _, s := range secrets {
+		if s == "" {
+			continue
+		}
+		nw.needles = append(nw.needles, []byte(s))
+		nw.keep = max(nw.keep, len(s))
+	}
+	return nw
+}
+
+func (n *needleWriter) reset(entry string) {
+	n.entry, n.tail = entry, n.tail[:0]
+}
+
+func (n *needleWriter) Write(b []byte) (int, error) {
+	if len(n.needles) == 0 {
+		return len(b), nil
+	}
+	buf := append(n.tail, b...)
+	for _, nd := range n.needles {
+		if bytes.Contains(buf, nd) {
+			return 0, errSecretInArtifact{entry: n.entry}
+		}
+	}
+	if keep := n.keep - 1; len(buf) > keep {
+		buf = buf[len(buf)-keep:]
+	}
+	n.tail = append(n.tail[:0], buf...)
+	return len(b), nil
 }
 
 func truncate(s string, n int) string {
@@ -117,140 +266,4 @@ func truncate(s string, n int) string {
 		return s[:n]
 	}
 	return s
-}
-
-// restoreStream feeds a stored archive to `tar -x` inside the container as
-// a heredoc on the script's own stdin, wrapped to 76 columns.
-func restoreStream(archive io.Reader) io.ReadCloser {
-	pr, pw := io.Pipe()
-	go func() {
-		header := "cd /workspace || exit 3\nbase64 -d <<'" + restoreData + "' | tar -xzf - -C /workspace || { echo '" + collectErr + "extract failed'; exit 4; }\n"
-		if _, err := io.WriteString(pw, header); err != nil {
-			return
-		}
-		buf := make([]byte, 57*64)
-		for {
-			n, err := io.ReadFull(archive, buf)
-			for off := 0; off < n; off += 57 {
-				end := min(off+57, n)
-				line := base64.StdEncoding.EncodeToString(buf[off:end]) + "\n"
-				if _, werr := io.WriteString(pw, line); werr != nil {
-					return
-				}
-			}
-			if err != nil {
-				if !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
-					_ = pw.CloseWithError(err)
-					return
-				}
-				break
-			}
-		}
-		_, _ = io.WriteString(pw, restoreData+"\n")
-		_ = pw.Close()
-	}()
-	return pr
-}
-
-// validateArchive walks a gzip tar and refuses anything that could write
-// or link outside the workspace on extraction, anything bigger than
-// maxUnpacked once expanded, and any file containing a secret value.
-func validateArchive(r io.Reader, secrets []string, maxUnpacked int64) error {
-	gz, err := gzip.NewReader(r)
-	if err != nil {
-		return fmt.Errorf("artifact is not a gzip archive: %w", err)
-	}
-	defer func() { _ = gz.Close() }()
-	tr := tar.NewReader(gz)
-	symlinks := map[string]bool{}
-	var total int64
-	for {
-		h, err := tr.Next()
-		if errors.Is(err, io.EOF) {
-			return nil
-		}
-		if err != nil {
-			return fmt.Errorf("read archive: %w", err)
-		}
-		if h.Typeflag == tar.TypeXGlobalHeader {
-			continue
-		}
-		name := path.Clean(strings.TrimPrefix(h.Name, "./"))
-		if name == "." {
-			continue
-		}
-		if strings.HasPrefix(name, "/") || name == ".." || strings.HasPrefix(name, "../") {
-			return fmt.Errorf("archive entry %q leaves the workspace", h.Name)
-		}
-		for parent := path.Dir(name); parent != "."; parent = path.Dir(parent) {
-			if symlinks[parent] {
-				return fmt.Errorf("archive entry %q is written through a symlink", h.Name)
-			}
-		}
-		switch h.Typeflag {
-		case tar.TypeDir:
-		case tar.TypeReg:
-			total += h.Size
-			if maxUnpacked > 0 && total > maxUnpacked {
-				return fmt.Errorf("archive expands past the %d byte limit", maxUnpacked)
-			}
-			if found, err := containsAny(tr, secrets); err != nil {
-				return fmt.Errorf("scan %q: %w", h.Name, err)
-			} else if found {
-				return fmt.Errorf("archive entry %q contains a secret value", h.Name)
-			}
-		case tar.TypeSymlink:
-			symlinks[name] = true
-			target := h.Linkname
-			resolved := path.Clean(path.Join(path.Dir(name), target)) //nolint:gosec // lexical check of a header; nothing is extracted here
-			if path.IsAbs(target) || resolved == ".." || strings.HasPrefix(resolved, "../") {
-				return fmt.Errorf("archive symlink %q points outside the workspace", h.Name)
-			}
-		case tar.TypeLink:
-			target := path.Clean(strings.TrimPrefix(h.Linkname, "./"))
-			if path.IsAbs(h.Linkname) || target == ".." || strings.HasPrefix(target, "../") {
-				return fmt.Errorf("archive hard link %q points outside the workspace", h.Name)
-			}
-		default:
-			return fmt.Errorf("archive entry %q has an unsupported type", h.Name)
-		}
-	}
-}
-
-// containsAny reports whether the stream holds any needle, scanning in
-// chunks with an overlap so a match split across chunks is still found.
-func containsAny(r io.Reader, needles []string) (bool, error) {
-	var longest int
-	var bs [][]byte
-	for _, n := range needles {
-		if n == "" {
-			continue
-		}
-		bs = append(bs, []byte(n))
-		longest = max(longest, len(n))
-	}
-	if len(bs) == 0 {
-		_, err := io.Copy(io.Discard, r)
-		return false, err
-	}
-	buf := make([]byte, 0, 64*1024+longest)
-	chunk := make([]byte, 64*1024)
-	for {
-		n, err := r.Read(chunk)
-		buf = append(buf, chunk[:n]...)
-		for _, b := range bs {
-			if bytes.Contains(buf, b) {
-				return true, nil
-			}
-		}
-		if len(buf) > longest {
-			buf = append(buf[:0], buf[len(buf)-(longest-1):]...)
-		}
-		if errors.Is(err, io.EOF) {
-			return false, nil
-		}
-		if err != nil {
-			return false, err
-		}
-	}
 }

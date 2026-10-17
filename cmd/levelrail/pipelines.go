@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -64,7 +65,7 @@ func startPipelines(ctx context.Context, logger *slog.Logger, b *brand.Brand, db
 			if err != nil {
 				return nil, fmt.Errorf("resolve node %q: %w", nodeID, err)
 			}
-			return rt, nil
+			return archiveNode{Runtime: rt}, nil
 		},
 		GitImage:        os.Getenv("APP_PIPELINE_GIT_IMAGE"),
 		MaxParallelJobs: envInt("APP_PIPELINE_MAX_PARALLEL_JOBS", 0),
@@ -467,6 +468,7 @@ const (
 	defaultPipelineArtifactMaxBytes    = 256 << 20
 	defaultPipelineArtifactMaxRunBytes = 1 << 30
 	defaultPipelineArtifactMaxUnpacked = 1 << 30
+	defaultPipelineArtifactMaxEntries  = 100000
 	defaultPipelineArtifactRetention   = 7 * 24 * time.Hour
 	pipelineArtifactSubdir             = "pipeline-artifacts"
 )
@@ -483,6 +485,7 @@ func newPipelineArtifactStore(logger *slog.Logger) *pipeline.ArtifactStore {
 		MaxBytes:         int64(envInt("APP_PIPELINE_ARTIFACT_MAX_BYTES", defaultPipelineArtifactMaxBytes)),
 		MaxRunBytes:      int64(envInt("APP_PIPELINE_ARTIFACT_MAX_RUN_BYTES", defaultPipelineArtifactMaxRunBytes)),
 		MaxUnpackedBytes: int64(envInt("APP_PIPELINE_ARTIFACT_MAX_UNPACKED_BYTES", defaultPipelineArtifactMaxUnpacked)),
+		MaxEntries:       envInt("APP_PIPELINE_ARTIFACT_MAX_ENTRIES", defaultPipelineArtifactMaxEntries),
 		Retention:        envDuration("APP_PIPELINE_ARTIFACT_RETENTION", defaultPipelineArtifactRetention),
 	})
 	if err != nil {
@@ -490,4 +493,24 @@ func newPipelineArtifactStore(logger *slog.Logger) *pipeline.ArtifactStore {
 		return nil
 	}
 	return s
+}
+
+// archiveNode gives a node runtime the tar copy methods pipeline.Runtime
+// requires; a runtime without them fails the artifact step with a clear error.
+type archiveNode struct{ docker.Runtime }
+
+func (n archiveNode) CopyFromContainer(ctx context.Context, containerID, path string, maxBytes int64) (io.ReadCloser, docker.PathStat, error) {
+	ar, ok := n.Runtime.(docker.ArchiveRuntime)
+	if !ok {
+		return nil, docker.PathStat{}, docker.ErrArchiveUnsupported
+	}
+	return ar.CopyFromContainer(ctx, containerID, path, maxBytes)
+}
+
+func (n archiveNode) CopyToContainer(ctx context.Context, containerID, dir string, content io.Reader, maxBytes int64) error {
+	ar, ok := n.Runtime.(docker.ArchiveRuntime)
+	if !ok {
+		return docker.ErrArchiveUnsupported
+	}
+	return ar.CopyToContainer(ctx, containerID, dir, content, maxBytes)
 }

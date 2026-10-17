@@ -40,19 +40,44 @@ func runPipelinesArtifacts(prog string, args []string, stdout, stderr io.Writer,
 }
 
 func downloadArtifact(ctx context.Context, client *Client, app, runID string, a apiclient.PipelineArtifact, out string, of outputFlags, c *pipelineCmd, stdout, stderr io.Writer, jsonOut bool) int {
-	data, err := client.DownloadPipelineArtifact(ctx, app, runID, a.ID)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download artifact of job %q: %w", a.Job, err))
-	}
 	if out == "" {
 		out = fmt.Sprintf("run-%s-%s.tar.gz", runID, filepath.Base(a.Job))
 	}
-	if err := os.WriteFile(out, data, 0o600); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("write %s: %w", out, err))
+	n, err := streamArtifactToFile(ctx, client, app, runID, a, out)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("download artifact of job %q: %w", a.Job, err))
 	}
-	return c.write(of, map[string]any{"file": out, "bytes": len(data), "sha256": a.SHA256}, func() {
-		_, _ = fmt.Fprintf(stdout, "wrote %s (%d bytes, sha256 %s)\n", out, len(data), a.SHA256)
+	return c.write(of, map[string]any{"file": out, "bytes": n, "sha256": a.SHA256}, func() {
+		_, _ = fmt.Fprintf(stdout, "wrote %s (%d bytes, sha256 %s)\n", out, n, a.SHA256)
 	})
+}
+
+// streamArtifactToFile writes the download to a temp file beside out and
+// renames it into place only after the sha256 matched, so a failed or
+// partial download never leaves a file at out.
+func streamArtifactToFile(ctx context.Context, client *Client, app, runID string, a apiclient.PipelineArtifact, out string) (int64, error) {
+	tmp, err := os.CreateTemp(filepath.Dir(out), ".artifact-*")
+	if err != nil {
+		return 0, fmt.Errorf("create %s: %w", out, err)
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	n, sum, err := client.DownloadPipelineArtifact(ctx, app, runID, a.ID, tmp)
+	if cerr := tmp.Close(); err == nil && cerr != nil {
+		err = cerr
+	}
+	if err != nil {
+		return n, err
+	}
+	if a.SHA256 != "" && sum != a.SHA256 {
+		return n, fmt.Errorf("sha256 mismatch: listed %s, downloaded %s", a.SHA256, sum)
+	}
+	if err := os.Chmod(tmp.Name(), 0o600); err != nil {
+		return n, err
+	}
+	if err := os.Rename(tmp.Name(), out); err != nil {
+		return n, fmt.Errorf("write %s: %w", out, err)
+	}
+	return n, nil
 }
 
 func printArtifacts(out io.Writer, list []apiclient.PipelineArtifact) {

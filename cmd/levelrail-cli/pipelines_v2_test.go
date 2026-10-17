@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -32,13 +34,55 @@ func TestRun_PipelinesRunParam(t *testing.T) {
 	}
 }
 
+var bytesSHA = func() string { h := sha256.Sum256([]byte("bytes")); return hex.EncodeToString(h[:]) }()
+
+func TestRun_PipelinesArtifactDownloadRefusesBadStreams(t *testing.T) {
+	tests := []struct {
+		name   string
+		listed string
+		serve  func(w http.ResponseWriter)
+		want   string
+	}{
+		{"listed hash differs", strings.Repeat("0", 64), func(w http.ResponseWriter) { _, _ = w.Write([]byte("bytes")) }, "sha256 mismatch"},
+		{"server header differs", bytesSHA, func(w http.ResponseWriter) {
+			w.Header().Set("X-Content-SHA256", strings.Repeat("1", 64))
+			_, _ = w.Write([]byte("bytes"))
+		}, "sha256 mismatch"},
+		{"cut short", bytesSHA, func(w http.ResponseWriter) {
+			w.Header().Set("Content-Length", "50")
+			_, _ = w.Write([]byte("bytes"))
+		}, "unexpected EOF"},
+	}
+	for _, tc := range tests {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/download") {
+				tc.serve(w)
+				return
+			}
+			_ = json.NewEncoder(w).Encode([]apiclient.PipelineArtifact{{ID: "a1", Job: "build", SizeBytes: 5, SHA256: tc.listed}})
+		}))
+		out := filepath.Join(t.TempDir(), "a.tar.gz")
+		var stdout, stderr bytes.Buffer
+		got := run("cli", []string{"pipelines", "artifacts", "web", "r1", "--api-url", srv.URL, "--download", "build", "--out", out}, &stdout, &stderr, envMap())
+		srv.Close()
+		if got == exitOK || !strings.Contains(stdout.String()+stderr.String(), tc.want) {
+			t.Errorf("%s: exit %d out %q err %q, want failure naming %q", tc.name, got, stdout.String(), stderr.String(), tc.want)
+		}
+		if entries, _ := os.ReadDir(filepath.Dir(out)); len(entries) != 0 {
+			t.Errorf("%s: a failed download left %d file(s) behind", tc.name, len(entries))
+		}
+	}
+}
+
 func TestRun_PipelinesArtifactsListAndDownload(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/api/v1/apps/web/pipeline-runs/r1/artifacts":
 			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode([]apiclient.PipelineArtifact{{ID: "a1", Job: "build", SizeBytes: 5, SHA256: "abc"}})
+			_ = json.NewEncoder(w).Encode([]apiclient.PipelineArtifact{{ID: "a1", Job: "build", SizeBytes: 5, SHA256: bytesSHA}})
 		case "/api/v1/apps/web/pipeline-runs/r1/artifacts/a1/download":
+			w.Header().Set("X-Content-SHA256", bytesSHA)
+			w.Header().Set("Content-Length", "5")
 			_, _ = w.Write([]byte("bytes"))
 		default:
 			http.NotFound(w, r)
