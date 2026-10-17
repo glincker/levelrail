@@ -170,10 +170,7 @@ func ClientAddr(peer netip.Addr, forwardedFor string, trusted func(netip.Addr) b
 	return addr
 }
 
-// OverCap says what happens to the session at position rank (0 is the oldest)
-// among total live sessions: SessionEvicted when it is among the oldest
-// beyond the cap under evict-oldest, SessionLimit when it is a newer session
-// over the cap under reject, Allowed otherwise.
+// OverCap reports what happens to the session at rank (0 is oldest) among total live sessions.
 func (r Rules) OverCap(rank, total int) Verdict {
 	if r.MaxSessions <= 0 || total <= r.MaxSessions {
 		return Allowed

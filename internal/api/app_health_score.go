@@ -14,20 +14,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// Health score statuses. One shared set of constants, referenced by
-// every category computation below and by the CLI's own rendering, so
-// "pass"/"warn"/"fail" is never retyped as a bare string literal in two
-// places that could silently drift.
+// Shared pass/warn/fail values, so the CLI and category code never retype them.
 const (
 	HealthScoreStatusPass = "pass"
 	HealthScoreStatusWarn = "warn"
 	HealthScoreStatusFail = "fail"
 )
 
-// healthScoreCategory is one category's verdict: a status plus the
-// single reason an operator needs, never a vague percentage. Each
-// category's own compute function below owns picking Status/Reason from
-// real store/alerting reads, nothing invented.
+// healthScoreCategory is one category's status plus the single reason an operator needs.
 type healthScoreCategory struct {
 	Key    string `json:"key"`
 	Label  string `json:"label"`
@@ -35,10 +29,7 @@ type healthScoreCategory struct {
 	Reason string `json:"reason"`
 }
 
-// appHealthScoreResource is GET /api/v1/apps/{name}/health-score's wire
-// shape: Status is the worst of Categories' own statuses, the same
-// "one False outranks everything" rule summarizeAppConditions already
-// applies to reconcile conditions.
+// appHealthScoreResource is the health-score wire shape; its Status is the worst category status.
 type appHealthScoreResource struct {
 	AppName    string                `json:"app_name"`
 	Status     string                `json:"status"`
@@ -65,12 +56,7 @@ func overallHealthStatus(categories []healthScoreCategory) string {
 	return status
 }
 
-// handleGetAppHealthScore handles GET /api/v1/apps/{name}/health-score:
-// a live, read-only synthesis of signals this control plane already
-// tracks separately for one app (deploys, crashloop, TLS, secrets,
-// backups, health checks, alerting) into four pass/warn/fail
-// categories. Computed fresh on every call, no cache and no new
-// reconciler loop: a plain aggregation query, not AI.
+// handleGetAppHealthScore computes the score fresh on each call, with no cache.
 func (rt *Router) handleGetAppHealthScore(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	ctx := r.Context()
@@ -100,20 +86,10 @@ func (rt *Router) handleGetAppHealthScore(w http.ResponseWriter, r *http.Request
 	})
 }
 
-// recentDeployAttemptWindow bounds how many of an app's most recent
-// deploy attempts healthScoreDeploy's success-rate reads, the same
-// "recent, not all-time" scope a health signal needs: an app with one
-// bad deploy three months ago and twenty clean ones since is healthy
-// today, not flagged forever.
+// Recent, not all-time: one bad deploy long ago should not flag the app forever.
 const recentDeployAttemptWindow = 5
 
-// healthScoreDeploy covers deploy success rate over the most recent
-// finished attempts, plus whether a crashloop alert rule is currently
-// firing for this app (alerting.Rule.Firing, persisted by the evaluator
-// via UpdateState, read here with no need for the live in-memory
-// RestartTracker). A firing crashloop outranks deploy history: a service
-// stuck restarting right now matters more than yesterday's clean
-// deploys.
+// A firing crashloop outranks deploy history: a service stuck restarting now matters more.
 func (rt *Router) healthScoreDeploy(ctx context.Context, name string) healthScoreCategory {
 	cat := healthScoreCategory{Key: "deploy", Label: "Deploy health"}
 
@@ -181,13 +157,7 @@ func (rt *Router) healthScoreDeploy(ctx context.Context, name string) healthScor
 	return cat
 }
 
-// healthScoreSecurity covers TLS cert status for this app's own domains
-// (alerting.ListCertificates, the identical computation GET
-// /api/v1/certificates and a kind=cert_expiry rule both already use) and
-// whether every env var the app declared { secret: true, required: true }
-// actually has a stored value (rt.secrets.Exists), the same check
-// internal/deploy.Pipeline's validateEnv runs before a build-triggered
-// deploy. Worst of the two findings wins.
+// Reports the worse of TLS status and whether every required secret has a stored value.
 func (rt *Router) healthScoreSecurity(ctx context.Context, svc store.DesiredService) healthScoreCategory {
 	cat := healthScoreCategory{Key: "security", Label: "Security"}
 
@@ -300,12 +270,7 @@ func (rt *Router) healthScoreSecrets(ctx context.Context, svc store.DesiredServi
 	return HealthScoreStatusPass, fmt.Sprintf("all %d required secret(s) are set", len(required))
 }
 
-// healthScoreResilience covers whether a readiness or liveness probe is
-// configured (store.DesiredService.Health, internal/spec.Health's
-// storage home) and, for every named volume, whether a backup schedule
-// exists and its most recent attempt succeeded
-// (ServiceVolumeBackupScheduleStore/ServiceVolumeBackupHistoryStore,
-// the same two reads the volume backup panel already uses).
+// Covers probe configuration and, per named volume, whether a backup schedule exists and last succeeded.
 func (rt *Router) healthScoreResilience(ctx context.Context, svc store.DesiredService) healthScoreCategory {
 	cat := healthScoreCategory{Key: "resilience", Label: "Resilience"}
 
@@ -368,12 +333,7 @@ func (rt *Router) healthScoreResilience(ctx context.Context, svc store.DesiredSe
 	return cat
 }
 
-// healthScoreObservability covers whether this app has any alert rule
-// at all, and whether at least one enabled rule actually has somewhere
-// to notify (a channel_id, or a legacy notify_url/notify_kind pair): a
-// rule with neither fires silently into nothing, the exact "bolted-on
-// observability" gap this project set out to avoid in section 4.8's own
-// rationale.
+// A rule with no channel and no legacy notify target fires into nothing, so it does not count.
 func (rt *Router) healthScoreObservability(ctx context.Context, name string) healthScoreCategory {
 	cat := healthScoreCategory{Key: "observability", Label: "Observability"}
 
@@ -423,10 +383,7 @@ func (rt *Router) healthScoreObservability(ctx context.Context, name string) hea
 	return cat
 }
 
-// proxyServedCerts maps each domain to the notAfter of the trusted
-// certificate a fronting proxy was last seen serving. Levelrail's own
-// certificate store is stale for these domains, so they are judged from
-// what visitors actually get.
+// Judged from what a fronting proxy actually serves, since Levelrail's own cert store is stale for these domains.
 func (rt *Router) proxyServedCerts(ctx context.Context) map[string]time.Time {
 	out := map[string]time.Time{}
 	if rt.proxyIntegration == nil || rt.proxyIntegration.store == nil {

@@ -1,12 +1,6 @@
 package agent
 
-// This file: pure conversions between internal/docker's Go types and
-// internal/agent/agentpb's generated proto types. Field-for-field
-// mirrors, deliberately mechanical: proto.go's own header comment
-// already explains why the message shapes exist, this file is just the
-// translation layer both the control-plane dispatcher (grpc_transport.go)
-// and the agent-side executor (execute.go) share, so the mapping is
-// defined exactly once.
+// Pure field-for-field conversions between internal/docker and agentpb types, shared by dispatcher and executor.
 
 import (
 	"math"

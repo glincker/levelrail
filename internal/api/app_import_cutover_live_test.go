@@ -26,10 +26,7 @@ import (
 
 var statusLine = regexp.MustCompile(`HTTP/\d(?:\.\d)? (\d{3})`)
 
-// TestAppImportCutover_Live stages a fixture app on a real Docker daemon,
-// drives it with the real application reconciler, and runs the dry run,
-// the switch and the rollback through the HTTP API with a fake DNS
-// provider. The ingress probe is a real request, made inside the container.
+// Needs a real Docker daemon: the ingress probe is a real request made inside the container.
 func TestAppImportCutover_Live(t *testing.T) {
 	dockertest.SkipIfShort(t)
 	client, err := docker.NewClient()

@@ -41,10 +41,7 @@ func copyAttemptEnd(imp store.DatabaseDataImport) time.Time {
 	return imp.StartedAt
 }
 
-// dataCopyAttentionItem decides whether a recorded copy is still an incident.
-// The row is the latest attempt for its database; a failure stops counting
-// once a restore succeeded after it, or once it is older than maxAge. A copy
-// that is running again is the retry in progress, not an incident.
+// A failure stops counting once a later restore succeeded or it is older than maxAge; a running retry is not an incident.
 func dataCopyAttentionItem(name string, imp store.DatabaseDataImport, now time.Time, maxAge time.Duration, lastRestore time.Time) (attention.Item, bool) {
 	switch {
 	case imp.Status == store.DataImportFailed:

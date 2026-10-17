@@ -13,10 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// AlertRules is the surface the alert-rule handlers need from
-// internal/alerting.DB. *alerting.DB satisfies this
-// structurally, the same "narrow consumer-defined interface" convention
-// TelemetryQuerier and SecretSetter already establish in this package.
+// AlertRules is the narrow surface the alert-rule handlers need from alerting.DB.
 type AlertRules interface {
 	SaveRule(ctx context.Context, r alerting.Rule) error
 	GetRule(ctx context.Context, id string) (*alerting.Rule, error)
@@ -24,20 +21,8 @@ type AlertRules interface {
 	DeleteRule(ctx context.Context, id string) error
 }
 
-// ruleResource is the wire shape for an alert rule: alerting.Rule with
-// Go time.Duration fields flattened to duration strings ("2m", "30s")
-// for the same reason handleQueryMetrics' step query param and
-// APP_SESSION_TTL are duration strings elsewhere in this codebase,
-// rather than raw seconds a caller has to know the unit of.
-//
-// ID and ResourceID are never caller-supplied: ID is always generated
-// server-side (alerting.NewRuleID, matching how every other ID in this
-// codebase is minted, never trusted from a request body), ResourceID is
-// always derived from the app name in the URL
-// (resourceIDForApp, metrics.go), never taken from the body, so a
-// caller cannot point a rule at a different app's resource just by
-// putting a different value in the JSON. Both are still marshaled out
-// on responses, so a caller can see what was actually assigned.
+// ruleResource is the wire shape for an alert rule, with durations as strings such as 2m.
+// ID and ResourceID are server-assigned; ResourceID always comes from the app name in the URL, never the body.
 type ruleResource struct {
 	ID         string `json:"id,omitempty"`
 	Name       string `json:"name"`
@@ -97,11 +82,7 @@ type ruleResource struct {
 	Silenced   bool   `json:"silenced,omitempty"`
 	SilencedBy string `json:"silenced_by,omitempty"`
 
-	// Evaluation state: response-only. A request body that happens to
-	// set these is simply ignored, toRule below never reads them; only
-	// the evaluator (internal/alerting's Engine) ever writes this state,
-	// via UpdateState, exactly the boundary alerting.Rule's own doc
-	// comment already draws.
+	// Evaluation state is response-only: toRule ignores it, and only the evaluator writes it.
 	Firing          bool       `json:"firing,omitempty"`
 	PendingSince    *time.Time `json:"pending_since,omitempty"`
 	FiringSince     *time.Time `json:"firing_since,omitempty"`
@@ -283,10 +264,7 @@ func (a ruleResource) toRule(id string) (alerting.Rule, error) {
 	return r, nil
 }
 
-// parseOptionalDuration parses raw as a Go duration string ("2m", "30s"),
-// treating an empty string as zero (the same "omitted means zero value"
-// contract parseStep (metrics.go) already applies to its own optional
-// duration query param.
+// parseOptionalDuration parses a Go duration string, treating an empty string as zero.
 func parseOptionalDuration(raw string) (time.Duration, error) {
 	if raw == "" {
 		return 0, nil
@@ -298,15 +276,8 @@ func parseOptionalDuration(raw string) (time.Duration, error) {
 	return d, nil
 }
 
-// validateAlertRuleReferences checks rule's optional ScheduledTaskID and
-// ChannelID references before it is saved, the two checks
-// handleCreateAlertRule and handleUpdateAlertRule both need: a
-// scheduled_task_id must belong to appName, the same ownership check
-// loadOwnedScheduledTask (scheduled_tasks.go) applies when a caller
-// reaches a task through its own app URL, and a channel_id must name a
-// real, already-saved channel, validated the same way
-// handleCreateDeployNotifyTarget validates its own channel_id. Writes the
-// appropriate error response and returns false on failure.
+// validateAlertRuleReferences checks that scheduled_task_id belongs to appName and channel_id names a saved channel.
+// It writes the error response and returns false on failure.
 func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Request, appName, op string, rule alerting.Rule) bool {
 	if rule.ScheduledTaskID != "" {
 		task, err := rt.scheduledTasks.GetScheduledTask(r.Context(), rule.ScheduledTaskID)
@@ -335,12 +306,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 				return false
 			}
 		case store.BackupResourceKindVolume:
-			// A volume's owning service is always this same app in this
-			// codebase's single-service-per-app model (every volume backup
-			// endpoint derives serviceName from the app's own URL, never a
-			// caller-supplied value; see handleTriggerVolumeBackup), the
-			// same ownership boundary ScheduledTaskID's own check enforces
-			// for a scheduled task.
+			// A volume's owning service is always this app, since backup endpoints derive it from the URL.
 			if rule.BackupServiceName != appName {
 				writeError(w, http.StatusBadRequest, "unknown backup_service_name/backup_volume_name")
 				return false
@@ -375,11 +341,7 @@ func (rt *Router) validateAlertRuleReferences(w http.ResponseWriter, r *http.Req
 	return true
 }
 
-// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts.
-// resource_id is always resourceIDForApp(name),
-// regardless of what the request body carries: an app's own URL is the
-// only thing that gets to say which resource a rule it creates through
-// that URL is scoped to.
+// handleCreateAlertRule handles POST /api/v1/apps/{name}/alerts. resource_id is always resourceIDForApp(name), never taken from the body.
 func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) {
 	if rt.alertRules == nil {
 		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")
@@ -453,15 +415,7 @@ func ruleWarnings(r alerting.Rule) []string {
 	return nil
 }
 
-// handleUpdateAlertRule handles PUT /api/v1/apps/{name}/alerts/{id}: a
-// full replace of a rule's configuration, reusing ruleResource.toRule
-// (the same validation handleCreateAlertRule already runs) and
-// alerting.DB's SaveRule, which already upserts and leaves evaluation
-// state untouched (SaveRule's own doc comment), so this needs no
-// separate store-layer update method. The existing rule's ResourceID
-// must match resourceIDForApp(name) first, the same ownership check and
-// 404-either-way information hiding handleDeleteAlertRule's own doc
-// comment explains.
+// handleUpdateAlertRule handles PUT /api/v1/apps/{name}/alerts/{id} as a full replace. A rule owned by another app returns 404.
 func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) {
 	if rt.alertRules == nil {
 		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")
@@ -519,10 +473,7 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, toRuleResource(*saved))
 }
 
-// handleListAlertRules handles GET /api/v1/apps/{name}/alerts:
-// every rule scoped to this app's resource, including
-// disabled ones, so the UI can show and let an operator re-enable a
-// paused rule.
+// handleListAlertRules lists every rule for this app, including disabled ones, so a paused rule can be re-enabled.
 func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 	if rt.alertRules == nil {
 		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")
@@ -557,17 +508,7 @@ func (rt *Router) handleListAlertRules(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleDeleteAlertRule handles DELETE /api/v1/apps/{name}/alerts/{id}.
-// A rule ID is globally unique and never itself encodes
-// which app it belongs to, but the URL implies app-scoping, so this
-// verifies the rule's own ResourceID actually matches
-// resourceIDForApp(name) before deleting it: without that check, a
-// caller who can guess or enumerate another app's rule ID could delete
-// it through an app they do have write access to. Returns 404 either
-// way (rule doesn't exist, or belongs to a different app), the same
-// information-hiding reasoning handleGetApp's own 404 already applies:
-// a caller with write access to app A learns nothing about whether some
-// ID belongs to app B.
+// handleDeleteAlertRule handles DELETE /api/v1/apps/{name}/alerts/{id}. A rule owned by another app returns 404, so rule IDs cannot be probed across apps.
 func (rt *Router) handleDeleteAlertRule(w http.ResponseWriter, r *http.Request) {
 	if rt.alertRules == nil {
 		writeError(w, http.StatusNotImplemented, "alerting is not configured on this control plane")

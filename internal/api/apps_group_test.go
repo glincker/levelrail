@@ -11,10 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// linkServiceToApp is this file's own copy of internal/store's
-// test-only helper of the same name: apps_group_test.go is a different
-// package (api, not store), so it can't reach that unexported test
-// helper directly.
+// Own copy of store's test-only helper, since this file is package api and cannot reach that one.
 func linkServiceToApp(t *testing.T, db *store.DB, serviceName, appID string) {
 	t.Helper()
 	if _, err := db.ExecContext(context.Background(), `UPDATE desired_services SET app_id = ? WHERE name = ?`, appID, serviceName); err != nil {
@@ -61,10 +58,7 @@ func TestHandleGetAppGroup_NotFound(t *testing.T) {
 	}
 }
 
-// TestHandleGetAppGroup_ServiceWithNoApp covers a service saved with no
-// app_id (every service saved through this stage's write path, since
-// SaveDesiredService never sets it): the group endpoint must treat it
-// as its own one-service group, not 404 or error.
+// TestHandleGetAppGroup_ServiceWithNoApp checks a service with no app_id is its own one-service group, not a 404.
 func TestHandleGetAppGroup_ServiceWithNoApp(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -86,12 +80,7 @@ func TestHandleGetAppGroup_ServiceWithNoApp(t *testing.T) {
 	}
 }
 
-// TestHandleGetAppGroup_MultiServiceApp is stage 1's core read-path
-// scenario: two services under one app, both returned together, with a
-// worst-condition-wins rollup status (one True, one False -> the group
-// as a whole reads "Attention needed", the same rule
-// summarizeAppConditions already applies within a single app's own
-// conditions, now applied across an app's services).
+// TestHandleGetAppGroup_MultiServiceApp checks the worst-condition-wins rollup across two services.
 func TestHandleGetAppGroup_MultiServiceApp(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -138,21 +127,13 @@ func TestHandleGetAppGroup_MultiServiceApp(t *testing.T) {
 	}
 }
 
-// TestHandleGetAppGroup_ByAppName covers the real gap that motivated
-// appGroupByName: every multi-service-creating endpoint
-// (handleDeployCompose, handleDeploySpec) hands a caller back the app's
-// own name, not any one member service's name, so a caller that
-// naturally reuses that same name here must not get a false 404.
+// TestHandleGetAppGroup_ByAppName checks that the app name returned by deploy responses resolves, not a false 404.
 func TestHandleGetAppGroup_ByAppName(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 	ctx := context.Background()
 
-	// ID == Name, the real invariant every multi-service-creating
-	// endpoint's own App row already follows (App.ID == App.Name):
-	// GetAppByName looks up by Name, so this is what makes "demo" a
-	// valid app_id for the deploy-compose/deploy-spec response shapes
-	// appGroupByName's own doc comment describes.
+	// ID equals Name for multi-service apps, so the app name is a valid app_id.
 	app := store.App{ID: "demo", Name: "demo", CreatedAt: "2026-08-14T00:00:00Z", UpdatedAt: "2026-08-14T00:00:00Z"}
 	if err := db.SaveApp(ctx, app); err != nil {
 		t.Fatalf("SaveApp: %v", err)

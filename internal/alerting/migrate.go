@@ -13,17 +13,8 @@ import (
 //go:embed migrations/*.sql
 var migrationsFS embed.FS
 
-// migration is one forward-only, numbered schema change, no down
-// migration by design (the same versioned, forward-only migration
-// convention used across the store, applied here too).
-//
-// This runner is a deliberate near-duplicate of internal/store's and
-// internal/telemetry's own migrate.go, not a shared package: those
-// packages are under active concurrent development elsewhere in this
-// repo, and each currently differs only by its embedded migrations
-// directory. Worth extracting into one shared migration runner once all
-// three stabilize, not before, the same "revisit later" note
-// internal/telemetry/migrate.go already carries.
+// migration is one forward-only, numbered schema change.
+// This runner is a near-duplicate of store's and telemetry's on purpose: those are still changing, so extraction waits.
 type migration struct {
 	version int
 	name    string

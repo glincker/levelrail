@@ -234,10 +234,7 @@ func (r *Renewer) logRenewFailure(err error) {
 	r.logger.Warn("agent: certificate renewal failed, will retry", attrs...)
 }
 
-// RenewOnce generates a fresh key, has the control plane sign it, persists
-// the result, and proves it works before switching to it. On any failure
-// the agent keeps using its current certificate, which the control plane
-// still accepts inside the renewal overlap window.
+// RenewOnce keeps the current certificate on failure, which the control plane still accepts during the overlap window.
 func (r *Renewer) RenewOnce(ctx context.Context, client agentpb.AgentServiceClient) error {
 	cur := r.holder.Current()
 	keyPEM, csrDER, err := NewKeyAndCSR(cur.NodeID)

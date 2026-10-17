@@ -166,10 +166,7 @@ func (rt *Router) resolveImageMoveCreds(sessID string, req appImportImagesTransf
 	return t, c, nil
 }
 
-// handleTransferAppImportImages handles POST .../sessions/{id}/images/transfer.
-// It streams each host-built image from the source over SSH into the
-// target node and verifies the loaded image ID. It returns at once; poll
-// images/status. Images already verified on the target are skipped.
+// handleTransferAppImportImages streams host-built images to the target node; it returns at once, so poll images/status.
 func (rt *Router) handleTransferAppImportImages(w http.ResponseWriter, r *http.Request) {
 	sess, items, ok := rt.loadAppImport(w, r)
 	if !ok {

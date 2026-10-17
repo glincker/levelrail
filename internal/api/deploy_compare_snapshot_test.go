@@ -11,13 +11,8 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestHandleCompareDeploys_ConfigSnapshotDiff covers the fields
-// docs/roadmap.md's deploy-comparison gap named: env, ports, domains, and
-// resource limits, table-driven across the "what changed" cases plus the
-// baseline "nothing changed" case. Every case seeds two real deploy
-// attempts directly (not the current-live-state side) so the snapshots
-// under comparison are exactly what the test sets, not whatever the app's
-// live DesiredService happens to be.
+// Covers env, ports, domains, and resource limits across changed and unchanged cases.
+// Both sides are seeded deploy attempts, not live state.
 func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
 	hostPort := func(p int) *int { return &p }
 
@@ -210,10 +205,7 @@ func TestHandleCompareDeploys_ConfigSnapshotDiff(t *testing.T) {
 				t.Fatalf("decode: %v", err)
 			}
 
-			// The actual leak guard: whatever comes back on the wire for a
-			// secret- or database-backed key must never carry a value, in
-			// either side's own Env list or in env_changes, regardless of
-			// what the test fixture above happened to set.
+			// Leak guard: secret- and database-backed values must never appear on the wire, on either side or in env_changes.
 			for _, side := range []deployCompareSide{got.From, got.To} {
 				for _, e := range side.Env {
 					if e.Kind != store.DeployAttemptEnvKindLiteral && e.Value != "" {

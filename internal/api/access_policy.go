@@ -228,10 +228,8 @@ func (rt *Router) checkSessionRules(w http.ResponseWriter, r *http.Request, sub 
 	return true
 }
 
-// enforceSessionCap applies the per-user concurrent session cap. The library's
-// own cap is one global value, so per-team caps are checked here, on a
-// session's first request after sign-in or the TOTP step and then every
-// accessPolicyTouchEvery. Failing to list sessions refuses the request.
+// enforceSessionCap applies per-team session caps, which the library's single global cap cannot express.
+// Failing to list sessions refuses the request.
 func (rt *Router) enforceSessionCap(w http.ResponseWriter, r *http.Request, sub policySubject, rules accesspolicy.Rules, now time.Time) bool {
 	if rules.MaxSessions <= 0 || rt.libSessions == nil || !rt.policyCapChecks.due(sub.sessionID, now) {
 		return true

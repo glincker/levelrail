@@ -21,12 +21,7 @@ type validateSpecResponse struct {
 	Services int          `json:"services,omitempty"`
 }
 
-// handleValidateSpec handles POST /api/v1/apps/{name}/validate-spec: runs
-// the submitted app.yaml body through internal/spec.ValidateDocument,
-// the same checks Parse uses at real deploy time, without deploying or
-// saving anything. One issue per problem, not a single flat error, so a
-// live editor gets earlier feedback; the deploy-time check is unchanged.
-// Mirrors handleValidatePipeline's (pipelines.go) existing shape.
+// handleValidateSpec checks an app.yaml body with the same rules as deploy time, without deploying or saving.
 func (rt *Router) handleValidateSpec(w http.ResponseWriter, r *http.Request) {
 	var req validateSpecRequest
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, validateSpecBodyLimit)).Decode(&req); err != nil {

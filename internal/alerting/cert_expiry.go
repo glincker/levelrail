@@ -20,40 +20,19 @@ import (
 // (former) copy of this constant for the certmagic.KeyBuilder shape.
 const certStorageCertsPrefix = "certificates"
 
-// DefaultCertExpiryWarningWindow is how far ahead of a certificate's
-// NotAfter ListCertificates starts reporting "expiring_soon" instead of
-// "healthy" when no override is configured. Also GET
-// /api/v1/certificates' own default (api.Router.certExpiryWarningWindow),
-// so the dashboard's TLS card and a kind=cert_expiry rule always agree
-// on when a certificate first becomes a concern.
+// DefaultCertExpiryWarningWindow is the default lead time before NotAfter for a certificate to report expiring_soon.
 const DefaultCertExpiryWarningWindow = 14 * 24 * time.Hour
 
-// DefaultCertRenewalStalledThreshold is how long a certificate can sit
-// in "expiring_soon" or "expired" with an unchanged NotAfter before
-// EvaluateCertExpiry treats it as a stronger "renewal appears stalled"
-// signal rather than a plain expiry warning. Caddy's own ACME renewal
-// starts at roughly a third of a certificate's remaining lifetime
-// (~30 days out for a 90-day Let's Encrypt cert), well before the
-// 14-day warning window even opens, so a real renewal attempt should
-// already be long done by the time a certificate enters that window;
-// several hours of the window elapsing with zero movement on NotAfter
-// is a genuine anomaly, not just evaluation-tick jitter.
+// DefaultCertRenewalStalledThreshold is how long NotAfter may stay unchanged in the warning window before renewal is reported stalled.
 const DefaultCertRenewalStalledThreshold = 6 * time.Hour
 
-// CertSource is the narrow storage surface a cert-expiry evaluation
-// needs: the same two-method shape internal/api.CertStore already
-// defines. Duplicated here rather than imported because internal/api
-// imports internal/alerting (for AlertRules et al.), so the reverse
-// import would cycle; *store.DB satisfies both interfaces structurally.
+// CertSource is redeclared here to avoid an import cycle, since internal/api imports this package.
 type CertSource interface {
 	ListCertStorageKeys(ctx context.Context, prefix string, recursive bool) ([]string, error)
 	GetCertStorageValue(ctx context.Context, key string) (*store.CertStorageValue, error)
 }
 
-// CertInfo is one stored certificate's expiry-relevant fields, the
-// single computation both GET /api/v1/certificates (internal/api) and a
-// kind=cert_expiry alert rule read via ListCertificates, so the two can
-// never silently disagree about a certificate's status.
+// CertInfo is one certificate's expiry fields, shared by the API and cert_expiry rules so they never disagree.
 type CertInfo struct {
 	Domain    string
 	SANs      []string
@@ -86,12 +65,7 @@ func CertExpiryStatus(notAfter, now time.Time, warningWindow time.Duration) stri
 	}
 }
 
-// ListCertificates returns every certificate currently in source,
-// parsed from its own stored PEM bytes, sorted by domain. A control
-// plane that has never issued a certificate returns an empty slice, not
-// an error. A single malformed or since-deleted entry is skipped and
-// logged, never fails the whole list, the same "one broken resource
-// must not block the rest" shape used throughout this codebase.
+// ListCertificates skips and logs a malformed entry, so one bad certificate does not fail the list.
 func ListCertificates(ctx context.Context, source CertSource, warningWindow time.Duration, now time.Time, logger *slog.Logger) ([]CertInfo, error) {
 	if logger == nil {
 		logger = slog.Default()
@@ -151,10 +125,7 @@ func parseLeafCertificate(pemBytes []byte) (*x509.Certificate, error) {
 	return x509.ParseCertificate(block.Bytes)
 }
 
-// certDomain picks a stored certificate's primary subject: the first SAN
-// if it has any, else its CommonName, else the domain segment of its own
-// storage key, so a pathological certificate with neither still gets a
-// usable label instead of an empty string.
+// Falls back to the storage key's domain segment so a certificate with no names still gets a label.
 func certDomain(cert *x509.Certificate, key string) string {
 	if len(cert.DNSNames) > 0 {
 		return cert.DNSNames[0]
@@ -186,11 +157,7 @@ type CertDeleter interface {
 	DeleteCertStorageValue(ctx context.Context, key string) error
 }
 
-// DeleteCertificateForDomain removes every stored certmagic entry
-// matching domain (by CommonName or SAN), so the next reconcile pass
-// finds none and re-issues a fresh one. found is false, nil when nothing
-// matched: a safe no-op, not an error, since reconcile re-attempts
-// issuance for every configured subject regardless.
+// DeleteCertificateForDomain removes matching entries; no match is a no-op since reconcile re-issues anyway.
 func DeleteCertificateForDomain(ctx context.Context, source CertSource, deleter CertDeleter, domain string) (found bool, err error) {
 	domain = strings.ToLower(strings.TrimSpace(domain))
 	if domain == "" {
@@ -236,10 +203,8 @@ type CertExpiryObservationStore interface {
 	ListCertExpiryObservations(ctx context.Context, ruleID string) ([]CertExpiryObservation, error)
 }
 
-// EvaluateCertExpiry runs one KindCertExpiry rule over certs and returns its state plus one notice per non-healthy certificate.
-// It fires with no ForDuration debounce: expiry only moves with real time, so there is nothing to debounce.
-// A renewal stuck on the same NotAfter past stalledThreshold is reported as stalled, not as a plain warning.
-// stronger, more actionable signal than "getting close to expiry."
+// EvaluateCertExpiry returns one notice per non-healthy certificate, with no debounce since expiry moves only with real time.
+// A renewal stuck on the same NotAfter past stalledThreshold is reported as stalled, not a plain warning.
 func EvaluateCertExpiry(ctx context.Context, certs CertSource, snapshots CertExpiryObservationStore, r Rule, warningWindow, stalledThreshold time.Duration, now time.Time, logger *slog.Logger) (Rule, []string, error) {
 	if warningWindow <= 0 {
 		warningWindow = DefaultCertExpiryWarningWindow

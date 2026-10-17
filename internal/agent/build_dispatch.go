@@ -1,12 +1,6 @@
 package agent
 
-// This file: the control plane's side of a dispatched build. A build is
-// the second operation (after exec) that spans many frames in both
-// directions on one Session, so it follows the same subscribe-before-call,
-// credit-windowed, exactly-one-terminal-frame shape grpc_transport.go's
-// exec already establishes: the build context goes up as BuildInput
-// frames, progress and the resulting image tar come back as BuildOutput
-// frames.
+// Control plane side of a dispatched build, which spans many frames on one Session.
 
 import (
 	"context"
@@ -18,10 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/build"
 )
 
-// RemoteBuilder is the optional capability a Transport advertises when it
-// can run a build dispatched to its node. Only *GRPCTransport does: a
-// Local transport is this process's own Docker socket, which is what
-// "build locally" already means, not somewhere to dispatch to.
+// RemoteBuilder is implemented by transports that can run a build on their node.
 type RemoteBuilder interface {
 	BuildOnNode(ctx context.Context, req build.RemoteRequest, image io.Writer, progress func(build.ProgressEvent)) (*build.Result, error)
 }
@@ -51,11 +42,8 @@ func (d *BuildDispatcher) BuildOnNode(ctx context.Context, nodeID string, req bu
 	return remote.BuildOnNode(ctx, req, image, progress)
 }
 
-// BuildOnNode implements RemoteBuilder: it dispatches req to this
-// transport's node, streams req.ContextDir up as a tar, relays progress
-// through progress, and writes the docker-save image tar the build
-// produced into image. The image is never loaded on the build node: the
-// control plane that asked for the build is the one that wants it.
+// BuildOnNode dispatches a build to this transport's node and writes the image tar to image.
+// The image is never loaded on the build node; the requesting control plane loads it.
 func (t *GRPCTransport) BuildOnNode(ctx context.Context, req build.RemoteRequest, image io.Writer, progress func(build.ProgressEvent)) (*build.Result, error) {
 	if progress == nil {
 		progress = func(build.ProgressEvent) {}
@@ -101,10 +89,7 @@ func (t *GRPCTransport) BuildOnNode(ctx context.Context, req build.RemoteRequest
 	return res, nil
 }
 
-// streamBuildContext tars dir and sends it as BuildInput frames for as
-// long as the agent's credit allows. A failure producing the tar is sent
-// as an explicit error frame rather than an EOF: a half-shipped context
-// must fail the build, not silently build the wrong tree.
+// A tar failure is sent as an error frame, never as EOF, so a half-shipped context fails the build.
 func (t *GRPCTransport) streamBuildContext(ctx context.Context, buildID string, sub *buildSub, dir string) {
 	pipeR, pipeW := io.Pipe()
 	go func() { _ = pipeW.CloseWithError(build.TarContext(ctx, dir, pipeW)) }()

@@ -105,10 +105,7 @@ func (rt *Router) handleListFirewallRules(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, out)
 }
 
-// handleCreateFirewallRule handles POST /api/v1/firewall-rules.
-// AbilityWriteSensitive. Checked against internal/firewall.Validate
-// before it ever reaches the store, so an unsafe rule is refused here,
-// not just caught later by the reconciler's own identical check.
+// handleCreateFirewallRule validates the rule before storing it, so an unsafe rule is refused at the API.
 func (rt *Router) handleCreateFirewallRule(w http.ResponseWriter, r *http.Request) {
 	var req createFirewallRuleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

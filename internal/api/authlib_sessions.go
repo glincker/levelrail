@@ -166,10 +166,7 @@ func (rt *Router) establishLibSession(w http.ResponseWriter, r *http.Request, us
 	return nil
 }
 
-// libRegister finishes handleRegister after its shared pre-checks. An
-// address-shaped username goes through the library setup-token gate; a plain
-// username (which the library refuses to sign up) is created by the platform
-// store and mirrored, still guarded by the setup token and first-user index.
+// The library refuses plain usernames, so those are created by the platform store behind the same setup token.
 func (rt *Router) libRegister(w http.ResponseWriter, r *http.Request, req registerRequest) {
 	ctx := r.Context()
 	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)

@@ -59,11 +59,7 @@ func (p *AnthropicProvider) newRequest(ctx context.Context, method, path string,
 	return req, nil
 }
 
-// anthropicMessage/anthropicContentBlock/anthropicTool are the request
-// wire shapes, matching the Messages API's own JSON exactly (verified
-// against the Anthropic Go SDK's type definitions: ToolUseBlock{Type,
-// ID, Name, Input}, ToolResultBlockParam{Type, ToolUseID, Content,
-// IsError}).
+// Request wire shapes, matching the Messages API JSON exactly.
 type anthropicMessage struct {
 	Role    string                  `json:"role"`
 	Content []anthropicContentBlock `json:"content"`
@@ -110,10 +106,7 @@ type anthropicRequest struct {
 	Stream    bool                   `json:"stream"`
 }
 
-// defaultMaxTokens bounds a single turn's output. No env var override
-// today: this is an implementation-detail request cap, not an
-// operator-facing threshold like the timeouts CLAUDE.md's "no hardcoded
-// thresholds" rule targets.
+// An implementation cap, not an operator threshold, so it is deliberately not an env var.
 const defaultMaxTokens = 4096
 
 func toAnthropicRequest(req ChatRequest) anthropicRequest {
@@ -158,11 +151,7 @@ func toAnthropicMessage(m Message) anthropicMessage {
 	return out
 }
 
-// anthropicSSEEvent is the envelope every "data:" line in the stream
-// decodes to; Type discriminates which of the fields below applies,
-// matching the go-sdk's own MessageStreamEventUnion variants
-// (message_start, content_block_start, content_block_delta,
-// content_block_stop, message_delta, message_stop).
+// Type selects which field applies, mirroring the SDK's stream event variants.
 type anthropicSSEEvent struct {
 	Type string `json:"type"`
 

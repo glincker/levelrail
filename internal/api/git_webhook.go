@@ -20,76 +20,20 @@ import (
 	"github.com/GLINCKER/levelrail/internal/webhook"
 )
 
-// gitSourceFetchFunc fetches repoURL at the exact commit sha to a local
-// directory, authenticating with token when non-empty, returning the
-// directory and a cleanup func that removes it. A distinct signature
-// from both fetchFunc (builds.go, no credential: a manual build
-// trigger's repo_url is hand-typed fresh every call, never stored) and
-// internal/webhook's own private fetchFunc (also no credential: the
-// original single-app path only ever documented a public repo): a
-// connected git source is the first path in this codebase that can
-// target a private repo, so it's the first one that needs to carry a
-// token through to the actual clone.
+// Fetches repoURL at an exact commit sha into a directory, authenticated with token when set.
+// The token is what makes private repos cloneable here.
 type gitSourceFetchFunc func(ctx context.Context, repoURL, sha, token string) (dir string, cleanup func(), err error)
 
-// handleGitPushWebhook handles POST /api/v1/webhooks/github/{name}: the
-// multi-app-aware evolution of internal/webhook.Handler (see that
-// package's own doc comment). Registered directly in internal/api,
-// rather than as a per-app Config resolved into internal/webhook.Handler
-// itself, because reconstructing a full spec.Service from a stored app
-// (specServiceFromDesired, builds.go) already lives in this package for
-// the identical reason handleTriggerBuild needs it, and duplicating that
-// reconstruction into internal/webhook would be exactly the kind of
-// speculative parallel implementation the project's engineering
-// standards warn against. Reuses internal/webhook's own verified
-// signature/payload logic (VerifySignature, ParsePushEvent,
-// MaxPayloadBytes, Config.TargetRef) rather than re-implementing any of
-// it, and reuses this package's own beginBuildDeployAttempt (deploy_attempts.go,
-// generalized to take a source parameter for exactly this second
-// caller) so a webhook-triggered build gets the identical deploy-attempt
-// history and log persistence a manual build trigger already gets.
-//
-// Unauthenticated by design (router.go's own route registration
-// comment): neither GitHub nor GitLab can present a session or API
-// token, so this route's own request verification (GitHub's HMAC
-// signature or GitLab's plain secret token, see
-// verifyGitPushWebhookAuth), against this app's own per-app secret
-// generated at connect time and internal/secrets-encrypted at rest, is
-// what stands in for auth. The URL still says "github" for backward
-// compatibility with already-configured GitHub webhooks; GitLab's own
-// project webhook (internal/api/gitlab_app_projects.go) points at this
-// exact same path.
-//
-// 404, not 501, when no git source is connected for name: unlike a
-// control-plane-wide "not configured" gap (no master key set, checked
-// first, below), a specific app simply not having a connected source is
-// exactly the shape GET/PUT/DELETE .../git-source already treat as 404,
-// and matches this route's own path shape (an app-scoped resource that
-// doesn't exist for this name) better than a blanket 501 would.
-//
-// A connected source with a persisted services: map (gs.Services) fans
-// out through deployServicesSpecFanout, the same deploy.Pipeline.DeploySpec
-// path POST .../deploy-spec uses; one with none falls through to the
-// single-service deploy plus the older deployAdditionalServices walk
-// below, unchanged.
+// Multi-app webhook handler for POST /api/v1/webhooks/github/{name}. Unauthenticated by design: GitHub and GitLab cannot present a session,
+// so the per-app secret checked by verifyGitPushWebhookAuth stands in for auth. The URL still says github for already-configured webhooks.
+// Returns 404 when no git source is connected for name; 501 is reserved for control-plane-wide gaps.
 func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
-	// Every success/partial-failure response below is a plain status
-	// line that can embed webhook-payload fields a pusher or PR author
-	// controls (a branch name, a PR's base ref): an explicit text/plain
-	// content type stops any client from ever MIME-sniffing one of
-	// those bodies as HTML. writeError's own writeJSON call overrides
-	// this to application/json for the error paths below, which is
-	// correct: this only needs to cover the plain-text success paths.
+	// Explicit text/plain stops clients from sniffing success bodies, which embed pusher-controlled fields, as HTML.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 	name := r.PathValue("name")
 
-	// Checked before anything else in this handler, including the
-	// "not configured" 501 below: this is the one gate an abusive or
-	// misbehaving client hits before the DB lookup, secret resolution,
-	// and saveWebhookDelivery write this route otherwise runs on every
-	// request regardless of outcome, signature-verification failures
-	// included.
+	// Rate limit runs first, before the 501 and any DB or secret work, so abusive clients are cheap to reject.
 	if rt.webhookRateLimit != nil {
 		key := clientIP(r) + "|" + name
 		if allowed, retryAfter := rt.webhookRateLimit.allow(key); !allowed {
@@ -172,12 +116,8 @@ func (rt *Router) handleGitPushWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// processGitPushWebhookPayload runs the real push/pull-request handling
-// logic against an already signature-verified body and header, returning
-// the status/message handleGitPushWebhook writes to its caller. Extracted
-// so handleReplayWebhookDelivery (webhook_deliveries.go) can re-run the
-// identical processing path against a stored payload instead of forking
-// a second copy of it.
+// Runs push and pull-request handling on an already signature-verified body.
+// Shared with handleReplayWebhookDelivery so replays take the identical path.
 func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string, gs store.GitSource, body []byte, header http.Header) (status int, message string) {
 	if webhook.IsPullRequestEvent(header) {
 		prEv, err := webhook.ParsePullRequestEventForProvider(body, header)
@@ -255,40 +195,18 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 	return rt.deployFromGitSource(withStartRelease(ctx, release), name, gs, ev.After, ev.After, rt.nextOrder(ctx, name, ev.After, ev.Before, ev.HeadCommitAt))
 }
 
-// isGitHubReleaseEvent reports whether header names GitHub's own
-// "release" webhook event: the one event type this route accepts that
-// carries neither a push (PushEvent) nor a pull_request payload shape,
-// so it must be routed before webhook.ParsePushEventForProvider ever
-// sees the body. GitLab and Bitbucket have no equivalent event wired up
-// today, see gitSourceTriggerMatchesPush's own doc comment for how a
-// tag push covers spec.TriggerModeRelease for them instead.
+// Routes GitHub's release event before ParsePushEventForProvider, since its payload is neither a push nor a pull_request.
 func isGitHubReleaseEvent(header http.Header) bool {
 	return header.Get(webhook.HeaderGitHubEvent) == "release"
 }
 
-// isGitHubPingEvent reports whether header names GitHub's own "ping"
-// event, sent once right after a webhook is created (and on a manual
-// "Redeliver"/"Test" from the repo's Settings > Webhooks page) to let
-// the receiver confirm it's reachable. Its payload has neither a push
-// nor a release shape, so it must be routed before
-// webhook.ParsePushEventForProvider ever sees the body, or it is
-// rejected as a malformed push and every new git source's first
-// delivery shows a scary 400 in GitHub's own UI.
+// Routes GitHub's ping before ParsePushEventForProvider, or the first delivery of every new source shows a 400.
 func isGitHubPingEvent(header http.Header) bool {
 	return header.Get(webhook.HeaderGitHubEvent) == "ping"
 }
 
-// gitSourceTriggerMatchesPush decides whether a push event's ref should
-// trigger a deploy under gs's configured trigger mode
-// (spec.TriggerModePush/spec.TriggerModeRelease): push mode (the
-// default) matches only the configured branch, unchanged from before
-// trigger modes existed; release mode matches only a tag ref push
-// ("refs/tags/..."), regardless of branch, and ignores every branch
-// push including the configured one. A GitHub "release" event is
-// handled separately (processGitHubReleaseWebhookEvent), since it never
-// reaches this function at all (isGitHubReleaseEvent routes it away
-// first). Returns the ignored-response message to send when it does not
-// trigger.
+// Push mode matches only the configured branch. Release mode matches only tag pushes, on any branch.
+// GitHub release events are handled separately, before this function is reached.
 func gitSourceTriggerMatchesPush(gs store.GitSource, ref string) (bool, string) {
 	if effectiveGitSourceTriggerMode(gs.TriggerMode) == spec.TriggerModeRelease {
 		if strings.HasPrefix(ref, "refs/tags/") {
@@ -329,16 +247,8 @@ func parseGitHubReleaseEvent(body []byte) (githubReleaseEvent, error) {
 	return githubReleaseEvent{Action: payload.Action, TagName: payload.Release.TagName}, nil
 }
 
-// processGitHubReleaseWebhookEvent handles a GitHub "release" webhook
-// event: only meaningful when gs's trigger mode is spec.TriggerModeRelease,
-// and only "published" (not "created", "edited", "deleted", etc.)
-// actually deploys, matching a real release announcement rather than a
-// draft being saved. checkoutRef is the tag's own ref name, since a
-// release payload carries no commit SHA of its own (see
-// gitCheckoutWithToken's own doc comment for how that resolves without
-// an extra GitHub API call); commitLabel sanitizes the tag name for use
-// as a Docker image tag (deploy.Request.CommitSHA), since a git tag may
-// contain "/", which Docker's own tag grammar rejects.
+// Deploys only on a published release, not a draft or other action.
+// The tag name is sanitized for Docker image tags, since git tags may contain '/'.
 func (rt *Router) processGitHubReleaseWebhookEvent(ctx context.Context, name string, gs store.GitSource, body []byte) (status int, message string) {
 	if effectiveGitSourceTriggerMode(gs.TriggerMode) != spec.TriggerModeRelease {
 		return http.StatusOK, "ignored: a github release event only deploys when this git source's trigger_mode is \"release\"\n"
@@ -375,22 +285,12 @@ func dockerSafeTag(tagName string) string {
 	return strings.ReplaceAll(tagName, "/", "-")
 }
 
-// deployFromGitSource fetches gs's repo at checkoutRef (a literal
-// commit hash for an ordinary push, or a "refs/..." ref name for a
-// GitHub release event) and deploys, tagging the built image with
-// commitLabel. Shared by the push and release event paths so both go
-// through the identical services:/AdditionalServices/single-service
-// routing decision handleGitPushWebhook's own doc comment already
-// establishes.
+// Shared by push and release paths so both use the identical services and AdditionalServices routing.
 func (rt *Router) deployFromGitSource(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder) (status int, message string) {
 	return rt.deployFromGitSourceAs(ctx, name, gs, checkoutRef, commitLabel, order, store.DeployAttemptSourceWebhook)
 }
 
-// deployFromGitSourceAs is deployFromGitSource with an explicit deploy
-// attempt source: store.DeployAttemptSourceWebhook for every push/release
-// caller, store.DeployAttemptSourceSchedule for TriggerScheduledDeploy,
-// so store.DeploymentTrigger and ListDeployments' own trigger filter can
-// tell a scheduled redeploy apart from a git push.
+// Sets the deploy attempt source, so scheduled redeploys are distinguishable from git pushes in deploy history.
 func (rt *Router) deployFromGitSourceAs(ctx context.Context, name string, gs store.GitSource, checkoutRef, commitLabel string, order *store.DeployOrder, source string) (status int, message string) {
 	dep := rt.beginForgeDeployment(ctx, name, gs, checkoutRef, forgeEnvProduction, forgeEnvProduction, "")
 	status, message = rt.deployFromGitSourceInner(ctx, name, gs, checkoutRef, commitLabel, order, source)
@@ -423,11 +323,8 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 		if _, adopted := adoptedAttemptID(ctx); errors.Is(err, errGitCommitNotFound) && !adopted {
 			return http.StatusUnprocessableEntity, "commit not found"
 		}
-		// A fetch that fails before any build starts still gets a failed
-		// attempt row, so the Deploys page, the CLI and the deploy
-		// notifier show the real cause instead of an empty history. The
-		// response body stays generic: the detail is only on the
-		// authenticated attempt row.
+		// Record a failed attempt even when the fetch fails, so the Deploys page shows the real cause.
+		// The response stays generic.
 		_, _, finishFetchAttempt, _ := rt.beginBuildDeployAttempt(ctx, deploy.Request{
 			ServiceName: name,
 			CommitSHA:   commitLabel,
@@ -445,12 +342,7 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	}
 	defer cleanup()
 
-	// A persisted services: map (store.GitSource.Services's own doc
-	// comment) routes this push through the same deploy.Pipeline.DeploySpec
-	// fan-out POST .../deploy-spec already uses, instead of the
-	// single-service Deploy plus AdditionalServices walk below: the two
-	// are mutually exclusive by construction (validateGitSourceServices),
-	// so this is the one place that decision is actually made.
+	// Services fan out via DeploySpec. validateGitSourceServices makes them mutually exclusive with AdditionalServices, so this is the one decision point.
 	if len(gs.Services) > 0 {
 		appName := existing.AppID
 		if appName == "" {
@@ -512,15 +404,8 @@ func (rt *Router) deployFromGitSourceInner(ctx context.Context, name string, gs 
 	return status, fmt.Sprintf("deploy triggered: %s (%d additional service(s) failed)\n", tag, additionalFailed)
 }
 
-// detectWebhookProviderAndEvent identifies which provider sent a webhook
-// request and what kind of event it was, from headers alone: debug
-// metadata for the delivery record, nothing here changes how the request
-// is processed. GitHub Enterprise Server sends the identical
-// X-GitHub-Event header github.com does, so both are reported as
-// "github"; there is no header that distinguishes them.
-// headerFields carries the raw values of the event-discriminator headers
-// (never a signature or token header), what processGitPushWebhookPayload
-// needs to take the identical branch on replay.
+// Identifies provider and event from headers, for delivery records only.
+// GHE sends the same headers as github.com, so both report as github.
 func detectWebhookProviderAndEvent(header http.Header) (provider, eventType string, headerFields map[string]string) {
 	headerFields = map[string]string{
 		webhook.HeaderGitHubEvent:       header.Get(webhook.HeaderGitHubEvent),
@@ -532,10 +417,7 @@ func detectWebhookProviderAndEvent(header http.Header) (provider, eventType stri
 	case headerFields[webhook.HeaderGitLabEvent] != "":
 		return "gitlab", headerFields[webhook.HeaderGitLabEvent], headerFields
 	case headerFields[webhook.HeaderGiteaEventType] != "":
-		// Checked before X-GitHub-Event: Gitea also sends
-		// X-Hub-Signature-256 for GitHub compatibility (verifyGitPushWebhookAuth's
-		// own doc comment), but never X-GitHub-Event, so this branch never
-		// shadows a real GitHub delivery.
+		// Checked before X-GitHub-Event: Gitea also sends X-Hub-Signature-256 but never X-GitHub-Event, so this cannot shadow a GitHub delivery.
 		return "gitea", headerFields[webhook.HeaderGiteaEventType], headerFields
 	case headerFields[webhook.HeaderGitHubEvent] != "":
 		return "github", headerFields[webhook.HeaderGitHubEvent], headerFields
@@ -546,11 +428,7 @@ func detectWebhookProviderAndEvent(header http.Header) (provider, eventType stri
 	}
 }
 
-// saveWebhookDelivery persists one inbound webhook delivery record,
-// logging and swallowing any store error: a history-tracking failure
-// must never block or fail the webhook response itself, the same
-// "optional signal" reasoning beginBuildDeployAttempt's own doc comment
-// establishes for deploy_attempts.
+// Logs and swallows store errors: history tracking must never fail the webhook response.
 func (rt *Router) saveWebhookDelivery(ctx context.Context, name, provider, eventType string, headerFields map[string]string, signatureValid, matched bool, statusCode int, payload []byte, errMsg, note string) {
 	rt.saveWebhookDeliveryIDs(ctx, name, provider, eventType, headerFields, signatureValid, matched, statusCode, payload, errMsg, note, "", "")
 }
@@ -617,11 +495,8 @@ func webhookDeliveryNote(message string) string {
 	return note
 }
 
-// resolveGitSourceDeployToken returns name's connected git source's
-// deploy token, or "" if none was ever set (the ordinary public-repo
-// case): shared by handleGitPushWebhook's own push path and
-// deployPreviewEnvironment (preview_environments.go), so both resolve a
-// private-repo credential exactly the same way.
+// Returns the connected source's deploy token, or empty for public repos.
+// Shared with preview deploys, so private-repo credentials resolve identically.
 func (rt *Router) resolveGitSourceDeployToken(ctx context.Context, name string) (string, error) {
 	secretsKey := store.GitSourceSecretsKey(name)
 	hasToken, err := rt.gitSourceSecrets.Exists(ctx, secretsKey, gitSourceTokenKey)
@@ -635,11 +510,7 @@ func (rt *Router) resolveGitSourceDeployToken(ctx context.Context, name string) 
 		}
 		return token, nil
 	}
-	// No per-app deploy token: fall back to the connected GitHub App's
-	// installation token (the same resolution a one-off build uses), so a
-	// private repo connected through the app pushes, schedules and previews
-	// without a separately stored PAT. Empty when no app is connected or
-	// the repo is not on the app's instance, the old anonymous clone.
+	// No deploy token: fall back to the connected GitHub App's installation token, so private repos work without a stored PAT.
 	gs, err := rt.gitSources.GetGitSource(ctx, name)
 	if err != nil || gs == nil {
 		return "", nil
@@ -647,12 +518,7 @@ func (rt *Router) resolveGitSourceDeployToken(ctx context.Context, name string) 
 	return rt.tokenForRepo(ctx, name, gs.RepoURL, true), nil
 }
 
-// deployAdditionalServices rebuilds and redeploys each sibling service in
-// additional from the same checkout and commit already fetched for the
-// pushed app, returning how many failed. One sibling's build failure
-// (e.g. it has since been deleted, or its Dockerfile path is stale) does
-// not block any other sibling, matching DeploySpec's own "one broken
-// resource must not block the others" principle (internal/deploy/multi.go).
+// Redeploys each sibling from the same checkout. One sibling's failure does not block the others; returns the failure count.
 func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[string]store.GitSourceBuild, sourceDir, commitSHA string) int {
 	failed := 0
 	for svcName, buildCfg := range additional {
@@ -685,18 +551,8 @@ func (rt *Router) deployAdditionalServices(ctx context.Context, additional map[s
 	return failed
 }
 
-// deployServicesSpecFanout routes a webhook-triggered push through
-// deploy.Pipeline.DeploySpec, the same fan-out handleDeploySpec
-// (apps_multi.go) already uses for a manual/API-triggered multi-service
-// deploy, so gs.Services and a hand-submitted deploy-spec request never
-// diverge again (docs/roadmap.md's own previously-named gap). appName is
-// resolved by the caller (existing.AppID, falling back to the git
-// source's own service name), matching DeploySpec's own ensureApp
-// default so a push against an already-fanned-out app reuses the same
-// store.App and the same "<appName>-<key>" service names, rather than
-// minting a second, parallel app group. Returns how many service keys
-// failed, the same shape deployAdditionalServices returns, so the caller
-// can pick 200 vs 207 the identical way.
+// Routes a webhook push through the same DeploySpec fan-out as the manual deploy-spec API.
+// appName matches DeploySpec's default so a push reuses the existing app group. Returns the failed key count.
 func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, gs store.GitSource, sourceDir, commitSHA string) int {
 	progress := func(serviceKey string, ev build.ProgressEvent) {
 		rt.logger.Info("api: git push webhook: services fan-out build progress", slog.String("app_name", appName), slog.String("service_key", serviceKey), slog.String("step", ev.Step), slog.Bool("completed", ev.Completed), slog.String("error", ev.Error))
@@ -726,21 +582,8 @@ func (rt *Router) deployServicesSpecFanout(ctx context.Context, appName string, 
 	return failed
 }
 
-// verifyGitPushWebhookAuth checks an incoming push webhook request
-// against secret, whichever of GitHub's, GitLab's, or Bitbucket's own
-// scheme the request's headers indicate. GitHub signs the body
-// (X-Hub-Signature-256, an HMAC-SHA256 hex digest,
-// webhook.VerifySignature); GitLab instead sends the configured secret
-// back verbatim (X-Gitlab-Token, checked with a constant-time comparison
-// since it's a direct secret comparison, not a signature); Bitbucket
-// signs the body the same HMAC-SHA256 way GitHub does, over the
-// identical "sha256=<hex>" wire format, just under a header name with
-// no "-256" suffix (X-Hub-Signature), so webhook.VerifySignature's own
-// parsing is reused unchanged for it. Gitea sends its own bare-hex
-// X-Gitea-Signature, but also sends X-Hub-Signature-256 in GitHub's
-// exact format for compatibility, so it falls into the GitHub branch
-// with no dedicated case needed. No known-header case present, or a
-// mismatch, fails closed.
+// Checks a push webhook against secret using the scheme the headers indicate: GitHub and Bitbucket sign the body (HMAC),
+// GitLab sends the secret verbatim (compared in constant time). Gitea uses the GitHub branch. Missing or mismatched headers fail closed.
 func verifyGitPushWebhookAuth(secret string, body []byte, header http.Header) bool {
 	if token := header.Get(webhook.HeaderGitLabToken); token != "" {
 		return secret != "" && subtle.ConstantTimeCompare([]byte(token), []byte(secret)) == 1

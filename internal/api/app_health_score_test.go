@@ -24,12 +24,7 @@ func TestHandleGetAppHealthScore_AppNotFound(t *testing.T) {
 	}
 }
 
-// TestHandleGetAppHealthScore_MixedCategories seeds one app with a
-// genuinely passing deploy/observability signal and a genuinely failing
-// security signal (a required secret declared but never set), then
-// asserts both compute correctly and the overall status is the worst
-// of the two, the same "one failure outranks everything" rule
-// overallHealthStatus applies.
+// TestHandleGetAppHealthScore_MixedCategories checks that one failing category makes the overall status the worst one.
 func TestHandleGetAppHealthScore_MixedCategories(t *testing.T) {
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)
@@ -107,10 +102,7 @@ func TestHandleGetAppHealthScore_MixedCategories(t *testing.T) {
 	}
 }
 
-// TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory asserts
-// a firing crashloop rule outranks an otherwise-clean deploy history,
-// reading alerting.Rule.Firing (persisted state, not the live in-memory
-// RestartTracker).
+// TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory checks a firing crashloop rule outranks a clean deploy history.
 func TestHandleGetAppHealthScore_CrashloopFiringFailsDeployCategory(t *testing.T) {
 	db := openTestDB(t)
 	adb := newTestAlertingDB(t)

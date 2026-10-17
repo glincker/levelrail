@@ -12,11 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// newTestRouterWithLookupHost builds a Router with lookupHost overridden
-// directly on the unexported field and publicHost pinned to a fixed
-// value, the same "no public Option, nothing outside this package needs
-// to fake DNS I/O" pattern newTestRouterWithListBranches already
-// establishes for listBranches.
+// Builds a Router with lookupHost and publicHost overridden, so no DNS I/O happens and no public Option is needed.
 func newTestRouterWithLookupHost(t *testing.T, publicHost string, fn lookupHostFunc) (*Router, *store.DB) {
 	t.Helper()
 	rt, db := newTestRouter(t)
@@ -126,12 +122,7 @@ func TestHandleCheckDomain_ResolvesElsewhere(t *testing.T) {
 	}
 }
 
-// TestHandleCheckDomain_CachesLookupsWithinTTL proves the rate-limiting
-// restraint domainCheckCache exists for: a second request for the same
-// domain shortly after the first must not perform a second real DNS
-// lookup, so a frontend polling this endpoint (web/src/queries/
-// domainCheck.ts) can't turn one open tab into a steady stream of
-// outbound DNS queries.
+// A second request for the same domain within the TTL must not trigger another DNS lookup, so polling cannot flood outbound queries.
 func TestHandleCheckDomain_CachesLookupsWithinTTL(t *testing.T) {
 	calls := 0
 	rt, db := newTestRouterWithLookupHost(t, "203.0.113.10", func(_ context.Context, _ string) ([]string, error) {
@@ -148,23 +139,13 @@ func TestHandleCheckDomain_CachesLookupsWithinTTL(t *testing.T) {
 			t.Fatalf("request %d: status = %d, want %d", i, rec.Code, http.StatusOK)
 		}
 	}
-	// One lookup for the domain itself; expectedIPs never calls lookupHost
-	// at all here since "203.0.113.10" is already an IP literal (see
-	// expectedIPs' own doc comment), so exactly 1 call total across all 3
-	// requests proves the cache, not a fluke of expectedIPs skipping it.
+	// Exactly one lookup across all 3 requests proves the cache; expectedIPs skips lookupHost for an IP literal.
 	if calls != 1 {
 		t.Errorf("lookupHost called %d times across 3 requests within the cache TTL, want 1", calls)
 	}
 }
 
-// TestHandleCheckDomain_CachesExpectedHostLookupWithinTTL is a
-// regression test: TestHandleCheckDomain_CachesLookupsWithinTTL only
-// ever exercises an IP-literal APP_PUBLIC_HOST, which expectedIPs
-// never calls lookupHost for at all (see that function's own doc
-// comment), so it never actually proved the expected-host lookup gets
-// cached. When APP_PUBLIC_HOST is a hostname instead (a load balancer
-// DNS name, plausible in a fronted deployment), that second lookup
-// used to run uncached on every single request.
+// Regression: the expected-host lookup must be cached too when APP_PUBLIC_HOST is a hostname, not an IP literal.
 func TestHandleCheckDomain_CachesExpectedHostLookupWithinTTL(t *testing.T) {
 	domainCalls, expectedCalls := 0, 0
 	rt, db := newTestRouterWithLookupHost(t, "lb.example.net", func(_ context.Context, host string) ([]string, error) {

@@ -98,10 +98,7 @@ type RequestCounts struct {
 	Bad   float64
 }
 
-// CountRequests sums an app's request counters over [from, to]. Counters are
-// per-tick deltas, so negative or non-finite values (a counter reset artefact)
-// count as zero and Bad never exceeds Total. A window with partial data is
-// counted over what exists.
+// CountRequests sums an app's request counters over [from, to], treating reset artefacts (negative or non-finite) as zero.
 func CountRequests(ctx context.Context, src MetricsSource, app string, from, to time.Time, cfg SLOConfig) (RequestCounts, error) {
 	resource := "service:" + app
 	sum := func(metric string) (float64, error) {

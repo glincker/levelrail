@@ -15,29 +15,16 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// domainCheckLookupTimeout bounds a single DNS resolution this handler
-// performs, so a slow or blackholed resolver can never turn GET
-// .../domains/{domain}/check into a request DomainEditor's "Check now"
-// button waits on forever.
+// Bounds each lookup so a blackholed resolver cannot hang the Check now button.
 const domainCheckLookupTimeout = 4 * time.Second
 
-// domainCheckCacheTTL is how long a domain's resolved-hosts result is
-// reused before a fresh DNS query runs again. Short enough that "Check
-// now" still feels live, long enough that DomainEditor's own bounded
-// auto-poll (web/src/queries/domainCheck.ts) can't turn one open tab
-// into a steady stream of outbound DNS queries against the same domain.
+// Short enough that Check now feels live, long enough that auto-polling does not flood DNS.
 const domainCheckCacheTTL = 5 * time.Second
 
-// lookupHostFunc resolves host to its A/AAAA addresses. Matches
-// net.Resolver.LookupHost's own signature so the real implementation is
-// a one-line wrapper; overridable per-Router the same way fetchFunc and
-// listBranchesFunc already are, so tests never perform a real DNS query.
+// Matches net.Resolver.LookupHost so the real implementation is a one-line wrapper.
 type lookupHostFunc func(ctx context.Context, host string) ([]string, error)
 
-// publicResolvers are asked when the system resolver finds nothing, because a
-// recursive resolver caches "does not exist" for the zone's whole negative TTL
-// (often 30 minutes) after a record is added, so the local answer lags the DNS
-// provider the operator just edited.
+// Used when the system resolver finds nothing, since its cached negative answer can lag a just-added record.
 var publicResolvers = []string{"1.1.1.1:53", "8.8.8.8:53"}
 
 func lookupVia(ctx context.Context, server, host string) ([]string, error) {
@@ -70,11 +57,7 @@ type domainCheckResult struct {
 	at            time.Time
 }
 
-// domainCheckCache rate-limits actual DNS lookups per domain, the same
-// in-memory-map-plus-mutex shape loginLimiter (ratelimit.go) already
-// uses for a different per-key throttling problem. A control plane
-// restart clearing it is an accepted tradeoff, not a regression worth a
-// persistent store for: the next request simply does one fresh lookup.
+// A restart clearing it is accepted: the next request just does one fresh lookup.
 type domainCheckCache struct {
 	mu      sync.Mutex
 	results map[string]domainCheckResult
@@ -112,11 +95,7 @@ const (
 	domainCheckStatusPropagating = "propagating"
 )
 
-// domainCheckResponse is GET
-// /api/v1/apps/{name}/domains/{domain}/check's wire shape: what
-// DomainEditor needs to tell an operator the exact DNS record to add and
-// whether it has actually taken effect, without either side needing to
-// know DNS terminology beyond "A record."
+// Lets DomainEditor show the exact DNS record to add and whether it has taken effect.
 type domainCheckResponse struct {
 	Domain string `json:"domain"`
 	// CheckedAt is when this answer was produced (RFC 3339), so a click on
@@ -125,16 +104,9 @@ type domainCheckResponse struct {
 	// Resolvers lists what this server and public resolvers answered, set
 	// when the domain is not yet connected.
 	Resolvers []resolverResult `json:"resolvers,omitempty"`
-	// ExpectedHost is the IP or hostname an A/CNAME record for Domain
-	// should point at to reach this control plane's embedded ingress:
-	// rt.publicHost (APP_PUBLIC_HOST) when configured, else a best-effort
-	// guess from the request's own Host header (see advertisedHost).
-	// Empty only when neither is available.
+	// The public host from config, or a best-effort guess from the Host header; empty if neither is set.
 	ExpectedHost string `json:"expected_host,omitempty"`
-	// HostInferred is true when ExpectedHost came from the request's Host
-	// header rather than APP_PUBLIC_HOST, so the frontend can say "best
-	// guess, configure APP_PUBLIC_HOST for accuracy" instead of stating it
-	// as fact.
+	// Set when ExpectedHost came from the Host header, so the UI can label it as a guess.
 	HostInferred  bool     `json:"host_inferred,omitempty"`
 	Resolved      bool     `json:"resolved"`
 	ResolvedHosts []string `json:"resolved_hosts,omitempty"`
@@ -159,15 +131,7 @@ type domainCheckResponse struct {
 	ProxyCertificate *servedCertificateResource `json:"proxy_certificate,omitempty"`
 }
 
-// advertisedHost picks the host DomainEditor should tell an operator to
-// point their DNS record at: configured (APP_PUBLIC_HOST, via
-// WithPublicHost) if set, since this control plane cannot reliably
-// discover its own public-facing address on its own (NAT, a container
-// port mapping, a cloud load balancer all break self-discovery); else a
-// best-effort guess stripped from the request's own Host header, since
-// an operator reaching the dashboard at some address is very likely
-// reaching it on the same host their apps' ingress serves from too, in
-// this project's single-binary architecture.
+// Configured APP_PUBLIC_HOST wins: self-discovery breaks behind NAT, port mappings and load balancers.
 func advertisedHost(r *http.Request, configured string) (host string, inferred bool) {
 	if configured != "" {
 		return configured, false
@@ -178,12 +142,7 @@ func advertisedHost(r *http.Request, configured string) (host string, inferred b
 	return r.Host, true
 }
 
-// expectedIPs resolves host into the IP set a domain's own resolved
-// addresses need to overlap with to count as "connected": host itself,
-// if it's already an IP literal (the expected case for an A record
-// target), or host's own resolved addresses otherwise, so an operator
-// can point APP_PUBLIC_HOST at a stable hostname instead of a raw IP and
-// the check still works.
+// Resolves a hostname target too, so APP_PUBLIC_HOST can be a stable name instead of a raw IP.
 func expectedIPs(ctx context.Context, lookup lookupHostFunc, host string) []string {
 	if ip := net.ParseIP(host); ip != nil {
 		return []string{host}
@@ -223,14 +182,8 @@ func hostsOverlap(a, b []string) bool {
 	return false
 }
 
-// runDomainCheck resolves domain and compares it against expectedHost,
-// the shared logic behind both handleCheckDomain (per-app) and
-// handleCheckIngressDomain (the platform's own primary domain, in
-// ingress_settings.go): same cache, same lookupHost, same status rules,
-// so the two endpoints can never quietly drift apart on what "connected"
-// means.
-// detectedPublicIPs probes this host's own public addresses, cached so a
-// polling dashboard does not hammer the probe services.
+// runDomainCheck resolves domain against expectedHost; shared by per-app and platform checks so their rules match.
+// detectedPublicIPs results are cached so a polling dashboard does not hammer the probe services.
 func (rt *Router) detectedPublicIPs(ctx context.Context) []string {
 	if ips := rt.serverAddressOverrideIPs(ctx); len(ips) > 0 {
 		return ips
@@ -362,13 +315,7 @@ func (rt *Router) runDomainCheckOpts(ctx context.Context, domain, expectedHost s
 	return resp
 }
 
-// handleCheckDomain handles GET
-// /api/v1/apps/{name}/domains/{domain}/check: a real DNS lookup
-// (net.LookupHost, no external dependency) for domain, reporting whether
-// it currently resolves to this control plane's own advertised address.
-// AbilityRead, the same passive-visibility tier as GET
-// /api/v1/apps/{name}/git-source: this reads live DNS state, it performs
-// no write.
+// AbilityRead: reads live DNS state and performs no write.
 func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	domain := strings.ToLower(strings.TrimSpace(r.PathValue("domain")))
@@ -393,14 +340,7 @@ func (rt *Router) handleCheckDomain(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-// CheckDomainStatus exposes runDomainCheck to internal/alerting's
-// kind=domain_health evaluator (see alerting.DomainCheckSource), the same
-// DNS check handleCheckDomain itself runs. Uses rt.publicHost only: unlike
-// an HTTP handler, an engine tick has no request Host header to fall back
-// on for advertisedHost's own best-effort guess, so a domain_health rule
-// needs APP_PUBLIC_HOST configured to evaluate meaningfully; without it
-// every domain simply reports domainCheckStatusUnconfigured, which
-// EvaluateDomainHealth treats as inconclusive, not unhealthy.
+// CheckDomainStatus exposes runDomainCheck to alerting's domain_health rule, using only APP_PUBLIC_HOST since engine ticks have no Host header.
 func (rt *Router) CheckDomainStatus(ctx context.Context, domain string) (string, error) {
 	return rt.runDomainCheck(ctx, domain, rt.publicHost, false).Status, nil
 }

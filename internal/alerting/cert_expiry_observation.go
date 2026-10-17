@@ -6,11 +6,7 @@ import (
 	"time"
 )
 
-// CertExpiryObservation is what EvaluateCertExpiry persists per
-// (rule, domain) after every tick, so the next tick can tell "still
-// stuck in the same unrenewed episode" apart from "just entered a fresh
-// expiry warning because a real renewal landed." See EvaluateCertExpiry's
-// own doc comment for how EpisodeNotAfter/EpisodeStartedAt are used.
+// CertExpiryObservation is persisted per rule and domain so the next tick can tell an unchanged episode from a new one.
 type CertExpiryObservation struct {
 	RuleID           string
 	Domain           string

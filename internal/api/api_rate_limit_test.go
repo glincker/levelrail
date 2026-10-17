@@ -105,10 +105,7 @@ func TestAPIRateLimiter_RefillsOverTime(t *testing.T) {
 		t.Fatal("allow() = true immediately after exhausting the burst, want false")
 	}
 
-	// Simulate 2 seconds passing without a real sleep, by back-dating the
-	// bucket's own lastRefill: same-package white-box access, the shape
-	// ratelimit_test.go's own loginLimiter tests already use on that
-	// type's exported allow()/recordFailure() instead.
+	// Back-date the bucket's lastRefill instead of sleeping.
 	l.mu.Lock()
 	l.buckets[key].lastRefill = l.buckets[key].lastRefill.Add(-2 * time.Second)
 	l.mu.Unlock()
@@ -177,14 +174,7 @@ func TestAPIRateLimit_ReadAndWriteBudgetsAreIndependent(t *testing.T) {
 	}
 }
 
-// newTestRouterWithAPIRateLimit is newTestRouter plus WithAPIRateLimit,
-// the same "opt into one extra option" shape every other
-// newTestRouterWith* helper in this package already uses. Every other
-// test in this package uses plain newTestRouter, which never applies
-// this option, so the rate limiter stays off (rt.apiRateLimit stays
-// nil) for the rest of the suite: see
-// TestRequireAbility_RateLimit_DisabledByDefault below for an explicit
-// regression guard on that.
+// newTestRouterWithAPIRateLimit is newTestRouter plus WithAPIRateLimit; other tests keep the limiter off.
 func newTestRouterWithAPIRateLimit(t *testing.T, readPerMinute, writePerMinute int) (*Router, *store.DB) {
 	t.Helper()
 	db := openTestDB(t)

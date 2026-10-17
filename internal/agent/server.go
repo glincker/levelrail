@@ -227,10 +227,7 @@ func tokenPurpose(t *store.NodeJoinToken) string {
 	return t.Purpose
 }
 
-// Session implements agentpb.AgentServiceServer: accepts an
-// mTLS-authenticated agent's persistent stream once its certificate is
-// confirmed to be one this node may use, and wires a GRPCTransport into
-// Registry until the stream ends.
+// Session implements agentpb.AgentServiceServer for an mTLS-authenticated agent stream.
 func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	ctx := stream.Context()
 	node, peerCert, err := s.authenticatePeer(ctx)
@@ -361,12 +358,7 @@ func (s *Server) trackSession(nodeID string, m *mux) *liveSession {
 	return live
 }
 
-// NotifyShutdown sends a GoAway frame to every connected agent, telling
-// each to close its own end of the Session stream now rather than wait
-// to be cut off by the control plane's own bounded GracefulStop timeout
-// (cmd/levelrail's stopAgentGRPCServer). Best-effort: a send failure here
-// just means that agent falls back to the timeout, same as before this
-// existed.
+// NotifyShutdown sends GoAway to every agent, best-effort; agents that miss it fall back to the GracefulStop timeout.
 func (s *Server) NotifyShutdown() {
 	s.sessionsMu.Lock()
 	muxes := make([]*mux, 0, len(s.sessions))

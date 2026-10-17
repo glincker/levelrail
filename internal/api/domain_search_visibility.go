@@ -39,10 +39,7 @@ func (rt *Router) handleGetDomainSearchVisibility(w http.ResponseWriter, r *http
 	writeJSON(w, http.StatusOK, domainSearchVisibilityResource{Domain: domain, Hidden: hidden})
 }
 
-// handleSetDomainSearchVisibility handles PUT
-// /api/v1/apps/{name}/domains/{domain}/search-visibility with {"hidden": bool}.
-// Takes effect on the next ingress reconcile pass. AbilityDeploy, like the
-// other per-domain routing settings.
+// Takes effect on the next ingress reconcile pass.
 func (rt *Router) handleSetDomainSearchVisibility(w http.ResponseWriter, r *http.Request) {
 	domain, ok := rt.requireOwnedDomain(w, r)
 	if !ok {

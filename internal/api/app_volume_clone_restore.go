@@ -22,11 +22,7 @@ type VolumeCloneRestoreHistoryStore interface {
 	ListVolumeCloneRestores(ctx context.Context, serviceName, volumeName string) ([]store.VolumeCloneRestore, error)
 }
 
-// VolumeCloneRestoreRunner is the surface the volume clone-restore trigger
-// handler needs from internal/backup.VolumeCloneRestoreRunner, the app
-// service volume counterpart of CloneRestoreRunner. *backup.
-// VolumeCloneRestoreRunner satisfies this structurally, the same boundary
-// CloneRestoreRunner's own doc comment describes.
+// VolumeCloneRestoreRunner is the surface the volume clone-restore handler needs, satisfied by *backup.VolumeCloneRestoreRunner.
 type VolumeCloneRestoreRunner interface {
 	RunVolumeCloneRestore(ctx context.Context, historyID, sourceServiceName, sourceVolumeName, newVolumeName, backupHistoryID string) error
 }
@@ -67,23 +63,8 @@ type volumeCloneRestoreRequest struct {
 	NewVolumeName string `json:"new_volume_name,omitempty"`
 }
 
-// handleVolumeCloneRestore handles
-// POST /api/v1/apps/{name}/volumes/{volume}/restore-as-new: creates a
-// brand-new, standalone Docker volume and restores a previously succeeded
-// backup of {name}'s {volume} into it, never touching that volume's own
-// live contents. The app service volume counterpart of handleCloneRestore
-// (database_clone_restore.go), with one real difference: an app service
-// volume has no "create a new resource" path the way a database does
-// (store.ServiceVolume only exists as an entry in a service's own app.yaml
-// declared volumes, see ServiceVolumeDockerName's own doc comment), so the
-// new volume this creates is a bare Docker volume, not attached to any
-// service or app.yaml, and not visible anywhere else in this API except
-// through this route's own history.
-//
-// AbilityWriteSensitive, not AbilityRoot, the identical reasoning
-// handleCloneRestore's own doc comment gives: this never overwrites
-// anything, it only creates a new volume and consumes a previously stored
-// backup-target credential to populate it.
+// handleVolumeCloneRestore creates a new standalone Docker volume from a succeeded backup and never touches the live volume.
+// It needs AbilityWriteSensitive, not AbilityRoot, because it never overwrites anything.
 func (rt *Router) handleVolumeCloneRestore(w http.ResponseWriter, r *http.Request) {
 	if rt.volumeCloneRestoreRunner == nil {
 		writeError(w, http.StatusNotImplemented, "restores are not configured on this control plane (no master key set)")
@@ -159,10 +140,6 @@ func (rt *Router) handleVolumeCloneRestore(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// handleListVolumeCloneRestores handles
-// GET /api/v1/apps/{name}/volumes/{volume}/clone-restores: past "restore
-// as new volume" attempts sourced from {name}'s {volume}, newest first,
-// the app service volume counterpart of handleListCloneRestores.
 func (rt *Router) handleListVolumeCloneRestores(w http.ResponseWriter, r *http.Request) {
 	serviceName := r.PathValue("name")
 	volumeName := r.PathValue("volume")
@@ -184,11 +161,7 @@ func (rt *Router) handleListVolumeCloneRestores(w http.ResponseWriter, r *http.R
 	writeJSON(w, http.StatusOK, out)
 }
 
-// defaultVolumeCloneName mints a new, standalone Docker volume name when
-// an operator doesn't supply one: "clone-" plus the source service and
-// volume so the new volume's own lineage is legible from `docker volume
-// ls` alone, plus a random suffix so two clone-restores of the same
-// source never collide.
+// Embeds the source service and volume so the lineage shows in docker volume ls, plus a random suffix to avoid collisions.
 func defaultVolumeCloneName(serviceName, volumeName string) (string, error) {
 	suffix, err := randomHexSuffix()
 	if err != nil {
@@ -205,10 +178,7 @@ func randomHexSuffix() (string, error) {
 	return hex.EncodeToString(buf), nil
 }
 
-// randomVolumeCloneRestoreID mirrors randomCloneRestoreID's exact shape,
-// with its own "vcr_" prefix so a volume clone-restore ID is never
-// visually confusable with a database clone-restore ID ("clr_") or a
-// restore-history ID ("rsh_") in a log line or error message.
+// The vcr_ prefix keeps these IDs distinct from database clone-restore and restore-history IDs in logs.
 func randomVolumeCloneRestoreID() (string, error) {
 	buf := make([]byte, 9)
 	if _, err := rand.Read(buf); err != nil {

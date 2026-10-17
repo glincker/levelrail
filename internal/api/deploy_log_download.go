@@ -11,13 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// handleDownloadDeployLog handles
-// GET /api/v1/apps/{name}/deploys/{deployId}/logs/download: one deploy
-// attempt's full log as a plain-text attachment, the download
-// counterpart to handleDeployLogStream's SSE view. Live if the attempt
-// hasn't finished yet (whatever rt.deployRecorder has buffered so far),
-// persisted otherwise, mirroring handleDeployLogStream's own
-// live-vs-finished split.
+// handleDownloadDeployLog serves live lines while the attempt runs, then the persisted log.
 func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	deployID := r.PathValue("deployId")
@@ -85,11 +79,7 @@ func (rt *Router) handleDownloadDeployLog(w http.ResponseWriter, r *http.Request
 	_, _ = w.Write([]byte(body.String()))
 }
 
-// deployLogDownloadFilename mirrors logDownloadFilename's own
-// sanitizing rule (a slash or space in name can't turn into an
-// unexpected path segment or a visually broken Content-Disposition
-// value), keyed by deployID instead of a time-range bound since a
-// single deploy attempt's log has no "to" to name it by.
+// deployLogDownloadFilename sanitizes like logDownloadFilename, keyed by deployID since there is no time range to name it by.
 func deployLogDownloadFilename(name, deployID string) string {
 	safeName := strings.NewReplacer("/", "-", " ", "-").Replace(name)
 	return fmt.Sprintf("%s-deploy-%s-%s.txt", safeName, deployID, time.Now().UTC().Format("20060102T150405Z"))

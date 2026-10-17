@@ -13,11 +13,7 @@ import (
 // read from a rule's stored, all-nodes-aggregated LastValue.
 type NodeAlertState string
 
-// The three states CheckNodeAlertStatus can report per kind.
-// NodeAlertUnknown is distinct from NodeAlertOK on purpose: a node with no
-// recent sample must never be reported as healthy, the same "don't
-// silently confirm what you can't actually see" stance every evaluator in
-// this package already takes on a per-node basis.
+// NodeAlertUnknown is kept distinct from OK so a node with no recent sample is never reported healthy.
 const (
 	NodeAlertOK      NodeAlertState = "ok"
 	NodeAlertFiring  NodeAlertState = "firing"
@@ -37,15 +33,7 @@ type NodeAlertStatus struct {
 // from one logged during Engine's own scheduled tick.
 const liveNodeAlertCheckLabel = "on-demand-node-check"
 
-// CheckNodeAlertStatus live-evaluates patch_status, node_disk_space, and
-// node_resource_usage for node, right now, rather than waiting for
-// Engine's next tick or reading a rule's stored aggregate LastValue
-// (which only ever holds the worst value seen across every node, not
-// which node it came from). It calls each evaluator's own per-node check
-// helper directly so this can never drift from what a real rule would
-// decide. A threshold of 0 falls back to that kind's own default, the
-// same convention EvaluatePatchStatus/EvaluateNodeDiskSpace/
-// EvaluateNodeResourceUsage already use.
+// CheckNodeAlertStatus calls each evaluator's per-node check directly, so it cannot drift from what a real rule decides.
 func CheckNodeAlertStatus(ctx context.Context, node store.Node, services NodeServiceSource, metrics MetricsSource,
 	patchThreshold, diskThresholdPercent, cpuThresholdPercent, memoryThresholdBytes float64, now time.Time, logger *slog.Logger) NodeAlertStatus {
 	if logger == nil {

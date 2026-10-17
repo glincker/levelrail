@@ -81,11 +81,7 @@ func TestHandleDeployStepStream_FinishedAttempt_Synthesizes(t *testing.T) {
 		t.Fatalf("finish attempt: %v", err)
 	}
 
-	// serveFinishedDeploySteps holds the connection open after its burst,
-	// mirroring serveFinishedDeployLog (see
-	// TestHandleDeployLogStream_FinishedAttempt_ReplaysPersistedLog's own
-	// doc comment): a short timeout here plays the client-disconnect role
-	// a real browser navigating away would.
+	// The short timeout stands in for a browser navigating away and closing the stream.
 	reqCtx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 	defer cancel()
 	req := authedRequest(t, cookie, http.MethodGet, "/api/v1/apps/web/deploys/dep_done/steps", "").WithContext(reqCtx)
@@ -134,10 +130,7 @@ func TestHandleDeployStepStream_FinishedFailedAttempt_SynthesizesFailed(t *testi
 	}
 }
 
-// TestHandleDeployStepStream_LiveTail mirrors
-// TestHandleDeployLogStream_LiveTail exactly, over the step stream
-// instead of the log stream: a real HTTP connection is required since
-// the handler and this test read/write the response concurrently.
+// Needs a real HTTP connection, since the handler and test read and write concurrently.
 func TestHandleDeployStepStream_LiveTail(t *testing.T) {
 	db := openTestDB(t)
 	recorder := deploylog.NewRecorder(nil, discardLogger())

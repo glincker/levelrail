@@ -47,17 +47,7 @@ func TestHandleDeploySpec_NotConfigured(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp covers this
-// handler's own HTTP-layer contract: request decoding, fetching source
-// once, forwarding a correctly-built deploy.MultiRequest to the
-// builder, and turning its outcomes into the response shape. Actual
-// store persistence (SaveDesiredService/SaveApp/UpdateServiceApp) is
-// internal/deploy.Pipeline.DeploySpec's own job, already covered end to
-// end by internal/deploy/multi_test.go against a real *store.DB; this
-// package's own tests use a fake Builder for the same reason every
-// other builds.go/apps_multi.go test in this package already does
-// (builds_test.go's own fakeBuilder), so this test does not re-assert
-// store state a fake builder never actually writes.
+// Store persistence is covered in internal/deploy; this test checks the HTTP contract with a fake builder.
 func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	fetch := newFakeFetch("/tmp/checkout", nil)
@@ -87,13 +77,7 @@ func TestHandleDeploySpec_Success_CreatesTwoServicesUnderOneApp(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_ImageBuildTypeAccepted proves build.type: image
-// reaches the builder rather than being rejected by this handler's own
-// per-service switch, alongside a sibling service that still needs a
-// real build: the whole point of supporting it here (rather than only
-// through the single-service, no-git POST /apps/{name}/deploys path) is
-// that one app.yaml can mix a prebuilt-image service with others that
-// don't.
+// A prebuilt-image service must be accepted alongside sibling services that need a real build.
 func TestHandleDeploySpec_ImageBuildTypeAccepted(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	fetch := newFakeFetch("/tmp/checkout", nil)
@@ -127,15 +111,7 @@ func TestHandleDeploySpec_ImageBuildTypeAccepted(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_ComposeBuildTypeAccepted proves this handler's
-// own per-service switch no longer rejects build.type: compose (it did,
-// with a 501, before internal/deploy.Pipeline.DeploySpec grew the
-// ability to expand one). Expansion itself (reading and parsing the
-// referenced compose file, splicing its own services in) is
-// Pipeline.DeploySpec's own job, already covered end to end against a
-// real *store.DB by internal/deploy/multi_test.go's own compose tests;
-// this test only needs a fake builder (this package's usual pattern) to
-// prove the request reaches it at all.
+// Compose expansion is covered in internal/deploy; this only checks the request reaches the builder.
 func TestHandleDeploySpec_ComposeBuildTypeAccepted(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	fetch := newFakeFetch("/tmp/checkout", nil)
@@ -197,11 +173,7 @@ func assertMultiRequestFromBody(t *testing.T, req deploy.MultiRequest) {
 	}
 }
 
-// TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors
-// proves a partial fan-out failure is reported per-service, not as a
-// whole-request failure: the HTTP request itself succeeded at fanning
-// out, matching deploy.Pipeline.DeploySpec's own "one broken resource
-// must not block the others" contract.
+// A partial fan-out failure is reported per service, with HTTP 2xx.
 func TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors(t *testing.T) {
 	builder := &fakeBuilder{
 		multiOutcomes: []deploy.ServiceOutcome{
@@ -253,12 +225,7 @@ func newTestRouterWithBuilderAndSecrets(t *testing.T, builder Builder, fetch *fa
 	return rt, db
 }
 
-// TestHandleDeploySpec_WithInlineSecret_Success covers an env entry with
-// both secret: true and an inline value: the value must reach
-// SecretSetter under "<app>-<service key>" (internal/deploy/multi.go's
-// own naming convention) before the builder ever runs, so a { required:
-// true } secret's own validateEnv check (internal/deploy.Pipeline) sees
-// it as already set.
+// The inline secret must be stored before the builder runs, so validateEnv sees it as set.
 func TestHandleDeploySpec_WithInlineSecret_Success(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	setter := &fakeSecretSetter{}
@@ -289,11 +256,7 @@ func TestHandleDeploySpec_WithInlineSecret_Success(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_SecretDeclaredNoValue_BuilderStillRuns covers
-// declaring a secret's NAME with no inline value: no SetValueGuarded
-// call happens, and the request still reaches the builder (an
-// unresolved value is Pipeline.Deploy's own concern via validateEnv, not
-// this handler's).
+// A declared secret with no inline value still reaches the builder; resolution is Pipeline's job.
 func TestHandleDeploySpec_SecretDeclaredNoValue_BuilderStillRuns(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	setter := &fakeSecretSetter{}
@@ -455,12 +418,6 @@ func TestHandleDeploySpec_SingleServiceName(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_SingleServiceDeployStillWorks proves stage 2's
-// fan-out endpoint existing alongside the pre-existing single-service
-// paths (POST /api/v1/apps, POST /api/v1/apps/{name}/builds) doesn't
-// change how either of those behaves: seeding and reading a
-// single-service app through the ordinary path is unaffected by
-// deploy-spec.go's own existence.
 func TestHandleDeploySpec_SingleServiceDeployStillWorks(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -491,11 +448,7 @@ const bindMountDeploySpecBody = `{
 	}
 }`
 
-// TestHandleDeploySpec_BindMount_PlainDeployToken_Forbidden mirrors
-// TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden
-// (apps_compose_test.go): an app.yaml service declaring a bind mount
-// needs AbilityRoot on top of this route's own AbilityDeploy gate, same
-// as the compose-import path already requires.
+// Bind mounts need AbilityRoot on top of AbilityDeploy, as in the compose import path.
 func TestHandleDeploySpec_BindMount_PlainDeployToken_Forbidden(t *testing.T) {
 	builder := &fakeBuilder{tag: "img:sha"}
 	rt, db := newTestRouterWithBuilder(t, builder, newFakeFetch("/tmp/checkout", nil))
@@ -538,11 +491,7 @@ func TestHandleDeploySpec_BindMount_RootCaller_Succeeds(t *testing.T) {
 	}
 }
 
-// TestHandleDeploySpec_TagsByResolvedCommit is the deploy-spec twin of
-// TestHandleTriggerBuild_TagsByResolvedCommitNotRef: every service in
-// the fan-out has to be tagged with the commit the checkout resolved to,
-// or a second deploy of the same branch moves the tag off the images the
-// first one produced.
+// Every service is tagged with the resolved commit, so a re-deploy does not move the tag.
 func TestHandleDeploySpec_TagsByResolvedCommit(t *testing.T) {
 	const resolved = "3333333333333333333333333333333333333333"
 	builder := &fakeBuilder{tag: "img:sha"}

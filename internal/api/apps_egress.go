@@ -22,11 +22,7 @@ type egressAllowResource struct {
 	Port int    `json:"port"`
 }
 
-// egressPolicyResource is GET/PUT /api/v1/apps/{name}/egress-policy's
-// response body. Mode/Allow are omitted (not zero-valued) when the app
-// has no egress policy configured, the same "absent, not a zero value,
-// means unconfigured" shape appStorageResource's own omitempty gives
-// storage_target_id.
+// egressPolicyResource is the GET and PUT egress-policy body; mode and allow are omitted when no policy is set.
 type egressPolicyResource struct {
 	AppName string                `json:"app_name"`
 	Mode    string                `json:"mode,omitempty"`
@@ -52,10 +48,7 @@ func egressPolicyResourceFrom(name string, policy *store.ServiceEgressPolicy) eg
 	return res
 }
 
-// handleGetAppEgressPolicy handles GET /api/v1/apps/{name}/egress-policy:
-// reads the app's current outbound network allowlist, unconfigured
-// (Mode/Allow both omitted) meaning unrestricted egress, today's
-// behavior for every app that has never opted in.
+// handleGetAppEgressPolicy returns the egress allowlist. Omitted mode and allow mean unrestricted egress.
 func (rt *Router) handleGetAppEgressPolicy(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -73,19 +66,8 @@ func (rt *Router) handleGetAppEgressPolicy(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, egressPolicyResourceFrom(name, svc.Egress))
 }
 
-// handleSetAppEgressPolicy handles PUT /api/v1/apps/{name}/egress-policy:
-// sets (or replaces) this app's outbound network allowlist, the UI/CLI-
-// facing equivalent of app.yaml's own egress: block for an app that
-// already exists, mirroring handleSetAppVaultEnv's own "dedicated
-// endpoint, not the general PUT" shape: an ordinary PUT
-// /api/v1/apps/{name} would silently drop every declarative field
-// (Egress included) it doesn't itself carry forward.
-//
-// mode must be "allowlist" (internal/spec.EgressModeAllowlist's only
-// meaningful value today) with at least one allow entry, the same
-// validation internal/spec.Service.validateEgress applies to app.yaml's
-// own egress: block, so this endpoint can never persist a policy
-// app.yaml itself would reject.
+// handleSetAppEgressPolicy sets an app's egress allowlist. A general PUT would silently drop it, so this is a dedicated endpoint.
+// Validation matches app.yaml's egress block, so it never stores a policy app.yaml would reject.
 func (rt *Router) handleSetAppEgressPolicy(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -129,13 +111,7 @@ func (rt *Router) handleSetAppEgressPolicy(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, egressPolicyResourceFrom(name, policy))
 }
 
-// handleClearAppEgressPolicy handles DELETE
-// /api/v1/apps/{name}/egress-policy: the reverse of
-// handleSetAppEgressPolicy, opting this app back out to unrestricted
-// egress. The next reconcile pass tears down the egress sidecar
-// (internal/reconcile/application's reconcileEgress); an already-running
-// app container itself is never touched, since egress enforcement lives
-// entirely in the sidecar, not the app's own container.
+// handleClearAppEgressPolicy opts the app back to unrestricted egress. The sidecar is torn down on the next reconcile; the app container is not touched.
 func (rt *Router) handleClearAppEgressPolicy(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 

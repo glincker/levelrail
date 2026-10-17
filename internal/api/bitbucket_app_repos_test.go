@@ -11,10 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// newTestRouterWithBitbucketAndGitSource wires both a Bitbucket
-// connection and git-source secrets into one router, the same
-// "reuses the exact same git-source hookup" point
-// newTestRouterWithGitLabAndGitSource's own doc comment establishes.
+// newTestRouterWithBitbucketAndGitSource wires a Bitbucket connection and git-source secrets into one router.
 func newTestRouterWithBitbucketAndGitSource(t *testing.T, bitbucketSecrets BitbucketAppSecrets, bitbucketClient BitbucketAppClient, gitSourceSecrets GitSourceSecrets) (*Router, *store.DB) {
 	t.Helper()
 	db := openTestDB(t)
@@ -110,12 +107,7 @@ func TestHandleUseBitbucketRepoAsSource_AppNotFound(t *testing.T) {
 	}
 }
 
-// TestHandleUseBitbucketRepoAsSource_Success proves this handler ends
-// up creating the exact same store.GitSource row (and webhook secret
-// under the exact same GitSourceSecretsKey) that PUT .../git-source
-// itself creates, and registers a Bitbucket repo webhook pointed at
-// that source's own webhook URL with that same secret, mirroring
-// TestHandleUseGitLabProjectAsSource_Success.
+// TestHandleUseBitbucketRepoAsSource_Success checks it creates the same git source and webhook as the PUT git-source route.
 func TestHandleUseBitbucketRepoAsSource_Success(t *testing.T) {
 	fakeClient := &fakeBitbucketAppClient{
 		repo: bitbucketapp.Repo{

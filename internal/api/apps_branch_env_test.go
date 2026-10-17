@@ -271,15 +271,8 @@ func TestHandleDeleteAppBranchEnv_WrongApp(t *testing.T) {
 	}
 }
 
-// TestHandlePullRequestWebhook_AppliesBranchEnvOverride is the real,
-// end-to-end proof for this feature: a branch-scoped override matching
-// the PR's own head branch reaches the actual deploy request
-// (deployPreviewSingle's applyBranchEnvOverrides call), winning over
-// both the parent app's own env and the unscoped preview-env override,
-// while a sibling key with no matching override still inherits from
-// the parent untouched. githubPullRequestBody (preview_environments_test.go)
-// always uses head ref "feature-x", so "feature-*" is this test's
-// matching pattern and "release/*" its deliberately-non-matching one.
+// TestHandlePullRequestWebhook_AppliesBranchEnvOverride checks a matching branch override wins over parent and unscoped env, end to end.
+// "feature-*" matches the fixture's head ref "feature-x"; "release/*" deliberately does not.
 func TestHandlePullRequestWebhook_AppliesBranchEnvOverride(t *testing.T) {
 	rt, db, secret, builder := setUpPreviewApp(t)
 
@@ -330,11 +323,7 @@ func TestHandlePullRequestWebhook_AppliesBranchEnvOverride(t *testing.T) {
 	}
 }
 
-// TestHandlePullRequestWebhook_AppliesSecretBranchEnvOverride proves the
-// secret-marked case end to end, through a real secrets.Manager (not a
-// fake): the plaintext set via POST .../branch-env is envelope-encrypted
-// at rest and decrypted fresh by applyBranchEnvOverrides at preview
-// deploy time, reaching the actual deploy request as a literal value.
+// TestHandlePullRequestWebhook_AppliesSecretBranchEnvOverride checks secret overrides are decrypted at preview deploy time, through a real secrets manager.
 func TestHandlePullRequestWebhook_AppliesSecretBranchEnvOverride(t *testing.T) {
 	db := openTestDB(t)
 	mk, err := secrets.GenerateMasterKey()

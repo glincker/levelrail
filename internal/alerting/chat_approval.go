@@ -6,18 +6,9 @@ import (
 	"log/slog"
 )
 
-// This file sends the one chat-interactive message this package knows
-// about: a pending deploy approval, posted to every enabled channel
-// that opted into InteractiveApprovals (notification_channel.go), with
-// real Approve/Deny buttons so an approver can act from their phone.
-// internal/api/chat_interactions.go is the other half: it receives and
-// verifies the button click this message produces.
+// Sends the interactive deploy-approval message (Approve/Deny buttons) to channels that opted in.
 
-// ApprovalRequestInfo is what SendApprovalRequest needs to render an
-// interactive message: just enough to identify the gated change and
-// let an approver decide without opening the dashboard. ApprovalID is
-// the value every button carries back on click (deploy_approval.go's
-// own opaque ID), never anything an approver would need to trust blind.
+// ApprovalRequestInfo identifies the gated change and the approval ID each button carries back on click.
 type ApprovalRequestInfo struct {
 	ApprovalID  string
 	ServiceName string
@@ -40,12 +31,7 @@ func approvalIntroText(info ApprovalRequestInfo) string {
 	return fmt.Sprintf("*%s approval requested*\n%s -> `%s`\nRequested by %s", verb, info.ServiceName, info.Image, info.RequestedBy)
 }
 
-// slackApprovalPayload is Slack's incoming-webhook shape with Block
-// Kit's "actions" block added: Slack renders a real section plus two
-// buttons from this, and (because the webhook belongs to an app with
-// Interactivity enabled, not a bare "custom integration" webhook) a
-// click posts to that app's own configured Request URL, verified by
-// chat_interactions.go's handleSlackInteraction.
+// Slack webhook shape plus a Block Kit actions block. Clicks post to the app's Request URL, verified in chat_interactions.go.
 type slackApprovalPayload struct {
 	Text   string             `json:"text"`
 	Blocks []slackApprovalBlk `json:"blocks"`
@@ -78,11 +64,7 @@ type slackApprovalConf struct {
 	Deny    slackApprovalText `json:"deny"`
 }
 
-// SlackApprovalActionApprove and SlackApprovalActionReject are the
-// action_id every Approve/Deny button carries, and the one shared
-// constant internal/api/chat_interactions.go dispatches on: a repeated
-// string literal for the same action_id in two packages would risk the
-// button and the handler silently drifting apart.
+// Shared action_id constants, so the Slack buttons and their handler in internal/api cannot drift apart.
 const (
 	SlackApprovalActionApprove = "deploy_approval_approve"
 	SlackApprovalActionReject  = "deploy_approval_reject"
@@ -114,10 +96,7 @@ func buildSlackApprovalPayload(info ApprovalRequestInfo) slackApprovalPayload {
 	}
 }
 
-// discordApprovalPayload is Discord's webhook-execute shape with a
-// message-components action row added (components only render when the
-// webhook's own application has an Interactions Endpoint URL
-// configured; see docs/chat-deploy-approvals.md).
+// Discord webhook shape plus an action row, which only renders when the webhook app has an Interactions Endpoint URL.
 type discordApprovalPayload struct {
 	Content    string               `json:"content"`
 	Components []discordApprovalRow `json:"components"`
@@ -164,18 +143,12 @@ func buildDiscordApprovalPayload(info ApprovalRequestInfo) discordApprovalPayloa
 	}
 }
 
-// ErrInteractiveApprovalUnsupported is returned by SendApprovalRequest
-// for any channel kind other than Slack or Discord: InteractiveApprovals
-// never applies to one (see notificationChannelsSupportingInteractiveApprovals
-// in internal/api/notification_channels.go, the matching validation at
-// save time), so reaching this in practice means a row was written
-// before that validation existed.
+// ErrInteractiveApprovalUnsupported is returned for channel kinds other than Slack or Discord.
+// Reaching it means the row predates save-time validation.
 var ErrInteractiveApprovalUnsupported = fmt.Errorf("alerting: send approval request: channel kind does not support interactive approval")
 
-// SendApprovalRequest posts one deploy-approval-requested message to c,
-// with real Approve/Deny buttons for NotifySlack and NotifyDiscord.
-// Records delivery history the same way Dispatch does for a deploy
-// outcome, under trigger "deploy-approval-requested".
+// SendApprovalRequest posts a deploy-approval request with Approve/Deny buttons to c.
+// Delivery history is recorded under trigger deploy-approval-requested.
 func (d *DeployDispatcher) SendApprovalRequest(ctx context.Context, c NotificationChannel, info ApprovalRequestInfo) error {
 	revealed, sendErr := d.db.RevealNotificationChannel(ctx, c)
 	switch {

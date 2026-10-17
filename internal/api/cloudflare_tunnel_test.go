@@ -14,10 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// fakeCloudflareTunnelSecrets is a hand-written fake for
-// CloudflareTunnelSecrets, the same pattern fakeEmailSecretsStore
-// (email_settings_test.go) already establishes for the structurally
-// similar interface.
+// Hand-written fake for CloudflareTunnelSecrets, mirroring fakeEmailSecretsStore.
 type fakeCloudflareTunnelSecrets struct {
 	err    error
 	values map[string]string

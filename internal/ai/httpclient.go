@@ -20,10 +20,7 @@ var errBlockedAddress = netguard.ErrBlockedAddress
 // ErrBaseURLRejected means a provider base URL failed the SSRF policy.
 var ErrBaseURLRejected = errors.New("ai: provider base URL is not allowed")
 
-// NewHTTPClient returns a client for provider traffic. Unless allowPrivate,
-// every dial is checked against the netguard blocklist on the resolved IP
-// (so DNS rebinding is caught). Redirects to another host are refused and
-// proxies are ignored.
+// NewHTTPClient returns a provider-traffic client that refuses private IPs unless allowPrivate, and refuses cross-host redirects.
 func NewHTTPClient(allowPrivate bool) *http.Client {
 	dialer := &net.Dialer{
 		Timeout:   10 * time.Second,
@@ -78,10 +75,7 @@ type BaseURLCheck struct {
 	Private bool
 }
 
-// CheckBaseURL applies the provider base URL policy: absolute http(s), no
-// credentials in the URL, https for anything public, and private or
-// loopback hosts only for openai_compat when privateAllowed (the caller is
-// root and set the host themselves). Fails closed.
+// CheckBaseURL validates a provider base URL: absolute http(s), no credentials, and https unless private hosts are allowed for openai_compat.
 func CheckBaseURL(ctx context.Context, raw string, kind Kind, privateAllowed bool, resolve HostResolver) (BaseURLCheck, error) {
 	u, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil || u.Fragment != "" {

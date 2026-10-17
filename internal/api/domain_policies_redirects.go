@@ -313,10 +313,7 @@ type canonicalRequest struct {
 
 var errCanonicalConflict = errors.New("conflict")
 
-// handleSetDomainCanonical handles POST .../redirects/canonical: www to apex,
-// apex to www, or serve both. Attaching the counterpart host changes the
-// app's domain list, so that part also needs AbilityWrite like PATCH
-// /apps/{name}/domains.
+// Attaching the counterpart host changes the domain list, so it also needs AbilityWrite.
 func (rt *Router) handleSetDomainCanonical(w http.ResponseWriter, r *http.Request) {
 	domain, ok := rt.requireOwnedDomain(w, r)
 	if !ok {

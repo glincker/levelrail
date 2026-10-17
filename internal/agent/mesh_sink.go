@@ -1,24 +1,7 @@
 package agent
 
-// This file: GRPCSink, the control-plane side of mesh config
-// distribution to a real, remote agent. This is exactly the piece
-// internal/network.ConfigSink's own doc comment describes as
-// "deliberately not in this change" (network/plan.go's header) and
-// cmd/levelrail/mesh.go's top-of-file note names as the reason
-// APP_MESH_ENABLED only brings up the control plane's own node today:
-// "internal/network.ConfigSink's gRPC arm... does not exist yet."
-// It now does.
-//
-// GRPCSink implements network.ConfigSink and network.KeyRotator, but
-// (unlike network.LocalSink) is not itself the transport: it holds a
-// *Registry and, for each call, resolves the Transport a real agent's
-// Session registered for that node ID, then forwards the call over that
-// specific connection. One GRPCSink instance is shared across every
-// remote node in the fleet; the *mux underneath each resolved Transport
-// is what's actually per-node. See meshTransport for the narrow slice of
-// GRPCTransport this needs, and network.MultiSink for how this and
-// LocalSink (which only ever serves the control plane's own local node)
-// combine into the one ConfigSink a Coordinator holds.
+// GRPCSink is the control-plane side of mesh config distribution to remote agents.
+// It resolves each node's registered transport and forwards the call over that node's connection.
 import (
 	"context"
 	"fmt"
@@ -26,11 +9,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
-// meshTransport is the slice of *GRPCTransport GRPCSink needs, extracted
-// as an interface for the same reason agentClientStream and sessionStream
-// already are in this package: a caller can fake it in a test without a
-// real Session stream. *GRPCTransport satisfies this structurally (see
-// its ApplyMesh/RotateMeshKey methods below).
+// meshTransport is the slice of *GRPCTransport GRPCSink needs, as an interface so tests can fake it.
 type meshTransport interface {
 	ApplyMesh(ctx context.Context, cfg network.DeviceConfig) (network.NodeIdentity, error)
 	RotateMeshKey(ctx context.Context) (network.RotationResult, error)
@@ -42,10 +21,7 @@ type GRPCSink struct {
 	registry *Registry
 }
 
-// NewGRPCSink builds a GRPCSink that resolves each node's transport
-// through registry, the same *Registry Server.Session already populates
-// (server.go) and every other remote-dispatch path in this package
-// (GRPCTransport itself, build dispatch) already shares.
+// NewGRPCSink builds a GRPCSink that resolves node transports through registry.
 func NewGRPCSink(registry *Registry) *GRPCSink {
 	return &GRPCSink{registry: registry}
 }
@@ -55,21 +31,10 @@ var (
 	_ network.KeyRotator = (*GRPCSink)(nil)
 )
 
-// ErrNodeNotMeshCapable is returned when nodeID's registered transport
-// exists (the node is connected) but does not support mesh operations,
-// which in practice means it isn't really a *GRPCTransport at all (a test
-// double registered directly, or a future transport kind that never
-// implements mesh). Never expected against a real agent connection, since
-// every real one is built by newGRPCTransport.
+// ErrNodeNotMeshCapable is returned when a node's registered transport does not support mesh operations. Real agent connections never hit it.
 var ErrNodeNotMeshCapable = fmt.Errorf("network: node's transport does not support mesh operations")
 
-// ApplyMesh implements network.ConfigSink by forwarding cfg to nodeID's
-// live agent Session, if it has one. A node with no registered transport
-// (never enrolled, or disconnected) fails this one node's pass with
-// agent.ErrNodeNotRegistered wrapped, exactly the "one node's problem,
-// never the fleet's" contract ConfigSink.ApplyMesh's own doc comment
-// requires: Distribute records it in that node's NodeResult.Err and
-// keeps distributing to every other node.
+// ApplyMesh forwards cfg to nodeID's live agent session, failing only that node's pass if it has no registered transport.
 func (s *GRPCSink) ApplyMesh(ctx context.Context, nodeID string, cfg network.DeviceConfig) (network.NodeIdentity, error) {
 	t, err := s.registry.Get(nodeID)
 	if err != nil {

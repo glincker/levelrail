@@ -31,10 +31,8 @@ func manualBuildRequest(name string, existing store.DesiredService, req triggerB
 	}
 }
 
-// defaultImageRepo keeps a rebuild or push deploy in the repo the app's builds already
-// use (a pending placeholder or a commit-sha tag), so earlier tags stay
-// listed as rollback targets. Any other image falls back to the app name,
-// never a registry image's repo.
+// Keeps a rebuild or push deploy in the repo the app's builds already use, so earlier tags stay rollback targets.
+// Other images fall back to the app name.
 func defaultImageRepo(name, current string) string {
 	current, _, _ = strings.Cut(current, "@")
 	i := strings.LastIndex(current, ":")

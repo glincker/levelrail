@@ -51,12 +51,7 @@ func TestHandleDeployCompose_RequiresAuth(t *testing.T) {
 	}
 }
 
-// TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden proves a
-// compose file bind-mounting a host directory needs AbilityRoot on top
-// of this route's own AbilityDeploy gate: a token scoped to nothing but
-// AbilityDeploy (this route's own gate, so it can deploy an ordinary
-// compose file fine) must still be rejected here, and must not have
-// created anything.
+// A bind-mounting compose file needs AbilityRoot on top of AbilityDeploy, so a deploy-only token must be rejected with nothing created.
 func TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 	ctx := context.Background()
@@ -81,10 +76,7 @@ func TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden(t *testing.T) 
 	}
 }
 
-// TestHandleDeployCompose_BindMount_RootCaller_Succeeds is the positive
-// counterpart: a root-ability caller (loginTestSession's own bootstrapped
-// admin) can deploy the exact same bind-mounting compose file that
-// TestHandleDeployCompose_BindMount_PlainDeployToken_Forbidden rejects.
+// Positive counterpart: a root caller deploys the same bind-mounting file.
 func TestHandleDeployCompose_BindMount_RootCaller_Succeeds(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -152,10 +144,7 @@ func TestHandleDeployCompose_CreatesAppAndServices(t *testing.T) {
 	}
 }
 
-// TestHandleDeployCompose_PullPolicyPropagates checks that a service's
-// pull_policy: always makes it all the way through the HTTP response
-// and into the persisted store.DesiredService, and that a sibling
-// service with no pull_policy: declared stays empty.
+// A pull_policy must reach the stored service, and a sibling without one stays empty.
 func TestHandleDeployCompose_PullPolicyPropagates(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -200,12 +189,7 @@ services:
 	}
 }
 
-// TestHandleDeployCompose_RecordsDeployAttempts covers the gap found via
-// live testing (deploying a template such as "Homepage" showed the
-// reconciler's own real rollout, but the Deploys tab stayed "No deploys
-// yet"): each service a compose file fans out into must get its own
-// deploy_attempts row, source compose, the same way a plain image
-// create/update already does under source image.
+// Each compose service needs its own deploy_attempts row, source compose, or the Deploys tab stays empty.
 func TestHandleDeployCompose_RecordsDeployAttempts(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -319,12 +303,7 @@ func TestHandleDeployCompose_Redeploy_RecreatesOnlyWhenConfigChanged(t *testing.
 	}
 }
 
-// TestHandleDeployCompose_Redeploy_PrunesRemovedService covers the real
-// gap that motivated pruneStaleComposeServices: a redeploy dropping a
-// service (here "redis") from the compose file must delete that
-// service's own DesiredService row, not just leave it (and its
-// containers) running forever alongside the services the new file still
-// declares.
+// A redeploy that drops a service must delete its DesiredService row, not leave its containers running.
 func TestHandleDeployCompose_Redeploy_PrunesRemovedService(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -545,11 +524,7 @@ func TestHandleDeployCompose_RestartAndNetworksSurfaceAsNotices(t *testing.T) {
 	}
 }
 
-// TestHandleDeployCompose_LongFormPortsAndVolumes proves a real-world
-// compose file using Compose's long mapping form for ports: and
-// volumes: (common in upstream project compose files, unlike this
-// platform's own short-form-only templates) deploys end to end, the
-// same as validComposeYAML's short-form equivalent.
+// Long-form ports and volumes must deploy end to end, unlike this platform's own short-form templates.
 func TestHandleDeployCompose_LongFormPortsAndVolumes(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

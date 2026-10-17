@@ -10,29 +10,16 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// defaultDoctorMinRAMBytes/defaultDoctorMinCPUCount are the recommended
-// minimums GET /api/v1/system/doctor's ram/cpu checks warn below when
-// WithDoctorMinRAMBytes/WithDoctorMinCPUCount haven't overridden them.
-// Section 1's own target audience (3-50 services on 1-10 machines) is
-// comfortable above these; below them isn't a hard failure, since a
-// small single-app instance can run lighter.
+// Below these the check only warns: a small single-app instance can run lighter.
 const (
 	defaultDoctorMinRAMBytes = 1 << 30 // 1GiB
 	defaultDoctorMinCPUCount = 2
 )
 
-// doctorDiskIOSampleBytes is how much data disk_io_latency writes and
-// fsyncs to measure write latency: enough to move past OS write-cache
-// buffering noise, small enough that the check itself never becomes the
-// slow thing an operator is troubleshooting.
+// Big enough to get past write-cache noise, small enough that the check is not itself slow.
 const doctorDiskIOSampleBytes = 1 << 20 // 1MiB
 
-// defaultDoctorDiskIOWarnLatency is the write+fsync duration disk_io_latency
-// warns above when WithDoctorDiskIOWarnLatency hasn't overridden it. A
-// nearly-full disk can still pass disk_space on free bytes alone while its
-// write latency has degraded to something that makes every deploy and log
-// write feel stuck; this catches that case directly instead of only ever
-// inferring it from unrelated symptoms.
+// Catches a near-full disk whose write latency has degraded, which disk_space alone misses.
 const defaultDoctorDiskIOWarnLatency = 200 * time.Millisecond
 
 func (rt *Router) doctorCheckDiskIOLatency() doctorCheckResource {

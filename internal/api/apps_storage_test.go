@@ -88,10 +88,7 @@ func TestHandleSetAppStorage_Success(t *testing.T) {
 	}
 }
 
-// TestHandleGetApp_SurfacesStorageTargetID proves the "no separate GET
-// route" design decision (router.go's own comment on these routes):
-// handleGetApp's existing response already carries storage_target_id
-// once set.
+// TestHandleGetApp_SurfacesStorageTargetID checks handleGetApp returns storage_target_id, with no separate GET route.
 func TestHandleGetApp_SurfacesStorageTargetID(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)

@@ -47,11 +47,7 @@ func toAppScheduleResource(s store.AppSchedule) appScheduleResource {
 	}
 }
 
-// handleGetAppSchedule handles GET /api/v1/apps/{name}/schedule. No
-// schedule configured is a normal state (404 with a plain body), the
-// same "absence is not an error condition, just an empty result" shape
-// handleGetVolumeBackupSchedule's own doc comment establishes for a
-// sibling per-app optional setting.
+// Returns a 404 with a plain body when no schedule is configured; that is a normal state, not an error.
 func (rt *Router) handleGetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -75,14 +71,8 @@ type setAppScheduleRequest struct {
 	Enabled  *bool  `json:"enabled"`
 }
 
-// handleSetAppSchedule handles PUT /api/v1/apps/{name}/schedule: sets or
-// replaces the app's recurring redeploy schedule. Requires a connected
-// git source (internal/scheduledeploy has nothing to redeploy otherwise)
-// and a syntactically valid cron expression, both checked synchronously
-// before any state is written, the same "validate first" shape
-// validateBackupScheduleRequest already establishes for a sibling
-// schedule setting. enabled defaults to true when omitted, so the
-// smallest useful request body is {"cron": "...", "branch": "..."}.
+// handleSetAppSchedule sets or replaces the app's recurring redeploy schedule.
+// Requires a connected git source; cron and source are validated before any state is written.
 func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -143,13 +133,7 @@ func (rt *Router) handleSetAppSchedule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resource := appScheduleResource{ServiceName: name, Cron: req.Cron, Branch: req.Branch, Timezone: timezone, Enabled: enabled}
-	// Arm the next occurrence immediately rather than leaving next_fire_at
-	// NULL until the scheduler's own next tick: otherwise a client that
-	// just saved a schedule sees no next-run time at all until that tick
-	// happens, which can be minutes away. This mirrors exactly what the
-	// scheduler itself would compute on first sight of the schedule
-	// (internal/scheduledeploy.Scheduler.tickOne), so it changes nothing
-	// about when the schedule actually fires.
+	// Arm next_fire_at now, not on the scheduler's next tick, so a just-saved schedule shows its next run at once.
 	if enabled {
 		next := cronexpr.NextInLocation(sched, time.Now(), loc)
 		if err := rt.appSchedules.ArmAppScheduleNextRun(r.Context(), name, next); err != nil {
@@ -170,10 +154,7 @@ type appScheduleHistoryResource struct {
 	Reason       string    `json:"reason,omitempty"`
 }
 
-// handleListAppScheduleHistory handles
-// GET /api/v1/apps/{name}/schedule/history: the most recent evaluations
-// of this app's schedule, newest first, whether they fired, were skipped
-// for an active freeze window, or failed.
+// handleListAppScheduleHistory returns recent schedule evaluations, newest first, including skipped freeze windows.
 func (rt *Router) handleListAppScheduleHistory(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 

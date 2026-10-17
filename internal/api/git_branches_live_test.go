@@ -15,17 +15,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
-// TestListRemoteBranches_Live exercises the real go-git remote-listing
-// path against a local repository built by go-git itself in a temp dir,
-// not a clone of a real GitHub repo: the same "free of any network
-// dependency, so it can't flake on GitHub's availability" reasoning
-// internal/webhook/clone_live_test.go's own TestCloneAndCheckout_Live
-// already documents for the identical tradeoff. go-git resolves a plain
-// filesystem path as a "file" transport endpoint exactly like an HTTPS
-// remote, so this exercises the same advertised-refs listing code the
-// real handler uses against a real GitHub HTTPS remote, with a real
-// network round trip through go-git's own transport layer, just a local
-// one instead of a flaky external dependency.
+// Uses a local go-git repo, not GitHub, so the test cannot flake on network availability.
 func TestListRemoteBranches_Live(t *testing.T) {
 	srcDir := t.TempDir()
 
@@ -70,11 +60,7 @@ func TestListRemoteBranches_Live(t *testing.T) {
 		t.Fatalf("create tag: %v", err)
 	}
 
-	// listRemoteBranchesUnchecked, not listRemoteBranches: srcDir is a
-	// bare filesystem path with no scheme, which listRemoteBranches
-	// itself now rejects (see TestListRemoteBranches_SchemeRejected).
-	// This test's own purpose is exercising the listing/filtering logic
-	// network-free, not the scheme gate.
+	// Uses the unchecked lister: this test covers listing and filtering, not the scheme gate.
 	branches, err := listRemoteBranchesUnchecked(context.Background(), srcDir)
 	if err != nil {
 		t.Fatalf("listRemoteBranchesUnchecked() error = %v", err)
@@ -107,19 +93,7 @@ func TestListRemoteBranches_Live_UnreachableRepo(t *testing.T) {
 	}
 }
 
-// TestListRemoteBranches_SchemeRejected is the live proof for this
-// task's SSRF/local-file finding: go-git's transport client registry
-// registers a "file" transport unconditionally (see
-// build.ValidatePublicRepoURL's own doc comment), so
-// without the scheme gate a file:// repoURL really does read a local
-// git repository on this host, and an http(s):// repoURL against an
-// internal address really does fire a request. This proves the gate
-// rejects every non-http(s) scheme before any transport is
-// constructed: no local repo is ever actually reached (proven by
-// srcDir being a real, listable repo in TestListRemoteBranches_Live
-// above, contrasted with the same path via a file:// URL being
-// rejected here with zero branches returned), and no network call is
-// ever attempted for ssh/git schemes or a malformed URL.
+// go-git registers a file transport unconditionally, so without the scheme gate a file:// URL reads local repos.
 func TestListRemoteBranches_SchemeRejected(t *testing.T) {
 	srcDir := t.TempDir()
 	if _, err := git.PlainInit(srcDir, false); err != nil {
@@ -150,12 +124,7 @@ func TestListRemoteBranches_SchemeRejected(t *testing.T) {
 	}
 }
 
-// TestListRemoteBranches_HTTPSchemeStillWorks proves the scheme gate
-// added for the SSRF/local-file finding doesn't collaterally break a
-// real http(s) repo_url: a plain httptest.Server stands in for "some
-// http(s) remote," and this asserts the request really reaches it (the
-// gate lets it through) even though the fake server isn't a real git
-// smart-HTTP backend and the call still ultimately errors.
+// Proves the scheme gate lets http(s) URLs through; the fake server is not a real git backend, so the call still errors.
 func TestListRemoteBranches_HTTPSchemeStillWorks(t *testing.T) {
 	contacted := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

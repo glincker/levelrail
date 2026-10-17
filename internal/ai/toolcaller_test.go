@@ -10,11 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// TestToolCaller_InProcess proves ToolCaller reaches the real
-// internal/mcptools tool server in-process (no subprocess, no network
-// MCP transport): a fake control-plane REST API stands in for the real
-// one, and ListTools/Call are exercised end to end through the same
-// mcp.NewInMemoryTransports wiring cmd/levelrail-mcp's own tests use.
+// TestToolCaller_InProcess exercises ListTools and Call end to end against a fake REST API, with no subprocess or network.
 func TestToolCaller_InProcess(t *testing.T) {
 	apiSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/api/v1/settings/ai-control" {

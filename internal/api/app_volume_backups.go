@@ -13,29 +13,17 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// ServiceVolumeBackupHistoryStore is the store surface the volume backup
-// history handler needs, the volume counterpart of BackupHistoryStore
-// (backups.go): GetBackupHistory is already generic by ID (shared with
-// the database path via rt.backupHistory), so only the listing method
-// needs its own volume-scoped query.
+// ServiceVolumeBackupHistoryStore is the store surface the volume backup history handler needs.
 type ServiceVolumeBackupHistoryStore interface {
 	ListServiceVolumeBackupHistory(ctx context.Context, serviceName, volumeName string, limit int, before *time.Time) ([]store.BackupHistory, error)
 }
 
-// ServiceVolumeBackupRunner is the surface the volume backup trigger
-// handler needs from internal/backup.Runner: the volume counterpart of
-// BackupRunner (backups.go). *backup.Runner satisfies this
-// structurally, the same boundary BackupRunner's own doc comment
-// describes.
+// ServiceVolumeBackupRunner is the surface the volume backup trigger needs from backup.Runner.
 type ServiceVolumeBackupRunner interface {
 	RunVolumeBackup(ctx context.Context, historyID, serviceName, volumeName, dockerVolumeName, targetID, sqlitePath string) error
 }
 
-// ServiceVolumeBackupScheduleStore is the store surface the volume
-// backup schedule handlers need: the volume counterpart of
-// SetDatabaseBackupSchedule/GetDatabaseBackupSchedule-shaped access, kept
-// as its own table (service_volume_backups) rather than columns on
-// desired_services, see migrations/0075's own doc comment.
+// ServiceVolumeBackupScheduleStore is the store surface for volume backup schedules, kept in service_volume_backups.
 type ServiceVolumeBackupScheduleStore interface {
 	SetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName, targetID, schedule string, retain, retainDays int, sqlitePath string) error
 	GetServiceVolumeBackupSchedule(ctx context.Context, serviceName, volumeName string) (store.ServiceVolumeBackupConfig, error)
@@ -45,11 +33,7 @@ type triggerVolumeBackupRequest struct {
 	TargetID string `json:"target_id"`
 }
 
-// handleTriggerVolumeBackup handles
-// POST /api/v1/apps/{name}/volumes/{volume}/backups: the volume
-// counterpart of handleTriggerBackup (backups.go), same "starts real
-// work, returns once it's recorded and under way" shape, same
-// AbilityWriteSensitive tier.
+// handleTriggerVolumeBackup starts a volume backup and returns once it is recorded and under way.
 func (rt *Router) handleTriggerVolumeBackup(w http.ResponseWriter, r *http.Request) {
 	if rt.serviceVolumeBackupRunner == nil {
 		writeError(w, http.StatusNotImplemented, "backups are not configured on this control plane (no master key set)")
@@ -139,15 +123,7 @@ type volumeBackupScheduleResource struct {
 	SqlitePath  string `json:"sqlite_path,omitempty"`
 }
 
-// handleGetVolumeBackupSchedule handles
-// GET /api/v1/apps/{name}/volumes/{volume}/backup-schedule. Unlike the
-// database path (whose schedule fields ride along on GET .../databases/
-// {name} instead of a dedicated route), a service can have any number of
-// volumes, so there is no single app resource response to embed a
-// volume's own schedule into; this is that dedicated GET.
-// ErrServiceVolumeBackupNotFound is not an error response, it's the
-// normal "no schedule configured" state, mirroring an empty
-// backup_schedule column's meaning on the database side.
+// handleGetVolumeBackupSchedule handles GET .../backup-schedule. A missing schedule is a normal state, not an error.
 func (rt *Router) handleGetVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
 	serviceName := r.PathValue("name")
 	volumeName := r.PathValue("volume")
@@ -182,11 +158,7 @@ type setVolumeBackupScheduleRequest struct {
 	SqlitePath string `json:"sqlite_path,omitempty"`
 }
 
-// handleSetVolumeBackupSchedule handles
-// PUT /api/v1/apps/{name}/volumes/{volume}/backup-schedule, the volume
-// counterpart of handleSetBackupSchedule (backups.go): identical
-// synchronous validation (cron string, non-negative retention) before
-// ever writing state.
+// handleSetVolumeBackupSchedule validates the cron and retention synchronously before writing state.
 func (rt *Router) handleSetVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
 	serviceName := r.PathValue("name")
 	volumeName := r.PathValue("volume")
@@ -230,10 +202,6 @@ func (rt *Router) handleSetVolumeBackupSchedule(w http.ResponseWriter, r *http.R
 	})
 }
 
-// handleClearVolumeBackupSchedule handles
-// DELETE /api/v1/apps/{name}/volumes/{volume}/backup-schedule, the
-// reverse of handleSetVolumeBackupSchedule, mirroring
-// handleClearBackupSchedule (backups.go).
 func (rt *Router) handleClearVolumeBackupSchedule(w http.ResponseWriter, r *http.Request) {
 	serviceName := r.PathValue("name")
 	volumeName := r.PathValue("volume")
@@ -251,11 +219,7 @@ func (rt *Router) handleClearVolumeBackupSchedule(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// loadVolumeBackupHistory resolves historyID via rt.backupHistory and
-// confirms it was taken from serviceName/volumeName, writing the
-// appropriate error response itself on failure. Shared by
-// handleVerifyVolumeBackup, handleListVolumeBackupVerifications, and
-// handleDownloadVolumeBackup.
+// loadVolumeBackupHistory resolves historyID and checks it came from this service and volume, writing the error response on failure.
 func (rt *Router) loadVolumeBackupHistory(w http.ResponseWriter, r *http.Request, serviceName, volumeName, historyID, logContext string) (store.BackupHistory, bool) {
 	h, err := rt.backupHistory.GetBackupHistory(r.Context(), historyID)
 	if errors.Is(err, store.ErrBackupHistoryNotFound) {

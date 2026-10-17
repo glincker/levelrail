@@ -14,17 +14,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// bitbucketAppCallbackPath is this control plane's own OAuth
-// redirect_uri path, registered in routes_platform.go. Must match
-// exactly what handleStartBitbucketAppConnect sends Bitbucket's
-// authorize endpoint, the same reasoning gitlabAppCallbackPath's own
-// doc comment gives.
+// bitbucketAppCallbackPath must match the redirect_uri sent to Bitbucket's authorize endpoint exactly.
 const bitbucketAppCallbackPath = "/api/v1/bitbucket-app/callback"
 
-// handleStartBitbucketAppConnect handles GET /api/v1/bitbucket-app/connect:
-// the entry point for Bitbucket's OAuth2 authorization-code flow, a
-// plain browser redirect, the same shape handleStartGitLabAppConnect's
-// own doc comment describes for GitLab.
+// handleStartBitbucketAppConnect starts the OAuth2 flow with a plain browser redirect.
 func (rt *Router) handleStartBitbucketAppConnect(w http.ResponseWriter, r *http.Request) {
 	if rt.bitbucketAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
@@ -65,10 +58,7 @@ func (rt *Router) handleStartBitbucketAppConnect(w http.ResponseWriter, r *http.
 	http.Redirect(w, r, authorizeURL, http.StatusFound)
 }
 
-// handleBitbucketAppCallback handles GET /api/v1/bitbucket-app/callback:
-// Bitbucket's redirect back once the operator approves the
-// authorization request, carrying ?code=...&state=.... Mirrors
-// handleGitLabAppCallback's own state/code validation.
+// handleBitbucketAppCallback completes the OAuth2 flow from the returned code and state.
 func (rt *Router) handleBitbucketAppCallback(w http.ResponseWriter, r *http.Request) {
 	if rt.bitbucketAppSecrets == nil {
 		writeError(w, http.StatusNotImplemented, "the bitbucket app connection requires a master key to be configured on this control plane")
@@ -157,21 +147,10 @@ var (
 	errBitbucketAppNotAuthorized = errors.New("api: bitbucket app is connected but not authorized")
 )
 
-// bitbucketTokenRefreshMargin mirrors gitLabTokenRefreshMargin's own
-// value and reasoning, sized tighter relative to Bitbucket's own
-// 2-hour access token lifetime (docs/design/git-provider-integrations.md
-// section 3: refresh is the normal path here, not an edge case) the
-// same way it already is relative to GitLab's own token lifetime.
+// bitbucketTokenRefreshMargin is tighter than GitLab's, since Bitbucket's 2-hour tokens make refresh the normal path.
 const bitbucketTokenRefreshMargin = 60 * time.Second
 
-// bitbucketAccessToken returns a valid access token for the connected
-// consumer, refreshing it first if the stored one is at or past its
-// recorded expiry. Mirrors gitlabAccessToken's own refresh logic, but
-// returns only the token, not the connection: Bitbucket Cloud has no
-// instance_url the way GitLab does (this package is Cloud-only, see
-// internal/bitbucketapp's own doc comment), so no caller here has ever
-// needed the connection value back, unlike gitlabAccessToken's own
-// callers, which use conn.InstanceURL on every API call.
+// bitbucketAccessToken returns only the token, since Bitbucket Cloud has no instance URL to carry back.
 func (rt *Router) bitbucketAccessToken(ctx context.Context) (string, error) {
 	conn, err := rt.bitbucketApp.GetBitbucketAppConnection(ctx)
 	if errors.Is(err, store.ErrBitbucketAppConnectionNotFound) {

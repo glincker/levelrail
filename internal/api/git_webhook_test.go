@@ -18,23 +18,14 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// sign mirrors internal/webhook/webhook_test.go's own sign helper
-// exactly: GitHub's X-Hub-Signature-256 scheme, duplicated here rather
-// than shared since Go test helpers aren't exported across packages, the
-// same reasoning fakeBuilder's own doc comment already gives for its own
-// duplication of internal/webhook's fakeDeployer.
+// sign duplicates internal/webhook's helper, since test helpers are not shared across packages.
 func sign(secret []byte, body []byte) string {
 	mac := hmac.New(sha256.New, secret)
 	mac.Write(body)
 	return "sha256=" + hex.EncodeToString(mac.Sum(nil))
 }
 
-// pushBody builds a push event payload for ref, always at commit sha1:
-// every test in this file that cares about a different commit
-// (TestHandleGitPushWebhook_CorrectSignature_TriggersDeploy and its
-// siblings) only ever varies ref/branch matching, never the commit
-// itself, so this stays single-purpose rather than taking a parameter
-// nothing here would ever vary.
+// pushBody always uses one commit, since no test here varies the commit.
 func pushBody(ref string) []byte {
 	b, _ := json.Marshal(struct {
 		Ref   string `json:"ref"`
@@ -43,10 +34,7 @@ func pushBody(ref string) []byte {
 	return b
 }
 
-// fakeGitSourceFetchCall records one gitSourceFetchFunc call's
-// arguments, the multi-app counterpart to builds_test.go's own
-// fakeFetchCall, with the one extra field (token) that distinguishes
-// this seam.
+// fakeGitSourceFetchCall adds the token field to the fake fetch record.
 type fakeGitSourceFetchCall struct {
 	repoURL, sha, token string
 }
@@ -61,12 +49,7 @@ func newFakeGitSourceFetch(calls *[]fakeGitSourceFetchCall, dir string, cleanupC
 	}
 }
 
-// connectGitSource drives the real PUT .../git-source handler (rather
-// than writing store/secrets rows directly) so these tests exercise the
-// actual connect flow a webhook depends on, returning the generated
-// webhook secret. Always against app "web": every test in this file
-// seeds exactly that one app name, the same fixed-name convention
-// seedApp's own callers across this package already use.
+// connectGitSource uses the real PUT .../git-source route, so tests exercise the actual connect flow.
 func connectGitSource(t *testing.T, rt *Router, cookie *http.Cookie, body string) gitSourceResource {
 	t.Helper()
 	rec := httptest.NewRecorder()
@@ -81,10 +64,7 @@ func connectGitSource(t *testing.T, rt *Router, cookie *http.Cookie, body string
 	return got
 }
 
-// newConnectedGitSourceRouter is the fixed router+seed+connect preamble
-// every trigger-mode test in this file repeats before it gets to what
-// it actually tests: a router, app "web" seeded, and its git source
-// connected via connectBody.
+// newConnectedGitSourceRouter sets up app web with its git source connected.
 func newConnectedGitSourceRouter(t *testing.T, connectBody string) (*Router, gitSourceResource) {
 	t.Helper()
 	rt, db := newTestRouterWithGitSourceSecrets(t, newFakeGitSourceSecrets())
@@ -93,10 +73,7 @@ func newConnectedGitSourceRouter(t *testing.T, connectBody string) (*Router, git
 	return rt, connectGitSource(t, rt, cookie, connectBody)
 }
 
-// postGitWebhook POSTs body to app "web"'s webhook route with sigHeader
-// set to sig, plus any extraHeaders (the event-type headers the
-// receiver switches on), and returns the recorder rather than asserting
-// a status: this file's trigger-mode tests expect different codes.
+// postGitWebhook returns the recorder, since the trigger-mode tests expect different status codes.
 func postGitWebhook(t *testing.T, rt *Router, sigHeader, sig string, body []byte, extraHeaders map[string]string) *httptest.ResponseRecorder {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodPost, "/api/v1/webhooks/github/web", strings.NewReader(string(body)))
@@ -143,12 +120,7 @@ func TestHandleGitPushWebhook_NotConfigured(t *testing.T) {
 }
 
 func TestHandleGitPushWebhook_IsUnauthenticated(t *testing.T) {
-	// No session cookie, no Authorization header at all: proves this
-	// route is not wrapped in requireAbility (router.go's own comment on
-	// why), unlike every /api/v1/apps/... route this package otherwise
-	// registers. A 404 (no git source connected, checked before any auth
-	// question is even relevant) is proof enough that the request wasn't
-	// bounced at 401 first.
+	// The route is not behind requireAbility, so a request with no auth must reach the handler.
 	rt, db := newTestRouter(t)
 	seedApp(t, db, "web")
 
@@ -185,13 +157,7 @@ func TestHandleGitPushWebhook_WrongSecret_Rejected(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_WrongApp_SecretDoesNotCrossOver is a
-// regression test against a future refactor silently breaking the
-// per-app secret isolation handleGitPushWebhook relies on: it resolves
-// secretsKey from the URL path's {name}, so app A's own secret must
-// never validate a signature against app B's webhook route, even
-// though both apps are configured and both secrets are real, connected
-// secrets, not placeholders.
+// TestHandleGitPushWebhook_WrongApp_SecretDoesNotCrossOver guards per-app secret isolation on the webhook route.
 func TestHandleGitPushWebhook_WrongApp_SecretDoesNotCrossOver(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -278,11 +244,7 @@ func TestHandleGitPushWebhook_CorrectSignature_TriggersDeploy(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_GitLabTokenHeader_TriggersDeploy proves the
-// exact same webhook route accepts GitLab's own X-Gitlab-Token scheme
-// (a plain secret comparison, not an HMAC signature), the receiver
-// gitlab_app_projects.go's CreateProjectWebhook call registers a
-// project hook against.
+// TestHandleGitPushWebhook_GitLabTokenHeader_TriggersDeploy checks GitLab's plain X-Gitlab-Token is accepted on the same route.
 func TestHandleGitPushWebhook_GitLabTokenHeader_TriggersDeploy(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -343,12 +305,7 @@ func bitbucketPushBody(branch string) []byte {
 	return b
 }
 
-// TestHandleGitPushWebhook_BitbucketSignatureHeader_TriggersDeploy
-// proves the same webhook route also accepts Bitbucket's own payload
-// shape and X-Hub-Signature header (HMAC-SHA256 like GitHub's
-// X-Hub-Signature-256, just without the "-256" suffix), selected by
-// X-Event-Key: repo:push (webhook.ParsePushEventForProvider's own doc
-// comment).
+// TestHandleGitPushWebhook_BitbucketSignatureHeader_TriggersDeploy checks Bitbucket's X-Hub-Signature is accepted on the same route.
 func TestHandleGitPushWebhook_BitbucketSignatureHeader_TriggersDeploy(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -400,10 +357,7 @@ func TestHandleGitPushWebhook_BitbucketWrongSignature_Rejected(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_GiteaSignatureHeader_TriggersDeploy proves
-// the same webhook route accepts a real Gitea delivery: GitHub-shaped
-// ref/after payload (webhook.ParsePushEvent, no dedicated parser
-// needed) plus Gitea's own X-Hub-Signature-256 compatibility header.
+// TestHandleGitPushWebhook_GiteaSignatureHeader_TriggersDeploy checks a real Gitea delivery is accepted on the same route.
 func TestHandleGitPushWebhook_GiteaSignatureHeader_TriggersDeploy(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -433,10 +387,7 @@ func TestHandleGitPushWebhook_GiteaSignatureHeader_TriggersDeploy(t *testing.T) 
 	}
 }
 
-// TestDetectWebhookProviderAndEvent covers every provider
-// detectWebhookProviderAndEvent recognizes from headers alone,
-// including the precedence a delivery carrying more than one
-// discriminator header resolves to.
+// TestDetectWebhookProviderAndEvent checks precedence when a delivery carries more than one discriminator header.
 func TestDetectWebhookProviderAndEvent(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -470,10 +421,7 @@ func TestDetectWebhookProviderAndEvent(t *testing.T) {
 	}
 }
 
-// TestVerifyGitPushWebhookAuth covers the full header matrix
-// verifyGitPushWebhookAuth branches on, including the case none of the
-// three known headers are present, which must fail closed rather than
-// pass by default.
+// TestVerifyGitPushWebhookAuth checks that a request with none of the known headers fails closed.
 func TestVerifyGitPushWebhookAuth(t *testing.T) {
 	secret := "s3cr3t"
 	body := []byte(`{"ref":"refs/heads/main","after":"sha1"}`)
@@ -765,10 +713,7 @@ func TestHandleGitPushWebhook_AdditionalServices_MissingSibling_PartialFailure(t
 	}
 }
 
-// servicesSpecBody is a two-key app.yaml-style services: map, the same
-// shape multiDeployBody (apps_multi_test.go) uses for the manual/API
-// deploy-spec path, so a git source's own persisted version exercises
-// an identical request shape.
+// servicesSpecBody uses the same shape as the manual deploy-spec path, so git and API requests match.
 func servicesSpecBody() string {
 	return `{"repo_url":"https://github.com/org/web.git","branch":"main","services":{
 		"web":{"build":{"type":"dockerfile","path":"./web/Dockerfile"},"port":3000},
@@ -776,12 +721,7 @@ func servicesSpecBody() string {
 	}}`
 }
 
-// TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec proves a
-// git source with a persisted services: map fans a push out through
-// Builder.DeploySpec (the same method handleDeploySpec calls), not
-// through the single Deploy call the AdditionalServices path uses: this
-// is the unification docs/roadmap.md's own "the two paths aren't
-// unified yet" gap named.
+// TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec checks a services map fans out through DeploySpec.
 func TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -819,13 +759,7 @@ func TestHandleGitPushWebhook_ServicesSpec_RoutesThroughDeploySpec(t *testing.T)
 	}
 }
 
-// TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing
-// covers the required case for this dispatch: a fan-out where
-// one service key's own build fails must still deploy every other key
-// (not silently drop it), must not retry or double-trigger the failed
-// key, and must surface the partial failure as 207, mirroring
-// TestHandleDeploySpec_PartialFailure_StillReturns2xxWithPerServiceErrors's
-// own contract for the manual/API path this now shares.
+// TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing checks other services still deploy and the result is 207.
 func TestHandleGitPushWebhook_ServicesSpec_PartialFailure_OneServiceFailing(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -871,11 +805,7 @@ func releaseBody(action string) []byte {
 	return b
 }
 
-// TestGitSourceTriggerMatchesPush covers gitSourceTriggerMatchesPush's
-// full decision table: push mode only matches the configured branch
-// (unchanged pre-trigger-mode behavior), release mode only matches a
-// tag ref regardless of branch, and an empty (pre-migration) TriggerMode
-// behaves exactly like an explicit "push".
+// TestGitSourceTriggerMatchesPush covers the trigger decision table, including an empty pre-migration mode acting as push.
 func TestGitSourceTriggerMatchesPush(t *testing.T) {
 	tests := []struct {
 		name string
@@ -907,10 +837,7 @@ func TestGitSourceTriggerMatchesPush(t *testing.T) {
 	}
 }
 
-// TestParseGitHubReleaseEvent covers parseGitHubReleaseEvent's own
-// decode contract: a missing action is rejected, tag_name is optional
-// at parse time (processGitHubReleaseWebhookEvent only requires it once
-// action is actually "published").
+// TestParseGitHubReleaseEvent checks a missing action is rejected, while tag_name is only required once published.
 func TestParseGitHubReleaseEvent(t *testing.T) {
 	got, err := parseGitHubReleaseEvent(releaseBody("published"))
 	if err != nil {
@@ -937,10 +864,7 @@ func TestDockerSafeTag(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored proves a git
-// source configured for trigger_mode "release" does not deploy on an
-// ordinary push to its own configured branch, the core behavior change
-// this trigger mode exists for.
+// TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored checks a release-mode source ignores ordinary branch pushes.
 func TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
@@ -960,11 +884,7 @@ func TestHandleGitPushWebhook_ReleaseMode_BranchPush_Ignored(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy proves a
-// git source configured for trigger_mode "release" deploys on a tag ref
-// push, using the tag push's own real commit SHA (ev.After) exactly as
-// an ordinary push would: no special checkout handling is needed here,
-// unlike the github release-event path.
+// TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy checks a tag push deploys using its own commit SHA.
 func TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
@@ -987,11 +907,7 @@ func TestHandleGitPushWebhook_ReleaseMode_TagPush_TriggersDeploy(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_PushMode_TagPush_Ignored proves the default
-// "push" trigger mode still ignores a tag push, the same shape
-// TestHandleGitPushWebhook_WrongBranch_AcceptedButNotTriggered already
-// proves for a wrong branch: a tag ref never equals
-// webhook.Config.TargetRef()'s "refs/heads/<branch>".
+// TestHandleGitPushWebhook_PushMode_TagPush_Ignored checks push mode ignores tag pushes.
 func TestHandleGitPushWebhook_PushMode_TagPush_Ignored(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
 
@@ -1006,13 +922,7 @@ func TestHandleGitPushWebhook_PushMode_TagPush_Ignored(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_GitHubPing_Returns200 is the regression test
-// for a live bug: GitHub's own "ping" event, sent automatically right
-// after a webhook is created, has neither a push nor a release payload
-// shape. Before this fix it fell through to
-// webhook.ParsePushEventForProvider, which rejected it as a malformed
-// push, so every new git source's very first delivery showed a 400 in
-// GitHub's own webhook settings page even though nothing was wrong.
+// TestHandleGitPushWebhook_GitHubPing_Returns200 guards against GitHub's ping event being rejected as a malformed push.
 func TestHandleGitPushWebhook_GitHubPing_Returns200(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
 
@@ -1027,11 +937,7 @@ func TestHandleGitPushWebhook_GitHubPing_Returns200(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy proves
-// a github "release" event with action "published" deploys when trigger
-// mode is "release", checking out the tag's own ref (no commit SHA
-// exists in the release payload) and tagging the built image with the
-// (sanitized) release tag name.
+// TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy checks a published release deploys its tag ref.
 func TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
@@ -1054,10 +960,7 @@ func TestHandleGitPushWebhook_GitHubReleasePublished_TriggersDeploy(t *testing.T
 	}
 }
 
-// TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored proves a
-// release event action other than "published" (created, edited, a
-// draft being saved, etc.) never deploys, even with trigger_mode
-// "release".
+// TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored checks only the published action deploys.
 func TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main","trigger_mode":"release"}`)
 
@@ -1072,12 +975,7 @@ func TestHandleGitPushWebhook_GitHubReleaseNotPublished_Ignored(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored proves a
-// github release event against a git source still on the default "push"
-// trigger mode is accepted (200) and ignored, not treated as a
-// malformed push payload (400): before trigger modes existed, this
-// event type fell through into webhook.ParsePushEventForProvider and
-// failed to parse.
+// TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored checks a release event on a push-mode source is accepted and ignored, not a 400.
 func TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://github.com/org/web.git","branch":"main"}`)
 
@@ -1092,16 +990,7 @@ func TestHandleGitPushWebhook_GitHubReleaseEvent_PushModeIgnored(t *testing.T) {
 	}
 }
 
-// TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap is a
-// regression/documentation test for the gap docs/git-integrations.md
-// spells out: ParseBitbucketPushEvent (internal/webhook/bitbucket_push.go)
-// always synthesizes "refs/heads/<name>" regardless of whether Bitbucket's
-// own payload marked the change as a tag ("type":"tag"), so a Bitbucket
-// tag push can never match gitSourceTriggerMatchesPush's "refs/tags/"
-// check today. This fails closed (never triggers), not open, so it's a
-// documented missing feature, not a security bug, but this test exists
-// so a future fix to Bitbucket tag support has to consciously update it
-// rather than silently leaving stale documentation behind.
+// TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap documents that Bitbucket tag pushes never match; it fails closed, so a fix must update it.
 func TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap(t *testing.T) {
 	rt, created := newConnectedGitSourceRouter(t, `{"repo_url":"https://bitbucket.org/org/web.git","branch":"main","trigger_mode":"release"}`)
 
@@ -1122,13 +1011,7 @@ func TestHandleGitPushWebhook_ReleaseMode_BitbucketTagPush_KnownGap(t *testing.T
 	}
 }
 
-// TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices
-// cannot happen through the connect API (validateGitSourceServices
-// rejects setting both), but a git source created before that
-// validation existed, or written directly to the store, could still
-// carry both. This proves handleGitPushWebhook's own routing decision
-// (len(gs.Services) > 0) is services-first regardless, so such a row
-// deploys once, not twice.
+// TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices checks a row with both fields deploys once, services first.
 func TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices(t *testing.T) {
 	secrets := newFakeGitSourceSecrets()
 	rt, db := newTestRouterWithGitSourceSecrets(t, secrets)
@@ -1164,10 +1047,7 @@ func TestHandleGitPushWebhook_ServicesSpec_TakesPriorityOverAdditionalServices(t
 	}
 }
 
-// newGitHubAppGitSourceRouter is newConnectedGitSourceRouter plus a
-// connected, installed GitHub App whose fake client mints
-// "ghs_installtoken", for the tests proving a source with no stored deploy
-// token authenticates with the installation token instead.
+// newGitHubAppGitSourceRouter adds a connected GitHub App whose installation token is ghs_installtoken.
 func newGitHubAppGitSourceRouter(t *testing.T) (*Router, gitSourceResource) {
 	t.Helper()
 	appSecrets := newFakeGitHubAppSecrets()
@@ -1188,10 +1068,7 @@ func postSignedPush(t *testing.T, rt *Router, created gitSourceResource, ref str
 	return postGitWebhook(t, rt, "X-Hub-Signature-256", sign([]byte(created.WebhookSecret), body), body, nil)
 }
 
-// TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken proves a
-// push to a source with no stored deploy token still clones with the
-// connected GitHub App's installation token, not an anonymous clone that
-// 401s for a private repo.
+// TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken checks a private repo clones with the App token when no deploy token is stored.
 func TestHandleGitPushWebhook_PrivateRepo_FallsBackToGitHubAppToken(t *testing.T) {
 	rt, created := newGitHubAppGitSourceRouter(t)
 	var fetchCalls []fakeGitSourceFetchCall

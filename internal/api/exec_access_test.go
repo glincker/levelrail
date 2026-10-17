@@ -12,10 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// TestHandleExecAccess_GetDefaultOnAndSetToggles proves the one place
-// this endpoint deliberately differs from GET/PUT .../auto-rollback:
-// default true, not false, so an app that never touches exec-access
-// keeps working exactly as it does today.
+// TestHandleExecAccess_GetDefaultOnAndSetToggles checks exec access defaults to on, unlike the other toggles.
 func TestHandleExecAccess_GetDefaultOnAndSetToggles(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -69,10 +66,7 @@ func TestHandleExecAccess_GetDefaultOnAndSetToggles(t *testing.T) {
 	}
 }
 
-// TestHandleExecAccess_ReadableWhileDisabled proves reading (and
-// re-enabling) the setting keeps working even while it's off: the
-// exec-access route itself must never be gated by its own flag, or an
-// operator who disabled it could never turn it back on.
+// TestHandleExecAccess_ReadableWhileDisabled checks the route is not gated by its own flag, so it can be re-enabled.
 func TestHandleExecAccess_ReadableWhileDisabled(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
@@ -97,11 +91,7 @@ func TestHandleExecAccess_ReadableWhileDisabled(t *testing.T) {
 	}
 }
 
-// TestHandleSetExecAccess_PlainWriteToken_Forbidden proves PUT
-// .../exec-access sits behind AbilityRoot, the same tier exec/terminal
-// themselves sit behind, not a lower ordinary-app-write tier: a token
-// scoped to nothing but AbilityWrite cannot re-enable exec access any
-// more than it can run exec itself.
+// TestHandleSetExecAccess_PlainWriteToken_Forbidden checks the toggle needs AbilityRoot, like exec itself.
 func TestHandleSetExecAccess_PlainWriteToken_Forbidden(t *testing.T) {
 	rt, db := newTestRouter(t)
 	ctx := context.Background()

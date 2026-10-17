@@ -14,18 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
-// This file: POST/GET/DELETE /api/v1/apps/{name}/connections[/{env_var}]
-// and GET /api/v1/apps/{name}/connectable-databases, the UI/CLI-facing
-// surface for store.DesiredService.DatabaseEnv (an open-ended map, one
-// env var per entry) that app.yaml's own { from: "<database>.<field>" }
-// syntax already populates but that, until now, had no way to set from
-// the dashboard or the CLI for an app not hand-editing a spec file.
-//
-// This is deliberately separate from PUT/DELETE /api/v1/apps/{name}/database
-// (apps_database.go), which remains DatabaseAttachment's own single-slot
-// endpoint: an app can have at most one attachment but arbitrarily many
-// DatabaseEnv connections, e.g. one app talking to both its own Postgres
-// and a shared Redis cache.
+// Sets and lists the DatabaseEnv connections an app uses, separate from the single-slot database attachment.
 
 // defaultConnectionFieldRequest is what a blank field defaults to on
 // create, mirroring apps_database.go's own defaultDatabaseAttachmentField:
@@ -34,19 +23,12 @@ const defaultConnectionFieldRequest = "url"
 
 var nonEnvVarChars = regexp.MustCompile(`[^A-Za-z0-9_]+`)
 
-// appConnectionResource is GET/POST /api/v1/apps/{name}/connections'
-// wire shape for one entry: store.DatabaseEnvRef plus the env var name
-// (the map key) and a resolved-host preview so an operator can tell,
-// without waiting for a deploy, whether this connection is actually
-// cross-node-capable.
+// appConnectionResource is one DatabaseEnv entry plus its resolved host, so cross-node reachability is visible before a deploy.
 type appConnectionResource struct {
 	EnvVar       string `json:"env_var"`
 	DatabaseName string `json:"database_name"`
 	Field        string `json:"field"`
-	// Host is the value application.DatabaseHost would resolve this
-	// connection's host to at deploy time: a mesh DNS name
-	// (<database>.<zone>) or, when mesh networking isn't configured on
-	// this control plane, the database's own Docker container name.
+	// The mesh DNS name when mesh is configured, otherwise the database's bare container name.
 	Host string `json:"host"`
 	// MeshDNS is true exactly when Host is a mesh DNS name rather than a
 	// container name, i.e. whether this connection actually works across
@@ -61,23 +43,14 @@ type appConnectionResource struct {
 	CrossNode bool `json:"cross_node"`
 }
 
-// createAppConnectionRequest is POST /api/v1/apps/{name}/connections'
-// request body. Field and EnvVar both default when left blank: Field to
-// "url", EnvVar via defaultConnectionEnvVar (this file's own doc
-// comment on that function explains the naming convention).
+// Field defaults to url and EnvVar to a generated name when left blank.
 type createAppConnectionRequest struct {
 	Database string `json:"database"`
 	Field    string `json:"field,omitempty"`
 	EnvVar   string `json:"env_var,omitempty"`
 }
 
-// handleCreateAppConnection handles POST /api/v1/apps/{name}/connections:
-// adds (or replaces, if env_var already names an existing connection) one
-// entry in this app's DatabaseEnv map, the UI/CLI-facing equivalent of
-// app.yaml's own { from: "<database>.<field>" } env var syntax for an
-// app that already exists. Validates database and field exist/are
-// supported the same "fail loudly here, not at reconcile time" way
-// handleSetAppDatabase already does.
+// Replaces an existing entry for env_var; validates database and field before saving, so failures surface at request time.
 func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -144,10 +117,7 @@ func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, rt.externalizeConnection(r.Context(), rt.toAppConnectionResource(envVar, store.DatabaseEnvRef{Database: req.Database, Field: field}, desiredDB, svc.NodeID), external))
 }
 
-// handleDeleteAppConnection handles DELETE /api/v1/apps/{name}/connections/{env_var}:
-// the reverse of handleCreateAppConnection, removing one DatabaseEnv
-// entry. Idempotent, the same "disconnect an already-disconnected thing
-// is not an error" shape handleClearAppVaultEnv already establishes.
+// Idempotent: removing an already-removed connection is not an error.
 func (rt *Router) handleDeleteAppConnection(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 	envVar := r.PathValue("env_var")
@@ -165,15 +135,7 @@ func (rt *Router) handleDeleteAppConnection(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// handleListAppConnections handles GET /api/v1/apps/{name}/connections:
-// every entry in this app's DatabaseEnv map, each resolved against its
-// referenced database's real placement so the response can say whether
-// it currently resolves to a mesh DNS name (cross-node-capable) or a
-// bare container name (reachable only when the app and database share a
-// node). A database that was since deleted is skipped rather than
-// failing the whole list, the same "one entry's problem, not the
-// caller's" tolerance handleListApps already extends to a single
-// broken app.
+// Skips a connection whose database was deleted, so one stale entry does not fail the whole list.
 func (rt *Router) handleListAppConnections(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -203,11 +165,7 @@ func (rt *Router) handleListAppConnections(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, out)
 }
 
-// toAppConnectionResource builds one appConnectionResource, computing
-// Host/MeshDNS the exact same way application.Controller's own
-// resolveDatabaseField would at deploy time (application.DatabaseHost is
-// that package's exported single source of truth for the host-selection
-// half of that logic).
+// Resolves Host and MeshDNS the same way the application controller does at deploy time.
 func (rt *Router) toAppConnectionResource(envVar string, ref store.DatabaseEnvRef, desiredDB *store.DesiredDatabase, appNodeID string) appConnectionResource {
 	host := application.DatabaseHost(ref.Database, rt.meshZone)
 	return appConnectionResource{
@@ -221,12 +179,7 @@ func (rt *Router) toAppConnectionResource(envVar string, ref store.DatabaseEnvRe
 	}
 }
 
-// connectableDatabaseResource is GET
-// /api/v1/apps/{name}/connectable-databases' wire shape for one
-// candidate database: every field handleCreateAppConnection needs to
-// offer a one-click "connect" action, plus enough placement/status
-// context for the UI to explain what connecting would actually mean
-// (same node vs. cross-node, already connected or not).
+// Carries placement and connection state so the UI can say whether connecting is same-node or cross-node.
 type connectableDatabaseResource struct {
 	Name             string   `json:"name"`
 	Engine           string   `json:"engine"`
@@ -236,19 +189,7 @@ type connectableDatabaseResource struct {
 	ConnectedEnvVars []string `json:"connected_env_vars,omitempty"`
 }
 
-// handleListConnectableDatabases handles GET
-// /api/v1/apps/{name}/connectable-databases: every managed database this
-// app could connect to (POST .../connections would accept it), so the
-// dashboard can suggest connections instead of an operator hand-typing a
-// database name. Scoped to the app's own project when it has one
-// (ListDesiredDatabasesByProject), matching how every other project-
-// scoped resource already limits "what's related to this app" (see
-// AppStore.ListDesiredServicesByProject's own doc comment); an app with
-// no project sees every database, the same lenient default
-// handleSetAppDatabase itself already has (it accepts any existing
-// database name regardless of project). Either way this is a
-// suggestion, not an authorization boundary: POST .../connections
-// itself still accepts any existing database name.
+// Scoped to the app's project when it has one; a suggestion only, since POST still accepts any existing database.
 func (rt *Router) handleListConnectableDatabases(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
@@ -298,10 +239,7 @@ func (rt *Router) handleListConnectableDatabases(w http.ResponseWriter, r *http.
 	writeJSON(w, http.StatusOK, out)
 }
 
-// existingServiceEnvKeys collects every env var name already in use on
-// svc, across every source that can declare one: defaultConnectionEnvVar
-// checks against this so a generated default never silently collides
-// with (and overwrites at deploy time) something already there.
+// Collects env var names from every source, so a generated default never overwrites an existing one at deploy time.
 func existingServiceEnvKeys(svc *store.DesiredService) map[string]bool {
 	keys := make(map[string]bool, len(svc.Env)+len(svc.SecretEnv)+len(svc.VaultEnv)+len(svc.DatabaseEnv))
 	for k := range svc.Env {
@@ -322,18 +260,7 @@ func existingServiceEnvKeys(svc *store.DesiredService) map[string]bool {
 	return keys
 }
 
-// defaultConnectionEnvVar picks a collision-safe env var name for a new
-// connection when the request leaves env_var blank: "<DATABASE>_DATABASE_URL"
-// for field "url" (the common case, namespaced by database name so two
-// connections on the same app never collide the way a bare
-// "DATABASE_URL" would once an app has more than one), or
-// "<DATABASE>_DB_<FIELD>" for every other field (e.g. "MAIN_DB_HOST"),
-// mirroring the self-documenting S3_* naming
-// resolveStorageEnv/StorageEnvKeys already establish for storage
-// targets. existing is every env var name already in use on this
-// service (existingServiceEnvKeys); a numeric suffix (_2, _3, ...) is
-// appended until the generated name is free, so a second connection to
-// the same database+field never silently overwrites the first.
+// Field url becomes <DATABASE>_DATABASE_URL, and a numeric suffix avoids collisions with existing env var names.
 func defaultConnectionEnvVar(dbName, field string, existing map[string]bool) string {
 	base := strings.Trim(nonEnvVarChars.ReplaceAllString(strings.ToUpper(dbName), "_"), "_")
 	var name string

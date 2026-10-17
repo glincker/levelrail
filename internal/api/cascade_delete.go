@@ -177,11 +177,7 @@ func (rt *Router) databaseUsersOutside(ctx context.Context, dbName string, inSco
 	return outside
 }
 
-// deleteWithMembers is the shared body of the three container deletes. By
-// default members are detached and keep running (the label-only behavior).
-// With cascade=true they are torn down first and the container is removed only
-// once nothing is left in it, so a partial failure is resumed by repeating the
-// request.
+// deleteWithMembers detaches members by default; with cascade they are removed first, so a retry resumes a partial failure.
 func (rt *Router) deleteWithMembers(w http.ResponseWriter, r *http.Request, kind string, scope func(context.Context) (cascadeScope, error), remove func(context.Context, cascadeScope) error) {
 	ctx := r.Context()
 	cascade := r.URL.Query().Get("cascade") == "true"

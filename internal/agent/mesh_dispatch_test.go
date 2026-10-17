@@ -10,10 +10,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/network"
 )
 
-// fakeMeshApplier is a MeshApplier test double: it records what it was
-// asked to apply and answers with canned results or errors, the same
-// recording-fake shape internal/network's own recordingSink establishes
-// for ConfigSink.
+// fakeMeshApplier records what it is asked to apply and answers with canned results.
 type fakeMeshApplier struct {
 	applyErr     error
 	applyResult  network.NodeIdentity

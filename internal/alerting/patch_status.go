@@ -10,19 +10,10 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// DefaultPatchStatusThreshold is how many pending security patches a
-// node can have before a kind=patch_status rule fires, when no override
-// is configured. hostpatch.go only ever reports a point-in-time count,
-// never a per-package age, so count is the only signal this kind can
-// evaluate; 1 means "any security patch pending at all," the same
-// zero-tolerance default GET /api/v1/nodes/{id}/patch-status's dashboard
-// card already implies by showing Security > 0 as a concern.
+// DefaultPatchStatusThreshold is the pending security patch count that fires a patch_status rule; 1 means any pending patch.
 const DefaultPatchStatusThreshold = 1
 
-// patchStatusLookback mirrors internal/api's osPatchLookback exactly:
-// wide enough to survive a slow or just-restarted HostPatchCollector
-// (its own default interval is an hour) without losing the last real
-// reading.
+// patchStatusLookback matches internal/api's osPatchLookback, wide enough to survive a slow or restarted collector.
 const patchStatusLookback = 48 * time.Hour
 
 // NodeSource is the narrow node-listing surface EvaluatePatchStatus
@@ -32,37 +23,13 @@ type NodeSource interface {
 	ListNodes(ctx context.Context) ([]store.Node, error)
 }
 
-// nodePatchResourceID duplicates internal/api's own nodeResourceID
-// rather than importing it: internal/api imports internal/alerting (for
-// AlertRules et al.), so the reverse import would cycle, the same
-// reasoning CertSource's own doc comment gives for duplicating its
-// method set.
+// nodePatchResourceID duplicates internal/api's nodeResourceID to avoid an import cycle.
 func nodePatchResourceID(nodeID string) string {
 	return "node:" + nodeID
 }
 
-// EvaluatePatchStatus runs one KindPatchStatus rule against every node
-// in nodes and returns its updated evaluation state plus, when firing,
-// one human-readable notice line per node whose latest security-patch
-// count meets or exceeds threshold, for Engine to attach to the
-// outgoing Event.
-//
-// Firing follows EvaluateCertExpiry's shape, not EvaluateThreshold's:
-// the instant any node is over threshold, with no ForDuration debounce.
-// HostPatchCollector already only samples once an hour, so there is
-// nothing left for a per-tick debounce to smooth out. LastValue is the
-// highest security-patch count seen across every node with a recent
-// sample, not just the ones over threshold, so an operator can see "how
-// close" the fleet is even while every node is healthy, matching
-// EvaluateCertExpiry's own LastValue convention.
-//
-// A node with no sample inside patchStatusLookback (no supported
-// package manager, or the collector hasn't run yet) is skipped, neither
-// confirming nor denying the condition, the same "no recent data" stance
-// EvaluateThreshold takes. A node whose own metrics query fails is
-// logged and skipped too, rather than failing the whole rule: the same
-// "one broken resource must not block the rest" stance
-// ListCertificates takes on a single malformed certificate.
+// EvaluatePatchStatus evaluates one patch_status rule across nodes; firing is immediate, with no debounce, since the collector samples hourly.
+// Nodes with no recent sample are skipped, neither confirming nor denying the condition.
 func EvaluatePatchStatus(ctx context.Context, nodes NodeSource, metrics MetricsSource, r Rule, threshold float64, now time.Time, logger *slog.Logger) (Rule, []string, error) {
 	if logger == nil {
 		logger = slog.Default()
@@ -119,11 +86,7 @@ func EvaluatePatchStatus(ctx context.Context, nodes NodeSource, metrics MetricsS
 	return advanceState(next, r, anyUnhealthy, 0, now), notices, nil
 }
 
-// evaluatePatchStatusForNode is one node's own check within
-// EvaluatePatchStatus's loop, pulled out so node_alert_status.go's live,
-// single-node check can call the identical logic without waiting for
-// Engine's next tick. have is false when there is no recent sample to
-// judge, matching the loop's own "skip, don't confirm or deny" stance.
+// evaluatePatchStatusForNode lets node_alert_status.go run the same check on demand, without waiting for the next tick.
 func evaluatePatchStatusForNode(ctx context.Context, metrics MetricsSource, ruleID string, node store.Node, threshold float64, from, now time.Time, logger *slog.Logger) (value float64, have, firing bool) {
 	samples, err := metrics.QueryMetrics(ctx, nodePatchResourceID(node.ID), telemetry.MetricOSSecurityPatchesAvailable, from, now)
 	if err != nil {

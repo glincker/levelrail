@@ -1,9 +1,6 @@
 package agent
 
-// This file: the agent-side half of the dispatched-build protocol, the
-// build counterpart to exec_relay.go. It unpacks the build context the
-// control plane streams up, runs the build against this node's own
-// BuildKit, and streams progress plus the resulting image tar back.
+// Agent-side half of the dispatched-build protocol: unpacks the streamed context and runs it on this node's BuildKit.
 
 import (
 	"context"
@@ -22,10 +19,7 @@ import (
 // CPU for a caller that is no longer listening.
 var errBuildCancelled = errors.New("agent: build cancelled by the control plane")
 
-// BuildRunner is what BuildRelay needs from internal/build to actually
-// run a dispatched build. *build.Client satisfies it; an agent with no
-// reachable BuildKit is constructed without one and rejects dispatched
-// builds explicitly rather than failing halfway through one.
+// BuildRunner runs dispatched builds; *build.Client satisfies it.
 type BuildRunner interface {
 	SolveRemote(ctx context.Context, req build.RemoteRequest, out io.Writer, progress func(build.ProgressEvent)) (*build.Result, error)
 }
@@ -40,10 +34,7 @@ type BuildRelay struct {
 	live map[string]*agentBuild
 }
 
-// NewBuildRelay builds a relay running builds through runner and writing
-// its frames through send, which must serialize writes to the Session
-// stream. A nil runner is valid: every dispatched build is then rejected
-// with a clear error.
+// NewBuildRelay returns a relay that runs builds through runner and writes frames through send; a nil runner rejects every build.
 func NewBuildRelay(runner BuildRunner, send func(*agentpb.AgentMessage)) *BuildRelay {
 	return &BuildRelay{runner: runner, send: send, live: make(map[string]*agentBuild)}
 }
@@ -56,10 +47,7 @@ type agentBuild struct {
 	in      chan *agentpb.BuildInput
 	credit  chan uint32
 
-	// sendMu serializes this build's own data frames and owns window,
-	// so the progress relay and the image exporter, which produce frames
-	// concurrently, share one flow-control budget without a third
-	// goroutine to arbitrate between them.
+	// sendMu serializes this build's data frames; the progress relay and image exporter share one flow-control window.
 	sendMu       sync.Mutex
 	window       uint32
 	terminalOnce sync.Once
@@ -89,10 +77,7 @@ func (b *agentBuild) stop() {
 	}
 }
 
-// sendData sends one data frame, waiting for credit when the window is
-// exhausted. Blocking here is the whole point: it pushes backpressure
-// into BuildKit's own exporter rather than buffering an image tar the
-// control plane is not keeping up with.
+// sendData waits for credit when the window is exhausted, pushing backpressure into BuildKit's exporter.
 func (b *agentBuild) sendData(ctx context.Context, send func(*agentpb.AgentMessage), frame *agentpb.BuildOutput) error {
 	b.sendMu.Lock()
 	defer b.sendMu.Unlock()
@@ -110,10 +95,7 @@ func (b *agentBuild) sendData(ctx context.Context, send func(*agentpb.AgentMessa
 	return nil
 }
 
-// sendTerminal sends the stream's one terminal frame, ordered after every
-// data frame but outside the window (the one frame of slack the control
-// plane's own subscription buffer reserves for it). Exactly one ever
-// goes out per build, however many paths race to end it.
+// sendTerminal sends the one terminal frame, outside the window; exactly one goes out per build.
 func (b *agentBuild) sendTerminal(send func(*agentpb.AgentMessage), frame *agentpb.BuildOutput) {
 	b.terminalOnce.Do(func() {
 		b.sendMu.Lock()
@@ -122,10 +104,7 @@ func (b *agentBuild) sendTerminal(send func(*agentpb.AgentMessage), frame *agent
 	})
 }
 
-// Start begins the build identified by buildID (the request's own
-// RequestId, which also tags every frame of this build). It returns
-// immediately: creating the context directory and running the build both
-// happen off the session's receive loop.
+// Start begins the build identified by buildID without blocking the session's receive loop.
 func (r *BuildRelay) Start(ctx context.Context, buildID string, req *agentpb.BuildRequest) {
 	if r.runner == nil {
 		r.sendResponse(buildID, "agent: this node has no BuildKit connection, so it cannot run a dispatched build")
@@ -206,10 +185,7 @@ func (r *BuildRelay) run(ctx context.Context, buildID string, b *agentBuild, req
 	})
 }
 
-// pumpContext feeds arriving context frames into the unpack pipe and
-// credits them back as they are consumed. It needs its own goroutine
-// because that pipe write blocks until the unpack reads, which must never
-// happen on the session's receive loop.
+// pumpContext runs on its own goroutine because the unpack pipe write blocks until the unpack reads.
 func (r *BuildRelay) pumpContext(ctx context.Context, buildID string, b *agentBuild) {
 	consumed := uint32(0)
 
