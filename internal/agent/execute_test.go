@@ -11,10 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 )
 
-// execRuntime is a hand-written, fully controllable fake docker.Runtime
-// for exercising every Execute branch, distinct from transport_test.go's
-// fakeRuntime (which only needs to prove delegation, not full
-// call/return behavior per method).
+// Fully controllable fake; transport_test.go's fakeRuntime only proves delegation.
 type execRuntime struct {
 	inspectState             *docker.ContainerState
 	inspectErr               error

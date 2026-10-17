@@ -20,10 +20,8 @@ var runningInContainer = func() bool {
 	return false
 }
 
-// resolveHTTPAddr returns APP_HTTP_ADDR when set. Otherwise loopback, but
-// only outside a container and when APP_DASHBOARD_URL says the embedded
-// ingress fronts the dashboard over HTTPS: anywhere else a loopback default
-// would lock the operator out of the first sign-in.
+// Loopback is the default only outside a container with an HTTPS dashboard URL.
+// Any other loopback default would lock the operator out of first sign-in.
 func resolveHTTPAddr(getenv func(string) string, inContainer bool) string {
 	if v := getenv("APP_HTTP_ADDR"); v != "" {
 		return v

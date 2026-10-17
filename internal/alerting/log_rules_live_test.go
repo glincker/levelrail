@@ -18,10 +18,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
-// TestLogRules_Live_RealContainerSignaturesAndAlert drives the whole path
-// against a real Docker daemon: a container writes two shapes of error line,
-// the collector stores them, signatures cluster them into two groups with the
-// right counts, and a log_pattern rule fires with redacted sample lines.
+// Real Docker: two error shapes are clustered, and a log_pattern rule fires with redacted samples.
 func TestLogRules_Live_RealContainerSignaturesAndAlert(t *testing.T) {
 	dockertest.SkipIfShort(t)
 	client, err := docker.NewClient()
