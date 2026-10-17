@@ -1,6 +1,6 @@
 # ADR 031: How Levelrail integrates with outside systems
 
-Status: Accepted
+Status: Accepted. Refined by [ADR 034](034-plugin-contract-and-marketplace.md): "no plugin runtime" is replaced by a defined out-of-process boundary.
 
 Date: 2026-10-11
 
