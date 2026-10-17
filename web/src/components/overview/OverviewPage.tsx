@@ -131,7 +131,7 @@ export function OverviewPage({
     kpis: (
       <section
         aria-label="Live traffic and resources"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5"
+        className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] gap-3"
       >
         {layout.containerMetrics ? <ResourceTiles reading={reading} /> : null}
         {layout.traffic !== 'hidden' ? (
@@ -178,12 +178,21 @@ export function OverviewPage({
       />
       {pairing ? (
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2">
-          {sections.attention}
+          <div className="space-y-6">
+            {sections.attention}
+            {sections.kpis}
+          </div>
           {sections.access}
         </div>
       ) : null}
       {layout.sections
-        .filter((id) => !(pairing && (id === 'attention' || id === 'access')))
+        .filter(
+          (id) =>
+            !(
+              pairing &&
+              (id === 'attention' || id === 'access' || id === 'kpis')
+            ),
+        )
         .map((id) => (
           <Fragment key={id}>{sections[id]}</Fragment>
         ))}
