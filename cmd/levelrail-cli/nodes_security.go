@@ -138,7 +138,7 @@ func printNodeSecurity(out io.Writer, t apiclient.NodeTrust, events []apiclient.
 		_, _ = fmt.Fprintf(out, "cert serial:          %s\n", orDash(c.Serial))
 		_, _ = fmt.Fprintf(out, "cert issued:          %s\n", fmtTime(c.IssuedAt))
 		_, _ = fmt.Fprintf(out, "cert expires:         %s\n", fmtTime(c.NotAfter))
-		_, _ = fmt.Fprintf(out, "private key made by:  %s\n", c.KeyOrigin)
+		_, _ = fmt.Fprintf(out, "private key made by:  %s\n", keyOriginLabel(c.KeyOrigin))
 	}
 	if r := t.Renewal; r != nil {
 		next := fmtTime(r.NextRenewAt)

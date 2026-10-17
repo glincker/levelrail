@@ -142,40 +142,106 @@ func TestCertLifecycle_EnrollWithCSR_KeyNeverLeavesAgent(t *testing.T) {
 	}
 }
 
-func TestCertLifecycle_LegacyEnrollWithoutCSR(t *testing.T) {
+func TestCertLifecycle_EnrollPinnedAndUnpinned(t *testing.T) {
 	db := openLiveTestStore(t)
 	ca, _ := GenerateCA()
+	ts := startCertTestServer(t, ca, db)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	mintToken(t, db, "pinned", store.NodeJoinTokenPurposeEnroll, "")
+	if _, err := DialEnroll(ctx, ts.addr, "pinned", "pinned-node", WithPinnedCAFingerprint(ca.Fingerprint())); err != nil {
+		t.Fatalf("pinned DialEnroll() error = %v", err)
+	}
+	mintToken(t, db, "unpinned", store.NodeJoinTokenPurposeEnroll, "")
+	if _, err := DialEnroll(ctx, ts.addr, "unpinned", "unpinned-node"); err != nil {
+		t.Fatalf("unpinned DialEnroll() error = %v", err)
+	}
+	mintToken(t, db, "wrong-pin", store.NodeJoinTokenPurposeEnroll, "")
+	if _, err := DialEnroll(ctx, ts.addr, "wrong-pin", "wrong-pin-node", WithPinnedCAFingerprint(strings.Repeat("ab", 32))); err == nil {
+		t.Fatal("a mismatched CA pin must refuse enrollment")
+	}
+}
+
+func TestCertLifecycle_EnrollWithoutCSRIsRefusedAndRecorded(t *testing.T) {
+	db := openLiveTestStore(t)
+	ca, _ := GenerateCA()
+	ts := startCertTestServer(t, ca, db)
 	ctx := context.Background()
 
-	for _, tt := range []struct {
-		name     string
-		opts     []Option
-		wantCode codes.Code
-	}{
-		{"refused by default", nil, codes.FailedPrecondition},
-		{"accepted when the override allows legacy agents", []Option{WithRequireCSR(false)}, codes.OK},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			ts := startCertTestServer(t, ca, db, tt.opts...)
-			token := "legacy-" + tt.wantCode.String()
-			mintToken(t, db, token, store.NodeJoinTokenPurposeEnroll, "")
-			conn, err := grpc.NewClient(ts.addr, grpc.WithTransportCredentials(credentials.NewTLS(enrollTrustConfig(ca.Fingerprint()))))
-			if err != nil {
-				t.Fatalf("grpc.NewClient() error = %v", err)
-			}
-			defer func() { _ = conn.Close() }()
-			resp, err := agentpb.NewAgentServiceClient(conn).Enroll(ctx, &agentpb.EnrollRequest{JoinToken: token, NodeName: "old-agent-" + tt.wantCode.String()})
-			if status.Code(err) != tt.wantCode {
-				t.Fatalf("Enroll() code = %v (%v), want %v", status.Code(err), err, tt.wantCode)
-			}
-			if err != nil && !strings.Contains(err.Error(), "APP_AGENT_REQUIRE_CSR=false") {
-				t.Fatalf("refusal must name the override, got %v", err)
-			}
-			if err == nil && len(resp.GetClientKeyPem()) == 0 {
-				t.Fatal("an agent that sent no CSR needs the server-generated key back")
-			}
-		})
+	mintToken(t, db, "old-agent", store.NodeJoinTokenPurposeEnroll, "")
+	conn, err := grpc.NewClient(ts.addr, grpc.WithTransportCredentials(credentials.NewTLS(enrollTrustConfig(ca.Fingerprint()))))
+	if err != nil {
+		t.Fatalf("grpc.NewClient() error = %v", err)
 	}
+	defer func() { _ = conn.Close() }()
+	_, err = agentpb.NewAgentServiceClient(conn).Enroll(ctx, &agentpb.EnrollRequest{JoinToken: "old-agent", NodeName: "old-agent"})
+	if status.Code(err) != codes.FailedPrecondition || !strings.Contains(err.Error(), "Upgrade the agent") {
+		t.Fatalf("Enroll() = %v, want FailedPrecondition telling the operator to upgrade", err)
+	}
+	if strings.Contains(err.Error(), "old-agent") && strings.Contains(err.Error(), "token") {
+		t.Fatalf("refusal must not echo the token: %v", err)
+	}
+	evs, err := db.ListNodeSecurityEvents(ctx, "", store.NodeSecurityFilter{})
+	if err != nil {
+		t.Fatalf("ListNodeSecurityEvents() error = %v", err)
+	}
+	if len(evs) != 1 || evs[0].Reason != store.SecurityReasonUpgradeRequired || evs[0].Outcome != store.SecurityOutcomeRejected {
+		t.Fatalf("events = %+v, want one rejected agent_upgrade_required", evs)
+	}
+	// The token was not spent: the operator can retry with an upgraded agent.
+	if _, err := DialEnroll(ctx, ts.addr, "old-agent", "old-agent", WithPinnedCAFingerprint(ca.Fingerprint())); err != nil {
+		t.Fatalf("retry with a CSR after the refusal: %v", err)
+	}
+}
+
+func TestCertLifecycle_RemovedKeyGenerationFieldsStayRemoved(t *testing.T) {
+	fields := (&agentpb.EnrollResponse{}).ProtoReflect().Descriptor().Fields()
+	if fields.ByName("client_key_pem") != nil || fields.ByNumber(3) != nil {
+		t.Fatal("EnrollResponse must not carry a private key")
+	}
+	if !(&agentpb.EnrollResponse{}).ProtoReflect().Descriptor().ReservedRanges().Has(3) {
+		t.Fatal("field 3 must stay reserved so it is never reused")
+	}
+}
+
+func TestCertLifecycle_ControlPlaneKeyNodeMustReenroll(t *testing.T) {
+	db := openLiveTestStore(t)
+	ca, _ := GenerateCA()
+	ts := startCertTestServer(t, ca, db)
+	id := enrollNode(t, db, ts, "legacy-key-node")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if _, err := db.ExecContext(ctx, `UPDATE nodes SET cert_key_origin = ? WHERE id = ?`, store.CertKeyOriginReenrollRequired, id.NodeID); err != nil {
+		t.Fatalf("mark node: %v", err)
+	}
+	_, err := dialAs(t, ts.addr, id).Renew(ctx, &agentpb.RenewRequest{CsrDer: mustCSR(t)})
+	if status.Code(err) != codes.FailedPrecondition || !strings.Contains(err.Error(), "re-enroll") {
+		t.Fatalf("Renew() = %v, want FailedPrecondition asking to re-enroll", err)
+	}
+	node, _ := db.GetNode(ctx, id.NodeID)
+	if node.CertGeneration != 1 || node.CertFingerprint != fingerprintOfPEM(t, id.ClientCertPEM) {
+		t.Fatal("a refused renewal must not issue or record a certificate")
+	}
+
+	mintToken(t, db, "fix-it", store.NodeJoinTokenPurposeReenroll, id.NodeID)
+	if _, err := DialReenroll(ctx, ts.addr, "fix-it", "", WithTrustedCA(id.CACertPEM)); err != nil {
+		t.Fatalf("DialReenroll() error = %v", err)
+	}
+	node, _ = db.GetNode(ctx, id.NodeID)
+	if node.CertKeyOrigin != store.CertKeyOriginAgent {
+		t.Fatalf("after re-enroll key origin = %q, want agent", node.CertKeyOrigin)
+	}
+}
+
+func fingerprintOfPEM(t *testing.T, certPEM []byte) string {
+	t.Helper()
+	c, err := parseCertPEM(certPEM)
+	if err != nil {
+		t.Fatalf("parseCertPEM() error = %v", err)
+	}
+	return CertFingerprint(c.Raw)
 }
 
 func TestCertLifecycle_RenewOverlapAndExpiryOfPrevious(t *testing.T) {

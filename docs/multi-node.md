@@ -715,7 +715,7 @@ Not verified, or only partly:
 - **An open session is not re-verified.** Expiry is checked at the handshake, so a session that outlives its certificate stays open until it reconnects. Revocation does close the live session.
 - **Rejections before the chain verifies are attributed by the certificate's claimed name.** That name is attacker controlled; a name that is not a known node is recorded without a node.
 - **The security log is operational history, not a tamper-evident audit trail.** It lives in the control plane database; use the audit log for who did what.
-- **Legacy key generation.** `APP_AGENT_REQUIRE_CSR=false` lets an old agent get a control-plane-generated key. It is off by default and the node page says which side generated each key.
+- **Early-beta nodes.** A node enrolled when the control plane still generated keys shows "re-enroll required" and is never renewed. Use Re-enroll on its page; the new key is made on the node.
 - **Clock skew.** Certificates are issued valid from one hour before issue time, so an agent clock up to about an hour behind still verifies them. Further behind, the agent refuses a new certificate (keeping the old one) and the control plane rejects the connection as not yet valid.
 
 ## Agent certificates: renewal and re-enrollment
@@ -749,7 +749,7 @@ The agent reports its next scheduled renewal and any failure (error, time, conse
 An agent stopped mid-renewal settles it on its next start: it keeps whichever identity the control plane accepts.
 
 <Note>
-Nodes enrolled before agents generated their own keys keep working, and their first renewal moves them to an agent-generated key. Older agents still enroll against a newer control plane and get a server-generated key. The control plane now refuses that by default. Set `APP_AGENT_REQUIRE_CSR=false` on the control plane to accept legacy agents until they are upgraded.
+Every agent key is generated on the node. An agent too old to send a certificate request is refused with an "upgrade the agent" error, its join token is not spent, and the attempt shows in the security log. Nodes enrolled by an early beta keep running until their certificate expires, are not renewed, and show "re-enroll required" until you use Re-enroll. There is no setting to turn this back on.
 </Note>
 
 ### Re-enrolling a node

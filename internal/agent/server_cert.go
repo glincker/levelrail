@@ -24,6 +24,10 @@ func (s *Server) Renew(ctx context.Context, req *agentpb.RenewRequest) (*agentpb
 	if err != nil {
 		return nil, err
 	}
+	if node.CertKeyOrigin == store.CertKeyOriginReenrollRequired {
+		s.recordRenewFailed(ctx, node.ID, store.SecurityReasonReenrollRequired)
+		return nil, status.Errorf(codes.FailedPrecondition, "node %q still uses a key the control plane generated: re-enroll the node", node.ID)
+	}
 	issued, err := s.signCSR(node.ID, req.GetCsrDer())
 	if err != nil {
 		s.recordRenewFailed(ctx, node.ID, store.SecurityReasonSignFailed)
@@ -65,7 +69,8 @@ func (s *Server) Reenroll(ctx context.Context, req *agentpb.ReenrollRequest) (*a
 		return nil, status.Error(codes.InvalidArgument, "reenroll_token is required")
 	}
 	if len(req.GetCsrDer()) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "csr_der is required")
+		s.recordUpgradeRequired(ctx, store.SecurityKindReenroll, req.GetNodeId())
+		return nil, errAgentUpgradeRequired
 	}
 	tok, err := s.redeemToken(ctx, req.GetReenrollToken(), store.NodeJoinTokenPurposeReenroll)
 	if err != nil {

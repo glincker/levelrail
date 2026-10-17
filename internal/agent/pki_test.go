@@ -41,9 +41,9 @@ func TestLoadCA_RoundTrips(t *testing.T) {
 	// The loaded CA's key must actually work for signing, not just parse:
 	// issue a leaf cert with it and verify against the original's own
 	// certificate.
-	certPEM, _, err := loaded.IssueClientCert("node-1", time.Hour)
+	certPEM, _, err := issueClientCert(loaded, "node-1")
 	if err != nil {
-		t.Fatalf("IssueClientCert() with loaded CA error = %v", err)
+		t.Fatalf("issueClientCert() with loaded CA error = %v", err)
 	}
 	verifyChain(t, original.CertPEM(), certPEM)
 }
@@ -61,15 +61,15 @@ func TestLoadCA_InvalidPEM(t *testing.T) {
 	}
 }
 
-func TestIssueClientCert_SignedByCA(t *testing.T) {
+func TestSignClientCSR_SignedByCA(t *testing.T) {
 	ca, err := GenerateCA()
 	if err != nil {
 		t.Fatalf("GenerateCA() error = %v", err)
 	}
 
-	certPEM, keyPEM, err := ca.IssueClientCert("node-abc123", time.Hour)
+	certPEM, keyPEM, err := issueClientCert(ca, "node-abc123")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 
 	verifyChain(t, ca.CertPEM(), certPEM)
@@ -142,13 +142,13 @@ func TestCertFingerprint_DeterministicAndDistinct(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GenerateCA() error = %v", err)
 	}
-	certA, _, err := ca.IssueClientCert("node-a", time.Hour)
+	certA, _, err := issueClientCert(ca, "node-a")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
-	certB, _, err := ca.IssueClientCert("node-b", time.Hour)
+	certB, _, err := issueClientCert(ca, "node-b")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 
 	blockA, _ := pem.Decode(certA)
@@ -191,9 +191,9 @@ func TestPKI_Live_MutualTLSHandshake(t *testing.T) {
 		t.Fatalf("tls.X509KeyPair(server) error = %v", err)
 	}
 
-	clientCertPEM, clientKeyPEM, err := ca.IssueClientCert("node-live-test", time.Hour)
+	clientCertPEM, clientKeyPEM, err := issueClientCert(ca, "node-live-test")
 	if err != nil {
-		t.Fatalf("IssueClientCert() error = %v", err)
+		t.Fatalf("issueClientCert() error = %v", err)
 	}
 	clientCert, err := tls.X509KeyPair(clientCertPEM, clientKeyPEM)
 	if err != nil {
@@ -274,9 +274,9 @@ func TestPKI_Live_MutualTLSHandshake_RejectsUnrelatedCA(t *testing.T) {
 
 	// A client certificate signed by a completely different CA: must be
 	// rejected by a server that only trusts ca's own pool.
-	rogueCertPEM, rogueKeyPEM, err := otherCA.IssueClientCert("node-rogue", time.Hour)
+	rogueCertPEM, rogueKeyPEM, err := issueClientCert(otherCA, "node-rogue")
 	if err != nil {
-		t.Fatalf("IssueClientCert() (rogue) error = %v", err)
+		t.Fatalf("issueClientCert() (rogue) error = %v", err)
 	}
 	rogueCert, err := tls.X509KeyPair(rogueCertPEM, rogueKeyPEM)
 	if err != nil {
@@ -344,4 +344,18 @@ func verifyChain(t *testing.T, caPEM, leafPEM []byte) {
 	}); err != nil {
 		t.Errorf("leaf.Verify() against CA pool error = %v, want the leaf to chain to the CA", err)
 	}
+}
+
+// issueClientCert mints a client identity the way an agent does: the key is
+// made here and only a CSR reaches the CA.
+func issueClientCert(ca *CA, commonName string) (certPEM, keyPEM []byte, err error) {
+	keyPEM, csr, err := NewKeyAndCSR(commonName)
+	if err != nil {
+		return nil, nil, err
+	}
+	issued, err := ca.SignClientCSR(commonName, csr, time.Hour, time.Now())
+	if err != nil {
+		return nil, nil, err
+	}
+	return issued.PEM, keyPEM, nil
 }

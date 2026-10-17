@@ -113,9 +113,7 @@ func normalizeFingerprint(fp string) string {
 }
 
 // DialEnroll connects to addr and exchanges joinToken for an Identity.
-// The private key is generated here and only a CSR is sent (ADR 021); a
-// control plane too old to sign CSRs returns a key of its own instead, which
-// is used as is. There is no CA on disk yet, so the server is verified
+// The private key is generated here and only a CSR is sent (ADR 021). There is no CA on disk yet, so the server is verified
 // against the pinned CA fingerprint when one is given (see ADR 003), and
 // trusted on first use otherwise.
 func DialEnroll(ctx context.Context, addr, joinToken, nodeName string, opts ...EnrollOption) (*Identity, error) {
@@ -147,9 +145,6 @@ func DialEnroll(ctx context.Context, addr, joinToken, nodeName string, opts ...E
 	}
 	if err := cfg.checkPinnedCA(resp.GetCaCertPem()); err != nil {
 		return nil, fmt.Errorf("agent: enroll: %w", err)
-	}
-	if len(resp.GetClientKeyPem()) > 0 {
-		keyPEM = resp.GetClientKeyPem()
 	}
 	if err := validateIssued(resp.GetNodeId(), resp.GetClientCertPem(), keyPEM, resp.GetCaCertPem(), time.Now()); err != nil {
 		return nil, fmt.Errorf("agent: enroll: %w", err)

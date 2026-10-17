@@ -147,7 +147,7 @@ Release binaries are signed, but both the installer and the self-upgrade path ac
 
 ### Hardening changes (no advisory)
 
-These shipped alongside the fixes and are listed for completeness: agents must generate their own keys by default (`APP_AGENT_REQUIRE_CSR`), the dashboard listens on loopback by default when fronted by HTTPS outside a container, the container list shows only managed containers to non-root callers, brand SVG is sanitized, bind mounts refuse executable directories and a custom data directory, `APP_MASTER_KEY_FILE` lets you keep the master key outside the data directory, and the Go toolchain and `golang.org/x/net` moved to releases that fix 13 reachable advisories.
+These shipped alongside the fixes and are listed for completeness: agents must generate their own keys, the dashboard listens on loopback by default when fronted by HTTPS outside a container, the container list shows only managed containers to non-root callers, brand SVG is sanitized, bind mounts refuse executable directories and a custom data directory, `APP_MASTER_KEY_FILE` lets you keep the master key outside the data directory, and the Go toolchain and `golang.org/x/net` moved to releases that fix 13 reachable advisories.
 
 ## Disclosure policy
 

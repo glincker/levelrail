@@ -58,7 +58,6 @@ type Server struct {
 
 	certValidity time.Duration
 	renewGrace   time.Duration
-	requireCSR   bool
 	now          func() time.Time
 
 	sessionsMu sync.Mutex
@@ -97,13 +96,6 @@ func WithRenewGrace(d time.Duration) Option {
 	}
 }
 
-// WithRequireCSR sets whether enrollments without a CSR are refused. The
-// default is true; false re-opens the legacy path where the control plane
-// generates the agent's key.
-func WithRequireCSR(require bool) Option {
-	return func(s *Server) { s.requireCSR = require }
-}
-
 // WithClock overrides the server's time source, for tests.
 func WithClock(now func() time.Time) Option {
 	return func(s *Server) { s.now = now }
@@ -117,7 +109,7 @@ func NewServer(ca *CA, st EnrollStore, registry *Registry, logger *slog.Logger, 
 	s := &Server{
 		ca: ca, store: st, registry: registry, logger: logger,
 		certValidity: DefaultClientCertValidity, renewGrace: DefaultCertRenewGrace,
-		now: time.Now, sessions: map[string]*liveSession{}, requireCSR: true,
+		now: time.Now, sessions: map[string]*liveSession{},
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -137,8 +129,9 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	if !validEnrollNodeName(req.GetNodeName()) {
 		return nil, status.Error(codes.InvalidArgument, "node_name must be 1-63 characters of letters, digits, dot, underscore or hyphen")
 	}
-	if len(req.GetCsrDer()) == 0 && s.requireCSR {
-		return nil, status.Error(codes.FailedPrecondition, "this control plane requires agents to generate their own key: upgrade the agent, or set APP_AGENT_REQUIRE_CSR=false on the control plane to accept old agents")
+	if len(req.GetCsrDer()) == 0 {
+		s.recordUpgradeRequired(ctx, store.SecurityKindEnroll, "")
+		return nil, errAgentUpgradeRequired
 	}
 
 	tok, err := s.redeemToken(ctx, req.GetJoinToken(), store.NodeJoinTokenPurposeEnroll)
@@ -153,7 +146,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
-	issued, keyPEM, origin, err := s.issueForEnroll(nodeID, req.GetCsrDer())
+	issued, err := s.signCSR(nodeID, req.GetCsrDer())
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +154,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	now := s.now()
 	if err := s.store.SaveNode(ctx, store.Node{
 		ID: nodeID, Name: req.GetNodeName(), Status: store.NodeStatusPending,
-		CertFingerprint: issued.Fingerprint, CertNotAfter: &issued.NotAfter, CertSerial: issued.Serial, CertKeyOrigin: origin,
+		CertFingerprint: issued.Fingerprint, CertNotAfter: &issued.NotAfter, CertSerial: issued.Serial, CertKeyOrigin: store.CertKeyOriginAgent,
 		CreatedAt: now, UpdatedAt: now,
 		AcceptsAppWorkloads: true,
 	}); err != nil {
@@ -174,41 +167,14 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 	s.recordEnrolled(ctx, store.SecurityKindEnroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 
-	s.logger.Info("agent: node enrolled", slog.String("node_id", nodeID), slog.String("name", req.GetNodeName()), slog.String("key_origin", origin))
+	s.logger.Info("agent: node enrolled", slog.String("node_id", nodeID), slog.String("name", req.GetNodeName()))
 
 	return &agentpb.EnrollResponse{
 		NodeId:        nodeID,
 		ClientCertPem: issued.PEM,
-		ClientKeyPem:  keyPEM,
 		CaCertPem:     s.ca.CertPEM(),
 		NotAfter:      timestamppb.New(issued.NotAfter),
 	}, nil
-}
-
-// issueForEnroll signs the agent's CSR, or for an agent too old to send
-// one, generates the key server-side and returns it (the pre-ADR 021 path).
-func (s *Server) issueForEnroll(nodeID string, csrDER []byte) (IssuedCert, []byte, string, error) {
-	if len(csrDER) > 0 {
-		issued, err := s.signCSR(nodeID, csrDER)
-		return issued, nil, store.CertKeyOriginAgent, err
-	}
-	s.logger.Warn("agent: legacy enrollment without a CSR, generating the key on the control plane", slog.String("node_id", nodeID))
-	certPEM, keyPEM, err := s.ca.IssueClientCert(nodeID, s.certValidity)
-	if err != nil {
-		s.logger.Error("agent: issue client cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
-		return IssuedCert{}, nil, "", status.Error(codes.Internal, "internal error")
-	}
-	cert, err := parseCertPEM(certPEM)
-	if err != nil {
-		s.logger.Error("agent: parse issued cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
-		return IssuedCert{}, nil, "", status.Error(codes.Internal, "internal error")
-	}
-	issued, err := issuedFromDER(cert.Raw)
-	if err != nil {
-		s.logger.Error("agent: parse issued cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
-		return IssuedCert{}, nil, "", status.Error(codes.Internal, "internal error")
-	}
-	return issued, keyPEM, store.CertKeyOriginServer, nil
 }
 
 func (s *Server) signCSR(nodeID string, csrDER []byte) (IssuedCert, error) {

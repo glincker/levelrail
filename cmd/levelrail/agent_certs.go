@@ -2,8 +2,6 @@ package main
 
 import (
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/agent"
@@ -12,8 +10,7 @@ import (
 )
 
 // agentCertServerOptions reads the agent certificate settings (ADR 021):
-// APP_AGENT_CERT_VALIDITY, APP_AGENT_CERT_RENEW_GRACE and
-// APP_AGENT_REQUIRE_CSR, plus the security event log bounds
+// APP_AGENT_CERT_VALIDITY and APP_AGENT_CERT_RENEW_GRACE, plus the security event log bounds
 // APP_NODE_SECURITY_COALESCE_WINDOW, APP_NODE_SECURITY_EVENTS_PER_NODE and
 // APP_NODE_SECURITY_EVENT_RETENTION.
 func agentCertServerOptions(db agent.SecurityStore) []agent.Option {
@@ -25,19 +22,7 @@ func agentCertServerOptions(db agent.SecurityStore) []agent.Option {
 		}),
 		agent.WithCertValidity(envDuration("APP_AGENT_CERT_VALIDITY", agent.DefaultClientCertValidity)),
 		agent.WithRenewGrace(envDuration("APP_AGENT_CERT_RENEW_GRACE", agent.DefaultCertRenewGrace)),
-		agent.WithRequireCSR(agentRequireCSR()),
 	}
-}
-
-// agentRequireCSR is true unless APP_AGENT_REQUIRE_CSR is explicitly a
-// false value: an unparsable value keeps the safe default.
-func agentRequireCSR() bool {
-	v := strings.TrimSpace(os.Getenv("APP_AGENT_REQUIRE_CSR"))
-	if v == "" {
-		return true
-	}
-	b, err := strconv.ParseBool(v)
-	return err != nil || b
 }
 
 // nodeCertThresholds reads APP_NODE_CERT_EXPIRY_WARNING and

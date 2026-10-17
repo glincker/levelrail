@@ -48,6 +48,8 @@ const (
 	SecurityReasonEnrollRefused       = "enroll_refused"
 	SecurityReasonSignFailed          = "sign_failed"
 	SecurityReasonRenewConflict       = "renewal_conflict"
+	SecurityReasonUpgradeRequired     = "agent_upgrade_required"
+	SecurityReasonReenrollRequired    = "reenroll_required"
 )
 
 // CA pin states an agent reports at enrollment.
