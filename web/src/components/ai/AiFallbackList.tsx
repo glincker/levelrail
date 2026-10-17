@@ -9,7 +9,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { BrandTile } from '../BrandLogoBadge'
 import { aiProviderBrand } from '../../lib/providerBrands'
-import type { AiProvider, AiSelection } from '../../queries/aiProviders'
+import type { AiSelection } from '../../queries/aiAssistantSettings'
+import type { AiProvider } from '../../queries/aiProviders'
 import { moveItem } from './aiProviderState'
 
 export function AiFallbackList({

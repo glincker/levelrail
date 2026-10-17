@@ -8,15 +8,13 @@ import { toast } from '@/components/ui/toast'
 import { useIsRoot } from '../../hooks/useIsRoot'
 import {
   useAiConfig,
-  useAiProviders,
-  useUpdateAiRouting,
   type AiSelection,
-} from '../../queries/aiProviders'
+} from '../../queries/aiAssistantSettings'
+import { useAiProviders, useUpdateAiRouting } from '../../queries/aiProviders'
 import { AiFallbackList } from './AiFallbackList'
 import { AiProviderDrawer } from './AiProviderDrawer'
 import { AiProviderGrid } from './AiProviderGrid'
 import { AiUsagePanel } from './AiUsagePanel'
-import { normalizeProvider } from './aiProviderState'
 
 function Section({
   title,
@@ -79,8 +77,7 @@ export function AiAssistantSettings() {
     )
   }
 
-  const { providers: raw, legacy } = providersQuery.data
-  const providers = raw.map(normalizeProvider)
+  const providers = providersQuery.data
   const config = configQuery.data
   const open = providers.find((p) => p.id === openId) ?? null
 
@@ -110,20 +107,18 @@ export function AiAssistantSettings() {
         onOpen={setOpenId}
       />
 
-      {!legacy ? (
-        <Section
-          title={t('aiAssistantPage.fallback.title')}
-          hint={t('aiAssistantPage.fallback.hint')}
-        >
-          <AiFallbackList
-            fallback={config?.fallback ?? []}
-            providers={providers}
-            canWrite={isRoot}
-            pending={routing.isPending}
-            onChange={saveFallback}
-          />
-        </Section>
-      ) : null}
+      <Section
+        title={t('aiAssistantPage.fallback.title')}
+        hint={t('aiAssistantPage.fallback.hint')}
+      >
+        <AiFallbackList
+          fallback={config?.fallback ?? []}
+          providers={providers}
+          canWrite={isRoot}
+          pending={routing.isPending}
+          onChange={saveFallback}
+        />
+      </Section>
 
       <Section title={t('aiAssistantPage.usage.title')}>
         <AiUsagePanel
@@ -137,7 +132,6 @@ export function AiAssistantSettings() {
         onOpenChange={(next) => {
           if (!next) setOpenId(null)
         }}
-        legacy={legacy}
         canWrite={isRoot}
         config={config}
       />

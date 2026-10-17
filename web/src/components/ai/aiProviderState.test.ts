@@ -1,36 +1,36 @@
 import { describe, expect, it } from 'vitest'
-import {
-  legacyProviders,
-  type AiAssistantConfig,
-  type AiProvider,
-} from '../../queries/aiProviders'
+import type { AiAssistantConfig } from '../../queries/aiAssistantSettings'
+import type { AiProvider } from '../../queries/aiProviders'
 import {
   addFallback,
   checkDraft,
   deriveHeader,
   groupProviders,
   moveItem,
-  normalizeProvider,
   pillState,
   tokensPerDay,
 } from './aiProviderState'
 
 function prov(over: Partial<AiProvider> = {}): AiProvider {
-  return normalizeProvider({
+  return {
     id: 'openai',
     label: 'OpenAI',
     kind: 'openai_compat',
+    default_base_url: '',
+    base_url_editable: false,
+    key_url: '',
+    brand: '',
     has_key: true,
     status: 'ok',
     default_model: 'gpt-x',
     ...over,
-  })
+  }
 }
 
 const cfg = (over: Partial<AiAssistantConfig> = {}): AiAssistantConfig => ({
   configured: true,
   fallback: [],
-  limits: {},
+  limits: { max_steps: 12 },
   ...over,
 })
 
@@ -74,18 +74,6 @@ describe('deriveHeader', () => {
       cfg({ active: { provider: 'openai', model: 'm' } }),
       'attention',
     ],
-    [
-      'legacy configured',
-      legacyProviders({ configured: true, model: 'claude-x' }),
-      cfg({ active: { provider: 'anthropic', model: 'claude-x' } }),
-      'ready',
-    ],
-    [
-      'legacy unconfigured',
-      legacyProviders({ configured: false }),
-      undefined,
-      'not_configured',
-    ],
   ])('%s', (_n, providers, config, want) => {
     expect(deriveHeader(providers, config).kind).toBe(want)
   })
@@ -98,22 +86,8 @@ describe('pillState', () => {
     [{ status: 'invalid_key' as const }, 'invalid_key'],
     [{ status: 'unreachable' as const }, 'unreachable'],
     [{ status: 'quota_exhausted' as const }, 'quota_exhausted'],
-    [{ status: undefined, has_key: true }, 'connected'],
   ])('%j', (over, want) => {
     expect(pillState(prov(over))).toBe(want)
-  })
-})
-
-describe('normalizeProvider', () => {
-  it('tolerates missing optional fields', () => {
-    const p = normalizeProvider({ id: 'x' })
-    expect(p).toMatchObject({
-      label: 'x',
-      brand: '',
-      has_key: false,
-      status: 'untested',
-      base_url_editable: false,
-    })
   })
 })
 

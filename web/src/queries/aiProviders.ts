@@ -5,7 +5,10 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import { aiAssistantSettingsKeys } from './aiAssistantSettings'
+import {
+  aiAssistantSettingsKeys,
+  type AiSelection,
+} from './aiAssistantSettings'
 
 export type AiProviderKind = 'anthropic' | 'openai_compat' | 'gemini'
 
@@ -28,24 +31,6 @@ export interface AiProvider {
   last_checked_at?: string
 }
 
-export interface AiSelection {
-  provider: string
-  model: string
-}
-
-export interface AiAssistantConfig {
-  configured: boolean
-  active?: AiSelection
-  fallback: AiSelection[]
-  limits: { max_steps?: number; monthly_token_budget?: number }
-  token_usage_month?: number
-}
-
-export interface AiProvidersResult {
-  providers: AiProvider[]
-  legacy: boolean
-}
-
 export interface AiModel {
   id: string
   label: string
@@ -65,9 +50,6 @@ export interface AiUsageDay {
 
 export interface AiUsage {
   days: AiUsageDay[]
-  totals?: Partial<
-    Pick<AiUsageDay, 'prompt_tokens' | 'completion_tokens' | 'requests'>
-  >
 }
 
 export interface AiTestResult {
@@ -107,31 +89,8 @@ const BASE = '/api/v1/settings/ai-assistant'
 
 export const aiProviderKeys = {
   providers: ['ai-providers'] as const,
-  config: ['ai-assistant-config'] as const,
   models: (id: string) => ['ai-provider-models', id] as const,
   usage: (days: number) => ['ai-usage', days] as const,
-}
-
-interface LegacySettings {
-  configured?: boolean
-  model?: string
-}
-
-export function legacyProviders(legacy: LegacySettings): AiProvider[] {
-  return [
-    {
-      id: 'anthropic',
-      label: 'Anthropic',
-      kind: 'anthropic',
-      default_base_url: '',
-      base_url_editable: false,
-      key_url: 'https://console.anthropic.com/settings/keys',
-      default_model: legacy.model ?? '',
-      brand: 'anthropic',
-      has_key: Boolean(legacy.configured),
-      status: legacy.configured ? 'ok' : 'untested',
-    },
-  ]
 }
 
 async function failureFrom(res: Response, fallback: string) {
@@ -159,37 +118,8 @@ async function getJson<T>(url: string, what: string): Promise<T> {
   return (await res.json()) as T
 }
 
-export async function fetchAiProviders(): Promise<AiProvidersResult> {
-  const res = await fetch(`${BASE}/providers`)
-  if (res.ok) {
-    const body = (await res.json().catch(() => null)) as AiProvider[] | null
-    if (Array.isArray(body)) return { providers: body, legacy: false }
-  }
-  if (res.status === 404 || res.ok) {
-    const legacy = await getJson<LegacySettings>(BASE, 'fetch AI settings')
-    return { providers: legacyProviders(legacy), legacy: true }
-  }
-  throw new ApiError(
-    res.status,
-    await readErrorMessage(res, `fetch AI providers failed: ${res.status}`),
-  )
-}
-
-export async function fetchAiConfig(): Promise<AiAssistantConfig> {
-  const raw = await getJson<
-    Partial<AiAssistantConfig> & { model?: string; provider?: string }
-  >(BASE, 'fetch AI settings')
-  const legacyActive =
-    !raw.active && raw.configured && raw.model
-      ? { provider: raw.provider || 'anthropic', model: raw.model }
-      : undefined
-  return {
-    configured: Boolean(raw.configured),
-    active: raw.active ?? legacyActive,
-    fallback: raw.fallback ?? [],
-    limits: raw.limits ?? {},
-    token_usage_month: raw.token_usage_month,
-  }
+export async function fetchAiProviders(): Promise<AiProvider[]> {
+  return getJson<AiProvider[]>(`${BASE}/providers`, 'fetch AI providers')
 }
 
 export function aiProvidersQueryOptions() {
@@ -200,20 +130,8 @@ export function aiProvidersQueryOptions() {
   })
 }
 
-export function aiConfigQueryOptions() {
-  return queryOptions({
-    queryKey: aiProviderKeys.config,
-    queryFn: fetchAiConfig,
-    staleTime: 30_000,
-  })
-}
-
 export function useAiProviders() {
   return useQuery(aiProvidersQueryOptions())
-}
-
-export function useAiConfig() {
-  return useQuery(aiConfigQueryOptions())
 }
 
 export function useAiModels(id: string, enabled: boolean) {
@@ -243,7 +161,6 @@ function useRefreshAi() {
   const queryClient = useQueryClient()
   return () => {
     void queryClient.invalidateQueries({ queryKey: aiProviderKeys.providers })
-    void queryClient.invalidateQueries({ queryKey: aiProviderKeys.config })
     void queryClient.invalidateQueries({
       queryKey: aiAssistantSettingsKeys.all,
     })
@@ -265,22 +182,10 @@ async function sendJson(
   return res
 }
 
-export function useSaveAiProvider(legacy: boolean) {
+export function useSaveAiProvider() {
   const refresh = useRefreshAi()
   return useMutation({
     mutationFn: async (vars: { id: string; update: AiProviderUpdate }) => {
-      if (legacy) {
-        await sendJson(
-          'PUT',
-          BASE,
-          {
-            model: vars.update.default_model ?? '',
-            api_key: vars.update.api_key ?? '',
-          },
-          'save failed',
-        )
-        return
-      }
       await sendJson(
         'PUT',
         `${BASE}/providers/${encodeURIComponent(vars.id)}`,
@@ -292,12 +197,16 @@ export function useSaveAiProvider(legacy: boolean) {
   })
 }
 
-export function useDisconnectAiProvider(legacy: boolean) {
+export function useDisconnectAiProvider() {
   const refresh = useRefreshAi()
   return useMutation({
     mutationFn: async (id: string) => {
-      const url = legacy ? BASE : `${BASE}/providers/${encodeURIComponent(id)}`
-      await sendJson('DELETE', url, undefined, 'disconnect failed')
+      await sendJson(
+        'DELETE',
+        `${BASE}/providers/${encodeURIComponent(id)}`,
+        undefined,
+        'disconnect failed',
+      )
     },
     onSuccess: refresh,
   })

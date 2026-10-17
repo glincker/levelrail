@@ -9,13 +9,11 @@ import {
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { AiAssistantSettings } from '../../components/ai/AiAssistantSettings'
-import {
-  deriveHeader,
-  normalizeProvider,
-} from '../../components/ai/aiProviderState'
+import { deriveHeader } from '../../components/ai/aiProviderState'
 import { BrandTile } from '../../components/BrandLogoBadge'
 import { aiProviderBrand } from '../../lib/providerBrands'
-import { useAiConfig, useAiProviders } from '../../queries/aiProviders'
+import { useAiConfig } from '../../queries/aiAssistantSettings'
+import { useAiProviders } from '../../queries/aiProviders'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { StatusBadge } from '@/components/ui/status-badge'
 
@@ -30,7 +28,7 @@ function HeaderStatus() {
   const providers = useAiProviders()
   const config = useAiConfig()
   if (providers.isPending) return null
-  const list = (providers.data?.providers ?? []).map(normalizeProvider)
+  const list = providers.data ?? []
   const state = deriveHeader(list, config.data)
   if (state.kind === 'ready') {
     const owner = list.find((p) => p.id === state.active.provider)

@@ -1,8 +1,10 @@
 import type {
   AiAssistantConfig,
+  AiSelection,
+} from '../../queries/aiAssistantSettings'
+import type {
   AiProvider,
   AiProviderStatus,
-  AiSelection,
   AiUsageDay,
 } from '../../queries/aiProviders'
 
@@ -38,24 +40,6 @@ export function isConnected(p: AiProvider): boolean {
 
 export function isSelfHosted(p: AiProvider): boolean {
   return p.kind === 'openai_compat' && p.base_url_editable
-}
-
-export function normalizeProvider(raw: Partial<AiProvider>): AiProvider {
-  return {
-    id: raw.id ?? '',
-    label: raw.label || raw.id || '',
-    kind: raw.kind ?? 'openai_compat',
-    default_base_url: raw.default_base_url ?? '',
-    base_url_editable: Boolean(raw.base_url_editable),
-    key_url: raw.key_url ?? '',
-    default_model: raw.default_model ?? '',
-    brand: raw.brand ?? '',
-    has_key: Boolean(raw.has_key),
-    base_url: raw.base_url,
-    status: raw.status ?? 'untested',
-    status_detail: raw.status_detail,
-    last_checked_at: raw.last_checked_at,
-  }
 }
 
 export interface ProviderGroups {

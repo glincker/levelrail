@@ -18,16 +18,16 @@ export interface AppSleep {
   // When the app went to sleep, set only while it is asleep.
   since?: string
   hold_requests: boolean
-  // Deprecated: single legacy blocker, superseded by blockers.
-  blocked_reason?: string
-  eligible?: boolean
-  blockers?: SleepIssue[]
-  warnings?: SleepIssue[]
-  settings?: SleepSettings
-  port_wake?: SleepPortWake
-  activity?: SleepActivity
-  cold_start_ms_p50?: number
-  estimated_memory_freed_bytes?: number
+  eligible: boolean
+  blockers: SleepIssue[]
+  warnings: SleepIssue[]
+  settings: SleepSettings
+  port_wake: SleepPortWake
+  activity: SleepActivity
+  // Null until the app has recorded wakes.
+  cold_start_ms_p50: number | null
+  // Null when the app has no memory limit.
+  estimated_memory_freed_bytes: number | null
 }
 
 export type SleepFixKind =
@@ -39,8 +39,8 @@ export type SleepFixKind =
 export interface SleepFix {
   kind: SleepFixKind
   label: string
-  method?: string
-  path?: string
+  method: string
+  path: string
   body?: unknown
 }
 
@@ -108,23 +108,13 @@ async function request(
 
 const API_PREFIX = '/api/v1'
 
-// Without a path the fix is derived from its kind where one call suffices.
-function runFix(appName: string, fix: SleepFix): Promise<unknown> {
-  if (fix.path) {
-    const path = fix.path.startsWith('/') ? fix.path : `/${fix.path}`
-    return send(
-      path.startsWith(API_PREFIX) ? path : `${API_PREFIX}${path}`,
-      fix.method ?? 'POST',
-      fix.body,
-    )
-  }
-  if (fix.kind === 'enable_port_wake') {
-    return request(appName, 'PUT', '', fix.body ?? { port_wake: true })
-  }
-  if (fix.kind === 'set_hold_requests') {
-    return request(appName, 'PUT', '', fix.body ?? { hold_requests: true })
-  }
-  return Promise.reject(new ApiError(400, 'this fix has no automatic action'))
+function runFix(fix: SleepFix): Promise<unknown> {
+  const path = fix.path.startsWith('/') ? fix.path : `/${fix.path}`
+  return send(
+    path.startsWith(API_PREFIX) ? path : `${API_PREFIX}${path}`,
+    fix.method,
+    fix.body,
+  )
 }
 
 async function send(
@@ -177,7 +167,7 @@ export function useAppSleepActions(appName: string) {
     onError: refetchEligibility,
   })
   const applyFix = useMutation<unknown, ApiError, SleepFix>({
-    mutationFn: (fix) => runFix(appName, fix),
+    mutationFn: runFix,
     onSettled: refetchEligibility,
   })
   const wake = useMutation<AppSleep, ApiError, void>({

@@ -8,7 +8,6 @@ import settingsEn from '../../locales/en/settings.json'
 import type { AiProvider } from '../../queries/aiProviders'
 import { AiProviderCard } from './AiProviderCard'
 import { AiProviderDrawer } from './AiProviderDrawer'
-import { normalizeProvider } from './aiProviderState'
 
 const testI18n = i18next.createInstance()
 void testI18n.use(initReactI18next).init({
@@ -20,7 +19,7 @@ void testI18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
 })
 
-const saved: AiProvider = normalizeProvider({
+const saved: AiProvider = {
   id: 'openai',
   label: 'OpenAI',
   kind: 'openai_compat',
@@ -29,7 +28,9 @@ const saved: AiProvider = normalizeProvider({
   status: 'ok',
   default_model: 'gpt-x',
   key_url: 'https://example.com/keys',
-})
+  default_base_url: '',
+  base_url_editable: false,
+}
 
 function stubFetch(handler: (url: string, init?: RequestInit) => Response) {
   vi.stubGlobal(
@@ -55,7 +56,6 @@ function renderDrawer(provider: AiProvider, canWrite = true) {
         <AiProviderDrawer
           provider={provider}
           onOpenChange={() => undefined}
-          legacy={false}
           canWrite={canWrite}
           config={undefined}
         />

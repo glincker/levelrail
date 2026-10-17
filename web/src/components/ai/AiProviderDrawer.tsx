@@ -31,10 +31,10 @@ import {
   useSaveAiProvider,
   useTestAiProvider,
   useUpdateAiRouting,
-  type AiAssistantConfig,
   type AiProvider,
   type AiTestResult,
 } from '../../queries/aiProviders'
+import type { AiAssistantConfig } from '../../queries/aiAssistantSettings'
 import { AiModelPicker } from './AiModelPicker'
 import { ProviderPill } from './AiProviderCard'
 import { addFallback, checkDraft } from './aiProviderState'
@@ -42,7 +42,6 @@ import { addFallback, checkDraft } from './aiProviderState'
 interface DrawerProps {
   provider: AiProvider | null
   onOpenChange: (open: boolean) => void
-  legacy: boolean
   canWrite: boolean
   config: AiAssistantConfig | undefined
 }
@@ -72,7 +71,6 @@ export function AiProviderDrawer({
 
 function DrawerBody({
   provider,
-  legacy,
   canWrite,
   config,
   onClose,
@@ -92,11 +90,11 @@ function DrawerBody({
   const [saved, setSaved] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const save = useSaveAiProvider(legacy)
+  const save = useSaveAiProvider()
   const test = useTestAiProvider()
-  const disconnect = useDisconnectAiProvider(legacy)
+  const disconnect = useDisconnectAiProvider()
   const routing = useUpdateAiRouting()
-  const models = useAiModels(provider.id, provider.has_key && !legacy)
+  const models = useAiModels(provider.id, provider.has_key)
 
   const check = checkDraft(provider, {
     apiKey,
@@ -295,7 +293,7 @@ function DrawerBody({
             placeholder={provider.default_model}
           />
           <FieldDescription>
-            {models.isError || legacy
+            {models.isError
               ? t('aiAssistantPage.drawer.modelFree')
               : t('aiAssistantPage.drawer.modelHelp')}
           </FieldDescription>
@@ -317,22 +315,20 @@ function DrawerBody({
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          {!legacy ? (
-            <Button
-              variant="outline"
-              disabled={
-                !canWrite ||
-                !provider.has_key ||
-                apiKey.trim() !== '' ||
-                test.isPending
-              }
-              onClick={onTest}
-            >
-              {test.isPending
-                ? t('aiAssistantPage.drawer.testing')
-                : t('aiAssistantPage.drawer.test')}
-            </Button>
-          ) : null}
+          <Button
+            variant="outline"
+            disabled={
+              !canWrite ||
+              !provider.has_key ||
+              apiKey.trim() !== '' ||
+              test.isPending
+            }
+            onClick={onTest}
+          >
+            {test.isPending
+              ? t('aiAssistantPage.drawer.testing')
+              : t('aiAssistantPage.drawer.test')}
+          </Button>
           <p
             role="status"
             aria-live="polite"
@@ -365,7 +361,7 @@ function DrawerBody({
           </p>
         </div>
 
-        {!legacy && provider.has_key ? (
+        {provider.has_key ? (
           <div className="flex flex-wrap gap-2 border-t border-border pt-4">
             <Button
               variant="secondary"

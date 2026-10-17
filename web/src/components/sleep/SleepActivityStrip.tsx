@@ -24,13 +24,9 @@ function Item({
 }
 
 /** SleepActivityStrip shows what keeps an awake app awake and counts down to its sleep. */
-export function SleepActivityStrip({
-  activity,
-}: {
-  activity: SleepActivity | undefined
-}) {
+export function SleepActivityStrip({ activity }: { activity: SleepActivity }) {
   const { t } = useTranslation('deploys')
-  const willSleepAt = activity?.will_sleep_at
+  const willSleepAt = activity.will_sleep_at
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!willSleepAt) return
@@ -38,7 +34,6 @@ export function SleepActivityStrip({
     return () => window.clearInterval(id)
   }, [willSleepAt])
 
-  if (!activity) return null
   const countdown = sleepCountdown(willSleepAt, now)
   const none = t('appSleep.activity.none')
   return (

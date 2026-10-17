@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
-import { issueText } from '../lib/sleepIssueText'
-import { deriveSleepState, sleepBlockers } from '../lib/sleepState'
+import { deriveSleepState } from '../lib/sleepState'
 import {
   useAppSleep,
   useAppSleepActions,
@@ -25,10 +24,9 @@ export function AppSleepCard({ appName }: { appName: string }) {
   const { setIdle, wake, sleepNow, applyFix } = useAppSleepActions(appName)
   const [fixingCode, setFixingCode] = useState<string | null>(null)
   const state = deriveSleepState(sleep, wake.isPending)
-  const blockers = sleepBlockers(sleep)
-  const warnings = sleep.warnings ?? []
-  const blocked = blockers.length > 0 || sleep.eligible === false
-  const idle = sleep.settings?.idle_minutes ?? sleep.idle_minutes
+  const { blockers, warnings } = sleep
+  const blocked = !sleep.eligible
+  const idle = sleep.settings.idle_minutes
 
   const fail = (error: Error) =>
     toast.add({
@@ -148,9 +146,7 @@ export function AppSleepCard({ appName }: { appName: string }) {
               >
                 {blocked
                   ? t('appSleep.turnOnBlocked', {
-                      titles: blockers
-                        .map((b) => issueText(t, b).title)
-                        .join(', '),
+                      titles: blockers.map((b) => b.title).join(', '),
                     })
                   : t('appSleep.turnOnHint', { minutes: DEFAULT_IDLE_MINUTES })}
               </p>

@@ -5,20 +5,9 @@ import {
   WarningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
-import { issueText } from '../../lib/sleepIssueText'
 import type { SleepFix, SleepIssue } from '../../queries/appSleep'
 
 type Kind = 'blocker' | 'warning'
-
-// Fixes with no path still work when their kind maps to a single sleep PUT.
-const CLIENT_FIXES: readonly SleepFix['kind'][] = [
-  'enable_port_wake',
-  'set_hold_requests',
-]
-
-function canApply(fix: SleepFix): boolean {
-  return !!fix.path || CLIENT_FIXES.includes(fix.kind)
-}
 
 function Row({
   kind,
@@ -33,7 +22,7 @@ function Row({
 }) {
   const { t } = useTranslation('deploys')
   const Icon = kind === 'blocker' ? ProhibitIcon : WarningIcon
-  const { title, detail } = issueText(t, issue)
+  const { title, detail } = issue
   return (
     <li className="flex flex-wrap items-start gap-3 py-2">
       <Icon
@@ -62,7 +51,7 @@ function Row({
           </p>
         ) : null}
       </div>
-      {issue.fix && canApply(issue.fix) ? (
+      {issue.fix ? (
         <Button
           type="button"
           size="sm"
