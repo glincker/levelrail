@@ -264,6 +264,7 @@
               "resilience",
               "resilience-summary",
               "observability",
+              "traffic-observability",
               "status-page",
               "scheduled-maintenance",
               "deploy-policies",

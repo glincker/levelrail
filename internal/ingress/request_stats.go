@@ -72,7 +72,10 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 		in = 0
 	}
 	elapsed := time.Since(start)
-	DefaultRequestStats().ObservePath(m.Key, r.URL.Path, status, elapsed, in, rec.bytes, upstreamErr)
+	DefaultRequestStats().ObserveRequest(m.Key, RequestObservation{
+		Method: r.Method, Path: r.URL.Path, Status: status, Duration: elapsed, BytesIn: in, BytesOut: rec.bytes,
+		UpstreamErr: upstreamErr, Upstream: upstreamHostport(r), RequestID: requestID, At: start,
+	})
 	DefaultAccessLog().Record(m.Key, AccessRecord{
 		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
 		Millis: float64(elapsed) / float64(time.Millisecond), BytesIn: in, BytesOut: rec.bytes,
@@ -153,12 +156,40 @@ var (
 	routesEnabled = telemetry.RoutesEnabled()
 	routeMax      = telemetry.RouteMaxFromEnv()
 	routeDepth    = telemetry.RouteDepthFromEnv()
+	upstreamMax   = telemetry.UpstreamMaxFromEnv()
+	sampleCfg     = telemetry.SampleConfigFromEnv()
 )
 
 // ObservePath records one finished request and, when route counting is on and
 // path is non-empty, its normalized route template. Only the path is read,
 // never the query string, and ids are collapsed before anything is stored.
 func (s *RequestStats) ObservePath(key, path string, status int, d time.Duration, bytesIn, bytesOut int64, upstreamErr bool) {
+	s.ObserveRequest(key, RequestObservation{Path: path, Status: status, Duration: d, BytesIn: bytesIn, BytesOut: bytesOut, UpstreamErr: upstreamErr})
+}
+
+// RequestObservation is one finished request as the stats see it. Upstream is
+// the replica host:port; no query string or client address is ever included.
+type RequestObservation struct {
+	Method      string
+	Path        string
+	Status      int
+	Duration    time.Duration
+	BytesIn     int64
+	BytesOut    int64
+	UpstreamErr bool
+	Upstream    string
+	RequestID   string
+	At          time.Time
+}
+
+// ObserveRequest records o under key: counters, route, replica histogram and,
+// for slow or failed requests, a bounded sample.
+func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
+	if o.At.IsZero() {
+		o.At = time.Now()
+	}
+	status, d, path := o.Status, o.Duration, o.Path
+	bytesIn, bytesOut, upstreamErr := o.BytesIn, o.BytesOut, o.UpstreamErr
 	s.mu.RLock()
 	h := s.hosts[key]
 	s.mu.RUnlock()
@@ -197,7 +228,27 @@ func (s *RequestStats) ObservePath(key, path string, status int, d time.Duration
 	if routesEnabled && path != "" {
 		route = telemetry.NormalizeRoute(path, routeDepth)
 	}
-	h.w.ObserveRoute(route, status, float64(d)/float64(time.Millisecond), routeMax)
+	ms := float64(d) / float64(time.Millisecond)
+	h.w.ObserveRoute(route, status, ms, routeMax)
+	h.w.ObserveUpstream(o.Upstream, status, upstreamErr, ms, upstreamMax)
+	if path != "" && sampleCfg.ShouldSample(status, ms, upstreamErr, o.RequestID) {
+		h.w.AddSample(telemetry.RequestSample{
+			Time: o.At, Route: telemetry.NormalizeRoute(path, routeDepth), Method: o.Method, Status: status,
+			DurationMS: ms, Upstream: o.Upstream, RequestID: o.RequestID,
+		}, sampleCfg.TickMax)
+	}
+}
+
+// upstreamHostport is the replica Caddy's reverse proxy picked for r, empty
+// when the request never reached an upstream.
+func upstreamHostport(r *http.Request) string {
+	repl, ok := r.Context().Value(caddy.ReplacerCtxKey).(*caddy.Replacer)
+	if !ok || repl == nil {
+		return ""
+	}
+	v, _ := repl.Get("http.reverse_proxy.upstream.hostport")
+	s, _ := v.(string)
+	return s
 }
 
 // SetHostOwners replaces the host-to-app map used to attribute traffic. Keys

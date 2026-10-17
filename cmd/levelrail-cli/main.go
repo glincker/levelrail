@@ -155,6 +155,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deployments":
 		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
+	case "traffic":
+		return runTraffic(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
 	case "preview":
@@ -340,6 +342,7 @@ Usage:
   %[1]s logs archive set|status|remove, logs dump|ls|fetch [flags]   archive node-local logs to a storage destination
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
+  %[1]s traffic <app> [--window 5m|1h|24h] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
   %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules

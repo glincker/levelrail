@@ -27,6 +27,9 @@ var metricClasses = map[string]MetricClass{
 	telemetry.MetricHTTPUpstreamErrors: MetricClassRequestPath,
 	telemetry.MetricHTTPBytesIn:        MetricClassRequestPath,
 	telemetry.MetricHTTPBytesOut:       MetricClassRequestPath,
+	MetricRequestErrorRate5xxPct:       MetricClassRequestPath,
+	MetricRequestP95Ms:                 MetricClassRequestPath,
+	MetricRequestP99Ms:                 MetricClassRequestPath,
 	telemetry.MetricLBUpstreamsHealthy: MetricClassRequestPath,
 	telemetry.MetricLBActiveRequests:   MetricClassRequestPath,
 

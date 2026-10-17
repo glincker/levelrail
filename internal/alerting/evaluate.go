@@ -44,9 +44,21 @@ func EvaluateThreshold(ctx context.Context, source MetricsSource, r Rule, now ti
 	// ForDuration-wide range and inspecting every sample in it.
 	const lookback = 60 * time.Second
 
-	samples, err := source.QueryMetrics(ctx, r.ResourceID, r.Metric, now.Add(-lookback), now)
-	if err != nil {
-		return r, fmt.Errorf("alerting: evaluate rule %q: query metrics: %w", r.ID, err)
+	var samples []telemetry.Sample
+	if IsRequestSignal(r.Metric) {
+		v, ok, err := requestSignalValue(ctx, source, r, now)
+		if err != nil {
+			return r, fmt.Errorf("alerting: evaluate rule %q: request signal: %w", r.ID, err)
+		}
+		if ok {
+			samples = []telemetry.Sample{{ResourceID: r.ResourceID, Metric: r.Metric, Timestamp: now, Value: v}}
+		}
+	} else {
+		var err error
+		samples, err = source.QueryMetrics(ctx, r.ResourceID, r.Metric, now.Add(-lookback), now)
+		if err != nil {
+			return r, fmt.Errorf("alerting: evaluate rule %q: query metrics: %w", r.ID, err)
+		}
 	}
 
 	next := r
