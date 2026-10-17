@@ -1542,6 +1542,14 @@
       "manualHint": "Run one command on the machine yourself. Nothing inbound is opened."
     }
   },
+  "builtInRegistry": {
+    "title": "No external registry? Run your own",
+    "titleActive": "Built-in registry",
+    "body": "Levelrail can run a private registry on this server. Builds and remote nodes push and pull images through it, with no outside account.",
+    "activeBody": "Serving images at {{host}}. Apps can pull from it without a credential here.",
+    "setUp": "Set up built-in registry",
+    "manage": "Manage"
+  },
   "registryVendors": {
     "heading": "Connect a registry",
     "subheading": "Pick a vendor to pre-fill the host and see which token scopes the credential needs.",
