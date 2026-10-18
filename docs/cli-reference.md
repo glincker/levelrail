@@ -316,6 +316,7 @@ levelrail-cli apps build-cache show <name>|--global
 levelrail-cli apps build-cache set <name>|--global --target ID [--mode min|max] [--disable]
 levelrail-cli apps build-cache clear <name>
 levelrail-cli apps build-stats <name> [--limit N]
+levelrail-cli apps build-speed <name> [--fix]
 levelrail-cli apps build-limits show|set|reset
 levelrail-cli apps build-cache remove <name>|--global
 ```

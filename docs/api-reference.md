@@ -502,6 +502,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/bound | AbilityRead | handleListBoundEnv |
 | POST | /api/v1/apps/{name}/builds/{id}/cancel | AbilityDeploy | handleCancelBuild |
 | POST | /api/v1/apps/{name}/builds/{id}/retry | AbilityDeploy | handleRetryBuild |
+| GET | /api/v1/apps/{name}/build-speed | AbilityRead | handleBuildSpeed |
 
 </Accordion>
 

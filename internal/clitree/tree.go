@@ -67,6 +67,7 @@ var Tree = map[string]*Node{
 		"deploys":                 {Subs: map[string]*Node{"list": nil, "show": nil, "wait": nil, "compare": nil, "release-notes": nil, "url": nil, "logs": nil, "failed": nil, "steps": nil, "probes": nil, "cancel": nil, "rollback-to": nil, "promote": nil, "gate": nil, "status": nil}},
 		"github-actions":          {Subs: map[string]*Node{"get": nil, "set": nil, "start": nil, "finish": nil}},
 		"build-stats":             nil,
+		"build-speed":             nil,
 		"build-limits":            {Subs: map[string]*Node{"show": nil, "set": nil, "reset": nil}},
 		"cancel-superseded":       {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
 		"deploy-safety":           {Subs: map[string]*Node{"show": nil, "set": nil, "targets": nil}},

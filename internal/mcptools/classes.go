@@ -262,6 +262,7 @@ var toolTable = map[string]Meta{
 	"apply_image_gc":                        {clsD, "images", 0},
 	"list_builds":                           {clsR, "builds", unt},
 	"get_buildkit_cache":                    {clsR, "builds", 0},
+	"get_build_speed":                       {clsR, "builds", 0},
 	"preview_build_cache_prune":             {clsR, "builds", 0},
 	"apply_build_cache_prune":               {clsD, "builds", 0},
 	"list_functions":                        {clsR, "functions", 0},
