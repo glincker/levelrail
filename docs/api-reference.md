@@ -1559,6 +1559,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/costs/budgets | AbilityRoot | handleCreateCostBudget |
 | PUT | /api/v1/costs/budgets/{id} | AbilityRoot | handleUpdateCostBudget |
 | DELETE | /api/v1/costs/budgets/{id} | AbilityRoot | handleDeleteCostBudget |
+| GET | /api/v1/resilience | AbilityRead | handleChaosReport |
+| POST | /api/v1/resilience/results | AbilityWrite | handleRecordChaosResults |
 
 ## See also
 

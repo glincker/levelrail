@@ -567,6 +567,16 @@
   "bucket",
   "settings"
  ],
+ "get_buildkit_cache": [
+  "in_use_bytes",
+  "node",
+  "reason",
+  "reclaimable_bytes",
+  "record_count",
+  "records",
+  "supported",
+  "total_bytes"
+ ],
  "get_canary": [
   "active",
   "created_at",
@@ -581,16 +591,6 @@
   "stages",
   "status_reason",
   "weight"
-  ],
- "get_buildkit_cache": [
-  "in_use_bytes",
-  "node",
-  "reason",
-  "reclaimable_bytes",
-  "record_count",
-  "records",
-  "supported",
-  "total_bytes"
  ],
  "get_cloudflare_tunnel_status": [
   "enabled",
@@ -994,6 +994,9 @@
   "state",
   "verification",
   "version"
+ ],
+ "get_resilience_report": [
+  "results"
  ],
  "get_resource_recommendation": [
   "cpu",

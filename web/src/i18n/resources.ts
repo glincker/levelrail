@@ -53,6 +53,7 @@ import type buildPerformance from '../locales/en/buildPerformance.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
+import type resilience from '../locales/en/resilience.json'
 import type jobs from '../locales/en/jobs.json'
 import type pipelines from '../locales/en/pipelines.json'
 import type budget from '../locales/en/budget.json'
@@ -137,6 +138,7 @@ declare module 'i18next' {
       eventWebhooks: typeof eventWebhooks
       compliance: typeof compliance
       deploySafety: typeof deploySafety
+      resilience: typeof resilience
       jobs: typeof jobs
       pipelines: typeof pipelines
       budget: typeof budget

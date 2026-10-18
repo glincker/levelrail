@@ -28,6 +28,7 @@ import {
 } from '../../queries/systemDoctor'
 import type { DoctorCheck } from '../../queries/systemDoctor'
 import { DoctorCheckRow } from '@/components/DoctorCheckRow'
+import { ResilienceReportCard } from '../../components/ResilienceReportCard'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Web half of "levelrail-cli doctor": that command already runs
@@ -268,6 +269,7 @@ function SystemStatusPage() {
         icon={HeartbeatIcon}
         checks={other}
       />
+      <ResilienceReportCard />
     </div>
   )
 }
