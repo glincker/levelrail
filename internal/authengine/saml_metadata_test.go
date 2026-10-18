@@ -87,9 +87,9 @@ func TestFetchSAMLIdPMetadata_ClientRequired(t *testing.T) {
 
 func TestFetchSAMLIdPMetadata_ValidClient(t *testing.T) {
 	// Simple server to return minimal SAML metadata
-	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="test-entity" />`))
+		_, _ = w.Write([]byte(`<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="test-entity" />`))
 	}))
 	defer srv.Close()
 
