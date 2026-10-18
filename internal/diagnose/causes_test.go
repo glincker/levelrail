@@ -56,6 +56,8 @@ func TestAnalyzeTopCause(t *testing.T) {
 		{"pull auth", Input{Attempt: &AttemptInput{Status: "failed", Error: "Head https://registry/v2/x/manifests/latest: unauthorized: authentication required"}}, CauseImagePullFailed, "", ""},
 		{"pull rate limit", Input{Attempt: &AttemptInput{Status: "failed", Error: "toomanyrequests: You have reached your pull rate limit"}}, CauseImagePullFailed, "", ""},
 		{"build out of disk", Input{Facts: Facts{BuildFailed: true}, RecentLogLines: logs("#12 ERROR: failed to copy: write /var/lib/x: no space left on device")}, CauseBuildOutOfDisk, "", ""},
+		{"dockerfile path fix", Input{Facts: Facts{BuildFailed: true, BuildType: "dockerfile", BuildPath: "Dockerfile", DockerfileCandidates: []string{"Dockerfile", "docker/web.Dockerfile"}}, RecentLogLines: logs("ERROR: failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory")}, CauseWrongDockerfilePath, GitSourceBuildPathField, "docker/web.Dockerfile"},
+		{"dockerfile path no candidate is manual", Input{Facts: Facts{BuildFailed: true, BuildType: "dockerfile", BuildPath: "Dockerfile"}, RecentLogLines: logs("failed to read dockerfile: open Dockerfile: no such file or directory")}, CauseWrongDockerfilePath, "", ""},
 		{"enospc", Input{RecentLogLines: logs("npm ERR! code ENOSPC")}, CauseBuildOutOfDisk, "", ""},
 		{"crashloop generic", Input{Crashloop: &CrashloopInput{Firing: true, RestartCount: 6, RestartCountThreshold: 3, RestartWindow: "10m"}}, CauseCrashloopGeneric, "", ""},
 		{"exit code generic", Input{Facts: Facts{HasExit: true, ExitCode: 1}, RecentLogLines: logs("something odd happened")}, CauseCrashloopGeneric, "", ""},

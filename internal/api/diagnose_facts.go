@@ -43,6 +43,9 @@ func (rt *Router) diagnoseFacts(ctx context.Context, svc *store.DesiredService, 
 	if rt.isLocalNode(svc.NodeID) {
 		f.NodeArch = goruntime.GOARCH
 	}
+	if buildFailed {
+		rt.addBuildSourceFacts(ctx, svc.Name, &f)
+	}
 	if rt.execRuntime == nil || buildFailed {
 		return f
 	}

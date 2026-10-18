@@ -12,6 +12,7 @@ import (
 	"golang.org/x/term"
 
 	"github.com/GLINCKER/levelrail/internal/agentinit"
+	"github.com/GLINCKER/levelrail/internal/projecttpl"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/kit/stackdetect"
 )
@@ -55,8 +56,12 @@ type initResult struct {
 // write app.yaml, AGENTS.md and .mcp.json.
 func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiURLP, profileP, jsonOutP, outputP, queryP := apiFlagSet(prog, "init", "print the plan and result as JSON to stdout and nothing else", stderr)
-	var dir, mode, mcpBinary string
-	var force, dryRun, yes bool
+	var dir, mode, mcpBinary, template string
+	var force, dryRun, yes, listTemplates bool
+	params := stringMapFlag{}
+	fs.StringVar(&template, "template", "", "write a starter template's files instead of detecting the stack (see --list-templates)")
+	fs.Var(params, "param", "template parameter as KEY=VALUE, repeatable (for example --param name=web --param port=8080)")
+	fs.BoolVar(&listTemplates, "list-templates", false, "list the starter templates and their parameters, then exit")
 	fs.StringVar(&dir, "dir", ".", "project directory to initialise")
 	fs.StringVar(&mode, "mode", agentinit.ModeAgentCore, "MCP tool exposure written to .mcp.json: agent-core (small tool profile, default), read-only, standard or full")
 	fs.StringVar(&mcpBinary, "mcp-binary", "", "MCP server binary name (default: derived from the CLI name)")
@@ -68,6 +73,13 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	_, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiURLP, profileP, jsonOutP, outputP, queryP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	if listTemplates {
+		if err := renderResult(stdout, of.Format, of.Query, projecttpl.List(), func() { printTemplateList(stdout) }); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitCodeForError(err)
+		}
+		return exitOK
 	}
 	if !agentinit.ValidMode(mode) {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--mode must be agent-core, read-only, standard or full, got %q", mode))
@@ -85,7 +97,24 @@ func runInit(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 	}
 	opts := agentinit.Options{Names: initNames(prog, mcpBinary, lookupEnv), APIURL: apiURL, Mode: mode, App: stack.Name}
 
-	files, err := planInit(dir, stack, opts, force)
+	var tplFiles []projecttpl.File
+	if template != "" {
+		tplFiles, err = projecttpl.Render(template, params)
+		var verr *projecttpl.ValidationError
+		switch {
+		case errors.As(err, &verr):
+			return reportError(stdout, stderr, jsonOut, newValidationError("%s", verr.Error()))
+		case errors.Is(err, projecttpl.ErrUnknownTemplate):
+			return reportError(stdout, stderr, jsonOut, newValidationError("unknown --template %q, run with --list-templates to see the choices", template))
+		case err != nil:
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		if name := params["name"]; name != "" {
+			opts.App = name
+		}
+	}
+
+	files, err := planInit(dir, stack, opts, force, tplFiles)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
@@ -152,14 +181,22 @@ func initNames(prog, mcpBinary string, lookupEnv func(string) (string, bool)) ag
 }
 
 // planInit decides what to do with each generated file without touching disk.
-func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force bool) ([]initFile, error) {
+func planInit(dir string, stack stackdetect.Stack, opts agentinit.Options, force bool, tpl []projecttpl.File) ([]initFile, error) {
 	specPath := "app.yaml"
 	if found, err := spec.DiscoverPath(dir, ""); err == nil {
 		specPath = filepath.Base(found)
 	}
 
 	var files []initFile
-	if stack.Detected() {
+	if len(tpl) > 0 {
+		for _, t := range tpl {
+			p := t.Path
+			if p == "app.yaml" {
+				p = specPath
+			}
+			files = append(files, initFile{Path: p, content: t.Content})
+		}
+	} else if stack.Detected() {
 		body, err := agentinit.AppYAML(stack)
 		if err != nil {
 			return nil, err
@@ -207,6 +244,9 @@ func writeInit(dir string, files []initFile) error {
 	for _, f := range files {
 		if f.Action != initCreate && f.Action != initOverwrite {
 			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(dir, f.Path)), 0o755); err != nil { //nolint:gosec // project directories meant to be committed
+			return fmt.Errorf("create directory for %s: %w", f.Path, err)
 		}
 		if err := os.WriteFile(filepath.Join(dir, f.Path), []byte(f.content), 0o644); err != nil { //nolint:gosec // project files meant to be committed
 			return fmt.Errorf("write %s: %w", f.Path, err)
@@ -262,6 +302,23 @@ func printInitSummary(w io.Writer, prog string, res initResult) {
 	}
 }
 
+func printTemplateList(w io.Writer) {
+	for _, t := range projecttpl.List() {
+		_, _ = fmt.Fprintf(w, "%s: %s\n", t.ID, t.Summary)
+		for _, p := range t.Params {
+			req := ""
+			if p.Required && p.Default == "" {
+				req = ", required"
+			}
+			def := ""
+			if p.Default != "" {
+				def = ", default " + p.Default
+			}
+			_, _ = fmt.Fprintf(w, "    --param %s=  %s (%s%s%s)\n", p.Name, p.Label, p.Kind, req, def)
+		}
+	}
+}
+
 func initUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s init [--dir DIR] [--mode MODE] [--dry-run] [--force] [--yes] [flags]
@@ -282,6 +339,11 @@ a script must pass --yes or --dry-run.
   read-only    every read tool, no mutations
   standard     read and mutating tools, no destructive ones
   full         every tool
+
+--template ID (with --param KEY=VALUE, repeatable) writes a starter's files in place
+of the detected app.yaml: web-service, static-site, worker, cron-job or
+build-test-deploy (adds .pipelines/release.yaml). --list-templates shows each
+template's parameters.
 
 --api-url (or the active profile) is written into AGENTS.md and .mcp.json when known.
 --mcp-binary overrides the MCP server binary name.

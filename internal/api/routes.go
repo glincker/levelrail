@@ -37,6 +37,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerDockerGuardRoutes(mux)
 	rt.registerPluginRoutes(mux)
 	rt.registerFixitRoutes(mux)
+	rt.registerProjectTemplateRoutes(mux)
 	rt.registerBuildPerformanceRoutes(mux)
 	rt.registerAlertNoiseRoutes(mux)
 	rt.registerStatusPageRoutes(mux)

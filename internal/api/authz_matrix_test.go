@@ -120,6 +120,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
 	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
 	"DELETE /api/v1/mobile/devices/{id}":                         "self service: revokes only a phone the caller paired, or any phone for root",
+	"POST /api/v1/project-templates/{id}/render":                 "renders starter files from submitted parameters, persists nothing",
 	"POST /api/v1/apps/{name}/health/discover":                   "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
 }
 
