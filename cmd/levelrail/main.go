@@ -1892,6 +1892,10 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithExecRuntime(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
+		imageInventoryOption(func(nodeID string) (docker.Runtime, error) {
+			return resolveNodeTransport(client, agentRegistry, nodeID)
+		}),
+		imageVerifyOption(logger),
 		// Applied unconditionally: scheduledTaskRunner is always non-nil.
 		api.WithScheduledTaskRunner(scheduledTaskRunner),
 		api.WithJobLimits(jobsPerAppCap(scheduledTaskRunner)),

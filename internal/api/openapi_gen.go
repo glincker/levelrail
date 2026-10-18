@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1271 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1275 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -875,6 +875,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/hooks/image-update/{name}/{token}", Ability: "Public", Group: "Other", Handler: "handleImageUpdateWebhook", Description: ""},
 	{Method: "POST", Path: "/api/v1/hooks/pipeline/{id}/{token}", Ability: "Public", Group: "Other", Handler: "handlePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/hooks/wake", Ability: "Public", Group: "Other", Handler: "handleWakeHook", Description: ""},
+	{Method: "GET", Path: "/api/v1/images", Ability: "AbilityRead", Group: "Other", Handler: "handleListImageInventory", Description: ""},
+	{Method: "POST", Path: "/api/v1/images/gc", Ability: "AbilityRoot", Group: "Other", Handler: "handleImageGC", Description: ""},
+	{Method: "GET", Path: "/api/v1/images/layers", Ability: "AbilityRead", Group: "Other", Handler: "handleImageLayerBreakdown", Description: ""},
+	{Method: "POST", Path: "/api/v1/images/verify", Ability: "AbilityRead", Group: "Other", Handler: "handleImageVerify", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},

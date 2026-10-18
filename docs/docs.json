@@ -154,6 +154,7 @@
               "functions",
               "canary-deploys",
               "deployments-page",
+              "images",
               "deploy-previews",
               "deploy-link",
               "deploy-timeline",

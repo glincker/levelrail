@@ -138,6 +138,10 @@ func (rt *Router) handlePromoteApp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if status, msg := rt.enforceImageSignature(r.Context(), promoteImageRef(res.source)); status != 0 {
+		writeError(w, status, msg)
+		return
+	}
 	if !rt.authorizeRefs(w, r, AbilityDeploy, notFoundAs(http.StatusForbidden, "your account lacks the required ability on the target app (needs "+AbilityDeploy+")"), appRef(res.target.Name)) {
 		return
 	}
