@@ -870,6 +870,7 @@
               "experimental-features",
               "performance",
               "benchmarks",
+              "control-plane-health",
               "changelog",
               "upgrade-history"
             ],

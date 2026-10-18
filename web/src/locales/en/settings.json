@@ -588,6 +588,10 @@
         "title": "Control plane backup",
         "description": "Snapshots, off-box backups, key escrow and restore drills for this instance."
       },
+      "control-plane-health": {
+        "title": "Control plane health",
+        "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
+      },
       "system-status": {
         "title": "System status",
         "description": "Preflight checks: Docker, disk, ports, database, and firewall."
@@ -853,6 +857,76 @@
     "banner": {
       "title": "Sign-in relies on a password alone",
       "body": "Turn on two-factor authentication or register a passkey so a leaked password cannot open this dashboard on its own."
+    }
+  },
+  "controlPlaneHealth": {
+    "title": "Control plane health",
+    "description": "Live saturation of this instance: process, database, reconcile loop and open streams.",
+    "status": { "ok": "Healthy", "warn": "Degraded", "crit": "Saturated" },
+    "severity": { "warn": "Warning", "crit": "Critical" },
+    "allClear": "Every measurement is under its threshold.",
+    "reading": "Now {{value}}, limit {{limit}}.",
+    "fixApplied": "Fix applied",
+    "fixFailed": "The fix failed",
+    "fixViaCli": "Fix via CLI",
+    "slowQueries": "Slow queries: {{count}} over {{ms}} ms",
+    "noSlowQueries": "No slow queries recorded since start.",
+    "fixes": {
+      "wal_checkpoint": "Checkpoint now",
+      "db_optimize": "Refresh query stats",
+      "reset_slow_log": "Clear slow log"
+    },
+    "metrics": {
+      "goroutines": "Goroutines",
+      "heap": "Heap in use",
+      "dbLatency": "Database p95",
+      "dbLatencyHint": "p50 {{p50}} ms, p99 {{p99}} ms",
+      "dbQueue": "Writes that waited",
+      "dbQueueHint": "{{ms}} ms waiting in total",
+      "wal": "Write ahead log",
+      "walHint": "Database file {{size}} MiB",
+      "reconcile": "Last reconcile pass",
+      "reconcileHint": "{{n}} controllers, p95 {{p95}} ms",
+      "eventLag": "Since last reconcile pass",
+      "streams": "Live streams"
+    },
+    "findings": {
+      "goroutines": {
+        "title": "Many goroutines",
+        "hint": "Usually open streams or stuck jobs. Restart the control plane if it keeps climbing."
+      },
+      "heap": {
+        "title": "High memory use",
+        "hint": "Check for very large log or build outputs held in memory."
+      },
+      "db_latency": {
+        "title": "Slow database queries",
+        "hint": "Refreshing query statistics often restores good plans."
+      },
+      "db_queue": {
+        "title": "Writes are queueing",
+        "hint": "The single SQLite writer is busy. Look at the slow query list below."
+      },
+      "wal_size": {
+        "title": "Write ahead log is large",
+        "hint": "A checkpoint folds it back into the database file."
+      },
+      "slow_queries": {
+        "title": "Many slow queries",
+        "hint": "Review the list below, then clear the counter once handled."
+      },
+      "reconcile_pass": {
+        "title": "Reconcile pass is slow",
+        "hint": "A controller is taking long. The slowest one is shown in the metrics."
+      },
+      "event_lag": {
+        "title": "Reconcile loop is lagging",
+        "hint": "No pass finished recently. Restart the control plane if this persists."
+      },
+      "streams": {
+        "title": "Live streams near the cap",
+        "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
+      }
     }
   },
   "generalPage": {

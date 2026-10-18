@@ -87,6 +87,8 @@ System endpoints for:
 | POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
 | GET | /api/v1/system/shield/bots | AbilityRead | handleShieldBotList |
 | GET | /api/v1/system/cache | AbilityRead | handleSystemCache |
+| GET | /api/v1/system/control-plane-health | AbilityRead | handleGetCPHealth |
+| POST | /api/v1/system/control-plane-health/fix | AbilityRoot | handleCPHealthFix |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

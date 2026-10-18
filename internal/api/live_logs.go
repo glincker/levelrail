@@ -163,7 +163,7 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	flusher, ok := startSSE(w)
+	flusher, ok := rt.startLiveSSE(w, r)
 	if !ok {
 		rt.logger.Error("api: "+opName+": response writer does not support flushing", slog.String("name", name))
 		return

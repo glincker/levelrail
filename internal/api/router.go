@@ -207,6 +207,7 @@ type Router struct {
 	buildCacheNodes        BuildCacheResolver                                            // nil: build cache routes return 501
 	buildRetrier           func(ctx context.Context, app, branch string) (string, error) // test seam, nil means TriggerScheduledDeploy
 	restart                restartState                                                  // see system_restart.go
+	cpHealth               cpHealthState                                                 // see system_cp_health.go
 	memAttribution         memoryAttributionCache                                        // see node_memory_attribution.go
 	nodeHostReports        NodeHostReports                                               // nil is valid: remote rows keep the placed-services-only shape
 	dockerGuard            DockerGuardController                                         // nil is valid: the docker guard routes report it as not configured

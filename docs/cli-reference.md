@@ -1242,6 +1242,14 @@ Restarts the control plane process through its supervisor, for example after ena
 
 If no process supervisor was detected, the command prints the reason and the command to run on the server (for example `sudo systemctl restart levelrail`) and exits non-zero. The API is `GET` and `POST /api/v1/system/restart`.
 
+## System health {#system-health}
+
+```
+levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log] [flags]
+```
+
+Prints goroutines, heap, database latency and write queue, write ahead log size, reconcile pass timing and live stream use, with a finding for each value over its threshold. `--fix` applies one of the typed fixes and prints the result; it needs a root token. The API is `GET /api/v1/system/control-plane-health` and `POST /api/v1/system/control-plane-health/fix`. See [Control plane health](/control-plane-health).
+
 ## System networks {#system-networks}
 
 ```

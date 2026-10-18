@@ -92,7 +92,23 @@ Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Go 1.26.9. The fixture 
 | 2000 | 2000 | 0 of 30000 | 0.18 | 0.45 | 4.93 | 54.9 | 0 |
 | 5000 | 5000 | 0 of 75000 | 0.16 | 6.16 | 16.45 | 40.7 | 0 |
 
-Not yet measured: anything through the ingress, with Docker, across nodes or across zones.
+### Control plane at 1000 apps (2026-10-18)
+
+Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Go 1.26.9, SQLite through modernc.org/sqlite in WAL mode on local SSD. The test seeds 1000 apps, 5000 deploy attempts and 1000 reconcile status rows into a fresh database, then times store calls in process, 200 samples each (50 for the full scans). This measures the database layer behind the list endpoints and the status writes of a reconcile pass. It does not include HTTP, JSON encoding, Docker, or the container work a real reconcile does, so treat it as a floor, not an end to end figure.
+
+| Operation | p50 ms | p95 ms | p99 ms |
+| --- | --- | --- | --- |
+| List apps, page of 50 | 0.47 | 0.62 | 0.86 |
+| List apps, all 1000 (no limit) | 4.82 | 5.06 | 5.58 |
+| List apps, search `app-05`, page of 50 | 0.94 | 1.16 | 1.29 |
+| Reconcile conditions, batch of 50 controllers | 0.07 | 0.09 | 0.20 |
+| Latest deploy activity, all apps | 1.29 | 1.52 | 1.66 |
+| Deploy attempts for one app | 0.03 | 0.04 | 0.19 |
+| Reconcile status write sweep, 1000 controllers (5 sweeps) | 60.04 | 60.87 | 60.87 |
+
+Seeding took 550 ms. Across the run the database logged 6353 statements, none over the 200 ms slow threshold, p95 0.38 ms. Reproduce with `LEVELRAIL_SCALE_BENCH=1 go test ./internal/store -run TestScaleSeeded -v`.
+
+Not yet measured: anything through the ingress, with Docker, across nodes or across zones, and the HTTP list endpoints under concurrent load.
 
 | Scenario | Rate | Result | Status |
 | --- | --- | --- | --- |

@@ -150,7 +150,7 @@ func (rt *Router) serveLiveDeploySteps(w http.ResponseWriter, r *http.Request, d
 	}
 	defer unsubscribe()
 
-	flusher, ok := startSSE(w)
+	flusher, ok := rt.startLiveSSE(w, r)
 	if !ok {
 		rt.logger.Error("api: deploy step stream: response writer does not support flushing", slog.String("deploy_id", deployID))
 		return
