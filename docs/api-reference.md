@@ -500,6 +500,8 @@ Endpoints for:
 | PUT | /api/v1/apps/{name}/buckets/{id} | AbilityWriteSensitive | handleBindAppBucket |
 | DELETE | /api/v1/apps/{name}/buckets/{id} | AbilityWriteSensitive | handleUnbindAppBucket |
 | GET | /api/v1/apps/{name}/env/bound | AbilityRead | handleListBoundEnv |
+| POST | /api/v1/apps/{name}/builds/{id}/cancel | AbilityDeploy | handleCancelBuild |
+| POST | /api/v1/apps/{name}/builds/{id}/retry | AbilityDeploy | handleRetryBuild |
 
 </Accordion>
 
@@ -1545,6 +1547,10 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dashboards/{id}/export | AbilityRead | handleExportDashboard |
 | PUT | /api/v1/dashboards/{id} | AbilityWrite | handleUpdateDashboard |
 | DELETE | /api/v1/dashboards/{id} | AbilityWrite | handleDeleteDashboard |
+| GET | /api/v1/builds | AbilityRead | handleListBuilds |
+| GET | /api/v1/builds/cache | AbilityRead | handleBuildCache |
+| POST | /api/v1/builds/cache/prune | AbilityWriteSensitive | handleBuildCachePrune |
+| GET | /api/v1/builds/{id} | AbilityRead | handleGetBuild |
 
 ## See also
 

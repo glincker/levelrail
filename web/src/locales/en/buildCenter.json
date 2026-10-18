@@ -1,0 +1,85 @@
+{
+  "title": "Builds",
+  "subtitle": "The build queue and history across every app: what is waiting, what is running, how long builds take, how much the cache helps and how big the images are.",
+  "retry": "Try again",
+  "error": {
+    "title": "Could not load builds"
+  },
+  "node": {
+    "label": "Node",
+    "local": "This server"
+  },
+  "tiles": {
+    "queued": "Queued",
+    "running": "Running",
+    "finished": "Finished",
+    "failed": "Failed"
+  },
+  "limits": {
+    "perNode": "Up to {{count}} builds run at once on each node, the rest wait in the queue.",
+    "node": "{{node}}: {{running}} running, {{waiting}} waiting"
+  },
+  "platforms": {
+    "target": "Builds target {{platform}}, the platform of the build node.",
+    "singleOnly": "Multi-platform builds are not supported yet."
+  },
+  "columns": {
+    "build": "Build",
+    "status": "Status",
+    "duration": "Time",
+    "cache": "Cache",
+    "image": "Image",
+    "node": "Node and platform",
+    "actions": "Actions"
+  },
+  "status": {
+    "queued": "Queued",
+    "queuedAt": "Queued, #{{position}}",
+    "held": "Held",
+    "running": "Running",
+    "succeeded": "Succeeded",
+    "failed": "Failed",
+    "canceled": "Canceled",
+    "superseded": "Superseded",
+    "stuck": "May be stuck"
+  },
+  "actions": {
+    "logs": "Logs",
+    "cancel": "Cancel",
+    "cancelStuck": "Cancel stuck build",
+    "cancelDone": "Build canceled",
+    "cancelFailed": "Could not cancel the build",
+    "retry": "Retry",
+    "retryDone": "Build restarted from the connected branch",
+    "retryFailed": "Could not retry the build",
+    "freeCache": "Free build cache"
+  },
+  "empty": {
+    "title": "No builds yet",
+    "description": "Builds appear here when an app deploys from a git source."
+  },
+  "cacheFull": {
+    "title": "A build ran out of disk space",
+    "description": "Idle build cache can be removed safely. Builds that are running keep their cache."
+  },
+  "cache": {
+    "title": "Build cache",
+    "prune": "Free idle cache",
+    "total": "Cache size",
+    "inUse": "In use",
+    "reclaimable": "Can be freed",
+    "records": "Records",
+    "errorTitle": "Could not load the build cache",
+    "unsupportedTitle": "Build cache not available",
+    "unsupported": "This node does not report its build cache yet."
+  },
+  "prune": {
+    "title": "Free idle build cache",
+    "loading": "Checking what can be freed.",
+    "description": "{{count}} cache records have been idle for {{hours}} hours or more. Removing them frees {{size}}.",
+    "consequences": "The next build of each app may take longer while its cache is rebuilt.",
+    "confirm": "Free {{size}}",
+    "pending": "Freeing cache",
+    "done": "Removed {{count}} cache records, freed {{size}}"
+  }
+}

@@ -73,6 +73,7 @@ import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type images from '../locales/en/images.json'
+import type buildCenter from '../locales/en/buildCenter.json'
 import type functions from '../locales/en/functions.json'
 import type secretRotation from '../locales/en/secretRotation.json'
 import type templates from '../locales/en/templates.json'
@@ -154,6 +155,7 @@ declare module 'i18next' {
       resources: typeof resources
       deployTimeline: typeof deployTimeline
       images: typeof images
+      buildCenter: typeof buildCenter
       functions: typeof functions
       secretRotation: typeof secretRotation
       models: typeof models

@@ -69,6 +69,7 @@ export const NAMESPACES = [
   'resources',
   'deployTimeline',
   'images',
+  'buildCenter',
   'functions',
   'secretRotation',
   'aiAssistant',

@@ -24,6 +24,16 @@
   "findings",
   "score"
  ],
+ "apply_build_cache_prune": [
+  "applied",
+  "candidate_count",
+  "candidates",
+  "freed_bytes",
+  "node",
+  "older_than_hours",
+  "removed_count",
+  "would_free_bytes"
+ ],
  "apply_image_gc": [
   "candidates",
   "dry_run",
@@ -569,6 +579,16 @@
   "stages",
   "status_reason",
   "weight"
+  ],
+ "get_buildkit_cache": [
+  "in_use_bytes",
+  "node",
+  "reason",
+  "reclaimable_bytes",
+  "record_count",
+  "records",
+  "supported",
+  "total_bytes"
  ],
  "get_cloudflare_tunnel_status": [
   "enabled",
@@ -1229,6 +1249,10 @@
   "started_at",
   "status"
  ],
+ "list_builds": [
+  "build",
+  "builds"
+ ],
  "list_certificates": [
   "acme_failure",
   "apps",
@@ -1841,6 +1865,16 @@
   "expires_at",
   "method",
   "url"
+ ],
+ "preview_build_cache_prune": [
+  "applied",
+  "candidate_count",
+  "candidates",
+  "freed_bytes",
+  "node",
+  "older_than_hours",
+  "removed_count",
+  "would_free_bytes"
  ],
  "preview_clone_environment": [
   "apps",

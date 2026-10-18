@@ -19,6 +19,8 @@ const defaultBuildTrendWindow = 20
 type BuildPerformanceStore interface {
 	RecordBuildRun(ctx context.Context, r store.BuildRun) error
 	ListBuildRuns(ctx context.Context, app string, limit int) ([]store.BuildRun, error)
+	ListAllBuildRuns(ctx context.Context, limit int) ([]store.BuildRun, error)
+	ListBuildAttempts(ctx context.Context, limit int) ([]store.DeployAttempt, error)
 	GetBuildLimitSetting(ctx context.Context, key string) (int64, bool, error)
 	SetBuildLimitSetting(ctx context.Context, key string, value int64, actor string, now time.Time) error
 	ClearBuildLimitSetting(ctx context.Context, key string) error
@@ -39,6 +41,7 @@ func (r runRecorder) RecordBuildRun(ctx context.Context, run build.Run) error {
 		App: run.App, Tag: run.Tag, StartedAt: run.StartedAt,
 		DurationMS: run.Duration.Milliseconds(), QueueWaitMS: run.QueueWait.Milliseconds(),
 		Status: string(run.Status), CachedSteps: run.CachedSteps, TotalSteps: run.TotalSteps, Error: run.Error,
+		NodeID: run.Node, Platform: run.Platform, ImageBytes: run.ImageBytes,
 	})
 }
 

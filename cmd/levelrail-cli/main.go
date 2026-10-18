@@ -131,6 +131,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runTraffic(prog, args[1:], stdout, stderr, lookupEnv)
 	case "images":
 		return runImages(prog, args[1:], stdout, stderr, lookupEnv)
+	case "builds":
+		return runBuilds(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cache":
 		return runCache(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
@@ -323,7 +325,8 @@ Usage:
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
   %[1]s traffic <app> [--window 5m|1h|24h] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
   %[1]s cache status|rules|purge|history <app> [flags]   response cache at the ingress: hit rate, rules, purge by URL, prefix, tag or all
-  %[1]s images list|layers|gc|verify [flags]   image inventory per node with size and owners, layer breakdown, retention GC that keeps rollback targets, signature check
+  %[1]s builds list|show|cancel|retry|cache|prune [flags]   build queue and history, cancel and retry, BuildKit cache inventory and prune preview
+  %[1]s images list|layers|gc|verify [flags] image inventory per node with size and owners, layer breakdown, retention GC that keeps rollback targets, signature check
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
   %[1]s private-networks list|map|create|set|delete|allow|deny|apply [flags]    private networks and app to app allow rules

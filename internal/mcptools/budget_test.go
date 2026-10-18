@@ -35,7 +35,7 @@ var modeTokenBudgets = map[Mode]int{
 var compactTokenBudgets = map[Mode]int{
 	ModeReadOnly: 23500,
 	ModeStandard: 31000,
-	ModeFull:     33000,
+	ModeFull:     34000,
 }
 
 func budgetEnvKey(mode Mode) string {
