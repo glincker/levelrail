@@ -1580,6 +1580,16 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipelines/templates/{id} | AbilityRead | handleGetPipelineTemplate |
 | GET | /api/v1/project-templates | AbilityRead | handleListProjectTemplates |
 | POST | /api/v1/project-templates/{id}/render | AbilityRead | handleRenderProjectTemplate |
+| GET | /api/v1/archives | AbilityRoot | handleListArchives |
+| POST | /api/v1/archives | AbilityRoot | handleCreateArchive |
+| GET | /api/v1/archives/policy | AbilityRoot | handleGetArchivePolicy |
+| PUT | /api/v1/archives/policy | AbilityRoot | handlePutArchivePolicy |
+| GET | /api/v1/archives/{id} | AbilityRoot | handleGetArchive |
+| GET | /api/v1/archives/{id}/rows | AbilityRoot | handleBrowseArchive |
+| GET | /api/v1/archives/{id}/download | AbilityRoot | handleDownloadArchive |
+| POST | /api/v1/archives/{id}/restore | AbilityRoot | handleRestoreArchive |
+| POST | /api/v1/archives/{id}/verify | AbilityRoot | handleVerifyArchive |
+| DELETE | /api/v1/archives/{id} | AbilityRoot | handleDeleteArchive |
 
 ## See also
 

@@ -75,6 +75,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
+	"github.com/GLINCKER/levelrail/internal/archive"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
@@ -750,8 +751,10 @@ type Router struct {
 	doctorDiskIOWarnLatency  time.Duration // 0 means "use defaultDoctorDiskIOWarnLatency", set via WithDoctorDiskIOWarnLatency
 
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
-	cpBackupScheduleOff bool                      // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
-	cpDR                ControlPlaneDR            // nil is valid: /system/control-plane-dr routes return 501
+	archives            *archive.Manager          // nil is valid: /archives routes return 501
+	archiveSettings     ArchiveSettingsStore
+	cpBackupScheduleOff bool           // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
+	cpDR                ControlPlaneDR // nil is valid: /system/control-plane-dr routes return 501
 
 	authEngine   *authengine.Engine // set by WithAuthEngine, or built by NewRouter when absent
 	libSessions  *authengine.Sessions
