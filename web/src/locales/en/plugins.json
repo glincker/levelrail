@@ -35,7 +35,10 @@
     "enabled": "{{name}} enabled",
     "disabled": "{{name}} disabled",
     "removed": "{{name}} removed",
-    "failed": "Plugin action failed"
+    "failed": "Plugin action failed",
+    "upgrade": "Upgrade",
+    "uninstall": "Uninstall",
+    "restarted": "{{name}} restarted"
   },
   "abilities": {
     "read": "Receive the alert event being delivered (title, text, status, resource).",
@@ -65,17 +68,27 @@
     "manifestHint": "Paste the file exactly as the publisher shipped it. Any edit breaks the signature.",
     "signature": "Signature",
     "keyId": "Signing key",
-    "keyPlaceholder": "Choose a trusted key",
     "noKeys": "No trusted keys yet. Add the publisher's key below first.",
-    "digest": "Pinned digest (optional)",
-    "digestHint": "Refuse the install unless the image is pinned to exactly this sha256 digest.",
-    "config": "Plugin config (optional, JSON)",
-    "configHint": "Non-secret settings only. Credentials go on the notification channel.",
-    "submit": "Verify and install",
     "pending": "Verifying",
     "cancel": "Cancel",
     "installed": "{{name}} installed. Review its abilities next.",
-    "failed": "Install failed"
+    "failed": "Install failed",
+    "upgradeTitle": "Upgrade {{name}}",
+    "reviewDescription": "Check who published this, whether it verifies, and exactly what it may do. Approve grants only the abilities listed.",
+    "source": "Source",
+    "sourceManifest": "Paste a manifest",
+    "sourceUrl": "Manifest URL",
+    "url": "Manifest URL (https)",
+    "urlHint": "A signature is read from the same URL with .sig added, unless you paste one below.",
+    "signatureHint": "Leave empty only for an unsigned package, which is refused unless the operator allows unsigned plugins.",
+    "signatureHintUrl": "Optional when a .sig file sits next to the manifest.",
+    "keyAuto": "Detect from trusted keys",
+    "review": "Review",
+    "reviewing": "Verifying",
+    "back": "Back",
+    "approveInstall": "Approve and install",
+    "installedApproved": "{{name}} installed and approved. Enable it to start it.",
+    "wrongPlugin": "This manifest is for a different plugin than {{name}}."
   },
   "remove": {
     "title": "Remove {{name}}?",
@@ -100,5 +113,37 @@
     "removeTitle": "Stop trusting {{name}}?",
     "removeDescription": "Plugins signed by this key stop at the next supervisor pass. They stay installed.",
     "removed": "Key removed"
+  },
+  "fix": {
+    "restart": "Fix: restart",
+    "trustKey": "Fix: trust the signing key",
+    "reinstall": "Fix: reinstall a signed package"
+  },
+  "verification": {
+    "verified": "Signature verified",
+    "unsigned": "Unsigned",
+    "unsigned_refused": "Unsigned, refused",
+    "untrusted_key": "Key not trusted",
+    "bad_signature": "Bad signature",
+    "digest_mismatch": "Digest mismatch",
+    "unverified": "Not verified"
+  },
+  "review": {
+    "verification": "Verification",
+    "digest": "Image pinned to {{digest}}",
+    "signedBy": "Signed by {{key}}",
+    "refused": "This package cannot be installed",
+    "unsignedWarn": "Unsigned packages are not authenticated. Install only if you built it yourself.",
+    "abilities": "Abilities it asks for",
+    "newAbility": "New",
+    "removed": "No longer requested: {{abilities}}",
+    "upgradeFrom": "Upgrade from version {{version}}",
+    "panels": "Adds {{count}} read-only panel(s) to this page, rendered by the dashboard from the manifest.",
+    "reapproval": "Wider access than before",
+    "reapprovalHint": "This version asks for abilities or hosts the installed one did not. Approving here grants exactly the set listed above."
+  },
+  "panels": {
+    "title": "Plugin panels",
+    "from": "{{name}} by {{publisher}}"
   }
 }

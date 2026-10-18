@@ -1551,6 +1551,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/builds/cache | AbilityRead | handleBuildCache |
 | POST | /api/v1/builds/cache/prune | AbilityWriteSensitive | handleBuildCachePrune |
 | GET | /api/v1/builds/{id} | AbilityRead | handleGetBuild |
+| POST | /api/v1/plugins/inspect | AbilityRoot | handleInspectPlugin |
+| POST | /api/v1/plugins/{name}/upgrade | AbilityRoot | handleUpgradePlugin |
+| POST | /api/v1/plugins/{name}/restart | AbilityRoot | handleRestartPlugin |
 
 ## See also
 

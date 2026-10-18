@@ -135,6 +135,8 @@ func experimentalFeature(name string, m Meta) (experimental.Feature, bool) {
 		return experimental.LoadBalancer, true
 	case m.Group == "iac":
 		return experimental.IaC, true
+	case m.Group == pluginsGroup:
+		return experimental.Plugins, true
 	case m.Group == globalEnvironmentsGroup:
 		return experimental.GlobalEnvironments, true
 	case name == "get_cloudflare_tunnel_status":

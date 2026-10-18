@@ -9,6 +9,8 @@ const (
 	AuditEnable      = "plugin.enable"
 	AuditDisable     = "plugin.disable"
 	AuditRemove      = "plugin.remove"
+	AuditUpgrade     = "plugin.upgrade"
+	AuditRestart     = "plugin.restart"
 	AuditAbilityUsed = "plugin.ability_used"
 	AuditTrustAdd    = "plugin.trust_add"
 	AuditTrustRemove = "plugin.trust_remove"

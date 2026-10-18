@@ -164,9 +164,13 @@ func (s *SQLStore) InsertPlugin(ctx context.Context, r Record) error {
 	return nil
 }
 
-// UpdatePlugin writes the mutable columns of a plugin.
+// UpdatePlugin writes every column except the name and kind; callers pass a record read from the store.
 func (s *SQLStore) UpdatePlugin(ctx context.Context, r Record) error {
-	res, err := s.db.ExecContext(ctx, `UPDATE plugins SET state = ?, approved_abilities = ?, approved_at = ?, approved_by = ?, updated_at = ?, last_error = ? WHERE name = ?`,
+	res, err := s.db.ExecContext(ctx, `UPDATE plugins SET version = ?, publisher = ?, description = ?, image = ?, digest = ?, manifest = ?, signature = ?, key_id = ?,
+		requested_abilities = ?, outbound_hosts = ?, config_json = ?,
+		state = ?, approved_abilities = ?, approved_at = ?, approved_by = ?, updated_at = ?, last_error = ? WHERE name = ?`,
+		r.Version, r.Publisher, r.Description, r.Image, r.Digest, r.Manifest, r.Signature, r.KeyID,
+		marshalList(r.RequestedAbilities), marshalList(r.OutboundHosts), r.ConfigJSON,
 		r.State, marshalList(r.ApprovedAbilities), r.ApprovedAt, r.ApprovedBy, r.UpdatedAt, r.LastError, r.Name)
 	if err != nil {
 		return fmt.Errorf("plugin: update %q: %w", r.Name, err)

@@ -214,6 +214,12 @@ func (m *Manager) verifyRecord(ctx context.Context, rec Record) error {
 	if man.Image != rec.Image || man.Digest() != rec.Digest || man.Name != rec.Name {
 		return errors.New("stored record does not match its signed manifest")
 	}
+	if rec.KeyID == "" && rec.Signature == "" {
+		if !m.cfg.AllowUnsigned {
+			return ErrUnsigned
+		}
+		return nil
+	}
 	keys, err := m.store.ListKeys(ctx)
 	if err != nil {
 		return err

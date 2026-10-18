@@ -49,6 +49,27 @@ type Manifest struct {
 	Image         string   `yaml:"image" json:"image"`
 	Abilities     []string `yaml:"abilities" json:"abilities"`
 	OutboundHosts []string `yaml:"outbound_hosts" json:"outbound_hosts"`
+	Contributes   Contrib  `yaml:"contributes" json:"contributes"`
+}
+
+// Contrib lists the UI a plugin adds. It is data the core renders with its own
+// components, never code.
+type Contrib struct {
+	Panels []Panel `yaml:"panels" json:"panels"`
+}
+
+// Panel is a read-only card of labelled text rows shown on the Plugins page.
+type Panel struct {
+	ID          string     `yaml:"id" json:"id"`
+	Title       string     `yaml:"title" json:"title"`
+	Description string     `yaml:"description" json:"description"`
+	Rows        []PanelRow `yaml:"rows" json:"rows"`
+}
+
+// PanelRow is one label and plain-text value in a Panel.
+type PanelRow struct {
+	Label string `yaml:"label" json:"label"`
+	Value string `yaml:"value" json:"value"`
 }
 
 // Digest returns the sha256 digest the image reference is pinned to.
@@ -72,6 +93,9 @@ func ParseManifest(raw []byte) (Manifest, error) {
 		return Manifest{}, invalid("parse manifest: %v", err)
 	}
 	if err := m.validate(); err != nil {
+		return Manifest{}, err
+	}
+	if err := validateSchema(raw); err != nil {
 		return Manifest{}, err
 	}
 	return m, nil
@@ -120,6 +144,9 @@ func (m *Manifest) validate() error {
 	}
 	sort.Strings(hosts)
 	m.OutboundHosts = dedupe(hosts)
+	if m.Contributes.Panels == nil {
+		m.Contributes.Panels = []Panel{}
+	}
 	return nil
 }
 

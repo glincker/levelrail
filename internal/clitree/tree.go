@@ -142,7 +142,7 @@ var Tree = map[string]*Node{
 	}}}},
 	"profile": {Subs: map[string]*Node{"list": nil}},
 	"tokens":  {Subs: map[string]*Node{"create": nil, "list": nil, "revoke": nil}},
-	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "install": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}}},
+	"plugins": {Subs: map[string]*Node{"list": nil, "show": nil, "inspect": nil, "install": nil, "upgrade": nil, "restart": nil, "uninstall": nil, "approve": nil, "enable": nil, "disable": nil, "remove": nil, "trust": {Subs: map[string]*Node{"add": nil, "list": nil, "remove": nil}}}},
 	"mobile":  {Subs: map[string]*Node{"pair": nil, "devices": {Subs: map[string]*Node{"list": nil, "revoke": nil}}}},
 	"domains": {Subs: map[string]*Node{
 		"list":                 nil,

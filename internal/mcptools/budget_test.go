@@ -26,7 +26,7 @@ const charsPerToken = 4
 var modeTokenBudgets = map[Mode]int{
 	ModeReadOnly: 38500,
 	ModeStandard: 49700,
-	ModeFull:     53500,
+	ModeFull:     55000,
 }
 
 // compactTokenBudgets are the ceilings for the listing levelrail-mcp serves

@@ -17,6 +17,9 @@ const (
 	envMaxConcurrent   = "APP_PLUGIN_MAX_CONCURRENT"
 	envBackoffMax      = "APP_PLUGIN_BACKOFF_MAX"
 	envBreakerFailures = "APP_PLUGIN_BREAKER_FAILURES"
+
+	// EnvAllowUnsigned lets an operator install and run a package with no signature.
+	EnvAllowUnsigned = "APP_PLUGIN_ALLOW_UNSIGNED"
 )
 
 // Config holds the runtime limits. Zero fields take the defaults in withDefaults.
@@ -24,6 +27,8 @@ type Config struct {
 	Namespace string
 	DataDir   string
 	UID, GID  int
+
+	AllowUnsigned bool
 
 	MemoryBytes int64
 	NanoCPUs    int64
@@ -118,6 +123,7 @@ func ConfigFromEnv(namespace, dataDir string, lookup func(string) (string, bool)
 	if n, err := strconv.Atoi(get(envMaxConcurrent)); err == nil && n > 0 {
 		c.MaxConcurrent = n
 	}
+	c.AllowUnsigned = get(EnvAllowUnsigned) == "true"
 	if n, err := strconv.Atoi(get(envBreakerFailures)); err == nil && n > 0 {
 		c.BreakerFailures = n
 	}
