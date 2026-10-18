@@ -27,6 +27,7 @@ const EXPECTED_GLOBAL = [
   '/resources',
   '/network',
   '/network/proxy',
+  '/network/private',
   '/cdn',
   '/domains',
   '/dns',
@@ -92,13 +93,14 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('groups Domains, DNS, Proxy, Firewall, Load balancers and CDN under Networking', () => {
+  it('groups Domains, DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Networking', () => {
     const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
     expect(net?.label).toBe('Networking')
     expect(net?.items.map((i) => i.label)).toEqual([
       'Domains',
       'DNS',
       'Proxy',
+      'Private networks',
       'Firewall',
       'Load balancers',
       'CDN and caches',

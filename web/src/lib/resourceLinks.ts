@@ -18,6 +18,10 @@ export function resourceTarget(r: ConsoleResource): ResourceTarget {
       return { to: '/nodes/$id', params: { id: r.id ?? r.name } }
     case 'domain':
       return { to: '/domains/$domain', params: { domain: r.name } }
+    case 'network':
+      return { to: '/network/private', params: {} }
+    case 'bucket':
+      return { to: '/settings/storage', params: {} }
     default:
       return { to: '/apps/$name', params: { name: r.name } }
   }

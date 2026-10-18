@@ -361,7 +361,7 @@ Usage:
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
-  %[1]s resources list|tag|untag|views [flags]                 every app, database, node and domain in one list, tags, bulk tag with --dry-run, saved views
+  %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
   %[1]s budget [set|delete] project|team ID [flags]            alias for usage budgets

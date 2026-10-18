@@ -1,9 +1,9 @@
 ---
 title: "Resource console"
-description: Search every app, database, node and domain in one list, tag them in bulk with a preview, save views, and see cost grouped by tag.
+description: Search every app, database, node, domain, bucket and private network in one list, tag them in bulk with a preview, save views, and see cost grouped by tag.
 ---
 
-The Resources page (`/resources`) lists every app, database, node and domain you can see in one searchable, virtualized list. Use it to find things across kinds, label them, and answer "what does the payments team cost".
+The Resources page (`/resources`) lists every app, database, node, domain, storage bucket and private network you can see in one searchable, virtualized list. Use it to find things across kinds, label them, and answer "what does the payments team cost".
 
 ## Search and filter
 
@@ -12,13 +12,17 @@ The Resources page (`/resources`) lists every app, database, node and domain you
 - The Tags control keeps only resources that carry all selected tags. Click a tag on a row to add it to the filter.
 - Press `Cmd+K` (`Ctrl+K`) and type a tag name to jump to the list filtered by it. Saved views also appear in the palette.
 
-Team scoped users only see resources they can read. Nodes and standalone domains are instance wide, so they only show for instance members.
+Team scoped users only see resources they can read. Nodes, standalone domains, buckets and private networks are instance wide, so they only show for instance members.
 
 ## Tag many resources at once
 
 Select rows, then choose Add tag or Remove tag. The dialog first runs a preview (a server side dry run) that shows how many resources would change, how many already match, and which ones are blocked by permissions. Nothing is written until you apply. Applying is only enabled once a preview for the same tag has passed.
 
-Tags are the same ones used on apps (`team:payments`, `env:prod`), and now also work on databases, nodes and domains. The same limits apply: a tag is a lowercase `key` or `key:value`.
+Tags are the same ones used on apps (`team:payments`, `env:prod`), and also work on databases, nodes, domains, buckets and private networks. Nodes, buckets and networks are tagged by their ID, so renaming one keeps its tags. The same limits apply: a tag is a lowercase `key` or `key:value`.
+
+## Restart or redeploy many apps
+
+With apps selected, Restart apps and Redeploy apps appear next to the tag buttons. They use the same preview step: a server side dry run shows which apps would run, which are skipped and which you lack permission for, and Apply unlocks once something would run. The command line equivalent is `levelrail-cli apps bulk`.
 
 ## Saved views
 
@@ -39,7 +43,7 @@ levelrail-cli resources views save payments --tag team:payments
 levelrail-cli usage report --by tag
 ```
 
-Resources are named `kind:name` where kind is `app`, `database`, `node` or `domain`. `--dry-run` writes nothing.
+Resources are named `kind:name` where kind is `app`, `database`, `node`, `domain`, `bucket` or `network`. `--dry-run` writes nothing.
 
 ## API
 

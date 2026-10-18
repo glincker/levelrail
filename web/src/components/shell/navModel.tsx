@@ -34,6 +34,7 @@ import {
   TerminalWindowIcon,
   RocketLaunchIcon,
   ScrollIcon,
+  LockKeyIcon,
   ShareNetworkIcon,
   ShieldCheckIcon,
   ShieldWarningIcon,
@@ -72,6 +73,7 @@ export type GlobalTo =
   | '/resources'
   | '/network'
   | '/network/proxy'
+  | '/network/private'
   | '/cdn'
   | '/domains'
   | '/dns'
@@ -240,6 +242,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         to: '/network/proxy',
         icon: <TrafficSignalIcon />,
         badge: 'proxy-attention',
+      },
+      {
+        id: 'private-networks',
+        label: 'Private networks',
+        to: '/network/private',
+        icon: <LockKeyIcon />,
       },
       {
         id: 'firewall',

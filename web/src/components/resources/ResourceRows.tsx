@@ -3,9 +3,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
+  ArchiveIcon,
   DatabaseIcon,
   GlobeIcon,
   HardDrivesIcon,
+  ShareNetworkIcon,
   StackIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +24,8 @@ const KIND_ICON: Record<ResourceKind, React.ReactNode> = {
   database: <DatabaseIcon />,
   node: <HardDrivesIcon />,
   domain: <GlobeIcon />,
+  bucket: <ArchiveIcon />,
+  network: <ShareNetworkIcon />,
 }
 
 function Row({

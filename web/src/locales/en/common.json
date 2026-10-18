@@ -212,6 +212,7 @@
       "proxy": "Proxy",
       "loadbalancers": "Load balancers",
       "firewall": "Firewall",
+      "private-networks": "Private networks",
       "nodes": "Nodes",
       "network": "Topology",
       "cdn": "CDN and caches",

@@ -405,6 +405,11 @@ func (rt *Router) handlePrivateNetworkMap(w http.ResponseWriter, r *http.Request
 			return
 		}
 	}
+	for id, nodeID := range nodes {
+		if nodeID == rt.localNodeID {
+			nodes[id] = ""
+		}
+	}
 	memberOf := map[string][]string{}
 	for _, n := range nets {
 		for _, m := range n.Members {

@@ -43,6 +43,14 @@ type consoleResource struct {
 	Detail string   `json:"detail,omitempty"`
 	Status string   `json:"status,omitempty"`
 	Tags   []string `json:"tags"`
+	tagRef string
+}
+
+func (c consoleResource) ref() store.ResourceRef {
+	if c.tagRef != "" {
+		return store.ResourceRef{Kind: c.Kind, Name: c.tagRef}
+	}
+	return store.ResourceRef{Kind: c.Kind, Name: c.Name}
 }
 
 type consoleListResponse struct {
@@ -87,7 +95,7 @@ func (rt *Router) consoleInventory(r *http.Request, ability string) ([]consoleRe
 			return nil, fmt.Errorf("list nodes: %w", err)
 		}
 		for _, n := range nodes {
-			out = append(out, consoleResource{ID: n.ID, Kind: store.ResourceKindNode, Name: n.Name, Detail: n.Address, Status: string(n.Status)})
+			out = append(out, consoleResource{ID: n.ID, Kind: store.ResourceKindNode, Name: n.Name, Detail: n.Address, Status: string(n.Status), tagRef: n.ID})
 		}
 	}
 	if rt.domains != nil {
@@ -110,12 +118,47 @@ func (rt *Router) consoleInventory(r *http.Request, ability string) ([]consoleRe
 			out = append(out, consoleResource{Kind: store.ResourceKindDomain, Name: d.Domain, Detail: d.Target})
 		}
 	}
+	if instanceWide {
+		more, err := rt.consoleNetworkInventory(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, more...)
+	}
+	return out, nil
+}
+
+// consoleNetworkInventory lists storage buckets and private networks, each skipped when unwired.
+func (rt *Router) consoleNetworkInventory(ctx context.Context) ([]consoleResource, error) {
+	var out []consoleResource
+	if rt.storage != nil && rt.storage.Buckets != nil {
+		buckets, err := rt.storage.Buckets.ListStorageBuckets(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list buckets: %w", err)
+		}
+		for _, b := range buckets {
+			detail := "private"
+			if b.Public {
+				detail = "public"
+			}
+			out = append(out, consoleResource{ID: b.ID, Kind: store.ResourceKindBucket, Name: b.Name, Detail: detail, tagRef: b.ID})
+		}
+	}
+	if rt.privateNetworks != nil && rt.privateNetworks.Store != nil {
+		nets, err := rt.privateNetworks.Store.ListPrivateNetworks(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("list private networks: %w", err)
+		}
+		for _, n := range nets {
+			out = append(out, consoleResource{ID: n.ID, Kind: store.ResourceKindNetwork, Name: n.Name, Detail: strconv.Itoa(len(n.Members)) + " apps", tagRef: n.ID})
+		}
+	}
 	return out, nil
 }
 
 func attachConsoleTags(items []consoleResource, tags map[string][]store.Tag) {
 	for i := range items {
-		names := tagNamesFromStoreTags(tags[store.ResourceRef{Kind: items[i].Kind, Name: items[i].Name}.Key()])
+		names := tagNamesFromStoreTags(tags[items[i].ref().Key()])
 		if names == nil {
 			names = []string{}
 		}
@@ -291,12 +334,14 @@ func (rt *Router) handleBulkResourceTags(w http.ResponseWriter, r *http.Request)
 		rt.internalError(w, "api: bulk resource tags: inventory", err)
 		return
 	}
-	canWrite, exists := map[string]bool{}, map[string]bool{}
+	canWrite, exists, refs := map[string]bool{}, map[string]bool{}, map[string]store.ResourceRef{}
 	for _, it := range writable {
 		canWrite[store.ResourceRef{Kind: it.Kind, Name: it.Name}.Key()] = true
 	}
 	for _, it := range all {
-		exists[store.ResourceRef{Kind: it.Kind, Name: it.Name}.Key()] = true
+		k := store.ResourceRef{Kind: it.Kind, Name: it.Name}.Key()
+		exists[k] = true
+		refs[k] = it.ref()
 	}
 	current, err := cs.ListAllResourceTags(ctx)
 	if err != nil {
@@ -312,21 +357,27 @@ func (rt *Router) handleBulkResourceTags(w http.ResponseWriter, r *http.Request)
 	}
 	resp := consoleBulkTagResponse{Action: req.Action, Tag: name, DryRun: req.DryRun, Results: []consoleBulkResult{}, Counts: map[string]int{}}
 	for _, ref := range req.Resources {
-		res := rt.applyBulkTag(ctx, cs, req, name, &tag, store.ResourceRef{Kind: ref.Kind, Name: ref.Name}, canWrite, exists, current)
+		display := store.ResourceRef{Kind: ref.Kind, Name: ref.Name}.Key()
+		tagged, ok := refs[display]
+		if !ok {
+			tagged = store.ResourceRef{Kind: ref.Kind, Name: ref.Name}
+		}
+		res := rt.applyBulkTag(ctx, cs, req, name, &tag, tagged, display, canWrite, exists, current)
+		res.Kind, res.Name = ref.Kind, ref.Name
 		resp.Results = append(resp.Results, res)
 		resp.Counts[res.Status]++
 	}
 	writeJSON(w, http.StatusMultiStatus, resp)
 }
 
-func (rt *Router) applyBulkTag(ctx context.Context, cs ResourceConsoleStore, req consoleBulkTagRequest, name string, tag *store.Tag, ref store.ResourceRef, canWrite, exists map[string]bool, current map[string][]store.Tag) consoleBulkResult {
+func (rt *Router) applyBulkTag(ctx context.Context, cs ResourceConsoleStore, req consoleBulkTagRequest, name string, tag *store.Tag, ref store.ResourceRef, display string, canWrite, exists map[string]bool, current map[string][]store.Tag) consoleBulkResult {
 	res := consoleBulkResult{Kind: ref.Kind, Name: ref.Name}
 	key := ref.Key()
 	switch {
-	case !exists[key]:
+	case !exists[display]:
 		res.Status = bulkStatusNotFound
 		return res
-	case !canWrite[key]:
+	case !canWrite[display]:
 		res.Status = bulkStatusDenied
 		return res
 	}

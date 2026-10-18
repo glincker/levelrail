@@ -7,13 +7,16 @@ import {
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { usageKeys } from './usage'
 
-export type ResourceKind = 'app' | 'database' | 'node' | 'domain'
+export type ResourceKind =
+  'app' | 'database' | 'node' | 'domain' | 'bucket' | 'network'
 
 export const RESOURCE_KINDS: ResourceKind[] = [
   'app',
   'database',
   'node',
   'domain',
+  'bucket',
+  'network',
 ]
 
 // Matches internal/api's consoleResource.
@@ -110,8 +113,8 @@ export function resourceListQueryOptions(q: ConsoleQuery) {
   })
 }
 
-export function useResourceList(q: ConsoleQuery) {
-  return useQuery(resourceListQueryOptions(q))
+export function useResourceList(q: ConsoleQuery, enabled = true) {
+  return useQuery({ ...resourceListQueryOptions(q), enabled })
 }
 
 export function useBulkTagResources() {

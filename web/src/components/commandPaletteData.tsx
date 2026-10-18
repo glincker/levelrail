@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   GaugeIcon,
+  LockKeyIcon,
   StackIcon,
   DatabaseIcon,
   FolderIcon,
@@ -83,6 +84,8 @@ export const GROUP_ORDER = [
   'Apps',
   'Databases',
   'Nodes',
+  'Buckets',
+  'Private networks',
   'Templates',
   'Tags',
   'Saved views',
@@ -138,6 +141,19 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-pipelines', 'Pipelines', <TreeStructureIcon />, '/pipelines'),
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
   nav('nav-dns', 'DNS zones', <GlobeHemisphereWestIcon />, '/dns'),
+  nav(
+    'nav-private-networks',
+    'Private networks',
+    <LockKeyIcon />,
+    '/network/private',
+  ),
+  nav(
+    'action-private-networks',
+    'Create a private network',
+    <PlusIcon />,
+    '/network/private',
+    'Actions',
+  ),
   nav('nav-firewall', 'Firewall', <ShieldCheckIcon />, '/firewall'),
   nav(
     'nav-loadbalancers',

@@ -3,13 +3,19 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import {
+  ArchiveIcon,
   BookmarkSimpleIcon,
   ListMagnifyingGlassIcon,
+  ShareNetworkIcon,
   TagIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { fuzzyFilter } from '@/lib/fuzzy'
 import { parseView } from '@/lib/resourceLinks'
-import { resourceKeys, type ConsoleView } from '@/queries/resources'
+import {
+  resourceKeys,
+  useResourceList,
+  type ConsoleView,
+} from '@/queries/resources'
 import { tagsQueryOptions } from '@/queries/tags'
 import type { PaletteItem } from './commandPaletteData'
 
@@ -40,6 +46,9 @@ export function useResourcePaletteItems(
     staleTime: 30_000,
   })
 
+  const buckets = useResourceList({ q: '', kind: 'bucket', tags: [] }, open)
+  const networks = useResourceList({ q: '', kind: 'network', tags: [] }, open)
+
   const base = React.useMemo<PaletteItem[]>(() => {
     const items: PaletteItem[] = [
       {
@@ -69,8 +78,30 @@ export function useResourcePaletteItems(
           }),
       })
     }
+    for (const b of buckets.data?.items ?? []) {
+      items.push({
+        key: `resource-bucket-${b.id ?? b.name}`,
+        label: t('palette.bucket', { name: b.name }),
+        group: 'Buckets',
+        icon: <ArchiveIcon />,
+        run: () =>
+          void navigate({
+            to: '/resources',
+            search: { kind: 'bucket', q: b.name },
+          }),
+      })
+    }
+    for (const n of networks.data?.items ?? []) {
+      items.push({
+        key: `resource-network-${n.id ?? n.name}`,
+        label: t('palette.network', { name: n.name }),
+        group: 'Private networks',
+        icon: <ShareNetworkIcon />,
+        run: () => void navigate({ to: '/network/private' }),
+      })
+    }
     return items
-  }, [navigate, t, views.data])
+  }, [buckets.data, navigate, networks.data, t, views.data])
 
   const search = React.useMemo<PaletteItem[]>(() => {
     const q = query.trim()

@@ -1,11 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func consoleCall(t *testing.T, rt *Router, method, path, body string, cookie *http.Cookie) *httptest.ResponseRecorder {
@@ -73,5 +77,44 @@ func TestResourceConsole_SavedViews(t *testing.T) {
 	}
 	if del := consoleCall(t, rt, http.MethodDelete, "/api/v1/resources/views/"+v.ID, "", cookie); del.Code != http.StatusNotFound {
 		t.Fatalf("second delete = %d", del.Code)
+	}
+}
+
+func TestResourceConsole_NodeAndNetworkTagsSurviveRename(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	rt.SetPrivateNetworks(PrivateNetworkConfig{Store: db})
+	ctx := context.Background()
+	if err := db.SaveNode(ctx, store.Node{ID: "n1", Name: "edge-a", Status: store.NodeStatusOnline, CreatedAt: time.Now(), UpdatedAt: time.Now()}); err != nil {
+		t.Fatalf("SaveNode: %v", err)
+	}
+	if err := db.SavePrivateNetwork(ctx, store.PrivateNetwork{ID: "pn1", Name: "core", CreatedAt: "2026-08-14T00:00:00Z"}); err != nil {
+		t.Fatalf("SavePrivateNetwork: %v", err)
+	}
+
+	list := func(query string) consoleListResponse {
+		var out consoleListResponse
+		w := consoleCall(t, rt, http.MethodGet, "/api/v1/resources"+query, "", cookie)
+		if err := json.Unmarshal(w.Body.Bytes(), &out); err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if all := list(""); all.Counts["node"] != 1 || all.Counts["network"] != 1 {
+		t.Fatalf("counts = %v", all.Counts)
+	}
+	w := consoleCall(t, rt, http.MethodPost, "/api/v1/resources/tags/bulk",
+		`{"action":"add","tag":"env:prod","resources":[{"kind":"node","name":"edge-a"},{"kind":"network","name":"core"}]}`, cookie)
+	var resp consoleBulkTagResponse
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil || resp.Counts[bulkStatusOK] != 2 || resp.Results[0].Name != "edge-a" {
+		t.Fatalf("bulk = %s err=%v", w.Body.String(), err)
+	}
+
+	if _, err := db.ExecContext(ctx, `UPDATE nodes SET name = 'edge-b' WHERE id = 'n1'`); err != nil {
+		t.Fatal(err)
+	}
+	tagged := list("?tag=env:prod&kind=node")
+	if tagged.Total != 1 || tagged.Items[0].Name != "edge-b" {
+		t.Fatalf("renamed node lost its tag: %+v", tagged)
 	}
 }

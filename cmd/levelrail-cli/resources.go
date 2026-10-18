@@ -39,7 +39,7 @@ func runResources(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 func resourcesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s resources list [--q TEXT] [--kind app|database|node|domain] [--tag T]...
+  %[1]s resources list [--q TEXT] [--kind app|database|node|domain|bucket|network] [--tag T]...
   %[1]s resources tag --tag T [--dry-run] KIND:NAME...      tag many resources, preview first with --dry-run
   %[1]s resources untag --tag T [--dry-run] KIND:NAME...
   %[1]s resources views [list]                              saved explorer views
@@ -54,7 +54,7 @@ groups cost by tag.
 func runResourcesList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenP, apiP, profileP, jsonP, outP, queryP := apiFlagSet(prog, "resources list", "print the list as JSON to stdout and nothing else", stderr)
 	text := fs.String("q", "", "search text (name, detail, tag)")
-	kind := fs.String("kind", "", "app, database, node or domain")
+	kind := fs.String("kind", "", "app, database, node, domain, bucket or network")
 	limit := fs.Int("limit", 0, "most rows to return (default all)")
 	var tags stringList
 	fs.Var(&tags, "tag", "require this tag, repeatable (all must match)")
