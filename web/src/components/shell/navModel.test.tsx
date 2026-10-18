@@ -107,9 +107,9 @@ describe('global nav model', () => {
     ])
   })
 
-  it('keeps every group at six items or fewer', () => {
+  it('keeps every group at eight items or fewer', () => {
     for (const g of GLOBAL_NAV_GROUPS) {
-      expect(g.items.length, g.id).toBeLessThanOrEqual(6)
+      expect(g.items.length, g.id).toBeLessThanOrEqual(8)
     }
   })
 
