@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1310 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1318 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -774,6 +774,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/compliance/evidence-packs/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyEvidencePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
+	{Method: "GET", Path: "/api/v1/dashboards", Ability: "AbilityRead", Group: "Other", Handler: "handleListDashboards", Description: ""},
+	{Method: "POST", Path: "/api/v1/dashboards", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateDashboard", Description: ""},
+	{Method: "POST", Path: "/api/v1/dashboards/import", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportDashboard", Description: ""},
+	{Method: "GET", Path: "/api/v1/dashboards/templates", Ability: "AbilityRead", Group: "Other", Handler: "handleDashboardTemplates", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/dashboards/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteDashboard", Description: ""},
+	{Method: "GET", Path: "/api/v1/dashboards/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDashboard", Description: ""},
+	{Method: "PUT", Path: "/api/v1/dashboards/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleUpdateDashboard", Description: ""},
+	{Method: "GET", Path: "/api/v1/dashboards/{id}/export", Ability: "AbilityRead", Group: "Other", Handler: "handleExportDashboard", Description: ""},
 	{Method: "GET", Path: "/api/v1/database-catalog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetDatabaseCatalogStatus", Description: ""},
 	{Method: "POST", Path: "/api/v1/database-catalog/refresh", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleRefreshDatabaseCatalog", Description: ""},
 	{Method: "GET", Path: "/api/v1/database-versions", Ability: "AbilityRead", Group: "Other", Handler: "handleListDatabaseVersions", Description: ""},

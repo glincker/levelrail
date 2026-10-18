@@ -622,6 +622,7 @@ type Router struct {
 	oidcIssuerURL                string                       // "" means not configured, set alongside oidcJWKS via SetOIDCManager
 	oidcRotator                  OIDCKeyRotator               // nil is valid: POST /pipelines/oidc/rotate-key returns 501
 	featureFlags                 FeatureFlagStore             // always set, same "core Store interface" shape as scheduledTasks above
+	dashboards                   DashboardStore               // nil when the backing store lacks custom dashboards
 	tags                         TagStore                     // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
 	appIntegrations              AppIntegrationStore          // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
 	bitbucketApp                 BitbucketAppStore            // always set, same "core Store interface" shape as gitlabApp above
@@ -921,6 +922,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.dnsRecordStatus = defaultDNSRecordStatus
 
 	rt.dash = newDashboardCache(0, 0)
+	rt.dashboards, _ = s.(DashboardStore)
 	for _, opt := range opts {
 		opt(rt)
 	}

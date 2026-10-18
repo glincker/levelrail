@@ -204,6 +204,7 @@
               "object-storage",
               "network-shares",
               "log-explorer",
+              "custom-dashboards",
               "tracing",
               "error-tracking",
               "loki-api",

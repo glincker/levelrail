@@ -581,6 +581,14 @@
   "last_drill",
   "next_drill_at"
  ],
+ "get_dashboard": [
+  "document",
+  "id",
+  "is_default",
+  "name",
+  "project_id",
+  "scope"
+ ],
  "get_database": [
   "auto_placed",
   "backup_retain",
@@ -1210,6 +1218,9 @@
  ],
  "list_control_plane_offbox_backups": [
   "backups"
+ ],
+ "list_dashboards": [
+  "dashboards"
  ],
  "list_database_engines": [
   "default_version",

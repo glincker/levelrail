@@ -121,6 +121,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runFlags(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
 		return runTags(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dashboards":
+		return runDashboards(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pipelines":
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deployments":
@@ -330,7 +332,8 @@ Usage:
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
   %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
-  %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
+  %[1]s dashboards list|show|create|export|import|delete [flags]   custom dashboards of metric, log, deploy and cost widgets, exported as JSON for version control
+  %[1]s tags list|create|delete|apps [flags]                manage tags, always identified by name, arbitrary labels for organizing and filtering apps
   %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
   %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
