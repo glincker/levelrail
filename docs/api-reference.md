@@ -1498,6 +1498,14 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStartFirewallEdgeAttack |
 | DELETE | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStopFirewallEdgeAttack |
 | GET | /api/v1/firewall/edge/audit | AbilityRead | handleFirewallEdgeAudit |
+| GET | /api/v1/private-networks | AbilityRead | handleListPrivateNetworks |
+| POST | /api/v1/private-networks | AbilityRoot | handleCreatePrivateNetwork |
+| GET | /api/v1/private-networks/map | AbilityRead | handlePrivateNetworkMap |
+| POST | /api/v1/private-networks/apply | AbilityRoot | handleApplyPrivateNetworks |
+| POST | /api/v1/private-networks/rules | AbilityRoot | handleCreatePrivateNetworkRule |
+| DELETE | /api/v1/private-networks/rules/{id} | AbilityRoot | handleDeletePrivateNetworkRule |
+| PUT | /api/v1/private-networks/{id} | AbilityRoot | handleUpdatePrivateNetwork |
+| DELETE | /api/v1/private-networks/{id} | AbilityRoot | handleDeletePrivateNetwork |
 
 ## See also
 

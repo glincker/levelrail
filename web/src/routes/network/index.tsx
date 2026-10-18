@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import {
   networkTopologyQueryOptions,
@@ -14,6 +14,7 @@ import {
 } from '../../components/network/NetworkTopologyView'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { buttonVariants } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageHeader } from '@/components/shell/PageHeader'
 
@@ -39,6 +40,14 @@ function NetworkPage() {
       <PageHeader
         title={t('page.title')}
         description={t('page.description', { zone: topology.zone })}
+        actions={
+          <Link
+            to="/network/private"
+            className={buttonVariants({ variant: 'outline' })}
+          >
+            {t('privateLink')}
+          </Link>
+        }
       />
 
       <NetworkSummaryRow

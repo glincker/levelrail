@@ -472,7 +472,8 @@ type Router struct {
 	hostFirewallSSHPorts         []int
 	exposure                     *exposure.Manager // nil is valid: /api/v1/firewall/exposure returns 501, see WithExposure
 	exposureStore                ExposureStore
-	dbAccess                     DatabaseAccessStore // nil is valid: database users, temporary credentials and network controls return 501, see WithDatabaseAccess
+	privateNetworks              *PrivateNetworkConfig // nil is valid: /api/v1/private-networks returns 501, see WithPrivateNetworks
+	dbAccess                     DatabaseAccessStore   // nil is valid: database users, temporary credentials and network controls return 501, see WithDatabaseAccess
 	dbAccessTTL                  dbaccess.TTLLimits
 	backupHistory                BackupHistoryStore                                    // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                                          // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above

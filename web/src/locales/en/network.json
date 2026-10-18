@@ -1,4 +1,5 @@
 {
+  "privateLink": "Private networks and rules",
   "page": {
     "title": "Network",
     "description": "Where every app and database runs, and how they reach each other. Internal zone {{zone}}."
