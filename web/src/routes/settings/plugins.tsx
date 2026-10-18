@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { ApprovalDialog } from '../../components/plugins/ApprovalDialog'
 import { InstallPluginDialog } from '../../components/plugins/InstallPluginDialog'
+import { PluginPanels } from '../../components/plugins/PluginPanels'
 import { PluginTable } from '../../components/plugins/PluginTable'
 import { TrustedKeysCard } from '../../components/plugins/TrustedKeysCard'
 import { requireExperimental } from '../../lib/experimental'
@@ -36,6 +37,11 @@ function PluginsPage() {
   const { data: plugins = [], isLoading, error } = usePlugins()
   const [installing, setInstalling] = useState(false)
   const [reviewing, setReviewing] = useState<Plugin | null>(null)
+  const [upgrading, setUpgrading] = useState<Plugin | null>(null)
+  const showKeys = () =>
+    document
+      .getElementById('plugin-trusted-keys')
+      ?.scrollIntoView({ behavior: 'smooth' })
 
   return (
     <PageTemplate
@@ -72,15 +78,33 @@ function PluginsPage() {
           }
         />
       ) : (
-        <PluginTable plugins={plugins} onReview={setReviewing} />
+        <PluginTable
+          plugins={plugins}
+          onReview={setReviewing}
+          onUpgrade={setUpgrading}
+          onTrustKeys={showKeys}
+        />
       )}
-      <TrustedKeysCard />
+      <PluginPanels plugins={plugins} />
+      <div id="plugin-trusted-keys">
+        <TrustedKeysCard />
+      </div>
       <InstallPluginDialog
         open={installing}
         onClose={() => setInstalling(false)}
         onInstalled={(plugin) => {
           setInstalling(false)
-          setReviewing(plugin)
+          if (plugin.approved_at === '') setReviewing(plugin)
+        }}
+      />
+      <InstallPluginDialog
+        key={upgrading?.name ?? 'none'}
+        open={upgrading !== null}
+        upgradeOf={upgrading?.name}
+        onClose={() => setUpgrading(null)}
+        onInstalled={(plugin) => {
+          setUpgrading(null)
+          if (plugin.approved_at === '') setReviewing(plugin)
         }}
       />
       <ApprovalDialog plugin={reviewing} onClose={() => setReviewing(null)} />

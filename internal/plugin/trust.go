@@ -15,6 +15,7 @@ var (
 	ErrUntrusted      = errors.New("plugin: signing key is not in the trust list")
 	ErrBadSignature   = errors.New("plugin: signature does not verify")
 	ErrDigestMismatch = errors.New("plugin: image digest does not match the pinned digest")
+	ErrUnsigned       = errors.New("plugin: the package is unsigned and unsigned plugins are not allowed (set " + EnvAllowUnsigned + "=true to allow them)")
 )
 
 const signedMessagePrefix = "plugin-package-v1"

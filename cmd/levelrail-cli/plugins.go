@@ -15,11 +15,16 @@ func pluginsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s plugins list [flags]                              list installed plugins
   %[1]s plugins show <name> [flags]                       show one plugin, its requested and approved abilities
-  %[1]s plugins install --manifest FILE --signature FILE --key-id ID [--digest DIGEST] [--config FILE] [flags]
-                                                          verify and record a plugin (nothing is approved or started)
+  %[1]s plugins inspect (--manifest FILE | --url URL) [--signature FILE] [flags]
+                                                          verify a package and show its abilities and what would change, installs nothing
+  %[1]s plugins install (--manifest FILE | --url URL) [--signature FILE] [--key-id ID] [--digest DIGEST] [--config FILE] [--approve ABILITIES] [flags]
+                                                          verify and record a plugin; --approve must list exactly the requested abilities
+  %[1]s plugins upgrade (--manifest FILE | --url URL) [same flags as install]
+                                                          replace an installed plugin; wider abilities or hosts need a new approval
   %[1]s plugins approve <name> --abilities read[,read:sensitive] [flags]
                                                           grant the listed abilities, never implied by install
-  %[1]s plugins enable|disable|remove <name> [flags]      start, stop or remove a plugin
+  %[1]s plugins enable|disable|restart <name> [flags]     start, stop or restart a plugin (restart clears failure backoff)
+  %[1]s plugins uninstall|remove <name> [flags]           stop and delete a plugin
   %[1]s plugins trust add --name NAME --public-key B64 [flags]   trust a publisher's ed25519 public key
   %[1]s plugins trust list|remove <key-id> [flags]        show or revoke trusted keys
 
@@ -52,10 +57,18 @@ func runPlugins(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runPluginsNamed(prog, "disable", rest, stdout, stderr, lookupEnv, func(ctx context.Context, c *apiclient.Client, name string) (apiclient.Plugin, error) {
 			return c.DisablePlugin(ctx, name)
 		})
-	case "remove":
+	case "restart":
+		return runPluginsNamed(prog, "restart", rest, stdout, stderr, lookupEnv, func(ctx context.Context, c *apiclient.Client, name string) (apiclient.Plugin, error) {
+			return c.RestartPlugin(ctx, name)
+		})
+	case "remove", "uninstall":
 		return runPluginsRemove(prog, rest, stdout, stderr, lookupEnv)
 	case "install":
 		return runPluginsInstall(prog, rest, stdout, stderr, lookupEnv)
+	case "inspect":
+		return runPluginsInspect(prog, rest, stdout, stderr, lookupEnv)
+	case "upgrade":
+		return runPluginsUpgrade(prog, rest, stdout, stderr, lookupEnv)
 	case "approve":
 		return runPluginsApprove(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
@@ -104,7 +117,10 @@ func joinOrNone(l []string) string {
 
 func printPlugin(out io.Writer, p apiclient.Plugin) {
 	_, _ = fmt.Fprintf(out, "Name:       %s %s (%s)\nPublisher:  %s\nImage:      %s\nState:      %s (running: %t)\n", p.Name, p.Version, p.Kind, p.Publisher, p.Image, p.State, p.Running)
-	_, _ = fmt.Fprintf(out, "Requested:  %s\nApproved:   %s\nNetwork:    %s\nSigned by:  %s\n", joinOrNone(p.RequestedAbilities), joinOrNone(p.ApprovedAbilities), outboundSummary(p.OutboundHosts), p.KeyID)
+	_, _ = fmt.Fprintf(out, "Requested:  %s\nApproved:   %s\nNetwork:    %s\nSigned by:  %s\nHealth:     %s (verification: %s)\n", joinOrNone(p.RequestedAbilities), joinOrNone(p.ApprovedAbilities), outboundSummary(p.OutboundHosts), joinOrNone([]string{p.KeyID}), p.Health, p.Verification)
+	for _, panel := range p.Panels {
+		_, _ = fmt.Fprintf(out, "Panel:      %s\n", panel.Title)
+	}
 	if p.LastError != "" {
 		_, _ = fmt.Fprintf(out, "Last error: %s\n", p.LastError)
 	}
@@ -162,55 +178,6 @@ func readTrimmed(path string) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(string(b)), nil
-}
-
-func runPluginsInstall(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	fs, tokenP, apiP, profP, jsonP, outP, qP := apiFlagSet(prog, "plugins install", "print the plugin as JSON", stderr)
-	fs.Usage = func() { _, _ = fmt.Fprint(stderr, pluginsUsage(prog)) }
-	manifestFile := fs.String("manifest", "", "path to plugin.yaml")
-	sigFile := fs.String("signature", "", "path to the detached base64 signature")
-	keyID := fs.String("key-id", "", "fingerprint of the trusted key that signed it")
-	digest := fs.String("digest", "", "optional: refuse unless the manifest image is pinned to this sha256 digest")
-	configFile := fs.String("config", "", "optional: path to a JSON object with the plugin's own non-secret config")
-	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiP, profP, jsonP, outP, qP}, prog, stderr)
-	if !ok {
-		return exitCode
-	}
-	if *manifestFile == "" || *sigFile == "" || *keyID == "" {
-		_, _ = fmt.Fprintf(stderr, "%s: plugins install needs --manifest, --signature and --key-id\n\n%s", prog, pluginsUsage(prog))
-		return exitUsage
-	}
-	in := apiclient.InstallPluginInput{KeyID: *keyID, ExpectedDigest: *digest}
-	var err error
-	if in.Manifest, err = readManifest(*manifestFile); err != nil {
-		return reportError(stdout, stderr, jsonOut, err)
-	}
-	if in.Signature, err = readTrimmed(*sigFile); err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("read signature: %w", err))
-	}
-	if *configFile != "" {
-		if in.ConfigJSON, err = readTrimmed(*configFile); err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("read config: %w", err))
-		}
-	}
-	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	p, err := client.InstallPlugin(context.Background(), in)
-	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("install plugin: %w", err))
-	}
-	return writeScheduledTaskResult(stdout, stderr, of, p, func() {
-		printPlugin(stdout, p)
-		_, _ = fmt.Fprintf(stdout, "\nInstalled but not approved or running. Review the abilities above, then:\n  %s plugins approve %s --abilities %s\n  %s plugins enable %s\n",
-			prog, p.Name, strings.Join(p.RequestedAbilities, ","), prog, p.Name)
-	})
-}
-
-func readManifest(path string) (string, error) {
-	b, err := os.ReadFile(path) //nolint:gosec // operator-supplied path to their own manifest
-	if err != nil {
-		return "", fmt.Errorf("read manifest: %w", err)
-	}
-	return string(b), nil
 }
 
 func runPluginsApprove(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {

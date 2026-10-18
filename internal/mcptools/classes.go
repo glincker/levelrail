@@ -166,6 +166,8 @@ var toolTable = map[string]Meta{
 	usageReportTool:                         {clsR, "metrics", 0},
 	"list_service_templates":                {clsR, "templates", 0},
 	"get_service_template":                  {clsR, "templates", 0},
+	"list_plugins":                          {clsR, pluginsGroup, 0},
+	"get_plugin":                            {clsR, pluginsGroup, 0},
 	"list_nodes":                            {clsR, "nodes", 0},
 	"get_node":                              {clsR, "nodes", 0},
 	"get_node_health":                       {clsR, "nodes", unt},

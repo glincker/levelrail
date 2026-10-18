@@ -72,8 +72,8 @@ func (s *memStore) UpdatePlugin(_ context.Context, r Record) error {
 	if !ok {
 		return ErrNotFound
 	}
-	cur.State, cur.ApprovedAbilities, cur.ApprovedAt, cur.ApprovedBy, cur.UpdatedAt, cur.LastError = r.State, r.ApprovedAbilities, r.ApprovedAt, r.ApprovedBy, r.UpdatedAt, r.LastError
-	s.plugins[r.Name] = cur
+	r.Kind = cur.Kind
+	s.plugins[r.Name] = r
 	return nil
 }
 

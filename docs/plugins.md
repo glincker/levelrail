@@ -40,7 +40,7 @@ levelrail-cli plugins trust remove <key-id>
 
 ## Install a plugin
 
-A package is two things: an image pinned by digest (`name@sha256:...`, tags are refused) and a `plugin.yaml` manifest, plus a detached signature.
+A package is two things: an image pinned by digest (`name@sha256:...`, tags are refused) and a `plugin.yaml` manifest, plus a detached signature. The manifest is validated against a JSON Schema (the same rules the dashboard, CLI and API share).
 
 ```yaml
 api_version: 1
@@ -52,19 +52,36 @@ description: Logs each alert event.
 image: registry.example.com/example/plugin-notify@sha256:<64 hex>
 abilities: [read]
 outbound_hosts: []
+contributes:
+  panels:
+    - id: delivery
+      title: Delivery
+      description: Where this plugin sends alerts.
+      rows:
+        - { label: Target, value: Example chat }
 ```
 
-Install records and verifies the package. It does not approve anything and does not start anything:
+Inspect first. It verifies the package and shows the publisher, the abilities it asks for, the digest pin and the signature status, and writes nothing. From a file or from an https URL (a `<url>.sig` file next to the manifest is the signature):
 
 ```bash
-levelrail-cli plugins install --manifest plugin.yaml --signature plugin.sig --key-id <key-id>
+levelrail-cli plugins inspect --manifest plugin.yaml --signature plugin.sig
+levelrail-cli plugins inspect --url https://plugins.example.com/notify/plugin.yaml
 ```
 
-Pass `--digest sha256:...` to refuse the install unless the manifest pins exactly the digest you expect. The install is refused if the signature does not verify, the key is not trusted, the manifest has an unknown field, or it asks for an ability plugins cannot hold.
+Install records and verifies the package. By default it approves nothing and starts nothing. The signing key is found among your trusted keys, or pass `--key-id`:
+
+```bash
+levelrail-cli plugins install --manifest plugin.yaml --signature plugin.sig
+levelrail-cli plugins install --url https://plugins.example.com/notify/plugin.yaml --approve read
+```
+
+`--approve` is the operator approving the exact ability set at install: it must list exactly the abilities the manifest requests, never fewer or more. In the dashboard, Install plugin shows the same review (publisher, verification, abilities, network) and an Approve and install button. Pass `--digest sha256:...` to refuse the install unless the manifest pins exactly the digest you expect. The install is refused if the signature does not verify, the key is not trusted, the manifest has an unknown field, or it asks for an ability plugins cannot hold.
+
+Unsigned packages are refused. To run one you built yourself, set `APP_PLUGIN_ALLOW_UNSIGNED=true` on the control plane and restart. Unsigned plugins are labelled as such everywhere, and a signed plugin can never be replaced by an unsigned one.
 
 ## Approve abilities
 
-Approval is a separate, explicit step. The dashboard shows exactly what the manifest requests before you confirm, and the CLI will not approve without an explicit list:
+Approval is explicit, either at install with the exact set or as a separate step. The dashboard shows exactly what the manifest requests before you confirm, and the CLI will not approve without an explicit list:
 
 ```bash
 levelrail-cli plugins show example-notify
@@ -74,7 +91,23 @@ levelrail-cli plugins enable example-notify
 
 Plugins can currently hold two abilities from the scoped-token vocabulary: `read` (receive the event) and `read:sensitive` (also receive log excerpts). `root` and every write ability are refused. A plugin that asks for something it did not declare in its signed manifest is stopped at the handshake.
 
-Use `disable` to stop a plugin and keep its approval, and `remove` to delete it. If the container cannot be removed right away the plugin stays in a removing state and cleanup is retried.
+## Upgrade, disable, uninstall
+
+```bash
+levelrail-cli plugins upgrade --url https://plugins.example.com/notify/plugin.yaml
+levelrail-cli plugins disable example-notify
+levelrail-cli plugins uninstall example-notify
+```
+
+An upgrade is a new signed package for an installed plugin. If it asks for an ability or an outbound host the installed version did not, the plugin is stopped and loses its approval until you approve the wider set (the dashboard shows the added abilities highlighted, and approving there grants exactly the listed set). An upgrade that asks for the same or less keeps your approval and the plugin keeps running on the new image. Use `disable` to stop a plugin and keep its approval, and `uninstall` to delete it. If the container cannot be removed right away the plugin stays in a removing state and cleanup is retried.
+
+## Health and fixes
+
+Each plugin shows its health (healthy, unhealthy, stopped), its verification status (verified, unsigned, key not trusted, not verified) and, when something is wrong, a Fix button on the Plugins page: restart an unhealthy plugin (clears the failure backoff and circuit breaker), jump to the trusted keys when its signing key was removed, approve a plugin that is waiting, or reinstall a signed package when verification no longer passes. `levelrail-cli plugins restart <name>` does the same restart. The MCP tools `list_plugins` and `get_plugin` expose the same data read only.
+
+## Contributed panels
+
+A manifest can contribute read-only panels (a title, a description and label/value rows of plain text). The dashboard renders them on the Plugins page from the manifest, labelled with the plugin and its publisher. A plugin never ships JavaScript into the dashboard.
 
 ## Use it as an alert channel
 
@@ -87,8 +120,8 @@ The contract is `proto/plugin/v1/plugin.proto`: `Describe` (name, version, kind,
 ## Not yet
 
 - A marketplace or any hosted index of plugins. You install a package you obtained yourself.
-- UI extension points. Plugins cannot add pages, panels or CLI commands.
-- Auto-update. Changing a plugin means removing it and installing the new digest, which asks for approval again.
+- Richer UI extension points. Panels are static text rows; plugins cannot add pages, forms or CLI commands yet.
+- Auto-update. Upgrades are an explicit operator action.
 - Other plugin kinds such as DNS or CDN providers, and plugins on remote nodes.
 - Per-host network enforcement and a supply chain scan of the plugin image.
 - Rootless Docker uid mapping for the socket directory.

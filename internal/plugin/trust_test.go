@@ -26,7 +26,10 @@ func TestInstallSignatureVerification(t *testing.T) {
 		{"valid", func(*harness, *InstallRequest) {}, nil},
 		{"wrong key signs", func(_ *harness, r *InstallRequest) { r.Signature = Sign(otherPriv, r.Manifest, testDigest) }, ErrBadSignature},
 		{"key id not in trust list", func(_ *harness, r *InstallRequest) { r.KeyID = otherID }, ErrUntrusted},
-		{"empty key id", func(_ *harness, r *InstallRequest) { r.KeyID = "" }, ErrUntrusted},
+		{"empty key id finds the signing key", func(_ *harness, r *InstallRequest) { r.KeyID = "" }, nil},
+		{"empty key id and unknown signer", func(_ *harness, r *InstallRequest) {
+			r.KeyID, r.Signature = "", Sign(otherPriv, r.Manifest, testDigest)
+		}, ErrUntrusted},
 		{"tampered manifest", func(_ *harness, r *InstallRequest) {
 			r.Manifest = []byte(strings.Replace(string(r.Manifest), "abilities: [read]", "abilities: [read, read:sensitive]", 1))
 		}, ErrBadSignature},

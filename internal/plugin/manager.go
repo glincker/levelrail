@@ -49,32 +49,32 @@ func NewManager(store Store, dk Containers, audit Auditor, cfg Config, log *slog
 	}
 }
 
-// InstallRequest is everything an operator submits to install a plugin.
+// InstallRequest is everything an operator submits to install or upgrade a plugin.
+// Approve, when non-nil, must list exactly the abilities the manifest requests.
 type InstallRequest struct {
 	Manifest       []byte
 	Signature      string
 	KeyID          string
 	ExpectedDigest string
 	ConfigJSON     string
+	Approve        []string
 }
 
 func stamp(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
 
-// Install verifies and records a plugin. It never approves abilities and never starts anything.
+// Install verifies and records a plugin. It starts nothing, and approves only
+// when the request carries the exact requested ability set.
 func (m *Manager) Install(ctx context.Context, req InstallRequest, actor string) (Record, error) {
 	man, err := ParseManifest(req.Manifest)
 	if err != nil {
 		return Record{}, err
 	}
-	digest := man.Digest()
-	if req.ExpectedDigest != "" && req.ExpectedDigest != digest {
-		return Record{}, ErrDigestMismatch
-	}
-	keys, err := m.store.ListKeys(ctx)
+	ver, keyID, err := m.verify(ctx, req, man)
 	if err != nil {
 		return Record{}, err
 	}
-	if err := Verify(keys, req.KeyID, req.Manifest, digest, req.Signature); err != nil {
+	approved, err := exactApproval(req.Approve, man.Abilities)
+	if err != nil {
 		return Record{}, err
 	}
 	cfgJSON, err := m.checkConfig(req.ConfigJSON)
@@ -84,17 +84,41 @@ func (m *Manager) Install(ctx context.Context, req InstallRequest, actor string)
 	now := stamp(m.now())
 	rec := Record{
 		Name: man.Name, Version: man.Version, Kind: man.Kind, Publisher: man.Publisher, Description: man.Description,
-		Image: man.Image, Digest: digest, Manifest: string(req.Manifest), Signature: req.Signature, KeyID: req.KeyID,
+		Image: man.Image, Digest: man.Digest(), Manifest: string(req.Manifest), Signature: req.Signature, KeyID: keyID,
 		RequestedAbilities: man.Abilities, ApprovedAbilities: []string{}, OutboundHosts: man.OutboundHosts, ConfigJSON: cfgJSON,
 		State: StateInstalled, InstalledAt: now, InstalledBy: actor, UpdatedAt: now,
+	}
+	if approved != nil {
+		rec.ApprovedAbilities, rec.ApprovedAt, rec.ApprovedBy = approved, now, actor
 	}
 	if err := m.store.InsertPlugin(ctx, rec); err != nil {
 		return Record{}, err
 	}
 	err = m.audit.Record(ctx, AuditEvent{Action: AuditInstall, Actor: actor, Plugin: rec.Name, Detail: map[string]string{
-		"version": rec.Version, "digest": rec.Digest, "key_id": rec.KeyID, "requested": strings.Join(rec.RequestedAbilities, ","),
+		"version": rec.Version, "digest": rec.Digest, "key_id": rec.KeyID, "verification": ver.Status, "requested": strings.Join(rec.RequestedAbilities, ","),
 	}})
+	if err == nil && approved != nil {
+		err = m.audit.Record(ctx, AuditEvent{Action: AuditApprove, Actor: actor, Plugin: rec.Name, Detail: map[string]string{
+			"approved": strings.Join(approved, ","), "requested": strings.Join(rec.RequestedAbilities, ","),
+		}})
+	}
 	return rec, err
+}
+
+// exactApproval returns the normalized approval list, nil when none was offered,
+// and an error unless the offer equals the requested set exactly.
+func exactApproval(offered, requested []string) ([]string, error) {
+	if offered == nil {
+		return nil, nil
+	}
+	got, err := normalizeAbilities(offered)
+	if err != nil {
+		return nil, err
+	}
+	if !slices.Equal(got, requested) {
+		return nil, invalid("approval must list exactly the requested abilities (%s)", strings.Join(requested, ", "))
+	}
+	return got, nil
 }
 
 func (m *Manager) checkConfig(raw string) (string, error) {

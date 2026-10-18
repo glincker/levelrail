@@ -39,6 +39,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerDatabaseAccessTools(server, client)
 	registerServiceTemplateTools(server, client)
 	registerNodeTools(server, client)
+	registerPluginTools(server, client)
 	registerPreviewTools(server, client)
 	registerAlertTools(server, client)
 	registerAlertNoiseTools(server, client)

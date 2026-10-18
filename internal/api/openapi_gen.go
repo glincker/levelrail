@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1321 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1324 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1013,11 +1013,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/plugin-keys/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemovePluginKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/plugins", Ability: "AbilityRoot", Group: "Other", Handler: "handleListPlugins", Description: "Plugins run third-party code beside the control plane, so every route is AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/plugins", Ability: "AbilityRoot", Group: "Other", Handler: "handleInstallPlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/inspect", Ability: "AbilityRoot", Group: "Other", Handler: "handleInspectPlugin", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/plugins/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleRemovePlugin", Description: ""},
 	{Method: "GET", Path: "/api/v1/plugins/{name}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetPlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugins/{name}/approve", Ability: "AbilityRoot", Group: "Other", Handler: "handleApprovePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugins/{name}/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisablePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugins/{name}/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnablePlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/{name}/restart", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestartPlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/{name}/upgrade", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpgradePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/preflight", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreflightNew", Description: ""},
 	{Method: "GET", Path: "/api/v1/private-networks", Ability: "AbilityRead", Group: "Other", Handler: "handleListPrivateNetworks", Description: ""},
 	{Method: "POST", Path: "/api/v1/private-networks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreatePrivateNetwork", Description: ""},

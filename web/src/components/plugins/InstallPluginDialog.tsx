@@ -21,161 +21,254 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import {
+  useInspectPlugin,
   useInstallPlugin,
   usePluginKeys,
+  useUpgradePlugin,
+  type InstallPluginInput,
   type Plugin,
+  type PluginPreview,
 } from '../../queries/plugins'
+import { PluginReview } from './PluginReview'
+
+const AUTO_KEY = 'auto'
 
 export function InstallPluginDialog({
   open,
+  upgradeOf,
   onClose,
   onInstalled,
 }: Readonly<{
   open: boolean
+  upgradeOf?: string
   onClose: () => void
   onInstalled: (plugin: Plugin) => void
 }>) {
   const { t } = useTranslation('plugins')
+  const inspect = useInspectPlugin()
   const install = useInstallPlugin()
+  const upgrade = useUpgradePlugin()
   const { data: keys = [] } = usePluginKeys()
+  const [source, setSource] = useState<'manifest' | 'url'>('manifest')
   const [manifest, setManifest] = useState('')
+  const [url, setUrl] = useState('')
   const [signature, setSignature] = useState('')
-  const [keyId, setKeyId] = useState('')
-  const [digest, setDigest] = useState('')
-  const [config, setConfig] = useState('')
+  const [keyId, setKeyId] = useState(AUTO_KEY)
+  const [preview, setPreview] = useState<PluginPreview | null>(null)
 
+  const input = (): InstallPluginInput => ({
+    manifest: source === 'manifest' ? manifest : undefined,
+    manifest_url: source === 'url' ? url.trim() : undefined,
+    signature: signature.trim() || undefined,
+    key_id: keyId === AUTO_KEY ? undefined : keyId,
+  })
   const ready =
-    manifest.trim() !== '' && signature.trim() !== '' && keyId !== ''
+    source === 'manifest' ? manifest.trim() !== '' : url.trim() !== ''
+  const applying = install.isPending || upgrade.isPending
+  const error = inspect.error ?? install.error ?? upgrade.error
 
-  const submit = () =>
-    install.mutate(
-      {
-        manifest,
-        signature: signature.trim(),
-        key_id: keyId,
-        expected_digest: digest.trim() || undefined,
-        config_json: config.trim() || undefined,
-      },
-      {
-        onSuccess: (plugin) => {
-          toast.add({
-            type: 'success',
-            title: t('installDialog.installed', { name: plugin.name }),
-          })
-          setManifest('')
-          setSignature('')
-          setDigest('')
-          setConfig('')
-          install.reset()
-          onInstalled(plugin)
-        },
-      },
-    )
+  const reset = () => {
+    setPreview(null)
+    setManifest('')
+    setUrl('')
+    setSignature('')
+    inspect.reset()
+    install.reset()
+    upgrade.reset()
+  }
+
+  const review = () =>
+    inspect.mutate(input(), { onSuccess: (p) => setPreview(p) })
+
+  const approve = () => {
+    if (!preview) return
+    const body = { ...input(), approve_abilities: preview.manifest.abilities }
+    const done = (plugin: Plugin) => {
+      toast.add({
+        type: 'success',
+        title: t('installDialog.installedApproved', { name: plugin.name }),
+      })
+      reset()
+      onInstalled(plugin)
+    }
+    if (preview.action === 'upgrade') {
+      upgrade.mutate(
+        { name: preview.manifest.name, input: body },
+        { onSuccess: done },
+      )
+    } else {
+      install.mutate(body, { onSuccess: done })
+    }
+  }
+
+  const wrongPlugin =
+    preview !== null &&
+    upgradeOf !== undefined &&
+    preview.manifest.name !== upgradeOf
 
   return (
     <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('installDialog.title')}</DialogTitle>
+          <DialogTitle>
+            {upgradeOf
+              ? t('installDialog.upgradeTitle', { name: upgradeOf })
+              : t('installDialog.title')}
+          </DialogTitle>
           <DialogDescription>
-            {t('installDialog.description')}
+            {preview
+              ? t('installDialog.reviewDescription')
+              : t('installDialog.description')}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <Field>
-            <FieldLabel htmlFor="plugin-manifest">
-              {t('installDialog.manifest')}
-            </FieldLabel>
-            <Textarea
-              id="plugin-manifest"
-              value={manifest}
-              onChange={(e) => setManifest(e.target.value)}
-              spellCheck={false}
-              className="font-mono text-xs"
-              rows={8}
-            />
-            <FieldDescription>
-              {t('installDialog.manifestHint')}
-            </FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="plugin-signature">
-              {t('installDialog.signature')}
-            </FieldLabel>
-            <Input
-              id="plugin-signature"
-              value={signature}
-              onChange={(e) => setSignature(e.target.value)}
-              spellCheck={false}
-              className="font-mono text-xs"
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="plugin-key">
-              {t('installDialog.keyId')}
-            </FieldLabel>
-            <Select value={keyId} onValueChange={(v) => setKeyId(v ?? '')}>
-              <SelectTrigger id="plugin-key" className="w-full">
-                <SelectValue placeholder={t('installDialog.keyPlaceholder')} />
-              </SelectTrigger>
-              <SelectContent>
-                {keys.map((k) => (
-                  <SelectItem key={k.key_id} value={k.key_id}>
-                    {k.name}
+        {preview ? (
+          <PluginReview preview={preview} />
+        ) : (
+          <div className="space-y-4">
+            <Field>
+              <FieldLabel htmlFor="plugin-source">
+                {t('installDialog.source')}
+              </FieldLabel>
+              <Select
+                value={source}
+                onValueChange={(v) =>
+                  setSource(v === 'url' ? 'url' : 'manifest')
+                }
+              >
+                <SelectTrigger id="plugin-source" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manifest">
+                    {t('installDialog.sourceManifest')}
                   </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {keys.length === 0 ? (
-              <FieldDescription>{t('installDialog.noKeys')}</FieldDescription>
-            ) : null}
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="plugin-digest">
-              {t('installDialog.digest')}
-            </FieldLabel>
-            <Input
-              id="plugin-digest"
-              value={digest}
-              onChange={(e) => setDigest(e.target.value)}
-              spellCheck={false}
-              className="font-mono text-xs"
-            />
-            <FieldDescription>{t('installDialog.digestHint')}</FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="plugin-config">
-              {t('installDialog.config')}
-            </FieldLabel>
-            <Textarea
-              id="plugin-config"
-              value={config}
-              onChange={(e) => setConfig(e.target.value)}
-              spellCheck={false}
-              className="font-mono text-xs"
-              rows={3}
-            />
-            <FieldDescription>{t('installDialog.configHint')}</FieldDescription>
-          </Field>
-          {install.error ? (
-            <p role="alert" className="text-sm text-destructive">
-              {install.error.message}
-            </p>
-          ) : null}
-        </div>
+                  <SelectItem value="url">
+                    {t('installDialog.sourceUrl')}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            {source === 'manifest' ? (
+              <Field>
+                <FieldLabel htmlFor="plugin-manifest">
+                  {t('installDialog.manifest')}
+                </FieldLabel>
+                <Textarea
+                  id="plugin-manifest"
+                  value={manifest}
+                  onChange={(e) => setManifest(e.target.value)}
+                  spellCheck={false}
+                  className="font-mono text-xs"
+                  rows={8}
+                />
+                <FieldDescription>
+                  {t('installDialog.manifestHint')}
+                </FieldDescription>
+              </Field>
+            ) : (
+              <Field>
+                <FieldLabel htmlFor="plugin-url">
+                  {t('installDialog.url')}
+                </FieldLabel>
+                <Input
+                  id="plugin-url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  spellCheck={false}
+                  placeholder="https://"
+                  className="font-mono text-xs"
+                />
+                <FieldDescription>
+                  {t('installDialog.urlHint')}
+                </FieldDescription>
+              </Field>
+            )}
+            <Field>
+              <FieldLabel htmlFor="plugin-signature">
+                {t('installDialog.signature')}
+              </FieldLabel>
+              <Input
+                id="plugin-signature"
+                value={signature}
+                onChange={(e) => setSignature(e.target.value)}
+                spellCheck={false}
+                className="font-mono text-xs"
+              />
+              <FieldDescription>
+                {source === 'url'
+                  ? t('installDialog.signatureHintUrl')
+                  : t('installDialog.signatureHint')}
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="plugin-key">
+                {t('installDialog.keyId')}
+              </FieldLabel>
+              <Select
+                value={keyId}
+                onValueChange={(v) => setKeyId(v ?? AUTO_KEY)}
+              >
+                <SelectTrigger id="plugin-key" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={AUTO_KEY}>
+                    {t('installDialog.keyAuto')}
+                  </SelectItem>
+                  {keys.map((k) => (
+                    <SelectItem key={k.key_id} value={k.key_id}>
+                      {k.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {keys.length === 0 ? (
+                <FieldDescription>{t('installDialog.noKeys')}</FieldDescription>
+              ) : null}
+            </Field>
+          </div>
+        )}
+        {wrongPlugin ? (
+          <p role="alert" className="text-sm text-destructive">
+            {t('installDialog.wrongPlugin', { name: upgradeOf })}
+          </p>
+        ) : null}
+        {error ? (
+          <p role="alert" className="text-sm text-destructive">
+            {error.message}
+          </p>
+        ) : null}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            {t('installDialog.cancel')}
-          </Button>
           <Button
             type="button"
-            disabled={!ready || install.isPending}
-            onClick={submit}
+            variant="outline"
+            onClick={preview ? () => setPreview(null) : onClose}
           >
-            {install.isPending
-              ? t('installDialog.pending')
-              : t('installDialog.submit')}
+            {preview ? t('installDialog.back') : t('installDialog.cancel')}
           </Button>
+          {preview ? (
+            <Button
+              type="button"
+              disabled={
+                !preview.verification.installable || wrongPlugin || applying
+              }
+              onClick={approve}
+            >
+              {applying
+                ? t('installDialog.pending')
+                : t('installDialog.approveInstall')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              disabled={!ready || inspect.isPending}
+              onClick={review}
+            >
+              {inspect.isPending
+                ? t('installDialog.reviewing')
+                : t('installDialog.review')}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
