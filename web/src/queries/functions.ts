@@ -92,6 +92,34 @@ export interface DeployFunctionInput {
   directory: string
   port: number
   idleMinutes: number
+  routeDomain?: string
+  routePath?: string
+}
+
+export interface FunctionRoute {
+  domain: string
+  path: string
+  strip_prefix: boolean
+}
+
+export async function setFunctionRoute(
+  name: string,
+  route: FunctionRoute,
+): Promise<void> {
+  const res = await fetch(
+    `/api/v1/functions/${encodeURIComponent(name)}/route`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(route),
+    },
+  )
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `set function route failed: ${res.status}`),
+    )
+  }
 }
 
 async function setSleepHold(name: string, idleMinutes: number): Promise<void> {
@@ -126,6 +154,13 @@ export async function deployFunction(
     })
   }
   await setSleepHold(input.name, input.idleMinutes)
+  if (input.routeDomain && input.routePath) {
+    await setFunctionRoute(input.name, {
+      domain: input.routeDomain,
+      path: input.routePath,
+      strip_prefix: true,
+    })
+  }
   await triggerBuild(input.name, {
     repoUrl: input.repoUrl,
     ref: input.ref,

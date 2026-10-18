@@ -54,6 +54,22 @@ levelrail-cli apps sleep enable web --after 10m --hold
 The dashboard has the same switch: App, Deploys, Sleep when idle, "Hold
 requests while waking".
 
+## Serve a function at a path
+
+A function can answer at `<domain>/<path>` as well as on its own host. Pick a
+domain that is already attached to an app, then give the path:
+
+```bash
+levelrail-cli functions deploy hello --repo https://github.com/you/hello --domain example.com --path /hello
+```
+
+The Deploy function dialog has the same two fields. The route is a path
+forwarder on the domain (see domain traffic controls), so `/hello` and
+`/hello/...` go to the function, the prefix is stripped before the handler sees
+the request, and every other path still goes to the domain's own app. A longer
+prefix wins over a shorter one. A sleeping function is woken by a request to
+its path. `functions delete` removes its routes.
+
 ## What a caller sees
 
 When the function is asleep, the first request is held while the container

@@ -1534,6 +1534,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/resources/views | AbilityRead | handleListResourceViews |
 | POST | /api/v1/resources/views | AbilityRead | handleSaveResourceView |
 | DELETE | /api/v1/resources/views/{id} | AbilityRead | handleDeleteResourceView |
+| GET | /api/v1/functions/{name}/route | AbilityRead | handleListFunctionRoutes |
+| PUT | /api/v1/functions/{name}/route | AbilityDeploy | handleSetFunctionRoute |
+| DELETE | /api/v1/functions/{name}/route | AbilityDeploy | handleDeleteFunctionRoute |
 
 ## See also
 

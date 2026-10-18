@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1310 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1313 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -872,6 +872,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/fixes/{id}/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewFix", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctions", Description: "Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime."},
 	{Method: "GET", Path: "/api/v1/functions/runtimes", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionRuntimes", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionRoute", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions/{name}/route", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctionRoutes", Description: "Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain."},
+	{Method: "PUT", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFunctionRoute", Description: ""},
 	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
 	{Method: "POST", Path: "/api/v1/git-sources/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGiteaApp", Description: ""},

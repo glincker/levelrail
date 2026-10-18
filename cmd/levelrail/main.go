@@ -39,6 +39,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
+	"github.com/GLINCKER/levelrail/internal/deployurls"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
@@ -875,6 +876,16 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := appSleepScheduler.Run(ctx, appsleep.DefaultInterval); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("app sleep scheduler stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	deployURLSyncer := &deployurls.Syncer{
+		Store: db, Config: deployurls.FromProcessEnv(), HostFor: apiRouter.DeployURLHost,
+		Remove: apiRouter.RemoveDeployURLService, Nudge: apiRouter.NudgeReconcilers, Logger: logger,
+	}
+	go func() {
+		if err := deployURLSyncer.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("deploy url syncer stopped", slog.String("error", err.Error()))
 		}
 	}()
 

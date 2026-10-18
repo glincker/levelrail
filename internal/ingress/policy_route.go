@@ -22,6 +22,9 @@ type RoutePolicy struct {
 	Policy trafficpolicy.Policy
 	// AppDials maps an app name to its reverse proxy dial address.
 	AppDials map[string]string
+	// AppWake maps a sleeping app to its wake route, so a forwarder that
+	// targets it starts it instead of answering "not running".
+	AppWake map[string]WakeRoute
 	// Targets maps an external forwarder URL to its checked address. A URL
 	// missing here (blocked or unresolvable) compiles to a 502 response.
 	Targets map[string]trafficpolicy.ResolvedTarget

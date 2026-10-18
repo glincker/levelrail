@@ -59,6 +59,8 @@ export interface DeployAttempt {
   author?: string
   /** Content identity: registry digest, or a build's local image ID. */
   image_digest?: string
+  /** Immutable address of this deploy while a retained copy exists. */
+  deploy_url?: string
   /** How image_digest was obtained, e.g. Resolved or PullFailedUsingCached. */
   digest_reason?: string
   /** URL of this deploy's preview thumbnail, when one was captured. */
