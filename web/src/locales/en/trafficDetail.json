@@ -5,7 +5,27 @@
   "windows": {
     "5m": "5 minutes",
     "1h": "1 hour",
-    "24h": "24 hours"
+    "24h": "24 hours",
+    "7d": "7 days"
+  },
+  "audience": {
+    "referrers": {
+      "title": "Top referrers",
+      "hint": "Referring hosts only. Paths and query strings are never stored. Direct means no Referer header.",
+      "label": "Referrer",
+      "empty": "No referrer data in this window yet."
+    },
+    "countries": {
+      "title": "Top countries",
+      "hint": "Coarse country from a CDN header or a GeoIP database, never stored per client.",
+      "label": "Country",
+      "empty": "No country data. Set a GeoIP database or a trusted country header on the ingress to see where traffic comes from."
+    },
+    "requests": "Requests",
+    "share": "Share"
+  },
+  "markers": {
+    "hint": "Vertical lines mark deploys. Select one to see what changed."
   },
   "kpi": {
     "rate": "Requests per second",

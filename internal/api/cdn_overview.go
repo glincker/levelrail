@@ -71,7 +71,7 @@ func (rt *Router) handleCDNOverview(w http.ResponseWriter, r *http.Request) {
 	}
 	window, ok := trafficWindows[label]
 	if !ok {
-		writeError(w, http.StatusBadRequest, "window must be 5m, 1h or 24h")
+		writeError(w, http.StatusBadRequest, "window must be 5m, 1h, 24h or 7d")
 		return
 	}
 	ctx := r.Context()

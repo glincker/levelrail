@@ -76,6 +76,7 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 	DefaultRequestStats().ObserveRequest(m.Key, RequestObservation{
 		Method: r.Method, Path: r.URL.Path, Status: status, Duration: elapsed, BytesIn: in, BytesOut: rec.bytes,
 		UpstreamErr: upstreamErr, Upstream: upstreamHostport(r), RequestID: requestID, At: start,
+		Referrer: requestReferrerHost(r), Country: requestCountry(r),
 	})
 	DefaultAccessLog().Record(m.Key, AccessRecord{
 		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
@@ -158,6 +159,7 @@ var (
 	routeMax      = telemetry.RouteMaxFromEnv()
 	routeDepth    = telemetry.RouteDepthFromEnv()
 	upstreamMax   = telemetry.UpstreamMaxFromEnv()
+	audienceMax   = telemetry.AudienceMaxFromEnv()
 	sampleCfg     = telemetry.SampleConfigFromEnv()
 )
 
@@ -181,6 +183,9 @@ type RequestObservation struct {
 	Upstream    string
 	RequestID   string
 	At          time.Time
+	// Referrer is the Referer header's host only; Country an ISO code.
+	Referrer string
+	Country  string
 }
 
 // ObserveRequest records o under key: counters, route, replica histogram and,
@@ -232,6 +237,7 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 	ms := float64(d) / float64(time.Millisecond)
 	h.w.ObserveRoute(route, status, ms, routeMax)
 	h.w.ObserveUpstream(o.Upstream, status, upstreamErr, ms, upstreamMax)
+	h.w.ObserveAudience(o.Referrer, o.Country, audienceMax)
 	if path != "" && sampleCfg.ShouldSample(status, ms, upstreamErr, o.RequestID) {
 		h.w.AddSample(telemetry.RequestSample{
 			Time: o.At, Route: telemetry.NormalizeRoute(path, routeDepth), Method: o.Method, Status: status,

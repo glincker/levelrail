@@ -27,6 +27,34 @@ var trafficWindows = map[string]time.Duration{
 	"5m":  5 * time.Minute,
 	"1h":  time.Hour,
 	"24h": 24 * time.Hour,
+	"7d":  7 * 24 * time.Hour,
+}
+
+// trafficLabel is one referrer host or country with its request count and
+// share of the audience kind's total.
+type trafficLabel struct {
+	Label    string  `json:"label"`
+	Requests float64 `json:"requests"`
+	Share    float64 `json:"share"`
+}
+
+const trafficTopLabels = 10
+
+func audienceLabels(rows []telemetry.AudienceRow, kind string) []trafficLabel {
+	var total float64
+	for _, r := range rows {
+		if r.Kind == kind {
+			total += r.Requests
+		}
+	}
+	out := []trafficLabel{}
+	for _, r := range rows {
+		if r.Kind != kind || len(out) >= trafficTopLabels {
+			continue
+		}
+		out = append(out, trafficLabel{Label: r.Label, Requests: r.Requests, Share: ratio(r.Requests, total)})
+	}
+	return out
 }
 
 type trafficStatusClasses struct {
@@ -84,6 +112,8 @@ type trafficResponse struct {
 	Replicas       []trafficReplica          `json:"replicas"`
 	SlowRoutes     []trafficRoute            `json:"slow_routes"`
 	Samples        []telemetry.RequestSample `json:"samples"`
+	Referrers      []trafficLabel            `json:"referrers"`
+	Countries      []trafficLabel            `json:"countries"`
 	SLO            *trafficSLO               `json:"slo,omitempty"`
 	Shield         trafficShield             `json:"shield"`
 }
@@ -219,7 +249,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	}
 	window, ok := trafficWindows[label]
 	if !ok {
-		writeError(w, http.StatusBadRequest, "window must be 5m, 1h or 24h")
+		writeError(w, http.StatusBadRequest, "window must be 5m, 1h, 24h or 7d")
 		return
 	}
 	ctx := r.Context()
@@ -228,6 +258,7 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 	resp := trafficResponse{
 		App: name, Window: label, From: from, To: to,
 		Replicas: []trafficReplica{}, SlowRoutes: []trafficRoute{}, Samples: []telemetry.RequestSample{},
+		Referrers: []trafficLabel{}, Countries: []trafficLabel{},
 	}
 
 	points, err := telemetry.QueryRequests(ctx, rt.telemetry, name, from, to, window+time.Second)
@@ -262,6 +293,12 @@ func (rt *Router) handleAppTraffic(w http.ResponseWriter, r *http.Request) {
 		}
 		if samples, serr := src.QueryRequestSamples(ctx, rid, from, to, trafficSampleLimit); serr == nil && samples != nil {
 			resp.Samples = samples
+		}
+	}
+	if src, ok := rt.telemetry.(telemetry.AudienceSource); ok {
+		if rows, aerr := src.QueryAudience(ctx, rid, from, to); aerr == nil {
+			resp.Referrers = audienceLabels(rows, telemetry.AudienceReferrer)
+			resp.Countries = audienceLabels(rows, telemetry.AudienceCountry)
 		}
 	}
 	resp.SLO = rt.trafficSLO(ctx, name, from, to)

@@ -180,6 +180,7 @@ var toolTable = map[string]Meta{
 	"list_status_incidents":                 {clsR, "alerts", 0},
 	"get_app_metrics":                       {clsR, "metrics", 0},
 	"get_app_requests":                      {clsR, "metrics", 0},
+	"get_app_traffic":                       {clsR, "metrics", 0},
 	"diagnose_app_failure":                  {clsR, "diagnostics", unt},
 	"get_attention":                         {clsR, "diagnostics", unt},
 	"preflight_app":                         {clsR, "diagnostics", unt},

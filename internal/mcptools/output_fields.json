@@ -476,6 +476,27 @@
   "items",
   "next_cursor"
  ],
+ "get_app_traffic": [
+  "app",
+  "countries",
+  "error_rate_4xx",
+  "error_rate_5xx",
+  "from",
+  "has_traffic",
+  "latency",
+  "rate_per_sec",
+  "referrers",
+  "replicas",
+  "requests",
+  "samples",
+  "shield",
+  "slo",
+  "slow_routes",
+  "status_classes",
+  "to",
+  "upstream_errors",
+  "window"
+ ],
  "get_attention": [
   "items"
  ],

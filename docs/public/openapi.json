@@ -31344,7 +31344,7 @@
     },
     "/api/v1/apps/{name}/traffic": {
       "get": {
-        "description": "Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h or 24h.\n\nRequires the `read` ability.",
+        "description": "Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.\n\nRequires the `read` ability.",
         "operationId": "handleAppTraffic",
         "parameters": [
           {
@@ -31413,7 +31413,7 @@
             ]
           }
         ],
-        "summary": "Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h or 24h.",
+        "summary": "Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],

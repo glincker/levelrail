@@ -111,7 +111,7 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// fanned out through a Federator (today, exactly one local source).
 	mux.HandleFunc("GET /api/v1/apps/{name}/metrics", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryMetrics))
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
-	// Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h or 24h.
+	// Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.
 	mux.HandleFunc("GET /api/v1/apps/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTraffic))
 	mux.HandleFunc("GET /api/v1/apps/{name}/investigate", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleInvestigate))
 	mux.HandleFunc("GET /api/v1/apps/{name}/failure-context", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleFailureContext))

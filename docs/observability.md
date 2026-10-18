@@ -339,6 +339,18 @@ Only the URL path is read. A path is cut to its first segments, and any segment 
 
 The breakdown is stored in `telemetry.db` at one minute resolution and pruned with `APP_METRICS_RETENTION_1M`. It is node-local like the rest of the telemetry and merges across nodes through the same query layer.
 
+## Referrers and countries
+
+The app Traffic tab, `levelrail-cli traffic <app> --window 7d` and the `get_app_traffic` MCP tool also show the top referrer hosts and top countries, next to per replica percentiles. The Traffic tab charts draw a line at every deploy, so a latency step at 3am can be matched to the release that caused it.
+
+Only the host of the `Referer` header is kept (never the path or query), and requests with no referrer count as `direct`. Requests whose referrer is the app's own host are skipped as `direct`. Countries appear only when a geo source is active (`APP_GEOIP_DB` or a trusted country header such as `CF-IPCountry`); with none, the countries list is empty and nothing is looked up. No client address is stored, and no script runs in the visitor's browser.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_REQUEST_AUDIENCE_MAX` | 32 | Distinct referrer hosts and countries kept per tick before `other` |
+
+The counts live in `telemetry.db` at one minute resolution, pruned with `APP_METRICS_RETENTION_1M`, and merge across nodes through the same query layer. Windows are `5m`, `1h`, `24h` and `7d`.
+
 ## Downsampling and period comparison
 
 Every series query bounds its size instead of returning raw 15 second samples for a long range.

@@ -19,6 +19,8 @@ func trafficFixture() apiclient.AppTrafficResource {
 		},
 		SlowRoutes: []apiclient.TrafficRoute{{Route: "/api/:id", Requests: 40, AvgMs: 700}},
 		Samples:    []apiclient.TrafficSample{{Time: time.Unix(1_700_000_000, 0).UTC(), Route: "/api/:id", Method: "GET", Status: 502, DurationMS: 3000, RequestID: "req1"}},
+		Referrers:  []apiclient.TrafficLabel{{Label: "news.example", Requests: 30, Share: 0.3}},
+		Countries:  []apiclient.TrafficLabel{{Label: "DE", Requests: 20, Share: 0.2}},
 		SLO:        &apiclient.TrafficSLO{Objective: "availability", Target: 99.9, BurnRate: 4.2, BudgetRemaining: 0.4},
 	}
 }
@@ -32,7 +34,7 @@ func TestRun_Traffic(t *testing.T) {
 	if path != "/api/v1/apps/web/traffic" {
 		t.Errorf("path = %q", path)
 	}
-	for _, want := range []string{"p99 900ms", "172.18.0.2:3000", "/api/:id", "burn 4.20x", "req1"} {
+	for _, want := range []string{"p99 900ms", "172.18.0.2:3000", "/api/:id", "burn 4.20x", "req1", "news.example", "30.0%", "DE"} {
 		if !strings.Contains(stdout, want) {
 			t.Errorf("stdout missing %q: %s", want, stdout)
 		}

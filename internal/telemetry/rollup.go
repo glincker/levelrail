@@ -155,6 +155,9 @@ func (db *DB) Prune(ctx context.Context, now time.Time) (PruneResult, error) {
 	if _, err = db.deleteBefore(ctx, `DELETE FROM request_upstreams WHERE ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
 		return res, err
 	}
+	if _, err = db.deleteBefore(ctx, `DELETE FROM request_audience WHERE ts < ?`, now.Add(-cfg.MinuteRetention).Unix()); err != nil {
+		return res, err
+	}
 	if _, err = db.deleteBefore(ctx, `DELETE FROM request_samples WHERE ts < ?`, now.Add(-SampleRetentionFromEnv()).Unix()); err != nil {
 		return res, err
 	}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { ChartLineUpIcon } from '@phosphor-icons/react/dist/ssr'
@@ -8,14 +9,24 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DeployMarkerDetails } from '../DeployMarkerDetails'
 import { RequestMetricsSection } from '../RequestMetricsSection'
+import { deployAttemptsQueryOptions } from '../../queries/deployAttempts'
 import { useTrafficDetail } from '../../queries/trafficDetail'
+import { deployMarkers } from '../../lib/chartMarkers'
+import type { ChartMarker } from '../../lib/metricChart'
+import type { DeployAttempt } from '../../types/deployAttempt'
 import type { TrafficDetail, TrafficWindow } from '../../types/trafficDetail'
 import { formatMs, formatPercent, formatRate } from './format'
 import { ShieldBlockedCard } from './ShieldBlockedCard'
-import { ReplicaTable, SampleList, SlowRouteTable } from './TrafficTables'
+import {
+  AudienceTable,
+  ReplicaTable,
+  SampleList,
+  SlowRouteTable,
+} from './TrafficTables'
 
-const WINDOWS: TrafficWindow[] = ['5m', '1h', '24h']
+const WINDOWS: TrafficWindow[] = ['5m', '1h', '24h', '7d']
 
 function Kpi({
   label,
@@ -102,6 +113,22 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
     () =>
       data ? { from: new Date(data.from), to: new Date(data.to) } : undefined,
     [data],
+  )
+  const { t: tObs } = useTranslation('observability')
+  const attempts = useQuery(deployAttemptsQueryOptions(app))
+  const [detail, setDetail] = useState<DeployAttempt | null>(null)
+  const markers = useMemo<ChartMarker[]>(
+    () =>
+      range
+        ? deployMarkers(attempts.data ?? [], range, (a, at) =>
+            tObs('markers.deploy', {
+              status: tObs(`deployStatus.${a.status}`),
+              image: a.image,
+              time: new Date(at).toLocaleString(),
+            }),
+          )
+        : [],
+    [attempts.data, range, tObs],
   )
 
   return (
@@ -195,15 +222,39 @@ export function TrafficDetailPanel({ app }: Readonly<{ app: string }>) {
           <SloCard app={app} slo={data.slo} />
           <ShieldBlockedCard app={app} shield={data.shield} />
           {range ? (
-            <RequestMetricsSection
-              appName={app}
-              range={range}
-              markers={[]}
-              live
-            />
+            <>
+              {markers.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  {t('markers.hint')}
+                </p>
+              ) : null}
+              <RequestMetricsSection
+                appName={app}
+                range={range}
+                markers={markers}
+                live
+                onMarkerClick={(marker) => {
+                  setDetail(
+                    (attempts.data ?? []).find((a) => a.id === marker.key) ??
+                      null,
+                  )
+                }}
+              />
+              <DeployMarkerDetails
+                appName={app}
+                attempt={detail}
+                onClose={() => {
+                  setDetail(null)
+                }}
+              />
+            </>
           ) : null}
           <ReplicaTable rows={data.replicas} />
           <SlowRouteTable rows={data.slow_routes} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <AudienceTable kind="referrers" rows={data.referrers} />
+            <AudienceTable kind="countries" rows={data.countries} />
+          </div>
           <SampleList rows={data.samples} />
         </>
       ) : null}
