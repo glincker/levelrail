@@ -1566,6 +1566,16 @@ Routes that do not fit an existing group.
 | POST | /api/v1/migration/checklists/{app}/steps/{step} | AbilityWriteSensitive | handleMigrationChecklistStep |
 | GET | /api/v1/resilience | AbilityRead | handleChaosReport |
 | POST | /api/v1/resilience/results | AbilityWrite | handleRecordChaosResults |
+| GET | /api/v1/archives | AbilityRoot | handleListArchives |
+| POST | /api/v1/archives | AbilityRoot | handleCreateArchive |
+| GET | /api/v1/archives/policy | AbilityRoot | handleGetArchivePolicy |
+| PUT | /api/v1/archives/policy | AbilityRoot | handlePutArchivePolicy |
+| GET | /api/v1/archives/{id} | AbilityRoot | handleGetArchive |
+| GET | /api/v1/archives/{id}/rows | AbilityRoot | handleBrowseArchive |
+| GET | /api/v1/archives/{id}/download | AbilityRoot | handleDownloadArchive |
+| POST | /api/v1/archives/{id}/restore | AbilityRoot | handleRestoreArchive |
+| POST | /api/v1/archives/{id}/verify | AbilityRoot | handleVerifyArchive |
+| DELETE | /api/v1/archives/{id} | AbilityRoot | handleDeleteArchive |
 
 ## See also
 

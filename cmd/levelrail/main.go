@@ -28,6 +28,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
+	"github.com/GLINCKER/levelrail/internal/archive"
 	"github.com/GLINCKER/levelrail/internal/autoscale"
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
@@ -944,6 +945,13 @@ func run(logger *slog.Logger) error {
 	go func() {
 		if err := apiRouter.RunAuditLogSweeper(ctx, auditLogSweepInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
 			logger.Error("audit log sweeper stopped", slog.String("error", err.Error()))
+		}
+	}()
+
+	// Moves cold audit, deploy and pipeline rows into archive bundles when the policy is on.
+	go func() {
+		if err := apiRouter.RunArchiveSweeper(ctx, 0); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("archive sweeper stopped", slog.String("error", err.Error()))
 		}
 	}()
 
@@ -1885,6 +1893,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithTrustRoot(trustRoot),
 		api.WithSourceCache(sourcecache.New(sourcecache.ConfigFromEnv(filepath.Join(dataDir, "source-cache")), logger)),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
+		api.WithArchives(archive.New(db.DB, dataDir), db),
 		multiNodeOption(db),
 		api.WithNodeJoinTokenTTL(nodeJoinTokenTTL(logger)),
 		api.WithControlPlaneBackupScheduleDisabled(controlPlaneBackupInterval(logger) == 0),

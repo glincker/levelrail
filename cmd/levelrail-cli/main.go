@@ -77,6 +77,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pitr":
 		return runPITR(prog, args[1:], stdout, stderr, lookupEnv)
+	case "archive":
+		return runArchive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "control-plane-backups":
 		return runControlPlaneBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-volume-backups":
@@ -384,6 +386,7 @@ Usage:
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
+  %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide

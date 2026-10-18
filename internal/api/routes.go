@@ -45,6 +45,7 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerResourceConsoleRoutes(mux)
 	rt.registerCustomDashboardRoutes(mux)
 	rt.registerChaosRoutes(mux)
+	rt.registerArchiveRoutes(mux)
 	rt.registerSpendCapRoutes(mux)
 	rt.registerCostExplorerRoutes(mux)
 	rt.registerAutoscaleRoutes(mux)

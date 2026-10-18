@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1342 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1352 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -751,6 +751,16 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apply/schema", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCSchema", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps-metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleBatchAppMetrics", Description: "Cross-app resource usage ranking (app_resource_usage.go): a literal segment, so Go's ServeMux resolves it ahead of the {name} wildcard on GET /api/v1/apps/{name} in routes.go."},
 	{Method: "GET", Path: "/api/v1/apps-summary", Ability: "AbilityRead", Group: "Other", Handler: "handleAppsSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/archives", Ability: "AbilityRoot", Group: "Other", Handler: "handleListArchives", Description: ""},
+	{Method: "POST", Path: "/api/v1/archives", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateArchive", Description: ""},
+	{Method: "GET", Path: "/api/v1/archives/policy", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetArchivePolicy", Description: ""},
+	{Method: "PUT", Path: "/api/v1/archives/policy", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutArchivePolicy", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/archives/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteArchive", Description: ""},
+	{Method: "GET", Path: "/api/v1/archives/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetArchive", Description: ""},
+	{Method: "GET", Path: "/api/v1/archives/{id}/download", Ability: "AbilityRoot", Group: "Other", Handler: "handleDownloadArchive", Description: ""},
+	{Method: "POST", Path: "/api/v1/archives/{id}/restore", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestoreArchive", Description: ""},
+	{Method: "GET", Path: "/api/v1/archives/{id}/rows", Ability: "AbilityRoot", Group: "Other", Handler: "handleBrowseArchive", Description: ""},
+	{Method: "POST", Path: "/api/v1/archives/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyArchive", Description: ""},
 	{Method: "POST", Path: "/api/v1/attention/dismiss", Ability: "Session", Group: "Other", Handler: "handleAttentionDismiss", Description: ""},
 	{Method: "GET", Path: "/api/v1/attention/feed", Ability: "AbilityRead", Group: "Other", Handler: "handleAttentionFeed", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/build-cache", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteBuildCache", Description: ""},

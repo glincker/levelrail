@@ -61,6 +61,7 @@ var demoReadDenylist = []string{
 	"/api/v1/audit-log/export",
 	"/api/v1/system/backups",
 	"/api/v1/system/backups/{name}/download",
+	"/api/v1/archives/{id}/download",
 	"/api/v1/system/control-plane-dr/backups",
 	"/api/v1/databases/{name}/backups/{historyId}/download",
 	"/api/v1/apps/{name}/volumes/{volume}/backups/{historyId}/download",

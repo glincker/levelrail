@@ -213,6 +213,7 @@
               "log-budgets",
               "data-export",
               "control-plane-backup",
+              "archives",
               "disaster-recovery",
               "upgrade-safely",
               "database-access",

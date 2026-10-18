@@ -45,6 +45,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerAlertNoiseTools(server, client)
 	registerDashboardTools(server, client)
 	registerResilienceTools(server, client)
+	registerArchiveTools(server, client)
 	registerAppMetricsTools(server, client)
 	registerAppRequestsTool(server, client)
 	registerAppTrafficTool(server, client)

@@ -1233,6 +1233,10 @@
   "next",
   "objects"
  ],
+ "list_archives": [
+  "archives",
+  "policy"
+ ],
  "list_audit_log": [
   "ability",
   "actor_id",
