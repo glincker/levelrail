@@ -12,6 +12,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (
@@ -385,7 +386,7 @@ func (rt *Router) handleImportSAMLMetadata(w http.ResponseWriter, r *http.Reques
 	}
 	raw := []byte(req.XML)
 	if req.URL != "" {
-		body, err := authengine.FetchSAMLIdPMetadata(r.Context(), nil, req.URL)
+		body, err := authengine.FetchSAMLIdPMetadata(r.Context(), netguard.NewClient(), req.URL)
 		if err != nil {
 			writeError(w, http.StatusBadGateway, err.Error())
 			return
