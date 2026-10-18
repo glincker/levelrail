@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1342 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1345 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -889,6 +889,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/fixes", Ability: "AbilityRead", Group: "Other", Handler: "handleListFixes", Description: ""},
 	{Method: "POST", Path: "/api/v1/fixes/{id}/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyFix", Description: "Fixes prune Docker data, write settings and re-verify host state, so AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/fixes/{id}/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewFix", Description: ""},
+	{Method: "GET", Path: "/api/v1/frameworks", Ability: "AbilityRead", Group: "Other", Handler: "handleListFrameworks", Description: ""},
+	{Method: "GET", Path: "/api/v1/frameworks/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFramework", Description: ""},
+	{Method: "GET", Path: "/api/v1/frameworks/{id}/dockerfile", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFrameworkDockerfile", Description: ""},
 	{Method: "GET", Path: "/api/v1/functions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctions", Description: "Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime."},
 	{Method: "GET", Path: "/api/v1/functions/runtimes", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionRuntimes", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/functions/{name}/route", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFunctionRoute", Description: ""},

@@ -361,7 +361,7 @@ var Tree = map[string]*Node{
 	"compose":          {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil}},
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},
-	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil}},
+	"build":            {Subs: map[string]*Node{"detect": nil, "branches": nil, "frameworks": nil}},
 }
 
 // db is the short alias for databases and shares its subtree.

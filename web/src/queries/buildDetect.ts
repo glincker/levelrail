@@ -26,12 +26,16 @@ export interface DetectFrameworkInput {
 export interface DetectFrameworkResult {
   provider?: string
   frameworkName?: string
+  frameworkId?: string
+  port?: number
   detected: boolean
 }
 
 interface RawDetectFrameworkResponse {
   provider?: string
   framework_name?: string
+  framework_id?: string
+  port?: number
   detected: boolean
 }
 
@@ -56,6 +60,8 @@ export async function detectFramework(
   return {
     provider: body.provider,
     frameworkName: body.framework_name,
+    frameworkId: body.framework_id,
+    port: body.port,
     detected: body.detected,
   }
 }

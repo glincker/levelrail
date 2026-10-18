@@ -28,6 +28,7 @@ type createFlags struct {
 	ref           string
 	dockerfile    string
 	buildType     string
+	framework     string
 	baseDirectory string
 	// buildArgs backs --build-arg (repeatable KEY=VALUE), only meaningful
 	// alongside --build-type dockerfile. See stringMapFlag (flagutil.go).
@@ -656,9 +657,20 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		detected = detectLocalGit()
 	}
 
+	preset, err := applyFrameworkPreset(&f)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+
 	plan, err := planFromFlags(f, fileSpec, detected)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+	if preset != nil {
+		plan.Volumes = append(plan.Volumes, presetVolumes(preset)...)
+		if !f.jsonOut {
+			printPresetEnvHints(stderr, preset, f.secrets)
+		}
 	}
 	// --node-id is applied after planning so every creation path honors it the same way.
 	if f.nodeIDSet {
@@ -824,6 +836,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
 	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" (default) or \"railpack\" (auto-detected build, no Dockerfile needed)")
+	fs.StringVar(&f.framework, "framework", "", "framework preset that fills the port, build type and volumes (git-build path); list them with \"build frameworks\"")
 	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
 	f.buildArgs = make(map[string]string)
 	fs.Var(stringMapFlag(f.buildArgs), "build-arg", "Dockerfile build arg as KEY=VALUE, repeatable (git-build path, --build-type dockerfile only)")

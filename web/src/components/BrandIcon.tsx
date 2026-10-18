@@ -59,6 +59,16 @@ import GoLogo from '@thesvg/react/go'
 import GoogleLogo from '@thesvg/react/google'
 import GoogleChatLogo from '@thesvg/react/google-chat'
 import JavaLogo from '@thesvg/react/java'
+import NextjsLogo from '@thesvg/react/nextjs'
+import ViteLogo from '@thesvg/react/vite'
+import SvelteLogo from '@thesvg/react/svelte'
+import NuxtLogo from '@thesvg/react/nuxt'
+import AstroLogo from '@thesvg/react/astro'
+import DjangoLogo from '@thesvg/react/django'
+import FastapiLogo from '@thesvg/react/fastapi'
+import LaravelLogo from '@thesvg/react/laravel'
+import SpringLogo from '@thesvg/react/spring'
+import RubyLogo from '@thesvg/react/ruby'
 import KeycloakLogo from '@thesvg/react/keycloak'
 import KeydbLogo from '@thesvg/react/keydb'
 import MariadbLogo from '@thesvg/react/mariadb'
@@ -138,6 +148,16 @@ export type BrandIconName =
   | 'node'
   | 'go'
   | 'java'
+  | 'nextjs'
+  | 'vite'
+  | 'svelte'
+  | 'nuxt'
+  | 'astro'
+  | 'django'
+  | 'fastapi'
+  | 'laravel'
+  | 'spring'
+  | 'ruby'
   | 'discord'
   | 'slack'
   | 'telegram'
@@ -259,6 +279,16 @@ const BRAND_ICONS: Record<
   node: NodedotjsLogo,
   go: GoLogo,
   java: JavaLogo,
+  nextjs: NextjsLogo,
+  vite: ViteLogo,
+  svelte: SvelteLogo,
+  nuxt: NuxtLogo,
+  astro: AstroLogo,
+  django: DjangoLogo,
+  fastapi: FastapiLogo,
+  laravel: LaravelLogo,
+  spring: SpringLogo,
+  ruby: RubyLogo,
   discord: DiscordLogo,
   slack: SlackLogo,
   telegram: TelegramLogo,
@@ -382,6 +412,16 @@ export const BRAND_ICON_NAMES: readonly BrandIconName[] = [
   'node',
   'go',
   'java',
+  'nextjs',
+  'vite',
+  'svelte',
+  'nuxt',
+  'astro',
+  'django',
+  'fastapi',
+  'laravel',
+  'spring',
+  'ruby',
   'discord',
   'slack',
   'telegram',

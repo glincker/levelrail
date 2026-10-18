@@ -689,6 +689,10 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// boundary as the branch listing above.
 	mux.HandleFunc("POST /api/v1/build/detect", rt.requireAbility(AbilityDeploy, rt.handleDetectFramework))
 
+	mux.HandleFunc("GET /api/v1/frameworks", rt.requireAbility(AbilityRead, rt.handleListFrameworks))
+	mux.HandleFunc("GET /api/v1/frameworks/{id}", rt.requireAbility(AbilityRead, rt.handleGetFramework))
+	mux.HandleFunc("GET /api/v1/frameworks/{id}/dockerfile", rt.requireAbility(AbilityRead, rt.handleGetFrameworkDockerfile))
+
 	// Import front door: classifies pasted input and returns a plan preview,
 	// creating nothing. AbilityWrite because it makes outbound fetches.
 	mux.HandleFunc("POST /api/v1/imports/plan", rt.requireAbility(AbilityWrite, rt.handleImportPlan))
