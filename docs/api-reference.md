@@ -1554,6 +1554,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/plugins/inspect | AbilityRoot | handleInspectPlugin |
 | POST | /api/v1/plugins/{name}/upgrade | AbilityRoot | handleUpgradePlugin |
 | POST | /api/v1/plugins/{name}/restart | AbilityRoot | handleRestartPlugin |
+| GET | /api/v1/costs/explore | AbilityRead | handleCostExplore |
+| GET | /api/v1/costs/budgets | AbilityRead | handleListCostBudgets |
+| POST | /api/v1/costs/budgets | AbilityRoot | handleCreateCostBudget |
+| PUT | /api/v1/costs/budgets/{id} | AbilityRoot | handleUpdateCostBudget |
+| DELETE | /api/v1/costs/budgets/{id} | AbilityRoot | handleDeleteCostBudget |
 
 ## See also
 

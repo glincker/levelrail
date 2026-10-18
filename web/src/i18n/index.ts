@@ -66,6 +66,7 @@ export const NAMESPACES = [
   'newApp',
   'getStarted',
   'usage',
+  'costs',
   'resources',
   'deployTimeline',
   'images',

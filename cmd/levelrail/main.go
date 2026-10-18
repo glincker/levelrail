@@ -797,6 +797,7 @@ func run(logger *slog.Logger) error {
 	alertingEngine.SetBudgets(apiRouter)
 	go runUsageRollup(ctx, apiRouter)
 	go runSpendCaps(ctx, apiRouter)
+	go runCostBudgets(ctx, apiRouter)
 	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
 	alertingEngine.SetChanges(withLogSignatures(changes.New(db, db, db, logger), alertingFederator), alertDashboardLink())
 	alertingEngine.SetNoiseControl(alerting.NewNoiseControl(alertNoiseConfig(logger), alertingDB, db, logger))

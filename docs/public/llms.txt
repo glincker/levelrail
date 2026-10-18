@@ -166,6 +166,7 @@ There is no hosted public API. Every instance exposes its own REST API at `/api/
 - [Roadmap](https://docs.levelrail.com/roadmap): phased build plan and current status.
 - [Feature status](https://docs.levelrail.com/feature-status): per-feature maturity labels with the evidence behind each one.
 - [Experimental features](https://docs.levelrail.com/experimental-features): features hidden at launch and the switch that turns them on.
+- [Cost explorer and budgets](https://docs.levelrail.com/cost-explorer): cost trend by app, project, tag, node or kind, month end forecast range, top movers and named budgets with alerts and a pause or throttle action.
 - [Usage and cost](https://docs.levelrail.com/usage-and-cost): cost showback per app, project and team from your own prices, how server bills and usage are allocated, budgets, alerts and CSV export.
 - [Resource advisor](https://docs.levelrail.com/resource-advisor): beta limit, idle, growth, disk and database tuning suggestions, every rule and threshold, and what it cannot know.
 - [Performance](https://docs.levelrail.com/performance): measured idle footprint of the control plane at 0, 100, and 500 apps.

@@ -72,6 +72,7 @@ export type GlobalTo =
   | '/nodes'
   | '/resource-advisor'
   | '/usage'
+  | '/costs'
   | '/resources'
   | '/dashboards'
   | '/network'
@@ -314,6 +315,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Usage and cost',
         to: '/usage',
         icon: <CoinsIcon />,
+      },
+      {
+        id: 'costs',
+        label: 'Cost explorer',
+        to: '/costs',
+        icon: <ChartLineUpIcon />,
       },
       {
         id: 'resources',

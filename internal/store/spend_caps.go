@@ -175,6 +175,21 @@ func (db *DB) ListSpendCapEvents(ctx context.Context, app string, limit int) ([]
 // period. A state from an earlier month enforces nothing, so a limit lapses
 // at rollover even if the controller is not running.
 func (db *DB) ListSpendCapEnforcements(ctx context.Context, period string) ([]spendcap.Enforcement, error) {
+	caps, err := db.listAppCapEnforcements(ctx, period)
+	if err != nil {
+		return nil, err
+	}
+	budgets, err := db.listCostBudgetEnforcements(ctx, period)
+	if err != nil {
+		return nil, err
+	}
+	if len(budgets) == 0 {
+		return caps, nil
+	}
+	return mergeEnforcements(caps, budgets), nil
+}
+
+func (db *DB) listAppCapEnforcements(ctx context.Context, period string) ([]spendcap.Enforcement, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT s.app_name, s.enforced, c.throttle_rps FROM app_spend_cap_state s
 		JOIN app_spend_caps c ON c.app_name = s.app_name

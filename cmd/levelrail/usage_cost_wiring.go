@@ -68,3 +68,25 @@ func runAutoscaler(ctx context.Context, r autoscaleTicker, interval time.Duratio
 		}
 	}
 }
+
+// costBudgetInterval is how often named cost budgets are re-evaluated.
+const costBudgetInterval = 2 * time.Minute
+
+type costBudgetTicker interface {
+	CostBudgetTick(ctx context.Context)
+}
+
+// runCostBudgets re-derives every named budget's state until ctx ends.
+func runCostBudgets(ctx context.Context, r costBudgetTicker) {
+	r.CostBudgetTick(ctx)
+	t := time.NewTicker(costBudgetInterval)
+	defer t.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-t.C:
+			r.CostBudgetTick(ctx)
+		}
+	}
+}

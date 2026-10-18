@@ -164,6 +164,8 @@ var toolTable = map[string]Meta{
 	"get_resource_recommendation":           {clsR, "metrics", 0},
 	resourceAdviceTool:                      {clsR, "metrics", 0},
 	usageReportTool:                         {clsR, "metrics", 0},
+	"cost_explorer":                         {clsR, "metrics", 0},
+	"cost_budgets":                          {clsR, "metrics", 0},
 	"list_service_templates":                {clsR, "templates", 0},
 	"get_service_template":                  {clsR, "templates", 0},
 	"list_plugins":                          {clsR, pluginsGroup, 0},
