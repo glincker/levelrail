@@ -18,7 +18,7 @@ func init() {
 func (rt *Router) registerResourceConsoleRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/resources", rt.requireAbility(AbilityRead, rt.handleListResources))
 	mux.HandleFunc("POST /api/v1/resources/tags/bulk", rt.requireAbility(AbilityWrite, rt.handleBulkResourceTags))
-	mux.HandleFunc("GET /api/v1/resources/views", rt.requireAbility(AbilityRead, rt.handleListResourceViews))
-	mux.HandleFunc("POST /api/v1/resources/views", rt.requireAbility(AbilityRead, rt.handleSaveResourceView))
-	mux.HandleFunc("DELETE /api/v1/resources/views/{id}", rt.requireAbility(AbilityRead, rt.handleDeleteResourceView))
+	mux.HandleFunc("GET /api/v1/resources/views", rt.requireAbility(AbilityWrite, rt.handleListResourceViews))
+	mux.HandleFunc("POST /api/v1/resources/views", rt.requireAbility(AbilityWrite, rt.handleSaveResourceView))
+	mux.HandleFunc("DELETE /api/v1/resources/views/{id}", rt.requireAbility(AbilityWrite, rt.handleDeleteResourceView))
 }
