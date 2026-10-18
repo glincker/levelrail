@@ -21,7 +21,6 @@ const DOMAIN_TABS = new Set([
   'headers',
   'forwarding',
   'access',
-  'shield',
   'cache',
   'ports',
   'redirects',

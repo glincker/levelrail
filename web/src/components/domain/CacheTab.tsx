@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { PlusIcon, TrashIcon } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useApplyCachePreset } from '../../queries/cdnCache'
 import { CacheStatsCard } from './CacheStatsCard'
 import { PreviewControls } from './PreviewControls'
 import {
@@ -34,6 +35,7 @@ export function CacheTab({
   const saved = policies.policy.cache ?? EMPTY
   const ed = usePolicyEditor(app, domain, 'cache', saved)
   const c = ed.draft
+  const preset = useApplyCachePreset(app)
   const setRule = (i: number, patch: Partial<CacheRule>) =>
     ed.setDraft({
       ...c,
@@ -50,6 +52,22 @@ export function CacheTab({
             checked={c.enabled}
             onChange={(v) => ed.setDraft({ ...c, enabled: v })}
           />
+          <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 px-4 py-3">
+            <p className="min-w-48 flex-1 text-sm text-muted-foreground">
+              {t('cache.presetHelp')}
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              writeAction
+              disabled={preset.isPending || ed.dirty}
+              onClick={() => preset.mutate(domain)}
+            >
+              {t('cache.preset')}
+            </Button>
+          </div>
+          <FieldMessage message={preset.error?.message} />
           {c.rules.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('cache.empty')}</p>
           ) : null}
@@ -174,6 +192,55 @@ export function CacheTab({
                     label={t('cache.withCookies')}
                     checked={Boolean(r.cache_with_cookies)}
                     onChange={(v) => setRule(i, { cache_with_cookies: v })}
+                  />
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <label className="flex w-40 flex-col gap-1 text-xs">
+                    <span className="text-muted-foreground">
+                      {t('cache.staleIfError')}
+                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={r.stale_if_error_seconds ?? 0}
+                      onChange={(e) =>
+                        setRule(i, {
+                          stale_if_error_seconds: Number(e.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="flex w-48 flex-col gap-1 text-xs">
+                    <span className="text-muted-foreground">
+                      {t('cache.ignoreQuery')}
+                    </span>
+                    <Input
+                      defaultValue={(r.ignore_query_params ?? []).join(', ')}
+                      placeholder="utm_source, fbclid"
+                      onBlur={(e) =>
+                        setRule(i, {
+                          ignore_query_params: splitList(e.target.value),
+                        })
+                      }
+                    />
+                  </label>
+                  <label className="flex w-48 flex-col gap-1 text-xs">
+                    <span className="text-muted-foreground">
+                      {t('cache.keyCookies')}
+                    </span>
+                    <Input
+                      defaultValue={(r.key_cookies ?? []).join(', ')}
+                      placeholder="lang"
+                      onBlur={(e) =>
+                        setRule(i, { key_cookies: splitList(e.target.value) })
+                      }
+                    />
+                  </label>
+                  <CheckboxField
+                    id={`cr-never-${i}`}
+                    label={t('cache.never')}
+                    checked={Boolean(r.never)}
+                    onChange={(v) => setRule(i, { never: v })}
                   />
                 </div>
                 {Object.entries(ed.errors)

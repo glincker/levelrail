@@ -273,16 +273,11 @@ Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control 
 | `require` | Abort unless the signature verifies (no cosign, no bundle, or a bad signature all abort) |
 | `off` | Skip only the signature step. The checksum is still verified |
 
-**Signed releases only, once verified.** The first time a release signature verifies on a host (by `install.sh`, `levelrail self-upgrade`, or the dashboard upgrade), a root-owned marker is written to `<data dir>/release-signature.pin`. From then on `auto` behaves like `require`: a release with no signature bundle, or a host with no cosign, is refused instead of falling back to checksum only. This closes the downgrade where an attacker who controls a release strips its signature, since `checksums.txt` comes from the same release as the binary. A fresh install, or an install of a release cut before signing, behaves as before until the first signature verifies.
+**Signed releases only, once verified.** The first time a release signature verifies on a host (by `install.sh`, `levelrail self-upgrade`, or the dashboard upgrade), a root-owned marker is written to `<data dir>/release-signature.pin`. From then on `auto` behaves like `require`: a release with no signature bundle, or a host that has never been able to load the Sigstore trust data, is refused instead of falling back to checksum only. This closes the downgrade where an attacker who controls a release strips its signature, since `checksums.txt` comes from the same release as the binary. A fresh install, or an install of a release cut before signing, behaves as before until the first signature verifies.
 
-`levelrail self-upgrade` and the dashboard upgrade verify the signature in process and need no `cosign` binary. Only `install.sh` still uses `cosign`. The Sigstore trust metadata is cached under `<data dir>/sigstore-tuf`, and a host that cannot reach it falls back to checksum only until it is pinned.
+`levelrail self-upgrade` and the dashboard upgrade verify the signature inside the server and need no `cosign` binary. The server downloads the Sigstore trust data once, in the background, when it starts and when a newer release appears, and keeps it under `<data dir>/sigstore-tuf`. Later checks, including offline ones, use that saved copy. Until the first download succeeds, Settings > Updates shows a plain "retrying automatically" note and an unpinned host falls back to checksum only. Only `install.sh` uses `cosign`, and only when it is present.
 
-Until the pin exists, `levelrail-cli doctor` and Settings > Updates show **not signature verified** as a warning. To fix it, install cosign and upgrade once:
-
-```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- install-cosign
-sudo levelrail self-upgrade --latest
-```
+Until the pin exists, `levelrail-cli doctor` shows **not signature verified** as a warning, and Settings > Updates notes that the next upgrade verifies the signature and pins the host. There is nothing to install or run: just upgrade.
 
 The escape hatches are explicit and never silent: `APP_INSTALL_VERIFY=off` (or `self-upgrade --verify off`) skips the signature for that one run and prints a warning that it overrides the pin, and `sudo levelrail self-upgrade --unpin-signature` removes the pin (logged) until the next verified signature writes it again.
 

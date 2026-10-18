@@ -61,7 +61,6 @@ function preflight(edge: EdgeGuidance): UpdatePreflight {
     blocked: false,
     upgrade_command: '',
     rollback_command: '',
-    cosign_command: '',
     release_kind: 'edge_image',
     channel: 'edge',
     edge,

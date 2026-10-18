@@ -238,23 +238,6 @@ export function useResetPolicy(app: string, domain: string) {
   })
 }
 
-export function usePurgeCache(app: string, domain: string) {
-  const invalidate = useInvalidateAll(app, domain)
-  return useMutation<
-    { purged: number },
-    PolicyApiError,
-    { scope: 'url' | 'prefix' | 'all'; value?: string }
-  >({
-    mutationFn: (body) =>
-      request(
-        `${base(app, domain)}/cache/purge`,
-        jsonInit('POST', body),
-        'purge failed',
-      ),
-    onSuccess: () => invalidate(),
-  })
-}
-
 function useRedirectMutation<V>(
   app: string,
   domain: string,

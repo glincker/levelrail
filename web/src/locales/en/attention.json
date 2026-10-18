@@ -32,7 +32,6 @@
     "resolvedMeta": "{{ip}}, {{age}}",
     "resolvedMore_one": "{{count}} more login needs a look on the Status page.",
     "resolvedMore_other": "{{count}} more logins need a look on the Status page.",
-    "startOver": "Start over",
     "startOverHint": "Run this in your terminal to request a new login:",
     "copy": "Copy command",
     "copied": "Command copied",

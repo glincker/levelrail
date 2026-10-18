@@ -19,6 +19,8 @@ import {
   GitBranchIcon,
   GitPullRequestIcon,
   GlobeIcon,
+  GlobeHemisphereWestIcon,
+  LightningIcon,
   ListBulletsIcon,
   HardDrivesIcon,
   HeartbeatIcon,
@@ -66,9 +68,11 @@ export type GlobalTo =
   | '/usage'
   | '/network'
   | '/network/proxy'
+  | '/cdn'
   | '/domains'
   | '/dns'
   | '/loadbalancers'
+  | '/firewall'
   | '/models'
   | '/ai-assistant'
   | '/terminal'
@@ -222,6 +226,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         badge: 'proxy-attention',
       },
       {
+        id: 'firewall',
+        label: 'Firewall',
+        to: '/firewall',
+        icon: <ShieldCheckIcon />,
+      },
+      {
         id: 'loadbalancers',
         label: 'Load balancers',
         to: '/loadbalancers',
@@ -229,10 +239,10 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         feature: 'load-balancer',
       },
       {
-        id: 'network',
-        label: 'Topology',
-        to: '/network',
-        icon: <ShareNetworkIcon />,
+        id: 'cdn',
+        label: 'CDN and caches',
+        to: '/cdn',
+        icon: <GlobeHemisphereWestIcon />,
       },
     ],
   },
@@ -241,6 +251,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Fleet',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'network',
+        label: 'Topology',
+        to: '/network',
+        icon: <ShareNetworkIcon />,
+      },
       {
         id: 'node-providers',
         label: 'Cloud providers',
@@ -387,6 +403,7 @@ export type AppTo =
   | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
+  | '/apps/$name/cache'
   | '/apps/$name/environment'
   | '/apps/$name/services'
   | '/apps/$name/resources'
@@ -485,6 +502,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         'load-balancer',
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
+      item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
     ],
   },
   {

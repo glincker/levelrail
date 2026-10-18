@@ -1,4 +1,6 @@
 import type common from '../locales/en/common.json'
+import type firewall from '../locales/en/firewall.json'
+import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
 import type dashboard from '../locales/en/dashboard.json'
@@ -73,6 +75,7 @@ import type aiAssistant from '../locales/en/aiAssistant.json'
 import type demo from '../locales/en/demo.json'
 import type secretScan from '../locales/en/secretScan.json'
 import type sso from '../locales/en/sso.json'
+import type cdn from '../locales/en/cdn.json'
 
 // Makes a typo'd translation key a tsc error instead of a silent runtime fallback.
 declare module 'i18next' {
@@ -151,9 +154,12 @@ declare module 'i18next' {
       maintenance: typeof maintenance
       buildPerformance: typeof buildPerformance
       sso: typeof sso
+      cdn: typeof cdn
       trialApp: typeof trialApp
       deployPolicies: typeof deployPolicies
       deployDetail: typeof deployDetail
+      firewall: typeof firewall
+      rules: typeof rules
     }
   }
 }

@@ -15,6 +15,7 @@ import {
   useStartSelfUpgrade,
 } from '../../queries/selfUpgrade'
 import { scheduleQueryOptions } from '../../queries/upgradeSchedule'
+import { ShieldCheck } from '@phosphor-icons/react/dist/ssr'
 import { CopyCommand } from './CopyCommand'
 import { ScheduleUpgradeDialog } from './ScheduleUpgradeDialog'
 import { ScheduledUpgradeBanner } from './ScheduledUpgradeBanner'
@@ -198,25 +199,16 @@ export function UpgradeNow() {
           </p>
           <ul className="space-y-3" aria-label={t('preflight.checksLabel')}>
             {blockers.map((c) => (
-              <UpgradeCheckRow
-                key={c.code}
-                check={c}
-                cosignCommand={pre.cosign_command}
-              />
+              <UpgradeCheckRow key={c.code} check={c} />
             ))}
           </ul>
         </div>
       ) : null}
       {planData && planData.signature_pinned === false ? (
-        <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">
-            {t('selfUpgrade.notPinned')}
-          </p>
-          <CopyCommand
-            label={t('selfUpgrade.notPinnedCommand')}
-            command={pre.cosign_command}
-          />
-        </div>
+        <p className="flex items-start gap-2 text-sm text-muted-foreground">
+          <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0" />
+          {t('selfUpgrade.notPinned')}
+        </p>
       ) : null}
       {planData?.signature_pinned ? (
         <p className="text-xs text-muted-foreground">

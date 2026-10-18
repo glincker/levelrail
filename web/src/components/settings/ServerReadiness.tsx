@@ -8,7 +8,7 @@ import {
   serverReadinessQueryOptions,
   type ReadinessCheck,
 } from '../../queries/selfUpgrade'
-import { CopyCommand } from './CopyCommand'
+import { FixCli } from '../fixit/FixCli'
 
 const STATUS_TONE: Record<ReadinessCheck['status'], Tone> = {
   pass: 'success',
@@ -86,9 +86,10 @@ export function ServerReadiness() {
               {t(`readiness.mode.${data.mode}`)}
             </p>
             <p className="text-sm text-muted-foreground">{data.summary}</p>
-            <CopyCommand
-              label={t('readiness.nextStep')}
-              command={data.next_step}
+            <FixCli
+              steps={[
+                { label: t('readiness.nextStep'), command: data.next_step },
+              ]}
             />
           </div>
         </>

@@ -572,6 +572,7 @@ func run(logger *slog.Logger) error {
 	pluginMgr := setupPlugins(ctx, logger, b, db, client, agentDataDir)
 	var restartRequested atomic.Bool
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
+	apiRouter.WarmTrustRoot()
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {
 		wh.UseSourceCache(apiRouter.SourceCache())
 	}
@@ -583,6 +584,7 @@ func run(logger *slog.Logger) error {
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
 	configureNodeCerts(apiRouter, agentServer, agentServer)
+	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)
 	gateSecret := setupBuiltinGate(ctx, logger, apiRouter)
 	apiRouter.SetDockerGuard(guard.Controller)
@@ -653,7 +655,9 @@ func run(logger *slog.Logger) error {
 	if err != nil {
 		return fmt.Errorf("ingress edge settings: %w", err)
 	}
-	apiRouter.SetDoctorIngressEdge(edge.doctorInfo())
+	edgeInfo := edge.doctorInfo()
+	edgeInfo.Snapshot = setupIngressSnapshot(ctx, logger, ingressDriver, db, secretsManager, edge)
+	apiRouter.SetDoctorIngressEdge(edgeInfo)
 	proxySyncer := newProxySyncer(b, db, logger)
 	apiRouter.SetProxyIntegration(proxySyncer, db, proxyVerifyTimeout(logger))
 	routeCheck := newRouteCheck(logger)
@@ -1817,6 +1821,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 	if dataDir == "" {
 		dataDir = defaultDataDir
 	}
+	trustRoot := selfupgrade.NewTrustRoot(selfupgrade.TUFCacheDir(dataDir), logger)
 	opts := []api.Option{
 		api.WithReconcileNudger(engine),
 		api.WithStaticRootDir(filepath.Join(dataDir, "static")),
@@ -1856,6 +1861,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		api.WithWebhookRateLimit(webhookRateLimitRPM(logger)),
 		api.WithTokenRedeemRateLimit(apiRateLimitRPM(logger, "APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM", defaultTokenRedeemRateLimitRPM)),
 		api.WithDataDir(dataDir),
+		api.WithTrustRoot(trustRoot),
 		api.WithSourceCache(sourcecache.New(sourcecache.ConfigFromEnv(filepath.Join(dataDir, "source-cache")), logger)),
 		api.WithControlPlaneBackups(cpbackup.NewManager(db, dataDir)),
 		multiNodeOption(db),
@@ -2888,6 +2894,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressreconcile.WithHTTPListenAddr(deps.ingressHTTPAddr),
 			ingressreconcile.WithHTTPRedirect(deps.httpRedirect),
 			ingressreconcile.WithRequestStats(),
+			ingressreconcile.WithFirewall(),
 			ingressreconcile.WithRouteCheck(deps.routeCheck),
 			// Lets Reconcile flag a service placed on an unreachable node.
 			ingressreconcile.WithLocalNodeID(localNodeIDOf(deps)),

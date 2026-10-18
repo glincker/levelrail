@@ -104,7 +104,7 @@ type Signer struct {
 }
 
 // PinEscapeHint names the documented, explicit ways past a pinned refusal.
-const PinEscapeHint = "Install cosign and retry, override once with --verify off (APP_INSTALL_VERIFY=off), or clear the pin with self-upgrade --unpin-signature"
+const PinEscapeHint = "Retry when this host can reach Sigstore, override once with --verify off (APP_INSTALL_VERIFY=off), or clear the pin with self-upgrade --unpin-signature"
 
 // DetailOffWhilePinned is the timeline detail for an operator override.
 const DetailOffWhilePinned = "signature check disabled by the operator although this host is pinned to signed releases"

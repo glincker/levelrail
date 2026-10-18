@@ -81,6 +81,10 @@ export interface CacheRule {
   status_codes?: number[]
   vary?: string[]
   cache_with_cookies?: boolean
+  never?: boolean
+  stale_if_error_seconds?: number
+  ignore_query_params?: string[]
+  key_cookies?: string[]
 }
 
 export interface CacheSpec {
@@ -189,6 +193,8 @@ export interface CacheBucket {
   minute: number
   hits: number
   misses: number
+  hit_bytes: number
+  miss_bytes: number
 }
 
 export interface CacheStats {

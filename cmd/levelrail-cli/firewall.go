@@ -22,6 +22,8 @@ func runFirewall(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runFirewallHost(prog, "enable", args[1:], stdout, stderr, lookupEnv)
 	case "disable":
 		return runFirewallHost(prog, "disable", args[1:], stdout, stderr, lookupEnv)
+	case "ingress":
+		return runFirewallIngress(prog, args[1:], stdout, stderr, lookupEnv)
 	case "exposure":
 		return runFirewallExposure(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restrict":
@@ -55,6 +57,7 @@ func firewallUsage(prog string) string {
   %[1]s firewall allow --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]   add an allow rule
   %[1]s firewall deny --port N [--protocol tcp|udp] [--source-cidr CIDR] [--label TEXT] [flags]    add a deny rule
   %[1]s firewall delete <id> [flags]                                      remove a firewall rule
+  %[1]s firewall ingress <subcommand>                                    web request firewall: rules, bans, bots, attack mode (run "%[1]s firewall ingress -h")
 
 A deny rule, or an allow rule scoped to a source CIDR, targeting a port
 this control plane itself needs (the management API, agent connections,

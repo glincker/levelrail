@@ -150,7 +150,7 @@ func TestCacheModule_TTLStaleAndPurge(t *testing.T) {
 		t.Fatalf("fresh = %q age %q", rec.Header().Get(CacheStatusHeader), rec.Header().Get("Age"))
 	}
 	h.now = h.now.Add(10 * time.Second)
-	key := cacheKey("a.test", httptest.NewRequest("GET", "http://a.test/x", nil), nil)
+	key, _ := cacheKey("a.test", httptest.NewRequest("GET", "http://a.test/x", nil), trafficpolicy.CacheRule{})
 	h.store.beginRefresh(key)
 	if rec := h.do(t, "GET", "a.test", "/x", nil); rec.Header().Get(CacheStatusHeader) != cacheStale {
 		t.Fatalf("expired while refreshing = %q, want STALE", rec.Header().Get(CacheStatusHeader))

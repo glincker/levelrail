@@ -22,7 +22,6 @@
     "blocked": "Upgrade blocked: fix the failing checks first.",
     "upgradeCommand": "Run this on the server (never runs automatically)",
     "rollbackCommand": "To roll back the database after a bad upgrade",
-    "cosignCommand": "Install cosign on the server so upgrades also verify the release signature",
     "status": {
       "ok": "Pass",
       "warn": "Warning",
@@ -130,6 +129,8 @@
       "incompatible": "Too new for this release",
       "noneCompatible": "No backup on this host is compatible with {{version}}."
     },
+    "recheck": "Re-check",
+    "rechecking": "Checking...",
     "commands": {
       "fetch": "1. Stage the verified release on the server",
       "apply": "2. Roll back on the server (you will be asked to type {{version}})",
@@ -240,8 +241,7 @@
       "health": "Health check",
       "rollback": "Roll back"
     },
-    "notPinned": "Warning: this install is not signature verified yet, so an upgrade still accepts a release checked by checksum only. Install cosign and upgrade once: every later upgrade then requires a valid signature.",
-    "notPinnedCommand": "Install cosign on the server, then upgrade once",
+    "notPinned": "Release signatures are verified by this server. The next upgrade checks the signature, then this install only accepts signed releases.",
     "pinned": "Signed releases only, pinned since {{version}}. An unsigned release is refused."
   },
   "readiness": {

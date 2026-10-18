@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1248 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1271 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -118,6 +118,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-stats", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppCache", Description: "App-level cache view, purge across the app's domains, purge history and the one-click static assets preset; instance cache and CDN overview."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/cache/preset", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyCachePreset", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/cache/purge", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePurgeAppCache", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/cache/purges", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListCachePurges", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAbortCanary", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCanary", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/canary", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartCanary", Description: ""},
@@ -748,6 +752,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/build-limits", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuildLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/build-limits", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetBuildLimits", Description: "Limits decide when every app's builds are killed, so root only."},
 	{Method: "POST", Path: "/api/v1/build/detect", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDetectFramework", Description: "Framework pre-flight detection (handleDetectFramework's own doc comment): also not scoped to an existing app, same AbilityDeploy boundary as the branch listing above."},
+	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
 	{Method: "POST", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAccessReview", Description: ""},
@@ -830,6 +835,23 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/firewall-rules", Ability: "AbilityRead", Group: "Other", Handler: "handleListFirewallRules", Description: "Firewall rules (firewall_rules.go): declarative host firewall rules internal/reconcile/firewall converges onto ufw. AbilityWriteSensitive for create/delete, same tier as a backup target: a rule here changes what inbound traffic this host accepts. List is ordinary AbilityRead."},
 	{Method: "POST", Path: "/api/v1/firewall-rules", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateFirewallRule", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall-rules/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteFirewallRule", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/edge/allow", Ability: "AbilityDeploy", Group: "Other", Handler: "handleFirewallIPEntry", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/firewall/edge/attack-mode", Ability: "AbilityDeploy", Group: "Other", Handler: "handleStopFirewallEdgeAttack", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/edge/attack-mode", Ability: "AbilityDeploy", Group: "Other", Handler: "handleStartFirewallEdgeAttack", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/audit", Ability: "AbilityRead", Group: "Other", Handler: "handleFirewallEdgeAudit", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/bans", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListFirewallEdgeBans", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/firewall/edge/bans/{ip}", Ability: "AbilityDeploy", Group: "Other", Handler: "handleLiftFirewallEdgeBan", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/edge/block", Ability: "AbilityDeploy", Group: "Other", Handler: "handleFirewallIPEntry", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/rules", Ability: "AbilityRead", Group: "Other", Handler: "handleListFirewallEdgeRules", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/edge/rules", Ability: "AbilityDeploy", Group: "Other", Handler: "handleCreateFirewallEdgeRule", Description: ""},
+	{Method: "POST", Path: "/api/v1/firewall/edge/rules/order", Ability: "AbilityDeploy", Group: "Other", Handler: "handleReorderFirewallEdgeRules", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/firewall/edge/rules/{id}", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDeleteFirewallEdgeRule", Description: ""},
+	{Method: "PUT", Path: "/api/v1/firewall/edge/rules/{id}", Ability: "AbilityDeploy", Group: "Other", Handler: "handleUpdateFirewallEdgeRule", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/series", Ability: "AbilityRead", Group: "Other", Handler: "handleFirewallEdgeSeries", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/settings", Ability: "AbilityRead", Group: "Other", Handler: "handleGetFirewallEdgeSettings", Description: ""},
+	{Method: "PUT", Path: "/api/v1/firewall/edge/settings", Ability: "AbilityDeploy", Group: "Other", Handler: "handleSetFirewallEdgeSettings", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/status", Ability: "AbilityRead", Group: "Other", Handler: "handleFirewallEdgeStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/firewall/edge/traffic", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleFirewallEdgeTraffic", Description: ""},
 	{Method: "GET", Path: "/api/v1/firewall/exposure", Ability: "AbilityRead", Group: "Other", Handler: "handleExposureReport", Description: "Exposure audit (exposure.go): read-only list of published container ports and how reachable each is; preview is a pure computation. Restricting and unrestricting change the host's DOCKER-USER chain, so they are AbilityRoot like the ufw switch above."},
 	{Method: "POST", Path: "/api/v1/firewall/exposure/preview", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposurePreview", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/firewall/exposure/restrictions/{protocol}/{port}", Ability: "AbilityRoot", Group: "Other", Handler: "handleExposureUnrestrict", Description: ""},
@@ -1202,6 +1224,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/system/backups/{name}", Ability: "AbilityRoot", Group: "System", Handler: "handleDeleteControlPlaneBackup", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/backups/{name}/download", Ability: "AbilityRoot", Group: "System", Handler: "handleDownloadControlPlaneBackup", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/backups/{name}/verify", Ability: "AbilityRoot", Group: "System", Handler: "handleVerifyControlPlaneBackup", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/cache", Ability: "AbilityRead", Group: "System", Handler: "handleSystemCache", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/cli-console/commands", Ability: "AbilityRoot", Group: "System", Handler: "handleCLIConsoleCommands", Description: "The CLI console acts with the caller's full token, so root like the app terminal; step-up is checked inside."},
 	{Method: "GET", Path: "/api/v1/system/cli-console/session", Ability: "AbilityRoot", Group: "System", Handler: "handleCLIConsoleSession", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/containers", Ability: "AbilityRead", Group: "System", Handler: "handleListContainers", Description: "Every container on this node, Levelrail-managed or not (containers.go's own doc comment on why a Managed one stays read-only here), AbilityRead like system/status above."},

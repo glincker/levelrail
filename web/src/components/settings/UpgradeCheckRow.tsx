@@ -6,7 +6,6 @@ import {
   useBackupNow,
   useRecheckPreflight,
 } from '../../queries/upgradeSchedule'
-import { CopyCommand } from './CopyCommand'
 
 const CHECK_TONE: Record<UpgradeCheckStatus, Tone> = {
   ok: 'success',
@@ -17,13 +16,7 @@ const CHECK_TONE: Record<UpgradeCheckStatus, Tone> = {
   skipped: 'neutral',
 }
 
-export function UpgradeCheckRow({
-  check,
-  cosignCommand,
-}: {
-  check: UpgradeCheck
-  cosignCommand?: string
-}) {
+export function UpgradeCheckRow({ check }: { check: UpgradeCheck }) {
   const { t } = useTranslation('updates')
   const backup = useBackupNow()
   const recheck = useRecheckPreflight()
@@ -32,10 +25,6 @@ export function UpgradeCheckRow({
     check.status !== 'unknown' &&
     check.status !== 'skipped'
   const fix = check.fix
-  const wantsCommand =
-    fix?.action === 'command' ||
-    (check.code === 'release_verifier' && check.status === 'warn')
-  const command = wantsCommand ? (fix?.command ?? cosignCommand ?? '') : ''
   const error = backup.error ?? recheck.error
 
   return (
@@ -85,14 +74,6 @@ export function UpgradeCheckRow({
                 ? t('preflight.fix.rechecking')
                 : t('preflight.fix.recheck')}
             </Button>
-          </span>
-        ) : null}
-        {open && command ? (
-          <span className="mt-2 block">
-            <CopyCommand
-              label={t('preflight.cosignCommand')}
-              command={command}
-            />
           </span>
         ) : null}
         {error ? (

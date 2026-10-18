@@ -214,7 +214,7 @@ func checkDisk(add func(Check), in PreflightInput, required int64, unknown int) 
 	case unknown > 0:
 		add(Check{ID: CheckDisk, Status: datamigrate.CheckWarn,
 			Detail: fmt.Sprintf("the source did not report the size of %d volume(s), free space cannot be checked for them", unknown),
-			Fix:    "run du -sh on each volume at the source and compare with the free space shown here"})
+			Fix:    "Check the size of each unreported volume at the source against the free space shown here, then run the preflight again"})
 	case required > 0:
 		add(Check{ID: CheckDisk, Status: datamigrate.CheckPass, Detail: fmt.Sprintf("%d MiB of volumes fit in the free space", required>>20)})
 	}
