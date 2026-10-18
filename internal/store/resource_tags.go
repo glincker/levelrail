@@ -13,12 +13,15 @@ const (
 	ResourceKindDatabase = "database"
 	ResourceKindNode     = "node"
 	ResourceKindDomain   = "domain"
+	ResourceKindBucket   = "bucket"
+	ResourceKindNetwork  = "network"
 )
 
 // ErrResourceViewNotFound is returned when a saved view does not exist for its owner.
 var ErrResourceViewNotFound = errors.New("store: resource view not found")
 
-// ResourceRef identifies one taggable resource.
+// ResourceRef identifies one taggable resource. Name is the stable ID for nodes, buckets and
+// networks (so a rename keeps its tags) and the natural name for apps, databases and domains.
 type ResourceRef struct {
 	Kind string
 	Name string

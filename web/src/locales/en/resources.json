@@ -1,6 +1,6 @@
 {
   "title": "Resources",
-  "description": "Every app, database, node and domain in one searchable list. Tag them, save the views you use, and see what each tag costs.",
+  "description": "Every app, database, node, domain, bucket and private network in one searchable list. Tag them, save the views you use, and see what each tag costs.",
   "search": {
     "label": "Search resources",
     "placeholder": "Search by name, detail or tag"
@@ -11,10 +11,14 @@
     "database": "Databases",
     "node": "Nodes",
     "domain": "Domains",
+    "bucket": "Buckets",
+    "network": "Private networks",
     "appOne": "App",
     "databaseOne": "Database",
     "nodeOne": "Node",
-    "domainOne": "Domain"
+    "domainOne": "Domain",
+    "bucketOne": "Bucket",
+    "networkOne": "Private network"
   },
   "tags": {
     "filter": "Tags",
@@ -61,6 +65,19 @@
     "failed": "The change could not be previewed or applied.",
     "doneToast": "Tag {{tag}} updated on {{count}} resources"
   },
+  "appAction": {
+    "restart": "Restart apps",
+    "redeploy": "Redeploy apps",
+    "restartTitle": "Restart {{count}} apps",
+    "redeployTitle": "Redeploy {{count}} apps",
+    "restartDescription": "Preview which apps would restart. Each app restarts on its own, nothing happens until you apply.",
+    "redeployDescription": "Preview which apps would redeploy their current version. Nothing happens until you apply.",
+    "summaryDry": "Preview: {{would}} would run, {{skipped}} skipped, {{blocked}} blocked.",
+    "summaryDone": "Done: {{done}} started, {{skipped}} skipped, {{blocked}} blocked.",
+    "failed": "The action could not be previewed or applied.",
+    "restartToast": "Restarting {{count}} apps",
+    "redeployToast": "Redeploying {{count}} apps"
+  },
   "status": {
     "ok": "Changed",
     "would_apply": "Will change",
@@ -92,6 +109,8 @@
     "open": "Open the resource explorer",
     "openKeywords": "resources tags explorer search everything",
     "tagged": "Resources tagged {{tag}}",
-    "view": "Saved view: {{name}}"
+    "view": "Saved view: {{name}}",
+    "bucket": "Bucket {{name}}",
+    "network": "Private network {{name}}"
   }
 }

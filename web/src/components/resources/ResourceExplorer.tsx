@@ -13,6 +13,7 @@ import {
   type ConsoleQuery,
   type ConsoleResource,
 } from '@/queries/resources'
+import { BulkAppActionDialog, type BulkAppAction } from './BulkAppActionDialog'
 import { BulkTagDialog } from './BulkTagDialog'
 import { CostByTag } from './CostByTag'
 import { ResourceRows } from './ResourceRows'
@@ -32,8 +33,14 @@ export function ResourceExplorer({
     () => new Map(),
   )
   const [dialog, setDialog] = useState<BulkTagAction | null>(null)
+  const [appAction, setAppAction] = useState<BulkAppAction | null>(null)
   const items = useMemo(() => list.data?.items ?? [], [list.data])
   const keys = useMemo(() => new Set(selected.keys()), [selected])
+  const selectedApps = useMemo(
+    () =>
+      [...selected.values()].filter((r) => r.kind === 'app').map((r) => r.name),
+    [selected],
+  )
 
   function toggle(r: ConsoleResource) {
     setSelected((prev) => {
@@ -134,6 +141,24 @@ export function ResourceExplorer({
             >
               {t('bulk.removeTag')}
             </Button>
+            {selectedApps.length > 0 ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAppAction('restart')}
+                >
+                  {t('appAction.restart')}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setAppAction('redeploy')}
+                >
+                  {t('appAction.redeploy')}
+                </Button>
+              </>
+            ) : null}
             <Button
               size="sm"
               variant="ghost"
@@ -193,6 +218,17 @@ export function ResourceExplorer({
       <aside className="space-y-4">
         <CostByTag onPickTag={addTagFilter} />
       </aside>
+      {appAction ? (
+        <BulkAppActionDialog
+          open
+          onOpenChange={(o) => {
+            if (!o) setAppAction(null)
+          }}
+          action={appAction}
+          names={selectedApps}
+          onDone={() => setSelected(new Map())}
+        />
+      ) : null}
       {dialog ? (
         <BulkTagDialog
           open
