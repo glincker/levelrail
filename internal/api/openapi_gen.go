@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1271 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1286 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -112,6 +112,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetBadgeSettings", Description: "Deploy status badge opt-in (app_badge.go): same GET-is-AbilityRead, PUT-is-AbilityRoot split as exec-access just above, since enabling it hands out an unauthenticated public view of this app's deploy status. GET .../badge.svg itself is registered unauthenticated on purpose (see publicRoutes in authz_matrix_test.go); it 404s on its own when the per-app flag is off, so it never needs this file's own IAM wrapper."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/badge", Ability: "AbilityRoot", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetBadgeSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/badge.svg", Ability: "Public", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePublicAppBadge", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/buckets", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppBuckets", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUnbindAppBucket", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBindAppBucket", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteSpendCap", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetSpendCap", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/budget", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutSpendCap", Description: ""},
@@ -1059,6 +1062,18 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/status-page/incidents/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteStatusIncident", Description: ""},
 	{Method: "POST", Path: "/api/v1/status-page/incidents/{id}/updates", Ability: "AbilityWrite", Group: "Other", Handler: "handlePostStatusIncidentUpdate", Description: ""},
 	{Method: "GET", Path: "/api/v1/status-page/preview", Ability: "AbilityRead", Group: "Other", Handler: "handleStatusPagePreview", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/buckets", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageBuckets", Description: ""},
+	{Method: "POST", Path: "/api/v1/storage/buckets", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateStorageBucket", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/storage/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteStorageBucket", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/buckets/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetStorageBucket", Description: ""},
+	{Method: "PATCH", Path: "/api/v1/storage/buckets/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleUpdateStorageBucket", Description: ""},
+	{Method: "POST", Path: "/api/v1/storage/buckets/{id}/lifecycle/run", Ability: "AbilityWrite", Group: "Other", Handler: "handleSweepStorageBucket", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/storage/buckets/{id}/objects", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteBucketObject", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/buckets/{id}/objects", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleListBucketObjects", Description: ""},
+	{Method: "PUT", Path: "/api/v1/storage/buckets/{id}/objects", Ability: "AbilityWrite", Group: "Other", Handler: "handleUploadBucketObject", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/buckets/{id}/objects/download", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleDownloadBucketObject", Description: ""},
+	{Method: "POST", Path: "/api/v1/storage/buckets/{id}/presign", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handlePresignBucketObject", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/buckets/{id}/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleBucketUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/destinations", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageDestinations", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/destinations", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateStorageDestination", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/storage/destinations/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteStorageDestination", Description: ""},

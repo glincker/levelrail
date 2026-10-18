@@ -84,6 +84,7 @@ export const NAMESPACES = [
   'autoscale',
   'firewall',
   'rules',
+  'storageBuckets',
 ] as const
 
 void i18n

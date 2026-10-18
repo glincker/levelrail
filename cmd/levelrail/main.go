@@ -2997,6 +2997,7 @@ func appOptionsFor(deps dynamicSourceDeps) []application.Option {
 		application.WithProbeAttemptRecorder(deps.db),
 		application.WithWakeProbe(deps.db, appsleep.ConfigFromEnv(os.Getenv).WakeProbeInterval),
 		application.WithStorageTargets(deps.db),
+		application.WithBucketBindings(deps.db),
 		application.WithDatabaseAttachments(deps.db),
 		application.WithDatabaseScope(deps.db),
 		application.WithVaultSettings(deps.db),
