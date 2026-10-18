@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
+import { useImageStatus } from '../queries/dockerIntegration'
 import {
   useCheckImageUpdate,
   useRotateImageUpdateWebhook,
@@ -20,6 +21,7 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
   const setEnabled = useSetImageAutoUpdate(appName)
   const check = useCheckImageUpdate(appName)
   const rotate = useRotateImageUpdateWebhook(appName)
+  const imageStatus = useImageStatus(appName)
 
   function toggle(next: boolean) {
     setEnabled.mutate(next, {
@@ -41,6 +43,9 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
 
   function checkNow() {
     check.mutate(undefined, {
+      onSuccess: () => {
+        void imageStatus.refetch()
+      },
       onError: (error) =>
         toast.add({
           title: t('imageAutoUpdate.toast.checkFailed'),
@@ -78,6 +83,33 @@ export function ImageAutoUpdateCard({ appName }: { appName: string }) {
             aria-label={t('imageAutoUpdate.switchAriaLabel')}
           />
         </div>
+        {imageStatus.data?.source === 'registry' &&
+        (imageStatus.data.update_available ||
+          imageStatus.data.arch_mismatch) ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-tone-warning-border bg-tone-warning-soft px-3 py-2">
+            <div className="space-y-1 text-sm text-tone-warning">
+              {imageStatus.data.update_available ? (
+                <p>{t('imageAutoUpdate.status.updateAvailable')}</p>
+              ) : null}
+              {imageStatus.data.arch_mismatch ? (
+                <p>
+                  {t('imageAutoUpdate.status.archMismatch', {
+                    image: imageStatus.data.image_arch,
+                    node: imageStatus.data.node_arch,
+                  })}
+                </p>
+              ) : null}
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              onClick={checkNow}
+              disabled={check.isPending}
+            >
+              {t('imageAutoUpdate.status.updateNow')}
+            </Button>
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground" role="status">
             {lastResult

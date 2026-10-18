@@ -74,6 +74,36 @@
     "no_registry_digest": "Built locally, nothing to verify",
     "fix": "Set a public key file in the control plane settings, then check again."
   },
+  "dockerHealth": {
+    "title": "Docker engine",
+    "recheck": "Re-check",
+    "freeSpace": "Free space",
+    "summary": "Docker {{version}} on {{platform}}. {{reclaimable}} of {{total}} can be reclaimed.",
+    "status": {
+      "ok": "OK",
+      "warn": "Needs attention",
+      "fail": "Failing",
+      "unknown": "Unknown"
+    }
+  },
+  "lint": {
+    "title": "Dockerfile check",
+    "help": "Paste a Dockerfile to check for root users, floating base tags, missing health checks and single stage builds.",
+    "inputLabel": "Dockerfile contents",
+    "placeholder": "FROM node:22-alpine",
+    "check": "Check",
+    "applyFix": "Apply safe fixes",
+    "clean": "No findings.",
+    "line": "Line {{line}}:",
+    "severity": {
+      "warn": "Warning",
+      "info": "Hint"
+    },
+    "toast": {
+      "failed": "Could not check the Dockerfile.",
+      "fixed": "Fixes applied to the text above."
+    }
+  },
   "signatures": {
     "enforce": "Promotions require a valid image signature.",
     "off": "Signature checks run on request."

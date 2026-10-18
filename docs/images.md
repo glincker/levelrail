@@ -72,3 +72,19 @@ Set `APP_IMAGE_VERIFY_MODE=enforce` to also require a valid signature on every p
 
 - Per node inventory works for the control plane's own node today. Remote agents answer once they report images.
 - Signature checks read the `sha256-<digest>.sig` tag cosign pushes next to the image. Keyless (Fulcio) signatures are not supported.
+
+## Docker engine health
+
+The top of the Images page shows whether the Docker Engine API answers, the engine version, the node platform and how much storage can be reclaimed. When most of Docker's storage is unused, a **Free space** button opens the image cleanup. **Re-check** probes again. From the CLI:
+
+```bash
+levelrail-cli images health
+```
+
+## Dockerfile check
+
+Paste a Dockerfile on the Images page, or run `levelrail-cli images lint ./Dockerfile`, to get hints for a root final user, a floating base tag (no tag or `:latest`), no `HEALTHCHECK`, build tools shipped in a single stage, and a missing `.dockerignore`. **Apply safe fixes** (or `--fix`) adds a non-root `USER 65532:65532` before the final `CMD` and writes a starter `.dockerignore`. Check that your app can run as that user before shipping.
+
+## Update and architecture status
+
+`GET /api/v1/apps/{name}/image-status` (or `levelrail-cli images status <app>`) says whether the app's tag now points at a newer digest and whether the image architecture matches the node. The app's auto-update card shows an **Update now** button when either applies. Private registry credentials are stored encrypted and used for the lookup, never returned.

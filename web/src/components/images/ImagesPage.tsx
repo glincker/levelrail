@@ -17,6 +17,8 @@ import {
   useImageInventory,
   type ImageEntry,
 } from '../../queries/imageInventory'
+import { DockerHealthCard } from './DockerHealthCard'
+import { DockerfileLintCard } from './DockerfileLintCard'
 import { ImageCleanupDialog } from './ImageCleanupDialog'
 import { ImageDetailSheet } from './ImageDetailSheet'
 import { imageTitle, shortId, sizeLabel, uniqueApps } from './imageFormat'
@@ -188,6 +190,12 @@ export function ImagesPage() {
       }
     >
       <div className="flex flex-col gap-4">
+        <DockerHealthCard
+          canFix={isRoot}
+          onFreeSpace={() => {
+            setCleanupOpen(true)
+          }}
+        />
         {inventory.isPending ? <SkeletonList rows={6} /> : null}
 
         {inventory.isError ? (
@@ -254,6 +262,9 @@ export function ImagesPage() {
             />
           </>
         ) : null}
+      </div>
+      <div className="mt-4">
+        <DockerfileLintCard />
       </div>
       <ImageDetailSheet
         node={node}
