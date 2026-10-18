@@ -36,6 +36,8 @@ func TestRun_FunctionsDeployListInvokeDelete(t *testing.T) {
 			_ = json.NewEncoder(w).Encode(map[string]any{"enabled": false})
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/fn":
 			_ = json.NewEncoder(w).Encode(appResource{Name: "fn", FallbackURL: fnSrv.URL})
+		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/functions/fn/route":
+			w.WriteHeader(http.StatusNoContent)
 		case r.Method == http.MethodDelete && r.URL.Path == "/api/v1/apps/fn":
 			w.WriteHeader(http.StatusNoContent)
 		default:
