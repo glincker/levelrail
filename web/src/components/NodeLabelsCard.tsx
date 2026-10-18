@@ -15,12 +15,15 @@ import { toast } from '@/components/ui/toast'
 import { useNodeLabels, useSetNodeLabels } from '../queries/nodeMoves'
 import {
   labelsFromRows,
+  newLabelRow,
   rowsFromLabels,
   sameLabels,
   type LabelRow,
 } from '../lib/labelRows'
 import type { NodeLabels } from '../types/nodeMoves'
 import { LabelRowsEditor } from './nodes/LabelRowsEditor'
+
+const KNOWN_KEYS = ['region', 'zone', 'provider'] as const
 
 export function NodeLabelsCard({ nodeId }: { nodeId: string }) {
   const { t } = useTranslation('nodes')
@@ -89,6 +92,24 @@ function LabelsForm({ nodeId, saved }: { nodeId: string; saved: NodeLabels }) {
         removeLabel={(key) => t('labels.remove', { key })}
         disabled={save.isPending}
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        {KNOWN_KEYS.filter((key) => !rows.some((r) => r.key === key)).map(
+          (key) => (
+            <Button
+              key={key}
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={save.isPending}
+              onClick={() => setRows([...rows, newLabelRow(key, '')])}
+            >
+              {t('labels.addKnown', { key })}
+            </Button>
+          ),
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">{t('labels.knownHint')}</p>
 
       <p className="text-xs text-muted-foreground">
         {t('labels.keyRule')} {t('labels.valueRule')}

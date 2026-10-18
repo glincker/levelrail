@@ -102,6 +102,8 @@ type Request struct {
 	Policy Policy
 	// Prefer wins when it is eligible, e.g. the node that serves ingress.
 	Prefer string
+	// Peers are node IDs already running this workload's other replicas.
+	Peers []string
 }
 
 // Rejection says why one candidate was filtered out.
@@ -151,7 +153,9 @@ func Filter(c Candidate, req Request) string {
 // verified node; ties fall to load, then node id, so the choice is stable.
 func Spread(cands []Candidate, req Request) (Decision, error) {
 	d := newDecision(cands, req)
-	ranked := rank(d.Considered)
+	applyZones(cands, d.Considered)
+	zs := newZoneSpread(cands, d.Considered, req.Peers)
+	ranked := rankZones(d.Considered, zs)
 	if len(ranked) == 0 {
 		return d, fmt.Errorf("%w: %s", ErrNoEligibleNode, summarize(d.Rejected))
 	}
@@ -164,7 +168,7 @@ func Spread(cands []Candidate, req Request) (Decision, error) {
 		}
 	}
 	d.NodeID = ranked[0].NodeID
-	d.Why = explainWinner(ranked, prefer)
+	d.Why = explainWinner(ranked, prefer, zs.active)
 	if ranked[0].Unverified {
 		d.Warnings = append(d.Warnings, "capacity is unknown on the chosen node, so the fit could not be verified")
 	}

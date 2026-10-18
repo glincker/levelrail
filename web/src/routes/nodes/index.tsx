@@ -10,6 +10,7 @@ import { NodesTable } from '../../components/NodesTable'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
+import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 import { countResourcesByNode } from '../../lib/nodeResourceCounts'
 
@@ -71,6 +72,7 @@ function NodeListPage() {
       }
     >
       <BuildStrainSuggestion nodes={nodes} />
+      <ZoneSpreadCard />
       {nodes.length === 0 ? (
         <EmptyState
           icon={<HardDrivesIcon className="size-5" />}

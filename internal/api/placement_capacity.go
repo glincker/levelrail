@@ -105,8 +105,17 @@ func (rt *Router) candidatesFrom(ctx context.Context, inv placementInventory) ([
 			load += inv.counts[""]
 			requested = requested.Add(inv.requested[""])
 		}
+		nodeLabels := labels[n.ID]
+		if _, ok := nodeLabels[placement.LabelRegion]; !ok && n.Region != "" {
+			merged := make(map[string]string, len(nodeLabels)+1)
+			for k, v := range nodeLabels {
+				merged[k] = v
+			}
+			merged[placement.LabelRegion] = n.Region
+			nodeLabels = merged
+		}
 		out = append(out, placement.Candidate{
-			ID: n.ID, Name: n.Name, Labels: labels[n.ID], Schedulable: n.Schedulable,
+			ID: n.ID, Name: n.Name, Labels: nodeLabels, Schedulable: n.Schedulable,
 			Online: n.Status == store.NodeStatusOnline, Load: load,
 			Capacity: rt.nodeCapacity(n.ID), Requested: requested,
 		})

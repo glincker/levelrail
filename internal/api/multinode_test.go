@@ -92,6 +92,23 @@ func TestNodeLabels(t *testing.T) {
 	}
 }
 
+func TestListZones(t *testing.T) {
+	rt, db, cookie := newMultiNodeRouter(t)
+	seedMNNode(t, db, "n1", map[string]string{"zone": "a", "region": "eu", "provider": "hetzner"})
+	seedMNNode(t, db, "n2", map[string]string{"zone": "b"})
+	rec := mnDo(t, rt, cookie, http.MethodGet, "/api/v1/nodes/zones", "")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d: %s", rec.Code, rec.Body.String())
+	}
+	var got zonesResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !got.Labeled || len(got.Zones) != 2 || len(got.Nodes) != 2 || got.Zones[0].Region != "eu" {
+		t.Fatalf("zones = %+v", got)
+	}
+}
+
 func seedMNApp(t *testing.T, db *store.DB, node string) {
 	const name = "web"
 	t.Helper()

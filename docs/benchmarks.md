@@ -3,7 +3,7 @@ title: "Load and failover benchmarks"
 description: How to measure throughput, latency, ingress overhead and failover behavior under load, and which numbers are still unmeasured.
 ---
 
-This page describes the harness. It does not publish results yet: the harness was written and unit tested on a machine with no Docker daemon, so every number in the results table below is marked not yet measured. [Performance](/performance) covers the idle footprint instead.
+This page describes the harness and publishes the few numbers measured so far. Anything not in a dated, hardware-labeled row is marked not yet measured. [Performance](/performance) covers the idle footprint instead.
 
 ## What it measures
 
@@ -80,17 +80,32 @@ Publish these with every result, via `--hardware` and the report's `client` bloc
 
 ## Results
 
-Not yet measured. No Docker daemon was available where the harness was written, so none of these have been run. Do not quote a number from this table until a row has a date and a hardware note.
+Only rows with a date and a hardware note are measured. Everything else is not yet measured, and no limit is claimed for it.
+
+### Load driver against the fixture app, loopback (2026-10-18)
+
+Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Go 1.26.9. The fixture app (`test/fixtures/bench-app`, built from source, not in a container) and the load driver ran on the same machine over loopback, 15 seconds per rate, 1 replica, no ingress, no Docker. This shows the ceiling of the driver and the fixture, not of a Levelrail deployment: it is a client-side floor to subtract from real runs, not a production figure.
+
+| Rate (req/s) | Achieved | Errors | p50 ms | p95 ms | p99 ms | Max ms | Client saturated |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 500 | 500 | 0 of 7500 | 0.56 | 3.77 | 9.57 | 26.6 | 0 |
+| 2000 | 2000 | 0 of 30000 | 0.18 | 0.45 | 4.93 | 54.9 | 0 |
+| 5000 | 5000 | 0 of 75000 | 0.16 | 6.16 | 16.45 | 40.7 | 0 |
+
+Not yet measured: anything through the ingress, with Docker, across nodes or across zones.
 
 | Scenario | Rate | Result | Status |
 | --- | --- | --- | --- |
-| Steady state, requests per second achieved | not set | not yet measured | not yet measured |
-| Steady state, p50 / p95 / p99 latency | not set | not yet measured | not yet measured |
+| Steady state through the ingress, requests per second achieved | not set | not yet measured | not yet measured |
+| Steady state through the ingress, p50 / p95 / p99 latency | not set | not yet measured | not yet measured |
 | Ingress overhead, p50 / p95 / p99 | not set | not yet measured | not yet measured |
+| Zone loss: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
 | Replica stop: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
 | Node drain: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
 | Control plane restart: ingress kept serving, outage length | not set | not yet measured | not yet measured |
 
 ## What is tested without Docker
+
+Zone-aware placement is tested against a fake fleet in `internal/placement`: replicas spread one per zone, and after losing a whole zone the replacement lands in a surviving zone. That test proves the scheduling decision, not request-level recovery, which is the unmeasured zone loss row above.
 
 The load driver is unit tested against fake HTTP servers: arrival schedule, percentile math, error accounting, coordinated omission and failure-window analysis. Deploying the fixture and running the scenarios against real containers is not covered by those tests.
