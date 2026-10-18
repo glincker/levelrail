@@ -537,7 +537,7 @@ func run(logger *slog.Logger) error {
 
 	supplyChainSvc := newSupplyChainService(ctx, logger, db, client, agentDataDir, b.ShortName)
 
-	builder, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc, guard)
+	builder, buildLimiter, closeBuilder, err := loadBuilder(ctx, logger, db, telemetryDB, secretsManager, agentRegistry, supplyChainSvc, guard)
 	if err != nil {
 		// Non-fatal: the control plane still starts, with build-dependent paths unavailable.
 		logger.Warn("builder not configured: git webhook deploys and manual build trigger are both unavailable", slog.String("error", err.Error()))
@@ -574,6 +574,9 @@ func run(logger *slog.Logger) error {
 	var restartRequested atomic.Bool
 	apiHandler, apiRouter := rootHandler(logger, b, db, telemetryDB, alertingDB, secretsManager, masterKeyFilePath, webhookHandler, client, builder, deployRecorder, logBroadcaster, deployDispatcher, backupRunner, backupVerifyRunner, agentRegistry, agentCA.Fingerprint(), emailSender, scheduledTaskRunner, engine, ingressDriver, pushVAPIDPublicKey)
 	apiRouter.WarmTrustRoot()
+	if buildLimiter != nil {
+		apiRouter.SetBuildLoad(buildLimiter)
+	}
 	if wh, ok := webhookHandler.(*webhook.Handler); ok {
 		wh.UseSourceCache(apiRouter.SourceCache())
 	}
@@ -1646,10 +1649,10 @@ func loadOrGenerateMasterKey(dataDir string) (mk *secrets.MasterKey, keyPath str
 
 // Shared by the git webhook and the manual build trigger, so both use one BuildKit connection.
 // Returns an error rather than a partially wired builder; the caller treats it as non-fatal.
-func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service, guard dockerguard.Booted) (*deploy.Pipeline, func() error, error) {
+func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemetryDB *telemetry.DB, secretsManager *secrets.Manager, agentRegistry *agent.Registry, supplyChain *supplychain.Service, guard dockerguard.Booted) (*deploy.Pipeline, *build.Limiter, func() error, error) {
 	rawDockerCli, err := rawDockerClient(guard.Host)
 	if err != nil {
-		return nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
+		return nil, nil, nil, fmt.Errorf("new docker client for buildkit: %w", err)
 	}
 
 	connectCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
@@ -1657,7 +1660,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 	cancel()
 	if err != nil {
 		_ = rawDockerCli.Close()
-		return nil, nil, fmt.Errorf("connect to buildkit: %w", err)
+		return nil, nil, nil, fmt.Errorf("connect to buildkit: %w", err)
 	}
 
 	closer := func() error {
@@ -1701,8 +1704,9 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 
 	router := build.NewRouter(buildClient, buildNodeSource(db, agentRegistry), agent.NewBuildDispatcher(agentRegistry), build.WithRouterLogger(logger))
 	limiter := build.NewLimiter(router, api.BuildLimitsSource(db, build.LimitsFromEnv(os.LookupEnv)),
-		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger))
-	return deploy.New(limiter, db, deployOpts...), closer, nil
+		build.WithRunRecorder(api.BuildRunRecorder(db)), build.WithLimiterLogger(logger),
+		build.WithNodeResolver(router.SelectedNode), build.WithImageSizer(router.ImageSize))
+	return deploy.New(limiter, db, deployOpts...), limiter, closer, nil
 }
 
 // Requires every input, so any missing one returns an error rather than a partially wired handler.
@@ -1895,6 +1899,9 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
 		imageInventoryOption(func(nodeID string) (docker.Runtime, error) {
+			return resolveNodeTransport(client, agentRegistry, nodeID)
+		}),
+		buildCacheOption(func(nodeID string) (docker.Runtime, error) {
 			return resolveNodeTransport(client, agentRegistry, nodeID)
 		}),
 		imageVerifyOption(logger),

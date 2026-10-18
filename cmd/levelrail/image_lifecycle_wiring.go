@@ -48,6 +48,23 @@ func imageInventoryOption(resolve func(nodeID string) (docker.Runtime, error)) a
 	})
 }
 
+// buildCacheOption exposes the BuildKit cache of every node whose runtime can report it.
+func buildCacheOption(resolve func(nodeID string) (docker.Runtime, error)) api.Option {
+	return api.WithBuildCache(func(nodeID string) (docker.BuildCacheAdmin, error) {
+		rt, err := resolve(nodeID)
+		if err != nil {
+			return nil, err
+		}
+		admin, ok := rt.(docker.BuildCacheAdmin)
+		if !ok {
+			return nil, errUnsupportedBuildCache
+		}
+		return admin, nil
+	})
+}
+
+const errUnsupportedBuildCache = imageInventoryError("this node does not report its build cache yet")
+
 type imageInventoryError string
 
 func (e imageInventoryError) Error() string { return string(e) }

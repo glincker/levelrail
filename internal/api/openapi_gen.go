@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1310 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1316 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -121,6 +121,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/budget/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSpendCapHistory", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/build-stats", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleBuildStats", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/builds", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTriggerBuild", Description: "Manual build trigger (see Builder/WithBuilder above and handleTriggerBuild's own doc comment): builds an image from a git source through the same internal/deploy.Pipeline the webhook receiver uses, for an operator with no working git webhook configured. AbilityDeploy, the same boundary as the image-tag trigger above: this also ultimately writes desired state."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/builds/{id}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelBuild", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/builds/{id}/retry", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRetryBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/cache", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppCache", Description: "App-level cache view, purge across the app's domains, purge history and the one-click static assets preset; instance cache and CDN overview."},
 	{Method: "POST", Path: "/api/v1/apps/{name}/cache/preset", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyCachePreset", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/cache/purge", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePurgeAppCache", Description: ""},
@@ -760,6 +762,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/build-limits", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuildLimits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/build-limits", Ability: "AbilityRoot", Group: "Other", Handler: "handleSetBuildLimits", Description: "Limits decide when every app's builds are killed, so root only."},
 	{Method: "POST", Path: "/api/v1/build/detect", Ability: "AbilityDeploy", Group: "Other", Handler: "handleDetectFramework", Description: "Framework pre-flight detection (handleDetectFramework's own doc comment): also not scoped to an existing app, same AbilityDeploy boundary as the branch listing above."},
+	{Method: "GET", Path: "/api/v1/builds", Ability: "AbilityRead", Group: "Other", Handler: "handleListBuilds", Description: ""},
+	{Method: "GET", Path: "/api/v1/builds/cache", Ability: "AbilityRead", Group: "Other", Handler: "handleBuildCache", Description: ""},
+	{Method: "POST", Path: "/api/v1/builds/cache/prune", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleBuildCachePrune", Description: "Pruning frees disk shared by every app's builds, so write-sensitive even as a preview."},
+	{Method: "GET", Path: "/api/v1/builds/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},

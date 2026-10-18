@@ -103,6 +103,24 @@ func (r *Router) BuildRailpack(ctx context.Context, req RailpackRequest, progres
 	return r.dispatch(ctx, nodeID, remoteReq, progress)
 }
 
+// SelectedNode names the node the next build would run on, "" for the local one.
+func (r *Router) SelectedNode(ctx context.Context) string {
+	id, err := r.selectNode(ctx)
+	if err != nil {
+		return ""
+	}
+	return id
+}
+
+// ImageSize reports a built image's size in bytes from the local image store, 0 when unknown.
+func (r *Router) ImageSize(ctx context.Context, tag string) int64 {
+	info, err := r.local.docker.ImageInspect(ctx, tag)
+	if err != nil {
+		return 0
+	}
+	return info.Size
+}
+
 func (r *Router) selectNode(ctx context.Context) (string, error) {
 	if r.nodes == nil || r.remote == nil {
 		return "", nil

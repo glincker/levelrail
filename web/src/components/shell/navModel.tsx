@@ -27,6 +27,7 @@ import {
   KeyIcon,
   PackageIcon,
   CubeIcon,
+  HammerIcon,
   PlugsConnectedIcon,
   PlugsIcon,
   PulseIcon,
@@ -63,6 +64,7 @@ export type GlobalTo =
   | '/functions'
   | '/deploy-timeline'
   | '/images'
+  | '/builds'
   | '/projects'
   | '/databases'
   | '/backups'
@@ -176,6 +178,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Images',
         to: '/images',
         icon: <CubeIcon />,
+      },
+      {
+        id: 'builds',
+        label: 'Builds',
+        to: '/builds',
+        icon: <HammerIcon />,
       },
       {
         id: 'registry',

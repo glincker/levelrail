@@ -29,6 +29,9 @@ type Run struct {
 	CachedSteps int           `json:"cached_steps"`
 	TotalSteps  int           `json:"total_steps"`
 	Error       string        `json:"error,omitempty"`
+	Node        string        `json:"node,omitempty"`
+	Platform    string        `json:"platform,omitempty"`
+	ImageBytes  int64         `json:"image_bytes,omitempty"`
 }
 
 // Trend summarises the last N builds of one app. Percentiles cover successful

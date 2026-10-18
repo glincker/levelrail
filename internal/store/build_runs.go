@@ -27,15 +27,18 @@ type BuildRun struct {
 	CachedSteps int
 	TotalSteps  int
 	Error       string
+	NodeID      string
+	Platform    string
+	ImageBytes  int64
 }
 
 // RecordBuildRun appends one finished build and trims the app's history.
 func (db *DB) RecordBuildRun(ctx context.Context, r BuildRun) error {
 	_, err := db.ExecContext(ctx, `INSERT INTO build_runs
-		(app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, platform, image_bytes)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		r.App, r.Tag, r.StartedAt.UTC().Format(time.RFC3339Nano), r.DurationMS, r.QueueWaitMS,
-		r.Status, r.CachedSteps, r.TotalSteps, r.Error)
+		r.Status, r.CachedSteps, r.TotalSteps, r.Error, r.NodeID, r.Platform, r.ImageBytes)
 	if err != nil {
 		return fmt.Errorf("store: record build run: %w", err)
 	}
@@ -52,8 +55,30 @@ func (db *DB) ListBuildRuns(ctx context.Context, app string, limit int) ([]Build
 	if limit <= 0 || limit > buildRunsListMaxRows {
 		limit = buildRunsListMaxRows
 	}
-	rows, err := db.QueryContext(ctx, `SELECT app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error
-		FROM build_runs WHERE app_name = ? ORDER BY id DESC LIMIT ?`, app, limit)
+	return db.queryBuildRuns(ctx, `WHERE app_name = ? ORDER BY id DESC LIMIT ?`, app, limit)
+}
+
+// ListAllBuildRuns returns the newest builds of every app, newest first.
+func (db *DB) ListAllBuildRuns(ctx context.Context, limit int) ([]BuildRun, error) {
+	if limit <= 0 || limit > buildRunsListMaxRows {
+		limit = buildRunsListMaxRows
+	}
+	return db.queryBuildRuns(ctx, `ORDER BY id DESC LIMIT ?`, limit)
+}
+
+// ListBuildAttempts returns the newest deploy attempts that built from source
+// (plain image and compose deploys build nothing), newest first.
+func (db *DB) ListBuildAttempts(ctx context.Context, limit int) ([]DeployAttempt, error) {
+	if limit <= 0 || limit > buildRunsListMaxRows {
+		limit = buildRunsListMaxRows
+	}
+	return db.queryDeployAttempts(ctx, "build", `source NOT IN (?, ?) ORDER BY started_at DESC LIMIT ?`,
+		DeployAttemptSourceImage, DeployAttemptSourceCompose, limit)
+}
+
+func (db *DB) queryBuildRuns(ctx context.Context, clause string, args ...any) ([]BuildRun, error) {
+	rows, err := db.QueryContext(ctx, `SELECT app_name, tag, started_at, duration_ms, queue_wait_ms, status, cached_steps, total_steps, error, node_id, platform, image_bytes
+		FROM build_runs `+clause, args...) //nolint:gosec // clause is a package-internal constant
 	if err != nil {
 		return nil, fmt.Errorf("store: list build runs: %w", err)
 	}
@@ -62,7 +87,7 @@ func (db *DB) ListBuildRuns(ctx context.Context, app string, limit int) ([]Build
 	for rows.Next() {
 		var r BuildRun
 		var started string
-		if err := rows.Scan(&r.App, &r.Tag, &started, &r.DurationMS, &r.QueueWaitMS, &r.Status, &r.CachedSteps, &r.TotalSteps, &r.Error); err != nil {
+		if err := rows.Scan(&r.App, &r.Tag, &started, &r.DurationMS, &r.QueueWaitMS, &r.Status, &r.CachedSteps, &r.TotalSteps, &r.Error, &r.NodeID, &r.Platform, &r.ImageBytes); err != nil {
 			return nil, fmt.Errorf("store: scan build run: %w", err)
 		}
 		r.StartedAt, _ = time.Parse(time.RFC3339Nano, started)

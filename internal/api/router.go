@@ -199,18 +199,21 @@ type Router struct {
 	localNodeID            string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone               string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
-	meshSettings           meshSettingsState      // see mesh_settings.go
-	fixit                  fixitState             // see fixit.go
-	buildPerf              BuildPerformanceStore  // see build_performance.go
-	restart                restartState           // see system_restart.go
-	memAttribution         memoryAttributionCache // see node_memory_attribution.go
-	nodeHostReports        NodeHostReports        // nil is valid: remote rows keep the placed-services-only shape
-	dockerGuard            DockerGuardController  // nil is valid: the docker guard routes report it as not configured
-	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	containers             ContainerLister        // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
-	dockerDiskUsage        DockerDiskUsager       // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
-	imageInventory         ImageInventoryResolver // nil: /api/v1/images routes return 501
+	meshSettings           meshSettingsState                                             // see mesh_settings.go
+	fixit                  fixitState                                                    // see fixit.go
+	buildPerf              BuildPerformanceStore                                         // see build_performance.go
+	buildLoad              BuildLoadSource                                               // nil: the build center shows no live slot usage
+	buildCacheNodes        BuildCacheResolver                                            // nil: build cache routes return 501
+	buildRetrier           func(ctx context.Context, app, branch string) (string, error) // test seam, nil means TriggerScheduledDeploy
+	restart                restartState                                                  // see system_restart.go
+	memAttribution         memoryAttributionCache                                        // see node_memory_attribution.go
+	nodeHostReports        NodeHostReports                                               // nil is valid: remote rows keep the placed-services-only shape
+	dockerGuard            DockerGuardController                                         // nil is valid: the docker guard routes report it as not configured
+	dockerPinger           DockerPinger                                                  // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images                 ImageLister                                                   // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	containers             ContainerLister                                               // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
+	dockerDiskUsage        DockerDiskUsager                                              // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	imageInventory         ImageInventoryResolver                                        // nil: /api/v1/images routes return 501
 	imageVerifyKey         *ecdsa.PublicKey
 	imageVerifyMode        string
 	imageVerifier          *imagelife.Verifier
