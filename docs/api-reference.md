@@ -770,6 +770,7 @@ Endpoints for:
 | GET | /api/v1/nodes/{id}/security/events | AbilityRoot | handleListNodeSecurityEvents |
 | POST | /api/v1/nodes/{id}/cert/renew | AbilityRoot | handleRenewNodeCert |
 | GET | /api/v1/nodes/allocations | AbilityRoot | handleNodeAllocations |
+| GET | /api/v1/nodes/zones | AbilityRoot | handleListZones |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

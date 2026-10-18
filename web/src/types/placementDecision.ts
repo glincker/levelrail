@@ -66,3 +66,28 @@ export interface NodeAllocations {
   policy: PlacementPolicy
   nodes: NodeAllocation[]
 }
+
+export interface ZoneSummary {
+  zone: string
+  region?: string
+  providers?: string[]
+  node_ids: string[]
+  online_nodes: number
+  workloads: number
+}
+
+export interface ZoneNode {
+  node_id: string
+  name: string
+  zone?: string
+  region?: string
+  provider?: string
+  online: boolean
+  workloads: number
+}
+
+export interface ZonesView {
+  zones: ZoneSummary[]
+  nodes: ZoneNode[]
+  labeled: boolean
+}

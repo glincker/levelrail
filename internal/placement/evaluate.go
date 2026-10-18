@@ -10,6 +10,8 @@ import (
 type Evaluation struct {
 	NodeID     string      `json:"node_id"`
 	Name       string      `json:"name"`
+	Zone       string      `json:"zone,omitempty"`
+	Region     string      `json:"region,omitempty"`
 	Eligible   bool        `json:"eligible"`
 	Reason     string      `json:"reason,omitempty"`
 	Capacity   bool        `json:"capacity_blocked,omitempty"`
@@ -100,13 +102,15 @@ func rank(evals []Evaluation) []Evaluation {
 }
 
 // explainWinner states why w was picked among ranked.
-func explainWinner(ranked []Evaluation, prefer bool) string {
+func explainWinner(ranked []Evaluation, prefer, zoned bool) string {
 	w := ranked[0]
 	switch {
 	case prefer:
 		return "preferred node: it serves ingress locally and it fits"
 	case len(ranked) == 1:
 		return "the only node that fits"
+	case zoned && w.Zone != "":
+		return "spread across failure domains: zone " + w.Zone + " carries the fewest replicas"
 	case w.Unverified:
 		return "no node could be verified, so the least loaded one was chosen"
 	case w.Headroom != nil:

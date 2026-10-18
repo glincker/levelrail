@@ -83,6 +83,8 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
 	case "labels":
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
+	case "zones":
+		return runNodesZones(prog, rest, stdout, stderr, lookupEnv)
 	case "allocations":
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
@@ -111,7 +113,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
-  %[1]s nodes allocations [flags]                                    requested versus allocatable CPU, memory and disk per node
+  %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
+  %[1]s nodes allocations [flags]                                  requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions

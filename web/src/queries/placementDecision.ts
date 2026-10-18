@@ -6,11 +6,13 @@ import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
   NodeAllocations,
   PlacementDecisionView,
+  ZonesView,
 } from '../types/placementDecision'
 import type { NodeMoveKind } from '../types/nodeMoves'
 
 export const placementDecisionKeys = {
   allocations: () => ['nodes', 'allocations'] as const,
+  zones: () => ['nodes', 'zones'] as const,
   decision: (kind: NodeMoveKind, name: string) =>
     ['placement', kind, name, 'decision'] as const,
 }
@@ -34,6 +36,15 @@ export function useNodeAllocations() {
         '/api/v1/nodes/allocations',
         'fetch node allocations',
       ),
+    retry: false,
+  })
+}
+
+export function useZones() {
+  return useQuery({
+    queryKey: placementDecisionKeys.zones(),
+    queryFn: () =>
+      getJson<ZonesView>('/api/v1/nodes/zones', 'fetch node zones'),
     retry: false,
   })
 }

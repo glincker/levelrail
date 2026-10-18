@@ -135,7 +135,24 @@
     "keyRule": "Keys: lowercase letters, digits, dot, underscore, dash and slash, 1 to 63 characters.",
     "valueRule": "Values: letters, digits, dot, underscore and dash, 1 to 63 characters. At most 32 labels.",
     "duplicate": "Each key can be used once.",
-    "incomplete": "Fill in both a key and a value, or remove the empty row."
+    "incomplete": "Fill in both a key and a value, or remove the empty row.",
+    "addKnown": "Add {{key}} label",
+    "knownHint": "region, zone and provider name this node's failure domain. When zones are set, replicas spread across them."
+  },
+  "zones": {
+    "title": "Failure domains",
+    "description": "How workloads spread across zones. With zone labels set, new placements and drains prefer the zone carrying the fewest workloads.",
+    "unlabeledZone": "No zone",
+    "nodes": "{{online}} of {{total}} nodes online",
+    "workloads_one": "{{count}} workload",
+    "workloads_other": "{{count}} workloads",
+    "share": "{{pct}}% of workloads in {{zone}}",
+    "loadFailed": "Could not load the zones.",
+    "retry": "Try again",
+    "unlabeledTitle": "No zone labels yet",
+    "unlabeledBody": "Without a zone label on at least one node, replicas are not spread across failure domains.",
+    "fix": "Set a zone on a node",
+    "concentrated": "Most workloads sit in one zone, so losing it takes most of them down."
   },
   "placement": {
     "title": "Placement",

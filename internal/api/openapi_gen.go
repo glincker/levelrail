@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1274 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1275 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -701,6 +701,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/nodes/resource-usage", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFleetResourceUsage", Description: "Fleet-wide latest CPU/memory/disk snapshot plus rollup (node_resource_usage.go), the node-scoped counterpart to GET /apps/resource-usage above: registered as a literal path segment under /nodes/, which Go's net/http mux matches ahead of the /nodes/{id} wildcard above regardless of registration order, the same precedent apps/resource-usage already relies on."},
 	{Method: "POST", Path: "/api/v1/nodes/ssh-provision", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateSSHNodeProvision", Description: "SSH-based node provisioning: adopts a machine the operator already has instead of creating one at a cloud provider, same AbilityRoot boundary as every other node route above (an SSH credential is at least as sensitive as a join token or a provider credential). The create route has no path wildcard, so it can live under /api/v1/nodes/ like /api/v1/nodes/provision does; the show route needs a wildcard {id} and so, like /api/v1/node-provisions/{id} above, must be a top-level sibling rather than nested under /api/v1/nodes/{id}/...: \"/api/v1/nodes/ssh-provisions/{id}\" would conflict with \"/api/v1/nodes/{id}/health\" the exact way that comment already explains for the cloud path."},
 	{Method: "POST", Path: "/api/v1/nodes/ssh-provision/preflight", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleSSHProvisionPreflight", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/zones", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListZones", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
