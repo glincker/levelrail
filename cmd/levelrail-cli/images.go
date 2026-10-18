@@ -16,6 +16,9 @@ func imagesUsage(prog string) string {
   %[1]s images layers <image-id> [--node N]
   %[1]s images gc [--node N] [--keep N] [--min-age-hours H] [--apply]
   %[1]s images verify (<image-id> | --ref repo@sha256:...) [--node N]
+  %[1]s images lint <Dockerfile> [--fix]
+  %[1]s images health
+  %[1]s images status <app>
 
 Every image on a node with its size, which apps use it and why it is kept.
 gc previews by default and only removes images with --apply. Live images,
@@ -42,6 +45,12 @@ func runImages(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runImagesGC(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
 		return runImagesVerify(prog, args[1:], stdout, stderr, lookupEnv)
+	case "lint":
+		return runImagesLint(prog, args[1:], stdout, stderr, lookupEnv)
+	case "health":
+		return runImagesHealth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status":
+		return runImagesStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown images subcommand %q\n\n%s", prog, args[0], imagesUsage(prog))
 	return exitUsage

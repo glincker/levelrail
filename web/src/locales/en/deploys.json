@@ -90,6 +90,12 @@
     "checking": "Checking...",
     "lastCheck": "Last check ({{when}}): {{result}}",
     "neverChecked": "Not checked yet.",
+    "status": {
+      "updateAvailable": "A newer image is available for this tag.",
+      "upToDate": "Image is up to date.",
+      "updateNow": "Update now",
+      "archMismatch": "This image is built for {{image}} but the node runs {{node}}. It may fail to start."
+    },
     "toast": {
       "enabled": "Image auto-update enabled.",
       "disabled": "Image auto-update disabled.",

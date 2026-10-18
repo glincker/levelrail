@@ -1510,7 +1510,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/firewall/edge/audit | AbilityRead | handleFirewallEdgeAudit |
 | GET | /api/v1/images | AbilityRead | handleListImageInventory |
 | GET | /api/v1/images/layers | AbilityRead | handleImageLayerBreakdown |
-| POST | /api/v1/images/verify | AbilityRead | handleImageVerify |
+| POST | /api/v1/images/verify | AbilityWrite | handleImageVerify |
 | POST | /api/v1/images/gc | AbilityRoot | handleImageGC |
 | GET | /api/v1/functions | AbilityRead | handleListFunctions |
 | GET | /api/v1/functions/runtimes | AbilityRead | handleFunctionRuntimes |
@@ -1536,9 +1536,9 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/private-networks/{id} | AbilityRoot | handleDeletePrivateNetwork |
 | GET | /api/v1/resources | AbilityRead | handleListResources |
 | POST | /api/v1/resources/tags/bulk | AbilityWrite | handleBulkResourceTags |
-| GET | /api/v1/resources/views | AbilityRead | handleListResourceViews |
-| POST | /api/v1/resources/views | AbilityRead | handleSaveResourceView |
-| DELETE | /api/v1/resources/views/{id} | AbilityRead | handleDeleteResourceView |
+| GET | /api/v1/resources/views | AbilityWrite | handleListResourceViews |
+| POST | /api/v1/resources/views | AbilityWrite | handleSaveResourceView |
+| DELETE | /api/v1/resources/views/{id} | AbilityWrite | handleDeleteResourceView |
 | GET | /api/v1/functions/{name}/route | AbilityRead | handleListFunctionRoutes |
 | PUT | /api/v1/functions/{name}/route | AbilityDeploy | handleSetFunctionRoute |
 | DELETE | /api/v1/functions/{name}/route | AbilityDeploy | handleDeleteFunctionRoute |

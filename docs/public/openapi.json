@@ -64564,7 +64564,7 @@
     },
     "/api/v1/images/verify": {
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleImageVerify",
         "requestBody": {
           "content": {
@@ -64630,7 +64630,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -64638,7 +64638,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       }
     },
     "/api/v1/imports/analyze": {
@@ -85186,7 +85186,7 @@
     },
     "/api/v1/resources/views": {
       "get": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleListResourceViews",
         "responses": {
           "200": {
@@ -85241,7 +85241,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -85249,10 +85249,10 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       },
       "post": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleSaveResourceView",
         "requestBody": {
           "content": {
@@ -85318,7 +85318,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -85326,12 +85326,12 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       }
     },
     "/api/v1/resources/views/{id}": {
       "delete": {
-        "description": "Requires the `read` ability.",
+        "description": "Requires the `write` ability.",
         "operationId": "handleDeleteResourceView",
         "parameters": [
           {
@@ -85396,7 +85396,7 @@
         "security": [
           {
             "bearerAuth": [
-              "read"
+              "write"
             ]
           }
         ],
@@ -85404,7 +85404,7 @@
         "tags": [
           "Other"
         ],
-        "x-required-ability": "read"
+        "x-required-ability": "write"
       }
     },
     "/api/v1/roles": {
