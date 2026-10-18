@@ -1495,6 +1495,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStartFirewallEdgeAttack |
 | DELETE | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStopFirewallEdgeAttack |
 | GET | /api/v1/firewall/edge/audit | AbilityRead | handleFirewallEdgeAudit |
+| GET | /api/v1/resources | AbilityRead | handleListResources |
+| POST | /api/v1/resources/tags/bulk | AbilityWrite | handleBulkResourceTags |
+| GET | /api/v1/resources/views | AbilityRead | handleListResourceViews |
+| POST | /api/v1/resources/views | AbilityRead | handleSaveResourceView |
+| DELETE | /api/v1/resources/views/{id} | AbilityRead | handleDeleteResourceView |
 
 ## See also
 

@@ -56,6 +56,7 @@ type Report struct {
 	Environments []Group  `json:"environments"`
 	Teams        []Group  `json:"teams"`
 	Movers       []Group  `json:"movers"`
+	Tags         []Group  `json:"tags"`
 	// Forecast is the projected month end total, set for periods that
 	// include the current month's elapsed days.
 	Forecast *float64 `json:"forecast,omitempty"`

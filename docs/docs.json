@@ -260,6 +260,7 @@
             "pages": [
               "managing-apps-at-scale",
               "tags",
+              "resource-console",
               "command-palette",
               "cost-estimate",
               "usage-and-cost",

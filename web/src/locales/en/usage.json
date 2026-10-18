@@ -28,7 +28,8 @@
     "project": "Project",
     "environment": "Environment",
     "team": "Team",
-    "resource": "App or database"
+    "resource": "App or database",
+    "tag": "Tag"
   },
   "table": {
     "label": "Cost ranking",
@@ -38,6 +39,8 @@
     "change": "Change",
     "trend": "Trend",
     "unassigned": "Unassigned",
+    "untagged": "Untagged",
+    "tagNote": "A resource with several tags is counted under each of them, so tag totals can add up to more than the report total.",
     "empty": "Nothing to show for this period yet."
   },
   "movers": {

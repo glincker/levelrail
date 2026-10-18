@@ -178,6 +178,7 @@ func (rt *Router) handleUsageReport(w http.ResponseWriter, r *http.Request) {
 	}
 	rows, prev = filterUsageRows(rows, keep), filterUsageRows(prev, keep)
 	report := usagecost.Rollup(period, prevPeriod, rows, prev, seesIdle)
+	report.Tags = usagecost.RollupTags(period, prevPeriod, rows, prev, rt.tagNamesByResource(ctx))
 	resp := usageReportResponse{
 		Report: report, Currency: settings.Currency, Mode: settings.Mode, Basis: settings.Basis,
 		Labels: visibleUsageLabels(report, rt.usageLabels(ctx)), UnpricedNodes: []string{}, IncludesUnallocated: seesIdle,

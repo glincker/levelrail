@@ -66,6 +66,7 @@ import type betaFeatures from '../locales/en/betaFeatures.json'
 import type newApp from '../locales/en/newApp.json'
 import type getStarted from '../locales/en/getStarted.json'
 import type usage from '../locales/en/usage.json'
+import type resources from '../locales/en/resources.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type secretRotation from '../locales/en/secretRotation.json'
@@ -144,6 +145,7 @@ declare module 'i18next' {
       newApp: typeof newApp
       getStarted: typeof getStarted
       usage: typeof usage
+      resources: typeof resources
       deployTimeline: typeof deployTimeline
       secretRotation: typeof secretRotation
       models: typeof models

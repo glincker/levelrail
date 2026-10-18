@@ -15,6 +15,7 @@ const DIMENSIONS: UsageDimension[] = [
   'environment',
   'team',
   'resource',
+  'tag',
 ]
 const VIRTUALIZE_ABOVE = 50
 const ROW_HEIGHT = 44
@@ -29,6 +30,8 @@ function rowsFor(report: UsageReport, dim: UsageDimension): UsageGroup[] {
       return report.teams
     case 'resource':
       return report.resources
+    case 'tag':
+      return report.tags ?? []
     default:
       return report.projects
   }
@@ -65,7 +68,12 @@ function Row({
   g: UsageGroup
 }) {
   const { t } = useTranslation('usage')
-  const name = groupName(report, dim, g, t('table.unassigned'))
+  const name = groupName(
+    report,
+    dim,
+    g,
+    dim === 'tag' ? t('table.untagged') : t('table.unassigned'),
+  )
   return (
     <div
       role="row"
@@ -164,6 +172,9 @@ export function UsageTable({ report }: { report: UsageReport }) {
           </Button>
         ))}
       </div>
+      {dim === 'tag' ? (
+        <p className="text-xs text-muted-foreground">{t('table.tagNote')}</p>
+      ) : null}
       <div
         role="table"
         aria-label={t('table.label')}

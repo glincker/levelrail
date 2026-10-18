@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1271 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1276 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1001,6 +1001,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/restore", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/snooze", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/resources", Ability: "AbilityRead", Group: "Other", Handler: "handleListResources", Description: ""},
+	{Method: "POST", Path: "/api/v1/resources/tags/bulk", Ability: "AbilityWrite", Group: "Other", Handler: "handleBulkResourceTags", Description: ""},
+	{Method: "GET", Path: "/api/v1/resources/views", Ability: "AbilityRead", Group: "Other", Handler: "handleListResourceViews", Description: ""},
+	{Method: "POST", Path: "/api/v1/resources/views", Ability: "AbilityRead", Group: "Other", Handler: "handleSaveResourceView", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/resources/views/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleDeleteResourceView", Description: ""},
 	{Method: "GET", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityRead", Group: "Other", Handler: "handleListScheduledMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateScheduledMaintenance", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/scheduled-maintenance/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteScheduledMaintenance", Description: ""},
