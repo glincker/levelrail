@@ -7,6 +7,11 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/docker-guard", rt.requireAbility(AbilityRead, rt.handleGetDockerGuard))
 	// Switching modes changes the host-protection boundary, so AbilityRoot.
 	mux.HandleFunc("PUT /api/v1/system/docker-guard", rt.requireAbility(AbilityRoot, rt.handleUpdateDockerGuard))
+	mux.HandleFunc("GET /api/v1/system/janitor", rt.requireAbility(AbilityRead, rt.handleGetJanitor))
+	mux.HandleFunc("GET /api/v1/system/janitor/runs", rt.requireAbility(AbilityRead, rt.handleListJanitorRuns))
+	// The policy and a run decide what gets deleted from the host, so AbilityRoot.
+	mux.HandleFunc("PUT /api/v1/system/janitor/policy", rt.requireAbility(AbilityRoot, rt.handleUpdateJanitorPolicy))
+	mux.HandleFunc("POST /api/v1/system/janitor/run", rt.requireAbility(AbilityRoot, rt.handleRunJanitor))
 	mux.HandleFunc("GET /api/v1/system/restart", rt.requireAbility(AbilityRead, rt.handleGetSystemRestart))
 	// Exiting the process drops every in-flight request and node session, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/restart", rt.requireAbility(AbilityRoot, rt.handleSystemRestart))

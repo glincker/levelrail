@@ -80,6 +80,7 @@ export const NAMESPACES = [
   'secretScan',
   'maintenance',
   'buildPerformance',
+  'janitor',
   'sso',
   'cdn',
   'models',

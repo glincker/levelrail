@@ -323,7 +323,8 @@
               "platform-as-code",
               "resource-advisor",
               "feature-flags",
-              "log-archive"
+              "log-archive",
+              "janitor"
             ],
             "icon": "/assets/icons/flask.svg"
           }

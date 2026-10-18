@@ -600,6 +600,10 @@
         "title": "Containers",
         "description": "Every container on this node, managed by this platform or not."
       },
+      "janitor": {
+        "title": "Automatic cleanup",
+        "description": "Reclaim disk from unused images, cache, volumes and old attempts."
+      },
       "domains": {
         "title": "Domains",
         "description": "Platform ingress: dashboard domain and ACME certificates."

@@ -275,6 +275,7 @@ var toolTable = map[string]Meta{
 	"list_database_links":                   {clsR, "databases", 0},
 	"link_database_app":                     {clsM, "databases", 0},
 	"get_build_cache":                       {clsR, "logs", 0},
+	"get_janitor":                           {clsR, "system", 0},
 	"set_build_cache":                       {clsM, "logs", outb},
 	"get_oauth_providers":                   {clsR, "settings", sens},
 	"get_email_settings":                    {clsR, "settings", sens},

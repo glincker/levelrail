@@ -195,6 +195,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":
 		return runDeployLink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "janitor":
+		return runJanitor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system":
@@ -386,6 +388,7 @@ Usage:
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
+  %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1350 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1354 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1321,6 +1321,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/doctor", Ability: "AbilityRead", Group: "System", Handler: "handleSystemDoctor", Description: "Doctor (levelrail-cli doctor): a superset preflight bundle of the same individual checks above, plus a few doctor-only ones (data dir writability, ingress port availability, SQLite reachability), AbilityRead like system/status above."},
 	{Method: "GET", Path: "/api/v1/system/geoip", Ability: "AbilityRead", Group: "System", Handler: "handleGeoIPLookup", Description: "Active country sources and a test lookup for one address."},
+	{Method: "GET", Path: "/api/v1/system/janitor", Ability: "AbilityRead", Group: "System", Handler: "handleGetJanitor", Description: ""},
+	{Method: "PUT", Path: "/api/v1/system/janitor/policy", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateJanitorPolicy", Description: "The policy and a run decide what gets deleted from the host, so AbilityRoot."},
+	{Method: "POST", Path: "/api/v1/system/janitor/run", Ability: "AbilityRoot", Group: "System", Handler: "handleRunJanitor", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/janitor/runs", Ability: "AbilityRead", Group: "System", Handler: "handleListJanitorRuns", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/master-key/rotate", Ability: "AbilityRoot", Group: "System", Handler: "handleRotateMasterKey", Description: "Master key rotation re-wraps every stored DEK live: AbilityRoot, the same fleet-wide-blast-radius tier as prune above, not AbilityWrite (SecretSetter's own gate for a single app's values)."},
 	{Method: "GET", Path: "/api/v1/system/networks", Ability: "AbilityRead", Group: "System", Handler: "handleGetSystemNetworks", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/networks/prune", Ability: "AbilityRoot", Group: "System", Handler: "handlePruneSystemNetworks", Description: "Removes Docker networks, so AbilityRoot."},

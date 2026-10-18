@@ -854,6 +854,15 @@
   "inventory",
   "layers"
  ],
+ "get_janitor": [
+  "free_percent",
+  "last_pass",
+  "mode",
+  "pressure",
+  "preview",
+  "quarantined",
+  "reclaimed_bytes"
+ ],
  "get_latest_backup_verification": [
   "backup_history_id",
   "checked_by",

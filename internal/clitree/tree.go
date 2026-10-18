@@ -285,6 +285,7 @@ var Tree = map[string]*Node{
 	"api-docs":                 nil,
 	"deploy-link":              nil,
 	"init":                     nil,
+	"janitor":                  {Subs: map[string]*Node{"status": nil, "run": nil, "policy": nil}},
 	"containers":               {Subs: map[string]*Node{"list": nil, "stop": nil, "remove": nil, "claim": nil, "orphans": nil, "reap": nil}},
 	"system":                   {Subs: map[string]*Node{"address": nil, "restart": {Subs: map[string]*Node{"status": nil}}, "networks": {Subs: map[string]*Node{"prune": nil}}}},
 	"system-prune":             nil,
