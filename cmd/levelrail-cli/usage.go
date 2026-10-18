@@ -37,7 +37,7 @@ func runUsage(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 
 func usageCostUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s usage report [--period mtd|30d|last_month|custom] [--from D --to D] [--by project|environment|team|resource] [--csv]
+  %[1]s usage report [--period mtd|30d|last_month|custom] [--from D --to D] [--by project|environment|team|resource|tag] [--csv]
   %[1]s usage settings                                   show prices and node bills
   %[1]s usage settings set [flags]                       change prices (instance admin)
   %[1]s usage budgets                                    list budgets and where they stand
@@ -64,6 +64,8 @@ func usageGroupLabel(labels map[string]string, dim string, g usagecost.Group) st
 	switch dim {
 	case "resource":
 		return g.Kind + ":" + g.Name
+	case "tag":
+		return g.Key
 	case "project", "environment", "team":
 		if n := labels[dim+":"+g.Key]; n != "" {
 			return n
@@ -77,7 +79,7 @@ func runUsageReport(prog string, args []string, stdout, stderr io.Writer, lookup
 	period := fs.String("period", "mtd", "mtd, 30d, last_month or custom")
 	from := fs.String("from", "", "first day (YYYY-MM-DD) for --period custom")
 	to := fs.String("to", "", "last day (YYYY-MM-DD, inclusive) for --period custom")
-	by := fs.String("by", "project", "breakdown: project, environment, team or resource")
+	by := fs.String("by", "project", "breakdown: project, environment, team, resource or tag")
 	csv := fs.Bool("csv", false, "print the resource breakdown as CSV")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenP, apiP, profileP, jsonP, outP, queryP}, prog, stderr)
 	if !ok {
@@ -123,6 +125,8 @@ func printUsageReport(out io.Writer, rep apiclient.UsageReport, by string) {
 		groups = rep.Teams
 	case "resource":
 		groups = rep.Resources
+	case "tag":
+		groups = rep.Tags
 	default:
 		by = "project"
 	}

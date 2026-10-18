@@ -1528,6 +1528,11 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/private-networks/rules/{id} | AbilityRoot | handleDeletePrivateNetworkRule |
 | PUT | /api/v1/private-networks/{id} | AbilityRoot | handleUpdatePrivateNetwork |
 | DELETE | /api/v1/private-networks/{id} | AbilityRoot | handleDeletePrivateNetwork |
+| GET | /api/v1/resources | AbilityRead | handleListResources |
+| POST | /api/v1/resources/tags/bulk | AbilityWrite | handleBulkResourceTags |
+| GET | /api/v1/resources/views | AbilityRead | handleListResourceViews |
+| POST | /api/v1/resources/views | AbilityRead | handleSaveResourceView |
+| DELETE | /api/v1/resources/views/{id} | AbilityRead | handleDeleteResourceView |
 
 ## See also
 

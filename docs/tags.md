@@ -11,7 +11,7 @@ Tags are labels you attach to apps so you can group them by team, component, lif
 - The key is up to 32 characters (letters, digits, `.`, `_`, `-`) and the value up to 64 (the same set plus `/`). Both must start with a letter or digit. Anything else is rejected with a 400.
 - Tag names are unique across the control plane.
 - An app can carry at most 20 tags. Set `APP_MAX_TAGS_PER_APP` to change that. Tags created before these rules existed keep working.
-- Tags apply to apps only, not databases.
+- Tags apply to apps, databases, nodes and domains. Tag several at once from the [resource console](/resource-console).
 
 ## Create and delete tags
 

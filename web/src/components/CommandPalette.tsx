@@ -47,6 +47,7 @@ import {
 } from './commandPaletteData'
 import { PaletteFooter, ResultRow } from './commandPaletteEntries'
 import { domainFromPath, useTrafficPaletteItems } from './trafficPaletteItems'
+import { useResourcePaletteItems } from './resourcePaletteItems'
 import { isFeatureVisible } from '../lib/experimental'
 import { useExperimentalFeatures } from '../hooks/useExperimental'
 import { buildPaletteSuggestions } from './shell/paletteSuggestions'
@@ -125,6 +126,8 @@ export function CommandPalette({
     query,
     currentDomain,
   })
+
+  const resources = useResourcePaletteItems(open, query)
 
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -222,7 +225,7 @@ export function CommandPalette({
         run: go('/templates/$id', { id: template.id }),
       })
     }
-    items.push(...traffic.base)
+    items.push(...traffic.base, ...resources.base)
     return items
   }, [
     navigate,
@@ -233,6 +236,7 @@ export function CommandPalette({
     nodesQuery.data,
     templatesQuery.data,
     traffic.base,
+    resources.base,
     onShowShortcuts,
     pageActions,
     experimental,
@@ -362,7 +366,7 @@ export function CommandPalette({
         (i) => i.label,
         (i) => i.keywords,
       )
-      for (const item of [...matched, ...traffic.search]) {
+      for (const item of [...matched, ...traffic.search, ...resources.search]) {
         byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
       }
       for (const [group, max] of CAPPED_SEARCH_GROUPS) {
@@ -386,6 +390,7 @@ export function CommandPalette({
     currentApp,
     experimental,
     traffic.search,
+    resources.search,
   ])
 
   const results = React.useMemo(() => groups.flatMap((g) => g.items), [groups])

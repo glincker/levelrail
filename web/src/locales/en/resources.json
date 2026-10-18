@@ -1,0 +1,97 @@
+{
+  "title": "Resources",
+  "description": "Every app, database, node and domain in one searchable list. Tag them, save the views you use, and see what each tag costs.",
+  "search": {
+    "label": "Search resources",
+    "placeholder": "Search by name, detail or tag"
+  },
+  "kind": {
+    "all": "All",
+    "app": "Apps",
+    "database": "Databases",
+    "node": "Nodes",
+    "domain": "Domains",
+    "appOne": "App",
+    "databaseOne": "Database",
+    "nodeOne": "Node",
+    "domainOne": "Domain"
+  },
+  "tags": {
+    "filter": "Tags",
+    "filterLabel": "Filter by tag, a resource must have all selected tags",
+    "none": "No tags yet. Select resources and use Add tag to create the first one.",
+    "clear": "Clear tags"
+  },
+  "list": {
+    "label": "Resources",
+    "name": "Name",
+    "detail": "Detail",
+    "tags": "Tags",
+    "selectAll": "Select all shown resources",
+    "selectOne": "Select {{name}}",
+    "shown": "{{shown}} of {{total}} shown",
+    "emptyTitle": "No resources match",
+    "emptyDescription": "Clear the search or the tag filter to see everything again.",
+    "emptyAction": "Clear filters",
+    "errorTitle": "Could not load resources",
+    "retry": "Try again"
+  },
+  "bulk": {
+    "selected_one": "{{count}} selected",
+    "selected_other": "{{count}} selected",
+    "addTag": "Add tag",
+    "removeTag": "Remove tag",
+    "clear": "Clear selection"
+  },
+  "dialog": {
+    "addTitle": "Add a tag to {{count}} resources",
+    "removeTitle": "Remove a tag from {{count}} resources",
+    "description": "Preview the change first. Nothing is written until you apply it.",
+    "tagLabel": "Tag",
+    "tagPlaceholder": "team:shop",
+    "tagHint": "A key or key:value in lowercase, for example env:prod. Use it to group cost.",
+    "preview": "Preview changes",
+    "previewing": "Checking...",
+    "apply": "Apply to {{count}}",
+    "applying": "Applying...",
+    "cancel": "Cancel",
+    "close": "Close",
+    "summaryDry": "Preview: {{would}} would change, {{skipped}} already as requested, {{blocked}} blocked.",
+    "summaryDone": "Done: {{done}} changed, {{skipped}} already as requested, {{blocked}} blocked.",
+    "failed": "The change could not be previewed or applied.",
+    "doneToast": "Tag {{tag}} updated on {{count}} resources"
+  },
+  "status": {
+    "ok": "Changed",
+    "would_apply": "Will change",
+    "skipped": "Already set",
+    "denied": "No permission",
+    "not_found": "Not found",
+    "error": "Failed"
+  },
+  "views": {
+    "button": "Saved views",
+    "label": "Saved views",
+    "empty": "No saved views yet. Set up a search and save it here.",
+    "saveTitle": "Save the current filters",
+    "namePlaceholder": "View name",
+    "save": "Save view",
+    "saved": "View {{name}} saved",
+    "apply": "Open view {{name}}",
+    "delete": "Delete view {{name}}",
+    "deleted": "View deleted"
+  },
+  "cost": {
+    "title": "Cost by tag",
+    "description": "Month to date, a resource with several tags counts under each.",
+    "open": "Open the full cost report",
+    "empty": "Tag some apps or databases to see their cost grouped here.",
+    "untagged": "Untagged"
+  },
+  "palette": {
+    "open": "Open the resource explorer",
+    "openKeywords": "resources tags explorer search everything",
+    "tagged": "Resources tagged {{tag}}",
+    "view": "Saved view: {{name}}"
+  }
+}

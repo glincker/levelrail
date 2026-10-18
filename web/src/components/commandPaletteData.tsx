@@ -84,6 +84,8 @@ export const GROUP_ORDER = [
   'Databases',
   'Nodes',
   'Templates',
+  'Tags',
+  'Saved views',
   'Domains',
   'DNS zones',
   'DNS records',

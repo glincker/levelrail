@@ -1,4 +1,4 @@
-import type { UsageGroup, UsageReport } from '../types/usage'
+import type { UsageDimension, UsageGroup, UsageReport } from '../types/usage'
 
 export function formatMoney(value: number, currency: string): string {
   try {
@@ -22,11 +22,12 @@ export function formatDeltaPct(pct: number | undefined): string {
 // up in the report's labels with the raw key as the fallback.
 export function groupName(
   report: Pick<UsageReport, 'labels'>,
-  dim: 'project' | 'environment' | 'team' | 'resource',
+  dim: UsageDimension,
   g: UsageGroup,
   unassigned: string,
 ): string {
   if (dim === 'resource') return g.name ?? g.key
+  if (dim === 'tag') return g.key === 'untagged' ? unassigned : g.key
   if (g.key === 'unassigned') return unassigned
   return report.labels[`${dim}:${g.key}`] ?? g.key
 }
