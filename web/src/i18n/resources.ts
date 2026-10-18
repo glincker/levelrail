@@ -44,6 +44,7 @@ import type previews from '../locales/en/previews.json'
 import type backups from '../locales/en/backups.json'
 import type sleepHistory from '../locales/en/sleepHistory.json'
 import type gitBuild from '../locales/en/gitBuild.json'
+import type frameworks from '../locales/en/frameworks.json'
 import type teams from '../locales/en/teams.json'
 import type compose from '../locales/en/compose.json'
 import type smartDeploy from '../locales/en/smartDeploy.json'
@@ -135,6 +136,7 @@ declare module 'i18next' {
       backups: typeof backups
       sleepHistory: typeof sleepHistory
       gitBuild: typeof gitBuild
+      frameworks: typeof frameworks
       teams: typeof teams
       compose: typeof compose
       smartDeploy: typeof smartDeploy

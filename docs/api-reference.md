@@ -1593,6 +1593,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/storage/defaults | AbilityRead | handleListStorageDefaults |
 | PUT | /api/v1/storage/defaults/{class} | AbilityWriteSensitive | handleSetStorageDefault |
 | DELETE | /api/v1/storage/defaults/{class} | AbilityWriteSensitive | handleClearStorageDefault |
+| GET | /api/v1/frameworks | AbilityRead | handleListFrameworks |
+| GET | /api/v1/frameworks/{id} | AbilityRead | handleGetFramework |
+| GET | /api/v1/frameworks/{id}/dockerfile | AbilityRead | handleGetFrameworkDockerfile |
 
 ## See also
 

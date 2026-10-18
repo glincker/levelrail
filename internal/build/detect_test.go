@@ -116,15 +116,15 @@ func TestDetectUnchecked(t *testing.T) {
 		{name: "node", fixture: "testdata/railpack-node", wantProvider: "node", wantFramework: "Node.js"},
 		{name: "next.js app router", fixture: "testdata/railpack-nextjs", wantProvider: "node", wantFramework: "Next.js"},
 		{name: "go", fixture: "testdata/railpack-go", wantProvider: "golang", wantFramework: "Go"},
-		{name: "python", fixture: "testdata/railpack-python", wantProvider: "python", wantFramework: "Python (Django)"},
+		{name: "python", fixture: "testdata/railpack-python", wantProvider: "python", wantFramework: "Django"},
 		// Railpack itself detects a real provider here (deno), just one
 		// outside supportedRailpackProviders: Provider still reports what
 		// Railpack found, FrameworkName stays empty so the wizard falls
 		// back to manual build-type selection rather than claiming a name
 		// for a stack it can't actually build yet.
-		{name: "rails", fixture: "testdata/railpack-rails", wantProvider: "ruby", wantFramework: "Ruby"},
+		{name: "rails", fixture: "testdata/railpack-rails", wantProvider: "ruby", wantFramework: "Ruby on Rails"},
 		{name: "sinatra", fixture: "testdata/railpack-sinatra", wantProvider: "ruby", wantFramework: "Ruby"},
-		{name: "laravel", fixture: "testdata/railpack-laravel", wantProvider: "php", wantFramework: "PHP"},
+		{name: "laravel", fixture: "testdata/railpack-laravel", wantProvider: "php", wantFramework: "Laravel"},
 		{name: "plain php", fixture: "testdata/railpack-php", wantProvider: "php", wantFramework: "PHP"},
 		{name: "unsupported provider reports raw provider, no framework name", fixture: "testdata/railpack-unsupported", wantProvider: "deno", wantFramework: ""},
 	}

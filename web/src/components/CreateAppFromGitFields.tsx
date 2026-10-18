@@ -33,6 +33,8 @@ import {
   healthCheckFrom,
 } from '../lib/healthCheckDefaults'
 import { DraftRestoredNotice } from './DraftRestoredNotice'
+import type { FrameworkPreset } from '../queries/frameworks'
+import { FrameworkPresetPicker } from './FrameworkPresetPicker'
 import { GitBuildSourceFields } from './GitBuildSourceFields'
 import { GitDeployStatusAlerts } from './GitDeployStatusAlerts'
 import {
@@ -485,6 +487,9 @@ export function CreateAppFromGitFields({
   const [detectedFramework, setDetectedFramework] = useState<
     string | undefined
   >(undefined)
+  const [detectedFrameworkId, setDetectedFrameworkId] = useState<
+    string | undefined
+  >(undefined)
   // See this component's own doc comment for why this wraps
   // queries/builds.ts's triggerBuild() directly instead of using that
   // module's useTriggerBuild(appName) hook.
@@ -563,6 +568,15 @@ export function CreateAppFromGitFields({
       defaultValues: DEFAULT_VALUES,
     })
   const healthCheckEnabled = watch('healthCheckEnabled')
+  const applyFrameworkPreset = (preset: FrameworkPreset) => {
+    const opts = { shouldValidate: true, shouldDirty: true }
+    if (preset.build_type !== 'dockerfile') {
+      setValue('buildType', preset.build_type, opts)
+    }
+    if (preset.port > 0) setValue('port', String(preset.port), opts)
+    setValue('healthCheckEnabled', true, opts)
+    setValue('healthCheckPath', preset.health_path, opts)
+  }
 
   function runBuild(name: string, values: FormOutput) {
     buildMutation.mutate(
@@ -727,7 +741,22 @@ export function CreateAppFromGitFields({
             setDetectedFramework(
               result?.detected ? result.frameworkName : undefined,
             )
+            setDetectedFrameworkId(
+              result?.detected ? result.frameworkId : undefined,
+            )
           }}
+        />
+        <FrameworkPresetPicker
+          detectedId={detectedFrameworkId}
+          port={
+            typeof watch('port') === 'string' ||
+            typeof watch('port') === 'number'
+              ? String(watch('port'))
+              : ''
+          }
+          healthPath={watch('healthCheckPath')}
+          disabled={buildFieldsLocked}
+          onApply={applyFrameworkPreset}
         />
       </div>
 

@@ -18,6 +18,8 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/railwayapp/railpack/core"
 	rpapp "github.com/railwayapp/railpack/core/app"
+
+	"github.com/GLINCKER/levelrail/internal/frameworks"
 )
 
 // detectCloneTimeout bounds the whole clone+inspect call: a pre-flight
@@ -186,6 +188,9 @@ type DetectResult struct {
 	// PortSource describes where Port came from (e.g. "from scripts.start
 	// --port 4173"), empty if Port is 0.
 	PortSource string
+	// FrameworkID is the matched internal/frameworks preset id, empty when
+	// no preset matched.
+	FrameworkID string
 }
 
 // Detect shallow-clones req.RepoURL at req.Ref into a temporary
@@ -279,12 +284,30 @@ func detectUnchecked(ctx context.Context, req DetectRequest) (*DetectResult, err
 	case "php":
 		port, portSource = detectPHPPort(dir)
 	}
+	frameworkID := ""
+	if m, ok := frameworks.Detect(dirReader(dir)); ok {
+		frameworkID, frameworkName = m.Preset.ID, m.Preset.Name
+		if port == 0 && m.Preset.Port > 0 {
+			port, portSource = m.Preset.Port, "from "+m.Preset.Name+" preset"
+		}
+	}
 	return &DetectResult{
 		Provider:      provider,
 		FrameworkName: frameworkName,
 		Port:          port,
 		PortSource:    portSource,
+		FrameworkID:   frameworkID,
 	}, nil
+}
+
+func dirReader(dir string) frameworks.Reader {
+	return func(rel string) (string, bool) {
+		raw, err := os.ReadFile(filepath.Join(dir, rel)) //nolint:gosec // dir is this call's own freshly cloned temp checkout
+		if err != nil {
+			return "", false
+		}
+		return string(raw), true
+	}
 }
 
 // nextJSLabel reports "Next.js" when dir's package.json declares "next" as

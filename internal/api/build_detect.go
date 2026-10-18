@@ -23,6 +23,9 @@ type detectFrameworkResponse struct {
 	Provider      string `json:"provider,omitempty"`
 	FrameworkName string `json:"framework_name,omitempty"`
 	Detected      bool   `json:"detected"`
+	FrameworkID   string `json:"framework_id,omitempty"`
+	Port          int    `json:"port,omitempty"`
+	PortSource    string `json:"port_source,omitempty"`
 }
 
 // An unclonable or undetectable repo returns 200 with detected: false, so the wizard falls back to manual picking.
@@ -48,5 +51,8 @@ func (rt *Router) handleDetectFramework(w http.ResponseWriter, r *http.Request) 
 		Provider:      result.Provider,
 		FrameworkName: result.FrameworkName,
 		Detected:      result.FrameworkName != "",
+		FrameworkID:   result.FrameworkID,
+		Port:          result.Port,
+		PortSource:    result.PortSource,
 	})
 }

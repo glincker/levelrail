@@ -22,6 +22,8 @@ func runBuild(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runBuildRepoCommand(prog, "detect", args[1:], stdout, stderr, lookupEnv)
 	case "branches":
 		return runBuildRepoCommand(prog, "branches", args[1:], stdout, stderr, lookupEnv)
+	case "frameworks":
+		return runBuildFrameworks(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown build subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, buildUsage(prog))
@@ -33,6 +35,7 @@ func buildUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s build detect --repo-url URL [--ref REF] [flags]   show what framework the builder detects for a public repo, no build runs
   %[1]s build branches --repo-url URL [flags]             list the branches a public repo advertises
+  %[1]s build frameworks [ID] [--dockerfile] [flags]      list framework presets, show one, or print its Dockerfile template
 
 Both work against a public repository and need no existing app.
 
