@@ -256,7 +256,8 @@ Open the deploy history and press **Rollback** on the row you want, one click pe
 <Tab title="CLI">
 
 ```bash
-levelrail-cli apps deploys list NAME
+levelrail-cli apps deploys list NAME --branch main --author ada --status succeeded   # also --commit, --search, --limit
+levelrail-cli apps deploys promote NAME DEPLOY_ID              # same as rollback-to: make a past succeeded deploy the live one
 levelrail-cli apps deploys rollback-to NAME DEPLOY_ID          # exact image of a past succeeded deploy, pinned by digest
 levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag yourself
 ```
@@ -264,7 +265,9 @@ levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag
 </Tab>
 <Tab title="API">
 
-`POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release).
+`POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release). In the dashboard this is the **Promote to production** button on any older succeeded deploy.
+
+`GET /api/v1/apps/{name}/deploy-attempts` accepts `branch`, `author`, `commit` (SHA prefix), `status`, `q` and `limit` to narrow the history.
 
 </Tab>
 </Tabs>

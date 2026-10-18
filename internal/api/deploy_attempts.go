@@ -332,7 +332,7 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		}
 		out = append(out, res)
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, parseDeployAttemptFilter(r).apply(out))
 }
 
 // cacheWarningLister and cacheWarningSetter are optional deployAttempts
