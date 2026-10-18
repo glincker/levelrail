@@ -196,7 +196,7 @@ levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
-levelrail-cli functions deploy|list|invoke|delete [flags]
+levelrail-cli functions init|deploy|list|runtimes|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
 levelrail-cli apps sleep list [flags]
@@ -218,7 +218,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule.
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
 - `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](/scheduled-jobs)). `apps scheduled-tasks` is the older exec-only form of the same resource.
-- `functions` runs an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start (see [Functions](/functions)).
+- `functions` runs a handler repo (built with Railpack) or an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start. `functions init node|python|go` writes a ten line starter, `functions list` shows state, calls and p95 duration (see [Functions](/functions)).
 - `apps sleep` stops an app after it has had no requests for a set time and wakes it on the next request (see [Sleep when idle](/sleep-when-idle)).
 - `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](/canary-deploys)).
 - `apps auto-update` redeploys an app automatically when its image tag moves to a new digest (see [Image auto-update](/image-auto-update)).

@@ -12,12 +12,15 @@ import (
 )
 
 const functionsUsage = `Usage:
+  %[1]s functions init <node|python|go> [dir]     write a starter handler
+  %[1]s functions deploy <name> --repo <repo URL> [--ref main] [--dir sub/dir] [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
   %[1]s functions deploy <name> --image <ref> [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
-  %[1]s functions list
+  %[1]s functions list [--window 1h|24h|7d]       state, calls and p95 duration
+  %[1]s functions runtimes
   %[1]s functions invoke <name> [--path /] [--method GET] [--data BODY] [--insecure]
   %[1]s functions delete <name>
 
-A function is an image app that sleeps when idle and starts on the next
+A function is an app (a handler repo built with Railpack, or an image) that sleeps when idle and starts on the next
 request. A request that arrives while it is asleep waits for the cold start
 and is then replayed (a 307 redirect, which keeps the method and body), so
 callers see one slower response instead of an error page. The container must
@@ -33,6 +36,10 @@ func runFunctions(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprintf(stdout, functionsUsage, prog)
 		return exitOK
+	case "init":
+		return runFunctionsInit(prog, args[1:], stdout, stderr)
+	case "runtimes":
+		return runFunctionsRuntimes(stdout)
 	case "deploy", "list", "invoke", "delete":
 		return runFunctionsVerb(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -43,11 +50,13 @@ func runFunctions(prog string, args []string, stdout, stderr io.Writer, lookupEn
 }
 
 type functionRow struct {
-	Name        string `json:"name"`
-	Image       string `json:"image"`
-	IdleMinutes int    `json:"idle_minutes"`
-	Asleep      bool   `json:"asleep"`
-	URL         string `json:"url,omitempty"`
+	Name        string  `json:"name"`
+	Image       string  `json:"image"`
+	IdleMinutes int     `json:"idle_minutes"`
+	Asleep      bool    `json:"asleep"`
+	URL         string  `json:"url,omitempty"`
+	Invocations float64 `json:"invocations"`
+	P95Ms       float64 `json:"p95_ms"`
 }
 
 func appURL(domains []string, fallback string) string {
@@ -66,6 +75,11 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	method := fs.String("method", http.MethodGet, "HTTP method (invoke)")
 	data := fs.String("data", "", "request body (invoke)")
 	insecure := fs.Bool("insecure", false, "skip TLS verification, for a local self-signed certificate (invoke)")
+	repo := fs.String("repo", "", "repository URL of the handler, built with Railpack (deploy)")
+	ref := fs.String("ref", "", "branch, tag or commit to build, default the current branch (deploy)")
+	dir := fs.String("dir", "", "directory inside the repo that holds the handler (deploy)")
+	wait := fs.Duration("wait", 10*time.Minute, "wait this long for the build to go live, 0 to return at once (deploy)")
+	window := fs.String("window", "24h", "call statistics window: 1h, 24h or 7d (list)")
 	envs := map[string]string{}
 	fs.Func("env", "environment variable KEY=VALUE, repeatable (deploy)", func(v string) error {
 		k, val, ok := strings.Cut(v, "=")
@@ -87,17 +101,13 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	ctx := context.Background()
 
 	if verb == "list" {
-		apps, err := client.ListApps(ctx)
+		res, err := client.ListFunctions(ctx, *window)
 		if err != nil {
-			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list apps: %w", err))
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("list functions: %w", err))
 		}
 		rows := []functionRow{}
-		for _, a := range apps {
-			s, err := client.GetAppSleep(ctx, a.Name)
-			if err != nil || !s.Enabled || !s.HoldRequests {
-				continue
-			}
-			rows = append(rows, functionRow{Name: a.Name, Image: a.Image, IdleMinutes: s.IdleMinutes, Asleep: s.Sleeping, URL: appURL(a.Domains, a.FallbackURL)})
+		for _, f := range res.Functions {
+			rows = append(rows, functionRow{Name: f.Name, Image: f.Image, IdleMinutes: f.IdleMinutes, Asleep: f.Sleeping, URL: f.URL, Invocations: f.Invocations, P95Ms: f.P95Ms})
 		}
 		return writeScheduledTaskResult(stdout, stderr, of, rows, func() {
 			if len(rows) == 0 {
@@ -109,7 +119,7 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 				if r.Asleep {
 					state = "asleep"
 				}
-				_, _ = fmt.Fprintf(stdout, "%-24s %-7s idle %dm  %s\n", r.Name, state, r.IdleMinutes, r.URL)
+				_, _ = fmt.Fprintf(stdout, "%-24s %-7s idle %dm  %6.0f calls  p95 %4.0fms  %s\n", r.Name, state, r.IdleMinutes, r.Invocations, r.P95Ms, r.URL)
 			}
 		})
 	}
@@ -120,6 +130,9 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	}
 	switch verb {
 	case "deploy":
+		if *image == "" {
+			return deployFunctionFromRepo(ctx, client, name, *port, *idle, envs, functionSourceFlags{repo: *repo, ref: *ref, dir: *dir, wait: *wait}, of, stdout, stderr, jsonOut)
+		}
 		return deployFunction(ctx, client, name, *image, *port, *idle, envs, of, stdout, stderr, jsonOut)
 	case "delete":
 		if err := client.DeleteApp(ctx, name); err != nil {
