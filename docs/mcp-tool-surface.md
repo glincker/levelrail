@@ -16,20 +16,22 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | apps | 16 | 2103 |
 | audit | 1 | 306 |
 | backups | 13 | 1134 |
-| databases | 8 | 563 |
-| deploys | 26 | 3924 |
+| databases | 10 | 769 |
+| deploys | 26 | 4005 |
 | diagnostics | 5 | 595 |
 | domains | 12 | 1150 |
 | environments | 3 | 541 |
 | flags | 2 | 139 |
+| functions | 1 | 99 |
 | global-environments | 2 | 203 |
 | iac | 2 | 800 |
 | iam | 7 | 532 |
+| images | 3 | 368 |
 | loadbalancer | 9 | 1336 |
 | logs | 13 | 1755 |
-| metrics | 6 | 797 |
+| metrics | 7 | 930 |
 | models | 15 | 2222 |
-| nodes | 5 | 418 |
+| nodes | 6 | 464 |
 | notifications | 3 | 287 |
 | orgs | 2 | 145 |
 | pipelines | 3 | 432 |
@@ -37,11 +39,12 @@ Regenerate with `go test ./internal/mcptools -run TestToolSurfaceDoc -update-sur
 | registry | 3 | 309 |
 | scheduled | 2 | 171 |
 | settings | 3 | 208 |
+| storage | 5 | 558 |
 | system | 9 | 595 |
 | teams | 2 | 88 |
 | templates | 2 | 126 |
 | webhooks | 1 | 145 |
-| **total** | **187** | **22485** |
+| **total** | **200** | **23976** |
 
 ## agent-core profile
 
