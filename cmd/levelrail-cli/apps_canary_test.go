@@ -25,6 +25,7 @@ func TestRun_AppsCanary(t *testing.T) {
 		method, path, body string
 	}{
 		{[]string{"start", "web", "--image", "nginx:2", "--weight", "25"}, http.MethodPost, "/api/v1/apps/web/canary", `{"image":"nginx:2","weight":25}`},
+		{[]string{"start", "web", "--image", "nginx:2", "--stages", "10,50,100", "--interval", "2m"}, http.MethodPost, "/api/v1/apps/web/canary", `{"image":"nginx:2","stages":[10,50,100],"interval":"2m"}`},
 		{[]string{"weight", "web", "--weight", "0"}, http.MethodPut, "/api/v1/apps/web/canary", `{"weight":0}`},
 		{[]string{"status", "web"}, http.MethodGet, "/api/v1/apps/web/canary", ""},
 		{[]string{"promote", "web"}, http.MethodPost, "/api/v1/apps/web/canary/promote", ""},

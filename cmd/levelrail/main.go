@@ -32,6 +32,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/build"
+	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
@@ -595,6 +596,7 @@ func run(logger *slog.Logger) error {
 	startScheduledMaintenance(ctx, logger, db, alertingDB, deployDispatcher, apiRouter)
 	setupCompliance(ctx, logger, db, secretsManager, agentDataDir, apiRouter)
 	startHeldDeployReleaser(ctx, logger, db, apiRouter)
+	startCanaryReconciler(ctx, logger, db, apiRouter)
 	cpDR := setupControlPlaneDR(ctx, logger, db, secretsManager, masterKeyFilePath, agentDataDir, apiRouter)
 	startPipelines(ctx, logger, b, db, secretsManager, client, agentRegistry, builder, engine, deployDispatcher, apiRouter)
 	startExternalDatabaseMonitor(ctx, logger, db, secretsManager, client, agentRegistry)
@@ -1687,6 +1689,7 @@ func loadBuilder(ctx context.Context, logger *slog.Logger, db *store.DB, telemet
 		deploy.WithLoadBalancerStore(db),
 		deploy.WithSpendCapStore(db),
 		deploy.WithAutoscaleStore(db, autoscale.CeilingFromEnv(autoscale.OSEnv)),
+		deploy.WithCanaryPolicyStore(db),
 		deploy.WithJobStore(db),
 		deploy.WithOrderedStore(db),
 		deploy.WithAttemptRecorder(db),
@@ -2940,7 +2943,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 			ingressOpts = append(ingressOpts, ingressreconcile.WithLoadBalancers(deps.db, deps.lbRegistry))
 		}
 		ingressOpts = append(ingressOpts, ingressreconcile.WithAppWake(deps.db, dashboardDialAddr(httpAddr()), appWakeToken()))
-		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db))
+		ingressOpts = append(ingressOpts, ingressreconcile.WithCanaries(deps.db), ingressreconcile.WithCanaryDials(canary.DefaultDials()))
 		controllers = append(controllers, ingressreconcile.New(deps.db, deps.runtime, deps.driver, ingressOpts...))
 		if deps.proxySyncer != nil {
 			controllers = append(controllers, proxyroutesreconcile.New(deps.proxySyncer))

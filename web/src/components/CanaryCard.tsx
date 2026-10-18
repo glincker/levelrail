@@ -6,9 +6,40 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { InfoTip } from '@/components/kit'
 import { toast } from '@/components/ui/toast'
-import { useCanary, useCanaryActions } from '../queries/canary'
+import {
+  useCanary,
+  useCanaryActions,
+  type CanaryStartBody,
+} from '../queries/canary'
+import { CanaryOutcomeNotice, CanaryProgressPanel } from './CanaryProgressPanel'
 
 const DEFAULT_WEIGHT = 10
+
+interface StagedForm {
+  stages: string
+  interval: string
+  maxErrorPoints: string
+  maxP95Ratio: string
+}
+
+function startBody(
+  image: string,
+  weight: string,
+  form: StagedForm,
+): CanaryStartBody {
+  const stages = form.stages
+    .split(',')
+    .map((part) => Number(part.trim()))
+    .filter((n) => Number.isFinite(n) && n > 0)
+  if (stages.length === 0) return { image, weight: Number(weight) }
+  const body: CanaryStartBody = { image, stages }
+  if (form.interval.trim()) body.interval = form.interval.trim()
+  if (Number(form.maxErrorPoints) > 0)
+    body.max_error_rate = Number(form.maxErrorPoints) / 100
+  if (Number(form.maxP95Ratio) > 1)
+    body.max_p95_ratio = Number(form.maxP95Ratio)
+  return body
+}
 
 /** CanaryCard sends a share of traffic to a new image before it replaces the running release. */
 export function CanaryCard({ appName }: { appName: string }) {
@@ -17,6 +48,13 @@ export function CanaryCard({ appName }: { appName: string }) {
   const { start, setWeight, promote, abort } = useCanaryActions(appName)
   const [image, setImage] = useState('')
   const [weight, setWeightInput] = useState(String(DEFAULT_WEIGHT))
+  const [staged, setStaged] = useState<StagedForm>({
+    stages: '',
+    interval: '',
+    maxErrorPoints: '',
+    maxP95Ratio: '',
+  })
+  const isStaged = staged.stages.trim() !== ''
 
   const busy =
     start.isPending ||
@@ -60,30 +98,34 @@ export function CanaryCard({ appName }: { appName: string }) {
                 weight: canary.weight,
               })}
             </p>
-            <div className="flex items-end gap-2">
-              <label className="space-y-1 text-xs text-muted-foreground">
-                {t('canary.weightLabel')}
-                <Input
-                  type="number"
-                  min={0}
-                  max={99}
-                  value={weight}
-                  onChange={(e) => setWeightInput(e.target.value)}
-                  className="w-24"
-                />
-              </label>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() =>
-                  run(setWeight, Number(weight), t('canary.toast.weightSet'))
-                }
-              >
-                {t('canary.setWeight')}
-              </Button>
-            </div>
+            {canary.staged ? (
+              <CanaryProgressPanel canary={canary} />
+            ) : (
+              <div className="flex items-end gap-2">
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  {t('canary.weightLabel')}
+                  <Input
+                    type="number"
+                    min={0}
+                    max={99}
+                    value={weight}
+                    onChange={(e) => setWeightInput(e.target.value)}
+                    className="w-24"
+                  />
+                </label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() =>
+                    run(setWeight, Number(weight), t('canary.toast.weightSet'))
+                  }
+                >
+                  {t('canary.setWeight')}
+                </Button>
+              </div>
+            )}
             <div className="flex gap-2 border-t border-border pt-3">
               <Button
                 type="button"
@@ -93,7 +135,7 @@ export function CanaryCard({ appName }: { appName: string }) {
                   run(promote, undefined, t('canary.toast.promoted'))
                 }
               >
-                {t('canary.promote')}
+                {t('canary.promoteNow')}
               </Button>
               <Button
                 type="button"
@@ -113,11 +155,14 @@ export function CanaryCard({ appName }: { appName: string }) {
               e.preventDefault()
               run(
                 start,
-                { image: image.trim(), weight: Number(weight) },
+                startBody(image.trim(), weight, staged),
                 t('canary.toast.started'),
               )
             }}
           >
+            <div className="w-full">
+              <CanaryOutcomeNotice canary={canary} />
+            </div>
             <label className="min-w-48 flex-1 space-y-1 text-xs text-muted-foreground">
               {t('canary.imageLabel')}
               <Input
@@ -126,17 +171,73 @@ export function CanaryCard({ appName }: { appName: string }) {
                 placeholder={t('canary.imagePlaceholder')}
               />
             </label>
+            {isStaged ? null : (
+              <label className="space-y-1 text-xs text-muted-foreground">
+                {t('canary.weightLabel')}
+                <Input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={weight}
+                  onChange={(e) => setWeightInput(e.target.value)}
+                  className="w-24"
+                />
+              </label>
+            )}
             <label className="space-y-1 text-xs text-muted-foreground">
-              {t('canary.weightLabel')}
+              {t('canary.stagesLabel')}
               <Input
-                type="number"
-                min={1}
-                max={99}
-                value={weight}
-                onChange={(e) => setWeightInput(e.target.value)}
-                className="w-24"
+                value={staged.stages}
+                onChange={(e) =>
+                  setStaged({ ...staged, stages: e.target.value })
+                }
+                placeholder={t('canary.stagesPlaceholder')}
+                className="w-40"
               />
             </label>
+            {isStaged ? (
+              <>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  {t('canary.intervalLabel')}
+                  <Input
+                    value={staged.interval}
+                    onChange={(e) =>
+                      setStaged({ ...staged, interval: e.target.value })
+                    }
+                    placeholder="5m"
+                    className="w-20"
+                  />
+                </label>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  {t('canary.maxErrorLabel')}
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={staged.maxErrorPoints}
+                    onChange={(e) =>
+                      setStaged({ ...staged, maxErrorPoints: e.target.value })
+                    }
+                    placeholder="2"
+                    className="w-24"
+                  />
+                </label>
+                <label className="space-y-1 text-xs text-muted-foreground">
+                  {t('canary.maxP95Label')}
+                  <Input
+                    type="number"
+                    min={1}
+                    step={0.1}
+                    value={staged.maxP95Ratio}
+                    onChange={(e) =>
+                      setStaged({ ...staged, maxP95Ratio: e.target.value })
+                    }
+                    placeholder="1.5"
+                    className="w-24"
+                  />
+                </label>
+              </>
+            ) : null}
             <Button type="submit" size="sm" disabled={busy || !image.trim()}>
               {t('canary.start')}
             </Button>

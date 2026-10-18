@@ -129,6 +129,9 @@ type RequestStats struct {
 	mu     sync.RWMutex
 	hosts  map[string]*hostCounters
 	owners atomic.Pointer[map[string]string]
+
+	totalsMu sync.Mutex
+	totals   telemetry.RequestWindow
 }
 
 var defaultRequestStats = &RequestStats{hosts: make(map[string]*hostCounters)}
@@ -207,6 +210,11 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 		}
 		s.mu.Unlock()
 	}
+	if o.Upstream != "" {
+		s.totalsMu.Lock()
+		s.totals.ObserveUpstream(o.Upstream, status, upstreamErr, float64(d)/float64(time.Millisecond), upstreamMax)
+		s.totalsMu.Unlock()
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.w.Requests++
@@ -244,6 +252,19 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 			DurationMS: ms, Upstream: o.Upstream, RequestID: o.RequestID,
 		}, sampleCfg.TickMax)
 	}
+}
+
+// UpstreamTotals returns a copy of the cumulative per-replica counters since
+// process start. Unlike DrainByApp it never resets, so a caller can diff two
+// snapshots to judge one time window (the canary reconciler does).
+func (s *RequestStats) UpstreamTotals() map[string]telemetry.UpstreamStat {
+	s.totalsMu.Lock()
+	defer s.totalsMu.Unlock()
+	out := make(map[string]telemetry.UpstreamStat, len(s.totals.Upstreams))
+	for k, v := range s.totals.Upstreams {
+		out[k] = v
+	}
+	return out
 }
 
 // ObserveShield counts one request the abuse shield turned away under key.

@@ -1,4 +1,19 @@
 {
+ "abort_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
+ ],
  "ai_control_status": [
   "allowed_env_kinds",
   "explanation",
@@ -539,6 +554,21 @@
  "get_build_cache": [
   "bucket",
   "settings"
+ ],
+ "get_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
  ],
  "get_cloudflare_tunnel_status": [
   "enabled",
@@ -1867,6 +1897,21 @@
   "vault_env",
   "volumes"
  ],
+ "promote_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
+ ],
  "prune_system": [
   "build_cache_reclaimed_bytes",
   "containers_reclaimed_bytes",
@@ -2110,6 +2155,21 @@
   "principal_name",
   "principal_type",
   "resource"
+ ],
+ "start_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
  ],
  "start_log_archive_dump": [
   "app_name",

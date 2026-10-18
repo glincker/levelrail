@@ -120,7 +120,7 @@ describe('CanaryCard', () => {
 
     const user = userEvent.setup()
     renderCard()
-    await user.click(await screen.findByRole('button', { name: 'Promote' }))
+    await user.click(await screen.findByRole('button', { name: 'Promote now' }))
 
     await waitFor(() => {
       expect(toast.add).toHaveBeenCalledWith({
@@ -131,5 +131,77 @@ describe('CanaryCard', () => {
     expect(
       await screen.findByRole('button', { name: 'Start canary' }),
     ).toBeInTheDocument()
+  })
+
+  it('shows stage progress and the live comparison for a staged canary', async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        active: true,
+        image: 'nginx:2',
+        weight: 25,
+        staged: true,
+        stages: [10, 25, 50, 100],
+        stage: 2,
+        progress: {
+          stage: 2,
+          stage_count: 4,
+          elapsed_secs: 30,
+          interval_secs: 300,
+          canary_requests: 120,
+          canary_error_rate: 0.05,
+          canary_p95_ms: 240,
+          stable_requests: 900,
+          stable_error_rate: 0.001,
+          stable_p95_ms: 90,
+          next: 'observing stage',
+          breaching: true,
+        },
+      }),
+    )
+
+    renderCard()
+    expect(await screen.findByText('Stage 2 of 4')).toBeInTheDocument()
+    expect(screen.getByText('5.0%')).toBeInTheDocument()
+    expect(screen.getByText('240 ms')).toBeInTheDocument()
+    expect(
+      screen.getByText('Breach: observing stage. Rolling back.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Promote now' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abort' })).toBeInTheDocument()
+  })
+
+  it('starts a staged canary when stages are given', async () => {
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        Promise.resolve(
+          init?.method === 'POST'
+            ? json({
+                active: true,
+                image: 'nginx:2',
+                weight: 10,
+                staged: true,
+                stages: [10, 50],
+                stage: 1,
+              })
+            : json({ active: false, weight: 0 }),
+        ),
+    )
+    const user = userEvent.setup()
+    renderCard()
+    await user.type(await screen.findByLabelText('Canary image'), 'nginx:2')
+    await user.type(screen.getByLabelText('Stages % (optional)'), '10,50')
+    await user.click(screen.getByRole('button', { name: 'Start canary' }))
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
+      )
+      expect(JSON.parse((post?.[1] as RequestInit).body as string)).toEqual({
+        image: 'nginx:2',
+        stages: [10, 50],
+      })
+    })
   })
 })
