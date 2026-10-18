@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" database/sql driver
@@ -18,6 +19,7 @@ import (
 // foreign keys on, migrated to the latest version before Open returns.
 type DB struct {
 	*sql.DB
+	m *dbMetrics
 }
 
 // Open opens (creating if needed) the SQLite database at path, applies
@@ -43,7 +45,7 @@ func Open(ctx context.Context, path string, opts ...OpenOption) (*DB, error) {
 	// which handles contention from other processes/connections).
 	sqlDB.SetMaxOpenConns(1)
 
-	db := &DB{DB: sqlDB}
+	db := &DB{DB: sqlDB, m: newDBMetrics(path)}
 
 	if err := db.PingContext(ctx); err != nil {
 		_ = sqlDB.Close()
@@ -76,6 +78,7 @@ func dsn(path string) string {
 	q.Add("_pragma", "busy_timeout(5000)")
 	q.Add("_pragma", "journal_mode(WAL)")
 	q.Add("_pragma", "foreign_keys(ON)")
+	q.Add("_pragma", "journal_size_limit("+strconv.Itoa(walSizeLimitBytes)+")")
 	return "file:" + path + "?" + q.Encode()
 }
 

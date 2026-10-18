@@ -590,6 +590,8 @@ func run(logger *slog.Logger) error {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { restartRequested.Store(true); stop() },
 	})
+	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval})
+	go db.RunWALMaintenance(ctx)
 	configureNodeCerts(apiRouter, agentServer, agentServer)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)
 	apiRouter.SetNodeHostReports(hostReports)

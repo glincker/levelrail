@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1354 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1356 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1317,6 +1317,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/control-plane-dr/escrow/ack", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleAckControlPlaneDREscrow", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-dr/run", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleRunControlPlaneDRBackup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/system/control-plane-dr/settings", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleUpdateControlPlaneDR", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/control-plane-health", Ability: "AbilityRead", Group: "System", Handler: "handleGetCPHealth", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/control-plane-health/fix", Ability: "AbilityRoot", Group: "System", Handler: "handleCPHealthFix", Description: "Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/docker-guard", Ability: "AbilityRead", Group: "System", Handler: "handleGetDockerGuard", Description: "Docker API guard status (Security settings page): AbilityRead like system/doctor."},
 	{Method: "PUT", Path: "/api/v1/system/docker-guard", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateDockerGuard", Description: "Switching modes changes the host-protection boundary, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/doctor", Ability: "AbilityRead", Group: "System", Handler: "handleSystemDoctor", Description: "Doctor (levelrail-cli doctor): a superset preflight bundle of the same individual checks above, plus a few doctor-only ones (data dir writability, ingress port availability, SQLite reachability), AbilityRead like system/status above."},

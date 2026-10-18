@@ -18,6 +18,9 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	// The CLI console acts with the caller's full token, so root like the app terminal; step-up is checked inside.
 	mux.HandleFunc("GET /api/v1/system/cli-console/commands", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleCommands))
 	mux.HandleFunc("GET /api/v1/system/cli-console/session", rt.requireAbility(AbilityRoot, rt.handleCLIConsoleSession))
+	mux.HandleFunc("GET /api/v1/system/control-plane-health", rt.requireAbility(AbilityRead, rt.handleGetCPHealth))
+	// Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot.
+	mux.HandleFunc("POST /api/v1/system/control-plane-health/fix", rt.requireAbility(AbilityRoot, rt.handleCPHealthFix))
 	mux.HandleFunc("GET /api/v1/system/networks", rt.requireAbility(AbilityRead, rt.handleGetSystemNetworks))
 	// Removes Docker networks, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/networks/prune", rt.requireAbility(AbilityRoot, rt.handlePruneSystemNetworks))

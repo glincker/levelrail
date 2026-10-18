@@ -91,6 +91,8 @@ System endpoints for:
 | GET | /api/v1/system/janitor/runs | AbilityRead | handleListJanitorRuns |
 | PUT | /api/v1/system/janitor/policy | AbilityRoot | handleUpdateJanitorPolicy |
 | POST | /api/v1/system/janitor/run | AbilityRoot | handleRunJanitor |
+| GET | /api/v1/system/control-plane-health | AbilityRead | handleGetCPHealth |
+| POST | /api/v1/system/control-plane-health/fix | AbilityRoot | handleCPHealthFix |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

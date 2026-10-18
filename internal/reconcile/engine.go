@@ -58,6 +58,14 @@ type Engine struct {
 	lastResult map[string]Result
 	lastErr    map[string]error
 
+	stats       passStats
+	ring        []time.Duration
+	slowest     time.Duration
+	slowestName string
+
+	passSlowest     time.Duration
+	passSlowestName string
+
 	// nudge lets a caller outside the reconcile loop (internal/api, on a
 	// desired-state-changing request) request an immediate ReconcileAll
 	// instead of waiting for the next Docker event or resync tick.
@@ -136,6 +144,9 @@ func (e *Engine) SetSource(s Source) {
 // A Source error is logged and skipped for this pass rather than treated
 // as fatal, since the next tick or event re-derives the set again anyway.
 func (e *Engine) ReconcileAll(ctx context.Context) {
+	start := time.Now()
+	n := len(e.controllers)
+	defer func() { e.recordPass(start, n) }()
 	for _, c := range e.controllers {
 		e.reconcileOne(ctx, c)
 	}
@@ -147,6 +158,7 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 		e.logger.Error("listing dynamic controllers failed", slog.String("error", err.Error()))
 		return
 	}
+	n += len(dynamic)
 	for _, c := range dynamic {
 		e.reconcileOne(ctx, c)
 	}
@@ -156,6 +168,7 @@ func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
 	start := time.Now()
 	result, err := c.Reconcile(ctx)
 	dur := time.Since(start)
+	e.recordController(c.Name(), dur)
 
 	e.mu.Lock()
 	e.lastResult[c.Name()] = result
