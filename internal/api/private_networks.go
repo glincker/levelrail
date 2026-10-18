@@ -250,6 +250,9 @@ func (rt *Router) handleCreatePrivateNetwork(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, bad)
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown app in members"), appRefs(req.Members)...) {
+		return
+	}
 	existing, err := cfg.Store.ListPrivateNetworks(r.Context())
 	if err != nil {
 		rt.internalError(w, "api: create private network: list", err)
@@ -293,6 +296,9 @@ func (rt *Router) handleUpdatePrivateNetwork(w http.ResponseWriter, r *http.Requ
 	members, bad := resolveAppRefs(apps, req.Members)
 	if bad != "" {
 		writeError(w, http.StatusBadRequest, bad)
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown app in members"), appRefs(req.Members)...) {
 		return
 	}
 	id := r.PathValue("id")

@@ -333,6 +333,9 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(strings.TrimSpace(req.NodeID))) {
+		return
+	}
 	prev, _, err := d.Options.GetStorageOptions(r.Context(), existing.ID)
 	if err != nil {
 		rt.logger.Error("api: update storage destination: load options failed", slog.String("error", err.Error()), slog.String("id", existing.ID))

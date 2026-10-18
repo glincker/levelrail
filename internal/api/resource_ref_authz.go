@@ -18,6 +18,7 @@ const (
 	refKindDatabase    refKind = "database"
 	refKindEnvironment refKind = "environment"
 	refKindNode        refKind = "node"
+	refKindProject     refKind = "project"
 )
 
 // resourceRef is a resource a request names in its body or query rather
@@ -31,6 +32,7 @@ func appRef(name string) resourceRef            { return resourceRef{refKindApp,
 func databaseRef(name string) resourceRef       { return resourceRef{refKindDatabase, name} }
 func environmentRef(id string) resourceRef      { return resourceRef{refKindEnvironment, id} }
 func nodeRef(id string) resourceRef             { return resourceRef{refKindNode, id} }
+func projectRef(id string) resourceRef          { return resourceRef{refKindProject, id} }
 func appRefs(names []string) []resourceRef      { return mapRefs(names, appRef) }
 func databaseRefs(names []string) []resourceRef { return mapRefs(names, databaseRef) }
 
@@ -149,6 +151,8 @@ func (rt *Router) refAllowed(ctx context.Context, c *refCaller, ability string, 
 		return authorizeResource(c.abilities, c.policies, ability, resourcePrefixNode+ref.id), nil
 	case refKindEnvironment:
 		return rt.environmentRefAllowed(ctx, c, ability, ref.id)
+	case refKindProject:
+		return rt.projectRefAllowed(ctx, c, ability, ref.id)
 	}
 	return false, fmt.Errorf("unknown resource kind %q", ref.kind)
 }
@@ -196,6 +200,33 @@ func (rt *Router) environmentRefAllowed(ctx context.Context, c *refCaller, abili
 	}
 	extra := environmentResources(envRef)
 	return authorizeResource(abilities, c.policies, ability, extra[0], extra[1:]...), nil
+}
+
+// projectRefAllowed applies the team gate and IAM to a project named in a body.
+func (rt *Router) projectRefAllowed(ctx context.Context, c *refCaller, ability, id string) (bool, error) {
+	if !c.teamsLoaded {
+		teams, err := rt.principalTeamScope(ctx, c.principalType, c.principalID)
+		if err != nil {
+			return false, err
+		}
+		c.teams, c.teamsLoaded = teams, true
+	}
+	abilities := c.abilities
+	if c.teams != nil {
+		owner, err := rt.ownerOfObject(ctx, string(refKindProject), id)
+		if errors.Is(err, store.ErrProjectNotFound) {
+			return false, nil
+		}
+		if err != nil {
+			return false, err
+		}
+		role := c.teams.roleFor(&owner)
+		if role == "" {
+			return false, nil
+		}
+		abilities = capAbilities(abilities, owner.TeamID, role)
+	}
+	return authorizeResource(abilities, c.policies, ability, "project:"+id), nil
 }
 
 // authorizePlacementTarget is validatePlacementTarget for a request: a node

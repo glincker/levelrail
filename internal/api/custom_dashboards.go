@@ -192,6 +192,9 @@ func (rt *Router) createDashboard(w http.ResponseWriter, r *http.Request, owner 
 	if !ok {
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown project"), projectRef(req.ProjectID)) {
+		return
+	}
 	buf := make([]byte, 8)
 	if _, err := rand.Read(buf); err != nil {
 		rt.internalError(w, "api: create dashboard: id", err)
@@ -230,6 +233,9 @@ func (rt *Router) handleUpdateDashboard(w http.ResponseWriter, r *http.Request) 
 	}
 	body, ok := rt.checkDashboardRequest(w, &req)
 	if !ok {
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusBadRequest, "unknown project"), projectRef(req.ProjectID)) {
 		return
 	}
 	existing.Scope, existing.ProjectID, existing.IsDefault = req.Scope, req.ProjectID, req.IsDefault

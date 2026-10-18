@@ -144,6 +144,9 @@ func (rt *Router) createAgentStorageDestination(w http.ResponseWriter, r *http.R
 		writeError(w, status, msg)
 		return
 	}
+	if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(req.NodeID)) {
+		return
+	}
 	id, err := randomBackupTargetID()
 	if err != nil {
 		rt.internalError(w, "create storage destination: generate id", err)

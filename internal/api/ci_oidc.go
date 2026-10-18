@@ -246,17 +246,10 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "identity token rejected")
 		return
 	}
-	trusts, err := rt.ciTrusts.ListCIOIDCTrustsForRepo(r.Context(), claims.Repository, req.App)
+	match, err := rt.authorizeCIExchange(r.Context(), claims, req.App)
 	if err != nil {
 		rt.internalError(w, "ci exchange: list trusts", err)
 		return
-	}
-	var match *store.CIOIDCTrust
-	for i := range trusts {
-		if ciTrustMatches(trusts[i], claims) {
-			match = &trusts[i]
-			break
-		}
 	}
 	if match == nil {
 		rt.logger.Info("api: ci exchange: no trust", slog.String("app", req.App), slog.String("repository", claims.Repository), slog.String("ref", claims.Ref))
@@ -280,6 +273,20 @@ func (rt *Router) handleCIOIDCExchange(w http.ResponseWriter, r *http.Request) {
 	}
 	rt.logger.Info("api: ci exchange: token issued", slog.String("app", req.App), slog.String("repository", claims.Repository), slog.String("ref", claims.Ref), slog.String("subject", claims.Subject), slog.String("token_id", rec.ID))
 	writeJSON(w, http.StatusOK, ciExchangeResponse{Token: raw, ExpiresAt: expires})
+}
+
+// authorizeCIExchange returns the trust that lets these verified claims act on app, or nil.
+func (rt *Router) authorizeCIExchange(ctx context.Context, claims CIClaims, app string) (*store.CIOIDCTrust, error) {
+	trusts, err := rt.ciTrusts.ListCIOIDCTrustsForRepo(ctx, claims.Repository, app)
+	if err != nil {
+		return nil, err
+	}
+	for i := range trusts {
+		if ciTrustMatches(trusts[i], claims) {
+			return &trusts[i], nil
+		}
+	}
+	return nil, nil
 }
 
 type ciWorkflowResource struct {

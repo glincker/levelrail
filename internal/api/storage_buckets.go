@@ -129,6 +129,9 @@ func (rt *Router) handleListStorageBuckets(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	app := r.URL.Query().Get("app")
+	if !rt.authorizeRefs(w, r, AbilityRead, notFoundAs(http.StatusNotFound, "app not found"), appRef(app)) {
+		return
+	}
 	bindings, err := d.Buckets.ListStorageBucketBindings(r.Context(), "")
 	if err != nil {
 		rt.internalError(w, "api: list bucket bindings failed", err)
@@ -211,6 +214,9 @@ func (rt *Router) handleCreateStorageBucket(w http.ResponseWriter, r *http.Reque
 		return
 	} else if err != nil {
 		rt.internalError(w, "api: create bucket: look up destination failed", err)
+		return
+	}
+	if !rt.authorizeRefs(w, r, AbilityWrite, notFoundAs(http.StatusBadRequest, "unknown app_name"), appRef(req.AppName)) {
 		return
 	}
 	if req.AppName != "" {
