@@ -233,6 +233,7 @@ type Controller struct {
 	orgEnv            OrganizationEnvStore    // nil is valid: organization vars are just skipped, see WithOrganizationEnv
 	environmentEnv    EnvironmentEnvLister    // nil is valid: environment vars are just skipped, see WithEnvironmentEnv
 	appIntegrations   AppIntegrationStore     // nil is valid: attached-integration env vars are just skipped, see WithAppIntegrations
+	bucketBindings    BucketBindingStore      // nil is valid: bound buckets are just skipped, see WithBucketBindings
 	networkPrefix     string                  // empty falls back to defaultNetworkPrefix, see WithNetworkPrefix
 	registryCreds     RegistryCredentialStore // nil is valid: a service with no RegistryCredentialID never needs one, see WithRegistryCredentials
 	databaseScope     DatabaseScopeStore      // nil is valid: every referenced database is attached, see WithDatabaseScope
@@ -1365,8 +1366,9 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 	hasOrgEnv := desired.ProjectID != "" && c.orgEnv != nil
 	hasEnvironmentEnv := desired.EnvironmentID != "" && c.environmentEnv != nil
 	hasAppIntegrations := c.appIntegrations != nil
+	hasBucketBindings := c.bucketBindings != nil
 	hasDatabaseEnv := len(desired.DatabaseEnv) > 0 || desired.DatabaseAttachment != nil
-	if len(desired.SecretEnv) == 0 && len(desired.VaultEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasAppIntegrations && !hasDatabaseEnv {
+	if len(desired.SecretEnv) == 0 && len(desired.VaultEnv) == 0 && desired.StorageTargetID == "" && !hasProjectEnv && !hasOrgEnv && !hasEnvironmentEnv && !hasAppIntegrations && !hasBucketBindings && !hasDatabaseEnv {
 		return desired.Env, nil
 	}
 
@@ -1456,6 +1458,16 @@ func (c *Controller) resolveEnv(ctx context.Context, desired *store.DesiredServi
 			return nil, fmt.Errorf("resolve storage target env: %w", err)
 		}
 		for k, v := range storageEnv {
+			env[k] = v
+		}
+	}
+
+	if hasBucketBindings {
+		bucketEnv, err := c.resolveBucketEnv(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("resolve bucket env: %w", err)
+		}
+		for k, v := range bucketEnv {
 			env[k] = v
 		}
 	}

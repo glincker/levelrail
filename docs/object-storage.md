@@ -169,13 +169,26 @@ The app card and `build-cache show` list the app's prefix (bounded to `APP_BUILD
 </Accordion>
 </AccordionGroup>
 
+## App buckets
+
+A bucket is a private folder (a key prefix) inside a connected destination, bound to an app. Create one from the app's Integrations page (**Storage buckets**, **New bucket**) or with `levelrail-cli storage buckets create --name uploads --destination <id> --app web`.
+
+- **Env vars.** At the next container start the app gets `S3_ENDPOINT`, `S3_BUCKET`, `S3_PREFIX`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Give a second bucket another prefix with `--env-prefix MEDIA` to get `MEDIA_*`. The app page offers **Restart now** after a change because a running container keeps its old env.
+- **Files.** **Browse files** lists (virtualized), uploads, downloads and deletes. Console uploads are capped by `APP_API_MAX_BODY_BYTES` (default 16 MiB); use `storage buckets presign <id> <key> --method PUT` for bigger files.
+- **Presigned links.** Time-limited GET or PUT URLs, up to 7 days, from the console (copy link), CLI or `POST /api/v1/storage/buckets/{id}/presign`.
+- **Size limit.** Enforced for console, CLI and presign issuing, not for the app writing straight to S3 with its env credentials.
+- **Expire after N days.** A rule that deletes older files, run hourly and on demand (**Run expiry now**, `storage buckets sweep`).
+- **Public read.** The toggle serves files without sign-in at `/api/v1/public/buckets/<id>/<key>`, sandboxed with a restrictive content security policy. Everything else is private.
+
+The injected credentials are the destination's own, so they reach the whole destination bucket: the prefix scopes where this feature reads and writes, not what the key can do. Use a dedicated destination (its own provider bucket and key) for apps you do not fully trust.
+
 ## Alerting
 
 Create a `log_archive_stale` alert rule (dashboard: Alerts, or `levelrail-cli apps alerts create <app> --kind log_archive_stale`). It fires when any enabled policy's last run failed, or when a policy has gone longer than the rule's `for_duration` without a success (default: three intervals, at least two hours). It notifies through the same channels as every other rule.
 
 ## API and MCP
 
-REST routes live under `/api/v1/storage`, `/api/v1/log-archive`, and `/api/v1/build-cache` (see the [API reference](/api-reference)). Reads need the `read` ability, policy changes and dumps need `write`, and anything that handles credentials needs `write:sensitive`. The MCP server exposes read and control tools (`list_storage_destinations`, `test_storage_destination`, `list_log_archive_policies`, `set_log_archive_policy`, `start_log_archive_dump`, `list_log_archive_runs`, `list_archived_logs`, `get_build_cache`, `set_build_cache`) but deliberately has no tool that accepts bucket credentials.
+REST routes live under `/api/v1/storage` (including `/api/v1/storage/buckets`), `/api/v1/log-archive`, and `/api/v1/build-cache` (see the [API reference](/api-reference)). Reads need the `read` ability, policy changes and dumps need `write`, and anything that handles credentials needs `write:sensitive`. The MCP server exposes read and control tools (`list_storage_destinations`, `test_storage_destination`, `list_log_archive_policies`, `set_log_archive_policy`, `start_log_archive_dump`, `list_log_archive_runs`, `list_archived_logs`, `get_build_cache`, `set_build_cache`) but deliberately has no tool that accepts bucket credentials.
 
 ## Next steps
 

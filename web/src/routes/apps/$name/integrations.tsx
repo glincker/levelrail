@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useApp } from '../../../queries/apps'
 import { StorageAttachmentCard } from '../../../components/StorageAttachmentCard'
+import { AppBucketsCard } from '../../../components/storageBuckets/AppBucketsCard'
 import { LogDrainCard } from '../../../components/LogDrainCard'
 import { DatabaseAttachmentCard } from '../../../components/DatabaseAttachmentCard'
 import { DatabaseConnectionsCard } from '../../../components/DatabaseConnectionsCard'
@@ -22,6 +23,7 @@ function IntegrationsSection() {
     <div className="space-y-6">
       <AppIntegrationsCard appName={name} />
       <StorageAttachmentCard app={app} />
+      <AppBucketsCard app={app} />
       <LogDrainCard app={app} />
       <DatabaseAttachmentCard app={app} />
       <DatabaseConnectionsCard app={app} />

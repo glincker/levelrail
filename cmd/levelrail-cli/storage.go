@@ -18,6 +18,7 @@ func storageUsage(prog string) string {
   %[1]s storage add --name N --provider P --bucket B --access-key-id ID --secret-access-key KEY [flags]
   %[1]s storage test <id>                       write, read back and delete a probe object
   %[1]s storage delete <id>                     disconnect a destination
+  %[1]s storage buckets <subcommand>            named buckets bound to apps (run "storage buckets help")
 
 Add flags:
   --provider string        aws, r2, b2, minio, wasabi, or custom (default custom)
@@ -49,6 +50,8 @@ func runStorage(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runStorageTest(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return runStorageDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "buckets":
+		return runStorageBuckets(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown storage subcommand %q\n\n%s", prog, args[0], storageUsage(prog))
 		return exitUsage

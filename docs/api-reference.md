@@ -496,6 +496,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/cache/purges | AbilityRead | handleListCachePurges |
 | POST | /api/v1/apps/{name}/cache/preset | AbilityDeploy | handleApplyCachePreset |
 | POST | /api/v1/apps/{name}/env/scan | AbilityWrite | handleScanEnvValues |
+| GET | /api/v1/apps/{name}/buckets | AbilityRead | handleListAppBuckets |
+| PUT | /api/v1/apps/{name}/buckets/{id} | AbilityWriteSensitive | handleBindAppBucket |
+| DELETE | /api/v1/apps/{name}/buckets/{id} | AbilityWriteSensitive | handleUnbindAppBucket |
 
 </Accordion>
 
@@ -1505,6 +1508,18 @@ Routes that do not fit an existing group.
 | POST | /api/v1/images/gc | AbilityRoot | handleImageGC |
 | GET | /api/v1/functions | AbilityRead | handleListFunctions |
 | GET | /api/v1/functions/runtimes | AbilityRead | handleFunctionRuntimes |
+| GET | /api/v1/storage/buckets | AbilityRead | handleListStorageBuckets |
+| POST | /api/v1/storage/buckets | AbilityWriteSensitive | handleCreateStorageBucket |
+| GET | /api/v1/storage/buckets/{id} | AbilityRead | handleGetStorageBucket |
+| PATCH | /api/v1/storage/buckets/{id} | AbilityWriteSensitive | handleUpdateStorageBucket |
+| DELETE | /api/v1/storage/buckets/{id} | AbilityWriteSensitive | handleDeleteStorageBucket |
+| GET | /api/v1/storage/buckets/{id}/usage | AbilityRead | handleBucketUsage |
+| GET | /api/v1/storage/buckets/{id}/objects | AbilityReadSensitive | handleListBucketObjects |
+| PUT | /api/v1/storage/buckets/{id}/objects | AbilityWrite | handleUploadBucketObject |
+| DELETE | /api/v1/storage/buckets/{id}/objects | AbilityWrite | handleDeleteBucketObject |
+| GET | /api/v1/storage/buckets/{id}/objects/download | AbilityReadSensitive | handleDownloadBucketObject |
+| POST | /api/v1/storage/buckets/{id}/presign | AbilityReadSensitive | handlePresignBucketObject |
+| POST | /api/v1/storage/buckets/{id}/lifecycle/run | AbilityWrite | handleSweepStorageBucket |
 
 ## See also
 
