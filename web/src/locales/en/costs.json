@@ -1,0 +1,140 @@
+{
+  "title": "Cost explorer",
+  "description": "See where spend goes over time, what it is on track to reach this month, and which budgets are at risk. Figures use your own prices.",
+  "error": "Could not load costs: {{message}}",
+  "groupBy": {
+    "label": "Group by",
+    "app": "App",
+    "project": "Project",
+    "tag": "Tag",
+    "node": "Node",
+    "kind": "Resource kind"
+  },
+  "granularity": {
+    "label": "Granularity",
+    "daily": "Daily",
+    "monthly": "Monthly"
+  },
+  "period": {
+    "label": "Period",
+    "mtd": "Month to date",
+    "30d": "Last 30 days",
+    "last_month": "Last month"
+  },
+  "months": {
+    "label": "Months",
+    "count_one": "{{count}} month",
+    "count_other": "{{count}} months"
+  },
+  "summary": {
+    "change": "{{value}} vs previous period",
+    "noChange": "No previous period to compare"
+  },
+  "series": {
+    "other": "Other",
+    "unassigned": "Unassigned",
+    "untagged": "Untagged"
+  },
+  "kind": {
+    "app": "Apps",
+    "database": "Databases"
+  },
+  "chart": {
+    "label": "Cost over time"
+  },
+  "table": {
+    "label": "Cost ranking",
+    "name": "Name",
+    "cost": "Cost",
+    "previous": "Previous",
+    "change": "Change"
+  },
+  "forecast": {
+    "title": "Month end forecast",
+    "range": "Likely between {{low}} and {{high}}",
+    "hint": "Projected from recent full days. The range widens when daily spend is uneven.",
+    "chart": "Cumulative spend this month with the projected range",
+    "bandName": "Range",
+    "actual": "Spent so far",
+    "projected": "Projected",
+    "confidence": {
+      "low": "Low confidence",
+      "medium": "Medium confidence",
+      "high": "High confidence"
+    }
+  },
+  "movers": {
+    "title": "Top movers",
+    "description": "The largest increases against the previous period.",
+    "none": "Nothing grew against the previous period.",
+    "up": "{{name}} is up {{amount}} ({{pct}})"
+  },
+  "empty": {
+    "noData": "No cost data for this period yet.",
+    "noTelemetryTitle": "No usage data yet",
+    "noTelemetryDescription": "Cost is derived from measured usage. It appears once metrics are being collected.",
+    "notConfiguredTitle": "Set your prices first",
+    "notConfiguredDescription": "Costs are zero until you tell Levelrail what your servers or units cost.",
+    "configure": "Set prices"
+  },
+  "budgets": {
+    "title": "Budgets",
+    "description": "Monthly limits for a project, a tag or an app. Each one alerts once per threshold and can pause or throttle the apps in scope at 100%.",
+    "empty": "No budgets yet. Add one below to get alerted before spend runs away.",
+    "addTitle": "Add a budget",
+    "name": "Name",
+    "scope": "Applies to",
+    "scopes": {
+      "project": "Project",
+      "tag": "Tag",
+      "app": "App"
+    },
+    "target": {
+      "project": "Project",
+      "tag": "Tag name",
+      "app": "App"
+    },
+    "monthly": "Monthly amount",
+    "thresholds": "Alert at (percent)",
+    "action": "At 100%",
+    "actions": {
+      "none": "Alert only",
+      "throttle": "Throttle traffic",
+      "pause": "Pause the apps"
+    },
+    "actionHint": "Throttle and pause are lifted when you raise the budget or the month rolls over. Nothing is ever deleted.",
+    "create": "Create budget",
+    "created": "Budget created",
+    "error": "Could not save the budget: {{message}}",
+    "remove": "Delete budget {{name}}",
+    "spent": "{{spent}} of {{budget}}",
+    "forecast": "forecast {{mid}} ({{low}} to {{high}})",
+    "thresholdsLine": "Alerts at {{levels}} percent. Highest reached: {{reached}}",
+    "none": "none",
+    "state": {
+      "ok": "On track",
+      "warn": "Warning",
+      "over": "Over budget",
+      "forecast": "Forecast over"
+    },
+    "enforced": {
+      "pause": "Apps paused",
+      "throttle": "Traffic throttled"
+    },
+    "deleteTitle": "Delete budget {{name}}?",
+    "deleteDescription": "Any pause or throttle it applied is lifted. Spend history is not affected.",
+    "delete": "Delete budget",
+    "alertHint": "Alerts go through your budget threshold alert rule. Add one under Alerts if you want email, Slack or webhook notices."
+  },
+  "fix": {
+    "label": "Fix this budget",
+    "raise": "Raise budget to {{amount}}",
+    "raised": "Budget raised to {{amount}}",
+    "pause": "Pause {{app}}",
+    "pauseTitle": "Pause {{app}}?",
+    "pauseDescription": "The app stops serving until you start it again. Its data is kept.",
+    "pauseConfirm": "Pause app",
+    "pausing": "Pausing",
+    "rightSize": "Right-size apps"
+  }
+}

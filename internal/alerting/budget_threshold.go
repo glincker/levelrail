@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/costbudget"
 	"github.com/GLINCKER/levelrail/internal/spendcap"
 	"github.com/GLINCKER/levelrail/internal/usagecost"
 )
@@ -20,6 +21,12 @@ type BudgetSource interface {
 // crossed thresholds to the same rule.
 type SpendCapSource interface {
 	SpendCapBreaches(ctx context.Context) ([]spendcap.Breach, error)
+}
+
+// CostBudgetSource is optional on a BudgetSource: named cost budgets add the
+// highest threshold each one fired this period to the same rule.
+type CostBudgetSource interface {
+	CostBudgetBreaches(ctx context.Context) ([]costbudget.Breach, error)
 }
 
 // EvaluateBudgetThreshold fires while any budget is over its warn level, its limit, or a forecast overrun.
@@ -44,6 +51,16 @@ func EvaluateBudgetThreshold(ctx context.Context, src BudgetSource, r Rule, now 
 		breaches, err := caps.SpendCapBreaches(ctx)
 		if err != nil {
 			return r, nil, nil, fmt.Errorf("alerting: evaluate rule %q: spend caps: %w", r.ID, err)
+		}
+		for _, b := range breaches {
+			notices = append(notices, b.Text)
+			keys = append(keys, b.Key)
+		}
+	}
+	if cb, ok := src.(CostBudgetSource); ok {
+		breaches, err := cb.CostBudgetBreaches(ctx)
+		if err != nil {
+			return r, nil, nil, fmt.Errorf("alerting: evaluate rule %q: cost budgets: %w", r.ID, err)
 		}
 		for _, b := range breaches {
 			notices = append(notices, b.Text)

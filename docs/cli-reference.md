@@ -293,6 +293,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
+- `costs explore|budgets list|create|set|delete` is the cost explorer with forecast and top movers, and named budgets with alert thresholds and an optional pause or throttle at 100 percent, see [cost explorer](/cost-explorer).
 - `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget set|delete project|team ID` is an alias for `usage budgets`. `budget show|set|clear APP` manages a per-app egress and cost cap, see [spend caps](/spend-caps).
 - `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](/resource-advisor). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1321 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1326 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -774,6 +774,11 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/compliance/evidence-packs/{id}/verify", Ability: "AbilityRoot", Group: "Other", Handler: "handleVerifyEvidencePack", Description: ""},
 	{Method: "GET", Path: "/api/v1/compose", Ability: "AbilityRead", Group: "Other", Handler: "handleListComposeStacks", Description: ""},
 	{Method: "POST", Path: "/api/v1/compose/preview", Ability: "AbilityDeploy", Group: "Other", Handler: "handlePreviewCompose", Description: "Parse only, nothing saved; deploy tier so the endpoint is not a free YAML parser for read-only tokens."},
+	{Method: "GET", Path: "/api/v1/costs/budgets", Ability: "AbilityRead", Group: "Other", Handler: "handleListCostBudgets", Description: ""},
+	{Method: "POST", Path: "/api/v1/costs/budgets", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateCostBudget", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteCostBudget", Description: ""},
+	{Method: "PUT", Path: "/api/v1/costs/budgets/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdateCostBudget", Description: ""},
+	{Method: "GET", Path: "/api/v1/costs/explore", Ability: "AbilityRead", Group: "Other", Handler: "handleCostExplore", Description: ""},
 	{Method: "GET", Path: "/api/v1/dashboards", Ability: "AbilityRead", Group: "Other", Handler: "handleListDashboards", Description: ""},
 	{Method: "POST", Path: "/api/v1/dashboards", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateDashboard", Description: ""},
 	{Method: "POST", Path: "/api/v1/dashboards/import", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportDashboard", Description: ""},

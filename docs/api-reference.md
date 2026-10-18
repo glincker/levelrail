@@ -1545,6 +1545,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/dashboards/{id}/export | AbilityRead | handleExportDashboard |
 | PUT | /api/v1/dashboards/{id} | AbilityWrite | handleUpdateDashboard |
 | DELETE | /api/v1/dashboards/{id} | AbilityWrite | handleDeleteDashboard |
+| GET | /api/v1/costs/explore | AbilityRead | handleCostExplore |
+| GET | /api/v1/costs/budgets | AbilityRead | handleListCostBudgets |
+| POST | /api/v1/costs/budgets | AbilityRoot | handleCreateCostBudget |
+| PUT | /api/v1/costs/budgets/{id} | AbilityRoot | handleUpdateCostBudget |
+| DELETE | /api/v1/costs/budgets/{id} | AbilityRoot | handleDeleteCostBudget |
 
 ## See also
 

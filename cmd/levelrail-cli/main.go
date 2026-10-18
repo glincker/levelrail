@@ -207,6 +207,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "resources":
 		return runResources(prog, args[1:], stdout, stderr, lookupEnv)
+	case "costs":
+		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "budget":
@@ -366,6 +368,7 @@ Usage:
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
   %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
   %[1]s budget [set|delete] project|team ID [flags]            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
