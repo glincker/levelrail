@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1340 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1342 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1047,6 +1047,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/private-networks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeletePrivateNetwork", Description: ""},
 	{Method: "PUT", Path: "/api/v1/private-networks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdatePrivateNetwork", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-vendors", Ability: "AbilityRead", Group: "Other", Handler: "handleListRegistryVendors", Description: ""},
+	{Method: "GET", Path: "/api/v1/resilience", Ability: "AbilityRead", Group: "Other", Handler: "handleChaosReport", Description: ""},
+	{Method: "POST", Path: "/api/v1/resilience/results", Ability: "AbilityWrite", Group: "Other", Handler: "handleRecordChaosResults", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/findings", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorFindings", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/dismiss", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorState", Description: ""},

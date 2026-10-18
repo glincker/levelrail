@@ -67,6 +67,7 @@ import (
 	"log/slog"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -272,6 +273,9 @@ type Controller struct {
 	runtime docker.Runtime
 	driver  Applier
 	logger  *slog.Logger
+
+	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
+	lastDial sync.Map
 
 	serverName     string
 	requestStats   bool
@@ -1229,13 +1233,18 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
-		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, skipping for this pass",
+		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, keeping the last known backend",
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+		if dial, ok := c.lastDial.Load(svc.Name); ok {
+			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
+		}
 	} else if dial, ok := dialAddr(state); ok && targetReady {
+		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
 
 	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target); ok {
+		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
 
@@ -1320,6 +1329,9 @@ func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclu
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
 			slog.String("service", serviceName), slog.String("error", err.Error()))
+		if dial, ok := c.lastDial.Load(serviceName); ok {
+			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
+		}
 		return "", false
 	}
 	var best *docker.ContainerState

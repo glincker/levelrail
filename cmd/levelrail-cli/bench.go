@@ -36,6 +36,12 @@ type benchClientInfo struct {
 // runBench implements "bench run": an open-loop load run against an app
 // URL, optionally with one failure scenario fired mid-run.
 func runBench(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 {
+		switch args[0] {
+		case "chaos":
+			return runBenchChaos(prog, args[1:], stdout, stderr, lookupEnv)
+		}
+	}
 	if len(args) == 0 || args[0] != "run" {
 		_, _ = fmt.Fprint(stderr, benchUsage(prog))
 		return exitUsage

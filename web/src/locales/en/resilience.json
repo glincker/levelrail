@@ -1,0 +1,32 @@
+{
+  "title": "Resilience report",
+  "description": "The last measured result of each failure scenario, run against throwaway local containers. Only measured numbers are shown.",
+  "loadError": "Could not load the resilience report.",
+  "retry": "Re-check",
+  "status": {
+    "passed": "Passed",
+    "failed": "Failed",
+    "skipped": "Skipped"
+  },
+  "scenario": {
+    "kill-container": "Kill the serving container under traffic",
+    "daemon-unreachable": "Docker API unreachable during a deploy",
+    "control-plane-restart": "Control plane restart under traffic",
+    "disk-pressure": "Scratch volume filled",
+    "oom-during-readiness": "OOM kill during the readiness wait"
+  },
+  "metrics": {
+    "recovery": "Recovery",
+    "errors": "Failed requests",
+    "ranAt": "Measured"
+  },
+  "notMeasured": "Not yet measured",
+  "empty": {
+    "title": "No chaos results recorded yet",
+    "body": "Run the scenarios on a machine with Docker and record them, and each result appears here."
+  },
+  "cli": {
+    "summary": "Run the scenarios from a terminal instead",
+    "note": "Needs a CLI built with the chaoslive tag and a local Docker daemon."
+  }
+}

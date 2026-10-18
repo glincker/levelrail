@@ -141,7 +141,29 @@ Measured on a 2 vCPU droplet running a build of this branch's predecessor (v0.2.
 
 Fixes shipped from these runs: pinned host port handoff with restore on failure, removal of half-started containers, a check that a pinned port is actually published, rolling deploys keeping the routed replica until cutover, required secrets enforced at reconcile time, default [load balancing](/load-balancing) for multi-replica apps, and ingress config applies skipped when nothing changed. These fixes are covered by unit tests with a fake Docker client; they have not yet been re-measured on a real server.
 
-Not measured: Docker daemon restart mid-run and disk pressure (the shared test host could not be disturbed). Containers use restart policy `no`, so after a daemon restart recovery depends on the reconciler's next pass.
+Not measured on a server: Docker daemon restart mid-run and disk pressure on the host volume (the shared test host could not be disturbed). Containers use restart policy `no`, so after a daemon restart recovery depends on the reconciler's next pass.
+
+## Chaos harness
+
+`levelrail-cli bench chaos` repeats these failures on demand against throwaway local containers that carry a unique `lrchaos-` name prefix and are always removed afterwards. It never touches anything it did not create.
+
+```bash
+levelrail-cli bench chaos list
+levelrail-cli bench chaos run all --record --json
+levelrail-cli bench chaos report
+```
+
+`run` needs a CLI built with `-tags chaoslive` (the scenarios embed the control plane) and a local Docker daemon with `node:22-alpine`. It prints a table, or a JSON summary with `--json`, and exits 2 when an assertion fails. `--record` stores the results on the control plane, which the dashboard shows as the Resilience report on the System status page and an agent reads with the `get_resilience_report` MCP tool.
+
+| Scenario | What it asserts |
+| --- | --- |
+| `kill-container` | the container is healthy and routed again, with recovery time and failed requests recorded |
+| `daemon-unreachable` | with the Docker API cut for 6 s mid-deploy, the deploy resumes or fails cleanly and no request fails in the window |
+| `control-plane-restart` | the app container is not recreated and keeps answering on its own port while the ingress restarts |
+| `disk-pressure` | a filled scratch volume raises the node disk space alert, an idle one does not |
+| `oom-during-readiness` | the deploy fails as `OOMKilledDuringReadiness` and the old release serves every request |
+
+The measured numbers, with hardware and date, are in [benchmarks](/benchmarks#chaos-results). The same scenarios run as `go test ./test/e2e/reconcile -run TestChaos_Live` (skipped under `-short`). The first run of `daemon-unreachable` exposed that the ingress dropped every route while the Docker API was unreachable. It now keeps the last known backend per service.
 
 ## Next steps
 

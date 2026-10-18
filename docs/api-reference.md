@@ -1564,6 +1564,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/migration/checklists | AbilityRead | handleListMigrationChecklists |
 | GET | /api/v1/migration/checklists/{app} | AbilityRead | handleGetMigrationChecklist |
 | POST | /api/v1/migration/checklists/{app}/steps/{step} | AbilityWriteSensitive | handleMigrationChecklistStep |
+| GET | /api/v1/resilience | AbilityRead | handleChaosReport |
+| POST | /api/v1/resilience/results | AbilityWrite | handleRecordChaosResults |
 
 ## See also
 

@@ -52,6 +52,7 @@ export const NAMESPACES = [
   'eventWebhooks',
   'compliance',
   'deploySafety',
+  'resilience',
   'jobs',
   'network',
   'fixit',

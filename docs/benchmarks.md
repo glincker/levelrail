@@ -104,6 +104,27 @@ Not yet measured: anything through the ingress, with Docker, across nodes or acr
 | Node drain: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
 | Control plane restart: ingress kept serving, outage length | not set | not yet measured | not yet measured |
 
+## Chaos results
+
+Measured by `levelrail-cli bench chaos run all` (build with `-tags chaoslive`) on 2026-10-18. Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Docker Desktop engine 28.3.0 with 7 GiB visible to Docker, node:22-alpine fixture, one replica, 40 req/s open-loop for 30 s through the embedded ingress on loopback, one run per scenario. Single runs on a laptop: treat them as a first measurement, not a distribution.
+
+| Scenario | Date | Status | Recovery | Failed requests | Error window | What happened |
+| --- | --- | --- | --- | --- | --- | --- |
+| kill-container | 2026-10-18 | passed | 3525 ms | 141 of 1200 | 3500 ms | `SIGKILL` of the only container, restarted in place by the reconciler, ingress routed again |
+| daemon-unreachable | 2026-10-18 | passed | not applicable | 0 of 1200 | 0 ms | Docker API cut for 6 s mid-deploy, deploy resumed and succeeded, old container kept serving |
+| control-plane-restart | 2026-10-18 | passed | 25 ms | 1 of 1200 | 0 ms | in-process engine and ingress restart, container not recreated, 0 direct probes failed |
+| disk-pressure | 2026-10-18 | passed | not applicable | not applicable | not applicable | 10 MiB tmpfs scratch volume filled to 100%, node disk space rule fired, idle volume at 0% did not |
+| oom-during-readiness | 2026-10-18 | passed | not applicable | 0 of 1200 | 0 ms | deploy failed as `OOMKilledDuringReadiness`, v1 kept serving |
+
+How to read these:
+
+- **daemon-unreachable** cuts the Docker API with a switchable socket proxy in front of the real daemon. The daemon itself was not stopped, so a daemon restart (engine events stream re-established, containers with restart policy `no`) is not measured. The first run found a real bug: while the Docker API was unreachable the ingress dropped every route (185 of 1200 requests failed for the length of the outage). The ingress now keeps each service's last known backend through an outage, and the run above is after that fix.
+- **control-plane-restart** restarts the reconcile engine and embedded ingress inside one process. It does not exercise systemd socket activation, so the 25 ms figure is not the figure for a real `systemctl restart`. The 4 s outage in [resilience](/resilience) was measured on a server and still stands for that path.
+- **disk-pressure** fills a size-limited tmpfs inside a throwaway container and feeds the measured usage to the real node disk space evaluator. It does not fill the host disk, so it proves the rule fires on the measured percentage, not that the host collector samples it.
+- **kill-container** is slower than the 1 s once measured on a server (`docker kill`, 2 vCPU droplet) in [resilience](/resilience). They differ in hardware, Docker engine and whether the container was recreated or restarted in place, so neither replaces the other.
+
+Not yet measured: daemon restart (real engine stop), disk pressure on the host volume with the collector in the loop, control plane restart under systemd socket activation, multi-replica kill, and everything across nodes or zones.
+
 ## What is tested without Docker
 
 Zone-aware placement is tested against a fake fleet in `internal/placement`: replicas spread one per zone, and after losing a whole zone the replacement lands in a surviving zone. That test proves the scheduling decision, not request-level recovery, which is the unmeasured zone loss row above.

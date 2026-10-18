@@ -996,6 +996,9 @@
   "verification",
   "version"
  ],
+ "get_resilience_report": [
+  "results"
+ ],
  "get_resource_recommendation": [
   "cpu",
   "lookback_label",
