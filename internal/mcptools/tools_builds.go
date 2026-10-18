@@ -24,6 +24,10 @@ type buildCacheInput struct {
 	Node string `json:"node,omitempty" jsonschema:"node id; omit for the local node"`
 }
 
+type buildSpeedInput struct {
+	App string `json:"app" jsonschema:"app name"`
+}
+
 type pruneBuildCacheInput struct {
 	Node           string `json:"node,omitempty" jsonschema:"node id; omit for the local node"`
 	OlderThanHours *int   `json:"older_than_hours,omitempty" jsonschema:"only cache idle at least this many hours, default 168"`
@@ -46,6 +50,17 @@ func registerBuildTools(server *mcp.Server, client *apiclient.Client) {
 			return nil, listBuildsOutput{}, fmt.Errorf("list builds: %w", err)
 		}
 		return nil, listBuildsOutput{Builds: &l}, nil
+	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_build_speed",
+		Description: "Build speed of one app: time saved by cache (cold vs cached build median) and typed suggestions to speed builds up. Read only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in buildSpeedInput) (*mcp.CallToolResult, apiclient.BuildSpeed, error) {
+		out, err := client.GetBuildSpeed(ctx, in.App)
+		if err != nil {
+			return nil, apiclient.BuildSpeed{}, fmt.Errorf("get build speed: %w", err)
+		}
+		return nil, out, nil
 	})
 
 	addTool(server, &mcp.Tool{

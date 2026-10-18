@@ -567,6 +567,14 @@
   "bucket",
   "settings"
  ],
+ "get_build_speed": [
+  "builds",
+  "cold_p50_seconds",
+  "findings",
+  "time_saved_seconds",
+  "warm_known",
+  "warm_p50_seconds"
+ ],
  "get_buildkit_cache": [
   "in_use_bytes",
   "node",

@@ -505,6 +505,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-runs/{id}/fixes | AbilityRead | handleListPipelineRunFixes |
 | POST | /api/v1/apps/{name}/pipeline-runs/{id}/fixes/apply | AbilityDeploy | handleApplyPipelineRunFix |
 | GET | /api/v1/apps/{name}/pipelines/{pname}/insights | AbilityRead | handlePipelineInsights |
+| GET | /api/v1/apps/{name}/build-speed | AbilityRead | handleBuildSpeed |
 
 </Accordion>
 

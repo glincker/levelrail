@@ -46,4 +46,20 @@ levelrail-cli apps build-stats web --limit 50
 
 Over the API, `GET /api/v1/apps/{name}/build-stats?limit=50` returns the same trend plus every run, and `GET /api/v1/build-limits` returns the limits in effect. See the [API reference](/api-reference).
 
+## Making builds faster
+
+The build performance card also shows how much time the cache saved (median cold build against median cached build, over the last 50 builds) and suggestions, each with its fix:
+
+- **Cache turned off** (auto): the app has a cache destination that is disabled. The **Enable cache** button turns it back on.
+- **No remote cache configured** (guided): cache hits are low and no destination is set. **Set up cache** opens the app's deploy settings.
+- **Few steps reused** (manual): put the lockfile copy and dependency install before copying the source, and add a `.dockerignore`.
+- **Builds got slower recently** (manual): the recent median is at least 30% above the earlier one.
+
+```bash
+levelrail-cli apps build-speed web          # show the suggestions
+levelrail-cli apps build-speed web --fix    # apply the ones the control plane can apply
+```
+
+The API is `GET /api/v1/apps/{name}/build-speed`, and agents get the same data from the `get_build_speed` MCP tool.
+
 Remote registry cache hits are reported by BuildKit like local ones, so [build cache](/object-storage) setup shows up here as a rising cache hit rate.
