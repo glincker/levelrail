@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1342 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1347 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -249,6 +249,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/artifacts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRunArtifacts", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/artifacts/{aid}/download", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDownloadPipelineArtifact", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/cancel", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCancelPipelineRun", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/fixes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRunFixes", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/fixes/apply", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyPipelineRunFix", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/hold", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDecidePipelineRunHold", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/logs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListPipelineRunLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipeline-runs/{id}/logs/stream", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStreamPipelineRunLogs", Description: ""},
@@ -262,6 +264,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeletePipeline", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipeline", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/pipelines/{pname}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUpdatePipeline", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}/insights", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePipelineInsights", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/pipelines/{pname}/runs", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleStartPipelineRun", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeletePipelineWebhook", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/pipelines/{pname}/webhook", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetPipelineWebhook", Description: ""},
@@ -1023,6 +1026,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/pipelines/oidc/rotate-key", Ability: "AbilityRoot", Group: "Other", Handler: "handleRotatePipelineOIDCKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipelines/schema", Ability: "AbilityRead", Group: "Other", Handler: "handlePipelineSchema", Description: ""},
 	{Method: "GET", Path: "/api/v1/pipelines/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineSummary", Description: ""},
+	{Method: "GET", Path: "/api/v1/pipelines/templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListPipelineTemplates", Description: ""},
+	{Method: "GET", Path: "/api/v1/pipelines/templates/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetPipelineTemplate", Description: ""},
 	{Method: "POST", Path: "/api/v1/pipelines/validate", Ability: "AbilityRead", Group: "Other", Handler: "handleValidatePipeline", Description: ""},
 	{Method: "GET", Path: "/api/v1/plugin-keys", Ability: "AbilityRoot", Group: "Other", Handler: "handleListPluginKeys", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugin-keys", Ability: "AbilityRoot", Group: "Other", Handler: "handleAddPluginKey", Description: ""},

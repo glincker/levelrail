@@ -502,6 +502,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/bound | AbilityRead | handleListBoundEnv |
 | POST | /api/v1/apps/{name}/builds/{id}/cancel | AbilityDeploy | handleCancelBuild |
 | POST | /api/v1/apps/{name}/builds/{id}/retry | AbilityDeploy | handleRetryBuild |
+| GET | /api/v1/apps/{name}/pipeline-runs/{id}/fixes | AbilityRead | handleListPipelineRunFixes |
+| POST | /api/v1/apps/{name}/pipeline-runs/{id}/fixes/apply | AbilityDeploy | handleApplyPipelineRunFix |
+| GET | /api/v1/apps/{name}/pipelines/{pname}/insights | AbilityRead | handlePipelineInsights |
 
 </Accordion>
 
@@ -1566,6 +1569,8 @@ Routes that do not fit an existing group.
 | POST | /api/v1/migration/checklists/{app}/steps/{step} | AbilityWriteSensitive | handleMigrationChecklistStep |
 | GET | /api/v1/resilience | AbilityRead | handleChaosReport |
 | POST | /api/v1/resilience/results | AbilityWrite | handleRecordChaosResults |
+| GET | /api/v1/pipelines/templates | AbilityRead | handleListPipelineTemplates |
+| GET | /api/v1/pipelines/templates/{id} | AbilityRead | handleGetPipelineTemplate |
 
 ## See also
 

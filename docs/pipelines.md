@@ -502,6 +502,33 @@ Below the graph, every step shows its status and duration. Click a step to narro
 
 The MCP server exposes `list_pipeline_runs`, `list_all_pipeline_runs` (runs across every app), and `explain_pipeline_run`. All are read-only: the second reports the failed job and step, its exit code, the tail of its output, and any approval it is waiting on.
 
+## Starter templates
+
+Ten tested starter pipelines cover Node (test, deploy, version matrix), Go (test, tagged release), Python, a static site, a plain Dockerfile deploy, a monorepo with path filters, and a nightly cron job. Pick one in the dashboard from **Use a template** on a pipeline list, or from the CLI:
+
+```
+levelrail-cli pipelines templates
+levelrail-cli pipelines templates go-ci --out go-ci.yaml
+levelrail-cli pipelines templates node-ci --create web
+```
+
+`GET /api/v1/pipelines/templates` lists them and `GET /api/v1/pipelines/templates/{id}` returns one with its file. Every template is validated in the test suite.
+
+## Failed jobs, fixes, flaky jobs and timing
+
+When a run fails, the run page matches the failed job's output against known error patterns (network and registry timeouts, out of memory, job timeout, full disk, missing credentials, missing image or tool, npm, Python and Go version problems) and shows a typed **Fix** per match:
+
+- **Rerun**, **Add retries**, **Raise timeout** and **Raise memory** are applied by the control plane. The pipeline file is edited in place (comments are kept), re-validated, saved, and optionally rerun. Pipelines synced from the repository are not edited here, change the file in the repository instead.
+- Other fixes point at the one place the change lives: the pipeline editor, the app's secrets, or the node's disk.
+
+```
+levelrail-cli pipelines fixes web <run-id>
+levelrail-cli pipelines fixes web <run-id> --apply add_retries --job test --rerun
+levelrail-cli pipelines insights web ci
+```
+
+`GET /api/v1/apps/{name}/pipeline-runs/{id}/fixes` lists suggestions and `POST .../fixes/apply` applies one (`kind`, `job`, `rerun`). `GET /api/v1/apps/{name}/pipelines/{pname}/insights` returns, over the last 30 finished runs, each job's failure rate, median time and latest time, plus a timing diff of the newest run against the latest earlier run where everything passed. A job is flagged **flaky** when it both passed and failed on the same commit, passed only after a retry, or flips between pass and fail often at a failure rate that is neither rare nor constant.
+
 ## Permissions
 
 | Action | Ability |
