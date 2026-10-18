@@ -29,7 +29,9 @@
     "bound": "Bucket bound.",
     "bindFailed": "Could not bind the bucket.",
     "loadFailed": "Could not load buckets.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "boundRestarted": "Bucket bound. The app is restarting to pick up its env vars.",
+    "unboundRestarted": "Bucket unbound. The app is restarting to drop its env vars."
   },
   "create": {
     "title": "Create a bucket",

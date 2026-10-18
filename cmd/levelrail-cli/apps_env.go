@@ -124,6 +124,12 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	if bound, err := client.ListBoundEnv(ctx, name); err == nil {
+		for _, b := range bound {
+			secretKeys = append(secretKeys, b.Key)
+		}
+	}
+
 	plan := planEnvImport(app.Env, parseEnvFileBytes(data), secretKeys, keepExisting)
 	result := envImportResult{App: name, DryRun: dryRun, Plan: plan}
 	warnEnvSecrets(ctx, client, stderr, name, plan)

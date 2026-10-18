@@ -162,5 +162,17 @@
   "advanced": {
     "title": "Preview, branch and environment comparison",
     "description": "Values used only by preview deployments and per-branch builds, plus a comparison with other environments."
+  },
+  "bound": {
+    "title": "Connected resources",
+    "description": "Variables injected at container start from database links and bucket bindings. Read only here; change them on the database or bucket.",
+    "key": "Key",
+    "source": "Source",
+    "value": "Value",
+    "database": "Database {{name}} ({{field}})",
+    "bucket": "Bucket {{name}}",
+    "masked": "Masked",
+    "loadFailed": "Could not load connected resources.",
+    "retry": "Retry"
   }
 }

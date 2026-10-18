@@ -62,10 +62,13 @@ export function AppBucketsCard({ app }: Readonly<{ app: AppDetail }>) {
     bind.mutate(
       { app: app.name, id: pick },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           setPick('')
-          setNeedsRestart(true)
-          toast.add({ title: t('card.bound'), type: 'success' })
+          setNeedsRestart(!res.app_restarted)
+          toast.add({
+            title: t(res.app_restarted ? 'card.boundRestarted' : 'card.bound'),
+            type: 'success',
+          })
         },
         onError: (error) =>
           toast.add({
@@ -82,10 +85,15 @@ export function AppBucketsCard({ app }: Readonly<{ app: AppDetail }>) {
     unbind.mutate(
       { app: app.name, id: unbinding.id },
       {
-        onSuccess: () => {
+        onSuccess: (res) => {
           setUnbinding(null)
-          setNeedsRestart(true)
-          toast.add({ title: t('card.unbound'), type: 'success' })
+          setNeedsRestart(!res.app_restarted)
+          toast.add({
+            title: t(
+              res.app_restarted ? 'card.unboundRestarted' : 'card.unbound',
+            ),
+            type: 'success',
+          })
         },
         onError: (error) =>
           toast.add({

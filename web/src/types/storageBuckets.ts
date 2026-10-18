@@ -11,6 +11,7 @@ export interface StorageBucket {
   public: boolean
   public_url?: string
   quota_bytes: number
+  app_restarted?: boolean
   lifecycle_days: number
   last_swept_at?: string
   created_at: string

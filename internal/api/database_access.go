@@ -88,6 +88,8 @@ type databaseCredentialResource struct {
 	ExternalURL  string `json:"external_url,omitempty"`
 	ExternalNote string `json:"external_note,omitempty"`
 	ExpiresAt    string `json:"expires_at,omitempty"`
+	// RestartedApps lists linked apps recreated to pick up a rotated owner credential.
+	RestartedApps []string `json:"restarted_apps,omitempty"`
 }
 
 type databaseUserCreateRequest struct {
@@ -375,7 +377,11 @@ func (rt *Router) handleRotateDatabaseUser(w http.ResponseWriter, r *http.Reques
 	}
 	rt.auditDatabaseAccess(r, dbaccess.ActionUserRotate, desired.Name, role, http.StatusOK)
 	rt.logger.Info("api: database user password rotated", slog.String("database", desired.Name), slog.String("role", role))
-	writeJSON(w, http.StatusOK, rt.databaseCredential(r.Context(), r, desired, role, cred.Password, time.Time{}))
+	res := rt.databaseCredential(r.Context(), r, desired, role, cred.Password, time.Time{})
+	if role == desired.Name {
+		res.RestartedApps = rt.restartAppsUsingDatabase(r.Context(), desired.Name)
+	}
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (rt *Router) setDatabaseUserLogin(w http.ResponseWriter, r *http.Request, login bool) {

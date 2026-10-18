@@ -64,7 +64,8 @@
     "deleteTitle": "Delete {{name}}?",
     "deleteBody": "The login is removed and its sessions end. Anything it created is kept and handed to the admin role.",
     "deleteConfirm": "Delete user",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "rotateRestarted": "Restarted to pick up the new credential: {{apps}}."
   },
   "create": {
     "title": "Create a database user",
