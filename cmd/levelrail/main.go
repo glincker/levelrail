@@ -511,12 +511,12 @@ func run(logger *slog.Logger) error {
 			// Shared by database and service volume backups, so both use one upload, history, and scheduling pipeline.
 			VolumeArchiver:    &backup.ContainerVolumeArchiver{Runtime: client},
 			SqliteSnapshotter: &backup.ContainerSqliteSnapshotter{Runtime: client},
-			Uploader:          backup.S3Uploader{},
+			Uploader:          routedStorage(agentRegistry),
 		}
 		backupVerifyRunner = &backup.VerifyRunner{
 			Store:      db,
 			Secrets:    secretsManager,
-			Downloader: backup.S3Downloader{},
+			Downloader: routedStorage(agentRegistry),
 		}
 		volumeBackupOpts, err := newVolumeBackupOptions(db, client, agentRegistry, logger)
 		if err != nil {
@@ -829,7 +829,7 @@ func run(logger *slog.Logger) error {
 
 	// Gated on backupRunner: a scheduled backup needs the same master-key-backed credentials as a manual one.
 	if backupRunner != nil {
-		scheduler := backup.NewScheduler(db, backupRunner, backup.S3Deleter{}, logger)
+		scheduler := backup.NewScheduler(db, backupRunner, routedStorage(agentRegistry), logger)
 		// Every scheduled backup is auto-verified right after it
 		// completes, no opt-in toggle: same "just works" default the
 		// manual verify button already gives an operator on demand.
@@ -2043,7 +2043,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		restoreRunner := &backup.RestoreRunner{
 			Store:          db,
 			Secrets:        secretsManager,
-			Downloader:     backup.S3Downloader{},
+			Downloader:     routedStorage(agentRegistry),
 			Restorer:       &backup.ContainerRestorer{Runtime: client},
 			VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
 			Identities:     backupIdentities(backupRunner),
@@ -2053,7 +2053,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 		pitrRunner := &backup.PITRRunner{
 			Store:      db,
 			Secrets:    secretsManager,
-			Downloader: backup.S3Downloader{},
+			Downloader: routedStorage(agentRegistry),
 			Restorer:   &backup.ContainerPITRRestorer{Runtime: client},
 			WAL:        &backup.WALFetcher{Runtime: client, Lister: backup.S3Lister{}, Downloader: backup.S3Downloader{}},
 			WALVolume:  databaseWALArchiveVolume,
@@ -2079,14 +2079,14 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			api.WithCloneRestoreRunner(&backup.CloneRestoreRunner{
 				Store:      db,
 				Secrets:    secretsManager,
-				Downloader: backup.S3Downloader{},
+				Downloader: routedStorage(agentRegistry),
 				Restorer:   &backup.ContainerRestorer{Runtime: client},
 			}),
 			// Creates the volume synchronously: a bare volume has no reconciler to wait on.
 			api.WithVolumeCloneRestoreRunner(&backup.VolumeCloneRestoreRunner{
 				Store:          db,
 				Secrets:        secretsManager,
-				Downloader:     backup.S3Downloader{},
+				Downloader:     routedStorage(agentRegistry),
 				VolumeRestorer: &backup.ContainerVolumeRestorer{Runtime: client},
 				Volumes:        client,
 				Identities:     backupIdentities(backupRunner),
@@ -2096,13 +2096,13 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			api.WithBackupDownloader(&backup.DownloadRunner{
 				Store:      db,
 				Secrets:    secretsManager,
-				Downloader: backup.S3Downloader{},
+				Downloader: routedStorage(agentRegistry),
 			}),
 			// Shares the retention scheduler's deleter, so manual and automatic deletes clean up the same way.
 			api.WithBackupDeleter(&backup.DeleteRunner{
 				Store:   db,
 				Secrets: secretsManager,
-				Deleter: backup.S3Deleter{},
+				Deleter: routedStorage(agentRegistry),
 				Logger:  logger,
 			}),
 			// Re-downloads and re-checks a succeeded backup's own stored
@@ -2115,7 +2115,7 @@ func rootHandler(logger *slog.Logger, b *brand.Brand, db *store.DB, telemetryDB 
 			api.WithBackupTargetTester(&backup.TargetTester{
 				Store:   db,
 				Secrets: secretsManager,
-				Tester:  backup.S3Tester{},
+				Tester:  routedStorage(agentRegistry),
 			}),
 			// Reads and writes through secretsManager directly, so no separate runner type is needed.
 			api.WithGitHubAppSecrets(secretsManager),

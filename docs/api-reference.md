@@ -1590,6 +1590,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/archives/{id}/restore | AbilityRoot | handleRestoreArchive |
 | POST | /api/v1/archives/{id}/verify | AbilityRoot | handleVerifyArchive |
 | DELETE | /api/v1/archives/{id} | AbilityRoot | handleDeleteArchive |
+| GET | /api/v1/storage/defaults | AbilityRead | handleListStorageDefaults |
+| PUT | /api/v1/storage/defaults/{class} | AbilityWriteSensitive | handleSetStorageDefault |
+| DELETE | /api/v1/storage/defaults/{class} | AbilityWriteSensitive | handleClearStorageDefault |
 
 ## See also
 

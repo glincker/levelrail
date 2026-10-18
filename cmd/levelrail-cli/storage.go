@@ -18,6 +18,7 @@ func storageUsage(prog string) string {
   %[1]s storage add --name N --provider P --bucket B --access-key-id ID --secret-access-key KEY [flags]
   %[1]s storage test <id>                       write, read back and delete a probe object
   %[1]s storage delete <id>                     disconnect a destination
+  %[1]s storage destinations ls|add|test|default   destination commands (add --node N for a node directory)
   %[1]s storage buckets <subcommand>            named buckets bound to apps (run "storage buckets help")
 
 Add flags:
@@ -27,6 +28,14 @@ Add flags:
   --endpoint string        endpoint URL (minio, custom; overrides the preset)
   --virtual-hosted         use virtual-hosted addressing instead of path style
   --skip-verify            save without running the connection test first
+  --node string            store on this enrolled node's confined directory instead of S3 (no credentials)
+  --directory string       directory under the node's storage root (default backups)
+  --quota-gb float         soft quota in GB, flagged when exceeded (0 = none)
+
+Default:
+  %[1]s storage destinations default                   show the default per data class
+  %[1]s storage destinations default set <class> <id>  classes: backups, archives, artifacts, cache, dumps
+  %[1]s storage destinations default clear <class>
 %[2]s`, prog, commonFlagsHelp)
 }
 
@@ -50,6 +59,8 @@ func runStorage(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runStorageTest(prog, rest, stdout, stderr, lookupEnv)
 	case "delete":
 		return runStorageDelete(prog, rest, stdout, stderr, lookupEnv)
+	case "destinations":
+		return runStorageDestinations(prog, rest, stdout, stderr, lookupEnv)
 	case "buckets":
 		return runStorageBuckets(prog, rest, stdout, stderr, lookupEnv)
 	default:
@@ -113,9 +124,9 @@ func runStorageList(prog string, args []string, stdout, stderr io.Writer, lookup
 			return
 		}
 		tw := tabwriter.NewWriter(stdout, 0, 2, 2, ' ', 0)
-		_, _ = fmt.Fprintln(tw, "ID\tNAME\tPROVIDER\tBUCKET\tREGION\tARCHIVE POLICIES")
+		_, _ = fmt.Fprintln(tw, "ID\tNAME\tPROVIDER\tLOCATION\tUSED\tQUOTA\tEST COST/MO\tDEFAULT FOR")
 		for _, d := range dests {
-			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%d\n", d.ID, d.Name, d.Preset, d.Bucket, d.Region, d.ArchivePolicies)
+			_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\t$%.2f\t%s\n", d.ID, d.Name, d.Preset, destinationLocation(d), humanBytes(d.UsedBytes), quotaLabel(d), d.MonthlyCostUSD, joinOrDash(d.DefaultFor))
 		}
 		_ = tw.Flush()
 	})
@@ -124,6 +135,8 @@ func runStorageList(prog string, args []string, stdout, stderr io.Writer, lookup
 func runStorageAdd(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	var req apiclient.StorageDestinationRequest
 	var virtualHosted, skipVerify bool
+	var node, directory string
+	var quotaGB float64
 	c, code, ok := parseCLICall(prog, "storage add", storageUsage(prog), args, stdout, stderr, lookupEnv, func(fs *flag.FlagSet) {
 		fs.StringVar(&req.Name, "name", "", "display name (required)")
 		fs.StringVar(&req.Preset, "provider", "custom", "provider preset")
@@ -135,9 +148,30 @@ func runStorageAdd(prog string, args []string, stdout, stderr io.Writer, lookupE
 		fs.StringVar(&req.SecretAccessKey, "secret-access-key", "", "secret access key (required)")
 		fs.BoolVar(&virtualHosted, "virtual-hosted", false, "virtual-hosted addressing")
 		fs.BoolVar(&skipVerify, "skip-verify", false, "skip the connection test")
+		fs.StringVar(&node, "node", "", "enrolled node id for a node directory destination")
+		fs.StringVar(&directory, "directory", "", "directory under the node storage root")
+		fs.Float64Var(&quotaGB, "quota-gb", 0, "soft quota in GB")
 	})
 	if !ok {
 		return code
+	}
+	if quotaGB > 0 {
+		q := int64(quotaGB * 1e9)
+		req.QuotaBytes = &q
+	}
+	if node != "" {
+		req.Kind, req.NodeID, req.Directory = "agent", node, directory
+		if req.Name == "" {
+			return c.invalid("--name is required")
+		}
+		req.Verify = !skipVerify
+		created, err := c.client.CreateStorageDestination(context.Background(), req)
+		if err != nil {
+			return c.fail(fmt.Errorf("add storage destination %q: %w", req.Name, err))
+		}
+		return c.render(created, func() {
+			_, _ = fmt.Fprintf(stdout, "storage destination %q connected (id %s, node %s)\n", created.Name, created.ID, created.NodeID)
+		})
 	}
 	if req.Name == "" || req.Bucket == "" || req.AccessKeyID == "" || req.SecretAccessKey == "" {
 		return c.invalid("--name, --bucket, --access-key-id and --secret-access-key are required")
@@ -179,6 +213,8 @@ func runStorageTest(prog string, args []string, stdout, stderr io.Writer, lookup
 		}
 		if res.OK {
 			_, _ = fmt.Fprintf(stdout, "storage destination %q is working\n", id)
+		} else if res.Fix != "" {
+			_, _ = fmt.Fprintf(stdout, "suggested fix: %s\n", res.Fix)
 		}
 	}); rc != exitOK {
 		return rc

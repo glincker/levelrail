@@ -40,7 +40,7 @@ type archivedLogsInput struct {
 func registerLogArchiveTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_storage_destinations",
-		Description: "List connected S3-compatible storage destinations (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, custom): name, provider preset, bucket, region, and how many log archive policies use each. No credential fields, ever.",
+		Description: "List connected storage destinations (AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, custom S3, or an enrolled node directory): name, kind, provider preset, bucket or node directory, region, used bytes, quota, estimated monthly cost, the data classes that default to each, and how many log archive policies use each. No credential fields, ever.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.StorageDestination, error) {
 		out, err := client.ListStorageDestinations(ctx)
 		if err != nil {

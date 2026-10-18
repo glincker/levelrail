@@ -158,6 +158,9 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 			return gpu.Detect(ctx, gpu.ExecRunner{}, rl)
 		}))
 	}
+	if dir := os.Getenv("APP_AGENT_STORAGE_DIR"); dir != "" {
+		opts = append(opts, agent.WithFileStorage(dir))
+	}
 	if d := heartbeatIntervalFromEnv(); d > 0 {
 		opts = append(opts, agent.WithHeartbeatInterval(d))
 	}

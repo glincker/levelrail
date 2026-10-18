@@ -50,6 +50,9 @@ type StorageDeps struct {
 	Archiver    LogArchiver
 	ArchiveRoot string
 
+	// Policy enables per-class defaults, usage and quota reporting; nil answers 501 for defaults and omits usage.
+	Policy StoragePolicyStore
+
 	// BuildCache and BuildCacheSettings enable /api/v1/build-cache; nil answers 501.
 	BuildCache         BuildCacheService
 	BuildCacheSettings BuildCacheSettingsStore
@@ -89,6 +92,16 @@ type storageDestinationResource struct {
 	AccountID       string `json:"account_id,omitempty"`
 	CreatedAt       string `json:"created_at"`
 	ArchivePolicies int    `json:"archive_policies"`
+
+	Kind           string   `json:"kind"`
+	NodeID         string   `json:"node_id,omitempty"`
+	Directory      string   `json:"directory,omitempty"`
+	QuotaBytes     int64    `json:"quota_bytes"`
+	UsedBytes      int64    `json:"used_bytes"`
+	Objects        int64    `json:"objects"`
+	OverQuota      bool     `json:"over_quota"`
+	MonthlyCostUSD float64  `json:"monthly_cost_usd"`
+	DefaultFor     []string `json:"default_for"`
 }
 
 type storageDestinationRequest struct {
@@ -103,6 +116,12 @@ type storageDestinationRequest struct {
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
 	// Verify runs the put/get/delete probe before saving and rejects a failing destination.
 	Verify bool `json:"verify,omitempty"`
+
+	// Kind is "s3" (default) or "agent". An agent destination needs NodeID and Directory, no credentials.
+	Kind       string `json:"kind,omitempty"`
+	NodeID     string `json:"node_id,omitempty"`
+	Directory  string `json:"directory,omitempty"`
+	QuotaBytes *int64 `json:"quota_bytes,omitempty"`
 }
 
 func (rt *Router) toStorageResource(ctx context.Context, d *StorageDeps, t store.BackupTarget, opts store.StorageOptions, hasOpts bool) storageDestinationResource {
@@ -113,10 +132,16 @@ func (rt *Router) toStorageResource(ctx context.Context, d *StorageDeps, t store
 	if err != nil {
 		rt.logger.Warn("api: count archive policies failed", slog.String("error", err.Error()), slog.String("id", t.ID))
 	}
-	return storageDestinationResource{
+	res := storageDestinationResource{
 		ID: t.ID, Name: t.Name, Preset: opts.Preset, Provider: t.Provider, Endpoint: t.Endpoint, Region: t.Region,
 		Bucket: t.Bucket, PathStyle: opts.PathStyle, AccountID: opts.AccountID, CreatedAt: t.CreatedAt, ArchivePolicies: n,
+		Kind: storageKindS3, QuotaBytes: opts.QuotaBytes, DefaultFor: []string{},
 	}
+	if node, ok := strings.CutPrefix(t.Endpoint, store.AgentEndpointScheme); ok {
+		res.Kind, res.NodeID, res.Directory, res.Preset = storageKindAgent, node, t.Bucket, storageKindAgent
+		res.Endpoint, res.Bucket = "", ""
+	}
+	return res
 }
 
 // handleListStorageProviders handles GET /api/v1/storage/providers.
@@ -142,10 +167,13 @@ func (rt *Router) handleListStorageDestinations(w http.ResponseWriter, r *http.R
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+	dec := rt.storageDecorations(r.Context())
 	out := make([]storageDestinationResource, 0, len(targets))
 	for _, t := range targets {
 		o, has := opts[t.ID]
-		out = append(out, rt.toStorageResource(r.Context(), d, t, o, has))
+		res := rt.toStorageResource(r.Context(), d, t, o, has)
+		dec.apply(&res)
+		out = append(out, res)
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -166,7 +194,9 @@ func (rt *Router) handleGetStorageDestination(w http.ResponseWriter, r *http.Req
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toStorageResource(r.Context(), d, t, o, has))
+	res := rt.toStorageResource(r.Context(), d, t, o, has)
+	rt.storageDecorations(r.Context()).apply(&res)
+	writeJSON(w, http.StatusOK, res)
 }
 
 func (rt *Router) loadStorageTarget(w http.ResponseWriter, r *http.Request, id string) (store.BackupTarget, bool) {
@@ -236,7 +266,14 @@ func (rt *Router) handleCreateStorageDestination(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	if req.Kind == storageKindAgent {
+		rt.createAgentStorageDestination(w, r, d, req)
+		return
+	}
 	res, pathStyle, err := normalizeStorageRequest(&req)
+	if err == nil && req.QuotaBytes != nil && *req.QuotaBytes < 0 {
+		err = errors.New("quota_bytes must not be negative")
+	}
 	if err == nil && (req.AccessKeyID == "" || req.SecretAccessKey == "") {
 		err = errors.New("access_key_id and secret_access_key are required")
 	}
@@ -245,7 +282,7 @@ func (rt *Router) handleCreateStorageDestination(w http.ResponseWriter, r *http.
 		return
 	}
 	if req.Verify {
-		if probe := verifyStorageRequest(r.Context(), req, res, pathStyle); !probe.OK {
+		if probe := suggestPathStyle(verifyStorageRequest(r.Context(), req, res, pathStyle), res.Endpoint, pathStyle); !probe.OK {
 			writeError(w, http.StatusBadRequest, "connection test failed ("+probe.Reason+"): "+probe.Message)
 			return
 		}
@@ -272,7 +309,7 @@ func (rt *Router) handleCreateStorageDestination(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	opts := store.StorageOptions{TargetID: id, Preset: req.Preset, PathStyle: pathStyle, AccountID: strings.TrimSpace(req.AccountID)}
+	opts := store.StorageOptions{TargetID: id, Preset: req.Preset, PathStyle: pathStyle, AccountID: strings.TrimSpace(req.AccountID), QuotaBytes: quotaOrZero(req.QuotaBytes)}
 	if err := d.Options.SaveStorageOptions(r.Context(), opts); err != nil {
 		rt.logger.Error("api: create storage destination: save options failed", slog.String("error", err.Error()), slog.String("id", id))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -296,7 +333,20 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	prev, _, err := d.Options.GetStorageOptions(r.Context(), existing.ID)
+	if err != nil {
+		rt.logger.Error("api: update storage destination: load options failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
+		writeError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if strings.HasPrefix(existing.Endpoint, store.AgentEndpointScheme) {
+		rt.updateAgentStorageDestination(w, r, d, existing, prev, req)
+		return
+	}
 	res, pathStyle, err := normalizeStorageRequest(&req)
+	if err == nil && req.QuotaBytes != nil && *req.QuotaBytes < 0 {
+		err = errors.New("quota_bytes must not be negative")
+	}
 	if err == nil && (req.AccessKeyID == "") != (req.SecretAccessKey == "") {
 		err = errors.New("access_key_id and secret_access_key must be set together to rotate credentials")
 	}
@@ -324,7 +374,10 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	opts := store.StorageOptions{TargetID: existing.ID, Preset: req.Preset, PathStyle: pathStyle, AccountID: strings.TrimSpace(req.AccountID)}
+	opts := store.StorageOptions{TargetID: existing.ID, Preset: req.Preset, PathStyle: pathStyle, AccountID: strings.TrimSpace(req.AccountID), QuotaBytes: prev.QuotaBytes}
+	if req.QuotaBytes != nil {
+		opts.QuotaBytes = *req.QuotaBytes
+	}
 	if err := d.Options.SaveStorageOptions(r.Context(), opts); err != nil {
 		rt.logger.Error("api: update storage destination: save options failed", slog.String("error", err.Error()), slog.String("id", existing.ID))
 		writeError(w, http.StatusInternalServerError, "internal error")
@@ -334,7 +387,9 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 	if !ok {
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toStorageResource(r.Context(), d, updated, opts, true))
+	out := rt.toStorageResource(r.Context(), d, updated, opts, true)
+	rt.storageDecorations(r.Context()).apply(&out)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleDeleteStorageDestination handles DELETE /api/v1/storage/destinations/{id}.
@@ -369,7 +424,12 @@ func (rt *Router) handleTestStorageDestination(w http.ResponseWriter, r *http.Re
 		return
 	}
 	id := r.PathValue("id")
-	if _, ok := rt.loadStorageTarget(w, r, id); !ok {
+	target, ok := rt.loadStorageTarget(w, r, id)
+	if !ok {
+		return
+	}
+	if strings.HasPrefix(target.Endpoint, store.AgentEndpointScheme) {
+		writeJSON(w, http.StatusOK, rt.probeAgentDestination(r.Context(), id))
 		return
 	}
 	c, _, err := d.Clients.Client(r.Context(), id)
@@ -380,5 +440,9 @@ func (rt *Router) handleTestStorageDestination(w http.ResponseWriter, r *http.Re
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), storageProbeTimeout)
 	defer cancel()
-	writeJSON(w, http.StatusOK, objectstore.Probe(ctx, c))
+	probe := objectstore.Probe(ctx, c)
+	if opts, has, oerr := d.Options.GetStorageOptions(r.Context(), id); oerr == nil && has {
+		probe = suggestPathStyle(probe, target.Endpoint, opts.PathStyle)
+	}
+	writeJSON(w, http.StatusOK, probe)
 }

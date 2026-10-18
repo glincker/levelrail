@@ -595,6 +595,26 @@ message ExecRequest {
   // API (no command runs): copy-out streams ExecOutput frames, copy-in
   // consumes ExecInput frames. Same windowing and cancel as any exec.
   ArchiveOp archive = 7;
+  // File turns this exec into an object operation inside the agent's
+  // confined storage directory (no command runs, no container involved).
+  FileOp file = 8;
+}
+
+// FileOp is one object operation on a storage destination directory. The
+// agent resolves path under its configured storage root and refuses
+// anything that escapes it. PUT consumes ExecInput frames, GET and LIST
+// stream ExecOutput frames (LIST emits one "<size>\t<path>" line per file).
+message FileOp {
+  enum Kind {
+    KIND_UNSPECIFIED = 0;
+    KIND_PUT = 1;
+    KIND_GET = 2;
+    KIND_DELETE = 3;
+    KIND_LIST = 4;
+  }
+  Kind kind = 1;
+  string path = 2;
+  int64 max_bytes = 3;
 }
 
 // ArchiveOp describes a tar copy carried on an exec stream. copy_in sets

@@ -31,6 +31,16 @@ type StorageDestination struct {
 	AccountID       string `json:"account_id,omitempty"`
 	CreatedAt       string `json:"created_at"`
 	ArchivePolicies int    `json:"archive_policies"`
+
+	Kind           string   `json:"kind"`
+	NodeID         string   `json:"node_id,omitempty"`
+	Directory      string   `json:"directory,omitempty"`
+	QuotaBytes     int64    `json:"quota_bytes"`
+	UsedBytes      int64    `json:"used_bytes"`
+	Objects        int64    `json:"objects"`
+	OverQuota      bool     `json:"over_quota"`
+	MonthlyCostUSD float64  `json:"monthly_cost_usd"`
+	DefaultFor     []string `json:"default_for"`
 }
 
 // StorageDestinationRequest creates or updates a destination.
@@ -45,6 +55,10 @@ type StorageDestinationRequest struct {
 	AccessKeyID     string `json:"access_key_id,omitempty"`
 	SecretAccessKey string `json:"secret_access_key,omitempty"`
 	Verify          bool   `json:"verify,omitempty"`
+	Kind            string `json:"kind,omitempty"`
+	NodeID          string `json:"node_id,omitempty"`
+	Directory       string `json:"directory,omitempty"`
+	QuotaBytes      *int64 `json:"quota_bytes,omitempty"`
 }
 
 // StorageProbeStep is one step of a connection probe.
@@ -59,7 +73,21 @@ type StorageProbeResult struct {
 	OK      bool               `json:"ok"`
 	Reason  string             `json:"reason,omitempty"`
 	Message string             `json:"message,omitempty"`
+	Fix     string             `json:"fix,omitempty"`
 	Steps   []StorageProbeStep `json:"steps"`
+}
+
+// StorageDefault routes one data class to a destination.
+type StorageDefault struct {
+	DataClass string `json:"data_class"`
+	TargetID  string `json:"target_id"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+// StorageDefaults is GET /api/v1/storage/defaults.
+type StorageDefaults struct {
+	Classes  []string         `json:"classes"`
+	Defaults []StorageDefault `json:"defaults"`
 }
 
 // LogArchivePolicy is a log archive schedule for one app, or all apps when AppName is empty.
@@ -216,4 +244,23 @@ func (c *Client) ListLogArchiveObjects(ctx context.Context, targetID, app, curso
 func (c *Client) DownloadLogArchiveObject(ctx context.Context, targetID, key string) ([]byte, error) {
 	q := url.Values{"target_id": {targetID}, "key": {key}}
 	return c.downloadRaw(ctx, "/api/v1/log-archive/objects/download?"+q.Encode())
+}
+
+// ListStorageDefaults calls GET /api/v1/storage/defaults.
+func (c *Client) ListStorageDefaults(ctx context.Context) (StorageDefaults, error) {
+	var out StorageDefaults
+	err := c.do(ctx, http.MethodGet, "/api/v1/storage/defaults", nil, &out)
+	return out, err
+}
+
+// SetStorageDefault calls PUT /api/v1/storage/defaults/{class}.
+func (c *Client) SetStorageDefault(ctx context.Context, class, targetID string) (StorageDefault, error) {
+	var out StorageDefault
+	err := c.do(ctx, http.MethodPut, "/api/v1/storage/defaults/"+url.PathEscape(class), map[string]string{"target_id": targetID}, &out)
+	return out, err
+}
+
+// ClearStorageDefault calls DELETE /api/v1/storage/defaults/{class}.
+func (c *Client) ClearStorageDefault(ctx context.Context, class string) error {
+	return c.do(ctx, http.MethodDelete, "/api/v1/storage/defaults/"+url.PathEscape(class), nil, nil)
 }
