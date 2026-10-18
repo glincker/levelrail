@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import {
   ArrowCircleUpIcon,
+  BroomIcon,
   BuildingsIcon,
   ChartLineIcon,
   ClockCounterClockwiseIcon,
@@ -361,6 +362,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'containers',
         to: '/settings/containers',
         icon: StackIcon,
+      },
+      {
+        id: 'janitor',
+        to: '/settings/janitor',
+        icon: BroomIcon,
       },
       {
         id: 'infrastructure',

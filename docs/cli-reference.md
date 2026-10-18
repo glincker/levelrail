@@ -1047,6 +1047,15 @@ levelrail-cli maintenance delete <id>
 ```
 One-off planned downtime shown on the dashboard and the public status page. See [Scheduled maintenance](/scheduled-maintenance).
 
+## Automatic cleanup
+
+```
+levelrail-cli janitor status
+levelrail-cli janitor run [--dry-run] [--if-needed]
+levelrail-cli janitor policy [--enabled=BOOL] [--dry-run=BOOL] [--interval-minutes N] [--disk-free-budget-percent N] [--build-cache-budget-mb N] [--build-cache-max-age-hours N] [--volume-quarantine-days N] [--delete-orphan-volumes=BOOL] [--attempt-retention-days N] [--attempt-keep-per-app N] [--disabled-stages a,b]
+```
+Disk cleanup with preview and quarantine. See [Automatic cleanup](/janitor).
+
 ## Logs
 
 See [Log archive](/log-archive).

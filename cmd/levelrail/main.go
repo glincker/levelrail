@@ -50,6 +50,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/gpu"
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
@@ -658,6 +659,7 @@ func run(logger *slog.Logger) error {
 
 	orphanReaper := newOrphanReaper(db, client, agentRegistry, previewLocalNodeID, instanceID, logger)
 	apiRouter.SetOrphanReaper(orphanReaper)
+	janitorEngine := apiRouter.NewJanitor(db, client)
 
 	edge, err := loadIngressEdge(logger)
 	if err != nil {
@@ -677,6 +679,7 @@ func run(logger *slog.Logger) error {
 	sourceDeps := dynamicSourceDeps{
 		deployGate:                   gate,
 		orphanReaper:                 orphanReaper,
+		janitor:                      janitorEngine,
 		ingressEdge:                  edge,
 		db:                           db,
 		runtime:                      client,
@@ -2878,7 +2881,9 @@ type dynamicSourceDeps struct {
 	models       *modelDeps
 	// orphanReaper removes leftover containers and volumes on a schedule.
 	orphanReaper *orphans.Reaper
-	ingressEdge  ingressEdge
+	// janitor runs scheduled cleanup passes on the local node.
+	janitor     *janitor.Engine
+	ingressEdge ingressEdge
 	// lbRegistry is shared with the API so it can report live upstream status.
 	lbRegistry *loadbalancer.Registry
 	// proxySyncer is shared with the API so passes on one directory serialise.
@@ -2991,6 +2996,9 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		}
 		if deps.orphanReaper != nil {
 			controllers = append(controllers, orphans.NewController(deps.orphanReaper))
+		}
+		if deps.janitor != nil {
+			controllers = append(controllers, janitor.NewController(deps.janitor))
 		}
 
 		// Platform-wide singleton on the local runtime; a nil secretsManager is handled inside cloudflaretunnel.New.

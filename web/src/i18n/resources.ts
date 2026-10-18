@@ -51,6 +51,7 @@ import type dataExport from '../locales/en/dataExport.json'
 import type eventWebhooks from '../locales/en/eventWebhooks.json'
 import type maintenance from '../locales/en/maintenance.json'
 import type buildPerformance from '../locales/en/buildPerformance.json'
+import type janitor from '../locales/en/janitor.json'
 import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
@@ -171,6 +172,7 @@ declare module 'i18next' {
       secretScan: typeof secretScan
       maintenance: typeof maintenance
       buildPerformance: typeof buildPerformance
+      janitor: typeof janitor
       sso: typeof sso
       cdn: typeof cdn
       trialApp: typeof trialApp

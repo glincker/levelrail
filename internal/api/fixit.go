@@ -259,6 +259,11 @@ func (rt *Router) fixitReclaimable(ctx context.Context) (fixit.DiskReclaim, erro
 }
 
 func (rt *Router) fixitPrune(ctx context.Context) (int64, error) {
+	if rt.janitor != nil {
+		freed, err := rt.janitorDiskFix(ctx)
+		_, _ = rt.pruneOrphanNetworks(ctx)
+		return freed, err
+	}
 	if rt.dockerPruner == nil {
 		return 0, fixit.ErrCannotFixHere
 	}

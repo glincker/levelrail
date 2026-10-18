@@ -87,6 +87,10 @@ System endpoints for:
 | POST | /api/v1/system/networks/prune | AbilityRoot | handlePruneSystemNetworks |
 | GET | /api/v1/system/shield/bots | AbilityRead | handleShieldBotList |
 | GET | /api/v1/system/cache | AbilityRead | handleSystemCache |
+| GET | /api/v1/system/janitor | AbilityRead | handleGetJanitor |
+| GET | /api/v1/system/janitor/runs | AbilityRead | handleListJanitorRuns |
+| PUT | /api/v1/system/janitor/policy | AbilityRoot | handleUpdateJanitorPolicy |
+| POST | /api/v1/system/janitor/run | AbilityRoot | handleRunJanitor |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
