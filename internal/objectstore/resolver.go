@@ -2,11 +2,16 @@ package objectstore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
+
+// ErrNodeDestination is returned when an S3 client is requested for a node directory destination.
+var ErrNodeDestination = errors.New("objectstore: this destination is a node directory, which backups can use but S3 features (archives, buckets, cache) cannot")
 
 // TargetStore is the storage-destination lookup surface the resolver needs.
 type TargetStore interface {
@@ -48,6 +53,9 @@ func (r *Resolver) Config(ctx context.Context, targetID string) (Config, store.B
 	target, err := r.Store.GetBackupTarget(ctx, targetID)
 	if err != nil {
 		return Config{}, store.BackupTarget{}, fmt.Errorf("objectstore: get destination %q: %w", targetID, err)
+	}
+	if strings.HasPrefix(target.Endpoint, store.AgentEndpointScheme) {
+		return Config{}, store.BackupTarget{}, ErrNodeDestination
 	}
 	opts, ok, err := r.Store.GetStorageOptions(ctx, targetID)
 	if err != nil {

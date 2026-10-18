@@ -1641,5 +1641,124 @@
     "test": "Test",
     "remove": "Remove {{name}}",
     "mountAs": "secret id {{id}}"
+  },
+  "storageDestinations": {
+    "usage": {
+      "header": "Usage",
+      "none": "Empty",
+      "ofQuota": "{{used}} of {{quota}}",
+      "overQuota": "Over quota",
+      "cost": "Est. cost per month",
+      "free": "Free",
+      "defaultFor": "Default for",
+      "noDefault": "None"
+    },
+    "kind": {
+      "agent": "Node directory",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "classes": {
+      "backups": "Backups",
+      "archives": "Log archives",
+      "artifacts": "Pipeline artifacts",
+      "cache": "Build cache",
+      "dumps": "Data dumps"
+    },
+    "defaults": {
+      "title": "Default destination per data class",
+      "description": "Where each kind of data goes when no destination is chosen. Node directories can only hold backups and dumps.",
+      "unset": "Not set",
+      "clear": "Clear",
+      "saved": "{{class}} now go to {{name}}.",
+      "cleared": "Default for {{class}} cleared.",
+      "pick": "Choose a destination"
+    },
+    "node": {
+      "add": "Add node directory",
+      "title": "Add a node directory destination",
+      "description": "Stream backups to a confined directory on an enrolled node over its existing agent connection. No SSH, no shell, no credentials.",
+      "name": "Name",
+      "node": "Node",
+      "nodePlaceholder": "Choose a node",
+      "directory": "Directory",
+      "directoryHint": "Relative to the node's storage root (APP_AGENT_STORAGE_DIR on the agent). Defaults to backups.",
+      "quota": "Soft quota (GB)",
+      "quotaHint": "Flagged when backups exceed it. 0 means no limit.",
+      "verify": "Test the connection before saving (writes and deletes a probe file)",
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "connected": "Node directory \"{{name}}\" connected.",
+      "noNodes": "Enroll a node first to store data on it."
+    },
+    "test": {
+      "title": "Connection test for \"{{name}}\"",
+      "passed": "\"{{name}}\" is working.",
+      "failedTitle": "\"{{name}}\" failed the connection test",
+      "recheck": "Re-check",
+      "checking": "Checking...",
+      "close": "Close",
+      "step": "{{name}}: {{status}}",
+      "ok": "ok",
+      "failed": "failed"
+    },
+    "fix": {
+      "enable_path_style": {
+        "title": "Turn on path-style addressing",
+        "description": "This endpoint does not answer virtual-hosted bucket URLs. One click switches to https://host/bucket/key and re-checks.",
+        "action": "Enable path style and re-check"
+      },
+      "edit_credentials": {
+        "title": "Enter new credentials",
+        "description": "The endpoint rejected the access key. Paste a working key pair, it is encrypted and never shown again.",
+        "action": "Save credentials and re-check"
+      },
+      "edit_policy": {
+        "title": "Grant the key bucket access",
+        "description": "The key is valid but cannot write, read and delete in this bucket. Allow those actions in the provider's policy, or use another key pair.",
+        "action": "Use another key and re-check"
+      },
+      "edit_bucket": {
+        "title": "Correct the bucket name",
+        "description": "No bucket with this name exists at the endpoint.",
+        "action": "Save bucket and re-check"
+      },
+      "edit_region": {
+        "title": "Correct the region",
+        "description": "The bucket lives in another region.",
+        "action": "Save region and re-check"
+      },
+      "edit_endpoint": {
+        "title": "Correct the endpoint",
+        "description": "The endpoint could not be reached or its certificate failed. Private-network endpoints also need APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true.",
+        "action": "Save endpoint and re-check"
+      },
+      "sync_clock": {
+        "title": "Sync this server's clock",
+        "description": "The storage endpoint reports a large clock difference. Enable NTP on the control plane host, then re-check.",
+        "action": "Re-check"
+      },
+      "reconnect_node": {
+        "title": "Bring the node online",
+        "description": "The node is not connected to the control plane. Start its agent, then re-check.",
+        "action": "Open nodes",
+        "recheck": "Re-check"
+      },
+      "enable_node_storage": {
+        "title": "Give the node a storage directory",
+        "description": "Set APP_AGENT_STORAGE_DIR on the agent to a directory it may write to, restart the agent, then re-check.",
+        "action": "Re-check"
+      },
+      "fields": {
+        "accessKeyId": "Access key ID",
+        "secretAccessKey": "Secret access key",
+        "bucket": "Bucket",
+        "region": "Region",
+        "endpoint": "Endpoint"
+      }
+    },
+    "empty": {
+      "title": "No storage destinations",
+      "description": "Connect AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, any S3-compatible bucket, or an enrolled node to store backups, archives and dumps."
+    }
   }
 }

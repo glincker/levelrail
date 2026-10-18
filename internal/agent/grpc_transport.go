@@ -187,6 +187,7 @@ func (t *GRPCTransport) ExecTTY(ctx context.Context, containerID string, opts do
 // than passed as a run of bare booleans at the call site.
 type execAttach struct {
 	archive *agentpb.ArchiveOp
+	file    *agentpb.FileOp
 	stdin   bool
 	tty     bool
 	opts    docker.ExecTTYOptions
@@ -217,6 +218,7 @@ func (t *GRPCTransport) startExecAck(ctx context.Context, containerID string, cm
 		AttachStdin: attach.stdin,
 		Tty:         attach.tty,
 		Archive:     attach.archive,
+		File:        attach.file,
 	}
 	if attach.tty {
 		req.Env = attach.opts.Env

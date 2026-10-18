@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1342 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1345 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1130,6 +1130,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/storage/buckets/{id}/objects/download", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handleDownloadBucketObject", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/buckets/{id}/presign", Ability: "AbilityReadSensitive", Group: "Other", Handler: "handlePresignBucketObject", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/buckets/{id}/usage", Ability: "AbilityRead", Group: "Other", Handler: "handleBucketUsage", Description: ""},
+	{Method: "GET", Path: "/api/v1/storage/defaults", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageDefaults", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/storage/defaults/{class}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleClearStorageDefault", Description: ""},
+	{Method: "PUT", Path: "/api/v1/storage/defaults/{class}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleSetStorageDefault", Description: ""},
 	{Method: "GET", Path: "/api/v1/storage/destinations", Ability: "AbilityRead", Group: "Other", Handler: "handleListStorageDestinations", Description: ""},
 	{Method: "POST", Path: "/api/v1/storage/destinations", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateStorageDestination", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/storage/destinations/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteStorageDestination", Description: ""},

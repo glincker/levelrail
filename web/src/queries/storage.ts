@@ -11,20 +11,26 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
+  CreateNodeStorageDestinationRequest,
   CreateStorageDestinationRequest,
   LogArchiveDumpRequest,
   LogArchiveObjectsPage,
   LogArchivePolicy,
   LogArchiveRun,
   SetLogArchivePolicyRequest,
+  StorageDataClass,
+  StorageDefault,
+  StorageDefaults,
   StorageDestination,
   StorageProbeResult,
   StorageProvider,
+  UpdateStorageDestinationRequest,
 } from '../types/storage'
 
 export const storageKeys = {
   all: ['storage'] as const,
   providers: () => [...storageKeys.all, 'providers'] as const,
+  defaults: () => [...storageKeys.all, 'defaults'] as const,
   destinations: () => [...storageKeys.all, 'destinations'] as const,
   policies: () => [...storageKeys.all, 'archive-policies'] as const,
   runs: (app: string) => [...storageKeys.all, 'archive-runs', app] as const,
@@ -109,6 +115,95 @@ export function useCreateStorageDestination() {
       ),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: storageKeys.destinations() }),
+  })
+}
+
+export function useCreateNodeStorageDestination() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    StorageDestination,
+    ApiError,
+    CreateNodeStorageDestinationRequest
+  >({
+    mutationFn: (req) =>
+      requestJson<StorageDestination>(
+        '/api/v1/storage/destinations',
+        jsonInit('POST', req),
+        'create node storage destination',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: storageKeys.destinations() }),
+  })
+}
+
+export function useUpdateStorageDestination(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation<
+    StorageDestination,
+    ApiError,
+    UpdateStorageDestinationRequest
+  >({
+    mutationFn: (req) =>
+      requestJson<StorageDestination>(
+        `/api/v1/storage/destinations/${encodeURIComponent(id)}`,
+        jsonInit('PUT', req),
+        'update storage destination',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: storageKeys.destinations() }),
+  })
+}
+
+export function storageDefaultsQueryOptions() {
+  return queryOptions({
+    queryKey: storageKeys.defaults(),
+    queryFn: () =>
+      requestJson<StorageDefaults>(
+        '/api/v1/storage/defaults',
+        undefined,
+        'fetch storage defaults',
+      ),
+  })
+}
+
+export function useStorageDefaults() {
+  return useQuery({ ...storageDefaultsQueryOptions(), retry: false })
+}
+
+export function useSetStorageDefault() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    StorageDefault,
+    ApiError,
+    { dataClass: StorageDataClass; targetId: string }
+  >({
+    mutationFn: ({ dataClass, targetId }) =>
+      requestJson<StorageDefault>(
+        `/api/v1/storage/defaults/${dataClass}`,
+        jsonInit('PUT', { target_id: targetId }),
+        'set storage default',
+      ),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: storageKeys.all }),
+  })
+}
+
+export function useClearStorageDefault() {
+  const queryClient = useQueryClient()
+  return useMutation<void, ApiError, StorageDataClass>({
+    mutationFn: async (dataClass) => {
+      const res = await fetch(`/api/v1/storage/defaults/${dataClass}`, {
+        method: 'DELETE',
+      })
+      if (res.status !== 204) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `clear default failed: ${res.status}`),
+        )
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: storageKeys.all }),
   })
 }
 

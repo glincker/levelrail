@@ -184,6 +184,22 @@ A bucket is a private folder (a key prefix) inside a connected destination, boun
 Prefix scoping is not a security boundary. The injected credentials are the destination's own, so an app can read, write and delete every object in the whole provider bucket, including other apps' prefixes. The prefix only scopes where this feature's console, CLI, quota, lifecycle and public route read and write. There is no embedded S3 gateway that issues per-bucket keys. For apps you do not fully trust, create a dedicated destination (its own provider bucket and its own scoped key) and bind only that.
 </Warning>
 
+## Node directory destinations
+
+A destination can be a confined directory on an enrolled node instead of a bucket. Backups and dumps stream to it over the node's existing agent connection: no SSH, no shell, no credentials, nothing new listening on the node.
+
+1. On the node, set `APP_AGENT_STORAGE_DIR` to a directory the agent may write to and restart the agent. Without it the agent refuses every file request.
+2. Add the destination: **Settings, Storage, Add node directory**, or `levelrail-cli storage destinations add --name vault --node <node-id> --directory backups`.
+3. Test it. The probe writes, reads back and deletes a small file. A failure comes with a typed fix (bring the node online, give it a storage directory).
+
+The agent resolves every path under that root and rejects `..`, absolute paths and symlinks that leave it. Uploads land through a temp file, so a failed upload never leaves a partial object. Node directories serve backups and dumps only. Archives, artifacts, build cache and buckets need an S3 API, and WAL shipping, base backups and point in time restore stay on S3 destinations.
+
+## Quota, usage, cost and defaults
+
+Each destination shows what its successful backups occupy, an estimated monthly cost (list prices per preset, override with `APP_STORAGE_PRICE_PER_GB_MONTH_<PRESET>`, for example `..._R2=0.015`), and an optional soft quota that flags the destination when exceeded (`--quota-gb`). The quota warns, it does not block uploads.
+
+Pick a default destination per data class (backups, archives, artifacts, cache, dumps) on the Storage page or with `storage destinations default set <class> <id>`. A failed test can suggest typed fixes: wrong credentials, missing bucket, wrong region, clock skew, path-style addressing (one click switches it on and re-checks), or a node that is offline or has no storage directory.
+
 ## Alerting
 
 Create a `log_archive_stale` alert rule (dashboard: Alerts, or `levelrail-cli apps alerts create <app> --kind log_archive_stale`). It fires when any enabled policy's last run failed, or when a policy has gone longer than the rule's `for_duration` without a success (default: three intervals, at least two hours). It notifies through the same channels as every other rule.

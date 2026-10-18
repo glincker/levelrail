@@ -19,6 +19,10 @@ func (rt *Router) registerStorageRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/storage/destinations/{id}", rt.requireAbility(AbilityWriteSensitive, rt.handleDeleteStorageDestination))
 	mux.HandleFunc("POST /api/v1/storage/destinations/{id}/test", rt.requireAbility(AbilityWriteSensitive, rt.handleTestStorageDestination))
 
+	mux.HandleFunc("GET /api/v1/storage/defaults", rt.requireAbility(AbilityRead, rt.handleListStorageDefaults))
+	mux.HandleFunc("PUT /api/v1/storage/defaults/{class}", rt.requireAbility(AbilityWriteSensitive, rt.handleSetStorageDefault))
+	mux.HandleFunc("DELETE /api/v1/storage/defaults/{class}", rt.requireAbility(AbilityWriteSensitive, rt.handleClearStorageDefault))
+
 	mux.HandleFunc("GET /api/v1/storage/buckets", rt.requireAbility(AbilityRead, rt.handleListStorageBuckets))
 	mux.HandleFunc("POST /api/v1/storage/buckets", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateStorageBucket))
 	mux.HandleFunc("GET /api/v1/storage/buckets/{id}", rt.requireAbility(AbilityRead, rt.handleGetStorageBucket))

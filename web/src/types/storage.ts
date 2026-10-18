@@ -16,10 +16,24 @@ export interface StorageProvider {
   needs_endpoint: boolean
 }
 
+export type StorageKind = 's3' | 'agent'
+
+export type StorageDataClass =
+  'backups' | 'archives' | 'artifacts' | 'cache' | 'dumps'
+
 export interface StorageDestination {
   id: string
   name: string
-  preset: StoragePreset
+  preset: StoragePreset | 'agent'
+  kind: StorageKind
+  node_id?: string
+  directory?: string
+  quota_bytes: number
+  used_bytes: number
+  objects: number
+  over_quota: boolean
+  monthly_cost_usd: number
+  default_for: StorageDataClass[]
   provider: string
   endpoint?: string
   region?: string
@@ -41,7 +55,43 @@ export interface CreateStorageDestinationRequest {
   access_key_id: string
   secret_access_key: string
   verify: boolean
+  quota_bytes?: number
 }
+
+export interface CreateNodeStorageDestinationRequest {
+  kind: 'agent'
+  name: string
+  node_id: string
+  directory?: string
+  quota_bytes?: number
+  verify: boolean
+}
+
+export type UpdateStorageDestinationRequest = Partial<
+  Omit<CreateStorageDestinationRequest, 'verify'>
+> & { name: string; preset: StoragePreset; bucket: string }
+
+export interface StorageDefault {
+  data_class: StorageDataClass
+  target_id: string
+  updated_at: string
+}
+
+export interface StorageDefaults {
+  classes: StorageDataClass[]
+  defaults: StorageDefault[]
+}
+
+export type StorageFix =
+  | 'edit_credentials'
+  | 'edit_bucket'
+  | 'edit_region'
+  | 'edit_endpoint'
+  | 'enable_path_style'
+  | 'sync_clock'
+  | 'edit_policy'
+  | 'reconnect_node'
+  | 'enable_node_storage'
 
 export interface StorageProbeStep {
   name: string
@@ -53,6 +103,7 @@ export interface StorageProbeResult {
   ok: boolean
   reason?: string
   message?: string
+  fix?: StorageFix
   steps: StorageProbeStep[]
 }
 

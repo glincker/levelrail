@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { CreateStorageDestinationDialog } from '../../components/CreateStorageDestinationDialog'
+import { CreateNodeStorageDestinationDialog } from '../../components/CreateNodeStorageDestinationDialog'
+import { StorageDefaultsCard } from '../../components/StorageDefaultsCard'
 import { StorageDestinationTable } from '../../components/StorageDestinationTable'
 import { LogArchivePanel } from '../../components/LogArchivePanel'
 import { BuildCacheCard } from '../../components/BuildCacheCard'
@@ -42,7 +44,14 @@ function StoragePage() {
           <PageHeader
             title="Storage destinations"
             description="S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint."
-            actions={notConfigured ? null : <CreateStorageDestinationDialog />}
+            actions={
+              notConfigured ? null : (
+                <div className="flex flex-wrap gap-2">
+                  <CreateNodeStorageDestinationDialog />
+                  <CreateStorageDestinationDialog />
+                </div>
+              )
+            }
           />
         </div>
       </div>
@@ -78,6 +87,7 @@ function StoragePage() {
             destinations={destinations.data}
             action={<CreateStorageDestinationDialog />}
           />
+          <StorageDefaultsCard destinations={destinations.data} />
           <div className="space-y-3">
             <h2 className="text-base font-semibold text-foreground">
               Log archive for all apps
