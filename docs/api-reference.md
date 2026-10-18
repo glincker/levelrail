@@ -495,6 +495,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/cache/purge | AbilityDeploy | handlePurgeAppCache |
 | GET | /api/v1/apps/{name}/cache/purges | AbilityRead | handleListCachePurges |
 | POST | /api/v1/apps/{name}/cache/preset | AbilityDeploy | handleApplyCachePreset |
+| POST | /api/v1/apps/{name}/env/scan | AbilityWrite | handleScanEnvValues |
 
 </Accordion>
 
@@ -667,6 +668,8 @@ Endpoints for:
 | PUT | /api/v1/databases/{name}/placement | AbilityRoot | handleSetPlacement |
 | GET | /api/v1/databases/{name}/engine-stats | AbilityReadSensitive | handleGetDatabaseEngineStats |
 | GET | /api/v1/databases/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
+| GET | /api/v1/databases/{name}/links | AbilityRead | handleListDatabaseLinks |
+| POST | /api/v1/databases/{name}/links | AbilityWrite | handleConnectDatabaseApp |
 
 ## Projects / Organizations / Environments
 

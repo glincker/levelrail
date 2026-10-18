@@ -18,7 +18,12 @@ import {
 import { useEnvEditorState } from '../../hooks/useEnvEditorState'
 import { useRevealedValues } from '../../hooks/useRevealedValues'
 import { useStepUpGate } from '../../hooks/useStepUpGate'
-import { applyDotenv, rowsToDotenv, type EnvRow } from '../../lib/envRows'
+import {
+  applyDotenv,
+  MASKED_VALUE,
+  rowsToDotenv,
+  type EnvRow,
+} from '../../lib/envRows'
 import { HelpLink } from '../HelpLink'
 import { AddVariableRow } from './AddVariableRow'
 import { EnvEditorToolbar } from './EnvEditorToolbar'
@@ -111,6 +116,36 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
     [state.rows],
   )
   const ownRows = state.rows.filter((r) => r.origin === 'own')
+  const scanVars = useMemo(() => {
+    const out: Record<string, string> = {}
+    const touched = new Set(
+      state.changes.filter((c) => c.kind !== 'removed').map((c) => c.key),
+    )
+    for (const r of state.rows) {
+      if (
+        r.origin === 'own' &&
+        !r.removed &&
+        r.type === 'plain' &&
+        r.value !== MASKED_VALUE &&
+        touched.has(r.key)
+      )
+        out[r.key] = r.value
+    }
+    return out
+  }, [state.rows, state.changes])
+  const storeAsSecrets = useCallback(
+    (keys: string[]) => {
+      const set = new Set(keys)
+      state.replaceRows(
+        state.rows.map((r) =>
+          r.origin === 'own' && r.type === 'plain' && set.has(r.key)
+            ? { ...r, type: 'secret' as const }
+            : r,
+        ),
+      )
+    },
+    [state],
+  )
   const inheritedRows = state.rows.filter(
     (r) => r.origin === 'inherited' && !ownKeys.has(r.key),
   )
@@ -360,6 +395,9 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
         changes={state.changes}
         saving={saving}
         error={saveError}
+        scanApp={app.name}
+        scanVars={scanVars}
+        onStoreAsSecrets={storeAsSecrets}
         onConfirm={() => {
           void save()
         }}

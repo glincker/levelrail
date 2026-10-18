@@ -52,13 +52,15 @@ type createAppConnectionRequest struct {
 
 // Replaces an existing entry for env_var; validates database and field before saving, so failures surface at request time.
 func (rt *Router) handleCreateAppConnection(w http.ResponseWriter, r *http.Request) {
-	name := r.PathValue("name")
-
 	var req createAppConnectionRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	rt.createAppConnection(w, r, r.PathValue("name"), req)
+}
+
+func (rt *Router) createAppConnection(w http.ResponseWriter, r *http.Request, name string, req createAppConnectionRequest) {
 	if req.Database == "" {
 		writeError(w, http.StatusBadRequest, "database is required")
 		return

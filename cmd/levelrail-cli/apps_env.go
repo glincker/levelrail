@@ -24,6 +24,10 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAppsEnvExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
 		return runAppsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pull":
+		return runEnvPull(prog, args[1:], stdout, stderr, lookupEnv)
+	case "push":
+		return runEnvPush(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -122,6 +126,7 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 
 	plan := planEnvImport(app.Env, parseEnvFileBytes(data), secretKeys, keepExisting)
 	result := envImportResult{App: name, DryRun: dryRun, Plan: plan}
+	warnEnvSecrets(ctx, client, stderr, name, plan)
 
 	willChange := len(plan.New) > 0 || (len(plan.Changed) > 0 && !keepExisting)
 	if !dryRun && willChange {

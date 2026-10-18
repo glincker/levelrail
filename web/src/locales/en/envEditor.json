@@ -95,7 +95,13 @@
     "none": "No changes to save.",
     "save": "Save changes",
     "saving": "Saving...",
-    "back": "Back to editing"
+    "back": "Back to editing",
+    "scan": {
+      "title": "These values look like credentials",
+      "description": "Plain variables are visible to anyone who can read this app. Store them as Secrets so they stay encrypted.",
+      "finding": "{{key}}: {{rule}}",
+      "makeSecret": "Store as secrets"
+    }
   },
   "saved": "Environment saved.",
   "redeploy": {

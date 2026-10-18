@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1271 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1274 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -175,6 +175,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/export", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportEnvRedacted", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/export", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportEnvRevealed", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/reveal", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevealEnv", Description: "Reveal and full export need read:sensitive plus a step-up (or the allow policy); the handlers enforce the rest and audit every value read."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/env/scan", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleScanEnvValues", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetEnvSettings", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/env/settings", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutEnvSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/{key}/convert-to-secret", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleConvertEnvToSecret", Description: ""},
@@ -519,6 +520,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/databases/{name}/explain", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleDatabaseExplain", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/key", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleGetDatabaseKey", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/keys", Ability: "AbilityReadSensitive", Group: "Databases CRUD / Engines / Resources", Handler: "handleScanDatabaseKeys", Description: ""},
+	{Method: "GET", Path: "/api/v1/databases/{name}/links", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleListDatabaseLinks", Description: ""},
+	{Method: "POST", Path: "/api/v1/databases/{name}/links", Ability: "AbilityWrite", Group: "Databases CRUD / Engines / Resources", Handler: "handleConnectDatabaseApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleQueryDatabaseLogs", Description: ""},
 	{Method: "GET", Path: "/api/v1/databases/{name}/logs/stream", Ability: "AbilityRead", Group: "Databases CRUD / Engines / Resources", Handler: "handleLiveDatabaseLogStream", Description: ""},
 	{Method: "POST", Path: "/api/v1/databases/{name}/major-upgrade", Ability: "AbilityRoot", Group: "Databases CRUD / Engines / Resources", Handler: "handleMajorUpgrade", Description: ""},
