@@ -289,6 +289,9 @@ func migrateDataUsage(prog string) string {
   %[1]s migrate db-status [NAME]                              per-database copy status
   %[1]s migrate volumes --source user@host                    print the commands that copy imported volumes
   %[1]s migrate cutover [--verify]                            go or no-go for the DNS switch, then verify after it
+  %[1]s migrate plan --url U --token T [--apply --only ID]    read-only plan with a verdict per item, then import chosen items
+  %[1]s migrate status [APP]                                  cutover checklist per migrated app
+  %[1]s migrate step APP STEP [--reset]                       complete or reopen a checklist step
 
 The source database password is read from %[2]s or --password-stdin.
 `, prog, envMigrateSourcePassword)

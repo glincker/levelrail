@@ -53,6 +53,7 @@ import {
   FunnelIcon,
   LightbulbIcon,
   CoinsIcon,
+  ArrowsLeftRightIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { GO_TARGETS } from '@/lib/shortcuts'
 import type { ExperimentalFeature } from '@/lib/experimental'
@@ -73,6 +74,7 @@ export type GlobalTo =
   | '/resource-advisor'
   | '/usage'
   | '/costs'
+  | '/migrate'
   | '/resources'
   | '/dashboards'
   | '/network'
@@ -327,6 +329,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Resources',
         to: '/resources',
         icon: <ListMagnifyingGlassIcon />,
+      },
+      {
+        id: 'migrate',
+        label: 'Migrate',
+        to: '/migrate',
+        icon: <ArrowsLeftRightIcon />,
       },
     ],
   },

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1335 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1340 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -965,6 +965,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/stage", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleStageAppImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/migration/apps/sessions/{id}/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleVerifyAppImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/apps/sessions/{id}/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleAppImportVolumes", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/checklists", Ability: "AbilityRead", Group: "Other", Handler: "handleListMigrationChecklists", Description: ""},
+	{Method: "GET", Path: "/api/v1/migration/checklists/{app}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetMigrationChecklist", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/checklists/{app}/steps/{step}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationChecklistStep", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover", Ability: "AbilityRead", Group: "Other", Handler: "handleCutoverReport", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/cutover/verify", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCutoverVerify", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/hub/local-sources", Ability: "AbilityRead", Group: "Other", Handler: "handleHubLocalSources", Description: ""},
@@ -978,6 +981,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/migration/hub/sessions/{id}/receipt", Ability: "AbilityRead", Group: "Other", Handler: "handleHubReceipt", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/selection", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubSelection", Description: ""},
 	{Method: "PUT", Path: "/api/v1/migration/hub/sessions/{id}/step", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePutHubStep", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/import", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationImport", Description: ""},
+	{Method: "POST", Path: "/api/v1/migration/plan", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleMigrationPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/migration/volumes", Ability: "AbilityRead", Group: "Other", Handler: "handleVolumeGuide", Description: ""},
 	{Method: "GET", Path: "/api/v1/mobile/devices", Ability: "AbilityRead", Group: "Other", Handler: "handleListMobileDevices", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/mobile/devices/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleRevokeMobileDevice", Description: "Read tier so a device owner (or the phone itself) can revoke; root or owner is checked inside."},

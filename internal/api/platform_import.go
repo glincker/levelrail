@@ -103,26 +103,41 @@ func (rt *Router) buildImportPlan(ctx context.Context, req platformImportRequest
 	if err != nil {
 		return nil, fmt.Errorf("reading the source platform: %w", err)
 	}
+	opts, _, err := rt.importPlanOptions(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return platformimport.BuildPlan(disc, opts), nil
+}
+
+// importPlanOptions reads what already exists here, so a plan can mark
+// repeats and name collisions. The second result maps each routed domain
+// (lowercase) to the app that holds it.
+func (rt *Router) importPlanOptions(ctx context.Context, req platformImportRequest) (platformimport.PlanOptions, map[string]string, error) {
 	svcs, err := rt.apps.ListDesiredServices(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list apps: %w", err)
+		return platformimport.PlanOptions{}, nil, fmt.Errorf("list apps: %w", err)
 	}
 	dbs, err := rt.databases.ListDesiredDatabases(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("list databases: %w", err)
+		return platformimport.PlanOptions{}, nil, fmt.Errorf("list databases: %w", err)
 	}
 	opts := platformimport.PlanOptions{Only: req.Only, Collision: req.Collision,
 		ExistingApps: map[string]string{}, TakenApps: map[string]bool{}, ExistingDatabases: map[string]string{}}
+	domains := map[string]string{}
 	for _, s := range svcs {
 		opts.TakenApps[s.Name] = true
 		if id := s.Labels[platformimport.LabelSourceID]; id != "" {
 			opts.ExistingApps[id] = s.Name
 		}
+		for _, d := range s.Domains {
+			domains[strings.ToLower(d)] = s.Name
+		}
 	}
 	for _, d := range dbs {
 		opts.ExistingDatabases[d.Name] = d.Engine + ":" + d.Version
 	}
-	return platformimport.BuildPlan(disc, opts), nil
+	return opts, domains, nil
 }
 
 func (rt *Router) writeImportError(w http.ResponseWriter, err error, token string) {

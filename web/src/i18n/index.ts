@@ -22,6 +22,7 @@ export const NAMESPACES = [
   'logBudgets',
   'environments',
   'migration',
+  'migrate',
   'domains',
   'attention',
   'setup',

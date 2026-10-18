@@ -574,6 +574,7 @@ type Store interface {
 	AppSleepStore
 	DataImportStore
 	MigrationHubStore
+	MigrationChecklistStore
 	AppImportStore
 	LoginCodeStore
 	SecurityStore

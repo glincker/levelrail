@@ -537,6 +537,7 @@ type Router struct {
 	appSleep                     AppSleepStore                                         // always set, sleep-when-idle settings
 	dataImports                  DataImportStore                                       // always set, live data copy status
 	migrationHub                 MigrationHubStore                                     // always set, server migration hub sessions
+	migrationChecklists          MigrationChecklistStore                               // always set, per-app cutover checklists
 	appImports                   AppImportStore                                        // always set, guided app import sessions
 	appImportLive                *appImportState                                       // in-memory source tokens and discoveries
 	usageCost                    usageCostState                                        // cost showback rollup lock and live-day cache, zero value ready
@@ -824,6 +825,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		appSleep:                    s,
 		dataImports:                 s,
 		migrationHub:                s,
+		migrationChecklists:         s,
 		appImports:                  s,
 		appImportLive:               newAppImportState(),
 		hubState:                    newHubState(),

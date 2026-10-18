@@ -1559,6 +1559,11 @@ Routes that do not fit an existing group.
 | POST | /api/v1/costs/budgets | AbilityRoot | handleCreateCostBudget |
 | PUT | /api/v1/costs/budgets/{id} | AbilityRoot | handleUpdateCostBudget |
 | DELETE | /api/v1/costs/budgets/{id} | AbilityRoot | handleDeleteCostBudget |
+| POST | /api/v1/migration/plan | AbilityWriteSensitive | handleMigrationPlan |
+| POST | /api/v1/migration/import | AbilityWriteSensitive | handleMigrationImport |
+| GET | /api/v1/migration/checklists | AbilityRead | handleListMigrationChecklists |
+| GET | /api/v1/migration/checklists/{app} | AbilityRead | handleGetMigrationChecklist |
+| POST | /api/v1/migration/checklists/{app}/steps/{step} | AbilityWriteSensitive | handleMigrationChecklistStep |
 
 ## See also
 

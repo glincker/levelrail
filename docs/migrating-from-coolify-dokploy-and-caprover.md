@@ -24,6 +24,28 @@ You can run it three ways, all backed by the same two API routes:
 Always start with a dry run. `--dry-run` (or the dashboard's Discover step) reads the source and shows exactly what would be created, per item, without creating anything.
 </Tip>
 
+## Migration wizard: plan, select, cutover
+
+The Migrate page (`/migrate`) puts the whole move in one place.
+
+1. **Plan.** Read the source (read-only). Every app, database and service is listed with its env var, volume, domain and scheduled task counts and one verdict: will import, imports with changes, needs a manual step, or unsupported. Each row says why, and previews what would be created.
+2. **Select and fix.** Tick the items to import. A blocker the control plane can fix has a button: use another name, set the port, or hold domains that are already routed to another app here until cutover. Fixes re-plan immediately. Preview import is a dry run and creates nothing.
+3. **Cutover checklist.** Each imported app gets a checklist saved on the control plane: imported, data copied and verified, shadow running, DNS switched, old instance stopped. Steps complete in order, each with its own check, and the evidence is stored with the step.
+
+| Step | What must be true |
+| --- | --- |
+| Data copied and verified | Each listed database has a verified data copy with matching row counts. Each volume has a file count and size comparison with identical numbers on both hosts. |
+| Shadow running | The app is healthy here. |
+| DNS switched | Every domain resolves here, serves a certificate and answers its health path. Failed checks can be accepted explicitly. |
+| Old stopped | You confirm it, the control plane cannot see the old host. |
+
+The control plane never reaches the source host, so the volume comparison uses two commands you run yourself: one on the old host, one on this node (both shown on the checklist). Enter the two `files bytes` results and the step compares them.
+
+- CLI: `levelrail-cli migrate plan --url URL --token TOKEN` prints the plan. Add `--apply --only ID` (repeat `--only`) to import chosen items, `--fix ID:port=8080`, `--fix ID:name=NAME` or `--fix ID:hold-domains` for fixes, and `--dry-run` to preview. The token can come from `APP_MIGRATE_SOURCE_TOKEN`.
+- CLI: `levelrail-cli migrate status [APP]` shows the checklists, `levelrail-cli migrate step APP STEP` completes a step (`--reset` reopens it and the steps after it, `--database NAME`, `--volume NAME=SRC_FILES:SRC_BYTES:DST_FILES:DST_BYTES`, `--confirm`). All three take `--json`.
+- API: `POST /api/v1/migration/plan`, `POST /api/v1/migration/import` (with `only`, `overrides`, `dry_run`), `GET /api/v1/migration/checklists`, `POST /api/v1/migration/checklists/{app}/steps/{step}`.
+- MCP: `get_migration_plan` with `app` set reads that app's checklist. It cannot complete a step.
+
 ## Quick start
 
 <Steps>

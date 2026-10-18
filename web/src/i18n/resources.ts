@@ -23,6 +23,7 @@ import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
 import type appAccess from '../locales/en/appAccess.json'
 import type migration from '../locales/en/migration.json'
+import type migrate from '../locales/en/migrate.json'
 import type domains from '../locales/en/domains.json'
 import type attention from '../locales/en/attention.json'
 import type setup from '../locales/en/setup.json'
@@ -111,6 +112,7 @@ declare module 'i18next' {
       appExposure: typeof appExposure
       appAccess: typeof appAccess
       migration: typeof migration
+      migrate: typeof migrate
       domains: typeof domains
       attention: typeof attention
       setup: typeof setup
