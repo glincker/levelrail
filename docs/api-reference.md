@@ -512,6 +512,10 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/pipeline-runs/{id}/fixes/apply | AbilityDeploy | handleApplyPipelineRunFix |
 | GET | /api/v1/apps/{name}/pipelines/{pname}/insights | AbilityRead | handlePipelineInsights |
 | GET | /api/v1/apps/{name}/build-speed | AbilityRead | handleBuildSpeed |
+| GET | /api/v1/apps/{name}/ci/workflow | AbilityRead | handleGetCIWorkflow |
+| GET | /api/v1/apps/{name}/ci/trusts | AbilityRead | handleListCITrusts |
+| POST | /api/v1/apps/{name}/ci/trusts | AbilityWriteSensitive | handleCreateCITrust |
+| DELETE | /api/v1/apps/{name}/ci/trusts/{id} | AbilityWriteSensitive | handleDeleteCITrust |
 
 </Accordion>
 
@@ -1596,6 +1600,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/frameworks | AbilityRead | handleListFrameworks |
 | GET | /api/v1/frameworks/{id} | AbilityRead | handleGetFramework |
 | GET | /api/v1/frameworks/{id}/dockerfile | AbilityRead | handleGetFrameworkDockerfile |
+| POST | /api/v1/ci/oidc-exchange | Public | handleCIOIDCExchange |
 
 ## See also
 

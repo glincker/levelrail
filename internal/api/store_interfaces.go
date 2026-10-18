@@ -570,6 +570,7 @@ type Store interface {
 	GitSourceStore
 	AppScheduleStore
 	AppGitHubActionsStore
+	CIOIDCTrustStore
 	ImageAutoUpdateStore
 	AppSleepStore
 	DataImportStore

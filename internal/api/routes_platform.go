@@ -58,6 +58,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// GitHub Actions deploy action report settings (app_github_actions.go).
 	mux.HandleFunc("GET /api/v1/apps/{name}/github-actions", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppGitHubActions))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/github-actions", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetAppGitHubActions))
+	mux.HandleFunc("GET /api/v1/apps/{name}/ci/workflow", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetCIWorkflow))
+	mux.HandleFunc("GET /api/v1/apps/{name}/ci/trusts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListCITrusts))
+	mux.HandleFunc("POST /api/v1/apps/{name}/ci/trusts", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleCreateCITrust))
+	mux.HandleFunc("DELETE /api/v1/apps/{name}/ci/trusts/{id}", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteCITrust))
 	mux.HandleFunc("GET /api/v1/apps/{name}/schedule/history", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAppScheduleHistory))
 
 	// Git push webhook (git_webhook.go), the per-app-URL evolution of the

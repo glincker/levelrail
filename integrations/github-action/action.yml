@@ -9,8 +9,17 @@ inputs:
     description: 'Levelrail control plane base URL'
     required: true
   api-token:
-    description: 'Levelrail API token with at least the deploy ability'
-    required: true
+    description: 'Levelrail API token with at least the deploy ability. Leave empty with oidc: true to use the job identity instead.'
+    required: false
+    default: ''
+  oidc:
+    description: 'Set to "true" to swap the job OIDC identity for a short-lived deploy token (needs permissions: id-token: write and a CI trust on the app)'
+    required: false
+    default: 'false'
+  rollback-on-failure:
+    description: 'Set to "true" to redeploy the previously running image when the deploy fails or times out'
+    required: false
+    default: 'false'
   app:
     description: 'Name of the existing Levelrail app to deploy'
     required: true
@@ -83,9 +92,20 @@ runs:
         LR_TIMEOUT: ${{ inputs.timeout }}
         LR_ENV_URL: ${{ inputs.environment-url }}
         LR_SHA: ${{ inputs.sha }}
+        LR_OIDC: ${{ inputs.oidc }}
+        LR_ROLLBACK: ${{ inputs.rollback-on-failure }}
         GITHUB_TOKEN: ${{ inputs.github-token }}
       run: |
         set -uo pipefail
+        if [ "$LR_OIDC" = "true" ]; then
+          APP_API_TOKEN=$(levelrail-cli apps github-actions token "$LR_APP") || { echo "::error::OIDC token exchange failed. Add a CI trust for this repository on the app."; exit 1; }
+          export APP_API_TOKEN
+          echo "::add-mask::$APP_API_TOKEN"
+        fi
+        previous_image=""
+        if [ "$LR_ROLLBACK" = "true" ]; then
+          previous_image=$(levelrail-cli apps get "$LR_APP" --json 2>/dev/null | sed -n 's/.*"image": *"\([^"]*\)".*/\1/p' | head -n 1)
+        fi
         report=true
         [ -n "${GITHUB_TOKEN:-}" ] || report=false
         warnings=0
@@ -113,6 +133,15 @@ runs:
             esac
           fi
         fi
+
+        case "$outcome" in
+          failed|timeout)
+            if [ -n "$previous_image" ] && [ "$previous_image" != "$LR_IMAGE" ]; then
+              echo "::warning::Deploy $outcome, rolling back to $previous_image"
+              levelrail-cli apps rollback "$LR_APP" --image "$previous_image" "${confirm_flag[@]}" || echo "::error::Rollback request failed"
+            fi
+            ;;
+        esac
 
         if [ "$report" = true ]; then
           levelrail-cli apps github-actions finish "$LR_APP" --sha "$LR_SHA" --environment-url "$LR_ENV_URL" \

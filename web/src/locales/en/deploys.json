@@ -276,5 +276,31 @@
       "saved": "GitHub Actions reporting saved.",
       "errorTitle": "Could not save GitHub Actions reporting."
     }
+  },
+  "ciDeploy": {
+    "title": "Deploy from CI",
+    "infoTipLabel": "About deploying from CI",
+    "description": "Trust a repository and ref, then paste the generated workflow. The job swaps its GitHub identity for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
+    "noTrusts": "No repository is trusted to deploy this app yet. Add one below.",
+    "repositoryLabel": "GitHub repository",
+    "repositoryPlaceholder": "owner/name",
+    "refLabel": "Allowed ref",
+    "environmentLabel": "Environment",
+    "environmentPlaceholder": "Any environment",
+    "trust": "Trust",
+    "removeTrust": "Stop trusting {{repository}}",
+    "workflowTitle": "Generated workflow",
+    "copy": "Copy workflow",
+    "needsAddress": "CI tokens are issued for the dashboard address, and none is set yet.",
+    "useThisAddress": "Use {{origin}}",
+    "cliToggle": "Fix via CLI",
+    "toast": {
+      "trusted": "Repository trusted.",
+      "trustError": "Could not add the trust.",
+      "removeError": "Could not remove the trust.",
+      "addressError": "Could not save the dashboard address.",
+      "copied": "Workflow copied.",
+      "copyFailed": "Could not copy to the clipboard."
+    }
   }
 }
