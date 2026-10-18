@@ -220,6 +220,17 @@
       }
     }
   },
+  "starter": {
+    "open": "Start from a template",
+    "title": "Starter templates",
+    "description": "Pick a starting point, answer a few questions, and get validated files to commit to your repository.",
+    "generate": "Generate files",
+    "generating": "Generating...",
+    "copy": "Copy",
+    "copied": "Copied {{path}}",
+    "next": "Commit these files to your repository, then deploy it from the Where is it from step.",
+    "viaCli": "Generate with the CLI instead"
+  },
   "packages": {
     "title": "Workspace packages",
     "hint": "This repository holds several packages. Create one app per package, each built from its own directory and redeployed only when it changes.",

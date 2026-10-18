@@ -55,6 +55,8 @@ To try it, deploy `test/fixtures/failing-build`: it fails with `lockfile_out_of_
 ### dockerfile_error
 The Dockerfile is invalid or a file it references is missing. Check `build.path` and `build.baseDirectory`, fix the syntax, and make sure every `COPY` source is committed and not excluded by `.dockerignore`. A repo with no Dockerfile builds with `build.type: railpack` (`--build-type railpack`), which a manual rebuild does not remember.
 
+When a build fails because the Dockerfile path in the git source is wrong, the failed deploy's diagnosis lists the Dockerfiles the repository really has and offers a **Build from this one instead** fix. Applying it updates the build settings and starts a new build.
+
 ### dependency_install_failed
 A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the [build node](/build-node-routing).
 

@@ -81193,6 +81193,163 @@
         "x-required-ability": "root"
       }
     },
+    "/api/v1/project-templates": {
+      "get": {
+        "description": "Requires the `read` ability.",
+        "operationId": "handleListProjectTemplates",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "List Project Templates",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "read"
+      }
+    },
+    "/api/v1/project-templates/{id}/render": {
+      "post": {
+        "description": "A POST that only validates parameters and renders text, so AbilityRead.\n\nRequires the `read` ability.",
+        "operationId": "handleRenderProjectTemplate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object"
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful response. The body shape is not described in this document."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing or invalid credentials."
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "The token lacks the required ability."
+          },
+          "4XX": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Client error."
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Error response."
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": [
+              "read"
+            ]
+          }
+        ],
+        "summary": "A POST that only validates parameters and renders text, so AbilityRead.",
+        "tags": [
+          "Other"
+        ],
+        "x-required-ability": "read"
+      }
+    },
     "/api/v1/projects": {
       "get": {
         "description": "Projects (projects.go): a lightweight, non-auth organizational grouping, explicitly not the deferred Phase 4 teams/RBAC work (see that file's own package doc comment). AbilityRead/AbilityWrite, the same ordinary boundary apps/databases CRUD already uses, not AbilityRoot: unlike a node (real infrastructure), creating or deleting a project has no fleet-level consequence.\n\nRequires the `read` ability.",

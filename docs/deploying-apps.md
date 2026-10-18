@@ -42,6 +42,17 @@ There are four ways to create one. All four accept inline secret values (`--secr
 
 The dashboard's **New** wizard offers an existing image, a git repository, and Docker Compose as step-one cards, plus templates. The multi-service `app.yaml` route starts from an existing app's **Services** tab.
 
+### From a starter template
+
+The **New app** page has a **Start from a template** button. Pick a starter (web service, static site, background worker, scheduled job, or build, test and deploy), answer its few parameters, and get validated files to commit. Parameters are checked before anything is generated, and the output is parsed with the same validators a deploy uses. The build, test and deploy starter also writes `.pipelines/release.yaml`.
+
+```bash
+levelrail-cli init --list-templates
+levelrail-cli init --template web-service --param name=shop --param port=8080
+```
+
+`GET /api/v1/project-templates` lists the starters and `POST /api/v1/project-templates/{id}/render` renders one from `{"params": {...}}`, answering `422` with a per-parameter `fields` list when a value is invalid. Nothing is stored on the server.
+
 ### From an existing Docker image
 
 Skips the build step. Send `image` and `port` to `POST /api/v1/apps`, or:

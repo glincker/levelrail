@@ -11,11 +11,15 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from '@tanstack/react-query'
 import type { Diagnosis, DiagnosisFix } from '../types/diagnosis'
-import { patchApp } from '../lib/diagnosisFix'
+import { StaleFixError, patchApp } from '../lib/diagnosisFix'
 import { appKeys, fetchApp, updateApp } from './apps'
+import { triggerBuild } from './builds'
 import { applyTriggerDeployResult, triggerDeploy } from './deploys'
+import { setGitBuild } from './gitBuildSettings'
+import { fetchGitSource, gitSourceKeys } from './gitSources'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
 export const diagnosisKeys = {
@@ -56,6 +60,38 @@ export function useDiagnosis(
   return useQuery({ ...diagnosisQueryOptions(appName, deployId), enabled })
 }
 
+const GIT_BUILD_PATH = 'git_source.build_path'
+
+// A Dockerfile path fix edits the git source, not the app resource, so it
+// goes through the build settings endpoint and redeploys with a fresh build.
+async function applyBuildPathFix(
+  queryClient: QueryClient,
+  appName: string,
+  from: string,
+  to: string,
+  redeploy: boolean,
+) {
+  const gs = await fetchGitSource(appName)
+  if (from !== '' && gs.build_path && gs.build_path !== from) {
+    throw new StaleFixError(`Dockerfile path is ${gs.build_path}`)
+  }
+  const saved = await setGitBuild(appName, {
+    build_type: gs.build_type,
+    build_path: to,
+    base_directory: gs.base_directory ?? '',
+  })
+  queryClient.setQueryData(gitSourceKeys.detail(appName), saved)
+  if (redeploy) {
+    await triggerBuild(appName, {
+      repoUrl: saved.repo_url,
+      ref: saved.branch,
+      buildType: saved.build_type,
+      buildPath: saved.build_path,
+      baseDirectory: saved.base_directory,
+    })
+  }
+}
+
 export interface ApplyDiagnosisFixInput {
   fix: DiagnosisFix
   inputs: Record<string, string>
@@ -69,6 +105,17 @@ export function useApplyDiagnosisFix(appName: string) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async ({ fix, inputs, redeploy }: ApplyDiagnosisFixInput) => {
+      const pathChange = fix.changes.find((c) => c.field === GIT_BUILD_PATH)
+      if (pathChange) {
+        await applyBuildPathFix(
+          queryClient,
+          appName,
+          pathChange.from,
+          pathChange.to,
+          redeploy,
+        )
+        return
+      }
       const current = await fetchApp(appName)
       const saved = await updateApp(patchApp(current, fix.changes, inputs))
       queryClient.setQueryData(appKeys.detail(appName), saved)
@@ -76,7 +123,6 @@ export function useApplyDiagnosisFix(appName: string) {
         const result = await triggerDeploy(appName, { image: saved.image })
         applyTriggerDeployResult(queryClient, appName, result)
       }
-      return saved
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
