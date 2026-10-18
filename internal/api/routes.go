@@ -512,6 +512,7 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/canary", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleAbortCanary))
 	mux.HandleFunc("POST /api/v1/apps/{name}/canary/promote", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePromoteCanary))
 	mux.HandleFunc("POST /api/v1/hooks/image-update/{name}/{token}", rt.handleImageUpdateWebhook)
+	mux.HandleFunc("POST /api/v1/ci/oidc-exchange", rt.handleCIOIDCExchange)
 	mux.HandleFunc("GET /api/v1/hooks/wake", rt.handleWakeHook)
 	mux.HandleFunc("GET /api/v1/sleep", rt.requireAbility(AbilityRead, rt.handleSleepFleet))
 	mux.HandleFunc("GET /api/v1/sleep/overview", rt.requireAbility(AbilityRead, rt.handleSleepOverview))

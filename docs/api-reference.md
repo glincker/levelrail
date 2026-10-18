@@ -505,6 +505,10 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/pipeline-runs/{id}/fixes | AbilityRead | handleListPipelineRunFixes |
 | POST | /api/v1/apps/{name}/pipeline-runs/{id}/fixes/apply | AbilityDeploy | handleApplyPipelineRunFix |
 | GET | /api/v1/apps/{name}/pipelines/{pname}/insights | AbilityRead | handlePipelineInsights |
+| GET | /api/v1/apps/{name}/ci/workflow | AbilityRead | handleGetCIWorkflow |
+| GET | /api/v1/apps/{name}/ci/trusts | AbilityRead | handleListCITrusts |
+| POST | /api/v1/apps/{name}/ci/trusts | AbilityWriteSensitive | handleCreateCITrust |
+| DELETE | /api/v1/apps/{name}/ci/trusts/{id} | AbilityWriteSensitive | handleDeleteCITrust |
 
 </Accordion>
 
@@ -1510,7 +1514,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/firewall/edge/audit | AbilityRead | handleFirewallEdgeAudit |
 | GET | /api/v1/images | AbilityRead | handleListImageInventory |
 | GET | /api/v1/images/layers | AbilityRead | handleImageLayerBreakdown |
-| POST | /api/v1/images/verify | AbilityRead | handleImageVerify |
+| POST | /api/v1/images/verify | AbilityWrite | handleImageVerify |
 | POST | /api/v1/images/gc | AbilityRoot | handleImageGC |
 | GET | /api/v1/functions | AbilityRead | handleListFunctions |
 | GET | /api/v1/functions/runtimes | AbilityRead | handleFunctionRuntimes |
@@ -1536,9 +1540,9 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/private-networks/{id} | AbilityRoot | handleDeletePrivateNetwork |
 | GET | /api/v1/resources | AbilityRead | handleListResources |
 | POST | /api/v1/resources/tags/bulk | AbilityWrite | handleBulkResourceTags |
-| GET | /api/v1/resources/views | AbilityRead | handleListResourceViews |
-| POST | /api/v1/resources/views | AbilityRead | handleSaveResourceView |
-| DELETE | /api/v1/resources/views/{id} | AbilityRead | handleDeleteResourceView |
+| GET | /api/v1/resources/views | AbilityWrite | handleListResourceViews |
+| POST | /api/v1/resources/views | AbilityWrite | handleSaveResourceView |
+| DELETE | /api/v1/resources/views/{id} | AbilityWrite | handleDeleteResourceView |
 | GET | /api/v1/functions/{name}/route | AbilityRead | handleListFunctionRoutes |
 | PUT | /api/v1/functions/{name}/route | AbilityDeploy | handleSetFunctionRoute |
 | DELETE | /api/v1/functions/{name}/route | AbilityDeploy | handleDeleteFunctionRoute |
@@ -1571,6 +1575,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/resilience/results | AbilityWrite | handleRecordChaosResults |
 | GET | /api/v1/pipelines/templates | AbilityRead | handleListPipelineTemplates |
 | GET | /api/v1/pipelines/templates/{id} | AbilityRead | handleGetPipelineTemplate |
+| POST | /api/v1/ci/oidc-exchange | Public | handleCIOIDCExchange |
 
 ## See also
 

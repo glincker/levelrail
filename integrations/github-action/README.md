@@ -20,7 +20,10 @@ See `example-workflow.yml` for push, `workflow_dispatch` and `repository_dispatc
 
 | Input | Default | Meaning |
 | --- | --- | --- |
-| `api-url`, `api-token`, `app`, `image` | required | Same as the plain deploy action |
+| `api-url`, `app`, `image` | required | Same as the plain deploy action |
+| `api-token` | empty | Deploy token, or leave empty and set `oidc: true` |
+| `oidc` | `false` | Swap the job OIDC identity for a 15 minute, app-scoped token. Needs `id-token: write` and a CI trust on the app, so no long-lived secret is stored |
+| `rollback-on-failure` | `false` | Redeploy the previously running image when the deploy fails or times out |
 | `confirm` | `false` | Deploy into a protected environment |
 | `wait` | `true` | Wait for convergence; `false` reports the check as neutral |
 | `timeout` | `5m` | Rollout wait limit |

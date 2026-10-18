@@ -552,6 +552,8 @@ type Router struct {
 	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
+	ciTrusts                     CIOIDCTrustStore                                      // always set, CI OIDC trusts
+	ciVerifier                   CIIDTokenVerifier                                     // nil uses the GitHub Actions OIDC verifier
 	appSchedules                 AppScheduleStore                                      // always set, same "core Store interface" shape as gitSources above
 	resolveBranchSHA             resolveBranchSHAFunc                                  // remote branch head resolver for TriggerScheduledDeploy; always non-nil, defaulted to resolveRemoteBranchSHA in NewRouter, overridable in this package's own tests, the same "seam, not an interface" shape listBranches above already uses
 	previewEnvironments          PreviewEnvironmentStore                               // always set, same "core Store interface" shape as gitSources above: listing/tearing down a preview needs no extra secrets configuration, deploying a new one reuses gitSourceSecrets/gitSourceFetch/builder already above
@@ -822,6 +824,7 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		gitSources:                  s,
 		appSchedules:                s,
 		githubActions:               s,
+		ciTrusts:                    s,
 		imageAutoUpdates:            s,
 		appSleep:                    s,
 		dataImports:                 s,

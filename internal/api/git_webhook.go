@@ -165,6 +165,10 @@ func (rt *Router) processGitPushWebhookPayload(ctx context.Context, name string,
 		rt.logger.Info("api: git push webhook: ignoring push", slog.String("name", name), slog.String("ref", ev.Ref), slog.String("trigger_mode", effectiveGitSourceTriggerMode(gs.TriggerMode)))
 		return http.StatusOK, ignoredMsg
 	}
+	if msg := skipPushForMarker(ev.HeadMessage); msg != "" && !isWebhookReplay(ctx) {
+		rt.logger.Info("api: git push webhook: push skipped by commit marker", slog.String("name", name), slog.String("ref", ev.Ref))
+		return http.StatusOK, msg
+	}
 	if msg := rt.skipPushForPaths(ctx, name, gs, ev.Ref, ev.Before, ev.After, ev.Changed); msg != "" {
 		rt.logger.Info("api: git push webhook: push skipped by path filter", slog.String("name", name), slog.String("ref", ev.Ref))
 		return http.StatusOK, msg

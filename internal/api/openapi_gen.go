@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1347 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1352 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -135,6 +135,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/cancel-superseded", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCancelSuperseded", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/cancel-superseded", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetCancelSuperseded", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/changes", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppChanges", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListCITrusts", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/ci/trusts", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCreateCITrust", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/apps/{name}/ci/trusts/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteCITrust", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/ci/workflow", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetCIWorkflow", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/clone", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleCloneApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/clone/preview", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClonePreview", Description: "Clone: duplicates an app's desired state under a new name. AbilityWrite, the same gate POST /api/v1/apps itself uses, since a clone is a creation shaped as \"copy {name}\" rather than \"start from scratch\": handleCloneApp's own doc comment covers what does and doesn't carry over."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/compose", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleComposeDown", Description: "Same tier as DELETE /apps/{name}; ?volumes=true also needs write-sensitive, checked in the handler."},
@@ -771,6 +775,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/builds/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleGetBuild", Description: ""},
 	{Method: "GET", Path: "/api/v1/cdn/overview", Ability: "AbilityRead", Group: "Other", Handler: "handleCDNOverview", Description: ""},
 	{Method: "GET", Path: "/api/v1/changelog", Ability: "AbilityRead", Group: "Other", Handler: "handleGetChangelog", Description: "\"What's new\" dashboard panel: recent entries parsed from the repo's own CHANGELOG.md, AbilityRead like updates above."},
+	{Method: "POST", Path: "/api/v1/ci/oidc-exchange", Ability: "Public", Group: "Other", Handler: "handleCIOIDCExchange", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAccessReviews", Description: ""},
 	{Method: "POST", Path: "/api/v1/compliance/access-reviews", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateAccessReview", Description: ""},
 	{Method: "GET", Path: "/api/v1/compliance/access-reviews/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetAccessReview", Description: ""},
@@ -913,7 +918,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/images", Ability: "AbilityRead", Group: "Other", Handler: "handleListImageInventory", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/gc", Ability: "AbilityRoot", Group: "Other", Handler: "handleImageGC", Description: ""},
 	{Method: "GET", Path: "/api/v1/images/layers", Ability: "AbilityRead", Group: "Other", Handler: "handleImageLayerBreakdown", Description: ""},
-	{Method: "POST", Path: "/api/v1/images/verify", Ability: "AbilityRead", Group: "Other", Handler: "handleImageVerify", Description: ""},
+	{Method: "POST", Path: "/api/v1/images/verify", Ability: "AbilityWrite", Group: "Other", Handler: "handleImageVerify", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
 	{Method: "POST", Path: "/api/v1/imports/platform/apply", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleApplyPlatformImport", Description: ""},
@@ -1062,9 +1067,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/resource-advisor/summary", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/resources", Ability: "AbilityRead", Group: "Other", Handler: "handleListResources", Description: ""},
 	{Method: "POST", Path: "/api/v1/resources/tags/bulk", Ability: "AbilityWrite", Group: "Other", Handler: "handleBulkResourceTags", Description: ""},
-	{Method: "GET", Path: "/api/v1/resources/views", Ability: "AbilityRead", Group: "Other", Handler: "handleListResourceViews", Description: ""},
-	{Method: "POST", Path: "/api/v1/resources/views", Ability: "AbilityRead", Group: "Other", Handler: "handleSaveResourceView", Description: ""},
-	{Method: "DELETE", Path: "/api/v1/resources/views/{id}", Ability: "AbilityRead", Group: "Other", Handler: "handleDeleteResourceView", Description: ""},
+	{Method: "GET", Path: "/api/v1/resources/views", Ability: "AbilityWrite", Group: "Other", Handler: "handleListResourceViews", Description: ""},
+	{Method: "POST", Path: "/api/v1/resources/views", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveResourceView", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/resources/views/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteResourceView", Description: ""},
 	{Method: "GET", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityRead", Group: "Other", Handler: "handleListScheduledMaintenance", Description: ""},
 	{Method: "POST", Path: "/api/v1/scheduled-maintenance", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateScheduledMaintenance", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/scheduled-maintenance/{id}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDeleteScheduledMaintenance", Description: ""},

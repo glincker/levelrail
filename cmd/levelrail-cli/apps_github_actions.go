@@ -32,6 +32,12 @@ func runAppsGitHubActions(prog string, args []string, stdout, stderr io.Writer, 
 		return runAppsGitHubActionsGet(prog, args[1:], stdout, stderr, lookupEnv)
 	case "set":
 		return runAppsGitHubActionsSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "workflow":
+		return runAppsGitHubActionsWorkflow(prog, args[1:], stdout, stderr, lookupEnv)
+	case "token":
+		return runAppsGitHubActionsToken(prog, args[1:], stdout, stderr, lookupEnv)
+	case "trust":
+		return runAppsGitHubActionsTrust(prog, args[1:], stdout, stderr, lookupEnv)
 	case "start":
 		return runAppsGitHubActionsReport(prog, args[1:], stdout, stderr, lookupEnv, false)
 	case "finish":
@@ -47,6 +53,9 @@ func appsGitHubActionsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps github-actions get <app> [flags]      show what the deploy action reports back to GitHub
   %[1]s apps github-actions set <app> [flags]      change the environment name and which reports are on
+  %[1]s apps github-actions workflow <app> [flags] print a deploy workflow (OIDC login, wait, rollback on failure)
+  %[1]s apps github-actions trust list|add|remove <app> [flags]   which repositories may deploy the app from CI
+  %[1]s apps github-actions token <app> [flags]    swap the job OIDC identity for a 15 minute deploy token (used by the action)
   %[1]s apps github-actions start <app> [flags]    open a GitHub deployment and check run (used by the action)
   %[1]s apps github-actions finish <app> [flags]   close them with the deploy outcome (used by the action)
 
