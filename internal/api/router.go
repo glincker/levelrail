@@ -73,6 +73,7 @@ package api
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/compliance"
 	"github.com/GLINCKER/levelrail/internal/secrets"
@@ -108,6 +109,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/giteaapp"
 	"github.com/GLINCKER/levelrail/internal/githubapp"
 	"github.com/GLINCKER/levelrail/internal/gitlabapp"
+	"github.com/GLINCKER/levelrail/internal/imagelife"
 	"github.com/GLINCKER/levelrail/internal/importplan"
 	"github.com/GLINCKER/levelrail/internal/placement"
 	"github.com/GLINCKER/levelrail/internal/plugin"
@@ -197,17 +199,21 @@ type Router struct {
 	localNodeID            string // "" means "not mesh-enabled", set via WithLocalNodeID; the one node HostDiskCollector/HostMemoryCollector's readings are real for
 	meshZone               string // "" means mesh DNS resolution is off, set via SetMeshZone; mirrors application.Controller's own meshZone, see GET /api/v1/apps/{name}/connections' own doc comment
 	readiness              ReadinessProbes
-	meshSettings           meshSettingsState        // see mesh_settings.go
-	fixit                  fixitState               // see fixit.go
-	buildPerf              BuildPerformanceStore    // see build_performance.go
-	restart                restartState             // see system_restart.go
-	memAttribution         memoryAttributionCache   // see node_memory_attribution.go
-	nodeHostReports        NodeHostReports          // nil is valid: remote rows keep the placed-services-only shape
-	dockerGuard            DockerGuardController    // nil is valid: the docker guard routes report it as not configured
-	dockerPinger           DockerPinger             // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
-	images                 ImageLister              // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
-	containers             ContainerLister          // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
-	dockerDiskUsage        DockerDiskUsager         // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	meshSettings           meshSettingsState      // see mesh_settings.go
+	fixit                  fixitState             // see fixit.go
+	buildPerf              BuildPerformanceStore  // see build_performance.go
+	restart                restartState           // see system_restart.go
+	memAttribution         memoryAttributionCache // see node_memory_attribution.go
+	nodeHostReports        NodeHostReports        // nil is valid: remote rows keep the placed-services-only shape
+	dockerGuard            DockerGuardController  // nil is valid: the docker guard routes report it as not configured
+	dockerPinger           DockerPinger           // nil is valid: a control plane started without one reports DockerConnected: false, same shape as secrets/telemetry/alertRules above
+	images                 ImageLister            // nil is valid: GET /apps/{name}/images returns an empty list, same shape as dockerPinger above
+	containers             ContainerLister        // nil is valid: GET /api/v1/system/containers returns 501, same shape as execRuntime above
+	dockerDiskUsage        DockerDiskUsager       // nil is valid: GET /system/status omits its docker_disk_usage field, same "optional signal, absence is not an error" shape as dockerPinger above
+	imageInventory         ImageInventoryResolver // nil: /api/v1/images routes return 501
+	imageVerifyKey         *ecdsa.PublicKey
+	imageVerifyMode        string
+	imageVerifier          *imagelife.Verifier
 	dockerPruner           DockerPruner             // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
 	orphanedVolumes        OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
 	orphanReaper           *orphans.Reaper          // nil is valid: GET /system/orphans and POST /system/orphans/reap return 501

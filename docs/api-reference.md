@@ -1498,6 +1498,10 @@ Routes that do not fit an existing group.
 | POST | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStartFirewallEdgeAttack |
 | DELETE | /api/v1/firewall/edge/attack-mode | AbilityDeploy | handleStopFirewallEdgeAttack |
 | GET | /api/v1/firewall/edge/audit | AbilityRead | handleFirewallEdgeAudit |
+| GET | /api/v1/images | AbilityRead | handleListImageInventory |
+| GET | /api/v1/images/layers | AbilityRead | handleImageLayerBreakdown |
+| POST | /api/v1/images/verify | AbilityRead | handleImageVerify |
+| POST | /api/v1/images/gc | AbilityRoot | handleImageGC |
 
 ## See also
 

@@ -1702,6 +1702,17 @@ levelrail-cli cache history <app> [flags]
 
 - `cache status` shows the hit rate and bandwidth saved for one app, or the instance table without a name. `cache rules set --preset static` adds the static assets rule; `--file` replaces the policy from JSON. Purges are recorded in `cache history`. See [CDN and caching](/cdn-and-caching).
 
+## Images
+
+```bash
+levelrail-cli images list [--node N] [--keep N] [flags]
+levelrail-cli images layers <image-id> [--node N] [flags]
+levelrail-cli images gc [--node N] [--keep N] [--min-age-hours H] [--apply] [flags]
+levelrail-cli images verify (<image-id> | --ref repo@sha256:...) [--node N] [flags]
+```
+
+- `images list` shows every image on a node with size, owners and why it is kept. `images gc` previews until `--apply` and never removes live images, rollback targets or recent deploys. `images verify` checks a cosign signature and exits non-zero when it fails. See [Images](/images).
+
 ## Related
 
 <CardGroup cols={2}>
