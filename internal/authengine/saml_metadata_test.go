@@ -1,6 +1,7 @@
 package authengine_test
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -9,6 +10,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -72,5 +75,32 @@ func TestNormalizeIDPCertificate(t *testing.T) {
 	}
 	if _, err := authengine.NormalizeIDPCertificate("nope"); err == nil {
 		t.Fatal("garbage was accepted")
+	}
+}
+
+func TestFetchSAMLIdPMetadata_ClientRequired(t *testing.T) {
+	_, err := authengine.FetchSAMLIdPMetadata(context.Background(), nil, "https://example.com/metadata")
+	if err == nil || err.Error() != "http client is required" {
+		t.Fatalf("expected error 'http client is required', got %v", err)
+	}
+}
+
+func TestFetchSAMLIdPMetadata_ValidClient(t *testing.T) {
+	// Simple server to return minimal SAML metadata
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="test-entity" />`))
+	}))
+	defer srv.Close()
+
+	// Need a client that trusts the test server's cert
+	client := srv.Client()
+
+	body, err := authengine.FetchSAMLIdPMetadata(context.Background(), client, srv.URL)
+	if err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if string(body) != `<md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" entityID="test-entity" />` {
+		t.Errorf("unexpected body: %s", string(body))
 	}
 }
