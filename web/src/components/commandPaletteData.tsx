@@ -35,6 +35,7 @@ import {
   RobotIcon,
   TerminalWindowIcon,
   BellIcon,
+  LightningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   BETA_FEATURES_PATH,
@@ -146,6 +147,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
+  nav('nav-functions', 'Functions', <LightningIcon />, '/functions'),
   nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
   nav(
     'nav-models',

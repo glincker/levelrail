@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -26,8 +28,8 @@ func TestRun_FunctionsDeployListInvokeDelete(t *testing.T) {
 			b, _ := io.ReadAll(r.Body)
 			sleepBody = string(b)
 			_ = json.NewEncoder(w).Encode(map[string]any{"enabled": true, "idle_minutes": 10, "hold_requests": true})
-		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps":
-			_ = json.NewEncoder(w).Encode([]appResource{{Name: "fn", Image: "x:1", FallbackURL: fnSrv.URL}, {Name: "plain", Image: "y:1"}})
+		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/functions":
+			_ = json.NewEncoder(w).Encode(map[string]any{"functions": []map[string]any{{"name": "fn", "image": "x:1", "idle_minutes": 10, "url": fnSrv.URL, "invocations": 4, "p95_ms": 120}}})
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/fn/sleep":
 			_ = json.NewEncoder(w).Encode(map[string]any{"enabled": true, "idle_minutes": 10, "hold_requests": true})
 		case r.Method == http.MethodGet && r.URL.Path == "/api/v1/apps/plain/sleep":
@@ -84,5 +86,25 @@ func TestRun_FunctionsDeployListInvokeDelete(t *testing.T) {
 
 	if _, code := call("functions", "delete", "fn"); code != exitOK {
 		t.Fatalf("delete = %d", code)
+	}
+}
+
+func TestFunctionsStarterWritesFilesAndRefusesOverwrite(t *testing.T) {
+	dir := t.TempDir()
+	runIn := func(args ...string) int {
+		var stdout, stderr bytes.Buffer
+		return run("levelrail-cli-test", args, &stdout, &stderr, envMap())
+	}
+	if code := runIn("functions", "init", "node", dir); code != exitOK {
+		t.Fatalf("init = %d", code)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "index.js")); err != nil {
+		t.Fatal(err)
+	}
+	if code := runIn("functions", "init", "node", dir); code != exitUsage {
+		t.Fatalf("second init = %d, want usage error", code)
+	}
+	if code := runIn("functions", "init", "ruby", dir); code != exitUsage {
+		t.Fatalf("unknown runtime = %d, want usage error", code)
 	}
 }

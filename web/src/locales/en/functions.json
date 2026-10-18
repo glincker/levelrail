@@ -1,0 +1,52 @@
+{
+  "title": "Functions",
+  "description": "Small handlers that cost nothing while idle. A function sleeps after a quiet period and the next request wakes it and waits for the answer.",
+  "window": {
+    "label": "Statistics window",
+    "1h": "Last hour",
+    "24h": "Last 24 hours",
+    "7d": "Last 7 days"
+  },
+  "list": {
+    "name": "Function",
+    "state": "State",
+    "calls": "Calls",
+    "p95": "p95 duration",
+    "errors": "Server errors",
+    "idle": "Sleeps after",
+    "idleValue": "{{minutes}} min",
+    "asleep": "Asleep",
+    "awake": "Awake",
+    "visit": "Open URL",
+    "error": "Functions could not be loaded: {{message}}",
+    "retry": "Retry"
+  },
+  "empty": {
+    "title": "No functions yet",
+    "body": "Pick a runtime below, push the handler to a repository and deploy it. It gets a live URL that wakes on request."
+  },
+  "deploy": {
+    "open": "Deploy function",
+    "title": "Deploy a function",
+    "description": "Builds the handler in your repository with Railpack, then keeps it asleep until a request arrives.",
+    "name": "Name",
+    "repo": "Repository URL",
+    "ref": "Branch, tag or commit",
+    "directory": "Handler directory (optional)",
+    "directoryHint": "Leave empty when the handler is at the repository root.",
+    "port": "Port",
+    "idle": "Sleep after idle minutes",
+    "submit": "Deploy",
+    "cancel": "Cancel",
+    "started": "Build started for {{name}}. It goes live when the build finishes.",
+    "failed": "Could not deploy {{name}}: {{message}}"
+  },
+  "templates": {
+    "title": "Starter handlers",
+    "description": "Each starter is a complete handler of about ten lines. Railpack builds it without a Dockerfile and it listens on the PORT variable.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "cliLabel": "Or from the terminal",
+    "error": "Starter handlers could not be loaded: {{message}}"
+  }
+}

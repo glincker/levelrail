@@ -1502,6 +1502,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/images/layers | AbilityRead | handleImageLayerBreakdown |
 | POST | /api/v1/images/verify | AbilityRead | handleImageVerify |
 | POST | /api/v1/images/gc | AbilityRoot | handleImageGC |
+| GET | /api/v1/functions | AbilityRead | handleListFunctions |
+| GET | /api/v1/functions/runtimes | AbilityRead | handleFunctionRuntimes |
 
 ## See also
 

@@ -69,6 +69,7 @@ import type usage from '../locales/en/usage.json'
 import type deployDetail from '../locales/en/deployDetail.json'
 import type deployTimeline from '../locales/en/deployTimeline.json'
 import type images from '../locales/en/images.json'
+import type functions from '../locales/en/functions.json'
 import type secretRotation from '../locales/en/secretRotation.json'
 import type templates from '../locales/en/templates.json'
 import type models from '../locales/en/models.json'
@@ -147,6 +148,7 @@ declare module 'i18next' {
       usage: typeof usage
       deployTimeline: typeof deployTimeline
       images: typeof images
+      functions: typeof functions
       secretRotation: typeof secretRotation
       models: typeof models
       templates: typeof templates

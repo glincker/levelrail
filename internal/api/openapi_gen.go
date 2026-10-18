@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1278 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1280 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -865,6 +865,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/fixes", Ability: "AbilityRead", Group: "Other", Handler: "handleListFixes", Description: ""},
 	{Method: "POST", Path: "/api/v1/fixes/{id}/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyFix", Description: "Fixes prune Docker data, write settings and re-verify host state, so AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/fixes/{id}/preview", Ability: "AbilityRead", Group: "Other", Handler: "handlePreviewFix", Description: ""},
+	{Method: "GET", Path: "/api/v1/functions", Ability: "AbilityRead", Group: "Other", Handler: "handleListFunctions", Description: "Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime."},
+	{Method: "GET", Path: "/api/v1/functions/runtimes", Ability: "AbilityRead", Group: "Other", Handler: "handleFunctionRuntimes", Description: ""},
 	{Method: "GET", Path: "/api/v1/gate/check", Ability: "Public", Group: "Other", Handler: "handleGateCheck", Description: "Unauthenticated by design: the check proves itself with the ingress's gate secret, and login requires a dashboard session before minting."},
 	{Method: "POST", Path: "/api/v1/git-sources/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/gitea-app", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisconnectGiteaApp", Description: ""},
