@@ -9,12 +9,15 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 const functionsUsage = `Usage:
   %[1]s functions init <node|python|go> [dir]     write a starter handler
   %[1]s functions deploy <name> --repo <repo URL> [--ref main] [--dir sub/dir] [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
   %[1]s functions deploy <name> --image <ref> [--port 8080] [--idle 10m] [--env KEY=VALUE ...]
+  %[1]s functions deploy <name> ... --domain example.com --path /hello   also serve it at example.com/hello
   %[1]s functions list [--window 1h|24h|7d]       state, calls and p95 duration
   %[1]s functions runtimes
   %[1]s functions invoke <name> [--path /] [--method GET] [--data BODY] [--insecure]
@@ -71,7 +74,8 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	image := fs.String("image", "", "container image (deploy)")
 	port := fs.Int("port", 8080, "port the container serves HTTP on (deploy)")
 	idle := fs.Duration("idle", 10*time.Minute, "idle time before the function sleeps, 5m to 168h (deploy)")
-	path := fs.String("path", "/", "request path (invoke)")
+	path := fs.String("path", "/", "request path (invoke), or the path prefix to serve the function at on --domain (deploy)")
+	routeDomain := fs.String("domain", "", "serve the function at this domain's --path, for a domain already attached to an app (deploy)")
 	method := fs.String("method", http.MethodGet, "HTTP method (invoke)")
 	data := fs.String("data", "", "request body (invoke)")
 	insecure := fs.Bool("insecure", false, "skip TLS verification, for a local self-signed certificate (invoke)")
@@ -130,11 +134,26 @@ func runFunctionsVerb(prog, verb string, args []string, stdout, stderr io.Writer
 	}
 	switch verb {
 	case "deploy":
-		if *image == "" {
-			return deployFunctionFromRepo(ctx, client, name, *port, *idle, envs, functionSourceFlags{repo: *repo, ref: *ref, dir: *dir, wait: *wait}, of, stdout, stderr, jsonOut)
+		if *routeDomain != "" && (*path == "/" || *path == "") {
+			return reportError(stdout, stderr, jsonOut, newValidationError("--domain needs --path below /, for example --path /hello"))
 		}
-		return deployFunction(ctx, client, name, *image, *port, *idle, envs, of, stdout, stderr, jsonOut)
+		var code int
+		if *image == "" {
+			code = deployFunctionFromRepo(ctx, client, name, *port, *idle, envs, functionSourceFlags{repo: *repo, ref: *ref, dir: *dir, wait: *wait}, of, stdout, stderr, jsonOut)
+		} else {
+			code = deployFunction(ctx, client, name, *image, *port, *idle, envs, of, stdout, stderr, jsonOut)
+		}
+		if code != exitOK || *routeDomain == "" {
+			return code
+		}
+		route := apiclient.FunctionRoute{Domain: *routeDomain, Path: *path, StripPrefix: true}
+		if err := client.SetFunctionRoute(ctx, name, route); err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("function %q is live but its route could not be set: %w", name, err))
+		}
+		_, _ = fmt.Fprintf(stderr, "route: https://%s%s -> %s\n", route.Domain, route.Path, name)
+		return exitOK
 	case "delete":
+		_ = client.DeleteFunctionRoutes(ctx, name, "", "")
 		if err := client.DeleteApp(ctx, name); err != nil {
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("delete function %q: %w", name, err))
 		}

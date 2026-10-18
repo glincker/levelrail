@@ -74,6 +74,9 @@ func (p *RoutePolicy) forwardHandle(f trafficpolicy.Forwarder) []any {
 	switch f.Action {
 	case trafficpolicy.ActionApp:
 		dial = p.AppDials[f.App]
+		if wake, asleep := p.AppWake[f.App]; dial == "" && asleep {
+			return wake.handlers()
+		}
 		if dial == "" {
 			return []any{forwardUnavailable(fmt.Sprintf("The app %s this path forwards to is not running.", f.App))}
 		}

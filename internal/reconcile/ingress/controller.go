@@ -923,7 +923,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	// Per-domain traffic controls (controller_policies.go), after every
 	// app route exists so forwarders can resolve other apps' dials.
-	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides); err != nil {
+	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
 	if routes, err = c.applyAuthGates(ctx, routes); err != nil {

@@ -49,6 +49,8 @@ export function DeployFunctionDialog() {
   const [directory, setDirectory] = useState('')
   const [port, setPort] = useState(String(DEFAULT_PORT))
   const [idle, setIdle] = useState(String(DEFAULT_IDLE_MINUTES))
+  const [routeDomain, setRouteDomain] = useState('')
+  const [routePath, setRoutePath] = useState('')
   const deploy = useDeployFunction()
 
   function onSubmit(e: FormEvent) {
@@ -61,6 +63,8 @@ export function DeployFunctionDialog() {
         directory: directory.trim(),
         port: Number(port) || DEFAULT_PORT,
         idleMinutes: Number(idle) || DEFAULT_IDLE_MINUTES,
+        routeDomain: routeDomain.trim(),
+        routePath: routePath.trim(),
       },
       {
         onSuccess: () => {
@@ -166,6 +170,33 @@ export function DeployFunctionDialog() {
               />
             </Row>
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Row id="fn-route-domain" label={t('deploy.routeDomain')}>
+              <Input
+                id="fn-route-domain"
+                value={routeDomain}
+                placeholder="example.com"
+                required={routePath.trim() !== ''}
+                onChange={(e) => {
+                  setRouteDomain(e.target.value)
+                }}
+              />
+            </Row>
+            <Row id="fn-route-path" label={t('deploy.routePath')}>
+              <Input
+                id="fn-route-path"
+                value={routePath}
+                placeholder="/hello"
+                required={routeDomain.trim() !== ''}
+                onChange={(e) => {
+                  setRoutePath(e.target.value)
+                }}
+              />
+            </Row>
+          </div>
+          <p className="-mt-2 text-xs text-muted-foreground">
+            {t('deploy.routeHint')}
+          </p>
           <DialogFooter>
             <Button
               type="button"

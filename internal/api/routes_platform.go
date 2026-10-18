@@ -113,6 +113,10 @@ func (rt *Router) registerPlatformRoutes(mux *http.ServeMux) {
 	// Functions: apps that sleep to zero and hold the waking request, with call count and p95 duration, plus starter handlers per runtime.
 	mux.HandleFunc("GET /api/v1/functions", rt.requireAbility(AbilityRead, rt.handleListFunctions))
 	mux.HandleFunc("GET /api/v1/functions/runtimes", rt.requireAbility(AbilityRead, rt.handleFunctionRuntimes))
+	// Function paths: serve a function at <domain>/<path> through a forwarder rule on the domain.
+	mux.HandleFunc("GET /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListFunctionRoutes))
+	mux.HandleFunc("PUT /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleSetFunctionRoute))
+	mux.HandleFunc("DELETE /api/v1/functions/{name}/route", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteFunctionRoute))
 	mux.HandleFunc("GET /api/v1/apps/{name}/requests", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleQueryRequests))
 	// Traffic: RED totals, per-replica latency, slowest route templates, slow or failed request samples and SLO burn over window=5m, 1h, 24h or 7d, plus top referrers and countries.
 	mux.HandleFunc("GET /api/v1/apps/{name}/traffic", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppTraffic))

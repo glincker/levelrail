@@ -3634,6 +3634,9 @@ type PurgeAuditLogResult struct {
 // /api/v1/apps/{name}/deploy-attempts, additive to the reconcile
 // conditions GetDeployStatus already returns, not a replacement for it.
 type DeployAttemptResource struct {
+	// DeployURL is the attempt's own immutable address while a retained copy exists.
+	DeployURL   string     `json:"deploy_url,omitempty"`
+	Live        bool       `json:"live,omitempty"`
 	ID          string     `json:"id"`
 	ServiceName string     `json:"service_name"`
 	Image       string     `json:"image"`

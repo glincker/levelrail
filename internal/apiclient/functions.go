@@ -35,3 +35,47 @@ func (c *Client) ListFunctions(ctx context.Context, window string) (FunctionsLis
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
+
+// FunctionRoute is one path a function answers on at a domain.
+type FunctionRoute struct {
+	Domain      string `json:"domain"`
+	Path        string `json:"path"`
+	StripPrefix bool   `json:"strip_prefix"`
+}
+
+// FunctionRoutes is the response of the function route endpoints.
+type FunctionRoutes struct {
+	Routes []FunctionRoute `json:"routes"`
+}
+
+func functionRoutePath(name string) string {
+	return "/api/v1/functions/" + url.PathEscape(name) + "/route"
+}
+
+// SetFunctionRoute calls PUT /api/v1/functions/{name}/route: serve the function at domain/path.
+func (c *Client) SetFunctionRoute(ctx context.Context, name string, r FunctionRoute) error {
+	return c.do(ctx, http.MethodPut, functionRoutePath(name), r, nil)
+}
+
+// ListFunctionRoutes calls GET /api/v1/functions/{name}/route.
+func (c *Client) ListFunctionRoutes(ctx context.Context, name string) (FunctionRoutes, error) {
+	var out FunctionRoutes
+	err := c.do(ctx, http.MethodGet, functionRoutePath(name), nil, &out)
+	return out, err
+}
+
+// DeleteFunctionRoutes calls DELETE /api/v1/functions/{name}/route; an empty domain or path matches all.
+func (c *Client) DeleteFunctionRoutes(ctx context.Context, name, domain, path string) error {
+	q := url.Values{}
+	if domain != "" {
+		q.Set("domain", domain)
+	}
+	if path != "" {
+		q.Set("path", path)
+	}
+	p := functionRoutePath(name)
+	if len(q) > 0 {
+		p += "?" + q.Encode()
+	}
+	return c.do(ctx, http.MethodDelete, p, nil, nil)
+}
