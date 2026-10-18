@@ -81,6 +81,7 @@ type Controller struct {
 	distributor Distributor
 	resolver    *network.Resolver
 	logger      *slog.Logger
+	hiddenApps  func(ctx context.Context) (map[string]bool, error)
 }
 
 // Option configures New.
@@ -93,6 +94,12 @@ func WithLogger(l *slog.Logger) Option {
 			c.logger = l
 		}
 	}
+}
+
+// WithHiddenApps omits every service of the returned app IDs from mesh DNS,
+// the cross-node half of private network default-deny.
+func WithHiddenApps(f func(ctx context.Context) (map[string]bool, error)) Option {
+	return func(c *Controller) { c.hiddenApps = f }
 }
 
 // New builds the mesh controller. resolver is swapped wholesale on every
@@ -273,8 +280,18 @@ func (c *Controller) placements(ctx context.Context) ([]network.Placement, error
 		return nil, fmt.Errorf("mesh: list desired databases: %w", err)
 	}
 
+	var hidden map[string]bool
+	if c.hiddenApps != nil {
+		if hidden, err = c.hiddenApps(ctx); err != nil {
+			return nil, fmt.Errorf("mesh: hidden apps: %w", err)
+		}
+	}
+
 	out := make([]network.Placement, 0, len(services)+len(databases))
 	for _, s := range services {
+		if s.AppID != "" && hidden[s.AppID] {
+			continue
+		}
 		out = append(out, network.Placement{Service: s.Name, NodeID: s.NodeID})
 	}
 	for _, d := range databases {

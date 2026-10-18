@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1296 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1304 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1007,6 +1007,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/plugins/{name}/disable", Ability: "AbilityRoot", Group: "Other", Handler: "handleDisablePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugins/{name}/enable", Ability: "AbilityRoot", Group: "Other", Handler: "handleEnablePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/preflight", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreflightNew", Description: ""},
+	{Method: "GET", Path: "/api/v1/private-networks", Ability: "AbilityRead", Group: "Other", Handler: "handleListPrivateNetworks", Description: ""},
+	{Method: "POST", Path: "/api/v1/private-networks", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreatePrivateNetwork", Description: ""},
+	{Method: "POST", Path: "/api/v1/private-networks/apply", Ability: "AbilityRoot", Group: "Other", Handler: "handleApplyPrivateNetworks", Description: ""},
+	{Method: "GET", Path: "/api/v1/private-networks/map", Ability: "AbilityRead", Group: "Other", Handler: "handlePrivateNetworkMap", Description: ""},
+	{Method: "POST", Path: "/api/v1/private-networks/rules", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreatePrivateNetworkRule", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/private-networks/rules/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeletePrivateNetworkRule", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/private-networks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeletePrivateNetwork", Description: ""},
+	{Method: "PUT", Path: "/api/v1/private-networks/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpdatePrivateNetwork", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry-vendors", Ability: "AbilityRead", Group: "Other", Handler: "handleListRegistryVendors", Description: ""},
 	{Method: "GET", Path: "/api/v1/resource-advisor/findings", Ability: "AbilityRead", Group: "Other", Handler: "handleResourceAdvisorFindings", Description: ""},
 	{Method: "POST", Path: "/api/v1/resource-advisor/findings/{id}/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleResourceAdvisorApply", Description: ""},

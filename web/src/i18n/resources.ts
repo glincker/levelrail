@@ -8,6 +8,7 @@ import type dashboard from '../locales/en/dashboard.json'
 import type auditLog from '../locales/en/auditLog.json'
 import type streams from '../locales/en/streams.json'
 import type networkProxy from '../locales/en/networkProxy.json'
+import type privateNetworks from '../locales/en/privateNetworks.json'
 import type fixit from '../locales/en/fixit.json'
 import type network from '../locales/en/network.json'
 import type databases from '../locales/en/databases.json'
@@ -92,6 +93,7 @@ declare module 'i18next' {
       auditLog: typeof auditLog
       streams: typeof streams
       networkProxy: typeof networkProxy
+      privateNetworks: typeof privateNetworks
       fixit: typeof fixit
       network: typeof network
       databases: typeof databases

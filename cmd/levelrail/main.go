@@ -53,6 +53,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/objectstore"
 	"github.com/GLINCKER/levelrail/internal/orphans"
 	"github.com/GLINCKER/levelrail/internal/pkgregistry"
+	"github.com/GLINCKER/levelrail/internal/privnet"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
@@ -624,6 +625,7 @@ func run(logger *slog.Logger) error {
 		meshEndpoints.Attach(meshCfg.coordinator, meshCfg.localNodeID)
 	}
 	apiRouter.SetAppTeardownOptions(application.WithNetworkPrefix(b.ShortName), application.WithInstanceID(instanceID))
+	apiRouter.SetPrivateNetworks(privateNetworkConfig(db, client, b.ShortName, instanceID))
 	if meshCfg != nil {
 		defer meshCfg.close()
 		apiRouter.SetLocalNodeID(meshCfg.localNodeID)
@@ -2956,6 +2958,15 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 				controllers = append(controllers, application.NewNetworkCleanupController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID))
 			}
 		}
+		controllers = append(controllers, privnet.NewController(deps.db, deps.runtime, deps.networkPrefix, deps.instanceID))
+		for _, n := range nodes {
+			if runtimeNodeID(deps, n.ID) == "" {
+				continue
+			}
+			if nodeRuntime, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, n.ID); err == nil {
+				controllers = append(controllers, privnet.NewController(deps.db, nodeRuntime, deps.networkPrefix, deps.instanceID).ForNode(n.ID))
+			}
+		}
 		if deps.orphanReaper != nil {
 			controllers = append(controllers, orphans.NewController(deps.orphanReaper))
 		}
@@ -2983,7 +2994,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		controllers = append(controllers, exposurereconcile.New(deps.db, newExposureManager(deps.firewallRulePrefix), deps.logger))
 
 		if deps.meshCfg != nil {
-			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger)))
+			controllers = append(controllers, meshreconcile.New(deps.meshCfg.localNodeID, deps.db, deps.meshCfg.coordinator, deps.meshCfg.resolver, meshreconcile.WithLogger(deps.logger), meshreconcile.WithHiddenApps(privateNetworkHiddenApps(deps.db))))
 		}
 		return controllers, nil
 	}

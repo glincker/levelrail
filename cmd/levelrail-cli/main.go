@@ -111,6 +111,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRegistryCredentials(prog, args[1:], stdout, stderr, lookupEnv)
 	case "network-shares":
 		return runNetworkShares(prog, args[1:], stdout, stderr, lookupEnv)
+	case "private-networks":
+		return runPrivateNetworks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "firewall":
 		return runFirewall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "security":
@@ -320,6 +322,7 @@ Usage:
   %[1]s images list|layers|gc|verify [flags]   image inventory per node with size and owners, layer breakdown, retention GC that keeps rollback targets, signature check
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
+  %[1]s private-networks list|map|create|set|delete|allow|deny|apply [flags]    private networks and app to app allow rules
   %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules
   %[1]s security posture|sessions|policy [flags]                security score, sessions and devices, security policy
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry

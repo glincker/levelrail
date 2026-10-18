@@ -1520,6 +1520,14 @@ Routes that do not fit an existing group.
 | GET | /api/v1/storage/buckets/{id}/objects/download | AbilityReadSensitive | handleDownloadBucketObject |
 | POST | /api/v1/storage/buckets/{id}/presign | AbilityReadSensitive | handlePresignBucketObject |
 | POST | /api/v1/storage/buckets/{id}/lifecycle/run | AbilityWrite | handleSweepStorageBucket |
+| GET | /api/v1/private-networks | AbilityRead | handleListPrivateNetworks |
+| POST | /api/v1/private-networks | AbilityRoot | handleCreatePrivateNetwork |
+| GET | /api/v1/private-networks/map | AbilityRead | handlePrivateNetworkMap |
+| POST | /api/v1/private-networks/apply | AbilityRoot | handleApplyPrivateNetworks |
+| POST | /api/v1/private-networks/rules | AbilityRoot | handleCreatePrivateNetworkRule |
+| DELETE | /api/v1/private-networks/rules/{id} | AbilityRoot | handleDeletePrivateNetworkRule |
+| PUT | /api/v1/private-networks/{id} | AbilityRoot | handleUpdatePrivateNetwork |
+| DELETE | /api/v1/private-networks/{id} | AbilityRoot | handleDeletePrivateNetwork |
 
 ## See also
 
