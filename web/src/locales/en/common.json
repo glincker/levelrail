@@ -1,4 +1,23 @@
 {
+  "deployHistory": {
+    "filters": {
+      "search": "Search message, commit, author",
+      "branch": "Branch",
+      "author": "Author",
+      "status": "Status",
+      "all": "All ({{label}})",
+      "clear": "Clear filters",
+      "noMatch": "No deploys match these filters",
+      "noMatchHint": "Clear the filters to see every deploy."
+    },
+    "visit": "Visit",
+    "visitLabel": "Visit {{url}}",
+    "promote": "Promote to production",
+    "promoteHint": "Makes this exact build the live release, pinned by digest",
+    "promoted": "Promotion triggered.",
+    "promotedPending": "Promotion is waiting for approval.",
+    "promoteFailed": "Could not promote."
+  },
   "actions": {
     "copy": "Copy",
     "copied": "Copied",

@@ -10,6 +10,8 @@ import {
   GitBranchIcon,
   GitCommitIcon,
   GitDiffIcon,
+  ArrowSquareOutIcon,
+  MagnifyingGlassIcon,
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployAttempt } from '../types/deployAttempt'
@@ -27,6 +29,11 @@ import {
   DEPLOY_ATTEMPT_STATUS_LABEL,
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
+import {
+  EMPTY_DEPLOY_FILTERS,
+  filterDeployAttempts,
+} from '../lib/deployAttemptFilter'
+import { DeployAttemptFilterBar } from './DeployAttemptFilters'
 import { ProtectedEnvironmentNotice } from './ProtectedEnvironmentNotice'
 import { CancelDeployDialog } from './CancelDeployDialog'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
@@ -106,7 +113,11 @@ export function DeployAttemptsList({
   // regardless of attempts.length.
   const [selected, setSelected] = useState<string[]>([])
   const [ackProtected, setAckProtected] = useState(false)
+  const [filters, setFilters] = useState(EMPTY_DEPLOY_FILTERS)
+  const { t } = useTranslation('common')
   const { data: app } = useApp(appName)
+  const primaryDomain = app?.domains?.[0]
+  const visitUrl = primaryDomain ? `https://${primaryDomain}` : undefined
   const protectedEnv = useProtectedEnvironment(app)
 
   if (attempts.length === 0) {
@@ -138,6 +149,7 @@ export function DeployAttemptsList({
   }
 
   const latestAttemptId = attempts[0]?.id
+  const visibleAttempts = filterDeployAttempts(attempts, filters)
 
   const toggleSelected = (id: string) => {
     setSelected((prev) => {
@@ -196,11 +208,36 @@ export function DeployAttemptsList({
             onAcknowledgedChange={setAckProtected}
           />
         ) : null}
+        {attempts.length > 1 ? (
+          <DeployAttemptFilterBar
+            attempts={attempts}
+            filters={filters}
+            onChange={setFilters}
+          />
+        ) : null}
+        {visibleAttempts.length === 0 ? (
+          <EmptyState
+            compact
+            icon={<MagnifyingGlassIcon className="size-5" />}
+            title={t('deployHistory.filters.noMatch')}
+            description={t('deployHistory.filters.noMatchHint')}
+            action={
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setFilters(EMPTY_DEPLOY_FILTERS)}
+              >
+                {t('deployHistory.filters.clear')}
+              </Button>
+            }
+          />
+        ) : null}
         <ul className="-mx-4 -mb-4 divide-y divide-border border-t border-border">
-          {attempts.map((a) => (
+          {visibleAttempts.map((a) => (
             <DeployAttemptRow
               key={a.id}
               appName={appName}
+              visitUrl={visitUrl}
               attempt={a}
               isLatestAttempt={a.id === latestAttemptId}
               conditions={conditions}
@@ -225,8 +262,10 @@ function DeployAttemptRow({
   onToggleSelected,
   protectedEnv,
   ackProtected,
+  visitUrl,
 }: {
   appName: string
+  visitUrl?: string
   attempt: DeployAttempt
   isLatestAttempt: boolean
   conditions: ReconcileCondition[]
@@ -266,8 +305,8 @@ function DeployAttemptRow({
     const pending = isPendingApproval(result)
     toast.add({
       title: pending
-        ? 'Rollback is waiting for approval.'
-        : 'Rollback triggered.',
+        ? t('deployHistory.promotedPending')
+        : t('deployHistory.promoted'),
       description: `Redeploying ${unpinnedImage(attempt.image)}.`,
       type: 'success',
       actionProps: pending
@@ -289,7 +328,7 @@ function DeployAttemptRow({
           onSuccess: notifyRollback,
           onError: (error) =>
             toast.add({
-              title: 'Could not roll back.',
+              title: t('deployHistory.promoteFailed'),
               description: error.message,
               type: 'error',
             }),
@@ -303,6 +342,7 @@ function DeployAttemptRow({
     )
   }
 
+  const live = attempt.rollout_state === 'serving'
   const menuItems = [
     {
       id: 'compare',
@@ -317,13 +357,13 @@ function DeployAttemptRow({
         })
       },
     },
-    ...(attempt.status === 'succeeded'
+    ...(attempt.status === 'succeeded' && !live
       ? [
           {
             id: 'rollback',
-            label: 'Roll back to this',
+            label: t('deployHistory.promote'),
             description: attempt.image_digest
-              ? 'Redeploys exactly this image, pinned by digest'
+              ? t('deployHistory.promoteHint')
               : 'No digest recorded: redeploys by image tag',
             icon: <ArrowCounterClockwiseIcon className="size-4" />,
             disabled: rollbackBlocked,
@@ -355,7 +395,6 @@ function DeployAttemptRow({
     shortTag(attempt.image)
   const StatusIcon = DEPLOY_ATTEMPT_STATUS_ICON[attempt.status]
   const tone = DEPLOY_ATTEMPT_STATUS_TONE[attempt.status]
-  const live = attempt.rollout_state === 'serving'
   const detail = {
     to: '/apps/$name/deploys/$deployId/logs' as const,
     params: { name: appName, deployId: attempt.id },
@@ -491,6 +530,39 @@ function DeployAttemptRow({
       </div>
 
       <div className="relative z-10 flex shrink-0 items-center gap-1.5">
+        {live && visitUrl ? (
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={
+              <a
+                href={visitUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t('deployHistory.visitLabel', { url: visitUrl })}
+              />
+            }
+          >
+            <ArrowSquareOutIcon className="size-3.5" data-icon="inline-start" />
+            {t('deployHistory.visit')}
+          </Button>
+        ) : null}
+        {attempt.status === 'succeeded' && !live ? (
+          <Button
+            variant="outline"
+            size="sm"
+            className="max-sm:hidden"
+            disabled={rollbackBlocked}
+            onClick={handleRollback}
+          >
+            <ArrowCounterClockwiseIcon
+              className="size-3.5"
+              data-icon="inline-start"
+            />
+            {t('deployHistory.promote')}
+          </Button>
+        ) : null}
         <Button
           variant="outline"
           size="sm"

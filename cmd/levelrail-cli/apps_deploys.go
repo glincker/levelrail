@@ -8,6 +8,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAppsDeploys dispatches "apps deploys <verb> [flags]", the same
@@ -47,7 +49,7 @@ func runAppsDeploys(prog string, args []string, stdout, stderr io.Writer, lookup
 		return runAppsDeploysGate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cancel":
 		return runAppsDeploysCancel(prog, args[1:], stdout, stderr, lookupEnv)
-	case "rollback-to":
+	case "rollback-to", "promote":
 		return runAppsDeploysRollbackTo(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps deploys subcommand %q\n\n", prog, args[0])
@@ -71,6 +73,7 @@ func appsDeploysUsage(prog string) string {
   %[1]s apps deploys gate <name> [deploy-id] [--watch]            readiness gate, cutover, drain and post-deploy watch timeline
   %[1]s apps deploys cancel <name> <deploy-id> [flags]            cancel a queued or in-progress deploy before it cuts traffic
   %[1]s apps deploys rollback-to <name> <deploy-id> [flags]       redeploy a past succeeded deploy's exact image, pinned by digest
+  %[1]s apps deploys promote <name> <deploy-id> [flags]           alias of rollback-to: make any past succeeded deploy the live one
 
 Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 `, prog)
@@ -78,6 +81,13 @@ Run "%[1]s apps deploys <subcommand> -h" for a subcommand's own flags.
 
 func runAppsDeploysList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps deploys list", "print the attempt list as a JSON array to stdout and nothing else", stderr)
+	var filter apiclient.DeployAttemptFilter
+	fs.StringVar(&filter.Branch, "branch", "", "only deploys built from this git branch")
+	fs.StringVar(&filter.Author, "author", "", "only deploys whose author contains this text")
+	fs.StringVar(&filter.Commit, "commit", "", "only deploys whose commit SHA starts with this prefix")
+	fs.StringVar(&filter.Status, "status", "", "only deploys with this status (succeeded, failed, running, ...)")
+	fs.StringVar(&filter.Query, "search", "", "only deploys whose message, image, branch or author contains this text")
+	fs.IntVar(&filter.Limit, "limit", 0, "show at most this many deploys (newest first)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, appsDeploysListUsage(prog)) }
 
 	client, name, jsonOut, of, exitCode, ok := parseSingleArgClient(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, stderr, singleArgCmd{prog, "apps deploys list", "app name"}, lookupEnv)
@@ -85,7 +95,7 @@ func runAppsDeploysList(prog string, args []string, stdout, stderr io.Writer, lo
 		return exitCode
 	}
 
-	attempts, err := client.ListDeployAttempts(context.Background(), name)
+	attempts, err := client.ListDeployAttemptsFiltered(context.Background(), name, filter)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("list deploy attempts for app %q: %w", name, err))
 	}
@@ -103,6 +113,12 @@ its id, image, source, status, and timing. Use an id from here with
 "apps deploys compare --from ID" or "apps wait --attempt-id ID".
 
 Flags:
+  --branch string         only deploys built from this git branch
+  --author string         only deploys whose author contains this text
+  --commit string         only deploys whose commit SHA starts with this prefix
+  --status string         only deploys with this status
+  --search string         only deploys whose message, image, branch or author contains this text
+  --limit int             show at most this many deploys
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

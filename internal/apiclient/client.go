@@ -3773,6 +3773,36 @@ func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error)
 	return out, err
 }
 
+// DeployAttemptFilter narrows ListDeployAttemptsFiltered; empty fields are ignored.
+type DeployAttemptFilter struct {
+	Branch string
+	Author string
+	Commit string
+	Status string
+	Query  string
+	Limit  int
+}
+
+// ListDeployAttemptsFiltered is ListDeployAttempts narrowed server side.
+func (c *Client) ListDeployAttemptsFiltered(ctx context.Context, name string, f DeployAttemptFilter) ([]DeployAttemptResource, error) {
+	q := url.Values{}
+	for k, v := range map[string]string{"branch": f.Branch, "author": f.Author, "commit": f.Commit, "status": f.Status, "q": f.Query} {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.Itoa(f.Limit))
+	}
+	path := "/api/v1/apps/" + PathEscape(name) + "/deploy-attempts"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var out []DeployAttemptResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
 // ListDeployAttempts calls GET /api/v1/apps/{name}/deploy-attempts: the
 // real, row-per-trigger-call deploy history for name, newest first.
 // Additive to GetDeployStatus's reconcile conditions, not a replacement.
