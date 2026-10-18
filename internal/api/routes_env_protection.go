@@ -15,6 +15,7 @@ func (rt *Router) registerEnvProtectionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/env/reveal", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleRevealEnv))
 	mux.HandleFunc("POST /api/v1/apps/{name}/secrets/{key}/reveal", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleRevealSecret))
 	mux.HandleFunc("POST /api/v1/apps/{name}/env/export", rt.requireAbilityForResource(AbilityReadSensitive, appResourceFromPath, rt.handleExportEnvRevealed))
+	mux.HandleFunc("GET /api/v1/apps/{name}/env/bound", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListBoundEnv))
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/export", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleExportEnvRedacted))
 
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetEnvSettings))

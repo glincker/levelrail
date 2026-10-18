@@ -75,7 +75,7 @@ func TestStorageBucketCreateAndBind(t *testing.T) {
 	if rec := e.do(t, http.MethodPut, "/api/v1/apps/web/buckets/"+media.ID, `{"env_prefix":"MEDIA"}`); rec.Code != http.StatusOK {
 		t.Fatalf("bind with own prefix = %d", rec.Code)
 	}
-	if rec := e.do(t, http.MethodDelete, "/api/v1/apps/web/buckets/"+media.ID, ""); rec.Code != http.StatusNoContent {
+	if rec := e.do(t, http.MethodDelete, "/api/v1/apps/web/buckets/"+media.ID, ""); rec.Code != http.StatusOK {
 		t.Fatalf("unbind = %d", rec.Code)
 	}
 }

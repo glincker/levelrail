@@ -69,6 +69,23 @@ func (c *Client) ExportEnvRevealed(ctx context.Context, app, format string, proo
 	return c.rawRequest(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(app)+"/env/export", exportEnvRequest{Format: format, StepUp: proof})
 }
 
+// BoundEnvEntry is one variable injected from a database link or bucket binding.
+type BoundEnvEntry struct {
+	Key        string `json:"key"`
+	Source     string `json:"source"`
+	SourceName string `json:"source_name"`
+	Field      string `json:"field"`
+	Value      string `json:"value,omitempty"`
+	Masked     bool   `json:"masked"`
+}
+
+// ListBoundEnv calls GET /api/v1/apps/{name}/env/bound.
+func (c *Client) ListBoundEnv(ctx context.Context, app string) ([]BoundEnvEntry, error) {
+	var out []BoundEnvEntry
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(app)+"/env/bound", nil, &out)
+	return out, err
+}
+
 // EnvSettings mirrors GET /api/v1/apps/{name}/env/settings.
 type EnvSettings struct {
 	RevealPolicy       string          `json:"reveal_policy"`

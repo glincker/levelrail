@@ -13,6 +13,7 @@ import (
 	"path"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/objectstore"
@@ -27,8 +28,13 @@ const (
 	bucketListLimit           = 200
 	bucketOpTimeout           = 2 * time.Minute
 	publicBucketPathPrefix    = "/api/v1/public/buckets/"
-	bucketObjectSandboxPolicy = "sandbox; default-src 'none'"
-	storageBucketIDPrefix     = "sb_"
+	envPublicBucketRatePerMin = "APP_PUBLIC_BUCKET_RATE_PER_MIN"
+	envPublicBucketMaxBytes   = "APP_PUBLIC_BUCKET_MAX_BYTES"
+
+	defaultPublicBucketRatePerMin       = 120
+	defaultPublicBucketMaxBytes   int64 = 100 << 20
+	bucketObjectSandboxPolicy           = "sandbox; default-src 'none'"
+	storageBucketIDPrefix               = "sb_"
 )
 
 var (
@@ -66,6 +72,7 @@ type storageBucketResource struct {
 	Public        bool           `json:"public"`
 	PublicURL     string         `json:"public_url,omitempty"`
 	QuotaBytes    int64          `json:"quota_bytes"`
+	AppRestarted  bool           `json:"app_restarted,omitempty"`
 	LifecycleDays int            `json:"lifecycle_days"`
 	LastSweptAt   string         `json:"last_swept_at,omitempty"`
 	CreatedAt     string         `json:"created_at"`
@@ -417,6 +424,7 @@ func (rt *Router) handleBindAppBucket(w http.ResponseWriter, r *http.Request) {
 	}
 	res := bucketResource(b, []bucketAppRef{{AppName: app, EnvPrefix: req.EnvPrefix}})
 	res.EnvKeys = bucketEnvKeys(req.EnvPrefix)
+	res.AppRestarted = rt.restartAppForBucketChange(r.Context(), app)
 	writeJSON(w, http.StatusOK, res)
 }
 
@@ -430,7 +438,7 @@ func (rt *Router) handleUnbindAppBucket(w http.ResponseWriter, r *http.Request) 
 		rt.internalError(w, "api: unbind bucket failed", err)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	writeJSON(w, http.StatusOK, map[string]bool{"app_restarted": rt.restartAppForBucketChange(r.Context(), r.PathValue("name"))})
 }
 
 func (rt *Router) bucketClient(ctx context.Context, w http.ResponseWriter, d *StorageDeps, b store.StorageBucket) (*objectstore.Client, bool) {
@@ -589,6 +597,7 @@ func setObjectHeaders(w http.ResponseWriter, key string, length int64, attachmen
 }
 
 func (rt *Router) streamBucketObject(w http.ResponseWriter, r *http.Request, d *StorageDeps, b store.StorageBucket, rel string, attachment bool) {
+	public := !attachment
 	key, err := objectstore.ScopedKey(b.Prefix, rel)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid key")
@@ -604,6 +613,18 @@ func (rt *Router) streamBucketObject(w http.ResponseWriter, r *http.Request, d *
 		return
 	}
 	defer func() { _ = body.Close() }()
+	if public {
+		maxBytes := envPositiveInt64(envPublicBucketMaxBytes, defaultPublicBucketMaxBytes)
+		if length > maxBytes {
+			writeError(w, http.StatusRequestEntityTooLarge, "object is too large for the public route, use a presigned URL")
+			return
+		}
+		body = struct {
+			io.Reader
+			io.Closer
+		}{io.LimitReader(body, maxBytes), body}
+		attachment = isActiveContentType(mime.TypeByExtension(path.Ext(key)))
+	}
 	setObjectHeaders(w, key, length, attachment)
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.Copy(w, body)
@@ -699,7 +720,7 @@ func (rt *Router) handlePresignBucketObject(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		if !room {
-			writeError(w, http.StatusRequestEntityTooLarge, "bucket quota exceeded")
+			writeError(w, http.StatusRequestEntityTooLarge, fmt.Sprintf("bucket quota of %d bytes is full: delete objects or raise quota_bytes before uploading", b.QuotaBytes))
 			return
 		}
 		url, err = client.PresignPut(ctx, key, ttl)
@@ -748,10 +769,40 @@ func (rt *Router) handlePublicBucketObject(w http.ResponseWriter, r *http.Reques
 	if !ok {
 		return
 	}
+	if allowed, retry := rt.publicBucketAllowed(r); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
 	b, err := d.Buckets.GetStorageBucket(r.Context(), r.PathValue("id"))
 	if err != nil || !b.Public {
 		writeError(w, http.StatusNotFound, "object not found")
 		return
 	}
 	rt.streamBucketObject(w, r, d, b, r.PathValue("key"), false)
+}
+
+func (rt *Router) publicBucketAllowed(r *http.Request) (bool, time.Duration) {
+	rt.publicBucketLimiterOnce.Do(func() {
+		rt.publicBucketLimiter = newAPIRateLimiter(envPositiveInt(envPublicBucketRatePerMin, defaultPublicBucketRatePerMin))
+	})
+	return rt.publicBucketLimiter.allow(clientIP(r))
+}
+
+func envPositiveInt64(name string, def int64) int64 {
+	if v, err := strconv.ParseInt(os.Getenv(name), 10, 64); err == nil && v > 0 {
+		return v
+	}
+	return def
+}
+
+// isActiveContentType reports types a browser would execute or render as a page, which the public
+// route never serves inline.
+func isActiveContentType(ct string) bool {
+	base, _, _ := strings.Cut(ct, ";")
+	switch strings.ToLower(strings.TrimSpace(base)) {
+	case "text/html", "application/xhtml+xml", "image/svg+xml", "text/xml", "application/xml",
+		"text/javascript", "application/javascript", "application/x-javascript":
+		return true
+	}
+	return false
 }

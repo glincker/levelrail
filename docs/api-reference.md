@@ -499,6 +499,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/buckets | AbilityRead | handleListAppBuckets |
 | PUT | /api/v1/apps/{name}/buckets/{id} | AbilityWriteSensitive | handleBindAppBucket |
 | DELETE | /api/v1/apps/{name}/buckets/{id} | AbilityWriteSensitive | handleUnbindAppBucket |
+| GET | /api/v1/apps/{name}/env/bound | AbilityRead | handleListBoundEnv |
 
 </Accordion>
 

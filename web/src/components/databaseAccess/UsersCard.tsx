@@ -164,6 +164,11 @@ function UsersTable({
                   onSuccess: (cred) => {
                     toast.add({
                       title: t('users.rotateToast'),
+                      description: cred.restarted_apps?.length
+                        ? t('users.rotateRestarted', {
+                            apps: cred.restarted_apps.join(', '),
+                          })
+                        : undefined,
                       type: 'success',
                     })
                     onCredential(cred)

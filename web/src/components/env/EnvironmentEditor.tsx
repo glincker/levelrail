@@ -25,6 +25,7 @@ import {
   type EnvRow,
 } from '../../lib/envRows'
 import { HelpLink } from '../HelpLink'
+import { BoundEnvSection } from './BoundEnvSection'
 import { AddVariableRow } from './AddVariableRow'
 import { EnvEditorToolbar } from './EnvEditorToolbar'
 import { EnvPolicyNotice } from './EnvPolicyNotice'
@@ -388,6 +389,7 @@ export function EnvironmentEditor({ app }: { app: AppDetail }) {
             ) : null}
           </div>
         )}
+        <BoundEnvSection app={app.name} />
       </CardContent>
 
       <ReviewChangesDialog

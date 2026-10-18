@@ -182,9 +182,13 @@ export function useBindAppBucket() {
 
 export function useUnbindAppBucket() {
   const invalidate = useInvalidateBuckets()
-  return useMutation<void, ApiError, { app: string; id: string }>({
+  return useMutation<
+    { app_restarted: boolean },
+    ApiError,
+    { app: string; id: string }
+  >({
     mutationFn: ({ app, id }) =>
-      requestJson<void>(
+      requestJson<{ app_restarted: boolean }>(
         `/api/v1/apps/${encodeURIComponent(app)}/buckets/${encodeURIComponent(id)}`,
         { method: 'DELETE' },
         'unbind bucket',

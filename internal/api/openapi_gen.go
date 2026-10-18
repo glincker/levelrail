@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1309 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1310 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -175,6 +175,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleClearAppEgressPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppEgressPolicy", Description: "Outbound network allowlist, per app (apps_egress.go): AbilityWriteSensitive for PUT/DELETE, the same tier PUT/DELETE .../storage above uses, since this changes an app's own network-exfiltration surface, the identical sensitivity class as which live bucket credentials it receives. GET is a real route here (unlike storage's reuse of handleGetApp), since an unconfigured policy is common enough (every app before this feature existed) to be worth its own explicit, ordinary AbilityRead response rather than folding it into the general app resource."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/egress-policy", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppEgressPolicy", Description: ""},
+	{Method: "GET", Path: "/api/v1/apps/{name}/env/bound", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListBoundEnv", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/env/export", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportEnvRedacted", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/export", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleExportEnvRevealed", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/env/reveal", Ability: "AbilityReadSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRevealEnv", Description: "Reveal and full export need read:sensitive plus a step-up (or the allow policy); the handlers enforce the rest and audit every value read."},

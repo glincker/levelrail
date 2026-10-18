@@ -669,7 +669,10 @@ type Router struct {
 	samlFlows   *samlFlowStore
 	scimLib     http.Handler
 	samlLimiter *apiRateLimiter
-	scimLimiter *apiRateLimiter
+
+	publicBucketLimiter     *apiRateLimiter
+	publicBucketLimiterOnce sync.Once
+	scimLimiter             *apiRateLimiter
 	// accessPolicy enforces per-team session policy in accessPolicyMiddleware.
 	accessPolicy  AccessPolicyStore
 	policyTouches *touchCache

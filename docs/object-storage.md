@@ -173,14 +173,16 @@ The app card and `build-cache show` list the app's prefix (bounded to `APP_BUILD
 
 A bucket is a private folder (a key prefix) inside a connected destination, bound to an app. Create one from the app's Integrations page (**Storage buckets**, **New bucket**) or with `levelrail-cli storage buckets create --name uploads --destination <id> --app web`.
 
-- **Env vars.** At the next container start the app gets `S3_ENDPOINT`, `S3_BUCKET`, `S3_PREFIX`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Give a second bucket another prefix with `--env-prefix MEDIA` to get `MEDIA_*`. The app page offers **Restart now** after a change because a running container keeps its old env.
+- **Env vars.** At the next container start the app gets `S3_ENDPOINT`, `S3_BUCKET`, `S3_PREFIX`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Give a second bucket another prefix with `--env-prefix MEDIA` to get `MEDIA_*`. Binding or unbinding a bucket restarts a running app automatically so it picks up the change. The app's **Environment** card lists these variables (and database links) as read-only **Connected resources** with secrets masked, and `env pull` includes them, masked unless you reveal after step-up.
 - **Files.** **Browse files** lists (virtualized), uploads, downloads and deletes. Console uploads are capped by `APP_API_MAX_BODY_BYTES` (default 16 MiB); use `storage buckets presign <id> <key> --method PUT` for bigger files.
 - **Presigned links.** Time-limited GET or PUT URLs, up to 7 days, from the console (copy link), CLI or `POST /api/v1/storage/buckets/{id}/presign`.
-- **Size limit.** Enforced for console, CLI and presign issuing, not for the app writing straight to S3 with its env credentials.
+- **Size limit.** Enforced for console, CLI and presign issuing (a PUT presign for a full bucket fails with `413` and says to delete objects or raise `quota_bytes`), not for the app writing straight to S3 with its env credentials.
 - **Expire after N days.** A rule that deletes older files, run hourly and on demand (**Run expiry now**, `storage buckets sweep`).
-- **Public read.** The toggle serves files without sign-in at `/api/v1/public/buckets/<id>/<key>`, sandboxed with a restrictive content security policy. Everything else is private.
+- **Public read.** The toggle serves files without sign-in at `/api/v1/public/buckets/<id>/<key>`, sandboxed with a restrictive content security policy. Everything else is private. The route is rate limited per client IP (`APP_PUBLIC_BUCKET_RATE_PER_MIN`, default 120, answers `429` with `Retry-After`), refuses objects over `APP_PUBLIC_BUCKET_MAX_BYTES` (default 100 MiB, `413`), and always serves HTML, SVG, XML and JavaScript as a download instead of rendering them.
 
-The injected credentials are the destination's own, so they reach the whole destination bucket: the prefix scopes where this feature reads and writes, not what the key can do. Use a dedicated destination (its own provider bucket and key) for apps you do not fully trust.
+<Warning>
+Prefix scoping is not a security boundary. The injected credentials are the destination's own, so an app can read, write and delete every object in the whole provider bucket, including other apps' prefixes. The prefix only scopes where this feature's console, CLI, quota, lifecycle and public route read and write. There is no embedded S3 gateway that issues per-bucket keys. For apps you do not fully trust, create a dedicated destination (its own provider bucket and its own scoped key) and bind only that.
+</Warning>
 
 ## Alerting
 

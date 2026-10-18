@@ -61,6 +61,32 @@ export interface EnvSettings {
 export const envProtectionKeys = {
   settings: (app: string) => ['envProtection', 'settings', app] as const,
   stepUpOptions: ['envProtection', 'stepUpOptions'] as const,
+  bound: (app: string) => ['envProtection', 'bound', app] as const,
+}
+
+export interface BoundEnvEntry {
+  key: string
+  source: 'database' | 'bucket'
+  source_name: string
+  field: string
+  value?: string
+  masked: boolean
+}
+
+export function useBoundEnv(app: string) {
+  return useQuery({
+    queryKey: envProtectionKeys.bound(app),
+    queryFn: async (): Promise<BoundEnvEntry[]> => {
+      const res = await fetch(`${appPath(app)}/env/bound`)
+      if (!res.ok) {
+        return throwEnvError(
+          res,
+          `load bound env failed: ${String(res.status)}`,
+        )
+      }
+      return (await res.json()) as BoundEnvEntry[]
+    },
+  })
 }
 
 export function useEnvSettings(app: string) {
