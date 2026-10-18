@@ -1537,6 +1537,14 @@ Routes that do not fit an existing group.
 | GET | /api/v1/functions/{name}/route | AbilityRead | handleListFunctionRoutes |
 | PUT | /api/v1/functions/{name}/route | AbilityDeploy | handleSetFunctionRoute |
 | DELETE | /api/v1/functions/{name}/route | AbilityDeploy | handleDeleteFunctionRoute |
+| GET | /api/v1/dashboards | AbilityRead | handleListDashboards |
+| GET | /api/v1/dashboards/templates | AbilityRead | handleDashboardTemplates |
+| POST | /api/v1/dashboards/import | AbilityWrite | handleImportDashboard |
+| POST | /api/v1/dashboards | AbilityWrite | handleCreateDashboard |
+| GET | /api/v1/dashboards/{id} | AbilityRead | handleGetDashboard |
+| GET | /api/v1/dashboards/{id}/export | AbilityRead | handleExportDashboard |
+| PUT | /api/v1/dashboards/{id} | AbilityWrite | handleUpdateDashboard |
+| DELETE | /api/v1/dashboards/{id} | AbilityWrite | handleDeleteDashboard |
 
 ## See also
 

@@ -175,6 +175,8 @@ var toolTable = map[string]Meta{
 	"list_alert_rules":                      {clsR, "alerts", 0},
 	"get_slo_status":                        {clsR, "alerts", 0},
 	"list_alert_silences":                   {clsR, "alerts", 0},
+	"list_dashboards":                       {clsR, "dashboards", unt},
+	"get_dashboard":                         {clsR, "dashboards", unt},
 	"create_alert_silence":                  {clsM, "alerts", 0},
 	"silence_alert_rule":                    {clsM, "alerts", 0},
 	"expire_alert_silence":                  {clsM, "alerts", 0},

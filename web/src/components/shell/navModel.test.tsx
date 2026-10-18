@@ -14,6 +14,7 @@ import { isBoolRecord, readJson, writeJson } from './persist'
 const EXPECTED_GLOBAL = [
   '/',
   '/status',
+  '/dashboards',
   '/apps',
   '/deployments',
   '/functions',

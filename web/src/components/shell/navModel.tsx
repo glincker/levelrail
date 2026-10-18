@@ -71,6 +71,7 @@ export type GlobalTo =
   | '/resource-advisor'
   | '/usage'
   | '/resources'
+  | '/dashboards'
   | '/network'
   | '/network/proxy'
   | '/network/private'
@@ -136,6 +137,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         exact: true,
       },
       { id: 'status', label: 'Status', to: '/status', icon: <HeartbeatIcon /> },
+      {
+        id: 'dashboards',
+        label: 'Dashboards',
+        to: '/dashboards',
+        icon: <SquaresFourIcon />,
+      },
     ],
   },
   {

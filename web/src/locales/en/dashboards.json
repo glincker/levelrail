@@ -1,0 +1,143 @@
+{
+  "title": "Dashboards",
+  "description": "Build your own views of metrics, logs, deploys and cost. Keep them private or share them with everyone, and export them as JSON to keep in version control.",
+  "common": { "cancel": "Cancel" },
+  "grid": {
+    "label": "Dashboard widgets",
+    "controls": "Controls for {{title}}",
+    "moveEarlier": "Move {{title}} earlier",
+    "moveLater": "Move {{title}} later",
+    "size": "Make {{title}} size {{size}}",
+    "remove": "Remove {{title}}"
+  },
+  "widget": {
+    "type": {
+      "metric_chart": "Metric chart",
+      "request_percentiles": "Request latency",
+      "error_rate": "Error rate",
+      "log_tail": "Log tail",
+      "deploy_timeline": "Deploy timeline",
+      "resource_counts": "Resource counts",
+      "cost": "Cost by tag",
+      "alert_status": "Alert status",
+      "node_capacity": "Node capacity"
+    },
+    "noTraffic": "No requests in the last window.",
+    "p95": "p95 latency",
+    "reqPerSec": "requests per second",
+    "errorShare": "4xx and 5xx share of requests",
+    "noLogs": "No log lines in this range.",
+    "noDeploys": "No recent deploys.",
+    "count": {
+      "app": "Apps",
+      "database": "Databases",
+      "node": "Nodes",
+      "domain": "Domains"
+    },
+    "noCost": "No cost data yet. Set prices in Usage and cost to see spend by tag.",
+    "untagged": "Untagged",
+    "rulesEnabled": "alert rules enabled",
+    "noRules": "This app has no alert rules yet.",
+    "unknown": "Unknown",
+    "capacity": { "disk": "Disk used", "memory": "Memory used" }
+  },
+  "metric": {
+    "cpu_percent": "CPU",
+    "memory_usage_bytes": "Memory",
+    "network_rx_bytes": "Network in",
+    "network_tx_bytes": "Network out",
+    "disk_read_bytes": "Disk read",
+    "disk_write_bytes": "Disk write",
+    "disk_used_bytes": "Disk used",
+    "container_restart_count": "Restarts"
+  },
+  "kind": { "app": "App", "database": "Database", "node": "Node" },
+  "range": {
+    "15m": "Last 15 minutes",
+    "1h": "Last hour",
+    "6h": "Last 6 hours",
+    "24h": "Last 24 hours",
+    "7d": "Last 7 days",
+    "30d": "Last 30 days"
+  },
+  "refresh": {
+    "0": "Manual",
+    "15": "Every 15 seconds",
+    "30": "Every 30 seconds",
+    "60": "Every minute",
+    "300": "Every 5 minutes"
+  },
+  "toolbar": {
+    "range": "Time range",
+    "refresh": "Auto refresh",
+    "refreshNow": "Refresh",
+    "export": "Export JSON",
+    "import": "Import",
+    "importFile": "Dashboard JSON file",
+    "edit": "Edit",
+    "addWidget": "Add widget",
+    "shared": "Shared with everyone",
+    "project": "Project",
+    "noProject": "No project",
+    "isDefault": "Default for the project",
+    "delete": "Delete",
+    "save": "Save changes"
+  },
+  "add": {
+    "title": "Add a widget",
+    "description": "Pick what to show and what it reads from.",
+    "type": "Widget",
+    "kind": "Reads from",
+    "target": "Resource",
+    "targetPlaceholder": "Choose a resource",
+    "metric": "Metric",
+    "query": "Log filter",
+    "queryPlaceholder": "Text to search for, optional",
+    "submit": "Add widget"
+  },
+  "list": {
+    "label": "Your dashboards",
+    "default": "Default",
+    "shared": "Shared"
+  },
+  "template": {
+    "label": "Starter dashboards",
+    "new": "New from a starter",
+    "use": "Use this starter",
+    "pickApp": "App for {{name}}",
+    "app-health": {
+      "name": "App health",
+      "description": "CPU, memory, latency, errors, alerts, deploys and logs for one app."
+    },
+    "fleet-overview": {
+      "name": "Fleet overview",
+      "description": "How many apps, databases, nodes and domains you run."
+    },
+    "cost": {
+      "name": "Cost",
+      "description": "Month to date spend by tag next to the resource use behind it."
+    }
+  },
+  "empty": {
+    "title": "No dashboards yet",
+    "body": "Start from a ready made dashboard below, or import a JSON file you exported earlier.",
+    "widgetsTitle": "This dashboard is empty",
+    "widgetsBody": "Turn on Edit and add a widget to get started."
+  },
+  "delete": {
+    "title": "Delete {{name}}?",
+    "body": "The dashboard is removed for everyone who can see it. Exported JSON files are not affected.",
+    "confirm": "Delete dashboard"
+  },
+  "toast": {
+    "saved": "Dashboard saved",
+    "saveFailed": "Could not save the dashboard",
+    "imported": "Imported {{name}}",
+    "importFailed": "Could not import the dashboard",
+    "notJson": "That file is not valid JSON.",
+    "deleted": "Dashboard deleted",
+    "deleteFailed": "Could not delete the dashboard",
+    "created": "Created {{name}}",
+    "createFailed": "Could not create the dashboard"
+  }
+}
