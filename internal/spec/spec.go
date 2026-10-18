@@ -105,6 +105,9 @@ type Service struct {
 	// Autoscale owns this service's replica count within min and max. Nil
 	// leaves any policy set from the dashboard or CLI alone.
 	Autoscale *Autoscale `yaml:"autoscale,omitempty"`
+	// Canary tunes staged canary releases (strategy: canary). Nil uses the
+	// APP_CANARY_* defaults.
+	Canary *Canary `yaml:"canary,omitempty"`
 
 	// DependsOn names sibling services: keys (within this same Spec, or
 	// within the same compose file for a compose-expanded service, see
@@ -227,6 +230,9 @@ const (
 	StrategyRolling   = "rolling"
 	StrategyRecreate  = "recreate"
 	StrategyBlueGreen = "blue-green"
+	// StrategyCanary saves the canary: policy; the stable promotion itself
+	// still rolls out blue-green.
+	StrategyCanary = "canary"
 )
 
 // DefaultReplicas is used when a service doesn't set replicas.

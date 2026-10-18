@@ -544,6 +544,7 @@ type Router struct {
 	sleepActivity                SleepActivity                                         // nil falls back to the stored idle baseline
 	wakeToken                    string                                                // empty disables the wake hook
 	canaries                     CanaryStore                                           // always set, in-flight canary releases
+	canaryProgress               CanaryProgress                                        // nil is valid: GET canary then omits the live stage comparison
 	dbQueries                    DatabaseQueryStore                                    // always set, console history and saved queries
 	githubActions                AppGitHubActionsStore                                 // always set, per-app GitHub Actions report settings
 	appSchedules                 AppScheduleStore                                      // always set, same "core Store interface" shape as gitSources above

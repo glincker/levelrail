@@ -1,6 +1,6 @@
 ---
 title: "Canary deploys"
-description: Send a share of an app's traffic to a new image before promoting it, with one-command promote and abort.
+description: Send a share of an app's traffic to a new image in stages, promote it, or let the control plane roll it back when errors or latency rise.
 ---
 
 Run a new image next to the current release and send it a percentage of
@@ -25,6 +25,65 @@ stable release until you promote.
   removes the clone.
 - **Abort**, or deleting the app, removes the clone.
 
+## Staged canaries with automatic rollback
+
+Give the canary a stage schedule and the control plane runs it for you. It
+sends the first share of traffic, watches the canary against the stable
+release, and either moves to the next stage, promotes at the end, or rolls the
+canary back.
+
+```
+levelrail-cli apps canary start web --image myorg/web:next --stages 10,25,50,100 --interval 5m
+```
+
+- Each stage observes the canary's own requests (5xx rate and p95 latency from
+  the edge request stats) and the stable release's over the same window.
+- The canary is rolled back, and the reason recorded, as soon as it has served
+  at least `APP_CANARY_MIN_REQUESTS` requests in the stage and its 5xx rate is
+  more than `max_error_rate` above the stable release's, or its p95 latency is
+  more than `max_p95_ratio` times the stable release's (and above
+  `APP_CANARY_P95_FLOOR_MS`, so tiny latencies do not trip it).
+- A stage advances once its interval has passed with enough canary traffic. A
+  canary that gets no traffic waits; it is never promoted unobserved.
+- A stage of 100 means promote: the image is deployed to the app through the
+  normal deploy path and the canary is removed. **Promote now** skips the rest.
+- Weight 0 pauses a staged canary. **Abort** removes it.
+- The state lives in the database and a reconciler converges on it every
+  `APP_CANARY_TICK`, so a control plane restart only reopens the current
+  stage's observation window. A failed rollback or promote is retried.
+
+### Defaults and per-app policy
+
+Defaults come from environment variables on the control plane:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_CANARY_STAGES` | `10,25,50,100` | Stage schedule. |
+| `APP_CANARY_INTERVAL` | `5m` | Observation time per stage. |
+| `APP_CANARY_MAX_ERROR_RATE` | `0.02` | Allowed 5xx rate rise over the stable release. |
+| `APP_CANARY_MAX_P95_RATIO` | `1.5` | Allowed p95 latency multiple. |
+| `APP_CANARY_MIN_REQUESTS` | `30` | Canary requests needed before a stage is judged. |
+| `APP_CANARY_P95_FLOOR_MS` | `50` | Latency ratio is ignored below this p95. |
+| `APP_CANARY_TICK` | `15s` | How often the reconciler runs. |
+
+An app overrides them in `app.yaml`. A deploy saves the block, and `canary
+start` without `--weight` then runs staged with it:
+
+```yaml
+services:
+  web:
+    image: myorg/web:1
+    strategy: canary
+    canary:
+      stages: [10, 25, 50, 100]
+      interval: 10m
+      max_error_rate: 0.01
+      max_p95_ratio: 1.3
+```
+
+`strategy: canary` only saves this policy. The stable app still deploys
+blue-green, and a canary starts when you start one (CLI, dashboard, API or MCP).
+
 ## Limits
 
 - One canary per app.
@@ -43,16 +102,30 @@ levelrail-cli apps canary promote web
 levelrail-cli apps canary abort web
 ```
 
+`status` on a staged canary prints the stage, the canary and stable request
+counts, error rates and p95, and what happens next. With the canary gone it
+prints how the last one ended. All verbs take `--json`.
+
 ## Dashboard
 
-App, Deploys: the Canary release card has the image and traffic share form,
-and Promote and Abort buttons while a canary is running.
+App, Deploys: the Canary release card has the image form. Fill in stages for
+a staged canary, or a traffic share for a manual one. A running staged canary
+shows a stage progress bar, the live error rate and p95 of the canary next to
+the stable release, and **Promote now** and **Abort** buttons. After a rollback
+the card says why.
 
 ## API
 
 `GET`, `POST`, `PUT` and `DELETE /api/v1/apps/{name}/canary`, and
 `POST /api/v1/apps/{name}/canary/promote`. All need the `deploy` ability, and
-`GET` needs `read`. See the [API reference](/api-reference).
+`GET` needs `read`. `POST` takes `stages`, `interval`, `max_error_rate` and
+`max_p95_ratio` for a staged canary. `GET` returns the stage, the live
+comparison and the last outcome. See the [API reference](/api-reference).
+
+## MCP
+
+`get_canary` reads the same status. `start_canary`, `promote_canary` and
+`abort_canary` change state and are registered in `full` mode only.
 
 ## Verified
 

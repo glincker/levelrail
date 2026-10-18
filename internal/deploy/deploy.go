@@ -198,7 +198,8 @@ type Pipeline struct {
 	autoscale     AutoscaleStore    // nil is valid: the autoscale: block is then ignored
 
 	autoscaleCeiling int
-	jobs             JobStore // nil is valid: the jobs: list is then ignored
+	canaryPolicies   CanaryPolicyStore // nil is valid: strategy: canary and canary: are then ignored
+	jobs             JobStore          // nil is valid: the jobs: list is then ignored
 
 	buildCache BuildCacheProvider // nil is valid: builds use only the local and registry caches
 
@@ -384,6 +385,9 @@ func (p *Pipeline) finishDeploy(ctx context.Context, req Request, res *build.Res
 	if err := p.saveAutoscale(ctx, req); err != nil {
 		return "", err
 	}
+	if err := p.saveCanaryPolicy(ctx, req); err != nil {
+		return "", err
+	}
 	if err := p.saveJobs(ctx, req); err != nil {
 		return "", err
 	}
@@ -433,6 +437,9 @@ func (p *Pipeline) deployImage(ctx context.Context, req Request) (string, error)
 		return "", err
 	}
 	if err := p.saveAutoscale(ctx, req); err != nil {
+		return "", err
+	}
+	if err := p.saveCanaryPolicy(ctx, req); err != nil {
 		return "", err
 	}
 	if err := p.saveJobs(ctx, req); err != nil {

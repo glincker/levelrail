@@ -40,7 +40,8 @@
           "additionalProperties": { "$ref": "#/$defs/envValue" }
         },
         "replicas": { "type": "integer", "minimum": 1 },
-        "strategy": { "enum": ["rolling", "recreate", "blue-green"] },
+        "strategy": { "enum": ["rolling", "recreate", "blue-green", "canary"] },
+        "canary": { "$ref": "#/$defs/canary" },
         "labels": {
           "type": "object",
           "additionalProperties": { "type": "string" }
@@ -68,6 +69,21 @@
           "items": { "type": "string", "minLength": 1 },
           "minItems": 1
         }
+      }
+    },
+    "canary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stages": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 1, "maximum": 100 },
+          "minItems": 1,
+          "maxItems": 10
+        },
+        "interval": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "max_error_rate": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "max_p95_ratio": { "type": "number", "exclusiveMinimum": 1 }
       }
     },
     "autoscale": {

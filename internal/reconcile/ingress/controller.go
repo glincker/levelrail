@@ -71,6 +71,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
@@ -373,7 +374,8 @@ type Controller struct {
 	wakeDial      string
 	wakeToken     string
 	canarySource  CanarySource // nil disables canary traffic splitting
-	implicitLB    bool         // see WithImplicitLoadBalancing
+	canaryDials   *canary.Dials
+	implicitLB    bool // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
 	meshPaths     meshpath.Resolver

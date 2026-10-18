@@ -79,12 +79,15 @@ func (svc *Service) validate(name string) error {
 	if err := svc.validateBindAddress(name); err != nil {
 		return err
 	}
-	if svc.Strategy != "" && svc.Strategy != StrategyRolling && svc.Strategy != StrategyRecreate && svc.Strategy != StrategyBlueGreen {
+	if svc.Strategy != "" && svc.Strategy != StrategyRolling && svc.Strategy != StrategyRecreate && svc.Strategy != StrategyBlueGreen && svc.Strategy != StrategyCanary {
 		// Unreachable while the JSON Schema's enum stays in sync with the
 		// constants above, kept as a direct check anyway since Validate
 		// is documented as safe to call on a hand-built Spec that never
 		// went through schema validation.
-		return fmt.Errorf("spec: service %q: strategy %q is not one of rolling, recreate, blue-green", name, svc.Strategy)
+		return fmt.Errorf("spec: service %q: strategy %q is not one of rolling, recreate, blue-green, canary", name, svc.Strategy)
+	}
+	if err := svc.validateCanary(name); err != nil {
+		return err
 	}
 	if svc.Resources != nil && svc.Resources.SwapMemory != "" && svc.Resources.Memory == "" {
 		return fmt.Errorf("spec: service %q: resources.swapMemory requires resources.memory to also be set", name)
@@ -323,7 +326,7 @@ func (svc *Service) EffectiveStrategy() string {
 	if svc == nil {
 		return StrategyBlueGreen
 	}
-	if svc.Strategy == "" {
+	if svc.Strategy == "" || svc.Strategy == StrategyCanary {
 		return StrategyBlueGreen
 	}
 	return svc.Strategy
