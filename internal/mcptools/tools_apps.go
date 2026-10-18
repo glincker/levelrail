@@ -188,9 +188,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_attempts",
-		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
-		attempts, err := client.ListDeployAttempts(ctx, in.Name)
+		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Optional filters narrow it server side. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeployAttemptsInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
+		attempts, err := client.ListDeployAttemptsFiltered(ctx, in.Name, apiclient.DeployAttemptFilter{Branch: in.Branch, Author: in.Author, Commit: in.Commit, Status: in.Status, Query: in.Query, Limit: in.Limit})
 		if err != nil {
 			return nil, nil, fmt.Errorf("list deploy attempts for app %q: %w", in.Name, err)
 		}
@@ -264,6 +264,16 @@ func tailLogEntries(entries []apiclient.LogEntryResource, tail int) []apiclient.
 		return entries[len(entries)-tail:]
 	}
 	return entries
+}
+
+type listDeployAttemptsInput struct {
+	Name   string `json:"name" jsonschema:"the app's name"`
+	Branch string `json:"branch,omitempty"`
+	Author string `json:"author,omitempty"`
+	Commit string `json:"commit,omitempty" jsonschema:"commit SHA or prefix"`
+	Status string `json:"status,omitempty" jsonschema:"attempt status, e.g. succeeded or failed"`
+	Query  string `json:"query,omitempty" jsonschema:"free text match"`
+	Limit  int    `json:"limit,omitempty"`
 }
 
 type appNameInput struct {

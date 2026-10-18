@@ -35,3 +35,22 @@ func (c *Client) ListFunctions(ctx context.Context, window string) (FunctionsLis
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
+
+// FunctionRuntime is one starter runtime from GET /api/v1/functions/runtimes.
+type FunctionRuntime struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// FunctionRuntimes is the GET /api/v1/functions/runtimes response.
+type FunctionRuntimes struct {
+	Runtimes []FunctionRuntime `json:"runtimes"`
+	Port     int               `json:"port"`
+}
+
+// ListFunctionRuntimes calls GET /api/v1/functions/runtimes.
+func (c *Client) ListFunctionRuntimes(ctx context.Context) (FunctionRuntimes, error) {
+	var out FunctionRuntimes
+	err := c.do(ctx, http.MethodGet, "/api/v1/functions/runtimes", nil, &out)
+	return out, err
+}
