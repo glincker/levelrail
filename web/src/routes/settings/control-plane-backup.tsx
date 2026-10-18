@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { DatabaseIcon } from '@phosphor-icons/react/dist/ssr'
 import { ControlPlaneBackupsCard } from '../../components/ControlPlaneBackupsCard'
 import { ControlPlaneDrCard } from '../../components/ControlPlaneDrCard'
+import { ArchivesCard } from '../../components/ArchivesCard'
 import { PageHeader } from '@/components/shell/PageHeader'
 
 // This instance's own database, distinct from routes/backups/index.tsx's
@@ -29,6 +30,7 @@ function ControlPlaneBackupPage() {
       </div>
       <ControlPlaneBackupsCard />
       <ControlPlaneDrCard />
+      <ArchivesCard />
     </div>
   )
 }

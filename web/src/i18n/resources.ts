@@ -55,6 +55,7 @@ import type deployPolicies from '../locales/en/deployPolicies.json'
 import type compliance from '../locales/en/compliance.json'
 import type deploySafety from '../locales/en/deploySafety.json'
 import type resilience from '../locales/en/resilience.json'
+import type archives from '../locales/en/archives.json'
 import type jobs from '../locales/en/jobs.json'
 import type pipelines from '../locales/en/pipelines.json'
 import type budget from '../locales/en/budget.json'
@@ -141,6 +142,7 @@ declare module 'i18next' {
       compliance: typeof compliance
       deploySafety: typeof deploySafety
       resilience: typeof resilience
+      archives: typeof archives
       jobs: typeof jobs
       pipelines: typeof pipelines
       budget: typeof budget

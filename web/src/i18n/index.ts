@@ -53,6 +53,7 @@ export const NAMESPACES = [
   'compliance',
   'deploySafety',
   'resilience',
+  'archives',
   'jobs',
   'network',
   'fixit',
