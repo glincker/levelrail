@@ -137,3 +137,16 @@ func entropyValueOK(name, value string) bool {
 	}
 	return !strings.Contains(value, "://") || strings.Contains(value, "@")
 }
+
+// RuleDescription is the human label for a rule id, or the id itself when unknown.
+func RuleDescription(id string) string {
+	if id == RuleHighEntropy {
+		return "high-entropy value under a credential-like name"
+	}
+	for _, r := range Rules {
+		if r.ID == id {
+			return r.Desc
+		}
+	}
+	return id
+}

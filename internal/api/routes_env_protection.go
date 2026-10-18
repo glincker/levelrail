@@ -20,4 +20,8 @@ func (rt *Router) registerEnvProtectionRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/env/settings", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetEnvSettings))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/env/settings", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handlePutEnvSettings))
 	mux.HandleFunc("POST /api/v1/apps/{name}/env/{key}/convert-to-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleConvertEnvToSecret))
+
+	mux.HandleFunc("POST /api/v1/apps/{name}/env/scan", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleScanEnvValues))
+	mux.HandleFunc("GET /api/v1/databases/{name}/links", rt.requireAbilityForResource(AbilityRead, databaseResourceFromPath, rt.handleListDatabaseLinks))
+	mux.HandleFunc("POST /api/v1/databases/{name}/links", rt.requireAbilityForResource(AbilityWrite, databaseResourceFromPath, rt.handleConnectDatabaseApp))
 }

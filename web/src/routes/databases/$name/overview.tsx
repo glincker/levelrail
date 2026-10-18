@@ -18,6 +18,7 @@ import { DatabasePublicAccessCard } from '../../../components/DatabasePublicAcce
 import { useProjectListOptional } from '../../../queries/projects'
 import { ExternalDatabaseOverview } from '../../../components/ExternalDatabaseOverview'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DatabaseLinksCard } from '../../../components/databases/DatabaseLinksCard'
 import { ConnectionDetailsCard } from '../../../components/databases/ConnectionDetailsCard'
 import { OptimiseHint } from '../../../components/resourceAdvisor/ResourceAdvisorTile'
 
@@ -115,6 +116,8 @@ function OverviewSection() {
       </Card>
 
       <ConnectionDetailsCard database={database} />
+
+      <DatabaseLinksCard database={database.name} />
 
       <DatabasePublicAccessCard database={database} />
 

@@ -31,6 +31,17 @@ Open the app's detail page, find the **Connections** card, and choose **Connect 
 
 To see which databases an app could connect to, run `levelrail-cli apps connections suggest your-app`. It lists every database the app could connect to (scoped to the app's project when it has one) and flags the ones already connected. It does not check engine or schema fit. `levelrail-cli apps connections list your-app` shows the current connections.
 
+## Connect from the database side
+
+Open a database's **Overview** page and use the **Connected apps** card to pick an app and click **Connect**. It lists every app that resolves an env var from this database. The CLI equivalents:
+
+```bash
+levelrail-cli databases link main-db your-app
+levelrail-cli databases links main-db
+```
+
+The connection string is resolved from the encrypted store each time the app's container is created and is never logged. After a credential rotation, restart the app to pick up the new value.
+
 ## Reachability badges
 
 Every connection shows one of three badges, in `apps connections list` and on the dashboard's Connections card.

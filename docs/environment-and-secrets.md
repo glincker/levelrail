@@ -114,6 +114,20 @@ An app owner can also make one app's secrets write-only from **Protection** on t
 - **Review changes** lists added, changed and removed keys before anything is saved, with sensitive values hidden.
 - After a save, a **Redeploy needed** banner offers a restart.
 
+## Local .env files
+
+```bash
+levelrail-cli env pull your-app            # writes ./.env (owner-only permissions)
+levelrail-cli env push your-app --dry-run  # preview what ./.env would change
+levelrail-cli env push your-app
+```
+
+`env pull` asks for your password (and authenticator code) once so secret values are written too. Add `--masked` to skip that and write secrets as empty keys. Database and storage links inject their connection env at container start, so they are not part of the file. `env push` merges plain variables only: keys already stored as secrets are skipped. Both accept `--file` and the usual `--api-url` and `--token` flags.
+
+## Credential scan on save
+
+Before new or changed plain values are saved, the editor's **Review changes** step (and `env push`) checks them for credentials such as cloud keys, tokens and URLs with embedded passwords. A match shows a warning naming the variable only, never the value, with a **Store as secrets** button that converts those rows to Secrets. The scan needs secret scanning enabled on the control plane and is skipped silently when it is not.
+
 ## Threat model
 
 This protects against:
