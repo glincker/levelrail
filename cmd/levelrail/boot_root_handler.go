@@ -376,15 +376,11 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			api.WithPITRRestoreRunner(pitrRunner),
 			api.WithMajorUpgrader(newMajorUpgradeRunner(db, client, engine.Nudge, logger)),
 		)
-		// Optional: without a dial address or on setup failure the
+		// Optional: without a dial address the
 		// operator loses the assistant, not the control plane.
 		if dial := dashboardDialAddr(httpAddr()); dial != "" {
-			engine, err := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
-			if err != nil {
-				logger.Error("ai assistant: setup failed, chat routes stay disabled", slog.String("error", err.Error()))
-			} else {
-				opts = append(opts, api.WithAIEngine(engine))
-			}
+			engine := setupAIAssistantEngine(context.Background(), db, secretsManager, dial, b.Name, logger)
+			opts = append(opts, api.WithAIEngine(engine))
 		}
 	}
 	if builder != nil {

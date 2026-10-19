@@ -143,7 +143,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 		return Created{}, err
 	}
 	if err := in.Spec.Validate(); err != nil {
-		return Created{}, fmt.Errorf("%w: %v", ErrInvalid, err)
+		return Created{}, fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 	if in.Spec.GPUCount == 0 && !plan.cpu {
 		in.Spec.GPUCount = -1

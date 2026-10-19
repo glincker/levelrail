@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -118,7 +119,7 @@ func TestVerify(t *testing.T) {
 		t.Error("signature from another key accepted")
 	}
 	missing := "sha256:" + strings.Repeat("cd", 32)
-	if err := v.Verify(ctx, host+"/app@"+missing, pub, Credentials{}); err != ErrNoSignature {
+	if err := v.Verify(ctx, host+"/app@"+missing, pub, Credentials{}); !errors.Is(err, ErrNoSignature) {
 		t.Errorf("unsigned image err = %v, want ErrNoSignature", err)
 	}
 	if err := v.Verify(ctx, host+"/app:latest", pub, Credentials{}); err == nil {

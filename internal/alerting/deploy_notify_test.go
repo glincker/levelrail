@@ -3,6 +3,7 @@ package alerting
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
@@ -48,7 +49,7 @@ func TestSaveGetDeployTarget_RoundTrips(t *testing.T) {
 
 func TestGetDeployTarget_NotFound(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
-	if _, err := db.GetDeployTarget(context.Background(), "ghost"); err != ErrDeployTargetNotFound {
+	if _, err := db.GetDeployTarget(context.Background(), "ghost"); !errors.Is(err, ErrDeployTargetNotFound) {
 		t.Errorf("GetDeployTarget() error = %v, want ErrDeployTargetNotFound", err)
 	}
 }
@@ -112,7 +113,7 @@ func TestDeleteDeployTarget_RemovesRow(t *testing.T) {
 	if err := db.DeleteDeployTarget(ctx, "dnt_1"); err != nil {
 		t.Fatalf("DeleteDeployTarget() error = %v", err)
 	}
-	if _, err := db.GetDeployTarget(ctx, "dnt_1"); err != ErrDeployTargetNotFound {
+	if _, err := db.GetDeployTarget(ctx, "dnt_1"); !errors.Is(err, ErrDeployTargetNotFound) {
 		t.Errorf("GetDeployTarget() after delete error = %v, want ErrDeployTargetNotFound", err)
 	}
 }

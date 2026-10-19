@@ -166,7 +166,7 @@ func (s Signer) verifyInProcess(checksumsPath, bundlePath string) (string, error
 	case errors.Is(err, errTrustRoot):
 		return s.unavailable("the Sigstore trust root could not be loaded")
 	case err != nil:
-		return "", fmt.Errorf("%w: %s", ErrSignatureInvalid, err)
+		return "", fmt.Errorf("%w: %w", ErrSignatureInvalid, err)
 	}
 	if s.OnVerified != nil {
 		s.OnVerified()

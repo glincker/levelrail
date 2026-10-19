@@ -100,7 +100,7 @@ func TestRunWebhookDeliverySweeper(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 	cancel()
 
-	if err := <-errCh; err != context.Canceled {
+	if err := <-errCh; !errors.Is(err, context.Canceled) {
 		t.Errorf("expected context.Canceled, got %v", err)
 	}
 	if mock.callCount == 0 {
@@ -122,7 +122,7 @@ func TestRunWebhookDeliverySweeper_Error(t *testing.T) {
 	time.Sleep(20 * time.Millisecond)
 	cancel()
 
-	if err := <-errCh; err != context.Canceled {
+	if err := <-errCh; !errors.Is(err, context.Canceled) {
 		t.Errorf("expected context.Canceled, got %v", err)
 	}
 	if mock.callCount == 0 {

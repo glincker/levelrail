@@ -519,7 +519,7 @@ func New(serviceName string, svcStore ServiceStore, runtime docker.Runtime, opts
 		serviceName: serviceName,
 		store:       svcStore,
 		runtime:     runtime,
-		httpClient:  http.DefaultClient,
+		httpClient:  &http.Client{Timeout: defaultHookTimeout},
 		readyBudget: defaultReadyBudget,
 		hookTimeout: defaultHookTimeout,
 		liveness:    NewLivenessTracker(),

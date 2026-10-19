@@ -155,7 +155,7 @@ func RouterLoaded(ctx context.Context, base, router string, timeout time.Duratio
 	if err != nil {
 		return false, err
 	}
-	resp, err := http.DefaultClient.Do(req) //nolint:gosec // base is a fixed loopback address
+	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req) //nolint:gosec // base is a fixed loopback address
 	if err != nil {
 		return false, fmt.Errorf("traefik api: %w", err)
 	}

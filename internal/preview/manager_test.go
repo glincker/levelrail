@@ -2,6 +2,7 @@ package preview
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -478,7 +479,7 @@ func TestOpenImage(t *testing.T) {
 		t.Error("serving an image must stamp last_viewed_at")
 	}
 	for _, tc := range []struct{ app, id string }{{"other", "dep_a"}, {"web", "dep_skip"}, {"web", "dep_none"}, {"web", "../etc"}} {
-		if _, _, err := h.m.OpenImage(ctx, tc.app, tc.id); err != ErrNotFound {
+		if _, _, err := h.m.OpenImage(ctx, tc.app, tc.id); !errors.Is(err, ErrNotFound) {
 			t.Errorf("OpenImage(%q,%q) = %v, want ErrNotFound", tc.app, tc.id, err)
 		}
 	}

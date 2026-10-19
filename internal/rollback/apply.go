@@ -192,11 +192,11 @@ func Apply(ctx context.Context, d Deps, plan Plan, opts Options) (Result, error)
 		d.Log.Error("rolled-back release failed to start, restoring previous", slog.String("to", res.To), slog.String("error", startErr.Error()))
 		if err := d.recoverAndVerify(ctx, prev, keptDB, opts.HealthTimeout); err != nil {
 			keepPrev = true
-			return res, fmt.Errorf("target failed to start (%v) and recovery also failed: %w. Previous binary is at %s, previous database at %q", startErr, err, prev, keptDB)
+			return res, fmt.Errorf("target failed to start (%w) and recovery also failed: %w. Previous binary is at %s, previous database at %q", startErr, err, prev, keptDB)
 		}
 		res.Outcome = OutcomeRecovered
 		d.audit(ctx, "rollback "+res.From+" -> "+res.To+" failed to boot, previous release restored")
-		return res, fmt.Errorf("%w: %v", ErrRecovered, startErr)
+		return res, fmt.Errorf("%w: %w", ErrRecovered, startErr)
 	}
 	res.Outcome = OutcomeApplied
 	d.audit(ctx, "rollback "+res.From+" -> "+res.To+" applied, backup "+backup)

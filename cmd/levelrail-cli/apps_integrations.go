@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -127,7 +128,7 @@ func runAppsIntegrationsAdd(prog string, args []string, stdout, stderr io.Writer
 	}
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage
@@ -169,7 +170,7 @@ func runAppsIntegrationsRemove(prog string, args []string, stdout, stderr io.Wri
 	}
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

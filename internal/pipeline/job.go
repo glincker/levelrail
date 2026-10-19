@@ -112,9 +112,9 @@ func (e *Engine) runJob(ctx context.Context, run store.PipelineRun, def *Definit
 	switch {
 	case res == outcomeWaiting:
 		return
-	case ctx.Err() != nil && context.Cause(ctx) != errRunCancelled:
+	case ctx.Err() != nil && !errors.Is(context.Cause(ctx), errRunCancelled):
 		return
-	case context.Cause(ctx) == errRunCancelled:
+	case errors.Is(context.Cause(ctx), errRunCancelled):
 		jr.teardown(cleanupCtx)
 		jr.finish(cleanupCtx, outcomeCancelled, "run cancelled")
 	case jctx.Err() != nil && errors.Is(jctx.Err(), context.DeadlineExceeded):
@@ -256,7 +256,7 @@ func (jr *jobRun) runPlan(ctx context.Context) outcome {
 }
 
 func (jr *jobRun) interruptedOutcome(ctx context.Context) outcome {
-	if context.Cause(ctx) == errRunCancelled {
+	if errors.Is(context.Cause(ctx), errRunCancelled) {
 		return outcomeCancelled
 	}
 	return outcomeInterrupted
@@ -311,7 +311,7 @@ func (jr *jobRun) runStepWithRetries(ctx context.Context, k int, p plannedStep, 
 		if ctx.Err() != nil {
 			bg := context.WithoutCancel(ctx)
 			switch {
-			case context.Cause(ctx) == errRunCancelled:
+			case errors.Is(context.Cause(ctx), errRunCancelled):
 				jr.setStep(bg, k, store.PipelineStatusCancelled, "cancelled", nil, attempt)
 			case errors.Is(ctx.Err(), context.DeadlineExceeded):
 				jr.setStep(bg, k, store.PipelineStatusFailed, "job timed out", nil, attempt)

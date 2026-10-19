@@ -85,7 +85,7 @@ func fetchGitHubIDToken(ctx context.Context, reqURL, reqToken, audience string) 
 		return "", fmt.Errorf("build github oidc request: %w", err)
 	}
 	req.Header.Set("Authorization", "Bearer "+reqToken)
-	resp, err := http.DefaultClient.Do(req) //nolint:gosec // the URL is the runner-provided GitHub OIDC endpoint
+	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req) //nolint:gosec // the URL is the runner-provided GitHub OIDC endpoint
 	if err != nil {
 		return "", fmt.Errorf("request github oidc token: %w", err)
 	}

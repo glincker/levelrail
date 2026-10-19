@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log/slog"
@@ -21,7 +22,7 @@ func main() {
 	redact := flag.Bool("redact-sensitive", false, "return secret values empty, like a token without read:sensitive")
 	flag.Parse()
 
-	ln, err := net.Listen("tcp", *addr)
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", *addr)
 	if err != nil {
 		slog.Error("listen failed", slog.String("error", err.Error()))
 		os.Exit(1)

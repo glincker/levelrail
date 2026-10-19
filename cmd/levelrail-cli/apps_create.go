@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -620,7 +621,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	var tokenFlag, apiURLFlag, profileFlag string
 	f, err := parseCreateFlags(prog, args, stderr, &tokenFlag, &apiURLFlag, &profileFlag)
 	if err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

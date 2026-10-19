@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"testing"
 
@@ -46,7 +47,7 @@ func assertParseFlagsCase(t *testing.T, tt parseFlagsTestCase) {
 		if err == nil {
 			t.Fatalf("parseFlags() error = nil, want an error")
 		}
-		if tt.wantErrIsHelp && err != flag.ErrHelp {
+		if tt.wantErrIsHelp && !errors.Is(err, flag.ErrHelp) {
 			t.Errorf("parseFlags() error = %v, want flag.ErrHelp", err)
 		}
 		return

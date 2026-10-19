@@ -234,7 +234,7 @@ func (c *Controller) handleLivenessFailure(ctx context.Context, target string, s
 		return livenessOutcome{severity: livenessRestartFailed, err: fmt.Errorf("liveness probe for %q failed %d times and the restart failed: %w", target, failures, err)}
 	}
 	c.liveness.reset(target, now)
-	return livenessOutcome{severity: livenessRestarted, err: fmt.Errorf("liveness probe for %q failed %d times (%v), container restarted", target, failures, probeErr)}
+	return livenessOutcome{severity: livenessRestarted, err: fmt.Errorf("liveness probe for %q failed %d times (%v), container restarted", target, failures, probeErr)} //nolint:errorlint // probeErr can be nil when the probe reports no error
 }
 
 // restartReplica stops and starts the container in place, so its name

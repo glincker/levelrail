@@ -1,6 +1,7 @@
 package live
 
 import (
+	"context"
 	"io"
 	"net"
 	"os"
@@ -26,7 +27,7 @@ func newSocketProxy(dir, daemonHost string) (*socketProxy, error) {
 		upstream: strings.TrimPrefix(daemonHost, "unix://"),
 		conns:    map[net.Conn]struct{}{},
 	}
-	ln, err := net.Listen("unix", p.path)
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", p.path)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +55,7 @@ func (p *socketProxy) handle(c net.Conn) {
 		_ = c.Close()
 		return
 	}
-	up, err := net.Dial("unix", p.upstream)
+	up, err := (&net.Dialer{}).DialContext(context.Background(), "unix", p.upstream)
 	if err != nil {
 		p.mu.Unlock()
 		_ = c.Close()

@@ -88,7 +88,7 @@ func retryPull(ctx context.Context, sleep func(context.Context, time.Duration) e
 			break
 		}
 		if sleepErr := sleep(ctx, delay); sleepErr != nil {
-			return fmt.Errorf("registry pull retry stopped: %w (last error: %v)", sleepErr, err)
+			return fmt.Errorf("registry pull retry stopped: %w (last error: %w)", sleepErr, err)
 		}
 	}
 	return fmt.Errorf("registry pull failed after retries: %w", err)
@@ -102,7 +102,7 @@ func pullBackoff(attempt int) time.Duration {
 		d = pullMaxDelay
 	}
 	half := d / 2
-	//nolint:gosec // jitter for test retry timing, not security-sensitive
+	//nolint:gosec,forbidigo // jitter only, not security sensitive
 	return half + time.Duration(rand.Int64N(int64(half)+1))
 }
 

@@ -464,12 +464,12 @@ func (m *mux) shutdown(err error) {
 		close(ch)
 	}
 	for _, sub := range execs {
-		sub.fail(fmt.Errorf("%w: %v", ErrSessionClosed, err))
+		sub.fail(fmt.Errorf("%w: %v", ErrSessionClosed, err)) //nolint:errorlint // %v keeps io.EOF out of the chain so a dropped session never looks like a clean end
 		close(sub.out)
 		close(sub.credit)
 	}
 	for _, sub := range builds {
-		sub.fail(fmt.Errorf("%w: %v", ErrSessionClosed, err))
+		sub.fail(fmt.Errorf("%w: %v", ErrSessionClosed, err)) //nolint:errorlint // %v keeps io.EOF out of the chain so a dropped session never looks like a clean end
 		close(sub.out)
 		close(sub.credit)
 	}
@@ -494,7 +494,7 @@ func (m *mux) CallWithID(ctx context.Context, id string, req *agentpb.AgentReque
 	if m.pending == nil {
 		sessionErr := m.err
 		m.mu.Unlock()
-		return nil, fmt.Errorf("%w: %v", ErrSessionClosed, sessionErr)
+		return nil, fmt.Errorf("%w: %w", ErrSessionClosed, sessionErr)
 	}
 	m.pending[id] = ch
 	m.mu.Unlock()
@@ -509,7 +509,7 @@ func (m *mux) CallWithID(ctx context.Context, id string, req *agentpb.AgentReque
 	select {
 	case resp, ok := <-ch:
 		if !ok {
-			return nil, fmt.Errorf("%w: %v", ErrSessionClosed, m.err)
+			return nil, fmt.Errorf("%w: %w", ErrSessionClosed, m.err)
 		}
 		if resp.GetError() != "" {
 			return nil, errors.New(resp.GetError())
@@ -521,7 +521,7 @@ func (m *mux) CallWithID(ctx context.Context, id string, req *agentpb.AgentReque
 		m.mu.Unlock()
 		return nil, ctx.Err()
 	case <-m.closed:
-		return nil, fmt.Errorf("%w: %v", ErrSessionClosed, m.err)
+		return nil, fmt.Errorf("%w: %w", ErrSessionClosed, m.err)
 	}
 }
 

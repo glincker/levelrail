@@ -3,6 +3,7 @@ package dnsrecords
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -161,7 +162,7 @@ func TestManagerZoneFinder(t *testing.T) {
 	if err != nil || got != "example.com." {
 		t.Fatalf("FindZone = %q %v", got, err)
 	}
-	if _, err := f.FindZone(context.Background(), "app.other.org"); err != ErrZoneNotFound {
+	if _, err := f.FindZone(context.Background(), "app.other.org"); !errors.Is(err, ErrZoneNotFound) {
 		t.Fatalf("unknown zone error = %v", err)
 	}
 }
@@ -201,7 +202,7 @@ func TestCloudflareAPIFindZoneAndProxied(t *testing.T) {
 	if err != nil || zone != "example.com." {
 		t.Fatalf("FindZone = %q %v", zone, err)
 	}
-	if _, err := api.FindZone(context.Background(), "app.other.org"); err != ErrZoneNotFound {
+	if _, err := api.FindZone(context.Background(), "app.other.org"); !errors.Is(err, ErrZoneNotFound) {
 		t.Fatalf("missing zone error = %v", err)
 	}
 	n, err := api.SetProxied(context.Background(), "example.com.", "app.example.com", "A", "203.0.113.5", true)

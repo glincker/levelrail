@@ -25,7 +25,7 @@ func verifyBundle(artifactPath, bundlePath, identityRegexp, issuer, cacheDir str
 	}
 	tr, err := loadTrustedRoot(cacheDir)
 	if err != nil {
-		return fmt.Errorf("%w: %v", errTrustRoot, err)
+		return fmt.Errorf("%w: %w", errTrustRoot, err)
 	}
 	f, err := os.Open(artifactPath) //nolint:gosec // path is under the upgrade's own work directory
 	if err != nil {

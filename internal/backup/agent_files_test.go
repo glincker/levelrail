@@ -3,6 +3,7 @@ package backup
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -71,7 +72,7 @@ func TestRoutedAgentDestination(t *testing.T) {
 func TestRoutedAgentDestinationWithoutTransport(t *testing.T) {
 	dest := Destination{Endpoint: AgentEndpoint("node-1"), Bucket: "backups"}
 	err := Routed{}.Upload(context.Background(), dest, "k", strings.NewReader("x"), -1)
-	if err != ErrNodeFilesUnavailable {
+	if !errors.Is(err, ErrNodeFilesUnavailable) {
 		t.Fatalf("error = %v, want ErrNodeFilesUnavailable", err)
 	}
 }

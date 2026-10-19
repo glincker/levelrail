@@ -104,7 +104,7 @@ func fetchCommit(ctx context.Context, url, branch, sha string, auth transport.Au
 	}
 	repo, cerr := git.CloneContext(ctx, memory.NewStorage(), nil, opts)
 	if cerr != nil {
-		return nil, plumbing.ZeroHash, fmt.Errorf("%w: %s: %v", ErrSHAUnavailable, sha, cerr)
+		return nil, plumbing.ZeroHash, fmt.Errorf("%w: %s: %w", ErrSHAUnavailable, sha, cerr)
 	}
 	if _, cerr := repo.CommitObject(hash); cerr != nil {
 		return nil, plumbing.ZeroHash, fmt.Errorf("%w: %s", ErrSHAUnavailable, sha)

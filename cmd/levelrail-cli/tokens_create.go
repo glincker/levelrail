@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -29,7 +30,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensCreateUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

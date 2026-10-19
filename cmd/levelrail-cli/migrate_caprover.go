@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -35,7 +36,7 @@ func runMigrateCaprover(prog string, args []string, stdout, stderr io.Writer, lo
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, migrateCaproverUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

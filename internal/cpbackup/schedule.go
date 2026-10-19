@@ -36,7 +36,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 			continue
 		}
 		if _, err := cronexpr.Parse(expr); err != nil {
-			return fmt.Errorf("%w: cron expression %q: %v", ErrInvalid, expr, err)
+			return fmt.Errorf("%w: cron expression %q: %w", ErrInvalid, expr, err)
 		}
 	}
 	for _, n := range []int{u.Retention.Daily, u.Retention.Weekly, u.Retention.Monthly} {
@@ -52,7 +52,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 	}
 	if len(recipients) > 0 {
 		if _, err := ParseRecipients(recipients); err != nil {
-			return fmt.Errorf("%w: %v", ErrInvalid, err)
+			return fmt.Errorf("%w: %w", ErrInvalid, err)
 		}
 	}
 	for _, id := range []string{u.TargetID, u.EscrowTargetID} {
@@ -64,7 +64,7 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 		}
 	}
 	if u.Enabled && (u.TargetID == "" || len(recipients) == 0) {
-		return fmt.Errorf("%w: %v", ErrInvalid, ErrNotConfigured)
+		return fmt.Errorf("%w: %w", ErrInvalid, ErrNotConfigured)
 	}
 	cfg := store.CPDRSettings{
 		Enabled: u.Enabled, TargetID: u.TargetID, Recipients: recipients, Schedule: u.Schedule, DrillSchedule: u.DrillSchedule,

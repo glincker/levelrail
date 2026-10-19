@@ -178,7 +178,7 @@ func runPipelinesValidate(prog string, args []string, stdout, stderr io.Writer) 
 	fs.SetOutput(stderr)
 	jsonOut := fs.Bool("json", false, "print the validation result as JSON")
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

@@ -2,6 +2,7 @@ package search_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
@@ -153,7 +154,7 @@ func TestRecordUseHidesUnauthorizedRefs(t *testing.T) {
 		t.Fatal(err)
 	}
 	deny := search.Caller{PrincipalID: "user:1", Authz: allowFunc(func(string, string, string) bool { return false })}
-	if err := svc.RecordUse(context.Background(), deny, "app:secret"); err != search.ErrNotFound {
+	if err := svc.RecordUse(context.Background(), deny, "app:secret"); !errors.Is(err, search.ErrNotFound) {
 		t.Fatalf("want ErrNotFound, got %v", err)
 	}
 }
@@ -197,7 +198,7 @@ func TestSavedSearchesAreOwnerScoped(t *testing.T) {
 	if len(r.Hits) != 1 || r.Hits[0].Kind != search.KindSaved {
 		t.Fatalf("owner should find saved search: %+v", r)
 	}
-	if err := svc.DeleteSaved(ctx, "user:2", s.ID); err != search.ErrNotFound {
+	if err := svc.DeleteSaved(ctx, "user:2", s.ID); !errors.Is(err, search.ErrNotFound) {
 		t.Fatalf("foreign delete = %v", err)
 	}
 	if err := svc.DeleteSaved(ctx, "user:1", s.ID); err != nil {

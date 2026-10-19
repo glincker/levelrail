@@ -1,6 +1,7 @@
 package webhook
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -79,7 +80,7 @@ func TestParsePullRequestEventForProvider_GitHubSynchronizeAndClosed(t *testing.
 func TestParsePullRequestEventForProvider_GitHubUnrecognizedAction(t *testing.T) {
 	body := []byte(`{"action":"labeled","number":7,"pull_request":{"head":{"ref":"x","sha":"sha1"}}}`)
 	_, err := ParsePullRequestEventForProvider(body, headerWith("X-GitHub-Event", "pull_request"))
-	if err != ErrPullRequestEventFieldsMissing {
+	if !errors.Is(err, ErrPullRequestEventFieldsMissing) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v, want ErrPullRequestEventFieldsMissing", err)
 	}
 }
@@ -170,7 +171,7 @@ func TestParsePullRequestEventForProvider_GitLabSynchronizeReopenAndClosed(t *te
 func TestParsePullRequestEventForProvider_GitLabApprovalActionIgnored(t *testing.T) {
 	body := gitlabMergeRequestFixture("approved", 14, "fix-bug", "develop", "abc999")
 	_, err := ParsePullRequestEventForProvider(body, headerWith("X-Gitlab-Event", "Merge Request Hook"))
-	if err != ErrPullRequestEventFieldsMissing {
+	if !errors.Is(err, ErrPullRequestEventFieldsMissing) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v, want ErrPullRequestEventFieldsMissing", err)
 	}
 }
@@ -320,7 +321,7 @@ func TestParsePullRequestEventForProvider_GiteaSynchronizedReopenAndClosed(t *te
 func TestParsePullRequestEventForProvider_GiteaReviewActionIgnored(t *testing.T) {
 	body := giteaPullRequestFixture("review_requested", 11, "fix-w", "pqr678", "develop")
 	_, err := ParsePullRequestEventForProvider(body, headerWith("X-Gitea-Event-Type", "pull_request"))
-	if err != ErrPullRequestEventFieldsMissing {
+	if !errors.Is(err, ErrPullRequestEventFieldsMissing) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v, want ErrPullRequestEventFieldsMissing", err)
 	}
 }
@@ -335,7 +336,7 @@ func TestParsePullRequestEventForProvider_MalformedJSON(t *testing.T) {
 func TestParsePullRequestEventForProvider_MissingSHA(t *testing.T) {
 	body := []byte(`{"action":"opened","number":1,"pull_request":{"head":{"ref":"x","sha":""}}}`)
 	_, err := ParsePullRequestEventForProvider(body, headerWith("X-GitHub-Event", "pull_request"))
-	if err != ErrPullRequestEventFieldsMissing {
+	if !errors.Is(err, ErrPullRequestEventFieldsMissing) {
 		t.Fatalf("ParsePullRequestEventForProvider() error = %v, want ErrPullRequestEventFieldsMissing", err)
 	}
 }

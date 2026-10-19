@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -223,7 +224,7 @@ type outputFlags struct {
 // ok is false when parsing, --help, or a bad --output already wrote to stderr; return exitCode unchanged.
 func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog string, stderr io.Writer) (tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return "", "", "", false, outputFlags{}, exitOK, false
 		}
 		return "", "", "", false, outputFlags{}, exitUsage, false
@@ -239,7 +240,7 @@ func parseAPIFlags(fs *flag.FlagSet, args []string, flags apiFlagPtrs, prog stri
 // Same contract as parseAPIFlags: ok false means the caller returns exitCode unchanged.
 func parseSessionFlags(fs *flag.FlagSet, args []string, jsonOutP *bool, outputFlagP, queryFlagP *string, prog string, stderr io.Writer) (jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return false, outputFlags{}, exitOK, false
 		}
 		return false, outputFlags{}, exitUsage, false

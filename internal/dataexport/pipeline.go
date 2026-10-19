@@ -239,7 +239,7 @@ func newDeliverer(cfg Config) *deliverer {
 		cfg: cfg, br: br, st: &stats{br: br},
 		now:    time.Now,
 		sleep:  sleepCtx,
-		jitter: func() float64 { return 0.8 + 0.4*rand.Float64() }, //nolint:gosec // retry jitter, not a security value
+		jitter: func() float64 { return 0.8 + 0.4*rand.Float64() }, //nolint:gosec,forbidigo // jitter only, not security sensitive
 	}
 }
 

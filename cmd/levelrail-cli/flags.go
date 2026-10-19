@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -187,7 +188,7 @@ const appAndFlagIDLabel = "an app name and a flag id"
 
 func parseAppAndFlagID(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdLabel string) (appName, id string, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return "", "", exitOK, false
 		}
 		return "", "", exitUsage, false

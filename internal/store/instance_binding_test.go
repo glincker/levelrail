@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -54,7 +55,7 @@ func TestReconcileInstanceHost(t *testing.T) {
 	if restored, _ := db.GetInstanceInfo(ctx); restored.InstanceID != before.InstanceID || restored.Fingerprint != before.Fingerprint {
 		t.Fatalf("restored = %+v, want %+v", restored, before)
 	}
-	if err := db.ConfirmSameInstance(ctx); err != ErrNoPreviousInstance {
+	if err := db.ConfirmSameInstance(ctx); !errors.Is(err, ErrNoPreviousInstance) {
 		t.Fatalf("second confirm err = %v, want ErrNoPreviousInstance", err)
 	}
 }

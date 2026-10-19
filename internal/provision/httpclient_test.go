@@ -2,6 +2,7 @@ package provision
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -174,9 +175,5 @@ func TestHTTPClient_NonRetryableError(t *testing.T) {
 }
 
 func asProviderError(err error, target **ProviderError) bool {
-	pe, ok := err.(*ProviderError)
-	if ok {
-		*target = pe
-	}
-	return ok
+	return errors.As(err, target)
 }

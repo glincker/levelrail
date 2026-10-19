@@ -164,7 +164,7 @@ func parseRow(row []string) (Device, string, error) {
 	total, err2 := strconv.ParseInt(strings.TrimSpace(row[3]), 10, 64)
 	used, err3 := strconv.ParseInt(strings.TrimSpace(row[4]), 10, 64)
 	if err := errors.Join(err1, err2, err3); err != nil {
-		return Device{}, "", fmt.Errorf("%w: %v", errBadRow, err)
+		return Device{}, "", fmt.Errorf("%w: %w", errBadRow, err)
 	}
 	util, _ := strconv.Atoi(strings.TrimSpace(row[5])) // "[N/A]" on some virtualized GPUs
 	return Device{

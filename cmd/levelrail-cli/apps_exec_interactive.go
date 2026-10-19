@@ -115,7 +115,7 @@ func runAppsExecInteractive(prog, name string, command []string, creds terminalC
 	if creds.Token != "" {
 		header.Set("Authorization", "Bearer "+creds.Token)
 	}
-	conn, resp, err := websocket.Dial(ctx, target, &websocket.DialOptions{HTTPHeader: header})
+	conn, resp, err := websocket.Dial(ctx, target, &websocket.DialOptions{HTTPHeader: header}) //nolint:bodyclose // coder/websocket closes the handshake body itself
 	if err != nil {
 		return reportTerminalDialError(prog, stderr, resp, err)
 	}

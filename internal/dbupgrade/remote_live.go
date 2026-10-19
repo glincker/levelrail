@@ -106,7 +106,7 @@ func (r *RemoteCatalog) Refresh(ctx context.Context) error {
 }
 
 func jitter(d time.Duration) time.Duration {
-	return d - d/10 + time.Duration(rand.Int64N(int64(d/5)+1)) //nolint:gosec // schedule jitter, not security
+	return d - d/10 + time.Duration(rand.Int64N(int64(d/5)+1)) //nolint:gosec,forbidigo // jitter only, not security sensitive
 }
 
 // Run refreshes on schedule until ctx ends. It waits before the first

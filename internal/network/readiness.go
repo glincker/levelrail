@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -57,7 +58,7 @@ func SystemReadinessEnv(advertiseHost string, meshRunning bool) ReadinessEnv {
 			return err == nil
 		},
 		UDPPortFree: func(port int) (bool, error) {
-			pc, err := net.ListenPacket("udp", ":"+strconv.Itoa(port))
+			pc, err := (&net.ListenConfig{}).ListenPacket(context.Background(), "udp", ":"+strconv.Itoa(port))
 			if err != nil {
 				if errors.Is(err, syscall.EADDRINUSE) {
 					return false, nil

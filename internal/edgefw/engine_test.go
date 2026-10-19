@@ -2,6 +2,7 @@ package edgefw
 
 import (
 	"crypto/sha256"
+	"errors"
 	"net/http"
 	"net/netip"
 	"strconv"
@@ -481,7 +482,8 @@ func TestValidateRule(t *testing.T) {
 				}
 				return
 			}
-			ve, isVE := err.(*ValidationError)
+			var ve *ValidationError
+			isVE := errors.As(err, &ve)
 			if !isVE || ve.Fields[0].Field != tt.field {
 				t.Fatalf("error = %v, want field %s", err, tt.field)
 			}
@@ -513,7 +515,8 @@ func TestSettingsValidate(t *testing.T) {
 	far := t0.Add(1000 * time.Hour)
 	s.AttackUntil = &far
 	err := s.Validate(DefaultLimits(), 24*time.Hour, t0)
-	ve, ok := err.(*ValidationError)
+	var ve *ValidationError
+	ok := errors.As(err, &ve)
 	if !ok || len(ve.Fields) != 3 {
 		t.Fatalf("err = %v", err)
 	}

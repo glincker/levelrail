@@ -118,7 +118,7 @@ func Parse(raw []byte) (Doc, error) {
 	}
 	var d Doc
 	if err := json.Unmarshal(raw, &d); err != nil {
-		return Doc{}, fmt.Errorf("%w: %v", ErrInvalid, err)
+		return Doc{}, fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 	if err := d.checkWidgets(); err != nil {
 		return Doc{}, err

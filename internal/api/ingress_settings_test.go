@@ -75,7 +75,7 @@ func TestValidateIngressSettingsRequest(t *testing.T) {
 				}
 				return
 			}
-			if err != tt.wantErr {
+			if !errors.Is(err, tt.wantErr) {
 				t.Fatalf("validateIngressSettingsRequest() error = %v, want %v", err, tt.wantErr)
 			}
 		})

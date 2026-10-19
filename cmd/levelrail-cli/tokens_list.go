@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -17,7 +18,7 @@ func runTokensList(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tokensListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

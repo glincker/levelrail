@@ -185,7 +185,7 @@ func (p *logQLParser) parseSelector(q *LogQLQuery) error {
 		m := LogQLMatcher{Name: name, Op: op, Value: val}
 		if op == "=~" || op == "!~" {
 			if m.re, err = regexp.Compile("^(?:" + val + ")$"); err != nil {
-				return fmt.Errorf("invalid regex for label %q: %v", name, err)
+				return fmt.Errorf("invalid regex for label %q: %w", name, err)
 			}
 		}
 		q.Matchers = append(q.Matchers, m)
@@ -222,7 +222,7 @@ func (p *logQLParser) parseFilters(q *LogQLQuery) error {
 		f := LogQLLineFilter{Op: op, Value: val}
 		if op == "|~" || op == "!~" {
 			if f.re, err = regexp.Compile(val); err != nil {
-				return fmt.Errorf("invalid line filter regex: %v", err)
+				return fmt.Errorf("invalid line filter regex: %w", err)
 			}
 		}
 		q.Filters = append(q.Filters, f)

@@ -3,6 +3,7 @@ package alerting
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/textproto"
@@ -33,7 +34,7 @@ func TestSaveGetNotificationChannel_RoundTrips(t *testing.T) {
 
 func TestGetNotificationChannel_NotFound(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
-	if _, err := db.GetNotificationChannel(context.Background(), "ghost"); err != ErrNotificationChannelNotFound {
+	if _, err := db.GetNotificationChannel(context.Background(), "ghost"); !errors.Is(err, ErrNotificationChannelNotFound) {
 		t.Errorf("GetNotificationChannel() error = %v, want ErrNotificationChannelNotFound", err)
 	}
 }
@@ -60,7 +61,7 @@ func TestListNotificationChannels_OldestFirst(t *testing.T) {
 
 func TestDeleteNotificationChannel_NotFound(t *testing.T) {
 	db := newTestDeployNotifyDB(t)
-	if err := db.DeleteNotificationChannel(context.Background(), "ghost"); err != ErrNotificationChannelNotFound {
+	if err := db.DeleteNotificationChannel(context.Background(), "ghost"); !errors.Is(err, ErrNotificationChannelNotFound) {
 		t.Errorf("DeleteNotificationChannel() error = %v, want ErrNotificationChannelNotFound", err)
 	}
 }

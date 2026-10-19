@@ -216,7 +216,7 @@ func (m *PortWakeManager) listen(network, addr string) (net.Listener, error) {
 	if m.Listen != nil {
 		return m.Listen(network, addr)
 	}
-	return net.Listen(network, addr)
+	return (&net.ListenConfig{}).Listen(context.Background(), network, addr)
 }
 
 // bind opens every pinned port on exactly the app's own bind address. A

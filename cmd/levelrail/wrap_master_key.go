@@ -57,8 +57,11 @@ func runWrapMasterKey(ctx context.Context, args []string, dataDir string, stdout
 			return err
 		}
 		back, err := secrets.UnwrapMasterKey(ctx, out, w)
-		if err != nil || back != stored {
-			return fmt.Errorf("refusing to replace the key file: the wrapped value did not round trip (%v)", err)
+		if err != nil {
+			return fmt.Errorf("refusing to replace the key file: the wrapped value did not round trip (%w)", err)
+		}
+		if back != stored {
+			return errors.New("refusing to replace the key file: the wrapped value did not round trip (<nil>)")
 		}
 	}
 	if err := secrets.PersistMasterKeyFile(path, out); err != nil {

@@ -117,11 +117,7 @@ func TestExchangeManifestCode_ErrorResponse(t *testing.T) {
 }
 
 func asAPIError(err error, target **apiError) bool {
-	if e, ok := err.(*apiError); ok {
-		*target = e
-		return true
-	}
-	return false
+	return errors.As(err, target)
 }
 
 func TestGetInstallation_UsesBearerAppJWT(t *testing.T) {

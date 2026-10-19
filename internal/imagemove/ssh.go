@@ -129,7 +129,7 @@ func (s *SSHSaver) auth() ([]ssh.AuthMethod, func(), error) {
 		if sock == "" {
 			return nil, cleanup, errors.New("no SSH agent is available to the control plane (SSH_AUTH_SOCK is not set)")
 		}
-		conn, err := net.Dial("unix", sock) //nolint:gosec // socket comes from this process's own SSH_AUTH_SOCK, not request input
+		conn, err := (&net.Dialer{}).DialContext(context.Background(), "unix", sock) //nolint:gosec // socket comes from this process's own SSH_AUTH_SOCK, not request input
 		if err != nil {
 			return nil, cleanup, fmt.Errorf("connect to the SSH agent: %w", err)
 		}

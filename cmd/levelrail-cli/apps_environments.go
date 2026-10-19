@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -223,7 +224,7 @@ Flags:
 // exitCode is only meaningful when ok is false.
 func parseEnvironmentIDCommand(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdName string, flags apiFlagPtrs) (id, tokenFlag, apiURLFlag, profileFlag string, jsonOut bool, of outputFlags, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return "", "", "", "", false, outputFlags{}, exitOK, false
 		}
 		return "", "", "", "", false, outputFlags{}, exitUsage, false

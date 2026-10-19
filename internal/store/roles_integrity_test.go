@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"slices"
 	"testing"
 )
@@ -52,7 +53,7 @@ func TestUpdateRoleAndSync_DowngradeReachesEveryUser(t *testing.T) {
 			t.Errorf("user %s abilities = %v, want the downgraded set", id, u.Abilities)
 		}
 	}
-	if err := db.UpdateRoleAndSync(ctx, Role{ID: "role_admin", Name: "admin", Abilities: []string{"read"}, Visibility: RoleVisibilityAll}); err != ErrRoleBuiltin {
+	if err := db.UpdateRoleAndSync(ctx, Role{ID: "role_admin", Name: "admin", Abilities: []string{"read"}, Visibility: RoleVisibilityAll}); !errors.Is(err, ErrRoleBuiltin) {
 		t.Errorf("built-in update error = %v, want ErrRoleBuiltin", err)
 	}
 }

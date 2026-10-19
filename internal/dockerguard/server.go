@@ -74,7 +74,7 @@ func Listen(ctx context.Context, g *Guard, socket string) (*Server, error) {
 // listenPrivate binds then chmods to 0600; the 0700 parent keeps the
 // moment between the two unreachable for other users.
 func listenPrivate(socket string) (net.Listener, error) {
-	ln, err := net.Listen("unix", socket)
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "unix", socket)
 	if err != nil {
 		return nil, fmt.Errorf("dockerguard: listen on %s: %w", socket, err)
 	}

@@ -301,7 +301,7 @@ func reconcileUntilReady(parent context.Context, ctrl *application.Controller, o
 			return lastResult, nil
 		}
 		if time.Now().After(deadline) {
-			return lastResult, fmt.Errorf("did not reach a True Ready condition within %s: last error = %v, last result = %+v", overallTimeout, lastErr, lastResult)
+			return lastResult, fmt.Errorf("did not reach a True Ready condition within %s: last error = %v, last result = %+v", overallTimeout, lastErr, lastResult) //nolint:errorlint // lastErr is nil when the last reconcile returned no error
 		}
 		time.Sleep(templateFleetPollInterval)
 	}

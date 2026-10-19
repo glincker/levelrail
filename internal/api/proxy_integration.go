@@ -227,7 +227,7 @@ func portOf(addr string) int {
 	if err != nil {
 		return 0
 	}
-	n, err := net.LookupPort("tcp", p)
+	n, err := (&net.Resolver{}).LookupPort(context.Background(), "tcp", p)
 	if err != nil {
 		return 0
 	}

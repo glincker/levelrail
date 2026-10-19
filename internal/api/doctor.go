@@ -249,7 +249,7 @@ func (rt *Router) doctorCheckPort(port int) doctorCheckResource {
 	code := fmt.Sprintf("port_%d", port)
 	name := fmt.Sprintf("Port %d available", port)
 
-	ln, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", fmt.Sprintf(":%d", port))
 	if err == nil {
 		_ = ln.Close()
 		return doctorCheckResource{Code: code, Name: name, Status: doctorStatusOK, Message: "available"}

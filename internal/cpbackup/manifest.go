@@ -77,7 +77,7 @@ var ErrBadManifest = errors.New("invalid backup manifest")
 func ParseManifest(data []byte) (Manifest, error) {
 	var m Manifest
 	if err := json.Unmarshal(data, &m); err != nil {
-		return Manifest{}, fmt.Errorf("%w: %v", ErrBadManifest, err)
+		return Manifest{}, fmt.Errorf("%w: %w", ErrBadManifest, err)
 	}
 	switch {
 	case m.ManifestVersion != manifestFormat:

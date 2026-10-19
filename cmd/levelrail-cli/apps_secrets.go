@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -94,7 +95,7 @@ func runAppsSecretsSet(prog string, args []string, stdout, stderr io.Writer, loo
 	}
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage
@@ -137,7 +138,7 @@ func runAppsSecretsDelete(prog string, args []string, stdout, stderr io.Writer, 
 		fs.PrintDefaults()
 	}
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage
@@ -194,7 +195,7 @@ func runAppsSecretsLock(prog string, args []string, stdout, stderr io.Writer, lo
 	}
 
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

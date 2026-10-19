@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -28,7 +29,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authLoginUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

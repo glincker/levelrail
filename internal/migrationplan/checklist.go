@@ -66,7 +66,7 @@ func Parse(raw string) (Checklist, error) {
 	}
 	var in Checklist
 	if err := json.Unmarshal([]byte(raw), &in); err != nil {
-		return c, fmt.Errorf("%w: %v", ErrBadChecklist, err)
+		return c, fmt.Errorf("%w: %w", ErrBadChecklist, err)
 	}
 	for k, v := range in.States {
 		if stepIndex(k) < 0 {

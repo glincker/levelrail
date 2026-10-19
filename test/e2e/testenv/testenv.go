@@ -96,7 +96,7 @@ func ReconcileUntilAppReady(parent context.Context, ctrl *application.Controller
 			return lastResult, nil
 		}
 		if time.Now().After(deadline) {
-			return lastResult, fmt.Errorf("did not reach a True Ready condition within %s: last error = %v, last result = %+v", overallTimeout, lastErr, lastResult)
+			return lastResult, fmt.Errorf("did not reach a True Ready condition within %s: last error = %v, last result = %+v", overallTimeout, lastErr, lastResult) //nolint:errorlint // lastErr is nil when the last reconcile returned no error
 		}
 		select {
 		case <-parent.Done():
@@ -164,7 +164,7 @@ func removeServiceVolumes(ctx context.Context, rt docker.Runtime, serviceName st
 // get an ephemeral port for a test.
 func FreePort(t *testing.T) int {
 	t.Helper()
-	l, err := net.Listen("tcp", "127.0.0.1:0")
+	l, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("FreePort: listen: %v", err)
 	}

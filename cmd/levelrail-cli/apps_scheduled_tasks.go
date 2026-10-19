@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -71,7 +72,7 @@ func scheduledTaskFlags(fs *flag.FlagSet, schedule *string, disabled *bool, conc
 // ok is false once help, a parse error, or a missing command has been reported.
 func parseScheduledTaskArgs(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdLabel string, nArgs int) (leading, command []string, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return nil, nil, exitOK, false
 		}
 		return nil, nil, exitUsage, false
@@ -211,7 +212,7 @@ const appAndTaskIDLabel = "an app name and a task id"
 // common shape those three subcommands share.
 func parseAppAndTaskID(fs *flag.FlagSet, args []string, stderr io.Writer, prog, cmdLabel string) (appName, id string, exitCode int, ok bool) {
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return "", "", exitOK, false
 		}
 		return "", "", exitUsage, false

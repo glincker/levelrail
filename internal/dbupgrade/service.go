@@ -110,7 +110,7 @@ func (m *Manager) SetPolicy(ctx context.Context, name string, p Policy, inherit 
 		}
 	}
 	if err := p.Validate(); err != nil {
-		return fmt.Errorf("%w: %v", ErrInvalid, err)
+		return fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 	if err := m.Store.SaveDBUpgradePolicy(ctx, p.ToStore(name, by, m.now())); err != nil {
 		return fmt.Errorf("dbupgrade: %w", err)
@@ -163,7 +163,7 @@ func (m *Manager) manualTarget(db store.DesiredDatabase, version string) (Target
 		return t, nil
 	}
 	if err := database.CheckInPlaceVersionChange(db.Engine, db.Version, version); err != nil {
-		return Target{}, fmt.Errorf("%w: %v", ErrInvalid, err)
+		return Target{}, fmt.Errorf("%w: %w", ErrInvalid, err)
 	}
 	ec, ok := m.Advisor.Catalog.Engine(db.Engine)
 	from, okFrom := parseVersion(db.Version)
