@@ -37,6 +37,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitUsage
 	}
 
+	syncServerBetaFeatures(prog, args, lookupEnv)
 	if rejectDisabledExperimental(prog, args, stderr) {
 		return exitUsage
 	}

@@ -14,6 +14,7 @@ import {
 } from '../../queries/security'
 import { twoFactorStatusQueryOptions } from '../../queries/twoFactor'
 import { passkeysQueryOptions } from '../../queries/passkeys'
+import { CheckFix } from '../../components/fixit/FixAction'
 import { PasskeysCard } from '../../components/PasskeysCard'
 import { AuthEngineCard } from '../../components/AuthEngineCard'
 import { DockerGuardCard } from '../../components/DockerGuardCard'
@@ -90,6 +91,8 @@ function SecuritySettingsPage() {
   return (
     <SecurityPageShell>
       <div className="space-y-6">
+        <CheckFix checkId="dashboard_url_https" />
+
         <Card id="sessions">
           <CardHeader>
             <CardTitle>{t('securityPage.session.title')}</CardTitle>

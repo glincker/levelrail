@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/mcptools"
@@ -60,6 +61,12 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 		}
 		opts.Mode, opts.AllowWrite = mcptools.ModeReadOnly, false
 	}
+
+	syncCtx, cancelSync := context.WithTimeout(context.Background(), 5*time.Second)
+	if err := client.SyncBetaFeatures(syncCtx); err != nil {
+		logger.Warn("beta feature sync failed, gating follows APP_EXPERIMENTAL only", slog.String("error", err.Error()))
+	}
+	cancelSync()
 
 	server, summary := mcptools.NewServerWithOptions(client, opts)
 	logAttrs := []any{

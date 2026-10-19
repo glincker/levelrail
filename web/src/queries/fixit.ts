@@ -92,6 +92,27 @@ export function fixesQueryOptions() {
   })
 }
 
+export function settingsFixesQueryOptions() {
+  return queryOptions({
+    queryKey: [...fixKeys.all, 'settings'] as const,
+    queryFn: async (): Promise<Fix[]> => {
+      const res = await fetch('/api/v1/fixes?subject=settings&all=1')
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `fetch fixes failed: ${res.status}`),
+        )
+      }
+      return ((await res.json()) as { fixes: Fix[] }).fixes
+    },
+    staleTime: 10_000,
+  })
+}
+
+export function useSettingsFixes() {
+  return useQuery(settingsFixesQueryOptions())
+}
+
 export function useFixes() {
   return useQuery(fixesQueryOptions())
 }

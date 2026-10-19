@@ -56,3 +56,13 @@ func EnabledByEnv(f Feature) bool {
 	load()
 	return enabled[f]
 }
+
+// ApplyRemote makes the server's Settings switches the active state for this
+// process, so a CLI or MCP session follows the control plane, not its own env.
+func ApplyRemote(on map[Feature]bool) {
+	mu.Lock()
+	defer mu.Unlock()
+	for _, f := range All() {
+		runtime[f] = on[f]
+	}
+}

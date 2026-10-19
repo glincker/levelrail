@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"github.com/GLINCKER/levelrail/internal/experimental"
 	"net/http"
 	"net/url"
 
@@ -130,4 +131,19 @@ func (c *Client) SetBetaFeature(ctx context.Context, feature string, enabled boo
 	var out BetaFeature
 	err := c.do(ctx, http.MethodPut, "/api/v1/settings/beta-features/"+PathEscape(feature), map[string]bool{"enabled": enabled}, &out)
 	return out, err
+}
+
+// SyncBetaFeatures fetches the server's enabled beta features and applies them
+// to this process, so gating follows Settings. APP_EXPERIMENTAL stays an override.
+func (c *Client) SyncBetaFeatures(ctx context.Context) error {
+	list, err := c.ListBetaFeatures(ctx)
+	if err != nil {
+		return err
+	}
+	on := map[experimental.Feature]bool{}
+	for _, f := range list {
+		on[experimental.Feature(f.ID)] = f.Enabled
+	}
+	experimental.ApplyRemote(on)
+	return nil
 }

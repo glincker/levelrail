@@ -35,6 +35,12 @@
     "cannot_fix_here": "Cannot be fixed from here: {{detail}}",
     "skipped": "Nothing to do: {{detail}}"
   },
+  "settingsHealth": {
+    "title": "Settings health",
+    "loading": "Checking this instance...",
+    "summary": "{{failing}} of {{total}} checks need attention",
+    "allGood": "Nothing needs attention."
+  },
   "blockers_one": "{{count}} blocker, {{dependent}} depend on it",
   "blockers_other": "{{count}} blockers, {{dependent}} depend on them",
   "showDependent": "Show dependent checks",
