@@ -20,6 +20,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { toast } from '@/components/ui/toast'
 import { appListQueryOptions } from '../queries/apps'
+import { usePlugins } from '../queries/plugins'
+import { useSetDnsProviderPlugin } from '../queries/pluginDns'
 import {
   useAutomationRuns,
   useDomainAutomation,
@@ -196,6 +198,60 @@ function History() {
   )
 }
 
+function DnsWriter({ current }: Readonly<{ current: string }>) {
+  const { t } = useTranslation('domains')
+  const plugins = usePlugins()
+  const choose = useSetDnsProviderPlugin()
+  const options = (plugins.data ?? []).filter(
+    (p) => p.kind === 'dns_provider' && p.state === 'enabled',
+  )
+  if (current === '' && options.length === 0) return null
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor="automation-dns-writer">
+        {t('automation.dnsWriter.label')}
+      </Label>
+      <select
+        id="automation-dns-writer"
+        className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+        value={current}
+        disabled={choose.isPending}
+        onChange={(e) => {
+          choose.mutate(e.target.value, {
+            onSuccess: () => {
+              toast.add({
+                title: t('automation.dnsWriter.saved'),
+                type: 'success',
+              })
+            },
+          })
+        }}
+      >
+        <option value="">{t('automation.dnsWriter.builtIn')}</option>
+        {current !== '' && !options.some((p) => p.name === current) ? (
+          <option value={current}>
+            {t('automation.dnsWriter.plugin', { name: current })}
+          </option>
+        ) : null}
+        {options.map((p) => (
+          <option key={p.name} value={p.name}>
+            {t('automation.dnsWriter.plugin', { name: p.name })}
+          </option>
+        ))}
+      </select>
+      <p className="text-xs text-muted-foreground">
+        {t('automation.dnsWriter.help')}{' '}
+        <Link to="/settings/plugins" className="underline">
+          {t('automation.dnsWriter.managePlugins')}
+        </Link>
+      </p>
+      {choose.isError ? (
+        <p className="text-xs text-destructive">{choose.error.message}</p>
+      ) : null}
+    </div>
+  )
+}
+
 // The go-live policy as plain toggles, a live "what will happen" preview and
 // the history of recent runs.
 export function DomainAutomationCard() {
@@ -283,6 +339,7 @@ export function DomainAutomationCard() {
             {t('automation.www.help')}
           </p>
         </div>
+        <DnsWriter current={data.dns_provider_plugin} />
         {update.isError ? (
           <p className="text-xs text-destructive">{update.error.message}</p>
         ) : null}

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1453 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1456 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -492,6 +492,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/database-upgrades", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutPlatformUpgradePolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetGlobalDeployFreeze", Description: "OAuth settings: GET is AbilityRead, PUT is AbilityRoot, matching /api/v1/settings/ingress's own tiers. Global deploy freeze windows apply to every app, so writing them is root-only."},
 	{Method: "PUT", Path: "/api/v1/settings/deploy-freeze", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutGlobalDeployFreeze", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDNSProviderPlugin", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/dns-provider-plugin", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetDNSProviderPlugin", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetDomainAutomation", Description: ""},
 	{Method: "PUT", Path: "/api/v1/settings/domain-automation", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateDomainAutomation", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/oauth", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListOAuthSettings", Description: ""},
@@ -1117,6 +1119,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/plugins/{name}/panels/{panel}/actions/{action}", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handlePluginPanelAction", Description: ""},
 	{Method: "GET", Path: "/api/v1/plugins/{name}/panels/{panel}/data", Ability: "AbilityRead", Group: "Other", Handler: "handlePluginPanelData", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugins/{name}/restart", Ability: "AbilityRoot", Group: "Other", Handler: "handleRestartPlugin", Description: ""},
+	{Method: "POST", Path: "/api/v1/plugins/{name}/test", Ability: "AbilityRoot", Group: "Other", Handler: "handleTestPlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/plugins/{name}/upgrade", Ability: "AbilityRoot", Group: "Other", Handler: "handleUpgradePlugin", Description: ""},
 	{Method: "POST", Path: "/api/v1/preflight", Ability: "AbilityWrite", Group: "Other", Handler: "handlePreflightNew", Description: ""},
 	{Method: "GET", Path: "/api/v1/private-networks", Ability: "AbilityRead", Group: "Other", Handler: "handleListPrivateNetworks", Description: ""},

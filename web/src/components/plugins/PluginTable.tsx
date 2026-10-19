@@ -25,6 +25,7 @@ import {
   useRestartPlugin,
   type Plugin,
 } from '../../queries/plugins'
+import { DnsProviderControls } from './DnsProviderControls'
 import { VerificationBadge } from './PluginReview'
 
 function StateBadge({ plugin }: Readonly<{ plugin: Plugin }>) {
@@ -142,6 +143,9 @@ export function PluginTable({
                       verification={{ status: p.verification }}
                     />
                   </div>
+                  {p.kind === 'dns_provider' && approved ? (
+                    <DnsProviderControls plugin={p} />
+                  ) : null}
                   {p.last_error ? (
                     <p className="mt-1 text-xs text-destructive">
                       {t('lastError', { message: p.last_error })}

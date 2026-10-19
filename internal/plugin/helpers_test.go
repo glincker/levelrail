@@ -262,6 +262,7 @@ type fakeRPC struct {
 	panelReqs   []*pluginpb.PanelDataRequest
 	actionResp  *pluginpb.PanelActionResponse
 	actionReqs  []*pluginpb.PanelActionRequest
+	dns         fakeDNS
 }
 
 func (r *fakeRPC) PanelData(ctx context.Context, req *pluginpb.PanelDataRequest) (*pluginpb.PanelDataResponse, error) {
@@ -310,6 +311,58 @@ func (r *fakeRPC) Send(ctx context.Context, req *pluginpb.SendRequest) (*pluginp
 		return nil, r.sendErr
 	}
 	return r.sendResp, nil
+}
+
+type fakeDNS struct {
+	zones   []string
+	records []*pluginpb.DnsRecord
+	outcome *pluginpb.DnsOutcome
+	present bool
+	err     error
+	secrets []string
+	calls   []string
+}
+
+func (r *fakeRPC) dnsOut() *pluginpb.DnsOutcome {
+	if r.dns.outcome != nil {
+		return r.dns.outcome
+	}
+	return &pluginpb.DnsOutcome{Ok: true}
+}
+
+func (r *fakeRPC) ListZones(_ context.Context, req *pluginpb.ListZonesRequest) (*pluginpb.ListZonesResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.dns.secrets, r.dns.calls = append(r.dns.secrets, req.GetSecret()), append(r.dns.calls, "list_zones")
+	return &pluginpb.ListZonesResponse{Outcome: r.dnsOut(), Zones: r.dns.zones}, r.dns.err
+}
+
+func (r *fakeRPC) ListRecords(_ context.Context, req *pluginpb.ListRecordsRequest) (*pluginpb.ListRecordsResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.dns.secrets, r.dns.calls = append(r.dns.secrets, req.GetSecret()), append(r.dns.calls, "list_records")
+	return &pluginpb.ListRecordsResponse{Outcome: r.dnsOut(), Records: r.dns.records}, r.dns.err
+}
+
+func (r *fakeRPC) UpsertRecord(_ context.Context, req *pluginpb.UpsertRecordRequest) (*pluginpb.UpsertRecordResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.dns.secrets, r.dns.calls = append(r.dns.secrets, req.GetSecret()), append(r.dns.calls, "upsert_record")
+	return &pluginpb.UpsertRecordResponse{Outcome: r.dnsOut()}, r.dns.err
+}
+
+func (r *fakeRPC) DeleteRecord(_ context.Context, req *pluginpb.DeleteRecordRequest) (*pluginpb.DeleteRecordResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.dns.secrets, r.dns.calls = append(r.dns.secrets, req.GetSecret()), append(r.dns.calls, "delete_record")
+	return &pluginpb.DeleteRecordResponse{Outcome: r.dnsOut()}, r.dns.err
+}
+
+func (r *fakeRPC) VerifyRecord(_ context.Context, req *pluginpb.VerifyRecordRequest) (*pluginpb.VerifyRecordResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.dns.secrets, r.dns.calls = append(r.dns.secrets, req.GetSecret()), append(r.dns.calls, "verify_record")
+	return &pluginpb.VerifyRecordResponse{Outcome: r.dnsOut(), Present: r.dns.present}, r.dns.err
 }
 
 type closeFn func() error

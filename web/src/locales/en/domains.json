@@ -598,6 +598,14 @@
       "redirect_to_apex": "Redirect www to the apex",
       "redirect_to_www": "Redirect the apex to www",
       "help": "Needs the partner host, which is added for you when a redirect is chosen."
+    },
+    "dnsWriter": {
+      "label": "DNS record writer",
+      "builtIn": "The built-in client",
+      "plugin": "The {{name}} plugin",
+      "help": "Choose which one adds the DNS record when you fix a domain. Test a plugin on the Plugins page first.",
+      "managePlugins": "Manage DNS plugins",
+      "saved": "DNS record writer saved"
     }
   },
   "standalone": {

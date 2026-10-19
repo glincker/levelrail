@@ -6,7 +6,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.1
-// source: plugin/v1/plugin.proto
+// source: proto/plugin/v1/plugin.proto
 
 package pluginpb
 
@@ -167,7 +167,7 @@ var PluginService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "plugin/v1/plugin.proto",
+	Metadata: "proto/plugin/v1/plugin.proto",
 }
 
 const (
@@ -274,7 +274,7 @@ var NotificationChannelService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "plugin/v1/plugin.proto",
+	Metadata: "proto/plugin/v1/plugin.proto",
 }
 
 const (
@@ -422,5 +422,267 @@ var PanelService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "plugin/v1/plugin.proto",
+	Metadata: "proto/plugin/v1/plugin.proto",
+}
+
+const (
+	DnsProviderService_ListZones_FullMethodName    = "/levelrail.plugin.v1.DnsProviderService/ListZones"
+	DnsProviderService_ListRecords_FullMethodName  = "/levelrail.plugin.v1.DnsProviderService/ListRecords"
+	DnsProviderService_UpsertRecord_FullMethodName = "/levelrail.plugin.v1.DnsProviderService/UpsertRecord"
+	DnsProviderService_DeleteRecord_FullMethodName = "/levelrail.plugin.v1.DnsProviderService/DeleteRecord"
+	DnsProviderService_VerifyRecord_FullMethodName = "/levelrail.plugin.v1.DnsProviderService/VerifyRecord"
+)
+
+// DnsProviderServiceClient is the client API for DnsProviderService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// DnsProviderService is served by plugins whose kind is dns_provider. Every
+// request carries the credential for that one call in secret, which the
+// plugin must not persist or log.
+type DnsProviderServiceClient interface {
+	ListZones(ctx context.Context, in *ListZonesRequest, opts ...grpc.CallOption) (*ListZonesResponse, error)
+	ListRecords(ctx context.Context, in *ListRecordsRequest, opts ...grpc.CallOption) (*ListRecordsResponse, error)
+	UpsertRecord(ctx context.Context, in *UpsertRecordRequest, opts ...grpc.CallOption) (*UpsertRecordResponse, error)
+	DeleteRecord(ctx context.Context, in *DeleteRecordRequest, opts ...grpc.CallOption) (*DeleteRecordResponse, error)
+	VerifyRecord(ctx context.Context, in *VerifyRecordRequest, opts ...grpc.CallOption) (*VerifyRecordResponse, error)
+}
+
+type dnsProviderServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewDnsProviderServiceClient(cc grpc.ClientConnInterface) DnsProviderServiceClient {
+	return &dnsProviderServiceClient{cc}
+}
+
+func (c *dnsProviderServiceClient) ListZones(ctx context.Context, in *ListZonesRequest, opts ...grpc.CallOption) (*ListZonesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListZonesResponse)
+	err := c.cc.Invoke(ctx, DnsProviderService_ListZones_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dnsProviderServiceClient) ListRecords(ctx context.Context, in *ListRecordsRequest, opts ...grpc.CallOption) (*ListRecordsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListRecordsResponse)
+	err := c.cc.Invoke(ctx, DnsProviderService_ListRecords_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dnsProviderServiceClient) UpsertRecord(ctx context.Context, in *UpsertRecordRequest, opts ...grpc.CallOption) (*UpsertRecordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpsertRecordResponse)
+	err := c.cc.Invoke(ctx, DnsProviderService_UpsertRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dnsProviderServiceClient) DeleteRecord(ctx context.Context, in *DeleteRecordRequest, opts ...grpc.CallOption) (*DeleteRecordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteRecordResponse)
+	err := c.cc.Invoke(ctx, DnsProviderService_DeleteRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *dnsProviderServiceClient) VerifyRecord(ctx context.Context, in *VerifyRecordRequest, opts ...grpc.CallOption) (*VerifyRecordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(VerifyRecordResponse)
+	err := c.cc.Invoke(ctx, DnsProviderService_VerifyRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// DnsProviderServiceServer is the server API for DnsProviderService service.
+// All implementations must embed UnimplementedDnsProviderServiceServer
+// for forward compatibility.
+//
+// DnsProviderService is served by plugins whose kind is dns_provider. Every
+// request carries the credential for that one call in secret, which the
+// plugin must not persist or log.
+type DnsProviderServiceServer interface {
+	ListZones(context.Context, *ListZonesRequest) (*ListZonesResponse, error)
+	ListRecords(context.Context, *ListRecordsRequest) (*ListRecordsResponse, error)
+	UpsertRecord(context.Context, *UpsertRecordRequest) (*UpsertRecordResponse, error)
+	DeleteRecord(context.Context, *DeleteRecordRequest) (*DeleteRecordResponse, error)
+	VerifyRecord(context.Context, *VerifyRecordRequest) (*VerifyRecordResponse, error)
+	mustEmbedUnimplementedDnsProviderServiceServer()
+}
+
+// UnimplementedDnsProviderServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedDnsProviderServiceServer struct{}
+
+func (UnimplementedDnsProviderServiceServer) ListZones(context.Context, *ListZonesRequest) (*ListZonesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListZones not implemented")
+}
+func (UnimplementedDnsProviderServiceServer) ListRecords(context.Context, *ListRecordsRequest) (*ListRecordsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListRecords not implemented")
+}
+func (UnimplementedDnsProviderServiceServer) UpsertRecord(context.Context, *UpsertRecordRequest) (*UpsertRecordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpsertRecord not implemented")
+}
+func (UnimplementedDnsProviderServiceServer) DeleteRecord(context.Context, *DeleteRecordRequest) (*DeleteRecordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteRecord not implemented")
+}
+func (UnimplementedDnsProviderServiceServer) VerifyRecord(context.Context, *VerifyRecordRequest) (*VerifyRecordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method VerifyRecord not implemented")
+}
+func (UnimplementedDnsProviderServiceServer) mustEmbedUnimplementedDnsProviderServiceServer() {}
+func (UnimplementedDnsProviderServiceServer) testEmbeddedByValue()                            {}
+
+// UnsafeDnsProviderServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to DnsProviderServiceServer will
+// result in compilation errors.
+type UnsafeDnsProviderServiceServer interface {
+	mustEmbedUnimplementedDnsProviderServiceServer()
+}
+
+func RegisterDnsProviderServiceServer(s grpc.ServiceRegistrar, srv DnsProviderServiceServer) {
+	// If the following call panics, it indicates UnimplementedDnsProviderServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&DnsProviderService_ServiceDesc, srv)
+}
+
+func _DnsProviderService_ListZones_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListZonesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DnsProviderServiceServer).ListZones(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DnsProviderService_ListZones_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DnsProviderServiceServer).ListZones(ctx, req.(*ListZonesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DnsProviderService_ListRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRecordsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DnsProviderServiceServer).ListRecords(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DnsProviderService_ListRecords_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DnsProviderServiceServer).ListRecords(ctx, req.(*ListRecordsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DnsProviderService_UpsertRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpsertRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DnsProviderServiceServer).UpsertRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DnsProviderService_UpsertRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DnsProviderServiceServer).UpsertRecord(ctx, req.(*UpsertRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DnsProviderService_DeleteRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DnsProviderServiceServer).DeleteRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DnsProviderService_DeleteRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DnsProviderServiceServer).DeleteRecord(ctx, req.(*DeleteRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _DnsProviderService_VerifyRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DnsProviderServiceServer).VerifyRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DnsProviderService_VerifyRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DnsProviderServiceServer).VerifyRecord(ctx, req.(*VerifyRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// DnsProviderService_ServiceDesc is the grpc.ServiceDesc for DnsProviderService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var DnsProviderService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "levelrail.plugin.v1.DnsProviderService",
+	HandlerType: (*DnsProviderServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListZones",
+			Handler:    _DnsProviderService_ListZones_Handler,
+		},
+		{
+			MethodName: "ListRecords",
+			Handler:    _DnsProviderService_ListRecords_Handler,
+		},
+		{
+			MethodName: "UpsertRecord",
+			Handler:    _DnsProviderService_UpsertRecord_Handler,
+		},
+		{
+			MethodName: "DeleteRecord",
+			Handler:    _DnsProviderService_DeleteRecord_Handler,
+		},
+		{
+			MethodName: "VerifyRecord",
+			Handler:    _DnsProviderService_VerifyRecord_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "proto/plugin/v1/plugin.proto",
 }

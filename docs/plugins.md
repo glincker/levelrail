@@ -5,7 +5,7 @@ description: "Run signed, operator-approved plugins in locked-down containers. T
 "og:url": "https://docs.levelrail.com/plugins"
 ---
 
-A plugin is a separate program that extends the control plane without being loaded into it. It runs in its own container, talks to the control plane over a local socket, and can only do what you approved. This first release supports one kind: a notification channel that delivers alert events somewhere the built-in channels do not.
+A plugin is a separate program that extends the control plane without being loaded into it. It runs in its own container, talks to the control plane over a local socket, and can only do what you approved. It supports three kinds: a notification channel that delivers alert events somewhere the built-in channels do not, a panel provider, and a DNS provider that writes DNS records (see [DNS provider plugins](/plugins-first-party#dns-provider-plugins)).
 
 Plugins are experimental and off by default. Set `APP_EXPERIMENTAL=plugins` and restart (see [experimental features](/experimental-features)). The decisions behind this design are in ADR 034.
 
@@ -165,7 +165,7 @@ Once a plugin is enabled, add a notification channel whose kind is `plugin:<name
 
 ## Write a plugin
 
-The contract is `proto/plugin/v1/plugin.proto`: `Describe` (name, version, kind, requested abilities, config schema, with contract version negotiation), `Health`, for notification channels `Send`, and for panel providers `PanelService` (`PanelData`, `PanelAction`). The plugin listens on the unix socket path in the `PLUGIN_SOCKET` environment variable. A complete example lives in `test/fixtures/plugin-notify`, including a small signer that creates a key and signs a manifest.
+The contract is `proto/plugin/v1/plugin.proto`: `Describe` (name, version, kind, requested abilities, config schema, with contract version negotiation), `Health`, for notification channels `Send`, for panel providers `PanelService` (`PanelData`, `PanelAction`), and for DNS providers `DnsProviderService` (`ListZones`, `ListRecords`, `UpsertRecord`, `DeleteRecord`, `VerifyRecord`, each carrying the credential for that call only). The plugin listens on the unix socket path in the `PLUGIN_SOCKET` environment variable. A complete example lives in `test/fixtures/plugin-notify`, including a small signer that creates a key and signs a manifest.
 
 ## Marketplace
 
@@ -194,6 +194,6 @@ levelrail-cli plugins marketplace sources add --url https://plugins.example.com/
 - A hosted public index. The control plane ships with no default source until the project publishes one.
 - More UI extension points. Plugins can add panels and CLI commands, but not whole pages or forms yet.
 - Auto-update. Upgrades are an explicit operator action.
-- Other plugin kinds such as DNS or CDN providers, and plugins on remote nodes.
+- CDN providers and other kinds, Route53 as a DNS plugin, and plugins on remote nodes.
 - Per-host network enforcement and a supply chain scan of the plugin image.
 - Rootless Docker uid mapping for the socket directory.

@@ -49,6 +49,8 @@ type dnsTarget struct {
 	Provider string
 	Zone     string
 	Proxy    dnsProxier
+	// Plugin names the dns_provider plugin serving this target, empty for built-ins.
+	Plugin string
 }
 
 // domainDNSResult is one domain's automatic DNS outcome.
@@ -105,6 +107,9 @@ func dnsAutomationBudget() time.Duration {
 func (rt *Router) resolveDNSTarget(ctx context.Context, domain string) (*dnsTarget, error) {
 	if rt.domainAuto.resolveTarget != nil {
 		return rt.domainAuto.resolveTarget(ctx, domain)
+	}
+	if t, err := rt.pluginDNSTarget(ctx, domain); t != nil || err != nil {
+		return t, err
 	}
 	token, err := rt.cloudflareDNSToken(ctx)
 	if err != nil {
@@ -288,6 +293,10 @@ func (rt *Router) writeDomainDNS(ctx context.Context, r *http.Request, app, doma
 	if _, err := t.Manager.AppendRecords(ctx, t.Zone, []libdns.Record{rr}); err != nil {
 		rt.logger.Error("api: dns automation: create record failed", slog.String("error", err.Error()), slog.String("domain", domain))
 		res.DNS, res.Message = dnsResultError, "the DNS provider rejected the record"
+		if errors.Is(err, errDNSNotConfirmed) {
+			res.Message = "the DNS plugin wrote the record but could not confirm it is live; check the zone, then run the fix again"
+			undo = append(undo, undoAction{Kind: undoKindDNSRecord, Domain: domain, Name: d.Name, RecordType: d.Type, Value: d.Value})
+		}
 		return res, undo
 	}
 	action := store.AuditActionDNSRecordCreated

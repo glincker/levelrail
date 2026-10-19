@@ -11,9 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Extension kinds. Slice 1 ships one.
+// Extension kinds. KindPanelProvider is declared in panel.go.
 const (
 	KindNotificationChannel = "notification_channel"
+	KindDNSProvider         = "dns_provider"
 )
 
 // Abilities a plugin may be granted. Both come from the scoped-token
@@ -119,8 +120,8 @@ func (m *Manifest) validate() error {
 	if !versionRegexp.MatchString(m.Version) {
 		return invalid("version is missing or malformed")
 	}
-	if m.Kind != KindNotificationChannel && m.Kind != KindPanelProvider {
-		return invalid("kind %q is not supported, want %s or %s", m.Kind, KindNotificationChannel, KindPanelProvider)
+	if m.Kind != KindNotificationChannel && m.Kind != KindPanelProvider && m.Kind != KindDNSProvider {
+		return invalid("kind %q is not supported, want %s, %s or %s", m.Kind, KindNotificationChannel, KindPanelProvider, KindDNSProvider)
 	}
 	if strings.TrimSpace(m.Publisher) == "" || len(m.Publisher) > 80 {
 		return invalid("publisher is required (80 characters at most)")
@@ -135,8 +136,8 @@ func (m *Manifest) validate() error {
 	if err != nil {
 		return err
 	}
-	if m.Kind == KindNotificationChannel && !contains(abilities, AbilityRead) {
-		return invalid("a notification_channel plugin must request the read ability to receive events")
+	if (m.Kind == KindNotificationChannel || m.Kind == KindDNSProvider) && !contains(abilities, AbilityRead) {
+		return invalid("a %s plugin must request the read ability to be called", m.Kind)
 	}
 	m.Abilities = abilities
 	if len(m.OutboundHosts) > maxOutboundHosts {

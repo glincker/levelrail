@@ -237,5 +237,19 @@
       "error": "Error",
       "unknown": "Unknown"
     }
+  },
+  "dns": {
+    "active": "Writes your DNS records",
+    "inactive": "Not used for DNS records, the built-in client writes them",
+    "use": "Use for DNS records",
+    "useBuiltIn": "Use the built-in client",
+    "test": "Test connection",
+    "testing": "Testing...",
+    "testOk_one": "Connected, the plugin can see {{count}} zone",
+    "testOk_other": "Connected, the plugin can see {{count}} zones",
+    "testFailed": "Test failed: {{message}}",
+    "pluginOn": "DNS records are now written by {{name}}",
+    "builtInOn": "DNS records are written by the built-in client again",
+    "needsRunning": "Approve and enable the plugin to test it or use it for DNS records."
   }
 }

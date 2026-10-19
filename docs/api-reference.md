@@ -262,6 +262,7 @@ Endpoints for:
 | GET | /api/v1/iam/suggestions | AbilityRead | handleIAMSuggestions |
 | GET | /api/v1/security/hsts | AbilityRoot | handleGetHSTS |
 | PUT | /api/v1/security/hsts | AbilityRoot | handlePutHSTS |
+| GET | /api/v1/security/reachability | AbilityRoot | handleSecurityReachability |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -275,7 +276,8 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/security/reachability | AbilityRoot | handleSecurityReachability |
+| GET | /api/v1/settings/dns-provider-plugin | AbilityRead | handleGetDNSProviderPlugin |
+| PUT | /api/v1/settings/dns-provider-plugin | AbilityRoot | handleSetDNSProviderPlugin |
 
 </Accordion>
 
@@ -1678,6 +1680,7 @@ Routes that do not fit an existing group.
 | GET | /api/v1/inbox/preferences | AbilityRead | handleGetInboxPrefs |
 | PUT | /api/v1/inbox/preferences | AbilityWrite | handlePutInboxPrefs |
 | POST | /api/v1/images/signature-policy/validate | AbilityWrite | handleValidateImageSignaturePolicy |
+| POST | /api/v1/plugins/{name}/test | AbilityRoot | handleTestPlugin |
 
 ## See also
 

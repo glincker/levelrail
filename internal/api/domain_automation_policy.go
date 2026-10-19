@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"regexp"
 	"strings"
 )
+
+var dnsPluginNamePattern = regexp.MustCompile(`^[a-z][a-z0-9-]{1,39}$`)
 
 // www_policy values.
 const (
@@ -24,6 +27,8 @@ type domainAutomationPolicy struct {
 	AttachWWWCounterpart  bool   `json:"attach_www_counterpart"`
 	WildcardForBaseDomain bool   `json:"wildcard_for_base_domain"`
 	VerifyAfter           bool   `json:"verify_after"`
+	// DNSProviderPlugin names the dns_provider plugin that writes DNS records, empty for the built-in client.
+	DNSProviderPlugin string `json:"dns_provider_plugin"`
 }
 
 // domainAutomationOverride is the stored (and per-request) form: an omitted
@@ -37,6 +42,14 @@ type domainAutomationOverride struct {
 	AttachWWWCounterpart  *bool   `json:"attach_www_counterpart,omitempty"`
 	WildcardForBaseDomain *bool   `json:"wildcard_for_base_domain,omitempty"`
 	VerifyAfter           *bool   `json:"verify_after,omitempty"`
+	DNSProviderPlugin     *string `json:"dns_provider_plugin,omitempty"`
+}
+
+func (o domainAutomationOverride) dnsPluginName() string {
+	if o.DNSProviderPlugin == nil {
+		return ""
+	}
+	return *o.DNSProviderPlugin
 }
 
 func validWWWPolicy(v string) bool {
@@ -50,6 +63,9 @@ func validWWWPolicy(v string) bool {
 func (o domainAutomationOverride) validate() string {
 	if o.WWWPolicy != nil && !validWWWPolicy(*o.WWWPolicy) {
 		return "www_policy must be off, redirect_to_apex or redirect_to_www"
+	}
+	if o.DNSProviderPlugin != nil && *o.DNSProviderPlugin != "" && !dnsPluginNamePattern.MatchString(*o.DNSProviderPlugin) {
+		return "dns_provider_plugin must be an installed plugin name or empty"
 	}
 	return ""
 }
@@ -76,6 +92,9 @@ func (o domainAutomationOverride) apply(p domainAutomationPolicy) domainAutomati
 	}
 	if o.VerifyAfter != nil {
 		p.VerifyAfter = *o.VerifyAfter
+	}
+	if o.DNSProviderPlugin != nil {
+		p.DNSProviderPlugin = *o.DNSProviderPlugin
 	}
 	return p
 }
@@ -176,6 +195,13 @@ func (rt *Router) handleUpdateDomainAutomation(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if msg := ov.validate(); msg != "" {
+		writeError(w, http.StatusBadRequest, msg)
+		return
+	}
+	if ov.DNSProviderPlugin == nil {
+		ov.DNSProviderPlugin = rt.storedAutomation(r.Context()).DNSProviderPlugin
+	}
+	if msg := rt.checkDNSProviderPlugin(r.Context(), ov); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
 		return
 	}

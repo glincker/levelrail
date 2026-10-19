@@ -126,6 +126,13 @@ func dnsZoneApexGuess(domain string) string {
 func (rt *Router) resolveDNSRecordManager(ctx context.Context, domain string) (dnsrecords.Manager, string, string, error) {
 	zone := dnsZoneApexGuess(domain)
 
+	if t, err := rt.pluginDNSTarget(ctx, domain); t != nil || err != nil {
+		if err != nil {
+			return nil, "", "", err
+		}
+		return t.Manager, t.Provider, t.Zone, nil
+	}
+
 	mgr, err := rt.resolveCloudflareRecordManager(ctx)
 	if err != nil {
 		return nil, "", "", err

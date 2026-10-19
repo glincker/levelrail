@@ -54,6 +54,19 @@ levelrail-cli channels create --name oncall-sms --kind plugin:twilio-sms --notif
 
 Alert rules then deliver through `plugin:twilio-sms` like any other channel, with the same delivery history.
 
+## DNS provider plugins
+
+`cloudflare-dns` is the first plugin of kind `dns_provider`: it lists zones and creates, replaces, deletes and verifies records in Cloudflare. It needs no config and no credential of its own. The control plane hands it the Cloudflare DNS token you already stored under Settings on every call, and the plugin never keeps or logs it. Outbound host: `api.cloudflare.com`.
+
+By default the built-in client writes DNS records. To use the plugin instead, build, install, approve and enable it, then:
+
+- Plugins page: on the plugin's row, press Test connection (it lists your zones with the stored token), then Use for DNS records.
+- Domains page: pick the plugin under DNS record writer in the domain automation card.
+- CLI: `levelrail-cli plugins test cloudflare-dns`, then `levelrail-cli plugins dns-provider cloudflare-dns`. `plugins dns-provider --off` returns to the built-in client, and with no argument it shows the current choice.
+- API: `POST /api/v1/plugins/{name}/test` and `GET` or `PUT /api/v1/settings/dns-provider-plugin` (writes need root).
+
+Then the domain Fix button, go-live, add-domain automation and the records editor all write through the plugin. There is no automatic fallback: if the plugin is down or paused, the fix reports it, so you always know which code wrote a record. Every write is verified afterwards, and a record the plugin accepted but cannot see is reported as unconfirmed and stays undoable. The Cloudflare proxy toggle is not applied to records the plugin writes yet. See ADR 038.
+
 ## Self-hosted services
 
 Zulip and Matrix run on your own server, so the shipped manifest lists a placeholder host (`zulip.example.com`, `matrix.example.com`). Hosts a plugin declares are shown at approval but are not yet enforced per host (see [plugins](/plugins)), so the placeholder gives the plugin network access and the plugin itself only ever calls the `base_url` or `homeserver` you configure. To declare your real host, copy the manifest, change `outbound_hosts`, sign it with your own key and install that copy. The image digest stays the same.
