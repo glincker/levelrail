@@ -511,6 +511,9 @@ func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, 
 
 	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 	next(rec, r)
+	if rec.status < http.StatusBadRequest {
+		rt.markSearchDirty()
+	}
 
 	actorName := rt.auditActorName(r.Context(), actorType, actorID, tokenName)
 	rt.recordAudit(r.Context(), r, required, actorType, actorID, actorName, rec.status)

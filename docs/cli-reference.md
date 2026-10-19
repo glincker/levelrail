@@ -1065,6 +1065,16 @@ levelrail-cli janitor policy [--enabled=BOOL] [--dry-run=BOOL] [--interval-minut
 ```
 Disk cleanup with preview and quarantine. See [Automatic cleanup](/janitor).
 
+## Search
+
+```
+levelrail-cli search <query...> [--kind K] [--limit N] [--json]
+levelrail-cli search saved list
+levelrail-cli search saved add <name> <query...>
+levelrail-cli search saved rm <id>
+```
+One search over apps, databases, nodes, domains, templates, settings, docs and actions. Scopes (`app:`, `env:`, `tag:`, `node:`, `kind:`) narrow the result, the rest is free text. You only ever see what your token may see, and an action hit appears only when you hold the ability it needs: `levelrail-cli search kind:action restart api`. See [Unified search](/search).
+
 ## Logs
 
 See [Log archive](/log-archive).

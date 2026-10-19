@@ -77,6 +77,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/appsleep"
 	"github.com/GLINCKER/levelrail/internal/archive"
 	"github.com/GLINCKER/levelrail/internal/compliance"
+	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/sourcecache"
 	"log/slog"
@@ -637,26 +638,28 @@ type Router struct {
 	featureFlags                 FeatureFlagStore             // always set, same "core Store interface" shape as scheduledTasks above
 	dashboards                   DashboardStore               // nil when the backing store lacks custom dashboards
 	chaosResults                 ChaosStore                   // nil when the backing store lacks chaos results
-	tags                         TagStore                     // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
-	appIntegrations              AppIntegrationStore          // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
-	bitbucketApp                 BitbucketAppStore            // always set, same "core Store interface" shape as gitlabApp above
-	bitbucketAppSecrets          BitbucketAppSecrets          // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
-	bitbucketAppClient           BitbucketAppClient           // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
-	bitbucketAppState            *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
-	giteaApp                     GiteaAppStore                // always set, same "core Store interface" shape as gitlabApp above
-	giteaAppSecrets              GiteaAppSecrets              // nil is valid: every gitea-app route that needs it returns 501, same shape as gitlabAppSecrets above
-	giteaAppClient               GiteaAppClient               // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
-	giteaAppState                *pendingState                // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
-	setupGuide                   SetupGuideStore              // nil unless the store implements it: /api/v1/setup/guide routes return 501
-	onboarding                   OnboardingStore              // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
-	dbPinger                     DBPinger                     // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
-	doctorDiskWarningBytes       int64                        // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
-	ingressPortOwner             IngressPortOwner             // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
-	doctorHTTPPort               int                          // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
-	doctorHTTPSPort              int                          // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
-	webhookDeliveries            WebhookDeliveryStore         // always set, same "core Store interface" shape as deployAttempts above
-	policies                     PolicyStore                  // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
-	deviceFlow                   *apiRateLimiter              // per-IP device-login-start token bucket
+	searchOnce                   sync.Once
+	searchSvc                    *search.Service      // built lazily by searchService, see search.go
+	tags                         TagStore             // always set, same "core Store interface" shape as scheduledTasks above: tags/app_tags always exist, empty is a valid, non-error result
+	appIntegrations              AppIntegrationStore  // always set, same "core Store interface" shape as scheduledTasks above: attaching/listing needs no secrets configuration, only storing a field value does (rt.secrets, checked in handleAttachAppIntegration)
+	bitbucketApp                 BitbucketAppStore    // always set, same "core Store interface" shape as gitlabApp above
+	bitbucketAppSecrets          BitbucketAppSecrets  // nil is valid: every bitbucket-app route that needs it returns 501, same shape as gitlabAppSecrets above
+	bitbucketAppClient           BitbucketAppClient   // always set (NewRouter defaults it to a real *bitbucketapp.Client), overridable in this package's own tests
+	bitbucketAppState            *pendingState        // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
+	giteaApp                     GiteaAppStore        // always set, same "core Store interface" shape as gitlabApp above
+	giteaAppSecrets              GiteaAppSecrets      // nil is valid: every gitea-app route that needs it returns 501, same shape as gitlabAppSecrets above
+	giteaAppClient               GiteaAppClient       // always set (NewRouter defaults it to a real *giteaapp.Client), overridable in this package's own tests
+	giteaAppState                *pendingState        // always set (NewRouter constructs one unconditionally); purely in-memory OAuth CSRF state, see pendingState's own doc comment
+	setupGuide                   SetupGuideStore      // nil unless the store implements it: /api/v1/setup/guide routes return 501
+	onboarding                   OnboardingStore      // always set, same "core Store interface, not an optional plug-in" shape as ingressSettings above: the row always exists (migrations/0067's own seeded row)
+	dbPinger                     DBPinger             // nil is valid: GET /system/doctor reports its database check as unknown, same shape as dockerPinger above
+	doctorDiskWarningBytes       int64                // 0 means "use defaultDoctorDiskWarningBytes", set via WithDoctorDiskWarningBytes
+	ingressPortOwner             IngressPortOwner     // nil is valid: GET /system/doctor's port checks can't tell this control plane's own ingress apart from another process, same "can't check further, don't guess" shape as dbPinger above
+	doctorHTTPPort               int                  // 0 means "use defaultDoctorHTTPPort (80)", set via WithDoctorIngressPorts
+	doctorHTTPSPort              int                  // 0 means "use defaultDoctorHTTPSPort (443)", set via WithDoctorIngressPorts
+	webhookDeliveries            WebhookDeliveryStore // always set, same "core Store interface" shape as deployAttempts above
+	policies                     PolicyStore          // always set, same "core Store interface" shape as certs above: iam_policies/iam_policy_attachments always exist, empty is a valid, non-error result
+	deviceFlow                   *apiRateLimiter      // per-IP device-login-start token bucket
 	instance                     InstanceStore
 	instanceLimit                *apiRateLimiter // per-IP budget for the public identity endpoint
 	instanceMemo                 *instanceCache

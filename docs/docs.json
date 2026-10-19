@@ -326,7 +326,8 @@
               "resource-advisor",
               "feature-flags",
               "log-archive",
-              "janitor"
+              "janitor",
+              "search"
             ],
             "icon": "/assets/icons/flask.svg"
           }

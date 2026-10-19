@@ -141,6 +141,17 @@ How to read these:
 
 Not yet measured: daemon restart (real engine stop), disk pressure on the host volume with the collector in the loop, control plane restart under systemd socket activation, multi-replica kill, and everything across nodes or zones.
 
+## Unified search
+
+Measured by `go test ./internal/api -run TestSearch_ThousandAppsP95` on 2026-10-18. Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, SQLite on local SSD. 1000 apps, an admin token, 6 query shapes (exact name, action phrase, scoped, short term, broad term), 60 requests per run through the full HTTP stack including authentication and the per-hit authorization filter, three runs.
+
+| Metric | Target | Measured |
+| --- | --- | --- |
+| p50 latency | not set | 10 to 11 ms |
+| p95 latency | under 50 ms | 17 to 21 ms |
+
+How to read this: the index holds roughly 8000 documents at 1000 apps (apps, domains, per-app actions, deployments, templates). Ranking looks at the best 500 candidates, so a very broad term costs the same as a narrow one. A caller with many IAM policies or team scoping pays more per hit than the admin token measured here, and that case is not yet measured.
+
 ## What is tested without Docker
 
 Zone-aware placement is tested against a fake fleet in `internal/placement`: replicas spread one per zone, and after losing a whole zone the replacement lands in a surviving zone. That test proves the scheduling decision, not request-level recovery, which is the unmeasured zone loss row above.

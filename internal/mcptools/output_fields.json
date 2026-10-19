@@ -1828,13 +1828,22 @@
   "archive_policies",
   "bucket",
   "created_at",
+  "default_for",
+  "directory",
   "endpoint",
   "id",
+  "kind",
+  "monthly_cost_usd",
   "name",
+  "node_id",
+  "objects",
+  "over_quota",
   "path_style",
   "preset",
   "provider",
-  "region"
+  "quota_bytes",
+  "region",
+  "used_bytes"
  ],
  "list_team_members": [
   "created_at",
@@ -2197,6 +2206,14 @@
   "drill_id",
   "status"
  ],
+ "search": [
+  "hits",
+  "total"
+ ],
+ "search_actions": [
+  "hits",
+  "total"
+ ],
  "set_app_domains": [
   "app",
   "changed",
@@ -2321,6 +2338,7 @@
   "ok"
  ],
  "test_storage_destination": [
+  "fix",
   "message",
   "ok",
   "reason",
