@@ -155,7 +155,26 @@
     "unlabeledTitle": "No zone labels yet",
     "unlabeledBody": "Without a zone label on at least one node, replicas are not spread across failure domains.",
     "fix": "Set a zone on a node",
-    "concentrated": "Most workloads sit in one zone, so losing it takes most of them down."
+    "concentrated": "Most workloads sit in one zone, so losing it takes most of them down.",
+    "whatIf": {
+      "title": "What if",
+      "failureHint": "Pick a zone to see where its workloads would be rescheduled. Nothing is moved.",
+      "failZone": "Lose {{zone}}",
+      "failureSummary": "{{lost}} nodes lost, {{displaced}} workloads displaced, {{stuck}} with nowhere to go.",
+      "failureOk": "Every displaced workload fits on the surviving nodes.",
+      "failureStuck": "Add capacity outside this zone, or loosen selectors, to survive losing it.",
+      "addTitle": "Simulate adding apps",
+      "addMemory": "Memory per app (MiB)",
+      "addCpu": "CPU per app (millicores)",
+      "addCount": "Number of apps",
+      "run": "Simulate",
+      "workload": "Workload",
+      "from": "From",
+      "to": "To",
+      "none": "No node",
+      "failed": "Simulation failed.",
+      "invalid": "Enter whole numbers, with at least one app."
+    }
   },
   "placement": {
     "title": "Placement",

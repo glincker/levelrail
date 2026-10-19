@@ -829,6 +829,8 @@ Endpoints for:
 | GET | /api/v1/nodes/join-tokens | AbilityRoot | handleListPendingNodeJoinTokens |
 | DELETE | /api/v1/nodes/join-tokens | AbilityRoot | handleRevokeNodeJoinTokens |
 | DELETE | /api/v1/nodes/join-tokens/{id} | AbilityRoot | handleRevokeNodeJoinToken |
+| GET | /api/v1/nodes/placement-simulation | AbilityRoot | handlePlacementSimulation |
+| GET | /api/v1/nodes/failure-simulation | AbilityRoot | handleFailureSimulation |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

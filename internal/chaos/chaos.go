@@ -17,6 +17,7 @@ const (
 	ControlPlaneBounce = "control-plane-restart"
 	DiskPressure       = "disk-pressure"
 	OOMDuringReadiness = "oom-during-readiness"
+	IngressSteady      = "ingress-steady"
 )
 
 // Result statuses.
@@ -41,6 +42,7 @@ func Catalog() []Info {
 		{ControlPlaneBounce, "Control plane restart under traffic", "the app container is untouched and the ingress comes back by itself"},
 		{DiskPressure, "Scratch volume filled", "the node disk space rule fires on the measured usage"},
 		{OOMDuringReadiness, "OOM kill during the readiness wait", "the deploy fails as OOMKilledDuringReadiness and the old version keeps serving"},
+		{IngressSteady, "Rising steady load through the ingress", "the lowest step runs clean; the highest clean step is recorded as this machine's ceiling"},
 	}
 }
 

@@ -13,7 +13,8 @@
     "daemon-unreachable": "Docker API unreachable during a deploy",
     "control-plane-restart": "Control plane restart under traffic",
     "disk-pressure": "Scratch volume filled",
-    "oom-during-readiness": "OOM kill during the readiness wait"
+    "oom-during-readiness": "OOM kill during the readiness wait",
+    "ingress-steady": "Rising steady load through the ingress"
   },
   "metrics": {
     "recovery": "Recovery",

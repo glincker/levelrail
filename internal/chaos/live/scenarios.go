@@ -44,6 +44,7 @@ func Run(ctx context.Context, name, hardwareNote string) (res chaos.Result) {
 		chaos.ControlPlaneBounce: controlPlaneRestart,
 		chaos.DiskPressure:       diskPressure,
 		chaos.OOMDuringReadiness: oomDuringReadiness,
+		chaos.IngressSteady:      ingressSteady,
 	}[name]
 	if fn == nil {
 		res.Status, res.Summary = chaos.StatusFailed, "unknown scenario "+name

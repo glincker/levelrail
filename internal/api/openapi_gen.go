@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1438 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1440 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -736,10 +736,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/vault", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateVaultSettings", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListNodes", Description: "Nodes: fleet-level infrastructure, not scoped to any one app, so every route here requires AbilityRoot specifically rather than AbilityRead/AbilityWrite: minting a join token or removing a node is a materially more sensitive operation than editing one app's config, the same reasoning secrets.go's AbilityWriteSensitive already applies one level down at the per-app layer."},
 	{Method: "GET", Path: "/api/v1/nodes/allocations", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeAllocations", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/failure-simulation", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFailureSimulation", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/join-tokens", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeJoinTokens", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/join-tokens", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleListPendingNodeJoinTokens", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/join-tokens", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeJoinToken", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/nodes/join-tokens/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRevokeNodeJoinToken", Description: ""},
+	{Method: "GET", Path: "/api/v1/nodes/placement-simulation", Ability: "AbilityRoot", Group: "Nodes", Handler: "handlePlacementSimulation", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/provision", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateNodeProvision", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/resource-usage", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleFleetResourceUsage", Description: "Fleet-wide latest CPU/memory/disk snapshot plus rollup (node_resource_usage.go), the node-scoped counterpart to GET /apps/resource-usage above: registered as a literal path segment under /nodes/, which Go's net/http mux matches ahead of the /nodes/{id} wildcard above regardless of registration order, the same precedent apps/resource-usage already relies on."},
 	{Method: "POST", Path: "/api/v1/nodes/ssh-provision", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCreateSSHNodeProvision", Description: "SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token). The show route stays a top-level sibling: nesting {id} under /nodes/ would conflict with /nodes/{id}/health."},

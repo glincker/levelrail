@@ -419,6 +419,21 @@ levelrail-cli nodes zones
 
 When at least one eligible node has a `zone` label, placement spreads across zones by default: the zone holding the fewest replicas of the same workload wins, then the zone carrying the fewest workloads overall, then the usual headroom order. Drains and auto-placement use the same ranking, so draining a node prefers another zone. If no node has a zone label nothing changes. A node with no `region` label shows the free-text region set on the node, if any. `GET /api/v1/nodes/zones` returns each zone with its nodes and workload counts, and the **Failure domains** card on the nodes page shows the same view, with a button to the node page when no zone is set yet.
 
+### Dry runs: where would it land, and what if a zone dies
+
+Both checks use the real scheduler on a copy of the fleet and change nothing.
+
+```bash
+levelrail-cli nodes simulate --memory 512 --count 3
+levelrail-cli nodes failure --zone a
+```
+
+- `nodes simulate` places `--count` identical apps in turn, each seeing the load the previous ones added, and prints the node, zone and reason for each, or why one is refused. `GET /api/v1/nodes/placement-simulation?cpu_milli=&memory_mib=&count=&selector=` returns the same.
+- `nodes failure` removes a zone (or one node with `--node`), reschedules every app and database on it onto the survivors, largest memory request first, and lists those with nowhere to go. `GET /api/v1/nodes/failure-simulation?zone=a` returns the same.
+- The **What if** panel on the Failure domains card on the nodes page runs both.
+
+This answers the scheduling question from reported capacity. It does not measure how long requests fail while a zone is lost; that run is not yet measured (see [benchmarks](/benchmarks)). Nodes that report no capacity are ranked last and flagged as unverified.
+
 ### The spread scheduler
 
 When a move or a drain has no explicit target, the scheduler picks the eligible node with the most headroom, breaking ties by load and then node id. A node is not eligible when it is cordoned, offline, missing a label the selector requires, or short of the CPU or memory the resource requests. See [Resource-aware placement](/resource-aware-placement).
@@ -978,6 +993,8 @@ levelrail-cli nodes add [--name NAME] [--mesh] [flags]
 levelrail-cli nodes move app|database <name> [--to <node-id>] [--wait] [flags]
 levelrail-cli nodes labels <id> [key=value ...] [flags]
 levelrail-cli nodes zones [flags]
+levelrail-cli nodes simulate [--cpu MILLI] [--memory MIB] [--count N] [--selector k=v] [flags]
+levelrail-cli nodes failure --zone Z | --node ID [flags]
 levelrail-cli nodes placement app|database <name> [key=value ...] [flags]
 levelrail-cli nodes connectivity [flags]
 levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]

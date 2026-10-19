@@ -138,8 +138,8 @@ Not yet measured: anything through the ingress, with Docker, across nodes or acr
 
 | Scenario | Rate | Result | Status |
 | --- | --- | --- | --- |
-| Steady state through the ingress, requests per second achieved | not set | not yet measured | not yet measured |
-| Steady state through the ingress, p50 / p95 / p99 latency | not set | not yet measured | not yet measured |
+| Steady state through the ingress, requests per second achieved | up to 12800 req/s | 12800 req/s, 1 replica, trivial fixture, no ceiling found (2026-10-19, laptop) | measured, single run |
+| Steady state through the ingress, p50 / p95 / p99 latency | not set | 0.66 / 1.82 / 9.51 ms at 12800 req/s (same run) | measured, single run |
 | Ingress overhead, p50 / p95 / p99 | not set | not yet measured | not yet measured |
 | Zone loss: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
 | Replica stop: dropped requests, error window, recovery | not set | not yet measured | not yet measured |
@@ -164,6 +164,22 @@ How to read these:
 - **control-plane-restart** restarts the reconcile engine and embedded ingress inside one process. It does not exercise systemd socket activation, so the 25 ms figure is not the figure for a real `systemctl restart`. The 4 s outage in [resilience](/resilience) was measured on a server and still stands for that path.
 - **disk-pressure** fills a size-limited tmpfs inside a throwaway container and feeds the measured usage to the real node disk space evaluator. It does not fill the host disk, so it proves the rule fires on the measured percentage, not that the host collector samples it.
 - **kill-container** is slower than the 1 s once measured on a server (`docker kill`, 2 vCPU droplet) in [resilience](/resilience). They differ in hardware, Docker engine and whether the container was recreated or restarted in place, so neither replaces the other.
+
+### Steady load through the embedded ingress (2026-10-19)
+
+Measured by `levelrail-cli bench chaos run ingress-steady` (build with `-tags chaoslive`) on 2026-10-19. Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Docker Desktop engine 28.3.0 with 7 GiB visible to Docker, node:22-alpine trivial fixture (returns a short string), one replica, TLS through the embedded ingress on loopback, open-loop constant arrival rate, 10 s per step, one run. The load driver and the stack share this laptop, so this is a floor for the driver plus ingress plus one trivial container, not a server figure.
+
+| Rate (req/s) | Achieved | Errors | p50 ms | p95 ms | p99 ms | Max ms |
+| --- | --- | --- | --- | --- | --- | --- |
+| 100 | 100 | 0 of 1000 | 2.68 | 3.11 | 3.73 | 7.4 |
+| 400 | 400 | 0 of 4000 | 1.08 | 1.70 | 2.69 | 19.8 |
+| 800 | 800 | 0 of 8000 | 0.77 | 1.17 | 2.21 | 8.5 |
+| 1600 | 1600 | 0 of 16000 | 0.46 | 0.65 | 1.11 | 6.2 |
+| 3200 | 3200 | 0 of 32000 | 0.31 | 0.56 | 1.20 | 9.0 |
+| 6400 | 6398 | 19 of 64000 | 0.45 | 1.59 | 10.31 | 68.4 |
+| 12800 | 12800 | 0 of 128000 | 0.66 | 1.82 | 9.51 | 42.3 |
+
+No ceiling was reached: the top step ran with no client saturation, so the limit for this machine is above 12800 req/s for this fixture, and the run stopped there. The 19 errors at 6400 (0.03 percent) were not reproduced in the step above it, and were not investigated. Lower rates show higher latency because the first requests pay for TLS and connection setup; do not read that as the ingress getting faster under load. Ingress overhead against a direct path, several replicas, several apps and a real application are not measured here.
 
 Not yet measured: daemon restart (real engine stop), disk pressure on the host volume with the collector in the loop, control plane restart under systemd socket activation, multi-replica kill, and everything across nodes or zones.
 
@@ -193,6 +209,8 @@ The first run of this case measured 31 ms p50 and 50 ms p95 at 1000 apps for sea
 
 ## What is tested without Docker
 
-Zone-aware placement is tested against a fake fleet in `internal/placement`: replicas spread one per zone, and after losing a whole zone the replacement lands in a surviving zone. That test proves the scheduling decision, not request-level recovery, which is the unmeasured zone loss row above.
+Zone-aware placement is tested against a fake fleet in `internal/placement`: replicas spread one per zone, and after losing a whole zone the replacement lands in a surviving zone. That test proves the scheduling decision, not request-level recovery, which is the unmeasured zone loss row above. The same code backs `levelrail-cli nodes failure`, a dry run of that decision on your fleet (see [Multi-node](/multi-node)).
+
+Certificate sharing between two ingress processes on one database is tested in `internal/ingress/certshare_test.go`: one stores, the other loads, and racing issuance locks never overlap. Ingress nodes on separate hosts are a design note in ADR 036, not built.
 
 The load driver is unit tested against fake HTTP servers: arrival schedule, percentile math, error accounting, coordinated omission and failure-window analysis. Deploying the fixture and running the scenarios against real containers is not covered by those tests.

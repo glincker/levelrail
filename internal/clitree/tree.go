@@ -250,7 +250,7 @@ var Tree = map[string]*Node{
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
 		"health": nil, "patch-status": nil, "events": nil, "metrics": nil, "resource-usage": nil,
 		"capacity-forecast": nil,
-		"add":               nil, "move": nil, "moves": nil, "drains": nil, "labels": nil, "zones": nil, "placement": nil, "allocations": nil, "connectivity": nil,
+		"add":               nil, "move": nil, "moves": nil, "drains": nil, "labels": nil, "zones": nil, "simulate": nil, "failure": nil, "placement": nil, "allocations": nil, "connectivity": nil,
 		"mesh": nil, "rotate-key": nil, "rejoin-mesh": nil, "reenroll-token": nil, "revoke-cert": nil, "security": nil,
 		"cert":           {Subs: map[string]*Node{"renew": nil}},
 		"providers":      {Subs: map[string]*Node{"list": nil, "set-credential": nil}},

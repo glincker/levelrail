@@ -13,6 +13,7 @@ import {
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useZones } from '../../queries/placementDecision'
+import { PlacementWhatIf } from './PlacementWhatIf'
 
 const CONCENTRATION_PCT = 70
 
@@ -113,6 +114,7 @@ export function ZoneSpreadCard() {
         topPct >= CONCENTRATION_PCT ? (
           <p className="text-xs text-destructive">{t('zones.concentrated')}</p>
         ) : null}
+        <PlacementWhatIf zones={data.zones} />
       </CardContent>
     </Card>
   )

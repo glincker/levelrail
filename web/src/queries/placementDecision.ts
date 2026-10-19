@@ -4,8 +4,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import type {
+  FailureSimulation,
   NodeAllocations,
   PlacementDecisionView,
+  PlacementSimulation,
   ZonesView,
 } from '../types/placementDecision'
 import type { NodeMoveKind } from '../types/nodeMoves'
@@ -37,6 +39,34 @@ export function useNodeAllocations() {
         'fetch node allocations',
       ),
     retry: false,
+  })
+}
+
+export function usePlacementSimulation(qs: string | null) {
+  return useQuery({
+    queryKey: ['placement', 'simulate', qs ?? ''] as const,
+    queryFn: () =>
+      getJson<PlacementSimulation>(
+        `/api/v1/nodes/placement-simulation?${qs ?? ''}`,
+        'simulate placement',
+      ),
+    enabled: qs !== null,
+    retry: false,
+    staleTime: 0,
+  })
+}
+
+export function useFailureSimulation(zone: string | null) {
+  return useQuery({
+    queryKey: ['placement', 'failure', zone ?? ''] as const,
+    queryFn: () =>
+      getJson<FailureSimulation>(
+        `/api/v1/nodes/failure-simulation?zone=${encodeURIComponent(zone ?? '')}`,
+        'simulate zone failure',
+      ),
+    enabled: zone !== null,
+    retry: false,
+    staleTime: 0,
   })
 }
 
