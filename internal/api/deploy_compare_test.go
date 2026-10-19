@@ -200,3 +200,21 @@ func TestHandleCompareDeploys_AppNotFound(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNotFound)
 	}
 }
+
+func TestDiffDeployCompareSidesIgnoresMissingCommitOnCurrent(t *testing.T) {
+	from := deployCompareSide{Image: "web:1", CommitSHA: "abc"}
+	current := deployCompareSide{Image: "web:1", IsCurrent: true}
+	for _, c := range diffDeployCompareSides(from, current) {
+		if c.Field == "commit_sha" {
+			t.Fatalf("a current side with no commit must not read as a commit change: %+v", c)
+		}
+	}
+	other := deployCompareSide{Image: "web:1", CommitSHA: "def"}
+	found := false
+	for _, c := range diffDeployCompareSides(from, other) {
+		found = found || c.Field == "commit_sha"
+	}
+	if !found {
+		t.Fatal("two real attempts with different commits must still report commit_sha")
+	}
+}

@@ -245,7 +245,7 @@ func diffDeployCompareSides(from, to deployCompareSide) []deployCompareField {
 	if from.ImageDigest != to.ImageDigest && (from.ImageDigest != "" || to.ImageDigest != "") {
 		changes = append(changes, deployCompareField{Field: "image_digest", From: from.ImageDigest, To: to.ImageDigest})
 	}
-	if from.CommitSHA != to.CommitSHA {
+	if from.CommitSHA != to.CommitSHA && (!to.IsCurrent || to.CommitSHA != "") {
 		changes = append(changes, deployCompareField{Field: "commit_sha", From: from.CommitSHA, To: to.CommitSHA})
 	}
 	if !to.IsCurrent && from.Source != to.Source {
