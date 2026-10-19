@@ -73,6 +73,7 @@ func (rt *Router) Handler() http.Handler {
 
 	var h http.Handler = mux
 	h = rt.bodyLimitMiddleware(h)
+	h = rt.streamDrainMiddleware(h)
 	h = rt.accountEventMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = rt.accessPolicyMiddleware(h)

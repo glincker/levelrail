@@ -2,6 +2,7 @@ package apiclient
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -56,6 +57,7 @@ type CPHealth struct {
 	Footprint struct {
 		RSSBytes       uint64  `json:"rss_bytes"`
 		Threads        int     `json:"threads"`
+		OpenFDs        int     `json:"open_fds"`
 		CPUPercent     float64 `json:"cpu_percent"`
 		TelemetryBytes int64   `json:"telemetry_bytes"`
 		MemoryLimit    struct {
@@ -92,6 +94,13 @@ type CPHealthLoop struct {
 	CostPercent  float64   `json:"cost_percent"`
 	Running      bool      `json:"running"`
 	LastError    string    `json:"last_error,omitempty"`
+}
+
+// Probe issues GET path and discards the body, so the soak harness can
+// generate read load without a typed method per endpoint.
+func (c *Client) Probe(ctx context.Context, path string) error {
+	var out json.RawMessage
+	return c.do(ctx, http.MethodGet, path, nil, &out)
 }
 
 // GetCPHealth calls GET /api/v1/system/control-plane-health.

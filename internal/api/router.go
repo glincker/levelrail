@@ -787,6 +787,8 @@ type Router struct {
 	accountSelf  accountSelfState
 	cpDRMaterial EscrowMaterialReader
 	authLib      authLibState // the library engine behind token and device routes
+
+	shutdown shutdownState
 }
 
 // NewRouter builds a Router. logger defaults to slog.Default() if nil.

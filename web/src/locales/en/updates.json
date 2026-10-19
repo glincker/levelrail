@@ -136,7 +136,16 @@
       "apply": "2. Roll back on the server (you will be asked to type {{version}})",
       "restore": "Roll back and restore the backup on the server"
     },
-    "backupHint": "Backups older than a day are flagged above. A fresh backup is also taken automatically before anything changes."
+    "backupHint": "Backups older than a day are flagged above. A fresh backup is also taken automatically before anything changes.",
+    "oneClick": {
+      "button": "Roll back now",
+      "unavailable": "This rollback cannot be applied from the dashboard: {{reason}}",
+      "confirmTitle": "Roll back to {{version}}?",
+      "confirmBody": "The control plane takes a backup, swaps the program and restarts. Apps keep running. If the old release does not become healthy, the current one is restored automatically.",
+      "confirm": "Roll back",
+      "pending": "Starting...",
+      "started": "Rollback to {{version}} started. The dashboard reconnects when the control plane is back."
+    }
   },
   "verify": {
     "title": "Verify after an upgrade or rollback",

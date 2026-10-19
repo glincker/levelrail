@@ -131,6 +131,7 @@ type cpReconcile struct {
 type cpFootprint struct {
 	RSSBytes       uint64                `json:"rss_bytes"`
 	Threads        int                   `json:"threads"`
+	OpenFDs        int                   `json:"open_fds"`
 	CPUPercent     float64               `json:"cpu_percent"`
 	TelemetryBytes int64                 `json:"telemetry_bytes"`
 	MemoryLimit    footprint.MemoryLimit `json:"memory_limit"`
@@ -163,7 +164,7 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 	}
 	proc := footprint.ReadProc()
 	res.Footprint = cpFootprint{
-		RSSBytes: proc.RSSBytes, Threads: proc.Threads, CPUPercent: proc.CPUPercent,
+		RSSBytes: proc.RSSBytes, Threads: proc.Threads, OpenFDs: proc.OpenFDs, CPUPercent: proc.CPUPercent,
 		MemoryLimit: p.MemoryLimit, Loops: footprint.Loops(),
 	}
 	if p.Telemetry != nil {

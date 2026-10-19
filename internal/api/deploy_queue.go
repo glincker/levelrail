@@ -228,13 +228,14 @@ func (rt *Router) enqueueManualBuild(ctx context.Context, existing store.Desired
 // DrainDeployQueue starts every queued deploy that is no longer blocked. It
 // runs after each deploy finishes and on a timer, so a queue survives restarts.
 func (rt *Router) DrainDeployQueue(ctx context.Context) {
-	if rt.deploySafety == nil {
+	if rt.deploySafety == nil || rt.shutdown.isDraining() {
 		return
 	}
 	rt.buildStartMu.Lock()
 	started := rt.startQueued(ctx)
 	rt.buildStartMu.Unlock()
 	for _, a := range started {
+		rt.shutdown.deploys.Add(1)
 		go rt.runQueued(a) //nolint:gosec // queued deploys outlive any request
 	}
 }
@@ -297,6 +298,7 @@ func (rt *Router) queuedFrozen(ctx context.Context, a store.DeployAttempt) bool 
 
 // runQueued executes a queued deploy that startQueued already moved to running.
 func (rt *Router) runQueued(a store.DeployAttempt) {
+	defer rt.shutdown.deploys.Done()
 	ctx := withAdoptedAttempt(context.Background(), a.ID) //nolint:gosec // a queued deploy outlives any request
 	err := rt.replayQueuedSafely(ctx, a)
 	status, msg := store.DeployAttemptStatusSucceeded, ""

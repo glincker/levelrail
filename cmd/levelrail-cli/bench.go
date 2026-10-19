@@ -40,6 +40,8 @@ func runBench(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		switch args[0] {
 		case "chaos":
 			return runBenchChaos(prog, args[1:], stdout, stderr, lookupEnv)
+		case "soak":
+			return runBenchSoak(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	if len(args) == 0 || args[0] != "run" {

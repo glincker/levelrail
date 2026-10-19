@@ -82,6 +82,8 @@ type Engine struct {
 	started atomic.Bool
 
 	guard *Guard
+
+	drainTimeout time.Duration
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -116,6 +118,38 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 
 // Guard returns the storm protection state for the health page and its Fix.
 func (e *Engine) Guard() *Guard { return e.guard }
+
+// SetDrainTimeout lets a reconcile pass that is running when Run's context ends
+// finish, for at most d, instead of being cut mid-operation. Zero keeps the
+// old behavior of cancelling the pass with the context.
+func (e *Engine) SetDrainTimeout(d time.Duration) { e.drainTimeout = d }
+
+// pass runs one ReconcileAll that survives a shutdown signal for drainTimeout.
+func (e *Engine) pass(ctx context.Context) {
+	if e.drainTimeout <= 0 {
+		e.ReconcileAll(ctx)
+		return
+	}
+	pctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			t := time.NewTimer(e.drainTimeout)
+			defer t.Stop()
+			select {
+			case <-done:
+			case <-t.C:
+				e.logger.Warn("reconcile pass cut at the shutdown drain limit", slog.Duration("limit", e.drainTimeout))
+				cancel()
+			}
+		}
+	}()
+	e.ReconcileAll(pctx)
+	close(done)
+	cancel()
+}
 
 // SetGuard replaces the default storm protection. Call it before Run.
 func (e *Engine) SetGuard(g *Guard) { e.guard = g }
@@ -263,7 +297,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 	defer loop.Active()()
 	pass := func() {
 		start := time.Now()
-		e.ReconcileAll(ctx)
+		e.pass(ctx)
 		loop.Observe(start, nil)
 	}
 	pass()

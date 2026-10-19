@@ -21,6 +21,10 @@ The control plane is meant to stay small on a 2 vCPU, 8 GB box. Measured idle on
 
 At boot the control plane sets a soft Go memory limit of 80 percent of the container (cgroup) or host memory, so the garbage collector works harder before the kernel OOM killer acts. Override the share with `APP_GOMEMLIMIT_PERCENT` (0 disables it), or set `GOMEMLIMIT` yourself, which always wins. Limits under 128 MB are ignored. `GOGC` stays at the Go default (100); set `GOGC` in the environment to trade memory for CPU.
 
+## Shutdown
+
+On SIGTERM the control plane first ends every live SSE stream (clients reconnect on their own), lets a running reconcile pass and any detached queued deploys finish for up to `APP_SHUTDOWN_DRAIN` (default 20s), stops starting new queued deploys, then waits up to 10 seconds for ordinary requests. A pass still running at the limit is cancelled and converges on the next boot, since reconcile is level-triggered. Keep systemd `TimeoutStopSec` above the drain.
+
 ## Guard
 
 `go test ./cmd/levelrail -run TestFootprint` boots the real control plane (`run()` on a temp data dir, ephemeral ports, no Docker daemon needed) twice, with every experimental feature off and then on, settles 20 seconds, idles 60 seconds each (`APP_FOOTPRINT_IDLE_SECONDS`) and compares goroutines and RSS with `cmd/levelrail/testdata/footprint_baseline.json`. It fails when goroutines exceed the ratchet by more than 5 or RSS grows more than 15 percent. It is skipped under `-short` and runs in the nightly lane. After an intended change, re-record with `FOOTPRINT_RECORD=1` and say why in the commit. Baselines are per OS (`linux` and `darwin` are recorded); on a new OS the first run logs that it has none until recorded.

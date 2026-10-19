@@ -64,6 +64,17 @@ levelrail-cli bench run --url https://bench.example.com/ --rate 500 --duration 9
 
 The restart report includes `ingress_kept_serving`, true when no request failed after the restart was issued.
 
+### Soak
+
+`bench soak` churns read traffic against a control plane (a `levelrail demo` instance for a nightly run) and samples RSS, goroutines, open file descriptors and SQLite WAL size from the health endpoint. It fails when the end of the run is worse than the start by more than the limits, or worse than a ratchet file from the last passing run.
+
+```bash
+levelrail-cli bench soak --duration 24h --sample-interval 1m --csv soak.csv \
+  --ratchet soak-ratchet.json --record
+```
+
+Limits default to 25 percent RSS growth, 100 goroutines, 50 descriptors, a 256 MiB WAL and 1 percent errors (`--max-*`, 0 disables one). It churns reads, not deploys, so it guards the API and store layers; deploy churn needs a Docker host.
+
 ## Hardware disclosure
 
 Publish these with every result, via `--hardware` and the report's `client` block:

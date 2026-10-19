@@ -1,7 +1,11 @@
 // Data sources for the Settings > Updates release history and rollback
-// preview (internal/api/updates_releases.go). Both are read-only.
+// preview (internal/api/updates_releases.go), and the one-click rollback start.
 
-import { queryOptions } from '@tanstack/react-query'
+import {
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { updatesKeys, type UpgradeCheck } from './updates'
 
@@ -72,6 +76,8 @@ export interface RollbackPlan {
   blocked: boolean
   changes: RollbackChange[]
   notes: string
+  one_click: boolean
+  one_click_reason?: string
 }
 
 async function getJSON<T>(url: string, what: string): Promise<T> {
@@ -130,5 +136,29 @@ export function doctorQueryOptions() {
       getJSON<DoctorReport>('/api/v1/system/doctor', 'run health verification'),
     enabled: false,
     staleTime: 0,
+  })
+}
+
+export function useStartRollback() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (
+      version: string,
+    ): Promise<{ status: string; target_version: string }> => {
+      const res = await fetch('/api/v1/updates/rollback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version, confirm: version }),
+      })
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(res, `start rollback failed: ${res.status}`),
+        )
+      }
+      return (await res.json()) as { status: string; target_version: string }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: updatesKeys.all }),
   })
 }

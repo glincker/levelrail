@@ -5,8 +5,18 @@ description: "How to roll the control plane back to a previous release: what the
 
 Settings > Updates lists the last five releases for a channel (stable, beta, or
 both), each with a compatibility verdict against your database. Pick one to see
-exactly what a rollback would do. The dashboard never applies it: the control
-plane does not replace its own binary, so you run the rollback on the server.
+exactly what a rollback would do. When the verdict is "Safe: binary only", the
+release is kept on this host, the preflight passes and the control plane runs
+as root under systemd, the plan shows a **Roll back now** button (root only,
+type the version to confirm). The control plane hands the swap to a transient
+host unit, because it cannot replace the binary it runs from; it takes a backup,
+swaps, restarts and restores the previous release if the old one does not
+become healthy. Anything that would restore a database backup stays a typed
+host command, since it loses data.
+
+```sh
+levelrail-cli upgrade --rollback v0.2.0-beta.14 --yes
+```
 
 ## What the verdict means
 

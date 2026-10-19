@@ -42,6 +42,10 @@ const (
 
 	httpShutdownTimeout = 10 * time.Second
 
+	// shutdownDrainEnv bounds how long SIGTERM waits for a running reconcile pass and queued deploys.
+	shutdownDrainEnv     = "APP_SHUTDOWN_DRAIN"
+	defaultShutdownDrain = 20 * time.Second
+
 	// Bounded so a live agent Session stream cannot stall exit until systemd SIGKILLs the process.
 	agentGRPCShutdownTimeout = 5 * time.Second
 

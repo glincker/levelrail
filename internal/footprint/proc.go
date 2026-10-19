@@ -16,6 +16,7 @@ type Proc struct {
 	HeapBytes  uint64  `json:"heap_bytes"`
 	Goroutines int     `json:"goroutines"`
 	Threads    int     `json:"threads"`
+	OpenFDs    int     `json:"open_fds"`
 	CPUSeconds float64 `json:"cpu_seconds"`
 	CPUPercent float64 `json:"cpu_percent"`
 }
@@ -33,6 +34,7 @@ func ReadProc() Proc {
 	runtime.ReadMemStats(&ms)
 	p := Proc{HeapBytes: ms.HeapAlloc, Goroutines: runtime.NumGoroutine(), CPUSeconds: cpuSeconds()}
 	p.RSSBytes, p.Threads = procStatus()
+	p.OpenFDs = openFDs()
 	if p.RSSBytes == 0 {
 		p.RSSBytes = ms.Sys
 	}
@@ -48,6 +50,16 @@ func ReadProc() Proc {
 		cpuPrevAt, cpuPrev = now, p.CPUSeconds
 	}
 	return p
+}
+
+// openFDs counts this process's file descriptors, or 0 where neither /proc nor /dev/fd exists.
+func openFDs() int {
+	for _, dir := range []string{"/proc/self/fd", "/dev/fd"} {
+		if entries, err := os.ReadDir(dir); err == nil {
+			return len(entries)
+		}
+	}
+	return 0
 }
 
 func cpuSeconds() float64 {

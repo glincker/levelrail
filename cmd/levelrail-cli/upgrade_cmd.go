@@ -20,6 +20,8 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	list := fs.Bool("list", false, "list the last 5 releases with a schema compatibility verdict")
 	channel := fs.String("channel", "", "with --list: stable, beta or all (default: the configured channel)")
 	planVersion := fs.String("rollback-plan", "", "preview a rollback to `version` (read-only; applying happens on the host)")
+	rollbackTo := fs.String("rollback", "", "roll the control plane back to retained release `version` (binary only, needs --yes)")
+	yes := fs.Bool("yes", false, "with --rollback: confirm the rollback")
 	history := fs.Bool("history", false, "list recorded control plane upgrades, rollbacks and installs (add --json for JSON)")
 	ack := fs.String("ack", "", "acknowledge the recorded upgrade `id`")
 	apply := fs.Bool("apply", false, "download, verify, back up, swap and health-check the new release, rolling back automatically on failure")
@@ -29,7 +31,7 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	attempts := fs.Bool("attempts", false, "list recorded self-upgrade attempts with their step timelines")
 	noWatch := fs.Bool("no-wait", false, "with --apply: return once the upgrade has started instead of following it")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan shows breaking changes and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --list shows recent releases; --rollback-plan <version> previews returning to\none. Subcommands: schedule (--at TIME | --window, show, cancel), auto (get, set) and backup-now. Rolling back is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s upgrade [flags]\n\nChecks the running version against the latest release, runs the preflight\n(release signature, Docker Engine, free disk, backup), takes a control plane\nbackup, and prints the command that upgrades. It never upgrades by itself.\n\n--history shows every recorded upgrade and --ack <id> acknowledges one;\n--plan shows breaking changes and --apply upgrades with automatic rollback;\n--attempts lists self-upgrade runs; --rollback <version> --yes returns to a retained release (binary only); --list shows recent releases; --rollback-plan <version> previews returning to\none. Subcommands: schedule (--at TIME | --window, show, cancel), auto (get, set) and backup-now. A rollback that needs a backup restore is applied on the host with `sudo <control plane binary> rollback`.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
@@ -39,6 +41,9 @@ func runUpgrade(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
 
+	if *rollbackTo != "" {
+		return runUpgradeRollback(ctx, client, *rollbackTo, *yes, jsonOut, of, stdout, stderr)
+	}
 	if *apply || *planOnly {
 		return runUpgradeApply(ctx, client, upgradeApplyOptions{target: *applyTo, ack: *applyAck, plan: *planOnly && !*apply, watch: !*noWatch}, jsonOut, of, stdout, stderr)
 	}
@@ -124,4 +129,28 @@ func printEdgeGuidance(out io.Writer, g *apiclient.EdgeGuidance) {
 	}
 	_, _ = fmt.Fprintln(out, "This install runs as a host binary, so edge cannot be installed here.")
 	_, _ = fmt.Fprintln(out, "Switch the channel under Settings > Updates, or with `settings updates set --channel beta` (or stable).")
+}
+
+func runUpgradeRollback(ctx context.Context, client *Client, version string, yes, jsonOut bool, of outputFlags, stdout, stderr io.Writer) int {
+	plan, err := client.GetRollbackPlan(ctx, version)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("rollback plan: %w", err))
+	}
+	if !plan.OneClick {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("this rollback cannot be applied remotely: %s. Run on the host: %s", plan.OneClickReason, plan.Command))
+	}
+	if !yes {
+		return reportError(stdout, stderr, jsonOut, newValidationError("rolling back %s to %s restarts the control plane (about %ds); repeat with --yes to confirm", plan.CurrentVersion, version, plan.DowntimeSeconds))
+	}
+	started, err := client.StartRollback(ctx, version)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("start rollback: %w", err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, started, func() {
+		_, _ = fmt.Fprintf(stdout, "rollback to %s started on the host; the control plane restarts shortly\n", started.TargetVersion)
+	}); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
 }

@@ -286,17 +286,26 @@ type rollbackPlanResource struct {
 	FetchCommand string           `json:"fetch_command,omitempty"`
 	Changes      []rollbackChange `json:"changes"`
 	Notes        string           `json:"notes"`
+	// OneClick is true when the dashboard can apply this rollback itself.
+	OneClick    bool   `json:"one_click"`
+	OneClickWhy string `json:"one_click_reason,omitempty"`
 }
 
 // handleRollbackPlan handles GET /api/v1/updates/rollback-plan?version=: a
 // read-only preview of returning to one release. Root only, because it
 // names the database backups on this host. It applies nothing.
 func (rt *Router) handleRollbackPlan(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	target := r.URL.Query().Get("version")
-	if !rollback.ValidVersion(target) {
-		writeError(w, http.StatusBadRequest, "version must be a release tag such as v1.2.3")
+	out, status, msg := rt.buildRollbackPlan(r.Context(), r.URL.Query().Get("version"))
+	if status != http.StatusOK {
+		writeError(w, status, msg)
 		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (rt *Router) buildRollbackPlan(ctx context.Context, target string) (rollbackPlanResource, int, string) {
+	if !rollback.ValidVersion(target) {
+		return rollbackPlanResource{}, http.StatusBadRequest, "version must be a release tag such as v1.2.3"
 	}
 	dbSchema := rt.liveSchemaVersion(ctx)
 	retained := rt.retainedByVersion()
@@ -313,8 +322,7 @@ func (rt *Router) handleRollbackPlan(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if rel == nil && !isRet {
-		writeError(w, http.StatusNotFound, "that release is not among the recent releases or retained on this host")
-		return
+		return rollbackPlanResource{}, http.StatusNotFound, "that release is not among the recent releases or retained on this host"
 	}
 	schema, source := -1, rollback.SourceUnknown
 	if isRet && ret.SchemaVersion >= 0 {
@@ -354,7 +362,8 @@ func (rt *Router) handleRollbackPlan(w http.ResponseWriter, r *http.Request) {
 	if !isRet {
 		out.FetchCommand = "curl -fsSL https://raw.githubusercontent.com/" + githubRepo + "/main/install.sh | sudo LEVELRAIL_VERSION=" + target + " sh -s retain"
 	}
-	writeJSON(w, http.StatusOK, out)
+	out.OneClick, out.OneClickWhy = rt.rollbackOneClick(out)
+	return out, http.StatusOK, ""
 }
 
 func (rt *Router) rollbackChecks(ctx context.Context, assets []string, retained, known bool) []upgrade.Check {

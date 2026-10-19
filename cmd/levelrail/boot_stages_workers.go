@@ -383,7 +383,20 @@ func (s *bootState) serve() error {
 	healthy := time.AfterFunc(s.bootPolicy.HealthyAfter, s.ledger.MarkHealthy)
 	defer healthy.Stop()
 
+	engine.SetDrainTimeout(envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
+	go func() {
+		<-ctx.Done()
+		if n := s.apiRouter.BeginShutdown(); n > 0 {
+			logger.Info("closed live streams for shutdown", slog.Int("streams", n))
+		}
+	}()
 	engineErr := engine.Run(ctx, events, resyncInterval)
+
+	drainCtx, drainCancel := context.WithTimeout(context.Background(), envDurationOr(logger, shutdownDrainEnv, defaultShutdownDrain))
+	if !s.apiRouter.WaitDeploys(drainCtx) {
+		logger.Warn("shutdown drain limit reached with deploys still running, they resume as failed on next boot")
+	}
+	drainCancel()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)
 	defer cancel()

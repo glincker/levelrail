@@ -102,6 +102,7 @@ System endpoints for:
 | POST | /api/v1/system/integrity/check | AbilityRoot | handleIntegrityCheck |
 | POST | /api/v1/system/integrity/restore | AbilityRoot | handleIntegrityRestore |
 | DELETE | /api/v1/system/integrity/restore | AbilityRoot | handleIntegrityCancelRestore |
+| POST | /api/v1/updates/rollback | AbilityRoot | handleRollbackStart |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 
