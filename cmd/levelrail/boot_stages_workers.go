@@ -380,6 +380,9 @@ func (s *bootState) serve() error {
 		serveErrs <- nil
 	}()
 
+	healthy := time.AfterFunc(s.bootPolicy.HealthyAfter, s.ledger.MarkHealthy)
+	defer healthy.Stop()
+
 	engineErr := engine.Run(ctx, events, resyncInterval)
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), httpShutdownTimeout)

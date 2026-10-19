@@ -13,6 +13,8 @@ import {
 } from '@/components/ui/collapsible'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from '@/components/ui/toast'
+import { IntegrityCard } from '@/components/settings/IntegrityCard'
+import { ReconcileGuardCard } from '@/components/settings/ReconcileGuardCard'
 import {
   useApplyControlPlaneFix,
   useControlPlaneHealth,
@@ -146,21 +148,24 @@ function ControlPlaneHealthPage() {
   const fix = useApplyControlPlaneFix()
 
   const apply = (id: CPHealthFix) => {
-    fix.mutate(id, {
-      onSuccess: () => {
-        toast.add({
-          title: t('controlPlaneHealth.fixApplied'),
-          type: 'success',
-        })
+    fix.mutate(
+      { fix: id },
+      {
+        onSuccess: () => {
+          toast.add({
+            title: t('controlPlaneHealth.fixApplied'),
+            type: 'success',
+          })
+        },
+        onError: (e) => {
+          toast.add({
+            title: t('controlPlaneHealth.fixFailed'),
+            description: e.message,
+            type: 'error',
+          })
+        },
       },
-      onError: (e) => {
-        toast.add({
-          title: t('controlPlaneHealth.fixFailed'),
-          description: e.message,
-          type: 'error',
-        })
-      },
-    })
+    )
   }
 
   return (
@@ -253,6 +258,8 @@ function ControlPlaneHealthPage() {
               })}
             </div>
           )}
+          <IntegrityCard />
+          <ReconcileGuardCard guard={data.reconcile.guard} />
           <Card>
             <CardContent>
               <MetricsGrid h={data} />

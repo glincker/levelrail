@@ -25,6 +25,11 @@ func (rt *Router) registerDockerGuardRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/system/control-plane-health", rt.requireAbility(AbilityRead, rt.handleGetCPHealth))
 	// Checkpointing and ANALYZE briefly hold the single database connection, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/control-plane-health/fix", rt.requireAbility(AbilityRoot, rt.handleCPHealthFix))
+	mux.HandleFunc("GET /api/v1/system/integrity", rt.requireAbility(AbilityRead, rt.handleGetIntegrity))
+	mux.HandleFunc("POST /api/v1/system/integrity/check", rt.requireAbility(AbilityRoot, rt.handleIntegrityCheck))
+	// Stages a replacement of the whole control plane database for the next boot, so AbilityRoot.
+	mux.HandleFunc("POST /api/v1/system/integrity/restore", rt.requireAbility(AbilityRoot, rt.handleIntegrityRestore))
+	mux.HandleFunc("DELETE /api/v1/system/integrity/restore", rt.requireAbility(AbilityRoot, rt.handleIntegrityCancelRestore))
 	mux.HandleFunc("GET /api/v1/system/networks", rt.requireAbility(AbilityRead, rt.handleGetSystemNetworks))
 	// Removes Docker networks, so AbilityRoot.
 	mux.HandleFunc("POST /api/v1/system/networks/prune", rt.requireAbility(AbilityRoot, rt.handlePruneSystemNetworks))

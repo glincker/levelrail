@@ -19,6 +19,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/janitor"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/orphans"
@@ -26,6 +27,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/preview"
 	"github.com/GLINCKER/levelrail/internal/proxyroutes"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
+	"github.com/GLINCKER/levelrail/internal/safemode"
 	"github.com/GLINCKER/levelrail/internal/scheduledtask"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -40,6 +42,9 @@ type bootState struct {
 	logger              *slog.Logger
 	deferred            []func()
 	restartRequested    atomic.Bool
+	ledger              *safemode.Ledger
+	bootPolicy          safemode.Policy
+	integrity           *integrity.Service
 	db                  *store.DB
 	instanceID          string
 	guard               dockerguard.Booted

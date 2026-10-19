@@ -42,6 +42,12 @@ type CPHealth struct {
 		LastPassMS  float64 `json:"last_pass_ms"`
 		P95MS       float64 `json:"p95_ms"`
 		LagSeconds  float64 `json:"lag_seconds"`
+		Guard       struct {
+			PassesDeferred int64             `json:"passes_deferred"`
+			RecentLimited  int               `json:"recent_limited"`
+			OpenBreakers   int               `json:"open_breakers"`
+			Breakers       []CPHealthBreaker `json:"breakers"`
+		} `json:"guard"`
 	} `json:"reconcile"`
 	Streams struct {
 		Active int64 `json:"active"`
@@ -60,6 +66,19 @@ type CPHealth struct {
 		Loops []CPHealthLoop `json:"loops"`
 	} `json:"footprint"`
 	Findings []CPHealthFinding `json:"findings"`
+}
+
+// CPHealthBreaker is one controller's circuit breaker.
+type CPHealthBreaker struct {
+	Name      string    `json:"name"`
+	State     string    `json:"state"`
+	Failures  int       `json:"failures"`
+	OpenUntil time.Time `json:"open_until"`
+	LastError string    `json:"last_error,omitempty"`
+	Trips     int64     `json:"trips"`
+	Panics    int64     `json:"panics"`
+	Throttled int64     `json:"throttled"`
+	Skipped   int64     `json:"skipped"`
 }
 
 // CPHealthLoop is one background loop with its last run and cost.

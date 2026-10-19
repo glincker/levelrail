@@ -16,10 +16,12 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent/agentpb"
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
 	"github.com/GLINCKER/levelrail/internal/email"
+	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -37,7 +39,7 @@ func (s *bootState) openStore() error {
 		return newDowngradeRefusal(ctx, dataDirFromEnv())
 	}
 	if err != nil {
-		return err
+		return classifyStoreError(err, 0)
 	}
 	s.later(func() {
 		if cerr := db.Close(); cerr != nil {
@@ -56,6 +58,10 @@ func (s *bootState) openStore() error {
 		logger.Warn("database restored onto a new host: instance identity rotated, CLI tokens bound to the old one are refused until an owner confirms it is the same instance")
 	}
 	s.db = db
+	dataDir := dataDirFromEnv()
+	s.integrity = integrity.NewService(db.DB, dataDir, cpbackup.NewManager(db, dataDir), logger)
+	quick, full := integrity.IntervalsFromEnv(os.Getenv)
+	go s.integrity.Run(ctx, quick, full)
 	return nil
 }
 

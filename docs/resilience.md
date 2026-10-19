@@ -115,6 +115,53 @@ Where the windows cannot be removed:
 - **A pinned host port** still needs a stop-then-start swap, see [deploy safety](/deploy-safety#pinned-host-ports).
 - **A control plane crash** (not a restart) with socket activation queues connections until `Restart=on-failure` brings it back, 5 seconds by default (`RestartSec`). Connections wait that long and may time out at the client.
 
+## Database integrity and guided restore
+
+The control plane keeps its state in one SQLite file. A damaged file is the failure the other sections cannot hide, so it is checked and recoverable without a terminal.
+
+- **Periodic check.** A cheap `quick_check` runs every 6 hours (`APP_INTEGRITY_CHECK_INTERVAL`, `0` turns it off) and a full `integrity_check` once a week (`APP_INTEGRITY_FULL_INTERVAL`). The loop is listed on the health page like every other background loop.
+- **Check at boot.** Before the database opens, a `quick_check` runs on the file. A damaged file sends the process to [safe mode](#safe-mode) instead of crashing into it.
+- **Guided restore.** Settings, Control plane health shows the state, the snapshots and a Restore button per snapshot. The CLI is `system integrity` (state), `system integrity --check [--full]` and `system integrity --restore NAME|latest`. A damaged database also raises a critical finding with a one-click fix that picks the newest snapshot that still verifies.
+- **How a restore is applied.** The snapshot is verified (checksum, full integrity check, schema not newer than this binary) and a marker is written. The next start swaps it in before the database opens, so no open connection ever sees the file change. The damaged file is kept beside it as `levelrail.db.before-restore-<time>`. A snapshot that changed after it was staged is refused and the marker is removed so a bad restore cannot repeat on every boot.
+- **Scope.** Restoring brings back state as of the snapshot. Take snapshots often (`APP_CONTROL_PLANE_BACKUP_INTERVAL`), and keep an off-box copy ([disaster-recovery.md](/disaster-recovery)). The master key is not in a snapshot.
+
+The restore drill is a test: it snapshots a database, damages the live file in a temp directory, detects it at boot, stages and applies the restore, and reads the data back (`internal/integrity`).
+
+## Safe mode
+
+If the control plane cannot start, restarting it again will not help and a supervisor loop only burns CPU and fills the log. The boot ledger (`boot-ledger.json` in the data directory) counts consecutive starts that never stayed up for `APP_BOOT_HEALTHY_AFTER` (30s).
+
+| Failed starts | What happens |
+| --- | --- |
+| 1 or 2 | The next start waits first, 2s then 4s, doubling up to `APP_BOOT_BACKOFF_MAX` (60s). The wait is logged. |
+| `APP_SAFE_MODE_AFTER_FAILURES` (3) | Safe mode: the process stays up and serves only a recovery page. No more restarts. |
+| Any start | A damaged database file, or a store that fails to open or migrate, goes straight to safe mode. |
+
+Safe mode serves a read-only page on the normal HTTP address. It shows the reason, and unlocks details and actions with a recovery code that only a person with host access can read: `<data dir>/safe-mode-token`. Wrong codes are rate limited. The actions are Retry boot and Restore (the newest verified snapshot, or a chosen one). Both clear the ledger and ask the supervisor to restart (exit code 75). Without a supervisor the restore is staged and the page says to start the service again. Stopping the process without acting leaves one more attempt for the next start, so fixing the cause (for example starting Docker) and restarting the service works.
+
+Your apps are not touched: containers keep running and serving. Embedded ingress is part of the control plane process, so routing follows the rules above.
+
+## Reconcile storm protection
+
+A burst of Docker events or API nudges used to start one full reconcile pass each. Now:
+
+- **Global budget.** Event and nudge triggered passes draw from a token bucket (`APP_RECONCILE_PASS_BURST` 20, `APP_RECONCILE_PASSES_PER_SEC` 4). When it is empty the triggers are merged into one deferred pass. This is safe because every controller is level-triggered: the deferred pass sees the latest state, nothing is lost. The periodic resync is never limited.
+- **Per resource limit.** Each controller has its own bucket (`APP_RECONCILE_RESOURCE_BURST` 40, `APP_RECONCILE_RESOURCE_PER_SEC` 4).
+- **Circuit breaker.** After `APP_RECONCILE_BREAKER_FAILURES` (5) failed runs in a row a controller is paused for `APP_RECONCILE_BREAKER_BASE` (15s), doubling per further failure up to `APP_RECONCILE_BREAKER_MAX` (10 minutes), then one trial run decides whether it closes. A panic in a controller is recovered, logged with its stack and counted as a failure, so one broken resource cannot crash the process or stop the others.
+- **Visible and fixable.** The health page lists every controller that tripped or was throttled, with its last error, and raises a finding with a Reset protection button (`system health --fix reset_reconcile_guard`).
+
+`TestEventChurnFuzz` hammers an engine with random events and nudges and checks the pass count stays inside the budget, a failing controller stops after its threshold, and the final desired state still converges.
+
+## Data plane while the control plane is down
+
+What is tested, and what is not (see also ADR 025 and the route snapshot above):
+
+- **Control plane subsystems stalled, process alive.** A real embedded Caddy keeps answering from the last applied routes while every attempt to apply a new config fails for 10 simulated minutes, and the original config applies again afterwards (`TestDriverKeepsRoutingThroughStalledControlPlane`). A failed apply rolls back to the running config, it never leaves ingress empty.
+- **Process down for 10 minutes.** The sealed route snapshot is on disk. At the next start it is loaded into Caddy before the database is needed, with the certificate store unavailable (`TestSnapshotRestoreNeedsNoDatabase`).
+- **TLS renewals during a database outage.** A renewal that cannot be saved fails loudly and certmagic retries it on its next maintenance pass. A database that is down never reads as "certificate missing", so no needless re-issue happens when it returns, and stored certificates are untouched (`TestCertStorageOutageIsRetriableNotMissing`). Certificates already loaded in Caddy's memory keep serving.
+
+Limits that remain: while the process is down nothing renews certificates and nothing probes app health (container health probes and the reconciler run in the control plane process; Docker restart policies keep working). Ingress is one process, so the table above still applies for a stopped process. Several ingress nodes sharing certificate state are the next step (ADR 033).
+
 ## What this page does not cover
 
 - **Data loss.** This page is about a process crash where the disk is intact. If the disk holding `levelrail.db` is lost or corrupted, see [disaster-recovery.md](/disaster-recovery) for off-box backups and the master key escrow you need to recover.

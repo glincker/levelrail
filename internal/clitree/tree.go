@@ -291,7 +291,7 @@ var Tree = map[string]*Node{
 	"search":                   {Subs: map[string]*Node{"saved": {Subs: map[string]*Node{"list": nil, "add": nil, "rm": nil}}}},
 	"janitor":                  {Subs: map[string]*Node{"status": nil, "run": nil, "policy": nil}},
 	"containers":               {Subs: map[string]*Node{"list": nil, "stop": nil, "remove": nil, "claim": nil, "orphans": nil, "reap": nil}},
-	"system":                   {Subs: map[string]*Node{"address": nil, "restart": {Subs: map[string]*Node{"status": nil}}, "health": nil, "networks": {Subs: map[string]*Node{"prune": nil}}}},
+	"system":                   {Subs: map[string]*Node{"address": nil, "restart": {Subs: map[string]*Node{"status": nil}}, "health": nil, "integrity": nil, "networks": {Subs: map[string]*Node{"prune": nil}}}},
 	"system-prune":             nil,
 	"volumes-orphaned":         nil,
 	"volumes-orphaned-cleanup": nil,

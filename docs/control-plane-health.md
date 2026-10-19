@@ -25,6 +25,9 @@ Each measurement above its threshold becomes a warning, or critical at twice the
 | Slow database queries | Refresh query stats (`PRAGMA optimize`) | `system health --fix db_optimize` |
 | Many slow queries | Clear slow log | `system health --fix reset_slow_log` |
 | Metrics database is large | Prune and compact metrics (retention, size cap, then VACUUM when over a quarter of the file is free) | `system health --fix telemetry_prune` |
+| The control plane database is damaged | Restore the newest verified snapshot (applied at the next start, see [resilience](/resilience#database-integrity-and-guided-restore)) | `system health --fix integrity_restore` |
+| A controller keeps failing and was paused | Reset protection and resume | `system health --fix reset_reconcile_guard` |
+| A burst of events hit the rate limit | Reset protection and resume | `system health --fix reset_reconcile_guard` |
 
 Goroutines, heap, reconcile pass, event lag and stream findings have no automatic fix. The page says what to look at, and a restart (`system restart`) is the last resort.
 
@@ -51,6 +54,7 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 | `APP_CPHEALTH_RSS_MB` | 1024 | resident memory |
 | `APP_CPHEALTH_THREADS` | 200 | OS threads |
 | `APP_CPHEALTH_TELEMETRY_MB` | 768 | metrics database file |
+| `APP_CPHEALTH_STORM_EVENTS` | 100 | passes or resource runs held back by rate limits in the last 5 minutes |
 | `APP_GOMEMLIMIT_PERCENT` | 80 | soft Go memory limit as a share of container or host memory, 0 disables, ignored when `GOMEMLIMIT` is set |
 | `APP_DB_SLOW_QUERY_MS` | 200 | a statement slower than this is logged as slow |
 

@@ -1292,10 +1292,18 @@ If no process supervisor was detected, the command prints the reason and the com
 ## System health {#system-health}
 
 ```
-levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log|telemetry_prune] [flags]
+levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log|telemetry_prune|reset_reconcile_guard|integrity_check|integrity_restore] [flags]
 ```
 
 Prints goroutines, heap, database latency and write queue, write ahead log size, reconcile pass timing and live stream use, with a finding for each value over its threshold. `--fix` applies one of the typed fixes and prints the result; it needs a root token. The API is `GET /api/v1/system/control-plane-health` and `POST /api/v1/system/control-plane-health/fix`. See [Control plane health](/control-plane-health).
+
+## System integrity {#system-integrity}
+
+```
+levelrail-cli system integrity [--check [--full]] [--restore NAME|latest] [--cancel-restore] [flags]
+```
+
+Prints whether the control plane database passed its last integrity check and lists the snapshots that can be restored. `--check` runs a quick check now, `--full` the full `integrity_check`. `--restore` verifies a snapshot and stages it to replace the database at the next start (`latest` picks the newest one that verifies), and `--cancel-restore` removes a staged restore. Staging needs a root token. The API is `GET /api/v1/system/integrity`, `POST /api/v1/system/integrity/check`, and `POST` or `DELETE /api/v1/system/integrity/restore`. See [Resilience](/resilience#database-integrity-and-guided-restore).
 
 ## System networks {#system-networks}
 

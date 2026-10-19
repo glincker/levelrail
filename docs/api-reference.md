@@ -98,6 +98,10 @@ System endpoints for:
 | POST | /api/v1/system/encryption-keys/rotate | AbilityRoot | handleRotateDEK |
 | GET | /api/v1/system/control-plane-dr/restore-plan | AbilityRead | handleGetControlPlaneRestorePlan |
 | POST | /api/v1/system/control-plane-dr/keys | AbilityWriteSensitive | handleGenerateControlPlaneDRKeypair |
+| GET | /api/v1/system/integrity | AbilityRead | handleGetIntegrity |
+| POST | /api/v1/system/integrity/check | AbilityRoot | handleIntegrityCheck |
+| POST | /api/v1/system/integrity/restore | AbilityRoot | handleIntegrityRestore |
+| DELETE | /api/v1/system/integrity/restore | AbilityRoot | handleIntegrityCancelRestore |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

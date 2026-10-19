@@ -897,7 +897,49 @@
       "wal_checkpoint": "Checkpoint now",
       "db_optimize": "Refresh query stats",
       "reset_slow_log": "Clear slow log",
-      "telemetry_prune": "Prune and compact metrics"
+      "telemetry_prune": "Prune and compact metrics",
+      "reset_reconcile_guard": "Reset protection and resume",
+      "integrity_check": "Run a full check",
+      "integrity_restore": "Restore the newest verified snapshot"
+    },
+    "integrity": {
+      "title": "Database integrity",
+      "ok": "Intact",
+      "damaged": "Damaged",
+      "notYet": "No check has run since this process started. The first one runs shortly.",
+      "last": "Last check {{when}} ({{mode}}).",
+      "mode": {
+        "quick": "quick",
+        "full": "full"
+      },
+      "checkQuick": "Quick check now",
+      "checkFull": "Full check now",
+      "checkOk": "The database passed its check",
+      "checkBad": "The database failed its check",
+      "snapshots": "Snapshots you can restore",
+      "noSnapshots": "No snapshots exist yet. Create one from the backups page.",
+      "verified": "Verified",
+      "unverified": "Not verified yet",
+      "restore": "Restore",
+      "pending": "Snapshot {{name}} replaces the database at the next start.",
+      "restartNow": "Restart now",
+      "cancelRestore": "Cancel",
+      "staged": "Restore staged. Restart the control plane to apply it.",
+      "confirmTitle": "Restore {{name}}?",
+      "confirmDescription": "The snapshot is verified again before it is staged, and applied during the next start before the database opens.",
+      "consequenceKept": "The current database file is kept beside it, not deleted.",
+      "consequenceRestart": "Changes made after the snapshot was taken are not in it."
+    },
+    "guard": {
+      "title": "Reconcile protection",
+      "summary": "{{deferred}} passes were deferred, {{recent}} limited in the last 5 minutes, {{open}} breakers open.",
+      "none": "No controller has tripped a breaker or hit a rate limit.",
+      "counts": "{{trips}} trips, {{panics}} panics, {{throttled}} throttled",
+      "state": {
+        "closed": "Closed",
+        "open": "Paused",
+        "half_open": "Trial"
+      }
     },
     "metrics": {
       "goroutines": "Goroutines",
@@ -925,6 +967,18 @@
       "row": "every {{every}} s, {{runs}} runs, last {{ms}} ms, cost {{cost}} % of one core"
     },
     "findings": {
+      "reconcile_breakers": {
+        "title": "A controller keeps failing and was paused",
+        "hint": "Its breaker retries on a growing delay. Fix the cause shown below, then reset protection to retry now."
+      },
+      "reconcile_storm": {
+        "title": "A burst of events hit the rate limit",
+        "hint": "Passes were merged so the host stays responsive. Resetting protection refills the budget."
+      },
+      "db_integrity": {
+        "title": "The control plane database is damaged",
+        "hint": "Restore the newest verified snapshot. It is applied at the next start and the damaged file is kept."
+      },
       "rss": {
         "title": "High memory use",
         "hint": "The process is using a lot of RAM. Lower APP_GOMEMLIMIT_PERCENT or review the loops below."

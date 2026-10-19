@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/cphealth"
 	"github.com/GLINCKER/levelrail/internal/footprint"
+	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -45,6 +46,14 @@ type ControlPlaneProbe struct {
 	ResyncInterval time.Duration
 	Telemetry      TelemetryStore
 	MemoryLimit    footprint.MemoryLimit
+	Integrity      IntegrityProbe
+	Guard          GuardProbe
+}
+
+// GuardProbe is the reconcile storm protection the health page reads and resets.
+type GuardProbe interface {
+	Status() reconcile.GuardStatus
+	Reset(name string) int
 }
 
 type cpHealthState struct {
@@ -115,6 +124,8 @@ type cpReconcile struct {
 	Slowest     string  `json:"slowest_controller"`
 	LagSeconds  float64 `json:"lag_seconds"`
 	Pending     bool    `json:"pending"`
+
+	Guard reconcile.GuardStatus `json:"guard"`
 }
 
 type cpFootprint struct {
@@ -171,8 +182,17 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 			res.Reconcile.LagSeconds = now.Sub(rs.LastPassAt).Seconds()
 		}
 	}
+	var integrityFailed bool
+	if p.Integrity != nil {
+		integrityFailed = !p.Integrity.Status().Healthy
+	}
+	res.Reconcile.Guard = reconcile.GuardStatus{Breakers: []reconcile.BreakerStatus{}}
+	if p.Guard != nil {
+		res.Reconcile.Guard = p.Guard.Status()
+	}
 	res.Thresholds = cphealth.DefaultThresholds(os.Getenv)
 	res.Findings = cphealth.Evaluate(cphealth.Inputs{
+		OpenBreakers: res.Reconcile.Guard.OpenBreakers, RecentLimited: res.Reconcile.Guard.RecentLimited, IntegrityFailed: integrityFailed,
 		Goroutines: res.Runtime.Goroutines, HeapBytes: res.Runtime.HeapBytes,
 		DBP95MS: res.DB.P95MS, DBWaitCount: res.DB.WaitCount, DBInUse: res.DB.InUse,
 		WALBytes: res.DB.WALBytes, SlowQueries: res.DB.SlowQueries,
@@ -213,7 +233,8 @@ func (rt *Router) handleGetCPHealth(w http.ResponseWriter, _ *http.Request) {
 }
 
 type cpHealthFixRequest struct {
-	Fix string `json:"fix"`
+	Fix  string `json:"fix"`
+	Name string `json:"name,omitempty"`
 }
 
 func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
@@ -228,7 +249,25 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var err error
+	_, _, actor, _ := rt.currentActor(r)
 	switch req.Fix {
+	case cphealth.FixResetGuard:
+		if p.Guard == nil {
+			writeError(w, http.StatusNotImplemented, "reconcile protection is not available")
+			return
+		}
+		p.Guard.Reset("")
+	case cphealth.FixIntegrityCheck, cphealth.FixIntegrityFix:
+		if p.Integrity == nil {
+			writeError(w, http.StatusNotImplemented, "database integrity checks are not available")
+			return
+		}
+		if req.Fix == cphealth.FixIntegrityCheck {
+			p.Integrity.Check(r.Context(), integrity.ModeFull)
+		} else if _, err = p.Integrity.Restore(r.Context(), req.Name, actor); err != nil {
+			writeError(w, http.StatusConflict, err.Error())
+			return
+		}
 	case cphealth.FixWALCheckpoint:
 		err = p.DB.CheckpointWAL(r.Context(), true)
 	case cphealth.FixDBOptimize:
@@ -249,7 +288,6 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: control plane health fix failed", err)
 		return
 	}
-	_, _, actor, _ := rt.currentActor(r)
 	rt.logger.Info("api: control plane health fix applied", slog.String("fix", req.Fix), slog.String("actor", actor))
 	res, _ := rt.cpHealthSnapshot()
 	if res.Findings == nil {

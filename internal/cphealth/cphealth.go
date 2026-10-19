@@ -22,6 +22,9 @@ const (
 	FixDBOptimize     = "db_optimize"
 	FixResetSlowLog   = "reset_slow_log"
 	FixTelemetryPrune = "telemetry_prune"
+	FixResetGuard     = "reset_reconcile_guard"
+	FixIntegrityCheck = "integrity_check"
+	FixIntegrityFix   = "integrity_restore"
 )
 
 // Finding ids.
@@ -38,6 +41,9 @@ const (
 	FindingRSS        = "rss"
 	FindingThreads    = "threads"
 	FindingTelemetry  = "telemetry_size"
+	FindingBreakers   = "reconcile_breakers"
+	FindingStorm      = "reconcile_storm"
+	FindingIntegrity  = "db_integrity"
 )
 
 // Inputs are the measurements one evaluation reads.
@@ -58,6 +64,10 @@ type Inputs struct {
 	Streams        int
 	StreamCap      int
 	Now            time.Time
+
+	OpenBreakers    int
+	RecentLimited   int
+	IntegrityFailed bool
 }
 
 // Thresholds are the limits above which a measurement is flagged. Env vars override the defaults.
@@ -73,6 +83,7 @@ type Thresholds struct {
 	RSSBytes       uint64        `json:"rss_bytes"`
 	Threads        int           `json:"threads"`
 	TelemetryBytes int64         `json:"telemetry_bytes"`
+	StormEvents    int           `json:"storm_events"`
 }
 
 // Finding is one saturated or degraded measurement.
@@ -107,6 +118,7 @@ func DefaultThresholds(getenv func(string) string) Thresholds {
 		RSSBytes:       uint64(num("APP_CPHEALTH_RSS_MB", 1024)) << 20,
 		Threads:        int(num("APP_CPHEALTH_THREADS", 200)),
 		TelemetryBytes: int64(num("APP_CPHEALTH_TELEMETRY_MB", 768)) << 20,
+		StormEvents:    int(num("APP_CPHEALTH_STORM_EVENTS", 100)),
 	}
 }
 
@@ -122,6 +134,15 @@ func Evaluate(in Inputs, t Thresholds) []Finding {
 	var out []Finding
 	add := func(id string, v, limit float64, fix string) {
 		out = append(out, Finding{ID: id, Severity: rank(v, limit), Value: v, Threshold: limit, Fix: fix})
+	}
+	if in.IntegrityFailed {
+		out = append(out, Finding{ID: FindingIntegrity, Severity: SeverityCrit, Value: 1, Threshold: 0, Fix: FixIntegrityFix})
+	}
+	if in.OpenBreakers > 0 {
+		add(FindingBreakers, float64(in.OpenBreakers), 1, FixResetGuard)
+	}
+	if t.StormEvents > 0 && in.RecentLimited > t.StormEvents {
+		add(FindingStorm, float64(in.RecentLimited), float64(t.StormEvents), FixResetGuard)
 	}
 	if in.Goroutines > t.Goroutines {
 		add(FindingGoroutines, float64(in.Goroutines), float64(t.Goroutines), "")

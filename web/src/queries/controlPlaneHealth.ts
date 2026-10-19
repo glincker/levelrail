@@ -16,9 +16,37 @@ export type CPHealthFindingId =
   | 'rss'
   | 'threads'
   | 'telemetry_size'
+  | 'reconcile_breakers'
+  | 'reconcile_storm'
+  | 'db_integrity'
 
 export type CPHealthFix =
-  'wal_checkpoint' | 'db_optimize' | 'reset_slow_log' | 'telemetry_prune'
+  | 'wal_checkpoint'
+  | 'db_optimize'
+  | 'reset_slow_log'
+  | 'telemetry_prune'
+  | 'reset_reconcile_guard'
+  | 'integrity_check'
+  | 'integrity_restore'
+
+export interface CPHealthBreaker {
+  name: string
+  state: 'closed' | 'open' | 'half_open'
+  failures: number
+  open_until: string
+  last_error?: string
+  trips: number
+  panics: number
+  throttled: number
+  skipped: number
+}
+
+export interface CPHealthGuard {
+  passes_deferred: number
+  recent_limited: number
+  open_breakers: number
+  breakers: CPHealthBreaker[]
+}
 
 export interface CPHealthFinding {
   id: CPHealthFindingId
@@ -79,6 +107,7 @@ export interface CPHealth {
     slowest_controller: string
     lag_seconds: number
     pending: boolean
+    guard: CPHealthGuard
   }
   streams: { active: number; cap: number }
   footprint: {
@@ -118,11 +147,14 @@ export function useControlPlaneHealth() {
 export function useApplyControlPlaneFix() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (fix: CPHealthFix): Promise<CPHealth> => {
+    mutationFn: async (req: {
+      fix: CPHealthFix
+      name?: string
+    }): Promise<CPHealth> => {
       const res = await fetch(`${URL}/fix`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fix }),
+        body: JSON.stringify(req),
       })
       if (!res.ok) {
         throw new ApiError(

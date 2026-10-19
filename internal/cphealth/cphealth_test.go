@@ -22,6 +22,11 @@ func TestEvaluate(t *testing.T) {
 		{name: "db latency", in: Inputs{DBP95MS: 150, Now: now}, wantID: FindingDBLatency, wantSev: SeverityWarn, wantFix: FixDBOptimize},
 		{name: "event lag", in: Inputs{ResyncInterval: 30 * time.Second, LastPassAt: now.Add(-5 * time.Minute), Now: now}, wantID: FindingEventLag, wantSev: SeverityCrit},
 		{name: "streams near cap", in: Inputs{Streams: 85, StreamCap: 100, Now: now}, wantID: FindingStreams, wantSev: SeverityWarn},
+		{name: "corrupt database", in: Inputs{IntegrityFailed: true, Now: now}, wantID: FindingIntegrity, wantSev: SeverityCrit, wantFix: FixIntegrityFix},
+		{name: "one open breaker", in: Inputs{OpenBreakers: 1, Now: now}, wantID: FindingBreakers, wantSev: SeverityWarn, wantFix: FixResetGuard},
+		{name: "many open breakers", in: Inputs{OpenBreakers: 2, Now: now}, wantID: FindingBreakers, wantSev: SeverityCrit, wantFix: FixResetGuard},
+		{name: "reconcile storm", in: Inputs{RecentLimited: 150, Now: now}, wantID: FindingStorm, wantSev: SeverityWarn, wantFix: FixResetGuard},
+		{name: "limits under storm threshold", in: Inputs{RecentLimited: 50, Now: now}, wantNone: true},
 		{name: "streams under cap", in: Inputs{Streams: 10, StreamCap: 100, Now: now}, wantNone: true},
 	}
 	for _, tc := range tests {

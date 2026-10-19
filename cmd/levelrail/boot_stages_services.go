@@ -191,7 +191,7 @@ func (s *bootState) wireRouter() {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { s.restartRequested.Store(true); stop() },
 	})
-	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit()})
+	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit(), Integrity: s.integrity, Guard: engine.Guard()})
 	go db.RunWALMaintenance(ctx)
 	configureNodeCerts(apiRouter, agentServer, agentServer)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)

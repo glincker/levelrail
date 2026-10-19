@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1424 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1428 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1391,6 +1391,10 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/system/encryption-keys/policy", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateKeyPolicy", Description: "Rotation rewrites every secret of an app, and the policy drives alerts: both AbilityRoot, rotation also needs step-up."},
 	{Method: "POST", Path: "/api/v1/system/encryption-keys/rotate", Ability: "AbilityRoot", Group: "System", Handler: "handleRotateDEK", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/geoip", Ability: "AbilityRead", Group: "System", Handler: "handleGeoIPLookup", Description: "Active country sources and a test lookup for one address."},
+	{Method: "GET", Path: "/api/v1/system/integrity", Ability: "AbilityRead", Group: "System", Handler: "handleGetIntegrity", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/integrity/check", Ability: "AbilityRoot", Group: "System", Handler: "handleIntegrityCheck", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/system/integrity/restore", Ability: "AbilityRoot", Group: "System", Handler: "handleIntegrityCancelRestore", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/integrity/restore", Ability: "AbilityRoot", Group: "System", Handler: "handleIntegrityRestore", Description: "Stages a replacement of the whole control plane database for the next boot, so AbilityRoot."},
 	{Method: "GET", Path: "/api/v1/system/janitor", Ability: "AbilityRead", Group: "System", Handler: "handleGetJanitor", Description: ""},
 	{Method: "PUT", Path: "/api/v1/system/janitor/policy", Ability: "AbilityRoot", Group: "System", Handler: "handleUpdateJanitorPolicy", Description: "The policy and a run decide what gets deleted from the host, so AbilityRoot."},
 	{Method: "POST", Path: "/api/v1/system/janitor/run", Ability: "AbilityRoot", Group: "System", Handler: "handleRunJanitor", Description: ""},

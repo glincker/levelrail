@@ -10,7 +10,7 @@ import (
 
 func runSystemHealth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "system health", "print control plane health as JSON to stdout and nothing else", stderr)
-	fix := fs.String("fix", "", "apply a fix: wal_checkpoint, db_optimize, reset_slow_log or telemetry_prune")
+	fix := fs.String("fix", "", "apply a fix: wal_checkpoint, db_optimize, reset_slow_log, telemetry_prune, reset_reconcile_guard, integrity_check or integrity_restore")
 	fs.Usage = func() {
 		_, _ = fmt.Fprint(stderr, systemUsage(prog)+"\nFlags:\n")
 		fs.PrintDefaults()
@@ -47,6 +47,13 @@ func printCPHealth(out io.Writer, h apiclient.CPHealth) {
 	_, _ = fmt.Fprintf(out, "footprint:   rss %d MiB, %d threads, cpu %.1f%%, metrics db %d MiB, memory limit %d MiB (%s)\n", fp.RSSBytes>>20, fp.Threads, fp.CPUPercent, fp.TelemetryBytes>>20, fp.MemoryLimit.LimitBytes>>20, fp.MemoryLimit.Source)
 	for _, l := range fp.Loops {
 		_, _ = fmt.Fprintf(out, "  loop %-28s every %6.0fs runs %-6d last %6.1f ms cost %.3f%%\n", l.Name, l.IntervalSecs, l.Runs, l.LastDuration, l.CostPercent)
+	}
+	g := h.Reconcile.Guard
+	if g.PassesDeferred > 0 || len(g.Breakers) > 0 {
+		_, _ = fmt.Fprintf(out, "protection:  %d passes deferred, %d limited in the last 5 min, %d breakers open\n", g.PassesDeferred, g.RecentLimited, g.OpenBreakers)
+		for _, b := range g.Breakers {
+			_, _ = fmt.Fprintf(out, "  breaker %-28s %-9s failures %d trips %d panics %d %s\n", b.Name, b.State, b.Failures, b.Trips, b.Panics, b.LastError)
+		}
 	}
 	for _, f := range h.Findings {
 		line := fmt.Sprintf("  [%s] %s: %.1f (limit %.1f)", f.Severity, f.ID, f.Value, f.Threshold)
