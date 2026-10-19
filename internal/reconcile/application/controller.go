@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
@@ -1990,7 +1991,7 @@ func (c *Controller) recordHookRun(ctx context.Context, hookType, command string
 	if c.hookRuns == nil {
 		return
 	}
-	_ = c.hookRuns.UpsertHookRun(ctx, store.HookRun{
+	if err := c.hookRuns.UpsertHookRun(ctx, store.HookRun{
 		ServiceName: c.serviceName,
 		HookType:    hookType,
 		Command:     command,
@@ -1998,7 +1999,9 @@ func (c *Controller) recordHookRun(ctx context.Context, hookType, command string
 		Success:     hookErr == nil,
 		Output:      output,
 		RanAt:       time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("reconcile: hook run evidence write failed, diagnostics are incomplete", slog.String("service", c.serviceName), slog.String("hook", hookType), slog.String("error", err.Error()))
+	}
 }
 
 // cappedBuffer accumulates up to limit bytes and silently discards the
@@ -2175,6 +2178,9 @@ func (c *Controller) exitedCrash(ctx context.Context, name string) *readinessCra
 	return newCrashError(name, *state)
 }
 
+// crashWatchLogAfter is how many consecutive inspect errors the crash watcher tolerates before logging.
+const crashWatchLogAfter = 5
+
 // watchForCrash polls name's live exit state on interval (defaulted per
 // maxCrashCheckInterval) until ctx is done or the container has
 // stopped running, in which case it sends a *readinessCrashError
@@ -2188,13 +2194,22 @@ func watchForCrash(ctx context.Context, inspector docker.ExitStateInspector, nam
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	inspectFails := 0
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			state, err := inspector.InspectExitState(ctx, name)
-			if err != nil || state == nil || state.Running {
+			if err != nil {
+				inspectFails++
+				if inspectFails == crashWatchLogAfter {
+					slog.Warn("reconcile: crash watcher cannot inspect container", slog.String("container", name), slog.Int("consecutive_errors", inspectFails), slog.String("error", err.Error()))
+				}
+				continue
+			}
+			inspectFails = 0
+			if state == nil || state.Running {
 				continue
 			}
 			out <- newCrashError(name, *state)

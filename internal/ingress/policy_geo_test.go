@@ -159,6 +159,7 @@ func TestGeoModule(t *testing.T) {
 		{"other country passes", deny, geoRequest("127.0.0.1:1", "203.0.113.9", true, map[string]string{"CF-IPCountry": "DE"}), 200},
 		{"redirect action", redirect, geoRequest("127.0.0.1:1", "203.0.113.9", true, map[string]string{"CF-IPCountry": "RU"}), 302},
 		{"error page action", page, geoRequest("127.0.0.1:1", "203.0.113.9", true, map[string]string{"CF-IPCountry": "RU"}), 451},
+		{"unparseable client address fails closed", deny, geoRequest("not-an-address", "", true, nil), 403},
 		{"no client var uses remote addr", deny, geoRequest("203.0.113.9:1", "", true, map[string]string{"CF-IPCountry": "RU"}), 403},
 	}
 	for _, tt := range tests {

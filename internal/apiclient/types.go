@@ -518,6 +518,16 @@ type DomainResource struct {
 	// Kind is app or standalone; Target is where a standalone domain proxies.
 	Kind   string `json:"kind,omitempty"`
 	Target string `json:"target,omitempty"`
+	// Issues are problems the last ingress pass found for this domain.
+	Issues []DomainIssue `json:"issues,omitempty"`
+}
+
+// DomainIssue is one dropped or downgraded-domain finding from the ingress pass.
+type DomainIssue struct {
+	Domain   string `json:"domain"`
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource

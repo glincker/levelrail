@@ -52,6 +52,9 @@ func printDomainsTable(out io.Writer, domains []domainResource) {
 		if link == "" && d.ReachableReason != "" {
 			link = "(" + d.ReachableReason + ")"
 		}
+		if len(d.Issues) > 0 {
+			link = "(" + d.Issues[0].Severity + ": " + d.Issues[0].Message + ")"
+		}
 		_, _ = fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", d.Domain, service, source, link)
 	}
 	_ = tw.Flush()

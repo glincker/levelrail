@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import type { DeployFailure } from '../types/deployFailure'
 import { Skeleton } from '@/components/ui/skeleton'
+import { DeployFailureActions } from './DeployFailureActions'
 
 interface DeployFailureViewProps {
   failure?: DeployFailure
@@ -14,10 +15,6 @@ interface DeployFailureViewProps {
   /** Shown instead of nothing when the attempt has no failure. */
   showEmpty?: boolean
 }
-
-// Build failures that usually mean the build context or Dockerfile is wrong,
-// for which the Source tab's build settings are the fix.
-const BUILD_SETTINGS_CODES = new Set(['build_config_error', 'dockerfile_error'])
 
 /** DeployFailureView renders a deploy attempt's structured failure. */
 export function DeployFailureView({
@@ -76,14 +73,7 @@ export function DeployFailureView({
             ? 'Retrying may succeed.'
             : 'Retrying will not help until this is fixed.'}
         </span>
-        {failure.app && BUILD_SETTINGS_CODES.has(failure.code) ? (
-          <a
-            href={`/apps/${encodeURIComponent(failure.app)}/source#build-settings`}
-            className="underline underline-offset-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {t('failureLink')}
-          </a>
-        ) : null}
+        <DeployFailureActions failure={failure} appName={failure.app} />
         {failure.docs_url ? (
           <a
             href={failure.docs_url}

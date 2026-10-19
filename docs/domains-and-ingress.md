@@ -408,6 +408,12 @@ levelrail-cli domains tls-cert get <app> <domain>
 
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
 
+An upload is all or nothing: if saving the key or the record fails, the previous certificate is restored and the error names the failing step. The certificate shows as Pending until an ingress pass loads it, then In use. Uploading needs the control plane master key (`APP_MASTER_KEY` or `APP_MASTER_KEY_FILE`).
+
+### Domains that are dropped or downgraded
+
+The ingress pass never degrades a domain silently. Each pass records a per-domain issue, shown on the domain list (and by `levelrail-cli domains list`): an uploaded certificate that cannot be read (automatic issuance is used instead), a basic auth password that cannot be read (the domain is not routed rather than served open), a wildcard with no DNS-01 provider, or a standalone target that is unavailable. A dropped domain also turns the ingress Ready condition False with the domain names; fixing the cause clears it on the next pass.
+
 ## Wildcard domains: DNS-01 providers
 
 Wildcard domains like `*.example.com` need ACME's DNS-01 challenge (HTTP-01 cannot validate wildcards). DNS-01 works by creating a short-lived TXT record at your DNS provider, so you must grant API access.

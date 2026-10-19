@@ -511,7 +511,7 @@ func validateAppResource(a appResource) error {
 // create-with-a-project case instead of requiring a second client round
 // trip to PUT /api/v1/apps/{name}/project right after creation.
 func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxDecodeBodyBytes))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
@@ -101,7 +102,9 @@ func (c *Controller) recordRollout(ctx context.Context, desired *store.DesiredSe
 		return
 	}
 	// Best effort: history annotation must never fail a reconcile.
-	_ = c.rollouts.RecordRollout(ctx, c.serviceName, desired.Image, state, runningImageID)
+	if err := c.rollouts.RecordRollout(ctx, c.serviceName, desired.Image, state, runningImageID); err != nil {
+		slog.Warn("reconcile: rollout history write failed, history is incomplete", slog.String("service", c.serviceName), slog.String("image", desired.Image), slog.String("error", err.Error()))
+	}
 }
 
 // recordRolloutFailure corrects a deploy attempt's status once its
@@ -112,7 +115,9 @@ func (c *Controller) recordRolloutFailure(ctx context.Context, desired *store.De
 	if c.rollouts == nil {
 		return
 	}
-	_ = c.rollouts.RecordRolloutFailure(ctx, c.serviceName, desired.Image, cause.Error())
+	if err := c.rollouts.RecordRolloutFailure(ctx, c.serviceName, desired.Image, cause.Error()); err != nil {
+		slog.Warn("reconcile: rollout failure write failed, attempt may read as succeeded", slog.String("service", c.serviceName), slog.String("image", desired.Image), slog.String("error", err.Error()))
+	}
 }
 
 // releaseOf is a container name without its replica suffix.

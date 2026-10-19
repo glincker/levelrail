@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -607,7 +608,7 @@ func TestHandleListDomains(t *testing.T) {
 		t.Fatalf("GET /domains = %+v, want %+v", got, want)
 	}
 	for i := range want {
-		if stripLevelrailEnforcement(t, got[i]) != want[i] {
+		if !reflect.DeepEqual(stripLevelrailEnforcement(t, got[i]), want[i]) {
 			t.Errorf("GET /domains[%d] = %+v, want %+v", i, got[i], want[i])
 		}
 	}
@@ -667,7 +668,7 @@ func TestHandleListDomains_StatusFlags(t *testing.T) {
 		t.Fatalf("GET /domains = %+v, want %d rows", got, len(want))
 	}
 	for _, row := range got {
-		if stripLevelrailEnforcement(t, row) != want[row.Domain] {
+		if !reflect.DeepEqual(stripLevelrailEnforcement(t, row), want[row.Domain]) {
 			t.Errorf("GET /domains[%q] = %+v, want %+v", row.Domain, row, want[row.Domain])
 		}
 	}

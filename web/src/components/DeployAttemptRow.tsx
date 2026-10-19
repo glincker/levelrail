@@ -26,6 +26,7 @@ import {
   DEPLOY_ATTEMPT_STATUS_TONE,
 } from '../lib/deployAttemptPresentation'
 import { CancelDeployDialog } from './CancelDeployDialog'
+import { DeployFailureActions } from './DeployFailureActions'
 import { DeployFromCacheButton } from './DeployFromCacheButton'
 import { InfoTip, ActionMenu, RelativeTime } from './kit'
 import { RolloutChip } from './DeployDigestChips'
@@ -327,6 +328,13 @@ export function DeployAttemptRow({
                 <p className="mt-0.5 line-clamp-2 text-xs break-words text-muted-foreground">
                   {attempt.failure.suggested_fix}
                 </p>
+              ) : null}
+              {attempt.failure ? (
+                <DeployFailureActions
+                  failure={attempt.failure}
+                  appName={appName}
+                  image={attempt.image}
+                />
               ) : null}
               {attempt.failure?.code === 'git_host_unreachable' ? (
                 <DeployFromCacheButton appName={appName} />

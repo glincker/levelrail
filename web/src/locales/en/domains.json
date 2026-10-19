@@ -343,6 +343,12 @@
       "hideRecord": "Hide record",
       "done": "Done",
       "summary": "{{ok}} added, {{failed}} not added."
+    },
+    "issue": {
+      "custom_cert_unresolved": "Uploaded certificate not in use, automatic issuance instead. Upload it again.",
+      "basic_auth_unresolved": "Not routed: the basic auth password could not be read. Set it again.",
+      "dns01_unavailable": "Wildcard certificate needs a DNS provider. Enable one under DNS settings.",
+      "target_unavailable": "Not routed: its target is unavailable."
     }
   },
   "proxySetup": {
@@ -436,6 +442,10 @@
       "disclosure": "I have my own certificate",
       "hint": "Only needed if you bought a certificate. Otherwise certificates are issued automatically.",
       "uploaded": "BYO certificate",
+      "applied": "In use",
+      "pending": "Pending",
+      "applyIssue": "The uploaded certificate is stored but not in use: {{issue}}",
+      "masterKeyFix": "Check encryption settings",
       "expires": "expires {{date}}",
       "certLabel": "Certificate (PEM)",
       "keyLabel": "Private key (PEM)",

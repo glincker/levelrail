@@ -3,10 +3,13 @@ package api
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/distribution/reference"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
@@ -88,8 +91,23 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "image is required")
 		return
 	}
+	if err := validateImageReference(req.Image); err != nil {
+		writeCodedError(w, http.StatusBadRequest, errCodeInvalidImageRef, "image: "+err.Error())
+		return
+	}
 
 	rt.applyDeploy(w, r, *existing, req, "")
+}
+
+const errCodeInvalidImageRef = "invalid_image_reference"
+
+// validateImageReference rejects an image that Docker could never pull, so the
+// mistake surfaces at trigger time instead of as a failed deploy later.
+func validateImageReference(image string) error {
+	if _, err := reference.ParseNormalizedNamed(image); err != nil {
+		return fmt.Errorf("%q is not a valid image reference (expected name[:tag] or name@sha256:digest, repository names are lowercase)", image)
+	}
+	return nil
 }
 
 // applyDeploy runs a deploy request through the freeze gate and the

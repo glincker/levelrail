@@ -117,6 +117,13 @@ export function DomainTLSCertControl({
             {t('proxySetup.byo.uploaded')}
           </Badge>
         ) : null}
+        {uploaded ? (
+          <Badge variant={cert?.applied ? 'success' : 'warning'}>
+            {cert?.applied
+              ? t('proxySetup.byo.applied')
+              : t('proxySetup.byo.pending')}
+          </Badge>
+        ) : null}
         {uploaded && cert?.expires_at ? (
           <span className="text-xs text-muted-foreground">
             {t('proxySetup.byo.expires', {
@@ -130,6 +137,13 @@ export function DomainTLSCertControl({
           {t('proxySetup.byo.hint')}
         </p>
       )}
+      {uploaded && cert?.apply_issue ? (
+        <Alert variant="destructive" className="mt-2">
+          <AlertDescription>
+            {t('proxySetup.byo.applyIssue', { issue: cert.apply_issue })}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {open ? (
         <form
@@ -182,7 +196,20 @@ export function DomainTLSCertControl({
           ) : null}
           {setCert.isError ? (
             <Alert variant="destructive">
-              <AlertDescription>{setCert.error.message}</AlertDescription>
+              <AlertDescription>
+                {setCert.error.message}
+                {setCert.error.status === 501 ? (
+                  <>
+                    {' '}
+                    <a
+                      href="/settings/general"
+                      className="underline underline-offset-2"
+                    >
+                      {t('proxySetup.byo.masterKeyFix')}
+                    </a>
+                  </>
+                ) : null}
+              </AlertDescription>
             </Alert>
           ) : null}
           {clearCert.isError ? (

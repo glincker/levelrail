@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -79,7 +80,14 @@ func (c *Controller) confirmApplied(ctx context.Context, containerName string) {
 		return
 	}
 	snap.AppliedAt = time.Now()
-	_ = c.applied.SaveAppliedConfig(ctx, *snap)
+	if err := c.applied.SaveAppliedConfig(ctx, *snap); err != nil {
+		slog.Warn("reconcile: applied config save failed", slog.String("service", c.serviceName), slog.String("container", containerName), slog.String("error", err.Error()))
+		c.unconfirmedMu.Lock()
+		if _, ok := c.unconfirmed[containerName]; !ok {
+			c.unconfirmed[containerName] = snap
+		}
+		c.unconfirmedMu.Unlock()
+	}
 }
 
 // recordHold publishes when the held previous release is due, writing only
