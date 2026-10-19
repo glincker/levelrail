@@ -263,6 +263,8 @@ Endpoints for:
 | GET | /api/v1/security/hsts | AbilityRoot | handleGetHSTS |
 | PUT | /api/v1/security/hsts | AbilityRoot | handlePutHSTS |
 | GET | /api/v1/security/reachability | AbilityRoot | handleSecurityReachability |
+| GET | /api/v1/settings/dns-provider-plugin | AbilityRead | handleGetDNSProviderPlugin |
+| PUT | /api/v1/settings/dns-provider-plugin | AbilityRoot | handleSetDNSProviderPlugin |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -276,8 +278,6 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
-| GET | /api/v1/settings/dns-provider-plugin | AbilityRead | handleGetDNSProviderPlugin |
-| PUT | /api/v1/settings/dns-provider-plugin | AbilityRoot | handleSetDNSProviderPlugin |
 
 </Accordion>
 
@@ -551,6 +551,8 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/history | AbilityRead | handleListEnvHistory |
 | POST | /api/v1/apps/{name}/log-budget/trim | AbilityWriteSensitive | handleTrimLogBudget |
 | POST | /api/v1/apps/{name}/shield/recommended | AbilityDeploy | handleApplyRecommendedShield |
+| GET | /api/v1/apps/{name}/ingress-limits | AbilityRead | handleGetAppIngressLimits |
+| PUT | /api/v1/apps/{name}/ingress-limits | AbilityDeploy | handlePutAppIngressLimits |
 
 </Accordion>
 
@@ -952,6 +954,9 @@ Endpoints for:
 | DELETE | /api/v1/apps/{name}/domains/{domain}/shield | AbilityDeploy | handleDeleteDomainPolicy |
 | POST | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStartUnderAttack |
 | DELETE | /api/v1/apps/{name}/domains/{domain}/shield/under-attack | AbilityDeploy | handleStopUnderAttack |
+| GET | /api/v1/settings/ingress/edge | AbilityRead | handleGetIngressEdge |
+| PUT | /api/v1/settings/ingress/edge | AbilityRoot | handlePutIngressEdge |
+| POST | /api/v1/settings/ingress/edge/trusted-proxies/apply-detected | AbilityRoot | handleApplyDetectedProxy |
 
 </Accordion>
 

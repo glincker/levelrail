@@ -4,6 +4,7 @@ import { useApp } from '../../../queries/apps'
 import { certificatesQueryOptions } from '../../../queries/certificates'
 import { AppMaintenanceToggle } from '../../../components/maintenance/AppMaintenanceToggle'
 import { DomainEditor } from '../../../components/DomainEditor'
+import { AppIngressLimitsCard } from '../../../components/AppIngressLimitsCard'
 import { ShieldRecommendedCard } from '../../../components/ShieldRecommendedCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -27,6 +28,7 @@ function DomainsSection() {
       <AppMaintenanceToggle appName={name} />
       <DomainEditor app={app} />
       <ShieldRecommendedCard appName={name} />
+      <AppIngressLimitsCard appName={name} />
     </div>
   )
 }

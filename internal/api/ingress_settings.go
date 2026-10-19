@@ -85,7 +85,7 @@ func (rt *Router) toIngressSettingsResource(s store.IngressSettings) ingressSett
 	res.PublicHost = rt.publicHost
 	res.PublicHostSource = rt.publicHostSource
 	res.ACMESkippedUpstream = s.TLSTerminatedUpstream && s.ACMEEnabled
-	res.TrustedProxiesMissing = s.TLSTerminatedUpstream && rt.doctorEdge != nil && rt.doctorEdge.TrustedProxies == 0
+	res.TrustedProxiesMissing = s.TLSTerminatedUpstream && rt.doctorEdge != nil && rt.doctorEdge.TrustedProxies == 0 && !rt.edgeTrustedProxiesSet(context.Background())
 	httpPort, httpsPort := rt.doctorHTTPPort, rt.doctorHTTPSPort
 	if httpPort == 0 {
 		httpPort = defaultDoctorHTTPPort

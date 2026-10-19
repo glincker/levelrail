@@ -18,6 +18,7 @@ import { DashboardUrlCard } from './DashboardUrlCard'
 import { EnableHttpsCard } from './EnableHttpsCard'
 import { FallbackDomainsCard } from './FallbackDomainsCard'
 import { IngressConnectivityCard } from './IngressConnectivityCard'
+import { IngressEdgeCard } from './IngressEdgeCard'
 import { IngressSettingsCard } from './IngressSettingsCard'
 import { ReverseProxyGuideCard } from './ReverseProxyGuideCard'
 import { Route53DnsCard } from './Route53DnsCard'
@@ -75,6 +76,7 @@ export function PlatformSettingsSection({
         <div className="space-y-4 border-t border-border p-4">
           {httpsOff ? <EnableHttpsCard /> : null}
           <IngressSettingsCard settings={settings} primaryCert={primaryCert} />
+          <IngressEdgeCard />
           <DashboardUrlCard />
           <DomainAutomationCard />
           <AppsBaseDomainCard />

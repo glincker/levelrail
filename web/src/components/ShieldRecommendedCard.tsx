@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { toast } from '@/components/ui/toast'
+import { TrustedProxyFix } from './TrustedProxyFix'
 import { useRecommendedShield } from '../queries/shieldRecommended'
 
 export function ShieldRecommendedCard({ appName }: { appName: string }) {
@@ -63,11 +64,14 @@ export function ShieldRecommendedCard({ appName }: { appName: string }) {
           {t('shieldRecommended.blockBots')}
         </label>
         {mutation.data?.blocked ? (
-          <Alert variant="destructive">
-            <AlertDescription>
-              {t('shieldRecommended.blockedProxy')}
-            </AlertDescription>
-          </Alert>
+          <>
+            <Alert variant="destructive">
+              <AlertDescription>
+                {t('shieldRecommended.blockedProxy')}
+              </AlertDescription>
+            </Alert>
+            <TrustedProxyFix />
+          </>
         ) : null}
         {preview && !preview.blocked ? (
           <div className="space-y-1 text-sm" role="status">

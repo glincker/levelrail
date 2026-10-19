@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/api"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	ingressreconcile "github.com/GLINCKER/levelrail/internal/reconcile/ingress"
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 const (
@@ -75,7 +77,38 @@ func loadIngressEdge(logger *slog.Logger) (ingressEdge, error) {
 	return edge, nil
 }
 
-func (e ingressEdge) options() []ingressreconcile.Option {
+// edgeOverrideStore reads the dashboard-managed edge settings.
+type edgeOverrideStore interface {
+	GetIngressEdgeSettings(ctx context.Context) (store.IngressEdgeSettings, error)
+}
+
+// effectiveHardening layers the current dashboard settings over the boot
+// policy each pass, so a saved change applies without a restart.
+func (e ingressEdge) effectiveHardening(ctx context.Context, db edgeOverrideStore, logger *slog.Logger) *ingressdriver.Hardening {
+	if e.hardening == nil {
+		return nil
+	}
+	h := *e.hardening
+	if db == nil {
+		return &h
+	}
+	s, err := db.GetIngressEdgeSettings(ctx)
+	if err != nil {
+		logger.Warn("ingress edge settings unreadable, using the boot policy", slog.String("error", err.Error()))
+		return &h
+	}
+	merged, err := h.WithOverrides(ingressdriver.EdgeOverrides{
+		TrustedProxies: s.TrustedProxies, MaxHeaderBytes: s.MaxHeaderBytes, MaxBodyBytes: s.MaxBodyBytes,
+		ReadHeaderTimeoutSecs: s.ReadHeaderTimeoutSecs, IdleTimeoutSecs: s.IdleTimeoutSecs,
+	}, os.Getenv)
+	if err != nil {
+		logger.Warn("ingress edge settings invalid, using the boot policy", slog.String("error", err.Error()))
+		return &h
+	}
+	return &merged
+}
+
+func (e ingressEdge) options(ctx context.Context, db edgeOverrideStore, logger *slog.Logger) []ingressreconcile.Option {
 	opts := []ingressreconcile.Option{ingressreconcile.WithHoldTracker(e.holds)}
 	if e.fallbackLifetime > 0 {
 		opts = append(opts, ingressreconcile.WithFallbackCertLifetime(e.fallbackLifetime))
@@ -83,8 +116,8 @@ func (e ingressEdge) options() []ingressreconcile.Option {
 	if e.inherited.Active() {
 		opts = append(opts, ingressreconcile.WithInheritedSockets(e.inherited))
 	}
-	if e.hardening != nil {
-		opts = append(opts, ingressreconcile.WithHardening(*e.hardening))
+	if h := e.effectiveHardening(ctx, db, logger); h != nil {
+		opts = append(opts, ingressreconcile.WithHardening(*h))
 	}
 	return opts
 }

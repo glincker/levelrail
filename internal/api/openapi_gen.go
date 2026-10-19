@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1456 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1461 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -222,6 +222,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/health/discover", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDiscoverAppHealth", Description: "Health check auto-detect (apps_health_discover.go): AbilityRead, the same tier GET .../diagnose already uses for an active probe against a running container (routes.go), since this changes nothing and only reads what the container's own HTTP port already exposes."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/hook-runs", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppHookRuns", Description: "Latest pre/post-deploy hook outcome (apps_hooks.go, internal/reconcile/application's own HookRunRecorder). Read-only, same ability tier as the group route just above."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/images", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListImages", Description: "Previously-built image tags for this app's repo, so the deploy trigger form can offer a dropdown instead of a hand-typed tag (see ImageLister above). AbilityRead like every other passive view of an app's own state."},
+	{Method: "GET", Path: "/api/v1/apps/{name}/ingress-limits", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppIngressLimits", Description: ""},
+	{Method: "PUT", Path: "/api/v1/apps/{name}/ingress-limits", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handlePutAppIngressLimits", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/integrations", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleListAppIntegrations", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/integrations", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAttachAppIntegration", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/integrations/{id}", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDetachAppIntegration", Description: ""},
@@ -733,6 +735,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/settings/ingress", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleUpdateIngressSettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/settings/ingress/apps-base-domain/backfill", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleBackfillBaseDomain", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/check", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleCheckIngressDomain", Description: ""},
+	{Method: "GET", Path: "/api/v1/settings/ingress/edge", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetIngressEdge", Description: ""},
+	{Method: "PUT", Path: "/api/v1/settings/ingress/edge", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handlePutIngressEdge", Description: ""},
+	{Method: "POST", Path: "/api/v1/settings/ingress/edge/trusted-proxies/apply-detected", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleApplyDetectedProxy", Description: ""},
 	{Method: "GET", Path: "/api/v1/settings/ingress/https", Ability: "AbilityRead", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleGetHTTPSStatus", Description: "Platform-level DNS check (ingress_settings.go): runDomainCheck against the platform's own PrimaryDomain instead of a per-app one. AbilityRoot, matching PUT /api/v1/settings/ingress just above: the result speaks directly to whether that endpoint's ACMEEnabled toggle can actually succeed."},
 	{Method: "POST", Path: "/api/v1/settings/ingress/https", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleEnableHTTPS", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/route53-dns", Ability: "AbilityRoot", Group: "Ingress / Certificates / Domains / Email / Cloudflare", Handler: "handleDisconnectRoute53DNS", Description: ""},

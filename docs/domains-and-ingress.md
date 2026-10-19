@@ -846,6 +846,10 @@ Every proxied domain gets the same edge policy, on by default. All of it is tune
 | `APP_INGRESS_GRACE_PERIOD` | `0` (`3s` with socket activation) | How long in-flight requests get to finish when the process stops. |
 | `APP_INGRESS_HOLD_WINDOW` | `10m` | How long a previously routed domain keeps its route and certificate while its app has no ready container (see [When a backend is down](#when-a-backend-is-down)). |
 
+Request limits and the trusted proxy list can also be changed without a restart: Domains, Platform settings, "Request limits and trusted proxies" in the dashboard, `levelrail-cli settings edge get|set|fix`, or `GET`/`PUT /api/v1/settings/ingress/edge` (changing needs root). A saved value applies on the next reconcile and an environment variable above, when set, wins and shows as locked. Header size, the header read timeout and the idle timeout belong to the shared HTTP server, so they are instance wide. The request body cap can also be set per app: the Request size cap card on the app's Domains tab, `levelrail-cli ingress-limits show|set|clear APP`, or `GET`/`PUT /api/v1/apps/{name}/ingress-limits`. An app cap replaces the instance cap for that app's domains.
+
+Per-app monthly spend caps (warn at 50, 80 and 100 percent by default, with throttle or pause only when you opt in per app) are described in [Spend caps](/spend-caps); the cap card sits on the app's Deploys tab.
+
 There is no per-IP connection limit: Caddy has none built in. Put a firewall rule or the [WAF rate limit](#opt-in-waf-and-rate-limiting) in front if you need one.
 
 ### Real client IPs behind a CDN or proxy

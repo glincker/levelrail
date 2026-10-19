@@ -117,5 +117,5 @@ func (rt *Router) clientIPHidden(r *http.Request) bool {
 	if !s.TLSTerminatedUpstream && !s.DNSProxied {
 		return false
 	}
-	return strings.TrimSpace(rt.domainPolicy.env(ingress.EnvTrustedProxies)) == ""
+	return strings.TrimSpace(rt.domainPolicy.env(ingress.EnvTrustedProxies)) == "" && !rt.edgeTrustedProxiesSet(r.Context())
 }

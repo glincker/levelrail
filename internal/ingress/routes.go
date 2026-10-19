@@ -74,6 +74,8 @@ type ProxyRoute struct {
 	// Hidden asks search engines to stay away: X-Robots-Tag on every
 	// response and an ingress-served /robots.txt that disallows everything.
 	Hidden bool
+	// MaxBodyBytes, when positive, replaces the instance request body cap for these hosts.
+	MaxBodyBytes int64
 	// LB, if non-nil, replaces BackendDial with a multi-upstream pool.
 	LB *LBRoute
 	// Policy, if non-nil, adds the domain's traffic controls (policy_*.go).
@@ -547,9 +549,9 @@ func BuildRoutesConfig(opts RoutesOptions) (*Config, error) {
 				opts.Hardening.applyProxy(&rp)
 				handle[len(handle)-1] = rp
 			}
-			if limit := opts.Hardening.bodyLimit(); limit != nil {
-				handle = append([]any{limit}, handle...)
-			}
+		}
+		if limit := opts.Hardening.bodyLimitFor(r.MaxBodyBytes); limit != nil {
+			handle = append([]any{limit}, handle...)
 		}
 		// Traffic controls, backend side: cache and path forwarders sit
 		// right before the reverse proxy, behind auth and WAF.

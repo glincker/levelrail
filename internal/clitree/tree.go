@@ -279,6 +279,7 @@ var Tree = map[string]*Node{
 	"attention":                nil,
 	"tui":                      nil,
 	"advisor":                  {Subs: map[string]*Node{"findings": nil, "summary": nil, "apply": nil, "dismiss": nil, "snooze": nil, "restore": nil, "enable": nil, "disable": nil}},
+	"ingress-limits":           {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil}},
 	"budget":                   {Subs: map[string]*Node{"show": nil, "set": nil, "clear": nil, "delete": nil}},
 	"costs":                    {Subs: map[string]*Node{"explore": nil, "budgets": {Subs: map[string]*Node{"list": nil, "create": nil, "set": nil, "delete": nil}}}},
 	"usage":                    {Subs: map[string]*Node{"report": nil, "settings": {Subs: map[string]*Node{"set": nil}}, "budgets": {Subs: map[string]*Node{"set": nil, "delete": nil}}}},
@@ -350,6 +351,7 @@ var Tree = map[string]*Node{
 	"settings": {Subs: map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"email":         {Subs: map[string]*Node{"get": nil, "set": nil}},
+		"edge":          {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
 		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
