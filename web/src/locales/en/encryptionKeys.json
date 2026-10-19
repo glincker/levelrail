@@ -1,0 +1,67 @@
+{
+  "master": {
+    "title": "Master key",
+    "age_one": "{{count}} day old",
+    "age_other": "{{count}} days old",
+    "never": "Never rotated"
+  },
+  "apps": {
+    "title": "App data keys",
+    "empty": "No app has stored a secret yet, so there are no data keys to rotate.",
+    "age_one": "{{count}} day",
+    "age_other": "{{count}} days",
+    "values_one": "{{count}} secret",
+    "values_other": "{{count}} secrets",
+    "overdue": "Past limit",
+    "current": "Current",
+    "rotate": "Rotate key",
+    "rotateAll": "Rotate all keys",
+    "neverRotated": "Created {{date}}",
+    "rotatedOn": "Rotated {{date}}"
+  },
+  "lastRun": {
+    "title": "Last rotate all run",
+    "progress": "{{done}} of {{total}} apps, {{failed}} failed",
+    "finished": "Finished {{date}}",
+    "interrupted": "Interrupted. Rotate all keys again to resume where it stopped."
+  },
+  "policy": {
+    "title": "Maximum key age",
+    "description": "Send a reminder through your notification channels when a key is older than this. 0 turns reminders off.",
+    "maxAge": "Maximum age in days",
+    "remindEvery": "Repeat the reminder every (days)",
+    "save": "Save policy",
+    "saving": "Saving",
+    "saved": "Key age policy saved"
+  },
+  "hint": {
+    "fixMaster": "Rotate now",
+    "fixApp": "Rotate this key",
+    "fixAll": "Rotate all keys"
+  },
+  "confirm": {
+    "titleOne": "Rotate the data key for {{app}}?",
+    "titleAll": "Rotate every app data key?",
+    "descriptionOne": "A new key is generated and every secret of this app is re-encrypted in one step. If anything fails, nothing changes.",
+    "descriptionAll": "Each app is rotated in its own step. A run that stops part way resumes where it left off.",
+    "consequenceReadable": "All secrets stay readable and no restart is needed.",
+    "consequenceAudit": "The rotation is recorded in the audit log.",
+    "action": "Rotate",
+    "pending": "Rotating",
+    "typed": "ROTATE"
+  },
+  "result": {
+    "single_one": "Rotated the key for {{app}} and re-encrypted {{count}} secret",
+    "single_other": "Rotated the key for {{app}} and re-encrypted {{count}} secrets",
+    "all": "Rotated {{rotated}} keys, {{skipped}} already current",
+    "allFailed": "{{failed}} keys could not be rotated and were left unchanged: {{names}}",
+    "partial": "The run was cut short. Rotate all keys again to resume."
+  },
+  "errors": {
+    "load": "Could not load encryption key status",
+    "rotate": "Rotation failed"
+  },
+  "title": "Encryption keys",
+  "description": "Every secret is encrypted with a data key for its app, and those keys are protected by the master key. Rotate them to limit how long any one key is in use.",
+  "guide": "Key rotation guide"
+}

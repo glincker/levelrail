@@ -126,6 +126,26 @@ Once `binding-status` reports `legacy: 0`, you can set `APP_SECRETS_REQUIRE_BOUN
 
 `POST /api/v1/system/secrets/rebind` requires the `root` ability, like rotation. `GET /api/v1/system/secrets/binding` only needs `read`. Neither ever returns a secret value.
 
+## Rotating an app's data key
+
+The master key wraps one data key per app, and that data key encrypts the app's secret values. Rotating the master key re-wraps the data keys but leaves them unchanged. To retire a data key itself, rotate it: a new key is generated and every secret of the app is re-encrypted under it.
+
+Each app is rotated in one database transaction with a pre-image check. If a value fails to decrypt, the master key is wrong, or a row changes mid-run, nothing is written and every secret stays readable under the old key. No restart is needed, and key material is never logged.
+
+From the dashboard, open Settings, General, Encryption keys and press Rotate key on an app, or Rotate all keys. You confirm with your password first. From the CLI:
+
+```bash
+levelrail-cli secrets key-status
+levelrail-cli secrets rotate-dek <app>
+levelrail-cli secrets rotate-dek --all
+```
+
+`--all` records a run. If the control plane restarts or the request is cancelled part way, running it again resumes the same run and skips apps it already rotated. Apps that failed are listed and left unchanged, and a later run retries them.
+
+### Maximum key age
+
+Set a maximum key age under Encryption keys, or with `levelrail-cli secrets key-policy --max-age-days 90 --remind-every-days 7`. When the master key or any app data key is older than the limit, the card shows a Rotate button next to the problem and a reminder goes to your notification channels, repeated at the interval you chose. A limit of 0 turns reminders off. The MCP tool `get_encryption_key_status` reads the same ages and fixes.
+
 ## Troubleshooting
 
 ### Rotation fails with "unwrap DEK" error

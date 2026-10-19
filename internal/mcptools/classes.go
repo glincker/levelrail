@@ -183,6 +183,7 @@ var toolTable = map[string]Meta{
 	"get_dashboard":                         {clsR, "dashboards", unt},
 	"get_resilience_report":                 {clsR, "system", unt},
 	"list_archives":                         {clsR, "system", 0},
+	"get_encryption_key_status":             {clsR, "system", 0},
 	"create_alert_silence":                  {clsM, "alerts", 0},
 	"silence_alert_rule":                    {clsM, "alerts", 0},
 	"expire_alert_silence":                  {clsM, "alerts", 0},
