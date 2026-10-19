@@ -15,6 +15,8 @@ import { useAppAsleep } from '../../queries/appSleep'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { AppActionBar } from '../../components/apps/AppActionBar'
+import { AppPaletteActions } from '../../components/apps/AppPaletteActions'
+import { parseAppAction, type AppPaletteAction } from '../../lib/paletteAction'
 import { AppHeaderBadges } from '../../components/apps/AppHeaderBadges'
 import {
   DeploySheet,
@@ -66,6 +68,12 @@ export const Route = createFileRoute('/apps/$name')({
       queryClient.ensureQueryData(appDetailQueryOptions(name)),
       queryClient.ensureQueryData(deployStatusQueryOptions(name)),
     ]),
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { action?: AppPaletteAction } => {
+    const action = parseAppAction(search.action)
+    return action ? { action } : {}
+  },
   component: AppDetailLayout,
   pendingComponent: AppDetailLayoutSkeleton,
   errorComponent: AppDetailError,
@@ -73,6 +81,7 @@ export const Route = createFileRoute('/apps/$name')({
 
 function AppDetailLayout() {
   const { name } = Route.useParams()
+  const { action } = Route.useSearch()
   const { data: app } = useApp(name)
   const { data: conditions } = useDeployStatus(name)
   const asleep = useAppAsleep(name)
@@ -127,6 +136,7 @@ function AppDetailLayout() {
           setDeployTab(null)
         }}
       />
+      <AppPaletteActions app={app} action={action} onDeploy={setDeployTab} />
       <Outlet />
     </>
   )

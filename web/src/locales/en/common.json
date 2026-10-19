@@ -108,6 +108,25 @@
     "delete": "Delete...",
     "wake": "Wake now"
   },
+  "paletteAction": {
+    "restartTitle": "Restart {{name}}?",
+    "restartDescription": "The running containers are replaced with fresh ones.",
+    "restartConsequence": "Requests may fail briefly while the app comes back.",
+    "restartConfirm": "Restart",
+    "stopTitle": "Stop {{name}}?",
+    "stopDescription": "The app stops serving traffic until you start it again.",
+    "stopConsequence": "Config, env and domains are kept.",
+    "stopConfirm": "Stop",
+    "rollbackTitle": "Roll back {{name}}?",
+    "rollbackDescription": "Redeploys the previous release: {{image}}.",
+    "rollbackConsequence": "The current release stops serving once the previous one is healthy.",
+    "rollbackConfirm": "Roll back",
+    "rollbackNone": "{{name}} has no previous release to roll back to.",
+    "rollbackFailed": "Rollback failed",
+    "rollbackStarted": "Rolling back \"{{name}}\".",
+    "pending": "Working...",
+    "alreadyStopped": "{{name}} is already stopped."
+  },
   "confirmDialog": {
     "cancel": "Cancel",
     "typePrompt": "Type {{value}} to confirm"

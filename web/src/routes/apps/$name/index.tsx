@@ -1,10 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-// Bare /apps/$name has no content of its own now that the 8 former tabs
-// are real sibling routes: it redirects to overview, the same section the
-// old client-side Tabs component defaulted to (`defaultValue="overview"`).
+// Bare /apps/$name redirects to overview; ?action= from the palette rides along.
 export const Route = createFileRoute('/apps/$name/')({
-  beforeLoad: ({ params }) => {
-    redirect({ to: '/apps/$name/overview', params, throw: true })
+  beforeLoad: ({ params, search }) => {
+    redirect({
+      to: '/apps/$name/overview',
+      params,
+      search: search.action ? { action: search.action } : {},
+      throw: true,
+    })
   },
 })
