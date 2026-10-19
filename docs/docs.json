@@ -116,7 +116,10 @@
               "guides/self-host-flowise",
               "guides/self-host-openclaw",
               "guides/self-host-qdrant",
-              "guides/self-host-litellm"
+              "guides/self-host-litellm",
+              "guides/run-ai-agents-safely",
+              "guides/openclaw-on-docker-compose-vs-levelrail",
+              "guides/use-ollama-open-webui-with-a-mac-and-levelrail"
             ],
             "icon": "/assets/icons/compass.svg"
           },

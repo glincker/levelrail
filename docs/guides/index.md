@@ -21,3 +21,6 @@ Guides answer a specific question end to end and link into the reference pages f
 - [Self-host OpenClaw with Levelrail](/guides/self-host-openclaw): the agent gateway, and the start-up settings to review before you expose it.
 - [Self-host Qdrant with Levelrail](/guides/self-host-qdrant): vector search with a generated API key.
 - [Self-host LiteLLM Proxy with Levelrail](/guides/self-host-litellm): one OpenAI-format gateway with a generated master key and Postgres.
+- [Run AI agents safely on your own server](/guides/run-ai-agents-safely): the risk, the controls Levelrail gives you today, the self-host AI guides, and what is not covered yet.
+- [OpenClaw on Docker Compose or on Levelrail](/guides/openclaw-on-docker-compose-vs-levelrail): a factual comparison of the OpenClaw template run by hand and on Levelrail, with the checks that passed and the known limits.
+- [Use Ollama and Open WebUI with a Mac and Levelrail](/guides/use-ollama-open-webui-with-a-mac-and-levelrail): an end-to-end walkthrough from a native Ollama on a Mac to Open WebUI with a scoped key.
