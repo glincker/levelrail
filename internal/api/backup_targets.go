@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -221,8 +220,7 @@ func (rt *Router) handleCreateBackupTarget(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req createBackupTargetRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateCreateBackupTargetRequest(req); err != nil {
@@ -286,8 +284,7 @@ func (rt *Router) handleUpdateBackupTarget(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req updateBackupTargetRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateUpdateBackupTargetRequest(req); err != nil {

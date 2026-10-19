@@ -3,9 +3,7 @@ package api
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"strconv"
@@ -13,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/tokenhash"
 )
 
 // Env vars for the built-in auth gate provider.
@@ -183,8 +182,7 @@ func newGateSecretToken() (token, hash string, err error) {
 }
 
 func hashGateToken(token string) string {
-	sum := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(sum[:])
+	return tokenhash.Sum(token)
 }
 
 // validGateTokenShape rejects anything that is not a token we could have

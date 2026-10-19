@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/timeutil"
 )
 
 const recordColumns = `deployment_id, app_name, path, bytes, width, height, status, reason, detail, http_status, source, meta, captured_at, last_viewed_at`
@@ -26,13 +27,7 @@ func fmtTime(t time.Time) string {
 	return t.UTC().Format(time.RFC3339Nano)
 }
 
-func parseTime(s string) time.Time {
-	t, err := time.Parse(time.RFC3339Nano, s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
-}
+func parseTime(s string) time.Time { return timeutil.ParseOrZero(s) }
 
 // GetPreviewSettings returns the stored settings, or the zero value when none exist.
 func (s *SQLStore) GetPreviewSettings(ctx context.Context, app string) (AppSettings, error) {

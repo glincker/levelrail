@@ -189,8 +189,7 @@ func (rt *Router) handleCreateStorageBucket(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	var req createStorageBucketRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if !bucketNameRE.MatchString(req.Name) {
@@ -312,8 +311,7 @@ func (rt *Router) handleUpdateStorageBucket(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	var req updateStorageBucketRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Public != nil {
@@ -688,8 +686,7 @@ func (rt *Router) handlePresignBucketObject(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	var req presignRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Method == "" {

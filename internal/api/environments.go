@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -72,8 +71,7 @@ func (rt *Router) handleCreateEnvironment(w http.ResponseWriter, r *http.Request
 	}
 
 	var req createEnvironmentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Name == "" {
@@ -104,8 +102,7 @@ func (rt *Router) handleUpdateEnvironment(w http.ResponseWriter, r *http.Request
 	id := r.PathValue("id")
 
 	var req updateEnvironmentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if (req.Name != nil || req.Kind != nil || req.SortOrder != nil) && !requireExperimentalOn(w, experimental.GlobalEnvironments) {
@@ -180,8 +177,7 @@ func (rt *Router) handleSetAppEnvironment(w http.ResponseWriter, r *http.Request
 	name := r.PathValue("name")
 
 	var req setAppEnvironmentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	svc, err := rt.apps.GetDesiredService(r.Context(), name)

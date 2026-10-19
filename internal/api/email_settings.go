@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -169,8 +168,7 @@ func (rt *Router) handleUpdateEmailSettings(w http.ResponseWriter, r *http.Reque
 	}
 
 	var req emailSettingsResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateEmailSettingsRequest(req); err != nil {
@@ -255,8 +253,7 @@ func (rt *Router) handleTestEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req testEmailRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := email.ValidateAddress(req.To); err != nil {

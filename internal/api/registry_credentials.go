@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -192,8 +191,7 @@ func (rt *Router) handleCreateRegistryCredential(w http.ResponseWriter, r *http.
 	}
 
 	var req createRegistryCredentialRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateCreateRegistryCredentialRequest(req); err != nil {
@@ -260,8 +258,7 @@ func (rt *Router) handleUpdateRegistryCredential(w http.ResponseWriter, r *http.
 	}
 
 	var req updateRegistryCredentialRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateUpdateRegistryCredentialRequest(req); err != nil {

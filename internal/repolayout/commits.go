@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/timeutil"
 )
 
 // Commit is one entry of a branch's history, reduced to what a deploy
@@ -46,13 +48,7 @@ func firstLine(s string) string {
 	return strings.TrimSpace(s)
 }
 
-func parseTime(s string) time.Time {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
-}
+func parseTime(s string) time.Time { return timeutil.ParseOrZero(s) }
 
 func (s *githubSource) Commits(ctx context.Context, limit int) ([]Commit, error) {
 	var raw []struct {

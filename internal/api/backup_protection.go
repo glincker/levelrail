@@ -380,8 +380,7 @@ func (rt *Router) handleSetVolumeBackupPolicy(w http.ResponseWriter, r *http.Req
 		return
 	}
 	var req volumeBackupPolicyResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	switch {
@@ -432,8 +431,7 @@ func (rt *Router) handleVolumeRestoreTo(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	var req volumeRestoreToRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.BackupID == "" {

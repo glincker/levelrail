@@ -2,10 +2,10 @@ package models
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/GLINCKER/levelrail/internal/tokenhash"
 )
 
 const (
@@ -27,14 +27,13 @@ func NewAPIKey() (plaintext, hash, prefix string, err error) {
 
 // HashAPIKey returns the SHA-256 hex digest stored for a key.
 func HashAPIKey(plaintext string) string {
-	sum := sha256.Sum256([]byte(plaintext))
-	return hex.EncodeToString(sum[:])
+	return tokenhash.Sum(plaintext)
 }
 
 // KeyMatches reports whether plaintext hashes to storedHash, in constant
 // time.
 func KeyMatches(plaintext, storedHash string) bool {
-	return subtle.ConstantTimeCompare([]byte(HashAPIKey(plaintext)), []byte(storedHash)) == 1
+	return tokenhash.Matches(plaintext, storedHash)
 }
 
 // NewKeyID returns a random identifier for a virtual key.

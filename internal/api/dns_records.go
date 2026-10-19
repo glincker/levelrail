@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -368,8 +367,7 @@ func (rt *Router) handleCreateDNSRecord(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req dnsRecordResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	rr, ok := validateDNSRecord(w, req)
@@ -400,8 +398,7 @@ func (rt *Router) handleUpdateDNSRecord(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req updateDNSRecordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	oldRR, ok := validateDNSRecord(w, req.Original)
@@ -438,8 +435,7 @@ func (rt *Router) handleDeleteDNSRecord(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req dnsRecordResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	rr, ok := validateDNSRecord(w, req)

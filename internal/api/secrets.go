@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -61,8 +60,7 @@ func (rt *Router) handleSetSecret(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req setSecretRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Value == "" {
@@ -255,8 +253,7 @@ func (rt *Router) handleSetSecretLock(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req setSecretLockRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 

@@ -2,8 +2,6 @@ package janitor
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // Item actions a stage reports.
@@ -133,9 +132,7 @@ type Options struct {
 }
 
 func newID() string {
-	b := make([]byte, 8)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	return ids.MustHex(8)
 }
 
 // Run executes one pass under the saved policy and records it in history.

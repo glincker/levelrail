@@ -10,6 +10,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
 )
 
@@ -146,17 +147,14 @@ func (m *Manager) boundedEvent(n Notification) *pluginpb.Event {
 }
 
 func (m *Manager) boundedDetail(detail, secret string) string {
-	if secret != "" {
-		detail = strings.ReplaceAll(detail, secret, "[redacted]")
-	}
-	return truncateUTF8(detail, m.cfg.MaxResponseBytes)
+	return truncateUTF8(envredact.Secrets(detail, secret), m.cfg.MaxResponseBytes)
 }
 
 func redactSecret(err error, secret string) error {
 	if secret == "" {
 		return err
 	}
-	return errors.New(strings.ReplaceAll(err.Error(), secret, "[redacted]"))
+	return errors.New(envredact.Secrets(err.Error(), secret))
 }
 
 func truncateUTF8(s string, n int) string {

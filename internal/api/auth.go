@@ -3,10 +3,7 @@ package api
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -17,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/tokenhash"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -663,8 +661,7 @@ func bearerToken(r *http.Request) (string, bool) {
 // hashToken returns the hex-encoded SHA-256 digest of a plaintext API
 // token, the only form ever persisted (store.APIToken.TokenHash).
 func hashToken(plaintext string) string {
-	sum := sha256.Sum256([]byte(plaintext))
-	return hex.EncodeToString(sum[:])
+	return tokenhash.Sum(plaintext)
 }
 
 type registerRequest struct {
@@ -680,8 +677,7 @@ type registerRequest struct {
 // index (migrations/0035) closes the concurrent-registration race.
 func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Email == "" || req.Password == "" {

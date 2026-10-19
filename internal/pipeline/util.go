@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"bufio"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"regexp"
@@ -11,12 +9,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 func randomID() string {
-	b := make([]byte, 12)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	return ids.MustHex(12)
 }
 
 func shortID(id string) string {

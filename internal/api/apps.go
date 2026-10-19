@@ -843,8 +843,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req appResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	req.Name = name // the path is authoritative, not whatever the body claims
@@ -983,8 +982,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req setAppNodeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -1060,8 +1058,7 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req setAppProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 

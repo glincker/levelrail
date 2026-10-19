@@ -1,8 +1,6 @@
 package ingress
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"net/http"
 	"os"
 	"sort"
@@ -10,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 const (
@@ -214,7 +214,5 @@ func isLowerHex(s string) bool {
 }
 
 func randHex(n int) string {
-	b := make([]byte, n)
-	_, _ = rand.Read(b)
-	return hex.EncodeToString(b)
+	return ids.MustHex(n)
 }

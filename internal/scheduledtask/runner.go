@@ -22,9 +22,11 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	appspec "github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/backoff"
 )
 
 // defaultRunTimeout bounds one attempt when neither the job nor
@@ -35,7 +37,7 @@ const defaultRunTimeout = 10 * time.Minute
 // lines of a failing script are usually the error.
 const maxOutputBytes = 64 * 1024
 
-const redactedMarker = "[redacted]"
+const redactedMarker = envredact.Marker
 
 // AppStore resolves a job's target service.
 type AppStore interface {
@@ -367,14 +369,10 @@ func (r *Runner) backoff(task store.ScheduledTask, attempt int) time.Duration {
 	if task.RetryBackoffSeconds > 0 {
 		base = time.Duration(task.RetryBackoffSeconds) * time.Second
 	}
-	d := base
-	for i := 1; i < attempt && d < l.MaxRetryBackoff; i++ {
-		d *= 2
+	if l.MaxRetryBackoff <= 0 {
+		return base
 	}
-	if l.MaxRetryBackoff > 0 && d > l.MaxRetryBackoff {
-		d = l.MaxRetryBackoff
-	}
-	return d
+	return backoff.Exponential(base, l.MaxRetryBackoff, attempt)
 }
 
 func (r *Runner) sleep(ctx context.Context, d time.Duration) error {
@@ -622,12 +620,7 @@ func (r *Runner) record(ctx context.Context, taskID, status, output string) erro
 
 // redact replaces every secret value found in s.
 func redact(s string, secrets []string) string {
-	for _, v := range secrets {
-		if v != "" {
-			s = strings.ReplaceAll(s, v, redactedMarker)
-		}
-	}
-	return s
+	return envredact.Secrets(s, secrets...)
 }
 
 // capTail trims s to its last limit bytes.
