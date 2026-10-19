@@ -9,6 +9,7 @@
 package main
 
 import (
+	_ "embed"
 	"flag"
 	"fmt"
 	"os"
@@ -23,6 +24,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/compose"
 )
+
+//go:embed notes.md
+var notes string
 
 var priority = []string{
 	"ghost", "wordpress", "nextcloud", "grafana", "uptime-kuma", "n8n", "plausible", "metabase",
@@ -155,9 +159,8 @@ func render(tpl catalog.Template) (string, string) {
 				return tok
 			}
 			val = v
-		case mv.Kind == "FQDN":
-			val = tpl.ID + ".localhost"
-		case mv.Kind == "URL":
+		case mv.Kind == "FQDN", mv.Kind == "URL":
+			// The platform resolves FQDN to a full URL, so the harness must too.
 			val = "http://" + tpl.ID + ".localhost"
 		case mv.HasDefault:
 			val = mv.Default
@@ -171,15 +174,20 @@ func render(tpl catalog.Template) (string, string) {
 	if unresolved != "" {
 		return "", unresolved
 	}
-	stripped, err := dropHostPorts(body)
+	stripped, err := dropHostPorts(body, noInContainerProbe[tpl.ID])
 	if err != nil {
 		return "", "unparseable compose: " + err.Error()
 	}
 	return stripped, ""
 }
 
+// noInContainerProbe lists images with no shell, curl or wget. The platform probes
+// them over HTTP from outside, which docker compose cannot, so the harness only
+// checks that they stay running.
+var noInContainerProbe = map[string]bool{"portainer": true, "keycloak": true, "typesense": true}
+
 // dropHostPorts removes services.*.ports so a smoke run never collides with local ports.
-func dropHostPorts(body string) (string, error) {
+func dropHostPorts(body string, dropHealth bool) (string, error) {
 	var doc map[string]any
 	if err := yaml.Unmarshal([]byte(body), &doc); err != nil {
 		return "", err
@@ -195,6 +203,9 @@ func dropHostPorts(body string) (string, error) {
 				continue
 			}
 			delete(svc, "ports")
+			if dropHealth {
+				delete(svc, "healthcheck")
+			}
 			vols, _ := svc["volumes"].([]any)
 			for _, v := range vols {
 				if name := namedVolume(v); name != "" {
@@ -278,5 +289,7 @@ func report(args []string) error {
 	for _, r := range rows {
 		fmt.Fprintf(&b, "| `%s` | %s | %s | %s |\n", r.id, r.status, r.seconds, r.note)
 	}
+	b.WriteString("\n")
+	b.WriteString(notes)
 	return os.WriteFile(*out, []byte(b.String()), 0o600)
 }

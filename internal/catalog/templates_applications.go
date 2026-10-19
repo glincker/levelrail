@@ -53,7 +53,7 @@ var applicationsTemplates = []Template{
     volumes:
       - nextcloud_data:/var/www/html
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/status.php || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/status.php || wget -q -O /dev/null http://127.0.0.1:80/status.php || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -82,6 +82,9 @@ var applicationsTemplates = []Template{
       DATABASE_TYPE: postgresql
       DATABASE_URL: postgresql://umami:$SERVICE_PASSWORD_DB@db:5432/umami
       APP_SECRET: $SERVICE_HEX_64_APPSECRET
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/api/heartbeat || exit 1"]
       interval: 30s
@@ -95,6 +98,11 @@ var applicationsTemplates = []Template{
       POSTGRES_DB: umami
     volumes:
       - umami_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U umami -d umami"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 `,
 	},
 	{
@@ -121,7 +129,7 @@ var applicationsTemplates = []Template{
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2368/ghost/api/admin/site/"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:2368/ghost/api/admin/site/',r=>process.exit(r.statusCode<400?0:1)).on('error',()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 3

@@ -131,6 +131,7 @@ var devtools1Templates = []Template{
       ADMIN_PASSWORD: $SERVICE_PASSWORD_ADMIN
       DB_CLIENT: pg
       DB_HOST: db
+      DB_PORT: "5432"
       DB_DATABASE: directus
       DB_USER: directus
       DB_PASSWORD: $SERVICE_PASSWORD_DB
@@ -139,6 +140,9 @@ var devtools1Templates = []Template{
       REDIS: redis://redis:6379
     volumes:
       - directus_uploads:/directus/uploads
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8055/server/health || exit 1"]
       interval: 30s
@@ -152,6 +156,11 @@ var devtools1Templates = []Template{
       POSTGRES_DB: directus
     volumes:
       - directus_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U directus -d directus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   redis:
     image: redis:7-alpine
     volumes:

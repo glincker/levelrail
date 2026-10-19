@@ -23,7 +23,7 @@ var media1Templates = []Template{
       - jellyfin_config:/config
       - jellyfin_media:/data/media
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8096/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8096/health || wget -q -O /dev/null http://127.0.0.1:8096/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -77,7 +77,7 @@ var media1Templates = []Template{
     volumes:
       - immich_upload_data:/usr/src/app/upload
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:2283/api/server/ping || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:2283/api/server/ping || wget -q -O /dev/null http://127.0.0.1:2283/api/server/ping || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

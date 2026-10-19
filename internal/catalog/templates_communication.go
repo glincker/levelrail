@@ -187,7 +187,7 @@ var communicationTemplates = []Template{
     volumes:
       - gotify_data:/app/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/ || wget -q -O /dev/null http://127.0.0.1:80/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3

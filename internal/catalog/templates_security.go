@@ -17,7 +17,7 @@ var securityTemplates = []Template{
     volumes:
       - vaultwarden_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:80/alive || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/alive || wget -q -O /dev/null http://127.0.0.1:80/alive || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -93,7 +93,7 @@ var securityTemplates = []Template{
     volumes:
       - keycloak_data:/opt/keycloak/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/health/ready || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/health/ready || wget -q -O /dev/null http://127.0.0.1:8080/health/ready || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

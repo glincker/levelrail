@@ -22,7 +22,7 @@ var aiTemplates = []Template{
     volumes:
       - openwebui_data:/app/backend/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/health || wget -q -O /dev/null http://127.0.0.1:8080/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
