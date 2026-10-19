@@ -494,5 +494,6 @@ Every entry here passed the same structural checks the rest of the catalog gets 
 
 - [Templates and registry](/templates-and-registry) - how a template deploy actually works, the API/CLI/UI surface, custom templates
 - [Starter kit templates](/templates) - the seven `Starter Kits` entries in depth
+- [Template status](/templates-status) - measured pass rate from the local smoke run
 - [Deploying apps](/deploying-apps) - using templates from the dashboard or CLI
 - [ADR 015: Service template catalog reversal](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md) - why this catalog exists at all

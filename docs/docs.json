@@ -300,6 +300,7 @@
               "templates-and-registry",
               "private-registries",
               "template-catalog",
+              "templates-status",
               "templates"
             ],
             "icon": "/assets/icons/squares-four.svg"

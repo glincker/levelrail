@@ -149,5 +149,13 @@
   "hint": {
     "line": "Part of setup: {{step}}.",
     "cta": "Open the guide"
+  },
+  "sample": {
+    "cta": "Deploy a sample app",
+    "creating": "Deploying...",
+    "created": "Sample app created. It will be live in a moment.",
+    "exists": "A sample app already exists on this server.",
+    "error": "Could not deploy the sample app: {{message}}",
+    "open": "Open sample app"
   }
 }
