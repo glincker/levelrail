@@ -34,12 +34,34 @@ Recommended memory: about 512 MiB.
 | `directus` | `DB_DATABASE` | Preset in the template |
 | `directus` | `DB_HOST` | Preset in the template |
 | `directus` | `DB_PASSWORD` | Generated at deploy |
+| `directus` | `DB_PORT` | Preset in the template |
 | `directus` | `DB_USER` | Preset in the template |
 | `directus` | `KEY` | Generated at deploy |
 | `directus` | `REDIS` | Preset in the template |
 | `directus` | `SECRET` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`directus`): 8055:8055.
+- Passwords and keys are generated at deploy time (`db`, `directus`): ADMIN_PASSWORD, DB_PASSWORD, KEY, SECRET, POSTGRES_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`redis`).
+- Stores data in named volumes (`db`, `directus`, `redis`): directus_db_data, directus_redis_data, directus_uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
 
 ## Deploy Directus with Levelrail
 

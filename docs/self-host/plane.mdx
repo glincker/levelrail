@@ -53,6 +53,27 @@ Recommended memory: about 2048 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`proxy`): 8080:80.
+- Passwords and keys are generated at deploy time (`api`, `plane-db`, `plane-minio`, `plane-mq`): AMQP_URL, AWS_SECRET_ACCESS_KEY, DATABASE_URL, SECRET_KEY, MINIO_ROOT_PASSWORD, POSTGRES_PASSWORD, RABBITMQ_DEFAULT_PASS.
+- No health check, so a deploy is judged by the process starting (`api`).
+- Stores data in named volumes (`api`, `plane-db`, `plane-minio`, `plane-mq`, `plane-redis`, `proxy`): plane_db_data, plane_logs_api, plane_mq_data, plane_proxy_config, plane_proxy_data, plane_redis_data, plane_uploads.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Plane with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Plane. Review the Compose body and deploy.

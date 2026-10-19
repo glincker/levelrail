@@ -36,12 +36,35 @@ Recommended memory: about 2048 MiB.
 | `backend` | `PENPOT_SECRET_KEY` | Generated at deploy |
 | `exporter` | `PENPOT_PUBLIC_URI` | Preset in the template |
 | `exporter` | `PENPOT_REDIS_URI` | Preset in the template |
+| `frontend` | `PENPOT_BACKEND_URI` | Preset in the template |
+| `frontend` | `PENPOT_EXPORTER_URI` | Preset in the template |
 | `postgres` | `POSTGRES_DB` | Preset in the template |
 | `postgres` | `POSTGRES_INITDB_ARGS` | Preset in the template |
 | `postgres` | `POSTGRES_PASSWORD` | Generated at deploy |
 | `postgres` | `POSTGRES_USER` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`frontend`): 8080:8080.
+- Passwords and keys are generated at deploy time (`backend`, `postgres`): PENPOT_DATABASE_PASSWORD, PENPOT_DATABASE_USERNAME, PENPOT_SECRET_KEY, POSTGRES_PASSWORD, POSTGRES_USER.
+- No health check, so a deploy is judged by the process starting (`backend`, `exporter`, `postgres`, `valkey`).
+- Stores data in named volumes (`backend`, `postgres`, `valkey`): penpot_assets, penpot_db_data, penpot_valkey_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
 
 ## Deploy Penpot with Levelrail
 

@@ -41,6 +41,26 @@ Recommended memory: about 512 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- You must provide one or more secrets before it can deploy (`plunk`): AWS_ACCESS_KEY_ID, AWS_REGION, AWS_SECRET_ACCESS_KEY, AWS_SES_CONFIGURATION_SET.
+- Passwords and keys are generated at deploy time (`db`, `plunk`): DATABASE_URL, JWT_SECRET, POSTGRES_PASSWORD.
+- Stores data in named volumes (`db`, `redis`): pgdata, redis.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 <Warning>This template needs configuration before it can deploy. Open it in the dashboard, set each variable marked "You must provide" in the Compose body, then deploy.</Warning>
 
 ## Deploy Plunk with Levelrail

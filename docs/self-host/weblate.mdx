@@ -39,6 +39,27 @@ Recommended memory: about 1024 MiB.
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
 
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`weblate`): 8080:8080.
+- Passwords and keys are generated at deploy time (`db`, `redis`, `weblate`): POSTGRES_PASSWORD, POSTGRES_PASSWORD, REDIS_PASSWORD, WEBLATE_ADMIN_PASSWORD, REDIS_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`db`, `redis`).
+- Stores data in named volumes (`db`, `redis`, `weblate`): weblate_cache, weblate_data, weblate_db_data, weblate_redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
 ## Deploy Weblate with Levelrail
 
 In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Weblate. Review the Compose body and deploy.

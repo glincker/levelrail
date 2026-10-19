@@ -28,12 +28,34 @@ Recommended memory: about 512 MiB.
 | `db` | `POSTGRES_USER` | Preset in the template |
 | `outline` | `DATABASE_URL` | Generated at deploy |
 | `outline` | `FORCE_HTTPS` | Preset in the template |
+| `outline` | `PGSSLMODE` | Preset in the template |
 | `outline` | `REDIS_URL` | Preset in the template |
 | `outline` | `SECRET_KEY` | Generated at deploy |
 | `outline` | `URL` | Preset in the template |
 | `outline` | `UTILS_SECRET` | Generated at deploy |
 
 Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`outline`): 3000:3000.
+- Passwords and keys are generated at deploy time (`db`, `outline`): DATABASE_URL, SECRET_KEY, UTILS_SECRET, POSTGRES_PASSWORD.
+- No health check, so a deploy is judged by the process starting (`redis`).
+- Stores data in named volumes (`db`, `outline`, `redis`): outline_data, outline_db_data, outline_redis_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
 
 ## Deploy Outline with Levelrail
 

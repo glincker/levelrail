@@ -23,6 +23,8 @@ func runTemplates(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runTemplatesList(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
 		return runTemplatesGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "show":
+		return runTemplatesShow(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy":
 		return runTemplatesDeploy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "install":
@@ -40,6 +42,7 @@ func templatesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s templates list [--custom] [flags]               browse the curated service catalog, or --custom for your own saved templates
   %[1]s templates get <id> [flags]                       show one entry (built-in or custom), including its full compose.yaml
+  %[1]s templates show <id> [flags]                      what a template needs (privileges, ports, secrets) and what Levelrail adds
   %[1]s templates deploy <id> [--name NAME] [flags]     deploy a template's compose.yaml as an app, built-in or custom
   %[1]s templates install <id> [--name NAME] [--env K=V] [--domain SVC=HOST]   install a manifest template with its settings
   %[1]s templates delete <id> [flags]                    delete a custom template (see "apps save-as-template")

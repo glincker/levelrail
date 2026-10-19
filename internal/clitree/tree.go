@@ -367,7 +367,7 @@ var Tree = map[string]*Node{
 	"gitlab-app":       {Subs: map[string]*Node{"status": nil, "disconnect": nil, "projects": nil, "branches": nil, "use-as-source": nil}},
 	"bitbucket-app":    {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
 	"gitea-app":        {Subs: map[string]*Node{"status": nil, "disconnect": nil, "repos": nil, "branches": nil, "use-as-source": nil}},
-	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "deploy": nil, "install": nil, "delete": nil}},
+	"templates":        {Subs: map[string]*Node{"list": nil, "get": nil, "show": nil, "deploy": nil, "install": nil, "delete": nil}},
 	"compose":          {Subs: map[string]*Node{"deploy": nil, "preview": nil, "status": nil, "revisions": nil, "logs": nil, "redeploy": nil, "rollback": nil, "down": nil}},
 	"static-sites":     {Subs: map[string]*Node{"list": nil, "delete": nil}},
 	"deploy-approvals": {Subs: map[string]*Node{"list": nil, "get": nil, "approve": nil, "reject": nil}},

@@ -1640,15 +1640,38 @@ type ServiceTemplateListItem struct {
 // those, see resolveTemplate's own doc comment
 // (internal/api/service_templates.go).
 type ServiceTemplateDetail struct {
-	ID                     string `json:"id"`
-	Name                   string `json:"name"`
-	Slogan                 string `json:"slogan"`
-	Category               string `json:"category"`
-	DocumentationURL       string `json:"documentation_url"`
-	Compose                string `json:"compose"`
-	RecommendedMemoryBytes int64  `json:"recommended_memory_bytes,omitempty"`
-	RequiresGPU            bool   `json:"requires_gpu,omitempty"`
-	RequiresConfiguration  bool   `json:"requires_configuration,omitempty"`
+	ID                     string               `json:"id"`
+	Name                   string               `json:"name"`
+	Slogan                 string               `json:"slogan"`
+	Category               string               `json:"category"`
+	DocumentationURL       string               `json:"documentation_url"`
+	Compose                string               `json:"compose"`
+	RecommendedMemoryBytes int64                `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool                 `json:"requires_gpu,omitempty"`
+	RequiresConfiguration  bool                 `json:"requires_configuration,omitempty"`
+	Requirements           TemplateRequirements `json:"requirements"`
+}
+
+// TemplateRequirements mirrors internal/catalog's Requirements.
+type TemplateRequirements struct {
+	Level       string               `json:"level"`
+	Findings    []TemplateFinding    `json:"findings"`
+	Protections []TemplateProtection `json:"protections"`
+}
+
+// TemplateFinding mirrors internal/catalog's Finding.
+type TemplateFinding struct {
+	Code     string   `json:"code"`
+	Severity string   `json:"severity"`
+	Services []string `json:"services,omitempty"`
+	Detail   string   `json:"detail,omitempty"`
+	Message  string   `json:"message"`
+}
+
+// TemplateProtection mirrors internal/catalog's Protection.
+type TemplateProtection struct {
+	Code  string `json:"code"`
+	Label string `json:"label"`
 }
 
 // SaveAppAsTemplateRequest mirrors internal/api's

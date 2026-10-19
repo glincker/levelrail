@@ -8,6 +8,7 @@ import {
 import { useComposePreview } from '../../queries/composeStack'
 import { TemplateEnvNames } from '../../components/templates/TemplateEnvNames'
 import { TemplateFacts } from '../../components/templates/TemplateFacts'
+import { TemplateRequirementsCard } from '../../components/templates/TemplateRequirementsCard'
 import { TemplateServices } from '../../components/templates/TemplateServices'
 import { RelatedTemplates } from '../../components/templates/RelatedTemplates'
 import { useDeployTemplateNow } from '../../hooks/useDeployTemplateNow'
@@ -102,6 +103,7 @@ function TemplateDetailRoute() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
+          <TemplateRequirementsCard requirements={template.requirements} />
           {preview.isPending ? (
             <div role="status" aria-label={t('detail.deployed.loading')}>
               <Skeleton className="h-24 w-full" />

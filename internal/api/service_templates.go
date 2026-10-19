@@ -40,16 +40,17 @@ type serviceTemplateListItem struct {
 // to pre-fill a deploy form or send straight to
 // POST /api/v1/apps/{name}/compose.
 type serviceTemplateDetail struct {
-	ID                     string            `json:"id"`
-	Name                   string            `json:"name"`
-	Slogan                 string            `json:"slogan"`
-	Category               string            `json:"category"`
-	DocumentationURL       string            `json:"documentation_url"`
-	Compose                string            `json:"compose"`
-	RecommendedMemoryBytes int64             `json:"recommended_memory_bytes,omitempty"`
-	RequiresGPU            bool              `json:"requires_gpu,omitempty"`
-	RequiresConfiguration  bool              `json:"requires_configuration"`
-	Manifest               *catalog.Manifest `json:"manifest,omitempty"`
+	ID                     string               `json:"id"`
+	Name                   string               `json:"name"`
+	Slogan                 string               `json:"slogan"`
+	Category               string               `json:"category"`
+	DocumentationURL       string               `json:"documentation_url"`
+	Compose                string               `json:"compose"`
+	RecommendedMemoryBytes int64                `json:"recommended_memory_bytes,omitempty"`
+	RequiresGPU            bool                 `json:"requires_gpu,omitempty"`
+	RequiresConfiguration  bool                 `json:"requires_configuration"`
+	Manifest               *catalog.Manifest    `json:"manifest,omitempty"`
+	Requirements           catalog.Requirements `json:"requirements"`
 }
 
 // handleListServiceTemplates handles GET /api/v1/service-templates: the
@@ -111,6 +112,7 @@ type templateView struct {
 	RequiresGPU            bool
 	RequiresConfiguration  bool
 	Manifest               *catalog.Manifest
+	Requirements           catalog.Requirements
 }
 
 // resolveTemplate looks id up in catalog.Templates first (static, so
@@ -134,6 +136,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 			RequiresGPU:            tpl.RequiresGPU,
 			RequiresConfiguration:  rt.templateRequiresConfig[tpl.ID],
 			Manifest:               tpl.Manifest,
+			Requirements:           catalog.ComputeRequirements(tpl.Compose),
 		}, true, nil
 	}
 
@@ -151,6 +154,7 @@ func (rt *Router) resolveTemplate(ctx context.Context, id string) (templateView,
 		Category:              "Custom",
 		Compose:               ct.Compose,
 		RequiresConfiguration: composeNeedsConfiguration(ct.Compose),
+		Requirements:          catalog.ComputeRequirements(ct.Compose),
 	}, true, nil
 }
 
@@ -267,7 +271,8 @@ func composeNeedsConfiguration(composeBody string) bool {
 	if err != nil {
 		return true
 	}
-	return len(unresolved) > 0
+	// Elevated templates never take the one-click path: they need the acknowledgement step.
+	return len(unresolved) > 0 || catalog.ComputeRequirements(composeBody).Level == catalog.LevelElevated
 }
 
 // detectionGenerate/detectionPersist stand in for the real
