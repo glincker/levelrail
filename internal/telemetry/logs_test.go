@@ -80,22 +80,84 @@ func TestClassifyLine(t *testing.T) {
 	}
 }
 
-func TestFTSPhrase(t *testing.T) {
+func TestCompileLogSearch(t *testing.T) {
 	tests := []struct {
-		name  string
-		query string
-		want  string
+		name    string
+		query   string
+		want    string
+		wantErr bool
 	}{
+		{name: "empty", query: "  ", want: ""},
 		{name: "plain word", query: "error", want: `"error"`},
-		{name: "phrase with spaces", query: "connection refused", want: `"connection refused"`},
-		{name: "embedded double quote is doubled", query: `say "hi"`, want: `"say ""hi"""`},
+		{name: "implicit and", query: "connection refused", want: `"connection" AND "refused"`},
+		{name: "quoted phrase", query: `"connection refused"`, want: `"connection refused"`},
+		{name: "embedded quote doubled", query: `"say ""hi"""`, want: `"say ""hi"""`},
+		{name: "prefix", query: "err*", want: `"err"*`},
+		{name: "quoted prefix", query: `"conn ref"*`, want: `"conn ref"*`},
+		{name: "or", query: "error OR panic", want: `"error" OR "panic"`},
+		{name: "not", query: "error NOT timeout", want: `"error" NOT "timeout"`},
+		{name: "dash negation", query: "error -timeout", want: `"error" NOT "timeout"`},
+		{name: "parens", query: "(a OR b) c", want: `( "a" OR "b" ) AND "c"`},
+		{name: "special chars stay literal", query: "error:500", want: `"error:500"`},
+		{name: "lowercase or is a term", query: "this or that", want: `"this" AND "or" AND "that"`},
+		{name: "unbalanced quote", query: `"abc`, wantErr: true},
+		{name: "unbalanced paren", query: "(a OR b", wantErr: true},
+		{name: "leading not", query: "NOT a", wantErr: true},
+		{name: "leading dash only", query: "-a", wantErr: true},
+		{name: "trailing operator", query: "a OR", wantErr: true},
+		{name: "double operator", query: "a OR AND b", wantErr: true},
+		{name: "lone star", query: "*", wantErr: true},
+		{name: "only operators", query: "()", wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ftsPhrase(tt.query); got != tt.want {
-				t.Errorf("ftsPhrase(%q) = %q, want %q", tt.query, got, tt.want)
+			got, err := compileLogSearch(tt.query)
+			if tt.wantErr {
+				if !errors.Is(err, ErrInvalidLogSearch) {
+					t.Fatalf("compileLogSearch(%q) error = %v, want ErrInvalidLogSearch", tt.query, err)
+				}
+				return
+			}
+			if err != nil || got != tt.want {
+				t.Errorf("compileLogSearch(%q) = %q, %v, want %q", tt.query, got, err, tt.want)
 			}
 		})
+	}
+}
+
+func TestQueryLogs_SearchSyntax(t *testing.T) {
+	db := newTestDB(t)
+	ctx := context.Background()
+	base := time.Now().Add(-time.Minute).UTC()
+	msgs := []string{"connection refused by upstream", "connection reset", "error timeout reading", "error parsing body"}
+	var entries []LogEntry
+	for i, m := range msgs {
+		entries = append(entries, LogEntry{ResourceID: "service:q", ContainerID: "c", Stream: "stdout", Timestamp: base.Add(time.Duration(i) * time.Second), Message: m})
+	}
+	if err := db.WriteLogBatch(ctx, entries); err != nil {
+		t.Fatalf("WriteLogBatch() error = %v", err)
+	}
+	cases := []struct {
+		q    string
+		want int
+	}{
+		{"connection", 2},
+		{"conn*", 2},
+		{`"connection refused"`, 1},
+		{"error NOT timeout", 1},
+		{"error -timeout", 1},
+		{"refused OR parsing", 2},
+		{"(refused OR reset) connection", 2},
+		{"missing", 0},
+	}
+	for _, c := range cases {
+		got, err := db.QueryLogs(ctx, "service:q", base.Add(-time.Hour), time.Now(), c.q)
+		if err != nil || len(got) != c.want {
+			t.Errorf("QueryLogs(%q) = %d entries, %v, want %d", c.q, len(got), err, c.want)
+		}
+	}
+	if _, err := db.QueryLogs(ctx, "service:q", base.Add(-time.Hour), time.Now(), "(oops"); !errors.Is(err, ErrInvalidLogSearch) {
+		t.Errorf("QueryLogs(bad) error = %v, want ErrInvalidLogSearch", err)
 	}
 }
 

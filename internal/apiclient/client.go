@@ -1820,6 +1820,60 @@ func (c *Client) ListSecrets(ctx context.Context, name string) ([]SecretKeyResou
 	return out, err
 }
 
+// EnvFixResource is how an env finding can be fixed: type is auto or manual.
+type EnvFixResource struct {
+	Type   string `json:"type"`
+	Action string `json:"action"`
+}
+
+// EnvFindingResource is one problem found in an app's variables.
+type EnvFindingResource struct {
+	Kind     string         `json:"kind"`
+	Key      string         `json:"key"`
+	Severity string         `json:"severity"`
+	Detail   string         `json:"detail,omitempty"`
+	Fix      EnvFixResource `json:"fix"`
+}
+
+// EnvCheckResource is the response of the env check calls.
+type EnvCheckResource struct {
+	Findings []EnvFindingResource `json:"findings"`
+}
+
+// EnvChangeResource is one key-level env edit, never carrying a value.
+type EnvChangeResource struct {
+	ID     int64  `json:"id"`
+	At     string `json:"at"`
+	Actor  string `json:"actor"`
+	Key    string `json:"key"`
+	Action string `json:"action"`
+	Source string `json:"source"`
+}
+
+// CheckEnv calls GET /api/v1/apps/{name}/env/check.
+func (c *Client) CheckEnv(ctx context.Context, name string) (EnvCheckResource, error) {
+	var out EnvCheckResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/env/check", nil, &out)
+	return out, err
+}
+
+// FixEnv calls POST /api/v1/apps/{name}/env/check/fix and returns the findings that remain.
+func (c *Client) FixEnv(ctx context.Context, name, kind, key string) (EnvCheckResource, error) {
+	var out EnvCheckResource
+	body := map[string]string{"kind": kind, "key": key}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/env/check/fix", body, &out)
+	return out, err
+}
+
+// ListEnvHistory calls GET /api/v1/apps/{name}/env/history.
+func (c *Client) ListEnvHistory(ctx context.Context, name string, limit int) ([]EnvChangeResource, error) {
+	var out struct {
+		Changes []EnvChangeResource `json:"changes"`
+	}
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/env/history?limit="+strconv.Itoa(limit), nil, &out)
+	return out.Changes, err
+}
+
 // SetSecretLock calls POST /api/v1/apps/{name}/secrets/{key}/lock:
 // toggles the accidental-overwrite guard SetSecret's overwriteLocked
 // bypasses. Reversible either direction, not a permanent write-once

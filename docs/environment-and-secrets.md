@@ -128,6 +128,12 @@ levelrail-cli env push your-app
 
 Before new or changed plain values are saved, the editor's **Review changes** step (and `env push`) checks them for credentials such as cloud keys, tokens and URLs with embedded passwords. A match shows a warning naming the variable only, never the value, with a **Store as secrets** button that converts those rows to Secrets. The scan needs secret scanning enabled on the control plane and is skipped silently when it is not.
 
+## Variable health and history
+
+The Environment tab shows a Variable health card. It flags empty values, plain values hidden by a secret or database binding of the same name, names that differ only by case, required secrets with no value, and bindings to databases that no longer exist. Problems that can be fixed safely have a Fix button; the rest say what to do. From the CLI: `apps env check <name>` (add `--fix` to apply the safe fixes).
+
+Every edit also records which variables were added, changed or removed, by whom and when, shown under Recent changes and by `apps env history <name>`. Values are never recorded, only names, so the history is safe to share. It keeps the newest 1000 changes per app.
+
 ## Threat model
 
 This protects against:

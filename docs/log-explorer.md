@@ -23,6 +23,21 @@ levelrail-cli logs saved delete slq_AbC123
 
 API: `GET/POST /api/v1/logs/queries`, `PUT/DELETE /api/v1/logs/queries/{id}`. At most `APP_LOG_SAVED_QUERY_MAX` (default 100) per user.
 
+## Search syntax
+
+The search box and `apps logs --q` take an expression, not just a phrase.
+
+| Write | Matches |
+| --- | --- |
+| `timeout upstream` | lines with both words |
+| `"connection refused"` | the exact phrase |
+| `conn*` | words that start with `conn` |
+| `error OR panic` | either word (`OR`, `AND` and `NOT` are upper case) |
+| `error NOT timeout` or `error -timeout` | `error` without `timeout` |
+| `(refused OR reset) upstream` | grouping with parentheses |
+
+A malformed expression, such as an unclosed quote or a trailing `OR`, is refused with a message saying what to fix. Log alert rules use the same syntax and are checked when you save them.
+
 ## Error signatures
 
 Lines that differ only in numbers, ids, UUIDs, hex, IP addresses, emails or timestamps share one signature. `ERROR upstream 10.0.0.4 timed out after 301ms` and `ERROR upstream 10.0.0.9 timed out after 87ms` become `upstream <ip> timed out after <num>`.

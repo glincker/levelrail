@@ -535,6 +535,9 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/ci/trusts | AbilityRead | handleListCITrusts |
 | POST | /api/v1/apps/{name}/ci/trusts | AbilityWriteSensitive | handleCreateCITrust |
 | DELETE | /api/v1/apps/{name}/ci/trusts/{id} | AbilityWriteSensitive | handleDeleteCITrust |
+| GET | /api/v1/apps/{name}/env/check | AbilityRead | handleCheckEnv |
+| POST | /api/v1/apps/{name}/env/check/fix | AbilityWrite | handleFixEnv |
+| GET | /api/v1/apps/{name}/env/history | AbilityRead | handleListEnvHistory |
 
 </Accordion>
 

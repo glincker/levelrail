@@ -85,6 +85,10 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		return
 	}
 	query := r.URL.Query().Get("q")
+	if err := telemetry.ValidateLogSearch(query); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	minLevel, err := parseLevelParam(r.URL.Query().Get("level"))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())

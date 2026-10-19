@@ -221,6 +221,10 @@
     "newErrorTypes_other": "{{count}} new error types since this deploy",
     "tabErrors": "Errors",
     "conditionPattern": "{{count}} or more lines matching {{what}} within {{minutes}} min",
-    "conditionRate": "More than {{rate}} lines per minute at {{level}} or above over {{minutes}} min"
+    "conditionRate": "More than {{rate}} lines per minute at {{level}} or above over {{minutes}} min",
+    "searchPlaceholder": "Search log messages...",
+    "searchLabel": "Search log messages",
+    "clearSearch": "Clear search",
+    "searchSyntax": "Syntax: \"exact phrase\", prefix*, a OR b, a NOT b, -word, ( ) to group."
   }
 }

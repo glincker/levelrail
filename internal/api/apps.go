@@ -920,6 +920,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if imageChanged {
 		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
+	rt.recordEnvChanges(r, name, existing.Env, desired.Env, envChangeSourceAPI)
 	for _, ev := range updateEvents(name, *existing, desired) {
 		rt.recordAppEvent(r, ev)
 	}

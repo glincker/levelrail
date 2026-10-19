@@ -30,6 +30,10 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runEnvPush(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "check":
+		return runAppsEnvCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "history":
+		return runAppsEnvHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps env subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvUsage(prog))
@@ -43,6 +47,8 @@ func appsEnvUsage(prog string) string {
   %[1]s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json]      write an app's env vars as .env text
   %[1]s apps env get <name> <KEY> [--reveal] [flags]                              print one variable
   %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
+  %[1]s apps env check <name> [--fix] [flags]                                     find empty, shadowed, duplicate and missing variables
+  %[1]s apps env history <name> [--limit N] [flags]                               list who added, changed or removed which variable
 
 Sensitive and secret values are masked unless --reveal is given. --reveal
 asks for your password (and authenticator code) at the prompt, needs a token

@@ -345,8 +345,9 @@ export function LogSearchPanel({
           onChange={(e) => {
             setQuery(e.target.value)
           }}
-          placeholder="Search log messages..."
-          aria-label="Search log messages"
+          placeholder={t('explorer.searchPlaceholder')}
+          aria-label={t('explorer.searchLabel')}
+          aria-describedby="log-search-syntax"
           className="pl-8 font-mono"
         />
         {query ? (
@@ -355,13 +356,16 @@ export function LogSearchPanel({
             onClick={() => {
               setQuery('')
             }}
-            aria-label="Clear search"
+            aria-label={t('explorer.clearSearch')}
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <XIcon className="size-3.5" aria-hidden="true" />
           </button>
         ) : null}
       </div>
+      <p id="log-search-syntax" className="mt-1 text-xs text-muted-foreground">
+        {t('explorer.searchSyntax')}
+      </p>
 
       {filters.signature ? (
         <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">

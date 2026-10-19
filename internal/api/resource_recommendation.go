@@ -153,7 +153,7 @@ func toRightsizingSamples(samples []telemetry.Sample) []rightsizing.Sample {
 func (rt *Router) findOOMEvidence(ctx context.Context, name, resourceID string, from, to time.Time) *rightsizing.OOMEvidence {
 	var best *telemetry.LogEntry
 	for _, pattern := range diagnose.OOMLogPatterns {
-		entries, err := rt.telemetry.QueryLogs(ctx, resourceID, from, to, pattern)
+		entries, err := rt.telemetry.QueryLogs(ctx, resourceID, from, to, telemetry.QuoteLogPhrase(pattern))
 		if err != nil {
 			rt.logger.Warn("api: resource recommendation: query oom logs failed", slog.String("error", err.Error()), slog.String("name", name), slog.String("pattern", pattern))
 			continue

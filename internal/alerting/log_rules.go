@@ -120,6 +120,9 @@ func (c LogRuleConfig) Validate(kind Kind, p LogRulePolicy) error {
 			return fmt.Errorf("regex: %w", err)
 		}
 	}
+	if err := telemetry.ValidateLogSearch(c.Query); err != nil {
+		return fmt.Errorf("query: %w", err)
+	}
 	if _, err := telemetry.ParseFieldFilters(c.Fields); err != nil {
 		return fmt.Errorf("field filters: %w", err)
 	}

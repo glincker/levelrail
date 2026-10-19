@@ -173,5 +173,35 @@
     "masked": "Masked",
     "loadFailed": "Could not load connected resources.",
     "retry": "Retry"
+  },
+  "health": {
+    "title": "Variable health",
+    "description": "Problems found in this app's variables, and which variables were added, changed or removed. Values are never recorded.",
+    "recheck": "Re-check",
+    "loading": "Checking variables...",
+    "clean": "No problems found.",
+    "loadFailed": "Could not check the variables. Re-check to try again.",
+    "fixed": "Fixed {{key}}",
+    "historyTitle": "Recent changes",
+    "historyEmpty": "No changes recorded yet. Edits from now on appear here.",
+    "byActor": "by {{actor}}",
+    "kinds": {
+      "empty_value": "Empty value. Remove it or give it a value.",
+      "shadowed": "A secret or database binding with the same name wins, so this plain value is never used.",
+      "case_duplicate": "Names that differ only by case: {{detail}}. Most programs treat these as different variables.",
+      "missing_secret": "A required secret has no value yet. Set it in the secrets section.",
+      "dangling_database": "Bound to database {{detail}}, which no longer exists."
+    },
+    "fixes": {
+      "remove_key": "Remove variable",
+      "remove_database_ref": "Remove binding",
+      "set_secret": "Set a value above",
+      "rename": "Rename one of them"
+    },
+    "actions": {
+      "added": "Added",
+      "changed": "Changed",
+      "removed": "Removed"
+    }
   }
 }

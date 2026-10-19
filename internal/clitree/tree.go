@@ -101,7 +101,7 @@ var Tree = map[string]*Node{
 			"list": nil, "delete": nil, "teardown": nil, "extend": nil, "settings": nil, "enable": nil, "disable": nil, "sweep": nil, "limits": nil, "approve": nil,
 			"pr-status": {Subs: map[string]*Node{"enable": nil, "disable": nil}},
 		}},
-		"env": {Subs: map[string]*Node{"import": nil, "export": nil, "get": nil, "diff": nil, "pull": nil, "push": nil}},
+		"env": {Subs: map[string]*Node{"import": nil, "export": nil, "get": nil, "diff": nil, "pull": nil, "push": nil, "check": nil, "history": nil}},
 		"secrets": {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil, "lock": nil,
 			"rotation": {Subs: map[string]*Node{"list": nil, "due": nil, "set": nil, "remove": nil, "rotate": nil}}}},
 		"git-source":         {Subs: map[string]*Node{"commits": nil, "get": nil, "show": nil, "detect": nil, "affected": nil, "set": nil, "settings": nil, "rotate-secret": nil, "delete": nil}},
