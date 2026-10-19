@@ -16,6 +16,7 @@ import { Input } from './ui/input'
 import { Field, FieldLabel } from './ui/field'
 import { Alert, AlertDescription } from './ui/alert'
 import { isApprovalRequired } from '../queries/auth'
+import { classifyPasskeyError } from '../lib/passkeyErrors'
 import { NewDeviceApprovalWait } from './NewDeviceApprovalWait'
 import { ResumedApprovalWait } from './ResumedApprovalWait'
 
@@ -54,6 +55,7 @@ export function SignInFlow({
   const begin = useBeginPasskeyLogin()
   const finish = useFinishPasskeyLogin()
   const { t } = useTranslation('signIn')
+  const { t: tp } = useTranslation('passkeys')
   const options = useQuery(loginOptionsQueryOptions())
   const codeLink = options.data?.code_login ? (
     <Button
@@ -170,7 +172,9 @@ export function SignInFlow({
         {finish.isError ? (
           <Alert variant="destructive">
             <WarningIcon />
-            <AlertDescription>{finish.error.message}</AlertDescription>
+            <AlertDescription>
+              {tp(`errors.${classifyPasskeyError(finish.error)}`)}
+            </AlertDescription>
           </Alert>
         ) : null}
         <Button

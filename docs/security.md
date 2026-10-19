@@ -78,6 +78,17 @@ A notification channel's credential (its webhook URL, Telegram bot token, PagerD
 
 Channels saved by an older release are encrypted in place on the first start with a master key: each value is written as ciphertext, decrypted again to verify it, and only then is the plaintext column cleared. The step is idempotent and safe to interrupt; anything it could not finish is retried on the next start. Without a master key, channels keep working with plaintext credentials and `levelrail-cli doctor` warns with a `notification_channel_secrets` check until one is configured.
 
+## Passkeys
+
+Manage passkeys under Settings, Account. Each passkey shows the authenticator that stored it (iCloud Keychain, Google Password Manager, Windows Hello, a password manager or a YubiKey, resolved from its AAGUID, or plain "Passkey" when unknown), whether it is synced or device-bound, how it connects, when it was added and last used, and how many sign-ins it has made.
+
+- **Add**: the dialog suggests a name from your device, walks through naming, the browser prompt and saving, and explains every failure (cancelled, timed out, already registered, wrong address, server rejected) with a retry.
+- **Rename and remove**: rename inline. Removing your only passkey is refused when you have no password and no two-factor, so you cannot lock yourself out; add another passkey first.
+- **Test sign-in**: runs a real passkey check without creating a new session and updates last used.
+- **CLI**: `auth passkeys list`, `auth passkeys rename --name NAME ID` and `auth passkeys remove ID` (session only, like the rest of `auth`). Adding a passkey needs a browser.
+
+Passkeys only work on the exact https address set as the dashboard URL.
+
 ## Sessions and tokens
 
 - **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).

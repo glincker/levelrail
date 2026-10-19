@@ -97,6 +97,7 @@ export const NAMESPACES = [
   'rules',
   'storageBuckets',
   'dashboards',
+  'passkeys',
 ] as const
 
 void i18n
