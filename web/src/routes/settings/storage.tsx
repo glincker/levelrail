@@ -4,6 +4,7 @@ import {
   WarningCircleIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   storageDestinationsQueryOptions,
   storageProvidersQueryOptions,
@@ -27,6 +28,7 @@ export const Route = createFileRoute('/settings/storage')({
 })
 
 function StoragePage() {
+  const { t } = useTranslation('settings')
   const destinations = useQuery({
     ...storageDestinationsQueryOptions(),
     retry: false,
@@ -42,8 +44,8 @@ function StoragePage() {
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader
-            title="Storage destinations"
-            description="S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint."
+            title={t('storagePage.title')}
+            description={t('storagePage.description')}
             actions={
               notConfigured ? null : (
                 <div className="flex flex-wrap gap-2">
@@ -58,16 +60,15 @@ function StoragePage() {
 
       {notConfigured ? (
         <Alert>
-          <AlertTitle>Storage is not configured on this server</AlertTitle>
+          <AlertTitle>{t('storagePage.notConfiguredTitle')}</AlertTitle>
           <AlertDescription>
-            Set APP_MASTER_KEY and restart the control plane so bucket
-            credentials can be encrypted.
+            {t('storagePage.notConfiguredBody')}
           </AlertDescription>
         </Alert>
       ) : destinations.isError ? (
         <EmptyState
           icon={<WarningCircleIcon className="size-5" />}
-          title="Storage destinations could not be loaded"
+          title={t('storagePage.loadErrorTitle')}
           description={destinations.error.message}
           action={
             <Button
@@ -77,7 +78,7 @@ function StoragePage() {
                 void destinations.refetch()
               }}
             >
-              Retry
+              {t('storagePage.retry')}
             </Button>
           }
         />
@@ -90,17 +91,16 @@ function StoragePage() {
           <StorageDefaultsCard destinations={destinations.data} />
           <div className="space-y-3">
             <h2 className="text-base font-semibold text-foreground">
-              Log archive for all apps
+              {t('storagePage.logArchiveTitle')}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Ships node-local logs to a destination on a schedule. Apps with
-              their own policy (app Logs, Archive tab) are kept separate.
+              {t('storagePage.logArchiveBody')}
             </p>
             <LogArchivePanel appName="" />
           </div>
           <div className="space-y-3">
             <h2 className="text-base font-semibold text-foreground">
-              Build cache for all apps
+              {t('storagePage.buildCacheTitle')}
             </h2>
             <BuildCacheCard appName="" />
           </div>

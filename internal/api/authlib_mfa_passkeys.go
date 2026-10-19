@@ -116,7 +116,7 @@ func (l *authLibMFA) listPasskeys(w http.ResponseWriter, r *http.Request) {
 	for _, row := range rows {
 		out = append(out, passkeyResourceFromLib(row))
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }
 
 func (l *authLibMFA) deletePasskey(w http.ResponseWriter, r *http.Request) {

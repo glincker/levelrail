@@ -91,6 +91,10 @@ The dashboard's CLI console (experimental key `cli-console`) runs the commands o
 
 None of them take arguments: paths, process names, container names and flags are refused. Each line goes through the same step-up, one-command-at-a-time, idle timeout, output cap and audit log (`cli_console.run`) as any other console command. Linux only; other platforms reply "not supported on this platform". Set `APP_CLI_CONSOLE_HOST=off` on the server to turn the namespace off while keeping the rest of the console.
 
+## Naming conventions
+
+A command's own subject is a positional argument or `--name`. `--app` is a scope flag: it narrows a list or ties a new object to an app (`alerts history --app web`, `proxy --app web`), and is never the name of the thing being created. Every list command prints a bare JSON array under `--json`; paging info (`apps list --max-items`) goes to stderr, so the stdout shape never changes with a flag.
+
 ## Top-level convenience aliases
 
 ```
@@ -105,7 +109,7 @@ Alias for `apps rollback`; redeploy an older image.
 
 ## Apps
 
-`apps list` prints every app the caller can read as a bare JSON array. On a fleet large enough that matters, add `--max-items N` to cap the page size; the response becomes `{"items": [...], "next_token": "...", "total_count": N}` instead, and an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
+`apps list` prints every app the caller can read as a bare JSON array. On a fleet large enough that matters, add `--max-items N` to cap the page size; stdout stays a bare array and the paging info goes to stderr as `next_token=N total_count=M`; an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
 
 ```
 levelrail-cli apps list --max-items 50 --json
@@ -1063,6 +1067,13 @@ levelrail-cli maintenance create --title T --start TIME (--end TIME | --duration
 levelrail-cli maintenance delete <id>
 ```
 One-off planned downtime shown on the dashboard and the public status page. See [Scheduled maintenance](/scheduled-maintenance).
+
+## CDN overview
+
+```
+levelrail-cli cdn overview [--window 5m|1h|24h|7d]
+```
+Fleet requests, 5xx rate, edge cache hit rate and each node's share of traffic over the window. `--json` prints the same object the dashboard CDN page reads.
 
 ## Automatic cleanup
 

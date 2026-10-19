@@ -626,6 +626,7 @@ type Router struct {
 	forgotPasswordByEmail        *loginLimiter                // per-(IP,email) forgot-password budget; both this and forgotPasswordByIP must allow a request
 	auditLog                     AuditStore                   // always set, same "core Store interface" shape as backupTargets/certs above: requireAbility's audit hook (auth.go) writes through this on every request, GET /api/v1/audit-log (audit.go) reads through it
 	scheduledTasks               ScheduledTaskStore           // always set, same "core Store interface" shape as backupTargets above: CRUD on a scheduled task needs no runner configuration, only actually running one does
+	idempotency                  IdempotencyStore             // nil when the store lacks it: Idempotency-Key is then ignored
 	jobsMaxPerApp                int                          // 0 means defaultJobsMaxPerApp
 	scheduledTaskRunner          ScheduledTaskRunner          // nil is valid: POST .../scheduled-tasks/{id}/run returns 501, same shape as backupRunner above
 	preview                      PreviewService               // nil is valid: preview routes return 501 (SetPreview)
@@ -983,5 +984,8 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 	rt.attachEnvProtection(s)
 	rt.cliConsole = newCLIConsoleState()
 	rt.mobile = newMobileState()
+	if is, ok := s.(IdempotencyStore); ok {
+		rt.idempotency = is
+	}
 	return rt
 }

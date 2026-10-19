@@ -37,15 +37,15 @@ func TestRun_AppsList_MaxItems_WiresLimitAndReturnsNextToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	stdout, _ := runCLIExpectOK(t, []string{"apps", "list", "--api-url", srv.URL, "--max-items", "1", "--json"})
+	stdout, stderr := runCLIExpectOK(t, []string{"apps", "list", "--api-url", srv.URL, "--max-items", "1", "--json"})
 	if !strings.Contains(gotQuery, "limit=1") {
 		t.Errorf("request query = %q, want limit=1", gotQuery)
 	}
-	if !strings.Contains(stdout, `"next_token": "1"`) {
-		t.Errorf("stdout = %q, want next_token \"1\" (offset+len(items), more remain per X-Total-Count)", stdout)
+	if !strings.Contains(stderr, "next_token=1 total_count=3") {
+		t.Errorf("stderr = %q, want next_token=1 total_count=3", stderr)
 	}
-	if !strings.Contains(stdout, `"total_count": 3`) {
-		t.Errorf("stdout = %q, want total_count 3", stdout)
+	if strings.Contains(stdout, "next_token") || !strings.HasPrefix(strings.TrimSpace(stdout), "[") {
+		t.Errorf("stdout = %q, want a bare JSON array", stdout)
 	}
 }
 
@@ -59,12 +59,12 @@ func TestRun_AppsList_StartingToken_WiresOffset(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	stdout, _ := runCLIExpectOK(t, []string{"apps", "list", "--api-url", srv.URL, "--max-items", "1", "--starting-token", "1", "--json"})
+	_, stderr := runCLIExpectOK(t, []string{"apps", "list", "--api-url", srv.URL, "--max-items", "1", "--starting-token", "1", "--json"})
 	if !strings.Contains(gotQuery, "limit=1") || !strings.Contains(gotQuery, "offset=1") {
 		t.Errorf("request query = %q, want limit=1 and offset=1", gotQuery)
 	}
-	if !strings.Contains(stdout, `"next_token": ""`) {
-		t.Errorf("stdout = %q, want an empty next_token (no more items past total_count)", stdout)
+	if !strings.Contains(stderr, "next_token= total_count=2") {
+		t.Errorf("stderr = %q, want an empty next_token (no more items past total_count)", stderr)
 	}
 }
 

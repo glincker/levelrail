@@ -26,6 +26,7 @@ func (rt *Router) effectiveAuditLogRetention() time.Duration {
 func (rt *Router) PurgeOldAuditEntries(ctx context.Context) (int64, error) {
 	now := time.Now().UTC()
 	cutoff := now.Add(-rt.effectiveAuditLogRetention())
+	rt.pruneIdempotency(ctx)
 	if tiered, ok := rt.auditLog.(tieredAuditPurger); ok {
 		return tiered.DeleteAuditEntriesTiered(ctx, cutoff, now.Add(-rt.effectiveSecurityAuditRetention()))
 	}

@@ -1887,6 +1887,89 @@
     "remove": "Remove {{name}}",
     "mountAs": "secret id {{id}}"
   },
+  "storagePage": {
+    "title": "Storage destinations",
+    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint.",
+    "notConfiguredTitle": "Storage is not configured on this server",
+    "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane so bucket credentials can be encrypted.",
+    "loadErrorTitle": "Storage destinations could not be loaded",
+    "retry": "Retry",
+    "logArchiveTitle": "Log archive for all apps",
+    "logArchiveBody": "Ships node-local logs to a destination on a schedule. Apps with their own policy (app Logs, Archive tab) are kept separate.",
+    "buildCacheTitle": "Build cache for all apps"
+  },
+  "systemStatusPage": {
+    "title": "System status",
+    "description": "Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability.",
+    "troubleshootingGuide": "Troubleshooting guide",
+    "rerun": "Re-run checks",
+    "allPassedTitle": "All checks passed",
+    "allPassedBody": "Docker, disk space, ports, the database, and every other preflight check are all healthy right now.",
+    "failedTitle": "One or more checks failed",
+    "failing": "Failing: {{names}}.",
+    "reviewBelow": "Review the checks below for details.",
+    "ingressTitle": "Ingress is a single point of failure",
+    "ingressBody": "Domain-based HTTPS routing runs embedded in this control plane process. If it crashes or restarts, routing is down until it comes back up, even though already-running containers keep serving traffic on their own ports the whole time.",
+    "survivesCrash": "What survives a control plane crash",
+    "groups": {
+      "infrastructure": {
+        "title": "Infrastructure",
+        "description": "Can this box run and reach what it needs to run containers."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Hardening checks: firewall status and secret rotation age."
+      },
+      "network": {
+        "title": "Network and reachability",
+        "description": "Outbound network access and whether the internet can reach this box."
+      },
+      "other": {
+        "title": "Other checks",
+        "description": "Additional checks reported by this control plane."
+      }
+    }
+  },
+  "firewallRules": {
+    "liveStatus": "Live firewall status",
+    "liveStatusNote": "From this host's own preflight check. See Settings, System status for the full hardening checklist.",
+    "emptyTitle": "No firewall rules configured",
+    "emptyBody": "Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR.",
+    "cols": {
+      "action": "Action",
+      "port": "Port",
+      "protocol": "Protocol",
+      "source": "Source",
+      "label": "Label",
+      "added": "Added",
+      "actions": "Actions"
+    },
+    "anywhere": "Anywhere",
+    "none": "None",
+    "allow": "Allow",
+    "deny": "Deny",
+    "closeTitle": "This rule will close a port",
+    "restrictTitle": "This rule restricts a port to one source",
+    "closeBody": "Traffic to this port will be dropped. A rule targeting the management API, agent connections, or ingress is refused automatically.",
+    "restrictBody": "Traffic from outside this CIDR will no longer reach this port. A rule targeting the management API, agent connections, or ingress is refused automatically.",
+    "addRule": "Add rule",
+    "addDeny": "Add deny rule",
+    "adding": "Adding...",
+    "addTitle": "Add firewall rule",
+    "addBody": "Allow or deny traffic to a port, optionally restricted to a source CIDR. Applied on the next reconcile pass.",
+    "createdToast": "Firewall rule for port {{port}} created.",
+    "sourceCidr": "Source CIDR (optional)",
+    "sourceCidrPlaceholder": "10.0.0.0/24 (leave blank for any source)",
+    "labelOptional": "Label (optional)",
+    "labelPlaceholder": "what this rule is for",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "removing": "Removing...",
+    "removeTitle": "Remove this rule?",
+    "removeAllowBody": "This will stop allowing traffic to port {{port}}/{{protocol}} once the next reconcile pass removes it, unless something else on this host still allows it.",
+    "removeDenyBody": "This will stop denying traffic to port {{port}}/{{protocol}} once the next reconcile pass removes it.",
+    "removedToast": "Firewall rule removed."
+  },
   "storageDestinations": {
     "usage": {
       "header": "Usage",

@@ -339,6 +339,7 @@ var Tree = map[string]*Node{
 	"compliance":     {Subs: map[string]*Node{"evidence": {Subs: map[string]*Node{"create": nil, "list": nil, "download": nil, "verify": nil}}, "access-review": {Subs: map[string]*Node{"start": nil, "list": nil, "show": nil, "keep": nil, "revoke": nil, "complete": nil}}}},
 	"otel":           {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "add": nil, "test": nil, "remove": nil}}}},
 	"policy":         {Subs: map[string]*Node{"list": nil, "set": nil, "check": nil}},
+	"cdn":            {Subs: map[string]*Node{"overview": nil}},
 	"event-webhooks": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "deliveries": nil, "replay": nil, "enable": nil, "disable": nil, "rotate-secret": nil, "delete": nil}},
 	"export":         {Subs: map[string]*Node{"destinations": {Subs: map[string]*Node{"list": nil, "create": nil, "test": nil, "status": nil, "enable": nil, "disable": nil, "delete": nil}}, "audit": nil}},
 	"import":         {Subs: map[string]*Node{"platform": {Subs: map[string]*Node{"coolify": nil, "dokploy": nil, "caprover": nil}}, "cutover": {Subs: map[string]*Node{"plan": nil, "run": nil, "status": nil, "rollback": nil, "confirm-dns": nil}}}},

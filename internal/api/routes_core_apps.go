@@ -13,7 +13,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/bulk", rt.requireAbility(AbilityWrite, rt.handleBulkApps))
 	mux.HandleFunc("GET /api/v1/apps-summary", rt.requireAbility(AbilityRead, rt.handleAppsSummary))
 	mux.HandleFunc("GET /api/v1/apps/git-sources", rt.requireAbility(AbilityRead, rt.handleListGitSources))
-	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.handleCreateApp))
+	mux.HandleFunc("POST /api/v1/apps", rt.requireAbility(AbilityWrite, rt.idempotent(rt.handleCreateApp)))
 	// Resource-scoped (iam.go): a policy can Deny or narrowly Allow
 	// write/delete on one specific app by name, e.g. a token whose flat
 	// abilities grant write everywhere except an app: prod-web Deny
@@ -91,7 +91,7 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/moves/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppVolumeMove))
 
 	// Deploys.
-	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleTriggerDeploy))
+	mux.HandleFunc("POST /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.idempotent(rt.handleTriggerDeploy)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/deploys/from-cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeployFromCache))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleDeployHistory))
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/{deployId}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDeploy))

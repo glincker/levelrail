@@ -103,14 +103,13 @@ function FirewallPage() {
                 className="size-4 text-muted-foreground"
                 aria-hidden="true"
               />
-              Live firewall status
+              {t('firewallRules.liveStatus')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <DoctorCheckRow check={firewallCheck} />
             <p className="mt-4 text-xs text-muted-foreground">
-              From this host's own preflight check. See Settings &rarr; System
-              status for the full hardening checklist.
+              {t('firewallRules.liveStatusNote')}
             </p>
           </CardContent>
         </Card>
@@ -120,8 +119,8 @@ function FirewallPage() {
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
           icon={<ShieldIcon className="size-5" />}
-          title="No firewall rules configured"
-          description="Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR."
+          title={t('firewallRules.emptyTitle')}
+          description={t('firewallRules.emptyBody')}
           action={<AddFirewallRuleDialog />}
         />
       ) : (
@@ -129,13 +128,15 @@ function FirewallPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Action</TableHead>
-                <TableHead>Port</TableHead>
-                <TableHead>Protocol</TableHead>
-                <TableHead>Source</TableHead>
-                <TableHead>Label</TableHead>
-                <TableHead>Added</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('firewallRules.cols.action')}</TableHead>
+                <TableHead>{t('firewallRules.cols.port')}</TableHead>
+                <TableHead>{t('firewallRules.cols.protocol')}</TableHead>
+                <TableHead>{t('firewallRules.cols.source')}</TableHead>
+                <TableHead>{t('firewallRules.cols.label')}</TableHead>
+                <TableHead>{t('firewallRules.cols.added')}</TableHead>
+                <TableHead className="text-right">
+                  {t('firewallRules.cols.actions')}
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -151,10 +152,10 @@ function FirewallPage() {
                     {rule.protocol}
                   </TableCell>
                   <TableCell className="font-mono text-muted-foreground">
-                    {rule.source_cidr || 'Anywhere'}
+                    {rule.source_cidr || t('firewallRules.anywhere')}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {rule.label || 'None'}
+                    {rule.label || t('firewallRules.none')}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(rule.created_at)}
@@ -173,18 +174,19 @@ function FirewallPage() {
 }
 
 function ActionBadge({ action }: { action: FirewallRuleAction }) {
+  const { t } = useTranslation('settings')
   if (action === 'deny') {
     return (
       <Badge variant="destructive" className="gap-1">
         <ProhibitIcon className="size-3" aria-hidden="true" />
-        Deny
+        {t('firewallRules.deny')}
       </Badge>
     )
   }
   return (
     <Badge variant="success" className="gap-1">
       <CheckCircleIcon className="size-3" aria-hidden="true" />
-      Allow
+      {t('firewallRules.allow')}
     </Badge>
   )
 }
@@ -210,6 +212,7 @@ function CloseWarning({
   action: FirewallRuleAction
   sourceCIDR: string
 }) {
+  const { t } = useTranslation('settings')
   if (action !== 'deny' && sourceCIDR.trim() === '') {
     return null
   }
@@ -218,19 +221,20 @@ function CloseWarning({
       <WarningIcon aria-hidden="true" />
       <AlertTitle>
         {action === 'deny'
-          ? 'This rule will close a port'
-          : 'This rule restricts a port to one source'}
+          ? t('firewallRules.closeTitle')
+          : t('firewallRules.restrictTitle')}
       </AlertTitle>
       <AlertDescription>
         {action === 'deny'
-          ? 'Traffic to this port will be dropped. A rule targeting the management API, agent connections, or ingress is refused automatically.'
-          : 'Traffic from outside this CIDR will no longer reach this port. A rule targeting the management API, agent connections, or ingress is refused automatically.'}
+          ? t('firewallRules.closeBody')
+          : t('firewallRules.restrictBody')}
       </AlertDescription>
     </Alert>
   )
 }
 
 function AddFirewallRuleDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [port, setPort] = useState('')
   const [protocol, setProtocol] = useState<FirewallRuleProtocol>('tcp')
@@ -265,7 +269,7 @@ function AddFirewallRuleDialog() {
       {
         onSuccess: () => {
           toast.add({
-            title: `Firewall rule for port ${portNum} created.`,
+            title: t('firewallRules.createdToast', { port: portNum }),
             type: 'success',
           })
           handleOpenChange(false)
@@ -278,20 +282,19 @@ function AddFirewallRuleDialog() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
         <PlusIcon aria-hidden="true" />
-        Add rule
+        {t('firewallRules.addRule')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit} className="space-y-3">
           <DialogHeader>
-            <DialogTitle>Add firewall rule</DialogTitle>
-            <DialogDescription>
-              Allow or deny traffic to a port, optionally restricted to a source
-              CIDR. Applied on the next reconcile pass.
-            </DialogDescription>
+            <DialogTitle>{t('firewallRules.addTitle')}</DialogTitle>
+            <DialogDescription>{t('firewallRules.addBody')}</DialogDescription>
           </DialogHeader>
 
           <Field>
-            <FieldLabel htmlFor="fw-port">Port</FieldLabel>
+            <FieldLabel htmlFor="fw-port">
+              {t('firewallRules.cols.port')}
+            </FieldLabel>
             <Input
               id="fw-port"
               type="number"
@@ -307,7 +310,9 @@ function AddFirewallRuleDialog() {
 
           <div className="grid grid-cols-2 gap-3">
             <Field>
-              <FieldLabel htmlFor="fw-protocol">Protocol</FieldLabel>
+              <FieldLabel htmlFor="fw-protocol">
+                {t('firewallRules.cols.protocol')}
+              </FieldLabel>
               <Select
                 value={protocol}
                 onValueChange={(value) => {
@@ -324,7 +329,9 @@ function AddFirewallRuleDialog() {
               </Select>
             </Field>
             <Field>
-              <FieldLabel htmlFor="fw-action">Action</FieldLabel>
+              <FieldLabel htmlFor="fw-action">
+                {t('firewallRules.cols.action')}
+              </FieldLabel>
               <Select
                 value={action}
                 onValueChange={(value) => {
@@ -335,8 +342,12 @@ function AddFirewallRuleDialog() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="allow">Allow</SelectItem>
-                  <SelectItem value="deny">Deny</SelectItem>
+                  <SelectItem value="allow">
+                    {t('firewallRules.allow')}
+                  </SelectItem>
+                  <SelectItem value="deny">
+                    {t('firewallRules.deny')}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </Field>
@@ -344,7 +355,7 @@ function AddFirewallRuleDialog() {
 
           <Field>
             <FieldLabel htmlFor="fw-source-cidr">
-              Source CIDR (optional)
+              {t('firewallRules.sourceCidr')}
             </FieldLabel>
             <Input
               id="fw-source-cidr"
@@ -352,19 +363,21 @@ function AddFirewallRuleDialog() {
               onChange={(e) => {
                 setSourceCIDR(e.target.value)
               }}
-              placeholder="10.0.0.0/24 (leave blank for any source)"
+              placeholder={t('firewallRules.sourceCidrPlaceholder')}
             />
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="fw-label">Label (optional)</FieldLabel>
+            <FieldLabel htmlFor="fw-label">
+              {t('firewallRules.labelOptional')}
+            </FieldLabel>
             <Input
               id="fw-label"
               value={label}
               onChange={(e) => {
                 setLabel(e.target.value)
               }}
-              placeholder="what this rule is for"
+              placeholder={t('firewallRules.labelPlaceholder')}
             />
           </Field>
 
@@ -385,7 +398,7 @@ function AddFirewallRuleDialog() {
                 handleOpenChange(false)
               }}
             >
-              Cancel
+              {t('firewallRules.cancel')}
             </Button>
             <Button
               type="submit"
@@ -393,10 +406,10 @@ function AddFirewallRuleDialog() {
               disabled={createRule.isPending || port.trim() === ''}
             >
               {createRule.isPending
-                ? 'Adding...'
+                ? t('firewallRules.adding')
                 : action === 'deny'
-                  ? 'Add deny rule'
-                  : 'Add rule'}
+                  ? t('firewallRules.addDeny')
+                  : t('firewallRules.addRule')}
             </Button>
           </DialogFooter>
         </form>
@@ -415,6 +428,7 @@ function DeleteFirewallRuleDialog({
     action: FirewallRuleAction
   }
 }) {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const deleteRule = useDeleteFirewallRule()
 
@@ -429,7 +443,7 @@ function DeleteFirewallRuleDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
         <TrashIcon aria-hidden="true" />
-        Remove
+        {t('firewallRules.remove')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
@@ -438,12 +452,18 @@ function DeleteFirewallRuleDialog({
               className="size-4 text-destructive"
               aria-hidden="true"
             />
-            Remove this rule?
+            {t('firewallRules.removeTitle')}
           </DialogTitle>
           <DialogDescription>
             {rule.action === 'allow'
-              ? `This will stop allowing traffic to port ${rule.port}/${rule.protocol} once the next reconcile pass removes it, unless something else on this host still allows it.`
-              : `This will stop denying traffic to port ${rule.port}/${rule.protocol} once the next reconcile pass removes it.`}
+              ? t('firewallRules.removeAllowBody', {
+                  port: rule.port,
+                  protocol: rule.protocol,
+                })
+              : t('firewallRules.removeDenyBody', {
+                  port: rule.port,
+                  protocol: rule.protocol,
+                })}
           </DialogDescription>
         </DialogHeader>
         {deleteRule.isError ? (
@@ -460,7 +480,7 @@ function DeleteFirewallRuleDialog({
               handleOpenChange(false)
             }}
           >
-            Cancel
+            {t('firewallRules.cancel')}
           </Button>
           <Button
             type="button"
@@ -470,7 +490,7 @@ function DeleteFirewallRuleDialog({
               deleteRule.mutate(rule.id, {
                 onSuccess: () => {
                   toast.add({
-                    title: 'Firewall rule removed.',
+                    title: t('firewallRules.removedToast'),
                     type: 'success',
                   })
                   setOpen(false)
@@ -478,7 +498,9 @@ function DeleteFirewallRuleDialog({
               })
             }}
           >
-            {deleteRule.isPending ? 'Removing...' : 'Remove'}
+            {deleteRule.isPending
+              ? t('firewallRules.removing')
+              : t('firewallRules.remove')}
           </Button>
         </DialogFooter>
       </DialogContent>
