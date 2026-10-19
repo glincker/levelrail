@@ -2213,6 +2213,14 @@
   "drill_id",
   "status"
  ],
+ "search": [
+  "hits",
+  "total"
+ ],
+ "search_actions": [
+  "hits",
+  "total"
+ ],
  "set_app_domains": [
   "app",
   "changed",

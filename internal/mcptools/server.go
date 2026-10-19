@@ -98,6 +98,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerLogSignaturesTool(server, client)
 	registerBuildCacheTools(server, client)
 	registerJanitorTools(server, client)
+	registerSearchTools(server, client)
 	registerNewSurfaceTools(server, client)
 	registerBuildTools(server, client)
 	registerPipelineTools(server, client)

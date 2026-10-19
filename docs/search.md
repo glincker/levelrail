@@ -1,0 +1,57 @@
+---
+title: "Unified search"
+tag: "Beta"
+description: One search over apps, databases, nodes, domains, templates, settings and actions, filtered by what you are allowed to see.
+---
+
+Search finds apps, databases, nodes, domains, deployments, templates, projects, environments, tags, settings pages and actions in one box. It works from the API, the CLI and the MCP server, and the dashboard command palette reads the same endpoint.
+
+## Query syntax
+
+Scopes narrow the result, everything else is free text. Free text matches any part of a name, so `rapd` still finds `rapid-worker`.
+
+| Scope | Meaning |
+| --- | --- |
+| `app:NAME` | Only things that belong to an app whose name contains NAME |
+| `env:NAME` | Only things in an environment |
+| `tag:NAME` | Only apps with a tag |
+| `node:NAME` | Only things on a node |
+| `kind:KIND` | One kind: app, database, node, domain, template, project, environment, tag, deployment, setting, doc, action |
+
+Example: `env:prod kind:app api` lists production apps with `api` in the name.
+
+## Actions
+
+An action is something you can do to an app or database: deploy, restart, open logs, rollback, stop, add a domain, back up a database now. `search kind:action restart api` returns the Restart action for every app whose name matches `api` and that you may deploy, and nothing else. Each action hit carries the ability it needs and whether it asks to confirm. Search lists actions and never runs them.
+
+## What you can see
+
+Every hit is checked against your own access before it is ranked, with the same rules the rest of the API uses: IAM policies and denies, environment visibility, team scoping and the ability a route needs. A token that cannot see an app gets no hit for it, no action on it, and no domain, deployment or tag that would reveal it. Nodes appear only to callers who may list nodes.
+
+## Ranking
+
+Text relevance first, weighted by kind (apps and databases lead), then recency, then how often you opened a hit. Usage is per person.
+
+## Saved searches
+
+Save a query under a name and find it again by searching for the name. Saved searches are private to you. Saving needs write access, so a read-only token can search but cannot save.
+
+```
+levelrail-cli search saved add prod-apis env:prod kind:app
+levelrail-cli search saved list
+```
+
+## API
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/v1/search?q=&kind=&limit=&cursor=` | Ranked, paged hits |
+| `GET /api/v1/search/suggest?q=` | Scope completions and top titles |
+| `GET /api/v1/search/saved` | Your saved searches |
+| `POST /api/v1/search/saved` | Save one (`name`, `query`) |
+| `DELETE /api/v1/search/saved/{id}` | Remove one |
+| `POST /api/v1/search/usage` | Record that you opened a hit (`ref`) |
+
+The index refreshes within a couple of seconds of any change made through the API and fully every minute, so a hit can lag a change made outside the API by up to a minute. Measured latency at 1000 apps is in [benchmarks](/benchmarks).
+
+The MCP tools `search` and `search_actions` run the same search and only list what the token may see.

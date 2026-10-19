@@ -1607,6 +1607,12 @@ Routes that do not fit an existing group.
 | GET | /api/v1/instance | Public | handleInstance |
 | GET | /api/v1/instance/identity | AbilityRead | handleInstanceIdentity |
 | POST | /api/v1/instance/confirm-same | AbilityRoot | handleConfirmSameInstance |
+| GET | /api/v1/search | AbilityRead | handleSearch |
+| GET | /api/v1/search/suggest | AbilityRead | handleSearchSuggest |
+| GET | /api/v1/search/saved | AbilityRead | handleListSavedSearches |
+| POST | /api/v1/search/saved | AbilityWrite | handleSaveSearch |
+| DELETE | /api/v1/search/saved/{id} | AbilityWrite | handleDeleteSavedSearch |
+| POST | /api/v1/search/usage | AbilityWrite | handleSearchUsage |
 
 ## See also
 

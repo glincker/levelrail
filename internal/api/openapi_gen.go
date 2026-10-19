@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1383 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1389 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1109,6 +1109,12 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
 	{Method: "PUT", Path: "/api/v1/scim/v2/Users/{id}", Ability: "Public", Group: "Other", Handler: "handleSCIM", Description: ""},
+	{Method: "GET", Path: "/api/v1/search", Ability: "AbilityRead", Group: "Other", Handler: "handleSearch", Description: ""},
+	{Method: "GET", Path: "/api/v1/search/saved", Ability: "AbilityRead", Group: "Other", Handler: "handleListSavedSearches", Description: ""},
+	{Method: "POST", Path: "/api/v1/search/saved", Ability: "AbilityWrite", Group: "Other", Handler: "handleSaveSearch", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/search/saved/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleDeleteSavedSearch", Description: ""},
+	{Method: "GET", Path: "/api/v1/search/suggest", Ability: "AbilityRead", Group: "Other", Handler: "handleSearchSuggest", Description: ""},
+	{Method: "POST", Path: "/api/v1/search/usage", Ability: "AbilityWrite", Group: "Other", Handler: "handleSearchUsage", Description: ""},
 	{Method: "GET", Path: "/api/v1/secret-rotation", Ability: "AbilityRoot", Group: "Other", Handler: "handleListAllSecretRotation", Description: ""},
 	{Method: "OPTIONS", Path: "/api/v1/sentry/api/{project}/envelope/", Ability: "Public", Group: "Other", Handler: "handleSentryPreflight", Description: ""},
 	{Method: "POST", Path: "/api/v1/sentry/api/{project}/envelope/", Ability: "Public", Group: "Other", Handler: "handleSentryEnvelope", Description: ""},
