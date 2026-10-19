@@ -135,6 +135,8 @@
         ],
         "created_at": "\u003ccreated_at\u003e",
         "id": "\u003cid\u003e",
+        "instance_id": "\u003cinstance\u003e",
+        "last_ip": "192.0.2.1",
         "last_used_at": "\u003clast_used_at\u003e",
         "name": "reader",
         "revoked_at": "\u003crevoked_at\u003e"
@@ -165,6 +167,13 @@
     "Status": 200,
     "Body": [
       {
+        "abilities": [
+          "read",
+          "read:sensitive",
+          "write",
+          "write:sensitive",
+          "deploy"
+        ],
         "client_name": "laptop",
         "created_at": "\u003ccreated_at\u003e",
         "expires_at": "\u003cexpires_at\u003e",

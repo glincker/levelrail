@@ -145,6 +145,7 @@ func goldenScenario(t *testing.T) []goldenStep {
 // The test shortens the poll interval, so only that field and the device token name are masked.
 func maskDeviceName(steps []goldenStep) {
 	for _, s := range steps {
+		maskInstanceID(s.Body)
 		m, ok := s.Body.(map[string]any)
 		switch {
 		case !ok:
@@ -152,6 +153,20 @@ func maskDeviceName(steps []goldenStep) {
 			m["name"] = "<name>"
 		case strings.HasPrefix(s.Label, "device start"):
 			m["interval"] = "<interval>"
+		}
+	}
+}
+
+// The instance id is generated per test database, so only its presence is part of the contract.
+func maskInstanceID(body any) {
+	switch v := body.(type) {
+	case map[string]any:
+		if _, ok := v["instance_id"]; ok {
+			v["instance_id"] = "<instance>"
+		}
+	case []any:
+		for _, item := range v {
+			maskInstanceID(item)
 		}
 	}
 }
