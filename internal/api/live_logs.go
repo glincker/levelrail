@@ -136,7 +136,7 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 	// comment for why that ordering, not the reverse, is what closes the
 	// gap between "read what's already stored" and "start receiving
 	// what's published from here on."
-	live, unsubscribe := rt.logBroadcaster.Subscribe(resourceID)
+	live, takeDropped, unsubscribe := rt.logBroadcaster.SubscribeCounted(resourceID)
 	defer unsubscribe()
 	subscribeTime := time.Now()
 
@@ -237,6 +237,9 @@ func (rt *Router) streamResourceLogsWithStatus(w http.ResponseWriter, r *http.Re
 				// channel lifecycle is exactly the kind of bug that's
 				// cheap to guard against and expensive to debug blind.
 				return
+			}
+			if n := takeDropped(); n > 0 {
+				writeSSEEvent(w, sseLogEvent{Line: skippedLinesMarker(n), Stream: "system"})
 			}
 			show, transitioned := containerFilter.admit(r.Context(), entry.ContainerID)
 			if transitioned {

@@ -29,6 +29,16 @@ The hourly log retention sweep checks each app against its budget. An app over b
 
 The running total of trimmed lines per app is kept and shown as **Trimmed** in the table.
 
+## Trim now
+
+An app over its budget waits for the hourly sweep. To free the space immediately:
+
+```bash
+levelrail-cli apps log-budget trim web
+```
+
+In the dashboard, an app over budget shows a **Trim now** button on its Logs page and in **Settings, Observability, Log volume**. It drops the oldest lines of that app only, up to the same per-pass bound as the sweep (20,000 lines), and says when a backlog needs another pass. API: `POST /api/v1/apps/{name}/log-budget/trim` (same ability as changing the budget).
+
 ## See the noisiest apps
 
 ```bash

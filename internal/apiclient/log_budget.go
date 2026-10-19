@@ -63,3 +63,17 @@ func (c *Client) SetLogBudget(ctx context.Context, app string, maxMB int64) (Log
 func (c *Client) DeleteLogBudget(ctx context.Context, app string) error {
 	return c.do(ctx, http.MethodDelete, logBudgetPath(app), nil, nil)
 }
+
+// LogTrimResult is the response of POST /api/v1/apps/{name}/log-budget/trim.
+type LogTrimResult struct {
+	TrimmedLines int64 `json:"trimmed_lines"`
+	TrimmedBytes int64 `json:"trimmed_bytes"`
+	StillOver    bool  `json:"still_over"`
+}
+
+// TrimLogBudget calls POST /api/v1/apps/{name}/log-budget/trim.
+func (c *Client) TrimLogBudget(ctx context.Context, app string) (LogTrimResult, error) {
+	var out LogTrimResult
+	err := c.do(ctx, http.MethodPost, logBudgetPath(app)+"/trim", struct{}{}, &out)
+	return out, err
+}

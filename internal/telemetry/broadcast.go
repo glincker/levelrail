@@ -50,11 +50,13 @@ type LogBroadcaster struct {
 	mu   sync.Mutex
 	subs map[string][]chan LogEntry // keyed by ResourceID
 	all  []chan LogEntry            // receives every resource's lines
+	// drops counts lines skipped per slow subscriber, read by SubscribeCounted.
+	drops map[chan LogEntry]int64
 }
 
 // NewLogBroadcaster builds an empty LogBroadcaster.
 func NewLogBroadcaster() *LogBroadcaster {
-	return &LogBroadcaster{subs: make(map[string][]chan LogEntry)}
+	return &LogBroadcaster{subs: make(map[string][]chan LogEntry), drops: make(map[chan LogEntry]int64)}
 }
 
 // Publish delivers entry to every subscriber currently watching
@@ -81,7 +83,8 @@ func (b *LogBroadcaster) Publish(entry LogEntry) {
 			// Slow subscriber: drop rather than block. The entry is (or
 			// will shortly be, see logBatchMaxWait) in the persisted
 			// store regardless, so this is a live-view gap, not data
-			// loss.
+			// loss. The count lets the viewer show a skipped marker.
+			b.drops[ch]++
 		}
 	}
 }
@@ -97,15 +100,31 @@ func (b *LogBroadcaster) Publish(entry LogEntry) {
 // behavior for a live tail opened against a currently quiet or
 // not-yet-running app rather than an error condition.
 func (b *LogBroadcaster) Subscribe(resourceID string) (ch <-chan LogEntry, unsubscribe func()) {
+	ch, _, unsubscribe = b.SubscribeCounted(resourceID)
+	return ch, unsubscribe
+}
+
+// SubscribeCounted is Subscribe plus takeDropped, which returns how many
+// lines were skipped for this subscriber since the last call and resets it.
+func (b *LogBroadcaster) SubscribeCounted(resourceID string) (ch <-chan LogEntry, takeDropped func() int64, unsubscribe func()) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
 	c := make(chan LogEntry, broadcastBufferSize)
 	b.subs[resourceID] = append(b.subs[resourceID], c)
 
+	takeDropped = func() int64 {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		n := b.drops[c]
+		delete(b.drops, c)
+		return n
+	}
+
 	unsubscribe = func() {
 		b.mu.Lock()
 		defer b.mu.Unlock()
+		delete(b.drops, c)
 		list := b.subs[resourceID]
 		for i, existing := range list {
 			if existing == c {
@@ -127,7 +146,7 @@ func (b *LogBroadcaster) Subscribe(resourceID string) (ch <-chan LogEntry, unsub
 		}
 	}
 
-	return c, unsubscribe
+	return c, takeDropped, unsubscribe
 }
 
 // SubscribeAll returns a channel receiving every resource's lines, with

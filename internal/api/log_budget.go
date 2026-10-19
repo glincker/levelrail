@@ -24,6 +24,7 @@ type LogBudgetStore interface {
 	SetLogBudget(ctx context.Context, resourceID string, maxBytes int64) error
 	DeleteLogBudget(ctx context.Context, resourceID string) error
 	LogUsageAll(ctx context.Context, now time.Time, defaultMax int64) ([]telemetry.LogUsage, error)
+	TrimLogBudget(ctx context.Context, resourceID string, defaultMax int64) (telemetry.LogBudgetTrim, bool, error)
 }
 
 // WithLogBudgetStore turns on the log budget and usage routes.
@@ -191,4 +192,26 @@ func (rt *Router) handleDeleteLogBudget(w http.ResponseWriter, r *http.Request) 
 	}
 	rt.logUsageCache.invalidate()
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// LogTrimResult is POST /api/v1/apps/{name}/log-budget/trim.
+type LogTrimResult struct {
+	TrimmedLines int64 `json:"trimmed_lines"`
+	TrimmedBytes int64 `json:"trimmed_bytes"`
+	StillOver    bool  `json:"still_over"`
+}
+
+// handleTrimLogBudget handles POST /api/v1/apps/{name}/log-budget/trim.
+func (rt *Router) handleTrimLogBudget(w http.ResponseWriter, r *http.Request) {
+	if !rt.logBudgetReady(w) {
+		return
+	}
+	name := r.PathValue("name")
+	t, still, err := rt.logBudgets.TrimLogBudget(r.Context(), logBudgetResourcePrefix+name, telemetry.DefaultLogBudgetBytes())
+	if err != nil {
+		rt.internalError(w, "api: trim log budget", err, slog.String("name", name))
+		return
+	}
+	rt.logUsageCache.invalidate()
+	writeJSON(w, http.StatusOK, LogTrimResult{TrimmedLines: t.Lines, TrimmedBytes: t.Bytes, StillOver: still})
 }

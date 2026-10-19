@@ -21,3 +21,9 @@ export interface LogBudget {
   default_mb: number
   effective_max_bytes: number
 }
+
+export interface LogTrimResult {
+  trimmed_lines: number
+  trimmed_bytes: number
+  still_over: boolean
+}

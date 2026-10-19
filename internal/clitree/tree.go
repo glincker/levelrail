@@ -38,7 +38,7 @@ var Tree = map[string]*Node{
 		"access":                  nil,
 		"urls":                    nil,
 		"traces":                  {Subs: map[string]*Node{"list": nil, "get": nil}},
-		"log-budget":              {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
+		"log-budget":              {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "trim": nil}},
 		"log-pipeline":            {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil, "preview": nil}},
 		"tracing":                 {Subs: map[string]*Node{"enable": nil, "status": nil, "disable": nil}},
 		"errors":                  {Subs: map[string]*Node{"list": nil, "get": nil, "resolve": nil, "ignore": nil, "reopen": nil}},

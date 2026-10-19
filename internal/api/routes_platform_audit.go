@@ -54,6 +54,7 @@ func (rt *Router) registerAuditRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/apps/{name}/log-budget", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetLogBudget))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/log-budget", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleSetLogBudget))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/log-budget", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleDeleteLogBudget))
+	mux.HandleFunc("POST /api/v1/apps/{name}/log-budget/trim", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleTrimLogBudget))
 	mux.HandleFunc("GET /api/v1/apps/{name}/access", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleAppAccess))
 	mux.HandleFunc("GET /api/v1/apps/{name}/traces/{id}", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetTrace))
 	mux.HandleFunc("GET /api/v1/apps/{name}/log-drain", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppLogDrain))

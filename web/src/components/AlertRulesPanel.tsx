@@ -17,6 +17,7 @@ import { DeleteAlertRuleDialog } from './DeleteAlertRuleDialog'
 import { RuleNoiseDialog } from './RuleNoiseDialog'
 import { RecentChanges } from './RecentChanges'
 import { SilenceRuleMenu } from './SilenceRuleMenu'
+import { AppSloCard } from './AppSloCard'
 import { SloSuggestion } from './SloSuggestion'
 import {
   STATE_BADGE_VARIANT,
@@ -216,6 +217,7 @@ export function AlertRulesPanel({
         </div>
       </div>
 
+      <AppSloCard appName={appName} rules={rules} />
       <SloSuggestion appName={appName} rules={rules} />
 
       <div className="mt-3 space-y-3">

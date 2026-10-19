@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1436 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1437 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -241,6 +241,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/log-budget", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLogBudget", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-budget", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLogBudget", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-budget", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLogBudget", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/log-budget/trim", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleTrimLogBudget", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleDeleteLogPipeline", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetLogPipeline", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/log-pipeline", Ability: "AbilityWriteSensitive", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetLogPipeline", Description: ""},

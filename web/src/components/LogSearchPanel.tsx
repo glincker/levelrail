@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next'
 import {
   BellRingingIcon,
   CheckIcon,
+  ClockCounterClockwiseIcon,
   DownloadSimpleIcon,
   LinkIcon,
   MagnifyingGlassIcon,
+  SortAscendingIcon,
   TextAlignLeftIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -162,6 +164,7 @@ export function LogSearchPanel({
     stream: filters.stream,
     fields: fieldFilters,
     signature: filters.signature,
+    order: trimmedQuery ? filters.order : undefined,
   }
 
   const { data, isLoading, error } = useLogSearch(appName, {
@@ -363,9 +366,49 @@ export function LogSearchPanel({
           </button>
         ) : null}
       </div>
-      <p id="log-search-syntax" className="mt-1 text-xs text-muted-foreground">
-        {t('explorer.searchSyntax')}
-      </p>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+        <p id="log-search-syntax" className="text-xs text-muted-foreground">
+          {t('explorer.searchSyntax')}
+        </p>
+        {trimmedQuery ? (
+          <div
+            role="group"
+            aria-label={t('explorer.orderLabel')}
+            className="flex items-center gap-1"
+          >
+            {(['newest', 'relevance'] as const).map((mode) => {
+              const active = (filters.order ?? 'newest') === mode
+              return (
+                <Button
+                  key={mode}
+                  type="button"
+                  size="sm"
+                  variant={active ? 'secondary' : 'outline'}
+                  aria-pressed={active}
+                  onClick={() => {
+                    update({ order: mode === 'relevance' ? mode : undefined })
+                  }}
+                >
+                  {mode === 'relevance' ? (
+                    <SortAscendingIcon
+                      className="size-3.5"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <ClockCounterClockwiseIcon
+                      className="size-3.5"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {mode === 'relevance'
+                    ? t('explorer.orderRelevance')
+                    : t('explorer.orderNewest')}
+                </Button>
+              )
+            })}
+          </div>
+        ) : null}
+      </div>
 
       {filters.signature ? (
         <p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">

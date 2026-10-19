@@ -46,3 +46,25 @@ func TestRun_AppsLogBudgetSetSendsMaxMB(t *testing.T) {
 		t.Fatalf("method=%s body=%s out=%s", method, body, stdout.String())
 	}
 }
+
+func TestRun_AppsLogBudgetTrimPostsAndReports(t *testing.T) {
+	var method, path string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		method, path = r.Method, r.URL.Path
+		_, _ = w.Write([]byte(`{"trimmed_lines":42,"trimmed_bytes":1048576,"still_over":true}`))
+	}))
+	defer srv.Close()
+	var stdout, stderr bytes.Buffer
+	code := run("levelrail-cli-test", []string{"apps", "log-budget", "trim", "web", "--api-url", srv.URL}, &stdout, &stderr, envMap())
+	if code != exitOK {
+		t.Fatalf("exit %d: %s", code, stderr.String())
+	}
+	if method != http.MethodPost || path != "/api/v1/apps/web/log-budget/trim" {
+		t.Fatalf("method=%s path=%s", method, path)
+	}
+	for _, want := range []string{"trimmed 42 lines", "still over budget"} {
+		if !strings.Contains(stdout.String(), want) {
+			t.Errorf("output missing %q: %s", want, stdout.String())
+		}
+	}
+}

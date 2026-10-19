@@ -22,6 +22,7 @@ import { useIsRoot } from '../../hooks/useIsRoot'
 import { useLogUsage } from '../../queries/logBudgets'
 import type { LogUsageApp } from '../../types/logBudgets'
 import { LogBudgetEditor } from './LogBudgetEditor'
+import { TrimLogsButton } from './TrimLogsButton'
 import { splitBytes } from './format'
 
 const PAGE_SIZE = 25
@@ -72,6 +73,9 @@ function BudgetCell({ row, canEdit }: { row: LogUsageApp; canEdit: boolean }) {
         >
           <PencilSimpleIcon />
         </Button>
+      )}
+      {canEdit && row.percent !== null && row.percent > 100 && (
+        <TrimLogsButton app={row.app} />
       )}
     </span>
   )

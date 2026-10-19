@@ -227,6 +227,10 @@ It returns an excerpt of the newest matching lines, never a full dump: at most `
 </Accordion>
 </AccordionGroup>
 
+## Service level objectives
+
+An app's Alerts section shows one card per `slo_burn` rule: the error budget remaining for the window, a status (healthy, burning, paging, or no traffic) and the burn rate of each alert tier, computed from the app's ingress request metrics exactly as the rule evaluates them (`GET /api/v1/apps/{name}/slo-preview`, `levelrail-cli apps alerts slo`). An app that serves traffic with no SLO is offered a one click rule instead.
+
 ## Database slow query log
 
 `GET /api/v1/databases/{name}/slow-queries` returns structured slow-query entries (timestamp, duration, query text, rows examined where the engine reports it). Default `limit` is 100.

@@ -542,6 +542,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/env/check | AbilityRead | handleCheckEnv |
 | POST | /api/v1/apps/{name}/env/check/fix | AbilityWrite | handleFixEnv |
 | GET | /api/v1/apps/{name}/env/history | AbilityRead | handleListEnvHistory |
+| POST | /api/v1/apps/{name}/log-budget/trim | AbilityWriteSensitive | handleTrimLogBudget |
 
 </Accordion>
 

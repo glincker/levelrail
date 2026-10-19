@@ -46,6 +46,11 @@ type logsResponse struct {
 	Containers []logContainer `json:"containers"`
 }
 
+const (
+	logOrderNewest    = "newest"
+	logOrderRelevance = "relevance"
+)
+
 // handleQueryLogs handles GET /api/v1/apps/{name}/logs; see
 // queryResourceLogs for the shared implementation.
 func (rt *Router) handleQueryLogs(w http.ResponseWriter, r *http.Request) {
@@ -111,6 +116,11 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		return
 	}
 	container := r.URL.Query().Get("container")
+	order := r.URL.Query().Get("order")
+	if order != "" && order != logOrderNewest && order != logOrderRelevance {
+		writeError(w, http.StatusBadRequest, "order must be newest or relevance")
+		return
+	}
 
 	entries, err := rt.telemetry.QueryLogs(r.Context(), resourceID, from, to, query)
 	if err != nil {
@@ -135,7 +145,12 @@ func (rt *Router) queryResourceLogs(w http.ResponseWriter, r *http.Request, look
 		entries = filterLogsByContainer(entries, container)
 	}
 	total := len(entries)
-	if limit > 0 && len(entries) > limit {
+	if order == logOrderRelevance && strings.TrimSpace(query) != "" {
+		entries = telemetry.RankLogsByRelevance(entries, query)
+		if limit > 0 && len(entries) > limit {
+			entries = entries[:limit]
+		}
+	} else if limit > 0 && len(entries) > limit {
 		entries = entries[len(entries)-limit:]
 	}
 

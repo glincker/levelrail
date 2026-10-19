@@ -36,6 +36,8 @@ type LogQuery struct {
 	Since  string
 	Until  string
 	Text   string
+	// Order is "relevance" for best matches first (needs Text); empty is newest.
+	Order string
 	// MaxLines caps returned lines; 0 means DefaultLogMaxLines.
 	MaxLines int
 }
@@ -144,11 +146,18 @@ func (c *Client) QueryLogsCompact(ctx context.Context, q LogQuery, maxBytes int,
 	if q.Level != "" {
 		params.Set("level", q.Level)
 	}
+	ranked := q.Order == "relevance" && q.Text != ""
+	if ranked {
+		params.Set("order", q.Order)
+	}
 	var out logsResponse
 	if err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(q.App)+"/logs?"+params.Encode(), nil, &out); err != nil {
 		return LogExcerpt{}, fmt.Errorf("query logs for app %q: %w", q.App, err)
 	}
 	total := max(out.Total, len(out.Entries))
+	if ranked {
+		return buildRankedLogExcerpt(q.App, from, to, out.Entries, total, maxBytes), nil
+	}
 	return BuildLogExcerpt(q.App, from, to, out.Entries, total, maxBytes), nil
 }
 
@@ -177,6 +186,32 @@ func BuildLogExcerpt(app string, from, to time.Time, entries []LogEntryResource,
 	ex := LogExcerpt{App: app, From: from.UTC().Format(time.RFC3339), To: to.UTC().Format(time.RFC3339), Matched: total, Shown: len(lines), Lines: lines}
 	if len(lines) < total {
 		ex.Notice = fmt.Sprintf("showing %s of %s matching lines (newest), use since/until or level to narrow", groupDigits(len(lines)), groupDigits(total))
+	}
+	return ex
+}
+
+// buildRankedLogExcerpt keeps entries (best match first) in that order and
+// drops the weakest matches once maxBytes is reached.
+func buildRankedLogExcerpt(app string, from, to time.Time, entries []LogEntryResource, total, maxBytes int) LogExcerpt {
+	lines := make([]string, 0, len(entries))
+	size := 0
+	budget := maxBytes - min(logEnvelopeReserve, maxBytes/4)
+	for _, e := range entries {
+		line := e.Timestamp.UTC().Format("15:04:05")
+		if e.Level != "" {
+			line += " " + strings.ToUpper(e.Level)
+		}
+		line += " " + clipLine(e.Message, logLineMaxBytes)
+		encoded, _ := json.Marshal(line)
+		if size+len(encoded)+1 > budget {
+			break
+		}
+		size += len(encoded) + 1
+		lines = append(lines, line)
+	}
+	ex := LogExcerpt{App: app, From: from.UTC().Format(time.RFC3339), To: to.UTC().Format(time.RFC3339), Matched: total, Shown: len(lines), Lines: lines}
+	if len(lines) < total {
+		ex.Notice = fmt.Sprintf("showing the %s best of %s matching lines, use since/until or level to narrow", groupDigits(len(lines)), groupDigits(total))
 	}
 	return ex
 }

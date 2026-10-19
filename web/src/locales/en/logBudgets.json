@@ -31,6 +31,12 @@
   "saveFailed": "Could not save the log budget",
   "showMore": "Show more",
   "budgetField": "Log budget (MiB)",
+  "overBudget": "Over budget: the oldest lines are trimmed on the hourly sweep.",
+  "trimNow": "Trim now",
+  "trimDone_one": "Trimmed {{count}} line",
+  "trimDone_other": "Trimmed {{count}} lines",
+  "trimStillOver": "Still over budget, trim again to keep draining.",
+  "trimFailed": "Could not trim the logs",
   "bytes": {
     "b": "{{n}} B",
     "kib": "{{n}} KiB",

@@ -21,6 +21,8 @@ levelrail-cli logs saved run slq_AbC123
 levelrail-cli logs saved delete slq_AbC123
 ```
 
+The Saved menu is on every tab of an app's Logs page. Picking a query from Live, Errors or Archive opens it in Search with its filters and range applied.
+
 API: `GET/POST /api/v1/logs/queries`, `PUT/DELETE /api/v1/logs/queries/{id}`. At most `APP_LOG_SAVED_QUERY_MAX` (default 100) per user.
 
 ## Search syntax
@@ -86,6 +88,10 @@ Evaluation never scans an unbounded range. Each run reads the newest lines of at
 | `APP_LOG_EXPORT_MAX_LINES` | `5000` | lines in one download |
 | `APP_LOG_SAVED_QUERY_MAX` | `100` | saved queries per user |
 
+## Relevance or newest
+
+With a search phrase, the Search tab can order matches by **Relevance** (BM25: lines where the terms are frequent and the line is short rank first, words under `NOT` never score) instead of **Newest**. The same choice is `GET /api/v1/apps/{name}/logs?order=relevance` and `levelrail-cli logs query <app> --text PHRASE --order relevance`. The limit then keeps the best matches rather than the newest ones, and `total` still counts every match. Scores compare lines within one result, not across searches.
+
 ## Viewer
 
 The Search tab virtualizes the list, colours by level and has a Wrap toggle. Click a line (or press `j` and `k` to move, `Enter` to open) for pretty JSON, a chip per field that adds a filter on click, and the lines logged just before and after it. "Download logs" exports the current filters, up to `APP_LOG_EXPORT_MAX_LINES` newest lines, with credentials masked.
@@ -96,6 +102,8 @@ The Search tab virtualizes the list, colours by level and has a Wrap toggle. Cli
 | `w` | toggle wrapping |
 | `j` / `k` | next / previous line |
 | `Esc` | close the detail |
+
+The Live tab never blocks on a slow browser: when it falls behind, lines are skipped for that viewer and a marker line says how many ("skipped N lines while the viewer fell behind"). The skipped lines are still stored and searchable.
 
 ## Safety
 

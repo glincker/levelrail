@@ -229,6 +229,31 @@ func (db *DB) EnforceLogBudgets(ctx context.Context, defaultMax int64) ([]LogBud
 	return trims, nil
 }
 
+// TrimLogBudget trims one resource's oldest rows down to its budget (override,
+// else defaultMax) now. The bool reports a backlog larger than one pass drains.
+func (db *DB) TrimLogBudget(ctx context.Context, resourceID string, defaultMax int64) (LogBudgetTrim, bool, error) {
+	budget, err := db.GetLogBudget(ctx, resourceID)
+	if err != nil {
+		return LogBudgetTrim{}, false, err
+	}
+	if budget <= 0 {
+		budget = defaultMax
+	}
+	if budget <= 0 {
+		return LogBudgetTrim{ResourceID: resourceID}, false, nil
+	}
+	var used int64
+	err = db.QueryRowContext(ctx, `SELECT COALESCE(SUM(`+logRowBytes+`), 0) FROM log_entries WHERE resource_id = ?`, resourceID).Scan(&used)
+	if err != nil {
+		return LogBudgetTrim{}, false, fmt.Errorf("telemetry: log usage for trim: %w", err)
+	}
+	if used <= budget {
+		return LogBudgetTrim{ResourceID: resourceID}, false, nil
+	}
+	t, err := db.trimResource(ctx, resourceID, used-budget)
+	return t, used-t.Bytes > budget, err
+}
+
 func (db *DB) trimResource(ctx context.Context, id string, excess int64) (LogBudgetTrim, error) {
 	t := LogBudgetTrim{ResourceID: id}
 	for batch := 0; batch < trimMaxBatches && t.Bytes < excess; batch++ {

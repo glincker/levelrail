@@ -29,6 +29,7 @@ export interface LogsSearch {
   stream?: 'stdout' | 'stderr'
   field?: string[]
   signature?: string
+  order?: 'relevance'
   from?: string
   to?: string
 }
@@ -104,6 +105,9 @@ export function parseLogsSearch(raw: Record<string, unknown>): LogsSearch {
   const signature = stringOrUndefined(raw.signature)
   if (signature) {
     out.signature = signature
+  }
+  if (raw.order === 'relevance') {
+    out.order = 'relevance'
   }
   const from = isoOrUndefined(raw.from)
   const to = isoOrUndefined(raw.to)

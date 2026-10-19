@@ -25,6 +25,7 @@ export const logSearchKeys = {
     stream: string,
     fields: string[],
     signature: string,
+    order: string,
   ) =>
     [
       ...logSearchKeys.all(appName),
@@ -37,6 +38,7 @@ export const logSearchKeys = {
       stream,
       fields,
       signature,
+      order,
     ] as const,
 }
 
@@ -55,6 +57,8 @@ export interface LogSearchParams {
   fields?: readonly FieldFilter[]
   /** Keep only lines of one error signature. */
   signature?: string
+  /** Best text matches first (bm25); only applies with q. */
+  order?: 'relevance'
 }
 
 export async function fetchLogEntries(
@@ -99,6 +103,7 @@ export function logSearchQueryOptions(
       params.stream ?? '',
       (params.fields ?? []).map(formatFieldFilter),
       params.signature ?? '',
+      params.q ? (params.order ?? '') : '',
     ),
     queryFn: () => fetchLogEntries(appName, params),
   })
