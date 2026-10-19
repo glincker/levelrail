@@ -273,6 +273,7 @@ var Tree = map[string]*Node{
 	"docker-guard":             {Subs: map[string]*Node{"status": nil, "set": nil}},
 	"audit-log":                nil,
 	"audit-purge":              nil,
+	"audit-verify":             nil,
 	"attention":                nil,
 	"tui":                      nil,
 	"advisor":                  {Subs: map[string]*Node{"findings": nil, "summary": nil, "apply": nil, "dismiss": nil, "snooze": nil, "restore": nil, "enable": nil, "disable": nil}},

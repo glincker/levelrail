@@ -254,6 +254,11 @@ func (rt *Router) writeLibRegisterError(w http.ResponseWriter, err error) {
 func (rt *Router) requestLibPasswordReset(email, ip string) {
 	ctx, cancel := context.WithTimeout(context.Background(), libMailTimeout)
 	defer cancel()
+	defer func() {
+		if rec := recover(); rec != nil {
+			rt.logger.Error("api: forgot password: reset request panicked", slog.Any("panic", rec))
+		}
+	}()
 	if rt.emailSender == nil {
 		rt.logger.Warn("api: forgot password: no email capability configured on this control plane")
 		return

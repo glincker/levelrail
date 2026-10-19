@@ -3775,6 +3775,13 @@ func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error)
 	return out, err
 }
 
+// VerifyAuditLog calls GET /api/v1/audit-log/verify: walks the audit hash chain.
+func (c *Client) VerifyAuditLog(ctx context.Context) (AuditChainReport, error) {
+	var out AuditChainReport
+	err := c.do(ctx, http.MethodGet, "/api/v1/audit-log/verify", nil, &out)
+	return out, err
+}
+
 // DeployAttemptFilter narrows ListDeployAttemptsFiltered; empty fields are ignored.
 type DeployAttemptFilter struct {
 	Branch string

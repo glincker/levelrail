@@ -88,7 +88,9 @@
       "account_email_changed": "Email address changed",
       "account_deleted": "Account deleted",
       "step_up_verified": "Identity re-confirmed",
-      "step_up_failed": "Identity check failed"
+      "step_up_failed": "Identity check failed",
+      "step_up_locked": "Identity check locked after too many attempts",
+      "step_up_code_required": "Identity check asked for an authenticator code"
     }
   },
   "export": {

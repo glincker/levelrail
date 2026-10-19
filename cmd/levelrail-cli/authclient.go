@@ -165,6 +165,7 @@ type createTokenRequest struct {
 	Name          string      `json:"name"`
 	Abilities     []string    `json:"abilities"`
 	ExpiresInDays int         `json:"expires_in_days,omitempty"`
+	NoExpiry      bool        `json:"no_expiry,omitempty"`
 	Agent         *tokenAgent `json:"agent,omitempty"`
 	TeamID        string      `json:"team_id,omitempty"`
 	ProjectID     string      `json:"project_id,omitempty"`

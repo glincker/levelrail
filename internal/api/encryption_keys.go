@@ -144,6 +144,11 @@ func (rt *Router) handleGetEncryptionKeys(w http.ResponseWriter, r *http.Request
 		rt.internalError(w, "api: encryption keys status failed", err)
 		return
 	}
+	if abs, aerr := rt.callerAbilities(r); aerr != nil || !hasAbility(abs, AbilityRoot) {
+		for i := range res.Apps {
+			res.Apps[i].ValueCount = 0
+		}
+	}
 	writeJSON(w, http.StatusOK, res)
 }
 

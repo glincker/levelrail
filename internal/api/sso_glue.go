@@ -15,13 +15,15 @@ import (
 )
 
 const (
-	envSAMLRatePerMinute     = "APP_SAML_RATE_PER_MINUTE"
-	defaultSAMLRatePerMinute = 30
-	envSCIMFailuresPerIP     = "APP_SCIM_AUTH_FAILURES_PER_MINUTE"
-	defaultSCIMFailuresPerIP = 30
-	samlPathPrefix           = "/api/v1/auth/saml/"
-	scimBasePath             = "/api/v1/scim/v2"
-	signInMethodSAML         = "saml"
+	envSAMLRatePerMinute        = "APP_SAML_RATE_PER_MINUTE"
+	defaultSAMLRatePerMinute    = 30
+	envSCIMFailuresPerIP        = "APP_SCIM_AUTH_FAILURES_PER_MINUTE"
+	defaultSCIMFailuresPerIP    = 30
+	envSCIMRequestsPerToken     = "APP_SCIM_REQUESTS_PER_TOKEN_PER_MINUTE" //nolint:gosec // env var name
+	defaultSCIMRequestsPerToken = 600
+	samlPathPrefix              = "/api/v1/auth/saml/"
+	scimBasePath                = "/api/v1/scim/v2"
+	signInMethodSAML            = "saml"
 )
 
 var (
@@ -59,6 +61,7 @@ func (rt *Router) attachSSO(s Store) {
 	rt.policyTouches = &touchCache{}
 	rt.policyCapChecks = &touchCache{}
 	rt.scimLimiter = newWindowRateLimiter(envInt(envSCIMFailuresPerIP, defaultSCIMFailuresPerIP), time.Minute)
+	rt.scimTokenLimiter = newWindowRateLimiter(envInt(envSCIMRequestsPerToken, defaultSCIMRequestsPerToken), time.Minute)
 	rt.samlLimiter = newWindowRateLimiter(envInt(envSAMLRatePerMinute, defaultSAMLRatePerMinute), time.Minute)
 	rt.samlFlows = newSAMLFlowStore()
 	if rt.authEngine != nil {

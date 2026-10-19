@@ -1201,6 +1201,11 @@
     "docsLink": "View API docs",
     "activeCount_one": "{{count}} active token",
     "activeCount_other": "{{count}} active tokens",
+    "expiring": {
+      "title_one": "{{count}} token expires within 14 days",
+      "title_other": "{{count}} tokens expire within 14 days",
+      "body": "Create a replacement with the same access, switch your integration over, then revoke the old one."
+    },
     "banner": {
       "title_one": "{{count}} root token never expires",
       "title_other": "{{count}} root tokens never expire",

@@ -52,12 +52,12 @@ func TestHandleCreateToken_Success(t *testing.T) {
 	}
 }
 
-func TestHandleCreateToken_NeverExpiresByDefault(t *testing.T) {
+func TestHandleCreateToken_NeverExpiresOnlyWithNoExpiry(t *testing.T) {
 	rt, db := newTestRouter(t)
 	cookie := loginTestSession(t, rt, db)
 
 	rec := httptest.NewRecorder()
-	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/tokens", `{"name":"x","abilities":["read"]}`))
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/auth/tokens", `{"name":"x","abilities":["read"],"no_expiry":true}`))
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusCreated)
 	}

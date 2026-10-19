@@ -25,6 +25,16 @@
     "deviceLoginExpired": "CLI login expired",
     "deviceLoginDismissed": "Dismissed CLI login notice"
   },
+  "integrity": {
+    "checking": "Verifying integrity",
+    "intact": "Tamper-evident: intact",
+    "intactDetail": "{{checked}} entries and {{checkpoints}} signed checkpoints verified.",
+    "failed": "Integrity check failed",
+    "failedDetail_one": "{{count}} problem found. The audit log may have been edited or truncated.",
+    "failedDetail_other": "{{count}} problems found. The audit log may have been edited or truncated.",
+    "unavailable": "Integrity check unavailable",
+    "recheck": "Re-check"
+  },
   "filters": {
     "deviceLogin": "Device login",
     "clearPath": "Showing one login request. Clear"

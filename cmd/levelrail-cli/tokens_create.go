@@ -15,10 +15,12 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	var name, abilitiesFlag, agentName, agentDescription, presetFlag string
 	var scopeTeam, scopeProject, scopeRole string
 	var expiresInDays int
+	var noExpiry bool
 	fs.StringVar(&name, "name", "", "name for the new token (required)")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list, e.g. \"read,deploy\" (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)")
 	fs.StringVar(&presetFlag, "preset", "", "ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)")
-	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
+	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 90)")
+	fs.BoolVar(&noExpiry, "no-expiry", false, "create a token that never expires (root only; refused when the security policy caps token lifetime)")
 	fs.StringVar(&agentName, "agent", "", "label the token as issued to an AI agent with this name; audit entries made with it record the name")
 	fs.StringVar(&agentDescription, "agent-description", "", "optional description of the agent (requires --agent)")
 	fs.StringVar(&scopeTeam, "scope-team", "", "limit the token to this team")
@@ -63,6 +65,9 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 	if expiresInDays < 0 {
 		return reportError(stdout, stderr, jsonOut, newValidationError("--expires-in-days must not be negative"))
 	}
+	if noExpiry && expiresInDays > 0 {
+		return reportError(stdout, stderr, jsonOut, newValidationError("--no-expiry and --expires-in-days are mutually exclusive"))
+	}
 	if slices.Contains(abilities, "signin:approve") {
 		if agentName != "" {
 			return reportError(stdout, stderr, jsonOut, newValidationError("signin:approve cannot be granted to an agent token"))
@@ -86,7 +91,7 @@ func runTokensCreate(prog string, args []string, stdout, stderr io.Writer, looku
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, Agent: agent, TeamID: scopeTeam, ProjectID: scopeProject, TeamRole: scopeRole})
+	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: name, Abilities: abilities, ExpiresInDays: expiresInDays, NoExpiry: noExpiry, Agent: agent, TeamID: scopeTeam, ProjectID: scopeProject, TeamRole: scopeRole})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("create token %q: %w", name, err))
 	}
@@ -124,7 +129,8 @@ Flags:
   --name string                 name for the new token (required)
   --abilities string           comma-separated ability list (required; valid: read, read:sensitive, write, write:sensitive, deploy, root, signin:approve)
   --preset string              ability preset instead of --abilities: observer (read), deployer (read, deploy) or operator (everything except root)
-  --expires-in-days int      token lifetime in days (default: 0, never expires)
+  --expires-in-days int      token lifetime in days (default: 90)
+  --no-expiry                create a token that never expires (root only)
   --agent string                label the token as issued to an AI agent; audit entries record the name
   --agent-description string  optional description of the agent (requires --agent)
   --scope-team string         limit the token to this team

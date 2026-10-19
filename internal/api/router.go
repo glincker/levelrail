@@ -703,6 +703,7 @@ type Router struct {
 	publicBucketLimiter     *apiRateLimiter
 	publicBucketLimiterOnce sync.Once
 	scimLimiter             *apiRateLimiter
+	scimTokenLimiter        *apiRateLimiter
 	// accessPolicy enforces per-team session policy in accessPolicyMiddleware.
 	accessPolicy  AccessPolicyStore
 	policyTouches *touchCache

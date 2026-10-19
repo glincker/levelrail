@@ -22,7 +22,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs.BoolVar(&reauthFlag, "reauth", false, "replace the server this profile is pinned to (use after the server was reinstalled or restored)")
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list for the new token (default: root, same as the session it's minted from)")
-	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
+	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 90)")
 	fs.BoolVar(&deviceFlag, "device", false, "log in via the device code flow (print a code, approve it from the web dashboard) instead of username/password; works over plain http")
 	fs.StringVar(&clientNameFlag, "client-name", "", "optional label for the device request shown in the approval UI, --device only (default: local hostname)")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, authLoginUsage(prog)) }
@@ -134,7 +134,7 @@ Flags:
   --profile string             named credentials profile to save this login under (overrides APP_PROFILE, default "default"); lets one operator manage multiple control planes without overwriting each other's credentials
   --token-name string         name for the new token (default: "levelrail-cli-<timestamp>")
   --abilities string           comma-separated ability list (default: root)
-  --expires-in-days int      token lifetime in days (default: 0, never expires)
+  --expires-in-days int      token lifetime in days (default: 90)
   --reauth                       replace the server this profile is pinned to (after the server was reinstalled or restored)
   --device                       log in via the device code flow instead of username/password
   --client-name string       optional label for the device request shown in the approval UI, --device only (default: local hostname)

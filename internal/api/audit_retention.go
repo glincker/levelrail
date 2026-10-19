@@ -24,8 +24,28 @@ func (rt *Router) effectiveAuditLogRetention() time.Duration {
 // PurgeOldAuditEntries deletes every audit_log row older than
 // effectiveAuditLogRetention, returning how many rows were removed.
 func (rt *Router) PurgeOldAuditEntries(ctx context.Context) (int64, error) {
-	cutoff := time.Now().UTC().Add(-rt.effectiveAuditLogRetention())
+	now := time.Now().UTC()
+	cutoff := now.Add(-rt.effectiveAuditLogRetention())
+	if tiered, ok := rt.auditLog.(tieredAuditPurger); ok {
+		return tiered.DeleteAuditEntriesTiered(ctx, cutoff, now.Add(-rt.effectiveSecurityAuditRetention()))
+	}
 	return rt.auditLog.DeleteAuditEntriesOlderThan(ctx, cutoff)
+}
+
+const (
+	envAuditSecurityRetentionDays     = "APP_AUDIT_LOG_SECURITY_RETENTION_DAYS"
+	defaultAuditSecurityRetentionDays = 365
+)
+
+type tieredAuditPurger interface {
+	DeleteAuditEntriesTiered(ctx context.Context, cutoff, securityCutoff time.Time) (int64, error)
+}
+
+// effectiveSecurityAuditRetention is how long sign-in, step-up, token and
+// policy rows survive; it is never shorter than the general retention.
+func (rt *Router) effectiveSecurityAuditRetention() time.Duration {
+	days := envInt(envAuditSecurityRetentionDays, defaultAuditSecurityRetentionDays)
+	return max(time.Duration(days)*24*time.Hour, rt.effectiveAuditLogRetention())
 }
 
 // RunAuditLogSweeper calls PurgeOldAuditEntries on interval until ctx is

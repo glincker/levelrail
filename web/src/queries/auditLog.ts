@@ -171,6 +171,40 @@ export async function purgeAuditLog(): Promise<PurgeAuditLogResult> {
   return (await res.json()) as PurgeAuditLogResult
 }
 
+export interface AuditChainProblem {
+  seq: number
+  reason: string
+}
+
+export interface AuditChainReport {
+  ok: boolean
+  checked: number
+  head: number
+  checkpoints: number
+  unverified: number
+  unchained: number
+  problems: AuditChainProblem[]
+}
+
+export async function fetchAuditChainReport(): Promise<AuditChainReport> {
+  const res = await fetch('/api/v1/audit-log/verify')
+  if (!res.ok) {
+    throw new ApiError(
+      res.status,
+      await readErrorMessage(res, `verify audit log failed: ${res.status}`),
+    )
+  }
+  return (await res.json()) as AuditChainReport
+}
+
+export const auditChainQueryOptions = () =>
+  queryOptions({
+    queryKey: [...auditLogKeys.all, 'verify'] as const,
+    queryFn: fetchAuditChainReport,
+    retry: false,
+    staleTime: 60_000,
+  })
+
 export function usePurgeAuditLog() {
   const queryClient = useQueryClient()
   return useMutation({

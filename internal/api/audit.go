@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -78,6 +79,15 @@ func auditWorthy(required string) bool {
 	return required != AbilityRead
 }
 
+// AuditActionSensitiveRead marks a GET that returned value-bearing env or secret metadata.
+const AuditActionSensitiveRead = "sensitive_read"
+
+var sensitiveReadPath = regexp.MustCompile(`^/api/v1/(apps|organizations|environments)/[^/]+(/previews/[^/]+)?/(env(/(bound|secrets|all))?|secrets|branch-env)$`)
+
+func sensitiveReadRoute(r *http.Request) bool {
+	return r.Method == http.MethodGet && sensitiveReadPath.MatchString(r.URL.Path)
+}
+
 // auditActorName resolves the real display name behind an audited
 // request's actor: tokenName (already known to every requireAbility
 // caller, no extra lookup) for a token actor, or the session's own user
@@ -122,6 +132,9 @@ func (rt *Router) recordAudit(ctx context.Context, r *http.Request, required, ac
 		RemoteAddr: clientIP(r),
 		CreatedAt:  store.FormatAuditTime(time.Now()),
 		ClientKind: clientKindFromUserAgent(r.Header.Get("User-Agent")),
+	}
+	if required == AbilityRead && sensitiveReadRoute(r) {
+		entry.Action = AuditActionSensitiveRead
 	}
 	if actorType == "token" {
 		entry.AgentName = agentNameFrom(ctx)

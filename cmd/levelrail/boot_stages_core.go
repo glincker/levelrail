@@ -248,6 +248,7 @@ func (s *bootState) loadSecretsAndNotifiers() {
 		// Non-fatal, like bootstrapAdmin: secrets-dependent routes fail specifically instead of refusing startup.
 		logger.Warn("secrets not configured", slog.String("error", err.Error()))
 	}
+	installAuditChainKey(ctx, logger, secretsManager)
 	setupNotificationChannelSecrets(ctx, logger, alertingDB, secretsManager)
 
 	// Always non-nil: email settings resolve on every send, so 'not configured' surfaces at send time.

@@ -45,10 +45,18 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user.PasswordHash != nil {
+		if err := rt.stepUpAllowed(r, userID); err != nil {
+			rt.auditStepUpOutcome(r.Context(), r, userID, auditActionStepUpLocked, http.StatusTooManyRequests)
+			writeStepUpError(w, err)
+			return
+		}
 		if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+			rt.recordStepUp(r, userID, false)
+			rt.auditStepUp(r.Context(), r, userID, false)
 			writeError(w, http.StatusUnauthorized, "current password is incorrect")
 			return
 		}
+		rt.recordStepUp(r, userID, true)
 	}
 
 	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)

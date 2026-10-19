@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // This file (logs.go) is the node-local log store: read a container's
@@ -144,7 +145,7 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 		var fj *string
 		if e.Structured {
 			str = 1
-			tmp := e.FieldsJSON
+			tmp := secretmask.Mask(e.FieldsJSON)
 			fj = &tmp
 		}
 		je[i] = jsonEntry{
@@ -152,7 +153,7 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 			C:  e.ContainerID,
 			S:  e.Stream,
 			T:  e.Timestamp.UnixNano(),
-			M:  e.Message,
+			M:  secretmask.Mask(e.Message),
 			St: str,
 			F:  fj,
 		}

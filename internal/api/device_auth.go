@@ -26,12 +26,14 @@ const (
 	envDeviceTokenTTLDays   = "APP_DEVICE_TOKEN_TTL_DAYS"   //nolint:gosec // env var name
 	envDeviceTokenAllowRoot = "APP_DEVICE_TOKEN_ALLOW_ROOT" //nolint:gosec // env var name
 	defaultDeviceTokenDays  = 30
+	maxDeviceTokenDays      = 90
 )
 
 // deviceStartRatePerMinute is the per-IP budget for unauthenticated device
-// login starts, env-overridable; 0 or less disables the limit.
+// login starts, env-overridable; 0 disables the limit, a negative value is
+// treated as a typo and keeps the default.
 func deviceStartRatePerMinute() int {
-	if n, err := strconv.Atoi(os.Getenv(envDeviceStartRate)); err == nil {
+	if n, err := strconv.Atoi(os.Getenv(envDeviceStartRate)); err == nil && n >= 0 {
 		return n
 	}
 	return defaultDeviceStartRate
@@ -41,7 +43,7 @@ func deviceStartRatePerMinute() int {
 func deviceTokenTTL() time.Duration {
 	days := defaultDeviceTokenDays
 	if n, err := strconv.Atoi(os.Getenv(envDeviceTokenTTLDays)); err == nil && n > 0 {
-		days = n
+		days = min(n, maxDeviceTokenDays)
 	}
 	return time.Duration(days) * 24 * time.Hour
 }

@@ -49,6 +49,18 @@ func (rt *Router) tokenLifetimeProblem(ctx context.Context, expiresInDays int) (
 	return "", nil
 }
 
+// defaultTokenLifetimeDays is applied when a caller names no expiry; existing
+// tokens keep theirs. defaultTokenLifetime clamps it to the policy ceiling.
+const defaultTokenLifetimeDays = 90
+
+func (rt *Router) defaultTokenLifetimeDays(ctx context.Context) int {
+	days := defaultTokenLifetimeDays
+	if p, _, err := rt.effectiveSecurityPolicy(ctx); err == nil && p.MaxTokenLifetimeDays > 0 && p.MaxTokenLifetimeDays < days {
+		days = p.MaxTokenLifetimeDays
+	}
+	return days
+}
+
 func tokenLastActive(t store.APIToken) time.Time {
 	if t.LastUsedAt != nil && t.LastUsedAt.After(t.CreatedAt) {
 		return *t.LastUsedAt

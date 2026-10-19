@@ -17,6 +17,8 @@ func (rt *Router) registerAuditRoutes(mux *http.ServeMux) {
 	// other identity on this control plane, not an ordinary per-app
 	// read.
 	mux.HandleFunc("GET /api/v1/audit-log", rt.requireAbility(AbilityRoot, rt.handleListAuditLog))
+	// Walks the audit hash chain and reports edited, removed or truncated rows.
+	mux.HandleFunc("GET /api/v1/audit-log/verify", rt.requireAbility(AbilityRoot, rt.handleVerifyAuditLog))
 	// Manual retention purge (audit_retention.go): runs the same
 	// operator-configured retention window PurgeOldAuditEntries' own
 	// periodic sweep uses, on demand instead of waiting for its next

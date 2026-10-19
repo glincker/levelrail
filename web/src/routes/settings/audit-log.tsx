@@ -28,6 +28,7 @@ import {
 } from '../../queries/auditLog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
 import { PurgeAuditLogDialog } from '../../components/PurgeAuditLogDialog'
+import { AuditIntegrityBadge } from '../../components/AuditIntegrityBadge'
 import { AuditLogTable } from '../../components/AuditLogTable'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
@@ -272,6 +273,7 @@ function AuditLogSettingsPage() {
               ))}
             </SelectContent>
           </Select>
+          <AuditIntegrityBadge />
           <PurgeAuditLogDialog />
           {entries.length > 0 ? (
             <ExportAuditLogLink

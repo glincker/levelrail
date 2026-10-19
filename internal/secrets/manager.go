@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -118,6 +119,7 @@ func (m *Manager) SetValue(ctx context.Context, serviceName, envKey, plaintext s
 	if err := m.store.SaveSecretValue(ctx, serviceName, envKey, ciphertext); err != nil {
 		return fmt.Errorf("secrets: save value for %q/%q: %w", serviceName, envKey, err)
 	}
+	secretmask.Add(plaintext)
 	return nil
 }
 
@@ -190,6 +192,7 @@ func (m *Manager) Resolve(ctx context.Context, serviceName, envKey string) (stri
 		}
 		m.noteLegacy(serviceName, envKey)
 	}
+	secretmask.Add(plaintext)
 	return plaintext, nil
 }
 

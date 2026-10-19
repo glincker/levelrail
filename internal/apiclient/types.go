@@ -3639,6 +3639,23 @@ type PurgeAuditLogResult struct {
 	Deleted int64 `json:"deleted"`
 }
 
+// AuditChainProblem mirrors store.AuditChainProblem.
+type AuditChainProblem struct {
+	Seq    int64  `json:"seq"`
+	Reason string `json:"reason"`
+}
+
+// AuditChainReport mirrors store.AuditChainReport.
+type AuditChainReport struct {
+	OK          bool                `json:"ok"`
+	Checked     int                 `json:"checked"`
+	Head        int64               `json:"head"`
+	Checkpoints int                 `json:"checkpoints"`
+	Unverified  int                 `json:"unverified"`
+	Unchained   int                 `json:"unchained"`
+	Problems    []AuditChainProblem `json:"problems"`
+}
+
 // DeployAttemptResource mirrors internal/api's deployAttemptResource
 // (internal/api/deploy_attempts.go): one row of GET
 // /api/v1/apps/{name}/deploy-attempts, additive to the reconcile

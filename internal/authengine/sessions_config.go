@@ -15,7 +15,7 @@ import (
 const (
 	// EnvSessionTTL is the absolute session lifetime (Go duration), shared with the legacy store.
 	EnvSessionTTL = "APP_SESSION_TTL"
-	// EnvSessionIdleTimeout expires a session unused for this long; 0 disables it.
+	// EnvSessionIdleTimeout expires a session unused for this long (default 8h); 0 disables it.
 	EnvSessionIdleTimeout = "APP_AUTH_ENGINE_SESSION_IDLE_TIMEOUT"
 	// EnvSessionLinkTTL is how long a minted session link can be exchanged.
 	EnvSessionLinkTTL = "APP_AUTH_ENGINE_SESSION_LINK_TTL"
@@ -46,6 +46,7 @@ const (
 	defaultUserLockout       = 15 * time.Minute
 	defaultRatePerMinute     = 60
 	defaultStreamWatchPeriod = 5 * time.Second
+	defaultSessionIdle       = 8 * time.Hour
 )
 
 // SessionsHooks are the callbacks the sessions area needs from its host.
@@ -103,7 +104,7 @@ func applySessionsConfig(tcfg *theauth.Config, s *Sessions, throttle theauth.Log
 		ttl = defaultSessionTTL
 	}
 	tcfg.SessionTTL = ttl
-	tcfg.SessionIdleTimeout = envDuration(EnvSessionIdleTimeout, 0)
+	tcfg.SessionIdleTimeout = envDuration(EnvSessionIdleTimeout, defaultSessionIdle)
 	if tcfg.SessionIdleTimeout > 0 && tcfg.SessionTouchInterval <= 0 {
 		tcfg.SessionTouchInterval = tcfg.SessionIdleTimeout / 4
 	}

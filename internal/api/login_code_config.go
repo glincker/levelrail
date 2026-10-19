@@ -49,7 +49,8 @@ const (
 	defaultLoginCodeMinResp          = 300 * time.Millisecond
 	defaultDeviceApprovalTTL         = 10 * time.Minute
 	defaultApproverFreshness         = 30 * time.Minute
-	defaultTrustedDeviceTTL          = 90 * 24 * time.Hour
+	defaultTrustedDeviceTTL          = 30 * 24 * time.Hour
+	maxTrustedDeviceTTL              = 90 * 24 * time.Hour
 
 	loginCodeLength    = 8
 	loginCodeAlphabet  = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
@@ -142,7 +143,7 @@ func newCodeLoginState() *codeLoginState {
 		minResponse:       envDuration(envLoginCodeMinResponse, defaultLoginCodeMinResp),
 		approvalTTL:       envDuration(envDeviceApprovalTTL, defaultDeviceApprovalTTL),
 		approverFreshness: envDuration(envApproverSessionFreshness, defaultApproverFreshness),
-		trustTTL:          envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL),
+		trustTTL:          min(envDuration(envTrustedDeviceTTL, defaultTrustedDeviceTTL), maxTrustedDeviceTTL),
 		byIP:              newAPIRateLimiter(envInt(envLoginCodeIPRate, defaultLoginCodeIPRate)),
 		byAccount:         newAPIRateLimiter(accountRate),
 		byOwner:           newAPIRateLimiter(accountRate),

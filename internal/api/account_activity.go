@@ -49,6 +49,8 @@ var activityKindOfEvent = map[string]string{
 	accountEventDeleted:          activityKindAccount,
 	auditActionStepUpVerified:    activityKindSecurity,
 	auditActionStepUpFailed:      activityKindSecurity,
+	auditActionStepUpLocked:      activityKindSecurity,
+	auditActionStepUpNeedCode:    activityKindSecurity,
 }
 
 type myActivityEntry struct {
