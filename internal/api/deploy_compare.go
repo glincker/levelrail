@@ -96,8 +96,17 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fromID := r.URL.Query().Get("from")
-	toID := r.URL.Query().Get("to")
+	q := r.URL.Query()
+	fromID := q.Get("from")
+	toID := q.Get("to")
+	pending := q.Get("pending") == "true"
+	if fromID == "" && pending {
+		fromID = rt.latestSucceededAttemptID(r, name)
+		if fromID == "" {
+			writeError(w, http.StatusNotFound, "no earlier successful deploy to compare against")
+			return
+		}
+	}
 	if fromID == "" {
 		writeError(w, http.StatusBadRequest, "from is required")
 		return
@@ -109,6 +118,10 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	toSide := currentDeployCompareSide(*svc)
+	if img := strings.TrimSpace(q.Get("image")); pending && img != "" {
+		toSide.Image = img
+		toSide.ImageDigest = ""
+	}
 	if toID != "" {
 		toSide, ok = rt.loadDeployCompareSide(w, r, name, toID)
 		if !ok {
@@ -117,7 +130,7 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	commits, commitsNote := rt.commitsForRange(r.Context(), name, fromSide.CommitSHA, toSide.CommitSHA)
-	writeJSON(w, http.StatusOK, deployCompareResource{
+	out := deployCompareResource{
 		ServiceName:         name,
 		Commits:             commits,
 		CommitsNote:         commitsNote,
@@ -127,7 +140,47 @@ func (rt *Router) handleCompareDeploys(w http.ResponseWriter, r *http.Request) {
 		EnvChanges:          diffDeployCompareEnv(fromSide.Env, toSide.Env),
 		UnsnapshottedFields: unsnapshottedDeployFields,
 		Note:                deployCompareUnsnapshottedNote,
-	})
+	}
+	if pending {
+		out = keysOnlyDeployCompare(out)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// latestSucceededAttemptID returns the newest succeeded attempt, which is what is live now; empty when there is none.
+func (rt *Router) latestSucceededAttemptID(r *http.Request, name string) string {
+	attempts, err := rt.deployAttempts.ListDeployAttempts(r.Context(), name)
+	if err != nil {
+		rt.logger.Error("api: compare deploys: list attempts failed", slog.String("error", err.Error()), slog.String("name", name))
+		return ""
+	}
+	for _, a := range attempts {
+		if a.Status == store.DeployAttemptStatusSucceeded {
+			return a.ID
+		}
+	}
+	return ""
+}
+
+// keysOnlyDeployCompare drops every env value: a pre-deploy diff shows which keys change, never what they hold.
+func keysOnlyDeployCompare(c deployCompareResource) deployCompareResource {
+	strip := func(side deployCompareSide) deployCompareSide {
+		env := make([]store.DeployAttemptEnvKey, len(side.Env))
+		for i, e := range side.Env {
+			e.Value = ""
+			env[i] = e
+		}
+		side.Env = env
+		return side
+	}
+	c.From, c.To = strip(c.From), strip(c.To)
+	changes := make([]deployCompareEnvChange, len(c.EnvChanges))
+	for i, e := range c.EnvChanges {
+		e.From, e.To = "", ""
+		changes[i] = e
+	}
+	c.EnvChanges = changes
+	return c
 }
 
 // Shaped like a real attempt snapshot, so the diff logic never needs to know which side is live.

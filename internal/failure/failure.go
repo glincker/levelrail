@@ -10,6 +10,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
 	"github.com/GLINCKER/levelrail/internal/diagnose"
+	"github.com/GLINCKER/levelrail/internal/pipeline"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
@@ -34,9 +35,19 @@ type Failure struct {
 	DocsURL      string    `json:"docs_url"`
 	Retryable    bool      `json:"retryable"`
 	AlsoMatched  []string  `json:"also_matched,omitempty"`
+	Fixes        []Fix     `json:"fixes,omitempty"`
 	DeployID     string    `json:"deploy_id"`
 	App          string    `json:"app"`
 	At           time.Time `json:"at"`
+}
+
+// Fix is a typed build-log suggestion: Kind says whether the control plane or the operator acts, Target names where a guided fix lives.
+type Fix struct {
+	Code   string `json:"code"`
+	Kind   string `json:"kind"`
+	Target string `json:"target,omitempty"`
+	Hint   string `json:"hint"`
+	Match  string `json:"match"`
 }
 
 // Condition is one failing reconcile condition.
@@ -139,6 +150,9 @@ func Classify(in Input, opts Options) (Failure, bool) {
 		App:         in.App,
 		At:          in.At,
 	}
+	if inBuildPhase(in) {
+		f.Fixes = buildFixes(in.FailingStep, lines)
+	}
 	if cl == nil {
 		f.Code = CodeUnknown
 		f.Cause = unknownCause(in)
@@ -155,6 +169,18 @@ func Classify(in Input, opts Options) (Failure, bool) {
 	f.AlsoMatched = also
 	f.LogExcerpt = excerpt(lines, pattern, opts)
 	return f, true
+}
+
+func buildFixes(step string, lines []string) []Fix {
+	clean := make([]string, len(lines))
+	for i, l := range lines {
+		clean[i] = ansiRe.ReplaceAllString(l, "")
+	}
+	var out []Fix
+	for _, pf := range pipeline.SuggestBuildFixes(step, strings.Join(clean, "\n")) {
+		out = append(out, Fix{Code: pf.Code, Kind: pf.Kind, Target: pf.Target, Hint: pf.Hint, Match: pf.Match})
+	}
+	return out
 }
 
 func isFailing(in Input) bool {

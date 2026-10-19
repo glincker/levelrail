@@ -14,6 +14,7 @@ import { useFreezeBlocksDeploy } from '../../queries/deployFreeze'
 import { useProtectedEnvironment } from '../../queries/environments'
 import { useImageTagsOptional } from '../../queries/images'
 import type { AppDetail } from '../../types/appDetail'
+import { PendingChangesCard } from './PendingChangesCard'
 import { ProtectedDeployNotice } from './ProtectedDeployNotice'
 import { useDeployActions } from './useDeployActions'
 
@@ -112,6 +113,11 @@ export function ImageDeployPanel({
           </div>
         </div>
       ) : null}
+
+      <PendingChangesCard
+        appName={app.name}
+        image={image.trim() === current ? '' : image}
+      />
 
       <Collapsible
         open={advancedOpen || frozenWithoutReason}

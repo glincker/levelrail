@@ -1,7 +1,11 @@
 import { useTranslation } from 'react-i18next'
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import type { DeployFailure } from '../types/deployFailure'
-import { failureActionFor, isUnknownFailure } from '../lib/failureActions'
+import {
+  failureActionFor,
+  fixActionFor,
+  isUnknownFailure,
+} from '../lib/failureActions'
 import { useRedeployApp } from '../hooks/useRedeployApp'
 import { Button } from '@/components/ui/button'
 
@@ -35,6 +39,7 @@ export function DeployFailureActions({
   const { t } = useTranslation('gitBuild')
   const action = failureActionFor(failure.code, appName, failure.deploy_id)
   if (!action) return null
+  const fixes = failure.fixes ?? []
   return (
     <span className="mt-1 flex flex-wrap items-center gap-2">
       <a
@@ -45,6 +50,35 @@ export function DeployFailureActions({
       </a>
       {isUnknownFailure(failure.code) && image ? (
         <RetryButton appName={appName} image={image} />
+      ) : null}
+      {fixes.length > 0 ? (
+        <ul
+          aria-label={t('failureActions.matchedFixes')}
+          className="basis-full space-y-1 text-xs"
+        >
+          {fixes.map((fix) => {
+            const link = fixActionFor(fix.target, appName)
+            return (
+              <li
+                key={`${fix.code}-${fix.kind}`}
+                className="flex flex-wrap items-center gap-2"
+              >
+                <span className="text-muted-foreground">{fix.hint}</span>
+                {fix.kind === 'rerun' && image ? (
+                  <RetryButton appName={appName} image={image} />
+                ) : null}
+                {link ? (
+                  <a
+                    href={link.href}
+                    className="underline underline-offset-2 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2"
+                  >
+                    {t(`failureActions.${link.labelKey}`)}
+                  </a>
+                ) : null}
+              </li>
+            )
+          })}
+        </ul>
       ) : null}
     </span>
   )

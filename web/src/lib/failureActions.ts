@@ -121,3 +121,26 @@ export function failureActionFor(
 export function isUnknownFailure(code: string): boolean {
   return !(code in TARGETS)
 }
+
+const FIX_TARGETS: Record<string, FailureTarget> = {
+  build_settings: BUILD_SETTINGS,
+  build_performance: {
+    path: () => '/settings/build-performance',
+    labelKey: 'buildPerformance',
+  },
+  node_disk: FREE_SPACE,
+  app_secrets: {
+    path: (a) => `${app(a)}/environment`,
+    labelKey: 'environment',
+  },
+}
+
+/** fixActionFor links a build-log fix to the page where it is applied; null when the fix has no page (a retry). */
+export function fixActionFor(
+  target: string | undefined,
+  appName: string,
+): FailureAction | null {
+  const t = target ? FIX_TARGETS[target] : undefined
+  if (!t || !appName) return null
+  return { href: t.path(appName, ''), labelKey: t.labelKey }
+}

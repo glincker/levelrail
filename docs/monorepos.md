@@ -34,6 +34,8 @@ Open the app's **Source** tab, edit the build settings, and look under **Workspa
 
 The same panel can dry-run a change: paste changed file paths, one per line (list both names of a renamed file), and each package shows **Redeploys** or **Skipped**, together with the verdict for this app.
 
+In the new app wizard, the **Advanced** section has a **Validate directory** button next to the build context directory. It re-runs detection for the typed directory and warns when that directory does not exist on the branch, before anything is created.
+
 ## From the CLI
 
 ```bash

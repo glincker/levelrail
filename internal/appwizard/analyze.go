@@ -66,6 +66,16 @@ func (b *budget) get(p string) (string, bool) {
 	return s, true
 }
 
+func hasPathUnder(paths []string, dir string) bool {
+	prefix := dir + "/"
+	for _, p := range paths {
+		if strings.HasPrefix(p, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func joinPath(dir, file string) string {
 	if dir == "" || dir == "." {
 		return file
@@ -105,6 +115,9 @@ func Analyze(ctx context.Context, src repolayout.Source, opts Options) (*Analysi
 	if a.Build.Type == buildRailpack && guess.Method == importplan.BuildStatic && a.Build.DockerfilePath == "" {
 		a.Build.Type = buildStatic
 		a.Build.Evidence = st.Evidence
+	}
+	if dir := strings.Trim(a.Build.BaseDirectory, "/"); dir != "" && !hasPathUnder(paths, dir) && !truncated {
+		a.Warnings = append(a.Warnings, Warning{Code: WarnDirectoryMissing, Message: "the directory " + dir + " does not exist in this repository at this branch"})
 	}
 	if st.Runtime == runtimeUnknown && a.Build.Type != buildDockerfile {
 		a.Warnings = append(a.Warnings, Warning{Code: WarnNothingDetected, Message: "no Dockerfile, compose file or known framework was found; pick the build type manually"})

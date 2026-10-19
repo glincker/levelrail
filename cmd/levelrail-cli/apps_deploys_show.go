@@ -59,6 +59,9 @@ func printDeployFailure(w io.Writer, f *apiclient.DeployFailure) {
 		_, _ = fmt.Fprintf(w, "  step:   %s\n", f.FailingStep)
 	}
 	_, _ = fmt.Fprintf(w, "  fix:    %s\n  docs:   %s\n", f.SuggestedFix, f.DocsURL)
+	for _, fx := range f.Fixes {
+		_, _ = fmt.Fprintf(w, "  match:  %s (%s): %s\n", fx.Code, fx.Kind, fx.Hint)
+	}
 	if f.LogExcerpt != "" {
 		_, _ = fmt.Fprintf(w, "  log excerpt:\n%s\n", indentLines(f.LogExcerpt, "    "))
 	}

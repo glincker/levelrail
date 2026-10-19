@@ -161,3 +161,7 @@ No known class matched. The excerpt and the full deploy log (`apps deploys logs 
 ### Still stuck
 
 For the structured failure object with all fields, check the API response: `GET /api/v1/apps/{name}/deploys/{deployId}`. Read the failure's `suggested_fix` field for specific guidance. If the issue persists, run `levelrail-cli apps diagnose <name>` for system information.
+
+### Fixes matched from the build log
+
+When a build fails, the log is also matched against common errors (registry timeouts, out of memory, no space left, missing credentials, a missing base image, peer dependency conflicts, missing modules, an old Go image, permission errors). Each match is a typed fix under `failure.fixes` with a `kind`: `rerun` (the dashboard shows a Retry button), `raise_memory`, `free_disk`, `set_secret` or `edit_source` (each links to the page where it is applied). `levelrail-cli apps deploys show` prints them as `match:` lines.

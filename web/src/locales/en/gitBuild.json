@@ -73,6 +73,7 @@
     "appRailpack": "{{directory}} looks like an application, auto-detected from that directory."
   },
   "failureActions": {
+    "matchedFixes": "Fixes matched from the build log",
     "buildSettings": "Check build settings",
     "deployLog": "View full log",
     "registry": "Check registry credentials",

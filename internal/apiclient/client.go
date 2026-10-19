@@ -2055,6 +2055,20 @@ func (c *Client) CompareDeploys(ctx context.Context, name, from, to string) (Dep
 	return out, err
 }
 
+// PendingDeployDiff calls GET .../deploys/compare?pending=true: what the next
+// deploy would change against the last successful one, env keys only. image
+// empty means the app's current desired image.
+func (c *Client) PendingDeployDiff(ctx context.Context, name, image string) (DeployCompareResource, error) {
+	q := url.Values{}
+	q.Set("pending", "true")
+	if image != "" {
+		q.Set("image", image)
+	}
+	var out DeployCompareResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/compare?"+q.Encode(), nil, &out)
+	return out, err
+}
+
 // ReleaseNotes calls GET /api/v1/apps/{name}/deploys/release-notes: the
 // commits between two deploys, grouped by conventional-commit type. to
 // empty means the newest deploy that recorded a commit.

@@ -200,8 +200,9 @@ func (rt *Router) registerAppRoutes(mux *http.ServeMux) {
 
 	// Deploy comparison (deploy_compare.go): a before/after diff between
 	// two attempts, or one attempt against the app's current live state
-	// when ?to is omitted. AbilityRead, same sensitivity as the
-	// deploy-attempts list above.
+	// when ?to is omitted. ?pending=true defaults from to the last
+	// successful deploy and drops env values, the diff shown before a
+	// deploy. AbilityRead, same sensitivity as the deploy-attempts list.
 	mux.HandleFunc("GET /api/v1/apps/{name}/deploys/compare", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleCompareDeploys))
 	// Release notes (release_notes.go): the commits between two deploys,
 	// grouped by conventional-commit type, plus a markdown rendering.

@@ -412,7 +412,7 @@ An upload is all or nothing: if saving the key or the record fails, the previous
 
 ### Domains that are dropped or downgraded
 
-The ingress pass never degrades a domain silently. Each pass records a per-domain issue, shown on the domain list (and by `levelrail-cli domains list`): an uploaded certificate that cannot be read (automatic issuance is used instead), a basic auth password that cannot be read (the domain is not routed rather than served open), a wildcard with no DNS-01 provider, or a standalone target that is unavailable. A dropped domain also turns the ingress Ready condition False with the domain names; fixing the cause clears it on the next pass.
+The ingress pass never degrades a domain silently. Each pass records a per-domain issue, shown on the domain list (and by `levelrail-cli domains list`): an uploaded certificate that cannot be read (automatic issuance is used instead), a basic auth password that cannot be read (the domain is not routed rather than served open), a wildcard with no DNS-01 provider, or a standalone target that is unavailable. A dropped domain also turns the ingress Ready condition False with the domain names; fixing the cause clears it on the next pass. Each issue on the domain list has a Fix button: **Use automatic certificate** (root only, clears the uploaded certificate) or **Upload again** for a certificate, **Set password** for basic auth, **Connect DNS provider** for a wildcard, **Open app** or **Check target** for an unavailable target.
 
 ## Wildcard domains: DNS-01 providers
 

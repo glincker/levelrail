@@ -252,7 +252,10 @@ levelrail-cli deployments summary
 levelrail-cli deployments watch
 levelrail-cli apps deploys list NAME
 levelrail-cli apps deploys compare NAME --from ID [--to ID]
+levelrail-cli apps deploy NAME --image IMAGE --diff
 ```
+
+`apps deploy --diff` prints what the next deploy would change against the last successful one (image, ports, domains, limits, health, replicas, env keys) and exits without deploying. The same diff shows in the Deploy sheet before you confirm. Environment variable values are never shown, only which keys are added, removed or changed. The API is `GET /api/v1/apps/{name}/deploys/compare?pending=true` with an optional `image`.
 
 The MCP tools `list_deployments` and `deployments_summary` are read-only.
 

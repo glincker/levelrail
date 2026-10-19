@@ -3711,16 +3711,26 @@ type DeployAttemptResource struct {
 // DeployFailure mirrors internal/failure's Failure: the structured cause of a
 // failed or blocked deploy, identical across the API, CLI and MCP.
 type DeployFailure struct {
-	Code         string    `json:"code"`
-	Cause        string    `json:"cause"`
-	FailingStep  string    `json:"failing_step,omitempty"`
-	LogExcerpt   string    `json:"log_excerpt,omitempty"`
-	SuggestedFix string    `json:"suggested_fix"`
-	DocsURL      string    `json:"docs_url"`
-	Retryable    bool      `json:"retryable"`
-	DeployID     string    `json:"deploy_id"`
-	App          string    `json:"app"`
-	At           time.Time `json:"at"`
+	Code         string             `json:"code"`
+	Cause        string             `json:"cause"`
+	FailingStep  string             `json:"failing_step,omitempty"`
+	LogExcerpt   string             `json:"log_excerpt,omitempty"`
+	SuggestedFix string             `json:"suggested_fix"`
+	DocsURL      string             `json:"docs_url"`
+	Retryable    bool               `json:"retryable"`
+	Fixes        []DeployFailureFix `json:"fixes,omitempty"`
+	DeployID     string             `json:"deploy_id"`
+	App          string             `json:"app"`
+	At           time.Time          `json:"at"`
+}
+
+// DeployFailureFix mirrors internal/failure.Fix.
+type DeployFailureFix struct {
+	Code   string `json:"code"`
+	Kind   string `json:"kind"`
+	Target string `json:"target,omitempty"`
+	Hint   string `json:"hint"`
+	Match  string `json:"match"`
 }
 
 // CancelSupersededResource mirrors internal/api's cancelSupersededResource.

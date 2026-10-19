@@ -51,6 +51,7 @@ import { domainScope, isStandaloneDomain } from '../lib/standaloneDomain'
 import { isEnforced } from '../lib/domainEnforcement'
 import type { TrafficControl } from '../lib/domainEnforcement'
 import { DomainDnsRecordDialog } from './DomainDnsRecordDialog'
+import { DomainIssueFix } from './DomainIssueFix'
 import { DomainDnsStatusBadge } from './DomainDnsStatusBadge'
 import {
   StandaloneRowActions,
@@ -372,6 +373,9 @@ export function DomainNameCell({
           />
           <span>{warning.text}</span>
         </p>
+      ) : null}
+      {domain.issues?.[0] ? (
+        <DomainIssueFix domain={domain} issue={domain.issues[0]} />
       ) : null}
     </div>
   )

@@ -14,6 +14,8 @@ interface DeployFailureViewProps {
   loading?: boolean
   /** Shown instead of nothing when the attempt has no failure. */
   showEmpty?: boolean
+  /** Image of the failed attempt, enables the Retry fix. */
+  image?: string
 }
 
 /** DeployFailureView renders a deploy attempt's structured failure. */
@@ -21,6 +23,7 @@ export function DeployFailureView({
   failure,
   loading = false,
   showEmpty = false,
+  image,
 }: DeployFailureViewProps) {
   const [open, setOpen] = useState(false)
   const excerptId = useId()
@@ -73,7 +76,11 @@ export function DeployFailureView({
             ? 'Retrying may succeed.'
             : 'Retrying will not help until this is fixed.'}
         </span>
-        <DeployFailureActions failure={failure} appName={failure.app} />
+        <DeployFailureActions
+          failure={failure}
+          appName={failure.app}
+          image={image}
+        />
         {failure.docs_url ? (
           <a
             href={failure.docs_url}

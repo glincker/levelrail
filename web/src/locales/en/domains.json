@@ -344,6 +344,15 @@
       "done": "Done",
       "summary": "{{ok}} added, {{failed}} not added."
     },
+    "fix": {
+      "useAcme": "Use automatic certificate",
+      "acmeDone": "{{domain}} now uses an automatic certificate.",
+      "uploadAgain": "Upload again",
+      "setPassword": "Set password",
+      "connectDns": "Connect DNS provider",
+      "checkTarget": "Check target",
+      "checkApp": "Open app"
+    },
     "issue": {
       "custom_cert_unresolved": "Uploaded certificate not in use, automatic issuance instead. Upload it again.",
       "basic_auth_unresolved": "Not routed: the basic auth password could not be read. Set it again.",

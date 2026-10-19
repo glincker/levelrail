@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { CheckCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -327,14 +328,30 @@ export function FindingsStep({
             label={t('findings.advanced.baseDirectory')}
             evidence=""
           >
-            <Input
-              id="f-base"
-              value={edits.baseDirectory}
-              className="font-mono text-xs"
-              onChange={(e) => {
-                set('baseDirectory', e.target.value)
-              }}
-            />
+            <div className="flex gap-2">
+              <Input
+                id="f-base"
+                value={edits.baseDirectory}
+                className="font-mono text-xs"
+                onChange={(e) => {
+                  set('baseDirectory', e.target.value)
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onReanalyze({
+                    base_directory: edits.baseDirectory.trim(),
+                    dockerfile_path: edits.dockerfilePath,
+                    build_type: edits.buildType,
+                  })
+                }}
+              >
+                <CheckCircleIcon aria-hidden="true" />
+                {t('findings.advanced.validateDirectory')}
+              </Button>
+            </div>
           </Finding>
           <Finding
             id="f-mem"

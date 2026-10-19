@@ -153,3 +153,41 @@ func setJobScalar(src []byte, job string, path []string, value, tag string) ([]b
 	}
 	return buf.Bytes(), nil
 }
+
+// FixEditSource is a guided fix that lives in the app's source or build settings.
+const FixEditSource = "edit_source"
+
+type buildFixSpec struct {
+	kind   string
+	target string
+	hint   string
+}
+
+// buildFixSpecs reuses fixPatterns for deploy builds, where the fix is a retry, a setting or a source change rather than a pipeline edit.
+var buildFixSpecs = map[string]buildFixSpec{
+	"transient_network":     {FixRerun, "", "A network or registry hiccup interrupted the build. Retry the deploy."},
+	"out_of_memory":         {FixRaiseMemory, "build_performance", "The build ran out of memory. Raise the build memory limit."},
+	"disk_full":             {FixFreeDisk, "node_disk", "The build node is out of disk. Free space on the node, then retry."},
+	"missing_secret":        {FixSetSecret, "app_secrets", "The build needs a credential it does not have. Set the secret or registry credential."},
+	"image_not_found":       {FixEditSource, "build_settings", "The base image does not exist or is private. Fix the image name, or add registry credentials."},
+	"command_not_found":     {FixEditSource, "build_settings", "A tool the build needs is missing from its image. Use a base image that ships it."},
+	"node_peer_deps":        {FixEditSource, "build_settings", "Peer dependency conflict. Fix the versions, or install with --legacy-peer-deps."},
+	"node_module_missing":   {FixEditSource, "build_settings", "A dependency is not installed. Run the install step before the build step."},
+	"python_module_missing": {FixEditSource, "build_settings", "A Python package is not installed. Add it to requirements.txt."},
+	"go_version":            {FixEditSource, "build_settings", "The Go image is older than go.mod asks for. Use a newer golang image."},
+	"permission_denied":     {FixEditSource, "build_settings", "A build step cannot read or write a path. Check file modes and the working directory."},
+}
+
+// SuggestBuildFixes matches a failed deploy build's log against the pipeline error patterns and returns deploy-specific typed fixes.
+func SuggestBuildFixes(step, output string) []Fix {
+	var out []Fix
+	for _, f := range SuggestFixes(step, output) {
+		spec, ok := buildFixSpecs[f.Code]
+		if !ok {
+			continue
+		}
+		f.Kind, f.Target, f.Hint = spec.kind, spec.target, spec.hint
+		out = append(out, f)
+	}
+	return out
+}
