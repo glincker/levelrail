@@ -117,8 +117,8 @@ func TestHandleRotateMasterKey_RotatorError(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status = %d, want %d, body = %s", rec.Code, http.StatusBadRequest, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "wrong key") {
-		t.Errorf("body = %s, want it to surface the rotator's own error", rec.Body.String())
+	if strings.Contains(rec.Body.String(), "wrong key") || strings.Contains(rec.Body.String(), "web") {
+		t.Errorf("body = %s, must not echo the rotator's internal error or service names", rec.Body.String())
 	}
 }
 

@@ -1626,7 +1626,17 @@ func loadSecretsManager(db *store.DB, dataDir string, opts ...secrets.ManagerOpt
 	if err != nil {
 		return nil, "", err
 	}
-	return secrets.NewManager(db, mk, opts...), keyPath, nil
+	mgr = secrets.NewManager(db, mk, opts...)
+	promoted, err := mgr.RecoverPendingMasterKey(context.Background(), keyPath, func(raw string) (string, error) {
+		return openMasterKeyMaterial(context.Background(), raw, os.Getenv)
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("recover interrupted master key rotation: %w", err)
+	}
+	if promoted {
+		slog.Info("master key rotation was interrupted; completed it from the staged key file")
+	}
+	return mgr, keyPath, nil
 }
 
 // loadOrGenerateMasterKey loads a previously persisted master key from

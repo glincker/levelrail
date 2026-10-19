@@ -18,6 +18,8 @@ import (
 
 	"github.com/crewjam/saml"
 	xrv "github.com/mattermost/xml-roundtrip-validator"
+
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 // MaxSAMLMetadataBytes caps an imported IdP metadata document.
@@ -210,7 +212,7 @@ func FetchSAMLIdPMetadata(ctx context.Context, client *http.Client, rawURL strin
 		return nil, fmt.Errorf("metadata url %w", err)
 	}
 	if client == nil {
-		client = &http.Client{}
+		client = netguard.NewClient()
 	}
 	c := *client
 	c.CheckRedirect = func(req *http.Request, via []*http.Request) error {

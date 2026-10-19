@@ -694,12 +694,18 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
 		return
 	}
+	guessKey := clientIP(r)
+	if allowed, retry := rt.setupTokenGuess.allow(guessKey); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
 	ok, err := rt.setupTokenValid(req.SetupToken)
 	if err != nil {
 		rt.internalError(w, "api: register: read setup token failed", err)
 		return
 	}
 	if !ok {
+		rt.setupTokenGuess.recordFailure(guessKey)
 		writeError(w, http.StatusForbidden, "a valid setup token is required; print it on the server with the setup-token subcommand")
 		return
 	}
