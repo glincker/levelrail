@@ -53,6 +53,33 @@ previews the exact policy, and records an audit entry:
 - `database-operator`: read plus day to day operations, not users, restore or the write console.
 - `database-owner`: everything on this one database.
 
+### Owner password rotation
+
+The **Owner password** card on the Access tab rotates the password your apps use
+for PostgreSQL, MySQL, MariaDB and MongoDB. Redis family engines, search engines,
+ClickHouse and Memcached have no owner password the platform can change, so the
+card says so instead of offering a button.
+
+A rotation is staged so apps never point at a dead password:
+
+1. The new password is generated and held encrypted beside the current one.
+2. The database is changed over its own container (the password travels on stdin only).
+3. A real login with the new password is checked. If it is refused, the old password is put back and nothing else changes.
+4. The stored credential switches and the running apps linked to the database restart to pick it up. Stopped apps pick it up when they start.
+
+The dialog previews which apps restart before you confirm, and a real rotation
+asks for your password (and authenticator code). Single password engines have a
+brief window between steps 2 and 4 where a restarting app reconnects, which is
+why the preview lists them. If the control plane stops between steps, the
+rotation is settled on the next pass (hourly by default): whichever password the
+database actually holds is confirmed and the stored credential follows it.
+
+Set **Rotate every (days)** to rotate on a schedule; 0 turns it off. The card
+shows the password age, the state and the last failure reason. Audit entries are
+`database.password.rotate.start`, `database.password.rotate`,
+`database.password.rotate.rollback` and `database.password.policy`, and never carry
+the password.
+
 ## Network
 
 ### Reachability
@@ -97,6 +124,10 @@ refused once this is on.
 levelrail-cli databases users list <database>
 levelrail-cli databases users create <database> <name> --preset read_only --expires-in-days 30
 levelrail-cli databases users rotate|disable|enable|delete <database> <name>
+levelrail-cli databases rotate-password <database> --dry-run
+levelrail-cli databases rotate-password <database>
+levelrail-cli databases rotate-password <database> --every-days 30
+levelrail-cli databases rotate-password <database> --status
 levelrail-cli databases access temp <database> --preset read_write --minutes 60
 levelrail-cli databases access list|revoke|who|grant <database> ...
 levelrail-cli databases network show <database>
@@ -110,13 +141,15 @@ Every command takes `--json`.
 
 ## MCP
 
-Three read-only tools: `list_database_users`, `get_database_access` and
-`get_database_reachability`. None returns a secret, and there is no tool that
+Four read-only tools: `list_database_users`, `get_database_access`,
+`get_database_reachability` and `get_database_password_rotation` (age, state,
+schedule, apps a rotation would restart). None returns a secret, and there is no tool that
 creates users, issues credentials or changes rules.
 
 ## Permissions and audit
 
 Reading role names and platform access needs `read:sensitive` on the database.
+Rotating the owner password needs `write:sensitive` plus a fresh step-up.
 Creating, rotating, disabling, deleting, issuing credentials, granting access and
 every network change need `root` on the database, which a database scoped IAM
 policy can grant. Each change is written to the audit log with an action name
@@ -133,6 +166,7 @@ statement logged by the server carries no plaintext.
 | `APP_DB_TEMP_TTL_MAX_MINUTES` | 1440 | Longest temporary credential lifetime |
 | `APP_DB_TEMP_TTL_DEFAULT_MINUTES` | 60 | Lifetime when none is requested |
 | `APP_DB_TEMP_SWEEP_SECONDS` | 30 | How often expired credentials are removed |
+| `APP_DATABASE_PASSWORD_ROTATION_INTERVAL_SECONDS` | 3600 | How often scheduled and interrupted password rotations are processed |
 
 ## Troubleshooting
 

@@ -21,6 +21,7 @@ type Store interface {
 	HasSecretValue(ctx context.Context, serviceName, envKey string) (bool, error)
 	HasSecretValueForServices(ctx context.Context, serviceNames []string, envKey string) (map[string]bool, error)
 	DeleteServiceSecrets(ctx context.Context, serviceName string) error
+	DeleteSecretValue(ctx context.Context, serviceName, envKey string) (bool, error)
 	ListSecretKeys(ctx context.Context, serviceName string) ([]store.SecretKeyInfo, error)
 	GetSecretKeyLocked(ctx context.Context, serviceName, envKey string) (exists, locked bool, err error)
 	SetSecretLocked(ctx context.Context, serviceName, envKey string, locked bool) error
@@ -220,6 +221,14 @@ func (m *Manager) ExistsForServices(ctx context.Context, serviceNames []string, 
 		return nil, fmt.Errorf("secrets: check value for %d services/%q: %w", len(serviceNames), envKey, err)
 	}
 	return out, nil
+}
+
+// DeleteValue removes one stored value and keeps the namespace's DEK. Idempotent.
+func (m *Manager) DeleteValue(ctx context.Context, serviceName, envKey string) error {
+	if _, err := m.store.DeleteSecretValue(ctx, serviceName, envKey); err != nil {
+		return fmt.Errorf("secrets: delete value for %q/%q: %w", serviceName, envKey, err)
+	}
+	return nil
 }
 
 // DeleteAll permanently removes every value and the wrapped DEK for

@@ -159,6 +159,7 @@ var toolTable = map[string]Meta{
 	"list_database_users":                   {clsR, "databases", sens},
 	"get_database_access":                   {clsR, "databases", sens},
 	"get_database_reachability":             {clsR, "databases", 0},
+	"get_database_password_rotation":        {clsR, "databases", sens},
 	"list_database_engines":                 {clsR, "databases", 0},
 	"get_database_resource_recommendation":  {clsR, "metrics", 0},
 	"get_resource_recommendation":           {clsR, "metrics", 0},

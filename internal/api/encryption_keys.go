@@ -356,18 +356,24 @@ func (rt *Router) writeRotationError(w http.ResponseWriter, err error) {
 // keyRotationOwner confirms a fresh step-up: the dashboard's grant for a
 // session, or the token owner's password sent inline for a CLI token.
 func (rt *Router) keyRotationOwner(w http.ResponseWriter, r *http.Request, proof *stepUpProof) (string, bool) {
+	return rt.stepUpOwner(w, r, proof, encryptionKeysStepUpApp, "rotate encryption keys", "key rotation")
+}
+
+// stepUpOwner is keyRotationOwner for any manage scope. doing completes
+// "confirm it's you to ..." and noun starts "... needs a token that belongs to a user".
+func (rt *Router) stepUpOwner(w http.ResponseWriter, r *http.Request, proof *stepUpProof, scopeApp, doing, noun string) (string, bool) {
 	if _, pinned := rt.currentPinnedSession(r); pinned {
-		writeCodedError(w, http.StatusForbidden, errCodeStepUpSessionOnly, "a session link cannot rotate encryption keys")
+		writeCodedError(w, http.StatusForbidden, errCodeStepUpSessionOnly, "a session link cannot "+doing)
 		return "", false
 	}
 	if userID, ok := rt.currentSessionUserID(r); ok {
 		if c, err := r.Cookie(sessionCookieName); err == nil {
-			if _, granted := rt.envProtect.grants.check(c.Value, userID, stepUpActionManage, encryptionKeysStepUpApp, time.Now()); granted {
+			if _, granted := rt.envProtect.grants.check(c.Value, userID, stepUpActionManage, scopeApp, time.Now()); granted {
 				return userID, true
 			}
 		}
 		if proof.empty() {
-			writeCodedError(w, http.StatusForbidden, errCodeStepUpRequired, "confirm it's you to rotate encryption keys")
+			writeCodedError(w, http.StatusForbidden, errCodeStepUpRequired, "confirm it's you to "+doing)
 			return "", false
 		}
 		if err := rt.verifyPasswordProof(r, userID, *proof); err != nil {
@@ -383,7 +389,7 @@ func (rt *Router) keyRotationOwner(w http.ResponseWriter, r *http.Request, proof
 	}
 	rec, err := rt.lookupBearerToken(r.Context(), raw)
 	if err != nil || rec.OwnerUserID == "" {
-		writeCodedError(w, http.StatusForbidden, errCodeStepUpSessionOnly, "key rotation needs a token that belongs to a user")
+		writeCodedError(w, http.StatusForbidden, errCodeStepUpSessionOnly, noun+" needs a token that belongs to a user")
 		return "", false
 	}
 	if gone, gerr := rt.tokenOwnerGone(r.Context(), rec); gerr != nil || gone {
@@ -391,7 +397,7 @@ func (rt *Router) keyRotationOwner(w http.ResponseWriter, r *http.Request, proof
 		return "", false
 	}
 	if proof.empty() {
-		writeCodedError(w, http.StatusForbidden, errCodeStepUpRequired, "send the token owner's password (and authenticator code) as step_up to rotate encryption keys")
+		writeCodedError(w, http.StatusForbidden, errCodeStepUpRequired, "send the token owner's password (and authenticator code) as step_up to "+doing)
 		return "", false
 	}
 	if err := rt.verifyPasswordProof(r, rec.OwnerUserID, *proof); err != nil {

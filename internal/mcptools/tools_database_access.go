@@ -94,6 +94,41 @@ func registerDatabaseAccessTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, summarizeReachability(n), nil
 	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "get_database_password_rotation",
+		Description: "When a managed database's owner password was last changed, its age, rotation state, automatic schedule and the apps a rotation would restart (never the password).",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseNameInput) (*mcp.CallToolResult, passwordRotationOutput, error) {
+		r, err := client.GetDatabasePasswordRotation(ctx, in.Name)
+		if err != nil {
+			return nil, passwordRotationOutput{}, fmt.Errorf("get password rotation of database %q: %w", in.Name, err)
+		}
+		return nil, passwordRotationOutput{
+			Supported: r.Supported, Reason: r.Reason, State: r.State, LastError: r.LastError,
+			LastChangedAt: r.LastChangedAt, AgeDays: r.AgeDays, IntervalDays: r.IntervalDays, NextDue: r.NextDue,
+			AppsToRestart: nonNilStrings(r.Apps), SuspendedApps: nonNilStrings(r.SuspendedApps),
+		}, nil
+	})
+}
+
+type passwordRotationOutput struct {
+	Supported     bool     `json:"supported"`
+	Reason        string   `json:"reason,omitempty"`
+	State         string   `json:"state"`
+	LastError     string   `json:"last_error,omitempty"`
+	LastChangedAt string   `json:"last_changed_at,omitempty"`
+	AgeDays       *int     `json:"age_days,omitempty"`
+	IntervalDays  int      `json:"interval_days"`
+	NextDue       string   `json:"next_due,omitempty"`
+	AppsToRestart []string `json:"apps_to_restart"`
+	SuspendedApps []string `json:"suspended_apps"`
+}
+
+func nonNilStrings(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }
 
 type reachabilityOutput struct {

@@ -706,6 +706,9 @@ Endpoints for:
 | GET | /api/v1/databases/{name}/placement/decision | AbilityRead | handleGetPlacementDecision |
 | GET | /api/v1/databases/{name}/links | AbilityRead | handleListDatabaseLinks |
 | POST | /api/v1/databases/{name}/links | AbilityWrite | handleConnectDatabaseApp |
+| GET | /api/v1/databases/{name}/password-rotation | AbilityReadSensitive | handleGetDatabasePasswordRotation |
+| POST | /api/v1/databases/{name}/password-rotation | AbilityWriteSensitive | handleRotateDatabasePassword |
+| PUT | /api/v1/databases/{name}/password-rotation/policy | AbilityRoot | handleSetDatabasePasswordPolicy |
 
 ## Projects / Organizations / Environments
 

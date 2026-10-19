@@ -672,6 +672,18 @@
   "principals",
   "temporary_logins"
  ],
+ "get_database_password_rotation": [
+  "age_days",
+  "apps_to_restart",
+  "interval_days",
+  "last_changed_at",
+  "last_error",
+  "next_due",
+  "reason",
+  "state",
+  "supported",
+  "suspended_apps"
+ ],
  "get_database_reachability": [
   "allowed_sources",
   "apps",

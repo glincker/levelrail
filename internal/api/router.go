@@ -102,6 +102,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/changelog"
 	"github.com/GLINCKER/levelrail/internal/datamigrate"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
+	"github.com/GLINCKER/levelrail/internal/dbrotate"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploylog"
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
@@ -494,6 +495,9 @@ type Router struct {
 	exposureStore                ExposureStore
 	privateNetworks              *PrivateNetworkConfig // nil is valid: /api/v1/private-networks returns 501, see WithPrivateNetworks
 	dbAccess                     DatabaseAccessStore   // nil is valid: database users, temporary credentials and network controls return 501, see WithDatabaseAccess
+	dbRotationStore              dbrotate.Store        // nil is valid: database password rotation routes return 501, see WithDatabasePasswordRotation
+	dbRotationOnce               sync.Once
+	dbRotationSvc                *dbrotate.Service
 	dbAccessTTL                  dbaccess.TTLLimits
 	backupHistory                BackupHistoryStore                                    // always set, same "core Store interface" shape as backupTargets above: listing backup history needs no runner configuration, only triggering a new one does
 	backupRunner                 BackupRunner                                          // nil is valid: POST /api/v1/databases/{name}/backups returns 501, same shape as backupSecrets above

@@ -282,5 +282,50 @@
     "warning": "Clients configured with sslmode=disable will be refused.",
     "updatedToast": "TLS requirement updated",
     "failedToast": "Could not change the TLS requirement"
+  },
+  "rotation": {
+    "title": "Owner password",
+    "description": "The password your apps use to reach this database. Rotating it changes the password in the database, checks a real login, then updates every app that uses it.",
+    "rotate": "Rotate password",
+    "unsupportedTitle": "Rotation is not available for this engine",
+    "unsupportedBody": "This engine runs without an owner password the platform can change, so there is nothing to rotate here.",
+    "age_one": "Password changed {{count}} day ago.",
+    "age_other": "Password changed {{count}} days ago.",
+    "ageUnknown": "No password change recorded yet.",
+    "state": {
+      "idle": "Settled",
+      "pending": "Settling",
+      "failed": "Last attempt rolled back"
+    },
+    "pendingBody": "A rotation is still settling. It finishes on its own within the hour, and the old password keeps working until then.",
+    "failedBody": "The last rotation was rolled back and the old password is still in use. Reason: {{reason}}. You can rotate again.",
+    "reason": {
+      "verify_failed": "the database refused the new password",
+      "apply_failed": "the database could not apply the new password",
+      "reference_update_failed": "the stored credential could not be updated",
+      "unresolved": "neither password could be confirmed",
+      "interrupted": "the rotation was interrupted before the database changed",
+      "unknown": "unknown"
+    },
+    "failed": "Could not rotate the password",
+    "done_one": "Password rotated. {{count}} app restarted.",
+    "done_other": "Password rotated. {{count}} apps restarted.",
+    "willRestart_one": "This app restarts to pick up the new password: {{apps}}.",
+    "willRestart_other": "These {{count}} apps restart to pick up the new password: {{apps}}.",
+    "noRestart": "No running app uses this database, so nothing restarts.",
+    "verifies": "The new password is checked with a real login. If that fails, the old password is put back and nothing else changes.",
+    "suspended": "Stopped apps pick up the new password when they start: {{apps}}.",
+    "loading": "Checking which apps use this database.",
+    "previewFailed": "Could not check which apps would restart.",
+    "confirmTitle": "Rotate the owner password?",
+    "confirmDescription": "Apps restart briefly while they switch to the new password. The change is recorded in the audit log without the password.",
+    "confirmAction": "Rotate password",
+    "confirmPending": "Rotating",
+    "scheduleLabel": "Rotate every (days)",
+    "schedule": "Save schedule",
+    "scheduleSaving": "Saving",
+    "scheduleSaved": "Rotation schedule saved",
+    "scheduleNext": "Rotates automatically every {{days}} days. Next on {{date}}.",
+    "scheduleOff": "Automatic rotation is off. Enter a number of days to turn it on."
   }
 }

@@ -102,6 +102,12 @@ func (f *fakeStore) DeleteServiceSecrets(_ context.Context, serviceName string) 
 	return nil
 }
 
+func (f *fakeStore) DeleteSecretValue(_ context.Context, serviceName, envKey string) (bool, error) {
+	_, ok := f.values[serviceName][envKey]
+	delete(f.values[serviceName], envKey)
+	return ok, nil
+}
+
 func (f *fakeStore) ListSecretKeys(_ context.Context, serviceName string) ([]store.SecretKeyInfo, error) {
 	byKey, ok := f.values[serviceName]
 	if !ok {

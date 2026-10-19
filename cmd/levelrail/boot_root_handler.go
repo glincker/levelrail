@@ -116,6 +116,7 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 		api.WithFirewallRequiredPorts(platformRequiredPorts()),
 		api.WithExposure(newExposureManager(b.RuleCommentPrefix()), db),
 		api.WithDatabaseAccess(db, dbaccess.TTLLimitsFromEnv(os.Getenv)),
+		api.WithDatabasePasswordRotation(db),
 		api.WithSessionTTL(sessionTTL(logger)),
 		api.WithRequestLogThresholds(slowRequestThreshold(logger), criticalRequestThreshold(logger)),
 		api.WithDashboardCache(envDurationOr(logger, "APP_DASHBOARD_CACHE_TTL", 5*time.Second), envDurationOr(logger, "APP_DASHBOARD_CACHE_STALE", time.Minute)),

@@ -271,6 +271,12 @@ func (s *bootState) startSchedulers() {
 	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,
 		func(nodeID string) bool { return nodeID == "" || (meshCfg != nil && nodeID == meshCfg.localNodeID) }, apiRouter)
 
+	go func() {
+		if err := apiRouter.RunDatabasePasswordRotation(ctx, databasePasswordRotationInterval(logger)); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("database password rotation stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	imageUpdateScheduler := &imageupdate.Scheduler{Store: db, Checker: apiRouter, Logger: logger}
 	go func() {
 		if err := imageUpdateScheduler.Run(ctx, imageupdate.IntervalFromEnv(logger)); err != nil && !errors.Is(err, context.Canceled) {
