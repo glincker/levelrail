@@ -157,8 +157,10 @@ export interface AppImportSource {
   platform: string
   url: string
   token: string
-  // docker platform: the docker inspect JSON, used instead of url and token.
+  // docker, compose and dokku: the pasted file content, used instead of url and token.
   snapshot?: string
+  // dokku: the app the env dump belongs to.
+  app_name?: string
   allow_loopback?: boolean
   allow_private?: boolean
   insecure_tls?: boolean

@@ -243,7 +243,17 @@ A database whose engine or version cannot be determined is reported as unsupport
 
 ### Compose files and Dokku
 
-The importer package can also map a plain Docker Compose file (one app per service with an image, database-looking images as [managed databases](/managing-databases)) and a `dokku config:export` style environment dump, without contacting anything. These two file sources are not yet exposed through the API, CLI or dashboard, so today they are only reachable from Go code. Live Dokku over SSH is not supported.
+Two more sources need no network and no token: paste the content instead. They use the same plan, stage, verify and cutover steps as the platforms above.
+
+- **Compose file.** Each service with an image becomes an app, database-looking images become [managed databases](/managing-databases), and services with only a `build:` block are reported as unsupported.
+- **Dokku env dump.** One app from `dokku config:export APP`. Only the variables are read (`DOKKU_*` and `GIT_REV` are dropped), so set the image or repository, port and domains after planning.
+
+```bash
+levelrail import apps --from compose --snapshot docker-compose.yml --plan
+levelrail import apps --from dokku --app-name blog --snapshot dokku-env.txt --apply
+```
+
+In the dashboard they are the Compose file and Dokku env dump tabs of the connect step. The content is held in memory for the session only, never stored or logged, and secret-looking variables stay masked in every plan. Live Dokku over SSH is not supported.
 
 ## Step 2: copy database data
 

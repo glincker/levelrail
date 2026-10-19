@@ -12,6 +12,15 @@ import {
   type AppImportSource,
 } from '../queries/appImport'
 
+type Mode = 'api' | 'docker' | 'compose' | 'dokku'
+type FileMode = Exclude<Mode, 'api'>
+
+const FILE_MODES: readonly string[] = ['docker', 'compose', 'dokku']
+
+function isFileMode(m: string | undefined): m is FileMode {
+  return m !== undefined && FILE_MODES.includes(m)
+}
+
 interface Props {
   // Set when re-attaching the token to an existing session.
   reconnect?: { id: string; url: string; platform: string }
@@ -24,7 +33,10 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
   const connect = useConnectAppImportSession()
   const [url, setUrl] = useState(reconnect?.url ?? '')
   const [token, setToken] = useState('')
-  const [docker, setDocker] = useState(reconnect?.platform === 'docker')
+  const [mode, setMode] = useState<Mode>(
+    isFileMode(reconnect?.platform) ? reconnect.platform : 'api',
+  )
+  const [appName, setAppName] = useState('')
   const [snapshot, setSnapshot] = useState('')
   const [loopback, setLoopback] = useState(false)
   const [priv, setPriv] = useState(false)
@@ -34,11 +46,13 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
 
   function onSubmit(e: FormEvent) {
     e.preventDefault()
+    const fileMode = isFileMode(mode) ? mode : null
     const source: AppImportSource = {
-      platform: docker ? 'docker' : (reconnect?.platform ?? 'coolify'),
-      url: docker ? 'docker://snapshot' : url.trim(),
-      token: docker ? '' : token,
-      snapshot: docker ? snapshot : undefined,
+      platform: fileMode ?? reconnect?.platform ?? 'coolify',
+      url: fileMode ? `file://${fileMode}` : url.trim(),
+      token: fileMode ? '' : token,
+      snapshot: fileMode ? snapshot : undefined,
+      app_name: mode === 'dokku' ? appName.trim() : undefined,
       allow_loopback: loopback || undefined,
       allow_private: priv || undefined,
       insecure_tls: insecure || undefined,
@@ -71,37 +85,45 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
         </p>
       </div>
       {reconnect ? null : (
-        <div className="flex gap-2" role="group">
-          <Button
-            type="button"
-            size="sm"
-            variant={docker ? 'outline' : 'default'}
-            aria-pressed={!docker}
-            onClick={() => setDocker(false)}
-          >
-            {t('appImport.connect.modeApi')}
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={docker ? 'default' : 'outline'}
-            aria-pressed={docker}
-            onClick={() => setDocker(true)}
-          >
-            {t('appImport.connect.modeDocker')}
-          </Button>
+        <div className="flex flex-wrap gap-2" role="group">
+          {(['api', 'docker', 'compose', 'dokku'] as const).map((m) => (
+            <Button
+              key={m}
+              type="button"
+              size="sm"
+              variant={mode === m ? 'default' : 'outline'}
+              aria-pressed={mode === m}
+              onClick={() => setMode(m)}
+            >
+              {t(`appImport.connect.mode.${m}`)}
+            </Button>
+          ))}
         </div>
       )}
-      {docker ? (
+      {isFileMode(mode) ? (
         <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
-            {t('appImport.connect.dockerDescription')}
+            {t(`appImport.connect.fileDescription.${mode}`)}
           </p>
           <code className="block rounded-md bg-muted px-3 py-2 text-sm">
-            {t('appImport.connect.dockerCommand')}
+            {t(`appImport.connect.fileCommand.${mode}`)}
           </code>
+          {mode === 'dokku' ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="appimport-appname">
+                {t('appImport.connect.appName')}
+              </Label>
+              <Input
+                id="appimport-appname"
+                required
+                autoComplete="off"
+                value={appName}
+                onChange={(e) => setAppName(e.target.value)}
+              />
+            </div>
+          ) : null}
           <Label htmlFor="appimport-snapshot">
-            {t('appImport.connect.snapshot')}
+            {t(`appImport.connect.fileLabel.${mode}`)}
           </Label>
           <Textarea
             id="appimport-snapshot"
@@ -115,7 +137,6 @@ export function AppImportConnect({ reconnect, onCreated }: Props) {
           />
           <Input
             type="file"
-            accept="application/json,.json"
             aria-label={t('appImport.connect.snapshotFile')}
             onChange={(e) => {
               void e.target.files?.[0]?.text().then(setSnapshot)

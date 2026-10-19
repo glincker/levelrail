@@ -21,13 +21,13 @@ const (
 )
 
 type importAppsFlags struct {
-	from, url, token, only, collision, apiURL, profile, session, snapshot string
-	tokenStdin, plan, apply, verify, receipt, rollback                    bool
-	acceptSuggested, insecure, allowPrivate, allowLoopback                bool
-	jsonOut                                                               bool
-	images                                                                imageMoveFlags
-	maps                                                                  mapPairs
-	wait                                                                  time.Duration
+	from, url, token, only, collision, apiURL, profile, session, snapshot, appName string
+	tokenStdin, plan, apply, verify, receipt, rollback                             bool
+	acceptSuggested, insecure, allowPrivate, allowLoopback                         bool
+	jsonOut                                                                        bool
+	images                                                                         imageMoveFlags
+	maps                                                                           mapPairs
+	wait                                                                           time.Duration
 }
 
 type mapPairs []apiclient.AppImportMapping
@@ -60,9 +60,10 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	fs := flag.NewFlagSet(prog+" import apps", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, importAppsUsage(prog)) }
-	fs.StringVar(&f.from, "from", "coolify", "source platform: coolify, dokploy, caprover or docker")
+	fs.StringVar(&f.from, "from", "coolify", "source platform: coolify, dokploy, caprover, docker, compose or dokku")
 	fs.StringVar(&f.url, "url", "", "source platform base URL")
-	fs.StringVar(&f.snapshot, "snapshot", "", "docker inspect JSON file (use with --from docker, or - for stdin)")
+	fs.StringVar(&f.snapshot, "snapshot", "", "source file: docker inspect JSON, a compose file or a dokku env dump (- for stdin)")
+	fs.StringVar(&f.appName, "app-name", "", "the app a dokku env dump belongs to (--from dokku)")
 	fs.StringVar(&f.token, "token", "", "source token (prefer "+envImportSourceToken+" or --token-stdin)")
 	fs.BoolVar(&f.tokenStdin, "token-stdin", false, "read the source token from the first line of stdin")
 	fs.BoolVar(&f.plan, "plan", false, "print the inventory, verdicts and preflight, create nothing")
@@ -103,22 +104,25 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 	case f.plan == f.apply:
 		_, _ = fmt.Fprintf(stderr, "%s: choose exactly one of --plan or --apply (or --session with --verify, --rollback or --receipt)\n", prog)
 		return exitUsage
-	case f.from == "docker" && f.snapshot == "":
-		_, _ = fmt.Fprintf(stderr, "%s: --snapshot FILE is required with --from docker\n", prog)
+	case isFileImportSource(f.from) && f.snapshot == "":
+		_, _ = fmt.Fprintf(stderr, "%s: --snapshot FILE is required with --from %s\n", prog, f.from)
 		return exitUsage
-	case f.from != "docker" && f.url == "":
+	case f.from == "dokku" && strings.TrimSpace(f.appName) == "":
+		_, _ = fmt.Fprintf(stderr, "%s: --app-name is required with --from dokku\n", prog)
+		return exitUsage
+	case !isFileImportSource(f.from) && f.url == "":
 		_, _ = fmt.Fprintf(stderr, "%s: --url is required\n", prog)
 		return exitUsage
 	}
 	var token, snapshot string
 	srcURL := f.url
-	if f.from == "docker" {
+	if isFileImportSource(f.from) {
 		var err error
 		if snapshot, err = readSnapshot(f.snapshot, stdin); err != nil {
 			_, _ = fmt.Fprintf(stderr, "%s: %v\n", prog, err)
 			return exitUsage
 		}
-		srcURL = "docker://snapshot"
+		srcURL = "file://" + f.from
 	} else {
 		var code int
 		var ok bool
@@ -127,7 +131,7 @@ func runImportApps(prog string, args []string, stdin io.Reader, stdout, stderr i
 			return code
 		}
 	}
-	req := apiclient.AppImportRequest{Platform: f.from, URL: srcURL, Token: token, Snapshot: snapshot, InsecureTLS: f.insecure, AllowPrivate: f.allowPrivate,
+	req := apiclient.AppImportRequest{Platform: f.from, URL: srcURL, Token: token, Snapshot: snapshot, AppName: f.appName, InsecureTLS: f.insecure, AllowPrivate: f.allowPrivate,
 		AllowLoopback: f.allowLoopback, Collision: f.collision, Mappings: f.maps, Only: f.onlyList()}
 	if f.plan {
 		view, err := client.PlanAppImport(ctx, req)
@@ -299,6 +303,8 @@ func importAppsUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s import apps --from coolify --url URL --token-stdin --plan [--only NAME] [--map OLD=NEW] [--json]
   %[1]s import apps --from docker --snapshot inspect.json --plan
+  %[1]s import apps --from compose --snapshot docker-compose.yml --plan
+  %[1]s import apps --from dokku --app-name web --snapshot dokku-env.txt --plan
   %[1]s import apps --from coolify --url URL --token-stdin --apply [--only NAME] [--map OLD=NEW] [--accept-suggested-maps]
   %[1]s import apps --session ID --transfer-images --ssh user@host[:port] --ssh-key FILE|--ssh-agent [--only NAME]
   %[1]s import apps --session ID --images|--cancel-images
@@ -319,6 +325,10 @@ for stdin) and its passphrase from %[3]s; neither is stored. Run it after
 The source token is read from %[2]s, or --token-stdin, or --token (warns).
 It is sent to this control plane in the request body only and never stored.
 `, prog, envImportSourceToken, envImportSSHPassphrase)
+}
+
+func isFileImportSource(from string) bool {
+	return from == "docker" || from == "compose" || from == "dokku"
 }
 
 // readSnapshot reads a docker inspect JSON file, or stdin when path is "-".
