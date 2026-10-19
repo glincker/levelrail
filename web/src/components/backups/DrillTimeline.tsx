@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { formatDate } from '../../lib/format'
 import { useBackupDrills } from '../../queries/backupProtection'
+import { useFixForCheck } from '../../queries/fixit'
+import { FixAction } from '../fixit/FixAction'
 import type { BackupDrill } from '../../types/backupProtection'
 
 const COLLAPSED_COUNT = 4
@@ -23,6 +25,7 @@ const DOT: Record<BackupDrill['status'], string> = {
 export function DrillTimeline() {
   const { t } = useTranslation('backups')
   const drills = useBackupDrills({ limit: 25 })
+  const drillFix = useFixForCheck('backup_drill')
   const [expanded, setExpanded] = useState(false)
   const all = drills.data ?? []
   const shown = expanded ? all : all.slice(0, COLLAPSED_COUNT)
@@ -40,6 +43,7 @@ export function DrillTimeline() {
           {t('drills.shortDescription')}
         </p>
       </div>
+      {drillFix ? <FixAction fix={drillFix} /> : null}
       {drills.isError ? (
         <p className="text-sm text-destructive">
           {t('drills.loadFailed', { error: drills.error.message })}

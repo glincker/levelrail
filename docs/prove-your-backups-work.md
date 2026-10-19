@@ -45,6 +45,8 @@ Every resource that has a succeeded backup is drilled on its newest backup once 
 
 A failed drill fires the platform-wide `restore_drill_failed` alert rule. Create it under **Alerts** like any other rule; it resolves when the next drill of that resource passes. A resource also shows **Failing** on the Backups page until then.
 
+While any resource is failing, the drill history card shows a **Fix the failing restore drill** action. It re-checks the latest drill of every resource and, from the first failure's error, says which of these it is: rejected credentials (update the access key on the backup target), an unreachable destination (check the endpoint and use **Test connection**), a full host disk (use **Clean up unused Docker data**), a missing or damaged object (take a new backup), or something else (open the failed drill for its stage and error). **Re-check** clears it once the next drill passes. The same fix is listed by `levelrail-cli fixes list --subject backup`.
+
 ## Read backup health
 
 The **Backups** page groups every backed up database and app volume by app:
@@ -135,6 +137,16 @@ A live volume cannot be re-read from an offset, so a half-uploaded object is abo
 | Open | Neither. A leaked key or a bad script can delete or overwrite every backup. |
 
 Retention needs delete permission, so the key must be able to delete; object lock is what makes that safe. Backup object names include the backup ID, so a new backup never overwrites an old one.
+
+### Design note: encrypting database dumps before upload
+
+Volume backups are encrypted on the control plane. Database dumps are not yet, so the bucket sees plaintext SQL and the bucket provider is trusted with it. Planned shape, not built:
+
+- Reuse the age recipient and identity that volume backups already use, so there is one key to escrow.
+- Stream the dump through zstd and age before upload, and record the codec on the backup row so older plaintext dumps stay restorable.
+- Drills and restores already decode by recorded codec, so the drill path needs no change beyond the decoder.
+- Search and replay checks (trailer, table count) run after decryption, never on ciphertext.
+- Needs its own security review: key rotation, and what happens to dumps encrypted with a retired key.
 
 ## What was tested
 
