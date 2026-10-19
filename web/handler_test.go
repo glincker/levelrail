@@ -63,12 +63,14 @@ func TestHandlerFromFS_SetsSecurityHeaders(t *testing.T) {
 		"dist/assets/app-123.js": &fstest.MapFile{Data: []byte("console.log(1)")},
 	}, nil)
 	want := map[string]string{
-		"X-Content-Type-Options":  "nosniff",
-		"X-Frame-Options":         "DENY",
-		"Referrer-Policy":         "strict-origin-when-cross-origin",
-		"Content-Security-Policy": dashboardCSP,
+		"X-Content-Type-Options":     "nosniff",
+		"X-Frame-Options":            "DENY",
+		"Referrer-Policy":            "strict-origin-when-cross-origin",
+		"Content-Security-Policy":    dashboardCSP,
+		"Permissions-Policy":         dashboardPermissionsPolicy,
+		"Cross-Origin-Opener-Policy": "same-origin",
 	}
-	for _, path := range []string{"/", "/apps/web", "/assets/app-123.js"} {
+	for _, path := range []string{"/", "/apps/web", "/apps/web/deploys/7", "/login", "/missing/page", "/assets/app-123.js"} {
 		t.Run(path, func(t *testing.T) {
 			rec := httptest.NewRecorder()
 			h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))

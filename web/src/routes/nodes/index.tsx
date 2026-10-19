@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { PendingJoinTokensCard } from '../../components/nodes/PendingJoinTokensCard'
 import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
@@ -71,6 +72,7 @@ function NodeListPage() {
         </>
       }
     >
+      <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
       <ZoneSpreadCard />
       {nodes.length === 0 ? (

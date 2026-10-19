@@ -110,4 +110,9 @@ func setDashboardSecurityHeaders(h http.Header) {
 	h.Set("X-Frame-Options", "DENY")
 	h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 	h.Set("Content-Security-Policy", dashboardCSP)
+	h.Set("Permissions-Policy", dashboardPermissionsPolicy)
+	h.Set("Cross-Origin-Opener-Policy", "same-origin")
 }
+
+// dashboardPermissionsPolicy mirrors internal/api's permissionsPolicy.
+const dashboardPermissionsPolicy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-write=(self)"

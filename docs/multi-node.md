@@ -58,6 +58,8 @@ levelrail-cli nodes join-token
 levelrail-cli nodes add --name w2 --mesh
 ```
 
+A token you no longer need (a leaked command, an abandoned setup) can be revoked before it expires. The Nodes page lists unused tokens with a Revoke button, or use `levelrail-cli nodes join-tokens` and `levelrail-cli nodes revoke-join-token <id>|--all`. Nodes that already enrolled are not affected.
+
 </Tab>
 <Tab title="API">
 

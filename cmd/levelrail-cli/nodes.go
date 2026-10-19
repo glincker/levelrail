@@ -25,6 +25,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "join-token":
 		return runNodesJoinToken(prog, rest, stdout, stderr, lookupEnv)
+	case "join-tokens":
+		return runNodesJoinTokens(prog, rest, stdout, stderr, lookupEnv)
+	case "revoke-join-token":
+		return runNodesRevokeJoinToken(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
 		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
 	case "uncordon":
@@ -105,6 +109,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once
+  %[1]s nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
+  %[1]s nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
   %[1]s nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
   %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node

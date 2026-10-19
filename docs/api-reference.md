@@ -824,6 +824,9 @@ Endpoints for:
 | POST | /api/v1/nodes/{id}/cert/renew | AbilityRoot | handleRenewNodeCert |
 | GET | /api/v1/nodes/allocations | AbilityRoot | handleNodeAllocations |
 | GET | /api/v1/nodes/zones | AbilityRoot | handleListZones |
+| GET | /api/v1/nodes/join-tokens | AbilityRoot | handleListPendingNodeJoinTokens |
+| DELETE | /api/v1/nodes/join-tokens | AbilityRoot | handleRevokeNodeJoinTokens |
+| DELETE | /api/v1/nodes/join-tokens/{id} | AbilityRoot | handleRevokeNodeJoinToken |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 

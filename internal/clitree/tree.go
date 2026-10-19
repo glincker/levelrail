@@ -246,7 +246,7 @@ var Tree = map[string]*Node{
 	"lb":           {Subs: map[string]*Node{"list": nil, "show": nil, "set": nil, "clear": nil, "status": nil, "check": nil, "history": nil, "upstream": nil, "export": nil, "import": nil}},
 	"tags":         {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil, "apps": nil}},
 	"nodes": {Subs: map[string]*Node{
-		"list": nil, "get": nil, "delete": nil, "join-token": nil,
+		"list": nil, "get": nil, "delete": nil, "join-token": nil, "join-tokens": nil, "revoke-join-token": nil,
 		"cordon": nil, "uncordon": nil, "drain": nil, "workloads": nil,
 		"health": nil, "patch-status": nil, "events": nil, "metrics": nil, "resource-usage": nil,
 		"capacity-forecast": nil,

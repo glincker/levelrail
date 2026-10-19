@@ -17,6 +17,9 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/workloads", rt.requireAbility(AbilityRoot, rt.handleSetNodeWorkloads))
 	mux.HandleFunc("PUT /api/v1/nodes/{id}/region", rt.requireAbility(AbilityRoot, rt.handleSetNodeRegion))
 	mux.HandleFunc("POST /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleCreateNodeJoinToken))
+	mux.HandleFunc("GET /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleListPendingNodeJoinTokens))
+	mux.HandleFunc("DELETE /api/v1/nodes/join-tokens", rt.requireAbility(AbilityRoot, rt.handleRevokeNodeJoinTokens))
+	mux.HandleFunc("DELETE /api/v1/nodes/join-tokens/{id}", rt.requireAbility(AbilityRoot, rt.handleRevokeNodeJoinToken))
 	// Health, cordon, drain, same AbilityRoot boundary as
 	// every other node route above.
 	mux.HandleFunc("GET /api/v1/nodes/{id}/health", rt.requireAbility(AbilityRoot, rt.handleGetNodeHealth))

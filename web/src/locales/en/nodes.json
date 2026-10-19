@@ -463,5 +463,15 @@
     "done": "Done",
     "generating": "Generating...",
     "generate": "Generate re-enroll token"
+  },
+  "joinTokens": {
+    "title_one": "{{count}} unused join token",
+    "title_other": "{{count}} unused join tokens",
+    "description": "Anyone holding an unused join token can enroll a node. Revoke the ones you no longer need, a revoked token stops working at once.",
+    "expires": "expires {{when}}",
+    "revoke": "Revoke",
+    "revokeAll": "Revoke all",
+    "revoked_one": "Revoked {{count}} join token",
+    "revoked_other": "Revoked {{count}} join tokens"
   }
 }
