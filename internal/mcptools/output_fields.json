@@ -943,6 +943,13 @@
   "swap_group",
   "updated_at"
  ],
+ "get_model_endpoint_health": [
+  "failures",
+  "fix",
+  "latency_ms",
+  "problem",
+  "state"
+ ],
  "get_model_engine_metrics": [
   "collecting",
   "engine",

@@ -74,6 +74,7 @@ var tasks = []task{
 }
 
 var demoRoutes = map[string]string{
+	"/api/v1/auth/my-access":             `{"kind":"token","abilities":["root"],"policies":[]}`,
 	"/api/v1/auth/whoami":                `{"kind":"token","name":"demo","abilities":["read","root"]}`,
 	"/api/v1/apps":                       `[{"name":"web","image":"nginx:1","port":80,"replicas":1,"strategy":"rolling"}]`,
 	"/api/v1/apps/web/deploys":           `[{"type":"Ready","status":"True","reason":"Converged","message":"1/1 replicas ready"}]`,
@@ -139,6 +140,13 @@ func main() {
 	failed := 0
 	for _, t := range tasks {
 		r := run(context.Background(), base, tok, live, t)
+		if !r.Pass {
+			failed++
+		}
+		results = append(results, r)
+	}
+	if !live {
+		r := runReadOnlyToken(context.Background())
 		if !r.Pass {
 			failed++
 		}
@@ -246,4 +254,47 @@ func report(results []result, asJSON bool) {
 	}
 	_ = w.Flush()
 	fmt.Printf("\n%d/%d passed, ~%d tokens in total\n", passed, len(results), total)
+}
+
+// runReadOnlyToken asserts that a read-only token is never offered a write tool, before or after enabling a toolset.
+func runReadOnlyToken(ctx context.Context) result {
+	res := result{Task: "read-only token never sees write tools"}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/auth/my-access" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`{"kind":"token","abilities":["read"],"policies":[]}`))
+	}))
+	defer srv.Close()
+	server, _ := mcptools.NewServerWithOptions(apiclient.NewClient(srv.URL, "ro"), mcptools.Options{Mode: mcptools.ModeFull, Dynamic: true})
+	st, ct := mcp.NewInMemoryTransports()
+	go func() { _ = server.Run(ctx, st) }()
+	session, err := mcp.NewClient(&mcp.Implementation{Name: "mcp-eval", Version: "0"}, nil).Connect(ctx, ct, nil)
+	if err != nil {
+		res.Detail = "connect: " + err.Error()
+		return res
+	}
+	defer func() { _ = session.Close() }()
+	for _, group := range []string{"apps", "deploys", "domains"} {
+		if _, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "enable_toolset", Arguments: map[string]any{"toolsets": []string{group}}}); err != nil {
+			res.Detail = "enable_toolset: " + err.Error()
+			return res
+		}
+	}
+	tools, err := session.ListTools(ctx, nil)
+	if err != nil {
+		res.Detail = "list tools: " + err.Error()
+		return res
+	}
+	b, _ := json.Marshal(tools.Tools)
+	res.Tokens = len(b) / charsPerToken
+	for _, t := range tools.Tools {
+		if m, ok := mcptools.Lookup(t.Name); ok && m.Class != mcptools.ClassRead {
+			res.Detail = t.Name + " is offered to a read-only token"
+			return res
+		}
+	}
+	res.Pass = true
+	return res
 }

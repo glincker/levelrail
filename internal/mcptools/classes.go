@@ -307,6 +307,7 @@ var toolTable = map[string]Meta{
 	"revoke_model_key":                      {clsD, "models", 0},
 	"get_model_usage":                       {clsR, "models", 0},
 	"get_model_engine_metrics":              {clsR, "models", 0},
+	"get_model_endpoint_health":             {clsR, "models", 0},
 	"check_model_fit":                       {clsR, "models", 0},
 	"get_model_logs":                        {clsR, "models", unt},
 	"deploy_model":                          {clsM, "models", outb},
@@ -390,7 +391,7 @@ func addTool[In, Out any](s *mcp.Server, t *mcp.Tool, h mcp.ToolHandlerFor[In, O
 			t.OutputSchema = slim
 		}
 	}
-	mcp.AddTool(s, t, withAgentClient(h))
+	mcp.AddTool(s, t, withAgentClient(withForbiddenHint(t.Name, h)))
 }
 
 // withAgentClient reports the calling MCP client's name and version on every

@@ -25,6 +25,14 @@ description: "The levelrail-mcp tool listing, token budget, read-only diagnostic
 
 By default a session lists about 2,400 estimated tokens: a small core (list and get apps, deploy, rollback, logs, status, env, domains, search, whoami) plus three meta tools. `list_toolsets` returns each toolset with a one line description, tool count and token cost. `enable_toolset` adds a toolset's tools for the rest of the session and sends `tools/list_changed`; `disable_toolset` removes them. The mode still bounds what can ever be listed, a call to a tool in a disabled toolset is refused with a pointer to `enable_toolset`, and the API token's abilities decide every call as before. `--all`, `--toolsets` and `--tool-profile` keep the static listing. `list_apps` returns 50 apps per page, with `next_offset` for the next page.
 
+## Tools follow the token's abilities
+
+`tools/list` offers only the tools the connected token can call. A `read` token sees read tools, a `read,deploy` token also sees the deploy tier (`deploy_app`, `rollback_app`, `restart_app` and the canary tools) but not `set_app_env` or `set_app_domains`, a `write` or `write:sensitive` token sees the write tools, and `root` sees everything its mode lists. `enable_toolset` and `list_toolsets` apply the same filter, so a toolset with nothing the token can call is not offered. The filter only narrows the list and costs no extra tokens. It is skipped, and the full mode list is shown, when the token's abilities cannot be read or when IAM policies are attached to it, since a policy can grant access to one resource beyond the base abilities. The server still decides every call.
+
+A call the server refuses for a missing ability returns a short structured error such as `forbidden: {"missing_ability":"write:sensitive","use_instead":"plan_change"}`: the ability to ask for, and a read-only tool to call instead. Refusals from AI control or step-up keep their own message.
+
+`get_model_endpoint_health` (toolset `models`, enable it on demand) returns the last probe of an external inference endpoint registered with `models endpoint`.
+
 ## Token budget
 
 `tools/list` is what an assistant pays for on every conversation. Output schemas were about 60 percent of it, and results still carry structured content without them, so `levelrail-mcp` omits them by default. The in-process server used by the dashboard assistant keeps them.
@@ -84,7 +92,7 @@ Without the flag these tools are not registered: they are absent from `tools/lis
 | `extend_preview` | Extends a pull request preview's lifetime by `hours` (default 24, max 168). | the app `name` |
 | `run_restore_drill` | Starts a restore drill of one backup into a scratch target. | the `backup_id` |
 
-Each call is rejected locally, with no API request, when `confirm` is missing or differs from the named resource. A successful call returns the API's own result, and the API records it in the audit log with the MCP client name, so it is visible under `levelrail-cli audit-log --client-kind mcp`. The token's abilities still apply: a token without them gets the API's 403 text back as a tool error.
+Each call is rejected locally, with no API request, when `confirm` is missing or differs from the named resource. A successful call returns the API's own result, and the API records it in the audit log with the MCP client name, so it is visible under `levelrail-cli audit-log --client-kind mcp`. The token's abilities still apply: a token without them gets a short structured 403 error back (see above).
 
 Deploy, rollback and restart already exist as `deploy_app`, `rollback_app` and `restart_app` and are governed by `--mode`, not `--allow-write`. Use `--mode read-only` to remove every mutating tool.
 

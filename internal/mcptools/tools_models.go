@@ -95,7 +95,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_logs",
-		Description: "Search a model engine's already-stored logs in a time window; model download and load progress appears here. A bounded historical search, not a live tail: at most 200 entries per call.",
+		Description: "Search a model engine's stored logs in a time window; download and load progress appears here. Not a live tail: at most 200 entries per call.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelLogsInput) (*mcp.CallToolResult, []apiclient.LogEntryResource, error) {
 		window := defaultLogsWindow
 		if in.Since != "" {
@@ -183,7 +183,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_model_usage",
-		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, input and output tokens, average latency and time to first byte, hourly series and a per key breakdown. Tokens only cover responses that carried a usage object; the note field says so.",
+		Description: "Gateway usage of a model over a window: requests, status classes, rate-limited count, tokens, latency, hourly series and per key breakdown. Tokens cover only responses with a usage object.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in modelUsageInput) (*mcp.CallToolResult, apiclient.ModelUsageReport, error) {
 		var since time.Duration
 		if in.Since != "" {
@@ -215,7 +215,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_model_cache",
-		Description: "List cached model weights per node: volume, owning model, size, last use, whether it is in use or prunable, and duplicate weights counted once. Only the control plane's host is inspected today. Read-only; pruning is done from the CLI or dashboard.",
+		Description: "List cached model weights per node: volume, owning model, size, last use, in use or prunable. Only the control plane's host is inspected today.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, apiclient.ModelCacheReport, error) {
 		out, err := client.ListModelCache(ctx)
 		if err != nil {

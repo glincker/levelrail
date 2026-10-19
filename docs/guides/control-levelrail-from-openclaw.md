@@ -89,7 +89,7 @@ Verified with a `read` plus `deploy` agent token in `operate` mode:
 
 Pause everything at once with `levelrail-cli ai-control set --mode off`, or revoke every agent token with `levelrail-cli ai-control revoke-agents --yes`. See what the agent did with `levelrail-cli audit-log --agent openclaw`.
 
-The MCP tool list is narrowed by the MCP mode and by AI control, not by the token's own abilities, so a `read,deploy` token can still be offered tools such as `set_app_env`; the call is then refused with the API's 403. Use `--mode read-only` when you want those tools gone from the list.
+The MCP tool list is narrowed by the MCP mode, by AI control and by the token's own abilities: a `read,deploy` token is offered `deploy_app` and `rollback_app` but not `set_app_env` or `set_app_domains`, and `enable_toolset` follows the same rule. If a call is still refused for a missing ability, the agent gets a short error naming the ability and a read-only tool to use instead. Tokens with IAM policies attached see the full mode list, because a policy can grant access beyond the base abilities.
 
 ## 5. Safety classes
 
