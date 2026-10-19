@@ -46,7 +46,8 @@ levelrail-cli backup-targets test bkt_Ra-kILVUyJaw
 backup target "bkt_Ra-kILVUyJaw" connected successfully
 ```
 
-![The Backups page, which asks for a backup target on a fresh install](/assets/screenshots/backups.png)
+<img src="/assets/screenshots/backups-light.png" alt="The Backups page, which asks for a backup target on a fresh install" className="block dark:hidden" />
+<img src="/assets/screenshots/backups.png" alt="The Backups page, which asks for a backup target on a fresh install" className="hidden dark:block" />
 
 </Step>
 <Step title="Take a first backup">

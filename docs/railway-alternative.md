@@ -14,7 +14,8 @@ Connect a repo, get a running service with a domain, TLS, a database and logs. T
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-![Levelrail apps list across nodes](/assets/screenshots/apps-list.png)
+<img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list across nodes" className="block dark:hidden" />
+<img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list across nodes" className="hidden dark:block" />
 
 ## What you get
 

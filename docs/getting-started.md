@@ -54,7 +54,8 @@ Open the printed setup link, choose a password, and you are the admin. The first
 6. **First app** deploys a sample, a template, or your own repository, and waits until it is healthy. A failure shows the automatic diagnosis and a link to the logs.
 7. **Done** links to alerts, backup targets, and inviting teammates.
 
-![Levelrail setup wizard with the steps from server check to done](assets/screenshots/setup-wizard.png)
+<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard with the steps from server check to done" className="block dark:hidden" />
+<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard with the steps from server check to done" className="hidden dark:block" />
 
 Progress is saved on the server, so you can close the tab and resume from any browser. Reopen the wizard any time from **Settings, Setup wizard**.
 
@@ -126,7 +127,8 @@ levelrail-cli apps logs web --follow
 
 Status shows the reconciler's conditions, each with a reason string, so a failing deploy tells you why instead of spinning. In the dashboard the same app has live metrics with deploy markers on the charts, the deploy history with one-click rollback, and a log viewer with search.
 
-![Levelrail app overview: live metrics and deploy history in one view](assets/screenshots/app-overview.png)
+<img src="/assets/screenshots/app-overview-light.png" alt="Levelrail app overview: live metrics and deploy history in one view" className="block dark:hidden" />
+<img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview: live metrics and deploy history in one view" className="hidden dark:block" />
 
 To go back to the previous version, use the deploy history in the dashboard, or run `levelrail-cli apps deploys list web` and then `levelrail-cli apps deploys rollback-to web <deploy-id>`. Prior images are pinned, so garbage collection cannot remove a rollback target.
 
@@ -146,7 +148,8 @@ levelrail-cli auth login --device
 
 Once you are signed in, the dashboard home shows live stats, recent activity, and a **Needs attention** list built from the same server checks as the wizard:
 
-![Levelrail dashboard home with app, request, and deploy stats and a Needs attention list](assets/screenshots/dashboard-home.png)
+<img src="/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="block dark:hidden" />
+<img src="/assets/screenshots/dashboard-home.png" alt="Levelrail dashboard home with app, request, and deploy stats and a Needs attention list" className="hidden dark:block" />
 
 The sidebar also has a **Get started** item, and the home page a "Setup N% ready" chip, until you hide the guide or every step is settled. It is a checklist driven by live state: each step flips to done on its own the moment the real thing exists, with no reload.
 

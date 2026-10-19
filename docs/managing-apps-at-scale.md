@@ -14,7 +14,8 @@ An **environment** (production, staging, or any name you create) belongs to a pr
 
 ## The apps list
 
-![Levelrail apps list showing all services across nodes at a glance](assets/screenshots/apps-list.png)
+<img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing all services across nodes at a glance" className="block dark:hidden" />
+<img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" className="hidden dark:block" />
 
 The dashboard list at `/apps` has a status strip (running, deploying, failing, stopped), a search box, environment chips, a tag filter, and a checkbox on every row. The list is virtualized, so hundreds of apps stay responsive.
 

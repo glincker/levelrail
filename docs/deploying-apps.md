@@ -9,7 +9,8 @@ description: Create, deploy, roll back, configure, promote, and operate an app o
 
 An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is healthy, switches traffic to it, and keeps every previous image so you can go back. This page follows an app from creation through deploys, rollbacks, configuration, promotion, and day to day operation.
 
-![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
+<img src="/assets/screenshots/app-overview-page-light.png" alt="Levelrail app overview page with health status, setup checklist, and recent activity" className="block dark:hidden" />
+<img src="/assets/screenshots/app-overview-page.png" alt="Levelrail app overview page with health status, setup checklist, and recent activity" className="hidden dark:block" />
 
 ### Common tasks
 
@@ -68,7 +69,8 @@ In the dashboard, the **Docker image** card has an image picker that browses the
 
 ### From a git repository
 
-![Levelrail Git source settings: provider tabs, build pack, and deploy trigger](assets/screenshots/app-source.png)
+<img src="/assets/screenshots/app-source-light.png" alt="Levelrail Git source settings: provider tabs, build pack, and deploy trigger" className="block dark:hidden" />
+<img src="/assets/screenshots/app-source.png" alt="Levelrail Git source settings: provider tabs, build pack, and deploy trigger" className="hidden dark:block" />
 
 An app's **Source** tab connects a repository, picks the build pack, and sets the deploy trigger. BuildKit builds a Dockerfile, or Railpack builds it with no Dockerfile at all.
 
@@ -188,7 +190,8 @@ Use the pinned **Trigger a deploy** form on the app. A git push also deploys whe
 
 An app's **Deploy settings** tab sets the strategy (`rolling`, `recreate`, or `blue-green`, with `blue-green` the default) and the replica count:
 
-![Levelrail deploy settings with a blue-green strategy and two replicas](assets/screenshots/app-deploy-settings.png)
+<img src="/assets/screenshots/app-deploy-settings-light.png" alt="Levelrail deploy settings with a blue-green strategy and two replicas" className="block dark:hidden" />
+<img src="/assets/screenshots/app-deploy-settings.png" alt="Levelrail deploy settings with a blue-green strategy and two replicas" className="hidden dark:block" />
 
 Rolling and blue-green follow the same core sequence: start the new container, wait for readiness, cut ingress to the new container, then drain and stop the old one.
 
@@ -232,7 +235,8 @@ The cause is a heuristic match against a fixed rule table, not a diagnosis. It n
 
 ### Deploys across all apps
 
-![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
+<img src="/assets/screenshots/deploy-history-light.png" alt="Levelrail deploy history view with one-click rollback" className="block dark:hidden" />
+<img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" className="hidden dark:block" />
 
 <Accordion title="Filters, derived fields, summary and stream">
 
@@ -324,7 +328,8 @@ From the CLI, `apps status NAME` prints a "pending changes" line, and `apps env 
 
 ### Environment variables and secrets
 
-![Levelrail app Environment tab with plain variables and secrets](assets/screenshots/app-environment.png)
+<img src="/assets/screenshots/app-environment-light.png" alt="Levelrail app Environment tab with plain variables and secrets" className="block dark:hidden" />
+<img src="/assets/screenshots/app-environment.png" alt="Levelrail app Environment tab with plain variables and secrets" className="hidden dark:block" />
 
 Plain variables can be bulk loaded from a `.env` file and exported again:
 
@@ -397,7 +402,8 @@ Four optional dimensions, each independent. A dimension you leave off runs unbou
 
 Set them on the **Resources** tab, in `app.yaml`, or with `PUT /api/v1/apps/{name}`. New limits are applied live: right after the save, they are pushed to every running replica through the Docker Engine API's `ContainerUpdate`, with no recreate. The response's `resources_applied_live` says whether the push reached at least one replica. With no container running, the values are saved and take effect on the next create, and the dashboard shows a "restart required" toast.
 
-![Levelrail app resources tab](assets/screenshots/app-resources.png)
+<img src="/assets/screenshots/app-resources-light.png" alt="Levelrail app resources tab" className="block dark:hidden" />
+<img src="/assets/screenshots/app-resources.png" alt="Levelrail app resources tab" className="hidden dark:block" />
 
 `GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it in the Optimise panel on the Resources tab, or run `levelrail-cli apps resource-recommendation NAME`. With the [resource advisor](/resource-advisor) beta on, the same suggestion arrives as an advisor finding you can apply after a preview.
 

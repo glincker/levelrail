@@ -175,7 +175,8 @@ Markers are keyboard focusable with aria labels and show details on hover or foc
 
 ## Live tailing vs stored search vs download
 
-![Levelrail live log viewer with full-text search](assets/screenshots/logs.png)
+<img src="/assets/screenshots/logs-light.png" alt="Levelrail live log viewer with full-text search" className="block dark:hidden" />
+<img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" className="hidden dark:block" />
 
 Live tail, stored search and download are three ways to read the same log store.
 

@@ -69,7 +69,8 @@ The flags you will use most:
 | `--tail 50` | Only the last N entries. |
 | `--json` | Machine-readable output for scripts. |
 
-![The log viewer with full-text search and a live tail](/assets/screenshots/logs.png)
+<img src="/assets/screenshots/logs-light.png" alt="The log viewer with full-text search and a live tail" className="block dark:hidden" />
+<img src="/assets/screenshots/logs.png" alt="The log viewer with full-text search and a live tail" className="hidden dark:block" />
 
 The dashboard's log viewer reads the same store, with search and live tail.
 
@@ -98,7 +99,8 @@ TIMESTAMP             VALUE                 COUNT
 
 Metrics are sampled every 15 seconds and aggregated into the bucket size you set with `--step`. Leave `--step` off to get the raw samples.
 
-![An app's overview with live metrics and deploy markers](/assets/screenshots/app-overview.png)
+<img src="/assets/screenshots/app-overview-light.png" alt="An app's overview with live metrics and deploy markers" className="block dark:hidden" />
+<img src="/assets/screenshots/app-overview.png" alt="An app's overview with live metrics and deploy markers" className="hidden dark:block" />
 
 On the dashboard the same data becomes charts with deploy markers drawn on them. That is the quickest way to answer "which deploy made it slow": the line changes where the marker is.
 

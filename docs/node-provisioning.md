@@ -33,7 +33,8 @@ sequenceDiagram
 
 Store a credential once under **Settings > Cloud node providers** (`/settings/node-providers`) or with `levelrail-cli nodes providers set-credential --provider <name>`. Each provider card reads "Not connected" until you save one, and a saved credential is never shown again. It is envelope-encrypted at rest like every other integration credential.
 
-![Levelrail Cloud node providers settings with Hetzner, DigitalOcean, AWS, and Azure cards, all not connected](assets/screenshots/node-providers.png)
+<img src="/assets/screenshots/node-providers-light.png" alt="Levelrail Cloud node providers settings with Hetzner, DigitalOcean, AWS, and Azure cards, all not connected" className="block dark:hidden" />
+<img src="/assets/screenshots/node-providers.png" alt="Levelrail Cloud node providers settings with Hetzner, DigitalOcean, AWS, and Azure cards, all not connected" className="hidden dark:block" />
 
 `--provider-token` is accepted for scripting, but its value lands in shell history and the process list. Pipe the credential instead, or omit the flag for a no-echo prompt:
 

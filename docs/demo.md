@@ -14,7 +14,8 @@ A walkthrough of the dashboard and the CLI, using real screenshots. No sign-up, 
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-![Levelrail dashboard home with apps, nodes and recent deploys](/assets/screenshots/dashboard-home.png)
+<img src="/assets/screenshots/dashboard-home-light.png" alt="Levelrail dashboard home with apps, nodes and recent deploys" className="block dark:hidden" />
+<img src="/assets/screenshots/dashboard-home.png" alt="Levelrail dashboard home with apps, nodes and recent deploys" className="hidden dark:block" />
 
 ## Install and first deploy
 
@@ -47,27 +48,33 @@ levelrail-cli deploy myapp --image registry.example.com/acme/myapp:latest
 ## A tour of the dashboard
 
 <Frame caption="Every app across every node, with status at a glance.">
-  <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list" />
+  <img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list" className="block dark:hidden" />
+  <img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list" className="hidden dark:block" />
 </Frame>
 
 <Frame caption="Deploy history with one-click rollback to a pinned image.">
-  <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history" />
+  <img src="/assets/screenshots/deploy-history-light.png" alt="Levelrail deploy history" className="block dark:hidden" />
+  <img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history" className="hidden dark:block" />
 </Frame>
 
 <Frame caption="Live log tail with full-text search.">
-  <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer" />
+  <img src="/assets/screenshots/logs-light.png" alt="Levelrail live log viewer" className="block dark:hidden" />
+  <img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer" className="hidden dark:block" />
 </Frame>
 
 <Frame caption="Metrics with deploy markers overlaid on the charts.">
-  <img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview with metrics" />
+  <img src="/assets/screenshots/app-overview-light.png" alt="Levelrail app overview with metrics" className="block dark:hidden" />
+  <img src="/assets/screenshots/app-overview.png" alt="Levelrail app overview with metrics" className="hidden dark:block" />
 </Frame>
 
 <Frame caption="Nodes, their health and what is placed on them.">
-  <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list" />
+  <img src="/assets/screenshots/nodes-light.png" alt="Levelrail nodes list" className="block dark:hidden" />
+  <img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list" className="hidden dark:block" />
 </Frame>
 
 <Frame caption="Managed databases with backups and verification.">
-  <img src="/assets/screenshots/database-overview.png" alt="Levelrail database overview" />
+  <img src="/assets/screenshots/database-overview-light.png" alt="Levelrail database overview" className="block dark:hidden" />
+  <img src="/assets/screenshots/database-overview.png" alt="Levelrail database overview" className="hidden dark:block" />
 </Frame>
 
 ## Terminal recordings

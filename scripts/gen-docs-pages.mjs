@@ -7,6 +7,12 @@ const templates = JSON.parse(fs.readFileSync('scripts/gen-template-gallery/templ
 const esc = (s) => String(s).replace(/\|/g, '\\|').replace(/[<>{}]/g, (c) => `&#${c.charCodeAt(0)};`)
 const q = (s) => JSON.stringify(String(s))
 
+const shotDir = 'docs/assets/screenshots'
+const shot = (file, title) =>
+  fs.existsSync(`${shotDir}/${file}-light.png`)
+    ? `  <img src="/assets/screenshots/${file}-light.png" alt=${q(title)} className="block dark:hidden" />\n  <img src="/assets/screenshots/${file}.png" alt=${q(title)} className="hidden dark:block" />`
+    : `  <img src="/assets/screenshots/${file}.png" alt=${q(title)} />`
+
 fs.mkdirSync('docs/self-host', { recursive: true })
 for (const f of fs.readdirSync('docs/self-host')) if (f.endsWith('.mdx')) fs.unlinkSync(`docs/self-host/${f}`)
 
@@ -196,7 +202,7 @@ fs.writeFileSync(
       `## ${area}\n\n${items
         .map(
           ([file, title, desc, link]) =>
-            `### ${title}\n\n${desc} Read more in [the guide](${link}).\n\n<Frame caption=${q(title)}>\n  <img src="/assets/screenshots/${file}.png" alt=${q(title)} />\n</Frame>\n`,
+            `### ${title}\n\n${desc} Read more in [the guide](${link}).\n\n<Frame caption=${q(title)}>\n${shot(file, title)}\n</Frame>\n`,
         )
         .join('\n')}`,
     )

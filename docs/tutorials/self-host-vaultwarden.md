@@ -26,7 +26,8 @@ levelrail-cli templates list | grep -i vaultwarden
 vaultwarden   Vaultwarden   Security   ~0 GiB   -   A lightweight, self-hosted password manager server compatible with the Bitwarden clients.
 ```
 
-![The service templates page with search, categories, and Deploy now cards](/assets/screenshots/templates-catalog.png)
+<img src="/assets/screenshots/templates-catalog-light.png" alt="The service templates page with search, categories, and Deploy now cards" className="block dark:hidden" />
+<img src="/assets/screenshots/templates-catalog.png" alt="The service templates page with search, categories, and Deploy now cards" className="hidden dark:block" />
 
 The dashboard's **Templates** page lists the same catalog with search and categories. To see exactly what a template deploys before you run it:
 

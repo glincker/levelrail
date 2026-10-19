@@ -97,7 +97,8 @@ Every write endpoint on this page returns `501` if the control plane has no mast
 
 Both resources expose a `POST .../test` endpoint that validates the credential without doing the real operation.
 
-![Levelrail Backups page on a fresh install, prompting you to add a backup target](assets/screenshots/backups.png)
+<img src="/assets/screenshots/backups-light.png" alt="Levelrail Backups page on a fresh install, prompting you to add a backup target" className="block dark:hidden" />
+<img src="/assets/screenshots/backups.png" alt="Levelrail Backups page on a fresh install, prompting you to add a backup target" className="hidden dark:block" />
 
 <Tabs>
 <Tab title="Backup target">

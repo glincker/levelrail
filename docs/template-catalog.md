@@ -6,7 +6,8 @@ description: Every service in Levelrail's one-click template catalog, grouped by
 
 Every entry in `internal/catalog.Templates` as of this build, grouped by category. This page exists so you can browse the full breadth of what's deployable in one click without opening the dashboard.
 
-![Levelrail service templates page: search box, category list with counts, and Deploy now cards](assets/screenshots/templates-catalog.png)
+<img src="/assets/screenshots/templates-catalog-light.png" alt="Levelrail service templates page: search box, category list with counts, and Deploy now cards" className="block dark:hidden" />
+<img src="/assets/screenshots/templates-catalog.png" alt="Levelrail service templates page: search box, category list with counts, and Deploy now cards" className="hidden dark:block" />
 
 This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a template deploys, the `$SERVICE_PASSWORD_*` magic variables, custom templates), see [Templates and registry](/templates-and-registry). The `Starter Kits` category gets its own deep-dive page, [Starter kit templates](/templates), covering the multi-service wiring patterns those seven demonstrate; this page lists them too, for completeness, but doesn't repeat that detail.
 

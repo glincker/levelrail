@@ -248,7 +248,8 @@ The request is rejected with `400` when it carries neither a fingerprint nor `in
 
 ## Node health and heartbeat
 
-![Levelrail nodes list showing node health and placement](assets/screenshots/nodes.png)
+<img src="/assets/screenshots/nodes-light.png" alt="Levelrail nodes list showing node health and placement" className="block dark:hidden" />
+<img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" className="hidden dark:block" />
 
 ```bash
 levelrail-cli nodes health <id>

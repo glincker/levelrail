@@ -101,7 +101,8 @@ levelrail-cli domains doctor my-app my-app.example.com
 **Infrastructure > Domains** lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode and basic auth. Edit those settings on the owning app's Domains tab.
 </Note>
 
-![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](/assets/screenshots/domains-list.png)
+<img src="/assets/screenshots/domains-list-light.png" alt="Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS" className="block dark:hidden" />
+<img src="/assets/screenshots/domains-list.png" alt="Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS" className="hidden dark:block" />
 
 ## How domain routing actually works
 

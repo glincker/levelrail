@@ -45,7 +45,8 @@ Ready  True    AlreadyRunning           2026-10-05T02:21:40Z
 
 The first start pulls the image, so allow a minute on a fresh server.
 
-![The Databases page listing a healthy Postgres 16 database](/assets/screenshots/databases-list.png)
+<img src="/assets/screenshots/databases-list-light.png" alt="The Databases page listing a healthy Postgres 16 database" className="block dark:hidden" />
+<img src="/assets/screenshots/databases-list.png" alt="The Databases page listing a healthy Postgres 16 database" className="hidden dark:block" />
 
 </Step>
 <Step title="Connect the app">

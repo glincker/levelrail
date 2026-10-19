@@ -105,7 +105,8 @@ dep_IUrA3qUFg7DV  nginx:1.27-alpine  65645c7bb6a0  image   succeeded  serving  2
 dep_FnrJJJnuh0Md  nginx:alpine       df221db836e1  image   succeeded  serving  2026-10-05T02:15:38Z
 ```
 
-![The Deployments page listing every deploy across apps, with status and rollback actions](/assets/screenshots/deployments-all.png)
+<img src="/assets/screenshots/deployments-all-light.png" alt="The Deployments page listing every deploy across apps, with status and rollback actions" className="block dark:hidden" />
+<img src="/assets/screenshots/deployments-all.png" alt="The Deployments page listing every deploy across apps, with status and rollback actions" className="hidden dark:block" />
 
 The same history is on the dashboard's **Deployments** page, across every app.
 

@@ -8,7 +8,8 @@ The `Starter Kits` category of the [template catalog](/template-catalog) holds s
 
 Swap the `web`, `api` or `worker` service's `image:` for your own build output. The environment variable names and the `depends_on:` graph are the part meant to be copied as is.
 
-![Levelrail service templates page with category filters and the Starter Kits cards at the top](assets/screenshots/templates-catalog.png)
+<img src="/assets/screenshots/templates-catalog-light.png" alt="Levelrail service templates page with category filters and the Starter Kits cards at the top" className="block dark:hidden" />
+<img src="/assets/screenshots/templates-catalog.png" alt="Levelrail service templates page with category filters and the Starter Kits cards at the top" className="hidden dark:block" />
 
 How to deploy any template, and how `$SERVICE_...` variables work, is covered in [Templates and registry](/templates-and-registry).
 

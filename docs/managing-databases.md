@@ -46,11 +46,13 @@ Use the databases list page's create dialog. It collects name, engine, version, 
 
 Every database appears alongside your apps on its own list page, with engine, version, and status at a glance:
 
-![Levelrail databases list showing engine, version, and running status](assets/screenshots/databases-list.png)
+<img src="/assets/screenshots/databases-list-light.png" alt="Levelrail databases list showing engine, version, and running status" className="block dark:hidden" />
+<img src="/assets/screenshots/databases-list.png" alt="Levelrail databases list showing engine, version, and running status" className="hidden dark:block" />
 
 A database's Overview tab shows its connection details, resource usage, and the public access and backup cards covered below:
 
-![Levelrail database overview page with connection info and resource usage](assets/screenshots/database-overview.png)
+<img src="/assets/screenshots/database-overview-light.png" alt="Levelrail database overview page with connection info and resource usage" className="block dark:hidden" />
+<img src="/assets/screenshots/database-overview.png" alt="Levelrail database overview page with connection info and resource usage" className="hidden dark:block" />
 
 ### Placement
 

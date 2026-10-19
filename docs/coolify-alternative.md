@@ -16,7 +16,8 @@ Levelrail is an open source deployment platform for your own servers. Its agent 
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-![Levelrail apps list showing every service, its status and its node](/assets/screenshots/apps-list.png)
+<img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing every service, its status and its node" className="block dark:hidden" />
+<img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing every service, its status and its node" className="hidden dark:block" />
 
 ## Why people look for a Coolify alternative
 

@@ -24,7 +24,8 @@ Incident and maintenance text is escaped. Only paragraphs, line breaks, `- ` lis
 
 ## Set it up
 
-![Levelrail status page settings with the page switched off, and a title and custom domain field](assets/screenshots/status-page-settings.png)
+<img src="/assets/screenshots/status-page-settings-light.png" alt="Levelrail status page settings with the page switched off, and a title and custom domain field" className="block dark:hidden" />
+<img src="/assets/screenshots/status-page-settings.png" alt="Levelrail status page settings with the page switched off, and a title and custom domain field" className="hidden dark:block" />
 
 <Tabs>
 <Tab title="Dashboard">

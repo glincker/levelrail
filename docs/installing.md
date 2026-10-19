@@ -77,7 +77,8 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 
 ### First sign-in
 
-![Levelrail setup wizard on a fresh install: server checks with a Continue button](assets/screenshots/setup-wizard.png)
+<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="block dark:hidden" />
+<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="hidden dark:block" />
 
 <Steps>
 <Step title="Open the setup link">
@@ -395,7 +396,8 @@ Dev mode is for local use only. A release build (`-tags embedweb`) ignores `APP_
 
 `levelrail-cli` is a separate, small client binary for your own laptop or a CI runner, the same shape as `aws` or `gh`: install it locally, point it at a running instance, authenticate over the network, no SSH key and no inbound port on the server. The dashboard prints these same steps under **Settings, CLI access**, with a copy button on each command.
 
-![Levelrail CLI access page with install, point-at-server, and device login steps](assets/screenshots/cli-access.png)
+<img src="/assets/screenshots/cli-access-light.png" alt="Levelrail CLI access page with install, point-at-server, and device login steps" className="block dark:hidden" />
+<img src="/assets/screenshots/cli-access.png" alt="Levelrail CLI access page with install, point-at-server, and device login steps" className="hidden dark:block" />
 
 <Steps>
 <Step title="Install the binary">
