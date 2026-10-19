@@ -24,13 +24,18 @@ import { ControlPlaneDrEscrow } from './ControlPlaneDrEscrow'
 import { ControlPlaneDrRestore } from './ControlPlaneDrRestore'
 import { ControlPlaneDrSettings } from './ControlPlaneDrSettings'
 
-function drillSummary(d: ControlPlaneDrDrill): string {
-  if (d.at === undefined) return 'never run'
+function drillSummary(
+  d: ControlPlaneDrDrill,
+  t: TFunction<'settings'>,
+): string {
+  if (d.at === undefined) return t('drCard.neverRun')
   const when = formatAge(d.at)
-  if (!d.ok) return `failed ${when}: ${d.detail}`
-  return d.partial
-    ? `passed ${when} (partial: checksum only, decryption untested)`
-    : `passed ${when} in ${Math.max(1, Math.round(d.duration_ms / 1000))}s`
+  if (!d.ok) return t('drCard.failed', { when, detail: d.detail })
+  if (d.partial) return t('drCard.passedPartial', { when })
+  return t('drCard.passed', {
+    when,
+    seconds: Math.max(1, Math.round(d.duration_ms / 1000)),
+  })
 }
 
 function replicaSummary(
@@ -56,7 +61,8 @@ function replicaSummary(
 }
 
 export function ControlPlaneDrCard() {
-  const { t } = useTranslation('controlPlaneReplica')
+  const { t } = useTranslation('settings')
+  const { t: tr } = useTranslation('controlPlaneReplica')
   const { data: status, isLoading, isError } = useControlPlaneDr()
   const run = useRunControlPlaneDrBackup()
   const drill = useRunControlPlaneDrDrill()
@@ -69,7 +75,10 @@ export function ControlPlaneDrCard() {
   const start = (mutate: typeof run.mutate, label: string) => {
     mutate(undefined, {
       onSuccess: () => {
-        toast.add({ title: `${label} started.`, type: 'success' })
+        toast.add({
+          title: t('drCard.started', { label }),
+          type: 'success',
+        })
       },
       onError: (e) => {
         toast.add({ title: e.message, type: 'error' })
@@ -86,10 +95,8 @@ export function ControlPlaneDrCard() {
               <ShieldCheckIcon className="size-4" />
             </div>
             <div>
-              <CardTitle>Disaster recovery</CardTitle>
-              <CardDescription>
-                Encrypted off-box backups, key escrow and restore drills.
-              </CardDescription>
+              <CardTitle>{t('drCard.title')}</CardTitle>
+              <CardDescription>{t('drCard.description')}</CardDescription>
             </div>
           </div>
           <div className="flex gap-2">
@@ -99,11 +106,13 @@ export function ControlPlaneDrCard() {
                 run.isPending || status.backup_running || !status.configured
               }
               onClick={() => {
-                start(run.mutate, 'Backup')
+                start(run.mutate, t('drCard.labelBackup'))
               }}
             >
               <PlayIcon className="size-3.5" aria-hidden="true" />
-              {status.backup_running ? 'Backing up...' : 'Run now'}
+              {status.backup_running
+                ? t('drCard.backingUp')
+                : t('drCard.runNow')}
             </Button>
             <Button
               size="sm"
@@ -112,17 +121,19 @@ export function ControlPlaneDrCard() {
                 drill.isPending || status.drill_running || !status.configured
               }
               onClick={() => {
-                start(drill.mutate, 'Restore drill')
+                start(drill.mutate, t('drCard.labelDrill'))
               }}
             >
-              {status.drill_running ? 'Running drill...' : 'Run drill'}
+              {status.drill_running
+                ? t('drCard.runningDrill')
+                : t('drCard.runDrill')}
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {status.warnings.length > 0 ? (
-          <div className="space-y-2" aria-label="Warnings">
+          <div className="space-y-2" aria-label={t('drCard.warnings')}>
             {status.warnings.map((w) => (
               <Banner key={w.code} variant="warning" title={w.message} />
             ))}
@@ -132,28 +143,28 @@ export function ControlPlaneDrCard() {
         <ControlPlaneDrChecklistView checklist={status.checklist} />
 
         <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
-          <dt className="text-muted-foreground">Last backup</dt>
+          <dt className="text-muted-foreground">{t('drCard.lastBackup')}</dt>
           <dd>
             {status.last_backup_at !== undefined
               ? formatAge(status.last_backup_at)
-              : 'never'}
+              : t('drCard.never')}
             {status.next_backup_at !== undefined
-              ? `, next ${new Date(status.next_backup_at).toLocaleString()}`
+              ? `, ${t('drCard.nextBackup', { when: new Date(status.next_backup_at).toLocaleString() })}`
               : ''}
           </dd>
           {status.replica ? (
             <>
-              <dt className="text-muted-foreground">{t('label')}</dt>
-              <dd>{replicaSummary(status.replica, t)}</dd>
+              <dt className="text-muted-foreground">{tr('label')}</dt>
+              <dd>{replicaSummary(status.replica, tr)}</dd>
             </>
           ) : null}
-          <dt className="text-muted-foreground">Last restore drill</dt>
-          <dd>{drillSummary(status.last_drill)}</dd>
-          <dt className="text-muted-foreground">Drill identity</dt>
+          <dt className="text-muted-foreground">{t('drCard.lastDrill')}</dt>
+          <dd>{drillSummary(status.last_drill, t)}</dd>
+          <dt className="text-muted-foreground">{t('drCard.drillIdentity')}</dt>
           <dd>
             {status.drill_identity_configured
-              ? 'configured, drills decrypt and restore fully'
-              : 'not configured, drills verify checksums only (APP_CONTROL_PLANE_DRILL_IDENTITY_FILE)'}
+              ? t('drCard.identityConfigured')
+              : t('drCard.identityMissing')}
           </dd>
         </dl>
 

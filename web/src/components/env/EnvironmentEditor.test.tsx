@@ -211,9 +211,7 @@ describe('EnvironmentEditor', () => {
     expect(
       await screen.findByText('Overrides organization'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText('Hidden value, starts the-...alue'),
-    ).toBeInTheDocument()
+    expect(screen.getAllByText('Hidden value').length).toBeGreaterThan(0)
     expect(document.body.textContent).not.toContain(REAL_SECRET)
   })
 

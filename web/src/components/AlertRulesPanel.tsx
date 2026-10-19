@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { EmptyState } from '@/components/ui/empty-state'
@@ -21,7 +22,6 @@ import { AppSloCard } from './AppSloCard'
 import { SloSuggestion } from './SloSuggestion'
 import {
   STATE_BADGE_VARIANT,
-  STATE_LABEL,
   formatCondition,
   formatDate,
   formatLastValue,
@@ -39,12 +39,15 @@ import type { AppVolume } from '../types/appDetail'
 // were attached to the outbound notification event.
 
 function NotifyChannelCell({ rule }: { rule: AlertRule }) {
+  const { t } = useTranslation('alertSetup')
   if (!rule.notify_url) {
-    return <span className="text-muted-foreground">Not configured</span>
+    return (
+      <span className="text-muted-foreground">{t('rules.notConfigured')}</span>
+    )
   }
   return (
     <div className="flex flex-col gap-0.5">
-      <Badge variant="outline">{rule.notify_kind ?? 'generic'}</Badge>
+      <Badge variant="outline">{rule.notify_kind ?? t('rules.generic')}</Badge>
       <span
         className="max-w-[16rem] truncate font-mono text-xs text-muted-foreground"
         title={rule.notify_url}
@@ -55,18 +58,33 @@ function NotifyChannelCell({ rule }: { rule: AlertRule }) {
   )
 }
 
-function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
+const STATE_KEYS = {
+  firing: 'rules.stateFiring',
+  pending: 'rules.statePending',
+  ok: 'rules.stateOk',
+} as const satisfies Record<RuleState, string>
+
+const COUNT_KEYS = {
+  firing: 'rules.countFiring',
+  pending: 'rules.countPending',
+  ok: 'rules.countOk',
+} as const satisfies Record<RuleState, string>
+
+function buildColumns(
+  appName: string,
+  t: TFunction<'alertSetup'>,
+): ResponsiveColumn<AlertRule>[] {
   return [
     {
       id: 'name',
-      header: 'Name',
+      header: t('rules.colName'),
       primary: true,
       cell: (rule) => (
         <span className="font-medium text-foreground">
           {rule.name}
           {!rule.enabled ? (
             <Badge variant="muted" className="ml-2">
-              Disabled
+              {t('rules.disabled')}
             </Badge>
           ) : null}
         </span>
@@ -74,18 +92,18 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
     },
     {
       id: 'state',
-      header: 'State',
+      header: t('rules.colState'),
       cell: (rule) => {
         const state: RuleState = ruleState(rule)
         return (
           <div className="flex flex-col items-start gap-1">
             <Badge variant={STATE_BADGE_VARIANT[state]}>
               <StateDot state={state} />
-              {STATE_LABEL[state]}
+              {t(STATE_KEYS[state])}
             </Badge>
             {rule.silenced ? (
-              <Badge variant="muted" title="Notifications are silenced">
-                Silenced
+              <Badge variant="muted" title={t('rules.silencedTip')}>
+                {t('rules.silenced')}
               </Badge>
             ) : null}
             {rule.kind === 'crashloop' && state === 'firing' ? (
@@ -94,7 +112,7 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
                 params={{ name: appName }}
                 className="text-xs text-primary underline underline-offset-2"
               >
-                View logs
+                {t('rules.viewLogs')}
               </Link>
             ) : null}
           </div>
@@ -103,7 +121,7 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
     },
     {
       id: 'kind',
-      header: 'Kind',
+      header: t('rules.colKind'),
       priority: 2,
       cell: (rule) => (
         <Badge variant={rule.kind === 'crashloop' ? 'destructive' : 'outline'}>
@@ -113,7 +131,7 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
     },
     {
       id: 'condition',
-      header: 'Condition',
+      header: t('rules.colCondition'),
       priority: 2,
       cell: (rule) => (
         <span className="block font-mono text-xs break-words text-muted-foreground">
@@ -127,17 +145,17 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
     },
     {
       id: 'lastEvaluated',
-      header: 'Last evaluated',
+      header: t('rules.colLastEvaluated'),
       priority: 3,
       cell: (rule) => (
         <span className="text-muted-foreground">
-          {formatDate(rule.last_evaluated_at, 'Never')}
+          {formatDate(rule.last_evaluated_at, t('rules.never'))}
         </span>
       ),
     },
     {
       id: 'lastValue',
-      header: 'Last value',
+      header: t('rules.colLastValue'),
       priority: 3,
       cell: (rule) => (
         <span className="text-muted-foreground">{formatLastValue(rule)}</span>
@@ -145,7 +163,7 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
     },
     {
       id: 'notify',
-      header: 'Notify',
+      header: t('rules.colNotify'),
       priority: 3,
       cell: (rule) => <NotifyChannelCell rule={rule} />,
     },
@@ -157,6 +175,7 @@ function buildColumns(appName: string): ResponsiveColumn<AlertRule>[] {
 // summary-before-detail shape alerting UIs (Grafana's alert list,
 // PagerDuty) use.
 function StateSummary({ rules }: { rules: AlertRule[] }) {
+  const { t } = useTranslation('alertSetup')
   const counts = useMemo(() => {
     const result: Record<RuleState, number> = { firing: 0, pending: 0, ok: 0 }
     for (const rule of rules) {
@@ -167,11 +186,11 @@ function StateSummary({ rules }: { rules: AlertRule[] }) {
 
   return (
     <div className="flex items-center gap-3 text-xs text-muted-foreground">
-      {(Object.keys(STATE_LABEL) as RuleState[]).map((state) =>
+      {(Object.keys(STATE_KEYS) as RuleState[]).map((state) =>
         counts[state] > 0 ? (
           <span key={state} className="flex items-center gap-1.5">
             <StateDot state={state} />
-            {counts[state]} {STATE_LABEL[state].toLowerCase()}
+            {t(COUNT_KEYS[state], { count: counts[state] })}
           </span>
         ) : null,
       )}
@@ -187,9 +206,10 @@ export function AlertRulesPanel({
   volumes?: AppVolume[]
 }) {
   const { t } = useTranslation('common')
+  const { t: ta } = useTranslation('alertSetup')
   const { data, isLoading, error } = useAlertRules(appName)
   const rules = data ?? []
-  const columns = useMemo(() => buildColumns(appName), [appName])
+  const columns = useMemo(() => buildColumns(appName, ta), [appName, ta])
   const anyFiring = rules.some((r) => ruleState(r) === 'firing')
 
   return (
@@ -201,13 +221,10 @@ export function AlertRulesPanel({
               className="size-4 text-muted-foreground"
               aria-hidden="true"
             />
-            Alert rules
+            {ta('rules.title')}
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Threshold, crashloop, certificate expiry, scheduled task failure,
-            domain health, and missing backup rules over this app&apos;s
-            metrics, restarts, jobs, domains, and backup schedules. Notifies via
-            webhook, Slack, or Discord on a firing/resolved transition.
+            {ta('rules.description')}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -228,8 +245,8 @@ export function AlertRulesPanel({
         ) : rules.length === 0 ? (
           <EmptyState
             icon={<BellRingingIcon className="size-5" />}
-            title="No alert rules yet"
-            description="Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
+            title={ta('rules.emptyTitle')}
+            description={ta('rules.emptyDescription')}
             action={
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <AlertTemplatePicker appName={appName} />

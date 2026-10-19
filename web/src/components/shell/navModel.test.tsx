@@ -36,6 +36,7 @@ const EXPECTED_GLOBAL = [
   '/firewall',
   '/loadbalancers',
   '/images',
+  '/builds',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',

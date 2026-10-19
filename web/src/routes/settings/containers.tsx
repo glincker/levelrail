@@ -122,13 +122,13 @@ function ContainersPage() {
         error instanceof ApiError && error.status === 501 ? (
           <Alert>
             <WarningCircleIcon />
-            <AlertTitle>Not available</AlertTitle>
+            <AlertTitle>{t('containersPage.notAvailable')}</AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         ) : (
           <Alert variant="destructive">
             <WarningCircleIcon />
-            <AlertTitle>Couldn&apos;t list containers</AlertTitle>
+            <AlertTitle>{t('containersPage.listFailed')}</AlertTitle>
             <AlertDescription>{error.message}</AlertDescription>
           </Alert>
         )
@@ -139,8 +139,8 @@ function ContainersPage() {
           <EmptyState
             className="gap-2 border-0 bg-transparent py-4"
             icon={<CubeIcon className="size-5" />}
-            title="No containers"
-            description="Nothing is running on this node's Docker daemon right now."
+            title={t('containersPage.emptyTitle')}
+            description={t('containersPage.emptyDescription')}
           />
         ) : (
           <ResponsiveTable

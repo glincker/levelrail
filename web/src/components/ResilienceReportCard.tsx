@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/card'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ListSkeleton } from '@/components/ui/list-skeleton'
+import { useBrand } from '../hooks/useBrand'
+import { cliCommand } from '../lib/cliCommand'
 import { useResilienceReport } from '../queries/resilience'
 import type { ChaosResult } from '../queries/resilience'
 
@@ -65,6 +67,7 @@ function ResultRow({ result }: { result: ChaosResult }) {
 /** ResilienceReportCard shows the last recorded chaos result per scenario, read only. */
 export function ResilienceReportCard() {
   const { t } = useTranslation('resilience')
+  const brand = useBrand()
   const { data, isLoading, isError, isFetching, refetch } =
     useResilienceReport()
 
@@ -126,7 +129,9 @@ export function ResilienceReportCard() {
         <details className="text-xs text-muted-foreground">
           <summary className="cursor-pointer">{t('cli.summary')}</summary>
           <p className="mt-2">
-            <code>levelrail-cli bench chaos run all --record</code>
+            <code>
+              {cliCommand(brand.BinaryName, 'bench chaos run all --record')}
+            </code>
           </p>
           <p>{t('cli.note')}</p>
         </details>

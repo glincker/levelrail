@@ -186,5 +186,36 @@
       "caps": "This model may use up to {{cpus}} CPUs and {{memory}} of memory, with no swap and low priority. If the server runs short, this model is stopped before your apps.",
       "idleExplain": "Idle unload: with on demand residency the engine stops after the idle time and frees its memory and CPU. The downloaded weights stay on disk, so the next request only waits for the model to load again."
     }
+  },
+  "residencyCard": {
+    "title": "Residency",
+    "alwaysLoaded": "Always loaded",
+    "onDemand": "On demand",
+    "stateAsleep": "Idle, engine stopped",
+    "stateWaking": "Waking up",
+    "stateLoaded": "Loaded",
+    "aboutResidency": "About residency",
+    "aboutResidencyBody": "On demand stops the engine after the idle time, freeing its VRAM, and starts it on the first request, which waits while the engine loads (up to APP_MODEL_WAKE_WAIT, then a 503 with Retry-After). Ollama keeps models loaded forever, so the container is stopped to unload it.",
+    "mode": "Mode",
+    "idleMinutes": "Idle minutes",
+    "idlePlaceholder": "{{minutes}} (default)",
+    "save": "Save",
+    "saved": "Residency saved.",
+    "saveFailed": "Could not save residency.",
+    "wakeNow": "Wake now",
+    "wakeFailed": "Could not wake.",
+    "sleepNow": "Sleep now",
+    "sleepFailed": "Could not sleep.",
+    "notUsed": "Not used since it went idle.",
+    "swapGroup": "Swap group",
+    "aboutSwap": "About swap groups",
+    "aboutSwapBody": "Models sharing this name on the same node/GPU cannot both be resident. Waking one stops the group's current resident model first to free VRAM.",
+    "groupName": "Group name",
+    "groupNone": "none",
+    "swapSaved": "Swap group saved.",
+    "swapSaveFailed": "Could not save swap group.",
+    "sharesGpu": "Shares a GPU with:",
+    "lastUsedPrefix": "Last used",
+    "stopsAfter": "Stops after {{minutes}} idle minutes."
   }
 }

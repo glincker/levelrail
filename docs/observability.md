@@ -318,7 +318,6 @@ The Metrics tab of an app.
 <Tab title="CLI">
 ```bash
 levelrail-cli apps requests <name>
-levelrail-cli apps metrics <name> --requests
 ```
 </Tab>
 <Tab title="API">

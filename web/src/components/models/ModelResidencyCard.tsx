@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { MoonIcon, SunIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { InfoTip, RelativeTime, StatusPill } from '@/components/kit'
@@ -23,19 +25,20 @@ import type { ModelResidency, ModelResource } from '../../types/models'
 
 const POSITIVE_INT = /^[1-9][0-9]*$/
 
-function stateLabel(model: ModelResource): string {
-  if (model.residency === 'always') return 'Always loaded'
+function stateLabel(model: ModelResource, t: TFunction<'models'>): string {
+  if (model.residency === 'always') return t('residencyCard.alwaysLoaded')
   switch (model.residency_state) {
     case 'asleep':
-      return 'Idle, engine stopped'
+      return t('residencyCard.stateAsleep')
     case 'waking':
-      return 'Waking up'
+      return t('residencyCard.stateWaking')
     default:
-      return 'Loaded'
+      return t('residencyCard.stateLoaded')
   }
 }
 
 export function ModelResidencyCard({ model }: { model: ModelResource }) {
+  const { t } = useTranslation('models')
   const [mode, setMode] = useState<ModelResidency>(model.residency)
   const [minutes, setMinutes] = useState(
     model.idle_ttl_seconds > 0 ? String(model.idle_ttl_seconds / 60) : '',
@@ -56,24 +59,23 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
   }
 
   return (
-    <section aria-label="Residency" className="space-y-3">
+    <section aria-label={t('residencyCard.title')} className="space-y-3">
       <div className="flex items-center gap-2">
-        <h3 className="text-sm font-semibold">Residency</h3>
+        <h3 className="text-sm font-semibold">{t('residencyCard.title')}</h3>
         <StatusPill
           tone={model.residency_state === 'asleep' ? 'neutral' : 'success'}
-          label={stateLabel(model)}
+          label={stateLabel(model, t)}
           size="sm"
         />
-        <InfoTip label="About residency">
-          On demand stops the engine after the idle time, freeing its VRAM, and
-          starts it on the first request, which waits while the engine loads (up
-          to APP_MODEL_WAKE_WAIT, then a 503 with Retry-After). Ollama keeps
-          models loaded forever, so the container is stopped to unload it.
+        <InfoTip label={t('residencyCard.aboutResidency')}>
+          {t('residencyCard.aboutResidencyBody')}
         </InfoTip>
       </div>
       <div className="flex flex-wrap items-end gap-3">
         <Field>
-          <FieldLabel htmlFor="residency-mode">Mode</FieldLabel>
+          <FieldLabel htmlFor="residency-mode">
+            {t('residencyCard.mode')}
+          </FieldLabel>
           <Select
             value={mode}
             onValueChange={(v) => {
@@ -84,14 +86,20 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="always">Always loaded</SelectItem>
-              <SelectItem value="on_demand">On demand</SelectItem>
+              <SelectItem value="always">
+                {t('residencyCard.alwaysLoaded')}
+              </SelectItem>
+              <SelectItem value="on_demand">
+                {t('residencyCard.onDemand')}
+              </SelectItem>
             </SelectContent>
           </Select>
         </Field>
         {mode === 'on_demand' ? (
           <Field>
-            <FieldLabel htmlFor="residency-idle">Idle minutes</FieldLabel>
+            <FieldLabel htmlFor="residency-idle">
+              {t('residencyCard.idleMinutes')}
+            </FieldLabel>
             <Input
               id="residency-idle"
               className="w-32"
@@ -99,7 +107,9 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               onChange={(e) => {
                 setMinutes(e.target.value)
               }}
-              placeholder={`${String(Math.round(model.effective_idle_ttl_seconds / 60))} (default)`}
+              placeholder={t('residencyCard.idlePlaceholder', {
+                minutes: Math.round(model.effective_idle_ttl_seconds / 60),
+              })}
               inputMode="numeric"
             />
           </Field>
@@ -120,14 +130,17 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               },
               {
                 onSuccess: () => {
-                  toast.add({ title: 'Residency saved.', type: 'success' })
+                  toast.add({
+                    title: t('residencyCard.saved'),
+                    type: 'success',
+                  })
                 },
-                onError: fail('Could not save residency.'),
+                onError: fail(t('residencyCard.saveFailed')),
               },
             )
           }}
         >
-          Save
+          {t('residencyCard.save')}
         </Button>
         {onDemand ? (
           <>
@@ -137,11 +150,13 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               variant="outline"
               disabled={wake.isPending || model.residency_state !== 'asleep'}
               onClick={() => {
-                wake.mutate(model.name, { onError: fail('Could not wake.') })
+                wake.mutate(model.name, {
+                  onError: fail(t('residencyCard.wakeFailed')),
+                })
               }}
             >
               <SunIcon aria-hidden="true" />
-              Wake now
+              {t('residencyCard.wakeNow')}
             </Button>
             <Button
               type="button"
@@ -149,11 +164,13 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               variant="outline"
               disabled={sleep.isPending || model.residency_state === 'asleep'}
               onClick={() => {
-                sleep.mutate(model.name, { onError: fail('Could not sleep.') })
+                sleep.mutate(model.name, {
+                  onError: fail(t('residencyCard.sleepFailed')),
+                })
               }}
             >
               <MoonIcon aria-hidden="true" />
-              Sleep now
+              {t('residencyCard.sleepNow')}
             </Button>
           </>
         ) : null}
@@ -162,26 +179,31 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
         <p className="text-xs text-muted-foreground">
           {model.last_active_at ? (
             <>
-              Last used <RelativeTime at={model.last_active_at} />. Stops after{' '}
-              {Math.round(model.effective_idle_ttl_seconds / 60)} idle minutes.
+              {t('residencyCard.lastUsedPrefix')}{' '}
+              <RelativeTime at={model.last_active_at} />.{' '}
+              {t('residencyCard.stopsAfter', {
+                minutes: Math.round(model.effective_idle_ttl_seconds / 60),
+              })}
             </>
           ) : (
-            'Not used since it went idle.'
+            t('residencyCard.notUsed')
           )}
         </p>
       ) : null}
       <div className="space-y-2 border-t border-border pt-3">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold">Swap group</h3>
-          <InfoTip label="About swap groups">
-            Models sharing this name on the same node/GPU cannot both be
-            resident. Waking one stops the group's current resident model first
-            to free VRAM.
+          <h3 className="text-sm font-semibold">
+            {t('residencyCard.swapGroup')}
+          </h3>
+          <InfoTip label={t('residencyCard.aboutSwap')}>
+            {t('residencyCard.aboutSwapBody')}
           </InfoTip>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <Field>
-            <FieldLabel htmlFor="swap-group-input">Group name</FieldLabel>
+            <FieldLabel htmlFor="swap-group-input">
+              {t('residencyCard.groupName')}
+            </FieldLabel>
             <Input
               id="swap-group-input"
               className="w-44"
@@ -189,7 +211,7 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
               onChange={(e) => {
                 setSwapGroup(e.target.value)
               }}
-              placeholder="none"
+              placeholder={t('residencyCard.groupNone')}
             />
           </Field>
           <Button
@@ -201,19 +223,22 @@ export function ModelResidencyCard({ model }: { model: ModelResource }) {
                 { name: model.name, swapGroup: swapGroup.trim() },
                 {
                   onSuccess: () => {
-                    toast.add({ title: 'Swap group saved.', type: 'success' })
+                    toast.add({
+                      title: t('residencyCard.swapSaved'),
+                      type: 'success',
+                    })
                   },
-                  onError: fail('Could not save swap group.'),
+                  onError: fail(t('residencyCard.swapSaveFailed')),
                 },
               )
             }}
           >
-            Save
+            {t('residencyCard.save')}
           </Button>
         </div>
         {model.shares_gpu_with && model.shares_gpu_with.length > 0 ? (
           <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-            Shares a GPU with:
+            {t('residencyCard.sharesGpu')}
             {model.shares_gpu_with.map((name) => (
               <Badge
                 key={name}

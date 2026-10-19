@@ -166,7 +166,7 @@ Likely cause: The app has a memory leak, or the growth is faster than the sugges
 
 How to confirm: Check the container restarts: `levelrail-cli apps status <app> | grep restarts`. Check recent metrics: `levelrail-cli apps metrics <app> --metric memory_bytes --since 24h`. If memory climbs steadily even after a restart, there is likely a leak.
 
-Fix: Investigate the app for memory leaks (check logs with `levelrail-cli apps logs <app> --level warn --since 1h`). Increase the limit further as a temporary fix while debugging. Once fixed, the advisor's next run will suggest a smaller limit.
+Fix: Investigate the app for memory leaks (check logs with `levelrail-cli logs signatures <app> --level warn --since 1h`). Increase the limit further as a temporary fix while debugging. Once fixed, the advisor's next run will suggest a smaller limit.
 
 Still stuck: See [Investigating a spike](/observability#investigating-a-spike) for debugging approaches.
 

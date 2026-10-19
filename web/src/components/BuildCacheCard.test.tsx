@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AllI18n } from '../test/allI18n'
 import { BuildCacheCard } from './BuildCacheCard'
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -34,9 +35,11 @@ function renderCard(app: string) {
     defaultOptions: { queries: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={client}>
-      <BuildCacheCard appName={app} />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={client}>
+        <BuildCacheCard appName={app} />
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 
@@ -167,9 +170,11 @@ describe('BuildCacheCard', () => {
       defaultOptions: { queries: { retry: false } },
     })
     render(
-      <QueryClientProvider client={client}>
-        <BuildCacheCard appName="web" />
-      </QueryClientProvider>,
+      <AllI18n>
+        <QueryClientProvider client={client}>
+          <BuildCacheCard appName="web" />
+        </QueryClientProvider>
+      </AllI18n>,
     )
     await screen.findByRole('button', { name: 'Save' })
 

@@ -127,7 +127,7 @@ Still stuck: Check the audit log for deletion events: `levelrail-cli audit-log -
 
 Likely cause: The window or threshold is wrong, or the log stream is delayed.
 
-How to confirm: Test the rule manually: `levelrail-cli apps logs <app> --since 10m --q "<pattern>"` and count the lines. Compare to the rule's `count` or `per_minute` threshold. Check when the rule was last evaluated: `levelrail-cli logs alert-from <app> --id <rule-id> --json | jq .last_fired_at`.
+How to confirm: Test the rule manually: `levelrail-cli apps logs <app> --since 10m --q "<pattern>"` and count the lines. Compare to the rule's `count` or `per_minute` threshold. Check when the rule was last evaluated: `levelrail-cli apps alerts list <app> --json`.
 
 Fix: Adjust the threshold or window: delete and recreate the rule with better parameters. For a pattern rule firing too often, increase the `count` threshold. For a rate rule, increase `per_minute`. To reduce noise from oscillating alerts, increase the cooldown: `--cooldown 30m`.
 
@@ -137,7 +137,7 @@ Still stuck: Check control plane logs for rule evaluation errors: `levelrail log
 
 Likely cause: The error is not being logged at the required level, or it has very high variance (many unique identifiers).
 
-How to confirm: Query the logs directly: `levelrail-cli apps logs <app> --q "<error text>" --level error --since 1h`. If it does not appear, the log line exists but is at a different level (check with lower level like `--level warn`). If it appears but with many different variations (different IDs or timestamps), the signature algorithm groups them separately.
+How to confirm: Query the logs directly: `levelrail-cli logs signatures <app> --q "<error text>" --level error --since 1h`. If it does not appear, the log line exists but is at a different level (check with lower level like `--level warn`). If it appears but with many different variations (different IDs or timestamps), the signature algorithm groups them separately.
 
 Fix: If the error is at the wrong level, adjust the application to log it as an error. If the signature has too much variance, use an alert rule with a regex pattern instead: `levelrail-cli logs alert-from <app> --name "my error" --regex '<pattern>' --count 1`.
 

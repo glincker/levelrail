@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { StackIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -34,10 +35,10 @@ import type {
   StorageDestination,
 } from '../types/storage'
 
-const MODE_LABELS: Record<BuildCacheMode, string> = {
-  max: 'max (cache every layer, fastest rebuilds)',
-  min: 'min (cache final layers only, smaller bucket)',
-}
+const MODE_LABEL_KEYS = {
+  max: 'buildCache.modeMax',
+  min: 'buildCache.modeMin',
+} as const satisfies Record<BuildCacheMode, string>
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -52,6 +53,7 @@ function formatBytes(bytes: number): string {
 }
 
 function CacheUsage({ appName }: { appName: string }) {
+  const { t } = useTranslation('settings')
   const stats = useBuildCacheStats(appName, true)
   const clear = useClearBuildCache()
   const [confirming, setConfirming] = useState(false)
@@ -59,18 +61,24 @@ function CacheUsage({ appName }: { appName: string }) {
   return (
     <div className="space-y-4">
       {stats.isPending ? (
-        <p className="text-sm text-muted-foreground">Checking the bucket...</p>
+        <p className="text-sm text-muted-foreground">
+          {t('buildCache.checking')}
+        </p>
       ) : stats.isError ? (
         <p className="text-sm text-muted-foreground">
-          Could not read the bucket: {stats.error.message}
+          {t('buildCache.readFailed', { message: stats.error.message })}
         </p>
       ) : (
         <p className="text-sm text-foreground">
-          {stats.data.objects}
-          {stats.data.truncated ? '+' : ''} objects,{' '}
-          {formatBytes(stats.data.bytes)}
+          {t('buildCache.objects', {
+            count: stats.data.objects,
+            plus: stats.data.truncated ? '+' : '',
+            size: formatBytes(stats.data.bytes),
+          })}
           {stats.data.last_modified
-            ? `, last export ${new Date(stats.data.last_modified).toLocaleString()}`
+            ? t('buildCache.lastExport', {
+                when: new Date(stats.data.last_modified).toLocaleString(),
+              })
             : ''}
         </p>
       )}
@@ -92,15 +100,15 @@ function CacheUsage({ appName }: { appName: string }) {
                     setConfirming(false)
                     toast.add({
                       title: res.more
-                        ? `Deleted ${res.deleted} objects. More remain, clear again.`
-                        : `Cache cleared (${res.deleted} objects).`,
+                        ? t('buildCache.clearedMore', { deleted: res.deleted })
+                        : t('buildCache.cleared', { deleted: res.deleted }),
                       type: 'success',
                     })
                   },
                 })
               }}
             >
-              Delete cached layers
+              {t('buildCache.deleteLayers')}
             </Button>
             <Button
               type="button"
@@ -109,7 +117,7 @@ function CacheUsage({ appName }: { appName: string }) {
                 setConfirming(false)
               }}
             >
-              Cancel
+              {t('buildCache.cancel')}
             </Button>
           </>
         ) : (
@@ -120,7 +128,7 @@ function CacheUsage({ appName }: { appName: string }) {
               setConfirming(true)
             }}
           >
-            Clear cache
+            {t('buildCache.clear')}
           </Button>
         )}
       </div>
@@ -139,6 +147,7 @@ function CacheForm({
   own: BuildCacheSetting | undefined
   inherited: BuildCacheSetting | undefined
 }) {
+  const { t } = useTranslation('settings')
   const seed = own ?? inherited
   const [target, setTarget] = useState(
     seed?.target_id ?? destinations[0]?.id ?? '',
@@ -159,7 +168,10 @@ function CacheForm({
           { app_name: appName, target_id: target, mode, enabled },
           {
             onSuccess: () => {
-              toast.add({ title: 'Build cache saved.', type: 'success' })
+              toast.add({
+                title: t('buildCache.saved'),
+                type: 'success',
+              })
             },
           },
         )
@@ -167,7 +179,9 @@ function CacheForm({
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Field>
-          <FieldLabel htmlFor={`${idPrefix}-target`}>Destination</FieldLabel>
+          <FieldLabel htmlFor={`${idPrefix}-target`}>
+            {t('buildCache.destination')}
+          </FieldLabel>
           <Select
             value={target}
             onValueChange={(v) => {
@@ -175,7 +189,7 @@ function CacheForm({
             }}
           >
             <SelectTrigger id={`${idPrefix}-target`} className="w-full">
-              <SelectValue placeholder="Choose a destination" />
+              <SelectValue placeholder={t('buildCache.chooseDestination')} />
             </SelectTrigger>
             <SelectContent>
               {destinations.map((d) => (
@@ -187,7 +201,9 @@ function CacheForm({
           </Select>
         </Field>
         <Field>
-          <FieldLabel htmlFor={`${idPrefix}-mode`}>Export mode</FieldLabel>
+          <FieldLabel htmlFor={`${idPrefix}-mode`}>
+            {t('buildCache.exportMode')}
+          </FieldLabel>
           <Select
             value={mode}
             onValueChange={(v) => {
@@ -200,7 +216,7 @@ function CacheForm({
             <SelectContent>
               {(['max', 'min'] as const).map((m) => (
                 <SelectItem key={m} value={m}>
-                  {MODE_LABELS[m]}
+                  {t(MODE_LABEL_KEYS[m])}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -213,18 +229,18 @@ function CacheForm({
           checked={enabled}
           onCheckedChange={setEnabled}
         />
-        <label htmlFor={`${idPrefix}-enabled`}>Use the remote cache</label>
+        <label htmlFor={`${idPrefix}-enabled`}>
+          {t('buildCache.useRemote')}
+        </label>
       </div>
       {appName !== '' ? (
         <FieldDescription>
-          Layers are stored under {own?.key_prefix ?? `build-cache/${appName}/`}
-          . Turn this off to opt this app out of the default.
+          {t('buildCache.storedUnder', {
+            prefix: own?.key_prefix ?? `build-cache/${appName}/`,
+          })}
         </FieldDescription>
       ) : (
-        <FieldDescription>
-          Applies to every app without its own setting. Each app caches under
-          build-cache/&lt;app&gt;/.
-        </FieldDescription>
+        <FieldDescription>{t('buildCache.globalHint')}</FieldDescription>
       )}
       {save.isError ? (
         <p role="alert" className="text-sm text-destructive">
@@ -233,7 +249,7 @@ function CacheForm({
       ) : null}
       <div className="flex gap-2">
         <Button type="submit" disabled={save.isPending || target === ''}>
-          {own ? 'Update' : 'Save'}
+          {own ? t('buildCache.update') : t('buildCache.save')}
         </Button>
         {own ? (
           <Button
@@ -244,14 +260,14 @@ function CacheForm({
               remove.mutate(appName, {
                 onSuccess: () => {
                   toast.add({
-                    title: 'Build cache setting removed.',
+                    title: t('buildCache.removed'),
                     type: 'success',
                   })
                 },
               })
             }}
           >
-            Remove setting
+            {t('buildCache.removeSetting')}
           </Button>
         ) : null}
       </div>
@@ -262,6 +278,7 @@ function CacheForm({
 // BuildKit remote cache controls for one app (appName) or the default for
 // every app (appName ''). Bucket credentials never reach the browser.
 export function BuildCacheCard({ appName }: { appName: string }) {
+  const { t } = useTranslation('settings')
   const destinations = useStorageDestinationsOptional()
   const settings = useBuildCacheSettings()
 
@@ -277,26 +294,25 @@ export function BuildCacheCard({ appName }: { appName: string }) {
       <Alert>
         <AlertTitle>
           {notConfigured
-            ? 'Build cache is not configured on this server'
-            : 'Could not load build cache settings'}
+            ? t('buildCache.notConfiguredTitle')
+            : t('buildCache.loadFailedTitle')}
         </AlertTitle>
         <AlertDescription>
           {notConfigured
-            ? 'Set APP_MASTER_KEY and restart the control plane to connect object storage.'
-            : (error?.message ?? 'Unknown error')}
+            ? t('buildCache.notConfiguredBody')
+            : (error?.message ?? t('buildCache.unknownError'))}
         </AlertDescription>
       </Alert>
     )
   } else if (settings.isPending || destinations.isPending) {
-    body = <p className="text-sm text-muted-foreground">Loading...</p>
+    body = (
+      <p className="text-sm text-muted-foreground">{t('buildCache.loading')}</p>
+    )
   } else if (destinations.data.length === 0) {
     body = (
       <Alert>
-        <AlertTitle>No storage destination yet</AlertTitle>
-        <AlertDescription>
-          Connect a bucket under Settings, Storage destinations, then use it as
-          a build cache here.
-        </AlertDescription>
+        <AlertTitle>{t('buildCache.noDestinationTitle')}</AlertTitle>
+        <AlertDescription>{t('buildCache.noDestinationBody')}</AlertDescription>
       </Alert>
     )
   } else {
@@ -304,19 +320,19 @@ export function BuildCacheCard({ appName }: { appName: string }) {
       <div className="space-y-4">
         {appName !== '' && !own && inherited?.enabled ? (
           <p className="text-sm text-muted-foreground">
-            Using the default build cache for all apps. Save a setting below to
-            override it for this app.
+            {t('buildCache.usingDefault')}
           </p>
         ) : null}
         {own?.last_warning ? (
           <Alert>
-            <AlertTitle>Last build ran without the cache</AlertTitle>
+            <AlertTitle>{t('buildCache.ranWithout')}</AlertTitle>
             <AlertDescription>{own.last_warning}</AlertDescription>
           </Alert>
         ) : own?.last_build_at ? (
           <p className="text-sm text-muted-foreground">
-            Last build with the cache:{' '}
-            {new Date(own.last_build_at).toLocaleString()}
+            {t('buildCache.lastBuild', {
+              when: new Date(own.last_build_at).toLocaleString(),
+            })}
           </p>
         ) : null}
         <CacheForm
@@ -342,14 +358,9 @@ export function BuildCacheCard({ appName }: { appName: string }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <StackIcon className="size-4" aria-hidden="true" />
-          Build cache
-          {appName === '' ? ' for all apps' : ''}
+          {appName === '' ? t('buildCache.titleAll') : t('buildCache.title')}
         </CardTitle>
-        <CardDescription>
-          Keep BuildKit layers in a storage destination so rebuilds skip
-          unchanged steps. A cache problem never fails a build, it is reported
-          as a warning.
-        </CardDescription>
+        <CardDescription>{t('buildCache.description')}</CardDescription>
       </CardHeader>
       <CardContent>{body}</CardContent>
     </Card>

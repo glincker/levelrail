@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowsLeftRightIcon } from '@phosphor-icons/react/dist/ssr'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { useTranslation } from 'react-i18next'
@@ -22,6 +22,12 @@ function ImportPlatformPage() {
       description={ts('importPlatformPage.description')}
     >
       <div className="space-y-6">
+        <Link
+          to="/migrate"
+          className="inline-block text-sm text-primary underline-offset-4 hover:underline"
+        >
+          {ts('importPlatformPage.checklistLink')}
+        </Link>
         <AppImportWizard />
         <PlatformImportCard />
         <div className="space-y-1">

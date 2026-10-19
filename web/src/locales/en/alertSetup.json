@@ -30,5 +30,40 @@
     "cleared": "Quiet hours removed",
     "loadError": "Could not load quiet hours.",
     "saveError": "Could not save quiet hours"
+  },
+  "rules": {
+    "notConfigured": "Not configured",
+    "generic": "generic",
+    "colName": "Name",
+    "disabled": "Disabled",
+    "colState": "State",
+    "stateFiring": "Firing",
+    "statePending": "Pending",
+    "stateOk": "OK",
+    "countFiring": "{{count}} firing",
+    "countPending": "{{count}} pending",
+    "countOk": "{{count}} ok",
+    "silenced": "Silenced",
+    "silencedTip": "Notifications are silenced",
+    "viewLogs": "View logs",
+    "colKind": "Kind",
+    "colCondition": "Condition",
+    "colLastEvaluated": "Last evaluated",
+    "never": "Never",
+    "colLastValue": "Last value",
+    "colNotify": "Notify",
+    "title": "Alert rules",
+    "description": "Threshold, crashloop, certificate expiry, scheduled task failure, domain health, and missing backup rules over this app's metrics, restarts, jobs, domains, and backup schedules. Notifies via webhook, Slack, or Discord on a firing/resolved transition.",
+    "emptyTitle": "No alert rules yet",
+    "emptyDescription": "Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
+  },
+  "slo": {
+    "title": "Track a {{target}}% availability SLO",
+    "detail": "This app is serving traffic and has no SLO alert. A {{target}}% target pages you when the 30 day error budget burns fast and opens a ticket-level alert when it burns slowly.",
+    "noChannel": "No notification channel is connected yet, so the rule will only show in alert history until you attach one.",
+    "create": "Create SLO rule",
+    "ruleName": "{{target}}% availability SLO",
+    "created": "SLO alert rule created.",
+    "createFailed": "Could not create the SLO rule."
   }
 }
