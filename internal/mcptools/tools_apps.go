@@ -23,16 +23,38 @@ const (
 	maxLogTail     = 200
 )
 
+const (
+	defaultAppsPage = 50
+	maxAppsPage     = 200
+)
+
+type listAppsInput struct {
+	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
+	Offset      int    `json:"offset,omitempty"`
+	Environment string `json:"environment,omitempty" jsonschema:"only apps in this environment"`
+}
+
+type listAppsOutput struct {
+	Apps       []apiclient.AppResource `json:"apps"`
+	Total      int                     `json:"total"`
+	NextOffset int                     `json:"next_offset,omitempty"`
+}
+
 func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_apps",
-		Description: "List every app: name, image, port, domains and resource limits.",
-	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.AppResource, error) {
-		apps, err := client.ListApps(ctx)
-		if err != nil {
-			return nil, nil, fmt.Errorf("list apps: %w", err)
+		Description: "List apps (name, image, port, domains, limits), 50 per page. Pass next_offset as offset for more.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listAppsInput) (*mcp.CallToolResult, listAppsOutput, error) {
+		limit := in.Limit
+		if limit <= 0 {
+			limit = defaultAppsPage
 		}
-		return nil, apps, nil
+		limit = min(limit, maxAppsPage)
+		page, err := client.ListAppsPage(ctx, apiclient.ListAppsOptions{Limit: limit, Offset: max(in.Offset, 0), Environment: in.Environment})
+		if err != nil {
+			return nil, listAppsOutput{}, fmt.Errorf("list apps: %w", err)
+		}
+		return nil, listAppsOutput{Apps: page.Items, Total: page.TotalCount, NextOffset: page.NextOffset}, nil
 	})
 
 	addTool(server, &mcp.Tool{
@@ -96,7 +118,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_app",
-		Description: "Duplicate an existing app's desired state (image, port, env, secret names, resources, health checks, strategy, replicas, project) under a new name, creating a new app. Domains are left empty unless domain_suffix derives new ones, and secret values are copied only with copy_secrets (needs read:sensitive); volume data is never copied. The clone always starts on the local node regardless of where the source is pinned. Fails with a conflict if the new name already exists. This is a mutating, app-creating action, the same category deploy_app/restart_app already expose here.",
+		Description: "Duplicate an app under a new name: image, port, env, resources, health checks, strategy and replicas. Domains stay empty unless domain_suffix derives them; secret values copy only with copy_secrets (needs read:sensitive); volume data never copies. Fails on a name conflict.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneAppInput) (*mcp.CallToolResult, apiclient.AppResource, error) {
 		app, err := client.CloneAppWith(ctx, in.Name, apiclient.CloneAppRequest{NewName: in.NewName, CopySecrets: in.CopySecrets, DomainSuffix: in.DomainSuffix, EnvironmentID: in.EnvironmentID, Domains: cloneDomainMode(in.DomainSuffix)})
 		if err != nil {

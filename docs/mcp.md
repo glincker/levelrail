@@ -11,13 +11,18 @@ description: "The levelrail-mcp tool listing, token budget, read-only diagnostic
 | Flag | Env | Default | Effect |
 | --- | --- | --- | --- |
 | `--mode` | `APP_MCP_MODE` | `standard` | `read-only`, `standard` (no destructive tools) or `full`. |
-| `--toolsets` | `APP_MCP_TOOLSETS` | all | Comma separated tool groups to expose. |
+| `--all` | `APP_MCP_ALL=1` | off | List every tool at once, for clients without `tools/list_changed` support. Without it (and without `--toolsets` or `--tool-profile`) the session is progressive, see below. |
+| `--toolsets` | `APP_MCP_TOOLSETS` | progressive | Comma separated tool groups to expose, statically. |
 | `--tool-profile` | `APP_MCP_TOOL_PROFILE` | none | `agent-core`, a small allowlist. |
 | `--allow-write` | `APP_MCP_ALLOW_WRITE=1` | off | Exposes the confirm-gated write tools below. Ignored in `read-only` mode. |
 | `--readonly` | `APP_MCP_READONLY=1` | off | Asks the API which abilities the token holds and refuses to start if it has `write`, `write:sensitive`, `deploy` or `root`; also forces `read-only` mode. Recommended default for AI clients. |
 | `--output-schemas` | `APP_MCP_OUTPUT_SCHEMAS=1` | off | Advertise every tool's `outputSchema` in `tools/list`. |
 | `--print-config` | none | off | Print a client config block for `claude`, `cursor`, `vscode` or `zed`, then exit. See below. |
 | `--team`, `--project` | `APP_TEAM`, `APP_PROJECT` | saved context | Narrow every request with the `X-Scope-Team` and `X-Scope-Project` headers. They only narrow what the token already sees. |
+
+## Progressive disclosure
+
+By default a session lists about 2,400 estimated tokens: a small core (list and get apps, deploy, rollback, logs, status, env, domains, search, whoami) plus three meta tools. `list_toolsets` returns each toolset with a one line description, tool count and token cost. `enable_toolset` adds a toolset's tools for the rest of the session and sends `tools/list_changed`; `disable_toolset` removes them. The mode still bounds what can ever be listed, a call to a tool in a disabled toolset is refused with a pointer to `enable_toolset`, and the API token's abilities decide every call as before. `--all`, `--toolsets` and `--tool-profile` keep the static listing. `list_apps` returns 50 apps per page, with `next_offset` for the next page.
 
 ## Token budget
 
@@ -31,7 +36,7 @@ Estimated tokens (4 characters per token), with the write tools counted:
 | `standard` | 176 | about 29,200 | about 71,900 |
 | `full` | 186 | about 31,300 | about 77,400 |
 
-Before this change `standard` was about 67,700 tokens against a 68,000 ceiling. The budget tests (`internal/mcptools/budget_test.go`) enforce both listings, print headroom on every run, and on failure name the heaviest tools and toolsets. Override a ceiling deliberately with `APP_MCP_TOKEN_BUDGET_<MODE>` or `APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>` (mode upper case, dashes as underscores).
+The numbers below are the static (`--all`) listing and a documented ceiling; the budget tests (`internal/mcptools/budget_test.go`) enforce both listings, print headroom on every run, and on failure name the heaviest tools and toolsets. Override a ceiling deliberately with `APP_MCP_TOKEN_BUDGET_<MODE>` or `APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>` (mode upper case, dashes as underscores). Budgets are ratchets: lower them when a change shrinks the listing, never raise them. The default session, one toolset and every description (400 characters) have their own limits in the same tests.
 
 New tools return compact rows with a row cap and a `truncated` flag rather than the raw API resource.
 

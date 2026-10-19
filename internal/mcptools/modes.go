@@ -7,6 +7,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 )
 
@@ -110,6 +111,11 @@ type Options struct {
 	Profile string
 	// AllowWrite exposes the confirm-gated write tools. Off by default.
 	AllowWrite bool
+	// Dynamic starts the session with only the core tools plus the
+	// list_toolsets, enable_toolset and disable_toolset meta tools.
+	// Profile and Toolsets are ignored: enabling a toolset adds its tools
+	// and sends tools/list_changed.
+	Dynamic bool
 	// OmitOutputSchemas drops outputSchema from tools/list. Results still
 	// carry structured content; only the schema advertisement is left out.
 	OmitOutputSchemas bool
@@ -117,6 +123,7 @@ type Options struct {
 
 // Summary reports what a server exposes.
 type Summary struct {
+	Dynamic  bool
 	Mode     Mode
 	Toolsets []string
 	Profile  string
@@ -156,6 +163,9 @@ func (o Options) allows(name string, m Meta) bool {
 	if m.WriteGated() && !o.AllowWrite {
 		return false
 	}
+	if o.Dynamic {
+		return o.allowsMode(m)
+	}
 	if o.Profile == ProfileAgentCore {
 		if _, ok := agentCoreTools[name]; !ok {
 			return false
@@ -165,18 +175,18 @@ func (o Options) allows(name string, m Meta) bool {
 		}
 		return o.allowsToolset(m)
 	}
+	return o.allowsMode(m) && o.allowsToolset(m)
+}
+
+func (o Options) allowsMode(m Meta) bool {
 	switch o.Mode {
 	case ModeReadOnly:
-		if m.Class != ClassRead {
-			return false
-		}
+		return m.Class == ClassRead
 	case ModeFull:
+		return true
 	default:
-		if m.Class == ClassDestructive {
-			return false
-		}
+		return m.Class != ClassDestructive
 	}
-	return o.allowsToolset(m)
 }
 
 func (o Options) allowsToolset(m Meta) bool {
@@ -191,8 +201,8 @@ func (o Options) allowsToolset(m Meta) bool {
 	return false
 }
 
-func applyOptions(server *mcp.Server, opts Options) Summary {
-	sum := Summary{Mode: opts.Mode, Toolsets: opts.Toolsets, Profile: opts.Profile}
+func applyOptions(server *mcp.Server, client *apiclient.Client, opts Options) Summary {
+	sum := Summary{Dynamic: opts.Dynamic, Mode: opts.Mode, Toolsets: opts.Toolsets, Profile: opts.Profile}
 	var hidden []string
 	for name, m := range toolTable {
 		if !opts.allows(name, m) {
@@ -211,6 +221,27 @@ func applyOptions(server *mcp.Server, opts Options) Summary {
 	}
 	sort.Strings(hidden)
 	server.RemoveTools(hidden...)
+	if opts.Dynamic {
+		sum.Total = 0
+		sum.Read, sum.Mutate, sum.Destruct = 0, 0, 0
+		for name, m := range toolTable {
+			if _, core := dynamicCoreTools[name]; !core || !opts.allows(name, m) {
+				continue
+			}
+			sum.Total++
+			switch m.Class {
+			case ClassRead:
+				sum.Read++
+			case ClassMutate:
+				sum.Mutate++
+			case ClassDestructive:
+				sum.Destruct++
+			}
+		}
+		sum.Total += len(isToolsetMetaToolNames())
+		sum.Read += len(isToolsetMetaToolNames())
+		installDynamicToolsets(server, client, opts)
+	}
 	if opts.Profile == ProfileAgentCore || opts.OmitOutputSchemas {
 		server.AddReceivingMiddleware(omitOutputSchemas)
 	}

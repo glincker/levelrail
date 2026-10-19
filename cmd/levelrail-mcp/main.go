@@ -47,6 +47,7 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 	if err != nil {
 		return err
 	}
+	opts.Dynamic = !f.all && !envTrue(lookupEnv, mcptools.EnvAllTools) && len(opts.Toolsets) == 0 && opts.Profile == ""
 	opts.AllowWrite = f.allowWrite || envTrue(lookupEnv, mcptools.EnvAllowWrite)
 	opts.OmitOutputSchemas = !f.outputSchemas && !envTrue(lookupEnv, mcptools.EnvOutputSchemas)
 
@@ -76,6 +77,7 @@ func run(prog string, args []string, lookupEnv func(string) (string, bool), logg
 		slog.Int("read", summary.Read),
 		slog.Int("mutating", summary.Mutate),
 		slog.Int("destructive", summary.Destruct),
+		slog.Bool("progressive", summary.Dynamic),
 		slog.Bool("allow_write", opts.AllowWrite),
 		slog.Bool("output_schemas", !opts.OmitOutputSchemas),
 	}
@@ -148,7 +150,7 @@ const defaultListenAddr = "127.0.0.1:8090"
 type cliFlags struct {
 	token, apiURL, profile, transport, listen, mode, toolsets, toolProfile string
 	team, project, printConfig                                             string
-	allowWrite, outputSchemas, readonly                                    bool
+	allowWrite, outputSchemas, readonly, all                               bool
 }
 
 func parseAllFlags(prog string, args []string) (f cliFlags, err error) {
@@ -164,6 +166,7 @@ func parseAllFlags(prog string, args []string) (f cliFlags, err error) {
 	fs.StringVar(&f.team, "team", "", "narrow every request to one team (overrides "+apiclient.EnvTeam+")")
 	fs.StringVar(&f.project, "project", "", "narrow every request to one project (overrides "+apiclient.EnvProject+")")
 	fs.StringVar(&f.printConfig, "print-config", "", "print a ready MCP client config block for one of: "+strings.Join(configClients, ", ")+", then exit (read-only unless --allow-write or --mode is set)")
+	fs.BoolVar(&f.all, "all", false, "list every tool at once instead of the small core plus enable_toolset, for clients without tools/list_changed support (or set "+mcptools.EnvAllTools+"=1)")
 	fs.BoolVar(&f.allowWrite, "allow-write", false, "expose confirm-gated write tools such as extend_preview and run_restore_drill (or set "+mcptools.EnvAllowWrite+"=1); never exposed in read-only mode")
 	fs.BoolVar(&f.readonly, "readonly", false, "refuse to start unless the API token holds no write, write:sensitive, deploy or root ability, and expose read tools only (or set "+envReadonly+"=1)")
 	fs.BoolVar(&f.outputSchemas, "output-schemas", false, "advertise every tool's outputSchema in tools/list, about 2.4x the listing size (or set "+mcptools.EnvOutputSchemas+"=1)")

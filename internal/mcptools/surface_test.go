@@ -76,6 +76,22 @@ func renderSurface(t *testing.T) string {
 		names = append(names, tool.Name)
 	}
 	sort.Strings(names)
+	s, _ := dynamicSession(t, Options{Mode: ModeFull})
+	def := sessionTools(t, s)
+	defTokens := 0
+	defNames := make([]string, 0, len(def))
+	for _, tool := range def {
+		defTokens += toolTokens(t, tool)
+		defNames = append(defNames, tool.Name)
+	}
+	sort.Strings(defNames)
+	fmt.Fprintf(&b, "## Default session (progressive disclosure)\n\n`levelrail-mcp` lists only a small core plus `list_toolsets`, `enable_toolset` and `disable_toolset`. Enabling a toolset adds its tools for the rest of the session and sends `tools/list_changed`; the table above is what each toolset costs. `--all` (or `%s=1`), `--toolsets` and `--tool-profile` keep the static listing for clients without `list_changed` support. The mode and the token's abilities bound every call either way.\n\n", EnvAllTools)
+	fmt.Fprintf(&b, "%d tools, %d estimated tokens (ratchet %d, ceiling per toolset %d).\n\n", len(def), defTokens, dynamicListingBudget, toolsetTokenCeiling)
+	for _, n := range defNames {
+		fmt.Fprintf(&b, "- `%s`\n", n)
+	}
+	b.WriteString("\n")
+
 	fmt.Fprintf(&b, "## agent-core profile\n\nSelect with `--tool-profile agent-core` or `%s=agent-core`. It is an allowlist independent of the read-only, standard and full modes; the API token's abilities still apply.\n\n", EnvToolProfile)
 	fmt.Fprintf(&b, "%d tools, %d estimated tokens (cap %d).\n\n", len(core), coreTokens, agentCoreTokenCap)
 	for _, n := range names {

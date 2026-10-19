@@ -22,7 +22,7 @@ func registerPromoteTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "promote_app",
-		Description: "Point a sibling app's image at name's current image and redeploy it, through the same mechanism deploy_app uses. The sibling app is found in the same project as name: target names it explicitly, or it's auto-discovered when exactly one app tagged with the destination environment belongs to that project. Asynchronous: use get_app_status on the target app to watch it converge. Promoting into a production or protected environment requires confirm true just to be accepted at all, and even then the result's pending_approval is set instead of the promotion actually applying: a different, sufficiently privileged human must approve it (approve_deploy_approval) first.",
+		Description: "Point a sibling app (target, or the one app in the destination environment) at this app's image and redeploy, like deploy_app. Asynchronous: watch with get_app_status. A production or protected destination needs confirm true and returns pending_approval until a different privileged human runs approve_deploy_approval.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in promoteAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.PromoteApp(ctx, in.Name, apiclient.PromoteAppRequest{To: in.To, Target: in.Target, Confirm: in.Confirm, IncludeEnv: in.IncludeEnv, Force: in.Force})
 		if err != nil {
