@@ -457,6 +457,23 @@
       "token_issued": "re-enroll token issued",
       "revoked_by_operator": "revoked by an operator"
     },
+    "drill": {
+      "button": "Rotation drill",
+      "title": "Rotation drill for \"{{name}}\"",
+      "description": "Rotates this node's certificate end to end and checks each step. The old certificate stays valid, so a failed drill changes nothing.",
+      "run": "Run drill",
+      "again": "Run again",
+      "running": "Running...",
+      "close": "Close",
+      "passed": "Drill passed: certificate generation {{from}} to {{to}}.",
+      "failed": "Drill failed. The node still uses its previous certificate.",
+      "steps": {
+        "preflight": "Preflight",
+        "request": "Renewal request",
+        "new_certificate": "New certificate",
+        "still_online": "Node still online"
+      }
+    },
     "renewNow": "Renew now",
     "renewOffline": "The node must be connected to renew on demand",
     "renewTitle": "Renew \"{{name}}\"'s certificate now?",

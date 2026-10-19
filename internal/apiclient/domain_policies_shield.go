@@ -3,6 +3,7 @@ package apiclient
 import (
 	"context"
 	"net/http"
+	"net/url"
 
 	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 )
@@ -66,6 +67,32 @@ func (c *Client) ClearDomainShield(ctx context.Context, name, domain string) (Sh
 func (c *Client) StartUnderAttack(ctx context.Context, name, domain string, minutes int) (ShieldPolicyResource, error) {
 	var out ShieldPolicyResource
 	err := c.do(ctx, http.MethodPost, domainPolicyPath(name, domain, trafficpolicy.KindShield+"/under-attack"), UnderAttackRequest{Minutes: minutes}, &out)
+	return out, err
+}
+
+// ShieldRecommendedSkip is a domain the recommended shield left alone.
+type ShieldRecommendedSkip struct {
+	Domain string `json:"domain"`
+	Reason string `json:"reason"`
+}
+
+// ShieldRecommendedResource is the result of applying the recommended shield to an app.
+type ShieldRecommendedResource struct {
+	DryRun        bool                    `json:"dry_run"`
+	Blocked       string                  `json:"blocked,omitempty"`
+	RatePerMinute int                     `json:"rate_per_minute"`
+	Burst         int                     `json:"burst"`
+	MaxConcurrent int                     `json:"max_concurrent"`
+	BlockBots     bool                    `json:"block_bots"`
+	Applied       []string                `json:"applied"`
+	Skipped       []ShieldRecommendedSkip `json:"skipped"`
+}
+
+// ApplyRecommendedShield calls POST /api/v1/apps/{name}/shield/recommended.
+func (c *Client) ApplyRecommendedShield(ctx context.Context, app string, dryRun, blockBots bool) (ShieldRecommendedResource, error) {
+	var out ShieldRecommendedResource
+	body := map[string]bool{"dry_run": dryRun, "block_bots": blockBots}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+url.PathEscape(app)+"/shield/recommended", body, &out)
 	return out, err
 }
 

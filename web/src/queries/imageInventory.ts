@@ -140,6 +140,37 @@ export function useImageGC(node: string) {
   })
 }
 
+export interface ImageSignaturePolicyResult {
+  mode: 'off' | 'enforce'
+  requested_mode: 'off' | 'enforce'
+  key_configured: boolean
+  key_fingerprint?: string
+  ok: boolean
+  issues: {
+    code:
+      | 'key_unreadable'
+      | 'enforce_without_key'
+      | 'key_without_enforcement'
+      | 'sample_failed'
+    message: string
+  }[]
+  sample?: ImageVerifyResult
+}
+
+export function useValidateSignaturePolicy() {
+  return useMutation({
+    mutationFn: async (ref: string): Promise<ImageSignaturePolicyResult> =>
+      json<ImageSignaturePolicyResult>(
+        await fetch('/api/v1/images/signature-policy/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(ref ? { ref } : {}),
+        }),
+        'validate signature policy',
+      ),
+  })
+}
+
 export function useVerifyImage(node: string) {
   return useMutation({
     mutationFn: async (id: string): Promise<ImageVerifyResult> =>

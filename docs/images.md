@@ -68,6 +68,8 @@ Images signed with a cosign key pair (ECDSA P-256) can be verified against your 
 
 Set `APP_IMAGE_VERIFY_MODE=enforce` to also require a valid signature on every promotion. An image that is unsigned, signed by another key or not pinned to a registry digest is refused. Images built on the server have no registry digest and cannot be promoted while enforcement is on.
 
+The **Validate** button in the Images page signature card (and `levelrail-cli images policy [--ref repo@sha256:...]`) checks the policy itself. It reports a key file that could not be read, enforcement requested with no usable key (nothing is enforced then), and a key loaded while enforcement is off. With a reference it also verifies that one image against your key.
+
 ## Limits
 
 - Per node inventory works for the control plane's own node today. Remote agents answer once they report images.

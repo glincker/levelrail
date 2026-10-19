@@ -80,6 +80,47 @@ export async function renewNodeCert(id: string): Promise<void> {
   }
 }
 
+export type CertDrillStepId =
+  'preflight' | 'request' | 'new_certificate' | 'still_online'
+
+export interface CertDrillStep {
+  id: CertDrillStepId
+  status: 'pass' | 'fail' | 'skipped'
+  detail: string
+}
+
+export interface CertDrillResult {
+  ok: boolean
+  steps: CertDrillStep[]
+  before: { serial?: string; generation: number }
+  after: { serial?: string; generation: number }
+}
+
+export function useNodeCertDrill() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string): Promise<CertDrillResult> => {
+      const res = await fetch(
+        `/api/v1/nodes/${encodeURIComponent(id)}/cert/drill`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        throw new ApiError(
+          res.status,
+          await readErrorMessage(
+            res,
+            `certificate drill failed: ${res.status}`,
+          ),
+        )
+      }
+      return (await res.json()) as CertDrillResult
+    },
+    onSettled: (_data, _err, id) => {
+      void queryClient.invalidateQueries({ queryKey: nodeKeys.detail(id) })
+    },
+  })
+}
+
 export function useRenewNodeCert() {
   const queryClient = useQueryClient()
   return useMutation({

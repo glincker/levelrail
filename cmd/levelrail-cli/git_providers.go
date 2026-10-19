@@ -9,6 +9,12 @@ import (
 
 // Read-only flat GET: one call replaces the four per-provider status commands.
 func runGitProviders(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	if len(args) > 0 && args[0] == "validate" {
+		return runGitProvidersValidate(prog, args[1:], stdout, stderr, lookupEnv)
+	}
+	if len(args) > 0 && args[0] == "list" {
+		args = args[1:]
+	}
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "git-providers", "print providers as a JSON array to stdout and nothing else", stderr)
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, gitProvidersUsage(prog)) }
 
@@ -29,7 +35,8 @@ func runGitProviders(prog string, args []string, stdout, stderr io.Writer, looku
 
 func gitProvidersUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s git-providers [flags]
+  %[1]s git-providers [list] [flags]
+  %[1]s git-providers validate <github|gitlab|gitea|bitbucket> [flags]
 
 Shows connection status and capabilities (list branches, register a
 webhook, authenticated clone) for github, gitlab, bitbucket, and gitea

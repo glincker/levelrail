@@ -701,7 +701,10 @@ Below it, a timeline lists security events, newest first, with a **Rejected only
 ```bash
 levelrail-cli nodes security <id> [--rejected] [--limit N]
 levelrail-cli nodes cert renew <id>
+levelrail-cli nodes cert drill <id>
 ```
+
+The **Rotation drill** button (and `nodes cert drill`) rotates the certificate end to end and reports each step: the node is online with a valid certificate, the agent was asked to renew, a new certificate arrived, the node is still connected. The previous certificate stays accepted through the grace window and is never revoked, so a failed drill leaves the node as it was.
 
 To compare the CA fingerprint by hand, read it from the node page and compare it with `APP_CA_FINGERPRINT` in the agent's environment, or the value its enrollment command printed. They must match exactly.
 

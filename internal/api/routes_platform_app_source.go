@@ -44,6 +44,7 @@ func (rt *Router) registerAppSourceRoutes(mux *http.ServeMux) {
 	// full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as
 	// PUT .../git-source, since it's the identical class of credential
 	// write.
+	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/validate", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleValidateGitSourceAccess))
 	mux.HandleFunc("POST /api/v1/apps/{name}/git-source/rotate-webhook-secret", rt.requireAbilityForResource(AbilityWriteSensitive, appResourceFromPath, rt.handleRotateGitSourceWebhookSecret))
 
 	// Scheduled deploys (app_schedule.go): a per-app cron schedule that

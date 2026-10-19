@@ -17,17 +17,20 @@ const (
 // configured. A key that cannot be read is logged and verification stays off,
 // so a bad path never blocks startup.
 func imageVerifyOption(logger *slog.Logger) api.Option {
-	pub, err := api.ImageVerifyConfigFromEnv(os.Getenv(envImageVerifyKeyFile))
-	if err != nil {
-		logger.Error("images: signature verification disabled", slog.String("error", err.Error()))
-		return func(*api.Router) {}
-	}
-	if pub == nil {
-		return func(*api.Router) {}
-	}
 	mode := os.Getenv(envImageVerifyMode)
 	if mode != api.ImageVerifyEnforce {
 		mode = api.ImageVerifyOff
+	}
+	pub, err := api.ImageVerifyConfigFromEnv(os.Getenv(envImageVerifyKeyFile))
+	if err != nil {
+		logger.Error("images: signature verification disabled", slog.String("error", err.Error()))
+		return api.WithImageVerifyIssue(err.Error(), mode)
+	}
+	if pub == nil {
+		if mode == api.ImageVerifyEnforce {
+			return api.WithImageVerifyIssue("", mode)
+		}
+		return func(*api.Router) {}
 	}
 	return api.WithImageVerify(pub, mode)
 }

@@ -259,6 +259,8 @@ Endpoints for:
 | POST | /api/v1/auth/email-change | Public | handleRequestEmailChange |
 | POST | /api/v1/auth/email-change/confirm | Public | handleConfirmEmailChange |
 | GET | /api/v1/iam/suggestions | AbilityRead | handleIAMSuggestions |
+| GET | /api/v1/security/hsts | AbilityRoot | handleGetHSTS |
+| PUT | /api/v1/security/hsts | AbilityRoot | handlePutHSTS |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |
@@ -544,6 +546,7 @@ Endpoints for:
 | POST | /api/v1/apps/{name}/env/check/fix | AbilityWrite | handleFixEnv |
 | GET | /api/v1/apps/{name}/env/history | AbilityRead | handleListEnvHistory |
 | POST | /api/v1/apps/{name}/log-budget/trim | AbilityWriteSensitive | handleTrimLogBudget |
+| POST | /api/v1/apps/{name}/shield/recommended | AbilityDeploy | handleApplyRecommendedShield |
 
 </Accordion>
 
@@ -591,6 +594,7 @@ Endpoints for:
 | GET | /api/v1/apps/{name}/previews/{number}/env | AbilityRead | handleListPRPreviewEnv |
 | POST | /api/v1/apps/{name}/previews/{number}/env | AbilityWriteSensitive | handleSetPRPreviewEnv |
 | DELETE | /api/v1/apps/{name}/previews/{number}/env/{id} | AbilityWrite | handleDeletePRPreviewEnv |
+| POST | /api/v1/apps/{name}/git-source/validate | AbilityDeploy | handleValidateGitSourceAccess |
 
 ## Telemetry
 
@@ -831,6 +835,7 @@ Endpoints for:
 | DELETE | /api/v1/nodes/join-tokens/{id} | AbilityRoot | handleRevokeNodeJoinToken |
 | GET | /api/v1/nodes/placement-simulation | AbilityRoot | handlePlacementSimulation |
 | GET | /api/v1/nodes/failure-simulation | AbilityRoot | handleFailureSimulation |
+| POST | /api/v1/nodes/{id}/cert/drill | AbilityRoot | handleNodeCertDrill |
 
 ## Ingress / Certificates / Domains / Email / Cloudflare
 
@@ -1040,6 +1045,7 @@ Endpoints for:
 | POST | /api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source | AbilityWriteSensitive | handleUseBitbucketRepoAsSource |
 | GET | /api/v1/github-app/installations | AbilityRoot | handleListGitHubAppInstallations |
 | DELETE | /api/v1/github-app/installations/{id} | AbilityRoot | handleDeleteGitHubAppInstallation |
+| POST | /api/v1/git-providers/{provider}/validate | AbilityRoot | handleValidateGitProvider |
 
 ## Database Backups / Restore / Clone Restore
 
@@ -1669,6 +1675,7 @@ Routes that do not fit an existing group.
 | POST | /api/v1/inbox/read | AbilityWrite | handleInboxMarkRead |
 | GET | /api/v1/inbox/preferences | AbilityRead | handleGetInboxPrefs |
 | PUT | /api/v1/inbox/preferences | AbilityWrite | handlePutInboxPrefs |
+| POST | /api/v1/images/signature-policy/validate | AbilityWrite | handleValidateImageSignaturePolicy |
 
 ## See also
 

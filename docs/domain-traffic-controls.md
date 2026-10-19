@@ -224,6 +224,16 @@ levelrail-cli domains shield under-attack web example.com --minutes 60
 levelrail-cli domains shield stand-down web example.com
 ```
 
+### Defaults and the recommended limits
+
+Nothing is limited until you ask: a domain has no shield by default, and an upgrade never adds one. Under attack mode works without a shield for emergencies only. For a quick start, the app's **Domains** page has an **Abuse protection** card (and `levelrail-cli domains shield recommend <app>`) that turns on a sensible per-visitor rate and concurrency limit, `APP_SHIELD_RECOMMENDED_RATE_PER_MINUTE` (600), `APP_SHIELD_RECOMMENDED_BURST` (100) and `APP_SHIELD_RECOMMENDED_MAX_CONCURRENT` (50). It follows three rules:
+
+- It only touches domains with no shield row. A domain with any shield, even a disabled one, is left as it is.
+- Bad bot blocking is a separate opt-in (`--block-bots`), because the shipped list includes AI crawlers some owners want.
+- It refuses while a proxy (a Cloudflare proxied record or a TLS terminating proxy) hides client addresses and `APP_INGRESS_TRUSTED_PROXIES` is empty, since every visitor would look like one client.
+
+Preview first with `--dry-run`, or the Preview button.
+
 Client addresses live only in a per-domain in-memory table capped by `APP_SHIELD_MAX_TRACKED_IPS` (least recently seen evicted first). They are never logged or stored. Only counts by reason are kept, and the app **Traffic** tab, `GET /api/v1/apps/{name}/traffic` and `levelrail-cli traffic` show them as `shield`.
 
 ## Caching

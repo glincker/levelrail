@@ -169,6 +169,10 @@ If webhook registration fails, GitHub still connects the repository and reports 
 
 For an app that already exists, `levelrail-cli apps git-source get|set|delete <name>` manages the git source directly.
 
+### Validate access
+
+The git source card has a **Validate access** button (CLI: `levelrail-cli apps git-source validate <name>`). It reads the app's branch with the credential a deploy would use (a stored deploy token, else the connected GitHub App) and reports a typed fix: no credential for a private repo, a rejected or expired token, a token that cannot see the repository, a missing branch, or an unreachable host. Each provider settings page has the same button for the connection itself (`levelrail-cli git-providers validate <provider>`). Installation tokens minted from the GitHub App are registered with the secret masker, so they never appear in logs or stored output.
+
 ## Deploy triggers: push or release
 
 Every git source has a `trigger_mode`. It is independent of preview environments and is not part of `app.yaml`.

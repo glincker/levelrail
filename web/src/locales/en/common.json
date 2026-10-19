@@ -562,5 +562,20 @@
     "count_one": "{{count}} page",
     "count_other": "{{count}} pages",
     "noDomain": "no domain"
+  },
+  "gitAccess": {
+    "validate": "Validate access",
+    "validating": "Validating...",
+    "recheck": "Check again",
+    "ok": "Access works.",
+    "fix": "Fix",
+    "checks": {
+      "repo_url": "Repository URL",
+      "credential": "Credential",
+      "access": "Repository access",
+      "connection": "Connection",
+      "installation": "Installation",
+      "credentials": "App credentials"
+    }
   }
 }

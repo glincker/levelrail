@@ -110,6 +110,35 @@ func (c *Client) ListNodeSecurityEvents(ctx context.Context, id, outcome string,
 	return out, err
 }
 
+// NodeCertDrillStep is one step of a certificate rotation drill.
+type NodeCertDrillStep struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+	Detail string `json:"detail"`
+}
+
+// NodeCertDrillCert is the certificate state seen before or after a drill.
+type NodeCertDrillCert struct {
+	Serial     string     `json:"serial,omitempty"`
+	Generation int        `json:"generation"`
+	NotAfter   *time.Time `json:"not_after,omitempty"`
+}
+
+// NodeCertDrill is the result of POST /api/v1/nodes/{id}/cert/drill.
+type NodeCertDrill struct {
+	OK     bool                `json:"ok"`
+	Steps  []NodeCertDrillStep `json:"steps"`
+	Before NodeCertDrillCert   `json:"before"`
+	After  NodeCertDrillCert   `json:"after"`
+}
+
+// DrillNodeCert calls POST /api/v1/nodes/{id}/cert/drill and waits for the rotation to finish.
+func (c *Client) DrillNodeCert(ctx context.Context, id string) (NodeCertDrill, error) {
+	var out NodeCertDrill
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/cert/drill", nil, &out)
+	return out, err
+}
+
 // RenewNodeCert calls POST /api/v1/nodes/{id}/cert/renew.
 func (c *Client) RenewNodeCert(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodPost, nodePath(id)+"/cert/renew", nil, nil)

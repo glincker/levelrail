@@ -42,6 +42,8 @@ var tenantRoutes = map[string]bool{
 	"GET /api/v1/environments":         true,
 	"GET /api/v1/organizations":        true,
 	"GET /api/v1/teams":                true,
+	"GET /api/v1/search":               true,
+	"GET /api/v1/search/suggest":       true,
 	"GET /api/v1/teams/roles":          true,
 	"POST /api/v1/team-invites/accept": true,
 	"GET /api/v1/team-invites/{token}": true,

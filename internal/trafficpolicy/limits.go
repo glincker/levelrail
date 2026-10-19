@@ -33,6 +33,9 @@ const (
 	EnvShieldAttackMax        = "APP_SHIELD_ATTACK_MAX_DURATION"
 	EnvShieldAttackDefault    = "APP_SHIELD_ATTACK_DEFAULT_DURATION"
 	EnvShieldBotListFile      = "APP_SHIELD_BOT_LIST_FILE"
+	EnvShieldRecommendedRate  = "APP_SHIELD_RECOMMENDED_RATE_PER_MINUTE"
+	EnvShieldRecommendedBurst = "APP_SHIELD_RECOMMENDED_BURST"
+	EnvShieldRecommendedConc  = "APP_SHIELD_RECOMMENDED_MAX_CONCURRENT"
 )
 
 // Limits caps the size of every policy section. Built from the environment
@@ -64,6 +67,10 @@ type Limits struct {
 	ShieldAttackMax        time.Duration
 	ShieldAttackDefault    time.Duration
 	ShieldBotListFile      string
+
+	ShieldRecommendedRate       int
+	ShieldRecommendedBurst      int
+	ShieldRecommendedConcurrent int
 }
 
 // DefaultLimits are the caps used when no environment override is set.
@@ -94,6 +101,10 @@ func DefaultLimits() Limits {
 		ShieldAttackConcurrent: 4,
 		ShieldAttackMax:        24 * time.Hour,
 		ShieldAttackDefault:    time.Hour,
+
+		ShieldRecommendedRate:       600,
+		ShieldRecommendedBurst:      100,
+		ShieldRecommendedConcurrent: 50,
 	}
 }
 
@@ -123,6 +134,9 @@ func LimitsFromEnv(getenv func(string) string) Limits {
 	intVar(getenv, EnvShieldAttackRate, &l.ShieldAttackRate)
 	intVar(getenv, EnvShieldAttackBurst, &l.ShieldAttackBurst)
 	intVar(getenv, EnvShieldAttackConcurrent, &l.ShieldAttackConcurrent)
+	intVar(getenv, EnvShieldRecommendedRate, &l.ShieldRecommendedRate)
+	intVar(getenv, EnvShieldRecommendedBurst, &l.ShieldRecommendedBurst)
+	intVar(getenv, EnvShieldRecommendedConc, &l.ShieldRecommendedConcurrent)
 	durVar(getenv, EnvShieldTarpitMax, &l.ShieldTarpitMax)
 	durVar(getenv, EnvShieldAttackMax, &l.ShieldAttackMax)
 	durVar(getenv, EnvShieldAttackDefault, &l.ShieldAttackDefault)

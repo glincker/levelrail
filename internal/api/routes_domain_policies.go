@@ -29,6 +29,7 @@ func (rt *Router) registerDomainPolicyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/shield", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainPolicy(trafficpolicy.KindShield)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/shield/under-attack", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStartUnderAttack))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/shield/under-attack", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStopUnderAttack))
+	mux.HandleFunc("POST /api/v1/apps/{name}/shield/recommended", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyRecommendedShield))
 	mux.HandleFunc("GET /api/v1/system/shield/bots", rt.requireAbility(AbilityRead, rt.handleShieldBotList))
 	// Ingress response cache rules, purge and per-domain stats.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/cache", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainPolicy(trafficpolicy.KindCache)))

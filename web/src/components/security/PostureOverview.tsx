@@ -26,6 +26,7 @@ import {
   useUpdateSecurityPolicy,
 } from '../../queries/securityCenter'
 import { useUpdateCodeLoginSettings } from '../../queries/signIn'
+import { HstsFixButton } from './HstsFixButton'
 import { postureItemKey } from './postureCopy'
 
 const SEVERITY_VARIANT = {
@@ -179,6 +180,9 @@ function FixButton({
         {t(`actions.${action}`)}
       </Button>
     )
+  }
+  if (action === 'enable_hsts') {
+    return <HstsFixButton />
   }
   if (action === 'review_sessions') {
     return (

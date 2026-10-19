@@ -21,6 +21,7 @@ import { DockerHealthCard } from './DockerHealthCard'
 import { DockerfileLintCard } from './DockerfileLintCard'
 import { ImageCleanupDialog } from './ImageCleanupDialog'
 import { ImageDetailSheet } from './ImageDetailSheet'
+import { SignaturePolicyCard } from './SignaturePolicyCard'
 import { imageTitle, shortId, sizeLabel, uniqueApps } from './imageFormat'
 
 const VIRTUALIZE_ABOVE = 50
@@ -240,9 +241,7 @@ export function ImagesPage() {
                 tone="success"
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {t(`signatures.${data.signatures.mode}`)}
-            </p>
+            <SignaturePolicyCard mode={data.signatures.mode} />
             {data.images.length === 0 ? (
               <EmptyState
                 icon={<StackIcon className="size-5" />}

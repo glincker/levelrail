@@ -7,6 +7,7 @@ import { AgentOutdatedBadge, NodeCertBadge } from './NodeCertBadge'
 import { NodeLocalAgentCard } from './nodes/NodeLocalAgentCard'
 import { NodeSecurityTimeline } from './nodes/NodeSecurityTimeline'
 import { NodeTrustDetails } from './nodes/NodeTrustDetails'
+import { CertDrillDialog } from './nodes/CertDrillDialog'
 import { RenewNowDialog } from './nodes/RenewNowDialog'
 import { TrustStatusLine } from './nodes/TrustStatusLine'
 import { ReenrollNodeDialog } from './ReenrollNodeDialog'
@@ -39,6 +40,7 @@ export function NodeAgentCard({
         {isRoot ? (
           <div className="flex flex-wrap items-center gap-2">
             <RenewNowDialog node={node} />
+            <CertDrillDialog node={node} />
             <ReenrollNodeDialog node={node} defaultOpen={openReenroll} />
             <RevokeNodeCertDialog node={node} />
           </div>

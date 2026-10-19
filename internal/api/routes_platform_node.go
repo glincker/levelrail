@@ -98,5 +98,6 @@ func (rt *Router) registerNodeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/nodes/{id}/security", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleGetNodeTrust))
 	mux.HandleFunc("GET /api/v1/nodes/{id}/security/events", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleListNodeSecurityEvents))
 	mux.HandleFunc("POST /api/v1/nodes/{id}/cert/renew", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleRenewNodeCert))
+	mux.HandleFunc("POST /api/v1/nodes/{id}/cert/drill", rt.requireAbilityForResource(AbilityRoot, nodeResourceFromPath, rt.handleNodeCertDrill))
 	rt.registerMultiNodeRoutes(mux)
 }

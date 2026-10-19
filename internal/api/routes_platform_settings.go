@@ -64,6 +64,7 @@ func (rt *Router) registerSettingsRoutes(mux *http.ServeMux) {
 	// as the built-in catalog just above: a read of a public,
 	// unauthenticated upstream, proxied server-side only to avoid a
 	// browser-to-hub.docker.com CORS call.
+	mux.HandleFunc("POST /api/v1/git-providers/{provider}/validate", rt.requireAbility(AbilityRoot, rt.handleValidateGitProvider))
 	mux.HandleFunc("GET /api/v1/dockerhub/search", rt.requireAbility(AbilityRead, rt.handleDockerHubSearch))
 	mux.HandleFunc("GET /api/v1/dockerhub/repositories/{namespace}/{repo}/tags", rt.requireAbility(AbilityRead, rt.handleDockerHubTags))
 

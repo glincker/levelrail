@@ -16,6 +16,7 @@ func imagesUsage(prog string) string {
   %[1]s images layers <image-id> [--node N]
   %[1]s images gc [--node N] [--keep N] [--min-age-hours H] [--apply]
   %[1]s images verify (<image-id> | --ref repo@sha256:...) [--node N]
+  %[1]s images policy [--ref repo@sha256:...]
   %[1]s images lint <Dockerfile> [--fix]
   %[1]s images health
   %[1]s images status <app>
@@ -45,6 +46,8 @@ func runImages(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runImagesGC(prog, args[1:], stdout, stderr, lookupEnv)
 	case "verify":
 		return runImagesVerify(prog, args[1:], stdout, stderr, lookupEnv)
+	case "policy":
+		return runImagesPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lint":
 		return runImagesLint(prog, args[1:], stdout, stderr, lookupEnv)
 	case "health":

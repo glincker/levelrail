@@ -181,6 +181,39 @@ function useInvalidateSecurity() {
   return () => qc.invalidateQueries({ queryKey: ['security'] })
 }
 
+export interface HstsHost {
+  host: string
+  verified: boolean
+  issuer?: string
+  error?: string
+}
+
+export interface HstsStatus {
+  enabled: boolean
+  ready: boolean
+  hosts: HstsHost[]
+  warnings?: string[]
+  error?: string
+}
+
+export function hstsQuery() {
+  return queryOptions({
+    queryKey: ['security', 'hsts'],
+    queryFn: () => send<HstsStatus>('GET', '/api/v1/security/hsts'),
+    staleTime: 0,
+    gcTime: 0,
+  })
+}
+
+export function useSetHsts() {
+  const invalidate = useInvalidateSecurity()
+  return useMutation<HstsStatus, ApiError, boolean>({
+    mutationFn: (enabled) =>
+      send<HstsStatus>('PUT', '/api/v1/security/hsts', { enabled }),
+    onSettled: invalidate,
+  })
+}
+
 export function useUpdateSecurityPolicy() {
   const invalidate = useInvalidateSecurity()
   return useMutation<SecurityPolicy, ApiError, SecurityPolicyUpdate>({

@@ -229,6 +229,8 @@ type Router struct {
 	imageInventory         ImageInventoryResolver                                        // nil: /api/v1/images routes return 501
 	imageVerifyKey         *ecdsa.PublicKey
 	imageVerifyMode        string
+	imageVerifyIssue       string
+	imageVerifyRequested   string
 	imageVerifier          *imagelife.Verifier
 	dockerPruner           DockerPruner             // nil is valid: POST /system/prune returns 501, same shape as builder/secrets above
 	orphanedVolumes        OrphanedVolumeManager    // nil is valid: GET/POST /system/volumes/orphaned* return 501, same shape as dockerPruner above
@@ -334,6 +336,7 @@ type Router struct {
 	// never itself blocks on a database read.
 	hstsDBEnabled atomic.Bool
 	hstsDBLoaded  sync.Once
+	hstsHostProbe hstsHostProbe
 	// allowInsecureLogin disables the plain-HTTP login refusal (APP_ALLOW_INSECURE_LOGIN).
 	allowInsecureLogin bool
 	// lookupHost resolves a hostname's A/AAAA addresses for

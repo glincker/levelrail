@@ -26,7 +26,7 @@ An action is something you can do to an app or database: deploy, restart, open l
 
 ## What you can see
 
-Every hit is checked against your own access before it is ranked, with the same rules the rest of the API uses: IAM policies and denies, environment visibility, team scoping and the ability a route needs. A token that cannot see an app gets no hit for it, no action on it, and no domain, deployment or tag that would reveal it. Nodes appear only to callers who may list nodes.
+Every hit is checked against your own access before it is ranked, with the same rules the rest of the API uses: IAM policies and denies, environment visibility, team scoping and the ability a route needs. A token that cannot see an app gets no hit for it, no action on it, and no domain, deployment or tag that would reveal it. Nodes appear only to callers who may list nodes. Members of a non-default team can search too: they see their own team's apps, databases, projects and environments, plus templates and help pages. Tags and settings pages are instance wide, so tenants never get those hits.
 
 ## Ranking
 

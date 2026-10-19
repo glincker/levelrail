@@ -104,6 +104,30 @@
       "fixed": "Fixes applied to the text above."
     }
   },
+  "policy": {
+    "title": "Signature policy",
+    "validate": "Validate",
+    "validating": "Validating...",
+    "refLabel": "Image reference to test",
+    "refPlaceholder": "Optional: repo@sha256:... to verify one image",
+    "error": "Could not validate the signature policy.",
+    "valid": "The signature policy is working.",
+    "invalid": "The signature policy needs attention.",
+    "fingerprint": "Key {{value}}.",
+    "sample": {
+      "verified": "The sample image is signed by your key.",
+      "unsigned": "The sample image has no signature.",
+      "failed": "The sample image failed verification.",
+      "not_configured": "No public key is configured.",
+      "no_registry_digest": "The sample has no registry digest to verify."
+    },
+    "issues": {
+      "key_unreadable": "The public key file could not be read, so signature checks are off. Fix the key path and restart.",
+      "enforce_without_key": "Enforcement is requested but there is no usable key, so nothing is enforced. Set a valid public key file.",
+      "key_without_enforcement": "A key is loaded but enforcement is off, so unsigned images can still be promoted.",
+      "sample_failed": "The sample image did not verify against your key."
+    }
+  },
   "signatures": {
     "enforce": "Promotions require a valid image signature.",
     "off": "Signature checks run on request."

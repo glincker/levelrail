@@ -18,6 +18,8 @@ func runAppsGitSource(prog string, args []string, stdout, stderr io.Writer, look
 	case "-h", "--help", "help":
 		_, _ = fmt.Fprint(stdout, appsGitSourceUsage(prog))
 		return exitOK
+	case "validate":
+		return runAppsGitSourceValidate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "detect":
 		return runAppsGitSourceDetect(prog, args[1:], stdout, stderr, lookupEnv)
 	case "affected":
@@ -50,6 +52,7 @@ func appsGitSourceUsage(prog string) string {
   %[1]s apps git-source commits <name> [--branch B] [flags]             newest commits with deploy status and suggestions
   %[1]s apps git-source set <name> --repo-url URL [flags]              connect (or edit) a repo for auto-deploy-on-push
   %[1]s apps git-source set <name> --build-type T --dockerfile P --base-directory D   change only the build settings
+  %[1]s apps git-source validate <name> [flags]                         check repo access with the deploy credential and show the fix
   %[1]s apps git-source detect <name> [--apply|--package <dir>] [flags] list Dockerfiles, build roots and workspace packages
   %[1]s apps git-source affected <name> --files a,b [flags]             dry run: which packages a change would redeploy
   %[1]s apps git-source settings <name> [flags]                         set push path filters and forge status reporting

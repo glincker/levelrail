@@ -149,5 +149,5 @@ func resolveRemoteBranchSHA(ctx context.Context, repoURL, branch, token string) 
 			return ref.Hash().String(), nil
 		}
 	}
-	return "", fmt.Errorf("api: branch %q not found on %q", branch, repoURL)
+	return "", fmt.Errorf("api: branch %q on %q: %w", branch, repoURL, errRemoteBranchNotFound)
 }

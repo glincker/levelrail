@@ -331,7 +331,7 @@ func hstsRule(in postureInput) postureItem {
 	if !in.RealCert || in.HSTS {
 		return pass(id, postureMedium)
 	}
-	return failing(id, postureMedium, nil, linkFix("/domains"))
+	return failing(id, postureMedium, nil, actionFix("enable_hsts", nil, "/domains"))
 }
 
 func agentsRule(in postureInput) postureItem {

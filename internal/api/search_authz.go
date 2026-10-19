@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/search"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -55,7 +56,19 @@ func (a *searchAuthorizer) Allowed(prefix, name, ability string) bool {
 	case searchPrefixProject:
 		return a.refAllowed(projectRef(name), ability)
 	}
+	if prefix == searchPrefixGlobal && a.tenant() && !tenantGlobalHit(name) {
+		return false
+	}
 	return authorizeResource(a.abilities, a.policies, ability, prefix+name)
+}
+
+func (a *searchAuthorizer) tenant() bool {
+	return a.scope != nil && a.scope.teams != nil && !a.scope.teams.instance
+}
+
+// tenantGlobalHit: tags and settings are instance wide, so a tenant only sees catalog and help hits.
+func tenantGlobalHit(name string) bool {
+	return strings.HasPrefix(name, "template:") || strings.HasPrefix(name, "doc:")
 }
 
 func (a *searchAuthorizer) refAllowed(ref resourceRef, ability string) bool {

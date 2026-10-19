@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1445 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1452 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -312,6 +312,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/apps/{name}/secret-scan/allow", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAllowSecretScan", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/secret-scan/allow/{fingerprint}", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleUnallowSecretScan", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/secret-scan/run", Ability: "AbilityWrite", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleRunSecretScan", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/shield/recommended", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleApplyRecommendedShield", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleGetAppSleep", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/sleep", Ability: "AbilityDeploy", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleSetAppSleep", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/sleep/history", Ability: "AbilityRead", Group: "Apps CRUD / Lifecycle / Deploy", Handler: "handleAppSleepHistory", Description: ""},
@@ -459,6 +460,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/roles/{id}", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateRole", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetAccountSecurity", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutAccountSecurity", Description: ""},
+	{Method: "GET", Path: "/api/v1/security/hsts", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetHSTS", Description: ""},
+	{Method: "PUT", Path: "/api/v1/security/hsts", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutHSTS", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/policy", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetSecurityPolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/security/policy", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutSecurityPolicy", Description: ""},
 	{Method: "GET", Path: "/api/v1/security/posture", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSecurityPosture", Description: ""},
@@ -507,7 +510,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "PUT", Path: "/api/v1/users/{id}/password-change-required", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetPasswordChangeRequired", Description: ""},
 	{Method: "PUT", Path: "/api/v1/users/{id}/role", Ability: "AbilityRoot", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleSetUserRole", Description: ""},
 	{Method: "GET", Path: "/api/v1/dockerhub/repositories/{namespace}/{repo}/tags", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleDockerHubTags", Description: ""},
-	{Method: "GET", Path: "/api/v1/dockerhub/search", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleDockerHubSearch", Description: "Public Docker Hub search (dockerhub_search.go): the same picker's third source, for a well-known public image that isn't in the built-in registry or a connected credential. AbilityRead, same tier as the built-in catalog just above: a read of a public, unauthenticated upstream, proxied server-side only to avoid a browser-to-hub.docker.com CORS call."},
+	{Method: "GET", Path: "/api/v1/dockerhub/search", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleDockerHubSearch", Description: ""},
 	{Method: "GET", Path: "/api/v1/registry/repositories", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleListRegistryRepositories", Description: "Built-in registry catalog (registry_catalog.go): read-only browsing for the app-creation \"existing image\" step's repository/tag picker. AbilityRead, same tier as the settings GET just above: no secret is ever returned, the resolved password is only used server-side to authenticate the upstream catalog query."},
 	{Method: "GET", Path: "/api/v1/registry/tags", Ability: "AbilityRead", Group: "Built-in Container Registry", Handler: "handleListRegistryTags", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/settings/registry", Ability: "AbilityRoot", Group: "Built-in Container Registry", Handler: "handleDisableRegistry", Description: ""},
@@ -618,6 +621,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/branches", Ability: "AbilityReadSensitive", Group: "Git Provider Apps", Handler: "handleListBitbucketAppBranches", Description: ""},
 	{Method: "POST", Path: "/api/v1/bitbucket-app/repos/{workspace}/{repoSlug}/use-as-source", Ability: "AbilityWriteSensitive", Group: "Git Provider Apps", Handler: "handleUseBitbucketRepoAsSource", Description: ""},
 	{Method: "GET", Path: "/api/v1/git-providers", Ability: "AbilityReadSensitive", Group: "Git Provider Apps", Handler: "handleListGitProviders", Description: "Aggregated git provider capability summary (git_providers.go): one AbilityReadSensitive call the git-source picker uses instead of the three AbilityRoot status endpoints below, so a non-root deploy-scoped user can open the app creation wizard without hitting a 403. See handleListGitProviders's own doc comment."},
+	{Method: "POST", Path: "/api/v1/git-providers/{provider}/validate", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleValidateGitProvider", Description: "Public Docker Hub search (dockerhub_search.go): the same picker's third source, for a well-known public image that isn't in the built-in registry or a connected credential. AbilityRead, same tier as the built-in catalog just above: a read of a public, unauthenticated upstream, proxied server-side only to avoid a browser-to-hub.docker.com CORS call."},
 	{Method: "DELETE", Path: "/api/v1/github-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleDisconnectGitHubApp", Description: ""},
 	{Method: "GET", Path: "/api/v1/github-app", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGetGitHubAppStatus", Description: "GitHub App connection: routes that read or change the connection are AbilityRoot, since an installed app can read private repos. register/start, callback and installed are full-page browser navigations; the session cookie is implicitly root.  Repo and branch listing is AbilityReadSensitive; use-as-source is AbilityWriteSensitive like git-source."},
 	{Method: "GET", Path: "/api/v1/github-app/callback", Ability: "AbilityRoot", Group: "Git Provider Apps", Handler: "handleGitHubAppCallback", Description: ""},
@@ -750,6 +754,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDeleteNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleGetNode", Description: ""},
 	{Method: "GET", Path: "/api/v1/nodes/{id}/capacity-forecast", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCapacityForecast", Description: "Rough disk/memory exhaustion projection (node_capacity_forecast.go), a read-and-suggest layer over the same host samples patch-status/metrics above read, same AbilityRoot boundary and nil-telemetry 501 shape as every other node route."},
+	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/drill", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleNodeCertDrill", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cert/renew", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleRenewNodeCert", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/cordon", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleCordonNode", Description: ""},
 	{Method: "POST", Path: "/api/v1/nodes/{id}/drain", Ability: "AbilityRoot", Group: "Nodes", Handler: "handleDrainNode", Description: ""},
@@ -964,6 +969,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/images", Ability: "AbilityRead", Group: "Other", Handler: "handleListImageInventory", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/gc", Ability: "AbilityRoot", Group: "Other", Handler: "handleImageGC", Description: ""},
 	{Method: "GET", Path: "/api/v1/images/layers", Ability: "AbilityRead", Group: "Other", Handler: "handleImageLayerBreakdown", Description: ""},
+	{Method: "POST", Path: "/api/v1/images/signature-policy/validate", Ability: "AbilityWrite", Group: "Other", Handler: "handleValidateImageSignaturePolicy", Description: ""},
 	{Method: "POST", Path: "/api/v1/images/verify", Ability: "AbilityWrite", Group: "Other", Handler: "handleImageVerify", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/analyze", Ability: "AbilityWrite", Group: "Other", Handler: "handleAnalyzeImport", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/plan", Ability: "AbilityWrite", Group: "Other", Handler: "handleImportPlan", Description: "Import front door: classifies pasted input and returns a plan preview, creating nothing. AbilityWrite because it makes outbound fetches."},
@@ -1320,7 +1326,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apps/{name}/git-source/commits", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListGitSourceCommits", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/git-source/deploy-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetGitDeploySettings", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/detect", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleDetectGitSourceBuild", Description: ""},
-	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/rotate-webhook-secret", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateGitSourceWebhookSecret", Description: "Rotate webhook secret (git_sources.go): mints a fresh secret without touching repo_url/branch/build config, the narrow alternative to a full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as PUT .../git-source, since it's the identical class of credential write."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/rotate-webhook-secret", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleRotateGitSourceWebhookSecret", Description: ""},
+	{Method: "POST", Path: "/api/v1/apps/{name}/git-source/validate", Ability: "AbilityDeploy", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleValidateGitSourceAccess", Description: "Rotate webhook secret (git_sources.go): mints a fresh secret without touching repo_url/branch/build config, the narrow alternative to a full DELETE-then-PUT reconnect. Same AbilityWriteSensitive tier as PUT .../git-source, since it's the identical class of credential write."},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/preview-settings", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleSetPreviewEnabled", Description: "Preview environments per pull request (preview_environments.go/ preview_environments_handlers.go): opt-in per app, off by default. AbilityWriteSensitive for the toggle, matching PUT .../git-source's own tier since it's the same connect-time-adjacent configuration surface; AbilityRead for the list, matching GET .../git-source; AbilityDeploy for the manual teardown, the same lifecycle-action tier POST .../restart and POST .../stop already use."},
 	{Method: "GET", Path: "/api/v1/apps/{name}/previews", Ability: "AbilityRead", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleListPreviewEnvironments", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/previews/{number}/approve", Ability: "AbilityWriteSensitive", Group: "Secrets / Git Source / Webhooks / Preview Environments", Handler: "handleApprovePreviewEnvironment", Description: ""},

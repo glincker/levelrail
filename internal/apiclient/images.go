@@ -113,6 +113,35 @@ type ImageVerifyResource struct {
 	Message string `json:"message"`
 }
 
+// ImageSignaturePolicyRequest is the optional body of POST /api/v1/images/signature-policy/validate.
+type ImageSignaturePolicyRequest struct {
+	Ref string `json:"ref,omitempty"`
+}
+
+// ImageSignatureIssue is one problem the signature policy check found.
+type ImageSignatureIssue struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+// ImageSignaturePolicyResource is the result of validating the signature policy.
+type ImageSignaturePolicyResource struct {
+	Mode           string                `json:"mode"`
+	RequestedMode  string                `json:"requested_mode"`
+	KeyConfigured  bool                  `json:"key_configured"`
+	KeyFingerprint string                `json:"key_fingerprint,omitempty"`
+	OK             bool                  `json:"ok"`
+	Issues         []ImageSignatureIssue `json:"issues"`
+	Sample         *ImageVerifyResource  `json:"sample,omitempty"`
+}
+
+// ValidateImageSignaturePolicy calls POST /api/v1/images/signature-policy/validate.
+func (c *Client) ValidateImageSignaturePolicy(ctx context.Context, req ImageSignaturePolicyRequest) (ImageSignaturePolicyResource, error) {
+	var out ImageSignaturePolicyResource
+	err := c.do(ctx, http.MethodPost, "/api/v1/images/signature-policy/validate", req, &out)
+	return out, err
+}
+
 // ListImages calls GET /api/v1/images. keepPerApp < 0 keeps the server default.
 func (c *Client) ListImages(ctx context.Context, node string, keepPerApp int) (ImageListResource, error) {
 	q := url.Values{}

@@ -34,6 +34,8 @@ type nodeCertConfig struct {
 	minAgentVersion   string
 	sessions          NodeSessionCloser
 	trust             NodeTrustControl
+	drillTimeout      time.Duration
+	drillPoll         time.Duration
 }
 
 // WithNodeCertThresholds sets when a node's agent certificate is reported

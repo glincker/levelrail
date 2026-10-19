@@ -142,6 +142,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
   %[1]s nodes security <id> [--rejected] [flags]                     show how a node's agent is verified: fingerprints, renewal, recent security events
   %[1]s nodes cert renew <id> [flags]                                ask a connected node to renew its agent certificate now
+  %[1]s nodes cert drill <id> [flags]                                rotate its certificate end to end and report each step
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
   %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment
