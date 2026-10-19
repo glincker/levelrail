@@ -109,7 +109,14 @@
               "guides/self-host-postgres-with-backups",
               "guides/zero-downtime-deploys-without-kubernetes",
               "guides/control-levelrail-from-openclaw",
-              "guides/use-a-mac-as-a-private-llm-server"
+              "guides/use-a-mac-as-a-private-llm-server",
+              "guides/self-host-ollama-open-webui",
+              "guides/self-host-n8n",
+              "guides/self-host-langflow",
+              "guides/self-host-flowise",
+              "guides/self-host-openclaw",
+              "guides/self-host-qdrant",
+              "guides/self-host-litellm"
             ],
             "icon": "/assets/icons/compass.svg"
           },

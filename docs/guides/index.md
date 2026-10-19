@@ -11,3 +11,13 @@ Guides answer a specific question end to end and link into the reference pages f
 - [Zero-downtime deploys without Kubernetes](/guides/zero-downtime-deploys-without-kubernetes): readiness gating, digest-pinned images, rollback, and freeze windows on plain Docker.
 - [Control Levelrail from OpenClaw](/guides/control-levelrail-from-openclaw): a least-privilege agent token, the MCP config, and what an agent can and cannot do.
 - [Use your Mac mini or MacBook as a private LLM server](/guides/use-a-mac-as-a-private-llm-server): run Ollama, LM Studio or MLX natively on a Mac and serve it through the gateway with keys, limits and a fallback.
+
+## Self-host popular AI and automation apps
+
+- [Self-host Ollama with Open WebUI](/guides/self-host-ollama-open-webui): a local model runtime with a chat interface, and why Docker on a Mac cannot use the GPU.
+- [Self-host n8n with Levelrail](/guides/self-host-n8n): workflow automation with a generated encryption key and volume backups.
+- [Self-host Langflow with Levelrail](/guides/self-host-langflow): a visual workflow builder on its own Postgres database.
+- [Self-host Flowise with Levelrail](/guides/self-host-flowise): an LLM flow builder with a generated admin password.
+- [Self-host OpenClaw with Levelrail](/guides/self-host-openclaw): the agent gateway, and the start-up settings to review before you expose it.
+- [Self-host Qdrant with Levelrail](/guides/self-host-qdrant): vector search with a generated API key.
+- [Self-host LiteLLM Proxy with Levelrail](/guides/self-host-litellm): one OpenAI-format gateway with a generated master key and Postgres.
