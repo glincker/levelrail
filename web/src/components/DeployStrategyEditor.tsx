@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Controller, useForm } from 'react-hook-form'
 import { z } from 'zod'
+import { useTranslation } from 'react-i18next'
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
 import type { AppDetail } from '../types/appDetail'
 import { useUpdateApp } from '../queries/apps'
@@ -60,6 +61,7 @@ const STRATEGY_LABELS: Record<string, string> = {
 // prop as the others and must not let a background refetch stomp
 // unsaved edits in a sibling editor.
 export function DeployStrategyEditor({ app }: { app: AppDetail }) {
+  const { t } = useTranslation('common')
   const updateApp = useUpdateApp(app.name)
   const { control, register, handleSubmit, formState } = useForm<
     DeployStrategyFormInput,
@@ -140,6 +142,19 @@ export function DeployStrategyEditor({ app }: { app: AppDetail }) {
               <FieldError errors={[formState.errors.replicas]} />
             </Field>
           </div>
+
+          {app.strategy_reason ? (
+            <p className="text-sm text-muted-foreground">
+              {t('templateDefaults.strategyReason', {
+                reason: app.strategy_reason,
+              })}
+            </p>
+          ) : null}
+          {app.strategy === 'recreate' ? (
+            <p className="text-sm text-muted-foreground">
+              {t('templateDefaults.recreateDowntime')}
+            </p>
+          ) : null}
 
           <div className="flex items-center gap-2">
             <Button type="submit" size="sm" disabled={updateApp.isPending}>

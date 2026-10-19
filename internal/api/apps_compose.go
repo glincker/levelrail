@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/catalog"
 	"github.com/GLINCKER/levelrail/internal/compose"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
@@ -70,6 +71,11 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 	}
 
 	opts := composeDeployOpts{profiles: splitProfiles(r.URL.Query().Get("profiles")), source: store.ComposeRevisionSourceAPI}
+	if id := r.URL.Query().Get("template"); id != "" {
+		if _, ok := catalog.TemplateByID(id); ok {
+			opts.source, opts.templateID = store.ComposeRevisionSourceTemplate, id
+		}
+	}
 	resp, ok := rt.deployComposeBody(w, r, name, body, opts)
 	if !ok {
 		return
@@ -157,6 +163,8 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		return composeDeployResponse{}, false
 	}
 
+	templateDefaults := rt.planTemplateDefaults(r.Context(), name, opts.templateID, file, services, previousServices)
+
 	now := time.Now().UTC().Format(time.RFC3339)
 	if err := rt.appCompose.SaveApp(r.Context(), store.App{ID: name, Name: name, CreatedAt: now, UpdatedAt: now}); err != nil {
 		rt.internalError(w, "api: deploy compose: save app failed", err, slog.String("name", name))
@@ -177,6 +185,7 @@ func (rt *Router) deployComposeBody(w http.ResponseWriter, r *http.Request, name
 		out = append(out, toAppResource(svc))
 	}
 
+	rt.saveTemplateDefaults(r.Context(), templateDefaults)
 	rt.pruneStaleComposeServices(r.Context(), name, previousServices, services)
 
 	fileNotices := file.Notices()

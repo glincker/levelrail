@@ -742,12 +742,15 @@ func (rt *Router) handleGetApp(w http.ResponseWriter, r *http.Request) {
 	if serving, ok := rt.lastServingImage(r.Context(), *svc); ok {
 		pendingImage, resource.Image = resource.Image, serving
 	}
+	notes := rt.templateNotesFor(r.Context(), *svc)
 	writeJSON(w, http.StatusOK, appWithRequests{
 		appResource:              resource,
 		PendingImage:             pendingImage,
 		Requests:                 rt.requestSummaryFor(r, name),
 		PreviousReleaseHeldUntil: rt.previousReleaseHeldUntil(r.Context(), name),
 		FallbackURL:              rt.fallbackURLFor(r.Context(), *svc),
+		StrategyReason:           notes.strategyReason,
+		MemoryFromTemplate:       notes.memoryFromTemplate,
 	})
 }
 
@@ -780,6 +783,10 @@ type appWithRequests struct {
 	// FallbackURL is the automatic sslip.io URL an app with no domain is
 	// routed under. Omitted when it has a domain or none can be built.
 	FallbackURL string `json:"fallback_url,omitempty"`
+	// StrategyReason is why a template pinned the current strategy, shown only while the strategy still matches.
+	StrategyReason string `json:"strategy_reason,omitempty"`
+	// MemoryFromTemplate is true while the memory limit is the one the template recommended.
+	MemoryFromTemplate bool `json:"memory_from_template,omitempty"`
 }
 
 // fallbackURLFor returns the automatic https URL for svc, or "" when it has
@@ -1164,6 +1171,10 @@ func (rt *Router) handleStartApp(w http.ResponseWriter, r *http.Request) {
 // deleteAppIfOrphaned below, so the per-app network can be cleaned up.
 func (rt *Router) handleDeleteApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
+	if rt.retainedDeployServices(r.Context())[name] {
+		writeError(w, http.StatusConflict, "this is a retained copy of an earlier deploy that the platform manages; it is removed automatically")
+		return
+	}
 	purge, volumes, ok := rt.appDeleteDataPlan(w, r, name)
 	if !ok {
 		return

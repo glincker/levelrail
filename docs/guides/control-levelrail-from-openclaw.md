@@ -68,7 +68,7 @@ A running Levelrail instance can also serve MCP over HTTP (`levelrail-mcp --tran
 | `standard` | Reads and mutating tools (deploy, restart, env, domains) | Yes | No, it is classed destructive |
 | `full` | Everything above plus destructive tools | Yes | Yes |
 
-In `standard` mode an agent can still roll back by calling `deploy_app` with the previous image, or you can run `full` for the agent that is allowed to use `rollback_app` and `rollback_app_to_deploy`. Prefer `rollback_app_to_deploy`: it pins the rollback to the recorded image digest and fails closed if the image was garbage collected.
+In `standard` mode an agent can still roll back by calling `deploy_app` with the previous image, or you can run `full` for the agent that is allowed to use `rollback_app` and `rollback_app_to_deploy`. `rollback_app` refuses an image that was never a deploy of the app and returns the valid targets. Prefer `rollback_app_to_deploy`: it pins the rollback to the recorded image digest and fails closed if the image was garbage collected.
 
 ## 4. What the agent can and cannot do
 

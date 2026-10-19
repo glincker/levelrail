@@ -124,6 +124,9 @@ type AppResource struct {
 	PreviousReleaseHeldUntil string `json:"previous_release_held_until,omitempty"`
 	// FallbackURL is the automatic sslip.io URL of an app with no domain (GET only).
 	FallbackURL string `json:"fallback_url,omitempty"`
+	// StrategyReason and MemoryFromTemplate mirror the GET app payload: why a template pinned the strategy, and whether the memory limit is the template's recommendation.
+	StrategyReason     string `json:"strategy_reason,omitempty"`
+	MemoryFromTemplate bool   `json:"memory_from_template,omitempty"`
 	// Volumes mirrors internal/api's appResource.Volumes: this app's
 	// declared named Docker volumes, response-only (declared through
 	// app.yaml, not settable here).
@@ -341,6 +344,7 @@ type DeployTriggerRequest struct {
 	Confirm bool   `json:"confirm,omitempty"`
 	// Pull re-resolves the tag and fails if the registry is unreachable.
 	Pull           bool   `json:"pull,omitempty"`
+	Rollback       bool   `json:"rollback,omitempty"`
 	OverrideFreeze bool   `json:"override_freeze,omitempty"`
 	OverrideReason string `json:"override_reason,omitempty"`
 }

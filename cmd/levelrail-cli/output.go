@@ -308,6 +308,12 @@ func printAppHuman(out io.Writer, a appResource) {
 	if a.PullPolicy != "" {
 		_, _ = fmt.Fprintf(out, "pull policy: %s\n", a.PullPolicy)
 	}
+	if a.StrategyReason != "" {
+		_, _ = fmt.Fprintf(out, "strategy: %s (set by the template: %s)\n", a.Strategy, a.StrategyReason)
+	}
+	if a.MemoryFromTemplate && a.Resources != nil {
+		_, _ = fmt.Fprintf(out, "memory:   %s (the template's recommended limit)\n", formatRecommendedMemory(a.Resources.MemoryBytes))
+	}
 	for _, v := range a.Volumes {
 		_, _ = fmt.Fprintf(out, "volume:   %s -> %s\n", v.Name, v.ContainerPath)
 	}

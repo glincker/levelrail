@@ -181,7 +181,7 @@ func runTemplatesDeploy(prog string, args []string, stdout, stderr io.Writer, lo
 		name = template.ID
 	}
 
-	result, err := client.DeployCompose(context.Background(), name, []byte(template.Compose))
+	result, err := client.DeployComposeFromTemplate(context.Background(), name, []byte(template.Compose), template.ID)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("deploy template %q as app %q: %w", id, name, err))
 	}

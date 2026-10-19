@@ -93,9 +93,9 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "rollback_app",
-		Description: "Point an app back at an older image tag. Same approval gate as deploy_app, asynchronous. Does not verify the tag is unchanged; prefer rollback_app_to_deploy when a deploy_id is known.",
+		Description: "Point an app back at an older image tag. Same approval gate as deploy_app, asynchronous. Refuses an image that was never a deploy of the app and lists the valid targets. Does not verify the tag is unchanged; prefer rollback_app_to_deploy when a deploy_id is known.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
-		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
+		result, err := client.DeployAppWith(ctx, in.Name, apiclient.DeployTriggerRequest{Image: in.Image, Confirm: in.Confirm, Rollback: true})
 		if err != nil {
 			return nil, apiclient.DeployTriggerResult{}, fmt.Errorf("roll back app %q to image %q: %w", in.Name, in.Image, err)
 		}

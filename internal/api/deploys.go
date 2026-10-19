@@ -36,6 +36,9 @@ type deployTriggerRequest struct {
 	// Pull re-resolves the tag against the registry and fails rather than
 	// deploying a cached image when the registry is unreachable.
 	Pull bool `json:"pull,omitempty"`
+	// Rollback refuses an image that was never a previous deploy of this app
+	// at trigger time instead of failing later at pull time.
+	Rollback bool `json:"rollback,omitempty"`
 	freezeOverride
 	policyOverride
 }
@@ -94,6 +97,10 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := validateImageReference(req.Image); err != nil {
 		writeCodedError(w, http.StatusBadRequest, errCodeInvalidImageRef, "image: "+err.Error())
+		return
+	}
+
+	if req.Rollback && !rt.checkRollbackTarget(w, r, *existing, req.Image) {
 		return
 	}
 

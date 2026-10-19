@@ -21,7 +21,7 @@ type AppListFilter struct {
 var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
 
 func (f AppListFilter) where() (string, []any, error) {
-	clauses := []string{`name NOT LIKE ? ESCAPE '\'`}
+	clauses := []string{`name NOT LIKE ? ESCAPE '\'`, `name NOT IN (SELECT service_name FROM deploy_urls)`}
 	args := []any{"%" + likeEscaper.Replace(CanaryServiceSuffix)}
 	if q := strings.ToLower(strings.TrimSpace(f.Query)); q != "" {
 		clauses = append(clauses, `(lower(name) LIKE ? ESCAPE '\' OR lower(image) LIKE ? ESCAPE '\')`)

@@ -57,3 +57,40 @@ func (rt *Router) RemoveDeployURLService(ctx context.Context, serviceName string
 
 // NudgeReconcilers asks the reconcilers to run now.
 func (rt *Router) NudgeReconcilers() { rt.nudgeReconciler() }
+
+func (rt *Router) retainedDeployServices(ctx context.Context) map[string]bool {
+	l, ok := rt.deployAttempts.(deployURLLister)
+	if !ok {
+		return nil
+	}
+	rows, err := l.ListDeployURLs(ctx, "")
+	if err != nil {
+		rt.logger.Warn("api: list retained deploy services failed", slog.String("error", err.Error()))
+		return nil
+	}
+	out := make(map[string]bool, len(rows))
+	for _, r := range rows {
+		out[r.ServiceName] = true
+	}
+	return out
+}
+
+// listPublicApps is ListDesiredServices without the retained deploy services,
+// which are rollback machinery rather than apps an operator manages.
+func (rt *Router) listPublicApps(ctx context.Context) ([]store.DesiredService, error) {
+	svcs, err := rt.apps.ListDesiredServices(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list apps: %w", err)
+	}
+	hidden := rt.retainedDeployServices(ctx)
+	if len(hidden) == 0 {
+		return svcs, nil
+	}
+	out := make([]store.DesiredService, 0, len(svcs))
+	for _, s := range svcs {
+		if !hidden[s.Name] {
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}

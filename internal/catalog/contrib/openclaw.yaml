@@ -8,6 +8,8 @@ compose: |
   services:
     openclaw-gateway:
       image: ghcr.io/openclaw/openclaw:2026.10.5
+      x-levelrail-strategy: recreate
+      x-levelrail-strategy-reason: The gateway locks its state volume, so the old container must stop before the new one starts (brief downtime on each deploy).
       command: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789", "--allow-unconfigured"]
       ports: ["18789:18789"]
       environment:

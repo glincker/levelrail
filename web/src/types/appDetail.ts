@@ -116,6 +116,10 @@ export interface AppDetail {
   hooks?: ServiceHooks | null
   strategy: DeployStrategy
   replicas: number
+  // Response-only on GET: why a template pinned the strategy, and whether the
+  // memory limit is the template's recommendation.
+  strategy_reason?: string
+  memory_from_template?: boolean
   // Custom Docker labels applied to the container at create time
   // (internal/api/apps.go's appResource.Labels), an escape hatch for
   // external tooling that keys off container labels. Carries

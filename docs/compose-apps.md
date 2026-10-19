@@ -57,6 +57,7 @@ Each deploy is saved as a numbered revision. Deploying the same app name again u
 | `x-levelrail-domains` | Maps a service to a domain. HTTPS is issued automatically once DNS points at the server. |
 | `volumes` | Named volumes become Docker volumes scoped to the app and service. An absolute host path is a bind mount and needs the `root` ability. |
 | `environment` | Literal values are stored as config. `${SERVICE_PASSWORD_X}` and the other generated kinds are created once, encrypted, and injected when the container is created. |
+| `x-levelrail-strategy`, `x-levelrail-strategy-reason` | Per service: `recreate`, `rolling` or `blue-green` (the default). Use `recreate` for an app that locks its state volume, since the old container must stop first. That means brief downtime on each deploy; a failed readiness check still rolls back to the previous image. The reason is shown next to the strategy in the app's Deploy settings and in `apps get`. |
 | `depends_on` | A dependent service is created only after its dependency's container runs. With `condition: service_healthy`, it also waits until the dependency passes its readiness check. |
 | `healthcheck` | An HTTP check (`curl` or `wget` against localhost) becomes an HTTP readiness probe. Any other command runs inside the container as an exec probe. |
 | `profiles` | A service with `profiles:` only deploys when one of its profiles is enabled with `--profile-name` (or `?profiles=` on the API). |

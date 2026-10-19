@@ -238,8 +238,12 @@ Notes on the fields:
   container per service, no bind-mount file injection, no
   `depends_on: service_healthy` ordering. Use an image tag, not `latest`.
   At least one service needs a `healthcheck:` block.
-- `recommended_memory_bytes` is a pre-deploy advisory shown in the UI,
-  not enforced against any node's real memory.
+- `recommended_memory_bytes` is shown in the UI and applied as the new
+  app's container memory limit (editable under Resources, never lowered on
+  a redeploy). It is not checked against any node's real memory.
+- A single-writer app that locks its state volume sets
+  `x-levelrail-strategy: recreate` and an `x-levelrail-strategy-reason` on
+  its service in the compose body.
 - Pin a real, specific image tag you've verified exists.
 
 Review model: a human reviews every template PR the same way as any
