@@ -16,6 +16,7 @@ import { CommandPalette } from '../components/CommandPalette'
 import { StageOverlay } from '../components/StageOverlay'
 import { useShortcuts } from '../hooks/useShortcuts'
 import { ThemeProvider } from '../components/ThemeProvider'
+import { PreferencesApplier } from '../components/account/PreferencesApplier'
 import { AppHeader } from '../components/shell/AppHeader'
 import { ShellBanner } from '../components/shell/ShellBanner'
 import { MAIN_CONTENT_ID, SkipLink } from '../components/shell/SkipLink'
@@ -122,6 +123,7 @@ function AppShell() {
 
   return (
     <SidebarProvider>
+      <PreferencesApplier />
       <SkipLink />
       <AppSidebar />
       <CommandPalette

@@ -154,6 +154,7 @@ func (rt *Router) finishLibSession(w http.ResponseWriter, r *http.Request, user 
 	}
 	setSessionCookie(w, r, token, time.Now().Add(rt.sessions.ttl))
 	rt.noticeSignIn(r, user, token)
+	rt.recordAccountEvent(context.WithoutCancel(r.Context()), r, user.ID, accountEventSignIn, http.StatusOK)
 }
 
 // establishLibSession is establishSession's library-backed body.

@@ -238,6 +238,19 @@ Endpoints for:
 | POST | /api/v1/settings/ai-assistant/providers/{id}/test | AbilityRoot | handleTestAIProvider |
 | DELETE | /api/v1/settings/ai-assistant/providers/{id} | AbilityRoot | handleDeleteAIProvider |
 | GET | /api/v1/settings/ai-assistant/providers/{id}/models | AbilityRoot | handleListAIProviderModels |
+| GET | /api/v1/auth/my-activity | Public | handleMyActivity |
+| GET | /api/v1/auth/my-credentials | Public | handleMyCredentials |
+| GET | /api/v1/auth/preferences | Public | handleGetPreferences |
+| PUT | /api/v1/auth/preferences | Public | handlePutPreferences |
+| POST | /api/v1/auth/export | Public | handleStartExport |
+| GET | /api/v1/auth/export/{id} | Public | handleExportStatus |
+| GET | /api/v1/auth/export/{id}/download | Public | handleDownloadExport |
+| GET | /api/v1/auth/delete-account/check | Public | handleDeleteAccountCheck |
+| DELETE | /api/v1/auth/account | Public | handleDeleteAccount |
+| DELETE | /api/v1/auth/link/{provider} | Public | handleUnlinkProvider |
+| GET | /api/v1/auth/email-change | Public | handleEmailChangeStatus |
+| POST | /api/v1/auth/email-change | Public | handleRequestEmailChange |
+| POST | /api/v1/auth/email-change/confirm | Public | handleConfirmEmailChange |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

@@ -41,6 +41,16 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAuthDevices(prog, args[1:], stdout, stderr, lookupEnv)
 	case "code-login":
 		return runAuthCodeLogin(prog, args[1:], stdout, stderr, lookupEnv)
+	case "activity":
+		return runAuthActivity(prog, args[1:], stdout, stderr, lookupEnv)
+	case "preferences":
+		return runAuthPreferences(prog, args[1:], stdout, stderr, lookupEnv)
+	case "export":
+		return runAuthExport(prog, args[1:], stdout, stderr, lookupEnv)
+	case "unlink":
+		return runAuthUnlink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "delete-account":
+		return runAuthDeleteAccount(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown auth subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, authUsage(prog))
@@ -62,6 +72,11 @@ func authUsage(prog string) string {
   %[1]s auth deny <id>               deny a new-browser sign-in
   %[1]s auth devices [revoke <id>]   list or revoke browsers trusted for password sign-in
   %[1]s auth code-login [flags]      show or change the auth.code_login setting
+  %[1]s auth activity [flags]        show your own account activity feed
+  %[1]s auth preferences get|set     your timezone, language, theme, landing page and avatar
+  %[1]s auth export [flags]          download a zip of your own account data
+  %[1]s auth unlink <provider>       remove a linked sign-in provider
+  %[1]s auth delete-account [flags]  permanently delete your own account
 
 Run "%[1]s auth <subcommand> -h" for a subcommand's own flags.
 `, prog)

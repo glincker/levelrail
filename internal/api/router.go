@@ -772,6 +772,8 @@ type Router struct {
 	libSessions  *authengine.Sessions
 	mfaLib       *authLibMFA
 	authLibOAuth AuthLibOAuth
+
+	accountSelf  accountSelfState
 	cpDRMaterial EscrowMaterialReader
 	authLib      authLibState // the library engine behind token and device routes
 }
