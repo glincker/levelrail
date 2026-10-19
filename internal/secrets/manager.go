@@ -59,6 +59,8 @@ type Manager struct {
 	// rotation so nothing reads or wraps under the old key mid-rotation.
 	mu sync.RWMutex
 	mk *MasterKey
+	// valueMu keeps SetValue's encrypt-then-save atomic against DEK rotation. Lock order: valueMu, then mu.
+	valueMu sync.RWMutex
 
 	logger       *slog.Logger
 	requireBound bool
@@ -100,6 +102,8 @@ func slotBinding(serviceName, envKey string) Binding {
 // SetValue encrypts plaintext under serviceName's DEK, generating one on
 // first use, and persists only the ciphertext.
 func (m *Manager) SetValue(ctx context.Context, serviceName, envKey, plaintext string) error {
+	m.valueMu.RLock()
+	defer m.valueMu.RUnlock()
 	dek, err := m.dekFor(ctx, serviceName)
 	if err != nil {
 		return err

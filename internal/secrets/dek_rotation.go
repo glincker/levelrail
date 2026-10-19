@@ -92,6 +92,8 @@ func (r *DEKRotator) RotateOne(ctx context.Context, serviceName string) (DEKRota
 }
 
 func (r *DEKRotator) rotateService(ctx context.Context, serviceName string) (DEKRotateResult, error) {
+	r.m.valueMu.Lock()
+	defer r.m.valueMu.Unlock()
 	r.m.mu.RLock()
 	defer r.m.mu.RUnlock()
 	mk := r.m.mk
