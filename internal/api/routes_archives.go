@@ -3,8 +3,8 @@ package api
 import "net/http"
 
 func (rt *Router) registerArchiveRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/v1/archives", rt.requireAbility(AbilityRoot, rt.handleListArchives))
-	mux.HandleFunc("POST /api/v1/archives", rt.requireAbility(AbilityRoot, rt.handleCreateArchive))
+	mux.HandleFunc("GET /api/v1/archives", rt.requireAbility(AbilityWriteSensitive, rt.handleListArchives))
+	mux.HandleFunc("POST /api/v1/archives", rt.requireAbility(AbilityWriteSensitive, rt.handleCreateArchive))
 	mux.HandleFunc("GET /api/v1/archives/policy", rt.requireAbility(AbilityRoot, rt.handleGetArchivePolicy))
 	mux.HandleFunc("PUT /api/v1/archives/policy", rt.requireAbility(AbilityRoot, rt.handlePutArchivePolicy))
 	mux.HandleFunc("GET /api/v1/archives/{id}", rt.requireAbility(AbilityRoot, rt.handleGetArchive))

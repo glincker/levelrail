@@ -163,6 +163,10 @@ func (rt *Router) libraryListTokens(ctx context.Context, callerID string, admin 
 		}
 	}
 	slices.SortStableFunc(merged, func(a, b store.APIToken) int { return b.CreatedAt.Compare(a.CreatedAt) })
+	bindings, err := rt.instance.ListTokenBindings(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("api: list tokens: bindings: %w", err)
+	}
 	out := make([]tokenResource, 0, len(merged))
 	now := time.Now()
 	for _, t := range merged {
@@ -171,6 +175,7 @@ func (rt *Router) libraryListTokens(ctx context.Context, callerID string, admin 
 		}
 		res := toTokenResource(t)
 		res.Scope = rt.tokenScopeOf(ctx, t.ID)
+		res.InstanceID, res.LastIP = bindings[t.ID].InstanceID, bindings[t.ID].LastIP
 		out = append(out, res)
 	}
 	return out, nil

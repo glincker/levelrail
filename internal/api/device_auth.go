@@ -135,6 +135,8 @@ type deviceAuthRequestResource struct {
 	// IPMismatch is true when the requesting IP differs from the IP this
 	// listing session came from, a hint the login may not be the operator's own.
 	IPMismatch bool `json:"ip_mismatch"`
+	// Abilities is what approving would grant: the viewer's own abilities, never silently root.
+	Abilities []string `json:"abilities"`
 }
 
 // handleListDeviceAuthRequests handles GET /api/v1/auth/device/requests:

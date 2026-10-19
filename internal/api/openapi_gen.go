@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1377 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1380 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -352,7 +352,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/auth/device/activity", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceActivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/pending-summary", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDevicePendingSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/requests", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListDeviceAuthRequests", Description: ""},
-	{Method: "POST", Path: "/api/v1/auth/device/start", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceAuthStart", Description: "CLI device login (device_auth.go): \"levelrail-cli auth login --device\" prints a code, the operator approves it here. start/token are necessarily public (no credential exists yet); requests/ approve/deny are requireAuth session-only, the same tier tokens.go's own session-only routes use, since approving a device only ever mints a token scoped to the approving operator's own abilities."},
+	{Method: "POST", Path: "/api/v1/auth/device/start", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceAuthStart", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/device/token", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceAuthToken", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/device/{user_code}/approve", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleApproveDeviceAuthRequest", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/device/{user_code}/deny", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDenyDeviceAuthRequest", Description: ""},
@@ -759,8 +759,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/apply/schema", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCSchema", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps-metrics", Ability: "AbilityRead", Group: "Other", Handler: "handleBatchAppMetrics", Description: "Cross-app resource usage ranking (app_resource_usage.go): a literal segment, so Go's ServeMux resolves it ahead of the {name} wildcard on GET /api/v1/apps/{name} in routes.go."},
 	{Method: "GET", Path: "/api/v1/apps-summary", Ability: "AbilityRead", Group: "Other", Handler: "handleAppsSummary", Description: ""},
-	{Method: "GET", Path: "/api/v1/archives", Ability: "AbilityRoot", Group: "Other", Handler: "handleListArchives", Description: ""},
-	{Method: "POST", Path: "/api/v1/archives", Ability: "AbilityRoot", Group: "Other", Handler: "handleCreateArchive", Description: ""},
+	{Method: "GET", Path: "/api/v1/archives", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleListArchives", Description: ""},
+	{Method: "POST", Path: "/api/v1/archives", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCreateArchive", Description: ""},
 	{Method: "GET", Path: "/api/v1/archives/policy", Ability: "AbilityRoot", Group: "Other", Handler: "handleGetArchivePolicy", Description: ""},
 	{Method: "PUT", Path: "/api/v1/archives/policy", Ability: "AbilityRoot", Group: "Other", Handler: "handlePutArchivePolicy", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/archives/{id}", Ability: "AbilityRoot", Group: "Other", Handler: "handleDeleteArchive", Description: ""},
@@ -941,6 +941,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/imports/platform/databases/{name}/copy", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleCopyDatabaseData", Description: ""},
 	{Method: "POST", Path: "/api/v1/imports/platform/discover", Ability: "AbilityWriteSensitive", Group: "Other", Handler: "handleDiscoverPlatformImport", Description: ""},
 	{Method: "GET", Path: "/api/v1/ingress/connectivity", Ability: "AbilityRead", Group: "Other", Handler: "handleIngressConnectivity", Description: ""},
+	{Method: "GET", Path: "/api/v1/instance", Ability: "Public", Group: "Other", Handler: "handleInstance", Description: "CLI device login (device_auth.go): \"levelrail-cli auth login --device\" prints a code, the operator approves it here. start/token are necessarily public (no credential exists yet); requests/ approve/deny are requireAuth session-only, the same tier tokens.go's own session-only routes use, since approving a device only ever mints a token scoped to the approving operator's own abilities."},
+	{Method: "POST", Path: "/api/v1/instance/confirm-same", Ability: "AbilityRoot", Group: "Other", Handler: "handleConfirmSameInstance", Description: ""},
+	{Method: "GET", Path: "/api/v1/instance/identity", Ability: "AbilityRead", Group: "Other", Handler: "handleInstanceIdentity", Description: ""},
 	{Method: "GET", Path: "/api/v1/integrations", Ability: "AbilityRead", Group: "Other", Handler: "handleListIntegrationCatalog", Description: "Integrations (app_integrations.go): the curated internal/integrations catalog (PostHog, Sentry, etc), env-var injection only. The catalog itself is global and read-only (AbilityRead, no store involved, same shape service-templates uses); attach/detach store a field value through the app's own secrets namespace, AbilityWriteSensitive like PUT .../secrets/{key} above."},
 	{Method: "GET", Path: "/api/v1/loadbalancers", Ability: "AbilityRead", Group: "Other", Handler: "handleListLoadBalancers", Description: ""},
 	{Method: "POST", Path: "/api/v1/log-archive/dump", Ability: "AbilityWrite", Group: "Other", Handler: "handleLogArchiveDump", Description: ""},

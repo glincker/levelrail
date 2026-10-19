@@ -339,6 +339,9 @@ func (rt *Router) registerCoreRoutes(mux *http.ServeMux) {
 	// tokens.go's own session-only routes use, since approving a device
 	// only ever mints a token scoped to the approving operator's own
 	// abilities.
+	mux.HandleFunc("GET /api/v1/instance", rt.handleInstance)
+	mux.HandleFunc("GET /api/v1/instance/identity", rt.requireAbility(AbilityRead, rt.handleInstanceIdentity))
+	mux.HandleFunc("POST /api/v1/instance/confirm-same", rt.requireAbility(AbilityRoot, rt.handleConfirmSameInstance))
 	mux.HandleFunc("POST /api/v1/auth/device/start", rt.handleDeviceAuthStart)
 	mux.HandleFunc("POST /api/v1/auth/device/token", rt.handleDeviceAuthToken)
 	mux.HandleFunc("GET /api/v1/auth/device/requests", rt.requireAuth(rt.handleListDeviceAuthRequests))

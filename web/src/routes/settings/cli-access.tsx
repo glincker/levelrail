@@ -1,5 +1,9 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { tokenListQueryOptions } from '../../queries/tokens'
+import { TokenTable } from '../../components/TokenTable'
+import { CliServerCard } from '../../components/settings/CliServerCard'
 import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
@@ -88,6 +92,7 @@ export const Route = createFileRoute('/settings/cli-access')({
 function CliAccessPage() {
   const { t } = useTranslation('settings')
   const { data: requests } = useDeviceAuthRequests()
+  const { data: tokens } = useQuery(tokenListQueryOptions())
   const { user_code: highlightUserCode } = Route.useSearch()
   // Same origin the dashboard itself is served from: in production the
   // API and web UI are one embedded binary, so this is the address the CLI needs.
@@ -147,10 +152,22 @@ function CliAccessPage() {
         </FormSection>
       </div>
 
+      <CliServerCard />
+
       <DeviceAuthRequestTable
         requests={requests}
         highlightUserCode={highlightUserCode}
       />
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium">
+          {t('cliAccessPage.tokens.title')}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {t('cliAccessPage.tokens.body')}
+        </p>
+        <TokenTable tokens={(tokens ?? []).filter((tok) => !tok.agent)} />
+      </section>
     </PageTemplate>
   )
 }

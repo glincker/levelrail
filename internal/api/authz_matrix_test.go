@@ -41,6 +41,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /healthz":                                   "liveness probe for systemd and load balancers",
 	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
 	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
+	"GET /api/v1/instance":                           "CLI verifies which server it reached before sending a token; id and HMAC fingerprint only, rate limited",
 	"GET /api/v1/demo":                               "demo banner, boolean only on a real instance",
 	"POST /api/v1/demo/session":                      "demo sign-in, only registered when the instance runs in demo mode",
 	"POST /api/v1/demo/cta":                          "demo click beacon, only registered in demo mode, enum only",

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
 // runAuthWhoami implements "auth whoami": GET /api/v1/auth/whoami with the
@@ -35,6 +37,9 @@ func runAuthWhoami(prog string, args []string, stdout, stderr io.Writer, lookupE
 		_, _ = fmt.Fprintf(stdout, "name:        %s\n", info.Name)
 		_, _ = fmt.Fprintf(stdout, "abilities:   %s\n", strings.Join(info.Abilities, ", "))
 		_, _ = fmt.Fprintf(stdout, "expires_at:  %s\n", info.ExpiresAt)
+		if c, cerr := readCredentialsFile(prog, resolveProfile(profileFlag, lookupEnv)); cerr == nil && c.InstanceID != "" {
+			_, _ = fmt.Fprintf(stdout, "server:      %s (%s), fingerprint %s, %s\n", c.ServerName, apiclient.ShortInstanceID(c.InstanceID), c.Fingerprint, c.APIURL)
+		}
 	}); err != nil {
 		_, _ = fmt.Fprintln(stderr, err)
 		return exitCodeForError(err)

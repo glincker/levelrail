@@ -18,7 +18,8 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	fs, usernameP, passwordP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := sessionFlagSet(prog, "auth login", "print the new token resource as JSON to stdout and nothing else", stderr)
 	var tokenName, abilitiesFlag, clientNameFlag string
 	var expiresInDays int
-	var deviceFlag bool
+	var deviceFlag, reauthFlag bool
+	fs.BoolVar(&reauthFlag, "reauth", false, "replace the server this profile is pinned to (use after the server was reinstalled or restored)")
 	fs.StringVar(&tokenName, "token-name", "", "name for the newly minted token (default: \"levelrail-cli-<timestamp>\")")
 	fs.StringVar(&abilitiesFlag, "abilities", "", "comma-separated ability list for the new token (default: root, same as the session it's minted from)")
 	fs.IntVar(&expiresInDays, "expires-in-days", 0, "token lifetime in days (default: 0, never expires)")
@@ -41,7 +42,7 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 	of := outputFlags{format, *queryFlagP}
 
 	if deviceFlag {
-		return runAuthLoginDevice(prog, *apiURLFlagP, *profileFlagP, clientNameFlag, stdout, stderr, lookupEnv, of, jsonOut)
+		return runAuthLoginDevice(prog, *apiURLFlagP, *profileFlagP, clientNameFlag, reauthFlag, stdout, stderr, lookupEnv, of, jsonOut)
 	}
 
 	abilities := defaultTokenAbility
@@ -57,20 +58,23 @@ func runAuthLogin(prog string, args []string, stdout, stderr io.Writer, lookupEn
 
 	ctx := context.Background()
 	sf := sessionFlags{*usernameP, *passwordP, *apiURLFlagP, *profileFlagP}
+	profile := resolveProfile(sf.profileFlag, lookupEnv)
+	apiURL := resolveAPIURL(sf.apiURLFlag, lookupEnv, prog, profile)
+	serverInfo, err := checkLoginServer(prog, profile, apiURL, reauthFlag, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
 	sessionClient, loginResp, err := loggedInSessionClient(ctx, sf, prog, lookupEnv, stdin, stderr)
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, err)
 	}
-
-	profile := resolveProfile(sf.profileFlag, lookupEnv)
-	apiURL := resolveAPIURL(sf.apiURLFlag, lookupEnv, prog, profile)
 
 	created, err := sessionClient.CreateToken(ctx, createTokenRequest{Name: tokenName, Abilities: abilities, ExpiresInDays: expiresInDays})
 	if err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("mint API token: %w", err))
 	}
 
-	if err := writeCredentialsFile(prog, profile, credentials{APIURL: apiURL, Token: created.Token}); err != nil {
+	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: created.Token}, serverInfo)); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 
@@ -131,6 +135,7 @@ Flags:
   --token-name string         name for the new token (default: "levelrail-cli-<timestamp>")
   --abilities string           comma-separated ability list (default: root)
   --expires-in-days int      token lifetime in days (default: 0, never expires)
+  --reauth                       replace the server this profile is pinned to (after the server was reinstalled or restored)
   --device                       log in via the device code flow instead of username/password
   --client-name string       optional label for the device request shown in the approval UI, --device only (default: local hostname)
   --json                          print the new token resource as JSON to stdout; with --device, the first stdout line is a JSON object with the approval URL, code and expiry
