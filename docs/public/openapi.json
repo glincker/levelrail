@@ -10729,7 +10729,7 @@
         "x-required-ability": "root"
       },
       "get": {
-        "description": "Domain basic auth (domain_basic_auth.go): HTTP Basic Auth protection on one app-owned domain, enforced by Caddy's authentication handler (internal/reconcile/ingress) on the next reconcile pass. GET is AbilityRead, the same passive-visibility tier GET /api/v1/settings/cloudflare-tunnel uses for its own has_token-shaped read. PUT/DELETE are AbilityRoot, matching PUT/ DELETE /api/v1/settings/cloudflare-tunnel: this changes how a live, currently-routed host is secured, the same \"real infrastructure, high blast radius\" class of change Cloudflare Tunnel/DNS and the ACME toggle already reserve AbilityRoot for.\n\nRequires the `read` ability.",
+        "description": "Domain basic auth: GET is AbilityRead. PUT/DELETE are AbilityRoot, since they change how a live host is secured.\n\nRequires the `read` ability.",
         "operationId": "handleGetDomainBasicAuth",
         "parameters": [
           {
@@ -10806,7 +10806,7 @@
             ]
           }
         ],
-        "summary": "Domain basic auth (domain_basic_auth.go): HTTP Basic Auth protection on one app-owned domain, enforced by Caddy's authentication handler (internal/reconcile/ingress) on the next reconcile pass.",
+        "summary": "Domain basic auth: GET is AbilityRead.",
         "tags": [
           "Ingress / Certificates / Domains / Email / Cloudflare"
         ],
@@ -16364,7 +16364,7 @@
         "x-required-ability": "write:sensitive"
       },
       "get": {
-        "description": "Outbound network allowlist, per app (apps_egress.go): AbilityWriteSensitive for PUT/DELETE, the same tier PUT/DELETE .../storage above uses, since this changes an app's own network-exfiltration surface, the identical sensitivity class as which live bucket credentials it receives. GET is a real route here (unlike storage's reuse of handleGetApp), since an unconfigured policy is common enough (every app before this feature existed) to be worth its own explicit, ordinary AbilityRead response rather than folding it into the general app resource.\n\nRequires the `read` ability.",
+        "description": "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface. GET has its own route since an unset policy is the common case.\n\nRequires the `read` ability.",
         "operationId": "handleGetAppEgressPolicy",
         "parameters": [
           {
@@ -16433,7 +16433,7 @@
             ]
           }
         ],
-        "summary": "Outbound network allowlist, per app (apps_egress.go): AbilityWriteSensitive for PUT/DELETE, the same tier PUT/DELETE .../storage above uses, since this changes an app's own network-exfiltration surface, the identical sensitivity class as which live bucket credentials it receives.",
+        "summary": "Outbound allowlist per app: AbilityWriteSensitive, it changes the exfiltration surface.",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],
@@ -17879,7 +17879,7 @@
     },
     "/api/v1/apps/{name}/exec": {
       "post": {
-        "description": "One-off exec (handleExecApp's own doc comment): AbilityRoot, not AbilityDeploy. Secrets are injected as plaintext env vars into a container at create time and this package deliberately never decrypts one back into a response body anywhere else, see the secrets route above: \"never decrypts a value for a response body.\" Exec is the one route that can read them anyway, by running `env` inside the container, so it must sit behind the same tier that boundary already implies it needs, not the deploy tier. AbilityRoot is this project's existing \"breaks an assumption other tiers rely on\" boundary (see restore's own reasoning below).\n\nRequires the `root` ability.",
+        "description": "One-off exec: AbilityRoot, not AbilityDeploy, because it can read the plaintext env secrets that no other route ever returns.\n\nRequires the `root` ability.",
         "operationId": "handleExecApp",
         "parameters": [
           {
@@ -17959,7 +17959,7 @@
             ]
           }
         ],
-        "summary": "One-off exec (handleExecApp's own doc comment): AbilityRoot, not AbilityDeploy.",
+        "summary": "One-off exec: AbilityRoot, not AbilityDeploy, because it can read the plaintext env secrets that no other route ever returns.",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],
@@ -17968,7 +17968,7 @@
     },
     "/api/v1/apps/{name}/exec-access": {
       "get": {
-        "description": "Exec access opt-out (exec.go's requireExecAccess): a second, independent gate the two routes just above both check before attempting to reach a container, on top of (not instead of) their own AbilityRoot check. GET is AbilityRead, matching every other passive per-app setting view (e.g. GET .../auto-rollback above). PUT is AbilityRoot, the same tier exec/terminal themselves sit behind: flipping this back on hands back a root-tier capability, so re-enabling it needs the same tier as using it, an explicit, auditable, two-step action even for an already-root token.\n\nRequires the `read` ability.",
+        "description": "Exec access opt-out: a second gate checked by exec and terminal on top of AbilityRoot. GET is AbilityRead; PUT is AbilityRoot, since re-enabling hands back a root capability.\n\nRequires the `read` ability.",
         "operationId": "handleGetExecAccess",
         "parameters": [
           {
@@ -18037,7 +18037,7 @@
             ]
           }
         ],
-        "summary": "Exec access opt-out (exec.go's requireExecAccess): a second, independent gate the two routes just above both check before attempting to reach a container, on top of (not instead of) their own AbilityRoot check.",
+        "summary": "Exec access opt-out: a second gate checked by exec and terminal on top of AbilityRoot.",
         "tags": [
           "Apps CRUD / Lifecycle / Deploy"
         ],
@@ -18630,7 +18630,7 @@
         "x-required-ability": "read"
       },
       "post": {
-        "description": "Feature flags (feature_flags.go): a boolean plus optional gradual rollout percentage a running app's own code reads live via the evaluate route below, never baked into a container at create time. CRUD sits at AbilityWrite/AbilityRead, the same ordinary config-mutation tier scheduled tasks above use. Evaluate is a separate, flat, AbilityRead-only route (no app name in its URL: see handleEvaluateFeatureFlag's own doc comment for why), the hot-path endpoint an app calls at runtime with a minimally-scoped read-only token, reusing the existing token/ability system with no new auth surface.\n\nRequires the `write` ability.",
+        "description": "Feature flags: CRUD at AbilityWrite/AbilityRead. Evaluate is a flat AbilityRead route an app calls at runtime with a read-only token.\n\nRequires the `write` ability.",
         "operationId": "handleCreateFeatureFlag",
         "parameters": [
           {
@@ -18710,7 +18710,7 @@
             ]
           }
         ],
-        "summary": "Feature flags (feature_flags.go): a boolean plus optional gradual rollout percentage a running app's own code reads live via the evaluate route below, never baked into a container at create time.",
+        "summary": "Feature flags: CRUD at AbilityWrite/AbilityRead.",
         "tags": [
           "Alerts / Scheduled Tasks / Feature Flags / Notification Channels"
         ],
@@ -28332,7 +28332,7 @@
     },
     "/api/v1/apps/{name}/project": {
       "put": {
-        "description": "Move an app/database into (or out of, with project_id: \"\") a project: the project-kind counterpart to PUT /apps/{name}/node and PUT /databases/{name}/node above, same narrow-dedicated- mutation shape those routes establish (appResource/ databaseResource's own ProjectID field is response-only, exactly like NodeID, see handleSetAppProject's own doc comment for why). AbilityWrite, not AbilityRoot: project membership is an ordinary organizational edit, not infrastructure placement, so it sits at the same sensitivity as the rest of apps/databases CRUD rather than the node routes' fleet-level boundary.\n\nRequires the `write` ability.",
+        "description": "Move an app or database into a project (project_id \"\" removes it): AbilityWrite, since project membership is an organizational edit, not infrastructure placement.\n\nRequires the `write` ability.",
         "operationId": "handleSetAppProject",
         "parameters": [
           {
@@ -28412,7 +28412,7 @@
             ]
           }
         ],
-        "summary": "Move an app/database into (or out of, with project_id: \"\") a project: the project-kind counterpart to PUT /apps/{name}/node and PUT /databases/{name}/node above, same narrow-dedicated- mutation shape those routes establish (appResource/ databaseResource's own ProjectID field is response-only, exactly like NodeID, see handleSetAppProject's own doc comment for why).",
+        "summary": "Move an app or database into a project (project_id \"\" removes it): AbilityWrite, since project membership is an organizational edit, not infrastructure placement.",
         "tags": [
           "Projects / Organizations / Environments"
         ],
@@ -31234,7 +31234,7 @@
         "x-required-ability": "write:sensitive"
       },
       "put": {
-        "description": "Object-storage attachment, per app (apps_storage.go): which connected backup_targets bucket (the same S3-compatible connection a database's scheduled backups can already point at, reused rather than a second \"storage target\" concept) this app's own container gets S3_* credentials injected from at container-create time. AbilityWriteSensitive for both PUT and DELETE, the same tier scheduled backups and database public access above already use: this changes which live bucket credentials an app's own container receives, the identical sensitivity class. GET reuses handleGetApp's own existing AbilityRead response (appResource carries storage_target_id), the same \"no separate GET route\" reasoning the backup-schedule/public-access routes above already apply.\n\nRequires the `write:sensitive` ability.",
+        "description": "Object-storage attachment per app: AbilityWriteSensitive, it decides which bucket credentials the container receives. No GET: handleGetApp already returns storage_target_id.\n\nRequires the `write:sensitive` ability.",
         "operationId": "handleSetAppStorage",
         "parameters": [
           {
@@ -31314,7 +31314,7 @@
             ]
           }
         ],
-        "summary": "Object-storage attachment, per app (apps_storage.go): which connected backup_targets bucket (the same S3-compatible connection a database's scheduled backups can already point at, reused rather than a second \"storage target\" concept) this app's own container gets S3_* credentials injected from at container-create time.",
+        "summary": "Object-storage attachment per app: AbilityWriteSensitive, it decides which bucket credentials the container receives.",
         "tags": [
           "App Storage / Database Attach"
         ],
@@ -45136,7 +45136,7 @@
     },
     "/api/v1/database-engines": {
       "get": {
-        "description": "Databases CRUD, the database-kind counterpart to apps CRUD above. No PUT (full-replace update) yet: unlike a service's image/port/ domains, none of engine/version/name are meant to change in place once created (an engine or major-version change is a migration, not a config edit), so there is nothing for an update endpoint to legitimately do yet. Read-only, ahead of the CRUD routes below since it's not scoped to any one database: every engine this control plane can create at all, backed by the embedded database_engines.yaml registry rather than a hardcoded list, see handleListDatabaseEngines' own doc comment.\n\nRequires the `read` ability.",
+        "description": "Databases CRUD. No PUT: engine, version and name never change in place (that is a migration). The engine registry list sits first since it is not scoped to one database.\n\nRequires the `read` ability.",
         "operationId": "handleListDatabaseEngines",
         "responses": {
           "200": {
@@ -45195,7 +45195,7 @@
             ]
           }
         ],
-        "summary": "Databases CRUD, the database-kind counterpart to apps CRUD above.",
+        "summary": "Databases CRUD.",
         "tags": [
           "Databases CRUD / Engines / Resources"
         ],
@@ -46314,7 +46314,7 @@
         "x-required-ability": "write:sensitive"
       },
       "put": {
-        "description": "Scheduled backup config, per database (wave-2 roadmap item 6): which backup target, cron schedule, and retention count internal/backup.Scheduler uses for this database, if any. AbilityWriteSensitive for both PUT and DELETE, the same tier the manual trigger route above already uses: this is the config that decides where an unattended, recurring backup ends up, a live bucket with previously-stored credentials, the identical sensitivity class. GET reuses handleGetDatabase's own existing AbilityRead response (databaseResource already carries these three fields, see that handler's own file), so there is no separate GET route here.\n\nRequires the `write:sensitive` ability.",
+        "description": "Scheduled backup config: AbilityWriteSensitive, it decides where unattended backups go. No GET: handleGetDatabase already returns these fields.\n\nRequires the `write:sensitive` ability.",
         "operationId": "handleSetBackupSchedule",
         "parameters": [
           {
@@ -46394,7 +46394,7 @@
             ]
           }
         ],
-        "summary": "Scheduled backup config, per database (wave-2 roadmap item 6): which backup target, cron schedule, and retention count internal/backup.Scheduler uses for this database, if any.",
+        "summary": "Scheduled backup config: AbilityWriteSensitive, it decides where unattended backups go.",
         "tags": [
           "Database Backups / Restore / Clone Restore"
         ],
@@ -46654,7 +46654,7 @@
     },
     "/api/v1/databases/{name}/backups/{historyId}/download": {
       "get": {
-        "description": "Download one succeeded backup's own object, streamed straight to the browser. AbilityReadSensitive, not AbilityRead: this returns the actual dump bytes, a full database's worth of content, not metadata about an attempt the way history listing above does; it's also not a mutation, so AbilityWriteSensitive (the tier the trigger route above uses) would overstate it. Not AbilityRoot either, unlike restore.go's own explicit \"single most destructive endpoint\" reasoning for that tier: restore is irreversible, in-place destruction of live data, a materially worse risk class than a read-only fetch from a bucket, even though this route is a genuine full-database exfiltration primitive on the confidentiality axis. Today every session is implicitly root (requireAbility only gates scoped bearer/MCP tokens), so this choice mainly matters once Phase 4 mints scoped automation tokens against this ability tier. See handleDownloadBackup's own doc comment for the full reasoning.\n\nRequires the `read:sensitive` ability.",
+        "description": "Backup download streams the dump bytes: AbilityReadSensitive, since it is a read but exposes a full database. Not AbilityRoot: unlike restore it destroys nothing.\n\nRequires the `read:sensitive` ability.",
         "operationId": "handleDownloadBackup",
         "parameters": [
           {
@@ -46731,7 +46731,7 @@
             ]
           }
         ],
-        "summary": "Download one succeeded backup's own object, streamed straight to the browser.",
+        "summary": "Backup download streams the dump bytes: AbilityReadSensitive, since it is a read but exposes a full database.",
         "tags": [
           "Database Backups / Restore / Clone Restore"
         ],
@@ -49920,7 +49920,7 @@
         "x-required-ability": "write:sensitive"
       },
       "put": {
-        "description": "Public/host-exposed access, per database (database_public_access.go): whether this database's container port is bound to a host port so an operator's own database GUI tool can connect directly. AbilityWriteSensitive for both PUT and DELETE, the same tier scheduled backups above already use: this changes real network exposure, the identical sensitivity class as where an unattended backup ends up. GET reuses handleGetDatabase's own existing AbilityRead response (databaseResource already carries publicly_accessible/public_port), the same \"no separate GET route\" reasoning the backup-schedule routes above already apply.\n\nRequires the `write:sensitive` ability.",
+        "description": "Public host access per database: AbilityWriteSensitive, it changes network exposure. No GET: handleGetDatabase already returns the fields.\n\nRequires the `write:sensitive` ability.",
         "operationId": "handleSetDatabasePublicAccess",
         "parameters": [
           {
@@ -50000,7 +50000,7 @@
             ]
           }
         ],
-        "summary": "Public/host-exposed access, per database (database_public_access.go): whether this database's container port is bound to a host port so an operator's own database GUI tool can connect directly.",
+        "summary": "Public host access per database: AbilityWriteSensitive, it changes network exposure.",
         "tags": [
           "Database Backups / Restore / Clone Restore"
         ],
@@ -63134,7 +63134,7 @@
         "x-required-ability": "root"
       },
       "get": {
-        "description": "GitHub App connection: the manifest-based registration flow, installation, and repo/branch browsing through it (internal/api/github_app.go, github_app_register.go, github_app_repos.go). Every route that reads or mutates the connection itself (status, register/start, callback, installed, disconnect) is AbilityRoot, matching PUT /api/v1/settings/ingress's own precedent above rather than the plain AbilityRead most other GET routes use: this is platform-wide configuration with a real external-account relationship behind it (an installed GitHub App can read a private repository's contents), the same \"real infrastructure, high blast radius\" class ingress settings and node placement already reserve this tier for, not an ordinary per-app read. register/start, callback, and installed are all real, full-page browser navigations (GitHub's manifest flow is inherently that, not a fetch call), not XHR/fetch calls: a session cookie is implicitly AbilityRoot (requireAbility's own doc comment), so the operator's own logged-in browser satisfies this gate the same way it satisfies every other AbilityRoot route.  Repo and branch listing are the one exception, at AbilityReadSensitive: see handleListGitHubAppRepos's own doc comment for why reading already-connected repo/branch names is a materially different (lower) risk class than changing the connection itself. use-as-source is AbilityWriteSensitive, matching PUT .../git-source's own tier and GitLab/Bitbucket's own use-as-source routes below: it performs that exact action.\n\nRequires the `root` ability.",
+        "description": "GitHub App connection: routes that read or change the connection are AbilityRoot, since an installed app can read private repos. register/start, callback and installed are full-page browser navigations; the session cookie is implicitly root.  Repo and branch listing is AbilityReadSensitive; use-as-source is AbilityWriteSensitive like git-source.\n\nRequires the `root` ability.",
         "operationId": "handleGetGitHubAppStatus",
         "responses": {
           "200": {
@@ -63193,7 +63193,7 @@
             ]
           }
         ],
-        "summary": "GitHub App connection: the manifest-based registration flow, installation, and repo/branch browsing through it (internal/api/github_app.go, github_app_register.go, github_app_repos.go).",
+        "summary": "GitHub App connection: routes that read or change the connection are AbilityRoot, since an installed app can read private repos.",
         "tags": [
           "Git Provider Apps"
         ],
@@ -67648,7 +67648,7 @@
         "x-required-ability": "read"
       },
       "post": {
-        "description": "Team invites (invites.go): unlike POST /api/v1/auth/users above, create/revoke are AbilityWrite, not AbilityRoot: handleCreateInvite itself caps the abilities an invite can carry at the caller's own resolved abilities, so a write-level caller can never hand out more than they hold, closing off the escalation risk without needing a root gate. Revoke additionally requires the caller be either root or the invite's own creator (handleRevokeInvite). Listing stays AbilityRead, same tier as the user list, but scopes non-root callers to invites they created (handleListInvites). Accept is necessarily public, gated by possession of the emailed token instead of a session or ability, the same shape as reset-password below.\n\nRequires the `write` ability.",
+        "description": "Team invites: create/revoke are AbilityWrite because an invite can never carry more than the caller holds; list is scoped to the caller's own invites; accept is public, gated by the emailed token.\n\nRequires the `write` ability.",
         "operationId": "handleCreateInvite",
         "requestBody": {
           "content": {
@@ -67718,7 +67718,7 @@
             ]
           }
         ],
-        "summary": "Team invites (invites.go): unlike POST /api/v1/auth/users above, create/revoke are AbilityWrite, not AbilityRoot: handleCreateInvite itself caps the abilities an invite can carry at the caller's own resolved abilities, so a write-level caller can never hand out more than they hold, closing off the escalation risk without needing a root gate.",
+        "summary": "Team invites: create/revoke are AbilityWrite because an invite can never carry more than the caller holds; list is scoped to the caller's own invites; accept is public, gated by the emailed token.",
         "tags": [
           "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth"
         ],
@@ -77247,7 +77247,7 @@
     },
     "/api/v1/nodes/ssh-provision": {
       "post": {
-        "description": "SSH-based node provisioning: adopts a machine the operator already has instead of creating one at a cloud provider, same AbilityRoot boundary as every other node route above (an SSH credential is at least as sensitive as a join token or a provider credential). The create route has no path wildcard, so it can live under /api/v1/nodes/ like /api/v1/nodes/provision does; the show route needs a wildcard {id} and so, like /api/v1/node-provisions/{id} above, must be a top-level sibling rather than nested under /api/v1/nodes/{id}/...: \"/api/v1/nodes/ssh-provisions/{id}\" would conflict with \"/api/v1/nodes/{id}/health\" the exact way that comment already explains for the cloud path.\n\nRequires the `root` ability.",
+        "description": "SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token). The show route stays a top-level sibling: nesting {id} under /nodes/ would conflict with /nodes/{id}/health.\n\nRequires the `root` ability.",
         "operationId": "handleCreateSSHNodeProvision",
         "requestBody": {
           "content": {
@@ -77317,7 +77317,7 @@
             ]
           }
         ],
-        "summary": "SSH-based node provisioning: adopts a machine the operator already has instead of creating one at a cloud provider, same AbilityRoot boundary as every other node route above (an SSH credential is at least as sensitive as a join token or a provider credential).",
+        "summary": "SSH node provisioning: AbilityRoot like every node route (an SSH credential is as sensitive as a join token).",
         "tags": [
           "Nodes"
         ],
@@ -93348,7 +93348,7 @@
     },
     "/api/v1/settings/ingress": {
       "get": {
-        "description": "Ingress settings (ACME toggle, platform primary domain, ADR 005's own \"Verified\" section names this exact gap: real ACME issuance was explicitly unproven, spot-checked against a real domain, not assumed to follow automatically). GET is AbilityRead, the same passive-visibility tier as GET /api/v1/certificates above: reading today's toggle state is ordinary operator visibility. PUT is AbilityRoot, matching handleSetAppNode/handleDrainNode/POST /system/prune's own precedent for \"real infrastructure, high blast radius, not an ordinary per-app write\": flipping acme_enabled changes what every currently-routed host's certificate automation does, fleet-wide, on the very next ingress reconcile pass, the same class of change node placement and draining already reserve AbilityRoot for.\n\nRequires the `read` ability.",
+        "description": "Ingress settings: GET is AbilityRead. PUT is AbilityRoot, since flipping acme_enabled changes certificate automation fleet-wide on the next reconcile.\n\nRequires the `read` ability.",
         "operationId": "handleGetIngressSettings",
         "responses": {
           "200": {
@@ -93407,7 +93407,7 @@
             ]
           }
         ],
-        "summary": "Ingress settings (ACME toggle, platform primary domain, ADR 005's own \"Verified\" section names this exact gap: real ACME issuance was explicitly unproven, spot-checked against a real domain, not assumed to follow automatically).",
+        "summary": "Ingress settings: GET is AbilityRead.",
         "tags": [
           "Ingress / Certificates / Domains / Email / Cloudflare"
         ],
@@ -108110,7 +108110,7 @@
     },
     "/api/v1/webhooks/github/{name}": {
       "post": {
-        "description": "Git push webhook (git_webhook.go), the per-app-URL evolution of the original static POST /webhook (still mounted separately by cmd/levelrail/main.go for the single-app, env-var-configured path). Deliberately unauthenticated, like that route: GitHub cannot present a session or API token, so this is not wrapped in requireAbility. Its own per-app HMAC signature check (the secret generated at connect time, PUT .../git-source above) is what stands in for auth here, the same trust boundary internal/webhook.Handler's own doc comment establishes for the single-app path.\n\nNo authentication required.",
+        "description": "Git push webhook: deliberately unauthenticated because GitHub cannot present a session. The per-app HMAC signature check (secret set at git-source connect time) stands in for auth.\n\nNo authentication required.",
         "operationId": "handleGitPushWebhook",
         "parameters": [
           {
@@ -108164,7 +108164,7 @@
           }
         },
         "security": [],
-        "summary": "Git push webhook (git_webhook.go), the per-app-URL evolution of the original static POST /webhook (still mounted separately by cmd/levelrail/main.go for the single-app, env-var-configured path).",
+        "summary": "Git push webhook: deliberately unauthenticated because GitHub cannot present a session.",
         "tags": [
           "Secrets / Git Source / Webhooks / Preview Environments"
         ]
