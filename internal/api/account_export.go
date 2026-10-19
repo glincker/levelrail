@@ -19,6 +19,8 @@ const (
 	exportBuildTimeout  = time.Minute
 	exportCooldown      = time.Minute
 	exportActivityLimit = 5000
+	exportMaxBytes      = 32 << 20
+	exportMaxHeld       = 64
 
 	accountExportPending = "pending"
 	accountExportReady   = "ready"
@@ -72,6 +74,15 @@ func (s *accountSelfState) startExport(id, userID string, now time.Time) {
 		if e.userID == userID || now.After(e.expires) {
 			delete(s.exports, k)
 		}
+	}
+	for len(s.exports) >= exportMaxHeld {
+		oldest := ""
+		for k, e := range s.exports {
+			if oldest == "" || e.expires.Before(s.exports[oldest].expires) {
+				oldest = k
+			}
+		}
+		delete(s.exports, oldest)
 	}
 	s.exports[id] = &accountExport{id: id, userID: userID, status: accountExportPending, expires: now.Add(exportTTL)}
 }
@@ -243,10 +254,14 @@ func (rt *Router) exportSessions(ctx context.Context, userID string) ([]sessionR
 func zipJSON(files map[string]any) ([]byte, error) {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
+	total := 0
 	for name, v := range files {
 		raw, err := json.MarshalIndent(v, "", "  ")
 		if err != nil {
 			return nil, fmt.Errorf("encode %s: %w", name, err)
+		}
+		if total += len(raw); total > exportMaxBytes {
+			return nil, fmt.Errorf("export exceeds %d bytes", exportMaxBytes)
 		}
 		f, err := zw.Create(name)
 		if err != nil {

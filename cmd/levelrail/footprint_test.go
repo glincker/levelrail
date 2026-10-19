@@ -2,24 +2,22 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
-	"github.com/GLINCKER/levelrail/internal/alerting"
-	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/footprint"
-	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
 
 const (
@@ -31,6 +29,8 @@ const (
 	rssGrowthLimit     = 1.15
 	goroutineSlack     = 5
 	defaultIdleSeconds = 60
+	bootSettle         = 20 * time.Second
+	footprintBrandFile = "../../brand.yaml"
 )
 
 type footprintResult struct {
@@ -51,33 +51,24 @@ func idleSeconds() int {
 	return defaultIdleSeconds
 }
 
-// TestFootprintPhase is the child process of TestFootprint: it boots the demo control plane on seeded fixtures, idles, and prints one result line.
+// TestFootprintPhase is the child process of TestFootprint: it boots the real control plane (run) on a temp data dir, with no Docker daemon needed,, idles, and prints one result line.
 func TestFootprintPhase(t *testing.T) {
 	mode := os.Getenv(envFootprintPhase)
 	if mode == "" {
 		t.Skip("child of TestFootprint")
 	}
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	t.Setenv("APP_DATA_DIR", t.TempDir())
-	db, err := openStore(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = db.Close() }()
-	tdb, err := openTelemetryStore(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = tdb.Close() }()
-	adb, err := openAlertingStore(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = adb.Close() }()
-	seedFootprintDemo(ctx, t, db, tdb, adb)
-	if _, err := buildDemoHandler(ctx, demoTestLogger(), demoTestBrand(), db, tdb, adb, telemetry.NewLogBroadcaster()); err != nil {
-		t.Fatal(err)
+	t.Setenv("APP_BRAND_FILE", footprintBrandFile)
+	t.Setenv("APP_HTTP_ADDR", "127.0.0.1:0")
+	t.Setenv("APP_INGRESS_HTTP_ADDR", "127.0.0.1:0")
+	t.Setenv("APP_INGRESS_HTTPS_ADDR", "127.0.0.1:0")
+	t.Setenv("APP_AGENT_ADDR", "127.0.0.1:0")
+	runErr := make(chan error, 1)
+	go func() { runErr <- run(slog.New(slog.NewTextHandler(io.Discard, nil))) }()
+	select {
+	case err := <-runErr:
+		t.Fatalf("control plane exited during boot: %v", err)
+	case <-time.After(bootSettle):
 	}
 
 	idle := time.Duration(idleSeconds()) * time.Second
@@ -98,6 +89,11 @@ func TestFootprintPhase(t *testing.T) {
 	}
 	b, _ := json.Marshal(res)
 	fmt.Println(footprintResultTag + string(b))
+	_ = syscall.Kill(os.Getpid(), syscall.SIGTERM)
+	select {
+	case <-runErr:
+	case <-time.After(30 * time.Second):
+	}
 }
 
 // TestFootprint measures idle RSS, goroutines, threads and CPU with every experimental feature off and on, and fails on a regression against testdata/footprint_baseline.json. Set FOOTPRINT_RECORD=1 to rewrite the baseline.
@@ -173,12 +169,4 @@ func runFootprintPhase(t *testing.T, mode, features string) footprintResult {
 	}
 	t.Fatalf("%s phase printed no result:\n%s", mode, out.String())
 	return footprintResult{}
-}
-
-func seedFootprintDemo(ctx context.Context, t *testing.T, db *store.DB, tdb *telemetry.DB, adb *alerting.DB) {
-	t.Helper()
-	anchor := time.Date(2026, 10, 14, 0, 0, 0, 0, time.UTC)
-	if _, err := demo.SeedAll(ctx, demo.Stores{DB: db, Telemetry: tdb, Alerting: adb}, demo.Options{Seed: 1, Anchor: anchor}); err != nil {
-		t.Fatal(err)
-	}
 }

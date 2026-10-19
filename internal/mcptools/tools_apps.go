@@ -32,6 +32,7 @@ type listAppsInput struct {
 	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
 	Offset      int    `json:"offset,omitempty"`
 	Environment string `json:"environment,omitempty" jsonschema:"only apps in this environment"`
+	Fields      string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
 }
 
 type listAppsOutput struct {
@@ -70,7 +71,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_app",
-		Description: "Point an existing app at a new image tag. Asynchronous: returns once desired state is saved, so use get_app_status to watch convergence. Protected environments require confirm true and then yield pending_approval: a different privileged human must approve before anything runs.",
+		Description: "Point an app at a new image tag. Asynchronous: watch with get_app_status. Protected environments need confirm and yield pending_approval until another human approves.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
@@ -92,7 +93,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "rollback_app",
-		Description: "Point an app back at an older, already-built image tag. Same request and protected-environment approval gate as deploy_app. Asynchronous: use get_app_status to watch it converge. This does not verify the tag's content is unchanged; prefer rollback_app_to_deploy when a deploy_id is known.",
+		Description: "Point an app back at an older image tag. Same approval gate as deploy_app, asynchronous. Does not verify the tag is unchanged; prefer rollback_app_to_deploy when a deploy_id is known.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployAppInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.DeployApp(ctx, in.Name, in.Image, in.Confirm)
 		if err != nil {
@@ -103,7 +104,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "rollback_app_to_deploy",
-		Description: "Roll back to a past succeeded deploy attempt (from list_deploy_attempts), pinned by the exact image digest it recorded. Fails closed if that image was garbage collected or its tag now points at different content, the two rollback failure modes rollback_app cannot detect. Same freeze and protected-environment approval gate as deploy_app. Asynchronous: use get_app_status to watch it converge.",
+		Description: "Roll back to a past succeeded attempt (from list_deploy_attempts), pinned by its recorded image digest. Fails closed if the image was garbage collected or its tag changed. Same freeze and approval gate as deploy_app. Asynchronous: watch with get_app_status.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in rollbackToDeployInput) (*mcp.CallToolResult, apiclient.DeployTriggerResult, error) {
 		result, err := client.RollbackToDeploy(ctx, in.Name, in.DeployID, apiclient.RollbackToRequest{
 			Confirm:        in.Confirm,
@@ -195,7 +196,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy",
-		Description: "Get one deploy attempt (deploy_id, or \"latest\") with its status, image, commit and, when it failed or is blocked, the structured failure object: code, cause, failing_step, a capped and redacted log_excerpt, suggested_fix, docs_url, retryable, deploy_id, app and at. Use this to explain a failed build or deploy.",
+		Description: "Get one deploy attempt (deploy_id, or \"latest\"): status, image, commit and, on failure, the structured failure (code, cause, failing_step, redacted log_excerpt, suggested_fix, docs_url, retryable). Use it to explain a failed deploy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in getDeployInput) (*mcp.CallToolResult, apiclient.DeployAttemptResource, error) {
 		id := in.DeployID
 		if id == "" {
@@ -210,7 +211,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_deploy_attempts",
-		Description: "List an app's real deploy-attempt history: one row per actual trigger call (manual deploy, build, or webhook), newest first, with status, image, commit SHA, and timestamps. Optional filters narrow it server side. Additive to get_app_status/list_deploys' current reconcile conditions, not a replacement: this is a real log of what was tried, not just the latest state.",
+		Description: "List an app's deploy-attempt history, newest first: one row per trigger (manual, build, webhook) with status, image, commit SHA and timestamps. Filters apply server side. Unlike get_app_status, this is a log of what was tried.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeployAttemptsInput) (*mcp.CallToolResult, []apiclient.DeployAttemptResource, error) {
 		attempts, err := client.ListDeployAttemptsFiltered(ctx, in.Name, apiclient.DeployAttemptFilter{Branch: in.Branch, Author: in.Author, Commit: in.Commit, Status: in.Status, Query: in.Query, Limit: in.Limit})
 		if err != nil {
@@ -221,7 +222,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_sbom",
-		Description: "Get the software bill of materials summary of one deploy: package count, package types, license counts and the first packages. Without a deploy id the newest deploy that has an SBOM is used. Read only; SBOMs exist only for Dockerfile builds when the server sets APP_BUILD_ATTEST=true.",
+		Description: "Get one deploy's SBOM summary: package count, types, license counts, first packages. Defaults to the newest deploy with an SBOM. Exists only for Dockerfile builds with APP_BUILD_ATTEST=true.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.SBOMSummary, error) {
 		id, err := supplyChainDeploy(ctx, client, in, true)
 		if err != nil {
@@ -236,7 +237,7 @@ func registerAppTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_deploy_vulnerabilities",
-		Description: "Get the vulnerability scan result of one deploy: counts by severity, the top fixable findings and the scan gate decision. Without a deploy id the newest scanned deploy is used. Read only; it never starts a scan.",
+		Description: "Get one deploy's vulnerability scan: counts by severity, top fixable findings and the gate decision. Defaults to the newest scanned deploy; never starts a scan.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployRefInput) (*mcp.CallToolResult, apiclient.VulnReport, error) {
 		id, err := supplyChainDeploy(ctx, client, in, false)
 		if err != nil {
@@ -296,6 +297,7 @@ type listDeployAttemptsInput struct {
 	Status string `json:"status,omitempty" jsonschema:"attempt status, e.g. succeeded or failed"`
 	Query  string `json:"query,omitempty" jsonschema:"free text match"`
 	Limit  int    `json:"limit,omitempty"`
+	Fields string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
 }
 
 type appNameInput struct {
@@ -318,13 +320,13 @@ type cloneAppInput struct {
 type deployAppInput struct {
 	Name    string `json:"name" jsonschema:"the app's name"`
 	Image   string `json:"image" jsonschema:"image reference to deploy, e.g. registry.example.com/org/app:tag"`
-	Confirm bool   `json:"confirm,omitempty" jsonschema:"required true to deploy into an app tagged with a protected environment; omit or false fails with a 409 naming the environment if it's protected"`
+	Confirm bool   `json:"confirm,omitempty" jsonschema:"true to confirm a protected environment, else 409"`
 }
 
 type rollbackToDeployInput struct {
 	Name           string `json:"name" jsonschema:"the app's name"`
 	DeployID       string `json:"deploy_id" jsonschema:"the target deploy attempt's id, from list_deploy_attempts"`
-	Confirm        bool   `json:"confirm,omitempty" jsonschema:"required true to roll back an app tagged with a protected environment; omit or false fails with a 409 naming the environment if it's protected"`
+	Confirm        bool   `json:"confirm,omitempty" jsonschema:"true to confirm a protected environment, else 409"`
 	OverrideFreeze bool   `json:"override_freeze,omitempty" jsonschema:"roll back even though a deploy freeze window is active; requires override_reason"`
 	OverrideReason string `json:"override_reason,omitempty" jsonschema:"why this rollback overrides an active freeze, recorded on the deploy"`
 }

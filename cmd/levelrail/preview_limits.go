@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/api"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 const (
@@ -81,14 +82,18 @@ func staticOrphanGrace(logger *slog.Logger) time.Duration {
 // runStaticOrphanSweep removes static sites whose app is gone, at startup and
 // then once per grace period.
 func runStaticOrphanSweep(ctx context.Context, logger *slog.Logger, r *api.Router) {
+	loop := footprint.Track("static orphan sweep", r.StaticOrphanGrace())
+	defer loop.Active()()
 	t := time.NewTicker(r.StaticOrphanGrace())
 	defer t.Stop()
 	for {
+		start := time.Now()
 		if removed, err := r.SweepOrphanStaticSites(ctx); err != nil {
 			logger.Warn("orphan static site sweep had errors", slog.String("error", err.Error()))
 		} else if len(removed) > 0 {
 			logger.Info("orphan static site sweep removed sites", slog.Int("removed", len(removed)))
 		}
+		loop.Observe(start, nil)
 		select {
 		case <-ctx.Done():
 			return

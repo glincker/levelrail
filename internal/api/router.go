@@ -774,6 +774,8 @@ type Router struct {
 	cpBackups           ControlPlaneBackupManager // nil is valid: /system/backups routes return 501
 	archives            *archive.Manager          // nil is valid: /archives routes return 501
 	archiveSettings     ArchiveSettingsStore
+	archiveWake         chan struct{}
+	archiveWakeOnce     sync.Once
 	cpBackupScheduleOff bool           // APP_CONTROL_PLANE_BACKUP_INTERVAL=0, set via WithControlPlaneBackupScheduleDisabled
 	cpDR                ControlPlaneDR // nil is valid: /system/control-plane-dr routes return 501
 

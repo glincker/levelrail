@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -78,6 +79,8 @@ func (s *Service) UpdateConfig(ctx context.Context, u ConfigUpdate) error {
 // Run checks for due backups and drills every Opts.Tick until ctx is done.
 func (s *Service) Run(ctx context.Context) {
 	s.CleanTemp()
+	loop := footprint.Track("control plane backup", s.Opts.Tick)
+	defer loop.Active()()
 	t := time.NewTicker(s.Opts.Tick)
 	defer t.Stop()
 	for {
@@ -85,7 +88,9 @@ func (s *Service) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			start := time.Now()
 			s.Tick(ctx)
+			loop.Observe(start, nil)
 		}
 	}
 }

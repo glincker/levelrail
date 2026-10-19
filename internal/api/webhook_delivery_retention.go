@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // defaultWebhookDeliveryRetention is how long a webhook_deliveries row
@@ -35,19 +37,11 @@ func (rt *Router) PurgeOldWebhookDeliveries(ctx context.Context) (int64, error) 
 // establishes: without it, webhook_deliveries would be the one inbound-
 // request history table in this codebase that only ever grows.
 func (rt *Router) RunWebhookDeliverySweeper(ctx context.Context, interval time.Duration) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if n, err := rt.PurgeOldWebhookDeliveries(ctx); err != nil {
-				rt.logger.Warn("api: webhook delivery sweep tick failed", slog.String("error", err.Error()))
-			} else if n > 0 {
-				rt.logger.Info("api: swept old webhook deliveries", slog.Int64("deleted", n))
-			}
+	return footprint.Every(ctx, "webhook delivery sweep", interval, rt.logger, func(ctx context.Context) error {
+		n, err := rt.PurgeOldWebhookDeliveries(ctx)
+		if err == nil && n > 0 {
+			rt.logger.Info("api: swept old webhook deliveries", slog.Int64("deleted", n))
 		}
-	}
+		return err
+	})
 }

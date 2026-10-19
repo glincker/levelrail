@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/archive"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -148,24 +149,52 @@ func (rt *Router) RunArchives(ctx context.Context, manual bool) (archive.RunResu
 	return res, runErr
 }
 
-// RunArchiveSweeper applies the archive policy on interval until ctx is done.
+func (rt *Router) archiveWakeChan() chan struct{} {
+	rt.archiveWakeOnce.Do(func() { rt.archiveWake = make(chan struct{}, 1) })
+	return rt.archiveWake
+}
+
+func (rt *Router) archivePolicyEnabled(ctx context.Context) bool {
+	if rt.archives == nil || rt.archiveSettings == nil {
+		return false
+	}
+	pol, err := rt.archiveSettings.GetArchiveSettings(ctx)
+	return err != nil || pol.Enabled
+}
+
+// RunArchiveSweeper applies the archive policy on interval until ctx is done. While the policy is off it holds no timer and waits for the policy to be saved.
 func (rt *Router) RunArchiveSweeper(ctx context.Context, interval time.Duration) error {
 	if interval <= 0 {
 		interval = archiveSweepDefault
 	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	loop := footprint.Track("archive sweep", interval)
+	defer loop.Active()()
+	wake := rt.archiveWakeChan()
 	for {
+		if !rt.archivePolicyEnabled(ctx) {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-wake:
+				continue
+			}
+		}
+		timer := time.NewTimer(interval)
 		select {
 		case <-ctx.Done():
+			timer.Stop()
 			return ctx.Err()
-		case <-ticker.C:
-			res, err := rt.RunArchives(ctx, false)
-			if err != nil {
-				rt.logger.Warn("api: archive sweep failed", slog.String("error", err.Error()))
-			} else if len(res.Created) > 0 || res.Pruned > 0 {
-				rt.logger.Info("api: archive sweep done", slog.Int("bundles", len(res.Created)), slog.Int("pruned", res.Pruned))
-			}
+		case <-wake:
+			timer.Stop()
+		case <-timer.C:
+		}
+		start := time.Now()
+		res, err := rt.RunArchives(ctx, false)
+		loop.Observe(start, err)
+		if err != nil {
+			rt.logger.Warn("api: archive sweep failed", slog.String("error", err.Error()))
+		} else if len(res.Created) > 0 || res.Pruned > 0 {
+			rt.logger.Info("api: archive sweep done", slog.Int("bundles", len(res.Created)), slog.Int("pruned", res.Pruned))
 		}
 	}
 }
@@ -209,6 +238,10 @@ func (rt *Router) handlePutArchivePolicy(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		rt.internalError(w, "api: get archive policy failed", err)
 		return
+	}
+	select {
+	case rt.archiveWakeChan() <- struct{}{}:
+	default:
 	}
 	writeJSON(w, http.StatusOK, pol)
 }

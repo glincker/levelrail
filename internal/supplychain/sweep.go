@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"sort"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 const orphanGrace = 5 * time.Minute
@@ -175,7 +177,14 @@ func (s *Service) sweepContainers(ctx context.Context) error {
 // Start runs a startup sweep and then one every SweepInterval until ctx ends.
 func (s *Service) Start(ctx context.Context) {
 	go func() {
-		s.Sweep(ctx)
+		loop := footprint.Track("supply chain sweep", s.cfg.SweepInterval)
+		defer loop.Active()()
+		sweep := func() {
+			start := time.Now()
+			s.Sweep(ctx)
+			loop.Observe(start, nil)
+		}
+		sweep()
 		t := time.NewTicker(s.cfg.SweepInterval)
 		defer t.Stop()
 		for {
@@ -183,7 +192,7 @@ func (s *Service) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-t.C:
-				s.Sweep(ctx)
+				sweep()
 			}
 		}
 	}()

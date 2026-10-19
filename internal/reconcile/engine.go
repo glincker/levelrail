@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // Controller manages one resource's convergence from desired to observed
@@ -258,7 +259,14 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 		slog.Duration("resync_interval", resyncInterval),
 	)
 
-	e.ReconcileAll(ctx)
+	loop := footprint.Track("reconcile pass", resyncInterval)
+	defer loop.Active()()
+	pass := func() {
+		start := time.Now()
+		e.ReconcileAll(ctx)
+		loop.Observe(start, nil)
+	}
+	pass()
 
 	ticker := time.NewTicker(resyncInterval)
 	defer ticker.Stop()
@@ -284,7 +292,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 			deferTimer.Stop()
 			deferC = nil
 		}
-		e.ReconcileAll(ctx)
+		pass()
 	}
 
 	for {
@@ -295,7 +303,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-ticker.C:
 			e.logger.Debug("resync tick")
-			e.ReconcileAll(ctx)
+			trigger()
 
 		case <-deferC:
 			deferC = nil

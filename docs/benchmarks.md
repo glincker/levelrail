@@ -96,14 +96,16 @@ Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Go 1.26.9. The fixture 
 
 Live instance, 2 vCPU and 8 GB test box, all features at defaults, no apps under load: idle RSS 200 MB (peak 253 MB), 273 goroutines, 11 threads, 1.5 percent CPU, database p95 0.4 ms, reconcile pass 400 ms, metrics database 395 MB. The Control plane health page shows these numbers live, plus every background loop.
 
-Demo harness (`go test ./cmd/levelrail -run TestFootprint`, 60 s idle per run, Apple M4 Max, macOS; the router and stores on seeded demo data, no Docker, Caddy or agents). RSS here is the Go runtime's reserved memory, so it is higher than a Linux RSS and is only comparable run to run on the same OS:
+Boot harness (`go test ./cmd/levelrail -run TestFootprint`, 60 s idle per run after a 20 s settle). It starts the real control plane (`run()`: store, reconcile engine, telemetry, alerting, schedulers, ingress, agent server) on a temp data dir with no Docker daemon, once with every experimental feature off and once with all on, and records peak RSS, goroutines, threads, CPU and the number of loops on the health page. The Linux rows ran in a `golang:1.23` container limited to 2 CPUs and 8 GB from a cross-compiled test binary on an Apple M4 Max host; the binary carries the test runtime, so treat RSS as an upper bound for the shipped binary.
 
-| Features | Goroutines | RSS MB | CPU percent |
-| --- | --- | --- | --- |
-| All experimental features off | 12 | 113 | 0.01 |
-| All experimental features on | 12 | 112 | 0.01 |
+| Platform | Features | Goroutines | Threads | RSS MB | CPU percent | Loops on health page |
+| --- | --- | --- | --- | --- | --- | --- |
+| Linux arm64 | All experimental features off | 100 | 8 | 232 | 0.41 | 36 |
+| Linux arm64 | All experimental features on | 104 | 8 | 233 | 0.40 | 38 |
+| macOS arm64 | All experimental features off | 114 | not read | 170 | 0.22 | 36 |
+| macOS arm64 | All experimental features on | 118 | not read | 170 | 0.52 | 38 |
 
-The demo handler starts no feature loops, so on versus off is equal here. The ratchet guards the API and store layers against regressions; see [Performance budget](/performance-budget).
+Turning every experimental feature on costs 4 goroutines and 2 loops, and no measurable memory. The recorded baseline lives in `cmd/levelrail/testdata/footprint_baseline.json` and is a ratchet; see [Performance budget](/performance-budget). Live numbers on the 2 vCPU test box above are from the health page of a running instance, not this harness.
 
 ### Control plane at 1000 apps (2026-10-18)
 

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -30,6 +31,8 @@ func (s *BucketSweeper) Run(ctx context.Context) {
 	if tick <= 0 {
 		tick = time.Hour
 	}
+	loop := footprint.Track("storage bucket sweep", tick)
+	defer loop.Active()()
 	t := time.NewTicker(tick)
 	defer t.Stop()
 	for {
@@ -37,7 +40,9 @@ func (s *BucketSweeper) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			start := time.Now()
 			s.SweepAll(ctx)
+			loop.Observe(start, nil)
 		}
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"log/slog"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // TempCredential is one tracked short-lived login. Its secret is never held.
@@ -64,7 +66,14 @@ func (s *Sweeper) now() time.Time {
 
 // Run sweeps immediately, then every interval until ctx ends.
 func (s *Sweeper) Run(ctx context.Context, interval time.Duration) error {
-	s.Sweep(ctx)
+	loop := footprint.Track("database access sweep", interval)
+	defer loop.Active()()
+	sweep := func() {
+		start := time.Now()
+		s.Sweep(ctx)
+		loop.Observe(start, nil)
+	}
+	sweep()
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
@@ -72,7 +81,7 @@ func (s *Sweeper) Run(ctx context.Context, interval time.Duration) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			s.Sweep(ctx)
+			sweep()
 		}
 	}
 }

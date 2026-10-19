@@ -318,6 +318,12 @@ func (s *Syncer) create(ctx context.Context, app store.DesiredService, w Wanted,
 
 // Run syncs every Config.Interval until ctx ends.
 func (s *Syncer) Run(ctx context.Context) error {
+	if !s.Config.Enabled() {
+		if err := s.Sync(ctx); err != nil {
+			s.Logger.WarnContext(ctx, "deploy urls: cleanup pass failed", slog.String("error", err.Error()))
+		}
+		return nil
+	}
 	t := time.NewTicker(s.Config.Interval)
 	defer t.Stop()
 	for {

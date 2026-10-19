@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -204,18 +205,7 @@ func (s *Service) Overdue(ctx context.Context) ([]store.AccessReviewCampaign, er
 // RunScheduler opens the next campaign of a repeating series once the
 // previous one is completed and its interval has elapsed.
 func (s *Service) RunScheduler(ctx context.Context, every time.Duration) {
-	t := time.NewTicker(every)
-	defer t.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-			if err := s.scheduleOnce(ctx); err != nil {
-				s.logger.Warn("compliance: scheduled access review failed", slog.String("error", err.Error()))
-			}
-		}
-	}
+	_ = footprint.Every(ctx, "access review scheduler", every, s.logger, s.scheduleOnce)
 }
 
 func (s *Service) scheduleOnce(ctx context.Context) error {

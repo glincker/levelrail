@@ -241,3 +241,20 @@ func TestSearchCallsAuthorizerForEveryHit(t *testing.T) {
 		t.Fatalf("hits=%d authz calls=%d err=%v", len(r.Hits), rec.calls, err)
 	}
 }
+
+func TestSearchCandidatesAreCapped(t *testing.T) {
+	db := openDB(t)
+	docs := make([]search.Doc, 0, 700)
+	for i := range 700 {
+		docs = append(docs, appDoc(fmt.Sprintf("svc-%03d", i), "shared body"))
+	}
+	svc := search.New(db, nil, staticProvider{search.KindApp, docs})
+	c := search.Caller{PrincipalID: "user:1", Authz: allowFunc(func(string, string, string) bool { return true })}
+	got, err := svc.Search(context.Background(), c, search.Request{Q: "shared", Limit: search.MaxPageSize})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Total > 500 {
+		t.Fatalf("one query ranked %d docs in memory, the candidate cap is 500", got.Total)
+	}
+}

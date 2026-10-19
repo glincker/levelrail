@@ -37,4 +37,5 @@ type auditLogInput struct {
 	Query  string `json:"q,omitempty" jsonschema:"case-insensitive substring match across actor, ability, method, path and remote address"`
 	Status string `json:"status,omitempty" jsonschema:"set to failed to only return entries with an HTTP status of 400 or above"`
 	Agent  string `json:"agent,omitempty" jsonschema:"only return entries made with a token labeled with this agent name"`
+	Fields string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
 }

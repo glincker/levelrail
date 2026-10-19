@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -116,6 +117,8 @@ func (s *DrillScheduler) Tick(ctx context.Context) error {
 
 // Run ticks until ctx is done.
 func (s *DrillScheduler) Run(ctx context.Context, every time.Duration) error {
+	loop := footprint.Track("backup drill scheduler", every)
+	defer loop.Active()()
 	t := time.NewTicker(every)
 	defer t.Stop()
 	for {
@@ -123,7 +126,10 @@ func (s *DrillScheduler) Run(ctx context.Context, every time.Duration) error {
 		case <-ctx.Done():
 			return nil
 		case <-t.C:
-			if err := s.Tick(ctx); err != nil {
+			start := time.Now()
+			err := s.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
 				s.log().Error("backup: drill scheduler tick failed", slog.String("error", err.Error()))
 			}
 		}

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/secretrotation"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -459,7 +460,14 @@ func (s *Service) Sweep(ctx context.Context) int {
 
 // Run sweeps once at boot, then every interval until ctx ends.
 func (s *Service) Run(ctx context.Context, interval time.Duration) error {
-	s.Sweep(ctx)
+	loop := footprint.Track("database credential rotation sweep", interval)
+	defer loop.Active()()
+	sweep := func() {
+		start := time.Now()
+		s.Sweep(ctx)
+		loop.Observe(start, nil)
+	}
+	sweep()
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
@@ -467,7 +475,7 @@ func (s *Service) Run(ctx context.Context, interval time.Duration) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			s.Sweep(ctx)
+			sweep()
 		}
 	}
 }

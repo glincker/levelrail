@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
@@ -76,6 +77,8 @@ func lbTelemetrySamples(ctx context.Context, reg *loadbalancer.Registry, stats l
 // runLoadBalancerTelemetry samples every balancer's health and load into the
 // metrics store until ctx is cancelled.
 func runLoadBalancerTelemetry(ctx context.Context, reg *loadbalancer.Registry, stats loadbalancer.StatsSource, db *telemetry.DB, every time.Duration, logger *slog.Logger) {
+	loop := footprint.Track("load balancer telemetry", every)
+	defer loop.Active()()
 	ticker := time.NewTicker(every)
 	defer ticker.Stop()
 	for {
@@ -83,7 +86,10 @@ func runLoadBalancerTelemetry(ctx context.Context, reg *loadbalancer.Registry, s
 		case <-ctx.Done():
 			return
 		case now := <-ticker.C:
-			if err := db.RecordLoadBalancer(ctx, lbTelemetrySamples(ctx, reg, stats, loadbalancer.HTTPProber{}), now); err != nil && ctx.Err() == nil {
+			start := time.Now()
+			err := db.RecordLoadBalancer(ctx, lbTelemetrySamples(ctx, reg, stats, loadbalancer.HTTPProber{}), now)
+			loop.Observe(start, err)
+			if err != nil && ctx.Err() == nil {
 				logger.Warn("load balancer telemetry sample failed", slog.String("error", err.Error()))
 			}
 		}

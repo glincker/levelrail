@@ -1,6 +1,10 @@
 package api
 
-import "testing"
+import (
+	"fmt"
+	"strings"
+	"testing"
+)
 
 func TestParseDocumentCached(t *testing.T) {
 	const doc = `{"Statement":[{"Effect":"Deny","Action":["*"],"Resource":["app:x"]}]}`
@@ -18,5 +22,27 @@ func TestParseDocumentCached(t *testing.T) {
 	}
 	if _, err := parseDocumentCached(`{"Statement":[]}`); err == nil {
 		t.Fatal("an invalid document must still be rejected")
+	}
+}
+
+func TestParseDocumentCacheIsBounded(t *testing.T) {
+	big := `{"Statement":[{"Effect":"Allow","Action":["read"],"Resource":["app:` + strings.Repeat("x", parsedDocumentMaxKey) + `"]}]}`
+	a, err := parseDocumentCached(big)
+	if err != nil {
+		t.Fatalf("parse big: %v", err)
+	}
+	if b, _ := parseDocumentCached(big); a == b {
+		t.Fatal("a document over the per-entry cap must not be cached")
+	}
+	for i := range parsedDocumentCacheMax + 10 {
+		if _, err := parseDocumentCached(fmt.Sprintf(`{"Statement":[{"Effect":"Allow","Action":["read"],"Resource":["app:n%d"]}]}`, i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	parsedDocuments.RLock()
+	n, size := len(parsedDocuments.m), parsedDocuments.bytes
+	parsedDocuments.RUnlock()
+	if n > parsedDocumentCacheMax || size > parsedDocumentCacheBytes {
+		t.Fatalf("cache grew past its caps: %d entries, %d bytes", n, size)
 	}
 }

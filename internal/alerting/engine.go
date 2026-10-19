@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/changes"
 	"github.com/GLINCKER/levelrail/internal/deploy"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 	"github.com/GLINCKER/levelrail/internal/version"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
@@ -673,6 +674,8 @@ func (e *Engine) fetchRecentLogLines(ctx context.Context, resourceID string) []s
 // every other periodic loop in this codebase
 // (telemetry.Collector.Run, cmd/levelrail's retention sweeps).
 func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
+	loop := footprint.Track("alerting evaluation", interval)
+	defer loop.Active()()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -686,7 +689,10 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 			}
 			return ctx.Err()
 		case <-ticker.C:
-			if err := e.Tick(ctx); err != nil {
+			start := time.Now()
+			err := e.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
 				e.logger.Warn("alerting: evaluation tick had errors", slog.String("error", err.Error()))
 			}
 		}

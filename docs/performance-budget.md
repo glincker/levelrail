@@ -23,6 +23,12 @@ At boot the control plane sets a soft Go memory limit of 80 percent of the conta
 
 ## Guard
 
-`go test ./cmd/levelrail -run TestFootprint` boots the control plane on demo fixtures twice, with every experimental feature off and then on, idles 60 seconds each (`APP_FOOTPRINT_IDLE_SECONDS`) and compares goroutines and RSS with `cmd/levelrail/testdata/footprint_baseline.json`. It fails when goroutines exceed the ratchet by more than 5 or RSS grows more than 15 percent. It is skipped under `-short` and runs in the nightly lane. After an intended change, re-record with `FOOTPRINT_RECORD=1` and say why in the commit. Baselines are per OS, so the first Linux run logs that it has none until recorded.
+`go test ./cmd/levelrail -run TestFootprint` boots the real control plane (`run()` on a temp data dir, ephemeral ports, no Docker daemon needed) twice, with every experimental feature off and then on, settles 20 seconds, idles 60 seconds each (`APP_FOOTPRINT_IDLE_SECONDS`) and compares goroutines and RSS with `cmd/levelrail/testdata/footprint_baseline.json`. It fails when goroutines exceed the ratchet by more than 5 or RSS grows more than 15 percent. It is skipped under `-short` and runs in the nightly lane. After an intended change, re-record with `FOOTPRINT_RECORD=1` and say why in the commit. Baselines are per OS (`linux` and `darwin` are recorded); on a new OS the first run logs that it has none until recorded.
 
-The harness measures the demo handler (the real router and stores on seeded data, without Docker, Caddy or agents), so it guards the API and store layers, not the container work of a live reconcile. Use the numbers on the health page of a real instance for that.
+Because the harness runs the whole boot path, a new background loop shows up in its loop count and goroutine total. It does not exercise container work (no Docker), so use the health page of a real instance for the cost of a live reconcile.
+
+## Loops and caches in practice
+
+- Sweeps, schedulers and retention loops use `footprint.Every` or `footprint.Track`; the reconcile pass itself is one `reconcile pass` entry. The archive sweeper holds no timer while the archive policy is off and wakes when the policy is saved. The deploy URL syncer does one cleanup pass and exits when `APP_DEPLOY_URL_KEEP` is 0.
+- Caps in force: search ranks at most 500 candidates per query; the IAM parse cache holds 2048 documents and 4 MiB and never stores a document over 64 KiB; an account export is refused above 32 MiB and at most 64 export jobs are held in memory; marketplace indexes are limited to 1 MiB; plugin panel responses are limited by `MaxPanelBytes`.
+- MCP: `list_apps`, `list_deployments`, `list_deploy_attempts` and `list_audit_log` accept `fields` (comma separated keys kept per item) so an agent can ask for names and statuses only. No toolset may exceed 4000 estimated tokens (`deploys` is 3.9k after canary, import and schedule tools moved to their own toolsets).

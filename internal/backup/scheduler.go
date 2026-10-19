@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -538,6 +539,8 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 // telemetry.Collector.Run, and cmd/levelrail/main.go's own retention
 // sweeps all follow this identical select-on-ticker-or-ctx-Done shape).
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	loop := footprint.Track("backup scheduler", interval)
+	defer loop.Active()()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -546,7 +549,10 @@ func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			if err := s.Tick(ctx); err != nil {
+			start := time.Now()
+			err := s.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
 				s.log().Warn("backup: scheduler tick had errors", slog.String("error", err.Error()))
 			}
 		}

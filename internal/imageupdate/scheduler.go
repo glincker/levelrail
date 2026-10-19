@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -71,16 +72,5 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 
 // Run ticks on interval until ctx is done.
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if err := s.Tick(ctx); err != nil {
-				s.Logger.Warn("imageupdate: tick had errors", slog.String("error", err.Error()))
-			}
-		}
-	}
+	return footprint.Every(ctx, "image update check", interval, s.Logger, s.Tick)
 }

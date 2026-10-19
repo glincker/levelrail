@@ -12,6 +12,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/dockerguard"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/secrets"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -111,10 +112,14 @@ func startHeldDeployReleaser(ctx context.Context, logger *slog.Logger, db *store
 // runDeployQueueDrain restarts queued deploys a restart or a missed finish
 // left waiting.
 func runDeployQueueDrain(ctx context.Context, rt *api.Router, interval time.Duration) {
+	loop := footprint.Track("deploy queue drain", interval)
+	defer loop.Active()()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
+		start := time.Now()
 		rt.DrainDeployQueue(ctx)
+		loop.Observe(start, nil)
 		select {
 		case <-ctx.Done():
 			return

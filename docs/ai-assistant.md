@@ -82,7 +82,7 @@ Every tool carries MCP annotations (`readOnlyHint`, `destructiveHint`, `idempote
 
 `APP_MCP_TOOL_PROFILE=agent-core` (or `--tool-profile agent-core`) additionally restricts the server to 15 tools for autonomous agents: list, status, deploy, rollback, cancel, diagnose, preflight, capped log search (`query_logs`), env (`get_app_env`, `set_app_env`, `unset_app_env`, secrets are write-only) and domains. It lists no output schemas, which brings the whole `tools/list` to about 2,600 estimated tokens against about 66,700 for `full`. See [MCP tool surface](/mcp-tool-surface) and [Agent tooling audit](/agent-tooling-audit).
 
-`APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, databases, deploys, diagnostics, domains, environments, flags, iac, iam, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
+`APP_MCP_TOOLSETS` (or `--toolsets`) is an optional comma separated list that limits the groups exposed: `alerts, apps, audit, backups, canary, databases, deploys, diagnostics, domains, environments, flags, iac, iam, imports, loadbalancer, logs, metrics, models, nodes, notifications, orgs, pipelines, previews, registry, scheduled, settings, system, templates, webhooks`.
 
 ```bash
 APP_MCP_MODE=read-only APP_MCP_TOOLSETS=apps,nodes,logs,diagnostics levelrail-mcp

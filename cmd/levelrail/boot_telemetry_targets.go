@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/telemetry"
 )
@@ -197,10 +198,13 @@ func drainTargets(db *store.DB) func(context.Context) ([]telemetry.DrainConfig, 
 
 // Mirrors runMetricsRetentionSweep; retention is env-configurable, the interval is not.
 func runLogsRetentionSweep(ctx context.Context, db *telemetry.DB, logger *slog.Logger) {
+	loop := footprint.Track("logs retention sweep", logsRetentionSweepInterval)
+	defer loop.Active()()
 	ticker := time.NewTicker(logsRetentionSweepInterval)
 	defer ticker.Stop()
 
 	sweep := func() {
+		defer loop.Observe(time.Now(), nil)
 		cutoff := time.Now().Add(-logsRetention())
 		deleted, err := db.RetainLogs(ctx, cutoff)
 		if err != nil {

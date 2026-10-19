@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -78,19 +79,10 @@ func (rt *Router) SweepStalePreviewEnvironments(ctx context.Context) (swept int,
 // this codebase (backup.Scheduler.Run, scheduledtask.Scheduler.Run,
 // alerting.Engine.Run).
 func (rt *Router) RunPreviewSweeper(ctx context.Context, interval time.Duration) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if _, err := rt.SweepStalePreviewEnvironments(ctx); err != nil {
-				rt.logger.Warn("api: preview sweep tick had errors", slog.String("error", err.Error()))
-			}
-		}
-	}
+	return footprint.Every(ctx, "preview sweep", interval, rt.logger, func(ctx context.Context) error {
+		_, err := rt.SweepStalePreviewEnvironments(ctx)
+		return err
+	})
 }
 
 // handleSweepPreviewEnvironments handles POST /api/v1/previews/sweep:
