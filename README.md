@@ -1,6 +1,4 @@
 <div align="center">
-<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
-<br>
 <img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="48" height="48">
 <h1>Levelrail</h1>
 <p><strong>The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.</strong><br>
@@ -34,6 +32,7 @@ Push to git. Get HTTPS, logs, metrics and one-click rollback on your own servers
   <a href="https://github.com/glincker/levelrail/discussions">Discussions</a> &middot;
   <a href="https://discord.gg/Ar5pcaZB99">Discord</a>
 </p>
+<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
 </div>
 
 Levelrail is an open source (Apache 2.0) **self-hosted PaaS**: a Vercel and Heroku alternative that runs on any Linux server you own, from a $5 VPS to a rack. It turns plain servers into a private cloud with Git deploys, automatic HTTPS, databases with verified backups, metrics, logs and alerts, without Kubernetes and without the monitoring stack you would otherwise bolt on.
