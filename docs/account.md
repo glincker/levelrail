@@ -29,13 +29,13 @@ Settings, Account is the personal half of access: everything about your own sign
 | `GET /api/v1/security/sessions` | Your live sessions, trusted devices and tokens. Never returns token values. |
 | `DELETE /api/v1/security/sessions/{id}` | End one of your sessions. |
 | `POST /api/v1/auth/sessions/revoke-others` | End every session except this one. |
-| `GET /api/v1/auth/my-activity` | Your own activity feed. `?kind=` (`sign_in`, `security`, `sessions`, `tokens`, `token_use`, `account`, `failed`), `?limit=` (1 to 100) and `?cursor=` from `next_cursor`. |
+| `GET /api/v1/auth/my-activity` | Your own activity feed. By default only security events (sign-ins, password, two-factor, passkey, session, token, provider, email, export and delete changes); `?kind=all` adds raw API requests. `?kind=` also takes `sign_in`, `security`, `sessions`, `tokens`, `token_use`, `account`, `failed`; `?limit=` (1 to 100) and `?cursor=` from `next_cursor`. |
 | `GET /api/v1/auth/my-credentials` | Your live sessions and active tokens, read only, never a token secret. |
 | `GET` / `PUT /api/v1/auth/preferences` | Your timezone, language, theme, landing page and Gravatar choice. |
-| `POST /api/v1/auth/export`, `GET /api/v1/auth/export/{id}`, `GET /api/v1/auth/export/{id}/download` | Request, poll and download your data export. |
+| `POST /api/v1/auth/export`, `GET /api/v1/auth/export/{id}`, `GET /api/v1/auth/export/{id}/download` | Request, poll and download your data export. One request per minute per user (`429` with `Retry-After` otherwise); finished jobs are swept after 15 minutes. |
 | `GET /api/v1/auth/delete-account/check`, `DELETE /api/v1/auth/account` | See what blocks deleting your account, then delete it (typed email plus a password or step-up proof). |
 | `DELETE /api/v1/auth/link/{provider}` | Unlink a sign-in provider. Refused with `last_sign_in_method` when it is your only way in. |
-| `GET` / `POST /api/v1/auth/email-change`, `POST /api/v1/auth/email-change/confirm` | Whether email can be sent, request an address change, confirm it with the mailed token. Session only. |
+| `GET` / `POST /api/v1/auth/email-change`, `POST /api/v1/auth/email-change/confirm` | Whether email can be sent, request an address change (3 per hour per user, the same answer for a taken address), confirm it with the token from the mailed link's `#confirm_email=` fragment. The confirm step applies the address and spends the token in one transaction. Session only. |
 
 Every route here is scoped to the caller, and the account always comes from your credential, never from the request. Another user's sessions read as not found unless you are an admin using `?user_id=`. A token can use the read routes when it belongs to a user and holds `read:sensitive` (activity, sessions, export) and the write routes with `write:sensitive`.
 
@@ -48,7 +48,9 @@ levelrail-cli auth whoami --access
 Prints your access level, abilities, teams and attached policies, then one line per area: `can` or `cannot`, with the missing ability for the latter. Add `--json` for the raw response.
 
 ```bash
-levelrail-cli auth activity [--kind security] [--limit 25]
+levelrail-cli auth activity [--kind security] [--all] [--limit 25]
+levelrail-cli auth email-change request --new-email you@new.example
+levelrail-cli auth email-change confirm --token TOKEN
 levelrail-cli auth preferences get
 levelrail-cli auth preferences set --timezone Europe/Berlin --theme dark
 levelrail-cli auth export --out my-data.zip
@@ -56,7 +58,7 @@ levelrail-cli auth unlink github
 levelrail-cli auth delete-account --confirm you@example.com
 ```
 
-`delete-account` logs in with `--username` and `--password` (prompted if omitted), and takes `--code` when two-factor is on. All of them accept `--json`.
+`--all` shows raw API requests too. `email-change` and `delete-account` log in with `--username` and `--password` (prompted if omitted), and takes `--code` when two-factor is on. All of them accept `--json`.
 
 ## From MCP
 

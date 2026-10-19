@@ -39,10 +39,11 @@
   },
   "activity": {
     "title": "My activity",
-    "description": "What your own account did: sign-ins, token use, session changes and passkey or two-factor changes. Only your own activity is listed.",
+    "description": "What your own account did: sign-ins, credential and session changes, tokens, email changes and exports. Choose All requests to include every API call. Only your own activity is listed.",
     "filterLabel": "Show",
     "filters": {
-      "all": "Everything",
+      "important": "Security events",
+      "all": "All requests",
       "sign_in": "Sign-ins",
       "security": "Security changes",
       "sessions": "Sessions and devices",
@@ -116,6 +117,7 @@
     "sent": "If the address can be used, a confirmation link is on its way. Open it while signed in here. It expires in an hour.",
     "invalid": "The password or code is not correct.",
     "locked": "Too many attempts. Try again in a few minutes.",
+    "rateLimited": "Too many email change requests. Try again in an hour.",
     "badAddress": "Enter a valid email address.",
     "notConfigured": "This server cannot send email yet, so an address change cannot be verified.",
     "configure": "Configure email",

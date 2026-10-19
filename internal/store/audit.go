@@ -133,6 +133,8 @@ type AuditEntryFilter struct {
 	PathLike []string
 	// ActionPrefixes keeps rows whose action starts with any of these.
 	ActionPrefixes []string
+	// ActionOrPath ORs ActionPrefixes with PathLike instead of ANDing them.
+	ActionOrPath bool
 	// OwnerUserID keeps only rows this user caused: their own sessions, the
 	// tokens they minted, and assistant turns run on their behalf.
 	OwnerUserID string
@@ -203,8 +205,19 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 		conditions = append(conditions, `((actor_type = 'session' AND actor_id = ?) OR (actor_type = 'token' AND actor_id IN (SELECT id FROM api_tokens WHERE owner_user_id = ?)) OR on_behalf_of = ?)`)
 		args = append(args, filter.OwnerUserID, filter.OwnerUserID, "user:"+filter.OwnerUserID)
 	}
-	conditions, args = appendAnyLike(conditions, args, "path", filter.PathLike, "")
-	conditions, args = appendAnyLike(conditions, args, "action", escapeAll(filter.ActionPrefixes), "%")
+	if filter.ActionOrPath {
+		var ors []string
+		var orArgs []any
+		ors, orArgs = appendAnyLike(ors, orArgs, "path", filter.PathLike, "")
+		ors, orArgs = appendAnyLike(ors, orArgs, "action", escapeAll(filter.ActionPrefixes), "%")
+		if len(ors) > 0 {
+			conditions = append(conditions, "("+strings.Join(ors, " OR ")+")")
+			args = append(args, orArgs...)
+		}
+	} else {
+		conditions, args = appendAnyLike(conditions, args, "path", filter.PathLike, "")
+		conditions, args = appendAnyLike(conditions, args, "action", escapeAll(filter.ActionPrefixes), "%")
+	}
 	if len(conditions) > 0 {
 		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"
 	}

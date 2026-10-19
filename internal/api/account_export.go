@@ -17,6 +17,7 @@ import (
 const (
 	exportTTL           = 15 * time.Minute
 	exportBuildTimeout  = time.Minute
+	exportCooldown      = time.Minute
 	exportActivityLimit = 5000
 
 	accountExportPending = "pending"
@@ -90,12 +91,17 @@ func (rt *Router) handleStartExport(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	now := time.Now()
+	if !rt.accountSelf.takeExport(userID, now) {
+		w.Header().Set("Retry-After", strconv.Itoa(int(exportCooldown.Seconds())))
+		writeCodedError(w, http.StatusTooManyRequests, "export_cooldown", "an export was requested a moment ago: wait a minute before asking again")
+		return
+	}
 	id, err := randomTokenID()
 	if err != nil {
 		rt.internalError(w, "api: export: id failed", err)
 		return
 	}
-	now := time.Now()
 	rt.accountSelf.startExport(id, userID, now)
 	rt.recordAccountAction(r, userID, viaSession, accountEventExportRequested, http.StatusAccepted)
 	go rt.buildAccountExport(id, userID)

@@ -67,6 +67,25 @@ func TestEmailChange_TokenRules(t *testing.T) {
 	}
 }
 
+func TestConsumeEmailChange_TakenAddressKeepsToken(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	owner := seedTestUser(t, db, "user_c1", "c1@example.com")
+	seedTestUser(t, db, "user_c2", "taken@example.com")
+	now := time.Now()
+	err := db.CreateEmailChangeRequest(ctx, EmailChangeRequest{ID: "ec_c", UserID: owner.ID, NewEmail: "taken@example.com", TokenHash: "h", CreatedAt: now, ExpiresAt: now.Add(time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ConsumeEmailChange(ctx, "h", owner.ID, now); !errors.Is(err, ErrUserEmailExists) {
+		t.Fatalf("taken address = %v, want ErrUserEmailExists", err)
+	}
+	var used string
+	if err := db.QueryRowContext(ctx, `SELECT COALESCE(used_at, '') FROM email_change_requests WHERE id = 'ec_c'`).Scan(&used); err != nil || used != "" {
+		t.Fatalf("token burned on conflict: used_at=%q (%v)", used, err)
+	}
+}
+
 func TestUpdateUserEmail(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()

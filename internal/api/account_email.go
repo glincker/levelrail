@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/mail"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,8 @@ import (
 const (
 	emailChangeTTL      = time.Hour
 	emailChangeSendWait = 15 * time.Second
+	emailChangeLimit    = 3
+	emailChangeWindow   = time.Hour
 	maxEmailLen         = 254
 )
 
@@ -72,15 +75,18 @@ func (rt *Router) handleRequestEmailChange(w http.ResponseWriter, r *http.Reques
 		writeStepUpError(w, err)
 		return
 	}
+	if !rt.accountSelf.takeEmailChange(userID, time.Now()) {
+		w.Header().Set("Retry-After", strconv.Itoa(int(emailChangeWindow.Seconds())))
+		writeCodedError(w, http.StatusTooManyRequests, "email_change_limited", "too many email change requests: try again in an hour")
+		return
+	}
 	user, err := rt.auth.GetUserByID(r.Context(), userID)
 	if err != nil {
 		rt.internalError(w, "api: email change: load user failed", err)
 		return
 	}
-	if _, lookupErr := rt.auth.GetUserByEmail(r.Context(), newEmail); lookupErr == nil || strings.EqualFold(user.Email, newEmail) {
-		w.WriteHeader(http.StatusAccepted)
-		return
-	}
+	_, lookupErr := rt.auth.GetUserByEmail(r.Context(), newEmail)
+	unavailable := lookupErr == nil || strings.EqualFold(user.Email, newEmail)
 	token, err := randomToken()
 	if err != nil {
 		rt.internalError(w, "api: email change: token failed", err)
@@ -98,10 +104,15 @@ func (rt *Router) handleRequestEmailChange(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: email change: save failed", err)
 		return
 	}
-	link := rt.emailLinkBase(r.Context()) + "/settings/account?confirm_email=" + token
+	if unavailable {
+		rt.recordAccountAction(r, userID, true, accountEventEmailRequested, http.StatusAccepted)
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+	link := rt.emailLinkBase(r.Context()) + "/settings/account#confirm_email=" + token
 	body := fmt.Sprintf("Confirm that this is your new %s email address: %s\n\nThe link expires in %d minutes and works only while you are signed in. If you did not ask for this, ignore this message.",
 		rt.brand.Name, link, int(emailChangeTTL.Minutes()))
-	rt.sendAccountMail(context.WithoutCancel(r.Context()), newEmail, fmt.Sprintf("[%s] Confirm your new email", rt.brand.Name), body)
+	go rt.sendAccountMail(context.WithoutCancel(r.Context()), newEmail, fmt.Sprintf("[%s] Confirm your new email", rt.brand.Name), body)
 	rt.recordAccountAction(r, userID, true, accountEventEmailRequested, http.StatusAccepted)
 	w.WriteHeader(http.StatusAccepted)
 }
@@ -133,16 +144,12 @@ func (rt *Router) handleConfirmEmailChange(w http.ResponseWriter, r *http.Reques
 		writeCodedError(w, http.StatusBadRequest, "invalid_token", "this confirmation link is invalid, expired or already used")
 		return
 	}
-	if err != nil {
-		rt.internalError(w, "api: email confirm failed", err)
+	if errors.Is(err, store.ErrUserEmailExists) {
+		writeCodedError(w, http.StatusConflict, "email_taken", "that address now belongs to another account")
 		return
 	}
-	if err := db.UpdateUserEmail(r.Context(), userID, newEmail); err != nil {
-		if errors.Is(err, store.ErrUserEmailExists) {
-			writeCodedError(w, http.StatusConflict, "email_taken", "that address now belongs to another account")
-			return
-		}
-		rt.internalError(w, "api: email confirm: update failed", err)
+	if err != nil {
+		rt.internalError(w, "api: email confirm failed", err)
 		return
 	}
 	if updated, err := rt.auth.GetUserByID(r.Context(), userID); err == nil && rt.libSessions != nil {

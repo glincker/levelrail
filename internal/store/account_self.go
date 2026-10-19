@@ -104,10 +104,16 @@ func (db *DB) CreateEmailChangeRequest(ctx context.Context, req EmailChangeReque
 	return nil
 }
 
-// ConsumeEmailChange marks the token used and returns the new address; the token must belong to userID.
+// ConsumeEmailChange marks the token used and applies the new address in one
+// transaction, so a taken address (ErrUserEmailExists) leaves the token unspent.
 func (db *DB) ConsumeEmailChange(ctx context.Context, tokenHash, userID string, now time.Time) (string, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("store: begin consume email change: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
 	var newEmail string
-	err := db.QueryRowContext(ctx, `
+	err = tx.QueryRowContext(ctx, `
 		UPDATE email_change_requests SET used_at = ?
 		WHERE token_hash = ? AND user_id = ? AND used_at IS NULL AND expires_at > ?
 		RETURNING new_email`,
@@ -118,21 +124,36 @@ func (db *DB) ConsumeEmailChange(ctx context.Context, tokenHash, userID string, 
 	if err != nil {
 		return "", fmt.Errorf("store: consume email change: %w", err)
 	}
-	return newEmail, nil
+	if err := setUserEmail(ctx, tx, userID, newEmail); err != nil {
+		return "", err
+	}
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("store: commit consume email change: %w", err)
+	}
+	return strings.ToLower(strings.TrimSpace(newEmail)), nil
 }
 
 // UpdateUserEmail sets a user's email, ErrUserEmailExists when another account holds it.
 func (db *DB) UpdateUserEmail(ctx context.Context, id, email string) error {
+	return setUserEmail(ctx, db, id, email)
+}
+
+type emailExecer interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+}
+
+func setUserEmail(ctx context.Context, q emailExecer, id, email string) error {
 	email = strings.ToLower(strings.TrimSpace(email))
 	var taken string
-	err := db.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND id != ?`, email, id).Scan(&taken)
+	err := q.QueryRowContext(ctx, `SELECT id FROM users WHERE email = ? AND id != ?`, email, id).Scan(&taken)
 	if err == nil {
 		return ErrUserEmailExists
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("store: check email %q: %w", email, err)
 	}
-	res, err := db.ExecContext(ctx, `UPDATE users SET email = ? WHERE id = ?`, email, id)
+	res, err := q.ExecContext(ctx, `UPDATE users SET email = ? WHERE id = ?`, email, id)
 	if err != nil {
 		return fmt.Errorf("store: update user %q email: %w", id, err)
 	}

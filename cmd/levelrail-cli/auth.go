@@ -49,6 +49,8 @@ func runAuth(prog string, args []string, stdout, stderr io.Writer, lookupEnv fun
 		return runAuthExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "unlink":
 		return runAuthUnlink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "email-change":
+		return runAuthEmailChange(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	case "delete-account":
 		return runAuthDeleteAccount(prog, args[1:], stdout, stderr, lookupEnv, os.Stdin)
 	default:
@@ -76,6 +78,7 @@ func authUsage(prog string) string {
   %[1]s auth preferences get|set     your timezone, language, theme, landing page and avatar
   %[1]s auth export [flags]          download a zip of your own account data
   %[1]s auth unlink <provider>       remove a linked sign-in provider
+  %[1]s auth email-change request|confirm  change your account email
   %[1]s auth delete-account [flags]  permanently delete your own account
 
 Run "%[1]s auth <subcommand> -h" for a subcommand's own flags.

@@ -157,9 +157,12 @@ type SecretKeyPolicy struct {
 // DefaultRemindEveryDays is how often an overdue reminder repeats.
 const DefaultRemindEveryDays = 7
 
-// GetSecretKeyPolicy returns the stored policy, or the default (off) one.
+// DefaultMaxKeyAgeDays applies until an operator saves a policy; a saved 0 stays off.
+const DefaultMaxKeyAgeDays = 90
+
+// GetSecretKeyPolicy returns the stored policy, or the 90 day default when none was ever saved.
 func (db *DB) GetSecretKeyPolicy(ctx context.Context) (SecretKeyPolicy, error) {
-	p := SecretKeyPolicy{RemindEveryDays: DefaultRemindEveryDays}
+	p := SecretKeyPolicy{MaxKeyAgeDays: DefaultMaxKeyAgeDays, RemindEveryDays: DefaultRemindEveryDays}
 	var reminded, updated string
 	err := db.QueryRowContext(ctx, `
 		SELECT max_key_age_days, remind_every_days, last_reminded_at, updated_at, updated_by
@@ -193,9 +196,9 @@ func (db *DB) SaveSecretKeyPolicy(ctx context.Context, p SecretKeyPolicy, now ti
 func (db *DB) MarkSecretKeyReminded(ctx context.Context, at time.Time) error {
 	stamp := at.UTC().Format(time.RFC3339Nano)
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO secret_key_policy (id, updated_at, last_reminded_at) VALUES (1, ?, ?)
+		INSERT INTO secret_key_policy (id, max_key_age_days, updated_at, last_reminded_at) VALUES (1, ?, ?, ?)
 		ON CONFLICT (id) DO UPDATE SET last_reminded_at = excluded.last_reminded_at
-	`, stamp, stamp)
+	`, DefaultMaxKeyAgeDays, stamp, stamp)
 	if err != nil {
 		return fmt.Errorf("store: mark secret key reminded: %w", err)
 	}

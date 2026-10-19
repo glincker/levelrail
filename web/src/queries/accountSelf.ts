@@ -89,13 +89,13 @@ interface ActivityPage {
   next_cursor?: string
 }
 
-export function activityQueryOptions(kind: ActivityKind | 'all') {
+export function activityQueryOptions(kind: ActivityKind | 'important' | 'all') {
   return infiniteQueryOptions({
     queryKey: [...accountSelfKeys.activity, kind],
     initialPageParam: '',
     queryFn: ({ pageParam }) => {
       const q = new URLSearchParams({ limit: '25' })
-      if (kind !== 'all') q.set('kind', kind)
+      if (kind !== 'important') q.set('kind', kind)
       if (pageParam !== '') q.set('cursor', pageParam)
       return send<ActivityPage>('GET', `/api/v1/auth/my-activity?${q}`)
     },

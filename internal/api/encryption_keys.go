@@ -45,6 +45,7 @@ const (
 	keyFixRotateMasterKey = "rotate_master_key"
 	keyFixRotateApp       = "rotate_dek"
 	keyFixRotateAll       = "rotate_all_deks"
+	keyFixEnablePolicy    = "enable_key_policy"
 )
 
 type encryptionKeyFix struct {
@@ -191,6 +192,13 @@ func (rt *Router) buildEncryptionKeys(ctx context.Context) (encryptionKeysResour
 // encryptionKeyHints turns key ages into typed fixes the dashboard renders as buttons.
 func encryptionKeyHints(res encryptionKeysResource, maxAgeDays int) []encryptionKeyHint {
 	hints := []encryptionKeyHint{}
+	if maxAgeDays <= 0 {
+		hints = append(hints, encryptionKeyHint{
+			Code: "key_policy_off", Severity: "info",
+			Message: "No key age policy is set. Get a reminder every " + strconv.Itoa(store.DefaultMaxKeyAgeDays) + " days to rotate keys.",
+			Fix:     encryptionKeyFix{Kind: keyFixEnablePolicy},
+		})
+	}
 	masterLimit := maxAgeDays
 	if masterLimit <= 0 {
 		masterLimit = defaultMasterKeyHintAgeDays

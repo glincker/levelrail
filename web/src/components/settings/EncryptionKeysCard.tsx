@@ -113,11 +113,24 @@ function HintRow({
   onFix: (h: EncryptionKeyHint) => void
 }>) {
   const { t } = useTranslation('encryptionKeys')
+  const updatePolicy = useUpdateKeyPolicy()
   const fixLabel = {
     rotate_master_key: t('hint.fixMaster'),
     rotate_dek: t('hint.fixApp'),
     rotate_all_deks: t('hint.fixAll'),
+    enable_key_policy: t('hint.fixPolicy'),
   }[hint.fix.kind]
+  const fix = () => {
+    if (hint.fix.kind !== 'enable_key_policy') return onFix(hint)
+    updatePolicy.mutate(
+      { max_key_age_days: 90 },
+      {
+        onSuccess: () =>
+          toast.add({ title: t('policy.saved'), type: 'success' }),
+        onError: (error) => toast.add({ title: error.message, type: 'error' }),
+      },
+    )
+  }
   return (
     <Alert variant={hint.severity === 'warning' ? 'destructive' : 'default'}>
       <WarningIcon aria-hidden="true" />
@@ -126,7 +139,12 @@ function HintRow({
         {hint.fix.kind === 'rotate_master_key' ? (
           <RotateMasterKeyDialog />
         ) : (
-          <Button variant="outline" size="sm" onClick={() => onFix(hint)}>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={updatePolicy.isPending}
+            onClick={fix}
+          >
             {fixLabel}
           </Button>
         )}

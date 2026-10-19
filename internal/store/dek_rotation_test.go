@@ -7,6 +7,28 @@ import (
 	"time"
 )
 
+func TestSecretKeyPolicy_DefaultsTo90ButKeepsExplicitOff(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	p, err := db.GetSecretKeyPolicy(ctx)
+	if err != nil || p.MaxKeyAgeDays != DefaultMaxKeyAgeDays {
+		t.Fatalf("fresh policy = %+v (%v), want %d days", p, err, DefaultMaxKeyAgeDays)
+	}
+	if err := db.MarkSecretKeyReminded(ctx, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if p, _ = db.GetSecretKeyPolicy(ctx); p.MaxKeyAgeDays != DefaultMaxKeyAgeDays {
+		t.Fatalf("a reminder stamp turned the default into %d", p.MaxKeyAgeDays)
+	}
+	p.MaxKeyAgeDays = 0
+	if err := db.SaveSecretKeyPolicy(ctx, p, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if p, _ = db.GetSecretKeyPolicy(ctx); p.MaxKeyAgeDays != 0 {
+		t.Fatalf("explicit off became %d", p.MaxKeyAgeDays)
+	}
+}
+
 func seedDEKService(t *testing.T, db *DB, name string) {
 	t.Helper()
 	ctx := context.Background()
@@ -76,7 +98,7 @@ func TestSecretKeyPolicyAndRuns(t *testing.T) {
 	db := openTestDB(t)
 	ctx := context.Background()
 	p, err := db.GetSecretKeyPolicy(ctx)
-	if err != nil || p.MaxKeyAgeDays != 0 || p.RemindEveryDays != DefaultRemindEveryDays {
+	if err != nil || p.MaxKeyAgeDays != DefaultMaxKeyAgeDays || p.RemindEveryDays != DefaultRemindEveryDays {
 		t.Fatalf("default policy = %+v, %v", p, err)
 	}
 	now := time.Now().UTC()

@@ -37,7 +37,8 @@
   "hint": {
     "fixMaster": "Rotate now",
     "fixApp": "Rotate this key",
-    "fixAll": "Rotate all keys"
+    "fixAll": "Rotate all keys",
+    "fixPolicy": "Remind me every 90 days"
   },
   "confirm": {
     "titleOne": "Rotate the data key for {{app}}?",

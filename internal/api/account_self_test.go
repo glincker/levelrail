@@ -37,6 +37,16 @@ func (m *addressedMail) last(to string) string {
 	return ""
 }
 
+func waitForAddressedMail(t *testing.T, m *addressedMail, to string) {
+	t.Helper()
+	for deadline := time.Now().Add(5 * time.Second); time.Now().Before(deadline); time.Sleep(5 * time.Millisecond) {
+		if m.count(to) > 0 {
+			return
+		}
+	}
+	t.Fatalf("no mail reached %s", to)
+}
+
 func (m *addressedMail) count(to string) int {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -93,16 +103,16 @@ func TestMyActivity_OnlyCallersOwnRows(t *testing.T) {
 		t.Fatalf("other profile status = %d", rec.Code)
 	}
 
-	mine := fetchActivity(t, h, "", own)
+	mine := fetchActivity(t, h, "?kind=all", own)
 	if len(mine.Entries) != 1 || mine.Entries[0].Event != accountEventProfileUpdated || mine.Entries[0].Kind != activityKindAccount {
 		t.Fatalf("own feed = %+v, want exactly one profile_updated row", mine.Entries)
 	}
 	// A caller-supplied user id must change nothing: the account comes from the credential.
-	spoof := fetchActivity(t, h, "?user_id=user_other&owner=user_other", own)
+	spoof := fetchActivity(t, h, "?kind=all&user_id=user_other&owner=user_other", own)
 	if len(spoof.Entries) != 1 {
 		t.Fatalf("spoofed query returned %d rows, want the caller's own 1", len(spoof.Entries))
 	}
-	theirs := fetchActivity(t, h, "", otherCookie)
+	theirs := fetchActivity(t, h, "?kind=all", otherCookie)
 	if len(theirs.Entries) != 1 {
 		t.Fatalf("other feed = %d rows, want 1", len(theirs.Entries))
 	}
@@ -118,11 +128,11 @@ func TestMyActivity_FiltersAndPaging(t *testing.T) {
 		}
 		time.Sleep(2 * time.Millisecond)
 	}
-	page1 := fetchActivity(t, h, "?limit=2", own)
+	page1 := fetchActivity(t, h, "?kind=account&limit=2", own)
 	if len(page1.Entries) != 2 || page1.NextCursor == "" {
 		t.Fatalf("page 1 = %d rows cursor %q, want 2 rows and a cursor", len(page1.Entries), page1.NextCursor)
 	}
-	page2 := fetchActivity(t, h, "?limit=2&cursor="+page1.NextCursor, own)
+	page2 := fetchActivity(t, h, "?kind=account&limit=2&cursor="+page1.NextCursor, own)
 	if len(page2.Entries) != 1 || page2.NextCursor != "" {
 		t.Fatalf("page 2 = %d rows cursor %q, want the last row", len(page2.Entries), page2.NextCursor)
 	}
@@ -136,6 +146,92 @@ func TestMyActivity_FiltersAndPaging(t *testing.T) {
 		if rec := h.send(http.MethodGet, "/api/v1/auth/my-activity"+q, "", "", own); rec.Code != http.StatusBadRequest {
 			t.Errorf("%s status = %d, want 400", q, rec.Code)
 		}
+	}
+}
+
+func TestMyActivity_DefaultFeedHidesRawRequests(t *testing.T) {
+	h := newCodeHarness(t, false)
+	own := h.userSession()
+	ctx := context.Background()
+	rows := []store.AuditEntry{
+		{ID: "act_poll", ActorType: "session", ActorID: h.user.ID, Ability: AbilityRoot, Method: http.MethodGet, Path: "/api/v1/nodes", StatusCode: 200},
+		{ID: "act_signin", ActorType: "session", ActorID: h.user.ID, Ability: AbilityWrite, Method: http.MethodPost, Path: "/api/v1/auth/login", StatusCode: 200, Action: accountEventSignIn},
+		{ID: "act_revoke", ActorType: "session", ActorID: h.user.ID, Ability: AbilityWrite, Method: http.MethodDelete, Path: "/api/v1/auth/tokens/tok_1", StatusCode: 204},
+		{ID: "act_profile", ActorType: "session", ActorID: h.user.ID, Ability: AbilityWrite, Method: http.MethodPatch, Path: "/api/v1/auth/profile", StatusCode: 200, Action: accountEventProfileUpdated},
+	}
+	for i, e := range rows {
+		e.CreatedAt = store.FormatAuditTime(time.Now().Add(time.Duration(i) * time.Second))
+		if err := h.db.SaveAuditEntry(ctx, e); err != nil {
+			t.Fatal(err)
+		}
+	}
+	ids := func(q string) map[string]bool {
+		out := map[string]bool{}
+		for _, e := range fetchActivity(t, h, q, own).Entries {
+			out[e.ID] = true
+		}
+		return out
+	}
+	def := ids("")
+	if !def["act_signin"] || !def["act_revoke"] || def["act_poll"] || def["act_profile"] {
+		t.Fatalf("default feed = %v, want sign-in and token revoke only", def)
+	}
+	if all := ids("?kind=all"); len(all) != len(rows) {
+		t.Fatalf("kind=all returned %v, want every row", all)
+	}
+}
+
+func TestAccountSelfState_CooldownsAndSweep(t *testing.T) {
+	var s accountSelfState
+	now := time.Now()
+	for i := 0; i < emailChangeLimit; i++ {
+		if !s.takeEmailChange("u1", now) {
+			t.Fatalf("request %d refused inside the limit", i+1)
+		}
+	}
+	if s.takeEmailChange("u1", now) || !s.takeEmailChange("u2", now) {
+		t.Fatal("limit must be per user and refuse the extra request")
+	}
+	if !s.takeEmailChange("u1", now.Add(emailChangeWindow+time.Second)) {
+		t.Fatal("limit must reset after the window")
+	}
+	if !s.takeExport("u1", now) || s.takeExport("u1", now.Add(time.Second)) || !s.takeExport("u1", now.Add(exportCooldown)) {
+		t.Fatal("export cooldown must hold for a minute")
+	}
+	s.startExport("old", "u1", now.Add(-time.Hour))
+	s.sweep(now.Add(24 * time.Hour))
+	if len(s.exports) != 0 || len(s.lastExport) != 0 || len(s.emailAsks) != 0 {
+		t.Fatalf("sweep left exports=%d cooldowns=%d asks=%d", len(s.exports), len(s.lastExport), len(s.emailAsks))
+	}
+}
+
+func TestExport_CooldownPerUser(t *testing.T) {
+	h := newCodeHarness(t, false)
+	own := h.userSession()
+	if rec := h.send(http.MethodPost, "/api/v1/auth/export", "", "", own); rec.Code != http.StatusAccepted {
+		t.Fatalf("first export status = %d", rec.Code)
+	}
+	rec := h.send(http.MethodPost, "/api/v1/auth/export", "", "", own)
+	if rec.Code != http.StatusTooManyRequests || rec.Header().Get("Retry-After") == "" {
+		t.Fatalf("second export status = %d, want 429 with Retry-After", rec.Code)
+	}
+}
+
+func TestEmailChange_RateLimitedIncludingTakenAddress(t *testing.T) {
+	h := newCodeHarness(t, false)
+	h.rt.emailSender = &addressedMail{}
+	own := h.userSession()
+	accountOtherUser(t, h)
+	body := func(addr string) string {
+		return `{"new_email":"` + addr + `","password":"` + codeTestPassword + `"}`
+	}
+	for i := 0; i < emailChangeLimit; i++ {
+		if rec := h.send(http.MethodPost, "/api/v1/auth/email-change", body("other@example.com"), "", own); rec.Code != http.StatusAccepted {
+			t.Fatalf("request %d status = %d, want 202 for a taken address too", i+1, rec.Code)
+		}
+	}
+	if rec := h.send(http.MethodPost, "/api/v1/auth/email-change", body("free@example.com"), "", own); rec.Code != http.StatusTooManyRequests {
+		t.Fatalf("over-limit status = %d, want 429", rec.Code)
 	}
 }
 
@@ -444,6 +540,7 @@ func TestEmailChange(t *testing.T) {
 	if rec := h.send(http.MethodPost, "/api/v1/auth/email-change", `{"new_email":"`+next+`","password":"`+codeTestPassword+`"}`, "", own); rec.Code != http.StatusAccepted {
 		t.Fatalf("request status = %d", rec.Code)
 	}
+	waitForAddressedMail(t, mail, next)
 	body := mail.last(next)
 	idx := strings.Index(body, "confirm_email=")
 	if idx < 0 {

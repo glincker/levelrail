@@ -34,9 +34,13 @@ func runAuthActivity(prog string, args []string, stdout, stderr io.Writer, looku
 	limit := fs.Int("limit", 25, "how many rows to show, 1 to 100")
 	kind := fs.String("kind", "", "only one category: sign_in, security, sessions, tokens, token_use, account or failed")
 	cursor := fs.String("cursor", "", "continue after the next_cursor of a previous page")
+	all := fs.Bool("all", false, "include raw API requests, not just security events")
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
+	}
+	if *all && *kind == "" {
+		*kind = "all"
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	feed, err := client.MyActivity(context.Background(), apiclient.MyActivityOptions{Limit: *limit, Kind: *kind, Cursor: *cursor})
@@ -66,7 +70,7 @@ func activityLabel(e apiclient.MyActivityEntry) string {
 
 func authActivityUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s auth activity [--kind KIND] [--limit N] [--cursor C] [flags]
+  %[1]s auth activity [--kind KIND] [--all] [--limit N] [--cursor C] [flags]
 
 Shows what your own account did: sign-ins, token use, session changes and
 passkey or two-factor changes. Only your own rows are ever returned.

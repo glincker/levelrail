@@ -4,7 +4,8 @@ import { EnvApiError } from './envProtection'
 
 export const ENCRYPTION_KEYS_STEP_UP_APP = 'encryption-keys'
 
-export type KeyFixKind = 'rotate_master_key' | 'rotate_dek' | 'rotate_all_deks'
+export type KeyFixKind =
+  'rotate_master_key' | 'rotate_dek' | 'rotate_all_deks' | 'enable_key_policy'
 
 export interface EncryptionKeyHint {
   code: string

@@ -57,9 +57,13 @@ func registerAccountTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_my_activity",
-		Description: "List what this account's own sessions and tokens did, newest first: sign-ins, token use, session changes and passkey or two-factor changes. Only this account's rows. Filter with kind (sign_in, security, sessions, tokens, token_use, account, failed) and page with cursor.",
+		Description: "List what this account's own sessions and tokens did, newest first: sign-ins, token use, session changes and passkey or two-factor changes. Security events only unless all is true. Only this account's rows. Filter with kind (sign_in, security, sessions, tokens, token_use, account, failed) and page with cursor.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in myActivityInput) (*mcp.CallToolResult, apiclient.MyActivity, error) {
-		feed, err := client.MyActivity(ctx, apiclient.MyActivityOptions{Limit: in.Limit, Kind: in.Kind, Cursor: in.Cursor})
+		kind := in.Kind
+		if in.All && kind == "" {
+			kind = "all"
+		}
+		feed, err := client.MyActivity(ctx, apiclient.MyActivityOptions{Limit: in.Limit, Kind: kind, Cursor: in.Cursor})
 		if err != nil {
 			return nil, apiclient.MyActivity{}, fmt.Errorf("list my activity: %w", err)
 		}
@@ -71,4 +75,5 @@ type myActivityInput struct {
 	Limit  int    `json:"limit,omitempty" jsonschema:"rows to return, 1 to 100, default 25"`
 	Kind   string `json:"kind,omitempty" jsonschema:"only one category: sign_in, security, sessions, tokens, token_use, account or failed"`
 	Cursor string `json:"cursor,omitempty" jsonschema:"the next_cursor of a previous page"`
+	All    bool   `json:"all,omitempty" jsonschema:"include raw API requests, default is security events only"`
 }

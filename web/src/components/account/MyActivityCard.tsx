@@ -39,6 +39,7 @@ import {
 import { formatUserDateTime, useUserTimezone } from '../../lib/userPreferences'
 
 const FILTERS = [
+  'important',
   'all',
   'sign_in',
   'security',
@@ -155,7 +156,7 @@ function ActivityList({ rows }: { rows: ActivityEntry[] }) {
 
 export function MyActivityCard() {
   const { t } = useTranslation('account')
-  const [filter, setFilter] = useState<Filter>('all')
+  const [filter, setFilter] = useState<Filter>('important')
   const query = useInfiniteQuery(activityQueryOptions(filter))
   const rows = useMemo(
     () => query.data?.pages.flatMap((p) => p.entries) ?? [],
@@ -176,7 +177,7 @@ export function MyActivityCard() {
           <Label htmlFor="activity-filter">{t('activity.filterLabel')}</Label>
           <Select
             value={filter}
-            onValueChange={(v) => setFilter(isFilter(v) ? v : 'all')}
+            onValueChange={(v) => setFilter(isFilter(v) ? v : 'important')}
           >
             <SelectTrigger id="activity-filter" className="w-56">
               <SelectValue>

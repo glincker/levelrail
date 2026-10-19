@@ -144,7 +144,7 @@ levelrail-cli secrets rotate-dek --all
 
 ### Maximum key age
 
-Set a maximum key age under Encryption keys, or with `levelrail-cli secrets key-policy --max-age-days 90 --remind-every-days 7`. When the master key or any app data key is older than the limit, the card shows a Rotate button next to the problem and a reminder goes to your notification channels, repeated at the interval you chose. A limit of 0 turns reminders off. The MCP tool `get_encryption_key_status` reads the same ages and fixes.
+Set a maximum key age under Encryption keys, or with `levelrail-cli secrets key-policy --max-age-days 90 --remind-every-days 7`. When the master key or any app data key is older than the limit, the card shows a Rotate button next to the problem and a reminder goes to your notification channels, repeated at the interval you chose. A limit of 0 turns reminders off. Until you save a policy the default is 90 days; an explicit 0 you saved earlier is kept, and the card then offers a one-click Remind me every 90 days button. The MCP tool `get_encryption_key_status` reads the same ages and fixes.
 
 ## Troubleshooting
 

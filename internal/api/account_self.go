@@ -19,13 +19,77 @@ type accountSelfStore interface {
 	DeleteOAuthIdentityForUser(ctx context.Context, userID, provider string) error
 	CreateEmailChangeRequest(ctx context.Context, req store.EmailChangeRequest) error
 	ConsumeEmailChange(ctx context.Context, tokenHash, userID string, now time.Time) (string, error)
-	UpdateUserEmail(ctx context.Context, id, email string) error
 }
 
-// accountSelfState holds the in-memory export jobs; the zero value is ready to use.
+// accountSelfState holds the in-memory export jobs and per-user cooldowns; the zero value is ready to use.
 type accountSelfState struct {
-	mu      sync.Mutex
-	exports map[string]*accountExport
+	mu         sync.Mutex
+	exports    map[string]*accountExport
+	lastExport map[string]time.Time
+	emailAsks  map[string][]time.Time
+}
+
+// sweep drops expired export jobs and spent cooldown entries; the janitor ticker calls it.
+func (s *accountSelfState) sweep(now time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for k, e := range s.exports {
+		if now.After(e.expires) {
+			delete(s.exports, k)
+		}
+	}
+	for k, at := range s.lastExport {
+		if now.Sub(at) >= exportCooldown {
+			delete(s.lastExport, k)
+		}
+	}
+	for k, asks := range s.emailAsks {
+		if recent := recentWithin(asks, now, emailChangeWindow); len(recent) == 0 {
+			delete(s.emailAsks, k)
+		} else {
+			s.emailAsks[k] = recent
+		}
+	}
+}
+
+func recentWithin(times []time.Time, now time.Time, window time.Duration) []time.Time {
+	out := times[:0:0]
+	for _, t := range times {
+		if now.Sub(t) < window {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
+// takeEmailChange counts one email change request for userID, false once the hourly limit is spent.
+func (s *accountSelfState) takeEmailChange(userID string, now time.Time) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.emailAsks == nil {
+		s.emailAsks = map[string][]time.Time{}
+	}
+	recent := recentWithin(s.emailAsks[userID], now, emailChangeWindow)
+	if len(recent) >= emailChangeLimit {
+		s.emailAsks[userID] = recent
+		return false
+	}
+	s.emailAsks[userID] = append(recent, now)
+	return true
+}
+
+// takeExport reserves the user's export slot, false while the cooldown runs.
+func (s *accountSelfState) takeExport(userID string, now time.Time) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.lastExport == nil {
+		s.lastExport = map[string]time.Time{}
+	}
+	if at, ok := s.lastExport[userID]; ok && now.Sub(at) < exportCooldown {
+		return false
+	}
+	s.lastExport[userID] = now
+	return true
 }
 
 func (rt *Router) accountDB() accountSelfStore {

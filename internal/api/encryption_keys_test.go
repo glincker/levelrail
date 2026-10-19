@@ -84,11 +84,17 @@ func TestEncryptionKeys_StatusPolicyAndHints(t *testing.T) {
 		return res
 	}
 
+	if res := get(); res.Policy.MaxKeyAgeDays != store.DefaultMaxKeyAgeDays {
+		t.Fatalf("unset policy = %d days, want the default", res.Policy.MaxKeyAgeDays)
+	}
+	if err := db.SaveSecretKeyPolicy(context.Background(), store.SecretKeyPolicy{RemindEveryDays: 7}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
 	res := get()
 	if len(res.Apps) != 3 || res.Policy.MaxKeyAgeDays != 0 || res.MasterKey.AgeDays == nil {
 		t.Fatalf("status = %+v", res)
 	}
-	if len(res.Hints) != 1 || res.Hints[0].Fix.Kind != keyFixRotateMasterKey || res.Hints[0].Severity != "info" {
+	if len(res.Hints) != 2 || res.Hints[0].Fix.Kind != keyFixEnablePolicy || res.Hints[1].Fix.Kind != keyFixRotateMasterKey || res.Hints[1].Severity != "info" {
 		t.Fatalf("hints with policy off = %+v", res.Hints)
 	}
 
@@ -115,6 +121,16 @@ func TestEncryptionKeys_HintsNameOverdueApps(t *testing.T) {
 	}
 	if kinds[keyFixRotateApp] != 2 || kinds[keyFixRotateAll] != 1 {
 		t.Fatalf("hints = %+v", hints)
+	}
+}
+
+func TestEncryptionKeys_PolicyOffOffersOneClickFix(t *testing.T) {
+	off := encryptionKeyHints(encryptionKeysResource{}, 0)
+	if len(off) != 1 || off[0].Fix.Kind != keyFixEnablePolicy {
+		t.Fatalf("policy off hints = %+v, want one enable_key_policy fix", off)
+	}
+	if on := encryptionKeyHints(encryptionKeysResource{}, 90); len(on) != 0 {
+		t.Fatalf("policy on hints = %+v, want none", on)
 	}
 }
 

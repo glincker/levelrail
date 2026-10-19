@@ -26,12 +26,16 @@ import { useSession } from '../../queries/security'
 const CONFIRM_PARAM = 'confirm_email'
 
 function readConfirmToken(): string {
-  return new URLSearchParams(window.location.search).get(CONFIRM_PARAM) ?? ''
+  return (
+    new URLSearchParams(window.location.hash.replace(/^#/, '')).get(
+      CONFIRM_PARAM,
+    ) ?? ''
+  )
 }
 
 function clearConfirmParam(): void {
   const url = new URL(window.location.href)
-  url.searchParams.delete(CONFIRM_PARAM)
+  url.hash = ''
   window.history.replaceState(window.history.state, '', url)
 }
 
@@ -47,6 +51,8 @@ function requestErrorText(error: AccountApiError, t: TFn): string {
       return t('email.invalid')
     case 'email_not_configured':
       return t('email.notConfigured')
+    case 'email_change_limited':
+      return t('email.rateLimited')
     default:
       return error.status === 400 ? t('email.badAddress') : error.message
   }

@@ -90,9 +90,21 @@ func activityEventAndKind(e store.AuditEntry) (event, kind string) {
 	return event, activityKindOther
 }
 
+// securityActivityActionPrefixes is the default feed: sign-ins, credential,
+// session, token, provider, email, export and delete events, no raw requests.
+var securityActivityActionPrefixes = []string{
+	accountEventSignIn, accountEventPasswordChanged, "account.2fa_", "account.recovery_", "account.passkey_",
+	"account.session", "account.trusted_device", accountEventTokenCreated, accountEventProviderUnlinked,
+	"account.email_", "account.export_", accountEventDeleted, "step_up.",
+}
+
 func applyActivityKind(f *store.AuditEntryFilter, kind string) bool {
 	switch kind {
-	case "", "all":
+	case "":
+		f.ActionPrefixes = securityActivityActionPrefixes
+		f.PathLike = []string{"/api/v1/auth/tokens/%"}
+		f.ActionOrPath = true
+	case "all":
 	case activityKindSignIn:
 		f.Action = accountEventSignIn
 	case activityKindSecurity:
@@ -114,7 +126,8 @@ func applyActivityKind(f *store.AuditEntryFilter, kind string) bool {
 }
 
 // handleMyActivity handles GET /api/v1/auth/my-activity: only rows the caller
-// itself caused, newest first, paged by the ?before= cursor it hands back.
+// itself caused, newest first. Without ?kind it lists security events only;
+// ?kind=all adds raw API requests.
 func (rt *Router) handleMyActivity(w http.ResponseWriter, r *http.Request) {
 	userID, _, ok := rt.accountCaller(w, r, AbilityReadSensitive)
 	if !ok {
