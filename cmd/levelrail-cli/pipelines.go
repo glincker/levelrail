@@ -48,6 +48,9 @@ func pipelinesUsage(prog string) string {
   %[1]s pipelines artifacts <app> <run-id> [--download JOB] [--out FILE] [flags]   list a run's stored artifacts, or download one job's archive
   %[1]s pipelines triggers <app> [flags]                   why recent git events did or did not start runs
   %[1]s pipelines triggers <app> <pipeline> [--enable [--hmac]|--disable|--rotate|--delete|--deliveries|--replay ID] [flags]   manage the pipeline's inbound webhook trigger
+  %[1]s pipelines templates [<id>] [--out FILE] [--create APP [--name N]] [flags]   list the starter pipelines, print one, write it to a file, or save it on an app
+  %[1]s pipelines fixes <app> <run-id> [--apply KIND --job J [--rerun]] [flags]   known-error fixes for a failed run, or apply an automatic one
+  %[1]s pipelines insights <app> <pipeline> [flags]        per-job failure rate, p50 time, flaky jobs, and the latest run's timing diff
   %[1]s pipelines oidc [flags]                             whether pipeline jobs can mint OIDC tokens, and the JWKS URL to wire to a cloud provider
   %[1]s pipelines oidc rotate-key [--retire-after D] [flags]   rotate the OIDC signing key; the old key stays published in the JWKS until it retires
 
@@ -93,6 +96,12 @@ func runPipelines(prog string, args []string, stdout, stderr io.Writer, lookupEn
 			return runPipelinesWebhook(prog, rest, stdout, stderr, lookupEnv)
 		}
 		return runPipelinesTriggers(prog, rest, stdout, stderr, lookupEnv)
+	case "templates":
+		return runPipelinesTemplates(prog, rest, stdout, stderr, lookupEnv)
+	case "fixes":
+		return runPipelinesFixes(prog, rest, stdout, stderr, lookupEnv)
+	case "insights":
+		return runPipelinesInsights(prog, rest, stdout, stderr, lookupEnv)
 	case "oidc":
 		return runPipelinesOIDC(prog, rest, stdout, stderr, lookupEnv)
 	}
@@ -169,7 +178,7 @@ func runPipelinesValidate(prog string, args []string, stdout, stderr io.Writer) 
 	fs.SetOutput(stderr)
 	jsonOut := fs.Bool("json", false, "print the validation result as JSON")
 	if err := fs.Parse(reorderArgsFlagsFirst(fs, args)); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

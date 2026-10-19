@@ -57,6 +57,18 @@ type ControlPlaneDR struct {
 	DrillRunning            bool                    `json:"drill_running"`
 	Checklist               ControlPlaneDRChecklist `json:"checklist"`
 	Warnings                []ControlPlaneDRWarning `json:"warnings"`
+	Replica                 *ControlPlaneReplica    `json:"replica,omitempty"`
+}
+
+// ControlPlaneReplica is the opt-in continuous replica state.
+type ControlPlaneReplica struct {
+	Enabled         bool   `json:"enabled"`
+	IntervalSeconds int    `json:"interval_seconds"`
+	LastShipAt      string `json:"last_ship_at,omitempty"`
+	LastShipMs      int64  `json:"last_ship_ms,omitempty"`
+	LastSizeBytes   int64  `json:"last_size_bytes,omitempty"`
+	LastError       string `json:"last_error,omitempty"`
+	PendingSince    string `json:"pending_since,omitempty"`
 }
 
 // ControlPlaneDRSettings is the body of PUT /system/control-plane-dr/settings.
@@ -141,5 +153,38 @@ func (c *Client) BuildControlPlaneEscrow(ctx context.Context, recipients []strin
 func (c *Client) AckControlPlaneEscrow(ctx context.Context) (ControlPlaneDR, error) {
 	var out ControlPlaneDR
 	err := c.do(ctx, http.MethodPost, controlPlaneDRPath+"/escrow/ack", nil, &out)
+	return out, err
+}
+
+// ControlPlaneRestoreStep is one ordered recovery step and whether it is done.
+type ControlPlaneRestoreStep struct {
+	ID    string `json:"id"`
+	State string `json:"state"`
+}
+
+// ControlPlaneRestoreBackup is the newest complete off-box backup.
+type ControlPlaneRestoreBackup struct {
+	Key       string `json:"key"`
+	CreatedAt string `json:"created_at"`
+	SizeBytes int64  `json:"size_bytes"`
+}
+
+// ControlPlaneRestorePlan mirrors the restore-plan response.
+type ControlPlaneRestorePlan struct {
+	Ready      bool                       `json:"ready"`
+	Backup     *ControlPlaneRestoreBackup `json:"backup,omitempty"`
+	InstallID  string                     `json:"install_id,omitempty"`
+	Source     string                     `json:"source,omitempty"`
+	Endpoint   string                     `json:"endpoint,omitempty"`
+	Command    string                     `json:"command,omitempty"`
+	Steps      []ControlPlaneRestoreStep  `json:"steps"`
+	Warnings   []string                   `json:"warnings"`
+	BinaryName string                     `json:"binary_name"`
+}
+
+// GetControlPlaneRestorePlan calls GET /api/v1/system/control-plane-dr/restore-plan.
+func (c *Client) GetControlPlaneRestorePlan(ctx context.Context) (ControlPlaneRestorePlan, error) {
+	var out ControlPlaneRestorePlan
+	err := c.do(ctx, http.MethodGet, controlPlaneDRPath+"/restore-plan", nil, &out)
 	return out, err
 }

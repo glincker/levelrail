@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // defaultAuditLogRetention is how long an audit_log row survives before
@@ -24,28 +26,41 @@ func (rt *Router) effectiveAuditLogRetention() time.Duration {
 // PurgeOldAuditEntries deletes every audit_log row older than
 // effectiveAuditLogRetention, returning how many rows were removed.
 func (rt *Router) PurgeOldAuditEntries(ctx context.Context) (int64, error) {
-	cutoff := time.Now().UTC().Add(-rt.effectiveAuditLogRetention())
+	now := time.Now().UTC()
+	cutoff := now.Add(-rt.effectiveAuditLogRetention())
+	rt.pruneIdempotency(ctx)
+	if tiered, ok := rt.auditLog.(tieredAuditPurger); ok {
+		return tiered.DeleteAuditEntriesTiered(ctx, cutoff, now.Add(-rt.effectiveSecurityAuditRetention()))
+	}
 	return rt.auditLog.DeleteAuditEntriesOlderThan(ctx, cutoff)
+}
+
+const (
+	envAuditSecurityRetentionDays     = "APP_AUDIT_LOG_SECURITY_RETENTION_DAYS"
+	defaultAuditSecurityRetentionDays = 365
+)
+
+type tieredAuditPurger interface {
+	DeleteAuditEntriesTiered(ctx context.Context, cutoff, securityCutoff time.Time) (int64, error)
+}
+
+// effectiveSecurityAuditRetention is how long sign-in, step-up, token and
+// policy rows survive; it is never shorter than the general retention.
+func (rt *Router) effectiveSecurityAuditRetention() time.Duration {
+	days := envInt(envAuditSecurityRetentionDays, defaultAuditSecurityRetentionDays)
+	return max(time.Duration(days)*24*time.Hour, rt.effectiveAuditLogRetention())
 }
 
 // RunAuditLogSweeper calls PurgeOldAuditEntries on interval until ctx is
 // done, the same ticker shape RunPreviewSweeper already establishes.
 func (rt *Router) RunAuditLogSweeper(ctx context.Context, interval time.Duration) error {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-ticker.C:
-			if n, err := rt.PurgeOldAuditEntries(ctx); err != nil {
-				rt.logger.Warn("api: audit log sweep tick failed", slog.String("error", err.Error()))
-			} else if n > 0 {
-				rt.logger.Info("api: swept old audit log entries", slog.Int64("deleted", n))
-			}
+	return footprint.Every(ctx, "audit log sweep", interval, rt.logger, func(ctx context.Context) error {
+		n, err := rt.PurgeOldAuditEntries(ctx)
+		if err == nil && n > 0 {
+			rt.logger.Info("api: swept old audit log entries", slog.Int64("deleted", n))
 		}
-	}
+		return err
+	})
 }
 
 // handlePurgeAuditLog handles POST /api/v1/audit-log/purge: the manual

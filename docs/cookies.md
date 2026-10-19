@@ -1,6 +1,7 @@
 ---
 title: Cookie notice
 description: The Levelrail website sets no cookies of its own and stores only your theme preference in your browser's local storage.
+"og:url": "https://docs.levelrail.com/cookies"
 ---
 
 Last updated: 2026-10-05.

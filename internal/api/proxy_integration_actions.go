@@ -291,7 +291,7 @@ func listenerDownMessage(l proxyroutes.Listener) string {
 	if addr == "" {
 		return ""
 	}
-	c, err := net.DialTimeout("tcp", addr, listenerProbeTimeout)
+	c, err := (&net.Dialer{Timeout: listenerProbeTimeout}).DialContext(context.Background(), "tcp", addr)
 	if err == nil {
 		_ = c.Close()
 		return ""

@@ -18,6 +18,7 @@ import {
 import { useNavigate, useRouter } from '@tanstack/react-router'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 import { setStoredUsername } from '../lib/authStore'
+import { stepUpWithPasskey } from './envProtection'
 import {
   goAfterLogin,
   isApprovalRequired,
@@ -31,7 +32,14 @@ export interface PasskeyResource {
   transports?: string[]
   created_at: string
   last_used_at?: string
+  provider_key: string
+  provider_name?: string
+  synced?: boolean
+  backed_up?: boolean
+  sign_count: number
 }
+
+export type RegisterPhase = 'prompt' | 'saving'
 
 export const passkeyKeys = {
   all: ['passkeys'] as const,
@@ -92,7 +100,10 @@ interface PasskeyRegistrationBeginResponse {
 // server for a challenge (handleBeginPasskeyRegistration), triggers the
 // browser's navigator.credentials.create() prompt, and sends the result
 // to handleFinishPasskeyRegistration.
-export async function registerPasskey(label: string): Promise<PasskeyResource> {
+export async function registerPasskey(
+  label: string,
+  onPhase?: (phase: RegisterPhase) => void,
+): Promise<PasskeyResource> {
   assertPasskeySupport()
   const beginRes = await fetch('/api/v1/auth/passkeys/register/begin', {
     method: 'POST',
@@ -108,11 +119,13 @@ export async function registerPasskey(label: string): Promise<PasskeyResource> {
   const options = PublicKeyCredential.parseCreationOptionsFromJSON(
     begin.options.publicKey,
   )
+  onPhase?.('prompt')
   const credential = await navigator.credentials.create({ publicKey: options })
   if (!(credential instanceof PublicKeyCredential)) {
     throw new PasskeyUnsupportedError('The browser did not return a passkey.')
   }
 
+  onPhase?.('saving')
   const finishURL =
     `/api/v1/auth/passkeys/register/finish?session_id=${encodeURIComponent(begin.session_id)}` +
     `&label=${encodeURIComponent(label)}`
@@ -130,10 +143,15 @@ export async function registerPasskey(label: string): Promise<PasskeyResource> {
   return (await finishRes.json()) as PasskeyResource
 }
 
+export interface RegisterPasskeyInput {
+  label: string
+  onPhase?: (phase: RegisterPhase) => void
+}
+
 export function useRegisterPasskey() {
   const queryClient = useQueryClient()
-  return useMutation<PasskeyResource, Error, string>({
-    mutationFn: registerPasskey,
+  return useMutation<PasskeyResource, Error, RegisterPasskeyInput>({
+    mutationFn: ({ label, onPhase }) => registerPasskey(label, onPhase),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: passkeyKeys.all })
     },
@@ -157,6 +175,45 @@ export function useDeletePasskey() {
   return useMutation<void, ApiError, string>({
     mutationFn: deletePasskey,
     onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: passkeyKeys.all })
+    },
+  })
+}
+
+// PATCH /api/v1/auth/passkeys/{id}.
+export async function renamePasskey(
+  id: string,
+  label: string,
+): Promise<PasskeyResource> {
+  const res = await fetch(`/api/v1/auth/passkeys/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label }),
+  })
+  if (!res.ok) {
+    await throwPasskeyError(res, `rename passkey failed: ${res.status}`)
+  }
+  return (await res.json()) as PasskeyResource
+}
+
+export function useRenamePasskey() {
+  const queryClient = useQueryClient()
+  return useMutation<PasskeyResource, ApiError, { id: string; label: string }>({
+    mutationFn: ({ id, label }) => renamePasskey(id, label),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: passkeyKeys.all })
+    },
+  })
+}
+
+// Runs a real assertion through the step-up passkey path: it proves the
+// authenticator still works and bumps last used, without a new session.
+export function useTestPasskey() {
+  const queryClient = useQueryClient()
+  return useMutation<unknown, Error, void>({
+    mutationFn: () =>
+      stepUpWithPasskey({ action: 'manage', app: 'passkey-test' }),
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: passkeyKeys.all })
     },
   })

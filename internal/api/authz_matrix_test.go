@@ -41,6 +41,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /healthz":                                   "liveness probe for systemd and load balancers",
 	"GET /readyz":                                    "readiness probe, no data beyond ready/not ready",
 	"GET /api/v1/brand":                              "login screen needs branding before a session exists",
+	"GET /api/v1/instance":                           "CLI verifies which server it reached before sending a token; id and HMAC fingerprint only, rate limited",
 	"GET /api/v1/demo":                               "demo banner, boolean only on a real instance",
 	"POST /api/v1/demo/session":                      "demo sign-in, only registered when the instance runs in demo mode",
 	"POST /api/v1/demo/cta":                          "demo click beacon, only registered in demo mode, enum only",
@@ -77,6 +78,7 @@ var publicRoutes = map[string]string{ //nolint:gosec // route paths, not credent
 	"GET /.well-known/jwks.json":                     "pipeline OIDC verification key set, meant to be fetched by AWS/GCP/Vault with no session; answers 404 rather than 401 when OIDC is unconfigured (router.go's oidcJWKS is nil), which leaks nothing either",
 	"POST /api/v1/webhooks/github/{name}":            "authenticated by the HMAC signature of the app's webhook secret",
 	"POST /api/v1/hooks/pipeline/{id}/{token}":       "authenticated by the per-pipeline secret URL token (sha256 compared in constant time, uniform 404 on any mismatch), optionally plus a body HMAC, rate limited",
+	"POST /api/v1/ci/oidc-exchange":                  "authenticated by a CI provider OIDC identity token (signature, issuer, audience and expiry verified) that must match a per-app trust, rate limited",
 	"POST /api/v1/hooks/image-update/{name}/{token}": "authenticated by the per-app secret token in the path (hash compared in constant time); any mismatch answers a uniform 404",
 	"POST /api/v1/otlp/v1/traces":                    "OTLP exporters send a per-app ingest key as a bearer token; a missing or wrong key answers 401",
 	"POST /api/v1/sentry/api/{project}/envelope/":    "Sentry SDKs send the app's DSN public key in X-Sentry-Auth; a missing or wrong key answers 401, rate limited per app",
@@ -120,6 +122,7 @@ var readOnlyMayMutate = map[string]string{
 	"POST /api/v1/network-shares/{id}/test":                      "reachability dial only, gated by AbilityRead, persists nothing",
 	"DELETE /api/v1/teams/{id}/members/me":                       "self service: removes only the caller's own team membership",
 	"DELETE /api/v1/mobile/devices/{id}":                         "self service: revokes only a phone the caller paired, or any phone for root",
+	"POST /api/v1/project-templates/{id}/render":                 "renders starter files from submitted parameters, persists nothing",
 	"POST /api/v1/apps/{name}/health/discover":                   "active HTTP probes of a running container, gated by AbilityRead, persists nothing",
 }
 

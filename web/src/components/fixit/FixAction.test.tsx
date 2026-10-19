@@ -51,7 +51,7 @@ function renderFix(fix: Fix) {
 describe('FixAction', () => {
   it('offers apply with a change preview for an auto fix', () => {
     renderFix(base)
-    expect(screen.getByRole('button', { name: 'Apply fix' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Fix now' })).toBeEnabled()
     expect(screen.getByText(/Build cache/)).toBeInTheDocument()
     expect(screen.getByText('Cannot be undone')).toBeInTheDocument()
   })
@@ -65,13 +65,13 @@ describe('FixAction', () => {
     })
     expect(screen.getByText('sudo systemctl restart x')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Re-check/ })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Apply fix' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Fix now' })).toBeNull()
     expect(screen.getByText(/still blocked because X/)).toBeInTheDocument()
   })
 
   it('disables apply while rate limited', () => {
     renderFix({ ...base, state: 'rate_limited' })
-    expect(screen.getByRole('button', { name: 'Apply fix' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Fix now' })).toBeDisabled()
     expect(screen.getByText(/Waiting before trying again/)).toBeInTheDocument()
   })
 })

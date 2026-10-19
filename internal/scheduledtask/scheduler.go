@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -317,12 +318,17 @@ func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+	loop := footprint.Track("scheduledtask", interval)
+	defer loop.Active()()
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			if err := s.Tick(ctx); err != nil {
+			start := time.Now()
+			err := s.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
 				s.log().Warn("scheduledtask: scheduler tick had errors", slog.String("error", err.Error()))
 			}
 		}

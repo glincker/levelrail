@@ -322,8 +322,8 @@ func TestBetaFeatures_ToggleFromSettings(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/settings/beta-features/iac", nil)
 	req.AddCookie(cookie)
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPut, "/api/v1/settings/beta-features/iac", `{"enabled":true}`))
-	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "APP_EXPERIMENTAL=iac") {
-		t.Fatalf("non toggleable feature = %d %s", rec.Code, rec.Body.String())
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"pending_restart":true`) || experimental.Enabled(experimental.IaC) {
+		t.Fatalf("startup wired feature = %d %s", rec.Code, rec.Body.String())
 	}
 	rec = httptest.NewRecorder()
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/settings/beta-features", ""))

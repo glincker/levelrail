@@ -90,7 +90,7 @@ var selfhosted1Templates = []Template{
     volumes:
       - authentik_media:/media
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:9000/-/health/live/ || wget -q -O /dev/null http://127.0.0.1:9000/-/health/live/ || exit 1"]
+      test: ["CMD", "ak", "healthcheck"]
       interval: 30s
       timeout: 5s
       retries: 3

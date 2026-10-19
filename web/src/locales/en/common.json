@@ -1,4 +1,23 @@
 {
+  "deployHistory": {
+    "filters": {
+      "search": "Search message, commit, author",
+      "branch": "Branch",
+      "author": "Author",
+      "status": "Status",
+      "all": "All ({{label}})",
+      "clear": "Clear filters",
+      "noMatch": "No deploys match these filters",
+      "noMatchHint": "Clear the filters to see every deploy."
+    },
+    "visit": "Visit",
+    "visitLabel": "Visit {{url}}",
+    "promote": "Promote to production",
+    "promoteHint": "Makes this exact build the live release, pinned by digest",
+    "promoted": "Promotion triggered.",
+    "promotedPending": "Promotion is waiting for approval.",
+    "promoteFailed": "Could not promote."
+  },
   "actions": {
     "copy": "Copy",
     "copied": "Copied",
@@ -88,6 +107,25 @@
     "clone": "Clone...",
     "delete": "Delete...",
     "wake": "Wake now"
+  },
+  "paletteAction": {
+    "restartTitle": "Restart {{name}}?",
+    "restartDescription": "The running containers are replaced with fresh ones.",
+    "restartConsequence": "Requests may fail briefly while the app comes back.",
+    "restartConfirm": "Restart",
+    "stopTitle": "Stop {{name}}?",
+    "stopDescription": "The app stops serving traffic until you start it again.",
+    "stopConsequence": "Config, env and domains are kept.",
+    "stopConfirm": "Stop",
+    "rollbackTitle": "Roll back {{name}}?",
+    "rollbackDescription": "Redeploys the previous release: {{image}}.",
+    "rollbackConsequence": "The current release stops serving once the previous one is healthy.",
+    "rollbackConfirm": "Roll back",
+    "rollbackNone": "{{name}} has no previous release to roll back to.",
+    "rollbackFailed": "Rollback failed",
+    "rollbackStarted": "Rolling back \"{{name}}\".",
+    "pending": "Working...",
+    "alreadyStopped": "{{name}} is already stopped."
   },
   "confirmDialog": {
     "cancel": "Cancel",
@@ -192,8 +230,11 @@
       "dns": "DNS",
       "proxy": "Proxy",
       "loadbalancers": "Load balancers",
+      "firewall": "Firewall",
+      "private-networks": "Private networks",
       "nodes": "Nodes",
       "network": "Topology",
+      "cdn": "CDN and caches",
       "registry": "Container registry",
       "registry-credentials": "Credentials",
       "network-shares": "Network shares",
@@ -521,5 +562,20 @@
     "count_one": "{{count}} page",
     "count_other": "{{count}} pages",
     "noDomain": "no domain"
+  },
+  "gitAccess": {
+    "validate": "Validate access",
+    "validating": "Validating...",
+    "recheck": "Check again",
+    "ok": "Access works.",
+    "fix": "Fix",
+    "checks": {
+      "repo_url": "Repository URL",
+      "credential": "Credential",
+      "access": "Repository access",
+      "connection": "Connection",
+      "installation": "Installation",
+      "credentials": "App credentials"
+    }
   }
 }

@@ -20,15 +20,48 @@ func (rt *Router) SetPluginManager(m *plugin.Manager) { rt.plugins = m }
 
 type pluginResource struct {
 	plugin.Record
-	Running bool `json:"running"`
+	Running      bool             `json:"running"`
+	Health       string           `json:"health"`
+	Verification string           `json:"verification"`
+	Fix          string           `json:"fix"`
+	Panels       []plugin.Panel   `json:"panels"`
+	Commands     []plugin.Command `json:"commands"`
 }
 
 type installPluginRequest struct {
-	Manifest       string `json:"manifest"`
-	Signature      string `json:"signature"`
-	KeyID          string `json:"key_id"`
-	ExpectedDigest string `json:"expected_digest,omitempty"`
-	ConfigJSON     string `json:"config_json,omitempty"`
+	Manifest         string   `json:"manifest"`
+	ManifestURL      string   `json:"manifest_url,omitempty"`
+	Signature        string   `json:"signature"`
+	SignatureURL     string   `json:"signature_url,omitempty"`
+	KeyID            string   `json:"key_id"`
+	ExpectedDigest   string   `json:"expected_digest,omitempty"`
+	ConfigJSON       string   `json:"config_json,omitempty"`
+	ApproveAbilities []string `json:"approve_abilities,omitempty"`
+}
+
+// installRequest resolves a manifest URL, if given, into manifest and signature text.
+func (rt *Router) installRequest(ctx context.Context, req installPluginRequest) (plugin.InstallRequest, error) {
+	manifest, signature := req.Manifest, strings.TrimSpace(req.Signature)
+	if strings.TrimSpace(req.ManifestURL) != "" {
+		if manifest != "" {
+			return plugin.InstallRequest{}, &plugin.InvalidError{Msg: "give either manifest or manifest_url, not both"}
+		}
+		fetch := rt.pluginFetch
+		if fetch == nil {
+			fetch = plugin.Fetch
+		}
+		var err error
+		if manifest, signature, err = plugin.LoadSource(ctx, fetch, req.ManifestURL, req.SignatureURL); err != nil {
+			return plugin.InstallRequest{}, err
+		}
+		if s := strings.TrimSpace(req.Signature); s != "" {
+			signature = s
+		}
+	}
+	return plugin.InstallRequest{
+		Manifest: []byte(manifest), Signature: signature, KeyID: strings.TrimSpace(req.KeyID),
+		ExpectedDigest: strings.TrimSpace(req.ExpectedDigest), ConfigJSON: req.ConfigJSON, Approve: req.ApproveAbilities,
+	}, nil
 }
 
 type approvePluginRequest struct {
@@ -56,8 +89,13 @@ func (rt *Router) pluginActor(r *http.Request) string {
 	return kind + ":" + id
 }
 
-func (rt *Router) toPluginResource(m *plugin.Manager, rec plugin.Record) pluginResource {
-	return pluginResource{Record: rec, Running: m.Running(rec.Name)}
+func (rt *Router) toPluginResource(ctx context.Context, m *plugin.Manager, rec plugin.Record) pluginResource {
+	st := m.StatusOf(ctx, rec)
+	panels, commands := []plugin.Panel{}, []plugin.Command{}
+	if man, err := plugin.ParseManifest([]byte(rec.Manifest)); err == nil {
+		panels, commands = man.Contributes.Panels, man.Contributes.Commands
+	}
+	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels, Commands: commands}
 }
 
 func (rt *Router) writePluginError(w http.ResponseWriter, what string, err error) {
@@ -77,6 +115,10 @@ func (rt *Router) writePluginError(w http.ResponseWriter, what string, err error
 		writeError(w, http.StatusUnprocessableEntity, "the signing key is not in the trust list, add the publisher's key first")
 	case errors.Is(err, plugin.ErrBadSignature):
 		writeError(w, http.StatusUnprocessableEntity, "the signature does not verify for this manifest and image digest")
+	case errors.Is(err, plugin.ErrUnsigned):
+		writeError(w, http.StatusUnprocessableEntity, err.Error())
+	case errors.Is(err, plugin.ErrSourceNotFound):
+		writeError(w, http.StatusUnprocessableEntity, "nothing was found at that URL")
 	case errors.Is(err, plugin.ErrDigestMismatch):
 		writeError(w, http.StatusUnprocessableEntity, "the image digest does not match the digest you pinned")
 	default:
@@ -97,7 +139,7 @@ func (rt *Router) handleListPlugins(w http.ResponseWriter, r *http.Request) {
 	}
 	out := make([]pluginResource, 0, len(recs))
 	for _, rec := range recs {
-		out = append(out, rt.toPluginResource(m, rec))
+		out = append(out, rt.toPluginResource(r.Context(), m, rec))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -113,7 +155,7 @@ func (rt *Router) handleGetPlugin(w http.ResponseWriter, r *http.Request) {
 		rt.writePluginError(w, "get", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toPluginResource(m, rec))
+	writeJSON(w, http.StatusOK, rt.toPluginResource(r.Context(), m, rec))
 }
 
 // handleInstallPlugin serves POST /api/v1/plugins. It verifies and records the package; nothing is approved or started.
@@ -127,15 +169,83 @@ func (rt *Router) handleInstallPlugin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "request body must be JSON")
 		return
 	}
-	rec, err := m.Install(r.Context(), plugin.InstallRequest{
-		Manifest: []byte(req.Manifest), Signature: strings.TrimSpace(req.Signature), KeyID: strings.TrimSpace(req.KeyID),
-		ExpectedDigest: strings.TrimSpace(req.ExpectedDigest), ConfigJSON: req.ConfigJSON,
-	}, rt.pluginActor(r))
+	ir, err := rt.installRequest(r.Context(), req)
 	if err != nil {
 		rt.writePluginError(w, "install", err)
 		return
 	}
-	writeJSON(w, http.StatusCreated, rt.toPluginResource(m, rec))
+	rec, err := m.Install(r.Context(), ir, rt.pluginActor(r))
+	if err != nil {
+		rt.writePluginError(w, "install", err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, rt.toPluginResource(r.Context(), m, rec))
+}
+
+// handleInspectPlugin serves POST /api/v1/plugins/inspect. It verifies a package and shows the ability diff, writing nothing.
+func (rt *Router) handleInspectPlugin(w http.ResponseWriter, r *http.Request) {
+	m, ok := rt.pluginManager(w)
+	if !ok {
+		return
+	}
+	var req installPluginRequest
+	if err := decodeJSONBodyLimit(r, &req, pluginBodyLimit); err != nil {
+		writeError(w, http.StatusBadRequest, "request body must be JSON")
+		return
+	}
+	ir, err := rt.installRequest(r.Context(), req)
+	if err != nil {
+		rt.writePluginError(w, "inspect", err)
+		return
+	}
+	p, err := m.Inspect(r.Context(), ir)
+	if err != nil {
+		rt.writePluginError(w, "inspect", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, p)
+}
+
+// handleUpgradePlugin serves POST /api/v1/plugins/{name}/upgrade.
+func (rt *Router) handleUpgradePlugin(w http.ResponseWriter, r *http.Request) {
+	m, ok := rt.pluginManager(w)
+	if !ok {
+		return
+	}
+	var req installPluginRequest
+	if err := decodeJSONBodyLimit(r, &req, pluginBodyLimit); err != nil {
+		writeError(w, http.StatusBadRequest, "request body must be JSON")
+		return
+	}
+	ir, err := rt.installRequest(r.Context(), req)
+	if err != nil {
+		rt.writePluginError(w, "upgrade", err)
+		return
+	}
+	if man, perr := plugin.ParseManifest(ir.Manifest); perr == nil && man.Name != r.PathValue("name") {
+		writeError(w, http.StatusBadRequest, "the manifest is for a different plugin than the one in the URL")
+		return
+	}
+	rec, err := m.Upgrade(r.Context(), ir, rt.pluginActor(r))
+	if err != nil {
+		rt.writePluginError(w, "upgrade", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.toPluginResource(r.Context(), m, rec))
+}
+
+// handleRestartPlugin serves POST /api/v1/plugins/{name}/restart, the fix for an unhealthy plugin.
+func (rt *Router) handleRestartPlugin(w http.ResponseWriter, r *http.Request) {
+	m, ok := rt.pluginManager(w)
+	if !ok {
+		return
+	}
+	rec, err := m.Restart(r.Context(), r.PathValue("name"), rt.pluginActor(r))
+	if err != nil {
+		rt.writePluginError(w, "restart", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, rt.toPluginResource(r.Context(), m, rec))
 }
 
 // handleApprovePlugin serves POST /api/v1/plugins/{name}/approve.
@@ -154,7 +264,7 @@ func (rt *Router) handleApprovePlugin(w http.ResponseWriter, r *http.Request) {
 		rt.writePluginError(w, "approve", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toPluginResource(m, rec))
+	writeJSON(w, http.StatusOK, rt.toPluginResource(r.Context(), m, rec))
 }
 
 // handleEnablePlugin serves POST /api/v1/plugins/{name}/enable.
@@ -168,7 +278,7 @@ func (rt *Router) handleEnablePlugin(w http.ResponseWriter, r *http.Request) {
 		rt.writePluginError(w, "enable", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toPluginResource(m, rec))
+	writeJSON(w, http.StatusOK, rt.toPluginResource(r.Context(), m, rec))
 }
 
 // handleDisablePlugin serves POST /api/v1/plugins/{name}/disable.
@@ -182,7 +292,7 @@ func (rt *Router) handleDisablePlugin(w http.ResponseWriter, r *http.Request) {
 		rt.writePluginError(w, "disable", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rt.toPluginResource(m, rec))
+	writeJSON(w, http.StatusOK, rt.toPluginResource(r.Context(), m, rec))
 }
 
 // handleRemovePlugin serves DELETE /api/v1/plugins/{name}.

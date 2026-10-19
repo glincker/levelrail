@@ -1,6 +1,7 @@
 ---
 title: "Projects, organizations, and environments"
 description: Organize apps and databases into optional projects, organizations, and environments with shared configuration and deployment gates.
+"og:url": "https://docs.levelrail.com/projects-and-organizations"
 ---
 
 Group your apps and databases into projects, file projects under organizations, and tag apps with an environment (staging, production, and so on) so they share config and get deployment gates. All of it is optional: add structure when you need it.

@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import {
   ArrowCircleUpIcon,
+  BroomIcon,
   BuildingsIcon,
   ChartLineIcon,
   ClockCounterClockwiseIcon,
@@ -14,6 +15,7 @@ import {
   ExportIcon,
   FileCodeIcon,
   FlaskIcon,
+  GaugeIcon,
   GearIcon,
   GitBranchIcon,
   GithubLogoIcon,
@@ -363,6 +365,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         icon: StackIcon,
       },
       {
+        id: 'janitor',
+        to: '/settings/janitor',
+        icon: BroomIcon,
+      },
+      {
         id: 'infrastructure',
         to: '/settings/infrastructure',
         icon: FileCodeIcon,
@@ -377,6 +384,11 @@ export const settingsNavSections: SettingsNavSection[] = [
         id: 'system-status',
         to: '/settings/system-status',
         icon: HeartbeatIcon,
+      },
+      {
+        id: 'control-plane-health',
+        to: '/settings/control-plane-health',
+        icon: GaugeIcon,
       },
     ],
   },

@@ -6,7 +6,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.1
-// source: proto/plugin/v1/plugin.proto
+// source: plugin/v1/plugin.proto
 
 package pluginpb
 
@@ -167,7 +167,7 @@ var PluginService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/plugin/v1/plugin.proto",
+	Metadata: "plugin/v1/plugin.proto",
 }
 
 const (
@@ -274,5 +274,153 @@ var NotificationChannelService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/plugin/v1/plugin.proto",
+	Metadata: "plugin/v1/plugin.proto",
+}
+
+const (
+	PanelService_PanelData_FullMethodName   = "/levelrail.plugin.v1.PanelService/PanelData"
+	PanelService_PanelAction_FullMethodName = "/levelrail.plugin.v1.PanelService/PanelAction"
+)
+
+// PanelServiceClient is the client API for PanelService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// PanelService is served by plugins that contribute panels or commands.
+// The host calls it only for sources and actions the manifest declares and
+// only with the abilities the operator approved.
+type PanelServiceClient interface {
+	PanelData(ctx context.Context, in *PanelDataRequest, opts ...grpc.CallOption) (*PanelDataResponse, error)
+	PanelAction(ctx context.Context, in *PanelActionRequest, opts ...grpc.CallOption) (*PanelActionResponse, error)
+}
+
+type panelServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewPanelServiceClient(cc grpc.ClientConnInterface) PanelServiceClient {
+	return &panelServiceClient{cc}
+}
+
+func (c *panelServiceClient) PanelData(ctx context.Context, in *PanelDataRequest, opts ...grpc.CallOption) (*PanelDataResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PanelDataResponse)
+	err := c.cc.Invoke(ctx, PanelService_PanelData_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *panelServiceClient) PanelAction(ctx context.Context, in *PanelActionRequest, opts ...grpc.CallOption) (*PanelActionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PanelActionResponse)
+	err := c.cc.Invoke(ctx, PanelService_PanelAction_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// PanelServiceServer is the server API for PanelService service.
+// All implementations must embed UnimplementedPanelServiceServer
+// for forward compatibility.
+//
+// PanelService is served by plugins that contribute panels or commands.
+// The host calls it only for sources and actions the manifest declares and
+// only with the abilities the operator approved.
+type PanelServiceServer interface {
+	PanelData(context.Context, *PanelDataRequest) (*PanelDataResponse, error)
+	PanelAction(context.Context, *PanelActionRequest) (*PanelActionResponse, error)
+	mustEmbedUnimplementedPanelServiceServer()
+}
+
+// UnimplementedPanelServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedPanelServiceServer struct{}
+
+func (UnimplementedPanelServiceServer) PanelData(context.Context, *PanelDataRequest) (*PanelDataResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PanelData not implemented")
+}
+func (UnimplementedPanelServiceServer) PanelAction(context.Context, *PanelActionRequest) (*PanelActionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PanelAction not implemented")
+}
+func (UnimplementedPanelServiceServer) mustEmbedUnimplementedPanelServiceServer() {}
+func (UnimplementedPanelServiceServer) testEmbeddedByValue()                      {}
+
+// UnsafePanelServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to PanelServiceServer will
+// result in compilation errors.
+type UnsafePanelServiceServer interface {
+	mustEmbedUnimplementedPanelServiceServer()
+}
+
+func RegisterPanelServiceServer(s grpc.ServiceRegistrar, srv PanelServiceServer) {
+	// If the following call panics, it indicates UnimplementedPanelServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&PanelService_ServiceDesc, srv)
+}
+
+func _PanelService_PanelData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PanelDataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PanelServiceServer).PanelData(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PanelService_PanelData_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PanelServiceServer).PanelData(ctx, req.(*PanelDataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _PanelService_PanelAction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PanelActionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PanelServiceServer).PanelAction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PanelService_PanelAction_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PanelServiceServer).PanelAction(ctx, req.(*PanelActionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// PanelService_ServiceDesc is the grpc.ServiceDesc for PanelService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var PanelService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "levelrail.plugin.v1.PanelService",
+	HandlerType: (*PanelServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "PanelData",
+			Handler:    _PanelService_PanelData_Handler,
+		},
+		{
+			MethodName: "PanelAction",
+			Handler:    _PanelService_PanelAction_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "plugin/v1/plugin.proto",
 }

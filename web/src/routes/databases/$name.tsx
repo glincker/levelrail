@@ -9,6 +9,11 @@ import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
 import { routeErrorMessage } from '../../lib/apiError'
 import { Breadcrumbs } from '../../components/Breadcrumbs'
 import { DatabaseActionBar } from '../../components/databases/DatabaseActionBar'
+import { DatabasePaletteActions } from '../../components/databases/DatabasePaletteActions'
+import {
+  parseDatabaseAction,
+  type DatabasePaletteAction,
+} from '../../lib/paletteAction'
 import { DeleteExternalDatabaseDialog } from '../../components/ExternalDatabaseOverview'
 import { useTranslation } from 'react-i18next'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -25,6 +30,12 @@ export const Route = createFileRoute('/databases/$name')({
       queryClient.ensureQueryData(databaseDetailQueryOptions(name)),
       queryClient.ensureQueryData(databaseStatusQueryOptions(name)),
     ]),
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { action?: DatabasePaletteAction } => {
+    const action = parseDatabaseAction(search.action)
+    return action ? { action } : {}
+  },
   component: DatabaseDetailLayout,
   pendingComponent: DatabaseDetailSkeleton,
   errorComponent: DatabaseDetailError,
@@ -32,6 +43,7 @@ export const Route = createFileRoute('/databases/$name')({
 
 function DatabaseDetailLayout() {
   const { name } = Route.useParams()
+  const { action } = Route.useSearch()
   const { data: database } = useDatabase(name)
   const { data: conditions } = useDatabaseStatus(name)
   const status = summarizeDatabaseStatus(conditions)
@@ -51,6 +63,9 @@ function DatabaseDetailLayout() {
         )
       }
     >
+      {database.external ? null : (
+        <DatabasePaletteActions database={database} action={action} />
+      )}
       <Outlet />
     </PageTemplate>
   )

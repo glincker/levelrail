@@ -84,7 +84,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_gpu_nodes",
-		Description: "List nodes that report NVIDIA GPUs: driver version, per-GPU VRAM total and used, utilization, whether Docker has the nvidia container runtime, the fix when it does not, how many models run there, and GPU reservations: reserved and free GPU counts plus which apps and models hold them (a workload only places on a node with enough free GPUs).",
+		Description: "List nodes reporting NVIDIA GPUs: driver, per-GPU VRAM and utilization, nvidia runtime state and fix, models running, and reserved and free GPU counts with holders.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.GPUNodeResource, error) {
 		out, err := client.ListGPUNodes(ctx)
 		if err != nil {
@@ -115,7 +115,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "deploy_model",
-		Description: "Deploy an AI model as a container on a GPU node. Asynchronous: returns once saved, then the engine downloads weights into a persistent volume and loads the model; watch get_model until its status reason is ModelLoaded. The response carries the OpenAI-compatible base URL and a one-time API key that cannot be retrieved again (rotate_model_api_key issues a new one).",
+		Description: "Deploy an AI model container on a GPU node. Asynchronous: watch get_model until the status reason is ModelLoaded. The response has the OpenAI compatible base URL and a one time API key (rotate_model_api_key issues a new one).",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in deployModelInput) (*mcp.CallToolResult, apiclient.CreateModelResponse, error) {
 		out, err := client.CreateModel(ctx, apiclient.CreateModelRequest{
 			Name: in.Name, Engine: in.Engine, Model: in.Model, NodeID: in.NodeID, GPUCount: in.GPUCount,
@@ -202,7 +202,7 @@ func registerModelTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "preflight_model",
-		Description: "Check a HuggingFace repository before deploying a model: whether it exists, gated access and the next step, license, download size, GGUF quantizations with sizes and fit verdicts against the node's free VRAM, a recommended quantization, free disk on the node, and which engine can load the weights. GPU fit numbers are estimates. Queries the public Hub and persists nothing.",
+		Description: "Check a HuggingFace repository before deploying a model: existence, gated access, license, size, GGUF quantizations with fit verdicts against free VRAM, recommended quantization, node disk and engine. Fit numbers are estimates. Persists nothing.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in preflightModelInput) (*mcp.CallToolResult, apiclient.ModelPreflightResult, error) {
 		out, err := client.PreflightModel(ctx, apiclient.ModelPreflightRequest{
 			Repo: in.Repo, Engine: in.Engine, Quant: in.Quant, File: in.File, NodeID: in.NodeID, HFToken: in.HFToken,

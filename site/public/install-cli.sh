@@ -1,1 +1,0 @@
-../../install-cli.sh

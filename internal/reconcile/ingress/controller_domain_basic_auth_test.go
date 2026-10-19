@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/GLINCKER/levelrail/internal/ingress"
+	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -54,8 +55,8 @@ func TestController_Reconcile_DomainBasicAuth_NoResolverConfigured_RegressionUnc
 	if err != nil {
 		t.Fatalf("Reconcile() error = %v, want nil", err)
 	}
-	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
-		t.Errorf("condition reason = %q, want Routed0Services: an unresolvable protected domain must not be routed at all", cond.Reason)
+	if cond := conditionOf(t, result); cond.Reason != reasonDomainsDropped || cond.Status != reconcile.ConditionFalse {
+		t.Errorf("condition = %+v, want Ready=False/%s: an unresolvable protected domain must not be routed and must not read as ready", cond, reasonDomainsDropped)
 	}
 	if routes := applier.routes(t); len(routes) != 0 {
 		t.Errorf("applied routes = %+v, want none", routes)
@@ -148,8 +149,8 @@ func TestController_Reconcile_DomainBasicAuth_ResolveError_DomainSkippedNotFaile
 	if err != nil {
 		t.Fatalf("Reconcile() error = %v, want nil: a password-resolve failure must not fail the whole reconcile", err)
 	}
-	if cond := conditionOf(t, result); cond.Reason != "Routed0Services" {
-		t.Errorf("condition reason = %q, want Routed0Services", cond.Reason)
+	if cond := conditionOf(t, result); cond.Reason != reasonDomainsDropped {
+		t.Errorf("condition reason = %q, want %s", cond.Reason, reasonDomainsDropped)
 	}
 	if routes := applier.routes(t); len(routes) != 0 {
 		t.Errorf("applied routes = %+v, want none: failing closed on a resolve error", routes)

@@ -1,6 +1,7 @@
 ---
 title: "About Levelrail: open source, built by GLINCKER"
 description: "Levelrail is an Apache 2.0 licensed, self-hosted deployment platform built by GLINCKER. Read what it is, how it is licensed, and how pre-release it still is."
+"og:url": "https://docs.levelrail.com/about"
 ---
 
 **Levelrail is built by GLINCKER, in the open**

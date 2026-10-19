@@ -1,0 +1,34 @@
+{
+  "darwin/off": {
+    "mode": "off",
+    "rss_mb": 170.10771942138672,
+    "goroutines": 114,
+    "threads": 0,
+    "cpu_percent": 0.2206840318061817,
+    "loops": 36
+  },
+  "darwin/on": {
+    "mode": "on",
+    "rss_mb": 170.07254791259766,
+    "goroutines": 118,
+    "threads": 0,
+    "cpu_percent": 0.5150310391272503,
+    "loops": 38
+  },
+  "linux/off": {
+    "mode": "off",
+    "rss_mb": 231.640625,
+    "goroutines": 100,
+    "threads": 8,
+    "cpu_percent": 0.40765964143764116,
+    "loops": 36
+  },
+  "linux/on": {
+    "mode": "on",
+    "rss_mb": 232.93359375,
+    "goroutines": 104,
+    "threads": 8,
+    "cpu_percent": 0.39523258458121,
+    "loops": 38
+  }
+}

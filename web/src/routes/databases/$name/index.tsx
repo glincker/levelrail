@@ -1,12 +1,13 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-// Bare /databases/$name has no content of its own now that the layout
-// route renders <Outlet /> for a real section route: redirects to
-// overview, mirroring routes/apps/$name/index.tsx exactly (Overview is
-// still the natural landing section even now that Resources exists
-// alongside it).
+// Bare /databases/$name redirects to overview; ?action= from the palette rides along.
 export const Route = createFileRoute('/databases/$name/')({
-  beforeLoad: ({ params }) => {
-    redirect({ to: '/databases/$name/overview', params, throw: true })
+  beforeLoad: ({ params, search }) => {
+    redirect({
+      to: '/databases/$name/overview',
+      params,
+      search: search.action ? { action: search.action } : {},
+      throw: true,
+    })
   },
 })

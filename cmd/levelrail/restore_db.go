@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/integrity"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/upgradehistory"
 )
@@ -85,39 +86,14 @@ func runRestoreDB(ctx context.Context, args []string, dataDir string, stdout io.
 
 	_, _ = fmt.Fprintln(stdout, "WARNING: stop the control plane before restoring. Restoring under a running server corrupts state.")
 
-	version, err := store.InspectSnapshot(ctx, src)
-	if err != nil {
-		return fmt.Errorf("backup file rejected: %w", err)
-	}
-	latest, err := store.MaxSchemaVersion()
+	aside, version, err := integrity.Swap(ctx, dataDir, storeFilename, src, time.Now())
 	if err != nil {
 		return err
 	}
-	if version > latest {
-		return fmt.Errorf("backup is at schema version %d, newer than the %d this binary supports; use a newer release", version, latest)
-	}
-
-	live := filepath.Join(dataDir, storeFilename)
-	stamp := time.Now().UTC().Format("20060102T150405Z")
-	if _, err := os.Stat(live); err == nil {
-		aside := live + ".before-restore-" + stamp
-		if err := os.Rename(live, aside); err != nil {
-			return fmt.Errorf("move current database aside: %w", err)
-		}
+	if aside != "" {
 		_, _ = fmt.Fprintf(stdout, "current database kept as %s\n", aside)
 	}
-	for _, suffix := range []string{"-wal", "-shm"} {
-		if err := os.Remove(live + suffix); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("remove stale %s file: %w", suffix, err)
-		}
-	}
-
-	if err := os.MkdirAll(dataDir, 0o750); err != nil { //nolint:gosec // operator-controlled data dir
-		return err
-	}
-	if err := copyFile(src, live); err != nil {
-		return fmt.Errorf("put backup in place: %w", err)
-	}
+	live := filepath.Join(dataDir, storeFilename)
 	_, _ = fmt.Fprintf(stdout, "restored %s (schema version %d) to %s\n", src, version, live)
 	_, _ = fmt.Fprintln(stdout, "The master key is not part of a backup: secrets stay readable only with the master key that encrypted them.")
 	return nil

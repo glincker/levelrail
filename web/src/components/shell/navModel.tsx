@@ -19,11 +19,15 @@ import {
   GitBranchIcon,
   GitPullRequestIcon,
   GlobeIcon,
+  GlobeHemisphereWestIcon,
+  LightningIcon,
   ListBulletsIcon,
   HardDrivesIcon,
   HeartbeatIcon,
   KeyIcon,
   PackageIcon,
+  CubeIcon,
+  HammerIcon,
   PlugsConnectedIcon,
   PlugsIcon,
   PulseIcon,
@@ -31,6 +35,7 @@ import {
   TerminalWindowIcon,
   RocketLaunchIcon,
   ScrollIcon,
+  LockKeyIcon,
   ShareNetworkIcon,
   ShieldCheckIcon,
   ShieldWarningIcon,
@@ -57,18 +62,27 @@ export type GlobalTo =
   | '/status'
   | '/apps'
   | '/deployments'
+  | '/functions'
   | '/deploy-timeline'
+  | '/images'
+  | '/builds'
   | '/projects'
   | '/databases'
   | '/backups'
   | '/nodes'
   | '/resource-advisor'
   | '/usage'
+  | '/costs'
+  | '/resources'
+  | '/dashboards'
   | '/network'
   | '/network/proxy'
+  | '/network/private'
+  | '/cdn'
   | '/domains'
   | '/dns'
   | '/loadbalancers'
+  | '/firewall'
   | '/models'
   | '/ai-assistant'
   | '/terminal'
@@ -126,6 +140,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         exact: true,
       },
       { id: 'status', label: 'Status', to: '/status', icon: <HeartbeatIcon /> },
+      {
+        id: 'dashboards',
+        label: 'Dashboards',
+        to: '/dashboards',
+        icon: <SquaresFourIcon />,
+      },
     ],
   },
   {
@@ -146,6 +166,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <RocketLaunchIcon />,
       },
       {
+        id: 'functions',
+        label: 'Functions',
+        to: '/functions',
+        icon: <LightningIcon />,
+      },
+      {
         id: 'deploy-timeline',
         label: 'Deploy timeline',
         to: '/deploy-timeline',
@@ -158,16 +184,22 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         icon: <FolderIcon />,
       },
       {
+        id: 'images',
+        label: 'Images',
+        to: '/images',
+        icon: <CubeIcon />,
+      },
+      {
+        id: 'builds',
+        label: 'Builds',
+        to: '/builds',
+        icon: <HammerIcon />,
+      },
+      {
         id: 'registry',
         label: 'Container registry',
         to: '/settings/registry',
         icon: <PackageIcon />,
-      },
-      {
-        id: 'registry-credentials',
-        label: 'Credentials',
-        to: '/settings/registry-credentials',
-        icon: <KeyIcon />,
       },
     ],
   },
@@ -222,6 +254,18 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         badge: 'proxy-attention',
       },
       {
+        id: 'private-networks',
+        label: 'Private networks',
+        to: '/network/private',
+        icon: <LockKeyIcon />,
+      },
+      {
+        id: 'firewall',
+        label: 'Firewall',
+        to: '/firewall',
+        icon: <ShieldCheckIcon />,
+      },
+      {
         id: 'loadbalancers',
         label: 'Load balancers',
         to: '/loadbalancers',
@@ -229,10 +273,10 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         feature: 'load-balancer',
       },
       {
-        id: 'network',
-        label: 'Topology',
-        to: '/network',
-        icon: <ShareNetworkIcon />,
+        id: 'cdn',
+        label: 'CDN and caches',
+        to: '/cdn',
+        icon: <GlobeHemisphereWestIcon />,
       },
     ],
   },
@@ -241,6 +285,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
     label: 'Fleet',
     items: [
       { id: 'nodes', label: 'Nodes', to: '/nodes', icon: <HardDrivesIcon /> },
+      {
+        id: 'network',
+        label: 'Topology',
+        to: '/network',
+        icon: <ShareNetworkIcon />,
+      },
       {
         id: 'node-providers',
         label: 'Cloud providers',
@@ -259,6 +309,18 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'Usage and cost',
         to: '/usage',
         icon: <CoinsIcon />,
+      },
+      {
+        id: 'costs',
+        label: 'Cost explorer',
+        to: '/costs',
+        icon: <ChartLineUpIcon />,
+      },
+      {
+        id: 'resources',
+        label: 'Resources',
+        to: '/resources',
+        icon: <ListMagnifyingGlassIcon />,
       },
     ],
   },
@@ -297,6 +359,12 @@ export const GLOBAL_NAV_GROUPS: GlobalNavGroup[] = [
         label: 'IAM policies',
         to: '/settings/iam-policies',
         icon: <ShieldCheckIcon />,
+      },
+      {
+        id: 'registry-credentials',
+        label: 'Registry credentials',
+        to: '/settings/registry-credentials',
+        icon: <KeyIcon />,
       },
     ],
   },
@@ -387,6 +455,7 @@ export type AppTo =
   | '/apps/$name/streams'
   | '/apps/$name/loadbalancer'
   | '/apps/$name/network'
+  | '/apps/$name/cache'
   | '/apps/$name/environment'
   | '/apps/$name/services'
   | '/apps/$name/resources'
@@ -485,6 +554,7 @@ export const APP_NAV_SECTIONS: AppNavSection[] = [
         'load-balancer',
       ),
       item('network', 'Network', '/apps/$name/network', <ShareNetworkIcon />),
+      item('cache', 'Cache', '/apps/$name/cache', <LightningIcon />),
     ],
   },
   {

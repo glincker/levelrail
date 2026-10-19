@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Banner } from '@/components/ui/banner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,15 +19,15 @@ import { isSelectable, itemKey } from '../lib/platformImport'
 
 type Step = 'connect' | 'review' | 'done'
 
-const platforms: { id: ImportPlatform; label: string; tokenLabel: string }[] = [
-  { id: 'coolify', label: 'Coolify', tokenLabel: 'API token' },
-  { id: 'dokploy', label: 'Dokploy', tokenLabel: 'API key' },
-  { id: 'caprover', label: 'CapRover', tokenLabel: 'Login password' },
+const platforms: {
+  id: ImportPlatform
+  label: string
+  tokenKey: 'tokenApi' | 'tokenKey' | 'tokenPassword'
+}[] = [
+  { id: 'coolify', label: 'Coolify', tokenKey: 'tokenApi' },
+  { id: 'dokploy', label: 'Dokploy', tokenKey: 'tokenKey' },
+  { id: 'caprover', label: 'CapRover', tokenKey: 'tokenPassword' },
 ]
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Request failed'
-}
 
 // Three steps: connect (source URL and credential), review (the dry-run
 // report with a checkbox per app and database), done (what was created).
@@ -34,6 +35,9 @@ function errorMessage(err: unknown): string {
 // request body of each step, and is cleared as soon as the import is
 // applied or the form is reset. Nothing is cached or persisted.
 export function PlatformImportCard() {
+  const { t } = useTranslation('migration')
+  const errorMessage = (err: unknown): string =>
+    err instanceof Error ? err.message : t('platformImport.requestFailed')
   const [step, setStep] = useState<Step>('connect')
   const [platform, setPlatform] = useState<ImportPlatform>('coolify')
   const [url, setUrl] = useState('')
@@ -46,7 +50,8 @@ export function PlatformImportCard() {
   const discover = useDiscoverPlatformImport()
   const apply = useApplyPlatformImport()
 
-  const tokenLabel = platforms.find((p) => p.id === platform)?.tokenLabel
+  const tokenKey = platforms.find((p) => p.id === platform)?.tokenKey
+  const tokenLabel = tokenKey ? t(`platformImport.${tokenKey}`) : undefined
 
   function baseRequest(): PlatformImportRequest {
     return {
@@ -110,24 +115,29 @@ export function PlatformImportCard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Import summary</CardTitle>
+          <CardTitle>{t('platformImport.summaryTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            {report.counts.created ?? 0} created, {failed} failed,{' '}
-            {report.counts['already-imported'] ?? 0} already imported.
-            {failed > 0
-              ? ' Run the import again to retry what failed, finished items are skipped.'
-              : ''}
+            {t('platformImport.summaryCounts', {
+              created: report.counts.created ?? 0,
+              failed,
+              already: report.counts['already-imported'] ?? 0,
+            })}
+            {failed > 0 ? ` ${t('platformImport.retryHint')}` : ''}
           </p>
           {report.notes?.map((n) => (
-            <Banner key={n} variant="warning" title="Data is not migrated">
+            <Banner
+              key={n}
+              variant="warning"
+              title={t('platformImport.dataNotMigrated')}
+            >
               {n}
             </Banner>
           ))}
           <PlatformImportReportList items={report.items} />
           <Button variant="outline" onClick={reset}>
-            Start another import
+            {t('platformImport.another')}
           </Button>
         </CardContent>
       </Card>
@@ -139,13 +149,12 @@ export function PlatformImportCard() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Review what will be imported</CardTitle>
+          <CardTitle>{t('platformImport.reviewTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {report.items.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nothing was found on the source. Check the URL and that the
-              credential can see your projects.
+              {t('platformImport.nothingFound')}
             </p>
           ) : (
             <PlatformImportReportList
@@ -155,25 +164,33 @@ export function PlatformImportCard() {
             />
           )}
           {report.notes?.map((n) => (
-            <Banner key={n} variant="warning" title="Data is not migrated">
+            <Banner
+              key={n}
+              variant="warning"
+              title={t('platformImport.dataNotMigrated')}
+            >
               {n}
             </Banner>
           ))}
           {apply.isError ? (
-            <Banner variant="critical" title="Import failed">
+            <Banner variant="critical" title={t('platformImport.importFailed')}>
               {errorMessage(apply.error)}
             </Banner>
           ) : null}
-          {applying ? <Progress value={null} aria-label="Importing" /> : null}
+          {applying ? (
+            <Progress value={null} aria-label={t('platformImport.importing')} />
+          ) : null}
           <div className="flex gap-2">
             <Button
               onClick={onApply}
               disabled={applying || selected.size === 0}
             >
-              {applying ? 'Importing...' : `Import ${selected.size} selected`}
+              {applying
+                ? t('platformImport.importing')
+                : t('platformImport.importSelected', { count: selected.size })}
             </Button>
             <Button variant="outline" onClick={reset} disabled={applying}>
-              Back
+              {t('platformImport.back')}
             </Button>
           </div>
         </CardContent>
@@ -184,18 +201,20 @@ export function PlatformImportCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Connect the source platform</CardTitle>
+        <CardTitle>{t('platformImport.connectTitle')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={onDiscover} className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Reads apps, databases and settings from the other platform without
-            changing it. The credential is sent to this control plane once per
-            step and is never stored.
+            {t('platformImport.connectIntro')}
           </p>
           <div className="space-y-1.5">
-            <Label>Platform</Label>
-            <div className="flex gap-2" role="group" aria-label="Platform">
+            <Label>{t('platformImport.platform')}</Label>
+            <div
+              className="flex gap-2"
+              role="group"
+              aria-label={t('platformImport.platform')}
+            >
               {platforms.map((p) => (
                 <Button
                   key={p.id}
@@ -210,7 +229,7 @@ export function PlatformImportCard() {
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="import-url">Source URL</Label>
+            <Label htmlFor="import-url">{t('platformImport.sourceUrl')}</Label>
             <Input
               id="import-url"
               type="url"
@@ -234,36 +253,38 @@ export function PlatformImportCard() {
           <div className="space-y-2">
             <Label className="flex items-center gap-2 font-normal">
               <Checkbox
-                aria-label="Skip names already in use"
+                aria-label={t('platformImport.skipTakenLabel')}
                 checked={skipTaken}
                 onCheckedChange={(v) => setSkipTaken(v === true)}
               />
-              Skip resources whose name is already taken (default renames them)
+              {t('platformImport.skipTaken')}
             </Label>
             <Label className="flex items-center gap-2 font-normal">
               <Checkbox
-                aria-label="Source is on a private network"
+                aria-label={t('platformImport.privateLabel')}
                 checked={allowPrivate}
                 onCheckedChange={(v) => setAllowPrivate(v === true)}
               />
-              Source is on a private network (needs the control plane opt-in)
+              {t('platformImport.private')}
             </Label>
             <Label className="flex items-center gap-2 font-normal">
               <Checkbox
-                aria-label="Skip TLS verification"
+                aria-label={t('platformImport.insecureLabel')}
                 checked={insecure}
                 onCheckedChange={(v) => setInsecure(v === true)}
               />
-              Skip TLS verification (self-signed source)
+              {t('platformImport.insecure')}
             </Label>
           </div>
           {discover.isError ? (
-            <Banner variant="critical" title="Could not read the source">
+            <Banner variant="critical" title={t('platformImport.readFailed')}>
               {errorMessage(discover.error)}
             </Banner>
           ) : null}
           <Button type="submit" disabled={discover.isPending}>
-            {discover.isPending ? 'Reading source...' : 'Discover'}
+            {discover.isPending
+              ? t('platformImport.reading')
+              : t('platformImport.discover')}
           </Button>
         </form>
       </CardContent>

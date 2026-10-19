@@ -248,6 +248,11 @@ Flags:
   --region string                aws only: default region for these credentials (optional, default us-east-1)
   --role-arn string              aws only: an IAM role ARN to assume via STS before use (optional)
   --use-ambient-credentials      aws only: use this control plane's own AWS identity instead of a stored key
+  --method string                connection method: api_token, access_key, assume_role, ambient, service_account_json, workload_identity_federation or manual (default: inferred)
+  --label string                 custom only: a name for the data center (required for custom)
+  --location string              custom only: a location label
+  --notes string                 custom only: free-form notes
+  --verify                       run a read-only connection test first and store nothing when it fails (connect defaults to true, set-credential to false)
   --api-url string              control plane base URL (default: %[2]s env var, then %[3]s)
   --profile string              named credentials profile to read (overrides APP_PROFILE, default "default")
   --json                           print the updated provider as JSON to stdout, nothing else

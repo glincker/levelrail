@@ -56,7 +56,7 @@ func (rt *Router) doctorHTTPClientOrDefault() doctorHTTPDoer {
 	if rt.doctorHTTPClient != nil {
 		return rt.doctorHTTPClient
 	}
-	return http.DefaultClient
+	return &http.Client{Timeout: 10 * time.Second}
 }
 
 func (rt *Router) doctorDialContextOrDefault() doctorDialContextFunc {

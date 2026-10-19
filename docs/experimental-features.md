@@ -2,6 +2,7 @@
 title: "Experimental features"
 tag: "Experimental"
 description: Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
+"og:url": "https://docs.levelrail.com/experimental-features"
 ---
 
 Some features have unit tests but no end-to-end or real-infrastructure evidence (see [feature status](/feature-status)). They are off by default. To turn them on, set one env var:
@@ -26,9 +27,11 @@ The value is a comma separated list of feature keys. Unknown keys are logged at 
 | `plugins` | [Plugins](/plugins): signed, operator-approved plugins in locked-down containers, starting with notification channels |
 | `resource-advisor` | [Resource advisor](/resource-advisor) (beta): limit, idle and tuning suggestions |
 
-Beta features can also be switched on without a restart from Settings, Beta features, or with `levelrail-cli settings beta-features enable <feature>`. That covers `ai-chat`, `resource-advisor`, `cli-console`, `mobile-api` and `saml-scim`. The rest are wired at startup and need `APP_EXPERIMENTAL` plus a restart. A feature listed in `APP_EXPERIMENTAL` stays on regardless of Settings.
+Every feature has a switch in Settings, Beta features, and the choice is saved at once. `ai-chat`, `resource-advisor`, `cli-console`, `mobile-api` and `saml-scim` apply live. The rest are wired at server start: the card shows "Restart to apply" with a Restart now button (root, supervised installs), and `levelrail-cli settings beta-features set <feature> on --restart` does the same from the CLI. A feature listed in `APP_EXPERIMENTAL` shows as "Enabled by server setting" and stays on regardless of Settings. Turning a feature off never deletes its data.
 
-Features that are off are not hidden: they show as locked entries in the sidebar and command palette, and opening one lands on Settings, Beta features with the switch or the exact env line to set. `levelrail-cli settings beta-features list` prints the same list.
+Prefer config over the UI? Each card has "Use the CLI or server config instead", which shows the CLI command and the systemd and Docker lines to copy.
+
+Features that are off are not hidden: they show as locked entries in the sidebar and command palette, and opening one lands on Settings, Beta features. `levelrail-cli settings beta-features list` prints the same list.
 
 ## What "off" means
 

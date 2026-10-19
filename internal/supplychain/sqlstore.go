@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/timeutil"
 )
 
 const recordColumns = `attempt_id, app_name, sbom_format, package_count, sbom_bytes, has_provenance, summary, generated_at,
@@ -28,13 +29,7 @@ func fmtTime(t time.Time) string {
 	return t.UTC().Format(time.RFC3339Nano)
 }
 
-func parseTime(s string) time.Time {
-	t, err := time.Parse(time.RFC3339Nano, s)
-	if err != nil {
-		return time.Time{}
-	}
-	return t
-}
+func parseTime(s string) time.Time { return timeutil.ParseOrZero(s) }
 
 // GetSettings returns the stored settings, or the default (off) when none exist.
 func (s *SQLStore) GetSettings(ctx context.Context, app string) (Settings, error) {

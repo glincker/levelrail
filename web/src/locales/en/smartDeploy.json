@@ -140,5 +140,29 @@
     "failed": "Could not connect the repository.",
     "orImage": "Or deploy a container image",
     "imageDescription": "Point at an image that is already built and pushed."
+  },
+  "pending": {
+    "title": "Changes since the live deploy",
+    "none": "Nothing differs from the live deploy.",
+    "empty": "none",
+    "loadFailed": "Could not load the pending changes.",
+    "env": {
+      "added": "Env added",
+      "removed": "Env removed",
+      "changed": "Env changed"
+    },
+    "field": {
+      "image": "Image",
+      "image_digest": "Image digest",
+      "commit_sha": "Commit",
+      "port": "Port",
+      "host_port": "Host port",
+      "bind_address": "Network interface",
+      "domains": "Domains",
+      "strategy": "Deploy strategy",
+      "replicas": "Replicas",
+      "volumes": "Volumes",
+      "labels": "Labels"
+    }
   }
 }

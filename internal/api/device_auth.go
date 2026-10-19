@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 	"slices"
@@ -27,12 +26,14 @@ const (
 	envDeviceTokenTTLDays   = "APP_DEVICE_TOKEN_TTL_DAYS"   //nolint:gosec // env var name
 	envDeviceTokenAllowRoot = "APP_DEVICE_TOKEN_ALLOW_ROOT" //nolint:gosec // env var name
 	defaultDeviceTokenDays  = 30
+	maxDeviceTokenDays      = 90
 )
 
 // deviceStartRatePerMinute is the per-IP budget for unauthenticated device
-// login starts, env-overridable; 0 or less disables the limit.
+// login starts, env-overridable; 0 disables the limit, a negative value is
+// treated as a typo and keeps the default.
 func deviceStartRatePerMinute() int {
-	if n, err := strconv.Atoi(os.Getenv(envDeviceStartRate)); err == nil {
+	if n, err := strconv.Atoi(os.Getenv(envDeviceStartRate)); err == nil && n >= 0 {
 		return n
 	}
 	return defaultDeviceStartRate
@@ -42,7 +43,7 @@ func deviceStartRatePerMinute() int {
 func deviceTokenTTL() time.Duration {
 	days := defaultDeviceTokenDays
 	if n, err := strconv.Atoi(os.Getenv(envDeviceTokenTTLDays)); err == nil && n > 0 {
-		days = n
+		days = min(n, maxDeviceTokenDays)
 	}
 	return time.Duration(days) * 24 * time.Hour
 }
@@ -91,8 +92,7 @@ func (rt *Router) handleDeviceAuthStart(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req deviceStartRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -113,8 +113,7 @@ type deviceTokenRequest struct {
 // endpoint even though nothing in this codebase does yet.
 func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) {
 	var req deviceTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.DeviceCode == "" {
@@ -122,6 +121,10 @@ func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if allowed, retry := rt.devicePollLimit.allow(clientIP(r)); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
 	rt.libraryDeviceToken(w, r, req.DeviceCode)
 }
 
@@ -135,6 +138,8 @@ type deviceAuthRequestResource struct {
 	// IPMismatch is true when the requesting IP differs from the IP this
 	// listing session came from, a hint the login may not be the operator's own.
 	IPMismatch bool `json:"ip_mismatch"`
+	// Abilities is what approving would grant: the viewer's own abilities, never silently root.
+	Abilities []string `json:"abilities"`
 }
 
 // handleListDeviceAuthRequests handles GET /api/v1/auth/device/requests:

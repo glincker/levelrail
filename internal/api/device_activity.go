@@ -143,6 +143,7 @@ func (rt *Router) SweepDeviceLoginExpiry(ctx context.Context, now time.Time) (in
 // while the server was down are audited, then on every interval tick.
 func (rt *Router) RunDeviceLoginExpirySweeper(ctx context.Context) error {
 	tick := func() {
+		rt.accountSelf.sweep(time.Now())
 		if _, err := rt.SweepDeviceLoginExpiry(ctx, time.Now()); err != nil && ctx.Err() == nil {
 			rt.logger.Warn("api: device login expiry sweep failed", slog.String("error", err.Error()))
 		}

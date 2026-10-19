@@ -28,12 +28,19 @@ const (
 	// the real ceiling; this only exists to keep the arithmetic itself
 	// safe on the way there.
 	maxBackoffShift = 20
+	// loginLimiterPruneAt is the map size that triggers a sweep of idle entries.
+	loginLimiterPruneAt = 4096
+	// loginLimiterIdleAfter is how long an unlocked key must be quiet before a sweep drops it.
+	loginLimiterIdleAfter = time.Hour
+	// devicePollPerMinute caps POST /auth/device/token per client IP (a CLI polls about every 5s).
+	devicePollPerMinute = 120
 )
 
 // loginAttemptState is one (IP, username) pair's failure history.
 type loginAttemptState struct {
 	failures    int
 	lockedUntil time.Time
+	lastFailure time.Time
 }
 
 // loginLimiter enforces exponential backoff per (client IP, attempted
@@ -77,6 +84,10 @@ func (l *loginLimiter) recordFailure(key string) {
 		l.attempts[key] = st
 	}
 	st.failures++
+	st.lastFailure = time.Now()
+	if len(l.attempts) >= loginLimiterPruneAt {
+		l.pruneLocked(st.lastFailure)
+	}
 	if st.failures <= loginGraceFailures {
 		return
 	}
@@ -90,6 +101,16 @@ func (l *loginLimiter) recordFailure(key string) {
 		backoff = loginMaxBackoff
 	}
 	st.lockedUntil = time.Now().Add(backoff)
+}
+
+// pruneLocked drops keys that are no longer locked and have been quiet for loginLimiterIdleAfter,
+// so a flood of one-off keys cannot grow the map without bound. Callers hold l.mu.
+func (l *loginLimiter) pruneLocked(now time.Time) {
+	for k, st := range l.attempts {
+		if now.After(st.lockedUntil) && now.Sub(st.lastFailure) > loginLimiterIdleAfter {
+			delete(l.attempts, k)
+		}
+	}
 }
 
 // recordSuccess clears key's failure history entirely: a successful

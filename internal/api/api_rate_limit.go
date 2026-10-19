@@ -204,3 +204,21 @@ func writeRateLimited(w http.ResponseWriter, retryAfter time.Duration) {
 	w.Header().Set("Retry-After", strconv.Itoa(seconds))
 	writeError(w, http.StatusTooManyRequests, fmt.Sprintf("rate limit exceeded, retry after %ds", seconds))
 }
+
+// writeBudget charges a credential-touching route that is gated at AbilityRead
+// (so the audit seam and read tier pass it) to the stricter write budget.
+func (rt *Router) writeBudget(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if rt.apiRateLimit != nil {
+			key := "cred:ip:" + clientIP(r)
+			if uid, ok := rt.currentSessionUserID(r); ok {
+				key = "cred:user:" + uid
+			}
+			if allowed, retryAfter := rt.apiRateLimit.writes.allow(key); !allowed {
+				writeRateLimited(w, retryAfter)
+				return
+			}
+		}
+		next(w, r)
+	}
+}

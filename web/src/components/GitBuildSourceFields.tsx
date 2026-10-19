@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Controller,
-  useFieldArray,
   type Control,
   type FormState,
   type UseFormGetValues,
@@ -9,12 +9,7 @@ import {
   type UseFormSetValue,
   type UseFormWatch,
 } from 'react-hook-form'
-import {
-  WarningIcon,
-  SpinnerIcon,
-  PlusIcon,
-  XIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { WarningIcon, SpinnerIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -35,6 +30,7 @@ import { BrandIcon } from './BrandIcon'
 import { DetectionStatus } from './DetectionStatus'
 import type { FormInput, FormOutput } from './CreateAppFromGitFields'
 import { RegistryImagePicker } from './RegistryImagePicker'
+import { BuildArgsFields } from './GitBuildArgsFields'
 
 // GitBuildSourceFields is CreateAppFromGitFields' git-source input
 // group: repository URL, a branch picker, the build pack choice, a
@@ -68,6 +64,7 @@ export function GitBuildSourceFields({
    *  with the build trigger. */
   onDetected: (result: DetectFrameworkResult | null) => void
 }) {
+  const { t } = useTranslation('gitBuild')
   const buildType = watch('buildType')
   // null until "Load branches" is clicked: see useGitBranches's own doc
   // comment for why this isn't fired on every keystroke. Re-clicking
@@ -106,7 +103,10 @@ export function GitBuildSourceFields({
           ) : null}
           <span className="min-w-0 flex-1 truncate font-mono text-xs text-foreground">
             {repoUrl.replace(/^https?:\/\//, '').replace(/\.git$/, '')}
-            <span className="text-muted-foreground"> @ {ref || 'default'}</span>
+            <span className="text-muted-foreground">
+              {' '}
+              @ {ref || t('sourceFields.defaultRef')}
+            </span>
           </span>
           <Button
             type="button"
@@ -117,7 +117,7 @@ export function GitBuildSourceFields({
               setEditSource(true)
             }}
           >
-            Edit
+            {t('sourceFields.edit')}
           </Button>
         </div>
       ) : null}
@@ -125,7 +125,9 @@ export function GitBuildSourceFields({
       {buildType !== 'image' && !summarized ? (
         <>
           <Field>
-            <FieldLabel htmlFor="git-app-repo-url">Repository URL</FieldLabel>
+            <FieldLabel htmlFor="git-app-repo-url">
+              {t('sourceFields.repoUrl')}
+            </FieldLabel>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 {hostIcon ? (
@@ -155,7 +157,7 @@ export function GitBuildSourceFields({
                 {branchesQuery.isFetching ? (
                   <SpinnerIcon className="size-4 animate-spin" />
                 ) : null}
-                Load branches
+                {t('sourceFields.loadBranches')}
               </Button>
             </div>
             <FieldError errors={[formState.errors.repoUrl]} />
@@ -165,21 +167,24 @@ export function GitBuildSourceFields({
             <Alert variant="destructive">
               <WarningIcon />
               <AlertDescription>
-                {branchesQuery.error.message}. You can still type a branch, tag,
-                or commit manually below.
+                {t('sourceFields.branchesFailed', {
+                  message: branchesQuery.error.message,
+                })}
               </AlertDescription>
             </Alert>
           ) : null}
 
           {branches.length > 0 ? (
             <Field>
-              <FieldLabel htmlFor="git-app-branch-picker">Branch</FieldLabel>
+              <FieldLabel htmlFor="git-app-branch-picker">
+                {t('sourceFields.branch')}
+              </FieldLabel>
               <Combobox
                 id="git-app-branch-picker"
                 value=""
                 options={branches.map((b) => ({ value: b, label: b }))}
-                placeholder="Pick a branch..."
-                searchPlaceholder="Search branches..."
+                placeholder={t('sourceFields.pickBranch')}
+                searchPlaceholder={t('sourceFields.searchBranches')}
                 triggerClassName="font-mono"
                 onValueChange={(branch) => {
                   setValue('ref', branch, {
@@ -194,8 +199,8 @@ export function GitBuildSourceFields({
           <Field>
             <FieldLabel htmlFor="git-app-ref">
               {branches.length > 0
-                ? 'Branch, tag, or commit (or pick above)'
-                : 'Branch, tag, or commit'}
+                ? t('sourceFields.refWithPicker')
+                : t('sourceFields.ref')}
             </FieldLabel>
             <Input
               id="git-app-ref"
@@ -213,7 +218,9 @@ export function GitBuildSourceFields({
 
       <Field>
         <div className="flex items-center justify-between gap-2">
-          <FieldLabel htmlFor="git-app-build-type">Build pack</FieldLabel>
+          <FieldLabel htmlFor="git-app-build-type">
+            {t('sourceFields.buildPack')}
+          </FieldLabel>
           {buildType !== 'image' ? (
             <DetectionStatus
               pending={detection.isPending}
@@ -253,38 +260,36 @@ export function GitBuildSourceFields({
                 className="grid h-auto w-full grid-cols-2 sm:grid-cols-4"
               >
                 <TabsTrigger value="railpack" disabled={disabled}>
-                  Auto-detect
+                  {t('sourceFields.autoDetect')}
                 </TabsTrigger>
                 <TabsTrigger value="dockerfile" disabled={disabled}>
-                  Dockerfile
+                  {t('sourceFields.dockerfile')}
                 </TabsTrigger>
                 <TabsTrigger value="static" disabled={disabled}>
-                  Static site
+                  {t('sourceFields.staticSite')}
                 </TabsTrigger>
                 <TabsTrigger value="image" disabled={disabled}>
-                  Prebuilt image
+                  {t('sourceFields.prebuiltImage')}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="railpack" className="pt-2">
                 <FieldDescription>
-                  Recommended. Detects Node, Go, and Java projects and builds
-                  them automatically, no Dockerfile needed.
+                  {t('sourceFields.autoDetectHelp')}
                 </FieldDescription>
               </TabsContent>
               <TabsContent value="dockerfile" className="pt-2">
                 <FieldDescription>
-                  Builds from a Dockerfile in the repository.
+                  {t('sourceFields.dockerfileHelp')}
                 </FieldDescription>
               </TabsContent>
               <TabsContent value="static" className="pt-2">
                 <FieldDescription>
-                  Serves the checkout directly, no container.
+                  {t('sourceFields.staticHelp')}
                 </FieldDescription>
               </TabsContent>
               <TabsContent value="image" className="pt-2">
                 <FieldDescription>
-                  Deploys an already-built image from a registry directly, no
-                  git repository or build step at all.
+                  {t('sourceFields.imageHelp')}
                 </FieldDescription>
               </TabsContent>
             </Tabs>
@@ -304,7 +309,9 @@ export function GitBuildSourceFields({
             }}
           />
           <Field>
-            <FieldLabel htmlFor="git-app-image">Image reference</FieldLabel>
+            <FieldLabel htmlFor="git-app-image">
+              {t('sourceFields.imageRef')}
+            </FieldLabel>
             <Input
               id="git-app-image"
               className="font-mono"
@@ -315,8 +322,7 @@ export function GitBuildSourceFields({
               {...register('image')}
             />
             <FieldDescription>
-              A full registry reference, already built and pushed elsewhere.
-              Deployed as-is.
+              {t('sourceFields.imageRefHelp')}
             </FieldDescription>
             <FieldError errors={[formState.errors.image]} />
           </Field>
@@ -334,7 +340,9 @@ export function GitBuildSourceFields({
             disabled={disabled}
             className="w-fit text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            {showAdvanced ? 'Hide advanced options' : 'Show advanced options'}
+            {showAdvanced
+              ? t('sourceFields.hideAdvanced')
+              : t('sourceFields.showAdvanced')}
           </button>
 
           {showAdvanced ? (
@@ -343,20 +351,19 @@ export function GitBuildSourceFields({
                 {buildType !== 'static' ? (
                   <Field className="flex-1">
                     <FieldLabel htmlFor="git-app-image-repo">
-                      Image name (optional)
+                      {t('sourceFields.imageName')}
                     </FieldLabel>
                     <Input
                       id="git-app-image-repo"
                       className="font-mono"
-                      placeholder="defaults to the app name"
+                      placeholder={t('sourceFields.imageNamePlaceholder')}
                       autoComplete="off"
                       spellCheck={false}
                       disabled={disabled}
                       {...register('imageRepo')}
                     />
                     <FieldDescription>
-                      The name given to the built image. Leave blank to use the
-                      app name.
+                      {t('sourceFields.imageNameHelp')}
                     </FieldDescription>
                   </Field>
                 ) : null}
@@ -364,7 +371,7 @@ export function GitBuildSourceFields({
                 {buildType === 'dockerfile' ? (
                   <Field className="flex-1">
                     <FieldLabel htmlFor="git-app-dockerfile-path">
-                      Dockerfile path (optional)
+                      {t('sourceFields.dockerfilePath')}
                     </FieldLabel>
                     <Input
                       id="git-app-dockerfile-path"
@@ -376,15 +383,14 @@ export function GitBuildSourceFields({
                       {...register('dockerfilePath')}
                     />
                     <FieldDescription>
-                      Where the Dockerfile lives in your repo. Leave blank if
-                      it&rsquo;s at the root.
+                      {t('sourceFields.dockerfilePathHelp')}
                     </FieldDescription>
                   </Field>
                 ) : null}
 
                 <Field className="flex-1">
                   <FieldLabel htmlFor="git-app-base-directory">
-                    Base directory (optional)
+                    {t('sourceFields.baseDirectory')}
                   </FieldLabel>
                   <Input
                     id="git-app-base-directory"
@@ -396,8 +402,7 @@ export function GitBuildSourceFields({
                     {...register('baseDirectory')}
                   />
                   <FieldDescription>
-                    Subdirectory to build from, for a monorepo. Leave blank to
-                    build from the repo root.
+                    {t('sourceFields.baseDirectoryHelp')}
                   </FieldDescription>
                 </Field>
               </div>
@@ -415,93 +420,5 @@ export function GitBuildSourceFields({
         </div>
       ) : null}
     </>
-  )
-}
-
-// BuildArgsFields is GitBuildSourceFields' Dockerfile-build-args editor,
-// the same add/remove-row pattern LabelsEditor.tsx establishes for Docker
-// labels, bound to this form's own control/register instead of its own.
-function BuildArgsFields({
-  control,
-  register,
-  formState,
-  disabled,
-}: {
-  control: Control<FormInput, unknown, FormOutput>
-  register: UseFormRegister<FormInput>
-  formState: FormState<FormInput>
-  disabled: boolean
-}) {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'buildArgs',
-  })
-
-  return (
-    <Field>
-      <FieldLabel>Build args (optional)</FieldLabel>
-      <FieldDescription>
-        Dockerfile <code className="font-mono">ARG</code> values passed to the
-        build, for example a base image version or a build-time feature flag.
-      </FieldDescription>
-      <div className="flex flex-col gap-2">
-        {fields.map((field, index) => (
-          <div key={field.id} className="flex items-start gap-2">
-            <div className="flex-1">
-              <Input
-                {...register(`buildArgs.${index}.key`)}
-                className="font-mono"
-                placeholder="KEY"
-                autoComplete="off"
-                spellCheck={false}
-                disabled={disabled}
-                aria-label="Build arg key"
-              />
-              <FieldError
-                errors={
-                  formState.errors.buildArgs?.[index]?.key
-                    ? [formState.errors.buildArgs[index]?.key]
-                    : undefined
-                }
-              />
-            </div>
-            <Input
-              {...register(`buildArgs.${index}.value`)}
-              className="flex-1 font-mono"
-              placeholder="value"
-              autoComplete="off"
-              spellCheck={false}
-              disabled={disabled}
-              aria-label="Build arg value"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={disabled}
-              onClick={() => {
-                remove(index)
-              }}
-            >
-              <XIcon />
-              <span className="sr-only">Remove build arg</span>
-            </Button>
-          </div>
-        ))}
-      </div>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="w-fit"
-        disabled={disabled}
-        onClick={() => {
-          append({ key: '', value: '' })
-        }}
-      >
-        <PlusIcon />
-        Add build arg
-      </Button>
-    </Field>
   )
 }

@@ -299,7 +299,7 @@ func RunSession(ctx context.Context, addr string, id *Identity, rt docker.Runtim
 		heartbeatInterval = cfg.heartbeatInterval
 	}
 
-	return serveSession(ctx, sessionStream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, cfg.gpuProbe, logger, cfg.hostProbe)
+	return serveSession(WithFileRoot(ctx, cfg.fileRoot), sessionStream, rt, cfg.builder, cfg.mesh, cfg.meshNodeID, heartbeatInterval, cfg.gpuProbe, logger, cfg.hostProbe)
 }
 
 // sessionConfig holds RunSession's optional wiring.
@@ -313,6 +313,12 @@ type sessionConfig struct {
 	gpuProbe          GPUProbe
 	hostProbe         HostProbe
 	renewer           *Renewer
+	fileRoot          string
+}
+
+// WithFileStorage lets the control plane read and write objects under dir, and nowhere else, over this session.
+func WithFileStorage(dir string) SessionOption {
+	return func(c *sessionConfig) { c.fileRoot = dir }
 }
 
 // WithRenewer keeps the session's certificate fresh with r while the

@@ -22,6 +22,7 @@ import {
   useSetupGuide,
 } from '../../queries/setupGuide'
 import { CreateResourceWizard } from '../CreateResourceWizard'
+import { SampleAppButton } from './SampleAppButton'
 import { StepCard } from './StepCard'
 
 function errorMessage(err: unknown): string {
@@ -85,13 +86,16 @@ export function GuideBody({ guide }: { guide: SetupGuide }) {
       busy={busy}
       primaryAction={
         step.id === 'first_app' ? (
-          <CreateResourceWizard
-            trigger={
-              <Button size="sm" variant={highlighted ? 'default' : 'outline'}>
-                {t('steps.first_app.cta')}
-              </Button>
-            }
-          />
+          <>
+            <CreateResourceWizard
+              trigger={
+                <Button size="sm" variant={highlighted ? 'default' : 'outline'}>
+                  {t('steps.first_app.cta')}
+                </Button>
+              }
+            />
+            <SampleAppButton />
+          </>
         ) : undefined
       }
       onSkip={() => {

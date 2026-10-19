@@ -30,6 +30,8 @@ import {
   useSavePipeline,
 } from '../queries/pipelines'
 import type { Pipeline } from '../types/pipelines'
+import { PipelineInsightsCard } from './PipelineInsightsCard'
+import { PipelineTemplatesDialog } from './PipelineTemplatesDialog'
 import { PipelineRunsTable } from './PipelineRunsTable'
 import { PipelineStatusBadge } from './PipelineStatusBadge'
 import { PipelineSyncBar } from './PipelineSyncBar'
@@ -227,7 +229,10 @@ export function PipelinesPanel({ appName }: { appName: string }) {
               schedules, defined as YAML.
             </p>
           </div>
-          {newLink}
+          <div className="flex flex-wrap items-center gap-2">
+            <PipelineTemplatesDialog appName={appName} />
+            {newLink}
+          </div>
         </div>
         <div className="mt-3 space-y-3">
           <PipelineSyncBar appName={appName} />
@@ -266,6 +271,7 @@ export function PipelinesPanel({ appName }: { appName: string }) {
           )}
         </div>
       </section>
+      <PipelineInsightsCard appName={appName} pipelines={pipelines} />
       <section className="rounded-lg border border-border p-4">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
           Run history

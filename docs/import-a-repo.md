@@ -2,6 +2,7 @@
 title: "Import a repository"
 sidebarTitle: "Import a repo"
 description: Go from a git repository to a running app in a few steps, with detection that tells you what it found and why.
+"og:url": "https://docs.levelrail.com/import-a-repo"
 ---
 
 Pick a repository and Levelrail reads its file tree through the provider API (it never clones or runs your code), explains what it found, asks only for what it cannot guess, and then creates the app and starts the first build. Nothing exists until you press Deploy.

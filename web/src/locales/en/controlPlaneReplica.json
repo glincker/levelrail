@@ -1,0 +1,7 @@
+{
+  "label": "Continuous replica",
+  "summary": "every {{seconds}}s, last shipped {{age}} ({{kb}} KB, {{ms}} ms)",
+  "neverShipped": "every {{seconds}}s, nothing shipped yet",
+  "pending": "changes waiting since {{age}}",
+  "error": "last ship failed: {{message}}"
+}

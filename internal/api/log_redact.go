@@ -1,18 +1,14 @@
 package api
 
-import "net/url"
+import "github.com/GLINCKER/levelrail/internal/envredact"
 
 // redactURLCredentials strips userinfo from a URL before it is logged:
 // operators paste private repo URLs like https://<token>@host/repo.git,
 // and url.URL.Redacted only masks a password, not a bare token username.
 func redactURLCredentials(raw string) string {
-	u, err := url.Parse(raw)
+	out, err := envredact.URLUserinfo(raw, "redacted")
 	if err != nil {
 		return "<unparseable url>"
 	}
-	if u.User == nil {
-		return raw
-	}
-	u.User = url.User("redacted")
-	return u.String()
+	return out
 }

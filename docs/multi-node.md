@@ -2,6 +2,7 @@
 title: "Multi-node: adding and managing nodes"
 tag: "Beta"
 description: Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
+"og:url": "https://docs.levelrail.com/multi-node"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/wireguard/default.svg" alt="WireGuard" title="WireGuard" width="24" height="24" /></span></div>
@@ -57,6 +58,8 @@ levelrail-cli nodes join-token
 # or, in one command that also prints the enroll command:
 levelrail-cli nodes add --name w2 --mesh
 ```
+
+A token you no longer need (a leaked command, an abandoned setup) can be revoked before it expires. The Nodes page lists unused tokens with a Revoke button, or use `levelrail-cli nodes join-tokens` and `levelrail-cli nodes revoke-join-token <id>|--all`. Nodes that already enrolled are not affected.
 
 </Tab>
 <Tab title="API">
@@ -156,7 +159,7 @@ A node accepts app workloads by default but not build workloads. See [Build node
 A node `pending` for more than five minutes (`APP_NODE_PENDING_STALE_AFTER`) is flagged "Never connected" in the dashboard, and `nodes list` prints `pending (never connected)` with the next step. The token was spent but the agent never opened a session, so it cannot be retried.
 
 1. Check the agent logs on the host. The usual causes are an unwritable identity directory or a wrong `APP_AGENT_ADVERTISE_HOST`.
-2. Delete the node with `levelrail-cli nodes delete <id>`.
+2. Click Clean up node on the node page (or run `levelrail-cli nodes delete <id>`). A node that never connects is also removed automatically after `APP_NODE_PENDING_EXPIRE_AFTER` (default one hour, `0` disables), which frees its name.
 3. Enroll again with a new token.
 
 </Accordion>
@@ -245,7 +248,8 @@ The request is rejected with `400` when it carries neither a fingerprint nor `in
 
 ## Node health and heartbeat
 
-![Levelrail nodes list showing node health and placement](assets/screenshots/nodes.png)
+<img src="/assets/screenshots/nodes-light.png" alt="Levelrail nodes list showing node health and placement" className="block dark:hidden" />
+<img src="/assets/screenshots/nodes.png" alt="Levelrail nodes list showing node health and placement" className="hidden dark:block" />
 
 ```bash
 levelrail-cli nodes health <id>
@@ -405,6 +409,32 @@ levelrail-cli nodes placement database main disk=ssd
 - `GET` and `PUT /api/v1/nodes/{id}/labels` read and replace a node's whole label set. Keys are lowercase letters, digits, `.`, `_`, `-` and `/`, 1 to 63 characters. Values are letters, digits, `.`, `_` and `-`, 1 to 63 characters. At most 32 labels. Invalid input returns `400` with the reason.
 - `GET` and `PUT /api/v1/apps/{name}/placement` (and the same for `databases`) read and set a `node_selector`. The response lists `eligible_node_ids` and the `rejected` nodes with a reason each. Setting a selector never moves anything by itself.
 - The dashboard has a **Labels** card on the node page and a **Placement** card on the app and database pages.
+
+### Failure domains: region, zone and provider
+
+Three label keys have a meaning to the scheduler: `region`, `zone` and `provider`.
+
+```bash
+levelrail-cli nodes labels <id> region=eu zone=a provider=hetzner
+levelrail-cli nodes zones
+```
+
+When at least one eligible node has a `zone` label, placement spreads across zones by default: the zone holding the fewest replicas of the same workload wins, then the zone carrying the fewest workloads overall, then the usual headroom order. Drains and auto-placement use the same ranking, so draining a node prefers another zone. If no node has a zone label nothing changes. A node with no `region` label shows the free-text region set on the node, if any. `GET /api/v1/nodes/zones` returns each zone with its nodes and workload counts, and the **Failure domains** card on the nodes page shows the same view, with a button to the node page when no zone is set yet.
+
+### Dry runs: where would it land, and what if a zone dies
+
+Both checks use the real scheduler on a copy of the fleet and change nothing.
+
+```bash
+levelrail-cli nodes simulate --memory 512 --count 3
+levelrail-cli nodes failure --zone a
+```
+
+- `nodes simulate` places `--count` identical apps in turn, each seeing the load the previous ones added, and prints the node, zone and reason for each, or why one is refused. `GET /api/v1/nodes/placement-simulation?cpu_milli=&memory_mib=&count=&selector=` returns the same.
+- `nodes failure` removes a zone (or one node with `--node`), reschedules every app and database on it onto the survivors, largest memory request first, and lists those with nowhere to go. `GET /api/v1/nodes/failure-simulation?zone=a` returns the same.
+- The **What if** panel on the Failure domains card on the nodes page runs both.
+
+This answers the scheduling question from reported capacity. It does not measure how long requests fail while a zone is lost; that run is not yet measured (see [benchmarks](/benchmarks)). Nodes that report no capacity are ranked last and flagged as unverified.
 
 ### The spread scheduler
 
@@ -673,7 +703,10 @@ Below it, a timeline lists security events, newest first, with a **Rejected only
 ```bash
 levelrail-cli nodes security <id> [--rejected] [--limit N]
 levelrail-cli nodes cert renew <id>
+levelrail-cli nodes cert drill <id>
 ```
+
+The **Rotation drill** button (and `nodes cert drill`) rotates the certificate end to end and reports each step: the node is online with a valid certificate, the agent was asked to renew, a new certificate arrived, the node is still connected. The previous certificate stays accepted through the grace window and is never revoked, so a failed drill leaves the node as it was.
 
 To compare the CA fingerprint by hand, read it from the node page and compare it with `APP_CA_FINGERPRINT` in the agent's environment, or the value its enrollment command printed. They must match exactly.
 
@@ -931,6 +964,7 @@ Node routes require the `root` ability, not `read` or `write`, because node mana
 | `GET` | `/api/v1/node-moves/{id}` | `root` |
 | `GET` | `/api/v1/nodes/{id}/drains` | `root` |
 | `GET` | `/api/v1/node-drains/{id}` | `root` |
+| `GET` | `/api/v1/nodes/zones` | `root` |
 | `GET` | `/api/v1/nodes/{id}/labels` | `root` |
 | `PUT` | `/api/v1/nodes/{id}/labels` | `root` |
 | `GET` | `/api/v1/apps/{name}/placement` | `root` |
@@ -963,6 +997,9 @@ levelrail-cli nodes drains <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
 levelrail-cli nodes move app|database <name> [--to <node-id>] [--wait] [flags]
 levelrail-cli nodes labels <id> [key=value ...] [flags]
+levelrail-cli nodes zones [flags]
+levelrail-cli nodes simulate [--cpu MILLI] [--memory MIB] [--count N] [--selector k=v] [flags]
+levelrail-cli nodes failure --zone Z | --node ID [flags]
 levelrail-cli nodes placement app|database <name> [key=value ...] [flags]
 levelrail-cli nodes connectivity [flags]
 levelrail-cli nodes workloads <id> --accepts-app=BOOL --accepts-build=BOOL [flags]

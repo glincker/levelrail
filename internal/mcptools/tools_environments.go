@@ -33,7 +33,7 @@ func registerEnvironmentTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "clone_environment",
-		Description: "Clone a whole environment: creates a new environment in the same project, then a real, deployed copy of every app tagged with the source environment (image, env vars, resources, health checks, volumes, bind mounts, labels, scheduled tasks). Domains and host port pins are never copied (assign new ones per app if needed). Secret values (per-app and shared) are declared on the clone with no value set unless copy_secret_values is true; every declared secret otherwise behaves like a brand-new required secret. Asynchronous: use get_app_status on each cloned app to watch it converge.",
+		Description: "Clone an environment into the same project, with a deployed copy of every app in it. Domains and host ports are not copied; secrets are declared empty unless copy_secret_values is true. Asynchronous: watch each app with get_app_status.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in cloneEnvironmentInput) (*mcp.CallToolResult, apiclient.EnvironmentCloneResultResource, error) {
 		result, err := client.CloneEnvironment(ctx, in.EnvironmentID, apiclient.EnvironmentCloneRequest{
 			NewEnvironmentName: in.NewEnvironmentName,

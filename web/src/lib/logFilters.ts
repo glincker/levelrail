@@ -58,6 +58,8 @@ export interface LogQueryState {
   fields?: readonly FieldFilter[]
   /** Keep only lines of one error signature (see the Errors tab). */
   signature?: string
+  /** Best text matches first; only meaningful with q. */
+  order?: 'relevance'
   from?: Date
   to?: Date
   limit?: number
@@ -90,6 +92,9 @@ export function buildLogQuery(state: LogQueryState): URLSearchParams {
   }
   if (state.signature) {
     params.set('signature', state.signature)
+  }
+  if (state.order && state.q) {
+    params.set('order', state.order)
   }
   if (state.limit) {
     params.set('limit', String(state.limit))

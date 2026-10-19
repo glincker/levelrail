@@ -60,6 +60,8 @@ type bulkAppsRequest struct {
 	DryRun bool   `json:"dry_run,omitempty"`
 	// ConfirmNames must equal the resolved target list for delete.
 	ConfirmNames []string `json:"confirm_names,omitempty"`
+	// ConfirmCount must equal the resolved target count for a large disruptive action.
+	ConfirmCount int `json:"confirm_count,omitempty"`
 }
 
 type bulkAppResult struct {
@@ -131,6 +133,11 @@ func (rt *Router) handleBulkApps(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Action == bulkActionDelete && !req.DryRun && !sameNameSet(req.ConfirmNames, names) {
 		writeError(w, http.StatusConflict, "delete requires confirm_names listing exactly the target apps")
+		return
+	}
+
+	if !req.DryRun && bulkNeedsCountConfirm(req.Action, len(names)) && req.ConfirmCount != len(names) {
+		writeError(w, http.StatusConflict, bulkCountConfirmMessage(req.Action, len(names)))
 		return
 	}
 

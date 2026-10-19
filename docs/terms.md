@@ -1,6 +1,7 @@
 ---
 title: Terms of use
 description: Terms for using the Levelrail website and software, including the Apache 2.0 license, no warranty, trademarks and third-party links.
+"og:url": "https://docs.levelrail.com/terms"
 ---
 
 Last updated: 2026-10-05.

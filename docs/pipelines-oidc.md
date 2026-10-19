@@ -1,6 +1,7 @@
 ---
 title: "Pipelines: OIDC federation"
 description: Mint short-lived OIDC tokens for pipeline jobs, and wire AWS, GCP, or Vault to trust them without a long-lived credential.
+"og:url": "https://docs.levelrail.com/pipelines-oidc"
 ---
 
 A pipeline job normally reaches a cloud provider with a long-lived credential stored as a secret. OIDC federation replaces that with a short-lived, signed token the control plane mints per job run, verified by the provider against a published public key. Nothing long-lived ever sits in a secret or a job's environment.

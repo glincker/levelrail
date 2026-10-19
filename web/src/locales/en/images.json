@@ -1,0 +1,144 @@
+{
+  "title": "Images",
+  "subtitle": "Every container image on a node: how big it is, which apps and deploys it came from, and what is safe to remove.",
+  "node": {
+    "label": "Node",
+    "local": "This server"
+  },
+  "tiles": {
+    "count": "Images",
+    "size": "Disk used",
+    "reclaimable": "Can be freed",
+    "protected": "Kept"
+  },
+  "columns": {
+    "image": "Image",
+    "size": "Size",
+    "apps": "Used by",
+    "status": "Status",
+    "created": "Built"
+  },
+  "untagged": "untagged",
+  "status": {
+    "removable": "Can be removed",
+    "kept": "Kept: {{reason}}"
+  },
+  "roles": {
+    "live": "Live",
+    "rollback_target": "Rollback target",
+    "recent": "Recent deploy",
+    "history": "Older deploy"
+  },
+  "sources": {
+    "webhook": "Git push",
+    "manual": "Manual deploy",
+    "image": "Image deploy",
+    "compose": "Compose",
+    "promote": "Promoted",
+    "auto_rollback": "Auto rollback",
+    "clone": "Clone",
+    "schedule": "Scheduled",
+    "other": "Deploy"
+  },
+  "cleanup": {
+    "button": "Free {{size}}",
+    "nothing": "Nothing to remove",
+    "title": "Remove unused images",
+    "description": "These images are not live, not a rollback target, not one of the newest {{keep}} deploys of any app, and no container uses them.",
+    "consequences": "Live images, rollback targets and recent deploys are never removed. Removed images are pulled or rebuilt again if an app needs them.",
+    "confirm": "Remove images",
+    "pending": "Removing...",
+    "done": "Removed {{count}} images, freed {{size}}.",
+    "partial": "{{count}} images could not be removed.",
+    "failed": "Cleanup failed",
+    "preview": "Previewing cleanup..."
+  },
+  "detail": {
+    "close": "Close",
+    "lineage": "Lineage",
+    "lineageEmpty": "No deploy of this platform used this image.",
+    "layers": "Layers",
+    "layersEmpty": "Layer sizes are not available for this image.",
+    "digest": "Digest",
+    "localBuild": "Built on this server, no registry digest",
+    "promotedFrom": "Promoted to {{app}}",
+    "verify": "Verify signature",
+    "verifying": "Verifying...",
+    "layerSize": "{{size}} ({{percent}}%)"
+  },
+  "verify": {
+    "verified": "Signature verified",
+    "unsigned": "No signature found",
+    "failed": "Signature check failed",
+    "not_configured": "No signature key is configured",
+    "no_registry_digest": "Built locally, nothing to verify",
+    "fix": "Set a public key file in the control plane settings, then check again."
+  },
+  "dockerHealth": {
+    "title": "Docker engine",
+    "recheck": "Re-check",
+    "freeSpace": "Free space",
+    "summary": "Docker {{version}} on {{platform}}. {{reclaimable}} of {{total}} can be reclaimed.",
+    "status": {
+      "ok": "OK",
+      "warn": "Needs attention",
+      "fail": "Failing",
+      "unknown": "Unknown"
+    }
+  },
+  "lint": {
+    "title": "Dockerfile check",
+    "help": "Paste a Dockerfile to check for root users, floating base tags, missing health checks and single stage builds.",
+    "inputLabel": "Dockerfile contents",
+    "placeholder": "FROM node:22-alpine",
+    "check": "Check",
+    "applyFix": "Apply safe fixes",
+    "clean": "No findings.",
+    "line": "Line {{line}}:",
+    "severity": {
+      "warn": "Warning",
+      "info": "Hint"
+    },
+    "toast": {
+      "failed": "Could not check the Dockerfile.",
+      "fixed": "Fixes applied to the text above."
+    }
+  },
+  "policy": {
+    "title": "Signature policy",
+    "validate": "Validate",
+    "validating": "Validating...",
+    "refLabel": "Image reference to test",
+    "refPlaceholder": "Optional: repo@sha256:... to verify one image",
+    "error": "Could not validate the signature policy.",
+    "valid": "The signature policy is working.",
+    "invalid": "The signature policy needs attention.",
+    "fingerprint": "Key {{value}}.",
+    "sample": {
+      "verified": "The sample image is signed by your key.",
+      "unsigned": "The sample image has no signature.",
+      "failed": "The sample image failed verification.",
+      "not_configured": "No public key is configured.",
+      "no_registry_digest": "The sample has no registry digest to verify."
+    },
+    "issues": {
+      "key_unreadable": "The public key file could not be read, so signature checks are off. Fix the key path and restart.",
+      "enforce_without_key": "Enforcement is requested but there is no usable key, so nothing is enforced. Set a valid public key file.",
+      "key_without_enforcement": "A key is loaded but enforcement is off, so unsigned images can still be promoted.",
+      "sample_failed": "The sample image did not verify against your key."
+    }
+  },
+  "signatures": {
+    "enforce": "Promotions require a valid image signature.",
+    "off": "Signature checks run on request."
+  },
+  "empty": {
+    "title": "No images on this node",
+    "description": "Images appear here after the first deploy or build."
+  },
+  "error": {
+    "title": "Could not load images",
+    "retry": "Check again",
+    "unsupported": "This node does not report its images yet."
+  }
+}

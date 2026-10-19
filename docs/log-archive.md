@@ -2,6 +2,7 @@
 title: "Log archive"
 tag: "Beta"
 description: Ship container logs to storage as compressed NDJSON on a schedule.
+"og:url": "https://docs.levelrail.com/log-archive"
 ---
 
 Container logs are stored node-local (see [observability](/observability)) with a bounded retention window. Log archive ships them to a [storage destination](/object-storage) as gzip-compressed NDJSON, on a schedule you set per app or once for every app, so logs outlive the node-local store and you need no third-party log shipper.

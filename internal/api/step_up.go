@@ -28,6 +28,8 @@ const (
 
 	auditActionStepUpVerified = "step_up.verified"
 	auditActionStepUpFailed   = "step_up.failed"
+	auditActionStepUpLocked   = "step_up.locked"
+	auditActionStepUpNeedCode = "step_up.code_required"
 )
 
 var validStepUpActions = map[string]bool{stepUpActionReveal: true, stepUpActionExport: true, stepUpActionManage: true}
@@ -147,16 +149,19 @@ func (rt *Router) recordStepUp(r *http.Request, userID string, success bool) {
 // has TOTP enrolled, the authenticator or recovery code as well.
 func (rt *Router) verifyPasswordProof(r *http.Request, userID string, p stepUpProof) error {
 	if err := rt.stepUpAllowed(r, userID); err != nil {
+		rt.auditStepUpOutcome(r.Context(), r, userID, auditActionStepUpLocked, http.StatusTooManyRequests)
 		return err
 	}
 	err := rt.checkPasswordProof(r, userID, p)
 	if errors.Is(err, errStepUpNeedsCode) {
 		// Counted as an attempt, so the hint cannot become a free password oracle.
 		rt.recordStepUp(r, userID, false)
+		rt.auditStepUpOutcome(r.Context(), r, userID, auditActionStepUpNeedCode, http.StatusForbidden)
 		return err
 	}
 	var locked *authengine.LockedError
 	if errors.As(err, &locked) {
+		rt.auditStepUpOutcome(r.Context(), r, userID, auditActionStepUpLocked, http.StatusTooManyRequests)
 		return &stepUpLockedError{retryAfter: locked.RetryAfter}
 	}
 	rt.recordStepUp(r, userID, err == nil)
@@ -199,6 +204,10 @@ func (rt *Router) auditStepUp(ctx context.Context, r *http.Request, userID strin
 	if !ok {
 		action, status = auditActionStepUpFailed, http.StatusForbidden
 	}
+	rt.saveEnvAudit(ctx, r, envAuditActor{kind: "session", id: userID}, action, r.URL.Path, status)
+}
+
+func (rt *Router) auditStepUpOutcome(ctx context.Context, r *http.Request, userID, action string, status int) {
 	rt.saveEnvAudit(ctx, r, envAuditActor{kind: "session", id: userID}, action, r.URL.Path, status)
 }
 

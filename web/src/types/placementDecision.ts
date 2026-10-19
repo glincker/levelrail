@@ -66,3 +66,51 @@ export interface NodeAllocations {
   policy: PlacementPolicy
   nodes: NodeAllocation[]
 }
+
+export interface ZoneSummary {
+  zone: string
+  region?: string
+  providers?: string[]
+  node_ids: string[]
+  online_nodes: number
+  workloads: number
+}
+
+export interface ZoneNode {
+  node_id: string
+  name: string
+  zone?: string
+  region?: string
+  provider?: string
+  online: boolean
+  workloads: number
+}
+
+export interface ZonesView {
+  zones: ZoneSummary[]
+  nodes: ZoneNode[]
+  labeled: boolean
+}
+
+export interface SimulatedPlacement {
+  name: string
+  from_node_id?: string
+  node_id?: string
+  node_name?: string
+  zone?: string
+  why?: string
+  unplaced?: string
+}
+
+export interface PlacementSimulation {
+  placed: SimulatedPlacement[]
+  unplaced: number
+  zones: ZoneSummary[]
+}
+
+export interface FailureSimulation extends PlacementSimulation {
+  zone?: string
+  node?: string
+  lost_node_ids: string[]
+  displaced: number
+}

@@ -1,6 +1,7 @@
 ---
 title: "Network shares"
 description: Register and test network shares (NFS and CIFS) with the control plane.
+"og:url": "https://docs.levelrail.com/network-shares"
 ---
 
 A network share is a saved record of an NFS export or a CIFS (SMB) share on your network, such as a NAS. You register it once, with the host, remote path and credentials, and test that the host answers. The record is stored by the control plane, and a CIFS password is stored encrypted with the master key, never returned by the API.

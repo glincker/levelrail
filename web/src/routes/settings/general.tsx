@@ -37,8 +37,11 @@ import {
 import { DockerDiskUsageCard } from '@/components/settings/DockerDiskUsageCard'
 import { CertificatesCard } from '@/components/settings/CertificatesCard'
 import { MasterKeyCard } from '@/components/settings/MasterKeyCard'
+import { SettingsHealthCard } from '@/components/settings/SettingsHealthCard'
+import { EncryptionKeysCard } from '@/components/settings/EncryptionKeysCard'
 import { DensityCard } from '@/components/settings/DensityCard'
 import { PageWidthCard } from '@/components/settings/PageWidthCard'
+import { PanelHost } from '../../components/plugins/PanelHost'
 
 // Platform info comes from the already-warm /api/v1/brand cache via
 // useBrand() (primed by routes/__root.tsx's loader). Build version lives
@@ -117,6 +120,8 @@ function GeneralSettingsPage() {
   return (
     <GeneralPageShell>
       <div className="space-y-(--glinr-page-gap)">
+        <SettingsHealthCard />
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -242,7 +247,9 @@ function GeneralSettingsPage() {
         <CertificatesCard />
 
         {status.secrets_configured ? <MasterKeyCard /> : null}
+        {status.secrets_configured ? <EncryptionKeysCard /> : null}
         {status.secrets_configured ? <SecretBindingCard /> : null}
+        <PanelHost slot="settings" />
       </div>
     </GeneralPageShell>
   )

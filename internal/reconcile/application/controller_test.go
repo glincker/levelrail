@@ -57,9 +57,10 @@ type fakeRuntime struct {
 	// distinct from a zero-value *docker.ExitState. crashContainer sets
 	// this to simulate an OOM-killed or otherwise-exited container mid
 	// readiness wait.
-	exitStates map[string]*docker.ExitState
-	nextID     int
-	hostPort   int
+	exitStates     map[string]*docker.ExitState
+	inspectExitErr error // when set, InspectExitState fails with it
+	nextID         int
+	hostPort       int
 
 	// trackPorts makes Start publish the spec's host ports and fail with
 	// Docker's "port is already allocated" while another running container
@@ -226,6 +227,9 @@ func (f *fakeRuntime) setExitState(name string, es *docker.ExitState) {
 func (f *fakeRuntime) InspectExitState(_ context.Context, name string) (*docker.ExitState, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if f.inspectExitErr != nil {
+		return nil, f.inspectExitErr
+	}
 	es, ok := f.exitStates[name]
 	if !ok {
 		return nil, nil

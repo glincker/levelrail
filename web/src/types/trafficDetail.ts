@@ -1,7 +1,13 @@
 // Wire types for GET /api/v1/apps/{name}/traffic
 // (internal/api/traffic_app.go's trafficResponse).
 
-export type TrafficWindow = '5m' | '1h' | '24h'
+export type TrafficWindow = '5m' | '1h' | '24h' | '7d'
+
+export interface TrafficLabel {
+  label: string
+  requests: number
+  share: number
+}
 
 export interface TrafficLatency {
   p50_ms: number
@@ -70,6 +76,8 @@ export interface TrafficDetail {
   replicas: TrafficReplica[]
   slow_routes: TrafficRoute[]
   samples: TrafficSample[]
+  referrers: TrafficLabel[]
+  countries: TrafficLabel[]
   slo?: TrafficSLO
   shield: TrafficShield
 }

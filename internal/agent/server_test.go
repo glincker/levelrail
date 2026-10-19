@@ -567,3 +567,31 @@ func TestServer_Session_FingerprintMismatch_Rejected(t *testing.T) {
 		t.Errorf("Session() error = %v, want codes.Unauthenticated", err)
 	}
 }
+
+func (f *fakeEnrollStore) ReleaseNodeJoinToken(_ context.Context, id string) error {
+	for _, t := range f.tokens {
+		if t.ID == id {
+			t.UsedAt = nil
+		}
+	}
+	return nil
+}
+
+func TestServer_Enroll_NameCollisionDoesNotBurnToken(t *testing.T) {
+	ca, _ := GenerateCA()
+	st := newFakeEnrollStore()
+	seedJoinToken(st, "token-1", time.Hour)
+	seedJoinToken(st, "token-2", time.Hour)
+	srv := NewServer(ca, st, NewRegistry(), nil)
+	ctx := context.Background()
+
+	if _, err := srv.Enroll(ctx, &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "token-1", NodeName: "worker-1"}); err != nil {
+		t.Fatalf("first Enroll() error = %v", err)
+	}
+	if _, err := srv.Enroll(ctx, &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "token-2", NodeName: "worker-1"}); status.Code(err) != codes.AlreadyExists {
+		t.Fatalf("want AlreadyExists, got %v", err)
+	}
+	if _, err := srv.Enroll(ctx, &agentpb.EnrollRequest{CsrDer: mustCSR(t), JoinToken: "token-2", NodeName: "worker-2"}); err != nil {
+		t.Fatalf("the token must still work after a name collision: %v", err)
+	}
+}

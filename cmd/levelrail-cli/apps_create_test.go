@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -730,7 +731,7 @@ func TestPlanFromFlags(t *testing.T) {
 				if !strings.Contains(err.Error(), tt.wantErr) {
 					t.Fatalf("err = %q, want it to contain %q", err.Error(), tt.wantErr)
 				}
-				if _, ok := err.(*validationError); !ok {
+				if !errors.As(err, new(*validationError)) {
 					t.Errorf("err type = %T, want *validationError", err)
 				}
 				return

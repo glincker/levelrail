@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
+import { PendingJoinTokensCard } from '../../components/nodes/PendingJoinTokensCard'
 import { HardDrivesIcon } from '@phosphor-icons/react/dist/ssr'
 import { nodeListQueryOptions, useNodes } from '../../queries/nodes'
 import { useFleetResourceUsage } from '../../queries/fleetResourceUsage'
@@ -10,6 +11,7 @@ import { NodesTable } from '../../components/NodesTable'
 import { AddNodeWizard } from '../../components/AddNodeWizard'
 import { BuildStrainSuggestion } from '../../components/BuildStrainSuggestion'
 import { EmptyState } from '../../components/ui/empty-state'
+import { ZoneSpreadCard } from '../../components/nodes/ZoneSpreadCard'
 import { PageTemplate } from '../../components/shell/PageTemplate'
 import { countResourcesByNode } from '../../lib/nodeResourceCounts'
 
@@ -70,7 +72,9 @@ function NodeListPage() {
         </>
       }
     >
+      <PendingJoinTokensCard />
       <BuildStrainSuggestion nodes={nodes} />
+      <ZoneSpreadCard />
       {nodes.length === 0 ? (
         <EmptyState
           icon={<HardDrivesIcon className="size-5" />}

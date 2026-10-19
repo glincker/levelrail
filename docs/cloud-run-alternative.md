@@ -1,6 +1,7 @@
 ---
 title: "Self-hosted alternative to Cloud Run for steady workloads"
 description: "When an always-on container is cheaper on your own server than on Cloud Run, when it is not, and how Levelrail fits for git or image deploys."
+"og:url": "https://docs.levelrail.com/cloud-run-alternative"
 ---
 
 **Run the same container on a server you own**

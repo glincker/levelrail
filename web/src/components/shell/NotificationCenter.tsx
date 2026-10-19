@@ -22,6 +22,7 @@ import { useActivityEvents } from '../../queries/activity'
 import { useDeployApprovalsOptional } from '../../queries/deployApprovals'
 import { failedDeploysQueryOptions } from '../../queries/failedDeploys'
 import { useAttentionItems } from '../../queries/attention'
+import { useInboxUnreadCount } from '../../queries/inbox'
 import { useDismissAttentionItem } from '../../queries/deviceAuth'
 import {
   buildNotifications,
@@ -49,7 +50,9 @@ export function NotificationCenter() {
   })
   const attention = useAttentionItems()
   const dismiss = useDismissAttentionItem()
+  const inboxUnread = useInboxUnreadCount()
   const { t } = useTranslation('attention', { useSuspense: false })
+  const { t: tInbox } = useTranslation('inbox', { useSuspense: false })
   const { ids, set } = useReadIds()
   const { isSnoozed } = useSnoozed()
   const [showSnoozed, setShowSnoozed] = useState(false)
@@ -212,6 +215,17 @@ export function NotificationCenter() {
             ))}
           </div>
         )}
+        <Link
+          to="/alerts"
+          className="mt-1 flex items-center justify-between rounded-lg px-2 py-2 text-sm hover:bg-muted"
+        >
+          <span>{tInbox('bell.link')}</span>
+          {(inboxUnread.data ?? 0) > 0 ? (
+            <span className="text-xs text-muted-foreground">
+              {tInbox('bell.unread', { count: inboxUnread.data })}
+            </span>
+          ) : null}
+        </Link>
       </PopoverContent>
     </Popover>
   )

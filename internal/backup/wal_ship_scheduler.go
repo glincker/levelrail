@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -67,10 +68,14 @@ func (s *WALShipScheduler) Run(ctx context.Context, interval time.Duration) erro
 	if interval <= 0 {
 		return nil
 	}
+	loop := footprint.Track("wal ship scheduler", interval)
+	defer loop.Active()()
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
+		start := time.Now()
 		s.Tick(ctx)
+		loop.Observe(start, nil)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()

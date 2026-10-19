@@ -1,6 +1,7 @@
 ---
 title: "Migrating a service from Cloud Run"
 description: "A runbook for moving a Google Cloud Run service to Levelrail: concept mapping, deploying the same image, secrets, Cloud SQL, domains, jobs and what you give up."
+"og:url": "https://docs.levelrail.com/migrating-from-cloud-run"
 ---
 
 This is a runbook for moving one Cloud Run service onto a Levelrail instance you run yourself. It maps only to features that exist in this repository today. Where something is unverified or has no equivalent, it says so.

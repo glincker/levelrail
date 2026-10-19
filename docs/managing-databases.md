@@ -1,6 +1,7 @@
 ---
 title: "Managing databases"
 description: Create and manage databases with backups, point-in-time restore, and lifecycle management.
+"og:url": "https://docs.levelrail.com/managing-databases"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/mysql/default.svg" alt="MySQL" title="MySQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/mariadb/default.svg" alt="MariaDB" title="MariaDB" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/mongodb/default.svg" alt="MongoDB" title="MongoDB" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/redis/default.svg" alt="Redis" title="Redis" width="24" height="24" /></span></div>
@@ -45,11 +46,13 @@ Use the databases list page's create dialog. It collects name, engine, version, 
 
 Every database appears alongside your apps on its own list page, with engine, version, and status at a glance:
 
-![Levelrail databases list showing engine, version, and running status](assets/screenshots/databases-list.png)
+<img src="/assets/screenshots/databases-list-light.png" alt="Levelrail databases list showing engine, version, and running status" className="block dark:hidden" />
+<img src="/assets/screenshots/databases-list.png" alt="Levelrail databases list showing engine, version, and running status" className="hidden dark:block" />
 
 A database's Overview tab shows its connection details, resource usage, and the public access and backup cards covered below:
 
-![Levelrail database overview page with connection info and resource usage](assets/screenshots/database-overview.png)
+<img src="/assets/screenshots/database-overview-light.png" alt="Levelrail database overview page with connection info and resource usage" className="block dark:hidden" />
+<img src="/assets/screenshots/database-overview.png" alt="Levelrail database overview page with connection info and resource usage" className="hidden dark:block" />
 
 ### Placement
 

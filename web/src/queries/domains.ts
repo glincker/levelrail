@@ -54,6 +54,15 @@ export interface Domain {
   target?: string
   // enforcement says which saved traffic controls visitors really get.
   enforcement?: DomainEnforcement
+  // issues are the problems the last ingress pass found (dropped or downgraded).
+  issues?: DomainIssue[]
+}
+
+export interface DomainIssue {
+  domain: string
+  code: string
+  severity: 'dropped' | 'degraded'
+  message: string
 }
 
 export async function fetchDomains(): Promise<Domain[]> {

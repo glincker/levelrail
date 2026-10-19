@@ -2,6 +2,7 @@
 title: "Platform as code"
 tag: "Experimental"
 description: Describe projects, environments, apps, domains, databases and more as YAML files, review the plan, and apply it from the CLI, the dashboard, MCP or CI.
+"og:url": "https://docs.levelrail.com/platform-as-code"
 ---
 
 Write the state you want as YAML, run `levelrail-cli apply`, and the control plane converges to it. The same files can be exported from a live control plane, reviewed in a pull request, and applied from CI.

@@ -1,6 +1,7 @@
 ---
 title: "VPS smoke test"
 description: scripts/vps-smoke.sh checks a real install end to end on a VPS you already have, without creating or deleting cloud resources.
+"og:url": "https://docs.levelrail.com/vps-smoke"
 ---
 
 `scripts/vps-smoke.sh` checks a real install end to end on a VPS you already have (a rented Linux server). It never creates or deletes cloud resources.

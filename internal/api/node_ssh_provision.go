@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -177,8 +176,7 @@ func (req createSSHNodeProvisionRequest) credentials() (sshprovision.Credentials
 // progress" shape handleCreateNodeProvision already establishes.
 func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Request) {
 	var req createSSHNodeProvisionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Host == "" {
@@ -313,8 +311,7 @@ const sshPreflightTimeout = 45 * time.Second
 // confirm a fingerprint before any credential leaves the control plane.
 func (rt *Router) handleSSHProvisionPreflight(w http.ResponseWriter, r *http.Request) {
 	var req sshProvisionPreflightRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Host == "" {
@@ -490,7 +487,7 @@ func (rt *Router) refreshSSHNodeProvision(ctx context.Context, p store.SSHNodePr
 		rt.logger.Warn("api: ssh node provision: list nodes failed", slog.String("provision_id", p.ID), slog.String("error", err.Error()))
 		return p
 	}
-	if n, ok := findNodeByName(nodes, p.Name); ok {
+	if n, ok := findProvisionedNode(nodes, p.Name, p.CreatedAt); ok {
 		acceptsApp, acceptsBuild := p.Role != "build", p.Role == "build"
 		if werr := rt.nodes.UpdateNodeWorkloads(ctx, n.ID, acceptsApp, acceptsBuild); werr != nil {
 			rt.logger.Error("api: ssh node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
@@ -515,6 +512,16 @@ func (rt *Router) saveSSHNodeProvisionUpdate(ctx context.Context, p store.SSHNod
 	}
 	p.Status, p.NodeID, p.FailureReason, p.UpdatedAt = status, nodeID, failureReason, now
 	return p
+}
+
+// findProvisionedNode matches by name like findNodeByName but ignores nodes that existed before the provision started, so a same-named older node is never adopted.
+func findProvisionedNode(nodes []store.Node, name string, since time.Time) (store.Node, bool) {
+	for _, n := range nodes {
+		if n.Name == name && !n.CreatedAt.Before(since) {
+			return n, true
+		}
+	}
+	return store.Node{}, false
 }
 
 // findNodeByName returns the first node in nodes named name. Both

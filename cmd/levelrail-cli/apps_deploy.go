@@ -40,10 +40,11 @@ func runAppsDeploy(prog string, args []string, stdout, stderr io.Writer, lookupE
 func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), stdin io.Reader, cfg deployOrRollbackConfig) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, cfg.cmdLabel, "print the updated app as JSON to stdout and nothing else", stderr)
 	var image string
-	var confirm bool
+	var confirm, diff bool
 	var extra deployExtraFlags
 	fs.StringVar(&image, "image", "", cfg.imageHelp)
 	fs.BoolVar(&confirm, "confirm", false, cfg.confirmHelp)
+	fs.BoolVar(&diff, "diff", false, "show what this deploy would change (config, env keys, image) against the last successful deploy and exit without deploying")
 	extra.register(fs)
 	var src sourceDeployFlags
 	if cfg.fromSource {
@@ -69,6 +70,10 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
+
+	if diff {
+		return showPendingDeployDiff(ctx, client, name, image, stdout, stderr, jsonOut, of)
+	}
 
 	if src.fromCache {
 		if image != "" || src.latest || src.branch != "" {
@@ -121,6 +126,18 @@ func runAppsDeployOrRollback(prog string, args []string, stdout, stderr io.Write
 	})
 }
 
+func showPendingDeployDiff(ctx context.Context, client *Client, name, image string, stdout, stderr io.Writer, jsonOut bool, of outputFlags) int {
+	cmp, err := client.PendingDeployDiff(ctx, name, image)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("diff deploy for app %q: %w", name, err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, cmp, func() { printDeployCompareHuman(stdout, cmp) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
 func appsDeployUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s apps deploy <name> --image IMAGE [flags]
@@ -144,6 +161,8 @@ Flags:
                              (default commit: the last successful source deploy; --commit picks another)
   --pull                     re-resolve the tag against its registry, failing rather than deploying a cached
                              image; without --image, redeploys the app's current tag at its newest digest
+  --diff                     show what this deploy would change (config, env keys, image) against the last
+                             successful deploy, then exit without deploying
   --override-freeze          deploy even though a deploy freeze window is active
   --override-reason string   required with --override-freeze, recorded on the deploy
   --token string          API token (default: %[2]s env var, then the credentials file)

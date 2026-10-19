@@ -1,6 +1,7 @@
 ---
 title: "Access control"
 description: Roles for multi-user access, per-user environment grants, the guest role, IAM policies on apps, databases and environments, and ready-made policy templates.
+"og:url": "https://docs.levelrail.com/access-control"
 ---
 
 Give each teammate the access they need and no more. A role bundles abilities, environment grants narrow a guest down to chosen environments, and IAM policies allow or deny access to individual apps, databases and environments.
@@ -164,7 +165,10 @@ Conditions such as source IP, time window and MFA are not part of the evaluator,
 levelrail-cli iam simulate --principal token:TOKEN_ID --action deploy --resource app:web
 levelrail-cli iam effective --principal user:USER_ID
 levelrail-cli iam analyze --json
+levelrail-cli iam suggest --days 30
 ```
+
+The Analyzer tab and `iam suggest` also compare every active token with what the audit log shows it used (default 30 days). A token that holds `root` but only ever wrote, or never did anything, gets a narrower suggested ability list, and an idle token gets a Revoke button. Plain reads are not audited, so `read` is never flagged. The MCP tool `suggest_least_privilege` (iam toolset) returns the same data.
 
 ## API
 

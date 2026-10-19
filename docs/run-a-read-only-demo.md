@@ -1,6 +1,7 @@
 ---
 title: "Run a read-only demo"
 description: Run a read-only demo instance of the dashboard with fictional data, no Docker and no way to change anything.
+"og:url": "https://docs.levelrail.com/run-a-read-only-demo"
 ---
 
 The demo entrypoint serves the real dashboard and API over a seeded data directory of fictional apps, deploy history, databases and nodes. It never talks to Docker, never opens ingress or agent ports, and rejects every write on the server, so it is safe to put in front of strangers.

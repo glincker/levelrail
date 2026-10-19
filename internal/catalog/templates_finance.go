@@ -96,7 +96,7 @@ var financeTemplates = []Template{
     volumes:
       - actual_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5006/health"]
+      test: ["CMD-SHELL", "node /app/src/scripts/health-check.js"]
       interval: 10s
       timeout: 5s
       retries: 3

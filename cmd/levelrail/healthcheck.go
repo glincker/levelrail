@@ -28,7 +28,7 @@ func runHealthcheck(ctx context.Context, out io.Writer, ready bool) error {
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
 	if err != nil {
 		return fmt.Errorf("request %s: %w", addr, err)
 	}

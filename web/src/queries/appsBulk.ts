@@ -23,6 +23,7 @@ export interface BulkRequest {
   value?: string
   dry_run?: boolean
   confirm_names?: string[]
+  confirm_count?: number
 }
 
 export interface BulkAppResult {

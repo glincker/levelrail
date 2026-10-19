@@ -134,3 +134,60 @@ func TestCanaryStartRejectsUnresolvableImage(t *testing.T) {
 		t.Error("clone created for an unresolvable image")
 	}
 }
+
+func TestCanaryStagedStartAndAutoRollback(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := canaryCall(t, rt.handleStartCanary, http.MethodPost, `{"image":"nginx:2","stages":[20,10]}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("descending stages = %d, want 400", rec.Code)
+	}
+	if rec := canaryCall(t, rt.handleStartCanary, http.MethodPost, `{"image":"nginx:2","stages":[10,50],"weight":5}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("stages with weight = %d, want 400", rec.Code)
+	}
+	if rec := canaryCall(t, rt.handleStartCanary, http.MethodPost, `{"image":"nginx:2","stages":[10,50,100],"interval":"2m"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("staged start = %d %s", rec.Code, rec.Body)
+	}
+	rel, ok, _ := db.GetCanaryRelease(ctx, "web")
+	if !ok || !rel.Staged() || rel.Weight != 10 || rel.IntervalSecs != 120 || rel.MaxP95Ratio <= 1 {
+		t.Fatalf("release = %+v", rel)
+	}
+
+	if err := rt.CanaryActions().Rollback(ctx, rel, "error rate too high"); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok, _ := db.GetCanaryRelease(ctx, "web"); ok {
+		t.Error("release survived rollback")
+	}
+	if _, err := db.GetDesiredService(ctx, "web--canary"); err == nil {
+		t.Error("clone survived rollback")
+	}
+	o, ok, _ := db.GetCanaryOutcome(ctx, "web")
+	if !ok || o.Outcome != store.CanaryOutcomeRolledBack || o.Reason != "error rate too high" {
+		t.Fatalf("outcome = %+v", o)
+	}
+	rec := canaryCall(t, rt.handleGetCanary, http.MethodGet, ``)
+	if !strings.Contains(rec.Body.String(), `"rolled_back"`) {
+		t.Errorf("GET after rollback should report the last outcome: %s", rec.Body)
+	}
+}
+
+func TestCanaryStartUsesSavedPolicy(t *testing.T) {
+	rt, db, _ := newSafetyRouter(t, stubResolver{digest: newDigest})
+	ctx := context.Background()
+	if err := db.SaveDesiredService(ctx, store.DesiredService{Name: "web", Image: "nginx:1", Port: 80}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SetCanaryPolicy(ctx, store.CanaryPolicy{ServiceName: "web", Stages: []int{5, 100}, IntervalSecs: 30, MaxErrorRate: 0.1, MaxP95Ratio: 2}); err != nil {
+		t.Fatal(err)
+	}
+	if rec := canaryCall(t, rt.handleStartCanary, http.MethodPost, `{"image":"nginx:2"}`); rec.Code != http.StatusCreated {
+		t.Fatalf("start = %d %s", rec.Code, rec.Body)
+	}
+	rel, _, _ := db.GetCanaryRelease(ctx, "web")
+	if !rel.Staged() || rel.Weight != 5 || rel.IntervalSecs != 30 || rel.MaxErrorRate != 0.1 {
+		t.Fatalf("saved policy not applied: %+v", rel)
+	}
+}

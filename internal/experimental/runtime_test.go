@@ -43,7 +43,31 @@ func TestToggleableListAndMessage(t *testing.T) {
 			t.Fatalf("%s beta message should point at Settings", f)
 		}
 	}
-	if strings.Contains(DisabledMessage(IaC), "Settings") {
-		t.Fatal("env only feature should not point at Settings")
+	if !strings.Contains(DisabledMessage(IaC), "Settings") {
+		t.Fatal("every feature message should point at Settings")
+	}
+}
+
+func TestPendingForStartupWiredFeature(t *testing.T) {
+	Set()
+	defer Reset()
+	if Pending(IaC) {
+		t.Fatal("nothing saved yet")
+	}
+	SetRuntime(IaC, true)
+	if Enabled(IaC) || !Pending(IaC) {
+		t.Fatalf("saved on must wait for restart: enabled=%v pending=%v", Enabled(IaC), Pending(IaC))
+	}
+	ApplyAtBoot(IaC, true)
+	if !Enabled(IaC) || Pending(IaC) {
+		t.Fatal("boot applies the saved choice")
+	}
+	SetRuntime(IaC, false)
+	if !Enabled(IaC) || !Pending(IaC) {
+		t.Fatal("switching off also waits for restart")
+	}
+	SetRuntime(AIChat, true)
+	if !Enabled(AIChat) || Pending(AIChat) {
+		t.Fatal("live features apply at once")
 	}
 }

@@ -26,6 +26,8 @@ func runDomainsShield(prog string, args []string, stdout, stderr io.Writer, look
 			return runShieldStandDown
 		case "bots":
 			return runShieldBots
+		case "recommend":
+			return runShieldRecommend
 		}
 		return nil
 	}, domainsShieldUsage(prog))
@@ -39,6 +41,7 @@ func domainsShieldUsage(prog string) string {
   %[1]s domains shield under-attack <app> <domain> [--minutes 60]
   %[1]s domains shield stand-down <app> <domain>
   %[1]s domains shield bots
+  %[1]s domains shield recommend <app> [--dry-run] [--block-bots]
 
 Limits apply per client IP at the ingress. Rate limited and over-concurrency
 requests get 429 with Retry-After, bad bots get 403, oversized bodies get 413.

@@ -67,10 +67,13 @@ import (
 	"log/slog"
 	"net"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/GLINCKER/levelrail/internal/canary"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
@@ -272,8 +275,12 @@ type Controller struct {
 	driver  Applier
 	logger  *slog.Logger
 
+	// lastDial keeps each service's last resolved backend so a Docker API outage keeps routes instead of dropping them.
+	lastDial sync.Map
+
 	serverName     string
 	requestStats   bool
+	firewall       bool
 	listenAddr     string
 	httpListenAddr string
 	httpRedirect   bool
@@ -316,6 +323,8 @@ type Controller struct {
 	certStore   ingress.CertStore
 	certStorage any
 	servedHosts ServedHostsRecorder
+	domainConds DomainConditionsRecorder
+	issues      domainIssues
 
 	// auditRecorder, if set via WithAuditRecorder, is attached to the
 	// same SQLiteStorage certStore builds, so a certificate issuance or
@@ -372,7 +381,8 @@ type Controller struct {
 	wakeDial      string
 	wakeToken     string
 	canarySource  CanarySource // nil disables canary traffic splitting
-	implicitLB    bool         // see WithImplicitLoadBalancing
+	canaryDials   *canary.Dials
+	implicitLB    bool // see WithImplicitLoadBalancing
 	lbRegistry    *loadbalancer.Registry
 	nodeUpstreams NodeUpstreamResolver
 	meshPaths     meshpath.Resolver
@@ -391,6 +401,11 @@ func (c *Controller) isLocalNode(nodeID string) bool {
 
 // Option configures optional Controller behavior.
 type Option func(*Controller)
+
+// WithFirewall puts the instance firewall in front of every route.
+func WithFirewall() Option {
+	return func(ctrl *Controller) { ctrl.firewall = true }
+}
 
 // WithRequestStats makes every proxied route count requests for the
 // per-app request metrics.
@@ -488,6 +503,17 @@ type ServedHostsRecorder interface {
 // the evidence the orphan reaper needs before it may drop a certificate.
 func WithServedHostsRecorder(r ServedHostsRecorder) Option {
 	return func(c *Controller) { c.servedHosts = r }
+}
+
+// DomainConditionsRecorder persists each pass's per-domain problems.
+type DomainConditionsRecorder interface {
+	ReplaceDomainConditions(ctx context.Context, conds []store.DomainCondition) error
+}
+
+// WithDomainConditionsRecorder records dropped and downgraded domains so the
+// domain list can show why instead of the pass only logging a warning.
+func WithDomainConditionsRecorder(r DomainConditionsRecorder) Option {
+	return func(c *Controller) { c.domainConds = r }
 }
 
 // WithAuditRecorder records a system-actor audit_log row for every
@@ -668,6 +694,7 @@ func (c *Controller) Name() string { return "ingress" }
 // desired state, build the config, or apply it to Caddy is reported as
 // an error.
 func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
+	c.issues.reset()
 	services, err := c.store.ListDesiredServices(ctx)
 	if err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list desired services: %w", err)
@@ -917,7 +944,7 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 
 	// Per-domain traffic controls (controller_policies.go), after every
 	// app route exists so forwarders can resolve other apps' dials.
-	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides); err != nil {
+	if routes, err = c.applyTrafficPolicies(ctx, routes, claimedHosts, settings, tlsCertOverrides, sleeping); err != nil {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list domain traffic policies: %w", err)
 	}
 	if routes, err = c.applyAuthGates(ctx, routes); err != nil {
@@ -1023,6 +1050,21 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		return notReady("StoreError", err), fmt.Errorf("ingress: list app streams: %w", err)
 	}
 
+	dnsProvider := c.resolveDNSProvider(ctx)
+	if dnsProvider == nil && !settings.TLSTerminatedUpstream && settings.EffectiveACMEEnabled() {
+		for host := range claimedHosts {
+			if ingress.IsWildcardDomain(host) {
+				c.issues.note(host, store.DomainCondDNS01Unavailable, store.DomainConditionDegraded,
+					"wildcard certificate needs a DNS provider for DNS-01 and none is enabled, so only HTTP-01 is attempted and will fail for the wildcard")
+			}
+		}
+	}
+	for host, why := range standalonePlan.unrouted {
+		if !c.issues.has(host, store.DomainConditionDropped) {
+			c.issues.note(host, store.DomainCondTargetUnavailable, store.DomainConditionDropped, why)
+		}
+	}
+
 	cfg, err := ingress.BuildRoutesConfig(ingress.RoutesOptions{
 		ServerName:           c.serverName,
 		ListenAddr:           c.listenAddr,
@@ -1046,9 +1088,10 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		ACMEEnabled:          settings.EffectiveACMEEnabled(),
 		ACMEEmail:            settings.ACMEEmail,
 		ACMEDirectoryURL:     settings.ACMEDirectoryURL,
-		DNSProvider:          c.resolveDNSProvider(ctx),
+		DNSProvider:          dnsProvider,
 		TLSCertificates:      tlsCertOverrides,
 		RequestStats:         c.requestStats,
+		Firewall:             c.firewall,
 		Streams:              streamRoutes,
 	})
 	if err != nil {
@@ -1080,6 +1123,12 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 		Reason:  reason,
 		Message: message,
 	}}
+	c.recordDomainConditions(ctx)
+	if dropped := c.issues.droppedHosts(); len(dropped) > 0 {
+		conditions[0].Status = reconcile.ConditionFalse
+		conditions[0].Reason = reasonDomainsDropped
+		conditions[0].Message = fmt.Sprintf("%d domain(s) are not routed this pass (%s); %s", len(dropped), strings.Join(dropped, ", "), message)
+	}
 	if cond := lbCondition(lbPlans); cond != nil {
 		conditions = append(conditions, *cond)
 	}
@@ -1220,13 +1269,18 @@ func (c *Controller) dialForService(ctx context.Context, svc store.DesiredServic
 
 	state, err := c.runtime.InspectByName(ctx, target)
 	if err != nil {
-		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, skipping for this pass",
+		c.logger.WarnContext(ctx, "ingress: inspecting service container failed, keeping the last known backend",
 			slog.String("service", svc.Name), slog.String("container", target), slog.String("error", err.Error()))
+		if dial, ok := c.lastDial.Load(svc.Name); ok {
+			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
+		}
 	} else if dial, ok := dialAddr(state); ok && targetReady {
+		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
 
 	if dial, ok := c.dialPreviousRelease(ctx, svc.Name, target); ok {
+		c.lastDial.Store(svc.Name, dial)
 		return dial, true
 	}
 
@@ -1311,6 +1365,9 @@ func (c *Controller) dialPreviousRelease(ctx context.Context, serviceName, exclu
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: list previous release containers failed",
 			slog.String("service", serviceName), slog.String("error", err.Error()))
+		if dial, ok := c.lastDial.Load(serviceName); ok {
+			return dial.(string), true //nolint:errcheck,forcetypeassert // only strings are stored
+		}
 		return "", false
 	}
 	var best *docker.ContainerState
@@ -1539,19 +1596,23 @@ func (c *Controller) domainErrorPagesByDomain(ctx context.Context) (map[string][
 // the same "never cache, re-derive from current state" principle every
 // other Reconcile input already follows.
 func (c *Controller) resolveBasicAuthAccount(ctx context.Context, domain string, auth store.DomainBasicAuth) (*ingress.BasicAuthAccount, bool) {
+	const dropMsg = "basic auth password could not be read or hashed, so the domain is not routed rather than served unprotected: set the password again"
 	if c.basicAuthSecrets == nil {
+		c.issues.note(domain, store.DomainCondBasicAuthUnresolved, store.DomainConditionDropped, "basic auth is configured but no master key is set, so the domain is not routed rather than served unprotected")
 		return nil, false
 	}
 	password, err := c.basicAuthSecrets.Resolve(ctx, store.DomainBasicAuthSecretsKey(domain), store.DomainBasicAuthPasswordEnvKey)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: resolve domain basic auth password failed, domain will not be routed this pass",
 			slog.String("domain", domain), slog.String("error", err.Error()))
+		c.issues.note(domain, store.DomainCondBasicAuthUnresolved, store.DomainConditionDropped, dropMsg)
 		return nil, false
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		c.logger.WarnContext(ctx, "ingress: hash domain basic auth password failed, domain will not be routed this pass",
 			slog.String("domain", domain), slog.String("error", err.Error()))
+		c.issues.note(domain, store.DomainCondBasicAuthUnresolved, store.DomainConditionDropped, dropMsg)
 		return nil, false
 	}
 	return &ingress.BasicAuthAccount{Username: auth.Username, Password: string(hash)}, true
@@ -1571,10 +1632,18 @@ func (c *Controller) domainTLSCertOverrides(ctx context.Context) ([]ingress.TLSC
 	if err != nil {
 		return nil, err
 	}
-	if c.tlsCertSecrets == nil || len(rows) == 0 {
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	if c.tlsCertSecrets == nil {
+		for _, row := range rows {
+			c.issues.note(row.Domain, store.DomainCondCustomCertUnresolved, store.DomainConditionDegraded,
+				"a custom certificate is uploaded but no master key is set, so automatic issuance is used instead")
+		}
 		return nil, nil
 	}
 
+	const customCertMsg = "the uploaded certificate or key could not be read, so automatic issuance is used instead: upload the certificate again"
 	overrides := make([]ingress.TLSCertificateOverride, 0, len(rows))
 	for _, row := range rows {
 		key := store.DomainTLSCertSecretsKey(row.Domain)
@@ -1582,12 +1651,14 @@ func (c *Controller) domainTLSCertOverrides(ctx context.Context) ([]ingress.TLSC
 		if err != nil {
 			c.logger.WarnContext(ctx, "ingress: resolve domain tls certificate failed, domain falls back to automatic issuance this pass",
 				slog.String("domain", row.Domain), slog.String("error", err.Error()))
+			c.issues.note(row.Domain, store.DomainCondCustomCertUnresolved, store.DomainConditionDegraded, customCertMsg)
 			continue
 		}
 		keyPEM, err := c.tlsCertSecrets.Resolve(ctx, key, store.DomainTLSCertPrivateKeyEnvKey)
 		if err != nil {
 			c.logger.WarnContext(ctx, "ingress: resolve domain tls private key failed, domain falls back to automatic issuance this pass",
 				slog.String("domain", row.Domain), slog.String("error", err.Error()))
+			c.issues.note(row.Domain, store.DomainCondCustomCertUnresolved, store.DomainConditionDegraded, customCertMsg)
 			continue
 		}
 		overrides = append(overrides, ingress.TLSCertificateOverride{Host: row.Domain, CertPEM: certPEM, KeyPEM: keyPEM})

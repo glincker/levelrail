@@ -173,7 +173,7 @@ func (CDPShooter) Shoot(ctx context.Context, addr string, req ShotRequest) (*Sho
 	if err != nil {
 		return nil, err
 	}
-	conn, _, err := websocket.Dial(ctx, wsURL, nil)
+	conn, _, err := websocket.Dial(ctx, wsURL, nil) //nolint:bodyclose // coder/websocket closes the handshake body itself
 	if err != nil {
 		return nil, fmt.Errorf("preview: dial browser: %w", err)
 	}

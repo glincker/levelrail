@@ -63,7 +63,7 @@ func (rt *Router) handleDeployCompose(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxDecodeBodyBytes))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "failed to read request body")
 		return

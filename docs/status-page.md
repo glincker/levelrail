@@ -1,6 +1,7 @@
 ---
 title: "Public status page"
 description: An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
+"og:url": "https://docs.levelrail.com/status-page"
 ---
 
 The control plane can serve a read-only status page for your users. It is off until you turn it on. It lists only the components you choose, under public names you choose, and nothing else.
@@ -23,7 +24,8 @@ Incident and maintenance text is escaped. Only paragraphs, line breaks, `- ` lis
 
 ## Set it up
 
-![Levelrail status page settings with the page switched off, and a title and custom domain field](assets/screenshots/status-page-settings.png)
+<img src="/assets/screenshots/status-page-settings-light.png" alt="Levelrail status page settings with the page switched off, and a title and custom domain field" className="block dark:hidden" />
+<img src="/assets/screenshots/status-page-settings.png" alt="Levelrail status page settings with the page switched off, and a title and custom domain field" className="hidden dark:block" />
 
 <Tabs>
 <Tab title="Dashboard">

@@ -7,7 +7,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
-import type { LogBudget, LogUsage } from '../types/logBudgets'
+import type { LogBudget, LogTrimResult, LogUsage } from '../types/logBudgets'
 
 export const logBudgetKeys = {
   usage: ['log-usage'] as const,
@@ -66,6 +66,23 @@ export function useSetLogBudget(app: string) {
     },
     onSuccess: (data) => {
       qc.setQueryData(logBudgetKeys.budget(app), data)
+      void qc.invalidateQueries({ queryKey: logBudgetKeys.usage })
+    },
+  })
+}
+
+export function useTrimLogBudget(app: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const res = await fetch(
+        `/api/v1/apps/${encodeURIComponent(app)}/log-budget/trim`,
+        { method: 'POST' },
+      )
+      await ensureOk(res, `trim logs failed: ${res.status}`)
+      return (await res.json()) as LogTrimResult
+    },
+    onSuccess: () => {
       void qc.invalidateQueries({ queryKey: logBudgetKeys.usage })
     },
   })

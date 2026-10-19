@@ -1,6 +1,7 @@
 ---
 title: Roadmap
 description: What Levelrail has shipped by area, what is still open, and what is out of scope.
+"og:url": "https://docs.levelrail.com/roadmap"
 ---
 
 Releases are listed on the [releases page](https://github.com/glincker/levelrail/releases). "Shipped" on this page means built and merged, not proven in production. For per-feature maturity and the evidence behind each label, see [feature status](/feature-status). Release-by-release detail is in the [changelog](/changelog). The decisions behind the build order are in the [ADRs](https://github.com/glincker/levelrail/tree/main/adr).

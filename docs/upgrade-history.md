@@ -1,6 +1,7 @@
 ---
 title: "Upgrade history"
 description: "Every version the control plane has run, recorded at boot, and how upgrades are acknowledged."
+"og:url": "https://docs.levelrail.com/upgrade-history"
 ---
 
 Settings > Updates shows every version the control plane has run. Upgrades are never silent: each change waits for someone to acknowledge it.

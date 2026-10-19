@@ -60,7 +60,7 @@ func (tc *targetCache) resolve(ctx context.Context, guard trafficpolicy.EgressGu
 // applyTrafficPolicies attaches each domain's stored traffic controls to its
 // proxy route. Rows that fail to decode are skipped with a warning rather
 // than failing the whole pass for every other domain.
-func (c *Controller) applyTrafficPolicies(ctx context.Context, routes []ingress.ProxyRoute, claimedHosts map[string]string, settings store.IngressSettings, certs []ingress.TLSCertificateOverride) ([]ingress.ProxyRoute, error) {
+func (c *Controller) applyTrafficPolicies(ctx context.Context, routes []ingress.ProxyRoute, claimedHosts map[string]string, settings store.IngressSettings, certs []ingress.TLSCertificateOverride, sleeping map[string]bool) ([]ingress.ProxyRoute, error) {
 	ingress.SetHTTPRedirectActive(c.httpRedirect && !settings.TLSTerminatedUpstream)
 	ps, ok := c.store.(TrafficPolicyStore)
 	if !ok {
@@ -97,6 +97,10 @@ func (c *Controller) applyTrafficPolicies(ctx context.Context, routes []ingress.
 			}
 		}
 	}
+	appWake := make(map[string]ingress.WakeRoute, len(sleeping))
+	for name := range sleeping {
+		appWake[name] = c.wakeRoute(name, nil)
+	}
 	byoCert := map[string]bool{}
 	for _, cert := range certs {
 		byoCert[cert.Host] = true
@@ -119,6 +123,7 @@ func (c *Controller) applyTrafficPolicies(ctx context.Context, routes []ingress.
 		rp := &ingress.RoutePolicy{
 			Policy:                *p,
 			AppDials:              appDials,
+			AppWake:               appWake,
 			Targets:               map[string]trafficpolicy.ResolvedTarget{},
 			TLSTerminatedUpstream: settings.TLSTerminatedUpstream,
 			TLSReal:               settings.EffectiveACMEEnabled() || byoCert[host] || settings.TLSTerminatedUpstream,

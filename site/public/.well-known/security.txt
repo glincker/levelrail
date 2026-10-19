@@ -1,5 +1,0 @@
-Contact: https://github.com/glincker/levelrail/security/advisories/new
-Expires: 2027-10-16T00:00:00.000Z
-Policy: https://github.com/glincker/levelrail/blob/main/SECURITY.md
-Preferred-Languages: en
-Canonical: https://levelrail.com/.well-known/security.txt

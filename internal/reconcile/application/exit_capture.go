@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/deploysafety"
@@ -93,12 +94,14 @@ func (c *Controller) captureExit(ctx context.Context, desired *store.DesiredServ
 	if finished.IsZero() && !es.StartedAt.IsZero() && v.Ran > 0 {
 		finished = es.StartedAt.Add(v.Ran)
 	}
-	_ = c.exitRecorder.RecordDeployExit(ctx, store.DeployExit{
+	if err := c.exitRecorder.RecordDeployExit(ctx, store.DeployExit{
 		ServiceName: c.serviceName, Image: desired.Image, Container: name,
 		ExitCode: es.ExitCode, OOMKilled: es.OOMKilled, Reason: v.Reason, Message: v.Message,
 		StartedAt: es.StartedAt, FinishedAt: finished, LogTail: c.tailContainerLogs(ctx, name),
 		CapturedAt: time.Now(),
-	})
+	}); err != nil {
+		slog.Warn("reconcile: deploy exit evidence write failed, diagnostics are incomplete", slog.String("service", c.serviceName), slog.String("container", name), slog.String("error", err.Error()))
+	}
 }
 
 // tailContainerLogs reads the last ExitLogTailLines of name, which works

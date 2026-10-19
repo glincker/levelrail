@@ -103,7 +103,7 @@ func TestRunAuditLogSweeper(t *testing.T) {
 	cancel()
 
 	err := <-errCh
-	if err != context.Canceled {
+	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected context.Canceled, got %v", err)
 	}
 
@@ -130,7 +130,7 @@ func TestRunAuditLogSweeper_Error(t *testing.T) {
 	cancel()
 
 	err := <-errCh
-	if err != context.Canceled {
+	if !errors.Is(err, context.Canceled) {
 		t.Errorf("expected context.Canceled, got %v", err)
 	}
 

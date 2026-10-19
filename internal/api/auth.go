@@ -3,10 +3,7 @@ package api
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -17,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/tokenhash"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -436,6 +434,9 @@ func (rt *Router) requireAbilityDecided(required string, decide authzDecision, n
 			writeError(w, http.StatusUnauthorized, "invalid token")
 			return
 		}
+		if rt.tokenBindingRejects(w, r, rec) {
+			return
+		}
 		r = rt.noteAITurnRequest(r, rec, required)
 		if rt.aiControlRejects(w, r, rec, required) {
 			return
@@ -501,13 +502,16 @@ func (rt *Router) pinnedOriginUsable(ctx context.Context, pinned session) bool {
 // plain AbilityRead request never reaches the auditWorthy branch at
 // all, so it never pays for that lookup.
 func (rt *Router) callAudited(w http.ResponseWriter, r *http.Request, required, actorType, actorID, tokenName string, next http.HandlerFunc) {
-	if !auditWorthy(required) {
+	if !auditWorthy(required) && !sensitiveReadRoute(r) {
 		next(w, r)
 		return
 	}
 
 	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
 	next(rec, r)
+	if rec.status < http.StatusBadRequest {
+		rt.markSearchDirty()
+	}
 
 	actorName := rt.auditActorName(r.Context(), actorType, actorID, tokenName)
 	rt.recordAudit(r.Context(), r, required, actorType, actorID, actorName, rec.status)
@@ -657,8 +661,7 @@ func bearerToken(r *http.Request) (string, bool) {
 // hashToken returns the hex-encoded SHA-256 digest of a plaintext API
 // token, the only form ever persisted (store.APIToken.TokenHash).
 func hashToken(plaintext string) string {
-	sum := sha256.Sum256([]byte(plaintext))
-	return hex.EncodeToString(sum[:])
+	return tokenhash.Sum(plaintext)
 }
 
 type registerRequest struct {
@@ -674,8 +677,7 @@ type registerRequest struct {
 // index (migrations/0035) closes the concurrent-registration race.
 func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Email == "" || req.Password == "" {
@@ -691,12 +693,18 @@ func (rt *Router) handleRegister(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, "an account already exists; sign in instead")
 		return
 	}
+	guessKey := clientIP(r)
+	if allowed, retry := rt.setupTokenGuess.allow(guessKey); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
 	ok, err := rt.setupTokenValid(req.SetupToken)
 	if err != nil {
 		rt.internalError(w, "api: register: read setup token failed", err)
 		return
 	}
 	if !ok {
+		rt.setupTokenGuess.recordFailure(guessKey)
 		writeError(w, http.StatusForbidden, "a valid setup token is required; print it on the server with the setup-token subcommand")
 		return
 	}

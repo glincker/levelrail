@@ -1,6 +1,7 @@
 ---
 title: "Security overview"
 description: How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
+"og:url": "https://docs.levelrail.com/security"
 ---
 
 Levelrail keeps your secrets encrypted, signs every request in with a session or a scoped token, and never reaches into your servers over SSH after setup. This page explains how those pieces fit together and links to the detailed page for each. It is a map, not a duplicate.
@@ -78,6 +79,17 @@ A notification channel's credential (its webhook URL, Telegram bot token, PagerD
 
 Channels saved by an older release are encrypted in place on the first start with a master key: each value is written as ciphertext, decrypted again to verify it, and only then is the plaintext column cleared. The step is idempotent and safe to interrupt; anything it could not finish is retried on the next start. Without a master key, channels keep working with plaintext credentials and `levelrail-cli doctor` warns with a `notification_channel_secrets` check until one is configured.
 
+## Passkeys
+
+Manage passkeys under Settings, Account. Each passkey shows the authenticator that stored it (iCloud Keychain, Google Password Manager, Windows Hello, a password manager or a YubiKey, resolved from its AAGUID, or plain "Passkey" when unknown), whether it is synced or device-bound, how it connects, when it was added and last used, and how many sign-ins it has made.
+
+- **Add**: the dialog suggests a name from your device, walks through naming, the browser prompt and saving, and explains every failure (cancelled, timed out, already registered, wrong address, server rejected) with a retry.
+- **Rename and remove**: rename inline. Removing your only passkey is refused when you have no password and no two-factor, so you cannot lock yourself out; add another passkey first.
+- **Test sign-in**: runs a real passkey check without creating a new session and updates last used.
+- **CLI**: `auth passkeys list`, `auth passkeys rename --name NAME ID` and `auth passkeys remove ID` (session only, like the rest of `auth`). Adding a passkey needs a browser.
+
+Passkeys only work on the exact https address set as the dashboard URL.
+
 ## Sessions and tokens
 
 - **Session cookies** are `HttpOnly`, `SameSite=Lax`, and `Secure` whenever the request arrived over HTTPS (directly or through the embedded Caddy ingress). Once an `https://` dashboard URL is set, sign-in over plain HTTP is refused (`APP_ALLOW_INSECURE_LOGIN=true` is the recovery escape hatch).
@@ -86,6 +98,7 @@ Channels saved by an older release are encrypted in place on the first start wit
 - **Rate limits use the real client address.** Behind the embedded ingress the control plane reads the right-most untrusted hop of `X-Forwarded-For`, but only when the TCP peer is loopback or listed in `APP_INGRESS_TRUSTED_PROXIES`. Any other peer cannot spoof its address, so one visitor can no longer exhaust the login or webhook budget for everyone.
 - **Token-redeeming routes are rate limited.** `POST /api/v1/auth/reset-password` and `POST /api/v1/invites/accept` are unauthenticated by design, so each gets a per-client-IP budget (`APP_API_RATE_LIMIT_TOKEN_REDEEM_RPM`, default `10` per minute, `0` disables). Over budget returns `429` with `Retry-After`.
 - **API tokens** are minted per-user, scoped by ability (a user can only mint a token holding abilities they hold themselves), and can be issued through a device-code flow for headless environments.
+- **Tokens are bound to the server that issued them.** The server publishes its identity at `GET /api/v1/instance` (instance id, name, version, and a fingerprint, an HMAC of the id under a per-instance key that never leaves the database). The CLI pins that identity per profile at login and checks it before every first request, so a wrong URL, a stale tunnel or a hijacked DNS name never receives the token. The server also remembers which instance each token was first used on and refuses it on any other. A database restored onto a new host (the `instance.marker` file in the data dir is missing or different) gets a new identity, so bound tokens stop working until a root operator confirms "same instance" on **Settings, CLI access**.
 - **Two-factor authentication (TOTP)** is available per user, with recovery codes for account lockout.
 - **Two-factor codes are single-use.** A TOTP code that was already accepted is refused if presented again inside its validity window, and recovery codes are consumed on use.
 - **Read-tier callers cannot enumerate people or credentials.** `GET /api/v1/users` returns only the caller's own record unless the caller is `root`, and notification destinations (webhook URLs, bot tokens, routing keys) are shown as `(hidden)` without `read:sensitive`, see [observability](/observability#notification-channels).

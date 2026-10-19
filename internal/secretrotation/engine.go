@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -304,7 +305,14 @@ func (e *Engine) expireGrace(ctx context.Context, p store.SecretRotationPolicy) 
 
 // Run sweeps at boot and then every interval until ctx ends.
 func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
-	e.Sweep(ctx)
+	loop := footprint.Track("secret rotation sweep", interval)
+	defer loop.Active()()
+	sweep := func() {
+		start := time.Now()
+		e.Sweep(ctx)
+		loop.Observe(start, nil)
+	}
+	sweep()
 	t := time.NewTicker(interval)
 	defer t.Stop()
 	for {
@@ -312,7 +320,7 @@ func (e *Engine) Run(ctx context.Context, interval time.Duration) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-t.C:
-			e.Sweep(ctx)
+			sweep()
 		}
 	}
 }

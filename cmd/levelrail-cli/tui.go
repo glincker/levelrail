@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -45,7 +46,7 @@ func runTUI(prog string, args []string, _, stderr io.Writer, lookupEnv func(stri
 	refresh := fs.Duration("refresh", 0, "refresh interval, minimum 2s (default 2s, or "+envTUIRefresh+")")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, tuiUsage(prog)) }
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

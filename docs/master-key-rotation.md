@@ -1,6 +1,7 @@
 ---
 title: "Master key rotation"
 description: Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
+"og:url": "https://docs.levelrail.com/master-key-rotation"
 ---
 
 All secrets (app env vars marked `secret: true`, email credentials, notification channel webhook URLs and keys, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.
@@ -21,7 +22,7 @@ However, this is not a fully unattended operation due to one constraint: the con
 
 **File-sourced** (default, no `APP_MASTER_KEY` set). The file is `<data dir>/master.key`, or the path in `APP_MASTER_KEY_FILE` if you set it. Point `APP_MASTER_KEY_FILE` at an absolute path outside the data directory (for example `/etc/levelrail/master.key`, mode `0600`) so a copy of the data directory alone cannot decrypt your secrets. A file with group or world permissions is refused at startup.
 
-Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action.
+Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action. The new key is written to `master.key.new` (fsynced) before the database is touched, and renamed over `master.key` only after the rotation commits. If the process dies in between, the next start detects `master.key.new`, checks which key your stored secrets actually use, and finishes the swap (or discards the staged file if the rotation never committed), so you never end up with a key file that cannot decrypt your data. If the new key file cannot be staged, the rotation is refused and nothing changes.
 
 **Env-sourced** (`APP_MASTER_KEY` set):
 Rotation cannot rewrite an environment variable belonging to your process supervisor. The CLI output includes an explicit warning to update `APP_MASTER_KEY` in your systemd unit or Docker Compose file before the next restart. Restarting with the old value will make every secret permanently unreadable, since all DEKs are now wrapped only under the new key.
@@ -87,7 +88,7 @@ A stored DEK could not be unwrapped with the control plane's current master key.
 
 <Accordion title="`persistedToFile: false` with a warning about the key file">
 
-The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but writing the new key to `master.key` failed. Usually a permissions or disk-space problem. Fix it and copy the new key into place manually before the control plane restarts.
+The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but the final rename of `master.key.new` over `master.key` failed. Leave `master.key.new` in place: the next start applies it automatically. A failure to write `master.key.new` in the first place refuses the rotation before anything changes.
 
 </Accordion>
 
@@ -125,6 +126,26 @@ Rebinding cannot tell whether a legacy value was already swapped before it ran: 
 Once `binding-status` reports `legacy: 0`, you can set `APP_SECRETS_REQUIRE_BOUND=true` on the control plane. Reads then refuse any legacy value, so a ciphertext copied in from an old backup cannot be used either. Leave it unset (the default) until the rebind is complete, or unbound secrets will stop resolving.
 
 `POST /api/v1/system/secrets/rebind` requires the `root` ability, like rotation. `GET /api/v1/system/secrets/binding` only needs `read`. Neither ever returns a secret value.
+
+## Rotating an app's data key
+
+The master key wraps one data key per app, and that data key encrypts the app's secret values. Rotating the master key re-wraps the data keys but leaves them unchanged. To retire a data key itself, rotate it: a new key is generated and every secret of the app is re-encrypted under it.
+
+Each app is rotated in one database transaction with a pre-image check. If a value fails to decrypt, the master key is wrong, or a row changes mid-run, nothing is written and every secret stays readable under the old key. No restart is needed, and key material is never logged.
+
+From the dashboard, open Settings, General, Encryption keys and press Rotate key on an app, or Rotate all keys. You confirm with your password first. From the CLI:
+
+```bash
+levelrail-cli secrets key-status
+levelrail-cli secrets rotate-dek <app>
+levelrail-cli secrets rotate-dek --all
+```
+
+`--all` records a run. If the control plane restarts or the request is cancelled part way, running it again resumes the same run and skips apps it already rotated. Apps that failed are listed and left unchanged, and a later run retries them.
+
+### Maximum key age
+
+Set a maximum key age under Encryption keys, or with `levelrail-cli secrets key-policy --max-age-days 90 --remind-every-days 7`. When the master key or any app data key is older than the limit, the card shows a Rotate button next to the problem and a reminder goes to your notification channels, repeated at the interval you chose. A limit of 0 turns reminders off. Until you save a policy the default is 90 days; an explicit 0 you saved earlier is kept, and the card then offers a one-click Remind me every 90 days button. The MCP tool `get_encryption_key_status` reads the same ages and fixes.
 
 ## Troubleshooting
 

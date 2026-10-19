@@ -19,6 +19,8 @@ type rpcClient interface {
 	Describe(ctx context.Context, req *pluginpb.DescribeRequest) (*pluginpb.DescribeResponse, error)
 	Health(ctx context.Context, req *pluginpb.HealthRequest) (*pluginpb.HealthResponse, error)
 	Send(ctx context.Context, req *pluginpb.SendRequest) (*pluginpb.SendResponse, error)
+	PanelData(ctx context.Context, req *pluginpb.PanelDataRequest) (*pluginpb.PanelDataResponse, error)
+	PanelAction(ctx context.Context, req *pluginpb.PanelActionRequest) (*pluginpb.PanelActionResponse, error)
 }
 
 type dialFunc func(ctx context.Context, socketPath string, maxSend, maxRecv int) (rpcClient, io.Closer, error)
@@ -26,6 +28,7 @@ type dialFunc func(ctx context.Context, socketPath string, maxSend, maxRecv int)
 type grpcClient struct {
 	svc    pluginpb.PluginServiceClient
 	notify pluginpb.NotificationChannelServiceClient
+	panel  pluginpb.PanelServiceClient
 }
 
 func (g grpcClient) Describe(ctx context.Context, r *pluginpb.DescribeRequest) (*pluginpb.DescribeResponse, error) {
@@ -40,6 +43,14 @@ func (g grpcClient) Send(ctx context.Context, r *pluginpb.SendRequest) (*pluginp
 	return g.notify.Send(ctx, r)
 }
 
+func (g grpcClient) PanelData(ctx context.Context, r *pluginpb.PanelDataRequest) (*pluginpb.PanelDataResponse, error) {
+	return g.panel.PanelData(ctx, r)
+}
+
+func (g grpcClient) PanelAction(ctx context.Context, r *pluginpb.PanelActionRequest) (*pluginpb.PanelActionResponse, error) {
+	return g.panel.PanelAction(ctx, r)
+}
+
 // dialUnix connects lazily over a unix socket. Message size caps apply in both directions.
 func dialUnix(_ context.Context, socketPath string, maxSend, maxRecv int) (rpcClient, io.Closer, error) {
 	conn, err := grpc.NewClient("unix://"+socketPath,
@@ -49,5 +60,5 @@ func dialUnix(_ context.Context, socketPath string, maxSend, maxRecv int) (rpcCl
 	if err != nil {
 		return nil, nil, fmt.Errorf("plugin: dial %s: %w", socketPath, err)
 	}
-	return grpcClient{svc: pluginpb.NewPluginServiceClient(conn), notify: pluginpb.NewNotificationChannelServiceClient(conn)}, conn, nil
+	return grpcClient{svc: pluginpb.NewPluginServiceClient(conn), notify: pluginpb.NewNotificationChannelServiceClient(conn), panel: pluginpb.NewPanelServiceClient(conn)}, conn, nil
 }

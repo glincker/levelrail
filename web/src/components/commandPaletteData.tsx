@@ -1,6 +1,7 @@
 import * as React from 'react'
 import {
   GaugeIcon,
+  LockKeyIcon,
   StackIcon,
   DatabaseIcon,
   FolderIcon,
@@ -10,6 +11,7 @@ import {
   GlobeIcon,
   UserIcon,
   ShieldIcon,
+  ShieldCheckIcon,
   KeyIcon,
   PlugsConnectedIcon,
   CloudArrowUpIcon,
@@ -34,6 +36,7 @@ import {
   RobotIcon,
   TerminalWindowIcon,
   BellIcon,
+  LightningIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import {
   BETA_FEATURES_PATH,
@@ -41,6 +44,7 @@ import {
   lockedSearch,
   type ExperimentalFeature,
 } from '../lib/experimental'
+import type { SearchSpan } from '../queries/search'
 import { chordFor } from './shell/navModel'
 
 export interface PaletteItem {
@@ -58,6 +62,20 @@ export interface PaletteItem {
   subtitle?: string
   /** True for a gated destination that is switched off. */
   locked?: boolean
+  /** Label spans to highlight, computed by the server for search hits. */
+  highlightSpans?: SearchSpan[]
+  /** Run without closing the palette (expand a group, apply a chip). */
+  keepOpen?: boolean
+  /** Ask for a confirm step before run (destructive server actions). */
+  confirm?: boolean
+  /** Tab / Cmd+Enter action and the hint word shown for it. */
+  secondary?: () => void
+  secondaryHint?: string
+  /** Trailing remove control, e.g. delete a saved search. */
+  onRemove?: () => void
+  removeLabel?: string
+  /** Search hit ref, recorded as usage on select. */
+  searchRef?: string
 }
 
 export interface RouteEntry {
@@ -81,7 +99,11 @@ export const GROUP_ORDER = [
   'Apps',
   'Databases',
   'Nodes',
+  'Buckets',
+  'Private networks',
   'Templates',
+  'Tags',
+  'Saved views',
   'Domains',
   'DNS zones',
   'DNS records',
@@ -135,6 +157,20 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   nav('nav-domains', 'Domains', <GlobeIcon />, '/domains'),
   nav('nav-dns', 'DNS zones', <GlobeHemisphereWestIcon />, '/dns'),
   nav(
+    'nav-private-networks',
+    'Private networks',
+    <LockKeyIcon />,
+    '/network/private',
+  ),
+  nav(
+    'action-private-networks',
+    'Create a private network',
+    <PlusIcon />,
+    '/network/private',
+    'Actions',
+  ),
+  nav('nav-firewall', 'Firewall', <ShieldCheckIcon />, '/firewall'),
+  nav(
     'nav-loadbalancers',
     'Load balancers',
     <ArrowsSplitIcon />,
@@ -144,6 +180,7 @@ export const ROUTE_ENTRIES: RouteEntry[] = [
   ),
   nav('nav-backups', 'Backups', <CloudArrowUpIcon />, '/backups'),
   nav('nav-deployments', 'Deployments', <RocketLaunchIcon />, '/deployments'),
+  nav('nav-functions', 'Functions', <LightningIcon />, '/functions'),
   nav('nav-approvals', 'Deploy approvals', <GavelIcon />, '/approvals'),
   nav(
     'nav-models',

@@ -113,8 +113,11 @@ func (e *agentLoopEnv) runMissingEnvLoop(t *testing.T, app string) {
 		t.Fatalf("set_app_env result = %+v, want key %q with redeploy_needed", changed, key)
 	}
 
-	var apps []apiclient.AppResource
-	e.callTool(t, "list_apps", nil, &apps)
+	var page struct {
+		Apps []apiclient.AppResource `json:"apps"`
+	}
+	e.callTool(t, "list_apps", nil, &page)
+	apps := page.Apps
 	image := ""
 	for _, a := range apps {
 		if a.Name == app {

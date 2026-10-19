@@ -8,12 +8,16 @@ package reconcile
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"os"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // Controller manages one resource's convergence from desired to observed
@@ -58,6 +62,14 @@ type Engine struct {
 	lastResult map[string]Result
 	lastErr    map[string]error
 
+	stats       passStats
+	ring        []time.Duration
+	slowest     time.Duration
+	slowestName string
+
+	passSlowest     time.Duration
+	passSlowestName string
+
 	// nudge lets a caller outside the reconcile loop (internal/api, on a
 	// desired-state-changing request) request an immediate ReconcileAll
 	// instead of waiting for the next Docker event or resync tick.
@@ -68,6 +80,10 @@ type Engine struct {
 	nudge chan struct{}
 
 	started atomic.Bool
+
+	guard *Guard
+
+	drainTimeout time.Duration
 }
 
 // Source dynamically supplies the current set of controllers to reconcile,
@@ -96,8 +112,47 @@ func NewEngine(logger *slog.Logger, controllers ...Controller) *Engine {
 		lastResult:  make(map[string]Result, len(controllers)),
 		lastErr:     make(map[string]error, len(controllers)),
 		nudge:       make(chan struct{}, 1),
+		guard:       NewGuard(GuardConfigFromEnv(os.Getenv)),
 	}
 }
+
+// Guard returns the storm protection state for the health page and its Fix.
+func (e *Engine) Guard() *Guard { return e.guard }
+
+// SetDrainTimeout lets a reconcile pass that is running when Run's context ends
+// finish, for at most d, instead of being cut mid-operation. Zero keeps the
+// old behavior of cancelling the pass with the context.
+func (e *Engine) SetDrainTimeout(d time.Duration) { e.drainTimeout = d }
+
+// pass runs one ReconcileAll that survives a shutdown signal for drainTimeout.
+func (e *Engine) pass(ctx context.Context) {
+	if e.drainTimeout <= 0 {
+		e.ReconcileAll(ctx)
+		return
+	}
+	pctx, cancel := context.WithCancel(context.WithoutCancel(ctx))
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-done:
+		case <-ctx.Done():
+			t := time.NewTimer(e.drainTimeout)
+			defer t.Stop()
+			select {
+			case <-done:
+			case <-t.C:
+				e.logger.Warn("reconcile pass cut at the shutdown drain limit", slog.Duration("limit", e.drainTimeout))
+				cancel()
+			}
+		}
+	}()
+	e.ReconcileAll(pctx)
+	close(done)
+	cancel()
+}
+
+// SetGuard replaces the default storm protection. Call it before Run.
+func (e *Engine) SetGuard(g *Guard) { e.guard = g }
 
 // Started reports whether Run has begun; it stays true after Run returns.
 func (e *Engine) Started() bool { return e.started.Load() }
@@ -136,6 +191,9 @@ func (e *Engine) SetSource(s Source) {
 // A Source error is logged and skipped for this pass rather than treated
 // as fatal, since the next tick or event re-derives the set again anyway.
 func (e *Engine) ReconcileAll(ctx context.Context) {
+	start := time.Now()
+	n := len(e.controllers)
+	defer func() { e.recordPass(start, n) }()
 	for _, c := range e.controllers {
 		e.reconcileOne(ctx, c)
 	}
@@ -147,15 +205,34 @@ func (e *Engine) ReconcileAll(ctx context.Context) {
 		e.logger.Error("listing dynamic controllers failed", slog.String("error", err.Error()))
 		return
 	}
+	n += len(dynamic)
 	for _, c := range dynamic {
 		e.reconcileOne(ctx, c)
 	}
 }
 
+// safeReconcile turns a controller panic into an error so one broken resource cannot crash the process.
+func (e *Engine) safeReconcile(ctx context.Context, c Controller) (result Result, panicked bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			panicked = true
+			err = fmt.Errorf("controller %s panicked: %v", c.Name(), r)
+			e.logger.Error("reconcile panicked", slog.String("controller", c.Name()), slog.String("stack", string(debug.Stack())))
+		}
+	}()
+	result, err = c.Reconcile(ctx)
+	return result, false, err
+}
+
 func (e *Engine) reconcileOne(ctx context.Context, c Controller) {
+	if !e.guard.Before(c.Name()) {
+		return
+	}
 	start := time.Now()
-	result, err := c.Reconcile(ctx)
+	result, panicked, err := e.safeReconcile(ctx, c)
+	e.guard.After(c.Name(), err, panicked)
 	dur := time.Since(start)
+	e.recordController(c.Name(), dur)
 
 	e.mu.Lock()
 	e.lastResult[c.Name()] = result
@@ -216,10 +293,41 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 		slog.Duration("resync_interval", resyncInterval),
 	)
 
-	e.ReconcileAll(ctx)
+	loop := footprint.Track("reconcile pass", resyncInterval)
+	defer loop.Active()()
+	pass := func() {
+		start := time.Now()
+		e.pass(ctx)
+		loop.Observe(start, nil)
+	}
+	pass()
 
 	ticker := time.NewTicker(resyncInterval)
 	defer ticker.Stop()
+
+	// A burst of events past the pass budget collapses into one deferred pass: level-triggered, so nothing is lost.
+	var deferTimer *time.Timer
+	var deferC <-chan time.Time
+	defer func() {
+		if deferTimer != nil {
+			deferTimer.Stop()
+		}
+	}()
+	trigger := func() {
+		ok, wait := e.guard.AllowPass()
+		if !ok {
+			if deferC == nil {
+				deferTimer = time.NewTimer(wait)
+				deferC = deferTimer.C
+			}
+			return
+		}
+		if deferC != nil {
+			deferTimer.Stop()
+			deferC = nil
+		}
+		pass()
+	}
 
 	for {
 		select {
@@ -229,11 +337,15 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 
 		case <-ticker.C:
 			e.logger.Debug("resync tick")
-			e.ReconcileAll(ctx)
+			trigger()
+
+		case <-deferC:
+			deferC = nil
+			trigger()
 
 		case <-e.nudge:
 			e.logger.Debug("nudge triggered reconcile")
-			e.ReconcileAll(ctx)
+			trigger()
 
 		case ev, ok := <-events:
 			if !ok {
@@ -245,7 +357,7 @@ func (e *Engine) Run(ctx context.Context, events <-chan docker.Event, resyncInte
 				slog.String("container", ev.ContainerName),
 				slog.String("action", string(ev.Action)),
 			)
-			e.ReconcileAll(ctx)
+			trigger()
 		}
 	}
 }

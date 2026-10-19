@@ -100,7 +100,9 @@ describe('CreateTokenDialog', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((_input: string, init?: RequestInit) => {
-        bodies.push(typeof init?.body === 'string' ? init.body : '{}')
+        if (init?.method === 'POST') {
+          bodies.push(typeof init.body === 'string' ? init.body : '{}')
+        }
         return Promise.resolve({
           ok: true,
           status: 201,
@@ -133,7 +135,7 @@ describe('CreateTokenDialog', () => {
   })
 
   it('refuses a sign-in approver token for an agent', async () => {
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn<typeof fetch>()
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
     renderDialog()
@@ -153,6 +155,9 @@ describe('CreateTokenDialog', () => {
         'A token that approves sign-ins cannot be issued to an agent',
       ),
     ).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    const posts = fetchMock.mock.calls.filter(
+      (call) => call[1]?.method === 'POST',
+    )
+    expect(posts).toHaveLength(0)
   })
 })

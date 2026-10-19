@@ -3,6 +3,7 @@ package backup
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -31,6 +32,14 @@ func (t *TargetTester) TestTarget(ctx context.Context, targetID string) error {
 	target, err := t.Store.GetBackupTarget(ctx, targetID)
 	if err != nil {
 		return fmt.Errorf("get backup target %q: %w", targetID, err)
+	}
+
+	if strings.HasPrefix(target.Endpoint, AgentEndpointScheme) {
+		dest := Destination{Provider: target.Provider, Endpoint: target.Endpoint, Bucket: target.Bucket}
+		if err := t.Tester.Test(ctx, dest); err != nil {
+			return fmt.Errorf("test backup target %q: %w", targetID, err)
+		}
+		return nil
 	}
 
 	secretsKey := store.BackupTargetSecretsKey(targetID)

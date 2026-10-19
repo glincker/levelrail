@@ -511,7 +511,7 @@ func validateAppResource(a appResource) error {
 // create-with-a-project case instead of requiring a second client round
 // trip to PUT /api/v1/apps/{name}/project right after creation.
 func (rt *Router) handleCreateApp(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxDecodeBodyBytes))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
@@ -843,8 +843,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req appResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	req.Name = name // the path is authoritative, not whatever the body claims
@@ -921,6 +920,7 @@ func (rt *Router) handleUpdateApp(w http.ResponseWriter, r *http.Request) {
 	if imageChanged {
 		rt.recordPlainDeployAttempt(r.Context(), desired, req.Image)
 	}
+	rt.recordEnvChanges(r, name, existing.Env, desired.Env, envChangeSourceAPI)
 	for _, ev := range updateEvents(name, *existing, desired) {
 		rt.recordAppEvent(r, ev)
 	}
@@ -983,8 +983,7 @@ func (rt *Router) handleSetAppNode(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req setAppNodeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -1060,8 +1059,7 @@ func (rt *Router) handleSetAppProject(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req setAppProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["version", "name", "widgets"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "name": { "type": "string", "minLength": 1, "maxLength": 64 },
+    "description": { "type": "string", "maxLength": 280 },
+    "time_range": { "enum": ["15m", "1h", "6h", "24h", "7d", "30d"] },
+    "refresh_seconds": { "enum": [0, 15, 30, 60, 300] },
+    "widgets": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "size"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,31}$" },
+          "type": {
+            "enum": [
+              "metric_chart",
+              "request_percentiles",
+              "error_rate",
+              "log_tail",
+              "deploy_timeline",
+              "resource_counts",
+              "cost",
+              "alert_status",
+              "node_capacity"
+            ]
+          },
+          "title": { "type": "string", "maxLength": 80 },
+          "size": { "enum": ["S", "M", "L"] },
+          "target": {
+            "type": "object",
+            "required": ["kind", "name"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["app", "database", "node"] },
+              "name": { "type": "string", "minLength": 1, "maxLength": 128 }
+            }
+          },
+          "metric": { "type": "string", "maxLength": 64 },
+          "query": { "type": "string", "maxLength": 256 }
+        }
+      }
+    }
+  }
+}

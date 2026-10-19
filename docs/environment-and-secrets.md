@@ -5,6 +5,7 @@ sidebarTitle: "Set variables and secrets"
 description: Masking, reveal policies, and protection for app environment variables and secrets.
 "og:image": "https://docs.levelrail.com/public/og/environment-and-secrets.png"
 "twitter:image": "https://docs.levelrail.com/public/og/environment-and-secrets.png"
+"og:url": "https://docs.levelrail.com/environment-and-secrets"
 ---
 
 An app's Environment tab is one editor for every variable the app reads at start: plain values, encrypted secrets, and Vault references. Values that look like credentials are masked everywhere they are read, and reading one back needs a fresh confirmation that is written to the audit log.
@@ -113,6 +114,26 @@ An app owner can also make one app's secrets write-only from **Protection** on t
 - **Import .env file** merges a file into the table; a masked or empty value for a masked key keeps the stored value.
 - **Review changes** lists added, changed and removed keys before anything is saved, with sensitive values hidden.
 - After a save, a **Redeploy needed** banner offers a restart.
+
+## Local .env files
+
+```bash
+levelrail-cli env pull your-app            # writes ./.env (owner-only permissions)
+levelrail-cli env push your-app --dry-run  # preview what ./.env would change
+levelrail-cli env push your-app
+```
+
+`env pull` asks for your password (and authenticator code) once so secret values are written too. Add `--masked` to skip that and write secrets as empty keys. Database and storage links inject their connection env at container start, so they are not part of the file. `env push` merges plain variables only: keys already stored as secrets are skipped. Both accept `--file` and the usual `--api-url` and `--token` flags.
+
+## Credential scan on save
+
+Before new or changed plain values are saved, the editor's **Review changes** step (and `env push`) checks them for credentials such as cloud keys, tokens and URLs with embedded passwords. A match shows a warning naming the variable only, never the value, with a **Store as secrets** button that converts those rows to Secrets. The scan needs secret scanning enabled on the control plane and is skipped silently when it is not.
+
+## Variable health and history
+
+The Environment tab shows a Variable health card. It flags empty values, plain values hidden by a secret or database binding of the same name, names that differ only by case, required secrets with no value, and bindings to databases that no longer exist. Problems that can be fixed safely have a Fix button; the rest say what to do. From the CLI: `apps env check <name>` (add `--fix` to apply the safe fixes).
+
+Every edit also records which variables were added, changed or removed, by whom and when, shown under Recent changes and by `apps env history <name>`. Values are never recorded, only names, so the history is safe to share. It keeps the newest 1000 changes per app.
 
 ## Threat model
 

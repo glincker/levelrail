@@ -241,6 +241,12 @@ if [ -n "$staged_web_src" ]; then
 	fi
 fi
 
+# No literal JSX text in new web files (scripts/check-i18n.sh, docs/i18n.md).
+echo "pre-commit: i18n gate"
+if ! scripts/check-i18n.sh; then
+	fail=1
+fi
+
 # The installer CI job runs this exact shellcheck command and fails on info-level
 # findings, which cost a full CI cycle to discover. Keep the file list in sync
 # with the install.sh job in .github/workflows/ci.yml.

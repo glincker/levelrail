@@ -69,7 +69,7 @@ func fetchAIControl(ctx context.Context, client *apiclient.Client) (mode string,
 
 // aiControlAllows reports whether the mode lets the tool be listed or called. This only trims what the model sees: the server enforces the mode on every request.
 func aiControlAllows(mode, tool string) bool {
-	if tool == aiControlStatusTool {
+	if tool == aiControlStatusTool || isToolsetMetaTool(tool) {
 		return true
 	}
 	switch mode {

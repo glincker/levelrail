@@ -22,6 +22,14 @@ service NotificationChannelService {
   rpc Send(SendRequest) returns (SendResponse);
 }
 
+// PanelService is served by plugins that contribute panels or commands.
+// The host calls it only for sources and actions the manifest declares and
+// only with the abilities the operator approved.
+service PanelService {
+  rpc PanelData(PanelDataRequest) returns (PanelDataResponse);
+  rpc PanelAction(PanelActionRequest) returns (PanelActionResponse);
+}
+
 message DescribeRequest {
   repeated uint32 host_contract_versions = 1;
 }
@@ -70,4 +78,29 @@ message SendResponse {
   bool delivered = 1;
   string detail = 2;
   bool retryable = 3;
+}
+
+message PanelDataRequest {
+  string panel_id = 1;
+  string source_id = 2;
+  // Scope the panel is shown in, for example {"app_id": "web"}.
+  map<string, string> context = 3;
+  string config_json = 4;
+}
+
+message PanelDataResponse {
+  // A JSON document the host binds widgets to. The host caps its size.
+  string json = 1;
+}
+
+message PanelActionRequest {
+  string panel_id = 1;
+  string action_id = 2;
+  map<string, string> context = 3;
+  string config_json = 4;
+}
+
+message PanelActionResponse {
+  bool ok = 1;
+  string message = 2;
 }

@@ -29,7 +29,7 @@ func runAppsLogs(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	fs.StringVar(&since, "since", "", "how far back to search, e.g. \"1h\", \"30m\" (default: 1h, the server's own default window; mutually exclusive with --from and --follow)")
 	fs.StringVar(&from, "from", "", "RFC3339 start of the search window (overrides --since; mutually exclusive with --follow)")
 	fs.StringVar(&to, "to", "", "RFC3339 end of the search window (default: now; mutually exclusive with --follow)")
-	fs.StringVar(&query, "q", "", "full-text search phrase; omitted means every log line in range (mutually exclusive with --follow)")
+	fs.StringVar(&query, "q", "", "search expression: words, \"exact phrase\", prefix*, OR, NOT, -word, parentheses; omitted means every log line in range (mutually exclusive with --follow)")
 	fs.IntVar(&tail, "tail", 0, "only show the last N entries (applied client-side; mutually exclusive with --follow)")
 	fs.BoolVar(&follow, "follow", false, "stream new log lines live, like \"docker logs -f\"; runs until Ctrl+C, ignores --since/--from/--to/--q/--tail/--query")
 	fs.BoolVar(&follow, "f", false, "shorthand for --follow")

@@ -1,6 +1,7 @@
 ---
 title: "Deploy failures"
 description: The structured failure object every failed or blocked deploy carries, and what each failure code means.
+"og:url": "https://docs.levelrail.com/deploy-failures"
 ---
 
 A deploy that fails, is held, or does not become healthy carries one structured `failure` object. The same object comes back from the API, the CLI and the MCP tools, so a person and an agent read the same explanation.
@@ -55,6 +56,8 @@ To try it, deploy `test/fixtures/failing-build`: it fails with `lockfile_out_of_
 ### dockerfile_error
 The Dockerfile is invalid or a file it references is missing. Check `build.path` and `build.baseDirectory`, fix the syntax, and make sure every `COPY` source is committed and not excluded by `.dockerignore`. A repo with no Dockerfile builds with `build.type: railpack` (`--build-type railpack`), which a manual rebuild does not remember.
 
+When a build fails because the Dockerfile path in the git source is wrong, the failed deploy's diagnosis lists the Dockerfiles the repository really has and offers a **Build from this one instead** fix. Applying it updates the build settings and starts a new build.
+
 ### dependency_install_failed
 A dependency install step in the build failed. Read the failing command in the excerpt, fix the lockfile or version pin, and confirm the package registry is reachable from the [build node](/build-node-routing).
 
@@ -101,7 +104,7 @@ A required environment variable or secret has no value. Set it on the app and re
 Pushing the built image failed. Retryable. Check the registry credential, repository permissions and reachability.
 
 ### disk_full
-The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry.
+The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry. Deploys, backups and pulls are also refused before they start when the data or Docker volume is below `APP_DISK_CRITICAL_FREE_MB`; use **Free space now** on the System status page.
 
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
@@ -111,6 +114,9 @@ The git host could not be reached and the commit is not in the source cache. Ret
 
 ### source_not_cached
 Deploy from cache was requested but the cache does not hold the commit. Deploy it once while the git host is reachable, or raise `APP_SOURCE_CACHE_MAX_BYTES` and `APP_SOURCE_CACHE_MAX_AGE` if it was pruned.
+
+### image_corrupt
+The image or one of its layers is corrupt or incomplete on the node. Retryable: redeploy so it is pulled or rebuilt again, and prune the node's image cache if it repeats. See [Resilience](/resilience).
 
 ### freeze_window_hold
 The deploy is held by a freeze window. Retryable: it is released when the window ends, or redeploy with an explicit override and a reason.
@@ -156,3 +162,7 @@ No known class matched. The excerpt and the full deploy log (`apps deploys logs 
 ### Still stuck
 
 For the structured failure object with all fields, check the API response: `GET /api/v1/apps/{name}/deploys/{deployId}`. Read the failure's `suggested_fix` field for specific guidance. If the issue persists, run `levelrail-cli apps diagnose <name>` for system information.
+
+### Fixes matched from the build log
+
+When a build fails, the log is also matched against common errors (registry timeouts, out of memory, no space left, missing credentials, a missing base image, peer dependency conflicts, missing modules, an old Go image, permission errors). Each match is a typed fix under `failure.fixes` with a `kind`: `rerun` (the dashboard shows a Retry button), `raise_memory`, `free_disk`, `set_secret` or `edit_source` (each links to the page where it is applied). `levelrail-cli apps deploys show` prints them as `match:` lines.

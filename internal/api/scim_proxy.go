@@ -95,6 +95,12 @@ func (rt *Router) handleSCIM(w http.ResponseWriter, r *http.Request) {
 		writeSCIMError(w, http.StatusUnauthorized, "", "a valid SCIM bearer token is required")
 		return
 	}
+	if rt.scimTokenLimiter != nil {
+		if allowed, retry := rt.scimTokenLimiter.allow("token:" + tokenID); !allowed {
+			writeRateLimited(w, retry)
+			return
+		}
+	}
 	body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, scimMaxBody))
 	if err != nil {
 		writeSCIMError(w, http.StatusRequestEntityTooLarge, "", "request body too large")

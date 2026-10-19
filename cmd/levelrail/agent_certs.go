@@ -40,6 +40,7 @@ func configureNodeCerts(rt *api.Router, sessions api.NodeSessionCloser, trust ap
 		api.WithMinAgentVersion(os.Getenv("APP_AGENT_MIN_VERSION")),
 		api.WithNodeSessionCloser(sessions),
 		api.WithNodeTrustControl(trust),
+		api.WithNodeCertDrillTimeout(envDuration("APP_NODE_CERT_DRILL_TIMEOUT", api.DefaultCertDrillTimeout)),
 	} {
 		opt(rt)
 	}

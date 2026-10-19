@@ -17,7 +17,7 @@ const defaultMetricsWindow = time.Hour
 func registerAppMetricsTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_app_metrics",
-		Description: "Query an app's time-series resource metrics (e.g. cpu_percent, memory_usage_bytes, memory_limit_bytes, network_rx_bytes, network_tx_bytes, disk_read_bytes, disk_write_bytes) over a time window, aggregated into buckets. This is how to answer 'why was this app slow/using too much memory at time X' without leaving the tool call.",
+		Description: "Query an app's time-series metrics (cpu_percent, memory_usage_bytes, network and disk bytes and more) over a window, bucketed. Answers why an app was slow or heavy at time X.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appMetricsInput) (*mcp.CallToolResult, apiclient.AppMetricsResource, error) {
 		window := defaultMetricsWindow
 		if in.Since != "" {

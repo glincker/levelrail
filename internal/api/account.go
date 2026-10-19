@@ -45,10 +45,18 @@ func (rt *Router) handleChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if user.PasswordHash != nil {
+		if err := rt.stepUpAllowed(r, userID); err != nil {
+			rt.auditStepUpOutcome(r.Context(), r, userID, auditActionStepUpLocked, http.StatusTooManyRequests)
+			writeStepUpError(w, err)
+			return
+		}
 		if err := bcrypt.CompareHashAndPassword([]byte(*user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+			rt.recordStepUp(r, userID, false)
+			rt.auditStepUp(r.Context(), r, userID, false)
 			writeError(w, http.StatusUnauthorized, "current password is incorrect")
 			return
 		}
+		rt.recordStepUp(r, userID, true)
 	}
 
 	newHash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
@@ -73,7 +81,9 @@ type sessionInfoResponse struct {
 	Email       string `json:"username"`
 	DisplayName string `json:"display_name"`
 	HasPassword bool   `json:"has_password"`
-	ExpiresAt   string `json:"expires_at"`
+	// EmailVerified is true once the address was confirmed, for example by a verified OAuth sign-in.
+	EmailVerified bool   `json:"email_verified"`
+	ExpiresAt     string `json:"expires_at"`
 }
 
 // Email stays under the 'username' wire key for frontend compatibility.
@@ -95,10 +105,11 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sessionInfoResponse{
-		Email:       user.Email,
-		DisplayName: user.DisplayName,
-		HasPassword: user.PasswordHash != nil,
-		ExpiresAt:   sess.expiresAt.UTC().Format(time.RFC3339),
+		Email:         user.Email,
+		DisplayName:   user.DisplayName,
+		HasPassword:   user.PasswordHash != nil,
+		EmailVerified: rt.authEngine.EmailVerified(r.Context(), user.Email),
+		ExpiresAt:     sess.expiresAt.UTC().Format(time.RFC3339),
 	})
 }
 

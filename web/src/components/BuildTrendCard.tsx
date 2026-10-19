@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { TimerIcon } from '@phosphor-icons/react/dist/ssr'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { BuildSpeedAdvice } from './BuildSpeedAdvice'
 import { formatBuildSeconds } from '../lib/buildDuration'
 import { useBuildStats, type BuildRun } from '../queries/buildPerformance'
 
@@ -114,6 +115,7 @@ export function BuildTrendCard({ appName }: { appName: string }) {
                 ? ` ${t('trend.skewed', { count: data.trend.skewed })}`
                 : ''}
             </p>
+            <BuildSpeedAdvice appName={appName} />
           </>
         ) : null}
       </CardContent>

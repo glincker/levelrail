@@ -6,6 +6,9 @@ import {
 } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ConfirmAction } from '@/components/ui/confirm-action'
+import { RelativeTime } from '../kit/RelativeTime'
+import { formatAbsolute } from '../../lib/dateFormat'
 import { BrandIcon } from '../BrandIcon'
 import { deviceMarks, lastSeenTone } from '../../lib/deviceMarks'
 import { cn } from '@/lib/utils'
@@ -17,10 +20,6 @@ const TONE_DOT = {
   idle: 'bg-muted-foreground/40',
 } as const
 
-function when(iso: string): string {
-  return iso ? new Date(iso).toLocaleString() : ''
-}
-
 /** SessionDeviceRow shows one signed-in browser with its marks, network and whether it can approve a new sign-in. */
 export function SessionDeviceRow({
   session,
@@ -31,7 +30,7 @@ export function SessionDeviceRow({
   session: SessionEntry
   now: number
   busy: boolean
-  onRevoke: () => void
+  onRevoke: (done: () => void) => void
 }) {
   const { t } = useTranslation('settings')
   const marks = deviceMarks(session.browser)
@@ -74,25 +73,48 @@ export function SessionDeviceRow({
               className={cn('size-1.5 rounded-full', TONE_DOT[tone])}
             />
             {t(`accountPage.sessions.tone.${tone}`)}
-            <span className="sr-only">{when(session.last_seen_at)}</span>
+            <span className="sr-only">
+              {formatAbsolute(session.last_seen_at)}
+            </span>
           </span>
-          <span title={when(session.created_at)}>
-            {t('accountPage.sessions.signedInAt', {
-              when: when(session.created_at),
-            })}
+          <span>
+            {t('accountPage.sessions.signedInAt')}{' '}
+            <RelativeTime at={session.created_at} />
           </span>
         </p>
       </div>
       {session.current ? null : (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={busy}
-          onClick={onRevoke}
-        >
-          {t('accountPage.sessions.revoke')}
-        </Button>
+        <ConfirmAction
+          trigger={(open) => (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              aria-label={t('accountPage.sessions.revokeLabel', {
+                device: session.browser,
+                ip: session.ip || session.network,
+              })}
+              onClick={open}
+            >
+              {busy
+                ? t('accountPage.sessions.revoking')
+                : t('accountPage.sessions.revoke')}
+            </Button>
+          )}
+          title={t('accountPage.sessions.revokeConfirmTitle', {
+            device: session.browser,
+          })}
+          consequences={[
+            t('accountPage.sessions.revokeConsequence'),
+            session.can_approve
+              ? t('accountPage.sessions.revokeApproverConsequence')
+              : t('accountPage.sessions.revokeReloginConsequence'),
+          ]}
+          confirmLabel={t('accountPage.sessions.revoke')}
+          pending={busy}
+          onConfirm={onRevoke}
+        />
       )}
     </li>
   )

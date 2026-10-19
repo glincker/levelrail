@@ -20,6 +20,7 @@ import { SleepHistoryCard } from '../../../../components/SleepHistoryCard'
 import { CanaryCard } from '../../../../components/CanaryCard'
 import { BadgeSettingsCard } from '../../../../components/BadgeSettingsCard'
 import { GitHubActionsCard } from '../../../../components/GitHubActionsCard'
+import { CIDeployCard } from '../../../../components/CIDeployCard'
 import { BuildTrendCard } from '../../../../components/BuildTrendCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -100,6 +101,7 @@ function DeploysSection() {
             <ImageAutoUpdateCard appName={name} />
             <BadgeSettingsCard appName={name} />
             <GitHubActionsCard appName={name} />
+            <CIDeployCard appName={name} />
           </div>
         </CollapsiblePanel>
       </Collapsible>

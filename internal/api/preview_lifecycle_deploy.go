@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/spec"
 	"github.com/GLINCKER/levelrail/internal/store"
@@ -77,6 +78,25 @@ func (rt *Router) applyPreviewDatabaseStrategy(ctx context.Context, preview *sto
 	return rt.seedPreviewDatabase(ctx, source, db, src.Engine)
 }
 
+const (
+	envPreviewSeedTimeout     = "APP_PREVIEW_SEED_TIMEOUT"
+	defaultPreviewSeedTimeout = 30 * time.Minute
+)
+
+// markSeedFailed records on the preview database row why seeding stopped, so
+// the preview stops reading as "seeding" forever.
+func (rt *Router) markSeedFailed(id string, cause error) {
+	if rt.previewEnvironments == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	if err := rt.previewEnvironments.UpdatePreviewEphemeralDatabaseStatus(ctx, id, store.PreviewEphemeralDatabaseStatusSeedFailed, cause.Error(), now); err != nil {
+		rt.logger.Error("api: record preview seed failure failed", slog.String("error", err.Error()), slog.String("database_id", id))
+	}
+}
+
 // seedPreviewDatabase restores the newest succeeded backup of source into the
 // preview's database in the background. With no usable backup or restore
 // runner the preview keeps its empty database and says so.
@@ -105,8 +125,11 @@ func (rt *Router) seedPreviewDatabase(ctx context.Context, source string, db sto
 	}
 	container, controller := databaseContainerName(db.DatabaseName), databaseControllerName(db.DatabaseName)
 	go func() { //nolint:gosec // outlives the webhook request: the restore waits for the new database to come up
-		if err := rt.cloneRestoreRunner.RunCloneRestore(context.Background(), historyID, source, db.DatabaseName, backupID, engine, container, controller); err != nil {
+		seedCtx, cancel := context.WithTimeout(context.Background(), envDuration(envPreviewSeedTimeout, defaultPreviewSeedTimeout))
+		defer cancel()
+		if err := rt.cloneRestoreRunner.RunCloneRestore(seedCtx, historyID, source, db.DatabaseName, backupID, engine, container, controller); err != nil {
 			rt.logger.Error("api: preview seed restore failed", slog.String("error", err.Error()), slog.String("database", db.DatabaseName), slog.String("seed", source))
+			rt.markSeedFailed(db.ID, err)
 		}
 	}()
 	return []string{"seeding " + db.DatabaseName + " from the latest backup of " + source}

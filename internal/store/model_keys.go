@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/timeutil"
 )
 
 // ErrModelKeyNotFound is returned when a model has no key with the given id.
@@ -78,16 +80,7 @@ func timeOrEmpty(t *time.Time) string {
 	return formatTime(*t)
 }
 
-func parseTimeOrNil(s string) (*time.Time, error) {
-	if s == "" {
-		return nil, nil
-	}
-	t, err := time.Parse(time.RFC3339Nano, s)
-	if err != nil {
-		return nil, err
-	}
-	return &t, nil
-}
+func parseTimeOrNil(s string) (*time.Time, error) { return timeutil.ParseOptional(s) }
 
 func scanModelKey(scan func(dest ...any) error) (*ModelKey, error) {
 	var (

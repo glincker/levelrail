@@ -34,6 +34,9 @@ type tokenResource struct {
 	Agent *agentIdentity `json:"agent,omitempty"`
 	// Scope is set when the token is limited to one team.
 	Scope *tokenScopeResource `json:"scope,omitempty"`
+	// InstanceID is the server the token is bound to; LastIP is where it was last seen.
+	InstanceID string `json:"instance_id,omitempty"`
+	LastIP     string `json:"last_ip,omitempty"`
 }
 
 func toTokenResource(t store.APIToken) tokenResource {
@@ -56,10 +59,10 @@ func toTokenResource(t store.APIToken) tokenResource {
 type createTokenRequest struct {
 	Name      string   `json:"name"`
 	Abilities []string `json:"abilities"`
-	// ExpiresInDays is optional; omitted or 0 means the token never
-	// expires (Dokploy's own "never" option, which Coolify's
-	// forced-expiry-only picker doesn't offer).
-	ExpiresInDays int `json:"expires_in_days,omitempty"`
+	// ExpiresInDays omitted or 0 applies defaultTokenLifetimeDays; a token
+	// that never expires needs NoExpiry from a root caller.
+	ExpiresInDays int  `json:"expires_in_days,omitempty"`
+	NoExpiry      bool `json:"no_expiry,omitempty"`
 	// Agent optionally labels the token as issued to an AI agent.
 	Agent *agentIdentity `json:"agent,omitempty"`
 	tokenScopeRequest
@@ -97,6 +100,19 @@ func (rt *Router) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	if msg := signInApproveTokenProblem(req); msg != "" {
 		writeError(w, http.StatusBadRequest, msg)
 		return
+	}
+	if req.NoExpiry && req.ExpiresInDays > 0 {
+		writeError(w, http.StatusBadRequest, "no_expiry and expires_in_days are mutually exclusive")
+		return
+	}
+	if req.NoExpiry {
+		callerAbs, aerr := rt.callerAbilities(r)
+		if aerr != nil || !hasAbility(callerAbs, AbilityRoot) {
+			writeError(w, http.StatusForbidden, "only a root caller can create a token that never expires")
+			return
+		}
+	} else if req.ExpiresInDays == 0 {
+		req.ExpiresInDays = rt.defaultTokenLifetimeDays(r.Context())
 	}
 	lifetimeMsg, err := rt.tokenLifetimeProblem(r.Context(), req.ExpiresInDays)
 	if err != nil {

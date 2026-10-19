@@ -1,6 +1,7 @@
 ---
 title: "Tracing"
 description: Receive OpenTelemetry traces from your apps, keep them on the node and read them as a waterfall in the dashboard.
+"og:url": "https://docs.levelrail.com/tracing"
 ---
 
 Your apps send spans to the control plane over OTLP/HTTP, and the dashboard shows each trace as a waterfall next to the app's logs and metrics. Nothing is shipped anywhere else, and nothing is stored until you turn tracing on for an app.

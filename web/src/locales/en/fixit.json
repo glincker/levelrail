@@ -6,16 +6,20 @@
   },
   "kind": {
     "auto": "One click",
-    "guided": "Run on the server",
+    "guided": "Needs a step on the server",
     "manual": "Manual step"
   },
   "reversible": "Can be undone",
   "irreversible": "Cannot be undone",
   "willChange": "What will change",
-  "command": "Run this on the server",
+  "cli": {
+    "summary": "Fix via CLI",
+    "hint": "Prefer a terminal? Run this on the server, then use Re-check."
+  },
+  "learnMore": "Learn more",
   "copy": "Copy",
   "copied": "Copied",
-  "apply": "Apply fix",
+  "apply": "Fix now",
   "applying": "Applying...",
   "recheck": "Re-check",
   "rechecking": "Checking...",
@@ -28,8 +32,14 @@
   "outcome": {
     "fixed": "Fixed. The check passes now.",
     "still_failing": "Still failing: {{detail}}",
-    "cannot_fix_here": "This cannot be fixed from here: {{detail}}",
+    "cannot_fix_here": "Cannot be fixed from here: {{detail}}",
     "skipped": "Nothing to do: {{detail}}"
+  },
+  "settingsHealth": {
+    "title": "Settings health",
+    "loading": "Checking this instance...",
+    "summary": "{{failing}} of {{total}} checks need attention",
+    "allGood": "Nothing needs attention."
   },
   "blockers_one": "{{count}} blocker, {{dependent}} depend on it",
   "blockers_other": "{{count}} blockers, {{dependent}} depend on them",

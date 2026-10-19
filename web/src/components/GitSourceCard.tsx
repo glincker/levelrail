@@ -45,6 +45,7 @@ import {
   type GitRepoSourceValue,
 } from './GitRepoSourcePicker'
 import { RotateWebhookSecretDialog } from './RotateWebhookSecretDialog'
+import { GitAccessValidate } from './GitAccessValidate'
 import { GitBuildSettings } from './GitBuildSettings'
 import { ApiError } from '../lib/apiError'
 import type { AppDetail } from '../types/appDetail'
@@ -1355,6 +1356,9 @@ export function GitSourceCard({ app }: { app: AppDetail }) {
                 Disconnect
               </Button>
             </div>
+            <GitAccessValidate
+              path={`/api/v1/apps/${encodeURIComponent(app.name)}/git-source/validate`}
+            />
           </div>
         ) : null}
       </CardContent>

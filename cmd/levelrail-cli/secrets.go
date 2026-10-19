@@ -33,6 +33,12 @@ func runSecrets(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runSecretsBindingStatus(prog, args[1:], stdout, stderr, lookupEnv)
 	case "rebind":
 		return runSecretsRebind(prog, args[1:], stdout, stderr, lookupEnv)
+	case "key-status":
+		return runSecretsKeyStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "rotate-dek":
+		return runSecretsRotateDEK(prog, args[1:], stdout, stderr, lookupEnv)
+	case "key-policy":
+		return runSecretsKeyPolicy(prog, args[1:], stdout, stderr, lookupEnv)
 	case "scan":
 		return runSecretsScan(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -49,6 +55,7 @@ func secretsUsage(prog string) string {
   %[1]s secrets binding-status [flags]
   %[1]s secrets rebind [flags]
   %[1]s secrets scan [<app> | --path DIR] [flags]
+  %[1]s secrets key-status | rotate-dek <app>|--all | key-policy [flags]
 
 scan looks for credentials in a directory or an app's plain env values and
 sets the deploy-time secret scan policy.
@@ -59,6 +66,9 @@ master key in one atomic step, live, then binds any legacy values.
 binding-status counts secret values not yet bound to their slot, and
 rebind binds them. Read docs/master-key-rotation.md before running these
 in production.
+
+key-status, rotate-dek and key-policy manage per-app data key rotation and
+the maximum key age reminder.
 
 Run "%[1]s secrets <command> -h" for its own flags.
 `, prog)

@@ -1,11 +1,13 @@
 ---
 title: "Template catalog"
 description: Every service in Levelrail's one-click template catalog, grouped by category, generated straight from the Go source
+"og:url": "https://docs.levelrail.com/template-catalog"
 ---
 
 Every entry in `internal/catalog.Templates` as of this build, grouped by category. This page exists so you can browse the full breadth of what's deployable in one click without opening the dashboard.
 
-![Levelrail service templates page: search box, category list with counts, and Deploy now cards](assets/screenshots/templates-catalog.png)
+<img src="/assets/screenshots/templates-catalog-light.png" alt="Levelrail service templates page: search box, category list with counts, and Deploy now cards" className="block dark:hidden" />
+<img src="/assets/screenshots/templates-catalog.png" alt="Levelrail service templates page: search box, category list with counts, and Deploy now cards" className="hidden dark:block" />
 
 This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a template deploys, the `$SERVICE_PASSWORD_*` magic variables, custom templates), see [Templates and registry](/templates-and-registry). The `Starter Kits` category gets its own deep-dive page, [Starter kit templates](/templates), covering the multi-service wiring patterns those seven demonstrate; this page lists them too, for completeness, but doesn't repeat that detail.
 
@@ -494,5 +496,6 @@ Every entry here passed the same structural checks the rest of the catalog gets 
 
 - [Templates and registry](/templates-and-registry) - how a template deploy actually works, the API/CLI/UI surface, custom templates
 - [Starter kit templates](/templates) - the seven `Starter Kits` entries in depth
+- [Template status](/templates-status) - measured pass rate from the local smoke run
 - [Deploying apps](/deploying-apps) - using templates from the dashboard or CLI
 - [ADR 015: Service template catalog reversal](https://github.com/glincker/levelrail/blob/main/adr/015-service-template-catalog-reversal.md) - why this catalog exists at all

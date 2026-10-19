@@ -35,6 +35,7 @@ export interface DatabaseCredential {
   external_url?: string
   external_note?: string
   expires_at?: string
+  restarted_apps?: string[]
 }
 
 export interface CreateDatabaseUserInput {

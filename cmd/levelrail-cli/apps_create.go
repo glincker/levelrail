@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +29,7 @@ type createFlags struct {
 	ref           string
 	dockerfile    string
 	buildType     string
+	framework     string
 	baseDirectory string
 	// buildArgs backs --build-arg (repeatable KEY=VALUE), only meaningful
 	// alongside --build-type dockerfile. See stringMapFlag (flagutil.go).
@@ -619,7 +621,7 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 	var tokenFlag, apiURLFlag, profileFlag string
 	f, err := parseCreateFlags(prog, args, stderr, &tokenFlag, &apiURLFlag, &profileFlag)
 	if err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage
@@ -656,9 +658,20 @@ func runAppsCreate(prog string, args []string, stdout, stderr io.Writer, lookupE
 		detected = detectLocalGit()
 	}
 
+	preset, err := applyFrameworkPreset(&f)
+	if err != nil {
+		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+
 	plan, err := planFromFlags(f, fileSpec, detected)
 	if err != nil {
 		return reportError(stdout, stderr, f.jsonOut, err)
+	}
+	if preset != nil {
+		plan.Volumes = append(plan.Volumes, presetVolumes(preset)...)
+		if !f.jsonOut {
+			printPresetEnvHints(stderr, preset, f.secrets)
+		}
 	}
 	// --node-id is applied after planning so every creation path honors it the same way.
 	if f.nodeIDSet {
@@ -824,6 +837,7 @@ func parseCreateFlags(prog string, args []string, errOut io.Writer, tokenFlag, a
 	fs.StringVar(&f.ref, "ref", "", "git ref (branch) to build from (git-build path); defaults to the current directory's branch, then \"main\"")
 	fs.StringVar(&f.dockerfile, "dockerfile", "", "Dockerfile path relative to the repo root (git-build path, --build-type dockerfile only); defaults to \"Dockerfile\" at the repo root")
 	fs.StringVar(&f.buildType, "build-type", "", "build type for the git-build path: \"dockerfile\" (default) or \"railpack\" (auto-detected build, no Dockerfile needed)")
+	fs.StringVar(&f.framework, "framework", "", "framework preset that fills the port, build type and volumes (git-build path); list them with \"build frameworks\"")
 	fs.StringVar(&f.baseDirectory, "base-directory", "", "subdirectory of the repo to build from, for a monorepo (git-build path); defaults to the repo root")
 	f.buildArgs = make(map[string]string)
 	fs.Var(stringMapFlag(f.buildArgs), "build-arg", "Dockerfile build arg as KEY=VALUE, repeatable (git-build path, --build-type dockerfile only)")
@@ -912,6 +926,7 @@ Git-build path (flags):
   --ref string            git ref/branch (default: current branch, then "main")
   --image-repo string     image name without a tag (required)
   --build-type string  "dockerfile" (default) or "railpack" (auto-detected build, no Dockerfile needed)
+  --framework string      framework preset that fills the port, build type and volumes; list them with "build frameworks"
   --dockerfile string   Dockerfile path relative to the repo root, --build-type dockerfile only (default: "Dockerfile")
   --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)
   --build-arg KEY=VALUE   Dockerfile build arg, repeatable, --build-type dockerfile only
@@ -928,6 +943,10 @@ Manifest path:
       no running container)
   build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
     --build-arg overrides them entirely rather than merging
+
+Rollout (any path above):
+  --replicas int          number of container replicas (default 1, or the spec's replicas with --file)
+  --strategy string       deploy strategy: rolling, recreate or blue-green (default blue-green, or the spec's strategy with --file)
 
 Placement (any path above):
   --node-id string        node to place this app on; omitted auto-places it on the

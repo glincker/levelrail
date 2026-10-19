@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { WarningCircleIcon } from '@phosphor-icons/react/dist/ssr'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -18,7 +18,6 @@ import { HeadersTab } from './HeadersTab'
 import { OverviewTab } from './OverviewTab'
 import { PortsTab } from './PortsTab'
 import { RedirectsTab } from './RedirectsTab'
-import { ShieldTab } from './ShieldTab'
 import { DOMAIN_TABS, type DomainTab } from './domainTabs'
 
 export function DomainPolicyPage({
@@ -52,17 +51,26 @@ export function DomainPolicyPage({
             : t('page.description', { app })
         }
         actions={
-          standalone ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setEditing(true)
-              }}
+          <>
+            <Link
+              to="/firewall/rules"
+              search={{ scope: domain }}
+              className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              {t('page.editTarget')}
-            </Button>
-          ) : undefined
+              {t('page.firewall')}
+            </Link>
+            {standalone ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditing(true)
+                }}
+              >
+                {t('page.editTarget')}
+              </Button>
+            ) : null}
+          </>
         }
       />
       {standalone ? (
@@ -151,9 +159,6 @@ export function DomainPolicyPage({
         </TabsContent>
         <TabsContent value="access" className="pt-2">
           <AccessTab app={app} domain={domain} policies={data} />
-        </TabsContent>
-        <TabsContent value="shield" className="pt-2">
-          <ShieldTab app={app} domain={domain} policies={data} />
         </TabsContent>
         <TabsContent value="cache" className="pt-2">
           <CacheTab app={app} domain={domain} policies={data} />

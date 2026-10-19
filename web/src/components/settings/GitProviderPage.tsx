@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { Banner } from '@/components/ui/banner'
 import { BrandTile } from '../BrandLogoBadge'
+import { GitAccessValidate } from '../GitAccessValidate'
 import { GitProviderRail } from './GitProviderRail'
 
 export type GitProvider = 'github' | 'gitlab' | 'gitea' | 'bitbucket'
@@ -66,7 +67,12 @@ export function GitProviderPage({
         />
       }
     >
-      <div className="space-y-6">{children}</div>
+      <div className="space-y-6">
+        {children}
+        <GitAccessValidate
+          path={`/api/v1/git-providers/${provider}/validate`}
+        />
+      </div>
     </PageTemplate>
   )
 }

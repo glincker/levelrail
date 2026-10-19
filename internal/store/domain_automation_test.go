@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 )
@@ -76,7 +77,7 @@ func TestDomainAutomationPolicyAndRuns(t *testing.T) {
 	if err != nil || got.UndoneAt == nil || got.Domain != "app.example.com" {
 		t.Fatalf("run = %+v err = %v", got, err)
 	}
-	if _, err := db.GetDomainAutomationRun(ctx, "missing"); err != ErrAutomationRunNotFound {
+	if _, err := db.GetDomainAutomationRun(ctx, "missing"); !errors.Is(err, ErrAutomationRunNotFound) {
 		t.Fatalf("missing run error = %v", err)
 	}
 	if runs, err := db.ListDomainAutomationRuns(ctx, 5); err != nil || len(runs) != 1 {

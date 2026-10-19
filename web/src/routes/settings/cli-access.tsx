@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { tokenListQueryOptions } from '../../queries/tokens'
+import { TokenTable } from '../../components/TokenTable'
+import { CliServerCard } from '../../components/settings/CliServerCard'
 import { useTranslation } from 'react-i18next'
 import {
+  CaretDownIcon,
   CheckIcon,
   CopyIcon,
   TerminalWindowIcon,
@@ -15,6 +20,11 @@ import { HelpLink } from '../../components/HelpLink'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { PageTemplate } from '@/components/shell/PageTemplate'
 import { FormSection } from '@/components/ui/form-section'
@@ -88,6 +98,7 @@ export const Route = createFileRoute('/settings/cli-access')({
 function CliAccessPage() {
   const { t } = useTranslation('settings')
   const { data: requests } = useDeviceAuthRequests()
+  const { data: tokens } = useQuery(tokenListQueryOptions())
   const { user_code: highlightUserCode } = Route.useSearch()
   // Same origin the dashboard itself is served from: in production the
   // API and web UI are one embedded binary, so this is the address the CLI needs.
@@ -120,37 +131,60 @@ function CliAccessPage() {
         ) : null
       }
     >
-      <div>
-        <FormSection
-          step={1}
-          title={t('cliAccessPage.steps.install.title')}
-          description={t('cliAccessPage.steps.install.body')}
-        >
-          <CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
-          <p className="text-xs text-muted-foreground">
-            {t('cliAccessPage.steps.install.note')}
-          </p>
-        </FormSection>
-        <FormSection
-          step={2}
-          title={t('cliAccessPage.steps.point.title')}
-          description={t('cliAccessPage.steps.point.body')}
-        >
-          <CopyCommand command={`export APP_API_URL=${apiUrl}`} />
-        </FormSection>
-        <FormSection
-          step={3}
-          title={t('cliAccessPage.steps.login.title')}
-          description={t('cliAccessPage.steps.login.body')}
-        >
-          <CopyCommand command="levelrail-cli auth login --device" />
-        </FormSection>
-      </div>
+      <CliServerCard />
 
       <DeviceAuthRequestTable
         requests={requests}
         highlightUserCode={highlightUserCode}
       />
+
+      <Collapsible className="rounded-lg border border-border px-4 py-3">
+        <CollapsibleTrigger className="flex items-center justify-between gap-2 text-sm font-medium">
+          {t('cliAccessPage.setup.toggle')}
+          <CaretDownIcon className="size-4" aria-hidden="true" />
+        </CollapsibleTrigger>
+        <CollapsiblePanel className="space-y-2 pt-3">
+          <p className="text-sm text-muted-foreground">
+            {t('cliAccessPage.setup.hint')}
+          </p>
+          <div>
+            <FormSection
+              step={1}
+              title={t('cliAccessPage.steps.install.title')}
+              description={t('cliAccessPage.steps.install.body')}
+            >
+              <CopyCommand command="curl -fsSL https://levelrail.com/install-cli.sh | sh" />
+              <p className="text-xs text-muted-foreground">
+                {t('cliAccessPage.steps.install.note')}
+              </p>
+            </FormSection>
+            <FormSection
+              step={2}
+              title={t('cliAccessPage.steps.point.title')}
+              description={t('cliAccessPage.steps.point.body')}
+            >
+              <CopyCommand command={`export APP_API_URL=${apiUrl}`} />
+            </FormSection>
+            <FormSection
+              step={3}
+              title={t('cliAccessPage.steps.login.title')}
+              description={t('cliAccessPage.steps.login.body')}
+            >
+              <CopyCommand command="levelrail-cli auth login --device" />
+            </FormSection>
+          </div>
+        </CollapsiblePanel>
+      </Collapsible>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-medium">
+          {t('cliAccessPage.tokens.title')}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {t('cliAccessPage.tokens.body')}
+        </p>
+        <TokenTable tokens={(tokens ?? []).filter((tok) => !tok.agent)} />
+      </section>
     </PageTemplate>
   )
 }

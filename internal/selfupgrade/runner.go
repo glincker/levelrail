@@ -113,7 +113,7 @@ func (r *runner) rollbackAndFinish(ctx context.Context, failedStep string, cause
 		return detail + ", previous release healthy", nil
 	})
 	if err != nil {
-		return r.close(OutcomeFailed, failedStep, fmt.Errorf("%v, and rollback failed: %w. Previous binary: %s, snapshot: %s", cause, err, a.PrevBinary, a.SnapshotPath))
+		return r.close(OutcomeFailed, failedStep, fmt.Errorf("%w, and rollback failed: %w. Previous binary: %s, snapshot: %s", cause, err, a.PrevBinary, a.SnapshotPath))
 	}
 	if a.PrevBinary != "" {
 		_ = os.Remove(a.PrevBinary)

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { TargetIcon } from '@phosphor-icons/react/dist/ssr'
 import { Suggestion } from '@/components/kit'
 import { toast } from '@/components/ui/toast'
@@ -33,6 +34,7 @@ export function SloSuggestion({
   appName: string
   rules: AlertRule[]
 }) {
+  const { t } = useTranslation('alertSetup')
   const hasSlo = rules.some((r) => r.kind === 'slo_burn')
   const [dismissed, setDismissed] = useState(() => readDismissed(appName))
   const preview = useSloPreview(appName, DEFAULT_SLO, !hasSlo && !dismissed)
@@ -47,33 +49,29 @@ export function SloSuggestion({
     <Suggestion
       tone="info"
       icon={<TargetIcon />}
-      title={`Track a ${DEFAULT_SLO_TARGET}% availability SLO`}
-      detail={`This app is serving traffic and has no SLO alert. A ${DEFAULT_SLO_TARGET}% target pages you when the 30 day error budget burns fast and opens a ticket-level alert when it burns slowly.${
-        channelId
-          ? ''
-          : ' No notification channel is connected yet, so the rule will only show in alert history until you attach one.'
+      title={t('slo.title', { target: DEFAULT_SLO_TARGET })}
+      detail={`${t('slo.detail', { target: DEFAULT_SLO_TARGET })}${
+        channelId ? '' : ` ${t('slo.noChannel')}`
       }`}
       actions={[
         {
-          label: 'Create SLO rule',
+          label: t('slo.create'),
           kind: 'primary',
           pending: create.isPending,
           onClick: async () => {
             try {
               await create.mutateAsync({
-                name: `${DEFAULT_SLO_TARGET}% availability SLO`,
+                name: t('slo.ruleName', { target: DEFAULT_SLO_TARGET }),
                 kind: 'slo_burn',
                 slo: DEFAULT_SLO,
                 channel_id: channelId,
                 enabled: true,
               })
-              toast.add({ title: 'SLO alert rule created.', type: 'success' })
+              toast.add({ title: t('slo.created'), type: 'success' })
             } catch (err) {
               toast.add({
                 title:
-                  err instanceof Error
-                    ? err.message
-                    : 'Could not create the SLO rule.',
+                  err instanceof Error ? err.message : t('slo.createFailed'),
                 type: 'error',
               })
             }

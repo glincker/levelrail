@@ -28,7 +28,8 @@ func (cliExecer) ExecWithInput(ctx context.Context, containerID string, cmd []st
 	rc := &errAfter{Reader: &stdout}
 	if err != nil {
 		code := 1
-		if ee, ok := err.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
 			code = ee.ExitCode()
 		}
 		rc.err = &docker.ExecExitError{Cmd: cmd, Container: containerID, ExitCode: code, Stderr: stderr.String()}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -49,7 +50,7 @@ func runProfileList(prog string, args []string, stdout, stderr io.Writer, _ func
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, profileListUsage(prog)) }
 
 	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
+		if errors.Is(err, flag.ErrHelp) {
 			return exitOK
 		}
 		return exitUsage

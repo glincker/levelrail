@@ -69,8 +69,12 @@ var productivity1Templates = []Template{
       REDIS_URL: redis://redis:6379
       URL: ${SERVICE_FQDN_OUTLINE:-http://localhost:3000}
       FORCE_HTTPS: "false"
+      PGSSLMODE: disable
     volumes:
       - outline_data:/var/lib/outline/data
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:3000/_health || exit 1"]
       interval: 30s
@@ -84,6 +88,11 @@ var productivity1Templates = []Template{
       POSTGRES_DB: outline
     volumes:
       - outline_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U outline -d outline"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
   redis:
     image: redis:7-alpine
     volumes:

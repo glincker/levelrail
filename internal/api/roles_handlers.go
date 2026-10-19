@@ -60,8 +60,7 @@ func (rt *Router) handleCreateRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req roleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	name, visibility, err := validateRoleInput(req.Name, req.Visibility, req.Abilities)
@@ -95,8 +94,7 @@ func (rt *Router) handleUpdateRole(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("id")
 	var req roleRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	name, visibility, err := validateRoleInput(req.Name, req.Visibility, req.Abilities)
@@ -247,8 +245,7 @@ func (rt *Router) handlePutEnvironmentGrants(w http.ResponseWriter, r *http.Requ
 	}
 	id := r.PathValue("id")
 	var req environmentGrantsBody
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if _, err := rt.auth.GetUserByID(r.Context(), id); errors.Is(err, store.ErrUserNotFound) {

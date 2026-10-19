@@ -5,6 +5,7 @@ sidebarTitle: "Add a domain and HTTPS"
 description: Automatic TLS, domain routing, WAF, rate limiting, and redirects, all embedded in the control plane, with no separate proxy to manage.
 "og:image": "https://docs.levelrail.com/public/og/domains-and-ingress.png"
 "twitter:image": "https://docs.levelrail.com/public/og/domains-and-ingress.png"
+"og:url": "https://docs.levelrail.com/domains-and-ingress"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/caddy/default.svg" alt="Caddy" title="Caddy" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/letsencrypt/default.svg" alt="Let's Encrypt" title="Let's Encrypt" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/cloudflare/default.svg" alt="Cloudflare" title="Cloudflare" width="24" height="24" /></span></div>
@@ -100,7 +101,8 @@ levelrail-cli domains doctor my-app my-app.example.com
 **Infrastructure > Domains** lists every domain across every app with its certificate status, plus read-only badges for WAF, redirect, maintenance mode and basic auth. Edit those settings on the owning app's Domains tab.
 </Note>
 
-![Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS](/assets/screenshots/domains-list.png)
+<img src="/assets/screenshots/domains-list-light.png" alt="Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS" className="block dark:hidden" />
+<img src="/assets/screenshots/domains-list.png" alt="Levelrail Domains page with the platform ingress settings: primary domain, ACME certificates, and HSTS" className="hidden dark:block" />
 
 ## How domain routing actually works
 
@@ -407,6 +409,12 @@ levelrail-cli domains tls-cert get <app> <domain>
 ```
 
 The API is `PUT /api/v1/apps/{name}/domains/{domain}/tls-cert`, and the dashboard has a per-domain TLS control.
+
+An upload is all or nothing: if saving the key or the record fails, the previous certificate is restored and the error names the failing step. The certificate shows as Pending until an ingress pass loads it, then In use. Uploading needs the control plane master key (`APP_MASTER_KEY` or `APP_MASTER_KEY_FILE`).
+
+### Domains that are dropped or downgraded
+
+The ingress pass never degrades a domain silently. Each pass records a per-domain issue, shown on the domain list (and by `levelrail-cli domains list`): an uploaded certificate that cannot be read (automatic issuance is used instead), a basic auth password that cannot be read (the domain is not routed rather than served open), a wildcard with no DNS-01 provider, or a standalone target that is unavailable. A dropped domain also turns the ingress Ready condition False with the domain names; fixing the cause clears it on the next pass. Each issue on the domain list has a Fix button: **Use automatic certificate** (root only, clears the uploaded certificate) or **Upload again** for a certificate, **Set password** for basic auth, **Connect DNS provider** for a wildcard, **Open app** or **Check target** for an unavailable target.
 
 ## Wildcard domains: DNS-01 providers
 
@@ -881,6 +889,8 @@ LEVELRAIL_SOCKET_ACTIVATION=0 ./install.sh upgrade    # switch back
 An `upgrade` with the variable unset keeps whichever mode the install is already in. Docker Compose deployments are unchanged: they do not use systemd and bind the ports themselves.
 
 The installer writes `levelrail-http.socket` and `levelrail-https.socket`. The control plane detects the inherited sockets (`LISTEN_FDS`, named `http` and `https`) on its own; no extra setting is needed. While the process is down the kernel queues new connections, and the new process serves them when it is up, so visitors see a slower response instead of a refused connection. Measured numbers are on the [resilience](/resilience#ingress-availability-windows-measured) page, and the decision is in [ADR 025](https://github.com/glincker/levelrail/blob/main/adr/025-ingress-restart-gap-socket-activation.md).
+
+The control plane also saves its last applied route table, sealed with a key derived from the master key, and serves it as soon as it starts, before its first reconcile pass. `levelrail-cli doctor` reports `ingress_survives_control_plane` with the next step when this is not true on your install. Details and limits: [resilience](/resilience#what-happens-to-traffic-when-the-control-plane-restarts).
 
 <Accordion title="Socket activation trade-offs">
 

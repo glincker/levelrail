@@ -82,7 +82,7 @@ func (rt *Router) handleDeploymentsStream(w http.ResponseWriter, r *http.Request
 	events, unsubscribe := rt.deployRecorder.SubscribeAll()
 	defer unsubscribe()
 
-	flusher, ok := startSSE(w)
+	flusher, ok := rt.startLiveSSE(w, r)
 	if !ok {
 		return
 	}

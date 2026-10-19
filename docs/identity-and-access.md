@@ -1,6 +1,7 @@
 ---
 title: "Identity and access: users, roles, and IAM policies"
 description: Authentication, authorization, roles, IAM policies, and audit logging for users and API tokens.
+"og:url": "https://docs.levelrail.com/identity-and-access"
 ---
 
 This page covers who can sign in, what they can do once they are in, and the record of what they did. You can add a teammate with a role or invite them by email, scope a CI token down to one app, turn on two-factor auth, passkeys, OAuth or sign-in codes, and review who changed what in the audit log.
@@ -496,7 +497,7 @@ A token owned by the user that holds `signin:approve` can decide too: `levelrail
 | --- | --- | --- |
 | `APP_AUTH_DEVICE_APPROVAL_TTL` | 10 minutes | How long an approval waits |
 | `APP_AUTH_DEVICE_APPROVAL_RATE_PER_ACCOUNT_PER_HOUR` | 6 | Approvals created per account per hour |
-| `APP_AUTH_TRUSTED_DEVICE_TTL` | 90 days | Trusted-device cookie lifetime |
+| `APP_AUTH_TRUSTED_DEVICE_TTL` | 30 days (90 day ceiling) | Trusted-device cookie lifetime. Browsers already trusted keep their expiry |
 | `APP_AUTH_APPROVAL_SCOPE` | password only | `all_methods` also pauses passkey and OAuth/OIDC sign-ins |
 | `APP_AUTH_NEW_DEVICE_APPROVAL` | on | `false` turns the pause off for everyone |
 
@@ -550,7 +551,11 @@ Recording is best-effort and runs after the real request completes. A failed aud
 
 **Query.** `GET /api/v1/audit-log` is cursor-paginated (`?before`, an RFC3339 timestamp) and filterable by `?path`, `?method`, `?client_kind`, and `?agent` (the agent label of the token, see [AI assistant](/ai-assistant#agent-identity)). Use `?format=csv` to return rows as a downloadable attachment for compliance export. Cells that start with `=`, `+`, `-`, `@` or a tab get a leading `'` in the CSV, so a token named `=HYPERLINK(...)` is not evaluated as a formula when the export is opened in a spreadsheet.
 
-**Retention.** Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
+**Retention.** Defaults to 90 days (`APP_AUDIT_LOG_RETENTION_DAYS`). Sign-in, step-up, token and policy events, secret reveals and exports, and reads of env or secret routes (action `sensitive_read`) are kept longer: 365 days by default (`APP_AUDIT_LOG_SECURITY_RETENTION_DAYS`, never shorter than the general window). The system sweeps automatically on an interval (`APP_AUDIT_LOG_SWEEP_INTERVAL`) and is purgeable on demand via `POST /api/v1/audit-log/purge`.
+
+**Tamper evidence.** Every row is chained to the one before it with an HMAC under a random key that is wrapped by the master key, and a signed checkpoint is written every 64 rows. `levelrail-cli audit-verify` (or the badge on the audit log page, or `GET /api/v1/audit-log/verify`) reports rows that were edited, removed or cut off the end, and exits 1 on a failure. Purging keeps a compact link for each removed run, so retention does not break the chain. Rows written before the upgrade are not chained.
+
+**Secret values.** Values the secrets manager has stored or handed out are masked in audit rows, deploy and build logs, container log storage and the control plane's own log. A value shorter than 8 characters is not masked.
 
 ## API reference
 

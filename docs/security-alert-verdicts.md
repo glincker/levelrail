@@ -1,6 +1,7 @@
 ---
 title: "Security alert verdicts"
 description: Verdict, evidence, and dismissal command for each code scanning alert open when this page was written.
+"og:url": "https://docs.levelrail.com/security-alert-verdicts"
 ---
 
 This page gives the verdict, evidence and dismissal command for each code scanning alert that was open when it was written. Earlier triage landed in #609 and #717. This covers what remained.

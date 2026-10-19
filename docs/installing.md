@@ -5,6 +5,7 @@ sidebarTitle: "Install on a server"
 description: Requirements, then every supported way to get the Levelrail control plane running on Linux with install.sh, Docker, or source build.
 "og:image": "https://docs.levelrail.com/public/og/installing.png"
 "twitter:image": "https://docs.levelrail.com/public/og/installing.png"
+"og:url": "https://docs.levelrail.com/installing"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/ubuntu/default.svg" alt="Ubuntu" title="Ubuntu" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/debian/default.svg" alt="Debian" title="Debian" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/docker/default.svg" alt="Docker" title="Docker" width="24" height="24" /></span></div>
@@ -76,7 +77,8 @@ A missing `checksums.txt` is a hard failure unless you set `LEVELRAIL_SKIP_CHECK
 
 ### First sign-in
 
-![Levelrail setup wizard on a fresh install: server checks with a Continue button](assets/screenshots/setup-wizard.png)
+<img src="/assets/screenshots/setup-wizard-light.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="block dark:hidden" />
+<img src="/assets/screenshots/setup-wizard.png" alt="Levelrail setup wizard on a fresh install: server checks with a Continue button" className="hidden dark:block" />
 
 <Steps>
 <Step title="Open the setup link">
@@ -273,16 +275,11 @@ Each release publishes `checksums.txt` (SHA-256 of every CLI, agent and control 
 | `require` | Abort unless the signature verifies (no cosign, no bundle, or a bad signature all abort) |
 | `off` | Skip only the signature step. The checksum is still verified |
 
-**Signed releases only, once verified.** The first time a release signature verifies on a host (by `install.sh`, `levelrail self-upgrade`, or the dashboard upgrade), a root-owned marker is written to `<data dir>/release-signature.pin`. From then on `auto` behaves like `require`: a release with no signature bundle, or a host with no cosign, is refused instead of falling back to checksum only. This closes the downgrade where an attacker who controls a release strips its signature, since `checksums.txt` comes from the same release as the binary. A fresh install, or an install of a release cut before signing, behaves as before until the first signature verifies.
+**Signed releases only, once verified.** The first time a release signature verifies on a host (by `install.sh`, `levelrail self-upgrade`, or the dashboard upgrade), a root-owned marker is written to `<data dir>/release-signature.pin`. From then on `auto` behaves like `require`: a release with no signature bundle, or a host that has never been able to load the Sigstore trust data, is refused instead of falling back to checksum only. This closes the downgrade where an attacker who controls a release strips its signature, since `checksums.txt` comes from the same release as the binary. A fresh install, or an install of a release cut before signing, behaves as before until the first signature verifies.
 
-`levelrail self-upgrade` and the dashboard upgrade verify the signature in process and need no `cosign` binary. Only `install.sh` still uses `cosign`. The Sigstore trust metadata is cached under `<data dir>/sigstore-tuf`, and a host that cannot reach it falls back to checksum only until it is pinned.
+`levelrail self-upgrade` and the dashboard upgrade verify the signature inside the server and need no `cosign` binary. The server downloads the Sigstore trust data once, in the background, when it starts and when a newer release appears, and keeps it under `<data dir>/sigstore-tuf`. Later checks, including offline ones, use that saved copy. Until the first download succeeds, Settings > Updates shows a plain "retrying automatically" note and an unpinned host falls back to checksum only. Only `install.sh` uses `cosign`, and only when it is present.
 
-Until the pin exists, `levelrail-cli doctor` and Settings > Updates show **not signature verified** as a warning. To fix it, install cosign and upgrade once:
-
-```bash
-curl -fsSL https://levelrail.com/install.sh | sudo sh -s -- install-cosign
-sudo levelrail self-upgrade --latest
-```
+Until the pin exists, `levelrail-cli doctor` shows **not signature verified** as a warning, and Settings > Updates notes that the next upgrade verifies the signature and pins the host. There is nothing to install or run: just upgrade.
 
 The escape hatches are explicit and never silent: `APP_INSTALL_VERIFY=off` (or `self-upgrade --verify off`) skips the signature for that one run and prints a warning that it overrides the pin, and `sudo levelrail self-upgrade --unpin-signature` removes the pin (logged) until the next verified signature writes it again.
 
@@ -399,7 +396,8 @@ Dev mode is for local use only. A release build (`-tags embedweb`) ignores `APP_
 
 `levelrail-cli` is a separate, small client binary for your own laptop or a CI runner, the same shape as `aws` or `gh`: install it locally, point it at a running instance, authenticate over the network, no SSH key and no inbound port on the server. The dashboard prints these same steps under **Settings, CLI access**, with a copy button on each command.
 
-![Levelrail CLI access page with install, point-at-server, and device login steps](assets/screenshots/cli-access.png)
+<img src="/assets/screenshots/cli-access-light.png" alt="Levelrail CLI access page with install, point-at-server, and device login steps" className="block dark:hidden" />
+<img src="/assets/screenshots/cli-access.png" alt="Levelrail CLI access page with install, point-at-server, and device login steps" className="hidden dark:block" />
 
 <Steps>
 <Step title="Install the binary">

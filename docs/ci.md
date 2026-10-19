@@ -1,6 +1,7 @@
 ---
 title: "CI"
 description: How the GitHub Actions checks on a pull request are chosen, what they cost, and which ones branch protection relies on.
+"og:url": "https://docs.levelrail.com/ci"
 ---
 
 How the GitHub Actions checks on a pull request are chosen and which ones gate a merge. This page is for contributors to Levelrail itself.

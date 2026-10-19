@@ -140,7 +140,7 @@ func ResolveParameters(def *Definition, given map[string]string, maxValueBytes i
 		}
 		norm, err := checkParamValue(p, v)
 		if err != nil {
-			return nil, fmt.Errorf("%w: input %q %s", ErrInvalidInput, p.Name, err)
+			return nil, fmt.Errorf("%w: input %q %w", ErrInvalidInput, p.Name, err)
 		}
 		out[p.Name] = norm
 	}

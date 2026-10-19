@@ -15,7 +15,6 @@ import { useAuthUsername } from './useAuthUsername'
 export function useIsRoot(): boolean {
   const ownEmail = useAuthUsername()
   const { data: users } = useQuery(userListQueryOptions())
-  return (users ?? []).some(
-    (u) => u.email === ownEmail && u.abilities.includes('root'),
-  )
+  if (!Array.isArray(users)) return false
+  return users.some((u) => u.email === ownEmail && u.abilities.includes('root'))
 }

@@ -72,6 +72,9 @@ type Server struct {
 type liveSession struct {
 	kick chan struct{}
 	m    *mux
+	once sync.Once
+	// superseded is set, before kick closes, when a newer connection from the same node replaced this one.
+	superseded bool
 }
 
 // Option configures optional Server behavior.
@@ -140,6 +143,13 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, err
 	}
 
+	enrolled := false
+	defer func() {
+		if !enrolled {
+			s.releaseToken(tok.ID)
+		}
+	}()
+
 	nodeID, err := randomNodeID()
 	if err != nil {
 		s.logger.Error("agent: enroll: generate node id failed", slog.String("error", err.Error()))
@@ -164,6 +174,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		s.logger.Error("agent: enroll: save node failed", slog.String("error", err.Error()))
 		return nil, status.Error(codes.Internal, "internal error")
 	}
+	enrolled = true
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 	s.recordEnrolled(ctx, store.SecurityKindEnroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 
@@ -220,6 +231,21 @@ func (s *Server) redeemToken(ctx context.Context, plaintext, purpose string) (*s
 	return tok, nil
 }
 
+type tokenReleaser interface {
+	ReleaseNodeJoinToken(ctx context.Context, id string) error
+}
+
+// releaseToken un-spends a join token when enrollment failed after redeeming it (name collision, CSR or store error), so the operator can retry with the same token.
+func (s *Server) releaseToken(id string) {
+	r, ok := s.store.(tokenReleaser)
+	if !ok {
+		return
+	}
+	if err := r.ReleaseNodeJoinToken(context.Background(), id); err != nil {
+		s.logger.Error("agent: enroll: release join token failed", slog.String("token_id", id), slog.String("error", err.Error()))
+	}
+}
+
 func tokenPurpose(t *store.NodeJoinToken) string {
 	if t.Purpose == "" {
 		return store.NodeJoinTokenPurposeEnroll
@@ -273,8 +299,8 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 			go s.recordRenewalReport(context.Background(), nodeID, r)
 		},
 	})
-	s.registry.Register(nodeID, newGRPCTransport(m))
 	live := s.trackSession(nodeID, m)
+	s.registry.Register(nodeID, newGRPCTransport(m))
 	s.observeSession(ctx, nodeID)
 	s.logger.Info("agent: node connected", slog.String("node_id", nodeID))
 
@@ -283,7 +309,10 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 
 	defer func() {
 		close(heartbeatDone)
-		s.untrackSession(nodeID, live)
+		if !s.untrackSession(nodeID, live) {
+			s.logger.Info("agent: superseded session ended", slog.String("node_id", nodeID))
+			return
+		}
 		s.registry.Unregister(nodeID)
 		// The stream's context is already done here; the offline mark
 		// must still reach the store.
@@ -297,6 +326,9 @@ func (s *Server) Session(stream agentpb.AgentService_SessionServer) error {
 	case <-m.closed:
 		return nil
 	case <-live.kick:
+		if live.superseded {
+			return status.Error(codes.Aborted, "session replaced by a newer connection from this node")
+		}
 		return status.Error(codes.PermissionDenied, "session closed by the control plane: node certificate revoked")
 	}
 }
@@ -345,15 +377,25 @@ func (s *Server) Disconnect(nodeID string) {
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
 	if live, ok := s.sessions[nodeID]; ok {
-		close(live.kick)
-		delete(s.sessions, nodeID)
+		live.end(false)
 	}
+}
+
+func (l *liveSession) end(superseded bool) {
+	l.once.Do(func() {
+		l.superseded = superseded
+		close(l.kick)
+	})
 }
 
 func (s *Server) trackSession(nodeID string, m *mux) *liveSession {
 	live := &liveSession{kick: make(chan struct{}), m: m}
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
+	if old, ok := s.sessions[nodeID]; ok {
+		old.end(true)
+		s.logger.Warn("agent: duplicate connection, closing the older session", slog.String("node_id", nodeID))
+	}
 	s.sessions[nodeID] = live
 	return live
 }
@@ -375,12 +417,15 @@ func (s *Server) NotifyShutdown() {
 	}
 }
 
-func (s *Server) untrackSession(nodeID string, live *liveSession) {
+// untrackSession reports whether live was still the node's current session.
+func (s *Server) untrackSession(nodeID string, live *liveSession) bool {
 	s.sessionsMu.Lock()
 	defer s.sessionsMu.Unlock()
 	if s.sessions[nodeID] == live {
 		delete(s.sessions, nodeID)
+		return true
 	}
+	return false
 }
 
 func (s *Server) recordAgentInfo(ctx context.Context, nodeID string, info *agentpb.AgentInfo) {

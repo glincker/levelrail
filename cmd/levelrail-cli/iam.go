@@ -24,6 +24,8 @@ func runIAM(prog string, args []string, stdout, stderr io.Writer, lookupEnv func
 		return runIAMSimulate(prog, args[1:], stdout, stderr, lookupEnv)
 	case "effective":
 		return runIAMEffective(prog, args[1:], stdout, stderr, lookupEnv)
+	case "suggest":
+		return runIAMSuggest(prog, args[1:], stdout, stderr, lookupEnv)
 	case "analyze":
 		return runIAMAnalyze(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -42,6 +44,7 @@ func iamUsage(prog string) string {
   %[1]s iam simulate --principal user:ID|token:ID --action ABILITY --resource RESOURCE
   %[1]s iam effective --principal user:ID|token:ID
   %[1]s iam analyze [--json]
+  %[1]s iam suggest [--days N] [--json]
 
 Run "%[1]s iam policies -h" for the full set of policy subcommands.
 `, prog)

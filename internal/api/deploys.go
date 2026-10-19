@@ -2,16 +2,19 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/distribution/reference"
+
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
+	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -82,16 +85,30 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req deployTriggerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Image == "" {
 		writeError(w, http.StatusBadRequest, "image is required")
 		return
 	}
+	if err := validateImageReference(req.Image); err != nil {
+		writeCodedError(w, http.StatusBadRequest, errCodeInvalidImageRef, "image: "+err.Error())
+		return
+	}
 
 	rt.applyDeploy(w, r, *existing, req, "")
+}
+
+const errCodeInvalidImageRef = "invalid_image_reference"
+
+// validateImageReference rejects an image that Docker could never pull, so the
+// mistake surfaces at trigger time instead of as a failed deploy later.
+func validateImageReference(image string) error {
+	if _, err := reference.ParseNormalizedNamed(image); err != nil {
+		return fmt.Errorf("%q is not a valid image reference (expected name[:tag] or name@sha256:digest, repository names are lowercase)", image)
+	}
+	return nil
 }
 
 // applyDeploy runs a deploy request through the freeze gate and the
@@ -104,6 +121,9 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 	// Rollbacks skip guardrails: restoring a known state must never be blocked.
+	if rollbackTo == "" && rt.refuseLowDisk(w, diskguard.OpPull) {
+		return
+	}
 	if rollbackTo == "" {
 		candidate := existing
 		if req.Image != "" {
@@ -256,8 +276,7 @@ func (rt *Router) handleSetAutoRollback(w http.ResponseWriter, r *http.Request) 
 	name := r.PathValue("name")
 
 	var req setAutoRollbackRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -329,8 +348,7 @@ func (rt *Router) handleSetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 	name := r.PathValue("name")
 
 	var req setAutoRollbackSLOBurnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if !validSLOBurnAutoRollbackModes[req.Mode] {

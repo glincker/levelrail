@@ -180,6 +180,9 @@
     "empty": "No error lines in this range.",
     "truncated": "Only the newest {{rows}} lines were read. Narrow the range for exact counts.",
     "saved": "Saved",
+    "orderLabel": "Result order",
+    "orderNewest": "Newest",
+    "orderRelevance": "Relevance",
     "savedHeading": "Saved queries",
     "savedEmpty": "No saved queries for this app yet.",
     "recent": "Recent",
@@ -221,6 +224,24 @@
     "newErrorTypes_other": "{{count}} new error types since this deploy",
     "tabErrors": "Errors",
     "conditionPattern": "{{count}} or more lines matching {{what}} within {{minutes}} min",
-    "conditionRate": "More than {{rate}} lines per minute at {{level}} or above over {{minutes}} min"
+    "conditionRate": "More than {{rate}} lines per minute at {{level}} or above over {{minutes}} min",
+    "searchPlaceholder": "Search log messages...",
+    "searchLabel": "Search log messages",
+    "clearSearch": "Clear search",
+    "searchSyntax": "Syntax: \"exact phrase\", prefix*, a OR b, a NOT b, -word, ( ) to group."
+  },
+  "slo": {
+    "title": "Service level objectives",
+    "availabilityObjective": "{{target}}% of requests succeed",
+    "latencyObjective": "{{target}}% of requests finish within {{ms}} ms",
+    "noTraffic": "No traffic",
+    "noTrafficHint": "No requests reached this app in the evaluation window, so there is nothing to measure yet.",
+    "paging": "Paging",
+    "burning": "Burning",
+    "healthy": "Healthy",
+    "firing": "Firing",
+    "budgetRemaining": "Error budget remaining",
+    "tierWindow": "{{name}} ({{long}} and {{short}})",
+    "burnRate": "{{rate}}x burn"
   }
 }

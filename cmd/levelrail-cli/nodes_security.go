@@ -67,6 +67,8 @@ func runNodesCert(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return exitOK
 	case "renew":
 		return runNodesCertRenew(prog, args[1:], stdout, stderr, lookupEnv)
+	case "drill":
+		return runNodesCertDrill(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown nodes cert subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, nodesCertUsage(prog))
@@ -205,6 +207,7 @@ Flags:
 func nodesCertUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s nodes cert renew <id> [flags]   ask a connected node to renew its agent certificate now
+  %[1]s nodes cert drill <id> [flags]   rotate the certificate end to end and report each step
 
 Run "%[1]s nodes cert <subcommand> -h" for a subcommand's own flags.
 `, prog)

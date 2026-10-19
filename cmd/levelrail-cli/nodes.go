@@ -25,6 +25,10 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesDelete(prog, rest, stdout, stderr, lookupEnv)
 	case "join-token":
 		return runNodesJoinToken(prog, rest, stdout, stderr, lookupEnv)
+	case "join-tokens":
+		return runNodesJoinTokens(prog, rest, stdout, stderr, lookupEnv)
+	case "revoke-join-token":
+		return runNodesRevokeJoinToken(prog, rest, stdout, stderr, lookupEnv)
 	case "cordon":
 		return runNodesCordon(prog, rest, stdout, stderr, lookupEnv)
 	case "uncordon":
@@ -83,6 +87,12 @@ func runNodes(prog string, args []string, stdout, stderr io.Writer, lookupEnv fu
 		return runNodesDrains(prog, rest, stdout, stderr, lookupEnv)
 	case "labels":
 		return runNodesLabels(prog, rest, stdout, stderr, lookupEnv)
+	case "zones":
+		return runNodesZones(prog, rest, stdout, stderr, lookupEnv)
+	case "simulate":
+		return runNodesSimulate(prog, rest, stdout, stderr, lookupEnv)
+	case "failure":
+		return runNodesFailure(prog, rest, stdout, stderr, lookupEnv)
 	case "allocations":
 		return runNodesAllocations(prog, rest, stdout, stderr, lookupEnv)
 	case "placement":
@@ -103,6 +113,8 @@ func nodesUsage(prog string) string {
   %[1]s nodes get <id> [flags]                                      show one node
   %[1]s nodes delete <id> [flags]                                    delete a node (fails if it still has placements, drain first)
   %[1]s nodes join-token [flags]                                     mint a one-time enrollment token, shown once
+  %[1]s nodes join-tokens [flags]                                    list pending (unused, unexpired) join tokens
+  %[1]s nodes revoke-join-token <id>|--all [flags]                   revoke pending join tokens at once
   %[1]s nodes cordon <id> [flags]                                    mark a node unschedulable, without evacuating it
   %[1]s nodes uncordon <id> [flags]                                  mark a node schedulable again
   %[1]s nodes drain <id> [--target ID] [--wait] [flags]              cordon, then move every database and app off a node
@@ -111,7 +123,10 @@ func nodesUsage(prog string) string {
   %[1]s nodes moves [--kind K] [--resource N] [flags]                list node moves
   %[1]s nodes labels <id> [key=value ...] [flags]                    show or replace a node's labels
   %[1]s nodes placement <app|database> <name> [key=value ...]        show or set which node labels a resource requires
-  %[1]s nodes allocations [flags]                                    requested versus allocatable CPU, memory and disk per node
+  %[1]s nodes zones [flags]                                          failure domains with their nodes and workloads
+  %[1]s nodes simulate [--cpu M] [--memory MiB] [--count N]          dry run: where new apps would land and why
+  %[1]s nodes failure --zone Z | --node ID                           dry run: where workloads go if a zone or node dies
+  %[1]s nodes allocations [flags]                                requested versus allocatable CPU, memory and disk per node
   %[1]s nodes connectivity [flags]                                   WireGuard health of every node pair
   %[1]s nodes workloads <id> --accepts-app --accepts-build [flags]   set a node's accepted workload kinds
   %[1]s nodes health <id> [flags]                                    show a node's current reconcile conditions
@@ -127,6 +142,7 @@ func nodesUsage(prog string) string {
   %[1]s nodes revoke-cert <id> [flags]                               revoke a node's agent certificate and disconnect it
   %[1]s nodes security <id> [--rejected] [flags]                     show how a node's agent is verified: fingerprints, renewal, recent security events
   %[1]s nodes cert renew <id> [flags]                                ask a connected node to renew its agent certificate now
+  %[1]s nodes cert drill <id> [flags]                                rotate its certificate end to end and report each step
   %[1]s nodes providers list|set-credential [flags]                  manage cloud provider credentials (hetzner, digitalocean)
   %[1]s nodes provision --provider --region --size --name [flags]    create a server at a cloud provider and enroll it as a node
   %[1]s nodes provisions list|show <id> [flags]                      track a cloud node provision through to enrollment

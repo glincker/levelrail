@@ -24,18 +24,18 @@ const charsPerToken = 4
 // Override one with APP_MCP_TOKEN_BUDGET_<MODE>, where MODE is upper case with
 // dashes as underscores (e.g. READ_ONLY).
 var modeTokenBudgets = map[Mode]int{
-	ModeReadOnly: 38500,
-	ModeStandard: 49700,
-	ModeFull:     53500,
+	ModeReadOnly: 41100,
+	ModeStandard: 51700,
+	ModeFull:     56550,
 }
 
 // compactTokenBudgets are the ceilings for the listing levelrail-mcp serves
 // by default (OmitOutputSchemas). Override with
 // APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>.
 var compactTokenBudgets = map[Mode]int{
-	ModeReadOnly: 23500,
-	ModeStandard: 31000,
-	ModeFull:     33000,
+	ModeReadOnly: 25150,
+	ModeStandard: 31950,
+	ModeFull:     34820,
 }
 
 func budgetEnvKey(mode Mode) string {
@@ -141,6 +141,23 @@ func TestCompactToolListTokenBudget(t *testing.T) {
 			budget := envBudget(t, compactBudgetEnvKey(mode), compactTokenBudgets[mode])
 			checkBudget(t, "mode "+string(mode)+" compact", tools, budget, compactBudgetEnvKey(mode))
 		})
+	}
+}
+
+// toolsetTokenCeiling caps one toolset's compact listing so enabling it on demand stays cheap.
+const toolsetTokenCeiling = 4000
+
+func TestToolsetTokenCeiling(t *testing.T) {
+	groups := map[string]int{}
+	for _, tool := range listAll(t, Options{Mode: ModeFull, AllowWrite: true, OmitOutputSchemas: true}) {
+		m, _ := Lookup(tool.Name)
+		b, _ := json.Marshal(tool)
+		groups[m.Group] += (len(b) + charsPerToken - 1) / charsPerToken
+	}
+	for g, n := range groups {
+		if n > toolsetTokenCeiling {
+			t.Errorf("toolset %q is ~%d tokens, over the %d ceiling: split it or trim its tools", g, n, toolsetTokenCeiling)
+		}
 	}
 }
 

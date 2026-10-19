@@ -97,3 +97,28 @@ func (c *Client) ResetBuildLimits(ctx context.Context) (BuildLimits, error) {
 	err := c.do(ctx, http.MethodDelete, "/api/v1/build-limits", nil, &out)
 	return out, err
 }
+
+// BuildSpeedFinding is one suggestion to make an app's builds faster.
+type BuildSpeedFinding struct {
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	FixKind  string `json:"fix_kind"`
+	TargetID string `json:"target_id,omitempty"`
+}
+
+// BuildSpeed is the response of GET /api/v1/apps/{name}/build-speed.
+type BuildSpeed struct {
+	Builds           int                 `json:"builds"`
+	WarmP50Seconds   float64             `json:"warm_p50_seconds"`
+	ColdP50Seconds   float64             `json:"cold_p50_seconds"`
+	WarmKnown        bool                `json:"warm_known"`
+	TimeSavedSeconds float64             `json:"time_saved_seconds"`
+	Findings         []BuildSpeedFinding `json:"findings"`
+}
+
+// GetBuildSpeed calls GET /api/v1/apps/{name}/build-speed.
+func (c *Client) GetBuildSpeed(ctx context.Context, app string) (BuildSpeed, error) {
+	var out BuildSpeed
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+url.PathEscape(app)+"/build-speed", nil, &out)
+	return out, err
+}

@@ -165,7 +165,7 @@ func loadOrCreateIdentity(path string) (*age.X25519Identity, error) {
 	if err == nil {
 		ids, perr := age.ParseIdentities(strings.NewReader(string(raw)))
 		if perr != nil || len(ids) == 0 {
-			return nil, fmt.Errorf("parse backup encryption key %q: %v", path, perr)
+			return nil, fmt.Errorf("parse backup encryption key %q: %v", path, perr) //nolint:errorlint // perr is nil when the key file holds no identities
 		}
 		x, ok := ids[0].(*age.X25519Identity)
 		if !ok {

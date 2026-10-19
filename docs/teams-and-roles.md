@@ -1,6 +1,7 @@
 ---
 title: "Teams and roles"
 description: "Teams own projects, environments, apps and databases. Four roles (owner, admin, developer, viewer), invitations, team scoped API tokens, protected environments."
+"og:url": "https://docs.levelrail.com/teams-and-roles"
 ---
 
 A team owns projects. Each project owns its environments, and every app and database filed under a project belongs to that project's team. Two teams on one instance cannot see or change each other's apps, databases, domains, secrets, logs, deploys, tokens or team audit trail.

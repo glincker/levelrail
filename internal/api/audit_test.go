@@ -193,7 +193,8 @@ func TestAuditLogRoute_Pagination(t *testing.T) {
 	// Seed three write-ability requests worth of audit history directly,
 	// so pagination has deterministic, well-separated timestamps to work
 	// with rather than depending on real wall-clock request timing.
-	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	// Later than the sign-in row loginTestSession records, so it stays the newest.
+	base := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Hour)
 	for i, id := range []string{"aud_seed_1", "aud_seed_2", "aud_seed_3"} {
 		e := store.AuditEntry{
 			ID:         id,

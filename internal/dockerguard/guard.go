@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -203,11 +204,13 @@ func (g *Guard) validateBody(kind bodyKind, raw []byte, name string) ([]byte, []
 
 // jsonErrorKind describes a decode error without echoing body content.
 func jsonErrorKind(err error) string {
-	switch e := err.(type) {
-	case *json.SyntaxError:
-		return "syntax error at offset " + strconv.FormatInt(e.Offset, 10)
-	case *json.UnmarshalTypeError:
-		return "wrong type for field " + e.Field
+	var syntaxErr *json.SyntaxError
+	var typeErr *json.UnmarshalTypeError
+	switch {
+	case errors.As(err, &syntaxErr):
+		return "syntax error at offset " + strconv.FormatInt(syntaxErr.Offset, 10)
+	case errors.As(err, &typeErr):
+		return "wrong type for field " + typeErr.Field
 	default:
 		return "malformed body"
 	}

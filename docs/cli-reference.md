@@ -3,6 +3,7 @@ title: "Levelrail CLI Reference"
 description: Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
 "og:image": "https://docs.levelrail.com/public/og/cli-reference.png"
 "twitter:image": "https://docs.levelrail.com/public/og/cli-reference.png"
+"og:url": "https://docs.levelrail.com/cli-reference"
 ---
 
 `levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so you need no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags you will use most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.
@@ -28,6 +29,8 @@ Each command resolves its target in this order, and an explicit flag always wins
 | API token | `--token` | `APP_API_TOKEN` | the saved profile |
 | Control plane URL | `--api-url` | `APP_API_URL` | `http://localhost:8080` |
 | Profile | `--profile` | `APP_PROFILE` | `default` |
+
+Login pins the server. `auth login` prints the server's name and fingerprint (compare it with the one on the approval page) and saves its identity in the profile. Every later request first checks that the URL still answers as that server and refuses to send the token otherwise, naming the fix: `auth login --reauth` to log in to the new server, or `auth trust-server` to pin the one now answering. A profile saved before pinning existed asks once to confirm the fingerprint (`--yes` or `APP_TRUST_SERVER=yes` for scripts). `APP_API_TOKEN` keeps working and only prints a warning when the profile pins a different server. `auth status` and `auth whoami` show the pinned server.
 
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
 ## Scripting: `--json` and exit codes
@@ -89,6 +92,10 @@ The dashboard's CLI console (experimental key `cli-console`) runs the commands o
 
 None of them take arguments: paths, process names, container names and flags are refused. Each line goes through the same step-up, one-command-at-a-time, idle timeout, output cap and audit log (`cli_console.run`) as any other console command. Linux only; other platforms reply "not supported on this platform". Set `APP_CLI_CONSOLE_HOST=off` on the server to turn the namespace off while keeping the rest of the console.
 
+## Naming conventions
+
+A command's own subject is a positional argument or `--name`. `--app` is a scope flag: it narrows a list or ties a new object to an app (`alerts history --app web`, `proxy --app web`), and is never the name of the thing being created. Every list command prints a bare JSON array under `--json`; paging info (`apps list --max-items`) goes to stderr, so the stdout shape never changes with a flag.
+
 ## Top-level convenience aliases
 
 ```
@@ -103,7 +110,7 @@ Alias for `apps rollback`; redeploy an older image.
 
 ## Apps
 
-`apps list` prints every app the caller can read as a bare JSON array. On a fleet large enough that matters, add `--max-items N` to cap the page size; the response becomes `{"items": [...], "next_token": "...", "total_count": N}` instead, and an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
+`apps list` prints every app the caller can read as a bare JSON array. On a fleet large enough that matters, add `--max-items N` to cap the page size; stdout stays a bare array and the paging info goes to stderr as `next_token=N total_count=M`; an empty `next_token` means there is no further page. Pass that `next_token` back in as `--starting-token` to fetch the next page (requires `--max-items`, since the server only pages a result when a limit is set):
 
 ```
 levelrail-cli apps list --max-items 50 --json
@@ -196,11 +203,11 @@ levelrail-cli apps schedule history <app> [flags]
 levelrail-cli apps cancel-superseded enable|disable|status <app-name> [flags]
 levelrail-cli apps auto-rollback enable|disable|status <app-name> [flags]
 levelrail-cli apps autoscale show|set|clear|history <app-name> [flags]
-levelrail-cli functions deploy|list|invoke|delete [flags]
+levelrail-cli functions init|deploy|list|runtimes|invoke|delete [flags]
 levelrail-cli jobs list|get|create|update|run|history|logs|enable|disable|delete <app> [<job>] [flags]
 levelrail-cli apps sleep enable|disable|status|wake|now|history <app-name> [flags]
 levelrail-cli apps sleep list [flags]
-levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]
+levelrail-cli apps canary start|status|weight|promote|abort <app-name> [flags]   (start takes --stages, --interval, --max-error-rate, --max-p95-ratio for a staged canary)
 levelrail-cli apps auto-update enable|disable|status|check <app-name> [flags]
 levelrail-cli apps auto-rollback-slo-burn set <app-name> off|auto|dry_run|pause_for_human [flags]
 levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
@@ -218,7 +225,7 @@ levelrail-cli apps auto-rollback-slo-burn status <app-name> [flags]
 - `apps schedule` configures a recurring redeploy of a branch's latest commit on a cron schedule.
 - `apps cancel-superseded` lets a newer queued deploy replace older queued ones of the same branch. Only queued deploys are replaced; a deploy that already started building is never canceled automatically.
 - `jobs` manages an app's scheduled jobs: fresh-container or exec cron jobs with run history, logs, retries and catch-up (see [Scheduled jobs](/scheduled-jobs)). `apps scheduled-tasks` is the older exec-only form of the same resource.
-- `functions` runs an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start (see [Functions](/functions)).
+- `functions` runs a handler repo (built with Railpack) or an image as a function: it sleeps when idle, and a request to a sleeping one waits through the cold start. `functions init node|python|go` writes a ten line starter, `functions list` shows state, calls and p95 duration (see [Functions](/functions)).
 - `apps sleep` stops an app after it has had no requests for a set time and wakes it on the next request (see [Sleep when idle](/sleep-when-idle)).
 - `apps canary` runs a new image beside the app and sends it a share of traffic until you promote or abort it (see [Canary deploys](/canary-deploys)).
 - `apps auto-update` redeploys an app automatically when its image tag moves to a new digest (see [Image auto-update](/image-auto-update)).
@@ -293,6 +300,7 @@ levelrail-cli apps scheduled-tasks delete <app> <id> [flags]
 - `apps logs` searches an app's stored log entries, or streams live with `--follow`. For a capped excerpt see `logs query` under [Logs](#logs).
 - `apps requests` shows request rate, errors and latency from the ingress; `apps resource-usage` ranks every app by latest CPU, memory and network usage.
 - `apps resource-recommendation` suggests memory and CPU limits from historical usage; `apps cost` estimates what the app's CPU and memory would cost under reference providers (not a real bill).
+- `costs explore|budgets list|create|set|delete` is the cost explorer with forecast and top movers, and named budgets with alert thresholds and an optional pause or throttle at 100 percent, see [cost explorer](/cost-explorer).
 - `usage report|settings|budgets` shows cost showback and manages prices and budgets, see [usage and cost](/usage-and-cost). `usage report --csv` prints the export. `budget set|delete project|team ID` is an alias for `usage budgets`. `budget show|set|clear APP` manages a per-app egress and cost cap, see [spend caps](/spend-caps).
 - `advisor findings|summary|apply|dismiss|snooze|restore|enable|disable` drives the beta [resource advisor](/resource-advisor). `advisor apply ID` only previews; add `--yes` to apply.
 - `apps health-score` gives a synthesized pass, warn or fail readiness verdict across deploy health, security, resilience and observability.
@@ -315,6 +323,7 @@ levelrail-cli apps build-cache show <name>|--global
 levelrail-cli apps build-cache set <name>|--global --target ID [--mode min|max] [--disable]
 levelrail-cli apps build-cache clear <name>
 levelrail-cli apps build-stats <name> [--limit N]
+levelrail-cli apps build-speed <name> [--fix]
 levelrail-cli apps build-limits show|set|reset
 levelrail-cli apps build-cache remove <name>|--global
 ```
@@ -355,6 +364,7 @@ levelrail-cli apps branch-env clear <name> <id> [flags]
 ### Source, previews and webhooks
 
 ```
+levelrail-cli apps git-source validate <name> [flags]
 levelrail-cli apps git-source detect <name> [--apply|--package DIR] [flags]
 levelrail-cli apps git-source affected <name> --files a,b [flags]
 levelrail-cli apps git-source get <name> [flags]
@@ -404,6 +414,7 @@ levelrail-cli apps alerts create <app> --kind KIND [flags]
 levelrail-cli apps alerts update <app> <id> --kind KIND [flags]
 levelrail-cli apps alerts delete <app> <id> [flags]
 levelrail-cli apps alerts slo <app> [--slo 99.9] [--slo-latency-ms N]
+levelrail-cli apps alerts template <app> [--profile-type web|worker|database] [--channel ID]
 ```
 
 `apps alerts create` takes one of these kinds: `threshold` (needs `--metric`, `--comparator`, `--threshold`), `crashloop` (`--restart-count-threshold`, `--restart-window`), `cert_expiry`, `patch_status`, `scheduled_task_failure` (`--scheduled-task-id`, `--restart-count-threshold`), `node_disk_space`, `node_resource_usage`, `node_offline`, `domain_health`, `control_plane_backup_stale`, `log_archive_stale`, `backup_missing` (`--backup-resource-kind database` with `--backup-database-name`, or `volume` with `--backup-volume-name`) and `slo_burn` (`--slo`, optional `--slo-latency-ms`). Mute, schedule and review alerts with the top-level [Alerts](#alerts) commands.
@@ -494,6 +505,9 @@ levelrail-cli pipelines sync <app> [--repo-truth=true|false] [flags]
 levelrail-cli pipelines artifacts <app> <run-id> [--download JOB] [--out FILE] [flags]
 levelrail-cli pipelines triggers <app> [flags]
 levelrail-cli pipelines triggers <app> <pipeline> [--enable [--hmac]|--disable|--rotate|--delete|--deliveries|--replay ID] [flags]
+levelrail-cli pipelines templates [<id>] [--out FILE] [--create APP [--name N]] [flags]
+levelrail-cli pipelines fixes <app> <run-id> [--apply KIND --job J [--rerun]] [flags]
+levelrail-cli pipelines insights <app> <pipeline> [flags]
 levelrail-cli pipelines oidc [flags]
 levelrail-cli pipelines oidc rotate-key [--retire-after D] [flags]
 ```
@@ -628,13 +642,23 @@ levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 
 ```
 levelrail-cli auth login [--device] [--profile NAME] [flags]
+levelrail-cli auth login --reauth [--device] [flags]
 levelrail-cli auth whoami [--access] [flags]
+levelrail-cli auth status [flags]
+levelrail-cli auth trust-server [--yes] [flags]
 levelrail-cli auth session-link [flags]
 levelrail-cli auth code [flags]
 levelrail-cli auth approve <id> --match N [flags]
 levelrail-cli auth deny <id> [flags]
 levelrail-cli auth devices [revoke <id>] [flags]
 levelrail-cli auth code-login [--admins true|false] [--others true|false] [flags]
+levelrail-cli auth activity [--kind KIND] [--all] [--limit N] [--cursor C] [flags]
+levelrail-cli auth preferences get|set [--timezone Z] [--language L] [--theme T] [--landing-page P] [--gravatar] [flags]
+levelrail-cli auth export [--out FILE] [flags]
+levelrail-cli auth unlink <provider> [flags]
+levelrail-cli auth email-change request --new-email ADDRESS [flags]
+levelrail-cli auth email-change confirm --token TOKEN [flags]
+levelrail-cli auth delete-account --confirm EMAIL [--code CODE] [flags]
 levelrail-cli auth 2fa status [flags]
 levelrail-cli auth 2fa setup [flags]
 levelrail-cli auth 2fa enable --code CODE [flags]
@@ -646,6 +670,7 @@ levelrail-cli auth 2fa recovery-codes --code CODE [flags]
 - `login --device --json` prints one JSON line first (`verification_url`, `user_code`, `expires_in`, `expires_at`) so an agent can relay it, then the token resource once approved. See [Attention center](/attention-center).
 - `session-link` mints a short lived (about 2 minutes), single use login link that signs in as whoever minted it, meant for browser automation. It needs a token with the root ability.
 - `code` prints the sign-in codes waiting for your account with the requester's IP address, browser and time, plus password sign-ins from new browsers waiting for approval; `approve` and `deny` decide one of those (`approve` needs `--match` with the two digit number the waiting browser shows, typed in; a wrong number denies it, and the number is never printed by `code`), and `devices` lists or revokes browsers trusted for password sign-in. They need a token that belongs to your user. Listing and `devices` accept `write:sensitive`; showing a code and `approve` or `deny` need `signin:approve`, which no device login, root or `write:sensitive` token carries. Mint one from a signed-in session with `levelrail-cli tokens create --name approver --abilities signin:approve --expires-in-days 30` (it must expire within 30 days by default, cannot be an agent token, and is revoked when you change or reset your password or sign out your other sessions), or use the dashboard. `code-login` shows or changes who may sign in with a code (changing it needs root). See [Identity and access](/identity-and-access#sign-in-with-a-code).
+- `activity` shows your own account activity feed (needs a token that belongs to you with `read:sensitive`); `preferences` reads or changes your timezone, language, theme, landing page and Gravatar choice; `export` requests the data bundle, waits and saves the zip (mode 0600); `unlink` removes a linked sign-in provider and refuses to remove your last way in; `delete-account` permanently deletes your account after the typed email and your password. See [Your account](/account).
 - Every `2fa` subcommand needs a live session: `--username` and `--password` (prompted if omitted), never the CLI's saved bearer token. `setup` starts enrollment and returns a secret and provisioning URI; `enable` confirms it and returns recovery codes once; `recovery-codes` regenerates them and invalidates the old set.
 
 ## Auth engine
@@ -853,6 +878,7 @@ levelrail-cli channels update <id> --name NAME --kind KIND --notify-url URL [fla
 levelrail-cli channels delete <id> [flags]
 levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
+levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z] | --clear]
 ```
 Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 
@@ -1046,6 +1072,32 @@ levelrail-cli maintenance delete <id>
 ```
 One-off planned downtime shown on the dashboard and the public status page. See [Scheduled maintenance](/scheduled-maintenance).
 
+## CDN overview
+
+```
+levelrail-cli cdn overview [--window 5m|1h|24h|7d]
+```
+Fleet requests, 5xx rate, edge cache hit rate and each node's share of traffic over the window. `--json` prints the same object the dashboard CDN page reads.
+
+## Automatic cleanup
+
+```
+levelrail-cli janitor status
+levelrail-cli janitor run [--dry-run] [--if-needed]
+levelrail-cli janitor policy [--enabled=BOOL] [--dry-run=BOOL] [--interval-minutes N] [--disk-free-budget-percent N] [--build-cache-budget-mb N] [--build-cache-max-age-hours N] [--volume-quarantine-days N] [--delete-orphan-volumes=BOOL] [--attempt-retention-days N] [--attempt-keep-per-app N] [--disabled-stages a,b]
+```
+Disk cleanup with preview and quarantine. See [Automatic cleanup](/janitor).
+
+## Search
+
+```
+levelrail-cli search <query...> [--kind K] [--limit N] [--json]
+levelrail-cli search saved list
+levelrail-cli search saved add <name> <query...>
+levelrail-cli search saved rm <id>
+```
+One search over apps, databases, nodes, domains, templates, settings, docs and actions. Scopes (`app:`, `env:`, `tag:`, `node:`, `kind:`) narrow the result, the rest is free text. You only ever see what your token may see, and an action hit appears only when you hold the ability it needs: `levelrail-cli search kind:action restart api`. See [Unified search](/search).
+
 ## Logs
 
 See [Log archive](/log-archive).
@@ -1116,7 +1168,10 @@ levelrail-cli security sessions revoke <id> [--user ID] [flags]
 levelrail-cli security sessions revoke-others [--user ID] [flags]
 levelrail-cli security policy get [flags]
 levelrail-cli security policy set [--approval-scope password_only|all_methods] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
+levelrail-cli security hsts status|enable|disable [flags]
 ```
+
+`security hsts enable` probes every public domain first and refuses until each serves a publicly trusted certificate. HSTS is off by default.
 
 `posture` prints the score for anyone with `read`; the item list needs root. The `sessions` commands act on your own account; `--user` names another account and needs root. A token used for them must belong to a user and hold `write:sensitive` or `signin:approve`. `policy set` needs root and changes only the flags you pass.
 
@@ -1163,6 +1218,7 @@ levelrail-cli nodes reenroll-token <id> [flags]
 levelrail-cli nodes revoke-cert <id> [flags]
 levelrail-cli nodes security <id> [--rejected] [--limit N] [flags]
 levelrail-cli nodes cert renew <id> [flags]
+levelrail-cli nodes cert drill <id> [flags]
 levelrail-cli nodes cordon <id> [flags]
 levelrail-cli nodes uncordon <id> [flags]
 levelrail-cli nodes add [--name NAME] [--mesh] [flags]
@@ -1191,7 +1247,7 @@ levelrail-cli nodes ssh-provision --host HOST --user USER (--key-file FILE | --p
 levelrail-cli nodes ssh-provisions list|show <id> [flags]
 ```
 
-- `delete` fails while the node still has placements; drain it first. `join-token` mints a one-time enrollment token, shown once. `reenroll-token` mints a one-time token that re-issues a node's agent certificate, keeping its identity, and prints the command to run on the node. `revoke-cert` revokes the certificate and closes the node's session; only a re-enroll token brings it back. `security` prints how the control plane verifies the node (CA and certificate fingerprints, renewal schedule and last failure, 24 hour check counts) and its recent security events; `cert renew` asks a connected node to renew its certificate now.
+- `delete` fails while the node still has placements; drain it first. `join-token` mints a one-time enrollment token, shown once. `reenroll-token` mints a one-time token that re-issues a node's agent certificate, keeping its identity, and prints the command to run on the node. `revoke-cert` revokes the certificate and closes the node's session; only a re-enroll token brings it back. `security` prints how the control plane verifies the node (CA and certificate fingerprints, renewal schedule and last failure, 24 hour check counts) and its recent security events; `cert renew` asks a connected node to renew its certificate now. `cert drill` rotates one node's certificate end to end (preflight, renewal request, new certificate, node still online), prints each step and exits non-zero on a failure. The old certificate is never revoked, so a failed drill changes nothing; wait time is `APP_NODE_CERT_DRILL_TIMEOUT` (30s).
 - `cordon` marks a node unschedulable without evacuating it; `uncordon` reverses that; `drain` moves every service and database off a node.
 - `list` shows each node's certificate state and days left (CERT) and agent version (AGENT); `get` adds expiry, last renewal, key origin, platform and commit.
 - `resource-usage` shows every node's latest CPU, memory and disk usage plus a fleet rollup; `capacity-forecast` projects disk and memory usage forward, roughly how many days until full.
@@ -1240,6 +1296,22 @@ levelrail-cli system restart status [flags]
 Restarts the control plane process through its supervisor, for example after enabling the mesh. It asks for confirmation unless `--yes`; without a terminal, `--yes` is required. With `--wait` it polls until the control plane answers from a new process (its `boot_id` changes), tolerating connection errors while it is down, and gives up after `--timeout`. `status` prints the current `boot_id`, whether restart is supported and whether one is pending.
 
 If no process supervisor was detected, the command prints the reason and the command to run on the server (for example `sudo systemctl restart levelrail`) and exits non-zero. The API is `GET` and `POST /api/v1/system/restart`.
+
+## System health {#system-health}
+
+```
+levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log|telemetry_prune|reset_reconcile_guard|integrity_check|integrity_restore] [flags]
+```
+
+Prints goroutines, heap, database latency and write queue, write ahead log size, reconcile pass timing and live stream use, with a finding for each value over its threshold. `--fix` applies one of the typed fixes and prints the result; it needs a root token. The API is `GET /api/v1/system/control-plane-health` and `POST /api/v1/system/control-plane-health/fix`. See [Control plane health](/control-plane-health).
+
+## System integrity {#system-integrity}
+
+```
+levelrail-cli system integrity [--check [--full]] [--restore NAME|latest] [--cancel-restore] [flags]
+```
+
+Prints whether the control plane database passed its last integrity check and lists the snapshots that can be restored. `--check` runs a quick check now, `--full` the full `integrity_check`. `--restore` verifies a snapshot and stages it to replace the database at the next start (`latest` picks the newest one that verifies), and `--cancel-restore` removes a staged restore. Staging needs a root token. The API is `GET /api/v1/system/integrity`, `POST /api/v1/system/integrity/check`, and `POST` or `DELETE /api/v1/system/integrity/restore`. See [Resilience](/resilience#database-integrity-and-guided-restore).
 
 ## System networks {#system-networks}
 
@@ -1362,7 +1434,11 @@ levelrail-cli audit-purge [flags]
 
 `audit-log` lists every recorded write, deploy and root tier request plus automatic certificate renewals, newest first. Read only requests are not recorded. It needs an admin or root scoped token. Flags: `--limit N`, `--before RFC3339`, `--path`, `--method`, `--client-kind cli|dashboard|mcp|api`, `--agent <name>` (entries made with a token labeled with that agent name), `--search <text>` (case-insensitive substring across actor, ability, method, path and remote address), `--resource domain:<name>|zone:<name>|app:<name>` (one resource's own trail), `--actions <prefixes>` (comma separated action prefixes such as `dns_record.,proxy_route.,domain.`), `--failed` (status 400 or higher), `--format csv` with `--output-file FILE`. `--agent`, `--search` and `--failed` are applied server side and carry into csv exports.
 
-`audit-purge` deletes every entry older than the retention window (`APP_AUDIT_LOG_RETENTION_DAYS`, default 90 days) right now instead of waiting for the automatic sweep. It needs an admin or root scoped token.
+`audit-purge` deletes every entry older than the retention window (`APP_AUDIT_LOG_RETENTION_DAYS`, default 90 days) right now instead of waiting for the automatic sweep. Security-family entries are kept for `APP_AUDIT_LOG_SECURITY_RETENTION_DAYS` (default 365). It needs an admin or root scoped token.
+
+`audit-verify` walks the audit log's hash chain and signed checkpoints and prints any entry that was edited, removed or cut off the end. It exits 1 when a check fails and needs a root token.
+
+`tokens create` and `auth login` default to a 90 day lifetime. A token that never expires needs `tokens create --no-expiry` from a root caller, and the security policy's maximum lifetime still overrides it.
 
 ## Attention
 
@@ -1463,13 +1539,14 @@ levelrail-cli control-plane-backups drill run|status [flags]
 levelrail-cli control-plane-backups escrow [--out FILE] [--recipient KEY] [--upload] [--ack] [flags]
 levelrail-cli control-plane-backups escrow ack [flags]
 levelrail-cli control-plane-backups escrow open <file> --identity FILE [--extract DIR]
+levelrail-cli control-plane-backups restore-plan
 levelrail-cli control-plane-backups keys generate [--out FILE] [--hybrid]
 levelrail-cli control-plane-backups help-dr
 ```
 
 Snapshots of the control plane's own database, stored under `<data dir>/control-plane-backups/`. `create` takes one now (manual snapshots are never auto-deleted), `download` saves one to `--out FILE` (or raw bytes to stdout), `verify` re-checks the checksum, SQLite integrity and schema version without restoring (exit 1 if any check fails), `delete` removes one. Snapshots never contain the master key. Restore is an offline server command, `levelrail restore-db <file>`; see [Control plane backup and restore](/control-plane-backup).
 
-The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
+The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `restore-plan` prints the ordered recovery steps with the newest complete backup and the exact restore command filled in. `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
 
 ### Orphaned volumes
 
@@ -1607,6 +1684,7 @@ levelrail-cli settings ingress https status [flags]
 levelrail-cli settings ingress https enable --email EMAIL [--staging] [--wait 2m] [flags]
 levelrail-cli settings dashboard-url get [flags]
 levelrail-cli settings dashboard-url set --url URL [flags]
+levelrail-cli settings dashboard-url fix [flags]
 levelrail-cli settings updates get [flags]
 levelrail-cli settings updates set --channel CHANNEL [--auto-update] [flags]
 levelrail-cli settings deploy-freeze show [flags]
@@ -1619,13 +1697,15 @@ levelrail-cli settings ai-assistant get|set|clear [flags]
 - `ingress get` shows the primary domain, ACME settings, the automatic hostname toggle and the detected public address. `ingress set` changes them (`--primary-domain`, `--acme-enabled`, `--acme-email`, `--acme-directory-url`, `--fallback-domains=false`, `--hsts-enabled`, `--apps-base-domain`, `--dns-cname-target`, `--dns-ttl`, `--dns-proxied`); flags you leave out keep their current value.
 - `ingress https status` shows whether the dashboard's free sslip.io HTTPS is off, pending, issued or failed. `ingress https enable` points the dashboard at `<dashed-ip>.sslip.io` and issues a real Let's Encrypt certificate for it, with no DNS setup.
 - `dashboard-url set` sets the public dashboard URL; once it is `https://`, sign in over plain HTTP is refused (`--url ""` clears it).
+- `dashboard-url fix` switches the URL to `https://` on the primary domain once it answers over https with a valid certificate. The same Fix button sits in Settings, General (Settings health) and Security. CLI and MCP gating of beta features follows the Settings switches (`APP_EXPERIMENTAL` stays an override).
 - `updates` configures the release channel and auto update checking. `deploy-freeze` manages fleet wide freeze windows; per app windows are under `apps freeze`.
 - `ai-assistant` is experimental (`APP_EXPERIMENTAL=ai-chat`): `get` shows the active model, the fallback chain and the limits (keys are never returned), `providers list|set|test|remove|models` manages provider keys, `use <provider> <model>` picks the active model, `fallback set` sets the fallback chain, and `usage` shows token use.
 
 ## Git integrations
 
 ```
-levelrail-cli git-providers [flags]
+levelrail-cli git-providers [list] [flags]
+levelrail-cli git-providers validate <github|gitlab|gitea|bitbucket> [flags]
 levelrail-cli github-app status|disconnect|repos [flags]
 levelrail-cli github-app branches <owner> <repo> [flags]
 levelrail-cli github-app use-as-source <owner> <repo> --app-name NAME [flags]
@@ -1690,6 +1770,29 @@ See [Compose apps](/compose-apps).
 levelrail-cli static-sites list [flags]
 ```
 Lists every `build.type: static` app served directly through the embedded Caddy ingress, with no container involved.
+
+## Response cache
+
+```bash
+levelrail-cli cache status [<app>] [flags]
+levelrail-cli cache rules show|set|clear <app> [--domain D] [flags]
+levelrail-cli cache purge <app> (--url PATH | --prefix PATH | --tag NAME | --all) [flags]
+levelrail-cli cache history <app> [flags]
+```
+
+- `cache status` shows the hit rate and bandwidth saved for one app, or the instance table without a name. `cache rules set --preset static` adds the static assets rule; `--file` replaces the policy from JSON. Purges are recorded in `cache history`. See [CDN and caching](/cdn-and-caching).
+
+## Images
+
+```bash
+levelrail-cli images list [--node N] [--keep N] [flags]
+levelrail-cli images layers <image-id> [--node N] [flags]
+levelrail-cli images gc [--node N] [--keep N] [--min-age-hours H] [--apply] [flags]
+levelrail-cli images verify (<image-id> | --ref repo@sha256:...) [--node N] [flags]
+levelrail-cli images policy [--ref repo@sha256:...] [flags]
+```
+
+- `images list` shows every image on a node with size, owners and why it is kept. `images gc` previews until `--apply` and never removes live images, rollback targets or recent deploys. `images verify` checks a cosign signature and exits non-zero when it fails. See [Images](/images).
 
 ## Related
 

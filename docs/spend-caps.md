@@ -1,6 +1,7 @@
 ---
 title: "Spend caps"
 description: "Set a monthly egress and cost limit per app, get alerts at 50, 80 and 100 percent, and choose whether the app is throttled or paused when the limit is reached."
+"og:url": "https://docs.levelrail.com/spend-caps"
 ---
 
 A spend cap keeps heavy traffic from turning into a surprise bill. You give an app a monthly egress limit, a monthly cost ceiling, or both. The platform alerts you as usage climbs and, if you choose, throttles or pauses the app when the limit is reached. Counters reset on the first day of each UTC month.

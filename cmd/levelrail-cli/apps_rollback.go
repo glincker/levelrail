@@ -95,6 +95,7 @@ If the app is tagged with a protected environment, this fails unless
 Flags:
   --image string          older, already-built image reference to roll back to (required)
   --confirm                  confirm rolling back into a protected environment, skipping the interactive prompt
+  --diff                     show what this rollback would change against the last successful deploy, then exit without rolling back
   --token string          API token (default: %[2]s env var, then the credentials file)
   --api-url string       control plane base URL (default: %[3]s env var, then %[4]s)
   --profile string       named credentials profile to read (overrides APP_PROFILE, default "default")

@@ -5,11 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/httpx"
 )
 
 const (
@@ -138,7 +139,7 @@ func (c *httpClient) do(ctx context.Context, method, path string, body, out any)
 		if err != nil {
 			return fmt.Errorf("provision: request %s %s: %w", method, path, err)
 		}
-		respBody, readErr := io.ReadAll(resp.Body)
+		respBody, readErr := httpx.ReadBody(resp.Body)
 		_ = resp.Body.Close()
 		if readErr != nil {
 			return fmt.Errorf("provision: read response from %s %s: %w", method, path, readErr)

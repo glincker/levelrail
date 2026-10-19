@@ -76,6 +76,7 @@ func (m requestStatsModule) ServeHTTP(w http.ResponseWriter, r *http.Request, ne
 	DefaultRequestStats().ObserveRequest(m.Key, RequestObservation{
 		Method: r.Method, Path: r.URL.Path, Status: status, Duration: elapsed, BytesIn: in, BytesOut: rec.bytes,
 		UpstreamErr: upstreamErr, Upstream: upstreamHostport(r), RequestID: requestID, At: start,
+		Referrer: requestReferrerHost(r), Country: requestCountry(r),
 	})
 	DefaultAccessLog().Record(m.Key, AccessRecord{
 		Time: start, Host: r.Host, Method: r.Method, Path: r.URL.Path, Status: status,
@@ -128,6 +129,9 @@ type RequestStats struct {
 	mu     sync.RWMutex
 	hosts  map[string]*hostCounters
 	owners atomic.Pointer[map[string]string]
+
+	totalsMu sync.Mutex
+	totals   telemetry.RequestWindow
 }
 
 var defaultRequestStats = &RequestStats{hosts: make(map[string]*hostCounters)}
@@ -158,6 +162,7 @@ var (
 	routeMax      = telemetry.RouteMaxFromEnv()
 	routeDepth    = telemetry.RouteDepthFromEnv()
 	upstreamMax   = telemetry.UpstreamMaxFromEnv()
+	audienceMax   = telemetry.AudienceMaxFromEnv()
 	sampleCfg     = telemetry.SampleConfigFromEnv()
 )
 
@@ -181,6 +186,9 @@ type RequestObservation struct {
 	Upstream    string
 	RequestID   string
 	At          time.Time
+	// Referrer is the Referer header's host only; Country an ISO code.
+	Referrer string
+	Country  string
 }
 
 // ObserveRequest records o under key: counters, route, replica histogram and,
@@ -201,6 +209,11 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 			s.hosts[key] = h
 		}
 		s.mu.Unlock()
+	}
+	if o.Upstream != "" {
+		s.totalsMu.Lock()
+		s.totals.ObserveUpstream(o.Upstream, status, upstreamErr, float64(d)/float64(time.Millisecond), upstreamMax)
+		s.totalsMu.Unlock()
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -232,12 +245,26 @@ func (s *RequestStats) ObserveRequest(key string, o RequestObservation) {
 	ms := float64(d) / float64(time.Millisecond)
 	h.w.ObserveRoute(route, status, ms, routeMax)
 	h.w.ObserveUpstream(o.Upstream, status, upstreamErr, ms, upstreamMax)
+	h.w.ObserveAudience(o.Referrer, o.Country, audienceMax)
 	if path != "" && sampleCfg.ShouldSample(status, ms, upstreamErr, o.RequestID) {
 		h.w.AddSample(telemetry.RequestSample{
 			Time: o.At, Route: telemetry.NormalizeRoute(path, routeDepth), Method: o.Method, Status: status,
 			DurationMS: ms, Upstream: o.Upstream, RequestID: o.RequestID,
 		}, sampleCfg.TickMax)
 	}
+}
+
+// UpstreamTotals returns a copy of the cumulative per-replica counters since
+// process start. Unlike DrainByApp it never resets, so a caller can diff two
+// snapshots to judge one time window (the canary reconciler does).
+func (s *RequestStats) UpstreamTotals() map[string]telemetry.UpstreamStat {
+	s.totalsMu.Lock()
+	defer s.totalsMu.Unlock()
+	out := make(map[string]telemetry.UpstreamStat, len(s.totals.Upstreams))
+	for k, v := range s.totals.Upstreams {
+		out[k] = v
+	}
+	return out
 }
 
 // ObserveShield counts one request the abuse shield turned away under key.

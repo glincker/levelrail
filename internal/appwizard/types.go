@@ -20,6 +20,8 @@ const (
 	WarnTruncated       = "tree_truncated"
 	WarnMonorepo        = "monorepo_choose_app"
 	WarnNoPort          = "port_unknown"
+
+	WarnDirectoryMissing = "directory_missing"
 )
 
 // Stack is the detected runtime and framework.

@@ -10,12 +10,11 @@ import (
 
 func settingsBetaFeaturesUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
-  %[1]s settings beta-features list [flags]              list every gated feature and how to turn it on
-  %[1]s settings beta-features enable <feature> [flags]  switch a beta feature on (no restart)
-  %[1]s settings beta-features disable <feature> [flags] switch a beta feature off
+  %[1]s settings beta-features list [flags]                      list every gated feature and its state
+  %[1]s settings beta-features set <feature> on|off [--restart]  switch a feature, saved at once
 
-Features that are wired at startup are not switchable here: list shows the
-APP_EXPERIMENTAL line to set for each, and enable prints the same instructions.
+Features wired at server start show "restart to apply" until the control
+plane restarts; --restart asks it to restart right away (root, supervised installs).
 `, prog)
 }
 
@@ -39,8 +38,8 @@ func runSettingsBetaFeatures(prog string, args []string, stdout, stderr io.Write
 			errVerb: "list beta features",
 			print:   printBetaFeatures,
 		})
-	case "enable", "disable":
-		return runSettingsBetaFeatureSwitch(prog, args[0] == "enable", args[1:], stdout, stderr, lookupEnv)
+	case "set":
+		return runSettingsBetaFeatureSwitch(prog, args[1:], stdout, stderr, lookupEnv)
 	}
 	_, _ = fmt.Fprintf(stderr, "%s: unknown settings beta-features subcommand %q\n\n", prog, args[0])
 	_, _ = fmt.Fprint(stderr, settingsBetaFeaturesUsage(prog))
@@ -56,36 +55,47 @@ func printBetaFeatures(out io.Writer, list []apiclient.BetaFeature) {
 		case f.Enabled:
 			state = "on (settings)"
 		}
-		how := "set APP_EXPERIMENTAL=" + f.ID + " and restart"
-		if f.Toggleable {
-			how = "switchable with enable/disable"
+		how := "applies live"
+		if f.PendingRestart {
+			how = "restart to apply"
+		} else if f.RequiresRestart {
+			how = "applies at server start"
 		}
 		_, _ = fmt.Fprintf(out, "%-20s %-12s %-22s %s\n", f.ID, f.Maturity, state, how)
 	}
 }
 
-func runSettingsBetaFeatureSwitch(prog string, enable bool, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
-	verb := map[bool]string{true: "enable", false: "disable"}[enable]
-	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings beta-features "+verb, "print the feature state as JSON to stdout and nothing else", stderr)
+func runSettingsBetaFeatureSwitch(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings beta-features set", "print the feature state as JSON to stdout and nothing else", stderr)
+	restart := fs.Bool("restart", false, "restart the control plane afterwards when the change needs it")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, settingsBetaFeaturesUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
 		return exitCode
 	}
-	if fs.NArg() != 1 {
+	if fs.NArg() != 2 || (fs.Arg(1) != "on" && fs.Arg(1) != "off") {
 		_, _ = fmt.Fprint(stderr, settingsBetaFeaturesUsage(prog))
 		return exitUsage
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
-	id := fs.Arg(0)
+	id, enable := fs.Arg(0), fs.Arg(1) == "on"
 	res, err := client.SetBetaFeature(context.Background(), id, enable)
 	if err != nil {
-		return reportError(stdout, stderr, jsonOut, fmt.Errorf("%s beta feature %q: %w", verb, id, err))
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("set beta feature %q: %w", id, err))
+	}
+	if *restart && res.PendingRestart {
+		if _, rerr := client.RestartControlPlane(context.Background()); rerr != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("saved %s, but restarting the control plane failed: %w", id, rerr))
+		}
 	}
 	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
 		switch {
 		case res.Locked:
-			_, _ = fmt.Fprintf(stdout, "%s is on through APP_EXPERIMENTAL; remove it there to turn it off\n", res.ID)
+			_, _ = fmt.Fprintf(stdout, "%s is on through the server setting; remove it there to turn it off\n", res.ID)
+		case res.PendingRestart && *restart:
+			_, _ = fmt.Fprintf(stdout, "%s saved, control plane restarting to apply it\n", res.ID)
+		case res.PendingRestart:
+			_, _ = fmt.Fprintf(stdout, "%s saved, restart the control plane to apply it (or rerun with --restart)\n", res.ID)
 		case res.Enabled:
 			_, _ = fmt.Fprintf(stdout, "%s is on\n", res.ID)
 		default:

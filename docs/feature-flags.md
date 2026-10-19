@@ -2,6 +2,7 @@
 title: "Feature flags"
 tag: "Beta"
 description: Toggle behavior in a running app without a redeploy, with per-app flags, percentage rollouts and a simple evaluate endpoint.
+"og:url": "https://docs.levelrail.com/feature-flags"
 ---
 
 A feature flag lets you change behavior in a running app with no redeploy or restart. You create a flag, your app asks the control plane whether it is on, and you flip it from the dashboard or CLI when you want.

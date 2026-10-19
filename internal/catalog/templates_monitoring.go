@@ -59,7 +59,7 @@ var monitoringTemplates = []Template{
     volumes:
       - changedetection_data:/datastore
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5000/"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/')"]
       interval: 10s
       timeout: 5s
       retries: 3

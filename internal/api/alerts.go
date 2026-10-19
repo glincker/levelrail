@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -360,8 +359,7 @@ func (rt *Router) handleCreateAlertRule(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req ruleResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	req.ResourceID = resourceIDForApp(name) // caller-supplied value, if any, is discarded
@@ -441,8 +439,7 @@ func (rt *Router) handleUpdateAlertRule(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req ruleResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	req.ResourceID = resourceIDForApp(name) // caller-supplied value, if any, is discarded

@@ -9,7 +9,6 @@ import (
 type Meta struct {
 	Sensitive     bool   `json:"sensitive"`
 	Set           bool   `json:"set"`
-	Preview       string `json:"preview,omitempty"`
 	ValueRedacted bool   `json:"value_redacted"`
 	Reason        string `json:"reason,omitempty"`
 	Override      *bool  `json:"override,omitempty"`
@@ -44,7 +43,6 @@ func Value(key, value string, overrides map[string]bool) (string, Meta) {
 		return value, m
 	}
 	m.ValueRedacted = true
-	m.Preview = Preview(value)
 	return Placeholder, m
 }
 

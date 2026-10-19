@@ -34,6 +34,12 @@ func runMigrate(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runMigrateVolumes(prog, args[1:], stdout, stderr, lookupEnv)
 	case "cutover":
 		return runMigrateCutover(prog, args[1:], stdout, stderr, lookupEnv)
+	case "plan":
+		return runMigratePlan(prog, args[1:], stdout, stderr, lookupEnv)
+	case "status":
+		return runMigrateStatus(prog, args[1:], stdout, stderr, lookupEnv)
+	case "step":
+		return runMigrateStep(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown migrate source %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, migrateUsage(prog))

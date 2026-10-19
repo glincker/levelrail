@@ -10,12 +10,54 @@ import {
 import { appKeys } from './apps'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+export interface CanaryProgress {
+  stage: number
+  stage_count: number
+  elapsed_secs: number
+  interval_secs: number
+  canary_requests: number
+  canary_error_rate: number
+  canary_p95_ms: number
+  stable_requests: number
+  stable_error_rate: number
+  stable_p95_ms: number
+  next: string
+  breaching: boolean
+}
+
+export interface CanaryOutcome {
+  outcome: 'promoted' | 'aborted' | 'rolled_back'
+  reason?: string
+  image?: string
+  at: string
+}
+
 export interface Canary {
   active: boolean
   image?: string
   weight: number
   created_at?: string
+  staged?: boolean
+  stages?: number[]
+  stage?: number
+  interval_secs?: number
+  max_error_rate?: number
+  max_p95_ratio?: number
+  status_reason?: string
+  progress?: CanaryProgress
+  last_outcome?: CanaryOutcome
 }
+
+export interface CanaryStartBody {
+  image: string
+  weight?: number
+  stages?: number[]
+  interval?: string
+  max_error_rate?: number
+  max_p95_ratio?: number
+}
+
+const LIVE_REFRESH_MS = 5000
 
 export const canaryKeys = {
   detail: (appName: string) => [...appKeys.detail(appName), 'canary'] as const,
@@ -48,6 +90,8 @@ export function canaryQueryOptions(appName: string) {
   return queryOptions({
     queryKey: canaryKeys.detail(appName),
     queryFn: () => request(appName, 'GET', ''),
+    refetchInterval: (query) =>
+      query.state.data?.staged ? LIVE_REFRESH_MS : false,
   })
 }
 
@@ -64,11 +108,7 @@ export function useCanaryActions(appName: string) {
       exact: true,
     })
   }
-  const start = useMutation<
-    Canary,
-    ApiError,
-    { image: string; weight: number }
-  >({
+  const start = useMutation<Canary, ApiError, CanaryStartBody>({
     mutationFn: (body) => request(appName, 'POST', '', body),
     onSuccess,
   })

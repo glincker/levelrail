@@ -2,13 +2,15 @@
 title: "Deploying and managing apps"
 sidebarTitle: "Deploying apps"
 description: Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
+"og:url": "https://docs.levelrail.com/deploying-apps"
 ---
 
 ## What this covers
 
 An app is a container (or a set of them) that Levelrail keeps running for you. You describe it once, from the dashboard, the CLI, or an `app.yaml` in your repo. Levelrail builds it if needed, starts it, waits until it is healthy, switches traffic to it, and keeps every previous image so you can go back. This page follows an app from creation through deploys, rollbacks, configuration, promotion, and day to day operation.
 
-![Levelrail app overview page with health status, setup checklist, and recent activity](assets/screenshots/app-overview-page.png)
+<img src="/assets/screenshots/app-overview-page-light.png" alt="Levelrail app overview page with health status, setup checklist, and recent activity" className="block dark:hidden" />
+<img src="/assets/screenshots/app-overview-page.png" alt="Levelrail app overview page with health status, setup checklist, and recent activity" className="hidden dark:block" />
 
 ### Common tasks
 
@@ -42,6 +44,17 @@ There are four ways to create one. All four accept inline secret values (`--secr
 
 The dashboard's **New** wizard offers an existing image, a git repository, and Docker Compose as step-one cards, plus templates. The multi-service `app.yaml` route starts from an existing app's **Services** tab.
 
+### From a starter template
+
+The **New app** page has a **Start from a template** button. Pick a starter (web service, static site, background worker, scheduled job, or build, test and deploy), answer its few parameters, and get validated files to commit. Parameters are checked before anything is generated, and the output is parsed with the same validators a deploy uses. The build, test and deploy starter also writes `.pipelines/release.yaml`.
+
+```bash
+levelrail-cli init --list-templates
+levelrail-cli init --template web-service --param name=shop --param port=8080
+```
+
+`GET /api/v1/project-templates` lists the starters and `POST /api/v1/project-templates/{id}/render` renders one from `{"params": {...}}`, answering `422` with a per-parameter `fields` list when a value is invalid. Nothing is stored on the server.
+
 ### From an existing Docker image
 
 Skips the build step. Send `image` and `port` to `POST /api/v1/apps`, or:
@@ -56,7 +69,8 @@ In the dashboard, the **Docker image** card has an image picker that browses the
 
 ### From a git repository
 
-![Levelrail Git source settings: provider tabs, build pack, and deploy trigger](assets/screenshots/app-source.png)
+<img src="/assets/screenshots/app-source-light.png" alt="Levelrail Git source settings: provider tabs, build pack, and deploy trigger" className="block dark:hidden" />
+<img src="/assets/screenshots/app-source.png" alt="Levelrail Git source settings: provider tabs, build pack, and deploy trigger" className="hidden dark:block" />
 
 An app's **Source** tab connects a repository, picks the build pack, and sets the deploy trigger. BuildKit builds a Dockerfile, or Railpack builds it with no Dockerfile at all.
 
@@ -176,7 +190,8 @@ Use the pinned **Trigger a deploy** form on the app. A git push also deploys whe
 
 An app's **Deploy settings** tab sets the strategy (`rolling`, `recreate`, or `blue-green`, with `blue-green` the default) and the replica count:
 
-![Levelrail deploy settings with a blue-green strategy and two replicas](assets/screenshots/app-deploy-settings.png)
+<img src="/assets/screenshots/app-deploy-settings-light.png" alt="Levelrail deploy settings with a blue-green strategy and two replicas" className="block dark:hidden" />
+<img src="/assets/screenshots/app-deploy-settings.png" alt="Levelrail deploy settings with a blue-green strategy and two replicas" className="hidden dark:block" />
 
 Rolling and blue-green follow the same core sequence: start the new container, wait for readiness, cut ingress to the new container, then drain and stop the old one.
 
@@ -220,7 +235,8 @@ The cause is a heuristic match against a fixed rule table, not a diagnosis. It n
 
 ### Deploys across all apps
 
-![Levelrail deploy history view with one-click rollback](assets/screenshots/deploy-history.png)
+<img src="/assets/screenshots/deploy-history-light.png" alt="Levelrail deploy history view with one-click rollback" className="block dark:hidden" />
+<img src="/assets/screenshots/deploy-history.png" alt="Levelrail deploy history view with one-click rollback" className="hidden dark:block" />
 
 <Accordion title="Filters, derived fields, summary and stream">
 
@@ -241,7 +257,10 @@ levelrail-cli deployments summary
 levelrail-cli deployments watch
 levelrail-cli apps deploys list NAME
 levelrail-cli apps deploys compare NAME --from ID [--to ID]
+levelrail-cli apps deploy NAME --image IMAGE --diff
 ```
+
+`apps deploy --diff` prints what the next deploy would change against the last successful one (image, ports, domains, limits, health, replicas, env keys) and exits without deploying. The same diff shows in the Deploy sheet before you confirm. Environment variable values are never shown, only which keys are added, removed or changed. The API is `GET /api/v1/apps/{name}/deploys/compare?pending=true` with an optional `image`.
 
 The MCP tools `list_deployments` and `deployments_summary` are read-only.
 
@@ -256,7 +275,8 @@ Open the deploy history and press **Rollback** on the row you want, one click pe
 <Tab title="CLI">
 
 ```bash
-levelrail-cli apps deploys list NAME
+levelrail-cli apps deploys list NAME --branch main --author ada --status succeeded   # also --commit, --search, --limit
+levelrail-cli apps deploys promote NAME DEPLOY_ID              # same as rollback-to: make a past succeeded deploy the live one
 levelrail-cli apps deploys rollback-to NAME DEPLOY_ID          # exact image of a past succeeded deploy, pinned by digest
 levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag yourself
 ```
@@ -264,7 +284,9 @@ levelrail-cli apps rollback NAME --image IMAGE:OLDER_TAG       # or name the tag
 </Tab>
 <Tab title="API">
 
-`POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release).
+`POST /api/v1/apps/{name}/deploys/{deployId}/rollback`, described in [Deploy safety](/deploy-safety#queue-cancel-and-rollback-to-a-release). In the dashboard this is the **Promote to production** button on any older succeeded deploy.
+
+`GET /api/v1/apps/{name}/deploy-attempts` accepts `branch`, `author`, `commit` (SHA prefix), `status`, `q` and `limit` to narrow the history.
 
 </Tab>
 </Tabs>
@@ -306,7 +328,8 @@ From the CLI, `apps status NAME` prints a "pending changes" line, and `apps env 
 
 ### Environment variables and secrets
 
-![Levelrail app Environment tab with plain variables and secrets](assets/screenshots/app-environment.png)
+<img src="/assets/screenshots/app-environment-light.png" alt="Levelrail app Environment tab with plain variables and secrets" className="block dark:hidden" />
+<img src="/assets/screenshots/app-environment.png" alt="Levelrail app Environment tab with plain variables and secrets" className="hidden dark:block" />
 
 Plain variables can be bulk loaded from a `.env` file and exported again:
 
@@ -379,7 +402,8 @@ Four optional dimensions, each independent. A dimension you leave off runs unbou
 
 Set them on the **Resources** tab, in `app.yaml`, or with `PUT /api/v1/apps/{name}`. New limits are applied live: right after the save, they are pushed to every running replica through the Docker Engine API's `ContainerUpdate`, with no recreate. The response's `resources_applied_live` says whether the push reached at least one replica. With no container running, the values are saved and take effect on the next create, and the dashboard shows a "restart required" toast.
 
-![Levelrail app resources tab](assets/screenshots/app-resources.png)
+<img src="/assets/screenshots/app-resources-light.png" alt="Levelrail app resources tab" className="block dark:hidden" />
+<img src="/assets/screenshots/app-resources.png" alt="Levelrail app resources tab" className="hidden dark:block" />
 
 `GET /api/v1/apps/{name}/resource-recommendation` is a read-only, deterministic suggestion (`internal/rightsizing`, no LLM, never applied automatically). It looks at memory and CPU samples over a lookback window (7 days by default), computes p95 and p99 against the current limit, and checks recent logs for OOM-kill signatures. The result has a sample count, a `data_sufficient` and `confidence` pair, and a suggested limit with a plain-English reason. See it in the Optimise panel on the Resources tab, or run `levelrail-cli apps resource-recommendation NAME`. With the [resource advisor](/resource-advisor) beta on, the same suggestion arrives as an advisor finding you can apply after a preview.
 

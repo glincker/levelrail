@@ -52,6 +52,31 @@ func scimInactive(raw json.RawMessage) bool {
 	return json.Unmarshal(raw, &s) == nil && strings.EqualFold(s, "false")
 }
 
+// scimPatchDeactivates reports whether a SCIM PatchOp sets active to false, by path or inside a value object.
+func scimPatchDeactivates(body []byte) bool {
+	var req struct {
+		Operations []struct {
+			Path  string          `json:"path"`
+			Value json.RawMessage `json:"value"`
+		} `json:"Operations"`
+	}
+	if json.Unmarshal(body, &req) != nil {
+		return false
+	}
+	for _, op := range req.Operations {
+		if strings.EqualFold(op.Path, "active") && scimInactive(op.Value) {
+			return true
+		}
+		var obj struct {
+			Active json.RawMessage `json:"active"`
+		}
+		if op.Path == "" && json.Unmarshal(op.Value, &obj) == nil && len(obj.Active) > 0 && scimInactive(obj.Active) {
+			return true
+		}
+	}
+	return false
+}
+
 func (b scimUserBody) email() string {
 	for _, e := range b.Emails {
 		if e.Primary && e.Value != "" {
@@ -86,7 +111,7 @@ func (rt *Router) scimBefore(r *http.Request, c scimCall) (scimPre, int, string)
 			return pre, http.StatusInternalServerError, "internal error"
 		}
 		pre.wasMember = found && du.Member
-		if c.method == http.MethodDelete && pre.wasMember {
+		if pre.wasMember && (c.method == http.MethodDelete || scimPatchDeactivates(c.body)) {
 			if status, detail := rt.scimLastRootGuard(ctx, c.id); status != 0 {
 				return pre, status, detail
 			}

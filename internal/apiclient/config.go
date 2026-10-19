@@ -60,16 +60,28 @@ func ResolveProfile(flagProfile string, lookupEnv func(string) (string, bool)) s
 // 401 be what reports "not authenticated" keeps this function from
 // duplicating that judgment.
 func ResolveToken(flagToken string, lookupEnv func(string) (string, bool), prog, profile string) string {
-	if flagToken != "" {
-		return flagToken
+	creds, credsErr := ReadCredentialsFile(prog, profile)
+	explicit := flagToken
+	if explicit == "" {
+		if v, ok := lookupEnv(EnvAPIToken); ok {
+			explicit = v
+		}
 	}
-	if v, ok := lookupEnv(EnvAPIToken); ok && v != "" {
-		return v
+	if explicit != "" {
+		if credsErr == nil && creds.InstanceID != "" {
+			registerTokenPin(explicit, tokenPin{pin: creds.pin(), prog: prog, profile: profile})
+		}
+		return explicit
 	}
-	if creds, err := ReadCredentialsFile(prog, profile); err == nil && creds.Token != "" {
+	if credsErr == nil && creds.Token != "" {
+		registerTokenPin(creds.Token, tokenPin{pin: creds.pin(), enforce: true, prog: prog, profile: profile})
 		return creds.Token
 	}
 	return ""
+}
+
+func (c Credentials) pin() ServerPin {
+	return ServerPin{InstanceID: c.InstanceID, Fingerprint: c.Fingerprint, Name: c.ServerName, APIURL: c.APIURL}
 }
 
 // ResolveAPIURL picks the base API URL by precedence: flagURL, then
@@ -93,7 +105,18 @@ func ResolveAPIURL(flagURL string, lookupEnv func(string) (string, bool), prog, 
 type Credentials struct {
 	APIURL string
 	Token  string
+	// InstanceID, Fingerprint and ServerName pin the server the token was issued by.
+	InstanceID  string
+	Fingerprint string
+	ServerName  string
 }
+
+// Credentials file keys for the server pin. Not env vars: the file is the only reader.
+const (
+	keyInstanceID  = "APP_INSTANCE_ID"
+	keyFingerprint = "APP_SERVER_FINGERPRINT"
+	keyServerName  = "APP_SERVER_NAME"
+)
 
 // ConfigDir is "~/.config/<prog>", prog being the caller's own binary
 // basename (filepath.Base(os.Args[0])), never a hardcoded product name:
@@ -201,6 +224,12 @@ func (p *parsedCredentialsFile) setKeyValueLine(section, line string) {
 		creds.APIURL = value
 	case EnvAPIToken:
 		creds.Token = value
+	case keyInstanceID:
+		creds.InstanceID = value
+	case keyFingerprint:
+		creds.Fingerprint = value
+	case keyServerName:
+		creds.ServerName = value
 	}
 	p.sections[section] = creds
 }
@@ -295,6 +324,11 @@ func WriteCredentialsFile(prog, profile string, creds Credentials) error {
 		}
 		if c.Token != "" {
 			sb.WriteString(EnvAPIToken + "=" + c.Token + "\n")
+		}
+		for _, kv := range [][2]string{{keyInstanceID, c.InstanceID}, {keyFingerprint, c.Fingerprint}, {keyServerName, c.ServerName}} {
+			if kv[1] != "" {
+				sb.WriteString(kv[0] + "=" + kv[1] + "\n")
+			}
 		}
 		sb.WriteString("\n")
 	}

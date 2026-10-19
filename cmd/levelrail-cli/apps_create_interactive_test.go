@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -100,7 +101,7 @@ func TestWizardPrompter_ReadLine_EOF(t *testing.T) {
 	if err == nil {
 		t.Fatal("readLine() error = nil, want an error on empty stdin (no answer ever given)")
 	}
-	if _, ok := err.(*validationError); !ok {
+	if !errors.As(err, new(*validationError)) {
 		t.Errorf("err type = %T, want *validationError (refuse, don't hang, matching authprompt.go's own EOF handling)", err)
 	}
 }

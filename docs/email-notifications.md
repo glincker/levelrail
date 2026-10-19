@@ -1,6 +1,7 @@
 ---
 title: "Email notifications"
 description: Configure SMTP, AWS SES, or Resend as the backend for alert emails and password resets, and send a test email to confirm it works.
+"og:url": "https://docs.levelrail.com/email-notifications"
 ---
 
 Levelrail sends email for alert notifications (when an alert rule with an email channel fires), password-reset links and team invites. All of them go through one backend, configured once at **Settings > Email**.

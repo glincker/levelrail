@@ -26,6 +26,7 @@ Flags:
   --until T          window end: a duration ago or an RFC3339 time (default now)
   --deploy ID        only lines from that deploy attempt's window
   --text PHRASE      only lines containing this phrase
+  --order ORDER      newest (default) or relevance (best text matches first, needs --text)
   --max-lines N      most recent lines to return (default %[2]d)
   --max-bytes N      output byte cap (default %[3]d, or $%[4]s)
   --json             print the excerpt as JSON to stdout and nothing else
@@ -45,11 +46,18 @@ func logsQueryCommand(lookupEnv func(string) (string, bool)) apiCmd {
 			fs.StringVar(&q.Until, "until", "", "window end: a duration ago or an RFC3339 time (default now)")
 			fs.StringVar(&q.Deploy, "deploy", "", "only lines from this deploy attempt's window")
 			fs.StringVar(&q.Text, "text", "", "only lines containing this phrase")
+			fs.StringVar(&q.Order, "order", "", "newest (default) or relevance (needs --text)")
 			fs.IntVar(&q.MaxLines, "max-lines", 0, "most recent lines to return")
 			fs.IntVar(&maxBytes, "max-bytes", 0, "output byte cap")
 		},
 		run: func(ctx context.Context, c *Client, pos []string) (any, func(io.Writer), error) {
 			q.App = pos[0]
+			if q.Order != "" && q.Order != "newest" && q.Order != "relevance" {
+				return nil, nil, newValidationError("--order must be newest or relevance")
+			}
+			if q.Order == "relevance" && q.Text == "" {
+				return nil, nil, newValidationError("--order relevance needs --text")
+			}
 			if maxBytes < 0 || q.MaxLines < 0 {
 				return nil, nil, newValidationError("--max-lines and --max-bytes must not be negative")
 			}

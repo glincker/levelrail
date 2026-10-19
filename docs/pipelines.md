@@ -1,6 +1,7 @@
 ---
 title: "Pipelines"
 description: Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
+"og:url": "https://docs.levelrail.com/pipelines"
 ---
 
 A pipeline is a YAML file that describes what should happen when code changes: run tests in a container, build an image, wait for a person to approve, then deploy. Pipelines sit on top of the build and deploy features that already exist. They call those primitives; they never touch the reconciler, and no AI is involved in running one.
@@ -62,7 +63,8 @@ What happens on a push to `main`:
 
 ## Where to find it
 
-![Levelrail Pipelines page before any run exists, showing a sample pipeline file and the Create a pipeline button](assets/screenshots/pipelines.png)
+<img src="/assets/screenshots/pipelines-light.png" alt="Levelrail Pipelines page before any run exists, showing a sample pipeline file and the Create a pipeline button" className="block dark:hidden" />
+<img src="/assets/screenshots/pipelines.png" alt="Levelrail Pipelines page before any run exists, showing a sample pipeline file and the Create a pipeline button" className="hidden dark:block" />
 
 Open **Pipelines** in the main sidebar (or press the [command palette](/command-palette) and type "Pipelines") to see recent runs across every app you can read. The screenshot shows the first-run view, before any pipeline has run. The page shows how many runs are active, how many failed in the last 24 hours, how many wait for approval, and the 24 hour success rate. A "Needs attention" strip lists failed runs and runs waiting on an approval or a fork hold, with **Approve** and **Reject** buttons when you hold the required ability. The table below filters by status, app, pipeline name, and trigger, loads more on demand, and refreshes on its own while a run is active. Click a row to open the run. With no runs yet, the page shows a sample pipeline and a **Create a pipeline** button that asks for an app and opens its Pipelines tab.
 
@@ -501,6 +503,33 @@ When a run fails, a summary at the top names the failed job, the failing step an
 Below the graph, every step shows its status and duration. Click a step to narrow the log to that step (click it again for the whole job). The log has a text filter, a stderr toggle, and a level filter. The link button on a step copies a URL that opens the run on that job and step (`?job=...&step=...`). The page streams a running job's output live and offers **Approve**, **Reject**, **Cancel**, and **Re-run**. Log lines are capped per job, and old runs are pruned to the newest 100 per pipeline.
 
 The MCP server exposes `list_pipeline_runs`, `list_all_pipeline_runs` (runs across every app), and `explain_pipeline_run`. All are read-only: the second reports the failed job and step, its exit code, the tail of its output, and any approval it is waiting on.
+
+## Starter templates
+
+Ten tested starter pipelines cover Node (test, deploy, version matrix), Go (test, tagged release), Python, a static site, a plain Dockerfile deploy, a monorepo with path filters, and a nightly cron job. Pick one in the dashboard from **Use a template** on a pipeline list, or from the CLI:
+
+```
+levelrail-cli pipelines templates
+levelrail-cli pipelines templates go-ci --out go-ci.yaml
+levelrail-cli pipelines templates node-ci --create web
+```
+
+`GET /api/v1/pipelines/templates` lists them and `GET /api/v1/pipelines/templates/{id}` returns one with its file. Every template is validated in the test suite.
+
+## Failed jobs, fixes, flaky jobs and timing
+
+When a run fails, the run page matches the failed job's output against known error patterns (network and registry timeouts, out of memory, job timeout, full disk, missing credentials, missing image or tool, npm, Python and Go version problems) and shows a typed **Fix** per match:
+
+- **Rerun**, **Add retries**, **Raise timeout** and **Raise memory** are applied by the control plane. The pipeline file is edited in place (comments are kept), re-validated, saved, and optionally rerun. Pipelines synced from the repository are not edited here, change the file in the repository instead.
+- Other fixes point at the one place the change lives: the pipeline editor, the app's secrets, or the node's disk.
+
+```
+levelrail-cli pipelines fixes web <run-id>
+levelrail-cli pipelines fixes web <run-id> --apply add_retries --job test --rerun
+levelrail-cli pipelines insights web ci
+```
+
+`GET /api/v1/apps/{name}/pipeline-runs/{id}/fixes` lists suggestions and `POST .../fixes/apply` applies one (`kind`, `job`, `rerun`). `GET /api/v1/apps/{name}/pipelines/{pname}/insights` returns, over the last 30 finished runs, each job's failure rate, median time and latest time, plus a timing diff of the newest run against the latest earlier run where everything passed. A job is flagged **flaky** when it both passed and failed on the same commit, passed only after a retry, or flips between pass and fail often at a failure rate that is neither rare nor constant.
 
 ## Permissions
 

@@ -2,6 +2,7 @@
 title: "Resource advisor (beta)"
 tag: "Beta"
 description: "The beta resource advisor suggests memory and CPU limits, flags idle apps, memory growth and disk pressure, and sizes database settings from local telemetry."
+"og:url": "https://docs.levelrail.com/resource-advisor"
 ---
 
 The resource advisor reads the usage history the platform already keeps on each server and turns it into plain suggestions. It tells you which containers need a memory limit, which limits are too tight or far too generous, which apps sit idle, how to size Postgres for the memory it has, and when a disk will fill. It never changes anything on its own. You apply a suggestion by opening it, reviewing the before and after, and confirming.
@@ -166,7 +167,7 @@ Likely cause: The app has a memory leak, or the growth is faster than the sugges
 
 How to confirm: Check the container restarts: `levelrail-cli apps status <app> | grep restarts`. Check recent metrics: `levelrail-cli apps metrics <app> --metric memory_bytes --since 24h`. If memory climbs steadily even after a restart, there is likely a leak.
 
-Fix: Investigate the app for memory leaks (check logs with `levelrail-cli apps logs <app> --level warn --since 1h`). Increase the limit further as a temporary fix while debugging. Once fixed, the advisor's next run will suggest a smaller limit.
+Fix: Investigate the app for memory leaks (check logs with `levelrail-cli logs signatures <app> --level warn --since 1h`). Increase the limit further as a temporary fix while debugging. Once fixed, the advisor's next run will suggest a smaller limit.
 
 Still stuck: See [Investigating a spike](/observability#investigating-a-spike) for debugging approaches.
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -340,8 +339,7 @@ func (rt *Router) handleSetNodeWorkloads(w http.ResponseWriter, r *http.Request)
 	id := r.PathValue("id")
 
 	var req setNodeWorkloadsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -376,8 +374,7 @@ func (rt *Router) handleSetNodeRegion(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	var req setNodeRegionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -488,6 +485,10 @@ type drainNodeResponse struct {
 // same teardownServiceContainers/teardownDatabaseContainer call
 // handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("dry_run") == "true" {
+		rt.previewNodeDrain(w, r)
+		return
+	}
 	if rt.multiNode != nil {
 		rt.handleStartDrain(w, r)
 		return

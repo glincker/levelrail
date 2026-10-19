@@ -28,6 +28,7 @@ const (
 	OutcomeRateLimited = "ratelimited"
 	OutcomeFlapping    = "flapping"
 	OutcomeSkipped     = "skipped"
+	OutcomeQuiet       = "quiet_hours"
 )
 
 // HistoryEntry is one alert state change and what became of its notification.

@@ -1,6 +1,7 @@
 ---
 title: "Case studies: measured results, not testimonials"
 description: "Real Levelrail measurements: a 500-app idle benchmark and multi-node verification against real Docker daemons, plus what is not proven yet."
+"og:url": "https://docs.levelrail.com/case-studies"
 ---
 
 **Measured results, stated honestly**

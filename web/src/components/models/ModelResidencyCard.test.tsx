@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelResource } from '../../types/models'
+import { AllI18n } from '../../test/allI18n'
 import { ModelResidencyCard } from './ModelResidencyCard'
 
 function model(over: Partial<ModelResource>): ModelResource {
@@ -30,9 +31,11 @@ function renderCard(m: ModelResource) {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
   return render(
-    <QueryClientProvider client={client}>
-      <ModelResidencyCard model={m} />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={client}>
+        <ModelResidencyCard model={m} />
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 

@@ -21,8 +21,7 @@ type UpgradeCheck struct {
 
 // UpgradeFix is the action that can clear a preflight check.
 type UpgradeFix struct {
-	Action  string `json:"action"`
-	Command string `json:"command"`
+	Action string `json:"action"`
 }
 
 // UpdatePreflight is GET /api/v1/updates/preflight's response.
@@ -37,7 +36,6 @@ type UpdatePreflight struct {
 	Waiting         bool           `json:"waiting"`
 	UpgradeCommand  string         `json:"upgrade_command"`
 	RollbackCommand string         `json:"rollback_command"`
-	CosignCommand   string         `json:"cosign_command"`
 	ReleaseKind     string         `json:"release_kind,omitempty"`
 	Channel         string         `json:"channel,omitempty"`
 	Edge            *EdgeGuidance  `json:"edge,omitempty"`
@@ -152,6 +150,21 @@ type RollbackPlan struct {
 	Blocked              bool             `json:"blocked"`
 	Changes              []RollbackChange `json:"changes"`
 	Notes                string           `json:"notes"`
+	OneClick             bool             `json:"one_click"`
+	OneClickReason       string           `json:"one_click_reason"`
+}
+
+// RollbackStarted is POST /api/v1/updates/rollback's response.
+type RollbackStarted struct {
+	Status        string `json:"status"`
+	TargetVersion string `json:"target_version"`
+}
+
+// StartRollback calls POST /api/v1/updates/rollback for a binary-only rollback to a retained release.
+func (c *Client) StartRollback(ctx context.Context, version string) (RollbackStarted, error) {
+	var out RollbackStarted
+	err := c.do(ctx, http.MethodPost, "/api/v1/updates/rollback", map[string]string{"version": version, "confirm": version}, &out)
+	return out, err
 }
 
 // GetRollbackPlan calls GET /api/v1/updates/rollback-plan.

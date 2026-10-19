@@ -518,6 +518,16 @@ type DomainResource struct {
 	// Kind is app or standalone; Target is where a standalone domain proxies.
 	Kind   string `json:"kind,omitempty"`
 	Target string `json:"target,omitempty"`
+	// Issues are problems the last ingress pass found for this domain.
+	Issues []DomainIssue `json:"issues,omitempty"`
+}
+
+// DomainIssue is one dropped or downgraded-domain finding from the ingress pass.
+type DomainIssue struct {
+	Domain   string `json:"domain"`
+	Code     string `json:"code"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
 }
 
 // CloudflareDNSResource mirrors internal/api's cloudflareDNSResource
@@ -3629,11 +3639,31 @@ type PurgeAuditLogResult struct {
 	Deleted int64 `json:"deleted"`
 }
 
+// AuditChainProblem mirrors store.AuditChainProblem.
+type AuditChainProblem struct {
+	Seq    int64  `json:"seq"`
+	Reason string `json:"reason"`
+}
+
+// AuditChainReport mirrors store.AuditChainReport.
+type AuditChainReport struct {
+	OK          bool                `json:"ok"`
+	Checked     int                 `json:"checked"`
+	Head        int64               `json:"head"`
+	Checkpoints int                 `json:"checkpoints"`
+	Unverified  int                 `json:"unverified"`
+	Unchained   int                 `json:"unchained"`
+	Problems    []AuditChainProblem `json:"problems"`
+}
+
 // DeployAttemptResource mirrors internal/api's deployAttemptResource
 // (internal/api/deploy_attempts.go): one row of GET
 // /api/v1/apps/{name}/deploy-attempts, additive to the reconcile
 // conditions GetDeployStatus already returns, not a replacement for it.
 type DeployAttemptResource struct {
+	// DeployURL is the attempt's own immutable address while a retained copy exists.
+	DeployURL   string     `json:"deploy_url,omitempty"`
+	Live        bool       `json:"live,omitempty"`
 	ID          string     `json:"id"`
 	ServiceName string     `json:"service_name"`
 	Image       string     `json:"image"`
@@ -3681,16 +3711,26 @@ type DeployAttemptResource struct {
 // DeployFailure mirrors internal/failure's Failure: the structured cause of a
 // failed or blocked deploy, identical across the API, CLI and MCP.
 type DeployFailure struct {
-	Code         string    `json:"code"`
-	Cause        string    `json:"cause"`
-	FailingStep  string    `json:"failing_step,omitempty"`
-	LogExcerpt   string    `json:"log_excerpt,omitempty"`
-	SuggestedFix string    `json:"suggested_fix"`
-	DocsURL      string    `json:"docs_url"`
-	Retryable    bool      `json:"retryable"`
-	DeployID     string    `json:"deploy_id"`
-	App          string    `json:"app"`
-	At           time.Time `json:"at"`
+	Code         string             `json:"code"`
+	Cause        string             `json:"cause"`
+	FailingStep  string             `json:"failing_step,omitempty"`
+	LogExcerpt   string             `json:"log_excerpt,omitempty"`
+	SuggestedFix string             `json:"suggested_fix"`
+	DocsURL      string             `json:"docs_url"`
+	Retryable    bool               `json:"retryable"`
+	Fixes        []DeployFailureFix `json:"fixes,omitempty"`
+	DeployID     string             `json:"deploy_id"`
+	App          string             `json:"app"`
+	At           time.Time          `json:"at"`
+}
+
+// DeployFailureFix mirrors internal/failure.Fix.
+type DeployFailureFix struct {
+	Code   string `json:"code"`
+	Kind   string `json:"kind"`
+	Target string `json:"target,omitempty"`
+	Hint   string `json:"hint"`
+	Match  string `json:"match"`
 }
 
 // CancelSupersededResource mirrors internal/api's cancelSupersededResource.

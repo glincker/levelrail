@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // defaultResendAPIURL is Resend's own fixed endpoint; resendSender's
@@ -53,7 +54,7 @@ func (s resendSender) Send(ctx context.Context, to, subject, body string) error 
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+s.cfg.APIKey)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	if err != nil {
 		return fmt.Errorf("email: send via resend: %w", err)
 	}

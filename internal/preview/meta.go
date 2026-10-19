@@ -202,7 +202,7 @@ func ResolveRef(base *url.URL, raw string) (*url.URL, error) {
 	}
 	ref, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrBadRef, err)
+		return nil, fmt.Errorf("%w: %w", ErrBadRef, err)
 	}
 	u := base.ResolveReference(ref)
 	if (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" || u.User != nil {

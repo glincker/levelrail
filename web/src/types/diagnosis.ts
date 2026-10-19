@@ -24,7 +24,8 @@ export interface Diagnosis {
 export type DiagnosisFixKind = 'patch' | 'input' | 'manual'
 
 // One field edit a fix proposes, on the app resource's own JSON paths:
-// "port", "health.readiness.path", "resources.memory_bytes", "env.NAME".
+// "port", "health.readiness.path", "resources.memory_bytes", "env.NAME",
+// plus "git_source.build_path", which edits the git source's Dockerfile path.
 export interface DiagnosisChange {
   field: string
   from: string

@@ -22,6 +22,10 @@ export interface DomainTLSCert {
   enabled: boolean
   uploaded_at?: string
   expires_at?: string
+  /** True once an ingress pass after the upload loaded the certificate. */
+  applied: boolean
+  /** Why the last ingress pass could not use the certificate, when it could not. */
+  apply_issue?: string
 }
 
 export interface SetDomainTLSCertRequest {
@@ -85,7 +89,10 @@ export async function setDomainTLSCert(
   if (res.status === 501) {
     throw new ApiError(
       501,
-      'Domain TLS certificate upload requires a master key to be configured on this control plane.',
+      await readErrorMessage(
+        res,
+        'Certificate upload needs the control plane master key.',
+      ),
     )
   }
   if (!res.ok) {
@@ -118,7 +125,10 @@ export async function clearDomainTLSCert(
   if (res.status === 501) {
     throw new ApiError(
       501,
-      'Domain TLS certificate upload requires a master key to be configured on this control plane.',
+      await readErrorMessage(
+        res,
+        'Certificate upload needs the control plane master key.',
+      ),
     )
   }
   if (!res.ok) {

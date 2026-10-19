@@ -143,7 +143,7 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 			return "skipped: target predates the migration dry-run, relying on the snapshot and automatic rollback", nil
 		}
 		if err != nil {
-			return "", fmt.Errorf("%w: %v", ErrMigrationCheck, err)
+			return "", fmt.Errorf("%w: %w", ErrMigrationCheck, err)
 		}
 		return fmt.Sprintf("snapshot migrates from %d to %d", a.FromSchema, schema), nil
 	}); err != nil {
@@ -174,7 +174,7 @@ func Apply(ctx context.Context, d Deps, req Request) (Attempt, error) {
 	}
 	if err := r.step(StepHealth, func() (string, error) {
 		if err := d.WaitHealthy(ctx, req.HealthTimeout); err != nil {
-			return "", fmt.Errorf("%w: %v", ErrNotHealthy, err)
+			return "", fmt.Errorf("%w: %w", ErrNotHealthy, err)
 		}
 		return "healthz and readyz answered", nil
 	}); err != nil {

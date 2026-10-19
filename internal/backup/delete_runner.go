@@ -38,7 +38,9 @@ type DeleteRunner struct {
 	// Scheduler.Deleter's own doc comment establishes: DeleteBackup then
 	// only removes the store row, never attempting the object delete.
 	Deleter Deleter
-	Logger  *slog.Logger
+	// Tombstones, if set, keeps an object whose delete failed so the scheduler sweep retries it after the row is gone.
+	Tombstones TombstoneStore
+	Logger     *slog.Logger
 }
 
 func (d *DeleteRunner) log() *slog.Logger {
@@ -67,10 +69,12 @@ func (d *DeleteRunner) DeleteBackup(ctx context.Context, historyID string) error
 		case destErr != nil:
 			d.log().Warn("backup: delete: resolve destination failed, deleting history row without removing the stored object",
 				slog.String("backup_id", historyID), slog.String("target_id", h.TargetID), slog.String("error", destErr.Error()))
+			recordTombstone(ctx, d.Tombstones, d.log(), h.TargetID, h.ObjectKey, destErr)
 		default:
 			if delErr := d.Deleter.Delete(ctx, dest, h.ObjectKey); delErr != nil {
 				d.log().Warn("backup: delete: remove stored object failed, deleting history row anyway",
 					slog.String("backup_id", historyID), slog.String("object_key", h.ObjectKey), slog.String("error", delErr.Error()))
+				recordTombstone(ctx, d.Tombstones, d.log(), h.TargetID, h.ObjectKey, delErr)
 			}
 		}
 	}

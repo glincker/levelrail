@@ -1,6 +1,7 @@
 ---
 title: "Log volume budgets"
 description: Cap how much log data one app can store, see which apps are noisiest, and forecast when a budget will be reached.
+"og:url": "https://docs.levelrail.com/log-budgets"
 ---
 
 Log retention is time based (`APP_LOGS_RETENTION`), so one chatty app can fill the disk or push everyone else's history out. A budget caps the stored log bytes per app. When an app goes over, its oldest lines are trimmed. Other apps are never touched.
@@ -28,6 +29,16 @@ A per-app value of 0, or `clear`, falls back to the fleet default. Changing a bu
 The hourly log retention sweep checks each app against its budget. An app over budget loses its oldest lines, in batches, until it is under. Each app drains a bounded amount per sweep (20,000 lines), so a very large backlog is worked down over several sweeps instead of blocking the database. Search stays consistent because trimmed lines leave the full text index at the same time.
 
 The running total of trimmed lines per app is kept and shown as **Trimmed** in the table.
+
+## Trim now
+
+An app over its budget waits for the hourly sweep. To free the space immediately:
+
+```bash
+levelrail-cli apps log-budget trim web
+```
+
+In the dashboard, an app over budget shows a **Trim now** button on its Logs page and in **Settings, Observability, Log volume**. It drops the oldest lines of that app only, up to the same per-pass bound as the sweep (20,000 lines), and says when a backlog needs another pass. API: `POST /api/v1/apps/{name}/log-budget/trim` (same ability as changing the budget).
 
 ## See the noisiest apps
 

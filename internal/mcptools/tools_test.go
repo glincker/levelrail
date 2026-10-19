@@ -79,7 +79,11 @@ func TestListApps(t *testing.T) {
 		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
 			t.Errorf("Authorization = %q, want Bearer test-token", got)
 		}
+		if got := r.URL.Query().Get("limit"); got != "50" {
+			t.Errorf("limit = %q, want the default page of 50", got)
+		}
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Total-Count", "120")
 		_ = json.NewEncoder(w).Encode([]apiclient.AppResource{{Name: "web", Image: "nginx:1", Port: 80}})
 	})
 
@@ -87,10 +91,10 @@ func TestListApps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CallTool(list_apps) error = %v", err)
 	}
-	var apps []apiclient.AppResource
-	decodeStructured(t, result, &apps)
-	if len(apps) != 1 || apps[0].Name != "web" {
-		t.Errorf("apps = %+v, want one app named web", apps)
+	var page listAppsOutput
+	decodeStructured(t, result, &page)
+	if len(page.Apps) != 1 || page.Apps[0].Name != "web" || page.Total != 120 || page.NextOffset != 1 {
+		t.Errorf("page = %+v, want app web, total 120, next_offset 1", page)
 	}
 }
 

@@ -28,7 +28,7 @@ type bulkDeleteAppsInput struct {
 func registerBulkAppTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "bulk_apps",
-		Description: "Apply one action to many apps at once, selected by names, tag or environment. Each app is authorized separately: denied apps are reported per item, not hidden, and do not fail the batch. Use dry_run first to see the targets. Apps in protected environments are skipped by redeploy. Deleting is a separate tool, bulk_delete_apps.",
+		Description: "Apply one action to many apps selected by names, tag or environment. Each app is authorized separately and denied apps are reported per item. Use dry_run first. Protected environments are skipped by redeploy. Deleting is bulk_delete_apps.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in bulkAppsInput) (*mcp.CallToolResult, apiclient.BulkAppsResponse, error) {
 		if in.Action == "delete" {
 			return nil, apiclient.BulkAppsResponse{}, fmt.Errorf("bulk apps: use bulk_delete_apps to delete")

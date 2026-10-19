@@ -1,6 +1,7 @@
 ---
 title: "Security center"
 description: "The security center scores your instance from its real state, lists what to fix first, manages sessions and devices, and sets sign-in approval and token policy."
+"og:url": "https://docs.levelrail.com/security-center"
 ---
 
 The security center is one page, **Security center** in the sidebar (`/security`). It answers three questions: how exposed is this instance right now, what should you fix first, and who is signed in. It reads the control plane's own state (accounts, tokens, sessions, settings, certificates, the [exposure audit](/exposure-audit)) and never calls anything outside your servers.
@@ -26,7 +27,7 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | API tokens that never expire | medium | live tokens | one click: limit new tokens to 90 days |
 | API tokens that can approve sign-ins | medium | live tokens holding `signin:approve` | Settings > API tokens |
 | Admins can sign in with a code | medium | `auth.code_login` | one click: turn it off |
-| HSTS is off while real certificates are in place | medium | HSTS setting and certificates | Domains |
+| HSTS is off while real certificates are in place | medium | HSTS setting and certificates | one click: probe, then turn it on |
 | Node agents older than the minimum version | medium | each node's reported agent version | Nodes |
 | No admin has a passkey | low | registered passkeys | Settings > Security |
 | API tokens unused for a long time | low | last use, `warn_unused_days` | Settings > API tokens |
@@ -34,6 +35,8 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | Only password sign-ins need new browser approval | low | `auth.approval_scope` | one click: every method |
 | The master key is missing or overdue for rotation | low | rotation history, `APP_DOCTOR_MASTER_KEY_ROTATION_WARN_DAYS` | `secrets rotate-master-key` |
 | Secrets older than 90 days | low | secret update times | rotate the secret |
+
+HSTS is never on by default. The **Enable HSTS** button first probes every public domain over HTTPS and only turns it on when each serves a publicly trusted certificate; a self-signed or internal certificate blocks it, because browsers give no way past an HSTS error. It covers subdomains and browsers remember it for 180 days. `levelrail-cli security hsts status|enable|disable` does the same, and `PUT /api/v1/security/hsts` refuses with 409 until the probe passes.
 
 A domain counts as served without public TLS when ACME is off, or when its only certificate is from the control plane's internal issuer or has expired. A proxy in front that terminates TLS (`tls_terminated_upstream`) passes the check.
 

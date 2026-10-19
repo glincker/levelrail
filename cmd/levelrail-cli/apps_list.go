@@ -9,13 +9,6 @@ import (
 	"github.com/GLINCKER/levelrail/internal/apiclient"
 )
 
-// Paged output is only used when paging is requested; the unpaged path keeps the bare array.
-type appsListPage struct {
-	Items      []appResource `json:"items"`
-	NextToken  string        `json:"next_token"`
-	TotalCount int           `json:"total_count"`
-}
-
 // --max-items/--starting-token use server-side limit/offset so large fleets are not fetched whole.
 func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "apps list", "print apps as a JSON array to stdout and nothing else", stderr)
@@ -23,7 +16,7 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	environmentFlag := fs.String("environment", "", "only apps in this environment (name or id)")
 	startingTokenFlag := fs.String("starting-token", "", "resume from the next_token a previous --max-items call printed, to fetch the next page")
 	fs.Usage = func() {
-		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. With --max-items or\n--starting-token, prints {items, next_token, total_count} instead of a\nbare array, so a script can page through a large fleet instead of\nfetching it all in one call.\n\nFlags:\n", prog)
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s apps list [flags]\n\nLists every app the caller's token can read. --json always prints a bare\narray. With --max-items or --starting-token, next_token and total_count go\nto stderr as \"next_token=N total_count=M\", so a script can page through a\nlarge fleet without the stdout shape changing.\n\nFlags:\n", prog)
 		fs.PrintDefaults()
 	}
 
@@ -73,9 +66,9 @@ func runAppsList(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 	if page.NextOffset > 0 {
 		nextToken = strconv.Itoa(page.NextOffset)
 	}
-	result := appsListPage{Items: page.Items, NextToken: nextToken, TotalCount: page.TotalCount}
+	_, _ = fmt.Fprintf(stderr, "next_token=%s total_count=%d\n", nextToken, page.TotalCount)
 
-	if err := renderResult(stdout, of.Format, of.Query, result, func() {
+	if err := renderResult(stdout, of.Format, of.Query, page.Items, func() {
 		printAppsTable(stdout, page.Items)
 		if nextToken != "" {
 			_, _ = fmt.Fprintf(stdout, "more: rerun with --starting-token %s\n", nextToken)

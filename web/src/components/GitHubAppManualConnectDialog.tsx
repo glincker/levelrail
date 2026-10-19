@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
@@ -26,6 +27,7 @@ export function ManualConnectDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const { t } = useTranslation('settings')
   const connect = useConnectGitHubAppManually()
   const [instanceURL, setInstanceURL] = useState('')
   const [appID, setAppID] = useState('')
@@ -79,8 +81,8 @@ export function ManualConnectDialog({
         account_login: accountLogin.trim() || undefined,
       },
       mutationToastCallbacks(
-        'GitHub App connected.',
-        'Could not connect the GitHub App.',
+        t('githubManualDialog.connected'),
+        t('githubManualDialog.connectFailed'),
         () => {
           resetForm()
           onOpenChange(false)
@@ -97,9 +99,9 @@ export function ManualConnectDialog({
     >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Connect a GitHub App manually</DialogTitle>
+          <DialogTitle>{t('githubManualDialog.title')}</DialogTitle>
           <DialogDescription>
-            Create the App yourself at{' '}
+            {t('githubManualDialog.descPrefix')}{' '}
             <a
               href="https://github.com/settings/apps/new"
               target="_blank"
@@ -108,16 +110,13 @@ export function ManualConnectDialog({
             >
               github.com/settings/apps/new
             </a>{' '}
-            (or your GitHub Enterprise Server instance&apos;s own
-            /settings/apps/new), then paste the resulting credentials here. No
-            primary domain required to save these: only automated setup needs
-            one.
+            {t('githubManualDialog.descSuffix')}
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-1">
           <Field>
             <FieldLabel htmlFor="gh-instance-url">
-              GitHub instance (optional)
+              {t('githubManualDialog.instanceLabel')}
             </FieldLabel>
             <Input
               id="gh-instance-url"
@@ -131,12 +130,13 @@ export function ManualConnectDialog({
               placeholder="https://github.com"
             />
             <FieldDescription>
-              Leave blank for github.com. Self-hosted instances work too, e.g.
-              https://github.example.com.
+              {t('githubManualDialog.instanceHint')}
             </FieldDescription>
           </Field>
           <Field>
-            <FieldLabel htmlFor="gh-app-id">App ID</FieldLabel>
+            <FieldLabel htmlFor="gh-app-id">
+              {t('githubManualDialog.appId')}
+            </FieldLabel>
             <Input
               id="gh-app-id"
               type="number"
@@ -149,7 +149,9 @@ export function ManualConnectDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="gh-client-id">Client ID</FieldLabel>
+            <FieldLabel htmlFor="gh-client-id">
+              {t('githubManualDialog.clientId')}
+            </FieldLabel>
             <Input
               id="gh-client-id"
               value={clientID}
@@ -160,7 +162,9 @@ export function ManualConnectDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="gh-client-secret">Client secret</FieldLabel>
+            <FieldLabel htmlFor="gh-client-secret">
+              {t('githubManualDialog.clientSecret')}
+            </FieldLabel>
             <Input
               id="gh-client-secret"
               type="password"
@@ -171,7 +175,9 @@ export function ManualConnectDialog({
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="gh-webhook-secret">Webhook secret</FieldLabel>
+            <FieldLabel htmlFor="gh-webhook-secret">
+              {t('githubManualDialog.webhookSecret')}
+            </FieldLabel>
             <Input
               id="gh-webhook-secret"
               type="password"
@@ -181,12 +187,13 @@ export function ManualConnectDialog({
               }}
             />
             <FieldDescription>
-              The value you set as the App&apos;s own webhook secret on GitHub,
-              not generated here.
+              {t('githubManualDialog.webhookHint')}
             </FieldDescription>
           </Field>
           <Field>
-            <FieldLabel htmlFor="gh-private-key">Private key (.pem)</FieldLabel>
+            <FieldLabel htmlFor="gh-private-key">
+              {t('githubManualDialog.privateKey')}
+            </FieldLabel>
             <Textarea
               id="gh-private-key"
               value={privateKey}
@@ -198,14 +205,13 @@ export function ManualConnectDialog({
               className="font-mono text-xs"
             />
             <FieldDescription>
-              Generated once on the App&apos;s General page on GitHub and
-              downloaded as a .pem file. Paste its full contents.
+              {t('githubManualDialog.privateKeyHint')}
             </FieldDescription>
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field>
               <FieldLabel htmlFor="gh-installation-id">
-                Installation ID (optional)
+                {t('githubManualDialog.installationId')}
               </FieldLabel>
               <Input
                 id="gh-installation-id"
@@ -219,7 +225,7 @@ export function ManualConnectDialog({
             </Field>
             <Field>
               <FieldLabel htmlFor="gh-account-login">
-                Account login (optional)
+                {t('githubManualDialog.accountLogin')}
               </FieldLabel>
               <Input
                 id="gh-account-login"
@@ -240,8 +246,8 @@ export function ManualConnectDialog({
           submitDisabled={!canSubmit || connect.isPending}
           pending={connect.isPending}
           onSubmit={handleSubmit}
-          submitLabel="Connect"
-          pendingLabel="Connecting..."
+          submitLabel={t('githubManualDialog.connect')}
+          pendingLabel={t('githubManualDialog.connecting')}
         />
       </DialogContent>
     </ResettableDialog>

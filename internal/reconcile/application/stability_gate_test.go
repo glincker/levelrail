@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -181,6 +182,30 @@ func TestStabilityGate_FailuresKeepOldReleaseServing(t *testing.T) {
 				t.Errorf("gate-failed container %s still running; it must be stopped so the next pass restarts it under backoff", target)
 			}
 		})
+	}
+}
+
+func TestStabilityGate_InspectErrorIsUnverifiedNotPassed(t *testing.T) {
+	srv := alwaysHealthy()
+	defer srv.Close()
+	rt := newFakeRuntime(serverPort(t, srv))
+	oldName := ContainerName("web", "img:v1", "")
+	rt.seed(oldName, true)
+	rt.inspectExitErr = errors.New("docker daemon unreachable")
+	desired := gateDesired()
+
+	rec := &fakeGateRecorder{}
+	opts := append(gateOptions(rec, 1, 50*time.Millisecond, 0), WithReadyBudget(200*time.Millisecond))
+	c := New("web", &fakeStore{svc: desired}, rt, opts...)
+	if _, err := c.Reconcile(context.Background()); err == nil {
+		t.Fatal("Reconcile() error = nil, want the unverified container to fail the gate")
+	}
+	if rec.has(deploysafety.PhaseCutover, deploysafety.StatusPassed) {
+		t.Errorf("events = %+v, an uninspectable container must not reach cutover", rec.events)
+	}
+	old, _ := rt.InspectByName(context.Background(), oldName)
+	if old == nil || !old.Running {
+		t.Errorf("previous release = %+v, want it still running", old)
 	}
 }
 

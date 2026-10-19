@@ -12,9 +12,7 @@ internal/api/doctor_nas.go | exec.LookPath presence check for mount.nfs/mount.ci
 kit/firewall/firewall.go | ufw has no Go-native API, exec.CommandContext with literal "ufw" and validated argv, no shell
 internal/api/firewall_host.go | host ufw allow/enable/disable for the firewall switch, literal "ufw", args are fixed verbs plus port numbers from config and the validated SSH port setting, argv form, no shell
 internal/api/router.go | exec.LookPath default for the ufw presence check, literal binary name, no args, nothing is run
-internal/api/updates_preflight.go | exec.LookPath presence check for cosign, literal binary name, no args, nothing is run
 cmd/levelrail/release_cmds.go | host rollback subcommand run by the root operator: systemctl show/stop/start with this executable's own name, or the operator's --stop-cmd/--start-cmd run directly as argv with no shell; not reachable from the API or MCP
-internal/api/updates_releases.go | exec.LookPath presence check for cosign, literal binary name, no args, nothing is run
 internal/exposure/manager.go | iptables for DOCKER-USER restrictions, literal binary name, args are validated ports, canonical CIDRs and a brand-prefixed tag, argv form, no shell
 cmd/levelrail/self_upgrade.go | host self-upgrade run by the root operator: systemctl with this executable's own file name, the operator's --stop-cmd/--start-cmd as argv with no shell, and the checksum-verified downloaded binary run with fixed subcommands (version, migrate-check); not reachable from the API or MCP
 internal/api/self_upgrade.go | systemd-run launcher for the dashboard upgrade: literal "systemd-run", argv is this executable's resolved path plus fixed flags, a target version from the release plan, a sanitized initiator and the comma-joined breaking-change ack ids as single argv values, argv form, no shell; gated by root and systemd presence

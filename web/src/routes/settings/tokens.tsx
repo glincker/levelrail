@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { KeyIcon } from '@phosphor-icons/react/dist/ssr'
 import { tokenListQueryOptions } from '../../queries/tokens'
@@ -11,6 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { Banner } from '@/components/ui/banner'
 import { useTranslation } from 'react-i18next'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
+
+const EXPIRING_SOON_MS = 14 * 24 * 60 * 60 * 1000
 
 // Account-level, so it lives under routes/settings/. The loader primes
 // the cache; the component only reads it.
@@ -29,6 +32,10 @@ function TokensPage() {
   const longLivedRoot = active.filter(
     (tok) => tok.abilities.includes('root') && !tok.expires_at,
   ).length
+  const [soonCutoff] = useState(() => Date.now() + EXPIRING_SOON_MS)
+  const expiringSoon = active.filter(
+    (tok) => tok.expires_at && Date.parse(tok.expires_at) < soonCutoff,
+  ).length
 
   return (
     <PageTemplate
@@ -45,14 +52,25 @@ function TokensPage() {
       }
       actions={<CreateTokenDialog />}
       banners={
-        longLivedRoot > 0 ? (
-          <Banner
-            variant="warning"
-            title={t('tokensPage.banner.title', { count: longLivedRoot })}
-          >
-            {t('tokensPage.banner.body')}
-          </Banner>
-        ) : null
+        <>
+          {expiringSoon > 0 ? (
+            <Banner
+              variant="warning"
+              title={t('tokensPage.expiring.title', { count: expiringSoon })}
+              action={<CreateTokenDialog />}
+            >
+              {t('tokensPage.expiring.body')}
+            </Banner>
+          ) : null}
+          {longLivedRoot > 0 ? (
+            <Banner
+              variant="warning"
+              title={t('tokensPage.banner.title', { count: longLivedRoot })}
+            >
+              {t('tokensPage.banner.body')}
+            </Banner>
+          ) : null}
+        </>
       }
     >
       {brand.DocsURL ? (

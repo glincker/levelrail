@@ -1,6 +1,7 @@
 ---
 title: "Deploy timeline"
 description: "The fleet deploy timeline shows every deploy across your apps as bars on one time axis, with live updates, filters, a hover card and a matching CLI command."
+"og:url": "https://docs.levelrail.com/deploy-timeline"
 ---
 
 The Deploy timeline (`/deploy-timeline`) puts every deploy across every app you can read on one shared time axis, one row per app. Use it to see what changed across the fleet around a given moment, and which deploys failed or rolled back.

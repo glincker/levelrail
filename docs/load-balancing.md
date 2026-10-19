@@ -2,6 +2,7 @@
 title: "Load balancing across replicas"
 tag: "Experimental"
 description: "Balance traffic across an app's replicas with health checks, retries, sticky sessions, weights, graceful cutovers, live upstream status and config export."
+"og:url": "https://docs.levelrail.com/load-balancing"
 ---
 
 Set `replicas: 3` and the control plane starts three containers. Any app with more than one replica is balanced across all of them by default: round robin, a replica that fails a request is skipped for 30 seconds, and a failed request is retried on another replica. Set `APP_INGRESS_IMPLICIT_LB=false` to send traffic to the first replica only. To tune the pool (health checks, sticky sessions, weights), use the app's Load balancer tab, the CLI, or `app.yaml`; explicit configuration replaces the default. Balancing uses the same embedded Caddy that terminates TLS for your domains, so no extra container is needed.
@@ -99,7 +100,8 @@ The single node case and the multi-node case use the same code path. For a servi
 
 ## Live status
 
-![Levelrail load balancer view showing two healthy replicas behind a round robin proxy](assets/screenshots/load-balancer.png)
+<img src="/assets/screenshots/load-balancer-light.png" alt="Levelrail load balancer view showing two healthy replicas behind a round robin proxy" className="block dark:hidden" />
+<img src="/assets/screenshots/load-balancer.png" alt="Levelrail load balancer view showing two healthy replicas behind a round robin proxy" className="hidden dark:block" />
 
 **Load balancer** in the dashboard shows an upstream table refreshed every five seconds: state (`healthy`, `unhealthy`, `draining`), weight, active requests, recent failures, last check time and the reason a replica is out of the pool. The same data is available from `levelrail-cli lb status web`, `GET /api/v1/apps/web/loadbalancer/status`, and the `get_app_load_balancer_status` MCP tool.
 

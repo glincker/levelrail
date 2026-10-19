@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -66,8 +65,7 @@ func (rt *Router) handleGetOrganization(w http.ResponseWriter, r *http.Request) 
 // handleCreateOrganization handles POST /api/v1/organizations.
 func (rt *Router) handleCreateOrganization(w http.ResponseWriter, r *http.Request) {
 	var req createOrganizationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Name == "" {
@@ -126,8 +124,7 @@ func (rt *Router) handleSetProjectOrganization(w http.ResponseWriter, r *http.Re
 	projectID := r.PathValue("id")
 
 	var req setProjectOrganizationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.OrgID != "" {

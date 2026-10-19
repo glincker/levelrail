@@ -130,15 +130,19 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 		fmt.Sprintf("waiting for %d consecutive readiness passes and %s running without a restart", cfg.SuccessThreshold, cfg.StableWindow))
 
 	var lastExit docker.ExitState
+	var lastInspectErr error
 	for {
 		obs := deploysafety.GateObservation{
 			Running: true, BaselineRestartCount: baseline.RestartCount, BaselineStartedAt: baseline.StartedAt,
 			RestartCount: baseline.RestartCount, StartedAt: baseline.StartedAt,
 		}
+		unverified := false
 		if inspector != nil {
 			es, err := inspector.InspectExitState(ctx, state.Name)
 			switch {
 			case err != nil:
+				unverified = true
+				lastInspectErr = err
 			case es == nil:
 				obs.Running = false
 			default:
@@ -148,8 +152,15 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			}
 		} else if cs, err := c.runtime.InspectByName(ctx, state.Name); err == nil {
 			obs.Running = cs != nil && cs.Running
+		} else {
+			unverified = true
+			lastInspectErr = err
 		}
-		if obs.Running && readiness != nil {
+		if unverified {
+			passes = 0
+		} else if readiness == nil {
+			passes = cfg.SuccessThreshold
+		} else if obs.Running {
 			if err := c.prober().Check(ctx, target, probeCfg); err != nil {
 				passes = 0
 			} else {
@@ -169,6 +180,9 @@ func (c *Controller) stabilityGate(ctx context.Context, state *docker.ContainerS
 			return nil
 		case deploysafety.VerdictFail:
 			msg := gateFailureMessage(state.Name, reason, obs, cfg)
+			if unverified && lastInspectErr != nil && reason == deploysafety.ReasonGateTimeout {
+				msg = fmt.Sprintf("container %s could not be inspected, so its stability is unverified: %v", state.Name, lastInspectErr)
+			}
 			if !obs.Running {
 				msg = c.captureGateExit(ctx, state, desired, readiness == nil, reason, lastExit, obs)
 			}

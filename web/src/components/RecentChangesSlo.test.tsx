@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AllI18n } from '../test/allI18n'
 import { AlertHistoryTable } from './AlertHistoryTable'
 import { RecentChanges } from './RecentChanges'
 import { SloSuggestion } from './SloSuggestion'
@@ -26,7 +27,11 @@ function renderWithClient(node: React.ReactNode) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
-  render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>)
+  render(
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>{node}</QueryClientProvider>
+    </AllI18n>,
+  )
 }
 
 const CHANGES = {

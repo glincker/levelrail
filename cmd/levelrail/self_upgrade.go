@@ -186,7 +186,7 @@ func selfUpgradeSigner(mode, repo, dataDir, target string, logger *slog.Logger, 
 		IdentityRegexp: "(?i)https://github.com/" + regexp.QuoteMeta(repo) + `/\.github/workflows/release\.yml@.*`,
 		Issuer:         cosignOIDCIssuer,
 		Pinned:         pinned,
-		TUFCacheDir:    filepath.Join(dataDir, "sigstore-tuf"),
+		TUFCacheDir:    selfupgrade.TUFCacheDir(dataDir),
 		OnVerified: func() {
 			if pinned {
 				return

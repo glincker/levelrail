@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/envredact"
 	"github.com/GLINCKER/levelrail/internal/platformimport"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -168,10 +169,7 @@ func stageable(state string) bool {
 }
 
 func redactImportError(msg, token string) string {
-	if token != "" {
-		msg = strings.ReplaceAll(msg, token, "[redacted]")
-	}
-	return msg
+	return envredact.Secrets(msg, token)
 }
 
 // stagedVolumes renames an item's volumes to the Docker volume names the

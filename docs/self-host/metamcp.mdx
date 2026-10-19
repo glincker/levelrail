@@ -1,0 +1,61 @@
+---
+title: "Self-host MetaMCP with Docker"
+sidebarTitle: "MetaMCP"
+description: "An MCP aggregator and gateway that groups many MCP servers behind one endpoint with auth, namespaces and middleware."
+"og:url": "https://docs.levelrail.com/self-host/metamcp"
+---
+
+An MCP aggregator and gateway that groups many MCP servers behind one endpoint with auth, namespaces and middleware.
+
+This page describes the Levelrail template for MetaMCP (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.metamcp.com.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `db` | `postgres:16-alpine` | none | `pgdata -&#62; /var/lib/postgresql/data` |
+| `metamcp` | `ghcr.io/metatool-ai/metamcp:2.4` | 12008 | none |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `db` | `POSTGRES_DB` | Preset in the template |
+| `db` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `db` | `POSTGRES_USER` | Preset in the template |
+| `metamcp` | `APP_URL` | Preset in the template |
+| `metamcp` | `BETTER_AUTH_SECRET` | Generated at deploy |
+| `metamcp` | `DATABASE_URL` | Generated at deploy |
+| `metamcp` | `NEXT_PUBLIC_APP_URL` | Preset in the template |
+| `metamcp` | `POSTGRES_DB` | Preset in the template |
+| `metamcp` | `POSTGRES_HOST` | Preset in the template |
+| `metamcp` | `POSTGRES_PASSWORD` | Generated at deploy |
+| `metamcp` | `POSTGRES_PORT` | Preset in the template |
+| `metamcp` | `POSTGRES_USER` | Preset in the template |
+| `metamcp` | `TRANSFORM_LOCALHOST_TO_DOCKER_INTERNAL` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy MetaMCP with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select MetaMCP. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy metamcp --name my-metamcp
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

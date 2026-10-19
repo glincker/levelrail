@@ -136,3 +136,28 @@ func TestInitNames_BrandEnvOverrides(t *testing.T) {
 		t.Errorf("names = %+v", n)
 	}
 }
+
+func TestInit_TemplateWritesStarterFiles(t *testing.T) {
+	dir := t.TempDir()
+	code, _, stderr := runInitCLI(t, "--dir", dir, "--yes", "--template", "build-test-deploy", "--param", "name=shop", "--json")
+	if code != exitOK {
+		t.Fatalf("exit %d, stderr: %s", code, stderr)
+	}
+	if !strings.Contains(readProjectFile(t, dir, "app.yaml"), "shop:") {
+		t.Fatal("app.yaml missing the service name")
+	}
+	if !strings.Contains(readProjectFile(t, dir, ".pipelines/release.yaml"), "stages: [test, build, deploy]") {
+		t.Fatal("pipeline file not written")
+	}
+}
+
+func TestInit_TemplateRejectsBadParams(t *testing.T) {
+	dir := t.TempDir()
+	code, _, _ := runInitCLI(t, "--dir", dir, "--yes", "--template", "web-service", "--param", "name=Bad_Name")
+	if code == exitOK {
+		t.Fatal("want a validation failure")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "app.yaml")); err == nil {
+		t.Fatal("nothing should be written on invalid params")
+	}
+}

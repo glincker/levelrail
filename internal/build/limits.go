@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"runtime"
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -84,7 +86,19 @@ func WithLimiterClock(c Clock) LimiterOption { return func(l *Limiter) { l.clock
 // WithLimiterLogger overrides the logger.
 func WithLimiterLogger(lg *slog.Logger) LimiterOption { return func(l *Limiter) { l.log = lg } }
 
-// Limiter queues builds past the concurrency limit, stops builds past the
+// NodeResolver names the node the next build will run on, "" for the local node.
+type NodeResolver func(ctx context.Context) string
+
+// ImageSizer reports a built image's size in bytes, 0 when unknown.
+type ImageSizer func(ctx context.Context, tag string) int64
+
+// WithNodeResolver makes the concurrency limit apply per node instead of globally.
+func WithNodeResolver(n NodeResolver) LimiterOption { return func(l *Limiter) { l.node = n } }
+
+// WithImageSizer records the size of every built image.
+func WithImageSizer(s ImageSizer) LimiterOption { return func(l *Limiter) { l.sizer = s } }
+
+// Limiter queues builds past the per-node concurrency limit, stops builds past the
 // time limit, and records each outcome with its cache hit counts.
 type Limiter struct {
 	inner  Builder
@@ -93,7 +107,14 @@ type Limiter struct {
 	clock  Clock
 	log    *slog.Logger
 
-	mu      sync.Mutex
+	node  NodeResolver
+	sizer ImageSizer
+
+	mu    sync.Mutex
+	slots map[string]*nodeSlots
+}
+
+type nodeSlots struct {
 	running int
 	limit   int
 	waiters []chan struct{}
@@ -101,7 +122,7 @@ type Limiter struct {
 
 // NewLimiter wraps inner. limits is read once per build.
 func NewLimiter(inner Builder, limits LimitsSource, opts ...LimiterOption) *Limiter {
-	l := &Limiter{inner: inner, limits: limits, clock: realClock{}, log: slog.Default()}
+	l := &Limiter{inner: inner, limits: limits, clock: realClock{}, log: slog.Default(), slots: map[string]*nodeSlots{}}
 	for _, o := range opts {
 		o(l)
 	}
@@ -125,13 +146,17 @@ func (l *Limiter) BuildRailpack(ctx context.Context, req RailpackRequest, progre
 func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEvent), do func(context.Context, func(ProgressEvent)) (*Result, error)) (*Result, error) {
 	lim := l.limits(ctx)
 	queued := l.clock.Now()
-	if err := l.acquire(ctx, lim.MaxConcurrent); err != nil {
+	nodeID := ""
+	if l.node != nil {
+		nodeID = l.node(ctx)
+	}
+	if err := l.acquire(ctx, nodeID, lim.MaxConcurrent); err != nil {
 		return nil, fmt.Errorf("build: waiting for a build slot: %w", err)
 	}
-	defer l.release()
+	defer l.release(nodeID)
 
 	started := l.clock.Now()
-	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued)}
+	run := Run{App: AppFromTag(tag), Tag: tag, StartedAt: started, QueueWait: started.Sub(queued), Node: nodeID, Platform: HostPlatform()}
 
 	bctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)
@@ -166,6 +191,9 @@ func (l *Limiter) run(ctx context.Context, tag string, progress func(ProgressEve
 	switch {
 	case err == nil:
 		run.Status = RunSuccess
+		if l.sizer != nil {
+			run.ImageBytes = l.sizer(context.WithoutCancel(ctx), tag)
+		}
 	case errors.Is(context.Cause(bctx), ErrBuildTimeout):
 		run.Status = RunTimeout
 		err = fmt.Errorf("%w after %s: %w", ErrBuildTimeout, lim.Timeout, err)
@@ -194,16 +222,26 @@ func (l *Limiter) record(ctx context.Context, r Run) {
 	}
 }
 
-func (l *Limiter) acquire(ctx context.Context, limit int) error {
+func (l *Limiter) slotsFor(node string) *nodeSlots {
+	n := l.slots[node]
+	if n == nil {
+		n = &nodeSlots{}
+		l.slots[node] = n
+	}
+	return n
+}
+
+func (l *Limiter) acquire(ctx context.Context, node string, limit int) error {
 	l.mu.Lock()
-	l.limit = limit
-	if limit <= 0 || (l.running < limit && len(l.waiters) == 0) {
-		l.running++
+	n := l.slotsFor(node)
+	n.limit = limit
+	if limit <= 0 || (n.running < limit && len(n.waiters) == 0) {
+		n.running++
 		l.mu.Unlock()
 		return nil
 	}
 	ch := make(chan struct{})
-	l.waiters = append(l.waiters, ch)
+	n.waiters = append(n.waiters, ch)
 	l.mu.Unlock()
 
 	select {
@@ -211,35 +249,63 @@ func (l *Limiter) acquire(ctx context.Context, limit int) error {
 		return nil
 	case <-ctx.Done():
 		l.mu.Lock()
-		for i, w := range l.waiters {
+		for i, w := range n.waiters {
 			if w == ch {
-				l.waiters = append(l.waiters[:i], l.waiters[i+1:]...)
+				n.waiters = append(n.waiters[:i], n.waiters[i+1:]...)
 				l.mu.Unlock()
 				return ctx.Err()
 			}
 		}
 		l.mu.Unlock()
 		// Admitted at the same moment the context ended: hand the slot back.
-		l.release()
+		l.release(node)
 		return ctx.Err()
 	}
 }
 
-func (l *Limiter) release() {
+func (l *Limiter) release(node string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	l.running--
-	for len(l.waiters) > 0 && (l.limit <= 0 || l.running < l.limit) {
-		ch := l.waiters[0]
-		l.waiters = l.waiters[1:]
-		l.running++
+	n := l.slotsFor(node)
+	n.running--
+	for len(n.waiters) > 0 && (n.limit <= 0 || n.running < n.limit) {
+		ch := n.waiters[0]
+		n.waiters = n.waiters[1:]
+		n.running++
 		close(ch)
 	}
 }
 
-// Queued reports builds waiting for a slot and builds running.
+// NodeLoad is one node's build slot usage.
+type NodeLoad struct {
+	Node    string
+	Running int
+	Waiting int
+	Limit   int
+}
+
+// Load reports slot usage per node that has seen a build, sorted by node ID.
+func (l *Limiter) Load() []NodeLoad {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	out := make([]NodeLoad, 0, len(l.slots))
+	for id, n := range l.slots {
+		out = append(out, NodeLoad{Node: id, Running: n.running, Waiting: len(n.waiters), Limit: n.limit})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Node < out[j].Node })
+	return out
+}
+
+// Queued reports builds waiting for a slot and builds running, across all nodes.
 func (l *Limiter) Queued() (waiting, running int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return len(l.waiters), l.running
+	for _, n := range l.slots {
+		waiting += len(n.waiters)
+		running += n.running
+	}
+	return waiting, running
 }
+
+// HostPlatform is the OS/arch BuildKit builds for: the daemon's own platform, since no cross-platform target is requested.
+func HostPlatform() string { return runtime.GOOS + "/" + runtime.GOARCH }

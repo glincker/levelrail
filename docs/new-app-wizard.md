@@ -1,6 +1,7 @@
 ---
 title: "New app wizard"
 description: How the New app wizard reads a repository, pre-fills build, port, health path, env keys and databases with evidence, and deploys with one click.
+"og:url": "https://docs.levelrail.com/new-app-wizard"
 ---
 
 The New app page (`/apps/new`) turns a repository into a running app without making you fill in blank forms. It reads the repository, suggests every setting along with the evidence behind it, and creates nothing until you press Deploy. The same analysis is available from the CLI and the HTTP API.

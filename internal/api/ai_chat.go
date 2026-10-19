@@ -195,8 +195,7 @@ func (rt *Router) handleCreateAIChatMessage(w http.ResponseWriter, r *http.Reque
 	}
 
 	var req createAIChatMessageRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Content == "" {
@@ -267,8 +266,7 @@ func (rt *Router) handleResolveAIChatConfirmation(w http.ResponseWriter, r *http
 	}
 
 	var req resolveAIChatConfirmationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 

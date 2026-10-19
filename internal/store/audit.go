@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // AuditEntry is one recorded request that passed internal/api's
@@ -81,7 +83,18 @@ func NewAuditEntryID() (string, error) {
 // ID would only ever indicate a caller bug, left to fail on the primary
 // key constraint rather than silently overwriting history.
 func (db *DB) SaveAuditEntry(ctx context.Context, e AuditEntry) error {
-	return insertAuditEntry(ctx, db, e)
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("store: begin audit write: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := insertAuditEntry(ctx, tx, e); err != nil {
+		return err
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("store: commit audit write: %w", err)
+	}
+	return nil
 }
 
 // SaveAuditEntryTx is SaveAuditEntry inside the caller's transaction.
@@ -99,13 +112,21 @@ type auditExecer interface {
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 }
 
-func insertAuditEntry(ctx context.Context, x auditExecer, e AuditEntry) error {
-	_, err := x.ExecContext(ctx, `
-		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, detail)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient, e.Action, e.OnBehalfOf, e.Detail)
+func insertAuditEntry(ctx context.Context, x auditChainDB, e AuditEntry) error {
+	e.Path, e.Detail, e.ActorName = secretmask.Mask(e.Path), secretmask.Mask(e.Detail), secretmask.Mask(e.ActorName)
+	seq, prev, hash, alg, err := chainAuditEntry(ctx, x, e)
+	if err != nil {
+		return err
+	}
+	_, err = x.ExecContext(ctx, `
+		INSERT INTO audit_log (id, actor_type, actor_id, actor_name, ability, method, path, status_code, remote_addr, created_at, client_kind, agent_name, agent_client, action, on_behalf_of, detail, chain_seq, chain_prev, chain_hash, chain_alg)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, e.ID, e.ActorType, e.ActorID, e.ActorName, e.Ability, e.Method, e.Path, e.StatusCode, e.RemoteAddr, e.CreatedAt, e.ClientKind, e.AgentName, e.AgentClient, e.Action, e.OnBehalfOf, e.Detail, seq, prev, hash, alg)
 	if err != nil {
 		return fmt.Errorf("store: save audit entry %q: %w", e.ID, err)
+	}
+	if seq%auditCheckpointEvery == 0 {
+		return writeAuditCheckpoint(ctx, x, seq, hash)
 	}
 	return nil
 }
@@ -133,6 +154,13 @@ type AuditEntryFilter struct {
 	PathLike []string
 	// ActionPrefixes keeps rows whose action starts with any of these.
 	ActionPrefixes []string
+	// ActionOrPath ORs ActionPrefixes with PathLike instead of ANDing them.
+	ActionOrPath bool
+	// OwnerUserID keeps only rows this user caused: their own sessions, the
+	// tokens they minted, and assistant turns run on their behalf.
+	OwnerUserID string
+	// ActorType keeps rows by "session", "token" or "system".
+	ActorType string
 }
 
 // AuditLikeLiteral escapes s for use inside an AuditEntryFilter.PathLike pattern.
@@ -190,8 +218,27 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 		conditions = append(conditions, `(action = ? OR action LIKE ? ESCAPE '\')`)
 		args = append(args, filter.Action, auditLikeEscaper.Replace(filter.Action)+".%")
 	}
-	conditions, args = appendAnyLike(conditions, args, "path", filter.PathLike, "")
-	conditions, args = appendAnyLike(conditions, args, "action", escapeAll(filter.ActionPrefixes), "%")
+	if filter.ActorType != "" {
+		conditions = append(conditions, "actor_type = ?")
+		args = append(args, filter.ActorType)
+	}
+	if filter.OwnerUserID != "" {
+		conditions = append(conditions, `((actor_type = 'session' AND actor_id = ?) OR (actor_type = 'token' AND actor_id IN (SELECT id FROM api_tokens WHERE owner_user_id = ?)) OR on_behalf_of = ?)`)
+		args = append(args, filter.OwnerUserID, filter.OwnerUserID, "user:"+filter.OwnerUserID)
+	}
+	if filter.ActionOrPath {
+		var ors []string
+		var orArgs []any
+		ors, orArgs = appendAnyLike(ors, orArgs, "path", filter.PathLike, "")
+		ors, orArgs = appendAnyLike(ors, orArgs, "action", escapeAll(filter.ActionPrefixes), "%")
+		if len(ors) > 0 {
+			conditions = append(conditions, "("+strings.Join(ors, " OR ")+")")
+			args = append(args, orArgs...)
+		}
+	} else {
+		conditions, args = appendAnyLike(conditions, args, "path", filter.PathLike, "")
+		conditions, args = appendAnyLike(conditions, args, "action", escapeAll(filter.ActionPrefixes), "%")
+	}
 	if len(conditions) > 0 {
 		query += "WHERE " + strings.Join(conditions, " AND ") + "\n"
 	}
@@ -248,13 +295,5 @@ func escapeAll(in []string) []string {
 // this with a cutoff derived from the operator-configured retention window,
 // rather than each rolling its own delete query.
 func (db *DB) DeleteAuditEntriesOlderThan(ctx context.Context, cutoff time.Time) (int64, error) {
-	res, err := db.ExecContext(ctx, `DELETE FROM audit_log WHERE created_at < ?`, FormatAuditTime(cutoff))
-	if err != nil {
-		return 0, fmt.Errorf("store: delete audit entries older than %s: %w", cutoff, err)
-	}
-	n, err := res.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("store: count deleted audit entries: %w", err)
-	}
-	return n, nil
+	return db.DeleteAuditEntriesTiered(ctx, cutoff, cutoff)
 }

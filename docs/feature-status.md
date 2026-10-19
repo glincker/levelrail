@@ -1,6 +1,7 @@
 ---
 title: "Feature status"
 description: Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
+"og:url": "https://docs.levelrail.com/feature-status"
 ---
 
 This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. The e2e rows, counts, and template and MCP rows were re-checked against main on 2026-10-05. Every claim cites a path, and where evidence is missing the page says so.
@@ -36,6 +37,7 @@ Because tier 4 is empty for almost every row, the "real infra" column below read
 | Feature flags | beta | Unit, API, CLI, MCP tests and a doc page, no e2e. |
 | Templates | beta | 311 catalog entries. Unit tests check shape and a floor of 180, and live e2e tests deploy samples (a 16-template fleet plus batch boot tests), not the whole catalog. |
 | Log archive | beta | Unit and e2e tests (`test/e2e/log_archive_test.go`), dedicated doc page (`docs/log-archive.md`). |
+| Automatic cleanup (janitor) | beta | Unit tests for every stage and safety rule, API test, CLI, MCP read tool, doc page (`docs/janitor.md`). No live disk-fill run yet; other nodes are not covered. |
 | Supply chain | stable | Live e2e proves the gate blocks and an override works through the real API (`test/e2e/supply_chain_test.go`). SBOM and scan stay off by default (`docs/supply-chain.md`). |
 | Sleep when idle | stable | Unit tests across scheduler, API, CLI and web, and a documented live run against a real Docker daemon and the real ingress (`scripts/verify-sleep-live.sh`, 10 checks: idle stop, wake on request, hold mode, manual wake, fleet counts). Per app and off by default (`docs/sleep-when-idle.md`). |
 | Status page | stable | Live e2e enables, authors and serves it publicly (`test/e2e/status_page_test.go`). Off until enabled. |

@@ -23,11 +23,14 @@ func setupLogArchive(ctx context.Context, logger *slog.Logger, db *store.DB, tel
 	resolver := &objectstore.Resolver{Store: db, Secrets: secretsManager}
 	archiver := objectstore.NewArchiver(db, resolver, telemetryDB, logger, opts)
 	buildCache := newBuildCache(logger, db, secretsManager)
+	sweeper := &objectstore.BucketSweeper{Store: db, Resolver: resolver, Logger: logger}
 	router.SetStorage(api.StorageDeps{
-		Options: db, Archive: db, Clients: resolver, Archiver: archiver, ArchiveRoot: opts.Prefix,
+		Options: db, Policy: db, Archive: db, Clients: resolver, Archiver: archiver, ArchiveRoot: opts.Prefix,
 		BuildCache: buildCache, BuildCacheSettings: db,
+		Buckets: db, BucketSweeper: sweeper,
 	})
 	go archiver.Run(ctx)
+	go sweeper.Run(ctx)
 }
 
 func newBuildCache(logger *slog.Logger, db *store.DB, secretsManager *secrets.Manager) *objectstore.BuildCache {

@@ -1,6 +1,7 @@
 ---
 title: "Scheduled maintenance"
 description: Announce planned downtime ahead of time with a dashboard banner, a status page entry and a channel notice, and optionally hold automatic deploys for the window.
+"og:url": "https://docs.levelrail.com/scheduled-maintenance"
 ---
 
 A maintenance window is a one-off period you plan in advance. Users see it coming, the public status page lists it as scheduled maintenance, and your notification channels hear about it once, a lead time you choose before it starts.

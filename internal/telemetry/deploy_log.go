@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // This file (deploy_log.go) is the deploy-attempt log store: build
@@ -56,7 +58,7 @@ func (db *DB) WriteDeployLogBatch(ctx context.Context, entries []DeployLogEntry)
 	defer func() { _ = stmt.Close() }()
 
 	for _, e := range entries {
-		if _, err := stmt.ExecContext(ctx, e.AttemptID, e.Stream, e.Timestamp.UnixNano(), e.Message); err != nil {
+		if _, err := stmt.ExecContext(ctx, e.AttemptID, e.Stream, e.Timestamp.UnixNano(), secretmask.Mask(e.Message)); err != nil {
 			return fmt.Errorf("telemetry: write deploy log entry for %s: %w", e.AttemptID, err)
 		}
 	}

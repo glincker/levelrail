@@ -155,7 +155,7 @@ func statementMatches(s Statement, ability, resource string) bool {
 func evaluatePolicies(policies []store.Policy, ability, resource string, extra ...string) (matched, allowed bool) {
 	sawAllow := false
 	for _, p := range policies {
-		doc, err := ParseDocument(p.Document)
+		doc, err := parseDocumentCached(p.Document)
 		if err != nil {
 			// A malformed stored document can't grant or deny anything;
 			// treat it as if it simply doesn't mention this pair.

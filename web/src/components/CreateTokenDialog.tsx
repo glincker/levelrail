@@ -30,10 +30,11 @@ import { InfoTip } from './kit'
 import { CreateFlowShell } from './CreateFlowKit'
 import { TOKEN_STEPS } from './tokenCreateSteps'
 import { useCreateToken } from '../queries/tokens'
+import { useIsRoot } from '../hooks/useIsRoot'
 import { SECRETS_REVEAL, SIGN_IN_APPROVE } from '../types/token'
 import type { CreateTokenResponse, TokenAbility } from '../types/token'
 
-// 'never' sends no expires_in_days at all, matching the Go side's omitempty.
+// 'never' sends no_expiry (root only); the server applies 90 days when nothing is named.
 const EXPIRATION_OPTIONS = [
   { value: 'never', days: undefined },
   { value: '1', days: 1 },
@@ -99,6 +100,7 @@ export function CreateTokenDialog() {
   const [open, setOpen] = useState(false)
   const [created, setCreated] = useState<CreateTokenResponse | null>(null)
   const createToken = useCreateToken()
+  const isRoot = useIsRoot()
   const schema = useMemo(() => createTokenSchema(t), [t])
   const {
     control,
@@ -112,7 +114,7 @@ export function CreateTokenDialog() {
     resolver: zodResolver(schema),
     defaultValues: {
       name: '',
-      expiration: 'never',
+      expiration: '90',
       agentName: '',
       abilities: [],
       signInApprove: false,
@@ -133,7 +135,7 @@ export function CreateTokenDialog() {
       {
         name: values.name.trim(),
         abilities,
-        ...(days ? { expires_in_days: days } : {}),
+        ...(days ? { expires_in_days: days } : { no_expiry: true }),
         ...(values.agentName.trim()
           ? { agent: { name: values.agentName.trim() } }
           : {}),
@@ -205,7 +207,9 @@ export function CreateTokenDialog() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {EXPIRATION_OPTIONS.map((option) => (
+                      {EXPIRATION_OPTIONS.filter(
+                        (option) => isRoot || option.days !== undefined,
+                      ).map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.days === undefined
                             ? t('tokens.create.never')

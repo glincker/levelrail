@@ -1,6 +1,7 @@
 ---
 title: "Developers: API, CLI and MCP server for your Levelrail instance"
 description: "Build on Levelrail: the REST API at /api/v1 on your own instance, the levelrail-cli command line, the self-hosted MCP server, and scoped API tokens."
+"og:url": "https://docs.levelrail.com/developers"
 ---
 
 **Build on the API every Levelrail surface already uses**
@@ -32,6 +33,14 @@ Pick the narrowest ability set a client actually needs. Details are in Identity 
 ## Route table and spec
 
 An OpenAPI 3.1 document listing every route, its method, path parameters and required token ability is published at https://levelrail.com/openapi.json and regenerated with the API reference. Request and response bodies are not described yet, so they are left generic. Each instance also serves a route table at GET /api/v1/openapi.json.
+
+## Retries and paging
+
+Send an `Idempotency-Key` header (up to 255 characters) on `POST /api/v1/apps`, `POST /api/v1/apps/{name}/deploys` and `POST /api/v1/scheduled-maintenance` to make a retry safe. The first response is stored for 24 hours per caller and key. A repeat with the same body gets that response back with `Idempotent-Replayed: true` and does not run again. A repeat with a different body gets 422. Server errors and rate limit responses are not stored, so those can be retried. Without the header nothing changes.
+
+List routes for apps, nodes, a tag's apps, previews and passkeys take optional `limit` (capped at 500) and `offset`. `X-Total-Count` carries the match count before paging. Without `limit` the whole list returns.
+
+Public status page and deploy badge routes answer errors as `text/plain` on purpose, so they render in an `<img>` or a plain fetch. Every other route answers errors as JSON `{"error": "..."}`.
 
 ## Related
 

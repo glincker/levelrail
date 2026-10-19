@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -49,7 +48,8 @@ type storageOrphansResponse struct {
 	TotalBytes int64                   `json:"total_bytes"`
 	// ThresholdBytes is the size above which the dashboard recommends a
 	// clean-up.
-	ThresholdBytes int64 `json:"threshold_bytes"`
+	ThresholdBytes int64     `json:"threshold_bytes"`
+	Page           *pageInfo `json:"page,omitempty"`
 }
 
 func orphanAttentionThreshold() int64 {
@@ -172,7 +172,9 @@ func (rt *Router) handleListStorageOrphans(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: list storage orphans failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, storageOrphansResponse{Orphans: list, TotalBytes: total, ThresholdBytes: orphanAttentionThreshold()})
+	resp := storageOrphansResponse{TotalBytes: total, ThresholdBytes: orphanAttentionThreshold()}
+	resp.Orphans, resp.Page = pageWithInfo(w, r, list)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 type reclaimOrphanRequest struct {
@@ -274,28 +276,6 @@ func (rt *Router) appDeleteDataPlan(w http.ResponseWriter, r *http.Request, name
 		volumes = append(volumes, v.Name)
 	}
 	return purge, volumes, true
-}
-
-// teardownDatabaseAndPurge is teardownDatabaseContainer followed by removal of
-// the database's own volumes once its container is gone.
-func (rt *Router) teardownDatabaseAndPurge(name, nodeID string) {
-	if rt.execRuntime == nil {
-		return
-	}
-	runtime, err := rt.execRuntime(nodeID)
-	if err != nil {
-		rt.logger.Error("api: delete database data: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
-		return
-	}
-	go func() { //nolint:gosec // deliberately outlives the request, same as teardownDatabaseContainer
-		ctx := context.Background()
-		if err := database.New(name, rt.databases, runtime).Teardown(ctx); err != nil {
-			rt.logger.Error("api: delete database data: teardown failed, data kept as orphaned data", slog.String("error", err.Error()), slog.String("name", name))
-			return
-		}
-		_, names := databaseVolumeNames(name)
-		rt.purgeVolumes(ctx, "database/"+name, names)
-	}()
 }
 
 // requireDeleteDataConfirm validates ?delete_data=true on a database or app

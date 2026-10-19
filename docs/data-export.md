@@ -1,6 +1,7 @@
 ---
 title: "Data export"
 description: Send logs, the audit log and metrics to Loki, syslog, a webhook, a bucket, Prometheus or an OTLP collector, with bounded buffers and no effect on deploys.
+"og:url": "https://docs.levelrail.com/data-export"
 ---
 
 Metrics, logs and the audit log stay on the control plane and its nodes by default. Data export sends copies to the tools you already run: Grafana and Prometheus, Loki, a syslog server, a SIEM webhook, an S3 compatible bucket, or an OpenTelemetry collector. Nothing is exported until you add a destination, and a destination that is down never slows a container, a deploy or the API.

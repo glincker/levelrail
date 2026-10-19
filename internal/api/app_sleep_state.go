@@ -231,6 +231,7 @@ type sleepAppsOverview struct {
 	Sleeping int                 `json:"sleeping"`
 	Eligible int                 `json:"eligible"`
 	Apps     []sleepOverviewItem `json:"apps"`
+	Page     *pageInfo           `json:"page,omitempty"`
 }
 
 // handleAppsSleepOverview handles GET /api/v1/apps/sleep/overview: every app
@@ -255,7 +256,9 @@ func (rt *Router) handleAppsSleepOverview(w http.ResponseWriter, r *http.Request
 	for _, a := range rows {
 		settings[a.ServiceName] = a
 	}
-	writeJSON(w, http.StatusOK, rt.buildAppsSleepOverview(fleet, settings, canRead, time.Now()))
+	out := rt.buildAppsSleepOverview(fleet, settings, canRead, time.Now())
+	out.Apps, out.Page = pageWithInfo(w, r, out.Apps)
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (rt *Router) buildAppsSleepOverview(fleet *appsleep.Fleet, settings map[string]store.AppSleep, canRead func(string) bool, now time.Time) sleepAppsOverview {

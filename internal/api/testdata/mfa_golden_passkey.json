@@ -22,9 +22,13 @@
     "Step": "register",
     "Status": 201,
     "Body": {
+      "backed_up": false,
       "created_at": "\u003credacted\u003e",
       "id": "\u003credacted\u003e",
       "label": "Golden Key",
+      "provider_key": "unknown",
+      "sign_count": 0,
+      "synced": false,
       "transports": [
         "internal"
       ]
@@ -35,9 +39,13 @@
     "Status": 200,
     "Body": [
       {
+        "backed_up": false,
         "created_at": "\u003credacted\u003e",
         "id": "\u003credacted\u003e",
         "label": "Golden Key",
+        "provider_key": "unknown",
+        "sign_count": 0,
+        "synced": false,
         "transports": [
           "internal"
         ]

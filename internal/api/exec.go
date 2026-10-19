@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -84,8 +83,7 @@ func (rt *Router) handleSetExecAccess(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	var req setExecAccessRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -214,8 +212,7 @@ func (rt *Router) handleExecApp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req execRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if strings.TrimSpace(req.Command) == "" {

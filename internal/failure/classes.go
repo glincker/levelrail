@@ -19,6 +19,7 @@ const (
 	CodeMissingEnv         = "missing_env"
 	CodeRegistryPushFailed = "registry_push_failed"
 	CodeDiskFull           = "disk_full"
+	CodeImageCorrupt       = "image_corrupt"
 	CodeFreezeWindow       = "freeze_window_hold"
 	CodeApprovalPending    = "approval_pending"
 	CodeScanGateBlocked    = "scan_gate_blocked"
@@ -93,7 +94,13 @@ var classes = []class{
 		code:     CodeDiskFull,
 		cause:    "The host ran out of disk space.",
 		fix:      "Free disk on the node (prune unused images and build cache, remove old logs), then retry.",
-		patterns: []string{"no space left on device", "disk quota exceeded", "insufficient disk space"},
+		patterns: []string{"no space left on device", "disk quota exceeded", "insufficient disk space", "use free space now"},
+	},
+	{
+		code: CodeImageCorrupt, retryable: true,
+		cause:    "The image or one of its layers is corrupt or incomplete on the node, so Docker could not unpack or start it.",
+		fix:      "Redeploy so the image is pulled or rebuilt again; if it keeps failing, prune the node's image cache from the resilience card first.",
+		patterns: []string{"digest mismatch", "invalid tar header", "unexpected eof", "failed to register layer", "layer does not exist", "corrupt image", "image is corrupt", "archive/tar: invalid"},
 	},
 	{
 		code: CodeDockerUnreachable, retryable: true,

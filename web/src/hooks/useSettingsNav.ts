@@ -62,3 +62,23 @@ export function filterSettingsNav(
     )
     .filter((section) => section.items.length > 0)
 }
+
+// Adds items the unified search service matched (by href) to the local text match.
+export function mergeSettingsHits(
+  sections: readonly LabelledSettingsSection[],
+  local: readonly LabelledSettingsSection[],
+  hrefs: ReadonlySet<string>,
+): LabelledSettingsSection[] {
+  if (hrefs.size === 0) return [...local]
+  const keep = new Set<string>()
+  for (const section of local) {
+    for (const item of section.items) keep.add(item.to)
+  }
+  for (const href of hrefs) keep.add(href)
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => keep.has(item.to)),
+    }))
+    .filter((section) => section.items.length > 0)
+}

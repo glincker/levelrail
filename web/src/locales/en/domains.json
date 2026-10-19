@@ -343,6 +343,21 @@
       "hideRecord": "Hide record",
       "done": "Done",
       "summary": "{{ok}} added, {{failed}} not added."
+    },
+    "fix": {
+      "useAcme": "Use automatic certificate",
+      "acmeDone": "{{domain}} now uses an automatic certificate.",
+      "uploadAgain": "Upload again",
+      "setPassword": "Set password",
+      "connectDns": "Connect DNS provider",
+      "checkTarget": "Check target",
+      "checkApp": "Open app"
+    },
+    "issue": {
+      "custom_cert_unresolved": "Uploaded certificate not in use, automatic issuance instead. Upload it again.",
+      "basic_auth_unresolved": "Not routed: the basic auth password could not be read. Set it again.",
+      "dns01_unavailable": "Wildcard certificate needs a DNS provider. Enable one under DNS settings.",
+      "target_unavailable": "Not routed: its target is unavailable."
     }
   },
   "proxySetup": {
@@ -436,6 +451,10 @@
       "disclosure": "I have my own certificate",
       "hint": "Only needed if you bought a certificate. Otherwise certificates are issued automatically.",
       "uploaded": "BYO certificate",
+      "applied": "In use",
+      "pending": "Pending",
+      "applyIssue": "The uploaded certificate is stored but not in use: {{issue}}",
+      "masterKeyFix": "Check encryption settings",
       "expires": "expires {{date}}",
       "certLabel": "Certificate (PEM)",
       "keyLabel": "Private key (PEM)",
@@ -744,5 +763,16 @@
     },
     "autoOffAt": "Switches off on its own at {{date}}",
     "noAutoOff": "No automatic end, it stays on until you end it"
+  },
+  "shieldRecommended": {
+    "title": "Abuse protection",
+    "description": "Limit how much one visitor can cost this app. Domains that already have limits are never changed.",
+    "blockBots": "Also refuse known bad bots and AI scrapers",
+    "preview_button": "Preview",
+    "apply": "Turn on recommended limits",
+    "preview": "{{rate}} requests per minute and {{concurrent}} at once per visitor would be set on {{count}} domain(s).",
+    "skipped": "{{count}} domain(s) already have limits and stay as they are.",
+    "applied": "Recommended limits turned on for {{count}} domain(s).",
+    "blockedProxy": "A proxy sits in front of this server and hides visitor addresses, so a per-visitor limit would hit everyone. Set the trusted proxy list first."
   }
 }

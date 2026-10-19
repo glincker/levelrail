@@ -1,3 +1,5 @@
+import { formatUserDateTime } from './userPreferences'
+
 // Human-readable formatting for values the backend expresses in raw
 // machine units: internal/store.ServiceResources (bytes, nano-CPUs) and
 // internal/store.ServiceProbe (nanosecond time.Duration, marshaled as a
@@ -47,7 +49,7 @@ export function formatNanoCpus(nanoCpus?: number | null): string {
 // falling back to a placeholder for a field that hasn't been filled in
 // yet (e.g. finished_at on a still-running attempt).
 export function formatDate(iso: string | undefined, fallback: string): string {
-  return iso ? new Date(iso).toLocaleString() : fallback
+  return formatUserDateTime(iso, fallback)
 }
 
 // formatAge renders an RFC3339 timestamp as a relative "Set N days ago"

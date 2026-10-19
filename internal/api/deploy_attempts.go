@@ -222,6 +222,10 @@ type deployAttemptResource struct {
 	CanceledBy string `json:"canceled_by,omitempty"`
 	// PreviewImageURL is set when a deploy preview thumbnail exists.
 	PreviewImageURL string `json:"preview_image_url,omitempty"`
+	// DeployURL is this deploy's own immutable address while a retained copy exists.
+	DeployURL string `json:"deploy_url,omitempty"`
+	// Live is true for the deploy the app runs right now, served at the app's own URL.
+	Live bool `json:"live,omitempty"`
 	// SBOMPackages and VulnCounts are set when the build produced an SBOM and it was scanned.
 	SBOMPackages *int                `json:"sbom_packages,omitempty"`
 	VulnCounts   *supplychain.Counts `json:"vuln_counts,omitempty"`
@@ -289,7 +293,7 @@ func toDeployAttemptResource(a store.DeployAttempt) deployAttemptResource {
 func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	_, err := rt.apps.GetDesiredService(r.Context(), name)
+	svc, err := rt.apps.GetDesiredService(r.Context(), name)
 	if errors.Is(err, store.ErrServiceNotFound) {
 		writeError(w, http.StatusNotFound, "app not found")
 		return
@@ -319,9 +323,12 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		ids = append(ids, a.ID)
 	}
 	supply := rt.supplyChainRecords(r.Context(), ids)
+	deployURLs := rt.deployURLsByAttempt(r.Context(), name)
 	out := make([]deployAttemptResource, 0, len(attempts))
 	for _, a := range attempts {
 		res := toDeployAttemptResource(a)
+		res.DeployURL = deployURLs[a.ID]
+		res.Live = a.Status == store.DeployAttemptStatusSucceeded && a.Image == svc.Image
 		res.CacheWarning = warnings[a.ID]
 		rt.attachFailure(&res, a)
 		rt.applyWait(r.Context(), &res, a, attempts)
@@ -332,7 +339,7 @@ func (rt *Router) handleListDeployAttempts(w http.ResponseWriter, r *http.Reques
 		}
 		out = append(out, res)
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, parseDeployAttemptFilter(r).apply(out))
 }
 
 // cacheWarningLister and cacheWarningSetter are optional deployAttempts
@@ -468,7 +475,7 @@ func (rt *Router) serveLiveDeployLog(w http.ResponseWriter, r *http.Request, dep
 	}
 	defer unsubscribe()
 
-	flusher, ok := startSSE(w)
+	flusher, ok := rt.startLiveSSE(w, r)
 	if !ok {
 		rt.logger.Error("api: deploy log stream: response writer does not support flushing", slog.String("deploy_id", deployID))
 		return

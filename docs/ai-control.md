@@ -1,6 +1,7 @@
 ---
 title: "AI control"
 description: Decide what AI agents and agent tokens may do on your instance, from off to admin, enforced on the server for every request.
+"og:url": "https://docs.levelrail.com/ai-control"
 ---
 
 AI control is a switch in Settings that decides what agents may do on this instance. The control plane enforces it on every request, so it does not depend on the agent, the MCP client or the token's own abilities. The page is always visible because it is the guardrail.

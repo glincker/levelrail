@@ -75,6 +75,7 @@ func runAppsBulk(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		}
 		req.Names = targets
 		req.Tag, req.Environment = "", ""
+		req.ConfirmCount = len(targets)
 		if req.Action == "delete" {
 			req.ConfirmNames = targets
 		}
@@ -108,7 +109,8 @@ set-environment <env>, move-to-project <project-id>, delete.
 
 Each app is authorized separately; denied apps are listed, not hidden, and
 do not fail the rest. Without --yes the targets are shown and confirmed
-first. delete always lists the exact apps it removes. redeploy skips apps in
+first. restart, stop and redeploy of more than 10 apps (APP_BULK_CONFIRM_ABOVE)
+are also confirmed by count server side. delete always lists the exact apps it removes. redeploy skips apps in
 protected environments (deploy those individually).
 
 Flags:

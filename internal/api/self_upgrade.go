@@ -39,6 +39,7 @@ type SelfUpgradeLauncher func(ctx context.Context, args []string) error
 type selfUpgradeConfig struct {
 	store     SelfUpgradeStore
 	launch    SelfUpgradeLauncher
+	rollback  SelfUpgradeLauncher
 	notes     func(ctx context.Context) ([]upgrade.HistoryRelease, error)
 	canLaunch func() (bool, string)
 	mu        sync.Mutex
@@ -57,6 +58,10 @@ func WithSelfUpgrade(s SelfUpgradeStore, launch SelfUpgradeLauncher) Option {
 		c.canLaunch = hostCanLaunch
 		if launch == nil {
 			c.launch = systemdRunLauncher
+		}
+		c.rollback = func(ctx context.Context, args []string) error { return launchHostCommand(ctx, "rollback", args) }
+		if launch != nil {
+			c.rollback = launch
 		}
 		rt.selfUpgrade = c
 	}
@@ -86,6 +91,10 @@ var hostEnvPassthrough = []string{
 // empty environment and cwd "/", so without the working directory and the
 // passthrough variables the host command cannot find brand.yaml and exits.
 func systemdRunArgs(exe, unit, cwd string, getenv func(string) string, args []string) []string {
+	return systemdRunArgsFor("self-upgrade", exe, unit, cwd, getenv, args)
+}
+
+func systemdRunArgsFor(sub, exe, unit, cwd string, getenv func(string) string, args []string) []string {
 	full := []string{"--collect", "--quiet", "--unit=" + unit}
 	if cwd != "" {
 		full = append(full, "--working-directory="+cwd)
@@ -95,11 +104,15 @@ func systemdRunArgs(exe, unit, cwd string, getenv func(string) string, args []st
 			full = append(full, "--setenv="+k+"="+v)
 		}
 	}
-	full = append(full, exe, "self-upgrade")
+	full = append(full, exe, sub)
 	return append(full, args...)
 }
 
 func systemdRunLauncher(ctx context.Context, args []string) error {
+	return launchHostCommand(ctx, "self-upgrade", args)
+}
+
+func launchHostCommand(ctx context.Context, sub string, args []string) error {
 	exe, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("locate own executable: %w", err)
@@ -107,9 +120,9 @@ func systemdRunLauncher(ctx context.Context, args []string) error {
 	if resolved, rerr := filepath.EvalSymlinks(exe); rerr == nil {
 		exe = resolved
 	}
-	unit := fmt.Sprintf("%s-self-upgrade-%d", filepath.Base(exe), time.Now().Unix())
+	unit := fmt.Sprintf("%s-%s-%d", filepath.Base(exe), sub, time.Now().Unix())
 	cwd, _ := os.Getwd()
-	full := systemdRunArgs(exe, unit, cwd, os.Getenv, args)
+	full := systemdRunArgsFor(sub, exe, unit, cwd, os.Getenv, args)
 	// A transient unit, so stopping the control plane unit does not kill the
 	// upgrade that is replacing it.
 	out, err := exec.CommandContext(ctx, "systemd-run", full...).CombinedOutput() //nolint:gosec // fixed program, argv validated by the caller

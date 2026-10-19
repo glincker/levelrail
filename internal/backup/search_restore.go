@@ -72,7 +72,7 @@ func (r *ContainerRestorer) restoreSearch(ctx context.Context, engine, container
 	if err := r.waitSearchLoaded(ctx, engine, containerName, l); err != nil {
 		rbErr := r.rollbackSearch(ctx, containerName, l)
 		if rbErr != nil {
-			return fmt.Errorf("backup: restore %s container %q: %w; rolling back also failed, the previous data is kept at %s: %v", engine, containerName, err, l.PreviousPath(), rbErr)
+			return fmt.Errorf("backup: restore %s container %q: %w; rolling back also failed, the previous data is kept at %s: %w", engine, containerName, err, l.PreviousPath(), rbErr)
 		}
 		return fmt.Errorf("backup: restore %s container %q: %w; the previous data was put back", engine, containerName, err)
 	}

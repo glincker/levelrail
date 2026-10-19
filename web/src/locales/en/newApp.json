@@ -71,6 +71,7 @@
       "read_budget": "The file read budget was reached, so some findings may be missing.",
       "tree_truncated": "This repository is large and its file listing was cut short.",
       "monorepo_choose_app": "This looks like a monorepo with several apps. Check the app directory below.",
+      "directory_missing": "That directory does not exist in this repository at this branch. Pick one from the list above or fix the path.",
       "port_unknown": "No listening port could be detected. Set the port the app listens on."
     },
     "app": {
@@ -112,6 +113,7 @@
       "buildType": "Build type",
       "dockerfile": "Dockerfile path",
       "baseDirectory": "Build context directory",
+      "validateDirectory": "Validate directory",
       "memory": "Memory limit (MiB)",
       "types": {
         "railpack": "Auto-detect (Railpack)",
@@ -219,6 +221,17 @@
         "fix": "Add a Dockerfile to the repository and analyze again."
       }
     }
+  },
+  "starter": {
+    "open": "Start from a template",
+    "title": "Starter templates",
+    "description": "Pick a starting point, answer a few questions, and get validated files to commit to your repository.",
+    "generate": "Generate files",
+    "generating": "Generating...",
+    "copy": "Copy",
+    "copied": "Copied {{path}}",
+    "next": "Commit these files to your repository, then deploy it from the Where is it from step.",
+    "viaCli": "Generate with the CLI instead"
   },
   "packages": {
     "title": "Workspace packages",

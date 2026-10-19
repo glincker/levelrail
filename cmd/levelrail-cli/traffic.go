@@ -16,7 +16,7 @@ import (
 
 const defaultTrafficInterval = 5 * time.Second
 
-var trafficWindows = map[string]bool{"5m": true, "1h": true, "24h": true}
+var trafficWindows = map[string]bool{"5m": true, "1h": true, "24h": true, "7d": true}
 
 // runTraffic implements "traffic <app>": GET /api/v1/apps/{name}/traffic,
 // request rate, errors and latency percentiles per app and per replica.
@@ -24,7 +24,7 @@ func runTraffic(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "traffic", "print the traffic report as JSON to stdout and nothing else", stderr)
 	var window, intervalStr string
 	var watch bool
-	fs.StringVar(&window, "window", "1h", "time window: 5m, 1h or 24h")
+	fs.StringVar(&window, "window", "1h", "time window: 5m, 1h, 24h or 7d")
 	fs.BoolVar(&watch, "watch", false, "refresh the report until interrupted")
 	fs.StringVar(&intervalStr, "interval", defaultTrafficInterval.String(), "how often --watch refreshes")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, trafficUsage(prog)) }
@@ -38,7 +38,7 @@ func runTraffic(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitUsage
 	}
 	if !trafficWindows[window] {
-		return reportError(stdout, stderr, jsonOut, newValidationError("--window must be 5m, 1h or 24h, got %q", window))
+		return reportError(stdout, stderr, jsonOut, newValidationError("--window must be 5m, 1h, 24h or 7d, got %q", window))
 	}
 	interval, err := parseDurationOrZero(intervalStr)
 	if err != nil || interval <= 0 {
@@ -115,6 +115,8 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 		}
 		_ = tw.Flush()
 	}
+	printTrafficLabels(out, tw, "top referrers:", "REFERRER", r.Referrers)
+	printTrafficLabels(out, tw, "top countries:", "COUNTRY", r.Countries)
 	if len(r.Samples) > 0 {
 		_, _ = fmt.Fprintln(out, "\nslow and failed requests:")
 		_, _ = fmt.Fprintln(tw, "TIME\tSTATUS\tMETHOD\tROUTE\tMS\tREPLICA\tREQUEST ID")
@@ -125,16 +127,29 @@ func printTrafficHuman(out io.Writer, r apiclient.AppTrafficResource) {
 	}
 }
 
+func printTrafficLabels(out io.Writer, tw *tabwriter.Writer, title, header string, rows []apiclient.TrafficLabel) {
+	if len(rows) == 0 {
+		return
+	}
+	_, _ = fmt.Fprintln(out, "\n"+title)
+	_, _ = fmt.Fprintln(tw, header+"\tREQ\tSHARE")
+	for _, l := range rows {
+		_, _ = fmt.Fprintf(tw, "%s\t%.0f\t%.1f%%\n", l.Label, l.Requests, l.Share*100)
+	}
+	_ = tw.Flush()
+}
+
 func trafficUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s traffic <app> [--window 1h] [--watch] [--json] [flags]
 
 Shows an app's request rate, errors and latency percentiles (p50, p95, p99)
 as measured at the ingress, with a per replica breakdown, the slowest route
-templates, sampled slow or failed requests and the SLO error-budget burn.
+templates, top referrer hosts and countries (countries need a geo source),
+sampled slow or failed requests and the SLO error-budget burn.
 
 Flags:
-  --window string         time window: 5m, 1h or 24h (default 1h)
+  --window string         time window: 5m, 1h, 24h or 7d (default 1h)
   --watch                   refresh the report until interrupted
   --interval string       how often --watch refreshes (default %[5]s)
   --token string           API token (default: %[2]s env var, then the credentials file)

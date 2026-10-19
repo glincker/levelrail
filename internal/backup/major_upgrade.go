@@ -260,14 +260,18 @@ func (r *MajorUpgradeRunner) abortBeforeWipe(ctx context.Context, run *upgradeRu
 			r.log().Warn("backup: major upgrade: snapshot volume left behind", slog.String("volume", run.snapshot), slog.String("error", err.Error()))
 			return
 		}
-		_ = r.Store.ClearMajorUpgradeSnapshot(ctx, run.id)
+		if err := r.Store.ClearMajorUpgradeSnapshot(ctx, run.id); err != nil {
+			r.log().Error("backup: major upgrade: clear snapshot record after abort failed", slog.String("upgrade", run.id), slog.String("error", err.Error()))
+		}
 	}
 }
 
 // rollbackToSnapshot puts the snapshot back as the live data volume and the
 // old version back in desired state. Safe to repeat.
 func (r *MajorUpgradeRunner) rollbackToSnapshot(ctx context.Context, run *upgradeRun) error {
-	_ = r.Store.UpdateMajorUpgradePhase(ctx, run.id, phaseRollback, "")
+	if err := r.Store.UpdateMajorUpgradePhase(ctx, run.id, phaseRollback, ""); err != nil {
+		return fmt.Errorf("record rollback phase: %w", err)
+	}
 	if err := r.Store.UpdateDatabaseSuspended(ctx, run.name, true); err != nil {
 		return fmt.Errorf("suspend database %q: %w", run.name, err)
 	}
@@ -385,8 +389,13 @@ func (r *MajorUpgradeRunner) dumpFromSnapshot(ctx context.Context, run *upgradeR
 		return "", "", fmt.Errorf("create source container: %w", err)
 	}
 	defer func() {
-		_ = r.Runtime.Stop(context.WithoutCancel(ctx), id, 30*time.Second)
-		_ = r.Runtime.Remove(context.WithoutCancel(ctx), id, true)
+		cctx := context.WithoutCancel(ctx)
+		if err := r.Runtime.Stop(cctx, id, 30*time.Second); err != nil {
+			r.log().Warn("backup: major upgrade: stop temp source container failed", slog.String("container_id", id), slog.String("error", err.Error()))
+		}
+		if err := r.Runtime.Remove(cctx, id, true); err != nil {
+			r.log().Warn("backup: major upgrade: temp source container left behind with its snapshot volume", slog.String("container_id", id), slog.String("error", err.Error()))
+		}
 	}()
 	if err := r.Runtime.Start(ctx, id); err != nil {
 		return "", "", fmt.Errorf("start source container: %w", err)

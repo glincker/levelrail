@@ -1,6 +1,7 @@
 ---
 title: "Connecting apps to databases"
 description: Connect apps to multiple databases and view reachability badges.
+"og:url": "https://docs.levelrail.com/connecting-apps-to-databases"
 ---
 
 An app can attach to exactly one database with the older `PUT /api/v1/apps/{name}/database` flow (see [Managing databases](/managing-databases#attach-a-database-to-an-app)). Connections are the newer, more general mechanism: an app can connect to as many databases as it needs, each one landing in its own env var.
@@ -30,6 +31,17 @@ Open the app's detail page, find the **Connections** card, and choose **Connect 
 `env_var` defaults to `<DATABASE>_DATABASE_URL` for the `url` field, or `<DATABASE>_DB_<FIELD>` otherwise (for example `MAIN_DB_HOST`). A numeric suffix is appended if that name is already taken by another env var, secret, vault ref, connection, or the legacy attachment. Pass `--env-var` to pick your own name. Connecting again with the same `env_var` replaces that entry.
 
 To see which databases an app could connect to, run `levelrail-cli apps connections suggest your-app`. It lists every database the app could connect to (scoped to the app's project when it has one) and flags the ones already connected. It does not check engine or schema fit. `levelrail-cli apps connections list your-app` shows the current connections.
+
+## Connect from the database side
+
+Open a database's **Overview** page and use the **Connected apps** card to pick an app and click **Connect**. It lists every app that resolves an env var from this database. The CLI equivalents:
+
+```bash
+levelrail-cli databases link main-db your-app
+levelrail-cli databases links main-db
+```
+
+The connection string is resolved from the encrypted store each time the app's container is created and is never logged. After a credential rotation, restart the app to pick up the new value.
 
 ## Reachability badges
 

@@ -177,13 +177,13 @@ func (s *DNSServer) bindPair(addr string) (net.PacketConn, net.Listener, error) 
 	var lastErr error
 
 	for i := 0; i < attempts; i++ {
-		udpConn, err := net.ListenPacket("udp", addr)
+		udpConn, err := (&net.ListenConfig{}).ListenPacket(context.Background(), "udp", addr)
 		if err != nil {
 			return nil, nil, fmt.Errorf("network: listen udp for dns on %s: %w", addr, err)
 		}
 		bound := udpConn.LocalAddr().String()
 
-		tcpListener, err := net.Listen("tcp", bound)
+		tcpListener, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", bound)
 		if err == nil {
 			return udpConn, tcpListener, nil
 		}

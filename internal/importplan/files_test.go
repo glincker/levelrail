@@ -2,6 +2,7 @@ package importplan
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -50,7 +51,7 @@ func TestHTTPFilesLimits(t *testing.T) {
 	if _, _, err := h.ReadFile(ctx, srv.URL+"/o/r", "", "private"); err == nil || !strings.Contains(err.Error(), "private") {
 		t.Errorf("private: %v", err)
 	}
-	if _, _, err := h.ReadFile(ctx, srv.URL+"/o/r", "", "ok"); err != ErrFileLimit {
+	if _, _, err := h.ReadFile(ctx, srv.URL+"/o/r", "", "ok"); !errors.Is(err, ErrFileLimit) {
 		t.Errorf("file limit: %v", err)
 	}
 }

@@ -1,6 +1,7 @@
 ---
 title: "Network topology view"
 description: Read the Network page, how this server and nodes group into cards, how to turn the mesh on, and what the connection and reachability notes mean.
+"og:url": "https://docs.levelrail.com/network-topology"
 ---
 
 The **Network** page shows every node, app, database, and load-balanced service on the mesh at once, grouped by node, with a note under each app for the database it connects to. It is read-only and built from data the dashboard already has, so it needs no configuration. Find it under **Infrastructure > Network**.

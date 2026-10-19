@@ -1,6 +1,7 @@
 ---
 title: "Cloud integrations"
 description: What works today with AWS, Google Cloud, Cloudflare, DigitalOcean and Hetzner (nodes, DNS, backups, registries, events), and what is planned but not built.
+"og:url": "https://docs.levelrail.com/cloud-integrations"
 ---
 
 This page lists, per cloud, what Levelrail does today and what is only planned. If an item is under Planned, nothing for it exists in the product yet. For the per-app tools catalog (Sentry, PostHog and similar), see [Integrations](/integrations).

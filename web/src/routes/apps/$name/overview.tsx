@@ -5,6 +5,7 @@ import { useDeployProgress } from '../../../hooks/useDeployProgress'
 import { FailureContextCard } from '../../../components/FailureContextCard'
 import { SleepHistoryCard } from '../../../components/SleepHistoryCard'
 import { OverviewPage } from '../../../components/overview/OverviewPage'
+import { PanelHost } from '../../../components/plugins/PanelHost'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // The loader primes deploy attempts (same query the Deploys tab uses); app
@@ -25,6 +26,7 @@ function OverviewSection() {
       <FailureContextCard appName={name} />
       <OverviewPage app={app} conditions={conditions} attempts={attempts} />
       <SleepHistoryCard appName={name} hideWhenOff />
+      <PanelHost slot="app-detail" appId={name} />
     </div>
   )
 }

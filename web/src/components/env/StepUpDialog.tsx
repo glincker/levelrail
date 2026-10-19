@@ -25,6 +25,8 @@ import { Label } from '@/components/ui/label'
 export interface StepUpDialogProps {
   scope: StepUpScope | null
   subject?: string
+  /** Replaces the action-based sentence, for scopes that are not an app. */
+  description?: string
   onVerified: () => void
   onCancel: () => void
 }
@@ -44,6 +46,7 @@ function errorText(
 export function StepUpDialog({
   scope,
   subject,
+  description: descriptionOverride,
   onVerified,
   onCancel,
 }: StepUpDialogProps) {
@@ -106,17 +109,19 @@ export function StepUpDialog({
     }
   }
 
-  const description = !scope
-    ? ''
-    : scope.action === 'reveal'
-      ? t('stepUp.descriptionReveal', {
-          key: subject ?? '',
-          app: scope.app,
-          minutes,
-        })
-      : scope.action === 'export'
-        ? t('stepUp.descriptionExport', { app: scope.app })
-        : t('stepUp.descriptionManage', { app: scope.app })
+  const description = descriptionOverride
+    ? descriptionOverride
+    : !scope
+      ? ''
+      : scope.action === 'reveal'
+        ? t('stepUp.descriptionReveal', {
+            key: subject ?? '',
+            app: scope.app,
+            minutes,
+          })
+        : scope.action === 'export'
+          ? t('stepUp.descriptionExport', { app: scope.app })
+          : t('stepUp.descriptionManage', { app: scope.app })
 
   return (
     <Dialog

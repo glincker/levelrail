@@ -229,7 +229,7 @@ func (rt *Router) handleListAppsByTag(w http.ResponseWriter, r *http.Request) {
 	for i, name := range names {
 		out[i] = tagAppResource{Name: name}
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }
 
 // handleListAppTags handles GET /api/v1/apps/{name}/tags.

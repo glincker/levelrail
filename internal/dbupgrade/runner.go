@@ -2,7 +2,6 @@ package dbupgrade
 
 import (
 	"context"
-	"crypto/rand"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // Phases inside a state. Persisted, so a restarted control plane resumes
@@ -424,7 +424,7 @@ func (r *Runner) log() *slog.Logger {
 const DefaultHealthTimeout = 5 * time.Minute
 
 func newID(prefix string) string {
-	return prefix + strings.ToLower(rand.Text()[:18])
+	return prefix + ids.LowerText(18)
 }
 
 func sleepCtx(ctx context.Context, d time.Duration) error {

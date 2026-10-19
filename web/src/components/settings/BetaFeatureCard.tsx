@@ -1,6 +1,10 @@
 import { useId, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, CopyIcon } from '@phosphor-icons/react/dist/ssr'
+import { ArrowsClockwiseIcon } from '@phosphor-icons/react/dist/ssr'
+import { BetaFeatureServerOptions } from '@/components/settings/BetaFeatureServerOptions'
+import { RestartControlPlaneButton } from '@/components/RestartControlPlaneButton'
+import { useIsRoot } from '@/hooks/useIsRoot'
+import { useSystemRestartInfo } from '@/queries/systemRestart'
 import { HelpLink } from '@/components/HelpLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -10,57 +14,47 @@ import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import type { BetaFeature } from '../../types/resourceAdvisor'
 
-const ENV_VAR = 'APP_EXPERIMENTAL'
-
-function EnvLine({ feature }: { feature: BetaFeature }) {
+function RestartNeeded() {
   const { t } = useTranslation('betaFeatures')
-  const [copied, setCopied] = useState(false)
-  const line = `${ENV_VAR}=${feature.id}`
-
-  function copy() {
-    void navigator.clipboard.writeText(line).then(
-      () => {
-        setCopied(true)
-        window.setTimeout(() => setCopied(false), 1500)
-      },
-      () => undefined,
+  const isRoot = useIsRoot()
+  const { data: info, refetch, isFetching } = useSystemRestartInfo()
+  if (!isRoot) {
+    return (
+      <p className="text-xs text-muted-foreground">{t('restart.askAdmin')}</p>
     )
   }
-
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium">{t('env.heading')}</p>
-      <div className="flex items-center gap-2">
-        <code
-          aria-label={t('env.line')}
-          className="rounded-md bg-muted px-2 py-1 font-mono text-xs"
-        >
-          {line}
-        </code>
-        <Button type="button" variant="outline" size="sm" onClick={copy}>
-          {copied ? (
-            <CheckIcon aria-hidden="true" />
-          ) : (
-            <CopyIcon aria-hidden="true" />
-          )}
-          {copied ? t('env.copied') : t('env.copy')}
-        </Button>
-      </div>
-      <ul className="space-y-1 text-xs text-muted-foreground">
-        <li>
-          <span className="font-medium">{t('env.systemd')}</span>
-          {': '}
-          {t('env.systemdHow', { line })}
-        </li>
-        <li>
-          <span className="font-medium">{t('env.docker')}</span>
-          {': '}
-          {t('env.dockerHow', { line })}
-        </li>
-      </ul>
-      {feature.requires_restart ? (
-        <p className="text-xs text-muted-foreground">{t('env.restart')}</p>
-      ) : null}
+    <div className="space-y-2 rounded-md border border-warning/40 bg-warning/10 p-3">
+      <p className="text-sm font-medium">{t('restart.needed')}</p>
+      {info?.supported ? (
+        <RestartControlPlaneButton variant="default" label={t('restart.now')} />
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            {t('restart.unsupported')}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            <ArrowsClockwiseIcon aria-hidden="true" />
+            {t('restart.recheck')}
+          </Button>
+          {info?.hint ? (
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">
+                {t('restart.manual')}
+              </summary>
+              <code className="mt-1 block rounded-md bg-muted px-2 py-1 font-mono">
+                {info.hint}
+              </code>
+            </details>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
@@ -80,6 +74,8 @@ export function BetaFeatureCard({
 }) {
   const { t } = useTranslation('betaFeatures')
   const switchId = useId()
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const saved = feature.pending_restart ? !feature.enabled : feature.enabled
   const state = feature.enabled
     ? feature.enabled_by === 'env'
       ? t('state.onByEnv')
@@ -108,28 +104,41 @@ export function BetaFeatureCard({
         <p className="text-sm text-muted-foreground">
           {detail ?? feature.summary}
         </p>
-        {feature.toggleable ? (
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <Switch
-                id={switchId}
-                checked={feature.enabled}
-                disabled={feature.locked || pending}
-                onCheckedChange={onToggle}
-              />
-              <Label htmlFor={switchId}>
-                {t('toggle.label', { name: feature.name })}
-              </Label>
-            </div>
-            {feature.locked ? (
-              <p className="text-xs text-muted-foreground">
-                {t('toggle.lockedByEnv')}
-              </p>
-            ) : null}
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <Switch
+              id={switchId}
+              checked={saved}
+              disabled={feature.locked || pending}
+              onCheckedChange={onToggle}
+            />
+            <Label htmlFor={switchId}>
+              {t('toggle.label', { name: feature.name })}
+            </Label>
           </div>
-        ) : feature.enabled ? null : (
-          <EnvLine feature={feature} />
+          {feature.locked ? (
+            <p className="text-xs text-muted-foreground">
+              {t('toggle.lockedByEnv')}
+            </p>
+          ) : null}
+        </div>
+        {feature.pending_restart ? <RestartNeeded /> : null}
+        {feature.locked ? null : (
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0"
+            onClick={() => setOptionsOpen(true)}
+          >
+            {t('options.open')}
+          </Button>
         )}
+        <BetaFeatureServerOptions
+          feature={feature}
+          open={optionsOpen}
+          onOpenChange={setOptionsOpen}
+        />
         <HelpLink path={feature.docs_path} label={t('docs')} variant="inline" />
       </CardContent>
     </Card>

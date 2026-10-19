@@ -1,6 +1,7 @@
 ---
 title: "Dokploy alternative: self-hosted deploys without Docker Swarm"
 description: "Levelrail is an open source Dokploy alternative that skips Docker Swarm: an agent on each node and a reconciler over the Docker Engine API."
+"og:url": "https://docs.levelrail.com/dokploy-alternative"
 ---
 
 **Self-hosted deploys without betting on Docker Swarm**
@@ -13,7 +14,8 @@ Levelrail runs apps on plain Docker with its own reconciler and a small agent pe
 curl -fsSL https://levelrail.com/install.sh | sudo sh
 ```
 
-![Levelrail apps list showing every service, its status and its node](/assets/screenshots/apps-list.png)
+<img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing every service, its status and its node" className="block dark:hidden" />
+<img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing every service, its status and its node" className="hidden dark:block" />
 
 ## What is different under the hood
 

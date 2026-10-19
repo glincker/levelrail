@@ -1,4 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { requireExperimental } from '../../lib/experimental'
 import { createFileRoute } from '@tanstack/react-router'
 import { FileCodeIcon, UploadSimpleIcon } from '@phosphor-icons/react/dist/ssr'
@@ -40,6 +41,7 @@ export const Route = createFileRoute('/settings/infrastructure')({
 const pastedName = 'pasted.yaml'
 
 function InfrastructureSettingsPage() {
+  const { t } = useTranslation('settings')
   const planIac = usePlanIac()
   const applyIac = useApplyIac()
 
@@ -109,22 +111,19 @@ function InfrastructureSettingsPage() {
           <FileCodeIcon className="size-4" />
         </div>
         <PageHeader
-          title="Infrastructure as code"
-          description="Describe projects, environments, apps, domains and databases as YAML, review the plan, then apply it."
+          title={t('iacPage.title')}
+          description={t('iacPage.description')}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Resource files</CardTitle>
-          <CardDescription>
-            One or more YAML documents separated by ---. Documents never hold
-            secret values, reference them with secretRef.
-          </CardDescription>
+          <CardTitle>{t('iacPage.filesTitle')}</CardTitle>
+          <CardDescription>{t('iacPage.filesDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Field>
-            <FieldLabel htmlFor="iac-yaml">YAML</FieldLabel>
+            <FieldLabel htmlFor="iac-yaml">{t('iacPage.yamlLabel')}</FieldLabel>
             <Textarea
               id="iac-yaml"
               className="min-h-48 font-mono text-xs"
@@ -139,7 +138,7 @@ function InfrastructureSettingsPage() {
               className="inline-flex cursor-pointer items-center gap-2 text-sm text-foreground"
             >
               <UploadSimpleIcon className="size-4" />
-              <span>Upload files</span>
+              <span>{t('iacPage.upload')}</span>
               <input
                 id="iac-upload"
                 type="file"
@@ -157,24 +156,26 @@ function InfrastructureSettingsPage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
-              <FieldLabel htmlFor="iac-source">Source</FieldLabel>
+              <FieldLabel htmlFor="iac-source">
+                {t('iacPage.sourceLabel')}
+              </FieldLabel>
               <Input
                 id="iac-source"
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
-                placeholder="infra-repo"
+                placeholder={t('iacPage.sourcePlaceholder')}
               />
-              <FieldDescription>
-                Tags the apps this apply creates so prune can find them later.
-              </FieldDescription>
+              <FieldDescription>{t('iacPage.sourceHint')}</FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor="iac-project">Only project</FieldLabel>
+              <FieldLabel htmlFor="iac-project">
+                {t('iacPage.projectLabel')}
+              </FieldLabel>
               <Input
                 id="iac-project"
                 value={project}
                 onChange={(e) => setProject(e.target.value)}
-                placeholder="shop"
+                placeholder={t('iacPage.projectPlaceholder')}
               />
             </Field>
           </div>
@@ -188,12 +189,11 @@ function InfrastructureSettingsPage() {
                 checked={prune}
                 onCheckedChange={(v) => setPrune(v === true)}
               />
-              Prune: delete apps this source created that the files no longer
-              declare
+              {t('iacPage.prune')}
             </label>
             {pruneNeedsSource ? (
               <p className="text-xs text-amber-700 dark:text-amber-400">
-                Prune needs a source name.
+                {t('iacPage.pruneNeedsSource')}
               </p>
             ) : null}
             <label
@@ -205,12 +205,12 @@ function InfrastructureSettingsPage() {
                 checked={noDeploy}
                 onCheckedChange={(v) => setNoDeploy(v === true)}
               />
-              Do not restart running apps to apply env changes
+              {t('iacPage.noDeploy')}
             </label>
           </div>
           <div className="flex gap-2">
             <Button type="button" disabled={!canPlan} onClick={handlePlan}>
-              {planIac.isPending ? 'Planning...' : 'Plan'}
+              {planIac.isPending ? t('iacPage.planning') : t('iacPage.plan')}
             </Button>
             <Button
               type="button"
@@ -218,7 +218,7 @@ function InfrastructureSettingsPage() {
               disabled={!canApply}
               onClick={() => setConfirming(true)}
             >
-              Apply
+              {t('iacPage.apply')}
             </Button>
           </div>
         </CardContent>
@@ -231,25 +231,28 @@ function InfrastructureSettingsPage() {
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Apply these changes?</DialogTitle>
+            <DialogTitle>{t('iacPage.confirmTitle')}</DialogTitle>
             <DialogDescription>
               {reviewed
-                ? `${reviewed.summary.create} to create, ${reviewed.summary.update} to update, ${reviewed.summary.delete} to delete.`
+                ? t('iacPage.confirmSummary', {
+                    create: reviewed.summary.create,
+                    update: reviewed.summary.update,
+                    delete: reviewed.summary.delete,
+                  })
                 : ''}{' '}
-              The apply only proceeds if live state still matches the plan you
-              reviewed.
+              {t('iacPage.confirmNote')}
             </DialogDescription>
           </DialogHeader>
           {reviewed && reviewed.summary.delete > 0 ? (
             <p className="text-sm text-red-700 dark:text-red-400">
-              This deletes {reviewed.summary.delete} resource(s).
+              {t('iacPage.confirmDeletes', { count: reviewed.summary.delete })}
             </p>
           ) : null}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirming(false)}>
-              Cancel
+              {t('iacPage.cancel')}
             </Button>
-            <Button onClick={handleApply}>Apply</Button>
+            <Button onClick={handleApply}>{t('iacPage.apply')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -264,12 +267,13 @@ function PlanCard({
   planIac: ReturnType<typeof usePlanIac>
   reviewed: IacPlan | null
 }) {
+  const { t } = useTranslation('settings')
   const error = planIac.error
   if (!error && !reviewed) return null
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Plan</CardTitle>
+        <CardTitle>{t('iacPage.planTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {error instanceof IacIssuesError ? (
@@ -298,12 +302,13 @@ function ResultCard({
 }: {
   applyIac: ReturnType<typeof useApplyIac>
 }) {
+  const { t } = useTranslation('settings')
   const { data, error } = applyIac
   if (!data && !error) return null
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Result</CardTitle>
+        <CardTitle>{t('iacPage.resultTitle')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {error ? (
@@ -315,8 +320,11 @@ function ResultCard({
           <>
             <IacResultView results={data.results} />
             <p className="text-sm text-muted-foreground">
-              {data.applied} applied, {data.failed} failed, {data.skipped}{' '}
-              skipped
+              {t('iacPage.resultCounts', {
+                applied: data.applied,
+                failed: data.failed,
+                skipped: data.skipped,
+              })}
             </p>
           </>
         ) : null}

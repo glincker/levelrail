@@ -28,6 +28,7 @@ import {
 } from '../../queries/auditLog'
 import { TableSkeleton } from '../../components/ui/table-skeleton'
 import { PurgeAuditLogDialog } from '../../components/PurgeAuditLogDialog'
+import { AuditIntegrityBadge } from '../../components/AuditIntegrityBadge'
 import { AuditLogTable } from '../../components/AuditLogTable'
 import { AgentFilterChips } from '../../components/AgentFilterChips'
 import { collectAgentNames } from '../../lib/agentNames'
@@ -260,11 +261,16 @@ function AuditLogSettingsPage() {
               }
             }}
           >
-            <SelectTrigger aria-label="Filter by client" className="w-36">
-              <SelectValue placeholder="All clients" />
+            <SelectTrigger
+              aria-label={t('filters.clientLabel')}
+              className="w-36"
+            >
+              <SelectValue placeholder={t('filters.allClients')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL_CLIENT_KINDS}>All clients</SelectItem>
+              <SelectItem value={ALL_CLIENT_KINDS}>
+                {t('filters.allClients')}
+              </SelectItem>
               {CLIENT_KIND_OPTIONS.map((kind) => (
                 <SelectItem key={kind} value={kind}>
                   {CLIENT_KIND_LABELS[kind] ?? kind}
@@ -272,6 +278,7 @@ function AuditLogSettingsPage() {
               ))}
             </SelectContent>
           </Select>
+          <AuditIntegrityBadge />
           <PurgeAuditLogDialog />
           {entries.length > 0 ? (
             <ExportAuditLogLink
@@ -292,8 +299,8 @@ function AuditLogSettingsPage() {
           onChange={(e) => {
             setSearch(e.target.value)
           }}
-          placeholder="Search actor, path, method, address"
-          aria-label="Search audit log entries"
+          placeholder={t('filters.searchPlaceholder')}
+          aria-label={t('filters.searchLabel')}
           className="max-w-xs"
         />
         <Button
@@ -305,7 +312,7 @@ function AuditLogSettingsPage() {
             setFailedOnly((prev) => !prev)
           }}
         >
-          Failed only
+          {t('filters.failedOnly')}
         </Button>
         <Button
           type="button"
@@ -345,11 +352,9 @@ function AuditLogSettingsPage() {
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"
           icon={<ClockCounterClockwiseIcon className="size-5" />}
-          title="No entries found"
+          title={t('page.emptyTitle')}
           description={
-            filtersActive
-              ? 'No entries match these filters.'
-              : 'No audited requests recorded yet.'
+            filtersActive ? t('page.emptyFiltered') : t('page.emptyNone')
           }
         />
       ) : (
@@ -372,7 +377,7 @@ function AuditLogSettingsPage() {
             void handleLoadMore()
           }}
         >
-          {loadingMore ? 'Loading...' : 'Load older entries'}
+          {loadingMore ? t('filters.loading') : t('filters.loadOlder')}
         </Button>
       ) : null}
     </PageTemplate>
@@ -383,9 +388,10 @@ function AuditLogSettingsPage() {
 // page's own 8-column table shape so the skeleton doesn't jump when real
 // rows swap in.
 function AuditLogSettingsPending() {
+  const { t } = useTranslation('auditLog')
   return (
     <div className="space-y-6">
-      <PageHeader title="Audit log" />
+      <PageHeader title={t('page.title')} />
       <TableSkeleton columnCount={8} rowCount={8} />
     </div>
   )

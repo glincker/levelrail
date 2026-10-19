@@ -199,6 +199,7 @@ func (rt *Router) handleCreateStandaloneDomain(w http.ResponseWriter, r *http.Re
 	rt.afterStandaloneChange(r, auditActionStandaloneCreated, d)
 	saved, err := st.GetStandaloneDomain(r.Context(), domain)
 	if err != nil {
+		rt.logger.Warn("api: standalone domain created but re-read failed, answering with the submitted values", slog.String("error", err.Error()), slog.String("domain", domain))
 		saved = d
 	}
 	writeJSON(w, http.StatusCreated, toStandaloneDomainResource(saved))
@@ -240,7 +241,9 @@ func (rt *Router) handleUpdateStandaloneDomain(w http.ResponseWriter, r *http.Re
 		return
 	}
 	rt.afterStandaloneChange(r, auditActionStandaloneUpdated, d)
-	if saved, err := st.GetStandaloneDomain(r.Context(), domain); err == nil {
+	if saved, err := st.GetStandaloneDomain(r.Context(), domain); err != nil {
+		rt.logger.Warn("api: standalone domain updated but re-read failed, answering with the submitted values", slog.String("error", err.Error()), slog.String("domain", domain))
+	} else {
 		d = saved
 	}
 	writeJSON(w, http.StatusOK, toStandaloneDomainResource(d))

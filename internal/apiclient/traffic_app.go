@@ -53,6 +53,13 @@ type TrafficSample struct {
 	RequestID  string    `json:"request_id,omitempty"`
 }
 
+// TrafficLabel is one referrer host or country with its request share.
+type TrafficLabel struct {
+	Label    string  `json:"label"`
+	Requests float64 `json:"requests"`
+	Share    float64 `json:"share"`
+}
+
 // TrafficSLO is the app's SLO error-budget burn over the window.
 type TrafficSLO struct {
 	Objective       string  `json:"objective"`
@@ -79,11 +86,13 @@ type AppTrafficResource struct {
 	Replicas       []TrafficReplica     `json:"replicas"`
 	SlowRoutes     []TrafficRoute       `json:"slow_routes"`
 	Samples        []TrafficSample      `json:"samples"`
+	Referrers      []TrafficLabel       `json:"referrers"`
+	Countries      []TrafficLabel       `json:"countries"`
 	SLO            *TrafficSLO          `json:"slo,omitempty"`
 	Shield         TrafficShield        `json:"shield"`
 }
 
-// GetAppTraffic calls GET /api/v1/apps/{name}/traffic for window 5m, 1h or 24h.
+// GetAppTraffic calls GET /api/v1/apps/{name}/traffic for window 5m, 1h, 24h or 7d.
 func (c *Client) GetAppTraffic(ctx context.Context, name, window string) (AppTrafficResource, error) {
 	query := url.Values{}
 	if window != "" {

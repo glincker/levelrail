@@ -22,6 +22,7 @@ type listDeploymentsInput struct {
 	PR          int    `json:"pr,omitempty" jsonschema:"only previews of this pull request number"`
 	Limit       int    `json:"limit,omitempty" jsonschema:"page size, default 50, max 200"`
 	Cursor      string `json:"cursor,omitempty" jsonschema:"next_cursor from a previous page"`
+	Fields      string `json:"fields,omitempty" jsonschema:"comma-separated keys to keep per item"`
 }
 
 type deploymentsSummaryInput struct {
@@ -41,7 +42,7 @@ func splitList(s string) []string {
 func registerDeploymentTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_deployments",
-		Description: "List deployments across every app the caller can read, newest first, with status, trigger, commit, branch, image digest, duration and rollback links. Filter by status, app, branch, trigger, environment, time range, text, live or pull request; page with cursor.",
+		Description: "List deployments across all readable apps, newest first: status, trigger, commit, branch, digest, duration, rollback links. Filter by status, app, branch, trigger, environment, time, text, live or PR; page with cursor.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in listDeploymentsInput) (*mcp.CallToolResult, apiclient.DeploymentList, error) {
 		opts := apiclient.DeploymentListOptions{
 			Statuses: splitList(in.Status), Triggers: splitList(in.Trigger), App: in.App, Branch: in.Branch,

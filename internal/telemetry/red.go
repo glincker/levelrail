@@ -70,6 +70,10 @@ type RequestWindow struct {
 	// slow or failed request sample, stored in their own tables.
 	Upstreams map[string]UpstreamStat
 	Sampled   []RequestSample
+	// Referrers and Countries are bounded label counts stored in
+	// request_audience.
+	Referrers map[string]uint64
+	Countries map[string]uint64
 }
 
 // Samples renders the window as non-zero metric samples for resourceID.
@@ -123,6 +127,8 @@ func (w *RequestWindow) Add(o RequestWindow) {
 	}
 	w.mergeBreakdown(o)
 	w.mergeDetail(o)
+	mergeLabels(&w.Referrers, o.Referrers)
+	mergeLabels(&w.Countries, o.Countries)
 }
 
 // RecordRequests writes the per-app windows as samples at time at.
@@ -140,7 +146,10 @@ func (db *DB) RecordRequests(ctx context.Context, byApp map[string]RequestWindow
 	if err := db.recordBreakdown(ctx, byApp, at); err != nil {
 		return err
 	}
-	return db.recordTrafficDetail(ctx, byApp, at)
+	if err := db.recordTrafficDetail(ctx, byApp, at); err != nil {
+		return err
+	}
+	return db.recordAudience(ctx, byApp, at)
 }
 
 // PercentileFromBuckets estimates the q-quantile (0..1) in milliseconds from

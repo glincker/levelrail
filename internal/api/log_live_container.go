@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/GLINCKER/levelrail/internal/reconcile/application"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
@@ -167,3 +168,8 @@ func sameIDSet(a, b map[string]struct{}) bool {
 // dashboard renders its own translated label for Stream == "system"
 // instead (web/src/components/LogRow.tsx), per this repo's i18n rule.
 const previousContainerTransitionLine = "previous container instance ended"
+
+// skippedLinesMarker is the live view's marker for lines a slow viewer missed.
+func skippedLinesMarker(n int64) string {
+	return fmt.Sprintf("skipped %d lines while the viewer fell behind, search the log history for them", n)
+}

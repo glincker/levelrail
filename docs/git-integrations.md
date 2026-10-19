@@ -1,6 +1,7 @@
 ---
 title: "Git integrations"
 description: Connect GitHub, GitLab, Bitbucket or Gitea for automatic git-triggered deploys, per-pull-request preview environments, and webhook history with replay.
+"og:url": "https://docs.levelrail.com/git-integrations"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/github/default.svg" alt="GitHub" title="GitHub" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/gitlab/default.svg" alt="GitLab" title="GitLab" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/bitbucket/default.svg" alt="Bitbucket" title="Bitbucket" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/gitea/default.svg" alt="Gitea" title="Gitea" width="24" height="24" /></span></div>
@@ -168,6 +169,10 @@ webhook_registered:  true
 If webhook registration fails, GitHub still connects the repository and reports `webhook_registered: false` with a `webhook_error` (typically an installation that predates the `repository_hooks:write` permission). GitLab, Bitbucket, and Gitea fail the whole request with a `502` instead.
 
 For an app that already exists, `levelrail-cli apps git-source get|set|delete <name>` manages the git source directly.
+
+### Validate access
+
+The git source card has a **Validate access** button (CLI: `levelrail-cli apps git-source validate <name>`). It reads the app's branch with the credential a deploy would use (a stored deploy token, else the connected GitHub App) and reports a typed fix: no credential for a private repo, a rejected or expired token, a token that cannot see the repository, a missing branch, or an unreachable host. Each provider settings page has the same button for the connection itself (`levelrail-cli git-providers validate <provider>`). Installation tokens minted from the GitHub App are registered with the secret masker, so they never appear in logs or stored output.
 
 ## Deploy triggers: push or release
 

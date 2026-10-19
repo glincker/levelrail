@@ -190,7 +190,8 @@ describe('CreateTokenDialog agent name', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalled()
     })
-    const rawBody = fetchMock.mock.calls[0]?.[1]?.body
+    const post = fetchMock.mock.calls.find((call) => call[1]?.method === 'POST')
+    const rawBody = post?.[1]?.body
     if (typeof rawBody !== 'string') throw new Error('expected a JSON body')
     const body = JSON.parse(rawBody) as { agent?: { name: string } }
     expect(body.agent).toEqual({ name: 'Claude Code' })

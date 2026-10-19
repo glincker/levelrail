@@ -21,6 +21,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/agent"
 	"github.com/GLINCKER/levelrail/internal/brand"
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/network"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -198,6 +199,8 @@ func markLocalNodeOnline(ctx context.Context, db *store.DB, id string) error {
 
 // Without this, nodehealth marks the local node Offline after boot and it never recovers.
 func localNodeHeartbeat(ctx context.Context, db *store.DB, id string, interval time.Duration, logger *slog.Logger) {
+	loop := footprint.Track("local node heartbeat", interval)
+	defer loop.Active()()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -205,11 +208,15 @@ func localNodeHeartbeat(ctx context.Context, db *store.DB, id string, interval t
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			start := time.Now()
 			if err := db.TouchNodeLastSeen(ctx, id); err != nil {
+				loop.Observe(start, err)
 				logger.Error("local node heartbeat failed", slog.String("error", err.Error()))
 				continue
 			}
-			if err := markLocalNodeOnline(ctx, db, id); err != nil {
+			err := markLocalNodeOnline(ctx, db, id)
+			loop.Observe(start, err)
+			if err != nil {
 				logger.Error("local node status recovery failed", slog.String("node_id", id), slog.String("error", err.Error()))
 			}
 		}

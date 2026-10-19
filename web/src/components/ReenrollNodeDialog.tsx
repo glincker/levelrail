@@ -39,9 +39,11 @@ export function ReenrollNodeDialog({
   const [open, setOpen] = useState(defaultOpen)
   const [created, setCreated] = useState<NodeReenrollTokenResponse | null>(null)
   const [copied, setCopied] = useState(false)
-  const [controlPlaneAddr, setControlPlaneAddr] = useState(
-    () => `${window.location.hostname}:9443`,
-  )
+  const [editedAddr, setEditedAddr] = useState<string | null>(null)
+  const controlPlaneAddr =
+    editedAddr ??
+    created?.control_plane_address ??
+    `${window.location.hostname}:9443`
   const createToken = useCreateNodeReenrollToken()
   const command = created ? reenrollCommand(created, controlPlaneAddr) : ''
 
@@ -49,6 +51,7 @@ export function ReenrollNodeDialog({
     setOpen(next)
     if (!next) {
       setCreated(null)
+      setEditedAddr(null)
       setCopied(false)
       createToken.reset()
     }
@@ -86,7 +89,7 @@ export function ReenrollNodeDialog({
                 id="reenroll-control-plane-addr"
                 value={controlPlaneAddr}
                 onChange={(e) => {
-                  setControlPlaneAddr(e.target.value)
+                  setEditedAddr(e.target.value)
                   setCopied(false)
                 }}
                 className="font-mono text-xs"

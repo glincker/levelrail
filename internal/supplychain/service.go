@@ -153,6 +153,9 @@ func (s *Service) ArmOverride(ctx context.Context, app, reason string) (Settings
 // the app opted in, scans it and applies the gate. Only a gate block returns
 // an error; every other failure is logged and the release proceeds.
 func (s *Service) AfterBuild(ctx context.Context, app, attemptID string, att build.Attestations) error {
+	if att.Incomplete {
+		s.log.Warn("supplychain: attestation scan was incomplete, sbom or provenance may be missing", slog.String("app", app), slog.String("attempt_id", attemptID), slog.String("error", att.ScanError))
+	}
 	if len(att.SBOM) == 0 {
 		return nil
 	}

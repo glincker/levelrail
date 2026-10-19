@@ -1,7 +1,90 @@
 ---
 title: "Changelog"
 description: Every Levelrail release with highlights, fixes and upgrade notes.
+"og:url": "https://docs.levelrail.com/changelog"
 ---
+
+<Update label="0.6.0" description="2026-10-17">
+**Features**
+
+* add container and registry files for levelrail-mcp (#1251)
+* CPU models, pipeline artifacts and triggers, maintenance alert silencing and AI providers (#1256)
+* **nodes:** flag nodes that must re-enroll and show why renewal fails (#1261)
+* release notes between deploys, monorepo detection, and build performance stats (#1253)
+* stream pipeline artifacts through the Docker archive API (#1259)
+
+
+**Bug Fixes**
+
+* agents always make their own key at enrollment (#1258)
+* **maintenance:** keep CPU, memory, disk and crash alerts firing (#1260)
+
+
+**Documentation**
+
+* **adr:** record scale-out roadmap and plugin architecture (#1262)
+* correct Pages guide and stale release notes, add discovery files (#1249)
+* redesign README as a quickstart-first front door (#1238)
+</Update>
+
+<Update label="0.5.1" description="2026-10-16">
+**Documentation**
+
+* fix missing titles and descriptions, add OG cards and an SEO audit script (#1227)
+</Update>
+
+<Update label="0.5.0" description="2026-10-16">
+**Features**
+
+* observability suite, Pages, and hardened git deploys (#1223)
+</Update>
+
+<Update label="0.4.0" description="2026-10-15">
+**Features**
+
+* 0.8 demo mode, infra canvas, deploy timeline, webhooks, secret rotation (#1216)
+* default the dashboard theme to dark instead of following the OS (#1211)
+* marketing site moves to site/ with a Pages deploy, docs links and redirects point at docs.levelrail.com (#1213)
+* sleep when idle, sign-in recovery, key wrapping, deploy guardrails and a clearer Help (#1217)
+
+
+**Bug Fixes**
+
+* git forges dial through the SSRF guard, plus accessibility fixes and dependency bumps (#1221)
+</Update>
+
+<Update label="0.3.0" description="2026-10-12">
+**Features**
+
+* restructure dashboard and settings sidebars, keep groups stable on navigation (#1207)
+
+
+**Bug Fixes**
+
+* authorize resources named in request bodies and queries (#1203)
+* envelope-encrypt notification channel secrets (#1201)
+* master key file outside the data dir, protect executable dirs and the configured data dir from bind mounts (#1193)
+* pin hosts to signed releases once a signature verifies (#1204)
+* remove the blue brand glow from the dashboard (#1209)
+* require agent CSRs by default, keep the Docker guard rollout, loopback dashboard when fronted (#1197)
+* run assistant tools as the sender with a per-turn token (#1202)
+* security wave 0, authorize database refs, real client IP, body caps (#1187)
+* small security hardening batch (session links, OAuth redirect, IaC export, containers, brand SVG, webhooks) (#1200)
+
+
+**Documentation**
+
+* advisories for the second wave of merged security fixes (#1206)
+* advisory for the release signature pin (#1208)
+* complete the Mintlify docs rebuild (#1189)
+* document APP_MASTER_KEY_FILE in the security overview and threat model (#1194)
+* fix redirect loops, load logos from jsDelivr, colour the active icon (#1199)
+* give Phosphor icons an explicit neutral fill so they never render black (#1198)
+* move the docs site from VitePress to Mintlify (#1186)
+* neutral graphite dark surfaces (#1205)
+* render landing pages on Mintlify, convert callouts, fix titles and descriptions, correct master key claim (#1191)
+* table padding, opaque navbar, theme-aware icons (#1196)
+</Update>
 
 <Update label="0.2.2" description="2026-10-12">
 **Bug Fixes**

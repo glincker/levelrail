@@ -140,14 +140,17 @@ export interface TokenResource {
   last_used_at?: string
   expires_at?: string
   revoked_at?: string
+  // Server the token is bound to and the address it was last seen from.
+  instance_id?: string
+  last_ip?: string
 }
 
 export interface CreateTokenRequest {
   name: string
   abilities: TokenAbility[]
-  // Omitted entirely (not 0, not null) means "never expires", matching
-  // createTokenRequest's `omitempty` json tag on the Go side.
+  // Omitted applies the server default (90 days); never-expire needs no_expiry.
   expires_in_days?: number
+  no_expiry?: boolean
   // Labels the token as issued to an AI agent; audit entries record its name.
   agent?: TokenAgent
 }

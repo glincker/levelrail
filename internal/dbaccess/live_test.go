@@ -3,6 +3,7 @@ package dbaccess
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os/exec"
@@ -25,7 +26,8 @@ func (dockerCLIExec) ExecWithInput(ctx context.Context, containerID string, cmd 
 	c.Stdout, c.Stderr = &stdout, &stderr
 	if err := c.Run(); err != nil {
 		code := -1
-		if ee, ok := err.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
 			code = ee.ExitCode()
 		}
 		return io.NopCloser(&errReader{err: &docker.ExecExitError{ExitCode: code, Stderr: stderr.String()}}), nil
@@ -96,7 +98,7 @@ func TestLivePostgresRoleLifecycle(t *testing.T) {
 	if out, err := psqlAs("report_ro", ro.Password, "INSERT INTO items (v) VALUES ('x')"); err == nil {
 		t.Fatalf("read-only role could insert: %s", out)
 	}
-	if _, err := pg.Create(ctx, CreateParamsIn{Role: "report_ro", Preset: PresetReadOnly}); err != ErrRoleExists {
+	if _, err := pg.Create(ctx, CreateParamsIn{Role: "report_ro", Preset: PresetReadOnly}); !errors.Is(err, ErrRoleExists) {
 		t.Fatalf("duplicate create err = %v", err)
 	}
 

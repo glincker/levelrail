@@ -130,6 +130,7 @@
             "pages": [
               "troubleshooting",
               "email-notifications",
+              "alert-inbox",
               "event-webhooks",
               "attention-center"
             ]
@@ -154,7 +155,10 @@
               "functions",
               "canary-deploys",
               "deployments-page",
+              "images",
               "deploy-previews",
+              "frameworks",
+              "deploy-urls",
               "deploy-link",
               "deploy-timeline",
               "previews",
@@ -176,6 +180,8 @@
               "standalone-domains",
               "dns",
               "domain-traffic-controls",
+              "cdn-and-caching",
+              "firewall",
               "acme-verification-runbook",
               "multi-node",
               "multi-node-quickstart",
@@ -201,6 +207,7 @@
               "object-storage",
               "network-shares",
               "log-explorer",
+              "custom-dashboards",
               "tracing",
               "error-tracking",
               "loki-api",
@@ -208,9 +215,11 @@
               "log-budgets",
               "data-export",
               "control-plane-backup",
+              "archives",
               "disaster-recovery",
               "upgrade-safely",
               "database-access",
+              "private-networks",
               "database-explorer",
               "database-viewer"
             ],
@@ -258,9 +267,11 @@
             "pages": [
               "managing-apps-at-scale",
               "tags",
+              "resource-console",
               "command-palette",
               "cost-estimate",
               "usage-and-cost",
+              "cost-explorer",
               "spend-caps",
               "integrations",
               "cloud-integrations",
@@ -290,6 +301,7 @@
               "templates-and-registry",
               "private-registries",
               "template-catalog",
+              "templates-status",
               "templates"
             ],
             "icon": "/assets/icons/squares-four.svg"
@@ -315,7 +327,9 @@
               "platform-as-code",
               "resource-advisor",
               "feature-flags",
-              "log-archive"
+              "log-archive",
+              "janitor",
+              "search"
             ],
             "icon": "/assets/icons/flask.svg"
           }
@@ -338,6 +352,7 @@
               "api-explorer",
               "mobile-api",
               "plugins",
+              "plugin-publishing",
               "mcp-tool-surface",
               "agent-tooling-audit",
               "kit",
@@ -861,7 +876,9 @@
               "feature-status",
               "experimental-features",
               "performance",
+              "performance-budget",
               "benchmarks",
+              "control-plane-health",
               "changelog",
               "upgrade-history"
             ],

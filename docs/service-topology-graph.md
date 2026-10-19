@@ -1,6 +1,7 @@
 ---
 title: "Project topology graph"
 description: Read a project's topology diagram, what each node and edge represents, and exactly which stored field each edge is derived from.
+"og:url": "https://docs.levelrail.com/service-topology-graph"
 ---
 
 The **Topology** page (`/projects/$id/topology`, linked from a project's own detail page) draws a project's apps, databases, and shared volumes as a diagram, with lines representing every relationship between them. It is read-only and requires no configuration: every fact on the page already exists in the project's desired state, just arranged as a graph instead of a list.

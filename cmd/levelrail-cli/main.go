@@ -21,6 +21,8 @@ func main() {
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)
+	installServerTrust(prog, args, stderr, lookupEnv)
+	apiclient.ResetServerPins()
 	if debug {
 		apiclient.SetDebugTrace(stderr)
 	} else {
@@ -35,6 +37,7 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return exitUsage
 	}
 
+	syncServerBetaFeatures(prog, args, lookupEnv)
 	if rejectDisabledExperimental(prog, args, stderr) {
 		return exitUsage
 	}
@@ -77,6 +80,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pitr":
 		return runPITR(prog, args[1:], stdout, stderr, lookupEnv)
+	case "archive":
+		return runArchive(prog, args[1:], stdout, stderr, lookupEnv)
 	case "control-plane-backups":
 		return runControlPlaneBackups(prog, args[1:], stdout, stderr, lookupEnv)
 	case "app-volume-backups":
@@ -95,6 +100,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAlerts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "status-page":
 		return runStatusPage(prog, args[1:], stdout, stderr, lookupEnv)
+	case "env":
+		return runEnv(prog, args[1:], stdout, stderr, lookupEnv)
 	case "shared-env":
 		return runSharedEnv(prog, args[1:], stdout, stderr, lookupEnv)
 	case "storage":
@@ -109,6 +116,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runRegistryCredentials(prog, args[1:], stdout, stderr, lookupEnv)
 	case "network-shares":
 		return runNetworkShares(prog, args[1:], stdout, stderr, lookupEnv)
+	case "private-networks":
+		return runPrivateNetworks(prog, args[1:], stdout, stderr, lookupEnv)
 	case "firewall":
 		return runFirewall(prog, args[1:], stdout, stderr, lookupEnv)
 	case "security":
@@ -117,12 +126,20 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runFlags(prog, args[1:], stdout, stderr, lookupEnv)
 	case "tags":
 		return runTags(prog, args[1:], stdout, stderr, lookupEnv)
+	case "dashboards":
+		return runDashboards(prog, args[1:], stdout, stderr, lookupEnv)
 	case "pipelines":
 		return runPipelines(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deployments":
 		return runDeployments(prog, args[1:], stdout, stderr, lookupEnv)
 	case "traffic":
 		return runTraffic(prog, args[1:], stdout, stderr, lookupEnv)
+	case "images":
+		return runImages(prog, args[1:], stdout, stderr, lookupEnv)
+	case "builds":
+		return runBuilds(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cache":
+		return runCache(prog, args[1:], stdout, stderr, lookupEnv)
 	case "lb":
 		return runLB(prog, args[1:], stdout, stderr, lookupEnv)
 	case "preview":
@@ -139,6 +156,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runOtel(prog, args[1:], stdout, stderr, lookupEnv)
 	case "event-webhooks":
 		return runEventWebhooks(prog, args[1:], stdout, stderr, lookupEnv)
+	case "cdn":
+		return runCDN(prog, args[1:], stdout, stderr, lookupEnv)
 	case "maintenance":
 		return runMaintenance(prog, args[1:], stdout, stderr, lookupEnv)
 	case "policy":
@@ -159,6 +178,8 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAIControl(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-log":
 		return runAuditLog(prog, args[1:], stdout, stderr, lookupEnv)
+	case "audit-verify":
+		return runAuditVerify(prog, args[1:], stdout, stderr, lookupEnv)
 	case "audit-purge":
 		return runAuditPurge(prog, args[1:], stdout, stderr, lookupEnv)
 	case "attention":
@@ -183,6 +204,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runAPIDocs(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deploy-link":
 		return runDeployLink(prog, args[1:], stdout, stderr, lookupEnv)
+	case "search":
+		return runSearch(prog, args[1:], stdout, stderr, lookupEnv)
+	case "janitor":
+		return runJanitor(prog, args[1:], stdout, stderr, lookupEnv)
 	case "containers":
 		return runContainers(prog, args[1:], stdout, stderr, lookupEnv)
 	case "system":
@@ -195,6 +220,10 @@ func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(st
 		return runDockerGuard(prog, args[1:], stdout, stderr, lookupEnv)
 	case "advisor":
 		return runAdvisor(prog, args[1:], stdout, stderr, lookupEnv)
+	case "resources":
+		return runResources(prog, args[1:], stdout, stderr, lookupEnv)
+	case "costs":
+		return runCosts(prog, args[1:], stdout, stderr, lookupEnv)
 	case "usage":
 		return runUsage(prog, args[1:], stdout, stderr, lookupEnv)
 	case "budget":
@@ -302,6 +331,7 @@ Usage:
   %[1]s push-subscriptions list|revoke [flags]             list or revoke registered browser push subscriptions
   %[1]s alerts silences|silence|maintenance|history        mute alerts, schedule maintenance windows, review alert history
   %[1]s status-page get|set|preview|components|incidents    manage the opt-in public status page
+  %[1]s env pull|push <app> [--file .env] [flags]   sync an app's env vars with a local .env file
   %[1]s shared-env list|set|delete --scope SCOPE --id ID [flags]   manage project/organization/environment-scoped shared env vars, plain or secret
   %[1]s backup-targets list|get|create|update|delete [flags]   manage connected S3-compatible backup destinations
   %[1]s storage providers|list|add|test|delete [flags]   manage S3-compatible storage destinations (AWS S3, R2, B2, MinIO, Wasabi, custom)
@@ -309,14 +339,19 @@ Usage:
   %[1]s logs search|failure <app> [flags]   search stored logs by text, level, container and JSON fields; show the failing container's last lines
   %[1]s metrics query|top|investigate [flags]   downsampled series with period comparison, top apps, and the spike investigation view
   %[1]s traffic <app> [--window 5m|1h|24h] [--watch] [flags]   request rate, errors and p50/p95/p99 latency per app and replica, slow routes, SLO burn
+  %[1]s cache status|rules|purge|history <app> [flags]   response cache at the ingress: hit rate, rules, purge by URL, prefix, tag or all
+  %[1]s builds list|show|cancel|retry|cache|prune [flags]   build queue and history, cancel and retry, BuildKit cache inventory and prune preview
+  %[1]s images list|layers|gc|verify [flags] image inventory per node with size and owners, layer breakdown, retention GC that keeps rollback targets, signature check
   %[1]s registry-credentials list|get|create|update|delete [flags]   manage private container registry pull credentials
   %[1]s network-shares list|get|create|update|delete|test [flags]    manage NFS/CIFS network share mounts
+  %[1]s private-networks list|map|create|set|delete|allow|deny|apply [flags]    private networks and app to app allow rules
   %[1]s firewall list|allow|deny|delete [flags]                 manage declarative host firewall rules
   %[1]s security posture|sessions|policy [flags]                security score, sessions and devices, security policy
   %[1]s registry status|enable|disable [flags]                 manage Levelrail's own built-in container registry
   %[1]s flags create|list|get|set|delete [flags]              manage feature flags, read live by a running app via GET /api/v1/flags/evaluate/{key}
   %[1]s pipelines list|validate|save|delete|run|runs|logs|cancel|approve [flags]   CI/CD pipelines: run, watch, approve, cancel
-  %[1]s tags list|create|delete|apps [flags]                  manage tags, always identified by name, arbitrary labels for organizing and filtering apps
+  %[1]s dashboards list|show|create|export|import|delete [flags]   custom dashboards of metric, log, deploy and cost widgets, exported as JSON for version control
+  %[1]s tags list|create|delete|apps [flags]                manage tags, always identified by name, arbitrary labels for organizing and filtering apps
   %[1]s lb show|set|clear|status|export|import <app> [flags]  load balancer across an app's replicas: config, live upstreams, terraform/cdk/cloudformation/caddy export
   %[1]s apply -f file|dir|- [--dry-run] [--prune --source S] [flags]   converge to YAML resource files: plan, diff, apply
   %[1]s diff -f dir [flags]                                    drift between the files and live state, exit 2 when they differ
@@ -326,6 +361,7 @@ Usage:
   %[1]s event-webhooks list|create|test|deliveries|replay|enable|disable|rotate-secret|delete   signed outbound event webhooks with a delivery log
   %[1]s policy list|set|check [flags]                           deploy guardrails: registries, probes, limits, mounts, labels, replicas
   %[1]s maintenance list|create|delete [flags]               scheduled maintenance windows with banner, status page and optional deploy freeze
+  %[1]s cdn overview [--window 1h]                          fleet traffic, edge cache hit rate and per-node request share
   %[1]s apps tag <name> <tag> [flags]                          attach a tag (by name) to an app
   %[1]s apps untag <name> <tag> [flags]                        detach a tag (by name) from an app
   %[1]s nodes list|get|delete [flags]                        manage nodes
@@ -343,15 +379,20 @@ Usage:
   %[1]s network mesh status|enable|disable [flags]            the WireGuard mesh between nodes
   %[1]s docker-guard status|set [flags]                       the Docker API allowlist proxy: off, audit, enforce
   %[1]s audit-log [flags]                                     who changed what, --format csv to export
-  %[1]s audit-purge [flags]                                   delete audit log entries past the retention window now
+  %[1]s audit-verify [flags]                                  check the audit log for edited, removed or cut-off entries
+  %[1]s audit-purge [flags]                                 delete audit log entries past the retention window now
   %[1]s attention [flags]                                     everything failing right now: apps, nodes, certificates, doctor checks
   %[1]s tui [--read-only] [flags]                             interactive terminal UI: apps, databases, deploys, logs, restart
   %[1]s advisor findings|summary|apply|dismiss|snooze [flags]  resource advice (beta): limits, idle apps, database tuning
+  %[1]s resources list|tag|untag|views [flags]                 every app, database, node, domain, bucket and network in one list, tags, bulk tag with --dry-run, saved views
   %[1]s usage report|settings|budgets [flags]                  cost showback per app, project and team
+  %[1]s costs explore|budgets [flags]                         cost explorer with forecast and movers, named budgets with alerts and a 100%% action
   %[1]s budget show|set|clear APP [flags]                      per-app monthly egress and cost cap with throttle or pause
   %[1]s budget [set|delete] project|team ID [flags]            alias for usage budgets
   %[1]s init [--dry-run] [--force] [--yes] [flags]            detect the stack, write app.yaml, AGENTS.md and .mcp.json for AI agents
   %[1]s bench run --url URL [flags]                           load and failover benchmark: open-loop rate, latency percentiles, ingress overhead
+  %[1]s bench soak [flags]                                    churn a control plane and fail on RSS, goroutine, FD or WAL growth
+  %[1]s bench chaos <list|run|report|disk|free-space> [flags]              failure scenarios measured on local containers, recorded for the resilience report
   %[1]s doctor [flags]                                        local preflight health check: Docker, disk, ports, database
   %[1]s setup status|next|skip|undo|reset [flags]             the Get started checklist: what is left before production
   %[1]s proxy [--domain D] [--verify] [flags]                 put the dashboard behind the proxy that owns ports 80 and 443
@@ -359,8 +400,11 @@ Usage:
   %[1]s api-docs [flags]                                      every registered HTTP route, the same data as Settings > API explorer
   %[1]s deploy-link --image REF --name N --port P [flags]     print a "Deploy with" link and README Markdown for an image
   %[1]s containers [flags]                                    every container on this node, managed by %[1]s or not
+  %[1]s archive ls|create|restore|verify|download|delete|policy [flags]   archive cold audit, deploy and pipeline rows into bundles and bring them back
   %[1]s control-plane-backups list|create|download|verify|delete [flags]   snapshot, verify and export the control plane's own database
   %[1]s system address [--domain NAME] [flags]              show this server's public IPs and the DNS records to create
+  %[1]s search <query...> [--kind K] [flags]                  find apps, databases, nodes, templates, settings and actions; search saved list|add|rm keeps queries
+  %[1]s janitor <status|run|policy> [flags]                   automatic cleanup of unused images, build cache, volumes and old deploy attempts
   %[1]s system-prune [flags]                                remove stopped containers, dangling images, and unused volumes/build cache, fleet-wide
   %[1]s volumes-orphaned [flags]                              list this instance's named volumes no app or database references any more
   %[1]s volumes-orphaned-cleanup --names name1,name2 [flags]   remove exactly the named orphaned volumes, after re-confirming each is still orphaned
@@ -384,7 +428,7 @@ Usage:
   %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s mobile pair|devices [flags]   pair a phone with the mobile app and manage paired phones
-  %[1]s plugins list|show|install|approve|enable|disable|remove|trust [flags]   signed plugins (needs the plugins experimental feature)
+  %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|run|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"

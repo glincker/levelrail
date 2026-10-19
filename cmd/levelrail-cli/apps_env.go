@@ -24,8 +24,16 @@ func runAppsEnv(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runAppsEnvExport(prog, args[1:], stdout, stderr, lookupEnv)
 	case "get":
 		return runAppsEnvGet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "pull":
+		return runEnvPull(prog, args[1:], stdout, stderr, lookupEnv)
+	case "push":
+		return runEnvPush(prog, args[1:], stdout, stderr, lookupEnv)
 	case "diff":
 		return runAppsEnvDiff(prog, args[1:], stdout, stderr, lookupEnv)
+	case "check":
+		return runAppsEnvCheck(prog, args[1:], stdout, stderr, lookupEnv)
+	case "history":
+		return runAppsEnvHistory(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps env subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsEnvUsage(prog))
@@ -39,6 +47,8 @@ func appsEnvUsage(prog string) string {
   %[1]s apps env export <name> [--out FILE] [--reveal] [--format dotenv|json]      write an app's env vars as .env text
   %[1]s apps env get <name> <KEY> [--reveal] [flags]                              print one variable
   %[1]s apps env diff <app-a> <app-b> [flags]                                     compare two apps' env vars (secrets by key only)
+  %[1]s apps env check <name> [--fix] [flags]                                     find empty, shadowed, duplicate and missing variables
+  %[1]s apps env history <name> [--limit N] [flags]                               list who added, changed or removed which variable
 
 Sensitive and secret values are masked unless --reveal is given. --reveal
 asks for your password (and authenticator code) at the prompt, needs a token
@@ -120,8 +130,15 @@ func runAppsEnvImport(prog string, args []string, stdout, stderr io.Writer, look
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
+	if bound, err := client.ListBoundEnv(ctx, name); err == nil {
+		for _, b := range bound {
+			secretKeys = append(secretKeys, b.Key)
+		}
+	}
+
 	plan := planEnvImport(app.Env, parseEnvFileBytes(data), secretKeys, keepExisting)
 	result := envImportResult{App: name, DryRun: dryRun, Plan: plan}
+	warnEnvSecrets(ctx, client, stderr, name, plan)
 
 	willChange := len(plan.New) > 0 || (len(plan.Changed) > 0 && !keepExisting)
 	if !dryRun && willChange {

@@ -20,6 +20,8 @@ const (
 	CauseCrashloopGeneric = "CRASHLOOP_GENERIC"
 	CauseImagePullFailed  = "IMAGE_PULL_FAILED"
 	CauseBuildOutOfDisk   = "BUILD_OUT_OF_DISK"
+
+	CauseWrongDockerfilePath = "WRONG_DOCKERFILE_PATH"
 )
 
 // Fix kinds.
@@ -73,6 +75,11 @@ type Facts struct {
 	ExposedPorts   []int
 	EnvKeys        []string
 	BuildFailed    bool
+	// BuildType, BuildPath and DockerfileCandidates describe the git source;
+	// candidates are repository-root-relative Dockerfile paths.
+	BuildType            string
+	BuildPath            string
+	DockerfileCandidates []string
 }
 
 type line struct {
@@ -87,6 +94,7 @@ var rules = []rule{
 	ruleMissingEnv,
 	ruleImagePull,
 	ruleBuildOutOfDisk,
+	ruleWrongDockerfilePath,
 	ruleExecFormat,
 	ruleCommandNotFound,
 	rulePermissionDenied,

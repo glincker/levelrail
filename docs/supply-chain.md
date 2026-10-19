@@ -1,6 +1,7 @@
 ---
 title: "Supply chain visibility"
 description: "A software bill of materials per Dockerfile build, an optional vulnerability scan in a short-lived container and a gate that can block a release. Costs, limits."
+"og:url": "https://docs.levelrail.com/supply-chain"
 ---
 
 A Dockerfile build can record what is inside the image, and the control plane can check that list for known vulnerabilities before the release goes live. Both are off by default.

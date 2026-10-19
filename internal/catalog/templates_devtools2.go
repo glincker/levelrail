@@ -233,7 +233,7 @@ var devtools2Templates = []Template{
     volumes:
       - typesense_data:/data
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8108/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8108/health || wget -q -O /dev/null http://127.0.0.1:8108/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

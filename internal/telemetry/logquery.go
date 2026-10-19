@@ -22,11 +22,12 @@ func (db *DB) QueryLogsLimited(ctx context.Context, resourceID string, from, to 
 	if limit <= 0 {
 		return nil, false, fmt.Errorf("telemetry: query logs limited for %s: limit must be positive", resourceID)
 	}
-	var (
-		rows *sql.Rows
-		err  error
-	)
-	if query == "" {
+	var rows *sql.Rows
+	match, err := compileLogSearch(query)
+	if err != nil {
+		return nil, false, err
+	}
+	if match == "" {
 		rows, err = db.QueryContext(ctx, `
 			SELECT resource_id, container_id, stream, ts, message, structured, fields_json
 			FROM log_entries
@@ -42,7 +43,7 @@ func (db *DB) QueryLogsLimited(ctx context.Context, resourceID string, from, to 
 			WHERE l.resource_id = ? AND l.ts BETWEEN ? AND ? AND log_entries_fts MATCH ?
 			ORDER BY l.ts DESC
 			LIMIT ?
-		`, resourceID, from.UnixNano(), to.UnixNano(), ftsPhrase(query), limit+1)
+		`, resourceID, from.UnixNano(), to.UnixNano(), match, limit+1)
 	}
 	if err != nil {
 		return nil, false, fmt.Errorf("telemetry: query logs limited for %s: %w", resourceID, err)

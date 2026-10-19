@@ -2,6 +2,7 @@
 title: "MCP recipes"
 tag: "Beta"
 description: Five real conversations with an AI assistant connected to the MCP server, showing what you ask, which prompts and tools run, and what comes back.
+"og:url": "https://docs.levelrail.com/mcp-recipes"
 ---
 
 Each recipe shows what you type, what the assistant runs and what comes back. The tools and prompts are described in [MCP tools and write mode](/mcp). Start read only: `levelrail-mcp --print-config claude` prints a config with `--mode read-only`.

@@ -1,6 +1,7 @@
 ---
 title: "Git provider integrations: shared abstraction, GHE, Bitbucket, connect-flow UX"
 description: Design for unified post-auth git provider abstraction supporting GitHub, GitLab, Bitbucket, and GitHub Enterprise Server
+"og:url": "https://docs.levelrail.com/design/git-provider-integrations"
 ---
 
 **Status:** Proposed. Feeds implementation for Bitbucket support, GitHub Enterprise Server, and connect-flow preview.

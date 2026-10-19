@@ -76,6 +76,7 @@ func (rt *Router) handleListAllPreviews(w http.ResponseWriter, r *http.Request) 
 		}
 		out.Previews = append(out.Previews, rt.toPreviewEnvironmentResource(ctx, p, rt.previewTTLFor(settings[p.AppName])))
 	}
+	out.Previews = pageQuery(w, r, out.Previews)
 	writeJSON(w, http.StatusOK, out)
 }
 

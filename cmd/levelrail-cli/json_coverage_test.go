@@ -16,6 +16,8 @@ var jsonExempt = map[string]string{
 	"completion fish":               "prints a shell script meant to be sourced",
 	"control-plane-backups help-dr": "prints a static runbook, no data to structure",
 	"tui":                           "interactive full-screen UI, needs a TTY and has no machine output",
+	"functions init":                "writes local starter files, no API call or data to structure",
+	"functions runtimes":            "prints the static built-in runtime list, no API call",
 }
 
 func leafPaths(prefix []string, nodes map[string]*cmdNode) [][]string {

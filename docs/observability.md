@@ -1,6 +1,7 @@
 ---
 title: "Observability: metrics, logs, and alerts"
 description: Node-local metrics, logs, and alerts with federated queries, no central ingestion.
+"og:url": "https://docs.levelrail.com/observability"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/grafana/default.svg" alt="Grafana" title="Grafana" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/prometheus/default.svg" alt="Prometheus" title="Prometheus" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/slack/default.svg" alt="Slack" title="Slack" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/discord/default.svg" alt="Discord" title="Discord" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/telegram/default.svg" alt="Telegram" title="Telegram" width="24" height="24" /></span></div>
@@ -174,7 +175,8 @@ Markers are keyboard focusable with aria labels and show details on hover or foc
 
 ## Live tailing vs stored search vs download
 
-![Levelrail live log viewer with full-text search](assets/screenshots/logs.png)
+<img src="/assets/screenshots/logs-light.png" alt="Levelrail live log viewer with full-text search" className="block dark:hidden" />
+<img src="/assets/screenshots/logs.png" alt="Levelrail live log viewer with full-text search" className="hidden dark:block" />
 
 Live tail, stored search and download are three ways to read the same log store.
 
@@ -226,6 +228,10 @@ It returns an excerpt of the newest matching lines, never a full dump: at most `
 - "Jump to first error" scrolls to the first error or stderr line in the current view.
 </Accordion>
 </AccordionGroup>
+
+## Service level objectives
+
+An app's Alerts section shows one card per `slo_burn` rule: the error budget remaining for the window, a status (healthy, burning, paging, or no traffic) and the burn rate of each alert tier, computed from the app's ingress request metrics exactly as the rule evaluates them (`GET /api/v1/apps/{name}/slo-preview`, `levelrail-cli apps alerts slo`). An app that serves traffic with no SLO is offered a one click rule instead.
 
 ## Database slow query log
 
@@ -314,7 +320,6 @@ The Metrics tab of an app.
 <Tab title="CLI">
 ```bash
 levelrail-cli apps requests <name>
-levelrail-cli apps metrics <name> --requests
 ```
 </Tab>
 <Tab title="API">
@@ -338,6 +343,18 @@ Only the URL path is read. A path is cut to its first segments, and any segment 
 | `APP_REQUEST_ROUTE_DEPTH` | 3 | Path segments kept in a template |
 
 The breakdown is stored in `telemetry.db` at one minute resolution and pruned with `APP_METRICS_RETENTION_1M`. It is node-local like the rest of the telemetry and merges across nodes through the same query layer.
+
+## Referrers and countries
+
+The app Traffic tab, `levelrail-cli traffic <app> --window 7d` and the `get_app_traffic` MCP tool also show the top referrer hosts and top countries, next to per replica percentiles. The Traffic tab charts draw a line at every deploy, so a latency step at 3am can be matched to the release that caused it.
+
+Only the host of the `Referer` header is kept (never the path or query), and requests with no referrer count as `direct`. Requests whose referrer is the app's own host are skipped as `direct`. Countries appear only when a geo source is active (`APP_GEOIP_DB` or a trusted country header such as `CF-IPCountry`); with none, the countries list is empty and nothing is looked up. No client address is stored, and no script runs in the visitor's browser.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `APP_REQUEST_AUDIENCE_MAX` | 32 | Distinct referrer hosts and countries kept per tick before `other` |
+
+The counts live in `telemetry.db` at one minute resolution, pruned with `APP_METRICS_RETENTION_1M`, and merge across nodes through the same query layer. Windows are `5m`, `1h`, `24h` and `7d`.
 
 ## Downsampling and period comparison
 
@@ -687,6 +704,13 @@ An app with no traffic, or fewer than `APP_SLO_MIN_REQUESTS` requests in a tier'
 - Preview without creating a rule: `levelrail-cli apps alerts slo <app> [--slo 99.9]`, `GET /api/v1/apps/{name}/slo-preview`, or the `get_slo_status` MCP tool.
 - An app with traffic and no SLO rule gets a suggestion on its alerts page to create a default 99.9% availability SLO.
 
+## Alert templates
+
+An app's alerts page has an "Add recommended rules" button with an app type (web, worker, database). A web app gets crash loop, 5xx rate above 5%, p95 above 1s, CPU above 90% and a 99.9% availability SLO; workers and databases get crash loop and CPU. Rules that already exist by name are skipped, so it is safe to press twice. The new rules notify the first connected channel.
+
+- CLI: `levelrail-cli apps alerts template <app> --profile-type web [--channel ID]`
+- API: `GET /api/v1/alert-templates`, `POST /api/v1/apps/{name}/alerts/apply-template`
+
 ## Notification channels
 
 Channels are global destinations you connect once (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs on every rule.
@@ -699,6 +723,13 @@ For most kinds, `notify_url` is a webhook URL. A few pack credentials into that 
 - `webpush` ignores `notify_url`: the destination is every browser subscription registered under Settings -> Notification channels -> Browser push.
 
 Both return a "not configured" error if the control plane has no master key set.
+
+### Quiet hours
+
+A channel can hold non-critical alerts during a daily window (Settings -> Notification channels -> edit). Warning and info alerts that fire inside the window are recorded in alert history as `quiet_hours` and sent when the window ends if they are still firing; if they resolve first, nothing is sent. Critical alerts always notify. The window is evaluated in the time zone you choose, and an end earlier than the start spans midnight.
+
+- CLI: `levelrail-cli channels quiet-hours <id> --start 22:00 --end 07:00 --timezone Europe/Berlin`, `--clear` to remove
+- API: `GET`, `PUT`, `DELETE /api/v1/notification-channels/{id}/quiet-hours`
 
 ### Destination checks and visibility
 

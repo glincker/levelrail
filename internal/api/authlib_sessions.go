@@ -154,6 +154,7 @@ func (rt *Router) finishLibSession(w http.ResponseWriter, r *http.Request, user 
 	}
 	setSessionCookie(w, r, token, time.Now().Add(rt.sessions.ttl))
 	rt.noticeSignIn(r, user, token)
+	rt.recordAccountEvent(context.WithoutCancel(r.Context()), r, user.ID, accountEventSignIn, http.StatusOK)
 }
 
 // establishLibSession is establishSession's library-backed body.
@@ -253,6 +254,11 @@ func (rt *Router) writeLibRegisterError(w http.ResponseWriter, err error) {
 func (rt *Router) requestLibPasswordReset(email, ip string) {
 	ctx, cancel := context.WithTimeout(context.Background(), libMailTimeout)
 	defer cancel()
+	defer func() {
+		if rec := recover(); rec != nil {
+			rt.logger.Error("api: forgot password: reset request panicked", slog.Any("panic", rec))
+		}
+	}()
 	if rt.emailSender == nil {
 		rt.logger.Warn("api: forgot password: no email capability configured on this control plane")
 		return

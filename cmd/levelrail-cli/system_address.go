@@ -22,6 +22,10 @@ func runSystem(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 		return runSystemAddress(prog, args[1:], stdout, stderr, lookupEnv)
 	case "restart":
 		return runSystemRestart(prog, args[1:], stdout, stderr, lookupEnv)
+	case "health":
+		return runSystemHealth(prog, args[1:], stdout, stderr, lookupEnv)
+	case "integrity":
+		return runSystemIntegrity(prog, args[1:], stdout, stderr, lookupEnv)
 	case "networks":
 		return runSystemNetworks(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
@@ -38,7 +42,10 @@ func systemUsage(prog string) string {
   %[1]s system address --clear                   go back to detection
   %[1]s system restart [--wait] [--yes]          restart the control plane process
   %[1]s system restart status                    show the restart state and boot id
-  %[1]s system networks [--orphans]              list app networks, owners and pool usage
+  %[1]s system health [--fix ID]                 show control plane saturation, optionally apply a fix
+  %[1]s system integrity [--check [--full]]      database integrity state and restorable snapshots
+  %[1]s system integrity --restore NAME|latest   stage a verified snapshot for the next start
+  %[1]s system networks [--orphans]             list app networks, owners and pool usage
   %[1]s system networks prune --dry-run|--yes    remove orphaned, empty app networks
 
 With --domain, also prints the exact DNS records to create for that name.

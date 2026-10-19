@@ -73,6 +73,66 @@
       ],
       "type": "object"
     },
+    "autoscale": {
+      "additionalProperties": false,
+      "properties": {
+        "max": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_step_down": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_step_up": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "metric": {
+          "enum": [
+            "cpu_percent",
+            "memory_percent",
+            "requests_per_replica"
+          ]
+        },
+        "min": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "scale_down_cooldown": {
+          "pattern": "^[0-9]+(s|m|h)$",
+          "type": "string"
+        },
+        "scale_down_tolerance": {
+          "maximum": 99,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "scale_up_cooldown": {
+          "pattern": "^[0-9]+(s|m|h)$",
+          "type": "string"
+        },
+        "scale_up_tolerance": {
+          "maximum": 100,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "stabilization": {
+          "pattern": "^[0-9]+(s|m|h)$",
+          "type": "string"
+        },
+        "target": {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "max",
+        "metric",
+        "target"
+      ],
+      "type": "object"
+    },
     "backup": {
       "additionalProperties": false,
       "properties": {
@@ -88,6 +148,40 @@
       "required": [
         "schedule"
       ],
+      "type": "object"
+    },
+    "budget": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "enum": [
+            "none",
+            "throttle",
+            "pause"
+          ]
+        },
+        "cost": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "egress": {
+          "pattern": "^[0-9.]+ ?([kKmMgGtT]i?[bB]?|[bB])?$",
+          "type": "string"
+        },
+        "thresholds": {
+          "items": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "maxItems": 8,
+          "type": "array"
+        },
+        "throttle_rps": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
       "type": "object"
     },
     "build": {
@@ -128,6 +222,35 @@
       "required": [
         "type"
       ],
+      "type": "object"
+    },
+    "canary": {
+      "additionalProperties": false,
+      "properties": {
+        "interval": {
+          "pattern": "^[0-9]+(s|m|h)$",
+          "type": "string"
+        },
+        "max_error_rate": {
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "type": "number"
+        },
+        "max_p95_ratio": {
+          "exclusiveMinimum": 1,
+          "type": "number"
+        },
+        "stages": {
+          "items": {
+            "maximum": 100,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "maxItems": 10,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
       "type": "object"
     },
     "database": {
@@ -772,12 +895,21 @@
         }
       ],
       "properties": {
+        "autoscale": {
+          "$ref": "#/$defs/autoscale"
+        },
         "bind_address": {
           "minLength": 1,
           "type": "string"
         },
+        "budget": {
+          "$ref": "#/$defs/budget"
+        },
         "build": {
           "$ref": "#/$defs/build"
+        },
+        "canary": {
+          "$ref": "#/$defs/canary"
         },
         "command": {
           "items": {
@@ -856,7 +988,8 @@
           "enum": [
             "rolling",
             "recreate",
-            "blue-green"
+            "blue-green",
+            "canary"
           ]
         },
         "volumes": {

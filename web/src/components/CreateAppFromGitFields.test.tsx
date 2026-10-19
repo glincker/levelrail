@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { AllI18n } from '../test/allI18n'
 import { CreateAppFromGitFields } from './CreateAppFromGitFields'
 
 const navigateMock = vi.fn()
@@ -168,11 +169,13 @@ function renderForm() {
   })
   const onCreated = vi.fn()
   render(
-    <QueryClientProvider client={queryClient}>
-      <Suspense fallback={<div>loading</div>}>
-        <CreateAppFromGitFields open onCreated={onCreated} />
-      </Suspense>
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={queryClient}>
+        <Suspense fallback={<div>loading</div>}>
+          <CreateAppFromGitFields open onCreated={onCreated} />
+        </Suspense>
+      </QueryClientProvider>
+    </AllI18n>,
   )
   return { onCreated }
 }

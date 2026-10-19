@@ -113,5 +113,62 @@
       "rejected": "Rejected",
       "failed": "Failed"
     }
+  },
+  "templates": {
+    "open": "Use a template",
+    "title": "Pipeline templates",
+    "description": "Ten tested starters. Pick one, name it, and edit it afterwards.",
+    "name": "Pipeline name",
+    "use": "Use template",
+    "creating": "Creating...",
+    "loadFailed": "Templates could not be loaded",
+    "created": "Pipeline {{name}} created.",
+    "cancel": "Cancel"
+  },
+  "fixes": {
+    "title": "Suggested fixes",
+    "code": {
+      "transient_network": "Network or registry hiccup. Rerun, or add retries so it heals itself.",
+      "out_of_memory": "The job ran out of memory. Raise its memory limit.",
+      "step_timeout": "The job hit its time limit. Raise the timeout.",
+      "disk_full": "The node is out of disk. Free space on the node, then rerun.",
+      "missing_secret": "A credential is missing or wrong. Set the secret the step reads.",
+      "image_not_found": "The job image does not exist or is private. Fix the image name or tag.",
+      "command_not_found": "A tool is missing from the job image. Pick an image that ships it.",
+      "node_peer_deps": "Peer dependency conflict. Fix the versions, or install with --legacy-peer-deps.",
+      "node_module_missing": "A dependency is not installed. Run the install step before this one.",
+      "python_module_missing": "A Python package is not installed. Add it to requirements.txt and install first.",
+      "go_version": "The Go image is older than go.mod asks for. Use a newer golang image.",
+      "permission_denied": "A step cannot read or write a path. Check file modes and the working directory."
+    },
+    "kind": {
+      "rerun": "Rerun",
+      "add_retries": "Add retries and rerun",
+      "raise_timeout": "Raise timeout and rerun",
+      "raise_memory": "Raise memory and rerun",
+      "edit_pipeline": "Edit pipeline",
+      "set_secret": "Open environment",
+      "free_disk": "Open nodes"
+    },
+    "applied": "Pipeline updated.",
+    "startedRun": "New run started.",
+    "job": "Job {{job}}"
+  },
+  "insights": {
+    "title": "Reliability and timing",
+    "pipeline": "Pipeline",
+    "empty": "Not enough finished runs yet.",
+    "loadFailed": "Insights could not be loaded",
+    "job": "Job",
+    "runs": "Runs",
+    "failRate": "Failed",
+    "p50": "Median",
+    "last": "Latest",
+    "flaky": "Flaky",
+    "stable": "Stable",
+    "diffTitle": "Latest run against the last fully passing run",
+    "before": "Before",
+    "now": "Now",
+    "change": "Change"
   }
 }

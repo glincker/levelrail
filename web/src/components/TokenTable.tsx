@@ -120,6 +120,26 @@ export function TokenTable({ tokens }: { tokens: TokenResource[] }) {
       ),
     },
     {
+      id: 'lastIp',
+      header: t('tokens.lastIp'),
+      priority: 3,
+      cell: (token) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {token.last_ip ?? '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'server',
+      header: t('tokens.server'),
+      priority: 3,
+      cell: (token) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {token.instance_id ? token.instance_id.slice(0, 12) : '-'}
+        </span>
+      ),
+    },
+    {
       id: 'expires',
       header: t('tokens.expires'),
       priority: 3,

@@ -89,11 +89,17 @@ func (rt *Router) libraryListDeviceRequests(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	viewer := clientIP(r)
+	var grant []string
+	if uid, ok := rt.currentSessionUserID(r); ok {
+		if user, uerr := rt.auth.GetUserByID(r.Context(), uid); uerr == nil {
+			grant = capDeviceAbilities(user.Abilities)
+		}
+	}
 	out := make([]deviceAuthRequestResource, 0, len(pending))
 	for _, p := range pending {
 		out = append(out, deviceAuthRequestResource{
 			UserCode: p.UserCode, ClientName: p.ClientName, CreatedAt: p.CreatedAt, ExpiresAt: p.ExpiresAt,
-			RequesterIP: p.RequesterIP, UserAgent: p.UserAgent, IPMismatch: p.RequesterIP != "" && p.RequesterIP != viewer,
+			RequesterIP: p.RequesterIP, UserAgent: p.UserAgent, IPMismatch: p.RequesterIP != "" && p.RequesterIP != viewer, Abilities: grant,
 		})
 	}
 	writeJSON(w, http.StatusOK, out)

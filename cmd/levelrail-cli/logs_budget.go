@@ -13,7 +13,9 @@ func appsLogBudgetUsage(prog string) string {
   %[1]s apps log-budget get <app> [flags]
   %[1]s apps log-budget set <app> --max-mb N [flags]
   %[1]s apps log-budget clear <app> [flags]
+  %[1]s apps log-budget trim <app> [flags]
 
+trim drops the oldest lines now until the app is back under its budget.
 Caps the log bytes kept for one app; the oldest lines are trimmed past it.
 --max-mb 0 or clear falls back to the control plane default (APP_LOG_BUDGET_MB).
 `, prog)
@@ -59,8 +61,8 @@ func runAppsLogBudget(prog string, args []string, stdout, stderr io.Writer, look
 		return exitOK
 	}
 	verb := args[0]
-	switch verb {
-	case "get", "set", "clear":
+	switch args[0] {
+	case "get", "set", "clear", "trim":
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps log-budget subcommand %q\n\n%s", prog, verb, appsLogBudgetUsage(prog))
 		return exitUsage
@@ -93,6 +95,17 @@ func runAppsLogBudget(prog string, args []string, stdout, stderr io.Writer, look
 		}
 		return c.render(res, func() {
 			_, _ = fmt.Fprintf(stdout, "log budget for %s set to %d MiB\n", app, res.MaxMB)
+		})
+	case "trim":
+		res, err := c.client.TrimLogBudget(ctx, app)
+		if err != nil {
+			return c.fail(fmt.Errorf("trim logs for %q: %w", app, err))
+		}
+		return c.render(res, func() {
+			_, _ = fmt.Fprintf(stdout, "trimmed %d lines (%s) from %s\n", res.TrimmedLines, humanBytes(res.TrimmedBytes), app)
+			if res.StillOver {
+				_, _ = fmt.Fprintln(stdout, "still over budget, run trim again to keep draining")
+			}
 		})
 	case "clear":
 		if err := c.client.DeleteLogBudget(ctx, app); err != nil {

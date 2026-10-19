@@ -60,14 +60,16 @@ func TestToolCaller_InProcess(t *testing.T) {
 	if isError {
 		t.Fatalf("Call(list_apps) isError = true, result = %s", result)
 	}
-	var apps []struct {
-		Name string `json:"name"`
+	var page struct {
+		Apps []struct {
+			Name string `json:"name"`
+		} `json:"apps"`
 	}
-	if err := json.Unmarshal([]byte(result), &apps); err != nil {
+	if err := json.Unmarshal([]byte(result), &page); err != nil {
 		t.Fatalf("unmarshal result %q: %v", result, err)
 	}
-	if len(apps) != 1 || apps[0].Name != "web" {
-		t.Errorf("apps = %+v, want one app named web", apps)
+	if len(page.Apps) != 1 || page.Apps[0].Name != "web" {
+		t.Errorf("apps = %+v, want one app named web", page.Apps)
 	}
 }
 

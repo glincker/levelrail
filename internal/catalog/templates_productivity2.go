@@ -50,7 +50,7 @@ var productivity2Templates = []Template{
     volumes:
       - memos_data:/var/opt/memos
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:5230/healthz"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5230/healthz || curl -fsS -o /dev/null http://127.0.0.1:5230/healthz"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -157,8 +157,14 @@ var productivity2Templates = []Template{
   frontend:
     image: penpotapp/frontend:2.11.1
     ports: ["8080:8080"]
+    environment:
+      PENPOT_BACKEND_URI: http://backend:6060
+      PENPOT_EXPORTER_URI: http://exporter:6061
+    depends_on:
+      - backend
+      - exporter
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8080/ || wget -q -O /dev/null http://127.0.0.1:8080/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

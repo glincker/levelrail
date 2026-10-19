@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next'
 import {
   BellRingingIcon,
   CheckIcon,
+  ClockCounterClockwiseIcon,
   DownloadSimpleIcon,
   LinkIcon,
   MagnifyingGlassIcon,
+  SortAscendingIcon,
   TextAlignLeftIcon,
   XIcon,
 } from '@phosphor-icons/react/dist/ssr'
@@ -162,6 +164,7 @@ export function LogSearchPanel({
     stream: filters.stream,
     fields: fieldFilters,
     signature: filters.signature,
+    order: trimmedQuery ? filters.order : undefined,
   }
 
   const { data, isLoading, error } = useLogSearch(appName, {
@@ -345,8 +348,9 @@ export function LogSearchPanel({
           onChange={(e) => {
             setQuery(e.target.value)
           }}
-          placeholder="Search log messages..."
-          aria-label="Search log messages"
+          placeholder={t('explorer.searchPlaceholder')}
+          aria-label={t('explorer.searchLabel')}
+          aria-describedby="log-search-syntax"
           className="pl-8 font-mono"
         />
         {query ? (
@@ -355,11 +359,54 @@ export function LogSearchPanel({
             onClick={() => {
               setQuery('')
             }}
-            aria-label="Clear search"
+            aria-label={t('explorer.clearSearch')}
             className="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <XIcon className="size-3.5" aria-hidden="true" />
           </button>
+        ) : null}
+      </div>
+      <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+        <p id="log-search-syntax" className="text-xs text-muted-foreground">
+          {t('explorer.searchSyntax')}
+        </p>
+        {trimmedQuery ? (
+          <div
+            role="group"
+            aria-label={t('explorer.orderLabel')}
+            className="flex items-center gap-1"
+          >
+            {(['newest', 'relevance'] as const).map((mode) => {
+              const active = (filters.order ?? 'newest') === mode
+              return (
+                <Button
+                  key={mode}
+                  type="button"
+                  size="sm"
+                  variant={active ? 'secondary' : 'outline'}
+                  aria-pressed={active}
+                  onClick={() => {
+                    update({ order: mode === 'relevance' ? mode : undefined })
+                  }}
+                >
+                  {mode === 'relevance' ? (
+                    <SortAscendingIcon
+                      className="size-3.5"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <ClockCounterClockwiseIcon
+                      className="size-3.5"
+                      aria-hidden="true"
+                    />
+                  )}
+                  {mode === 'relevance'
+                    ? t('explorer.orderRelevance')
+                    : t('explorer.orderNewest')}
+                </Button>
+              )
+            })}
+          </div>
         ) : null}
       </div>
 

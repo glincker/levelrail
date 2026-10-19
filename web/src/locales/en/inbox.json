@@ -1,0 +1,49 @@
+{
+  "tab": "Inbox",
+  "title": "Alert inbox",
+  "description": "Alerts that reached you, newest first. Silenced, grouped and rate limited noise is hidden. Read state follows your account.",
+  "loading": "Loading inbox",
+  "loadError": "Could not load the inbox.",
+  "retry": "Try again",
+  "unreadOnly": "Unread only",
+  "markAllRead": "Mark all read",
+  "markRead": "Mark read",
+  "markedAll": "Inbox marked read.",
+  "unreadCount_one": "{{count}} unread",
+  "unreadCount_other": "{{count}} unread",
+  "empty": {
+    "title": "Nothing needs you",
+    "body": "New firings and resolutions at warning level or above will show up here. Lower the minimum severity below to see more."
+  },
+  "event": {
+    "fired": "fired",
+    "resolved": "resolved",
+    "flapping": "flapping",
+    "group": "grouped alerts"
+  },
+  "severity": {
+    "info": "Info",
+    "warning": "Warning",
+    "critical": "Critical"
+  },
+  "prefs": {
+    "title": "Routing and daily digest",
+    "minSeverity": "Minimum severity",
+    "mutedApps": "Muted apps",
+    "mutedAppsHint": "Comma separated app names whose alerts stay out of your inbox.",
+    "digest": "Daily digest",
+    "digestHint": "One summary of the last 24 hours, sent through a notification channel.",
+    "digestHour": "Send at (UTC hour)",
+    "digestChannel": "Digest channel",
+    "noChannel": "Create a notification channel first",
+    "save": "Save preferences",
+    "saved": "Inbox preferences saved.",
+    "saveError": "Could not save preferences.",
+    "digestNeedsChannel": "Pick a channel to send the digest through."
+  },
+  "bell": {
+    "link": "Alert inbox",
+    "unread_one": "{{count}} unread alert",
+    "unread_other": "{{count}} unread alerts"
+  }
+}

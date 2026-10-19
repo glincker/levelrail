@@ -1,6 +1,7 @@
 ---
 title: "Deploying from GitHub Actions"
 description: Deploy a prebuilt image from a GitHub Actions workflow with the bundled composite action, no Go toolchain needed.
+"og:url": "https://docs.levelrail.com/github-actions"
 ---
 
 `.github/actions/deploy` is a composite GitHub Action that deploys an already-built image to a Levelrail app and waits for the rollout to converge before the job finishes. It wraps two CLI commands, `apps deploy` and `apps wait`, so anything it does you can also script in a shell step.
@@ -78,6 +79,18 @@ levelrail-cli apps github-actions set my-app --environment staging --no-checks
 ```
 
 The same settings are available at `GET/PUT /api/v1/apps/{name}/github-actions`. `apps github-actions start` and `finish` are the commands the action runs; they read `GITHUB_TOKEN`, `GITHUB_REPOSITORY` and `GITHUB_SHA`, so you can call them from any CI that has a GitHub token.
+
+## Deploy without a stored secret (OIDC)
+
+Instead of a long-lived token, trust a repository and let the job swap its GitHub identity for a 15 minute token that can only read and deploy that one app.
+
+1. Set the dashboard address (Settings), it is the audience the identity token is issued for.
+2. On the app's Deploys page, open **Deploy from CI**, trust `owner/name` with a ref such as `refs/heads/main` (globs like `refs/tags/v*` work, an environment is optional), and copy the generated workflow. CLI: `apps github-actions trust add <app> --repo owner/name` and `apps github-actions workflow <app>`.
+3. The workflow needs `permissions: id-token: write` and sets `oidc: "true"` on the action. It also sets `rollback-on-failure: "true"`, which redeploys the previously running image when the deploy fails or times out.
+
+The generated workflow honors the app's deploy path filters and skips commits containing `[skip ci]`, `[ci skip]`, `[skip deploy]` or `[no deploy]`. Git push webhooks skip the same markers.
+
+Token exchange is `POST /api/v1/ci/oidc-exchange`; `apps github-actions token <app>` calls it from a job.
 
 ## Not tied to GitHub Actions
 

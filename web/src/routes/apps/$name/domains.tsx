@@ -4,6 +4,7 @@ import { useApp } from '../../../queries/apps'
 import { certificatesQueryOptions } from '../../../queries/certificates'
 import { AppMaintenanceToggle } from '../../../components/maintenance/AppMaintenanceToggle'
 import { DomainEditor } from '../../../components/DomainEditor'
+import { ShieldRecommendedCard } from '../../../components/ShieldRecommendedCard'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -25,6 +26,7 @@ function DomainsSection() {
     <div className="space-y-4">
       <AppMaintenanceToggle appName={name} />
       <DomainEditor app={app} />
+      <ShieldRecommendedCard appName={name} />
     </div>
   )
 }

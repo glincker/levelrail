@@ -8,6 +8,8 @@ func (rt *Router) registerSecurityRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/security/posture", rt.requireAbility(AbilityRead, rt.handleSecurityPosture))
 	mux.HandleFunc("GET /api/v1/security/policy", rt.requireAbility(AbilityRead, rt.handleGetSecurityPolicy))
 	mux.HandleFunc("PUT /api/v1/security/policy", rt.requireAbility(AbilityRoot, rt.handlePutSecurityPolicy))
+	mux.HandleFunc("GET /api/v1/security/hsts", rt.requireAbility(AbilityRoot, rt.handleGetHSTS))
+	mux.HandleFunc("PUT /api/v1/security/hsts", rt.requireAbility(AbilityRoot, rt.handlePutHSTS))
 	mux.HandleFunc("GET /api/v1/security/sessions", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleListSecuritySessions))
 	mux.HandleFunc("DELETE /api/v1/security/sessions/{id}", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleRevokeSecuritySession))
 	mux.HandleFunc("POST /api/v1/security/sessions/revoke-others", rt.requireAbilityDecided(AbilityRead, allowAnyAuthenticated, rt.handleRevokeOtherSecuritySessions))

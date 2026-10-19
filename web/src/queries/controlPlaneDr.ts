@@ -48,6 +48,17 @@ export interface ControlPlaneDr {
   drill_running: boolean
   checklist: ControlPlaneDrChecklist
   warnings: ControlPlaneDrWarning[]
+  replica?: ControlPlaneDrReplica
+}
+
+export interface ControlPlaneDrReplica {
+  enabled: boolean
+  interval_seconds: number
+  last_ship_at?: string
+  last_ship_ms?: number
+  last_size_bytes?: number
+  last_error?: string
+  pending_since?: string
 }
 
 export interface ControlPlaneDrSettings {
@@ -71,9 +82,32 @@ export interface ControlPlaneEscrowBundle {
   uploaded_key?: string
 }
 
+export interface ControlPlaneRestoreStep {
+  id: string
+  state: 'done' | 'todo' | 'blocked'
+}
+
+export interface ControlPlaneRestorePlan {
+  ready: boolean
+  backup?: { key: string; created_at: string; size_bytes: number }
+  install_id?: string
+  source?: string
+  endpoint?: string
+  command?: string
+  steps: ControlPlaneRestoreStep[]
+  warnings: string[]
+  binary_name: string
+}
+
+export interface ControlPlaneDrKeypair {
+  recipient: string
+  identity: string
+}
+
 export const controlPlaneDrKeys = {
   all: ['control-plane-dr'] as const,
   status: () => [...controlPlaneDrKeys.all, 'status'] as const,
+  restorePlan: () => [...controlPlaneDrKeys.all, 'restore-plan'] as const,
 }
 
 const BASE = '/api/v1/system/control-plane-dr'
@@ -153,4 +187,29 @@ export function useAckControlPlaneEscrow() {
   return useInvalidating(() =>
     request<ControlPlaneDr>('/escrow/ack', jsonInit('POST'), 'acknowledge'),
   )
+}
+
+export function useControlPlaneRestorePlan(enabled: boolean) {
+  return useQuery({
+    queryKey: controlPlaneDrKeys.restorePlan(),
+    queryFn: () =>
+      request<ControlPlaneRestorePlan>(
+        '/restore-plan',
+        undefined,
+        'load restore plan',
+      ),
+    enabled,
+    retry: false,
+  })
+}
+
+export function useGenerateControlPlaneDrKeypair() {
+  return useMutation<ControlPlaneDrKeypair, Error, void>({
+    mutationFn: () =>
+      request<ControlPlaneDrKeypair>(
+        '/keys',
+        jsonInit('POST'),
+        'generate key pair',
+      ),
+  })
 }

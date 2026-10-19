@@ -194,6 +194,8 @@
   },
   "tokens": {
     "tableLabel": "API tokens",
+    "lastIp": "Last IP",
+    "server": "Server",
     "emptyTitle": "No tokens yet",
     "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
     "name": "Name",
@@ -588,6 +590,10 @@
         "title": "Control plane backup",
         "description": "Snapshots, off-box backups, key escrow and restore drills for this instance."
       },
+      "control-plane-health": {
+        "title": "Control plane health",
+        "description": "Goroutines, database latency, reconcile lag and stream load, with fixes."
+      },
       "system-status": {
         "title": "System status",
         "description": "Preflight checks: Docker, disk, ports, database, and firewall."
@@ -599,6 +605,10 @@
       "containers": {
         "title": "Containers",
         "description": "Every container on this node, managed by this platform or not."
+      },
+      "janitor": {
+        "title": "Automatic cleanup",
+        "description": "Reclaim disk from unused images, cache, volumes and old attempts."
       },
       "domains": {
         "title": "Domains",
@@ -853,6 +863,170 @@
     "banner": {
       "title": "Sign-in relies on a password alone",
       "body": "Turn on two-factor authentication or register a passkey so a leaked password cannot open this dashboard on its own."
+    },
+    "account": {
+      "title": "Your sign-in methods",
+      "description": "Two-factor authentication, passkeys, your password and active sessions live on your Account page.",
+      "open": "Open Account"
+    },
+    "loginProtection": {
+      "title": "Login protection",
+      "body": "Failed sign-in attempts are rate limited per IP address and username, with each additional failure making the next allowed attempt wait longer than the last. A handful of mistyped passwords will never lock you out, but repeated automated guessing gets slower with every try."
+    }
+  },
+  "controlPlaneHealth": {
+    "title": "Control plane health",
+    "description": "Live saturation of this instance: process, database, reconcile loop and open streams.",
+    "status": {
+      "ok": "Healthy",
+      "warn": "Degraded",
+      "crit": "Saturated"
+    },
+    "severity": {
+      "warn": "Warning",
+      "crit": "Critical"
+    },
+    "allClear": "Every measurement is under its threshold.",
+    "reading": "Now {{value}}, limit {{limit}}.",
+    "fixApplied": "Fix applied",
+    "fixFailed": "The fix failed",
+    "fixViaCli": "Fix via CLI",
+    "slowQueries": "Slow queries: {{count}} over {{ms}} ms",
+    "noSlowQueries": "No slow queries recorded since start.",
+    "fixes": {
+      "wal_checkpoint": "Checkpoint now",
+      "db_optimize": "Refresh query stats",
+      "reset_slow_log": "Clear slow log",
+      "telemetry_prune": "Prune and compact metrics",
+      "reset_reconcile_guard": "Reset protection and resume",
+      "integrity_check": "Run a full check",
+      "integrity_restore": "Restore the newest verified snapshot"
+    },
+    "integrity": {
+      "title": "Database integrity",
+      "ok": "Intact",
+      "damaged": "Damaged",
+      "notYet": "No check has run since this process started. The first one runs shortly.",
+      "last": "Last check {{when}} ({{mode}}).",
+      "mode": {
+        "quick": "quick",
+        "full": "full"
+      },
+      "checkQuick": "Quick check now",
+      "checkFull": "Full check now",
+      "checkOk": "The database passed its check",
+      "checkBad": "The database failed its check",
+      "snapshots": "Snapshots you can restore",
+      "noSnapshots": "No snapshots exist yet. Create one from the backups page.",
+      "verified": "Verified",
+      "unverified": "Not verified yet",
+      "restore": "Restore",
+      "pending": "Snapshot {{name}} replaces the database at the next start.",
+      "restartNow": "Restart now",
+      "cancelRestore": "Cancel",
+      "staged": "Restore staged. Restart the control plane to apply it.",
+      "confirmTitle": "Restore {{name}}?",
+      "confirmDescription": "The snapshot is verified again before it is staged, and applied during the next start before the database opens.",
+      "consequenceKept": "The current database file is kept beside it, not deleted.",
+      "consequenceRestart": "Changes made after the snapshot was taken are not in it."
+    },
+    "guard": {
+      "title": "Reconcile protection",
+      "summary": "{{deferred}} passes were deferred, {{recent}} limited in the last 5 minutes, {{open}} breakers open.",
+      "none": "No controller has tripped a breaker or hit a rate limit.",
+      "counts": "{{trips}} trips, {{panics}} panics, {{throttled}} throttled",
+      "state": {
+        "closed": "Closed",
+        "open": "Paused",
+        "half_open": "Trial"
+      }
+    },
+    "metrics": {
+      "goroutines": "Goroutines",
+      "heap": "Heap in use",
+      "dbLatency": "Database p95",
+      "dbLatencyHint": "p50 {{p50}} ms, p99 {{p99}} ms",
+      "dbQueue": "Writes that waited",
+      "dbQueueHint": "{{ms}} ms waiting in total",
+      "wal": "Write ahead log",
+      "walHint": "Database file {{size}} MiB",
+      "reconcile": "Last reconcile pass",
+      "reconcileHint": "{{n}} controllers, p95 {{p95}} ms",
+      "eventLag": "Since last reconcile pass",
+      "streams": "Live streams",
+      "rss": "Memory in use (RSS)",
+      "rssHint": "Soft limit {{limit}} MiB",
+      "rssNoLimit": "No soft limit set",
+      "threads": "OS threads",
+      "cpu": "CPU since last check",
+      "telemetry": "Metrics database"
+    },
+    "loops": {
+      "title": "Background loops",
+      "empty": "No background loops have reported yet.",
+      "row": "every {{every}} s, {{runs}} runs, last {{ms}} ms, cost {{cost}} % of one core"
+    },
+    "findings": {
+      "reconcile_breakers": {
+        "title": "A controller keeps failing and was paused",
+        "hint": "Its breaker retries on a growing delay. Fix the cause shown below, then reset protection to retry now."
+      },
+      "reconcile_storm": {
+        "title": "A burst of events hit the rate limit",
+        "hint": "Passes were merged so the host stays responsive. Resetting protection refills the budget."
+      },
+      "db_integrity": {
+        "title": "The control plane database is damaged",
+        "hint": "Restore the newest verified snapshot. It is applied at the next start and the damaged file is kept."
+      },
+      "rss": {
+        "title": "High memory use",
+        "hint": "The process is using a lot of RAM. Lower APP_GOMEMLIMIT_PERCENT or review the loops below."
+      },
+      "threads": {
+        "title": "Many OS threads",
+        "hint": "Usually blocked disk or network calls. Restart the control plane if it keeps climbing."
+      },
+      "telemetry_size": {
+        "title": "Metrics database is large",
+        "hint": "Pruning applies the retention and size cap, then returns free space to the disk."
+      },
+      "goroutines": {
+        "title": "Many goroutines",
+        "hint": "Usually open streams or stuck jobs. Restart the control plane if it keeps climbing."
+      },
+      "heap": {
+        "title": "High memory use",
+        "hint": "Check for very large log or build outputs held in memory."
+      },
+      "db_latency": {
+        "title": "Slow database queries",
+        "hint": "Refreshing query statistics often restores good plans."
+      },
+      "db_queue": {
+        "title": "Writes are queueing",
+        "hint": "The single SQLite writer is busy. Look at the slow query list below."
+      },
+      "wal_size": {
+        "title": "Write ahead log is large",
+        "hint": "A checkpoint folds it back into the database file."
+      },
+      "slow_queries": {
+        "title": "Many slow queries",
+        "hint": "Review the list below, then clear the counter once handled."
+      },
+      "reconcile_pass": {
+        "title": "Reconcile pass is slow",
+        "hint": "A controller is taking long. The slowest one is shown in the metrics."
+      },
+      "event_lag": {
+        "title": "Reconcile loop is lagging",
+        "hint": "No pass finished recently. Restart the control plane if this persists."
+      },
+      "streams": {
+        "title": "Live streams near the cap",
+        "hint": "New log and event streams are refused at the cap. Raise APP_MAX_LIVE_STREAMS if the host has headroom."
+      }
     }
   },
   "generalPage": {
@@ -1081,6 +1255,11 @@
     "docsLink": "View API docs",
     "activeCount_one": "{{count}} active token",
     "activeCount_other": "{{count}} active tokens",
+    "expiring": {
+      "title_one": "{{count}} token expires within 14 days",
+      "title_other": "{{count}} tokens expire within 14 days",
+      "body": "Create a replacement with the same access, switch your integration over, then revoke the old one."
+    },
     "banner": {
       "title_one": "{{count}} root token never expires",
       "title_other": "{{count}} root tokens never expire",
@@ -1145,6 +1324,22 @@
     "help": "CLI reference",
     "copy": "Copy",
     "copied": "Copied",
+    "server": {
+      "title": "This server",
+      "body": "The CLI pins this identity at login and refuses to send a token to any other server. Compare the fingerprint with what the CLI prints.",
+      "name": "Name",
+      "id": "Instance",
+      "fingerprint": "Fingerprint",
+      "movedTitle": "This instance was restored onto a new host",
+      "movedBody": "Its identity changed, so CLI tokens issued before the move are refused. If this is the same instance (a restore or migration you made), confirm it to accept those tokens again. If you did not move it, leave it and log in to the CLI again.",
+      "confirmLabel": "Type \"{{phrase}}\" to confirm",
+      "confirmAction": "Confirm same instance",
+      "confirmed": "Instance identity restored. CLI tokens work again."
+    },
+    "tokens": {
+      "title": "CLI tokens",
+      "body": "Each CLI login is a token bound to this server. Revoke one to cut that machine off."
+    },
     "waitingCount_one": "{{count}} login waiting",
     "waitingCount_other": "{{count}} logins waiting",
     "rail": {
@@ -1176,6 +1371,10 @@
         "title": "Log in",
         "body": "Opens a code here to approve, the same flow gh auth login and aws sso login use: no SSH key, no server port to open. Approval needs a signed-in dashboard session, so it inherits that session's 2FA or passkey."
       }
+    },
+    "setup": {
+      "toggle": "Set up the CLI on a new machine",
+      "hint": "Already have the CLI? Start the device login there and approve the code above. These steps are only for a fresh machine."
     }
   },
   "accountPage": {
@@ -1185,16 +1384,21 @@
       "title": "Profile",
       "description": "Your own details. What you can manage is listed under My access below.",
       "email": "Email",
+      "emailVerified": "Verified",
+      "emailUnverified": "Unverified",
       "displayName": "Display name",
       "hasPassword": "This account signs in with a password.",
       "noPassword": "This account has no password set, only OAuth sign-in.",
       "edit": "Edit display name",
       "save": "Save",
       "cancel": "Cancel",
-      "saved": "Display name updated"
+      "saved": "Display name updated",
+      "saving": "Saving...",
+      "counter": "{{used}} of {{max}} characters",
+      "saveError": "Could not save your display name. Check your connection and try again."
     },
     "loading": "Loading...",
-    "loadError": "Could not load this section. Reload the page to retry.",
+    "loadError": "Could not load this section.",
     "sessions": {
       "title": "Active sessions and trusted devices",
       "description": "Where you are signed in right now. Ending a session signs that browser out.",
@@ -1210,28 +1414,44 @@
       "deviceRemove": "Remove",
       "deviceRemoved": "Trusted device removed",
       "canApprove": "Can approve sign-ins",
-      "signedInAt": "Signed in {{when}}",
+      "signedInAt": "Signed in",
       "networks_one": "{{count}} network",
       "networks_other": "{{count}} networks",
       "tone": {
         "live": "Active now",
         "recent": "Active in the last hour",
         "idle": "Idle"
-      }
+      },
+      "revoking": "Signing out...",
+      "revokeLabel": "Sign out {{device}} ({{ip}})",
+      "revokeConfirmTitle": "Sign out {{device}}?",
+      "revokeConsequence": "That browser is signed out immediately.",
+      "revokeApproverConsequence": "It can currently approve new sign-ins, so you will lose that approver.",
+      "revokeReloginConsequence": "Whoever uses it must sign in again.",
+      "revokeOthersConfirmTitle": "Sign out all other sessions?",
+      "revokeOthersConsequence": "Every other browser and device is signed out immediately.",
+      "revokeOthersKeep": "This browser stays signed in.",
+      "empty": "No active sessions",
+      "emptyBody": "Sessions appear here after you sign in from a browser.",
+      "deviceRemoving": "Removing...",
+      "deviceRemoveLabel": "Remove trusted device {{device}}",
+      "deviceConfirmTitle": "Remove trusted device {{device}}?",
+      "deviceConsequence": "That device must be approved again the next time it signs in."
     },
     "providers": {
       "title": "Linked sign-in providers",
       "description": "Link an identity provider to sign in with it. Linking needs this live session.",
       "none": "No sign-in providers are enabled on this instance.",
       "linked": "Linked",
-      "link": "Link"
+      "link": "Link",
+      "configure": "Set up providers"
     },
     "tokens": {
       "title": "My API tokens",
       "description": "Tokens you created for the CLI, CI or agents.",
-      "count_one": "{{count}} active token",
-      "count_other": "{{count}} active tokens",
-      "manage": "Manage tokens"
+      "manage": "All tokens and history",
+      "emptyTitle": "No active API tokens",
+      "emptyBody": "Create a token for the CLI, CI or an agent. The secret is shown once."
     },
     "access": {
       "title": "My access",
@@ -1256,7 +1476,88 @@
         "sensitive_write": "Change sensitive settings",
         "users_and_access": "Manage users, roles and policies",
         "platform_settings": "Change platform-wide settings"
+      },
+      "colArea": "Capability",
+      "colStatus": "Status",
+      "colAction": "Action",
+      "allowed": "Allowed",
+      "request": "Request access",
+      "requestLabel": "Request access for: {{area}}"
+    },
+    "retry": "Retry",
+    "password": {
+      "titleChange": "Change password",
+      "titleSet": "Set a password",
+      "descChange": "Changing your password signs out every other active session for this account. This browser stays signed in.",
+      "descSet": "This account currently signs in through OAuth only. Setting a password adds a second way to sign in.",
+      "current": "Current password",
+      "currentRequired": "Current password is required",
+      "new": "New password",
+      "confirm": "Confirm new password",
+      "tooShort": "New password must be at least {{min}} characters",
+      "mismatch": "Passwords do not match",
+      "minHint": "At least {{min}} characters.",
+      "changed": "Password changed",
+      "changedBody": "Your other sessions have been signed out. This one stays signed in.",
+      "saving": "Saving...",
+      "submitChange": "Change password",
+      "submitSet": "Set password",
+      "strength": {
+        "label": "Password strength",
+        "level0": "Empty",
+        "level1": "Weak",
+        "level2": "Fair",
+        "level3": "Good",
+        "level4": "Strong"
+      },
+      "rules": {
+        "length": "At least {{min}} characters",
+        "mixedCase": "Upper and lower case",
+        "digit": "A number",
+        "symbol": "A symbol",
+        "met": "(met)",
+        "unmet": "(not met)"
       }
+    },
+    "twoFactor": {
+      "title": "Two-factor authentication",
+      "description": "Require a code from an authenticator app in addition to your password when signing in.",
+      "enabled_one": "Enabled. {{count}} recovery code remaining.",
+      "enabled_other": "Enabled. {{count}} recovery codes remaining.",
+      "disabledHint": "Not enabled. Add a second step so a stolen password alone cannot sign in.",
+      "enable": "Enable two-factor authentication",
+      "setupTitle": "Set up two-factor authentication",
+      "setupBody": "Add this to an authenticator app (1Password, Google Authenticator, Authy), then enter the 6-digit code it shows to confirm.",
+      "setupKey": "Setup key",
+      "setupLink": "Or use this link",
+      "codeLabel": "Code from your authenticator app",
+      "codePlaceholder": "123456",
+      "recoveryPlaceholder": "xxxx-xxxx-xxxx-xxxx",
+      "cancel": "Cancel",
+      "verify": "Verify and enable",
+      "verifying": "Verifying...",
+      "enabledTitle": "Two-factor authentication enabled",
+      "recoveryBody": "Save these recovery codes somewhere safe. Each one can be used once to sign in if you lose access to your authenticator app. They will not be shown again.",
+      "saved": "I have saved these codes",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyAll": "Copy all",
+      "regenerate": "Regenerate recovery codes",
+      "regenerateBody": "Every existing recovery code stops working the moment new ones are generated. Enter a current code from your authenticator app to confirm.",
+      "regenerateAction": "Regenerate",
+      "regenerating": "Regenerating...",
+      "regeneratedTitle": "New recovery codes generated",
+      "regeneratedBody": "Save these somewhere safe. The old codes no longer work, and these will not be shown again.",
+      "done": "Done",
+      "disable": "Disable two-factor authentication",
+      "disableTitle": "Disable two-factor authentication?",
+      "disableBody": "Signing in will only require a password afterward. Enter a current code to confirm.",
+      "recoveryCodeLabel": "Recovery code",
+      "authCodeLabel": "Authenticator code",
+      "useAuthCode": "Use authenticator code",
+      "useRecoveryCode": "Use a recovery code",
+      "disableAction": "Disable",
+      "disabling": "Disabling..."
     }
   },
   "apiExplorerPage": {
@@ -1271,7 +1572,8 @@
   },
   "importPlatformPage": {
     "title": "Import from another platform",
-    "description": "Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported."
+    "description": "Bring apps and databases over from Coolify, Dokploy or CapRover. Databases and volumes start empty, and re-running skips what was already imported.",
+    "checklistLink": "Open the migration checklist"
   },
   "builtInRegistryPage": {
     "title": "Container registry",
@@ -1386,7 +1688,11 @@
   },
   "containersPage": {
     "title": "Containers",
-    "description": "Every container on this node, whether or not it's managed by this platform."
+    "description": "Every container on this node, whether or not it's managed by this platform.",
+    "notAvailable": "Not available",
+    "listFailed": "Couldn't list containers",
+    "emptyTitle": "No containers",
+    "emptyDescription": "Nothing is running on this node's Docker daemon right now."
   },
   "networkSharesPage": {
     "title": "Network shares",
@@ -1641,5 +1947,362 @@
     "test": "Test",
     "remove": "Remove {{name}}",
     "mountAs": "secret id {{id}}"
+  },
+  "storagePage": {
+    "title": "Storage destinations",
+    "description": "S3-compatible object storage for log archives and backups. AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, or any custom endpoint.",
+    "notConfiguredTitle": "Storage is not configured on this server",
+    "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane so bucket credentials can be encrypted.",
+    "loadErrorTitle": "Storage destinations could not be loaded",
+    "retry": "Retry",
+    "logArchiveTitle": "Log archive for all apps",
+    "logArchiveBody": "Ships node-local logs to a destination on a schedule. Apps with their own policy (app Logs, Archive tab) are kept separate.",
+    "buildCacheTitle": "Build cache for all apps"
+  },
+  "systemStatusPage": {
+    "title": "System status",
+    "description": "Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability.",
+    "troubleshootingGuide": "Troubleshooting guide",
+    "rerun": "Re-run checks",
+    "allPassedTitle": "All checks passed",
+    "allPassedBody": "Docker, disk space, ports, the database, and every other preflight check are all healthy right now.",
+    "failedTitle": "One or more checks failed",
+    "failing": "Failing: {{names}}.",
+    "reviewBelow": "Review the checks below for details.",
+    "ingressTitle": "Ingress is a single point of failure",
+    "ingressBody": "Domain-based HTTPS routing runs embedded in this control plane process. If it crashes or restarts, routing is down until it comes back up, even though already-running containers keep serving traffic on their own ports the whole time.",
+    "survivesCrash": "What survives a control plane crash",
+    "groups": {
+      "infrastructure": {
+        "title": "Infrastructure",
+        "description": "Can this box run and reach what it needs to run containers."
+      },
+      "security": {
+        "title": "Security",
+        "description": "Hardening checks: firewall status and secret rotation age."
+      },
+      "network": {
+        "title": "Network and reachability",
+        "description": "Outbound network access and whether the internet can reach this box."
+      },
+      "other": {
+        "title": "Other checks",
+        "description": "Additional checks reported by this control plane."
+      }
+    }
+  },
+  "firewallRules": {
+    "liveStatus": "Live firewall status",
+    "liveStatusNote": "From this host's own preflight check. See Settings, System status for the full hardening checklist.",
+    "emptyTitle": "No firewall rules configured",
+    "emptyBody": "Add a rule to allow or deny traffic to a specific port, optionally restricted to a source CIDR.",
+    "cols": {
+      "action": "Action",
+      "port": "Port",
+      "protocol": "Protocol",
+      "source": "Source",
+      "label": "Label",
+      "added": "Added",
+      "actions": "Actions"
+    },
+    "anywhere": "Anywhere",
+    "none": "None",
+    "allow": "Allow",
+    "deny": "Deny",
+    "closeTitle": "This rule will close a port",
+    "restrictTitle": "This rule restricts a port to one source",
+    "closeBody": "Traffic to this port will be dropped. A rule targeting the management API, agent connections, or ingress is refused automatically.",
+    "restrictBody": "Traffic from outside this CIDR will no longer reach this port. A rule targeting the management API, agent connections, or ingress is refused automatically.",
+    "addRule": "Add rule",
+    "addDeny": "Add deny rule",
+    "adding": "Adding...",
+    "addTitle": "Add firewall rule",
+    "addBody": "Allow or deny traffic to a port, optionally restricted to a source CIDR. Applied on the next reconcile pass.",
+    "createdToast": "Firewall rule for port {{port}} created.",
+    "sourceCidr": "Source CIDR (optional)",
+    "sourceCidrPlaceholder": "10.0.0.0/24 (leave blank for any source)",
+    "labelOptional": "Label (optional)",
+    "labelPlaceholder": "what this rule is for",
+    "cancel": "Cancel",
+    "remove": "Remove",
+    "removing": "Removing...",
+    "removeTitle": "Remove this rule?",
+    "removeAllowBody": "This will stop allowing traffic to port {{port}}/{{protocol}} once the next reconcile pass removes it, unless something else on this host still allows it.",
+    "removeDenyBody": "This will stop denying traffic to port {{port}}/{{protocol}} once the next reconcile pass removes it.",
+    "removedToast": "Firewall rule removed."
+  },
+  "storageDestinations": {
+    "usage": {
+      "header": "Usage",
+      "none": "Empty",
+      "ofQuota": "{{used}} of {{quota}}",
+      "overQuota": "Over quota",
+      "cost": "Est. cost per month",
+      "free": "Free",
+      "defaultFor": "Default for",
+      "noDefault": "None"
+    },
+    "kind": {
+      "agent": "Node directory",
+      "agentLocation": "{{node}}:{{directory}}"
+    },
+    "classes": {
+      "backups": "Backups",
+      "archives": "Log archives",
+      "artifacts": "Pipeline artifacts",
+      "cache": "Build cache",
+      "dumps": "Data dumps"
+    },
+    "defaults": {
+      "title": "Default destination per data class",
+      "description": "Where each kind of data goes when no destination is chosen. Node directories can only hold backups and dumps.",
+      "unset": "Not set",
+      "clear": "Clear",
+      "saved": "{{class}} now go to {{name}}.",
+      "cleared": "Default for {{class}} cleared.",
+      "pick": "Choose a destination"
+    },
+    "node": {
+      "add": "Add node directory",
+      "title": "Add a node directory destination",
+      "description": "Stream backups to a confined directory on an enrolled node over its existing agent connection. No SSH, no shell, no credentials.",
+      "name": "Name",
+      "node": "Node",
+      "nodePlaceholder": "Choose a node",
+      "directory": "Directory",
+      "directoryHint": "Relative to the node's storage root (APP_AGENT_STORAGE_DIR on the agent). Defaults to backups.",
+      "quota": "Soft quota (GB)",
+      "quotaHint": "Flagged when backups exceed it. 0 means no limit.",
+      "verify": "Test the connection before saving (writes and deletes a probe file)",
+      "connect": "Connect",
+      "connecting": "Connecting...",
+      "connected": "Node directory \"{{name}}\" connected.",
+      "noNodes": "Enroll a node first to store data on it."
+    },
+    "test": {
+      "title": "Connection test for \"{{name}}\"",
+      "passed": "\"{{name}}\" is working.",
+      "failedTitle": "\"{{name}}\" failed the connection test",
+      "recheck": "Re-check",
+      "checking": "Checking...",
+      "close": "Close",
+      "step": "{{name}}: {{status}}",
+      "ok": "ok",
+      "failed": "failed"
+    },
+    "fix": {
+      "enable_path_style": {
+        "title": "Turn on path-style addressing",
+        "description": "This endpoint does not answer virtual-hosted bucket URLs. One click switches to https://host/bucket/key and re-checks.",
+        "action": "Enable path style and re-check"
+      },
+      "edit_credentials": {
+        "title": "Enter new credentials",
+        "description": "The endpoint rejected the access key. Paste a working key pair, it is encrypted and never shown again.",
+        "action": "Save credentials and re-check"
+      },
+      "edit_policy": {
+        "title": "Grant the key bucket access",
+        "description": "The key is valid but cannot write, read and delete in this bucket. Allow those actions in the provider's policy, or use another key pair.",
+        "action": "Use another key and re-check"
+      },
+      "edit_bucket": {
+        "title": "Correct the bucket name",
+        "description": "No bucket with this name exists at the endpoint.",
+        "action": "Save bucket and re-check"
+      },
+      "edit_region": {
+        "title": "Correct the region",
+        "description": "The bucket lives in another region.",
+        "action": "Save region and re-check"
+      },
+      "edit_endpoint": {
+        "title": "Correct the endpoint",
+        "description": "The endpoint could not be reached or its certificate failed. Private-network endpoints also need APP_NOTIFY_ALLOW_PRIVATE_NETWORKS=true.",
+        "action": "Save endpoint and re-check"
+      },
+      "sync_clock": {
+        "title": "Sync this server's clock",
+        "description": "The storage endpoint reports a large clock difference. Enable NTP on the control plane host, then re-check.",
+        "action": "Re-check"
+      },
+      "reconnect_node": {
+        "title": "Bring the node online",
+        "description": "The node is not connected to the control plane. Start its agent, then re-check.",
+        "action": "Open nodes",
+        "recheck": "Re-check"
+      },
+      "enable_node_storage": {
+        "title": "Give the node a storage directory",
+        "description": "Set APP_AGENT_STORAGE_DIR on the agent to a directory it may write to, restart the agent, then re-check.",
+        "action": "Re-check"
+      },
+      "fields": {
+        "accessKeyId": "Access key ID",
+        "secretAccessKey": "Secret access key",
+        "bucket": "Bucket",
+        "region": "Region",
+        "endpoint": "Endpoint"
+      }
+    },
+    "empty": {
+      "title": "No storage destinations",
+      "description": "Connect AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, any S3-compatible bucket, or an enrolled node to store backups, archives and dumps."
+    }
+  },
+  "controlPlaneDrKeygen": {
+    "trigger": "Generate key pair",
+    "title": "New backup recipient key",
+    "description": "The public key is added to the backup recipients. The private key is shown once and is never stored on this server.",
+    "warning": "Store the private key offline now (a password manager or a safe). Without it the backups cannot be decrypted.",
+    "copy": "Copy private key",
+    "download": "Download private key",
+    "use": "I saved it, add the public key"
+  },
+  "controlPlaneDrRestore": {
+    "title": "Restore plan",
+    "description": "Recovery replaces the control plane database, so it runs on the host with the control plane stopped. These are the steps for this install.",
+    "noBackup": "No complete off-box backup exists yet. Run a backup before you rely on recovery.",
+    "newest": "Newest backup: {{key}} ({{when}})",
+    "viaCli": "Restore command for the host",
+    "copy": "Copy command",
+    "copied": "Copied",
+    "warnings": {
+      "escrow_not_acknowledged": "The master key escrow is not acknowledged: a restore without the master key cannot read stored secrets.",
+      "drill_not_passed": "No restore drill has passed yet, so this plan is untested."
+    },
+    "steps": {
+      "backup_available": {
+        "title": "A complete backup is available",
+        "body": "The newest encrypted backup at the destination has both its data and manifest."
+      },
+      "identity_ready": {
+        "title": "Have a private key ready",
+        "body": "You need the private key that matches one of the backup recipients."
+      },
+      "master_key_escrow": {
+        "title": "Have the master key escrow ready",
+        "body": "The backup does not contain the master key. Restore it from your escrow bundle."
+      },
+      "stop_control_plane": {
+        "title": "Stop the control plane",
+        "body": "Restore refuses to run while the database is in use."
+      },
+      "run_restore": {
+        "title": "Run the restore on the host",
+        "body": "The current database is kept next to the restored one as a pre-restore copy."
+      },
+      "start_and_verify": {
+        "title": "Start the control plane and verify",
+        "body": "Check that apps, domains and nodes are back, then run a fresh backup."
+      }
+    }
+  },
+  "iacPage": {
+    "title": "Infrastructure as code",
+    "description": "Describe projects, environments, apps, domains and databases as YAML, review the plan, then apply it.",
+    "filesTitle": "Resource files",
+    "filesDescription": "One or more YAML documents separated by ---. Documents never hold secret values, reference them with secretRef.",
+    "yamlLabel": "YAML",
+    "upload": "Upload files",
+    "sourceLabel": "Source",
+    "sourcePlaceholder": "infra-repo",
+    "sourceHint": "Tags the apps this apply creates so prune can find them later.",
+    "projectLabel": "Only project",
+    "projectPlaceholder": "shop",
+    "prune": "Prune: delete apps this source created that the files no longer declare",
+    "pruneNeedsSource": "Prune needs a source name.",
+    "noDeploy": "Do not restart running apps to apply env changes",
+    "planning": "Planning...",
+    "plan": "Plan",
+    "apply": "Apply",
+    "confirmTitle": "Apply these changes?",
+    "confirmSummary": "{{create}} to create, {{update}} to update, {{delete}} to delete.",
+    "confirmNote": "The apply only proceeds if live state still matches the plan you reviewed.",
+    "confirmDeletes": "This deletes {{count}} resource(s).",
+    "cancel": "Cancel",
+    "planTitle": "Plan",
+    "resultTitle": "Result",
+    "resultCounts": "{{applied}} applied, {{failed}} failed, {{skipped}} skipped"
+  },
+  "githubManualDialog": {
+    "title": "Connect a GitHub App manually",
+    "descPrefix": "Create the App yourself at",
+    "descSuffix": "(or your GitHub Enterprise Server instance's own /settings/apps/new), then paste the resulting credentials here. No primary domain required to save these: only automated setup needs one.",
+    "instanceLabel": "GitHub instance (optional)",
+    "instanceHint": "Leave blank for github.com. Self-hosted instances work too, e.g. https://github.example.com.",
+    "appId": "App ID",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "webhookSecret": "Webhook secret",
+    "webhookHint": "The value you set as the App's own webhook secret on GitHub, not generated here.",
+    "privateKey": "Private key (.pem)",
+    "privateKeyHint": "Generated once on the App's General page on GitHub and downloaded as a .pem file. Paste its full contents.",
+    "installationId": "Installation ID (optional)",
+    "accountLogin": "Account login (optional)",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "connected": "GitHub App connected.",
+    "connectFailed": "Could not connect the GitHub App."
+  },
+  "drCard": {
+    "neverRun": "never run",
+    "failed": "failed {{when}}: {{detail}}",
+    "passedPartial": "passed {{when}} (partial: checksum only, decryption untested)",
+    "passed": "passed {{when}} in {{seconds}}s",
+    "started": "{{label}} started.",
+    "labelBackup": "Backup",
+    "labelDrill": "Restore drill",
+    "title": "Disaster recovery",
+    "description": "Encrypted off-box backups, key escrow and restore drills.",
+    "backingUp": "Backing up...",
+    "runNow": "Run now",
+    "runningDrill": "Running drill...",
+    "runDrill": "Run drill",
+    "warnings": "Warnings",
+    "lastBackup": "Last backup",
+    "never": "never",
+    "nextBackup": "next {{when}}",
+    "lastDrill": "Last restore drill",
+    "drillIdentity": "Drill identity",
+    "identityConfigured": "configured, drills decrypt and restore fully",
+    "identityMissing": "not configured, drills verify checksums only (APP_CONTROL_PLANE_DRILL_IDENTITY_FILE)"
+  },
+  "buildCache": {
+    "modeMax": "max (cache every layer, fastest rebuilds)",
+    "modeMin": "min (cache final layers only, smaller bucket)",
+    "checking": "Checking the bucket...",
+    "readFailed": "Could not read the bucket: {{message}}",
+    "objects": "{{count}}{{plus}} objects, {{size}}",
+    "lastExport": ", last export {{when}}",
+    "clearedMore": "Deleted {{deleted}} objects. More remain, clear again.",
+    "cleared": "Cache cleared ({{deleted}} objects).",
+    "deleteLayers": "Delete cached layers",
+    "cancel": "Cancel",
+    "clear": "Clear cache",
+    "saved": "Build cache saved.",
+    "destination": "Destination",
+    "chooseDestination": "Choose a destination",
+    "exportMode": "Export mode",
+    "useRemote": "Use the remote cache",
+    "storedUnder": "Layers are stored under {{prefix}}. Turn this off to opt this app out of the default.",
+    "globalHint": "Applies to every app without its own setting. Each app caches under build-cache/<app>/.",
+    "update": "Update",
+    "save": "Save",
+    "removed": "Build cache setting removed.",
+    "removeSetting": "Remove setting",
+    "notConfiguredTitle": "Build cache is not configured on this server",
+    "loadFailedTitle": "Could not load build cache settings",
+    "notConfiguredBody": "Set APP_MASTER_KEY and restart the control plane to connect object storage.",
+    "unknownError": "Unknown error",
+    "loading": "Loading...",
+    "noDestinationTitle": "No storage destination yet",
+    "noDestinationBody": "Connect a bucket under Settings, Storage destinations, then use it as a build cache here.",
+    "usingDefault": "Using the default build cache for all apps. Save a setting below to override it for this app.",
+    "ranWithout": "Last build ran without the cache",
+    "lastBuild": "Last build with the cache: {{when}}",
+    "title": "Build cache",
+    "titleAll": "Build cache for all apps",
+    "description": "Keep BuildKit layers in a storage destination so rebuilds skip unchanged steps. A cache problem never fails a build, it is reported as a warning."
   }
 }

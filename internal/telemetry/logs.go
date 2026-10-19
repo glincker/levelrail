@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 )
 
 // This file (logs.go) is the node-local log store: read a container's
@@ -144,7 +145,7 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 		var fj *string
 		if e.Structured {
 			str = 1
-			tmp := e.FieldsJSON
+			tmp := secretmask.Mask(e.FieldsJSON)
 			fj = &tmp
 		}
 		je[i] = jsonEntry{
@@ -152,7 +153,7 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 			C:  e.ContainerID,
 			S:  e.Stream,
 			T:  e.Timestamp.UnixNano(),
-			M:  e.Message,
+			M:  secretmask.Mask(e.Message),
 			St: str,
 			F:  fj,
 		}
@@ -185,26 +186,22 @@ func (db *DB) WriteLogBatch(ctx context.Context, entries []LogEntry) error {
 	return nil
 }
 
-// QueryLogs returns every log entry for resourceID with a timestamp in
-// [from, to], oldest first, optionally filtered to lines whose message
-// matches query. An empty query returns every line in range with no text
-// filter applied. A non-empty query runs against log_entries_fts (see
-// migrations/0002_log_entries.sql), wrapped as a single quoted phrase
-// (double quotes inside query are escaped by doubling, FTS5's own escape
-// convention) rather than passed through as raw FTS5 query syntax: this
-// keeps the query API a plain substring-ish search from a caller's point
-// of view, not something that can fail with an FTS5 syntax error just
-// because the search text happened to contain a character FTS5's query
-// grammar treats specially (e.g. a bare "-" or unbalanced quote).
+// QueryLogs returns every log entry for resourceID in [from, to], oldest
+// first, optionally filtered by a search expression (see compileLogSearch:
+// phrases, prefix*, AND, OR, NOT, -word, parentheses). An empty query
+// returns every line in range. A malformed expression returns ErrInvalidLogSearch.
 //
 // An empty (nil) result and a nil error both mean "no lines matched,"
 // not an error, the same convention Query already establishes for metric
 // samples.
 func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Time, query string) ([]LogEntry, error) {
 	var rows *sql.Rows
-	var err error
+	match, err := compileLogSearch(query)
+	if err != nil {
+		return nil, err
+	}
 
-	if query == "" {
+	if match == "" {
 		rows, err = db.QueryContext(ctx, `
 			SELECT resource_id, container_id, stream, ts, message, structured, fields_json
 			FROM log_entries
@@ -218,7 +215,7 @@ func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Ti
 			JOIN log_entries_fts f ON f.rowid = l.id
 			WHERE l.resource_id = ? AND l.ts BETWEEN ? AND ? AND log_entries_fts MATCH ?
 			ORDER BY l.ts ASC
-		`, resourceID, from.UnixNano(), to.UnixNano(), ftsPhrase(query))
+		`, resourceID, from.UnixNano(), to.UnixNano(), match)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("telemetry: query logs for %s: %w", resourceID, err)
@@ -245,13 +242,6 @@ func (db *DB) QueryLogs(ctx context.Context, resourceID string, from, to time.Ti
 		return nil, fmt.Errorf("telemetry: iterate log rows: %w", err)
 	}
 	return out, nil
-}
-
-// ftsPhrase wraps query as a single FTS5 phrase match, escaping any
-// double quote in query by doubling it, FTS5's own in-phrase escape
-// convention for a literal '"'.
-func ftsPhrase(query string) string {
-	return `"` + strings.ReplaceAll(query, `"`, `""`) + `"`
 }
 
 // RetainLogs deletes every log entry older than cutoff, returning how

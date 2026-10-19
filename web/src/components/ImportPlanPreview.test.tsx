@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { AllI18n } from '../test/allI18n'
 import { ImportFrontDoor } from './ImportFrontDoor'
 import { ImportPlanPreview } from './ImportPlanPreview'
 import type { ImportPlan, ImportService } from '../queries/imports'
@@ -25,7 +26,11 @@ function withClient(ui: React.ReactElement) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   })
-  return <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+  return (
+    <AllI18n>
+      <QueryClientProvider client={client}>{ui}</QueryClientProvider>
+    </AllI18n>
+  )
 }
 
 const dockerRunService: ImportService = {

@@ -3,6 +3,7 @@ title: "app.yaml reference"
 description: Complete reference for app.yaml - the declarative app spec for Levelrail
 "og:image": "https://docs.levelrail.com/public/og/app-spec-reference.png"
 "twitter:image": "https://docs.levelrail.com/public/og/app-spec-reference.png"
+"og:url": "https://docs.levelrail.com/app-spec-reference"
 ---
 
 `app.yaml` is the declarative spec Levelrail reads from your repo: services, their build and runtime settings, and the managed databases they use. The control plane validates every field below against the JSON Schema embedded in it (`internal/spec/schema/app.schema.json`). An unknown key is an error, not something that gets quietly ignored.
@@ -90,7 +91,8 @@ A prebuilt image needs no build block: `image: ghcr.io/your-org/web:1.0` on the 
 | `resources` | `Resources` | no | none | Memory and CPU limits. |
 | `env` | map of name to `EnvVar` | no | none | Environment variables. See the `EnvVar` shapes below. |
 | `replicas` | integer | no | `1` | Minimum 1 if set. |
-| `strategy` | string | no | `blue-green` | One of `rolling`, `recreate`, `blue-green`. |
+| `strategy` | string | no | `blue-green` | One of `rolling`, `recreate`, `blue-green`, `canary`. `canary` saves the `canary` block as the app's default for staged canary releases; the stable app itself still rolls out blue-green. |
+| `canary` | object | no | none | Staged canary policy, see `Canary` below. |
 | `labels` | map of string to string | no | none | Arbitrary operator-supplied Docker labels applied to the container at create time. See Validation below for the limits enforced on these. |
 | `volumes` | list of `Volume` | no | none | Named Docker volumes and host-directory bind mounts this service's container mounts. |
 | `hooks` | `Hooks` | no | none | Pre/post-deploy commands run inside the container. Not meaningful when `build.type` is `static` or `compose`. |
@@ -250,6 +252,17 @@ All fields are optional, but at least one of `egress` and `cost` is required. Se
 | `stabilization` | duration | `5m` | A lower count must be recommended this long before it is applied. |
 | `max_step_up` | integer | `4` | Most replicas added in one step. |
 | `max_step_down` | integer | `1` | Most replicas removed in one step. |
+
+### `Canary`
+
+Defaults for a staged canary release (`levelrail-cli apps canary start --stages ...`). Set `strategy: canary` or this block and a deploy saves it for the app. Unset fields use the operator's `APP_CANARY_*` defaults. See [Canary deploys](/canary-deploys).
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `stages` | list of integers | `[10, 25, 50, 100]` | Ascending traffic percents. A stage of 100 means promote. |
+| `interval` | duration | `5m` | How long each stage observes traffic before it may advance. |
+| `max_error_rate` | number | `0.02` | Roll back when the canary's 5xx rate exceeds the stable release's by more than this fraction (0.02 is two points). |
+| `max_p95_ratio` | number | `1.5` | Roll back when the canary's p95 latency exceeds this multiple of the stable release's. |
 
 ### `Hooks`
 

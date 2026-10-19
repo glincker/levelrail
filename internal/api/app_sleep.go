@@ -248,7 +248,13 @@ func (rt *Router) handleWakeApp(w http.ResponseWriter, r *http.Request) {
 // be used to start apps from outside.
 func (rt *Router) handleWakeHook(w http.ResponseWriter, r *http.Request) {
 	got := r.Header.Get(ingress.WakeTokenHeader)
+	guessKey := clientIP(r)
+	if allowed, _ := rt.wakeTokenGuess.allow(guessKey); !allowed {
+		http.NotFound(w, r)
+		return
+	}
 	if rt.wakeToken == "" || subtle.ConstantTimeCompare([]byte(got), []byte(rt.wakeToken)) != 1 {
+		rt.wakeTokenGuess.recordFailure(guessKey)
 		http.NotFound(w, r)
 		return
 	}

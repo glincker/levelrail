@@ -12,9 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/internal/version"
-	"github.com/GLINCKER/levelrail/kit/ticker"
 	"github.com/GLINCKER/levelrail/kit/upgrade"
 )
 
@@ -120,5 +120,5 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 
 // Run calls Tick on interval until ctx is done.
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
-	return ticker.Run(ctx, interval, s.log(), "updatecheck", s.Tick)
+	return footprint.Every(ctx, "updatecheck", interval, s.log(), s.Tick)
 }

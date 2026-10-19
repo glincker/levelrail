@@ -22,7 +22,7 @@ func registerRegistryCredentialTools(server *mcp.Server, client *apiclient.Clien
 
 	addTool(server, &mcp.Tool{
 		Name:        "list_registry_credential_repositories",
-		Description: "List every repository in the external registry a stored credential authenticates against, so an operator or agent can find an image reference for a direct-image app deploy without leaving the assistant. Read-only; resolves the credential's stored password server-side only to authenticate the upstream query, never returns it.",
+		Description: "List repositories in the external registry a stored credential authenticates against, to find an image reference for a direct image deploy. Read only; never returns the password.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in registryCredentialIDInput) (*mcp.CallToolResult, apiclient.RegistryRepositoriesResource, error) {
 		repos, err := client.ListRegistryCredentialRepositories(ctx, in.ID)
 		if err != nil {

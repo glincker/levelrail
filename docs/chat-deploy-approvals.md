@@ -2,6 +2,7 @@
 title: "Chat-interactive deploy approvals"
 sidebarTitle: "Chat approvals"
 description: Approve or deny a protected-environment deploy directly from the Slack or Discord notification, without opening the dashboard.
+"og:url": "https://docs.levelrail.com/chat-deploy-approvals"
 ---
 
 When a deploy or promotion targets a protected environment, Levelrail requires a second, distinct user to approve it (see [Deploy safety](/deploy-safety) for the two-person gate). By default an approver opens the dashboard's Approvals queue. This feature adds Approve and Deny buttons to the Slack or Discord message Levelrail sends when a request comes in, so an approver can decide from a phone.

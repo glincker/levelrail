@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
+	"github.com/GLINCKER/levelrail/internal/diskguard"
 )
 
 // ControlPlaneBackupManager is the surface the /system/backups routes need.
@@ -54,6 +55,9 @@ func (rt *Router) writeCPBackupError(w http.ResponseWriter, action string, err e
 func (rt *Router) handleCreateControlPlaneBackup(w http.ResponseWriter, r *http.Request) {
 	m, ok := rt.cpBackupsOrNotImplemented(w)
 	if !ok {
+		return
+	}
+	if rt.refuseLowDisk(w, diskguard.OpBackup) {
 		return
 	}
 	info, err := m.Create(r.Context())

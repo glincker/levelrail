@@ -18,6 +18,11 @@ type Attestations struct {
 	SBOM []byte
 	// Provenance is the SLSA provenance predicate, empty when none was produced.
 	Provenance []byte
+	// Incomplete is true when scanning the image stream failed part way, so a
+	// missing SBOM or provenance may be a read error rather than "none produced".
+	Incomplete bool
+	// ScanError says why the stream scan stopped, empty when it finished.
+	ScanError string
 }
 
 const (
@@ -50,7 +55,9 @@ func newAttestSniffer(limit int64) *attestSniffer {
 	s := &attestSniffer{pw: pw, limit: limit, done: make(chan struct{})}
 	go func() {
 		defer close(s.done)
-		_ = s.scan(pr)
+		if err := s.scan(pr); err != nil {
+			s.res.Incomplete, s.res.ScanError = true, err.Error()
+		}
 		_, _ = io.Copy(io.Discard, pr)
 		_ = pr.Close()
 	}()

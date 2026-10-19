@@ -4,6 +4,7 @@ import { appListQueryOptions } from '../queries/apps'
 import { onboardingQueryOptions } from '../queries/onboarding'
 import { userListQueryOptions } from '../queries/users'
 import { DashboardHome } from '../components/dashboard/DashboardHome'
+import { PanelHost } from '../components/plugins/PanelHost'
 import { SkeletonLine, SkeletonTile } from '@/components/kit'
 
 // Same loader/useSuspenseQuery split as routes/apps/index.tsx: the
@@ -28,7 +29,12 @@ function DashboardPage() {
     refetchInterval: 15_000,
   })
   const { data: onboarding } = useSuspenseQuery(onboardingQueryOptions())
-  return <DashboardHome apps={apps} onboarding={onboarding} />
+  return (
+    <div className="space-y-8">
+      <DashboardHome apps={apps} onboarding={onboarding} />
+      <PanelHost slot="dashboard" />
+    </div>
+  )
 }
 
 function DashboardPending() {

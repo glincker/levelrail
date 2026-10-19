@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/httpx"
 )
 
 // Request header names and values shared by every client call.
@@ -66,7 +68,7 @@ func NewClient(baseURL, token string, opts ...Option) *Client {
 	c := &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		token:   token,
-		hc:      &http.Client{Timeout: 15 * time.Minute, Transport: scopeTransport{base: http.DefaultTransport}},
+		hc:      &http.Client{Timeout: 15 * time.Minute, Transport: pinTransport{base: scopeTransport{base: http.DefaultTransport}}},
 	}
 	for _, opt := range opts {
 		opt(c)
@@ -131,7 +133,7 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 // method (DeployCompose) that must build its own *http.Request because
 // its body isn't JSON.
 func decodeResponse(resp *http.Response, out any) error {
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadBody(resp.Body)
 	if err != nil {
 		return fmt.Errorf("read response body: %w", err)
 	}
@@ -1818,6 +1820,60 @@ func (c *Client) ListSecrets(ctx context.Context, name string) ([]SecretKeyResou
 	return out, err
 }
 
+// EnvFixResource is how an env finding can be fixed: type is auto or manual.
+type EnvFixResource struct {
+	Type   string `json:"type"`
+	Action string `json:"action"`
+}
+
+// EnvFindingResource is one problem found in an app's variables.
+type EnvFindingResource struct {
+	Kind     string         `json:"kind"`
+	Key      string         `json:"key"`
+	Severity string         `json:"severity"`
+	Detail   string         `json:"detail,omitempty"`
+	Fix      EnvFixResource `json:"fix"`
+}
+
+// EnvCheckResource is the response of the env check calls.
+type EnvCheckResource struct {
+	Findings []EnvFindingResource `json:"findings"`
+}
+
+// EnvChangeResource is one key-level env edit, never carrying a value.
+type EnvChangeResource struct {
+	ID     int64  `json:"id"`
+	At     string `json:"at"`
+	Actor  string `json:"actor"`
+	Key    string `json:"key"`
+	Action string `json:"action"`
+	Source string `json:"source"`
+}
+
+// CheckEnv calls GET /api/v1/apps/{name}/env/check.
+func (c *Client) CheckEnv(ctx context.Context, name string) (EnvCheckResource, error) {
+	var out EnvCheckResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/env/check", nil, &out)
+	return out, err
+}
+
+// FixEnv calls POST /api/v1/apps/{name}/env/check/fix and returns the findings that remain.
+func (c *Client) FixEnv(ctx context.Context, name, kind, key string) (EnvCheckResource, error) {
+	var out EnvCheckResource
+	body := map[string]string{"kind": kind, "key": key}
+	err := c.do(ctx, http.MethodPost, "/api/v1/apps/"+PathEscape(name)+"/env/check/fix", body, &out)
+	return out, err
+}
+
+// ListEnvHistory calls GET /api/v1/apps/{name}/env/history.
+func (c *Client) ListEnvHistory(ctx context.Context, name string, limit int) ([]EnvChangeResource, error) {
+	var out struct {
+		Changes []EnvChangeResource `json:"changes"`
+	}
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/env/history?limit="+strconv.Itoa(limit), nil, &out)
+	return out.Changes, err
+}
+
 // SetSecretLock calls POST /api/v1/apps/{name}/secrets/{key}/lock:
 // toggles the accidental-overwrite guard SetSecret's overwriteLocked
 // bypasses. Reversible either direction, not a permanent write-once
@@ -1996,6 +2052,20 @@ func (c *Client) CompareDeploys(ctx context.Context, name, from, to string) (Dep
 
 	var out DeployCompareResource
 	err := c.do(ctx, http.MethodGet, path, nil, &out)
+	return out, err
+}
+
+// PendingDeployDiff calls GET .../deploys/compare?pending=true: what the next
+// deploy would change against the last successful one, env keys only. image
+// empty means the app's current desired image.
+func (c *Client) PendingDeployDiff(ctx context.Context, name, image string) (DeployCompareResource, error) {
+	q := url.Values{}
+	q.Set("pending", "true")
+	if image != "" {
+		q.Set("image", image)
+	}
+	var out DeployCompareResource
+	err := c.do(ctx, http.MethodGet, "/api/v1/apps/"+PathEscape(name)+"/deploys/compare?"+q.Encode(), nil, &out)
 	return out, err
 }
 
@@ -3754,7 +3824,7 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
@@ -3770,6 +3840,43 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 func (c *Client) PurgeAuditLog(ctx context.Context) (PurgeAuditLogResult, error) {
 	var out PurgeAuditLogResult
 	err := c.do(ctx, http.MethodPost, "/api/v1/audit-log/purge", nil, &out)
+	return out, err
+}
+
+// VerifyAuditLog calls GET /api/v1/audit-log/verify: walks the audit hash chain.
+func (c *Client) VerifyAuditLog(ctx context.Context) (AuditChainReport, error) {
+	var out AuditChainReport
+	err := c.do(ctx, http.MethodGet, "/api/v1/audit-log/verify", nil, &out)
+	return out, err
+}
+
+// DeployAttemptFilter narrows ListDeployAttemptsFiltered; empty fields are ignored.
+type DeployAttemptFilter struct {
+	Branch string
+	Author string
+	Commit string
+	Status string
+	Query  string
+	Limit  int
+}
+
+// ListDeployAttemptsFiltered is ListDeployAttempts narrowed server side.
+func (c *Client) ListDeployAttemptsFiltered(ctx context.Context, name string, f DeployAttemptFilter) ([]DeployAttemptResource, error) {
+	q := url.Values{}
+	for k, v := range map[string]string{"branch": f.Branch, "author": f.Author, "commit": f.Commit, "status": f.Status, "q": f.Query} {
+		if v != "" {
+			q.Set(k, v)
+		}
+	}
+	if f.Limit > 0 {
+		q.Set("limit", strconv.Itoa(f.Limit))
+	}
+	path := "/api/v1/apps/" + PathEscape(name) + "/deploy-attempts"
+	if len(q) > 0 {
+		path += "?" + q.Encode()
+	}
+	var out []DeployAttemptResource
+	err := c.do(ctx, http.MethodGet, path, nil, &out)
 	return out, err
 }
 
@@ -3816,7 +3923,7 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
@@ -3849,7 +3956,7 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}

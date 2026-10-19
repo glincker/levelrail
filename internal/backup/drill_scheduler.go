@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -116,6 +117,8 @@ func (s *DrillScheduler) Tick(ctx context.Context) error {
 
 // Run ticks until ctx is done.
 func (s *DrillScheduler) Run(ctx context.Context, every time.Duration) error {
+	loop := footprint.Track("backup drill scheduler", every)
+	defer loop.Active()()
 	t := time.NewTicker(every)
 	defer t.Stop()
 	for {
@@ -123,11 +126,19 @@ func (s *DrillScheduler) Run(ctx context.Context, every time.Duration) error {
 		case <-ctx.Done():
 			return nil
 		case <-t.C:
-			if err := s.Tick(ctx); err != nil {
+			start := time.Now()
+			err := s.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
 				s.log().Error("backup: drill scheduler tick failed", slog.String("error", err.Error()))
 			}
 		}
 	}
+}
+
+// newestBackupLister is the SQL-side newest-per-resource query, preferred over loading every backup.
+type newestBackupLister interface {
+	ListNewestSucceededBackups(ctx context.Context) ([]store.BackupHistory, error)
 }
 
 type drillKey struct{ kind, a, b string }
@@ -140,7 +151,13 @@ func keyOf(h store.BackupHistory) drillKey {
 }
 
 func (s *DrillScheduler) drillDue(ctx context.Context) error {
-	rows, err := s.Store.ListSucceededBackups(ctx)
+	var rows []store.BackupHistory
+	var err error
+	if nl, ok := s.Store.(newestBackupLister); ok {
+		rows, err = nl.ListNewestSucceededBackups(ctx)
+	} else {
+		rows, err = s.Store.ListSucceededBackups(ctx)
+	}
 	if err != nil {
 		return fmt.Errorf("list backups for drills: %w", err)
 	}
@@ -275,6 +292,8 @@ func RecordProtection(ctx context.Context, st ProtectionRecorder, secrets Secret
 	if err != nil {
 		rec.ProbeError = err.Error()
 	}
-	_ = st.SetBackupTargetProtection(ctx, rec)
+	if serr := st.SetBackupTargetProtection(ctx, rec); serr != nil {
+		slog.Warn("backup: could not store target protection state, it may be stale", slog.String("target_id", targetID), slog.String("error", serr.Error()))
+	}
 	return rec
 }

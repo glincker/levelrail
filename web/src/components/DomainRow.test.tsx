@@ -84,6 +84,24 @@ describe('DomainsTable rows', () => {
     expect(screen.queryByTitle('Basic auth configured')).not.toBeInTheDocument()
   })
 
+  it('shows the ingress issue instead of a silent fallback', () => {
+    renderRow(
+      makeDomain({
+        issues: [
+          {
+            domain: 'app.example.com',
+            code: 'custom_cert_unresolved',
+            severity: 'degraded',
+            message: 'key unreadable',
+          },
+        ],
+      }),
+    )
+    expect(
+      screen.getByText(/Uploaded certificate not in use/),
+    ).toBeInTheDocument()
+  })
+
   it('shows an icon for each active flag', () => {
     renderRow(
       makeDomain({

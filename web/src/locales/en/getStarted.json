@@ -56,6 +56,12 @@
       "why": "A stolen password alone should never be enough to reach your servers.",
       "cta": "Open security"
     },
+    "sign_in_recovery": {
+      "title": "Set up a way back in",
+      "what": "Connect email or approve sign-ins from another trusted session so you can recover access.",
+      "why": "If you lose your password or passkey, this is how you get back to your servers.",
+      "cta": "Open security"
+    },
     "public_address": {
       "title": "Set the public dashboard address",
       "what": "Tell the platform the address people reach it on, ideally an https hostname pointing at this server.",
@@ -143,5 +149,13 @@
   "hint": {
     "line": "Part of setup: {{step}}.",
     "cta": "Open the guide"
+  },
+  "sample": {
+    "cta": "Deploy a sample app",
+    "creating": "Deploying...",
+    "created": "Sample app created. It will be live in a moment.",
+    "exists": "A sample app already exists on this server.",
+    "error": "Could not deploy the sample app: {{message}}",
+    "open": "Open sample app"
   }
 }

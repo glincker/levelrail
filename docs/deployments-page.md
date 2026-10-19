@@ -1,11 +1,13 @@
 ---
 title: "Deployments page"
 description: "The cross-app Deployments page lists every deploy live, with filters kept in the URL, a details drawer, redeploy and rollback actions, and keyboard shortcuts."
+"og:url": "https://docs.levelrail.com/deployments-page"
 ---
 
 The Deployments page (`/deployments`) lists every deploy across every app you can read, newest first. It updates live, so a deploy that starts or finishes appears without a refresh.
 
-![Levelrail Deployments page with the summary strip and a live list of redeploys and a rollback across apps](assets/screenshots/deployments-all.png)
+<img src="/assets/screenshots/deployments-all-light.png" alt="Levelrail Deployments page with the summary strip and a live list of redeploys and a rollback across apps" className="block dark:hidden" />
+<img src="/assets/screenshots/deployments-all.png" alt="Levelrail Deployments page with the summary strip and a live list of redeploys and a rollback across apps" className="hidden dark:block" />
 
 ## What it shows
 

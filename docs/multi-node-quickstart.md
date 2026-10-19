@@ -6,6 +6,7 @@ sidebarTitle: "Add a second server"
 description: The short path to a second server, what has been verified on real infrastructure, and what to check before relying on the WireGuard mesh across hosts.
 "og:image": "https://docs.levelrail.com/public/og/multi-node-quickstart.png"
 "twitter:image": "https://docs.levelrail.com/public/og/multi-node-quickstart.png"
+"og:url": "https://docs.levelrail.com/multi-node-quickstart"
 ---
 
 This page is the short path to a second node. Each step links to the page that holds the detail, so nothing is repeated here. It also says plainly what has and has not been verified, per [Feature status](/feature-status).

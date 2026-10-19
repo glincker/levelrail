@@ -29,6 +29,10 @@ const (
 	ReasonTLS                = "tls_error"
 	ReasonUnreachable        = "unreachable"
 	ReasonIntegrity          = "integrity_mismatch"
+	ReasonClockSkew          = "clock_skew"
+	ReasonPathStyle          = "path_style"
+	ReasonNodeOffline        = "node_offline"
+	ReasonNodeStorageOff     = "node_storage_disabled"
 	ReasonUnknown            = "unknown"
 )
 
@@ -41,10 +45,12 @@ type ProbeStep struct {
 
 // ProbeResult reports a put, get and delete round trip on a throwaway key.
 type ProbeResult struct {
-	OK      bool        `json:"ok"`
-	Reason  string      `json:"reason,omitempty"`
-	Message string      `json:"message,omitempty"`
-	Steps   []ProbeStep `json:"steps"`
+	OK      bool   `json:"ok"`
+	Reason  string `json:"reason,omitempty"`
+	Message string `json:"message,omitempty"`
+	// Fix names the typed remedy the UI offers for Reason (see FixFor).
+	Fix   string      `json:"fix,omitempty"`
+	Steps []ProbeStep `json:"steps"`
 }
 
 // Probe writes, reads back and deletes a random object to prove the
@@ -89,8 +95,46 @@ func Probe(ctx context.Context, c *Client) ProbeResult {
 func failed(res ProbeResult, step string, err error) ProbeResult {
 	reason, msg := Classify(err)
 	res.Steps = append(res.Steps, ProbeStep{Name: step, Error: msg})
-	res.Reason, res.Message = reason, msg
+	res.Reason, res.Message, res.Fix = reason, msg, FixFor(reason)
 	return res
+}
+
+// Fix hints the dashboard turns into buttons.
+const (
+	FixEditCredentials = "edit_credentials"
+	FixEditBucket      = "edit_bucket"
+	FixEditRegion      = "edit_region"
+	FixEditEndpoint    = "edit_endpoint"
+	FixEnablePathStyle = "enable_path_style"
+	FixSyncClock       = "sync_clock"
+	FixEditPolicy      = "edit_policy"
+	FixReconnectNode   = "reconnect_node"
+	FixEnableNodeStore = "enable_node_storage"
+)
+
+// FixFor maps a probe reason to its typed fix hint, or "" when none applies.
+func FixFor(reason string) string {
+	switch reason {
+	case ReasonInvalidCredentials:
+		return FixEditCredentials
+	case ReasonAccessDenied:
+		return FixEditPolicy
+	case ReasonBucketNotFound:
+		return FixEditBucket
+	case ReasonRegionMismatch:
+		return FixEditRegion
+	case ReasonEndpointBlocked, ReasonTLS, ReasonUnreachable:
+		return FixEditEndpoint
+	case ReasonPathStyle:
+		return FixEnablePathStyle
+	case ReasonClockSkew:
+		return FixSyncClock
+	case ReasonNodeOffline:
+		return FixReconnectNode
+	case ReasonNodeStorageOff:
+		return FixEnableNodeStore
+	}
+	return ""
 }
 
 // Classify maps an S3 or transport error to a stable reason code and a
@@ -111,6 +155,8 @@ func Classify(err error) (string, string) {
 			return ReasonAccessDenied, "the credentials are valid but not allowed to write, read and delete objects in this bucket"
 		case "NoSuchBucket":
 			return ReasonBucketNotFound, "bucket not found at the configured endpoint: check the bucket name, region and endpoint"
+		case "RequestTimeTooSkewed", "RequestExpired":
+			return ReasonClockSkew, "the storage endpoint says this server's clock is too far from the real time: sync the control plane clock (NTP)"
 		case "AuthorizationHeaderMalformed", "PermanentRedirect", "IllegalLocationConstraintException", "InvalidRegionName":
 			return ReasonRegionMismatch, "the bucket lives in a different region than configured: check the region"
 		}

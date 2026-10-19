@@ -1,6 +1,7 @@
 ---
 title: "Sign-in engine"
 description: How sign-in, API tokens, two-factor, passkeys and OAuth are served, and the settings that tune them.
+"og:url": "https://docs.levelrail.com/auth-engine"
 ---
 
 Sign-in, sessions, API tokens, device login, two-factor codes, passkeys and OAuth all run on one auth library built into the control plane. On a new install there is nothing to enable or migrate. The first account is created from the setup token and goes straight into the library.
@@ -28,7 +29,7 @@ All optional.
 | `APP_DEVICE_TOKEN_TTL_DAYS` | `30` | Lifetime of a device login token |
 | `APP_DEVICE_TOKEN_ALLOW_ROOT` | `false` | Let a root approver mint a root device token |
 | `APP_SESSION_TTL` | `24h` | Absolute session lifetime |
-| `APP_AUTH_ENGINE_SESSION_IDLE_TIMEOUT` | `0` (off) | End a session unused for this long |
+| `APP_AUTH_ENGINE_SESSION_IDLE_TIMEOUT` | `8h` (`0` turns it off) | End a session unused for this long |
 | `APP_AUTH_ENGINE_SESSION_LINK_TTL` | `2m` | How long a session link can be exchanged |
 | `APP_AUTH_ENGINE_LOGIN_GRACE_FAILURES` | `3` | Free failed logins per IP and username before backoff |
 | `APP_AUTH_ENGINE_LOGIN_BASE_DELAY` | `1s` | First backoff delay, doubled per further failure |

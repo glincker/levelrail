@@ -47,7 +47,7 @@ func registerIaCTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "apply_resources",
-		Description: "Apply declarative resource files through the normal API with the caller's own permissions, in dependency order. Pass the expected_plan_hash from plan_apply so it only proceeds if nothing changed since. Each item reports applied, failed, denied or skipped. prune deletes apps the source created that are no longer declared. Secret values cannot be passed here; documents reference secrets by name.",
+		Description: "Apply declarative resource files in dependency order with the caller's own permissions. Pass expected_plan_hash from plan_apply so it only proceeds if nothing changed. Each item reports applied, failed, denied or skipped. prune deletes apps no longer declared. Secrets are referenced by name.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in planApplyInput) (*mcp.CallToolResult, iac.ApplyResult, error) {
 		res, err := client.ApplyIaC(ctx, in.request())
 		if err != nil {

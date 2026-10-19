@@ -1,6 +1,7 @@
 ---
 title: "Database viewer"
 description: Browse schemas and table data, run read-only SQL, and inspect Redis keys for a managed database from the dashboard or the CLI.
+"og:url": "https://docs.levelrail.com/database-viewer"
 ---
 
 Look inside a managed database without opening a port or handing out its

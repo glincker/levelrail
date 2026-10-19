@@ -1,10 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { z } from 'zod'
 import { CheckCircleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { useChangePassword } from '../queries/account'
 import { useSession } from '../queries/security'
+import { MIN_PASSWORD_LENGTH } from '../lib/passwordStrength'
+import { PasswordStrengthMeter } from './account/PasswordStrengthMeter'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import {
@@ -23,46 +27,28 @@ import {
   CardTitle,
 } from './ui/card'
 
-// Split out of routes/settings/account.tsx (see that file's history): a
-// route file that imports 'zod' at module scope defeats TanStack Router's
-// autoCodeSplitting for that import specifically, because the splitter
-// only cleanly separates a route file's own component/loader/pending/
-// error exports into their own chunk, not arbitrary same-file helper
-// consts (changePasswordSchema) a component closes over. With the schema
-// and zod import living in this file instead, `settings/account.tsx`
-// only ever reaches zod through this component, which the route's
-// generated split module already isolates, so zod stops getting
-// duplicated into the always-loaded main chunk (it was appearing there
-// verbatim, in addition to the shared `zod` chunk every dynamically
-// split form already shares, per the bundle-analysis pass that added
-// rollup-plugin-visualizer).
-//
-// Mirrors internal/api/account.go's minPasswordLength (8) exactly, the
-// same client-side head start RegisterForm already established for the
-// same rule: a fast local check for a quicker feedback loop, never a
-// substitute for the server's own check, which still runs and still
-// wins if the two ever drift.
-const MIN_PASSWORD_LENGTH = 8
-
-// currentPassword is required only when the account already has a
-// password (an OAuth-only account has none to reconfirm, see
-// internal/api/account.go's handleChangePassword).
-function buildChangePasswordSchema(requireCurrentPassword: boolean) {
+// Own file so autoCodeSplitting keeps zod out of the always-loaded bundle.
+// MIN_PASSWORD_LENGTH mirrors internal/api/account.go's minPasswordLength;
+// the server check still wins if the two drift.
+function buildChangePasswordSchema(
+  requireCurrentPassword: boolean,
+  t: TFunction<'settings'>,
+) {
   return z
     .object({
       currentPassword: requireCurrentPassword
-        ? z.string().min(1, 'Current password is required')
+        ? z.string().min(1, t('accountPage.password.currentRequired'))
         : z.string(),
       newPassword: z
         .string()
         .min(
           MIN_PASSWORD_LENGTH,
-          `New password must be at least ${MIN_PASSWORD_LENGTH} characters`,
+          t('accountPage.password.tooShort', { min: MIN_PASSWORD_LENGTH }),
         ),
       confirmPassword: z.string(),
     })
     .refine((data) => data.newPassword === data.confirmPassword, {
-      message: 'Passwords do not match',
+      message: t('accountPage.password.mismatch'),
       path: ['confirmPassword'],
     })
 }
@@ -71,20 +57,17 @@ type ChangePasswordValues = z.infer<
   ReturnType<typeof buildChangePasswordSchema>
 >
 
-// internal/api/account.go's handleChangePassword collapses "no session"
-// and "wrong current password" into the same 401 with the same message,
-// on purpose (its own doc comment cites the password-reconfirmation
-// finding this mirrors), so this form never tries to guess which one
-// happened, it just surfaces the server's message as-is on both 401 and
-// 400.
+// The server collapses "no session" and "wrong current password" into one
+// 401 on purpose, so the form surfaces its message as-is.
 export function ChangePasswordCard() {
+  const { t } = useTranslation('settings')
   const changePassword = useChangePassword()
   const { data: session } = useSession()
   const schema = useMemo(
-    () => buildChangePasswordSchema(session.has_password),
-    [session.has_password],
+    () => buildChangePasswordSchema(session.has_password, t),
+    [session.has_password, t],
   )
-  const { register, handleSubmit, formState, reset } =
+  const { register, handleSubmit, formState, reset, watch } =
     useForm<ChangePasswordValues>({
       resolver: zodResolver(schema),
       defaultValues: {
@@ -93,13 +76,10 @@ export function ChangePasswordCard() {
         confirmPassword: '',
       },
     })
+  const newPassword = watch('newPassword')
 
   const onSubmit = handleSubmit((values) => {
     changePassword.mutate(values, {
-      // Clears the form back to empty on a real success, an event-handler
-      // callback rather than a render-time side effect, the same
-      // "setState in response to the mutation settling, not during
-      // render" shape LoginForm's countdown effect already follows.
       onSuccess: () => {
         reset()
       },
@@ -110,12 +90,14 @@ export function ChangePasswordCard() {
     <Card>
       <CardHeader>
         <CardTitle>
-          {session.has_password ? 'Change password' : 'Set a password'}
+          {session.has_password
+            ? t('accountPage.password.titleChange')
+            : t('accountPage.password.titleSet')}
         </CardTitle>
         <CardDescription>
           {session.has_password
-            ? 'Changing your password signs out every other active session for this account. This browser stays signed in.'
-            : 'This account currently signs in through OAuth only. Setting a password adds a second way to sign in.'}
+            ? t('accountPage.password.descChange')
+            : t('accountPage.password.descSet')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -133,7 +115,7 @@ export function ChangePasswordCard() {
                 }
               >
                 <FieldLabel htmlFor="account-current-password">
-                  Current password
+                  {t('accountPage.password.current')}
                 </FieldLabel>
                 <Input
                   id="account-current-password"
@@ -149,7 +131,7 @@ export function ChangePasswordCard() {
               data-invalid={formState.errors.newPassword ? true : undefined}
             >
               <FieldLabel htmlFor="account-new-password">
-                New password
+                {t('accountPage.password.new')}
               </FieldLabel>
               <Input
                 id="account-new-password"
@@ -162,15 +144,18 @@ export function ChangePasswordCard() {
                 <FieldError errors={[formState.errors.newPassword]} />
               ) : (
                 <FieldDescription>
-                  At least {MIN_PASSWORD_LENGTH} characters.
+                  {t('accountPage.password.minHint', {
+                    min: MIN_PASSWORD_LENGTH,
+                  })}
                 </FieldDescription>
               )}
+              <PasswordStrengthMeter password={newPassword} />
             </Field>
             <Field
               data-invalid={formState.errors.confirmPassword ? true : undefined}
             >
               <FieldLabel htmlFor="account-confirm-password">
-                Confirm new password
+                {t('accountPage.password.confirm')}
               </FieldLabel>
               <Input
                 id="account-confirm-password"
@@ -186,10 +171,9 @@ export function ChangePasswordCard() {
           {changePassword.isSuccess ? (
             <Alert>
               <CheckCircleIcon />
-              <AlertTitle>Password changed</AlertTitle>
+              <AlertTitle>{t('accountPage.password.changed')}</AlertTitle>
               <AlertDescription>
-                Your other sessions have been signed out. This one stays signed
-                in.
+                {t('accountPage.password.changedBody')}
               </AlertDescription>
             </Alert>
           ) : changePassword.isError ? (
@@ -203,10 +187,10 @@ export function ChangePasswordCard() {
 
           <Button type="submit" disabled={changePassword.isPending}>
             {changePassword.isPending
-              ? 'Saving...'
+              ? t('accountPage.password.saving')
               : session.has_password
-                ? 'Change password'
-                : 'Set password'}
+                ? t('accountPage.password.submitChange')
+                : t('accountPage.password.submitSet')}
           </Button>
         </form>
       </CardContent>

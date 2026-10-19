@@ -359,6 +359,13 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if rt.execRuntime != nil {
+		if err := rt.recordDatabaseTeardown(r.Context(), name, existing.NodeID, purge); err != nil {
+			rt.internalError(w, "api: delete database: record teardown failed", err, slog.String("name", name))
+			return
+		}
+	}
+
 	err = rt.databases.DeleteDesiredDatabase(r.Context(), name)
 	if errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
@@ -369,12 +376,14 @@ func (rt *Router) handleDeleteDatabase(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-	if purge {
-		rt.teardownDatabaseAndPurge(name, existing.NodeID)
-	} else {
-		rt.teardownDatabaseContainer(name, existing.NodeID)
-	}
 	rt.nudgeReconciler()
+	if terr := rt.runDatabaseTeardown(r.Context(), name, existing.NodeID, purge); terr != nil {
+		writeJSON(w, http.StatusAccepted, map[string]string{
+			"status":  "teardown_pending",
+			"message": "database removed from desired state, but its container could not be stopped yet and will be retried: " + terr.Error(),
+		})
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -432,8 +441,7 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 	name := r.PathValue("name")
 
 	var req setDatabaseNodeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -478,23 +486,10 @@ func (rt *Router) handleSetDatabaseNode(w http.ResponseWriter, r *http.Request) 
 	rt.reloadAndWriteDatabase(w, r, name, "set database node")
 }
 
-// teardownDatabaseContainer stops name's running container in the
-// background after its desired state has moved off nodeID, the database
-// counterpart to teardownServiceContainers in apps.go.
+// teardownDatabaseContainer persists the teardown job then runs it in the
+// background; a failure leaves the job for RetryDatabaseTeardowns.
 func (rt *Router) teardownDatabaseContainer(name, nodeID string) {
-	if rt.execRuntime == nil {
-		return
-	}
-	runtime, err := rt.execRuntime(nodeID)
-	if err != nil {
-		rt.logger.Error("api: teardown database container: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
-		return
-	}
-	go func() { //nolint:gosec // deliberately outlives the request, same as teardownServiceContainers
-		if err := database.New(name, rt.databases, runtime).Teardown(context.Background()); err != nil {
-			rt.logger.Error("api: teardown database container failed", slog.String("error", err.Error()), slog.String("name", name))
-		}
-	}()
+	rt.scheduleDatabaseTeardown(name, nodeID, false)
 }
 
 // setDatabaseProjectRequest is PUT /api/v1/databases/{name}/project's
@@ -510,8 +505,7 @@ func (rt *Router) handleSetDatabaseProject(w http.ResponseWriter, r *http.Reques
 	name := r.PathValue("name")
 
 	var req setDatabaseProjectRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -554,8 +548,7 @@ func (rt *Router) handleSetDatabaseResources(w http.ResponseWriter, r *http.Requ
 	name := r.PathValue("name")
 
 	var req setDatabaseResourcesRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 

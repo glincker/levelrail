@@ -1,6 +1,7 @@
 ---
 title: "Host firewall"
 description: Manage allow and deny rules for the control plane host's ufw firewall from the dashboard, CLI or API, with a lockout guard against blocking essential ports.
+"og:url": "https://docs.levelrail.com/host-firewall"
 ---
 
 Levelrail can manage allow and deny rules for the control plane host's own `ufw` firewall (`ufw` is the firewall front end that ships with Ubuntu). You declare rules as records (a port, a protocol, an optional source, an action), and a reconciler changes `ufw` to match them. Edit the record and the host follows, like everything else on the platform.

@@ -39,6 +39,28 @@ func registerAppRequestsTool(server *mcp.Server, client *apiclient.Client) {
 	})
 }
 
+func registerAppTrafficTool(server *mcp.Server, client *apiclient.Client) {
+	addTool(server, &mcp.Tool{
+		Name:        "get_app_traffic",
+		Description: "Get an app's ingress traffic breakdown for a window: request rate, error rates, latency p50/p95/p99, per replica latency, slowest routes, top referrer hosts, top countries (when a geo source is set), sampled slow or failed requests and SLO burn. Use it to find which replica or route made the app slow.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appTrafficInput) (*mcp.CallToolResult, apiclient.AppTrafficResource, error) {
+		window := in.Window
+		if window == "" {
+			window = "1h"
+		}
+		res, err := client.GetAppTraffic(ctx, in.Name, window)
+		if err != nil {
+			return nil, apiclient.AppTrafficResource{}, fmt.Errorf("get traffic for app %q: %w", in.Name, err)
+		}
+		return nil, res, nil
+	})
+}
+
+type appTrafficInput struct {
+	Name   string `json:"name" jsonschema:"the app's name"`
+	Window string `json:"window,omitempty" jsonschema:"one of 5m, 1h, 24h or 7d; default 1h"`
+}
+
 type appRequestsInput struct {
 	Name  string `json:"name" jsonschema:"the app's name"`
 	Since string `json:"since,omitempty" jsonschema:"how far back to query, e.g. '1h', '30m'; default 1h"`

@@ -25,6 +25,7 @@ import { formatDuration } from '../lib/pipelineStatus'
 import { PipelineRunGraph } from './PipelineRunGraph'
 import { PipelineArtifactsPanel } from './PipelineArtifactsPanel'
 import { PipelineFailureSummary } from './PipelineFailureSummary'
+import { PipelineFixes } from './PipelineFixes'
 import { PipelineHoldGate } from './PipelineHoldGate'
 import { PipelineRunMeta } from './PipelineRunMeta'
 import { PipelineReportLink } from './PipelineReportLink'
@@ -241,6 +242,7 @@ export function PipelineRunDetail({
         <ApprovalGate key={a.id} app={app} runId={run.id} approval={a} />
       ))}
       <PipelineFailureSummary run={run} onOpen={(key) => onPick(key)} />
+      <PipelineFixes app={app} run={run} />
       {jobs.length > 0 ? (
         <PipelineRunGraph
           jobs={jobs}

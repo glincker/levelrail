@@ -71,6 +71,8 @@ func renderEnvExport(w http.ResponseWriter, app, format string, entries []export
 		switch {
 		case e.Type == envTypeVault:
 			b.WriteString("# " + e.Key + " is read from Vault at deploy time\n")
+		case e.Masked && e.Type == envTypeBound:
+			b.WriteString("# " + e.Key + " is injected at container start from a database link or bucket binding\n")
 		case e.Masked:
 			b.WriteString("# " + e.Key + " is sensitive, export with reveal to include it\n" + e.Key + "=\n")
 		default:
@@ -105,6 +107,14 @@ func (rt *Router) redactedExportEntries(r *http.Request, svc *store.DesiredServi
 	}
 	for k := range svc.VaultEnv {
 		out = append(out, exportEntry{Key: k, Type: envTypeVault})
+	}
+	return append(out, boundExportEntries(rt.boundEnvEntries(r.Context(), svc, false))...)
+}
+
+func boundExportEntries(bound []boundEnvEntry) []exportEntry {
+	out := make([]exportEntry, 0, len(bound))
+	for _, b := range bound {
+		out = append(out, exportEntry{Key: b.Key, Value: b.Value, Type: envTypeBound, Masked: b.Masked})
 	}
 	return out
 }
@@ -176,6 +186,7 @@ func (rt *Router) handleExportEnvRevealed(w http.ResponseWriter, r *http.Request
 	for k := range svc.VaultEnv {
 		entries = append(entries, exportEntry{Key: k, Type: envTypeVault})
 	}
+	entries = append(entries, boundExportEntries(rt.boundEnvEntries(r.Context(), svc, true))...)
 	rt.saveEnvAudit(r.Context(), r, actor, auditActionEnvExported, "apps/"+name+"/env/export ("+format+")", http.StatusOK)
 	rt.logger.Info("api: env exported with values", slog.String("name", name), slog.String("actor_id", actor.id), slog.String("method", actor.method), slog.Int("keys", len(entries)))
 	renderEnvExport(w, name, format, entries)

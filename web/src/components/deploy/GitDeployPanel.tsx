@@ -24,6 +24,7 @@ import type { GitSourceResource } from '../../types/gitSource'
 import { CommitRow, CommitStatusBadge } from './CommitRow'
 import { DeployShortcuts } from './DeployShortcuts'
 import { DeploySuggestions } from './DeploySuggestions'
+import { PendingChangesCard } from './PendingChangesCard'
 import { ProtectedDeployNotice } from './ProtectedDeployNotice'
 import { useDeployActions } from './useDeployActions'
 
@@ -90,6 +91,7 @@ export function GitDeployPanel({
 
   return (
     <div className="space-y-4">
+      <PendingChangesCard appName={app.name} />
       <div className="flex items-end gap-2">
         <div className="min-w-0 flex-1 space-y-1">
           <span className="block text-xs font-medium text-muted-foreground">

@@ -90,6 +90,12 @@
     "checking": "Checking...",
     "lastCheck": "Last check ({{when}}): {{result}}",
     "neverChecked": "Not checked yet.",
+    "status": {
+      "updateAvailable": "A newer image is available for this tag.",
+      "upToDate": "Image is up to date.",
+      "updateNow": "Update now",
+      "archMismatch": "This image is built for {{image}} but the node runs {{node}}. It may fail to start."
+    },
     "toast": {
       "enabled": "Image auto-update enabled.",
       "disabled": "Image auto-update disabled.",
@@ -114,7 +120,30 @@
     "running": "Canary {{image}} is receiving {{weight}}% of requests.",
     "setWeight": "Set share",
     "promote": "Promote",
+    "promoteNow": "Promote now",
     "abort": "Abort",
+    "stagesLabel": "Stages % (optional)",
+    "stagesPlaceholder": "10,25,50,100",
+    "intervalLabel": "Per stage",
+    "maxErrorLabel": "Max error rise (points)",
+    "maxP95Label": "Max p95 ratio",
+    "stageLabel": "Stage {{stage}} of {{count}}",
+    "stageWeights": "{{stages}} %",
+    "compareLabel": "Canary against stable release",
+    "canaryColumn": "Canary",
+    "stableColumn": "Stable",
+    "requests": "Requests this stage",
+    "errorRate": "Error rate (5xx)",
+    "p95": "p95 latency",
+    "next": "{{reason}} ({{elapsed}}s of {{interval}}s). It rolls back automatically if errors or latency rise against the stable release.",
+    "breaching": "Breach: {{reason}}. Rolling back.",
+    "waitingForTraffic": "Waiting for the canary to receive traffic before this stage is judged.",
+    "outcome": {
+      "promoted": "Last canary was promoted",
+      "aborted": "Last canary was aborted",
+      "rolled_back": "Last canary was rolled back automatically"
+    },
+    "outcomeDetail": "{{image}} {{reason}}",
     "toast": {
       "started": "Canary started.",
       "weightSet": "Traffic share updated.",
@@ -252,6 +281,32 @@
     "toast": {
       "saved": "GitHub Actions reporting saved.",
       "errorTitle": "Could not save GitHub Actions reporting."
+    }
+  },
+  "ciDeploy": {
+    "title": "Deploy from CI",
+    "infoTipLabel": "About deploying from CI",
+    "description": "Trust a repository and ref, then paste the generated workflow. The job swaps its GitHub identity for a 15 minute token that can only deploy this app, so no long-lived secret is stored. A commit with [skip ci] does not deploy.",
+    "noTrusts": "No repository is trusted to deploy this app yet. Add one below.",
+    "repositoryLabel": "GitHub repository",
+    "repositoryPlaceholder": "owner/name",
+    "refLabel": "Allowed ref",
+    "environmentLabel": "Environment",
+    "environmentPlaceholder": "Any environment",
+    "trust": "Trust",
+    "removeTrust": "Stop trusting {{repository}}",
+    "workflowTitle": "Generated workflow",
+    "copy": "Copy workflow",
+    "needsAddress": "CI tokens are issued for the dashboard address, and none is set yet.",
+    "useThisAddress": "Use {{origin}}",
+    "cliToggle": "Fix via CLI",
+    "toast": {
+      "trusted": "Repository trusted.",
+      "trustError": "Could not add the trust.",
+      "removeError": "Could not remove the trust.",
+      "addressError": "Could not save the dashboard address.",
+      "copied": "Workflow copied.",
+      "copyFailed": "Could not copy to the clipboard."
     }
   }
 }

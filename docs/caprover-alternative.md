@@ -1,6 +1,7 @@
 ---
 title: "CapRover alternative: self-hosted deploys without Docker Swarm"
 description: "Levelrail is an open source CapRover alternative: plain Docker instead of Swarm, an agent per node, built-in metrics and logs, one-click rollback."
+"og:url": "https://docs.levelrail.com/caprover-alternative"
 ---
 
 **Keep the simple CapRover workflow, drop the Swarm dependency**

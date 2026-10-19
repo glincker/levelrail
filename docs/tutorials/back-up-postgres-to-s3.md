@@ -3,6 +3,7 @@ title: "Back up Postgres to S3 and test the restore"
 icon: "/assets/icons/cloud-arrow-up.svg"
 sidebarTitle: "Back up to S3"
 description: Send Postgres backups to S3, R2, or any S3-compatible bucket on a schedule, verify them, and prove the restore works on your own server.
+"og:url": "https://docs.levelrail.com/tutorials/back-up-postgres-to-s3"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/postgresql/default.svg" alt="PostgreSQL" title="PostgreSQL" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws-amazon-simple-storage-service/default.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
@@ -45,7 +46,8 @@ levelrail-cli backup-targets test bkt_Ra-kILVUyJaw
 backup target "bkt_Ra-kILVUyJaw" connected successfully
 ```
 
-![The Backups page, which asks for a backup target on a fresh install](/assets/screenshots/backups.png)
+<img src="/assets/screenshots/backups-light.png" alt="The Backups page, which asks for a backup target on a fresh install" className="block dark:hidden" />
+<img src="/assets/screenshots/backups.png" alt="The Backups page, which asks for a backup target on a fresh install" className="hidden dark:block" />
 
 </Step>
 <Step title="Take a first backup">

@@ -1,6 +1,7 @@
 ---
 title: "DNS zones and records"
 description: Manage DNS zones and records at Cloudflare or Route53, move a domain's name servers, verify delegation and propagation, and serve wildcard subdomains.
+"og:url": "https://docs.levelrail.com/dns"
 ---
 
 The **DNS** page (Infrastructure, DNS) manages whole zones (a zone is all the DNS records for one domain) at the DNS provider you already connected for certificates: Cloudflare or Amazon Route53. From here you can create a zone, move a domain's name servers to it, import what the domain serves today, edit records, and check that the world sees your changes. The CLI has the same surface under `levelrail-cli dns`, and the API lives under `/api/v1/dns`.

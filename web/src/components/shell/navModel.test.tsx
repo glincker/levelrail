@@ -14,8 +14,10 @@ import { isBoolRecord, readJson, writeJson } from './persist'
 const EXPECTED_GLOBAL = [
   '/',
   '/status',
+  '/dashboards',
   '/apps',
   '/deployments',
+  '/functions',
   '/deploy-timeline',
   '/projects',
   '/databases',
@@ -23,11 +25,18 @@ const EXPECTED_GLOBAL = [
   '/nodes',
   '/resource-advisor',
   '/usage',
+  '/costs',
+  '/resources',
   '/network',
   '/network/proxy',
+  '/network/private',
+  '/cdn',
   '/domains',
   '/dns',
+  '/firewall',
   '/loadbalancers',
+  '/images',
+  '/builds',
   '/settings/registry',
   '/settings/registry-credentials',
   '/settings/network-shares',
@@ -55,6 +64,7 @@ const EXPECTED_APP = [
   'loadbalancer',
   'streams',
   'network',
+  'cache',
   'environment',
   'services',
   'resources',
@@ -86,21 +96,23 @@ describe('global nav model', () => {
     expect(GLOBAL_NAV_GROUPS.length).toBeLessThanOrEqual(8)
   })
 
-  it('groups Domains, DNS, Proxy, Load balancers and Topology under Networking', () => {
+  it('groups Domains, DNS, Proxy, Private networks, Firewall, Load balancers and CDN under Networking', () => {
     const net = GLOBAL_NAV_GROUPS.find((g) => g.id === 'traffic')
     expect(net?.label).toBe('Networking')
     expect(net?.items.map((i) => i.label)).toEqual([
       'Domains',
       'DNS',
       'Proxy',
+      'Private networks',
+      'Firewall',
       'Load balancers',
-      'Topology',
+      'CDN and caches',
     ])
   })
 
-  it('keeps every group at six items or fewer', () => {
+  it('keeps every group at eight items or fewer', () => {
     for (const g of GLOBAL_NAV_GROUPS) {
-      expect(g.items.length, g.id).toBeLessThanOrEqual(6)
+      expect(g.items.length, g.id).toBeLessThanOrEqual(8)
     }
   })
 

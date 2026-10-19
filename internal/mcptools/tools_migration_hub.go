@@ -9,7 +9,8 @@ import (
 )
 
 type migrationPlanInput struct {
-	ID string `json:"id,omitempty" jsonschema:"session id, empty lists sessions"`
+	ID  string `json:"id,omitempty" jsonschema:"session id, empty lists sessions"`
+	App string `json:"app,omitempty" jsonschema:"migrated app, returns its cutover checklist instead"`
 }
 
 type migrationItemBrief struct {
@@ -31,6 +32,7 @@ type migrationPlanOutput struct {
 	Selected int                  `json:"selected"`
 	Items    []migrationItemBrief `json:"items,omitempty"`
 	Sessions []string             `json:"sessions,omitempty"`
+	Cutover  []string             `json:"cutover,omitempty"`
 }
 
 // registerMigrationHubTools exposes the server migration plan read-only.
@@ -38,8 +40,23 @@ type migrationPlanOutput struct {
 func registerMigrationHubTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_migration_plan",
-		Description: "Read-only: a server migration's plan and progress per source database (preflight problems, copy status, verification counts). No id lists session ids. Cannot start a copy.",
+		Description: "Read-only: a server migration's plan and progress per source database (preflight problems, copy status, verification counts). No id lists session ids; app returns that app's cutover checklist. Cannot start a copy.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in migrationPlanInput) (*mcp.CallToolResult, migrationPlanOutput, error) {
+		if in.App != "" {
+			c, err := client.GetMigrationChecklist(ctx, in.App)
+			if err != nil {
+				return nil, migrationPlanOutput{}, fmt.Errorf("get cutover checklist %q: %w", in.App, err)
+			}
+			out := migrationPlanOutput{}
+			for _, st := range c.Steps {
+				line := st.ID + ": " + st.Status
+				for _, e := range st.Evidence {
+					line += "; " + e
+				}
+				out.Cutover = append(out.Cutover, line)
+			}
+			return nil, out, nil
+		}
 		if in.ID == "" {
 			list, err := client.ListMigrationSessions(ctx)
 			if err != nil {

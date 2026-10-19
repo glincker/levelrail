@@ -1,6 +1,7 @@
 ---
 title: "Kamal alternative with a dashboard, history and built-in observability"
 description: "Levelrail is an open source Kamal alternative: the same zero-downtime idea plus a control plane, dashboard, deploy history and built-in metrics."
+"og:url": "https://docs.levelrail.com/kamal-alternative"
 ---
 
 **Zero-downtime deploys, plus a control plane you can see**

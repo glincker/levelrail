@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -17,6 +18,8 @@ func (a *Archiver) Run(ctx context.Context) {
 	if err := a.Store.FailStaleLogArchiveRuns(ctx, a.stamp(a.Now())); err != nil {
 		a.Logger.Error("log archive: reset interrupted runs failed", slog.String("error", err.Error()))
 	}
+	loop := footprint.Track("log archive", a.Opts.Tick)
+	defer loop.Active()()
 	t := time.NewTicker(a.Opts.Tick)
 	defer t.Stop()
 	for {
@@ -24,7 +27,9 @@ func (a *Archiver) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			start := time.Now()
 			a.RunDue(ctx)
+			loop.Observe(start, nil)
 		}
 	}
 }

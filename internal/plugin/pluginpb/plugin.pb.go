@@ -6,7 +6,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v7.35.1
-// source: proto/plugin/v1/plugin.proto
+// source: plugin/v1/plugin.proto
 
 package pluginpb
 
@@ -35,7 +35,7 @@ type DescribeRequest struct {
 
 func (x *DescribeRequest) Reset() {
 	*x = DescribeRequest{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[0]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -47,7 +47,7 @@ func (x *DescribeRequest) String() string {
 func (*DescribeRequest) ProtoMessage() {}
 
 func (x *DescribeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[0]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -60,7 +60,7 @@ func (x *DescribeRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeRequest.ProtoReflect.Descriptor instead.
 func (*DescribeRequest) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{0}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *DescribeRequest) GetHostContractVersions() []uint32 {
@@ -87,7 +87,7 @@ type DescribeResponse struct {
 
 func (x *DescribeResponse) Reset() {
 	*x = DescribeResponse{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[1]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -99,7 +99,7 @@ func (x *DescribeResponse) String() string {
 func (*DescribeResponse) ProtoMessage() {}
 
 func (x *DescribeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[1]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -112,7 +112,7 @@ func (x *DescribeResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeResponse.ProtoReflect.Descriptor instead.
 func (*DescribeResponse) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{1}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *DescribeResponse) GetContractVersion() uint32 {
@@ -165,7 +165,7 @@ type HealthRequest struct {
 
 func (x *HealthRequest) Reset() {
 	*x = HealthRequest{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[2]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -177,7 +177,7 @@ func (x *HealthRequest) String() string {
 func (*HealthRequest) ProtoMessage() {}
 
 func (x *HealthRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[2]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -190,7 +190,7 @@ func (x *HealthRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthRequest.ProtoReflect.Descriptor instead.
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{2}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{2}
 }
 
 type HealthResponse struct {
@@ -203,7 +203,7 @@ type HealthResponse struct {
 
 func (x *HealthResponse) Reset() {
 	*x = HealthResponse{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[3]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -215,7 +215,7 @@ func (x *HealthResponse) String() string {
 func (*HealthResponse) ProtoMessage() {}
 
 func (x *HealthResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[3]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -228,7 +228,7 @@ func (x *HealthResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthResponse.ProtoReflect.Descriptor instead.
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{3}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *HealthResponse) GetOk() bool {
@@ -262,7 +262,7 @@ type Event struct {
 
 func (x *Event) Reset() {
 	*x = Event{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[4]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -274,7 +274,7 @@ func (x *Event) String() string {
 func (*Event) ProtoMessage() {}
 
 func (x *Event) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[4]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -287,7 +287,7 @@ func (x *Event) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Event.ProtoReflect.Descriptor instead.
 func (*Event) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{4}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Event) GetId() string {
@@ -360,7 +360,7 @@ type SendRequest struct {
 
 func (x *SendRequest) Reset() {
 	*x = SendRequest{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[5]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -372,7 +372,7 @@ func (x *SendRequest) String() string {
 func (*SendRequest) ProtoMessage() {}
 
 func (x *SendRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[5]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -385,7 +385,7 @@ func (x *SendRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendRequest.ProtoReflect.Descriptor instead.
 func (*SendRequest) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{5}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *SendRequest) GetEvent() *Event {
@@ -420,7 +420,7 @@ type SendResponse struct {
 
 func (x *SendResponse) Reset() {
 	*x = SendResponse{}
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[6]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -432,7 +432,7 @@ func (x *SendResponse) String() string {
 func (*SendResponse) ProtoMessage() {}
 
 func (x *SendResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_plugin_v1_plugin_proto_msgTypes[6]
+	mi := &file_plugin_v1_plugin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +445,7 @@ func (x *SendResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SendResponse.ProtoReflect.Descriptor instead.
 func (*SendResponse) Descriptor() ([]byte, []int) {
-	return file_proto_plugin_v1_plugin_proto_rawDescGZIP(), []int{6}
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *SendResponse) GetDelivered() bool {
@@ -469,11 +469,245 @@ func (x *SendResponse) GetRetryable() bool {
 	return false
 }
 
-var File_proto_plugin_v1_plugin_proto protoreflect.FileDescriptor
+type PanelDataRequest struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	PanelId  string                 `protobuf:"bytes,1,opt,name=panel_id,json=panelId,proto3" json:"panel_id,omitempty"`
+	SourceId string                 `protobuf:"bytes,2,opt,name=source_id,json=sourceId,proto3" json:"source_id,omitempty"`
+	// Scope the panel is shown in, for example {"app_id": "web"}.
+	Context       map[string]string `protobuf:"bytes,3,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ConfigJson    string            `protobuf:"bytes,4,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
 
-const file_proto_plugin_v1_plugin_proto_rawDesc = "" +
+func (x *PanelDataRequest) Reset() {
+	*x = PanelDataRequest{}
+	mi := &file_plugin_v1_plugin_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PanelDataRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PanelDataRequest) ProtoMessage() {}
+
+func (x *PanelDataRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plugin_v1_plugin_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PanelDataRequest.ProtoReflect.Descriptor instead.
+func (*PanelDataRequest) Descriptor() ([]byte, []int) {
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *PanelDataRequest) GetPanelId() string {
+	if x != nil {
+		return x.PanelId
+	}
+	return ""
+}
+
+func (x *PanelDataRequest) GetSourceId() string {
+	if x != nil {
+		return x.SourceId
+	}
+	return ""
+}
+
+func (x *PanelDataRequest) GetContext() map[string]string {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *PanelDataRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+type PanelDataResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// A JSON document the host binds widgets to. The host caps its size.
+	Json          string `protobuf:"bytes,1,opt,name=json,proto3" json:"json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PanelDataResponse) Reset() {
+	*x = PanelDataResponse{}
+	mi := &file_plugin_v1_plugin_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PanelDataResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PanelDataResponse) ProtoMessage() {}
+
+func (x *PanelDataResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plugin_v1_plugin_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PanelDataResponse.ProtoReflect.Descriptor instead.
+func (*PanelDataResponse) Descriptor() ([]byte, []int) {
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *PanelDataResponse) GetJson() string {
+	if x != nil {
+		return x.Json
+	}
+	return ""
+}
+
+type PanelActionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PanelId       string                 `protobuf:"bytes,1,opt,name=panel_id,json=panelId,proto3" json:"panel_id,omitempty"`
+	ActionId      string                 `protobuf:"bytes,2,opt,name=action_id,json=actionId,proto3" json:"action_id,omitempty"`
+	Context       map[string]string      `protobuf:"bytes,3,rep,name=context,proto3" json:"context,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ConfigJson    string                 `protobuf:"bytes,4,opt,name=config_json,json=configJson,proto3" json:"config_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PanelActionRequest) Reset() {
+	*x = PanelActionRequest{}
+	mi := &file_plugin_v1_plugin_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PanelActionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PanelActionRequest) ProtoMessage() {}
+
+func (x *PanelActionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_plugin_v1_plugin_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PanelActionRequest.ProtoReflect.Descriptor instead.
+func (*PanelActionRequest) Descriptor() ([]byte, []int) {
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *PanelActionRequest) GetPanelId() string {
+	if x != nil {
+		return x.PanelId
+	}
+	return ""
+}
+
+func (x *PanelActionRequest) GetActionId() string {
+	if x != nil {
+		return x.ActionId
+	}
+	return ""
+}
+
+func (x *PanelActionRequest) GetContext() map[string]string {
+	if x != nil {
+		return x.Context
+	}
+	return nil
+}
+
+func (x *PanelActionRequest) GetConfigJson() string {
+	if x != nil {
+		return x.ConfigJson
+	}
+	return ""
+}
+
+type PanelActionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ok            bool                   `protobuf:"varint,1,opt,name=ok,proto3" json:"ok,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PanelActionResponse) Reset() {
+	*x = PanelActionResponse{}
+	mi := &file_plugin_v1_plugin_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PanelActionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PanelActionResponse) ProtoMessage() {}
+
+func (x *PanelActionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_plugin_v1_plugin_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PanelActionResponse.ProtoReflect.Descriptor instead.
+func (*PanelActionResponse) Descriptor() ([]byte, []int) {
+	return file_plugin_v1_plugin_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *PanelActionResponse) GetOk() bool {
+	if x != nil {
+		return x.Ok
+	}
+	return false
+}
+
+func (x *PanelActionResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
+var File_plugin_v1_plugin_proto protoreflect.FileDescriptor
+
+const file_plugin_v1_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\x1cproto/plugin/v1/plugin.proto\x12\x13levelrail.plugin.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"G\n" +
+	"\x16plugin/v1/plugin.proto\x12\x13levelrail.plugin.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"G\n" +
 	"\x0fDescribeRequest\x124\n" +
 	"\x16host_contract_versions\x18\x01 \x03(\rR\x14hostContractVersions\"\xd5\x01\n" +
 	"\x10DescribeResponse\x12)\n" +
@@ -506,27 +740,53 @@ const file_proto_plugin_v1_plugin_proto_rawDesc = "" +
 	"\fSendResponse\x12\x1c\n" +
 	"\tdelivered\x18\x01 \x01(\bR\tdelivered\x12\x16\n" +
 	"\x06detail\x18\x02 \x01(\tR\x06detail\x12\x1c\n" +
-	"\tretryable\x18\x03 \x01(\bR\tretryable2\xbb\x01\n" +
+	"\tretryable\x18\x03 \x01(\bR\tretryable\"\xf5\x01\n" +
+	"\x10PanelDataRequest\x12\x19\n" +
+	"\bpanel_id\x18\x01 \x01(\tR\apanelId\x12\x1b\n" +
+	"\tsource_id\x18\x02 \x01(\tR\bsourceId\x12L\n" +
+	"\acontext\x18\x03 \x03(\v22.levelrail.plugin.v1.PanelDataRequest.ContextEntryR\acontext\x12\x1f\n" +
+	"\vconfig_json\x18\x04 \x01(\tR\n" +
+	"configJson\x1a:\n" +
+	"\fContextEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"'\n" +
+	"\x11PanelDataResponse\x12\x12\n" +
+	"\x04json\x18\x01 \x01(\tR\x04json\"\xf9\x01\n" +
+	"\x12PanelActionRequest\x12\x19\n" +
+	"\bpanel_id\x18\x01 \x01(\tR\apanelId\x12\x1b\n" +
+	"\taction_id\x18\x02 \x01(\tR\bactionId\x12N\n" +
+	"\acontext\x18\x03 \x03(\v24.levelrail.plugin.v1.PanelActionRequest.ContextEntryR\acontext\x12\x1f\n" +
+	"\vconfig_json\x18\x04 \x01(\tR\n" +
+	"configJson\x1a:\n" +
+	"\fContextEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"?\n" +
+	"\x13PanelActionResponse\x12\x0e\n" +
+	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage2\xbb\x01\n" +
 	"\rPluginService\x12W\n" +
 	"\bDescribe\x12$.levelrail.plugin.v1.DescribeRequest\x1a%.levelrail.plugin.v1.DescribeResponse\x12Q\n" +
 	"\x06Health\x12\".levelrail.plugin.v1.HealthRequest\x1a#.levelrail.plugin.v1.HealthResponse2i\n" +
 	"\x1aNotificationChannelService\x12K\n" +
-	"\x04Send\x12 .levelrail.plugin.v1.SendRequest\x1a!.levelrail.plugin.v1.SendResponseBAZ?github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpbb\x06proto3"
+	"\x04Send\x12 .levelrail.plugin.v1.SendRequest\x1a!.levelrail.plugin.v1.SendResponse2\xcc\x01\n" +
+	"\fPanelService\x12Z\n" +
+	"\tPanelData\x12%.levelrail.plugin.v1.PanelDataRequest\x1a&.levelrail.plugin.v1.PanelDataResponse\x12`\n" +
+	"\vPanelAction\x12'.levelrail.plugin.v1.PanelActionRequest\x1a(.levelrail.plugin.v1.PanelActionResponseBAZ?github.com/GLINCKER/levelrail/internal/plugin/pluginpb;pluginpbb\x06proto3"
 
 var (
-	file_proto_plugin_v1_plugin_proto_rawDescOnce sync.Once
-	file_proto_plugin_v1_plugin_proto_rawDescData []byte
+	file_plugin_v1_plugin_proto_rawDescOnce sync.Once
+	file_plugin_v1_plugin_proto_rawDescData []byte
 )
 
-func file_proto_plugin_v1_plugin_proto_rawDescGZIP() []byte {
-	file_proto_plugin_v1_plugin_proto_rawDescOnce.Do(func() {
-		file_proto_plugin_v1_plugin_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_plugin_v1_plugin_proto_rawDesc), len(file_proto_plugin_v1_plugin_proto_rawDesc)))
+func file_plugin_v1_plugin_proto_rawDescGZIP() []byte {
+	file_plugin_v1_plugin_proto_rawDescOnce.Do(func() {
+		file_plugin_v1_plugin_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_plugin_v1_plugin_proto_rawDesc), len(file_plugin_v1_plugin_proto_rawDesc)))
 	})
-	return file_proto_plugin_v1_plugin_proto_rawDescData
+	return file_plugin_v1_plugin_proto_rawDescData
 }
 
-var file_proto_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
-var file_proto_plugin_v1_plugin_proto_goTypes = []any{
+var file_plugin_v1_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_plugin_v1_plugin_proto_goTypes = []any{
 	(*DescribeRequest)(nil),       // 0: levelrail.plugin.v1.DescribeRequest
 	(*DescribeResponse)(nil),      // 1: levelrail.plugin.v1.DescribeResponse
 	(*HealthRequest)(nil),         // 2: levelrail.plugin.v1.HealthRequest
@@ -534,44 +794,56 @@ var file_proto_plugin_v1_plugin_proto_goTypes = []any{
 	(*Event)(nil),                 // 4: levelrail.plugin.v1.Event
 	(*SendRequest)(nil),           // 5: levelrail.plugin.v1.SendRequest
 	(*SendResponse)(nil),          // 6: levelrail.plugin.v1.SendResponse
-	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*PanelDataRequest)(nil),      // 7: levelrail.plugin.v1.PanelDataRequest
+	(*PanelDataResponse)(nil),     // 8: levelrail.plugin.v1.PanelDataResponse
+	(*PanelActionRequest)(nil),    // 9: levelrail.plugin.v1.PanelActionRequest
+	(*PanelActionResponse)(nil),   // 10: levelrail.plugin.v1.PanelActionResponse
+	nil,                           // 11: levelrail.plugin.v1.PanelDataRequest.ContextEntry
+	nil,                           // 12: levelrail.plugin.v1.PanelActionRequest.ContextEntry
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
 }
-var file_proto_plugin_v1_plugin_proto_depIdxs = []int32{
-	7, // 0: levelrail.plugin.v1.Event.occurred_at:type_name -> google.protobuf.Timestamp
-	4, // 1: levelrail.plugin.v1.SendRequest.event:type_name -> levelrail.plugin.v1.Event
-	0, // 2: levelrail.plugin.v1.PluginService.Describe:input_type -> levelrail.plugin.v1.DescribeRequest
-	2, // 3: levelrail.plugin.v1.PluginService.Health:input_type -> levelrail.plugin.v1.HealthRequest
-	5, // 4: levelrail.plugin.v1.NotificationChannelService.Send:input_type -> levelrail.plugin.v1.SendRequest
-	1, // 5: levelrail.plugin.v1.PluginService.Describe:output_type -> levelrail.plugin.v1.DescribeResponse
-	3, // 6: levelrail.plugin.v1.PluginService.Health:output_type -> levelrail.plugin.v1.HealthResponse
-	6, // 7: levelrail.plugin.v1.NotificationChannelService.Send:output_type -> levelrail.plugin.v1.SendResponse
-	5, // [5:8] is the sub-list for method output_type
-	2, // [2:5] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+var file_plugin_v1_plugin_proto_depIdxs = []int32{
+	13, // 0: levelrail.plugin.v1.Event.occurred_at:type_name -> google.protobuf.Timestamp
+	4,  // 1: levelrail.plugin.v1.SendRequest.event:type_name -> levelrail.plugin.v1.Event
+	11, // 2: levelrail.plugin.v1.PanelDataRequest.context:type_name -> levelrail.plugin.v1.PanelDataRequest.ContextEntry
+	12, // 3: levelrail.plugin.v1.PanelActionRequest.context:type_name -> levelrail.plugin.v1.PanelActionRequest.ContextEntry
+	0,  // 4: levelrail.plugin.v1.PluginService.Describe:input_type -> levelrail.plugin.v1.DescribeRequest
+	2,  // 5: levelrail.plugin.v1.PluginService.Health:input_type -> levelrail.plugin.v1.HealthRequest
+	5,  // 6: levelrail.plugin.v1.NotificationChannelService.Send:input_type -> levelrail.plugin.v1.SendRequest
+	7,  // 7: levelrail.plugin.v1.PanelService.PanelData:input_type -> levelrail.plugin.v1.PanelDataRequest
+	9,  // 8: levelrail.plugin.v1.PanelService.PanelAction:input_type -> levelrail.plugin.v1.PanelActionRequest
+	1,  // 9: levelrail.plugin.v1.PluginService.Describe:output_type -> levelrail.plugin.v1.DescribeResponse
+	3,  // 10: levelrail.plugin.v1.PluginService.Health:output_type -> levelrail.plugin.v1.HealthResponse
+	6,  // 11: levelrail.plugin.v1.NotificationChannelService.Send:output_type -> levelrail.plugin.v1.SendResponse
+	8,  // 12: levelrail.plugin.v1.PanelService.PanelData:output_type -> levelrail.plugin.v1.PanelDataResponse
+	10, // 13: levelrail.plugin.v1.PanelService.PanelAction:output_type -> levelrail.plugin.v1.PanelActionResponse
+	9,  // [9:14] is the sub-list for method output_type
+	4,  // [4:9] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
-func init() { file_proto_plugin_v1_plugin_proto_init() }
-func file_proto_plugin_v1_plugin_proto_init() {
-	if File_proto_plugin_v1_plugin_proto != nil {
+func init() { file_plugin_v1_plugin_proto_init() }
+func file_plugin_v1_plugin_proto_init() {
+	if File_plugin_v1_plugin_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_plugin_v1_plugin_proto_rawDesc), len(file_proto_plugin_v1_plugin_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plugin_v1_plugin_proto_rawDesc), len(file_plugin_v1_plugin_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   7,
+			NumMessages:   13,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
-		GoTypes:           file_proto_plugin_v1_plugin_proto_goTypes,
-		DependencyIndexes: file_proto_plugin_v1_plugin_proto_depIdxs,
-		MessageInfos:      file_proto_plugin_v1_plugin_proto_msgTypes,
+		GoTypes:           file_plugin_v1_plugin_proto_goTypes,
+		DependencyIndexes: file_plugin_v1_plugin_proto_depIdxs,
+		MessageInfos:      file_plugin_v1_plugin_proto_msgTypes,
 	}.Build()
-	File_proto_plugin_v1_plugin_proto = out.File
-	file_proto_plugin_v1_plugin_proto_goTypes = nil
-	file_proto_plugin_v1_plugin_proto_depIdxs = nil
+	File_plugin_v1_plugin_proto = out.File
+	file_plugin_v1_plugin_proto_goTypes = nil
+	file_plugin_v1_plugin_proto_depIdxs = nil
 }

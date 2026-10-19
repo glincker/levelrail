@@ -7,6 +7,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -307,7 +308,7 @@ func TestTrustEvents_RenewalReportAndRenewNow(t *testing.T) {
 		n, err := db.GetNode(context.Background(), id.NodeID)
 		return err == nil && n.CertGeneration >= 2
 	})
-	if err := ts.srv.RequestRenew("nobody"); err != ErrNodeNotConnected {
+	if err := ts.srv.RequestRenew("nobody"); !errors.Is(err, ErrNodeNotConnected) {
 		t.Fatalf("RequestRenew(unconnected) = %v, want ErrNodeNotConnected", err)
 	}
 }

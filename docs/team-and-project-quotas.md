@@ -1,6 +1,7 @@
 ---
 title: "Team and project quotas"
 description: Cap how many apps, databases, previews and how much memory and CPU a team or project may hold, from the dashboard, the CLI or the API.
+"og:url": "https://docs.levelrail.com/team-and-project-quotas"
 ---
 
 A quota is a ceiling on what one team or one project may hold. By default nothing is limited. Set a ceiling and any create or change that would go past it is refused with the limit and the current usage, so one team cannot starve the rest of the instance.

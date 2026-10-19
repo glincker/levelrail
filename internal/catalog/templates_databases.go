@@ -43,7 +43,7 @@ var databasesTemplates = []Template{
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:80/misc/ping"]
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:80/misc/ping || curl -fsS -o /dev/null http://127.0.0.1:80/misc/ping"]
       interval: 10s
       timeout: 5s
       retries: 3

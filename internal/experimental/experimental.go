@@ -76,6 +76,7 @@ var (
 	enabled map[Feature]bool
 	loaded  bool
 	runtime = map[Feature]bool{}
+	desired = map[Feature]bool{}
 )
 
 // load must be called with mu held. Unknown keys are ignored so a typo never
@@ -133,6 +134,7 @@ func Set(fs ...Feature) {
 	}
 	loaded = true
 	runtime = map[Feature]bool{}
+	desired = map[Feature]bool{}
 }
 
 // Reset forgets the cached environment, for tests.
@@ -141,12 +143,10 @@ func Reset() {
 	defer mu.Unlock()
 	enabled, loaded = nil, false
 	runtime = map[Feature]bool{}
+	desired = map[Feature]bool{}
 }
 
 // DisabledMessage is the operator-facing text for a gated surface.
 func DisabledMessage(f Feature) string {
-	if Toggleable(f) {
-		return fmt.Sprintf("the %s feature is in beta and off by default; turn it on in Settings, Beta features, or set %s=%s", f, EnvVar, f)
-	}
-	return fmt.Sprintf("the %s feature is experimental and off by default; set %s=%s to enable it", f, EnvVar, f)
+	return fmt.Sprintf("the %s feature is off by default; turn it on in Settings, Beta features (or set %s=%s on the server)", f, EnvVar, f)
 }

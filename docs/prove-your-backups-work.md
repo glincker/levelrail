@@ -1,6 +1,7 @@
 ---
 title: "Prove your backups work"
 description: Run restore drills to verify backups work before you need them.
+"og:url": "https://docs.levelrail.com/prove-your-backups-work"
 ---
 
 A backup file is not a backup until a restore of it has worked. Levelrail separates the two: "last backup" says an object was uploaded, and "last verified restore" says a copy of it was restored into a scratch resource and checked. This guide shows how to get the second one green and what to do when it is not.

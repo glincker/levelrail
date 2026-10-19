@@ -6,6 +6,60 @@ import {
 } from '@tanstack/react-query'
 import { ApiError, readErrorMessage } from '../lib/apiError'
 
+export type PluginHealth = 'healthy' | 'unhealthy' | 'stopped' | 'removing'
+export type PluginFix = '' | 'restart' | 'approve' | 'trust_key' | 'reinstall'
+export type PluginVerificationStatus =
+  | 'verified'
+  | 'unsigned'
+  | 'unsigned_refused'
+  | 'untrusted_key'
+  | 'bad_signature'
+  | 'digest_mismatch'
+  | 'unverified'
+
+export interface PluginPanel {
+  id: string
+  title: string
+  description: string
+  rows: { label: string; value: string }[] | null
+  slot?: string
+  source?: { id: string; abilities: string[] }
+}
+
+export interface PluginVerification {
+  status: PluginVerificationStatus
+  digest_pinned: boolean
+  digest: string
+  signed: boolean
+  key_id: string
+  key_name: string
+  installable: boolean
+  reason: string
+}
+
+export interface PluginPreview {
+  manifest: {
+    name: string
+    version: string
+    kind: string
+    publisher: string
+    description: string
+    image: string
+    abilities: string[]
+    outbound_hosts: string[]
+    contributes: { panels: PluginPanel[] }
+  }
+  verification: PluginVerification
+  action: 'install' | 'upgrade'
+  installed_version: string
+  approved_abilities: string[]
+  added_abilities: string[]
+  removed_abilities: string[]
+  added_hosts: string[]
+  removed_hosts: string[]
+  reapproval_required: boolean
+}
+
 // Matches internal/plugin's Record plus the API's running flag.
 export interface Plugin {
   name: string
@@ -23,6 +77,10 @@ export interface Plugin {
   config_json: string
   state: 'installed' | 'enabled' | 'disabled' | 'removing'
   running: boolean
+  health: PluginHealth
+  verification: PluginVerificationStatus
+  fix: PluginFix
+  panels: PluginPanel[]
   approved_at: string
   approved_by: string
   installed_at: string
@@ -40,11 +98,13 @@ export interface PluginKey {
 }
 
 export interface InstallPluginInput {
-  manifest: string
-  signature: string
-  key_id: string
+  manifest?: string
+  manifest_url?: string
+  signature?: string
+  key_id?: string
   expected_digest?: string
   config_json?: string
+  approve_abilities?: string[]
 }
 
 export const pluginKeys = {
@@ -118,6 +178,28 @@ export function useInstallPlugin() {
   return useInvalidating(
     (input: InstallPluginInput) =>
       send<Plugin>('POST', '/api/v1/plugins', input),
+    [pluginKeys.all],
+  )
+}
+
+export function useInspectPlugin() {
+  return useMutation({
+    mutationFn: (input: InstallPluginInput) =>
+      send<PluginPreview>('POST', '/api/v1/plugins/inspect', input),
+  })
+}
+
+export function useUpgradePlugin() {
+  return useInvalidating(
+    (v: { name: string; input: InstallPluginInput }) =>
+      send<Plugin>('POST', `${plugin(v.name)}/upgrade`, v.input),
+    [pluginKeys.all],
+  )
+}
+
+export function useRestartPlugin() {
+  return useInvalidating(
+    (name: string) => send<Plugin>('POST', `${plugin(name)}/restart`),
     [pluginKeys.all],
   )
 }

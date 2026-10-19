@@ -199,6 +199,23 @@ func (p Postgres) Rotate(ctx context.Context, name string) (Credential, error) {
 	return Credential{Role: name, Password: password}, nil
 }
 
+// SetOwnerPassword sets the platform admin role's password without ending
+// sessions, so a rotation that fails verification can be undone cleanly.
+func (p Postgres) SetOwnerPassword(ctx context.Context, password string) error {
+	verifier, err := ScramVerifier(password)
+	if err != nil {
+		return err
+	}
+	if err := validateIdent(p.Admin); err != nil {
+		return err
+	}
+	script := fmt.Sprintf("ALTER ROLE %s PASSWORD %s;\n", QuoteIdent(p.Admin), QuoteLiteral(verifier))
+	if _, err := p.run(ctx, script); err != nil {
+		return fmt.Errorf("set owner password: %w", err)
+	}
+	return nil
+}
+
 // SetLogin enables or disables a role's ability to log in.
 func (p Postgres) SetLogin(ctx context.Context, name string, login bool) error {
 	if err := p.mutable(ctx, name); err != nil {

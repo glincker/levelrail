@@ -53,7 +53,11 @@ func (m *geoModule) Provision(caddy.Context) error {
 }
 
 func (m *geoModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	client := requestClientAddr(r)
+	client, ok := parseRequestClientAddr(r)
+	if !ok {
+		writeGeoBlock(w, m.Rule)
+		return nil
+	}
 	trusted, _ := caddyhttp.GetVar(r.Context(), caddyhttp.TrustedProxyVarKey).(bool)
 	res := DefaultGeoResolver()
 	country, _ := res.Country(client, r.Header.Get(res.HeaderName()), trusted)
@@ -84,17 +88,27 @@ func writeGeoBlock(w http.ResponseWriter, g trafficpolicy.Geo) {
 // requestClientAddr prefers Caddy's client_ip var, which already applies
 // the trusted proxies and client IP header settings.
 func requestClientAddr(r *http.Request) netip.Addr {
+	a, _ := parseRequestClientAddr(r)
+	return a
+}
+
+// parseRequestClientAddr reports false for an unparseable address so a
+// geo policy can fail closed instead of matching the zero address.
+func parseRequestClientAddr(r *http.Request) (netip.Addr, bool) {
 	if s, ok := caddyhttp.GetVar(r.Context(), caddyhttp.ClientIPVarKey).(string); ok && s != "" {
 		if a, err := netip.ParseAddr(s); err == nil {
-			return a.Unmap()
+			return a.Unmap(), true
 		}
 	}
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
 		host = r.RemoteAddr
 	}
-	a, _ := netip.ParseAddr(host)
-	return a.Unmap()
+	a, err := netip.ParseAddr(host)
+	if err != nil {
+		return netip.Addr{}, false
+	}
+	return a.Unmap(), true
 }
 
 var (

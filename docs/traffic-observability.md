@@ -1,6 +1,7 @@
 ---
 title: "Traffic observability: rate, errors and duration"
 description: Per app and per replica request rate, error rate and p50/p95/p99 latency measured at the ingress, with slow request samples and SLO error-budget burn.
+"og:url": "https://docs.levelrail.com/traffic-observability"
 ---
 
 Every app that serves traffic through a domain gets request rate, error rate and latency percentiles with no setup and no change to the app. The numbers are measured at the embedded ingress, kept on the node that served the requests, and queried on demand.

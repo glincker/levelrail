@@ -1,6 +1,7 @@
 ---
 title: "Cost estimate"
 description: "How the app cost estimate of what this would cost elsewhere is calculated, its assumptions, and the env vars that correct the reference rates for your region."
+"og:url": "https://docs.levelrail.com/cost-estimate"
 ---
 
 An app's **Resources** tab shows what it might cost per month under three reference pricing profiles. Look for **What this would cost elsewhere**, folded at the bottom of the Optimise panel.
@@ -22,7 +23,8 @@ curl -H "Authorization: Bearer $TOKEN" https://levelrail.example.com/api/v1/apps
 </Tab>
 </Tabs>
 
-![Levelrail Resources tab with a resource suggestion and a what-this-would-cost-elsewhere estimate](assets/screenshots/app-resources.png)
+<img src="/assets/screenshots/app-resources-light.png" alt="Levelrail Resources tab with a resource suggestion and a what-this-would-cost-elsewhere estimate" className="block dark:hidden" />
+<img src="/assets/screenshots/app-resources.png" alt="Levelrail Resources tab with a resource suggestion and a what-this-would-cost-elsewhere estimate" className="hidden dark:block" />
 
 **This is an estimate, not a real bill.** It never calls a live pricing API and does not reflect what your own hardware costs. It shows roughly what the same CPU and memory would cost under typical metered cloud pricing, so you have something to compare against.
 

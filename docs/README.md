@@ -94,6 +94,7 @@ Four main types, plus two Levelrail-specific categories:
 | [deployments-page.md](/deployments-page) | The cross-app Deployments page: live feed, filters, details drawer, actions and keyboard shortcuts |
 | [deploy-timeline.md](/deploy-timeline) | The fleet deploy timeline: every deploy as a bar on one time axis, live, with filters and a CLI view |
 | [cost-estimate.md](/cost-estimate) | The per-app "what this would cost elsewhere" estimate: the formula, reference providers, and how to correct the rates for your own region |
+| [cost-explorer.md](/cost-explorer) | Cost trend by app, project, tag, node or kind, forecast range, top movers, named budgets with thresholds and a 100 percent action |
 | [usage-and-cost.md](/usage-and-cost) | Cost showback per app, project, environment and team from your own prices, allocation rules, budgets and alerts, export and limits |
 | [resource-advisor.md](/resource-advisor) | The beta resource advisor: limit, idle, growth, disk and database tuning suggestions, how each rule works, thresholds and limits |
 

@@ -2,13 +2,12 @@ package nodemove
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // Resource is one app or database a drain must move off a node.
@@ -147,9 +146,9 @@ func (r *Runner) saveDrain(ctx context.Context, d *store.NodeDrain) error {
 }
 
 func randomID(prefix string) (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	s, err := ids.URL(9)
+	if err != nil {
 		return "", fmt.Errorf("nodemove: generate id: %w", err)
 	}
-	return prefix + "_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return prefix + "_" + s, nil
 }

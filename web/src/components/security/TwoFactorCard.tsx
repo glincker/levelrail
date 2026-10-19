@@ -1,4 +1,6 @@
 import { type FormEvent, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import {
   CheckCircleIcon,
   CheckIcon,
@@ -12,7 +14,7 @@ import {
   useDisableTwoFactor,
   useRegenerateRecoveryCodes,
   useSetupTwoFactor,
-  useTwoFactorStatus,
+  twoFactorStatusQueryOptions,
 } from '../../queries/twoFactor'
 import { useCopyToClipboard } from '../../hooks/useCopyToClipboard'
 import {
@@ -26,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { CardError, CardLoading } from '../account/AccountCardStates'
 import {
   Dialog,
   DialogContent,
@@ -44,35 +47,60 @@ import {
 // see the feature and understand why it's unavailable, not have it
 // silently missing from the page.
 export function TwoFactorCard() {
-  const { data: status } = useTwoFactorStatus()
+  const { t } = useTranslation('settings')
+  const {
+    data: status,
+    isPending,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery(twoFactorStatusQueryOptions())
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <LockKeyIcon className="size-4 text-muted-foreground" />
-          Two-factor authentication
+          <LockKeyIcon
+            className="size-4 text-muted-foreground"
+            aria-hidden="true"
+          />
+          {t('accountPage.twoFactor.title')}
         </CardTitle>
         <CardDescription>
-          Require a code from an authenticator app in addition to your password
-          when signing in.
+          {t('accountPage.twoFactor.description')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {status.enabled ? (
+        {isPending ? <CardLoading /> : null}
+        {isError ? (
+          <CardError
+            retrying={isFetching}
+            onRetry={() => {
+              void refetch()
+            }}
+          />
+        ) : null}
+        {status?.enabled ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Enabled. {status.recovery_codes_remaining} recovery code
-              {status.recovery_codes_remaining === 1 ? '' : 's'} remaining.
+              {t('accountPage.twoFactor.enabled', {
+                count: status.recovery_codes_remaining,
+              })}
             </p>
             <div className="flex flex-wrap gap-2">
               <RegenerateRecoveryCodesDialog />
               <DisableTwoFactorDialog />
             </div>
           </>
-        ) : (
-          <EnableTwoFactorDialog />
-        )}
+        ) : null}
+        {status && !status.enabled ? (
+          <>
+            <p className="text-sm text-muted-foreground">
+              {t('accountPage.twoFactor.disabledHint')}
+            </p>
+            <EnableTwoFactorDialog />
+          </>
+        ) : null}
       </CardContent>
     </Card>
   )
@@ -83,6 +111,7 @@ export function TwoFactorCard() {
 // feature shows two of these (the setup key and the otpauth link) plus
 // a grid of recovery codes, all copy-once-then-gone values.
 function CopyableValue({ value, label }: { value: string; label: string }) {
+  const { t } = useTranslation('settings')
   const { copied, copy } = useCopyToClipboard()
   return (
     <div className="space-y-1">
@@ -100,7 +129,9 @@ function CopyableValue({ value, label }: { value: string; label: string }) {
           }}
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
-          {copied ? 'Copied' : 'Copy'}
+          {copied
+            ? t('accountPage.twoFactor.copied')
+            : t('accountPage.twoFactor.copy')}
         </Button>
       </div>
     </div>
@@ -108,6 +139,7 @@ function CopyableValue({ value, label }: { value: string; label: string }) {
 }
 
 function RecoveryCodeGrid({ codes }: { codes: string[] }) {
+  const { t } = useTranslation('settings')
   const { copied, copy } = useCopyToClipboard()
   return (
     <div className="space-y-2">
@@ -125,7 +157,9 @@ function RecoveryCodeGrid({ codes }: { codes: string[] }) {
         }}
       >
         {copied ? <CheckIcon /> : <CopyIcon />}
-        {copied ? 'Copied' : 'Copy all'}
+        {copied
+          ? t('accountPage.twoFactor.copied')
+          : t('accountPage.twoFactor.copyAll')}
       </Button>
     </div>
   )
@@ -137,6 +171,7 @@ function RecoveryCodeGrid({ codes }: { codes: string[] }) {
 // Opening the dialog calls setup immediately rather than waiting for a
 // second click, since there is nothing else to configure first.
 function EnableTwoFactorDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'setup' | 'recovery-codes'>('setup')
   const [code, setCode] = useState('')
@@ -170,38 +205,49 @@ function EnableTwoFactorDialog() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button />}>
         <LockKeyIcon />
-        Enable two-factor authentication
+        {t('accountPage.twoFactor.enable')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         {step === 'setup' ? (
           <>
             <DialogHeader>
-              <DialogTitle>Set up two-factor authentication</DialogTitle>
+              <DialogTitle>{t('accountPage.twoFactor.setupTitle')}</DialogTitle>
               <DialogDescription>
-                Add this to an authenticator app (1Password, Google
-                Authenticator, Authy), then enter the 6-digit code it shows to
-                confirm.
+                {t('accountPage.twoFactor.setupBody')}
               </DialogDescription>
             </DialogHeader>
             {setup.isPending ? (
-              <p className="text-sm text-muted-foreground">
-                Generating a setup key...
-              </p>
+              <CardLoading rows={2} />
             ) : setup.isError ? (
               <Alert variant="destructive">
                 <WarningIcon />
-                <AlertDescription>{setup.error.message}</AlertDescription>
+                <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+                  <span>{setup.error.message}</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setup.mutate()
+                    }}
+                  >
+                    {t('accountPage.retry')}
+                  </Button>
+                </AlertDescription>
               </Alert>
             ) : setup.data ? (
               <form onSubmit={handleConfirm} className="space-y-3">
-                <CopyableValue value={setup.data.secret} label="Setup key" />
+                <CopyableValue
+                  value={setup.data.secret}
+                  label={t('accountPage.twoFactor.setupKey')}
+                />
                 <CopyableValue
                   value={setup.data.provisioning_uri}
-                  label="Or use this link"
+                  label={t('accountPage.twoFactor.setupLink')}
                 />
                 <Field>
                   <FieldLabel htmlFor="totp-confirm-code">
-                    Code from your authenticator app
+                    {t('accountPage.twoFactor.codeLabel')}
                   </FieldLabel>
                   <Input
                     id="totp-confirm-code"
@@ -210,7 +256,7 @@ function EnableTwoFactorDialog() {
                     onChange={(e) => {
                       setCode(e.target.value)
                     }}
-                    placeholder="123456"
+                    placeholder={t('accountPage.twoFactor.codePlaceholder')}
                   />
                 </Field>
                 {confirm.isError ? (
@@ -227,13 +273,15 @@ function EnableTwoFactorDialog() {
                       handleOpenChange(false)
                     }}
                   >
-                    Cancel
+                    {t('accountPage.twoFactor.cancel')}
                   </Button>
                   <Button
                     type="submit"
                     disabled={confirm.isPending || code === ''}
                   >
-                    {confirm.isPending ? 'Verifying...' : 'Verify and enable'}
+                    {confirm.isPending
+                      ? t('accountPage.twoFactor.verifying')
+                      : t('accountPage.twoFactor.verify')}
                   </Button>
                 </DialogFooter>
               </form>
@@ -244,12 +292,10 @@ function EnableTwoFactorDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CheckCircleIcon className="text-green-700 dark:text-green-400" />
-                Two-factor authentication enabled
+                {t('accountPage.twoFactor.enabledTitle')}
               </DialogTitle>
               <DialogDescription>
-                Save these recovery codes somewhere safe. Each one can be used
-                once to sign in if you lose access to your authenticator app.
-                They will not be shown again.
+                {t('accountPage.twoFactor.recoveryBody')}
               </DialogDescription>
             </DialogHeader>
             <RecoveryCodeGrid codes={recoveryCodes} />
@@ -260,7 +306,7 @@ function EnableTwoFactorDialog() {
                   handleOpenChange(false)
                 }}
               >
-                I've saved these codes
+                {t('accountPage.twoFactor.saved')}
               </Button>
             </DialogFooter>
           </>
@@ -275,6 +321,7 @@ function EnableTwoFactorDialog() {
 // specifically, not a recovery code, so this can never consume one of
 // the codes it's about to throw away.
 function RegenerateRecoveryCodesDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState<'confirm' | 'recovery-codes'>('confirm')
   const [code, setCode] = useState('')
@@ -305,22 +352,20 @@ function RegenerateRecoveryCodesDialog() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" />}>
         <KeyIcon />
-        Regenerate recovery codes
+        {t('accountPage.twoFactor.regenerate')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         {step === 'confirm' ? (
           <form onSubmit={handleSubmit} className="space-y-3">
             <DialogHeader>
-              <DialogTitle>Regenerate recovery codes</DialogTitle>
+              <DialogTitle>{t('accountPage.twoFactor.regenerate')}</DialogTitle>
               <DialogDescription>
-                Every existing recovery code stops working the moment new ones
-                are generated. Enter a current code from your authenticator app
-                to confirm.
+                {t('accountPage.twoFactor.regenerateBody')}
               </DialogDescription>
             </DialogHeader>
             <Field>
               <FieldLabel htmlFor="regenerate-code">
-                Code from your authenticator app
+                {t('accountPage.twoFactor.codeLabel')}
               </FieldLabel>
               <Input
                 id="regenerate-code"
@@ -329,7 +374,7 @@ function RegenerateRecoveryCodesDialog() {
                 onChange={(e) => {
                   setCode(e.target.value)
                 }}
-                placeholder="123456"
+                placeholder={t('accountPage.twoFactor.codePlaceholder')}
               />
             </Field>
             {regenerate.isError ? (
@@ -346,13 +391,15 @@ function RegenerateRecoveryCodesDialog() {
                   handleOpenChange(false)
                 }}
               >
-                Cancel
+                {t('accountPage.twoFactor.cancel')}
               </Button>
               <Button
                 type="submit"
                 disabled={regenerate.isPending || code === ''}
               >
-                {regenerate.isPending ? 'Regenerating...' : 'Regenerate'}
+                {regenerate.isPending
+                  ? t('accountPage.twoFactor.regenerating')
+                  : t('accountPage.twoFactor.regenerateAction')}
               </Button>
             </DialogFooter>
           </form>
@@ -361,11 +408,10 @@ function RegenerateRecoveryCodesDialog() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CheckCircleIcon className="text-green-700 dark:text-green-400" />
-                New recovery codes generated
+                {t('accountPage.twoFactor.regeneratedTitle')}
               </DialogTitle>
               <DialogDescription>
-                Save these somewhere safe. The old codes no longer work, and
-                these will not be shown again.
+                {t('accountPage.twoFactor.regeneratedBody')}
               </DialogDescription>
             </DialogHeader>
             <RecoveryCodeGrid codes={recoveryCodes} />
@@ -376,7 +422,7 @@ function RegenerateRecoveryCodesDialog() {
                   handleOpenChange(false)
                 }}
               >
-                Done
+                {t('accountPage.twoFactor.done')}
               </Button>
             </DialogFooter>
           </>
@@ -391,6 +437,7 @@ function RegenerateRecoveryCodesDialog() {
 // handleDisableTwoFactor doc comment explains why a password re-check
 // would undermine the exact property 2FA exists to provide.
 function DisableTwoFactorDialog() {
+  const { t } = useTranslation('settings')
   const [open, setOpen] = useState(false)
   const [useRecoveryCode, setUseRecoveryCode] = useState(false)
   const [code, setCode] = useState('')
@@ -416,23 +463,24 @@ function DisableTwoFactorDialog() {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" />}>
-        Disable two-factor authentication
+        {t('accountPage.twoFactor.disable')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-sm">
         <form onSubmit={handleSubmit} className="space-y-3">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <WarningIcon className="size-4 text-destructive" />
-              Disable two-factor authentication?
+              {t('accountPage.twoFactor.disableTitle')}
             </DialogTitle>
             <DialogDescription>
-              Signing in will only require a password afterward. Enter a current
-              code to confirm.
+              {t('accountPage.twoFactor.disableBody')}
             </DialogDescription>
           </DialogHeader>
           <Field>
             <FieldLabel htmlFor="disable-code">
-              {useRecoveryCode ? 'Recovery code' : 'Authenticator code'}
+              {useRecoveryCode
+                ? t('accountPage.twoFactor.recoveryCodeLabel')
+                : t('accountPage.twoFactor.authCodeLabel')}
             </FieldLabel>
             <Input
               id="disable-code"
@@ -441,7 +489,11 @@ function DisableTwoFactorDialog() {
               onChange={(e) => {
                 setCode(e.target.value)
               }}
-              placeholder={useRecoveryCode ? 'xxxx-xxxx-xxxx-xxxx' : '123456'}
+              placeholder={
+                useRecoveryCode
+                  ? t('accountPage.twoFactor.recoveryPlaceholder')
+                  : t('accountPage.twoFactor.codePlaceholder')
+              }
             />
           </Field>
           <button
@@ -452,7 +504,9 @@ function DisableTwoFactorDialog() {
               setCode('')
             }}
           >
-            {useRecoveryCode ? 'Use authenticator code' : 'Use a recovery code'}
+            {useRecoveryCode
+              ? t('accountPage.twoFactor.useAuthCode')
+              : t('accountPage.twoFactor.useRecoveryCode')}
           </button>
           {disable.isError ? (
             <Alert variant="destructive">
@@ -468,14 +522,16 @@ function DisableTwoFactorDialog() {
                 handleOpenChange(false)
               }}
             >
-              Cancel
+              {t('accountPage.twoFactor.cancel')}
             </Button>
             <Button
               type="submit"
               variant="destructive"
               disabled={disable.isPending || code === ''}
             >
-              {disable.isPending ? 'Disabling...' : 'Disable'}
+              {disable.isPending
+                ? t('accountPage.twoFactor.disabling')
+                : t('accountPage.twoFactor.disableAction')}
             </Button>
           </DialogFooter>
         </form>

@@ -42,6 +42,8 @@ func (s *Scheduler) pruneGFS(ctx context.Context, v store.ServiceVolumeBackupCon
 	for _, h := range rows {
 		at, perr := time.Parse(time.RFC3339, h.StartedAt)
 		if perr != nil {
+			s.log().Warn("backup: scheduled volume retention: skipping backup with unreadable start time",
+				slog.String("service_volume", label), slog.String("id", h.ID), slog.String("error", perr.Error()))
 			continue
 		}
 		items = append(items, RetentionItem{ID: h.ID, At: at})

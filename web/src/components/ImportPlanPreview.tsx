@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
@@ -27,12 +28,11 @@ function requiredKeys(services: ImportService[]): string[] {
   return [...keys].sort()
 }
 
-function volumeLabel(v: {
-  name?: string
-  host_path?: string
-  container_path: string
-}): string {
-  return `${v.host_path ?? v.name ?? '(anonymous)'} -> ${v.container_path}`
+function volumeLabel(
+  v: { name?: string; host_path?: string; container_path: string },
+  anonymous: string,
+): string {
+  return `${v.host_path ?? v.name ?? anonymous} -> ${v.container_path}`
 }
 
 /**
@@ -52,6 +52,7 @@ export function ImportPlanPreview({
   onBack: () => void
   onDeployed: () => void
 }) {
+  const { t } = useTranslation('migration')
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [name, setName] = useState(plan.suggested_name)
@@ -86,10 +87,10 @@ export function ImportPlanPreview({
       void queryClient.invalidateQueries({ queryKey: appKeys.list() })
       onDeployed()
       toast.add({
-        title: `Importing "${result.appName}".`,
+        title: t('importPlan.importingToast', { name: result.appName }),
         description: result.deployId
-          ? 'Watching the build log now.'
-          : 'It will appear in the app list shortly.',
+          ? t('importPlan.watching')
+          : t('importPlan.appearsShortly'),
         type: 'success',
       })
       if (result.deployId) {
@@ -118,7 +119,7 @@ export function ImportPlanPreview({
       {plan.warnings.length > 0 ? (
         <Alert>
           <WarningIcon aria-hidden="true" />
-          <AlertTitle>Read before deploying</AlertTitle>
+          <AlertTitle>{t('importPlan.readFirst')}</AlertTitle>
           <AlertDescription>
             <ul className="list-disc space-y-1 pl-4">
               {plan.warnings.map((w, i) => (
@@ -131,7 +132,7 @@ export function ImportPlanPreview({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="space-y-1 text-sm">
-          <span className="font-medium">App name</span>
+          <span className="font-medium">{t('importPlan.appName')}</span>
           <Input
             value={name}
             onChange={(e) => {
@@ -141,13 +142,13 @@ export function ImportPlanPreview({
           />
           {!nameValid ? (
             <span className="text-xs text-destructive">
-              Use lowercase letters, numbers, and hyphens only.
+              {t('importPlan.nameInvalid')}
             </span>
           ) : null}
         </label>
         {single && plan.deploy !== 'compose' ? (
           <label className="space-y-1 text-sm">
-            <span className="font-medium">Container port</span>
+            <span className="font-medium">{t('importPlan.containerPort')}</span>
             <Input
               inputMode="numeric"
               value={port}
@@ -158,7 +159,7 @@ export function ImportPlanPreview({
             />
             {portInvalid ? (
               <span className="text-xs text-destructive">
-                Enter the port the app listens on.
+                {t('importPlan.portInvalid')}
               </span>
             ) : null}
           </label>
@@ -166,8 +167,7 @@ export function ImportPlanPreview({
       </div>
       {plan.domain_suggestion ? (
         <p className="text-xs text-muted-foreground">
-          Domain suggestion: {plan.domain_suggestion}. Add real domains from the
-          app&apos;s Domains tab after it is created.
+          {t('importPlan.domainSuggestion', { domain: plan.domain_suggestion })}
         </p>
       ) : null}
 
@@ -187,12 +187,12 @@ export function ImportPlanPreview({
           </div>
           {s.build_reason ? (
             <p className="text-xs text-muted-foreground">
-              Why: {s.build_reason}
+              {t('importPlan.why', { reason: s.build_reason })}
             </p>
           ) : null}
           {s.health_path ? (
             <p className="text-xs text-muted-foreground">
-              Health check: GET {s.health_path}
+              {t('importPlan.health', { path: s.health_path })}
             </p>
           ) : null}
           <ImportEnvTable
@@ -205,10 +205,17 @@ export function ImportPlanPreview({
           {(s.volumes ?? []).length > 0 ? (
             <ul className="space-y-1 text-xs">
               {(s.volumes ?? []).map((v) => (
-                <li key={volumeLabel(v)} className="flex items-center gap-2">
-                  <span className="font-mono">{volumeLabel(v)}</span>
+                <li
+                  key={volumeLabel(v, '')}
+                  className="flex items-center gap-2"
+                >
+                  <span className="font-mono">
+                    {volumeLabel(v, t('importPlan.anonymousVolume'))}
+                  </span>
                   {v.needs_approval ? (
-                    <Badge variant="warning">Needs root approval</Badge>
+                    <Badge variant="warning">
+                      {t('importPlan.needsApproval')}
+                    </Badge>
                   ) : null}
                 </li>
               ))}
@@ -219,13 +226,13 @@ export function ImportPlanPreview({
 
       {plan.services.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          Nothing to deploy was found in this input.
+          {t('importPlan.nothing')}
         </p>
       ) : null}
 
       {missing.length > 0 ? (
         <p role="status" className="text-sm text-destructive">
-          Required before deploying: {missing.join(', ')}
+          {t('importPlan.required', { keys: missing.join(', ') })}
         </p>
       ) : null}
       {deploy.isError ? (
@@ -236,7 +243,7 @@ export function ImportPlanPreview({
 
       <div className="flex items-center gap-2">
         <Button type="button" variant="ghost" onClick={onBack}>
-          Back
+          {t('importPlan.back')}
         </Button>
         <Button
           type="button"
@@ -245,7 +252,9 @@ export function ImportPlanPreview({
             deploy.mutate()
           }}
         >
-          {deploy.isPending ? 'Deploying...' : 'Deploy'}
+          {deploy.isPending
+            ? t('importPlan.deploying')
+            : t('importPlan.deploy')}
         </Button>
       </div>
     </div>

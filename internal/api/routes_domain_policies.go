@@ -29,6 +29,7 @@ func (rt *Router) registerDomainPolicyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/shield", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainPolicy(trafficpolicy.KindShield)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/shield/under-attack", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStartUnderAttack))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/shield/under-attack", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleStopUnderAttack))
+	mux.HandleFunc("POST /api/v1/apps/{name}/shield/recommended", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyRecommendedShield))
 	mux.HandleFunc("GET /api/v1/system/shield/bots", rt.requireAbility(AbilityRead, rt.handleShieldBotList))
 	// Ingress response cache rules, purge and per-domain stats.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/cache", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainPolicy(trafficpolicy.KindCache)))
@@ -36,6 +37,14 @@ func (rt *Router) registerDomainPolicyRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/domains/{domain}/cache", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleDeleteDomainPolicy(trafficpolicy.KindCache)))
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/cache/purge", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePurgeDomainCache))
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/cache/stats", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainCacheStats))
+	// App-level cache view, purge across the app's domains, purge history
+	// and the one-click static assets preset; instance cache and CDN overview.
+	mux.HandleFunc("GET /api/v1/apps/{name}/cache", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetAppCache))
+	mux.HandleFunc("POST /api/v1/apps/{name}/cache/purge", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handlePurgeAppCache))
+	mux.HandleFunc("GET /api/v1/apps/{name}/cache/purges", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListCachePurges))
+	mux.HandleFunc("POST /api/v1/apps/{name}/cache/preset", rt.requireAbilityForResource(AbilityDeploy, appResourceFromPath, rt.handleApplyCachePreset))
+	mux.HandleFunc("GET /api/v1/system/cache", rt.requireAbility(AbilityRead, rt.handleSystemCache))
+	mux.HandleFunc("GET /api/v1/cdn/overview", rt.requireAbility(AbilityRead, rt.handleCDNOverview))
 	// Every section plus status for the domain page, and a dry run preview.
 	mux.HandleFunc("GET /api/v1/apps/{name}/domains/{domain}/policies", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleGetDomainPolicies))
 	mux.HandleFunc("POST /api/v1/apps/{name}/domains/{domain}/policies/preview", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handlePreviewDomainPolicies))

@@ -1,6 +1,7 @@
 ---
 title: "Zero-downtime deploys with Docker: readiness-gated cutover and rollback"
 description: "How Levelrail ships without downtime: blue-green, rolling or recreate strategies gated on real readiness probes and digest-pinned images."
+"og:url": "https://docs.levelrail.com/zero-downtime-deploys"
 ---
 
 **A deploy is live only when it is actually ready**

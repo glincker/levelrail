@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -373,7 +374,8 @@ func TestLive_DowngradeGuardRefusesNewerDatabase(t *testing.T) {
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	err := cmd.Run()
-	exitErr, ok := err.(*exec.ExitError)
+	var exitErr *exec.ExitError
+	ok := errors.As(err, &exitErr)
 	if !ok || exitErr.ExitCode() != selfupgrade.ExitDowngradeRefused {
 		t.Fatalf("exit = %v, want %d\n%s", err, selfupgrade.ExitDowngradeRefused, stderr.String())
 	}

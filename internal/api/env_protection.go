@@ -39,12 +39,14 @@ type appEnvSettingsStore interface {
 // envProtection groups the env redaction and step-up reveal state.
 type envProtection struct {
 	settings appEnvSettingsStore
+	changes  envChangeStore
 	grants   *stepUpGrants
 	limiter  *loginLimiter
 }
 
 func (rt *Router) attachEnvProtection(s Store) {
 	rt.envProtect.settings, _ = s.(appEnvSettingsStore)
+	rt.envProtect.changes, _ = s.(envChangeStore)
 	rt.envProtect.grants = newStepUpGrants()
 	rt.envProtect.limiter = newLoginLimiter()
 }

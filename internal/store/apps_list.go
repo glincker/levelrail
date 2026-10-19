@@ -14,6 +14,7 @@ type AppListFilter struct {
 	ProjectID     string
 	Environment   string
 	Tags          []string
+	Names         []string
 	Limit, Offset int
 }
 
@@ -26,6 +27,14 @@ func (f AppListFilter) where() (string, []any, error) {
 		clauses = append(clauses, `(lower(name) LIKE ? ESCAPE '\' OR lower(image) LIKE ? ESCAPE '\')`)
 		like := "%" + likeEscaper.Replace(q) + "%"
 		args = append(args, like, like)
+	}
+	if f.Names != nil {
+		bNames, err := json.Marshal(f.Names)
+		if err != nil {
+			return "", nil, fmt.Errorf("marshal names: %w", err)
+		}
+		clauses = append(clauses, `name IN (SELECT value FROM json_each(?))`)
+		args = append(args, string(bNames))
 	}
 	if f.ProjectID != "" {
 		clauses = append(clauses, `project_id = ?`)

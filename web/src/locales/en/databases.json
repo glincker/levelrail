@@ -506,6 +506,9 @@
     "backupStarting": "Starting backup...",
     "backupStarted": "Backup of \"{{name}}\" started.",
     "backupSetup": "Set up backups",
+    "backupConfirmTitle": "Back up {{name}} now?",
+    "backupConfirmDescription": "Starts a backup to the configured target right away.",
+    "backupConfirmConsequence": "The backup appears in the history below once it starts.",
     "more": "More actions",
     "restart": "Restart",
     "restarting": "Restarting...",
@@ -571,5 +574,20 @@
     "title": "Backups",
     "body": "Backups are not available for {{engine}}: it keeps everything in memory and nothing on disk, so there is no data to back up.",
     "hint": "A restart, upgrade or move starts it with an empty cache. Keep anything you cannot lose in a database that has backups."
+  },
+  "links": {
+    "title": "Connected apps",
+    "description": "Connect an app to inject this database connection string as an env var. It is encrypted at rest, never logged, and follows credential rotation the next time the app starts.",
+    "empty": "No app is connected to this database yet.",
+    "appLabel": "App",
+    "appPlaceholder": "Choose an app",
+    "noApps": "There are no apps to connect yet.",
+    "connect": "Connect",
+    "connecting": "Connecting...",
+    "envVar": "Env var",
+    "toastConnected": "App connected.",
+    "toastConnectedBody": "{{app}} gets the connection string as {{envVar}} on its next start.",
+    "toastFailed": "Could not connect the app.",
+    "loadFailed": "Could not load connected apps."
   }
 }

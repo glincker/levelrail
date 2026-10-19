@@ -134,6 +134,24 @@ func (db *DB) ListSucceededBackups(ctx context.Context) ([]BackupHistory, error)
 	return scanBackupHistoryRows(rows)
 }
 
+// ListNewestSucceededBackups returns only the newest succeeded backup of each database or volume, so periodic drill checks do not scan all history.
+func (db *DB) ListNewestSucceededBackups(ctx context.Context) ([]BackupHistory, error) {
+	rows, err := db.QueryContext(ctx, `
+		SELECT `+backupHistoryColumns+` FROM backup_history WHERE id IN (
+			SELECT id FROM (
+				SELECT id, ROW_NUMBER() OVER (
+					PARTITION BY resource_kind, COALESCE(database_name, ''), COALESCE(service_name, ''), COALESCE(volume_name, '')
+					ORDER BY started_at DESC) AS rn
+				FROM backup_history WHERE status = ?
+			) WHERE rn = 1)
+	`, BackupStatusSucceeded)
+	if err != nil {
+		return nil, fmt.Errorf("store: list newest succeeded backups: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	return scanBackupHistoryRows(rows)
+}
+
 // Drill statuses and triggers.
 const (
 	DrillStatusRunning = "running"

@@ -1,4 +1,19 @@
 {
+ "abort_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
+ ],
  "ai_control_status": [
   "allowed_env_kinds",
   "explanation",
@@ -8,6 +23,24 @@
   "counts",
   "findings",
   "score"
+ ],
+ "apply_build_cache_prune": [
+  "applied",
+  "candidate_count",
+  "candidates",
+  "freed_bytes",
+  "node",
+  "older_than_hours",
+  "removed_count",
+  "would_free_bytes"
+ ],
+ "apply_image_gc": [
+  "candidates",
+  "dry_run",
+  "failed",
+  "reclaimed_bytes",
+  "removed",
+  "retention"
  ],
  "apply_resources": [
   "applied",
@@ -28,6 +61,20 @@
   "total",
   "truncated"
  ],
+ "bind_storage_bucket": [
+  "apps",
+  "created_at",
+  "env_keys",
+  "id",
+  "last_swept_at",
+  "lifecycle_days",
+  "name",
+  "prefix",
+  "public",
+  "public_url",
+  "quota_bytes",
+  "target_id"
+ ],
  "bulk_apps": [
   "action",
   "counts",
@@ -47,6 +94,7 @@
   "canceled_by",
   "commit_message",
   "commit_sha",
+  "deploy_url",
   "detected_framework",
   "digest_reason",
   "error",
@@ -55,6 +103,7 @@
   "id",
   "image",
   "image_digest",
+  "live",
   "outcome",
   "phase",
   "queue_position",
@@ -167,6 +216,20 @@
   "size_bytes",
   "verified_at",
   "verified_ok"
+ ],
+ "create_storage_bucket": [
+  "apps",
+  "created_at",
+  "env_keys",
+  "id",
+  "last_swept_at",
+  "lifecycle_days",
+  "name",
+  "prefix",
+  "public",
+  "public_url",
+  "quota_bytes",
+  "target_id"
  ],
  "delete_model": [
   "ok"
@@ -476,12 +539,75 @@
   "items",
   "next_cursor"
  ],
+ "get_app_traffic": [
+  "app",
+  "countries",
+  "error_rate_4xx",
+  "error_rate_5xx",
+  "from",
+  "has_traffic",
+  "latency",
+  "rate_per_sec",
+  "referrers",
+  "replicas",
+  "requests",
+  "samples",
+  "shield",
+  "slo",
+  "slow_routes",
+  "status_classes",
+  "to",
+  "upstream_errors",
+  "window"
+ ],
  "get_attention": [
   "items"
  ],
  "get_build_cache": [
   "bucket",
   "settings"
+ ],
+ "get_build_speed": [
+  "builds",
+  "cold_p50_seconds",
+  "findings",
+  "time_saved_seconds",
+  "warm_known",
+  "warm_p50_seconds"
+ ],
+ "get_buildkit_cache": [
+  "in_use_bytes",
+  "node",
+  "reason",
+  "reclaimable_bytes",
+  "record_count",
+  "records",
+  "supported",
+  "total_bytes"
+ ],
+ "get_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
+ ],
+ "get_cdn_overview": [
+  "cache",
+  "error_rate_5xx",
+  "has_traffic",
+  "nodes",
+  "rate_per_sec",
+  "requests",
+  "window"
  ],
  "get_cloudflare_tunnel_status": [
   "enabled",
@@ -509,6 +635,7 @@
   "next_backup_at",
   "next_drill_at",
   "recipients",
+  "replica",
   "retain_daily",
   "retain_monthly",
   "retain_weekly",
@@ -523,6 +650,14 @@
   "drill_schedule",
   "last_drill",
   "next_drill_at"
+ ],
+ "get_dashboard": [
+  "document",
+  "id",
+  "is_default",
+  "name",
+  "project_id",
+  "scope"
  ],
  "get_database": [
   "auto_placed",
@@ -546,6 +681,18 @@
   "policies",
   "principals",
   "temporary_logins"
+ ],
+ "get_database_password_rotation": [
+  "age_days",
+  "apps_to_restart",
+  "interval_days",
+  "last_changed_at",
+  "last_error",
+  "next_due",
+  "reason",
+  "state",
+  "supported",
+  "suspended_apps"
  ],
  "get_database_reachability": [
   "allowed_sources",
@@ -579,6 +726,7 @@
   "canceled_by",
   "commit_message",
   "commit_sha",
+  "deploy_url",
   "detected_framework",
   "digest_reason",
   "error",
@@ -587,6 +735,7 @@
   "id",
   "image",
   "image_digest",
+  "live",
   "outcome",
   "phase",
   "queue_position",
@@ -694,6 +843,13 @@
   "smtp_port",
   "smtp_username"
  ],
+ "get_encryption_key_status": [
+  "apps",
+  "hints",
+  "last_run",
+  "master_key_age_days",
+  "max_key_age_days"
+ ],
  "get_feature_flag": [
   "created_at",
   "description",
@@ -723,6 +879,19 @@
   "name",
   "updated_at"
  ],
+ "get_image_inventory": [
+  "inventory",
+  "layers"
+ ],
+ "get_janitor": [
+  "free_percent",
+  "last_pass",
+  "mode",
+  "pressure",
+  "preview",
+  "quarantined",
+  "reclaimed_bytes"
+ ],
  "get_latest_backup_verification": [
   "backup_history_id",
   "checked_by",
@@ -740,6 +909,7 @@
   "upstreams"
  ],
  "get_migration_plan": [
+  "cutover",
   "host",
   "id",
   "items",
@@ -801,6 +971,16 @@
   "to",
   "totals"
  ],
+ "get_my_access": [
+  "abilities",
+  "capabilities",
+  "kind",
+  "linked_providers",
+  "name",
+  "policies",
+  "teams",
+  "tier"
+ ],
  "get_node": [
   "accepts_app_workloads",
   "accepts_build_workloads",
@@ -845,6 +1025,36 @@
   "completed",
   "current_step",
   "steps"
+ ],
+ "get_plugin": [
+  "approved_abilities",
+  "approved_at",
+  "approved_by",
+  "commands",
+  "config_json",
+  "description",
+  "digest",
+  "fix",
+  "health",
+  "image",
+  "installed_at",
+  "installed_by",
+  "key_id",
+  "kind",
+  "last_error",
+  "manifest",
+  "name",
+  "outbound_hosts",
+  "panels",
+  "publisher",
+  "requested_abilities",
+  "running",
+  "state",
+  "verification",
+  "version"
+ ],
+ "get_resilience_report": [
+  "results"
  ],
  "get_resource_recommendation": [
   "cpu",
@@ -945,6 +1155,15 @@
   "top_routes",
   "truncated"
  ],
+ "link_database_app": [
+  "cross_node",
+  "database_name",
+  "env_var",
+  "field",
+  "host",
+  "mesh_dns",
+  "node_id"
+ ],
  "list_alert_history": [
   "app",
   "at",
@@ -1035,41 +1254,17 @@
   "volume_name"
  ],
  "list_apps": [
-  "auto_placed",
-  "bind_address",
-  "bind_mounts",
-  "command",
-  "domains",
-  "env",
-  "env_dirty",
-  "environment_id",
-  "fallback_url",
-  "health",
-  "hooks",
-  "host_port",
-  "image",
-  "image_digest",
-  "name",
-  "node_id",
-  "pending_image",
-  "port",
-  "preview_env_overrides",
-  "previous_release_held_until",
-  "project_id",
-  "pull_policy",
-  "replicas",
-  "resources",
-  "secret_env",
-  "secrets",
-  "storage_target_id",
-  "strategy",
-  "tags",
-  "vault_env",
-  "volumes"
+  "apps",
+  "next_offset",
+  "total"
  ],
  "list_archived_logs": [
   "next",
   "objects"
+ ],
+ "list_archives": [
+  "archives",
+  "policy"
  ],
  "list_audit_log": [
   "ability",
@@ -1121,6 +1316,10 @@
   "started_at",
   "status"
  ],
+ "list_builds": [
+  "build",
+  "builds"
+ ],
  "list_certificates": [
   "acme_failure",
   "apps",
@@ -1141,10 +1340,18 @@
  "list_control_plane_offbox_backups": [
   "backups"
  ],
+ "list_dashboards": [
+  "dashboards"
+ ],
  "list_database_engines": [
   "default_version",
   "id",
   "label"
+ ],
+ "list_database_links": [
+  "app",
+  "env_var",
+  "field"
  ],
  "list_database_users": [
   "users"
@@ -1193,6 +1400,7 @@
   "canceled_by",
   "commit_message",
   "commit_sha",
+  "deploy_url",
   "detected_framework",
   "digest_reason",
   "error",
@@ -1201,6 +1409,7 @@
   "id",
   "image",
   "image_digest",
+  "live",
   "outcome",
   "phase",
   "queue_position",
@@ -1241,6 +1450,7 @@
  "list_domains": [
   "automatic",
   "domain",
+  "issues",
   "kind",
   "reachable_reason",
   "reachable_url",
@@ -1287,6 +1497,10 @@
   "service_name",
   "updated_at"
  ],
+ "list_functions": [
+  "functions",
+  "runtimes"
+ ],
  "list_global_environments": [
   "app_count",
   "created_at",
@@ -1325,6 +1539,10 @@
   "id",
   "name",
   "updated_at"
+ ],
+ "list_inbox": [
+  "items",
+  "unread"
  ],
  "list_load_balancers": [
   "items",
@@ -1375,6 +1593,30 @@
   "targets",
   "timezone"
  ],
+ "list_marketplace_plugins": [
+  "abilities",
+  "categories",
+  "changelog",
+  "compatible",
+  "digest",
+  "icon",
+  "id",
+  "installed",
+  "installed_version",
+  "key_trusted",
+  "min_version",
+  "name",
+  "outbound_hosts",
+  "publisher",
+  "publisher_key_id",
+  "publisher_key_name",
+  "source_id",
+  "source_name",
+  "summary",
+  "update_available",
+  "verified",
+  "version"
+ ],
  "list_model_cache": [
   "nodes",
   "note",
@@ -1423,6 +1665,28 @@
   "status",
   "swap_group",
   "updated_at"
+ ],
+ "list_my_activity": [
+  "entries",
+  "next_cursor"
+ ],
+ "list_my_sessions": [
+  "browser",
+  "created_at",
+  "current",
+  "expires_at",
+  "id",
+  "ip",
+  "last_seen_at",
+  "network"
+ ],
+ "list_my_tokens": [
+  "abilities",
+  "created_at",
+  "expires_at",
+  "id",
+  "last_used_at",
+  "name"
  ],
  "list_node_moves": [
   "moves",
@@ -1474,6 +1738,33 @@
  ],
  "list_pipeline_runs": [
   "runs"
+ ],
+ "list_plugins": [
+  "approved_abilities",
+  "approved_at",
+  "approved_by",
+  "commands",
+  "config_json",
+  "description",
+  "digest",
+  "fix",
+  "health",
+  "image",
+  "installed_at",
+  "installed_by",
+  "key_id",
+  "kind",
+  "last_error",
+  "manifest",
+  "name",
+  "outbound_hosts",
+  "panels",
+  "publisher",
+  "requested_abilities",
+  "running",
+  "state",
+  "verification",
+  "version"
  ],
  "list_policy_templates": [
   "templates",
@@ -1581,18 +1872,42 @@
   "title",
   "updates"
  ],
+ "list_storage_buckets": [
+  "apps",
+  "created_at",
+  "env_keys",
+  "id",
+  "last_swept_at",
+  "lifecycle_days",
+  "name",
+  "prefix",
+  "public",
+  "public_url",
+  "quota_bytes",
+  "target_id",
+  "usage"
+ ],
  "list_storage_destinations": [
   "account_id",
   "archive_policies",
   "bucket",
   "created_at",
+  "default_for",
+  "directory",
   "endpoint",
   "id",
+  "kind",
+  "monthly_cost_usd",
   "name",
+  "node_id",
+  "objects",
+  "over_quota",
   "path_style",
   "preset",
   "provider",
-  "region"
+  "quota_bytes",
+  "region",
+  "used_bytes"
  ],
  "list_team_members": [
   "created_at",
@@ -1622,6 +1937,11 @@
   "service_name",
   "signature_valid",
   "status_code"
+ ],
+ "list_zones": [
+  "labeled",
+  "nodes",
+  "zones"
  ],
  "log_signatures": [
   "scanned",
@@ -1697,6 +2017,21 @@
   "total_bytes",
   "warnings"
  ],
+ "presign_bucket_object": [
+  "expires_at",
+  "method",
+  "url"
+ ],
+ "preview_build_cache_prune": [
+  "applied",
+  "candidate_count",
+  "candidates",
+  "freed_bytes",
+  "node",
+  "older_than_hours",
+  "removed_count",
+  "would_free_bytes"
+ ],
  "preview_clone_environment": [
   "apps",
   "environment_env_var_keys",
@@ -1705,6 +2040,14 @@
   "note",
   "source_environment",
   "uncloned_fields"
+ ],
+ "preview_image_gc": [
+  "candidates",
+  "dry_run",
+  "failed",
+  "reclaimed_bytes",
+  "removed",
+  "retention"
  ],
  "preview_promote_app": [
   "blockers",
@@ -1754,6 +2097,21 @@
   "tags",
   "vault_env",
   "volumes"
+ ],
+ "promote_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
  ],
  "prune_system": [
   "build_cache_reclaimed_bytes",
@@ -1912,6 +2270,14 @@
   "drill_id",
   "status"
  ],
+ "search": [
+  "hits",
+  "total"
+ ],
+ "search_actions": [
+  "hits",
+  "total"
+ ],
  "set_app_domains": [
   "app",
   "changed",
@@ -1999,6 +2365,27 @@
   "principal_type",
   "resource"
  ],
+ "simulate_placement": [
+  "displaced",
+  "lost_node_ids",
+  "placed",
+  "unplaced"
+ ],
+ "start_canary": [
+  "active",
+  "created_at",
+  "image",
+  "interval_secs",
+  "last_outcome",
+  "max_error_rate",
+  "max_p95_ratio",
+  "progress",
+  "stage",
+  "staged",
+  "stages",
+  "status_reason",
+  "weight"
+ ],
  "start_log_archive_dump": [
   "app_name",
   "bytes",
@@ -2014,6 +2401,11 @@
   "target_id",
   "to"
  ],
+ "suggest_least_privilege": [
+  "note",
+  "tokens",
+  "window_days"
+ ],
  "sweep_stale_preview_environments": [
   "swept"
  ],
@@ -2021,6 +2413,7 @@
   "ok"
  ],
  "test_storage_destination": [
+  "fix",
   "message",
   "ok",
   "reason",
@@ -2036,12 +2429,20 @@
   "unavailable",
   "zones_not_delegated"
  ],
+ "unbind_storage_bucket": [
+  "unbound"
+ ],
  "unset_app_env": [
   "hint",
   "key",
   "name",
   "redeploy_needed",
   "secret"
+ ],
+ "verify_audit_log": [
+  "checked",
+  "ok",
+  "problems"
  ],
  "verify_control_plane_backup": [
   "checks",
@@ -2056,5 +2457,11 @@
   "failure",
   "poll_again",
   "status"
+ ],
+ "whoami": [
+  "abilities",
+  "expires_at",
+  "kind",
+  "name"
  ]
 }

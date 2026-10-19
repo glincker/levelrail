@@ -11,6 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type {
+  TrafficLabel,
   TrafficReplica,
   TrafficRoute,
   TrafficSample,
@@ -112,6 +113,49 @@ export function SlowRouteTable({ rows }: Readonly<{ rows: TrafficRoute[] }>) {
                 <TableCell className={NUM}>
                   {formatPercent(r.error_rate_5xx)}
                 </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </Section>
+  )
+}
+
+// The API caps each audience list at 10 rows, so these never need virtualizing.
+export function AudienceTable({
+  kind,
+  rows,
+}: Readonly<{ kind: 'referrers' | 'countries'; rows: TrafficLabel[] }>) {
+  const { t } = useTranslation('trafficDetail')
+  return (
+    <Section
+      title={t(`audience.${kind}.title`)}
+      hint={t(`audience.${kind}.hint`)}
+    >
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {t(`audience.${kind}.empty`)}
+        </p>
+      ) : (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t(`audience.${kind}.label`)}</TableHead>
+              <TableHead className="text-right">
+                {t('audience.requests')}
+              </TableHead>
+              <TableHead className="text-right">
+                {t('audience.share')}
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => (
+              <TableRow key={r.label}>
+                <TableCell className="font-mono text-xs">{r.label}</TableCell>
+                <TableCell className={NUM}>{r.requests}</TableCell>
+                <TableCell className={NUM}>{formatPercent(r.share)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -11,7 +11,7 @@ import (
 func registerResourceRecommendationTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "get_resource_recommendation",
-		Description: "Suggest memory and CPU limits for an app based on its own historical usage (p95/p99 over a lookback window) and current limits: a deterministic engine, never a call to an external model. Weighs a real OOM-kill signal heavily when one was found in recent logs. Read-only, changes nothing, and the suggestion is never applied automatically.",
+		Description: "Suggest memory and CPU limits for an app from its own p95/p99 usage and current limits, weighing OOM kills heavily. Deterministic engine, no external model. Read only, never applied automatically.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in resourceRecommendationInput) (*mcp.CallToolResult, apiclient.ResourceRecommendationResource, error) {
 		result, err := client.GetAppResourceRecommendation(ctx, in.Name)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerResourceRecommendationTools(server *mcp.Server, client *apiclient.C
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_database_resource_recommendation",
-		Description: "Suggest memory and CPU limits for a managed database based on its own historical usage (p95/p99 over a lookback window) and current limits: the database-kind counterpart to get_resource_recommendation, same deterministic engine and same OOM-signal weighting. Read-only, changes nothing, and the suggestion is never applied automatically.",
+		Description: "Suggest memory and CPU limits for a managed database from its own p95/p99 usage and current limits. Same engine as get_resource_recommendation. Read only, never applied automatically.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in databaseResourceRecommendationInput) (*mcp.CallToolResult, apiclient.ResourceRecommendationResource, error) {
 		result, err := client.GetDatabaseResourceRecommendation(ctx, in.Name)
 		if err != nil {

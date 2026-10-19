@@ -1,6 +1,7 @@
 ---
 title: "Object storage"
 description: Connect S3-compatible buckets for log archive, build cache, and backups.
+"og:url": "https://docs.levelrail.com/object-storage"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/minio/default.svg" alt="MinIO" title="MinIO" width="24" height="24" /></span><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/aws-amazon-simple-storage-service/default.svg" alt="Amazon S3" title="Amazon S3" width="24" height="24" /></span></div>
@@ -169,13 +170,44 @@ The app card and `build-cache show` list the app's prefix (bounded to `APP_BUILD
 </Accordion>
 </AccordionGroup>
 
+## App buckets
+
+A bucket is a private folder (a key prefix) inside a connected destination, bound to an app. Create one from the app's Integrations page (**Storage buckets**, **New bucket**) or with `levelrail-cli storage buckets create --name uploads --destination <id> --app web`.
+
+- **Env vars.** At the next container start the app gets `S3_ENDPOINT`, `S3_BUCKET`, `S3_PREFIX`, `S3_REGION`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY`. Give a second bucket another prefix with `--env-prefix MEDIA` to get `MEDIA_*`. Binding or unbinding a bucket restarts a running app automatically so it picks up the change. The app's **Environment** card lists these variables (and database links) as read-only **Connected resources** with secrets masked, and `env pull` includes them, masked unless you reveal after step-up.
+- **Files.** **Browse files** lists (virtualized), uploads, downloads and deletes. Console uploads are capped by `APP_API_MAX_BODY_BYTES` (default 16 MiB); use `storage buckets presign <id> <key> --method PUT` for bigger files.
+- **Presigned links.** Time-limited GET or PUT URLs, up to 7 days, from the console (copy link), CLI or `POST /api/v1/storage/buckets/{id}/presign`.
+- **Size limit.** Enforced for console, CLI and presign issuing (a PUT presign for a full bucket fails with `413` and says to delete objects or raise `quota_bytes`), not for the app writing straight to S3 with its env credentials.
+- **Expire after N days.** A rule that deletes older files, run hourly and on demand (**Run expiry now**, `storage buckets sweep`).
+- **Public read.** The toggle serves files without sign-in at `/api/v1/public/buckets/<id>/<key>`, sandboxed with a restrictive content security policy. Everything else is private. The route is rate limited per client IP (`APP_PUBLIC_BUCKET_RATE_PER_MIN`, default 120, answers `429` with `Retry-After`), refuses objects over `APP_PUBLIC_BUCKET_MAX_BYTES` (default 100 MiB, `413`), and always serves HTML, SVG, XML and JavaScript as a download instead of rendering them.
+
+<Warning>
+Prefix scoping is not a security boundary. The injected credentials are the destination's own, so an app can read, write and delete every object in the whole provider bucket, including other apps' prefixes. The prefix only scopes where this feature's console, CLI, quota, lifecycle and public route read and write. There is no embedded S3 gateway that issues per-bucket keys. For apps you do not fully trust, create a dedicated destination (its own provider bucket and its own scoped key) and bind only that.
+</Warning>
+
+## Node directory destinations
+
+A destination can be a confined directory on an enrolled node instead of a bucket. Backups and dumps stream to it over the node's existing agent connection: no SSH, no shell, no credentials, nothing new listening on the node.
+
+1. On the node, set `APP_AGENT_STORAGE_DIR` to a directory the agent may write to and restart the agent. Without it the agent refuses every file request.
+2. Add the destination: **Settings, Storage, Add node directory**, or `levelrail-cli storage destinations add --name vault --node <node-id> --directory backups`.
+3. Test it. The probe writes, reads back and deletes a small file. A failure comes with a typed fix (bring the node online, give it a storage directory).
+
+The agent resolves every path under that root and rejects `..`, absolute paths and symlinks that leave it. Uploads land through a temp file, so a failed upload never leaves a partial object. Node directories serve backups and dumps only. Archives, artifacts, build cache and buckets need an S3 API, and WAL shipping, base backups and point in time restore stay on S3 destinations.
+
+## Quota, usage, cost and defaults
+
+Each destination shows what its successful backups occupy, an estimated monthly cost (list prices per preset, override with `APP_STORAGE_PRICE_PER_GB_MONTH_<PRESET>`, for example `..._R2=0.015`), and an optional soft quota that flags the destination when exceeded (`--quota-gb`). The quota warns, it does not block uploads.
+
+Pick a default destination per data class (backups, archives, artifacts, cache, dumps) on the Storage page or with `storage destinations default set <class> <id>`. A failed test can suggest typed fixes: wrong credentials, missing bucket, wrong region, clock skew, path-style addressing (one click switches it on and re-checks), or a node that is offline or has no storage directory.
+
 ## Alerting
 
 Create a `log_archive_stale` alert rule (dashboard: Alerts, or `levelrail-cli apps alerts create <app> --kind log_archive_stale`). It fires when any enabled policy's last run failed, or when a policy has gone longer than the rule's `for_duration` without a success (default: three intervals, at least two hours). It notifies through the same channels as every other rule.
 
 ## API and MCP
 
-REST routes live under `/api/v1/storage`, `/api/v1/log-archive`, and `/api/v1/build-cache` (see the [API reference](/api-reference)). Reads need the `read` ability, policy changes and dumps need `write`, and anything that handles credentials needs `write:sensitive`. The MCP server exposes read and control tools (`list_storage_destinations`, `test_storage_destination`, `list_log_archive_policies`, `set_log_archive_policy`, `start_log_archive_dump`, `list_log_archive_runs`, `list_archived_logs`, `get_build_cache`, `set_build_cache`) but deliberately has no tool that accepts bucket credentials.
+REST routes live under `/api/v1/storage` (including `/api/v1/storage/buckets`), `/api/v1/log-archive`, and `/api/v1/build-cache` (see the [API reference](/api-reference)). Reads need the `read` ability, policy changes and dumps need `write`, and anything that handles credentials needs `write:sensitive`. The MCP server exposes read and control tools (`list_storage_destinations`, `test_storage_destination`, `list_log_archive_policies`, `set_log_archive_policy`, `start_log_archive_dump`, `list_log_archive_runs`, `list_archived_logs`, `get_build_cache`, `set_build_cache`) but deliberately has no tool that accepts bucket credentials.
 
 ## Next steps
 

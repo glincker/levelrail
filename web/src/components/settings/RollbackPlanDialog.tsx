@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { StatusPill, type Tone } from '@/components/kit'
 import {
@@ -14,10 +16,13 @@ import { Button } from '../ui/button'
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
 import {
   rollbackPlanQueryOptions,
+  useStartRollback,
   type RollbackPlan,
 } from '../../queries/releases'
+import { ConfirmDialog } from '../ui/confirm-dialog'
+import { toast } from '../ui/toast'
 import type { UpgradeCheckStatus } from '../../queries/updates'
-import { CopyCommand } from './CopyCommand'
+import { FixCli, type CliStep } from '../fixit/FixCli'
 import { ReleaseNotes } from './ReleaseNotes'
 
 const STATUS_TONE: Record<UpgradeCheckStatus, Tone> = {
@@ -104,6 +109,30 @@ function DataLossBlock({ plan }: { plan: RollbackPlan }) {
       </AlertDescription>
     </Alert>
   )
+}
+
+function rollbackSteps(plan: RollbackPlan, t: TFunction<'updates'>): CliStep[] {
+  const steps: CliStep[] = []
+  if (plan.fetch_command) {
+    steps.push({
+      label: t('plan.commands.fetch'),
+      command: plan.fetch_command,
+    })
+  }
+  if (plan.restore_required) {
+    if (plan.restore_command) {
+      steps.push({
+        label: t('plan.commands.restore'),
+        command: plan.restore_command,
+      })
+    }
+  } else {
+    steps.push({
+      label: t('plan.commands.apply', { version: plan.target.version }),
+      command: plan.command,
+    })
+  }
+  return steps
 }
 
 function PlanBody({ plan }: { plan: RollbackPlan }) {
@@ -195,29 +224,13 @@ function PlanBody({ plan }: { plan: RollbackPlan }) {
         </div>
       ) : null}
 
-      {!plan.blocked ? (
-        <div className="space-y-3">
-          {plan.fetch_command ? (
-            <CopyCommand
-              label={t('plan.commands.fetch')}
-              command={plan.fetch_command}
-            />
-          ) : null}
-          {plan.restore_required ? (
-            plan.restore_command ? (
-              <CopyCommand
-                label={t('plan.commands.restore')}
-                command={plan.restore_command}
-              />
-            ) : null
-          ) : (
-            <CopyCommand
-              label={t('plan.commands.apply', { version: plan.target.version })}
-              command={plan.command}
-            />
-          )}
-        </div>
+      {!plan.one_click && !plan.blocked && plan.one_click_reason ? (
+        <p className="text-xs text-muted-foreground">
+          {t('plan.oneClick.unavailable', { reason: plan.one_click_reason })}
+        </p>
       ) : null}
+
+      {!plan.blocked ? <FixCli steps={rollbackSteps(plan, t)} /> : null}
     </div>
   )
 }
@@ -230,9 +243,11 @@ export function RollbackPlanDialog({
   onClose: () => void
 }) {
   const { t } = useTranslation('updates')
-  const { data, isPending, isError, error, refetch } = useQuery(
+  const { data, isPending, isError, error, refetch, isFetching } = useQuery(
     rollbackPlanQueryOptions(version),
   )
+  const start = useStartRollback()
+  const [confirming, setConfirming] = useState(false)
   return (
     <Dialog
       open={version !== null}
@@ -269,11 +284,59 @@ export function RollbackPlanDialog({
           <PlanBody plan={data} />
         )}
         <DialogFooter>
+          {data?.one_click && version ? (
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                start.reset()
+                setConfirming(true)
+              }}
+            >
+              {t('plan.oneClick.button')}
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isFetching}
+            onClick={() => {
+              void refetch()
+            }}
+          >
+            {isFetching ? t('plan.rechecking') : t('plan.recheck')}
+          </Button>
           <Button type="button" variant="outline" onClick={onClose}>
             {t('plan.close')}
           </Button>
         </DialogFooter>
       </DialogContent>
+      {version ? (
+        <ConfirmDialog
+          open={confirming}
+          onOpenChange={setConfirming}
+          title={t('plan.oneClick.confirmTitle', { version })}
+          description={t('plan.oneClick.confirmBody')}
+          confirmLabel={t('plan.oneClick.confirm')}
+          pendingLabel={t('plan.oneClick.pending')}
+          tone="destructive"
+          requireTyped={version}
+          pending={start.isPending}
+          error={start.isError ? start.error.message : null}
+          onConfirm={() => {
+            start.mutate(version, {
+              onSuccess: () => {
+                setConfirming(false)
+                toast.add({
+                  title: t('plan.oneClick.started', { version }),
+                  type: 'success',
+                })
+                onClose()
+              },
+            })
+          }}
+        />
+      ) : null}
     </Dialog>
   )
 }

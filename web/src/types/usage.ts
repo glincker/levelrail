@@ -3,7 +3,8 @@
 export type UsagePeriod = 'mtd' | '30d' | 'last_month'
 export type UsageMode = 'unit' | 'node'
 export type UsageBasis = 'avg' | 'p50'
-export type UsageDimension = 'project' | 'environment' | 'team' | 'resource'
+export type UsageDimension =
+  'project' | 'environment' | 'team' | 'resource' | 'tag'
 
 export interface UsageGroup {
   key: string
@@ -41,6 +42,7 @@ export interface UsageReport {
   environments: UsageGroup[]
   teams: UsageGroup[]
   movers: UsageGroup[]
+  tags?: UsageGroup[]
   forecast?: number
   currency: string
   mode: UsageMode

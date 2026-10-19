@@ -119,6 +119,36 @@ func (c *Client) GetSecurityPosture(ctx context.Context) (SecurityPosture, error
 	return out, err
 }
 
+// HSTSHost is one probed public host.
+type HSTSHost struct {
+	Host     string `json:"host"`
+	Verified bool   `json:"verified"`
+	Issuer   string `json:"issuer,omitempty"`
+	Error    string `json:"error,omitempty"`
+}
+
+// HSTSStatus is the HSTS setting plus the trusted-certificate probe.
+type HSTSStatus struct {
+	Enabled  bool       `json:"enabled"`
+	Ready    bool       `json:"ready"`
+	Hosts    []HSTSHost `json:"hosts"`
+	Warnings []string   `json:"warnings,omitempty"`
+}
+
+// GetHSTS calls GET /api/v1/security/hsts (root).
+func (c *Client) GetHSTS(ctx context.Context) (HSTSStatus, error) {
+	var out HSTSStatus
+	err := c.do(ctx, http.MethodGet, "/api/v1/security/hsts", nil, &out)
+	return out, err
+}
+
+// SetHSTS calls PUT /api/v1/security/hsts (root); enabling is refused unless the probe passes.
+func (c *Client) SetHSTS(ctx context.Context, enabled bool) (HSTSStatus, error) {
+	var out HSTSStatus
+	err := c.do(ctx, http.MethodPut, "/api/v1/security/hsts", map[string]bool{"enabled": enabled}, &out)
+	return out, err
+}
+
 // GetSecurityPolicy calls GET /api/v1/security/policy.
 func (c *Client) GetSecurityPolicy(ctx context.Context) (SecurityPolicy, error) {
 	var out SecurityPolicy

@@ -2,7 +2,10 @@
   "neverConnected": {
     "badge": "Never connected",
     "title": "This node enrolled but its agent never connected",
-    "description": "The join token is already used, so the agent cannot retry on its own. Check the agent logs on the host (for example, the identity directory may not be writable), then delete this node and enrol it again with a new join token."
+    "description": "The join token is already used, so the agent cannot retry on its own. Check the agent logs on the host (for example, the identity directory may not be writable), then clean up this node and enrol it again with a new join token. A node that never connects is also removed automatically after a while.",
+    "cleanUp": "Clean up node",
+    "cleaningUp": "Cleaning up",
+    "cleanedUp": "Removed {{name}}, its name is free again"
   },
   "join": {
     "trigger": "Add node",
@@ -135,7 +138,43 @@
     "keyRule": "Keys: lowercase letters, digits, dot, underscore, dash and slash, 1 to 63 characters.",
     "valueRule": "Values: letters, digits, dot, underscore and dash, 1 to 63 characters. At most 32 labels.",
     "duplicate": "Each key can be used once.",
-    "incomplete": "Fill in both a key and a value, or remove the empty row."
+    "incomplete": "Fill in both a key and a value, or remove the empty row.",
+    "addKnown": "Add {{key}} label",
+    "knownHint": "region, zone and provider name this node's failure domain. When zones are set, replicas spread across them."
+  },
+  "zones": {
+    "title": "Failure domains",
+    "description": "How workloads spread across zones. With zone labels set, new placements and drains prefer the zone carrying the fewest workloads.",
+    "unlabeledZone": "No zone",
+    "nodes": "{{online}} of {{total}} nodes online",
+    "workloads_one": "{{count}} workload",
+    "workloads_other": "{{count}} workloads",
+    "share": "{{pct}}% of workloads in {{zone}}",
+    "loadFailed": "Could not load the zones.",
+    "retry": "Try again",
+    "unlabeledTitle": "No zone labels yet",
+    "unlabeledBody": "Without a zone label on at least one node, replicas are not spread across failure domains.",
+    "fix": "Set a zone on a node",
+    "concentrated": "Most workloads sit in one zone, so losing it takes most of them down.",
+    "whatIf": {
+      "title": "What if",
+      "failureHint": "Pick a zone to see where its workloads would be rescheduled. Nothing is moved.",
+      "failZone": "Lose {{zone}}",
+      "failureSummary": "{{lost}} nodes lost, {{displaced}} workloads displaced, {{stuck}} with nowhere to go.",
+      "failureOk": "Every displaced workload fits on the surviving nodes.",
+      "failureStuck": "Add capacity outside this zone, or loosen selectors, to survive losing it.",
+      "addTitle": "Simulate adding apps",
+      "addMemory": "Memory per app (MiB)",
+      "addCpu": "CPU per app (millicores)",
+      "addCount": "Number of apps",
+      "run": "Simulate",
+      "workload": "Workload",
+      "from": "From",
+      "to": "To",
+      "none": "No node",
+      "failed": "Simulation failed.",
+      "invalid": "Enter whole numbers, with at least one app."
+    }
   },
   "placement": {
     "title": "Placement",
@@ -418,6 +457,23 @@
       "token_issued": "re-enroll token issued",
       "revoked_by_operator": "revoked by an operator"
     },
+    "drill": {
+      "button": "Rotation drill",
+      "title": "Rotation drill for \"{{name}}\"",
+      "description": "Rotates this node's certificate end to end and checks each step. The old certificate stays valid, so a failed drill changes nothing.",
+      "run": "Run drill",
+      "again": "Run again",
+      "running": "Running...",
+      "close": "Close",
+      "passed": "Drill passed: certificate generation {{from}} to {{to}}.",
+      "failed": "Drill failed. The node still uses its previous certificate.",
+      "steps": {
+        "preflight": "Preflight",
+        "request": "Renewal request",
+        "new_certificate": "New certificate",
+        "still_online": "Node still online"
+      }
+    },
     "renewNow": "Renew now",
     "renewOffline": "The node must be connected to renew on demand",
     "renewTitle": "Renew \"{{name}}\"'s certificate now?",
@@ -443,5 +499,15 @@
     "done": "Done",
     "generating": "Generating...",
     "generate": "Generate re-enroll token"
+  },
+  "joinTokens": {
+    "title_one": "{{count}} unused join token",
+    "title_other": "{{count}} unused join tokens",
+    "description": "Anyone holding an unused join token can enroll a node. Revoke the ones you no longer need, a revoked token stops working at once.",
+    "expires": "expires {{when}}",
+    "revoke": "Revoke",
+    "revokeAll": "Revoke all",
+    "revoked_one": "Revoked {{count}} join token",
+    "revoked_other": "Revoked {{count}} join tokens"
   }
 }

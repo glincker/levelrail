@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/experimental"
 	"github.com/GLINCKER/levelrail/internal/plugin"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/version"
 )
 
 var _ plugin.Containers = (*docker.Client)(nil)
@@ -28,6 +29,20 @@ func setupPlugins(ctx context.Context, logger *slog.Logger, b *brand.Brand, db *
 	mgr := plugin.NewManager(plugin.NewSQLStore(db), client, api.PluginAuditor{DB: db}, cfg, logger)
 	go mgr.Run(ctx)
 	return mgr
+}
+
+// Env vars for the default marketplace index. Unset means no default source.
+const (
+	envMarketplaceURL     = "APP_MARKETPLACE_URL"
+	envMarketplaceRootKey = "APP_MARKETPLACE_ROOT_KEY"
+)
+
+func setupPluginMarketplace(logger *slog.Logger, db *store.DB, mgr *plugin.Manager) *plugin.Marketplace {
+	mk, err := plugin.NewMarketplace(plugin.NewSQLMarketStore(db), mgr, os.Getenv(envMarketplaceURL), os.Getenv(envMarketplaceRootKey), version.Version)
+	if err != nil {
+		logger.Warn("plugin marketplace: default source not configured", "error", err)
+	}
+	return mk
 }
 
 type pluginAlertSender struct{ m *plugin.Manager }

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parseRecipients, recipientProblem } from '../lib/controlPlaneDr'
 import type { ControlPlaneDr } from '../queries/controlPlaneDr'
+import { AllI18n } from '../test/allI18n'
 import { ControlPlaneDrCard } from './ControlPlaneDrCard'
 
 vi.mock('@/components/ui/toast', () => ({
@@ -43,6 +44,14 @@ const base: ControlPlaneDr = {
   ],
 }
 
+const plan = { ready: false, steps: [], warnings: [], binary_name: 'cli' }
+
+function body(url: string): Response {
+  if (url.includes('/storage/destinations')) return json([])
+  if (url.includes('/restore-plan')) return json(plan)
+  return json(base)
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -53,9 +62,11 @@ function json(body: unknown, status = 200): Response {
 function renderCard() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return render(
-    <QueryClientProvider client={qc}>
-      <ControlPlaneDrCard />
-    </QueryClientProvider>,
+    <AllI18n>
+      <QueryClientProvider client={qc}>
+        <ControlPlaneDrCard />
+      </QueryClientProvider>
+    </AllI18n>,
   )
 }
 
@@ -80,11 +91,7 @@ describe('ControlPlaneDrCard', () => {
   })
 
   it('shows warnings, checklist progress and a partial drill note', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(
-        url.includes('/storage/destinations') ? json([]) : json(base),
-      ),
-    )
+    fetchMock.mockImplementation((url: string) => Promise.resolve(body(url)))
     renderCard()
     expect(await screen.findByText('Disaster recovery')).toBeInTheDocument()
     expect(
@@ -105,9 +112,7 @@ describe('ControlPlaneDrCard', () => {
       if (init?.method === 'POST') {
         return Promise.resolve(json({ started: true }, 202))
       }
-      return Promise.resolve(
-        url.includes('/storage/destinations') ? json([]) : json(base),
-      )
+      return Promise.resolve(body(url))
     })
     renderCard()
     await user.click(await screen.findByRole('button', { name: /Run now/ }))

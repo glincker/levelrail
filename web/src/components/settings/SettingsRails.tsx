@@ -8,6 +8,7 @@ import {
 } from '@/components/shell/PageRail'
 import { Badge } from '@/components/ui/badge'
 import { HelpLink } from '../HelpLink'
+import { formatAbsolute } from '../../lib/dateFormat'
 import { usePasskeys } from '../../queries/passkeys'
 import { useSession } from '../../queries/security'
 import { useTwoFactorStatus } from '../../queries/twoFactor'
@@ -43,7 +44,7 @@ export function SecurityRail() {
           {session.username}
         </PageRailRow>
         <PageRailRow label={t('securityPage.rail.until')}>
-          {new Date(session.expires_at).toLocaleString()}
+          {formatAbsolute(session.expires_at)}
         </PageRailRow>
       </PageRailSection>
       <PageRailSection title={t('securityPage.rail.jump')}>
@@ -54,14 +55,18 @@ export function SecurityRail() {
             </a>
           </li>
           <li>
-            <a href="#two-factor" className={linkClass}>
+            <Link
+              to="/settings/account"
+              hash="two-factor"
+              className={linkClass}
+            >
               {t('securityPage.rail.twoFactorLink')}
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#passkeys" className={linkClass}>
+            <Link to="/settings/account" hash="passkeys" className={linkClass}>
               {t('securityPage.rail.passkeysLink')}
-            </a>
+            </Link>
           </li>
         </ul>
       </PageRailSection>

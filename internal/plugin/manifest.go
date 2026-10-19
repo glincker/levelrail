@@ -49,6 +49,32 @@ type Manifest struct {
 	Image         string   `yaml:"image" json:"image"`
 	Abilities     []string `yaml:"abilities" json:"abilities"`
 	OutboundHosts []string `yaml:"outbound_hosts" json:"outbound_hosts"`
+	Contributes   Contrib  `yaml:"contributes" json:"contributes"`
+}
+
+// Contrib lists the UI a plugin adds. It is data the core renders with its own
+// components, never code.
+type Contrib struct {
+	Panels   []Panel   `yaml:"panels" json:"panels"`
+	Commands []Command `yaml:"commands" json:"commands"`
+}
+
+// Panel is a card the dashboard renders. Without a Source it is static rows on
+// the Plugins page; with one it is widgets fed by a plugin call, in Slot.
+type Panel struct {
+	ID          string       `yaml:"id" json:"id"`
+	Title       string       `yaml:"title" json:"title"`
+	Description string       `yaml:"description" json:"description"`
+	Rows        []PanelRow   `yaml:"rows" json:"rows"`
+	Slot        string       `yaml:"slot" json:"slot"`
+	Source      *PanelSource `yaml:"source" json:"source,omitempty"`
+	Widgets     []Widget     `yaml:"widgets" json:"widgets"`
+}
+
+// PanelRow is one label and plain-text value in a Panel.
+type PanelRow struct {
+	Label string `yaml:"label" json:"label"`
+	Value string `yaml:"value" json:"value"`
 }
 
 // Digest returns the sha256 digest the image reference is pinned to.
@@ -74,6 +100,12 @@ func ParseManifest(raw []byte) (Manifest, error) {
 	if err := m.validate(); err != nil {
 		return Manifest{}, err
 	}
+	if err := validateSchema(raw); err != nil {
+		return Manifest{}, err
+	}
+	if err := m.validatePanels(); err != nil {
+		return Manifest{}, err
+	}
 	return m, nil
 }
 
@@ -87,8 +119,8 @@ func (m *Manifest) validate() error {
 	if !versionRegexp.MatchString(m.Version) {
 		return invalid("version is missing or malformed")
 	}
-	if m.Kind != KindNotificationChannel {
-		return invalid("kind %q is not supported, want %s", m.Kind, KindNotificationChannel)
+	if m.Kind != KindNotificationChannel && m.Kind != KindPanelProvider {
+		return invalid("kind %q is not supported, want %s or %s", m.Kind, KindNotificationChannel, KindPanelProvider)
 	}
 	if strings.TrimSpace(m.Publisher) == "" || len(m.Publisher) > 80 {
 		return invalid("publisher is required (80 characters at most)")
@@ -103,7 +135,7 @@ func (m *Manifest) validate() error {
 	if err != nil {
 		return err
 	}
-	if !contains(abilities, AbilityRead) {
+	if m.Kind == KindNotificationChannel && !contains(abilities, AbilityRead) {
 		return invalid("a notification_channel plugin must request the read ability to receive events")
 	}
 	m.Abilities = abilities
@@ -120,6 +152,12 @@ func (m *Manifest) validate() error {
 	}
 	sort.Strings(hosts)
 	m.OutboundHosts = dedupe(hosts)
+	if m.Contributes.Panels == nil {
+		m.Contributes.Panels = []Panel{}
+	}
+	if m.Contributes.Commands == nil {
+		m.Contributes.Commands = []Command{}
+	}
 	return nil
 }
 

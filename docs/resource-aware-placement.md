@@ -2,6 +2,7 @@
 title: "Resource-aware placement"
 tag: "Beta"
 description: How new apps and databases are placed on nodes with room for them, how to read the "why here" explanation, and how to set the overcommit policy.
+"og:url": "https://docs.levelrail.com/resource-aware-placement"
 ---
 
 When you create an app or database without choosing a node, or when a move or drain has no explicit target, the control plane picks a node that can actually hold it. It looks at each node's CPU, memory and disk, filters out nodes that cannot fit the workload, and spreads onto the node that keeps the most headroom. Every decision is recorded so you can see why a workload landed where it did.

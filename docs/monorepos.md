@@ -1,6 +1,7 @@
 ---
 title: "Monorepos"
 description: Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.
+"og:url": "https://docs.levelrail.com/monorepos"
 ---
 
 A repository with several services should not rebuild all of them on every push. Detection lists the workspace packages in a connected repository, and each package carries a ready-made set of watch paths so a push only redeploys the services it touches.
@@ -33,6 +34,8 @@ So a change under `services/api` skips the `web` service, a change under a share
 Open the app's **Source** tab, edit the build settings, and look under **Workspace packages**. **Use this package** sets the package directory as the build root (with its Dockerfile when it has one) and saves its watch paths. To run several services from one repository, connect the same repository to one app per package and apply a different package to each.
 
 The same panel can dry-run a change: paste changed file paths, one per line (list both names of a renamed file), and each package shows **Redeploys** or **Skipped**, together with the verdict for this app.
+
+In the new app wizard, the **Advanced** section has a **Validate directory** button next to the build context directory. It re-runs detection for the typed directory and warns when that directory does not exist on the branch, before anything is created.
 
 ## From the CLI
 

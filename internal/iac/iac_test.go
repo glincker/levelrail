@@ -2,6 +2,7 @@ package iac
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -494,7 +495,7 @@ func TestPlanHashGuardsStaleApply(t *testing.T) {
 	st, _ := Load(context.Background(), f, res, Options{})
 	p := PlanFor(st, res, Options{})
 	f.projects["px"] = map[string]any{"id": "px", "name": "shop"}
-	if _, err := Apply(context.Background(), f, res, Options{}, p.Hash); err != ErrPlanChanged {
+	if _, err := Apply(context.Background(), f, res, Options{}, p.Hash); !errors.Is(err, ErrPlanChanged) {
 		t.Fatalf("err = %v", err)
 	}
 	if f.writeCount() != 0 {

@@ -72,24 +72,33 @@ func (rt *Router) handleListApps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := parseAppListFilter(r)
-	dbFilter := f
-	if filtered {
-		dbFilter.Limit, dbFilter.Offset = 0, 0
+	rank := rt.rankedAppOrder(r, fs, f)
+	var (
+		svcs  []store.DesiredService
+		total int
+	)
+	if rank != nil {
+		svcs, total, err = listRankedApps(r.Context(), fs, f, rank, canRead)
+	} else {
+		dbFilter := f
+		if filtered {
+			dbFilter.Limit, dbFilter.Offset = 0, 0
+		}
+		svcs, total, err = fs.ListDesiredServicesFiltered(r.Context(), dbFilter)
+		if err == nil && filtered {
+			visible := svcs[:0:0]
+			for _, s := range svcs {
+				if canRead(s.Name) {
+					visible = append(visible, s)
+				}
+			}
+			total = len(visible)
+			svcs = pageSlice(visible, f.Limit, f.Offset)
+		}
 	}
-	svcs, total, err := fs.ListDesiredServicesFiltered(r.Context(), dbFilter)
 	if err != nil {
 		rt.internalError(w, "api: list apps failed", err)
 		return
-	}
-	if filtered {
-		visible := svcs[:0:0]
-		for _, s := range svcs {
-			if canRead(s.Name) {
-				visible = append(visible, s)
-			}
-		}
-		total = len(visible)
-		svcs = pageSlice(visible, f.Limit, f.Offset)
 	}
 
 	controllerNames := make([]string, len(svcs))

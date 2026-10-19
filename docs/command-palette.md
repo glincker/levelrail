@@ -1,6 +1,7 @@
 ---
 title: "Command palette"
 description: Keyboard-first command palette and shortcuts for navigating the dashboard and running quick app actions.
+"og:url": "https://docs.levelrail.com/command-palette"
 ---
 
 Press `Ctrl+K` (`Cmd+K` on macOS) anywhere in the dashboard, or use the search hint in the header. Type to filter. Matching is fuzzy, so `rw` finds "Restart web".

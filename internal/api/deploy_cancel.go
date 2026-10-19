@@ -90,7 +90,11 @@ func (rt *Router) handleCancelDeploy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (rt *Router) writeCancelConflict(w http.ResponseWriter, r *http.Request, id, why string) {
-	if cur, err := rt.deployAttempts.GetDeployAttempt(r.Context(), id); err == nil {
+	cur, err := rt.deployAttempts.GetDeployAttempt(r.Context(), id)
+	if err != nil {
+		rt.logger.Warn("api: cancel conflict: reload attempt failed", slog.String("error", err.Error()), slog.String("attempt_id", id))
+		why += " (current state unknown)"
+	} else {
 		why += " (now " + cur.Status + ")"
 	}
 	writeError(w, http.StatusConflict, why)

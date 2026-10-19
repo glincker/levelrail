@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
 )
 
@@ -96,12 +97,16 @@ func (m *Manager) Run(ctx context.Context) {
 	m.Reconcile(ctx)
 	t := time.NewTicker(m.cfg.ReconcileInterval)
 	defer t.Stop()
+	loop := footprint.Track("plugin supervisor", m.cfg.ReconcileInterval)
+	defer loop.Active()()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			start := time.Now()
 			m.Reconcile(ctx)
+			loop.Observe(start, nil)
 		}
 	}
 }
@@ -214,6 +219,12 @@ func (m *Manager) verifyRecord(ctx context.Context, rec Record) error {
 	if man.Image != rec.Image || man.Digest() != rec.Digest || man.Name != rec.Name {
 		return errors.New("stored record does not match its signed manifest")
 	}
+	if rec.KeyID == "" && rec.Signature == "" {
+		if !m.cfg.AllowUnsigned {
+			return ErrUnsigned
+		}
+		return nil
+	}
 	keys, err := m.store.ListKeys(ctx)
 	if err != nil {
 		return err
@@ -320,7 +331,7 @@ func (m *Manager) start(ctx context.Context, rec Record, in *instance) error {
 
 func (m *Manager) connect(ctx context.Context, rec Record, sock string) (rpcClient, io.Closer, error) {
 	maxSend := m.cfg.MaxEventBytes + m.cfg.MaxConfigBytes + m.cfg.MaxSecretBytes + 4<<10
-	client, closer, err := m.dial(ctx, sock, maxSend, maxSend)
+	client, closer, err := m.dial(ctx, sock, maxSend, max(maxSend, m.cfg.MaxPanelBytes+4<<10))
 	if err != nil {
 		return nil, nil, err
 	}

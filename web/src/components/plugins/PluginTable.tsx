@@ -5,6 +5,7 @@ import {
   CircleDashedIcon,
   HourglassIcon,
   PauseCircleIcon,
+  WrenchIcon,
 } from '@phosphor-icons/react/dist/ssr'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -21,8 +22,10 @@ import { toast } from '@/components/ui/toast'
 import {
   usePluginAction,
   useRemovePlugin,
+  useRestartPlugin,
   type Plugin,
 } from '../../queries/plugins'
+import { VerificationBadge } from './PluginReview'
 
 function StateBadge({ plugin }: Readonly<{ plugin: Plugin }>) {
   const { t } = useTranslation('plugins')
@@ -87,11 +90,19 @@ function Abilities({ list }: Readonly<{ list: string[] }>) {
 export function PluginTable({
   plugins,
   onReview,
-}: Readonly<{ plugins: Plugin[]; onReview: (p: Plugin) => void }>) {
+  onUpgrade,
+  onTrustKeys,
+}: Readonly<{
+  plugins: Plugin[]
+  onReview: (p: Plugin) => void
+  onUpgrade: (p: Plugin) => void
+  onTrustKeys: () => void
+}>) {
   const { t } = useTranslation('plugins')
   const enable = usePluginAction('enable')
   const disable = usePluginAction('disable')
   const remove = useRemovePlugin()
+  const restart = useRestartPlugin()
   const [target, setTarget] = useState<Plugin | null>(null)
   const fail = (error: unknown) =>
     toast.add({
@@ -126,6 +137,11 @@ export function PluginTable({
                   <p className="text-xs text-muted-foreground">
                     {t('publisher', { publisher: p.publisher })}
                   </p>
+                  <div className="mt-1">
+                    <VerificationBadge
+                      verification={{ status: p.verification }}
+                    />
+                  </div>
                   {p.last_error ? (
                     <p className="mt-1 text-xs text-destructive">
                       {t('lastError', { message: p.last_error })}
@@ -142,6 +158,42 @@ export function PluginTable({
                   <Abilities list={p.approved_abilities} />
                 </TableCell>
                 <TableCell className="space-x-2 text-right whitespace-nowrap">
+                  {p.fix === 'restart' ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={restart.isPending}
+                      onClick={() =>
+                        restart.mutate(p.name, {
+                          onSuccess: () =>
+                            toast.add({
+                              type: 'success',
+                              title: t('actions.restarted', { name: p.name }),
+                            }),
+                          onError: fail,
+                        })
+                      }
+                    >
+                      <WrenchIcon aria-hidden="true" />
+                      {t('fix.restart')}
+                    </Button>
+                  ) : null}
+                  {p.fix === 'trust_key' ? (
+                    <Button type="button" size="sm" onClick={onTrustKeys}>
+                      <WrenchIcon aria-hidden="true" />
+                      {t('fix.trustKey')}
+                    </Button>
+                  ) : null}
+                  {p.fix === 'reinstall' ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => onUpgrade(p)}
+                    >
+                      <WrenchIcon aria-hidden="true" />
+                      {t('fix.reinstall')}
+                    </Button>
+                  ) : null}
                   {approved ? null : (
                     <Button type="button" size="sm" onClick={() => onReview(p)}>
                       {t('actions.review')}
@@ -188,13 +240,23 @@ export function PluginTable({
                       {t('actions.disable')}
                     </Button>
                   ) : null}
+                  {p.state !== 'removing' ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onUpgrade(p)}
+                    >
+                      {t('actions.upgrade')}
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     size="sm"
                     variant="outline"
                     onClick={() => setTarget(p)}
                   >
-                    {t('actions.remove')}
+                    {t('actions.uninstall')}
                   </Button>
                 </TableCell>
               </TableRow>

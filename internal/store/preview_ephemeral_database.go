@@ -29,6 +29,7 @@ func NewPreviewEphemeralDatabaseID() (string, error) {
 const (
 	PreviewEphemeralDatabaseStatusProvisioned    = "provisioned"
 	PreviewEphemeralDatabaseStatusTeardownFailed = "teardown_failed"
+	PreviewEphemeralDatabaseStatusSeedFailed     = "seed_failed"
 )
 
 // ErrPreviewEphemeralDatabaseNotFound is returned by

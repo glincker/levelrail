@@ -14,10 +14,14 @@ import (
 const defaultDevicePollInterval = 5 * time.Second
 
 // Cookie-free JSON POSTs, so it works against a plain-http control plane.
-func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), of outputFlags, jsonOut bool) int {
+func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, reauth bool, stdout, stderr io.Writer, lookupEnv func(string) (string, bool), of outputFlags, jsonOut bool) int {
 	profile := resolveProfile(profileFlag, lookupEnv)
 	apiURL := resolveAPIURL(apiURLFlag, lookupEnv, prog, profile)
 	client := NewClient(apiURL, "")
+	serverInfo, err := checkLoginServer(prog, profile, apiURL, reauth, stderr)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, err)
+	}
 
 	clientName := clientNameFlag
 	if clientName == "" {
@@ -42,7 +46,7 @@ func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, st
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("write pending line: %w", err))
 		}
 	}
-	_, _ = fmt.Fprintf(stderr, "To finish logging in, open:\n\n  %s\n\nand confirm this code matches: %s\n\nThe code expires in %d minutes. Waiting for approval...\n", approvalURL, started.UserCode, (started.ExpiresIn+59)/60)
+	_, _ = fmt.Fprintf(stderr, "To finish logging in, open:\n\n  %s\n\nand confirm this code matches: %s\nThe approval page must show the same server fingerprint as printed above.\n\nThe code expires in %d minutes. Waiting for approval...\n", approvalURL, started.UserCode, (started.ExpiresIn+59)/60)
 
 	interval := time.Duration(started.Interval) * time.Second
 	if interval <= 0 {
@@ -55,7 +59,7 @@ func runAuthLoginDevice(prog, apiURLFlag, profileFlag, clientNameFlag string, st
 		return reportError(stdout, stderr, jsonOut, err)
 	}
 
-	if err := writeCredentialsFile(prog, profile, credentials{APIURL: apiURL, Token: granted.Token}); err != nil {
+	if err := writeCredentialsFile(prog, profile, withServerPin(credentials{APIURL: apiURL, Token: granted.Token}, serverInfo)); err != nil {
 		return reportError(stdout, stderr, jsonOut, fmt.Errorf("save credentials: %w", err))
 	}
 

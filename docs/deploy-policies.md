@@ -1,6 +1,7 @@
 ---
 title: "Deploy policies"
 description: Guardrails checked before every deploy at organization, project and environment scope, with warn or enforce modes and an audited override.
+"og:url": "https://docs.levelrail.com/deploy-policies"
 ---
 
 A deploy policy is a set of rules an app must satisfy before it deploys. Rules are set at organization, project or environment scope. For each rule the most specific scope wins, so an environment can relax or tighten what the organization set.

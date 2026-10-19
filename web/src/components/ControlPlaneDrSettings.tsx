@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
 import { parseRecipients, recipientProblem } from '../lib/controlPlaneDr'
 import { useStorageDestinationsOptional } from '../queries/storage'
+import { ControlPlaneDrKeygen } from './ControlPlaneDrKeygen'
 import {
   useUpdateControlPlaneDr,
   type ControlPlaneDr,
@@ -177,14 +178,19 @@ export function ControlPlaneDrSettings({ status }: { status: ControlPlaneDr }) {
           <p className="text-sm text-destructive">{problem}</p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Public keys only. Generate a pair with{' '}
-            <span className="font-mono">
-              levelrail-cli control-plane-backups keys generate
-            </span>{' '}
-            and keep the private key offline. Add a second person&apos;s key so
-            either can restore.
+            Public keys only. Keep each private key offline. Add a second
+            person&apos;s key so either can restore.
           </p>
         )}
+        <div>
+          <ControlPlaneDrKeygen
+            onUseRecipient={(key) => {
+              setRecipients((cur) =>
+                cur.trim() === '' ? key : `${cur.trim()}\n${key}`,
+              )
+            }}
+          />
+        </div>
       </Field>
 
       <div className="grid gap-3 sm:grid-cols-2">

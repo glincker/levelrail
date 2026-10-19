@@ -704,7 +704,7 @@ func (rt *Router) handleStreamPipelineRunLogs(w http.ResponseWriter, r *http.Req
 	}
 	after, _ := strconv.ParseInt(firstNonEmptyStr(r.Header.Get("Last-Event-ID"), r.URL.Query().Get("after")), 10, 64)
 	job := r.URL.Query().Get("job")
-	flusher, ok := startSSE(w)
+	flusher, ok := rt.startLiveSSE(w, r)
 	if !ok {
 		return
 	}

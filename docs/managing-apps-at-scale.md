@@ -1,6 +1,7 @@
 ---
 title: "Managing apps at scale"
 description: Filter, tag, bulk-act on, clone and promote apps when you run dozens of them.
+"og:url": "https://docs.levelrail.com/managing-apps-at-scale"
 ---
 
 Once you run dozens of apps, you need ways to find them and act on several at once. This page covers filtering the list, environments and tags, bulk actions, cloning an app, and promoting a release from staging to production. You can do all of it from the dashboard, the CLI, or the API. Bulk actions and promotion are also MCP tools.
@@ -13,7 +14,8 @@ An **environment** (production, staging, or any name you create) belongs to a pr
 
 ## The apps list
 
-![Levelrail apps list showing all services across nodes at a glance](assets/screenshots/apps-list.png)
+<img src="/assets/screenshots/apps-list-light.png" alt="Levelrail apps list showing all services across nodes at a glance" className="block dark:hidden" />
+<img src="/assets/screenshots/apps-list.png" alt="Levelrail apps list showing all services across nodes at a glance" className="hidden dark:block" />
 
 The dashboard list at `/apps` has a status strip (running, deploying, failing, stopped), a search box, environment chips, a tag filter, and a checkbox on every row. The list is virtualized, so hundreds of apps stay responsive.
 

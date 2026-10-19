@@ -118,6 +118,8 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 // radius than inline script (no code execution) and locking it down
 // would need per-request nonce plumbing through the embedded, otherwise
 // static web/dist/index.html, not worth it for the risk it removes.
+// img-src names one outside host, Gravatar, which the browser contacts only
+// after the user switches the opt-in Gravatar avatar on in their preferences.
 // connect-src 'self' already covers the exec terminal's WebSocket and
 // the log/deploy-log SSE streams: CSP3 upgrades a 'self' connect-src
 // match to ws/wss automatically for a same-origin WebSocket, no explicit
@@ -125,13 +127,17 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 const contentSecurityPolicy = "default-src 'self'; " +
 	"script-src 'self'; " +
 	"style-src 'self' 'unsafe-inline'; " +
-	"img-src 'self' data:; " +
+	"img-src 'self' data: https://www.gravatar.com; " +
 	"font-src 'self' data:; " +
 	"connect-src 'self'; " +
 	"object-src 'none'; " +
 	"base-uri 'self'; " +
 	"form-action 'self'; " +
 	"frame-ancestors 'none'"
+
+// permissionsPolicy denies powerful browser features the dashboard never
+// uses; clipboard-write stays on self for the copy buttons.
+const permissionsPolicy = "camera=(), microphone=(), geolocation=(), payment=(), usb=(), clipboard-write=(self)"
 
 // hstsMaxAge is 180 days: long enough to be meaningful, short enough
 // that disabling APP_ENABLE_HSTS again (see Router.hstsEnabled) doesn't
@@ -154,6 +160,8 @@ func securityHeadersMiddleware(hstsEnabled bool) func(http.Handler) http.Handler
 			h.Set("X-Frame-Options", "DENY")
 			h.Set("Referrer-Policy", "strict-origin-when-cross-origin")
 			h.Set("Content-Security-Policy", contentSecurityPolicy)
+			h.Set("Permissions-Policy", permissionsPolicy)
+			h.Set("Cross-Origin-Opener-Policy", "same-origin")
 			if hstsEnabled {
 				h.Set("Strict-Transport-Security", hsts)
 			}

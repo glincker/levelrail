@@ -46,6 +46,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/netip"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/network"
@@ -81,6 +83,7 @@ type Controller struct {
 	distributor Distributor
 	resolver    *network.Resolver
 	logger      *slog.Logger
+	hiddenApps  func(ctx context.Context) (map[string]bool, error)
 }
 
 // Option configures New.
@@ -93,6 +96,12 @@ func WithLogger(l *slog.Logger) Option {
 			c.logger = l
 		}
 	}
+}
+
+// WithHiddenApps omits every service of the returned app IDs from mesh DNS,
+// the cross-node half of private network default-deny.
+func WithHiddenApps(f func(ctx context.Context) (map[string]bool, error)) Option {
+	return func(c *Controller) { c.hiddenApps = f }
 }
 
 // New builds the mesh controller. resolver is swapped wholesale on every
@@ -216,7 +225,7 @@ func (c *Controller) persist(ctx context.Context, inventory []network.NodeInfo, 
 	switch {
 	case len(failedNodes) > 0:
 		return condition("MeshDistributed", reconcile.ConditionFalse, "NodeUnreachable",
-			fmt.Sprintf("%d of %d nodes did not accept their mesh config this pass", len(failedNodes), len(result.Nodes)))
+			fmt.Sprintf("%d of %d nodes did not accept their mesh config this pass: %s", len(failedNodes), len(result.Nodes), failedNodeList(failedNodes)))
 	case persistErrs > 0:
 		return condition("MeshDistributed", reconcile.ConditionFalse, "PersistFailed",
 			fmt.Sprintf("every node was configured, but %d mesh state writes failed", persistErrs))
@@ -273,8 +282,18 @@ func (c *Controller) placements(ctx context.Context) ([]network.Placement, error
 		return nil, fmt.Errorf("mesh: list desired databases: %w", err)
 	}
 
+	var hidden map[string]bool
+	if c.hiddenApps != nil {
+		if hidden, err = c.hiddenApps(ctx); err != nil {
+			return nil, fmt.Errorf("mesh: hidden apps: %w", err)
+		}
+	}
+
 	out := make([]network.Placement, 0, len(services)+len(databases))
 	for _, s := range services {
+		if s.AppID != "" && hidden[s.AppID] {
+			continue
+		}
 		out = append(out, network.Placement{Service: s.Name, NodeID: s.NodeID})
 	}
 	for _, d := range databases {
@@ -358,4 +377,18 @@ func failed(kind, reason, message string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{
 		condition(kind, reconcile.ConditionFalse, reason, message),
 	}}
+}
+
+const maxNamedFailedNodes = 5
+
+func failedNodeList(failed []network.NodeResult) string {
+	ids := make([]string, 0, len(failed))
+	for _, f := range failed {
+		ids = append(ids, f.NodeID)
+	}
+	sort.Strings(ids)
+	if len(ids) > maxNamedFailedNodes {
+		return strings.Join(ids[:maxNamedFailedNodes], ", ") + fmt.Sprintf(" and %d more", len(ids)-maxNamedFailedNodes)
+	}
+	return strings.Join(ids, ", ")
 }

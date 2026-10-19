@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"log/slog"
 	"net"
 
 	"github.com/GLINCKER/levelrail/internal/bindaddr"
@@ -31,10 +32,15 @@ func (c *Controller) meshBindIP(ctx context.Context, desired *store.DesiredServi
 		return "", false
 	}
 	path, err := c.meshPaths.Path(ctx, desired.NodeID)
-	if err != nil || path.Local || !path.Usable {
+	if err != nil {
+		slog.Warn("reconcile: mesh path lookup failed, keeping the normal bind", slog.String("service", c.serviceName), slog.String("node", desired.NodeID), slog.String("error", err.Error()))
 		return "", false
 	}
-	if meshpath.ValidateBindIP(path.Address) != nil {
+	if path.Local || !path.Usable {
+		return "", false
+	}
+	if err := meshpath.ValidateBindIP(path.Address); err != nil {
+		slog.Warn("reconcile: mesh bind address rejected, keeping the normal bind", slog.String("service", c.serviceName), slog.String("node", desired.NodeID), slog.String("error", err.Error()))
 		return "", false
 	}
 	return path.Address, true

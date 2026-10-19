@@ -175,7 +175,23 @@
   "actions": {
     "set_policy": "Apply the recommended policy",
     "disable_code_login_admins": "Turn off code sign-in for admins",
-    "review_sessions": "Review sessions"
+    "review_sessions": "Review sessions",
+    "enable_hsts": "Enable HSTS"
+  },
+  "hsts": {
+    "title": "Turn on HSTS",
+    "description": "We check that every public domain serves a publicly trusted certificate before this can be turned on.",
+    "probing": "Checking certificates...",
+    "probeError": "Could not run the certificate check.",
+    "trusted": "Trusted certificate",
+    "notTrusted": "Self-signed, internal or unreachable over HTTPS",
+    "noDomains": "No public domain is configured yet.",
+    "blocked": "HSTS stays off until every domain passes. With a self-signed certificate browsers would refuse the site with no way past the warning.",
+    "warning": "HSTS covers subdomains and browsers remember it for 180 days, so it cannot be undone for visitors who already saw it.",
+    "recheck": "Check again",
+    "confirm": "Turn on HSTS",
+    "enabled": "HSTS is on",
+    "enableError": "Could not turn on HSTS"
   },
   "sessions": {
     "tableLabel": "Active sessions",

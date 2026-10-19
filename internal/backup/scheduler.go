@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -150,7 +151,9 @@ type Scheduler struct {
 	// both nil is valid and leaves only the count/age rules.
 	Policies VolumePolicyLookup
 	GFS      GFSStore
-	Logger   *slog.Logger
+	// Tombstones, if set, keeps failed object deletes for retry instead of only logging them.
+	Tombstones TombstoneStore
+	Logger     *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -292,6 +295,8 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 	if verrs := s.tickServiceVolumes(ctx, now); verrs != nil {
 		errs = append(errs, verrs)
 	}
+
+	s.sweepTombstones(ctx)
 
 	return errors.Join(errs...)
 }
@@ -515,6 +520,7 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 			if err != nil {
 				s.log().Error("backup: scheduled retention delete: resolve destination failed",
 					slog.String("database", databaseName), slog.String("target_id", p.TargetID), slog.String("error", err.Error()))
+				recordTombstone(ctx, s.Tombstones, s.log(), p.TargetID, p.ObjectKey, err)
 				continue
 			}
 			destinations[p.TargetID] = dest
@@ -523,6 +529,7 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 		if err := s.Deleter.Delete(ctx, dest, p.ObjectKey); err != nil {
 			s.log().Error("backup: scheduled retention delete failed",
 				slog.String("database", databaseName), slog.String("object_key", p.ObjectKey), slog.String("error", err.Error()))
+			recordTombstone(ctx, s.Tombstones, s.log(), p.TargetID, p.ObjectKey, err)
 		}
 	}
 }
@@ -532,6 +539,8 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 // telemetry.Collector.Run, and cmd/levelrail/main.go's own retention
 // sweeps all follow this identical select-on-ticker-or-ctx-Done shape).
 func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
+	loop := footprint.Track("backup scheduler", interval)
+	defer loop.Active()()
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -540,7 +549,10 @@ func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-ticker.C:
-			if err := s.Tick(ctx); err != nil {
+			start := time.Now()
+			err := s.Tick(ctx)
+			loop.Observe(start, err)
+			if err != nil {
 				s.log().Warn("backup: scheduler tick had errors", slog.String("error", err.Error()))
 			}
 		}

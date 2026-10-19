@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   filterSettingsNav,
+  mergeSettingsHits,
   useSettingsNav,
   type LabelledSettingsItem,
 } from '../../hooks/useSettingsNav'
+import { useSearch } from '../../queries/search'
 import { Badge } from '@/components/ui/badge'
 import { BETA_FEATURES_PATH, lockedSearch } from '../../lib/experimental'
 import { PageHeader } from '../../components/shell/PageHeader'
@@ -62,10 +64,20 @@ function SettingsHubPage() {
   const { t } = useTranslation('settings')
   const sections = useSettingsNav()
   const [query, setQuery] = useState('')
-  const visible = useMemo(
-    () => filterSettingsNav(sections, query),
-    [sections, query],
+  const q = query.trim()
+  const settingHits = useSearch(
+    { q: `kind:setting ${q}`, limit: 30 },
+    q.length >= 2,
   )
+  const visible = useMemo(() => {
+    const local = filterSettingsNav(sections, query)
+    if (q.length < 2) return local
+    const hrefs = new Set<string>()
+    for (const hit of settingHits.data?.hits ?? []) {
+      if (hit.href) hrefs.add(hit.href)
+    }
+    return mergeSettingsHits(sections, local, hrefs)
+  }, [sections, query, q, settingHits.data])
 
   return (
     <div className="space-y-6">

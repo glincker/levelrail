@@ -61,6 +61,8 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesClearNode(prog, rest, stdout, stderr, lookupEnv)
 	case "public-access":
 		return runDatabasesPublicAccess(prog, rest, stdout, stderr, lookupEnv)
+	case "rotate-password":
+		return runDatabasesRotatePassword(prog, rest, stdout, stderr, lookupEnv)
 	case "users":
 		return runDatabasesUsers(prog, rest, stdout, stderr, lookupEnv)
 	case "access":
@@ -89,6 +91,10 @@ func runDatabases(prog string, args []string, stdout, stderr io.Writer, lookupEn
 		return runDatabasesUpgradePolicy(prog, rest, stdout, stderr, lookupEnv)
 	case "upgrade-now":
 		return runDatabasesUpgradeNow(prog, rest, stdout, stderr, lookupEnv)
+	case "link":
+		return runDatabasesLink(prog, rest, stdout, stderr, lookupEnv)
+	case "links":
+		return runDatabasesLinks(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown databases subcommand %q\n\n", prog, sub)
 		_, _ = fmt.Fprint(stderr, databasesUsage(prog))
@@ -102,6 +108,8 @@ func databasesUsage(prog string) string {
   %[1]s databases create --interactive  guided, step-by-step creation
   %[1]s databases connect --name N --engine E --host H [flags]  connect an existing database where it is, no data moved (--password-stdin, --test)
   %[1]s databases adopt --container C [--node N] [flags]  adopt a running database container without touching it (--list to browse)
+  %[1]s databases link <name> <app> [--env-var VAR] [--field F] [flags]  connect an app: injects the connection env var
+  %[1]s databases links <name> [flags]  list the apps connected to a database
   %[1]s databases probe <name> [flags]  re-check an external database's connectivity
   %[1]s databases list [flags]         list databases
   %[1]s databases get <name> [flags]   show one database
@@ -123,6 +131,7 @@ func databasesUsage(prog string) string {
   %[1]s databases public-access set <name> [flags]    expose a database on a host port
   %[1]s databases public-access clear <name> [flags]  return a database to internal-network-only
   %[1]s databases users list|create|rotate|disable|enable|delete <name> ...  manage database logins
+  %[1]s databases rotate-password <name> [--dry-run|--status|--every-days N] [flags]  rotate the owner password, restart linked apps
   %[1]s databases access temp|list|revoke|who|grant <name> ...  temporary credentials and who can access
   %[1]s databases network show|allow|deny|make-private|scope|tls <name> ...  reachability, allowed sources, scope, TLS
   %[1]s databases set-resources <name> [--memory 512Mi] [--cpu 0.5] [flags]  apply memory/CPU limits

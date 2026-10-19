@@ -5,6 +5,7 @@ import type { DatabaseCredential } from '../../types/databaseAccess'
 import { useDatabase, useDatabaseStatus } from '../../queries/databases'
 import { summarizeDatabaseStatus } from '../../lib/databaseStatus'
 import { CredentialDialog } from './CredentialDialog'
+import { PasswordRotationCard } from './PasswordRotationCard'
 import { TempAccessCard } from './TempAccessCard'
 import { UsersCard } from './UsersCard'
 import { WhoCanAccessCard } from './WhoCanAccessCard'
@@ -49,6 +50,7 @@ export function AccessPanel({ databaseName }: { databaseName: string }) {
           <UsersCard databaseName={databaseName} onCredential={setCredential} />
         </>
       )}
+      <PasswordRotationCard databaseName={databaseName} />
       <WhoCanAccessCard databaseName={databaseName} />
       <CredentialDialog
         credential={credential}

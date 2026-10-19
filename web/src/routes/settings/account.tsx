@@ -9,11 +9,18 @@ import { TwoFactorCard } from '../../components/security/TwoFactorCard'
 import { PasskeysCard } from '../../components/PasskeysCard'
 import { ProfileCard } from '../../components/account/ProfileCard'
 import { AccountSessionsCard } from '../../components/account/AccountSessionsCard'
-import {
-  LinkedProvidersCard,
-  MyTokensCard,
-} from '../../components/account/AccountConnectionsCards'
+import { LinkedProvidersCard } from '../../components/account/AccountConnectionsCards'
+import { MyTokensCard } from '../../components/account/MyTokensCard'
 import { MyAccessCard } from '../../components/account/MyAccessCard'
+import { MyActivityCard } from '../../components/account/MyActivityCard'
+import { PreferencesCard } from '../../components/account/PreferencesCard'
+import { EmailChangeCard } from '../../components/account/EmailChangeCard'
+import { DataExportCard } from '../../components/account/DataExportCard'
+import { DangerZoneCard } from '../../components/account/DangerZoneCard'
+import {
+  ACCOUNT_PASSKEYS_ANCHOR,
+  ACCOUNT_PASSWORD_ANCHOR,
+} from '../../components/account/UnlinkProviderButton'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -39,6 +46,12 @@ function AccountSettingsSkeleton() {
       <SettingsHeaderSkeleton />
       <SettingsCardSkeleton rows={2} />
       <SettingsCardSkeleton rows={3} />
+      <SettingsCardSkeleton rows={1} rowVariant="line" />
+      <SettingsCardSkeleton rows={2} rowVariant="status" />
+      <SettingsCardSkeleton rows={3} rowVariant="list" />
+      <SettingsCardSkeleton rows={2} rowVariant="list" />
+      <SettingsCardSkeleton rows={3} rowVariant="list" />
+      <SettingsCardSkeleton rows={4} rowVariant="list" />
     </div>
   )
 }
@@ -53,13 +66,26 @@ function AccountSettingsPage() {
     >
       <div className="space-y-6">
         <ProfileCard />
-        <ChangePasswordCard />
-        <TwoFactorCard />
-        <PasskeysCard />
-        <AccountSessionsCard />
+        <PreferencesCard />
+        <EmailChangeCard />
+        <div id={ACCOUNT_PASSWORD_ANCHOR}>
+          <ChangePasswordCard />
+        </div>
+        <div id="two-factor">
+          <TwoFactorCard />
+        </div>
+        <div id={ACCOUNT_PASSKEYS_ANCHOR}>
+          <PasskeysCard />
+        </div>
+        <div id="sessions">
+          <AccountSessionsCard />
+        </div>
         <LinkedProvidersCard />
         <MyTokensCard />
         <MyAccessCard />
+        <MyActivityCard />
+        <DataExportCard />
+        <DangerZoneCard />
       </div>
     </PageTemplate>
   )

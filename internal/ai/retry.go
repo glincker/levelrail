@@ -46,7 +46,7 @@ func (p RetryPolicy) delay(attempt int, retryAfter time.Duration) (time.Duration
 	if p.MaxDelay > 0 && d > p.MaxDelay {
 		d = p.MaxDelay
 	}
-	j := rand.Float64() //nolint:gosec // jitter, not a security value
+	j := rand.Float64() //nolint:gosec,forbidigo // jitter only, not security sensitive
 	if p.Jitter != nil {
 		j = p.Jitter()
 	}

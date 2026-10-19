@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
@@ -169,6 +169,14 @@ func (rt *Router) handleEnablePITR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if db.BackupTargetID != "" {
+		target, err := rt.backupTargets.GetBackupTarget(r.Context(), db.BackupTargetID)
+		if err == nil && strings.HasPrefix(target.Endpoint, store.AgentEndpointScheme) {
+			writeError(w, http.StatusBadRequest, "point-in-time restore needs an S3 compatible backup target, not a node directory: pick an S3 target first")
+			return
+		}
+	}
+
 	now := time.Now().UTC().Format(time.RFC3339)
 	if err := rt.databases.SetDatabasePITR(r.Context(), name, true, now); errors.Is(err, store.ErrDatabaseNotFound) {
 		writeError(w, http.StatusNotFound, "database not found")
@@ -265,8 +273,7 @@ func (rt *Router) handleTriggerBaseBackup(w http.ResponseWriter, r *http.Request
 	}
 
 	var req triggerBaseBackupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -340,8 +347,7 @@ func (rt *Router) handleTriggerPITRRestore(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req triggerPITRRestoreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.BaseBackupID == "" {

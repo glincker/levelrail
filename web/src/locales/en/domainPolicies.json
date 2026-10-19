@@ -4,6 +4,7 @@
     "description": "Traffic controls for this domain of app {{app}}. Changes apply on the next ingress pass.",
     "descriptionStandalone": "Traffic controls for this standalone domain, which is not linked to any app. Changes apply on the next ingress pass.",
     "editTarget": "Edit target",
+    "firewall": "Firewall limits",
     "loadFailed": "Could not load this domain's traffic controls.",
     "retry": "Try again",
     "missingAppTitle": "Which app owns this domain?",
@@ -20,8 +21,7 @@
     "geo": "Geolocation",
     "cache": "Cache",
     "ports": "Ports",
-    "danger": "Danger zone",
-    "shield": "Shield"
+    "danger": "Danger zone"
   },
   "common": {
     "moveUp": "Move up",
@@ -227,14 +227,14 @@
     "size": "{{entries}} entries, {{bytes}}",
     "sparkline": "Hits and misses over the last 30 minutes",
     "noStats": "No cache activity yet.",
-    "purgeScope": "Purge",
-    "purgeUrl": "One URL",
-    "purgePrefix": "Path prefix",
-    "purgeAll": "Everything",
-    "purgeValue": "Path",
-    "purge": "Purge",
-    "purged_one": "Removed {{count}} entry.",
-    "purged_other": "Removed {{count}} entries."
+    "never": "Never cache these paths",
+    "staleIfError": "Serve stale on error (s)",
+    "ignoreQuery": "Ignore query parameters",
+    "keyCookies": "Cookies in the key",
+    "preset": "Cache static assets",
+    "presetHelp": "Adds one rule for images, scripts, styles and fonts and turns caching on. Your app's own Cache-Control still wins.",
+    "presetDone": "Static assets rule added.",
+    "presetAlready": "Static assets are already cached."
   },
   "ports": {
     "title": "Ports",

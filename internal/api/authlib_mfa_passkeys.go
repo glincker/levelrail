@@ -15,7 +15,33 @@ import (
 const passkeyBodyLimit = 1 << 20
 
 func passkeyResourceFromLib(p authengine.Passkey) passkeyResource {
-	return passkeyResource{ID: p.ID, Label: p.Label, Transports: p.Transports, CreatedAt: p.CreatedAt, LastUsedAt: p.LastUsedAt}
+	prov := authengine.ProviderForAAGUID(p.AAGUID)
+	return passkeyResource{
+		ID: p.ID, Label: p.Label, Transports: p.Transports, CreatedAt: p.CreatedAt, LastUsedAt: p.LastUsedAt,
+		ProviderKey: prov.Key, ProviderName: prov.Name, Synced: p.Synced, BackedUp: p.BackedUp, SignCount: p.SignCount,
+	}
+}
+
+const codeLastSignInMethod = "last_sign_in_method"
+
+// removalLocksOut reports whether deleting a passkey would leave the account with no way to sign in.
+func removalLocksOut(passkeys int, hasPassword, hasTOTP bool) bool {
+	return passkeys <= 1 && !hasPassword && !hasTOTP
+}
+
+// wouldLockOut checks the last-passkey guard for one user; an unreadable account fails open to the library delete.
+func (l *authLibMFA) wouldLockOut(r *http.Request, userID, id string) bool {
+	rows, err := l.mfa.PasskeyList(r.Context(), userID)
+	if err != nil || len(rows) != 1 || rows[0].ID != id {
+		return false
+	}
+	user, err := l.rt.auth.GetUserByID(r.Context(), userID)
+	if err != nil {
+		return false
+	}
+	hasPassword := user.PasswordHash != nil && *user.PasswordHash != ""
+	status, err := l.mfa.TOTPStatus(r.Context(), userID)
+	return removalLocksOut(len(rows), hasPassword, err == nil && status.Enabled)
 }
 
 func (l *authLibMFA) passkeysReady(w http.ResponseWriter) bool {
@@ -61,7 +87,7 @@ func (l *authLibMFA) finishRegistration(w http.ResponseWriter, r *http.Request) 
 	}
 	created, err := l.mfa.PasskeyFinishRegistration(r.Context(), user.ID, sessionID, label, http.MaxBytesReader(w, r.Body, passkeyBodyLimit))
 	if errors.Is(err, authengine.ErrPasskeyRejected) {
-		l.rt.logger.Warn("api: passkey registration finish failed", slog.String("user_id", user.ID))
+		l.rt.logger.Warn("api: passkey registration finish failed", slog.String("user_id", user.ID), slog.String("origin", r.Header.Get("Origin")), slog.String("reason", err.Error()))
 		writeError(w, http.StatusBadRequest, "could not verify passkey")
 		return
 	}
@@ -90,13 +116,17 @@ func (l *authLibMFA) listPasskeys(w http.ResponseWriter, r *http.Request) {
 	for _, row := range rows {
 		out = append(out, passkeyResourceFromLib(row))
 	}
-	writeJSON(w, http.StatusOK, out)
+	writeJSON(w, http.StatusOK, pageQuery(w, r, out))
 }
 
 func (l *authLibMFA) deletePasskey(w http.ResponseWriter, r *http.Request) {
 	userID, ok := l.rt.currentSessionUserID(r)
 	if !ok {
 		writeError(w, http.StatusUnauthorized, msgAuthRequired)
+		return
+	}
+	if l.wouldLockOut(r, userID, r.PathValue("id")) {
+		writeCodedError(w, http.StatusConflict, codeLastSignInMethod, "this is your only way to sign in: add a password, two-factor or another passkey first")
 		return
 	}
 	err := l.mfa.PasskeyDelete(r.Context(), userID, r.PathValue("id"))

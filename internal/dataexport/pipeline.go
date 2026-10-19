@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GLINCKER/levelrail/kit/backoff"
 	"github.com/GLINCKER/levelrail/kit/untrusted"
 )
 
@@ -238,7 +239,7 @@ func newDeliverer(cfg Config) *deliverer {
 		cfg: cfg, br: br, st: &stats{br: br},
 		now:    time.Now,
 		sleep:  sleepCtx,
-		jitter: func() float64 { return 0.8 + 0.4*rand.Float64() }, //nolint:gosec // retry jitter, not a security value
+		jitter: func() float64 { return 0.8 + 0.4*rand.Float64() }, //nolint:gosec,forbidigo // jitter only, not security sensitive
 	}
 }
 
@@ -257,13 +258,7 @@ func sleepCtx(ctx context.Context, d time.Duration) error {
 }
 
 func (d *deliverer) backoff(attempt int) time.Duration {
-	delay := d.cfg.BackoffBase
-	for i := 1; i < attempt && delay < d.cfg.BackoffMax; i++ {
-		delay *= 2
-	}
-	if delay > d.cfg.BackoffMax {
-		delay = d.cfg.BackoffMax
-	}
+	delay := backoff.Exponential(d.cfg.BackoffBase, d.cfg.BackoffMax, attempt)
 	return time.Duration(float64(delay) * d.jitter())
 }
 

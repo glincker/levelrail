@@ -58,7 +58,6 @@ const app: AppDetail = {
       sensitive: true,
       set: true,
       value_redacted: true,
-      preview: 'the-...alue',
     },
   },
   secret_env: ['DB_PASSWORD'],
@@ -122,6 +121,8 @@ function mockServer(overrides: Record<string, (call: Call) => Response> = {}) {
               },
             ]),
           )
+        case 'GET /api/v1/apps/demo/env/bound':
+          return Promise.resolve(json([]))
         case 'GET /api/v1/apps/demo/env/settings':
           return Promise.resolve(
             json({
@@ -210,9 +211,7 @@ describe('EnvironmentEditor', () => {
     expect(
       await screen.findByText('Overrides organization'),
     ).toBeInTheDocument()
-    expect(
-      screen.getByText('Hidden value, starts the-...alue'),
-    ).toBeInTheDocument()
+    expect(screen.getAllByText('Hidden value').length).toBeGreaterThan(0)
     expect(document.body.textContent).not.toContain(REAL_SECRET)
   })
 

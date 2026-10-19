@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import {
   HeartbeatIcon,
   CheckCircleIcon,
@@ -28,6 +29,8 @@ import {
 } from '../../queries/systemDoctor'
 import type { DoctorCheck } from '../../queries/systemDoctor'
 import { DoctorCheckRow } from '@/components/DoctorCheckRow'
+import { DiskResilienceCard } from '../../components/DiskResilienceCard'
+import { ResilienceReportCard } from '../../components/ResilienceReportCard'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
 // Web half of "levelrail-cli doctor": that command already runs
@@ -164,14 +167,14 @@ function CheckGroupCard({
 }
 
 function SummaryBanner({ ok, checks }: { ok: boolean; checks: DoctorCheck[] }) {
+  const { t } = useTranslation('settings')
   if (ok) {
     return (
       <Alert>
         <CheckCircleIcon />
-        <AlertTitle>All checks passed</AlertTitle>
+        <AlertTitle>{t('systemStatusPage.allPassedTitle')}</AlertTitle>
         <AlertDescription>
-          Docker, disk space, ports, the database, and every other preflight
-          check are all healthy right now.
+          {t('systemStatusPage.allPassedBody')}
         </AlertDescription>
       </Alert>
     )
@@ -180,17 +183,20 @@ function SummaryBanner({ ok, checks }: { ok: boolean; checks: DoctorCheck[] }) {
   return (
     <Alert variant="destructive">
       <XCircleIcon />
-      <AlertTitle>One or more checks failed</AlertTitle>
+      <AlertTitle>{t('systemStatusPage.failedTitle')}</AlertTitle>
       <AlertDescription>
         {failed.length > 0
-          ? `Failing: ${failed.map((c) => c.name).join(', ')}.`
-          : 'Review the checks below for details.'}
+          ? t('systemStatusPage.failing', {
+              names: failed.map((c) => c.name).join(', '),
+            })
+          : t('systemStatusPage.reviewBelow')}
       </AlertDescription>
     </Alert>
   )
 }
 
 function SystemStatusPage() {
+  const { t } = useTranslation('settings')
   const { data, isFetching, refetch } = useSystemDoctor()
   const { infrastructure, security, network, other } = groupChecks(data.checks)
 
@@ -202,10 +208,10 @@ function SystemStatusPage() {
         </div>
         <div className="min-w-0 flex-1">
           <PageHeader
-            title="System status"
-            description="Preflight checks: Docker, disk, ports, database, firewall, and outbound network reachability."
+            title={t('systemStatusPage.title')}
+            description={t('systemStatusPage.description')}
             helpPath="/troubleshooting"
-            helpLabel="Troubleshooting guide"
+            helpLabel={t('systemStatusPage.troubleshootingGuide')}
             actions={
               <Button
                 variant="outline"
@@ -218,7 +224,7 @@ function SystemStatusPage() {
                 <ArrowsClockwiseIcon
                   className={isFetching ? 'animate-spin' : ''}
                 />
-                Re-run checks
+                {t('systemStatusPage.rerun')}
               </Button>
             }
           />
@@ -229,15 +235,12 @@ function SystemStatusPage() {
 
       <Alert>
         <InfoIcon />
-        <AlertTitle>Ingress is a single point of failure</AlertTitle>
+        <AlertTitle>{t('systemStatusPage.ingressTitle')}</AlertTitle>
         <AlertDescription>
-          Domain-based HTTPS routing runs embedded in this control plane
-          process. If it crashes or restarts, routing is down until it comes
-          back up, even though already-running containers keep serving traffic
-          on their own ports the whole time.{' '}
+          {t('systemStatusPage.ingressBody')}{' '}
           <HelpLink
             path="/resilience"
-            label="What survives a control plane crash"
+            label={t('systemStatusPage.survivesCrash')}
             variant="inline"
           />
           .
@@ -245,29 +248,31 @@ function SystemStatusPage() {
       </Alert>
 
       <CheckGroupCard
-        title="Infrastructure"
-        description="Can this box run and reach what it needs to run containers."
+        title={t('systemStatusPage.groups.infrastructure.title')}
+        description={t('systemStatusPage.groups.infrastructure.description')}
         icon={StackIcon}
         checks={infrastructure}
       />
       <CheckGroupCard
-        title="Security"
-        description="Hardening checks: firewall status and secret rotation age."
+        title={t('systemStatusPage.groups.security.title')}
+        description={t('systemStatusPage.groups.security.description')}
         icon={ShieldCheckIcon}
         checks={security}
       />
       <CheckGroupCard
-        title="Network and reachability"
-        description="Outbound network access and whether the internet can reach this box."
+        title={t('systemStatusPage.groups.network.title')}
+        description={t('systemStatusPage.groups.network.description')}
         icon={GlobeIcon}
         checks={network}
       />
       <CheckGroupCard
-        title="Other checks"
-        description="Additional checks reported by this control plane."
+        title={t('systemStatusPage.groups.other.title')}
+        description={t('systemStatusPage.groups.other.description')}
         icon={HeartbeatIcon}
         checks={other}
       />
+      <DiskResilienceCard />
+      <ResilienceReportCard />
     </div>
   )
 }

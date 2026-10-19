@@ -1,27 +1,50 @@
 ---
 title: "Functions"
-description: Run an image as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
+description: Deploy a ten line handler in Node, Python or Go as a function that sleeps when idle and answers the first request after a cold start, like a serverless function on your own server.
+"og:url": "https://docs.levelrail.com/functions"
 ---
 
-A function is an image app that costs nothing while idle. It sleeps after a
+A function is an app that costs nothing while idle. It sleeps after a
 quiet period and starts on the next request. Unlike a plain
 [sleeping app](/sleep-when-idle), a request that arrives while it is asleep
 waits through the cold start and is then answered, so API callers see one slower
 response instead of an error page. It runs on your own server next to your other
 apps, with the same logs, metrics, secrets, domains and rollbacks.
 
-## Deploy and call one
+## From a handler to a live URL
+
+Start from a starter handler (Node, Python or Go, about ten lines each):
+
+```
+levelrail-cli functions init node ./hello
+cd hello && git init && git add . && git commit -m "handler" && git push
+levelrail-cli functions deploy hello --repo https://example.com/you/hello.git
+```
+
+`functions deploy --repo` creates the app, builds the handler with Railpack (no
+Dockerfile needed), turns on sleeping with function mode, waits for the build to
+go live and prints the URL. `--dir` points at a handler inside a monorepo, `--ref`
+picks the branch, `--wait 0` returns without waiting. The handler listens on the
+`PORT` variable, which is set to `--port` (default 8080). The first request after
+it sleeps wakes it.
+
+The dashboard has the same flow under Functions: the Deploy function button, and
+copyable starter handlers for each runtime.
+
+## Image functions, calling and statistics
 
 ```
 levelrail-cli functions deploy hello --image traefik/whoami:v1.10.1 --port 80 --idle 10m
 levelrail-cli functions invoke hello --path /api
-levelrail-cli functions list
+levelrail-cli functions list --window 24h
 levelrail-cli functions delete hello
 ```
 
-`functions deploy` creates the app and turns on sleeping with function mode. The
-container must serve HTTP on `--port`. Add a domain the usual way, or use the
-automatic URL it prints. `--idle` is 5 minutes to 7 days.
+`functions list` and the Functions page show each function's state, number of
+calls, p95 duration and server error rate over a 1 hour, 24 hour or 7 day window.
+The numbers come from the ingress request metrics, so they cover calls through
+the built-in ingress. Logs are the app's own logs (`apps logs <name>`). `--idle`
+is 5 minutes to 7 days.
 
 To make an existing app behave this way:
 
@@ -31,6 +54,22 @@ levelrail-cli apps sleep enable web --after 10m --hold
 
 The dashboard has the same switch: App, Deploys, Sleep when idle, "Hold
 requests while waking".
+
+## Serve a function at a path
+
+A function can answer at `<domain>/<path>` as well as on its own host. Pick a
+domain that is already attached to an app, then give the path:
+
+```bash
+levelrail-cli functions deploy hello --repo https://github.com/you/hello --domain example.com --path /hello
+```
+
+The Deploy function dialog has the same two fields. The route is a path
+forwarder on the domain (see domain traffic controls), so `/hello` and
+`/hello/...` go to the function, the prefix is stripped before the handler sees
+the request, and every other path still goes to the domain's own app. A longer
+prefix wins over a shorter one. A sleeping function is woken by a request to
+its path. `functions delete` removes its routes.
 
 ## What a caller sees
 
@@ -47,6 +86,8 @@ If the app does not become ready within 30 seconds, the caller gets the
 
 ## Limits
 
+- Functions are routed by host, one URL per function. Path prefixes on a shared
+  domain are not supported yet.
 - A function waits for one container start. There is no per-request concurrency
   control, queueing across many replicas, or autoscaling: it is one container,
   like any other app.

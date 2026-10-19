@@ -10,6 +10,9 @@ type DetectFrameworkResource struct {
 	Provider      string `json:"provider,omitempty"`
 	FrameworkName string `json:"framework_name,omitempty"`
 	Detected      bool   `json:"detected"`
+	FrameworkID   string `json:"framework_id,omitempty"`
+	Port          int    `json:"port,omitempty"`
+	PortSource    string `json:"port_source,omitempty"`
 }
 
 // RepoBranchesResource mirrors internal/api's gitBranchesResponse.

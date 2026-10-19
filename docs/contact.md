@@ -1,6 +1,7 @@
 ---
 title: "Contact Levelrail: support, community and security reports"
 description: "How to reach the Levelrail team: support email, GitHub issues and discussions, the Discord community, and the private security reporting process."
+"og:url": "https://docs.levelrail.com/contact"
 ---
 
 **Get help or reach the team**

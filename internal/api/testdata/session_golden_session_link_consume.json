@@ -18,7 +18,7 @@
   {
     "Step": "linked session",
     "Status": 200,
-    "Body": "{\"display_name\":\"root@example.test\",\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"root@example.test\"}",
+    "Body": "{\"display_name\":\"root@example.test\",\"email_verified\":false,\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"root@example.test\"}",
     "Cookies": null,
     "Retry": false
   },

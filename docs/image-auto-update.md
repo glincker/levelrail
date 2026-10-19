@@ -1,6 +1,7 @@
 ---
 title: "Image auto-update"
 description: Redeploy an image-based app automatically when its tag points at a new digest, with the same freeze and protection gates as a manual deploy.
+"og:url": "https://docs.levelrail.com/image-auto-update"
 ---
 
 An app can redeploy itself when its image tag moves to a new digest (the

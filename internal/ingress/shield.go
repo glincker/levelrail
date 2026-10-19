@@ -145,6 +145,7 @@ func (m *shieldModule) ServeHTTP(w http.ResponseWriter, r *http.Request, next ca
 
 func (m *shieldModule) reject(w http.ResponseWriter, r *http.Request, eff trafficpolicy.ShieldEffective, reason trafficpolicy.ShieldReason) {
 	DefaultRequestStats().ObserveShield(m.Key, reason)
+	caddyhttp.SetVar(r.Context(), shieldOutcomeVar, int(reason)+1)
 	if eff.Tarpit > 0 && reason != trafficpolicy.ShieldBodyTooLarge {
 		select {
 		case m.tarpit <- struct{}{}:

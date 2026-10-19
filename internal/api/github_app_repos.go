@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/githubapp"
+	"github.com/GLINCKER/levelrail/internal/secretmask"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -65,6 +66,7 @@ func (rt *Router) mintGitHubAppInstallationToken(ctx context.Context) (instanceU
 	if err != nil {
 		return "", "", fmt.Errorf("mint github app installation token: %w", err)
 	}
+	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
 }
 
@@ -112,6 +114,7 @@ func (rt *Router) mintGitHubAppInstallationTokenForOwner(ctx context.Context, ow
 	if err != nil {
 		return "", "", fmt.Errorf("mint github app installation token: %w", err)
 	}
+	secretmask.Add(tok.Token)
 	return instanceURL, tok.Token, nil
 }
 
