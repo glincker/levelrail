@@ -183,6 +183,20 @@ Migrations only go forward. A binary whose newest migration is older than the da
 
 Nothing is modified. The installer's unit sets `RestartPreventExitStatus=78` so systemd does not restart-loop it.
 
+## What is tested on every release
+
+An automated matrix builds a control plane database at several older schema versions, fills it with apps, environment values, secrets, domains, deploys, users, API tokens, backup targets, audit rows, plugins and model endpoints, then upgrades it to the current schema through the same start-up path a real upgrade uses. For each starting version it checks that:
+
+- the upgrade finishes and no table loses rows;
+- secrets still decrypt with the same master key, the audit hash chain still verifies and API tokens still authenticate;
+- the control plane answers `/healthz` and `/readyz` on the migrated database;
+- a second start does nothing, and takes no new snapshot;
+- the snapshot taken before the migration holds the old schema, and restoring it brings back the old data, which then upgrades again cleanly.
+
+Two failure cases are covered as well. A binary older than the database refuses to start, exits with status 78 and leaves the database file byte for byte unchanged. A migration that fails partway keeps the steps already committed, leaves the snapshot intact, and sends the control plane into safe mode with a migration failure reason, where the snapshot can be restored.
+
+The two most recent starting versions run on every pull request. The full set runs in the nightly suite. Run `scripts/upgrade-fixtures/generate.sh` to write the seeded pre-upgrade databases to a folder for inspection.
+
 ## Release notes metadata
 
 Breaking changes are read from each release's notes. A release author can declare them explicitly with a comment anywhere in the body:
