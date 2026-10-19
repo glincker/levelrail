@@ -1,16 +1,16 @@
 <div align="center">
+<img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="56" height="56">
 <h1>Levelrail</h1>
 <p><strong>The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.</strong><br>
-Push to git. Get HTTPS, logs, metrics and one-click rollback on your own servers.</p>
-<p>One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; observability built in &middot; no Kubernetes</p>
+Push to git. Get HTTPS, logs, metrics and one-click rollback on your own servers.<br>
+One Go binary &middot; Docker runtime &middot; agents instead of SSH &middot; observability built in &middot; no Kubernetes</p>
 <p>
   <a href="https://github.com/glincker/levelrail/releases"><img src="https://img.shields.io/github/v/release/glincker/levelrail?include_prereleases&label=release" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/glincker/levelrail" alt="License: Apache 2.0"></a>
   <a href="https://github.com/glincker/levelrail/stargazers"><img src="https://img.shields.io/github/stars/glincker/levelrail?style=flat" alt="GitHub stars"></a>
   <a href="https://github.com/glincker/levelrail/actions/workflows/ci.yml"><img src="https://github.com/glincker/levelrail/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://discord.gg/Ar5pcaZB99"><img src="https://img.shields.io/discord/829168897080557579?style=flat&logo=discord&logoColor=white&label=discord&color=5865F2" alt="Discord"></a>
-</p>
-<p>
+<br>
   <a href="docs/feature-status.md"><img src="https://img.shields.io/badge/single%20server-production%20ready-brightgreen?style=flat" alt="Single server: production ready"></a>
   <a href="https://github.com/glincker/levelrail/pkgs/container/levelrail"><img src="https://img.shields.io/badge/ghcr.io-multi--arch-2496ED?style=flat&logo=docker&logoColor=white" alt="Multi-arch container image on GHCR"></a>
   <a href="go.mod"><img src="https://img.shields.io/github/go-mod/go-version/glincker/levelrail?style=flat" alt="Go version"></a>
