@@ -108,7 +108,7 @@ func TestRegistryVendorsAndUsage(t *testing.T) {
 }
 
 func TestProbePackageRegistry_BlocksSSRF(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer ts.Close()
