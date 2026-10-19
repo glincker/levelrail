@@ -21,6 +21,18 @@ func pageQuery[T any](w http.ResponseWriter, r *http.Request, items []T) []T {
 	return items
 }
 
+// pageQueryDefault is pageQuery with a default page size for callers that sent no limit,
+// so an unbounded table never serializes whole into one response.
+func pageQueryDefault[T any](w http.ResponseWriter, r *http.Request, items []T, def int) []T {
+	if n, err := strconv.Atoi(r.URL.Query().Get("limit")); err != nil || n <= 0 {
+		q := r.URL.Query()
+		q.Set("limit", strconv.Itoa(def))
+		r = r.Clone(r.Context())
+		r.URL.RawQuery = q.Encode()
+	}
+	return pageQuery(w, r, items)
+}
+
 // pageInfo is the envelope block struct-shaped list responses carry when the
 // caller sent limit or offset. NextOffset is omitted on the last page.
 type pageInfo struct {

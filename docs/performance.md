@@ -67,3 +67,30 @@ BENCH_COUNTS="0 100" BENCH_SECONDS=20 scripts/bench-idle.sh
 Other knobs: `BENCH_REQUESTS` (requests per endpoint, default 200) and
 `BENCH_PORT`. It needs bash, curl, ps, awk, and the Go toolchain, and cleans up
 its data directory on exit.
+
+## Dashboard at scale
+
+`scripts/perf-measure.sh` seeds a scratch data dir with 1000 apps, 200 databases, 50 nodes and 20,000 deploy rows (`scripts/perf-fixtures`, deterministic, refuses a used data dir), runs a local control plane on it with Docker unreachable, and loads each page cold in headless Chromium through `scripts/perf-measure.py`. Everything is deleted on exit and nothing leaves the machine.
+
+- Time to interactive is the later of network idle and the last long task end. Long tasks and blocking time come from the Long Tasks API.
+- The CPU is throttled 4x (`PERF_CPU_THROTTLE`) so main thread work shows up on a fast laptop. Values are the median of 5 cold loads after one warm-up.
+- API KB and JS KB are decoded sizes. The production build also serves `.br` and `.gz` copies of static assets, which this does not credit.
+- Machine: Apple M4 Max, macOS 27.2, one run at a time. Treat the numbers as comparable between runs on one machine, not across machines. Deploy and request counts are the fixture's, not a real fleet's.
+
+Before and after the change that lazy-loads the dock terminal and fleet chart and pages `/deploys/failed`:
+
+| Page | TTI before | TTI after | Long tasks | API KB | JS KB before | JS KB after |
+|---|---|---|---|---|---|---|
+| Dashboard home | 2262 ms | 2056 ms | 6 to 4 | 692 to 693 | 5835 | 5090 |
+| Apps list | 1944 ms | 1548 ms | 5 to 4 | 472 | 2172 | 1748 |
+| Deploys list | 1904 ms | 1479 ms | 5 to 4 | 481 | 2184 | 1770 |
+| Logs page | 1919 ms | 1719 ms | 6 to 4 | 446 | 2448 | 2028 |
+| Search palette (type 11 chars) | 358 ms | 542 ms | 1 | 0 | 0 | 0 |
+
+Where it stands:
+
+- The xterm bundle (about 330 kB) loaded on every page because the dock console tab was imported statically. Dock tabs now load on first open. The fleet chart on the dashboard loads when "Usage details" is expanded.
+- `GET /api/v1/deploys/failed`, `/databases` and `/domains` now take `limit` and `offset` and return `X-Total-Count`. Without `limit` the page is 100 rows for failed deploys and 500 for the others. The failed deploys payload with 20k rows dropped from about 90 kB to under 10 kB.
+- Apps, nodes, deployments, the audit log and the search palette were already paged or debounced server side, and the long lists are virtualized. The palette row above is within run to run noise, not a regression.
+- Not fixed: the dashboard and apps list still fetch the whole apps list (about 314 kB at 1000 apps) because status tiles and filters count client side. A server side summary endpoint is the next step. The thesvg brand logo chunks (about 250 kB each) still load on home, databases and nodes. `npm run check-bundle-size` already fails on the diagram `elk` chunk (1463 kB against a 720 kB budget) before this change.
+- Apps seeded here have no running containers, so this measures list rendering and fetching, not live metrics streaming.

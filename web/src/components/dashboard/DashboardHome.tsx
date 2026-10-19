@@ -10,7 +10,6 @@ import { useIsRoot } from '../../hooks/useIsRoot'
 import { useBrand } from '../../hooks/useBrand'
 import { SetupWizard } from '../setup/SetupWizard'
 import { CreateResourceWizard } from '../CreateResourceWizard'
-import { FleetResourceChart } from '../FleetResourceChart'
 import { FleetUtilizationSummary } from '../FleetUtilizationSummary'
 import { TopResourceConsumers } from '../TopResourceConsumers'
 import { DashboardHero } from './DashboardHero'
@@ -26,6 +25,12 @@ import { ResourceAdvisorTile } from '../resourceAdvisor/ResourceAdvisorTile'
 import { StorageUsageCard } from './StorageUsageCard'
 import { SleepFleetCard } from './SleepFleetCard'
 import { PlatformCapabilities } from './PlatformCapabilities'
+
+const FleetResourceChart = lazy(() =>
+  import('../FleetResourceChart').then((m) => ({
+    default: m.FleetResourceChart,
+  })),
+)
 
 const RecentAlertsCard = lazy(() =>
   import('../RecentAlertsCard').then((m) => ({ default: m.RecentAlertsCard })),
@@ -53,7 +58,9 @@ function UsageDetails({ apps }: { apps: AppListEntry[] }) {
       {open ? (
         <div className="space-y-4">
           <FleetUtilizationSummary />
-          <FleetResourceChart />
+          <Suspense fallback={null}>
+            <FleetResourceChart />
+          </Suspense>
           <TopResourceConsumers apps={apps} />
           <ReservedUsageCard apps={apps} />
           <StorageUsageCard />

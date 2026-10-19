@@ -183,7 +183,11 @@ export default function DockPanel() {
                 hidden={!selected}
                 className="h-full min-h-0"
               >
-                {mounted ? <Tab /> : null}
+                {mounted ? (
+                  <React.Suspense fallback={null}>
+                    <Tab />
+                  </React.Suspense>
+                ) : null}
               </div>
             )
           })}

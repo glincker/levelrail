@@ -527,6 +527,7 @@ func (rt *Router) handleListDomains(w http.ResponseWriter, r *http.Request) {
 	out = append(out, rt.standaloneDomainRows(r, func(d string) domainResource {
 		return domainResource{WAFEnabled: wafEnabled[d], HasRedirect: hasRedirect[d], MaintenanceEnabled: inMaintenance[d], HasBasicAuth: hasBasicAuth[d], ACMEFailure: acmeFailureFor(d)}
 	})...)
+	out = pageQueryDefault(w, r, out, appListMaxLimit)
 	rt.annotateDomainTLS(r.Context(), out)
 	rt.annotateDomainReachability(r.Context(), out)
 	rt.annotateDomainEnforcement(r.Context(), out)
