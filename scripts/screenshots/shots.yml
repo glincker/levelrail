@@ -46,11 +46,10 @@
   height: 900
   wait: 2000
 
-- output: docs/assets/screenshots/network-topology.png
-  url: __BASE_URL__/network/
-  width: 1280
-  height: 800
-  wait: 2000
+# network-topology.png is not captured: the topology page labels the local
+# server with os.Hostname(), which would publish the maintainer's machine name.
+# leak_check.py fails the run on that label, so the entry stays out until the
+# page has a demo-safe label source.
 
 - output: docs/assets/screenshots/databases-list.png
   url: __BASE_URL__/databases/
@@ -147,3 +146,192 @@
   width: 1280
   height: 800
   wait: 2000
+
+- output: docs/assets/screenshots/framework-preset-picker.png
+  url: __BASE_URL__/apps/new
+  width: 1280
+  height: 900
+  wait: 2500
+
+- output: docs/assets/screenshots/build-cache.png
+  url: __BASE_URL__/apps/marketing-site/cache
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/build-performance.png
+  url: __BASE_URL__/settings/build-performance
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/deploy-live-log.png
+  url: __BASE_URL__/apps/marketing-site/deploys/__DEPLOY_ID__/logs
+  width: 1280
+  height: 900
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const b = [...document.querySelectorAll('button,[role=tab]')].find(x => /roll out/i.test(x.textContent)); if (b || ++n > 40) { clearInterval(t); if (b) b.click(); setTimeout(r, 800); } }, 200); })"
+
+- output: docs/assets/screenshots/ci-deploy-github-actions.png
+  url: __BASE_URL__/apps/marketing-site/deploys
+  width: 1280
+  height: 2600
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const b = [...document.querySelectorAll('button')].find(x => /deploy settings/i.test(x.textContent)); if (b || ++n > 40) { clearInterval(t); if (b) b.click(); setTimeout(r, 1000); } }, 200); })"
+
+- output: docs/assets/screenshots/pipeline-run.png
+  url: __BASE_URL__/apps/marketing-site/pipelines/runs/__RUN_ID__
+  width: 1280
+  height: 900
+  wait: 2500
+
+- output: docs/assets/screenshots/storage-destinations.png
+  url: __BASE_URL__/settings/storage
+  width: 1280
+  height: 900
+  wait: 2500
+
+- output: docs/assets/screenshots/archives.png
+  url: __BASE_URL__/settings/storage
+  width: 1280
+  height: 900
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const e = [...document.querySelectorAll('body *')].find(x => x.children.length === 0 && /log archive for all apps/i.test(x.textContent)); if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 600); } }, 200); })"
+
+- output: docs/assets/screenshots/janitor-settings.png
+  url: __BASE_URL__/settings/janitor
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/control-plane-health.png
+  url: __BASE_URL__/settings/control-plane-health
+  width: 1280
+  height: 900
+  wait: 2500
+
+- output: docs/assets/screenshots/database-backups.png
+  url: __BASE_URL__/databases/docs-sample-db/overview
+  width: 1280
+  height: 900
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const s = document.getElementById('backups'); if (s || ++n > 40) { clearInterval(t); if (s) s.scrollIntoView({block: 'start'}); setTimeout(r, 600); } }, 200); })"
+
+- output: docs/assets/screenshots/mesh-network.png
+  url: __BASE_URL__/network/private
+  width: 1280
+  height: 800
+  wait: 2000
+
+- output: docs/assets/screenshots/settings-account.png
+  url: __BASE_URL__/settings/account
+  loader: playwright
+  width: 1280
+  height: 2800
+  wait: 2000
+
+- output: docs/assets/screenshots/beta-features.png
+  url: __BASE_URL__/settings/beta-features
+  width: 1280
+  height: 900
+  wait: 2000
+
+- output: docs/assets/screenshots/command-palette.png
+  url: __BASE_URL__/apps/marketing-site/overview
+  width: 1280
+  height: 800
+  wait: 2000
+  javascript: "new Promise(r => { document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', metaKey: true, bubbles: true})); setTimeout(r, 800); })"
+
+- output: docs/assets/screenshots/security-center.png
+  url: __BASE_URL__/security/
+  width: 1280
+  height: 900
+  wait: 2500
+
+- output: docs/assets/screenshots/command-palette-search.png
+  url: __BASE_URL__/apps/marketing-site/overview
+  width: 1280
+  height: 800
+  wait: 2000
+  javascript: "new Promise(r => { document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', metaKey: true, bubbles: true})); let n = 0; const t = setInterval(() => { const i = [...document.querySelectorAll('input')].find(x => /search apps/i.test(x.placeholder)); if (i || ++n > 40) { clearInterval(t); if (i) { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(i, 'restart'); i.dispatchEvent(new Event('input', {bubbles: true})); } setTimeout(r, 1000); } }, 150); })"
+
+# Not captured in this pass: settings/general, settings/plugins and databases/<db>/access
+# never reach the load event in headless capture, so they time out. Re-add them
+# once the slow external request on those pages is found.
+
+- output: docs/assets/screenshots/get-started.png
+  url: __BASE_URL__/get-started
+  loader: playwright
+  width: 1280
+  height: 1000
+  wait: 2500
+
+- output: docs/assets/screenshots/settings-general.png
+  url: __BASE_URL__/settings/general
+  width: 1280
+  height: 2000
+  wait: 2500
+  loader: playwright
+
+- output: docs/assets/screenshots/settings-health.png
+  url: __BASE_URL__/settings/general
+  width: 1280
+  height: 1000
+  wait: 2500
+  loader: playwright
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const c = [...document.querySelectorAll('h1,h2,h3,h4,p,span,div,label')].filter(x => x.textContent.trim().length < 80 && /health/i.test(x.textContent)); const e = c.sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 800); } }, 200); })"
+
+- output: docs/assets/screenshots/encryption-keys.png
+  url: __BASE_URL__/settings/general
+  width: 1280
+  height: 1000
+  wait: 2500
+  loader: playwright
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const c = [...document.querySelectorAll('h1,h2,h3,h4,p,span,div,label')].filter(x => x.textContent.trim().length < 80 && /encryption keys/i.test(x.textContent)); const e = c.sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 800); } }, 200); })"
+
+- output: docs/assets/screenshots/plugins.png
+  url: __BASE_URL__/settings/plugins
+  width: 1280
+  height: 1100
+  wait: 2500
+  loader: playwright
+
+- output: docs/assets/screenshots/plugins-marketplace.png
+  url: __BASE_URL__/settings/plugins
+  width: 1280
+  height: 1100
+  wait: 2500
+  loader: playwright
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const b = [...document.querySelectorAll('button,[role=tab]')].find(x => /marketplace/i.test(x.textContent)); if (b || ++n > 40) { clearInterval(t); if (b) b.click(); setTimeout(r, 1200); } }, 200); })"
+
+- output: docs/assets/screenshots/database-access.png
+  url: __BASE_URL__/databases/docs-sample-db/access
+  width: 1280
+  height: 1800
+  wait: 2500
+  loader: playwright
+
+- output: docs/assets/screenshots/account-activity.png
+  url: __BASE_URL__/settings/account
+  loader: playwright
+  width: 1280
+  height: 1000
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const c = [...document.querySelectorAll('h1,h2,h3,h4,p,span,div,label')].filter(x => x.textContent.trim().length < 80 && /activity/i.test(x.textContent)); const e = c.sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 800); } }, 200); })"
+
+- output: docs/assets/screenshots/account-danger-zone.png
+  url: __BASE_URL__/settings/account
+  loader: playwright
+  width: 1280
+  height: 1000
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const c = [...document.querySelectorAll('h1,h2,h3,h4,p,span,div,label')].filter(x => x.textContent.trim().length < 80 && /danger zone/i.test(x.textContent)); const e = c.sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 800); } }, 200); })"
+
+- output: docs/assets/screenshots/account-passkeys.png
+  url: __BASE_URL__/settings/account
+  loader: playwright
+  width: 1280
+  height: 1000
+  wait: 2500
+  javascript: "new Promise(r => { let n = 0; const t = setInterval(() => { const c = [...document.querySelectorAll('h1,h2,h3,h4,p,span,div,label')].filter(x => x.textContent.trim().length < 80 && /passkey/i.test(x.textContent)); const e = c.sort((a, b) => a.textContent.length - b.textContent.length)[0]; if (e || ++n > 40) { clearInterval(t); if (e) e.scrollIntoView({block: 'start'}); setTimeout(r, 800); } }, 200); })"

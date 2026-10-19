@@ -23,6 +23,11 @@ Screenshots are produced by `scripts/screenshots/capture.sh`, a manual maintaine
 scripts/screenshots/capture.sh
 ```
 
+The web bundle is built with demo disk-pressure thresholds (`VITE_DISK_*`), and each shot waits up to 90 seconds for its page to load. Pages that never reach the load event are left out of `shots.yml` rather than failing the run.
+
+Before any shot is taken, `scripts/screenshots/leak_check.py` loads every page in the config and fails the run if it shows a public IP, an email, a sslip.io host, this machine's hostname, or an app error page. Private and loopback addresses are allowed. The pipeline pins demo addresses (documentation ranges) for the public host, advertise host, mesh, and app network pool so no real address reaches a shot.
+
+Each run writes every entry in `shots.yml` twice: the dark theme under the listed filename, and the light theme with a `-light` suffix (for example `app-overview-light.png`). Only the pages it can reach are captured, and output is optimized to stay under about 400 KB per image.
 The script runs the whole pipeline, from building binaries to capturing screenshots:
 
 ```mermaid
@@ -43,7 +48,7 @@ flowchart LR
 3. Deploy two real apps from public images, plus a real managed Postgres database
 4. Trigger real redeploys to build deploy history
 5. Send real HTTP traffic to the apps
-6. Set an example secret, a domain, and a [load balancer](/load-balancing) so the environment, domains, and load balancer pages aren't empty
+6. Set an example secret, a domain, and a [load balancer](/load-balancing) so the environment, domains, and load balancer pages aren't empty. Also seed a pipeline with one run, an export destination, and an archive so the pipeline, storage, and archive pages have content
 7. Wait about 75 seconds for metrics to accumulate at 15-second resolution
 8. Log in through the real `/login` form
 9. Capture screenshots with `shot-scraper`
@@ -72,6 +77,7 @@ All credentials are freshly created for each run and never leave the scratch dat
 - `scripts/screenshots/shots.yml`: the `shot-scraper multi` config, one entry per PNG.
 - `scripts/screenshots/login_state.py`: logs into a running control plane through the real login form and saves the session as a Playwright storage state file, reused across every shot.
 - `scripts/screenshots/capture.sh`: orchestrates the whole pipeline.
+- `scripts/screenshots/leak_check.py`: scans the shot pages for real identifiers and error pages before capture.
 
 ## Screens that need more than one node
 

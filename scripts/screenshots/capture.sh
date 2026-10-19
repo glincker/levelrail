@@ -29,7 +29,7 @@ SERVER_LOG="$SCRATCH_DIR/server.log"
 DEVICE_LOGIN_LOG="$SCRATCH_DIR/device-login.log"
 STORAGE_STATE="$SCRATCH_DIR/storage_state.json"
 SESSION_COOKIE_FILE="$SCRATCH_DIR/session_cookie.txt"
-RENDERED_SHOTS="$SCRATCH_DIR/shots.rendered.yml"
+CAPTURE_START="$(date +%s)"
 mkdir -p "$DATA_DIR" "$FAKE_HOME"
 
 SERVER_PID=""
@@ -68,7 +68,12 @@ cleanup() {
   # docker.Runtime has no RemoveVolume (see dataVolumeName's own doc
   # comment in internal/reconcile/database), so the data volume survives
   # "databases delete" and needs its own cleanup here.
-  docker volume rm -f "db-${SAMPLE_DB}-data" >/dev/null 2>&1
+  docker volume rm -f "db-${SAMPLE_DB}-data" "db-${SAMPLE_DB}-certs" >/dev/null 2>&1
+  # Per-app networks are named after the app and outlive the containers, and a
+  # leftover one keeps its old subnet (and so its IPs) on the next run.
+  for name in "$HERO_APP" "$SECOND_APP"; do
+    docker network rm "Levelrail-app-${name}" >/dev/null 2>&1
+  done
   if [ "${KEEP_SCRATCH:-0}" != "1" ]; then
     rm -rf "$SCRATCH_DIR"
   else
@@ -107,7 +112,10 @@ log "using HTTP port $HTTP_PORT, agent port $AGENT_PORT"
 # --- build ----------------------------------------------------------------
 
 log "building web frontend (web/dist)"
-(cd "$REPO_ROOT/web" && npm run build >/dev/null) || fail "web build failed"
+# The disk-pressure banner reads the host's real free space. Demo thresholds
+# are set at build time so a nearly full maintainer disk does not show up in
+# every screenshot (VITE_DISK_* in web/src/lib/diskPressure.ts).
+(cd "$REPO_ROOT/web" && VITE_DISK_WARN_FREE_PERCENT=0.5 VITE_DISK_CRITICAL_FREE_PERCENT=0.1 npm run build >/dev/null) || fail "web build failed"
 
 log "building control plane and CLI binaries"
 (cd "$REPO_ROOT" && go build -tags embedweb -o "$BIN" ./cmd/levelrail) || fail "control plane build failed"
@@ -133,13 +141,15 @@ export HOME="$FAKE_HOME"
 # this both wires up the ingress reconciler's live upstream registry on the
 # server (main.go's experimental.Enabled(LoadBalancer) checks) and unlocks
 # the CLI's "lb" subcommand used in the scaling step below.
-export APP_EXPERIMENTAL=load-balancer
+export APP_EXPERIMENTAL=load-balancer,plugins
 # APP_AUTO_PLACEMENT=false: with mesh on, bootstrapLocalNode gives this
 # solo control plane one real node row, so auto-placement would assign
 # new apps that node's ID instead of leaving node_id empty. Nothing ever
 # dials in as that node's agent (single-node has none), so the reconciler
 # can never resolve a transport for it. Keeping node_id empty resolves to
 # this process's own local runtime directly instead.
+# Demo addresses from the RFC 5737 / RFC 2544 documentation ranges, so no
+# real public IP, hostname, or LAN address ends up in a screenshot.
 APP_ADMIN_USERNAME=dev \
   APP_ADMIN_PASSWORD=dev \
   APP_DATA_DIR="$DATA_DIR" \
@@ -147,6 +157,19 @@ APP_ADMIN_USERNAME=dev \
   APP_AGENT_ADDR=":${AGENT_PORT}" \
   APP_MESH_ENABLED=1 \
   APP_AUTO_PLACEMENT=false \
+  APP_PUBLIC_HOST=203.0.113.5 \
+  APP_BRAND_SUPPORT_EMAIL=support@example.com \
+  APP_DASHBOARD_URL="$BASE_URL" \
+  APP_AUTH_ENGINE_WEBAUTHN_RP_ID=localhost \
+  APP_AUTH_ENGINE_WEBAUTHN_ORIGINS="$BASE_URL" \
+  HTTPS_PROXY=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9 NO_PROXY=127.0.0.1,localhost \
+  APP_AGENT_ADVERTISE_HOST=203.0.113.5 \
+  APP_MESH_CIDR=198.18.0.0/16 \
+  APP_NETWORK_POOL=198.18.0.0/14 \
+  APP_DOCTOR_PUBLIC_IP_ENDPOINT=http://127.0.0.1:9/ \
+  APP_PUBLIC_IP_DETECT=off \
+  APP_API_RATE_LIMIT_READ_RPM=100000 \
+  APP_API_RATE_LIMIT_WRITE_RPM=100000 \
   "$BIN" >"$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 log "control plane starting (pid $SERVER_PID), log at $SERVER_LOG"
@@ -198,7 +221,7 @@ DEVICE_LOGIN_PID=$!
 USER_CODE=""
 i=0
 while [ -z "$USER_CODE" ]; do
-  USER_CODE="$(grep -oE 'enter this code: [A-Za-z0-9-]+' "$DEVICE_LOGIN_LOG" 2>/dev/null | awk '{print $NF}')"
+  USER_CODE="$(grep -oE '(enter this code|confirm this code matches): [A-Za-z0-9-]+' "$DEVICE_LOGIN_LOG" 2>/dev/null | awk '{print $NF}')"
   i=$((i + 1))
   if [ "$i" -ge 15 ]; then
     cat "$DEVICE_LOGIN_LOG"
@@ -331,6 +354,51 @@ until [ "$("$CLI" lb status "$HERO_APP" --json 2>/dev/null | jq '[.upstreams[] |
 done
 "$CLI" lb check "$HERO_APP" || fail "lb check on $HERO_APP failed"
 
+# --- seed pages that need demo data -----------------------------------------
+#
+# Demo content for the pages shots.yml lists beyond apps and databases:
+# a pipeline with one run, an export destination, and an archive. Each one
+# is best-effort except the ids the deploy-log and pipeline-run shots name.
+api() { curl -s -H "Authorization: Bearer ${API_TOKEN}" -H "Content-Type: application/json" "$@"; }
+
+log "seeding a pipeline, a run, an export destination and an archive"
+pipeline_body="$(jq -n --arg yaml "$(cat <<'YAML'
+version: 1
+name: release
+on:
+  manual: {}
+  api: true
+stages: [test, deploy]
+jobs:
+  test:
+    stage: test
+    image: alpine:3.20
+    steps:
+      - run: echo "unit tests passed"
+  ship:
+    stage: deploy
+    image: alpine:3.20
+    steps:
+      - run: echo "release shipped"
+YAML
+)" '{name: "release", yaml: $yaml, enabled: true}')"
+api -X POST -d "$pipeline_body" "$BASE_URL/api/v1/apps/${HERO_APP}/pipelines" >"$SCRATCH_DIR/seed-pipeline.json" \
+  || log "pipeline seed failed"
+run_id="$(api -X POST -d '{}' "$BASE_URL/api/v1/apps/${HERO_APP}/pipelines/release/runs" | tee -a "$SCRATCH_DIR/seed-pipeline.json" | jq -r '.id // empty')"
+[ -n "$run_id" ] || fail "pipeline run for $HERO_APP did not start: $(cat "$SCRATCH_DIR/seed-pipeline.json")"
+sleep 3
+
+api -o /dev/null -X POST -d '{"name":"ops-log-sink","kind":"logs_http","endpoint":"https://logs.example.com/ingest","apps":["'"$HERO_APP"'"],"min_level":"info"}' \
+  "$BASE_URL/api/v1/export/destinations" || log "export destination seed failed"
+api -o /dev/null -X POST -d '{"kind":"deploys","older_than_days":30}' "$BASE_URL/api/v1/archives" || log "archive seed failed"
+# Without a domain the auto sslip.io URL carries this machine's public IP, which would end up in the apps list shot.
+api -o /dev/null -X PUT -d '{"image":"httpd:alpine","port":80,"domains":["edge-cache.example.com"]}' \
+  "$BASE_URL/api/v1/apps/${SECOND_APP}" || log "edge-cache domain seed failed"
+
+deploy_id="$(api "$BASE_URL/api/v1/apps/${HERO_APP}/deploy-attempts" \
+  | jq -r '(if type=="array" then . else (.attempts // .items // []) end) | .[0].id // empty')"
+[ -n "$deploy_id" ] || fail "no deploy attempt found for $HERO_APP"
+
 # --- let metrics accumulate -------------------------------------------------
 #
 # 15s collection resolution (see ADR on observability): a handful of
@@ -339,11 +407,83 @@ log "waiting ~75s for metrics history to accumulate"
 sleep 75
 
 # --- capture ----------------------------------------------------------------
+#
+# Dark shots keep the shots.yml output names; light shots add a -light
+# suffix. The theme is pinned through the levelrail-theme localStorage key
+# (ThemeProvider.tsx) by writing it into a copy of the login storage state.
+STATE_DARK="$SCRATCH_DIR/storage_state_dark.json"
+STATE_LIGHT="$SCRATCH_DIR/storage_state_light.json"
+python3 - "$STORAGE_STATE" "$STATE_DARK" "$STATE_LIGHT" "$BASE_URL" <<'PY' || fail "could not write theme storage states"
+import json, sys
+src, dark, light, origin = sys.argv[1:5]
+base = json.load(open(src))
+for path, theme in ((dark, "dark"), (light, "light")):
+    state = dict(base)
+    origins = []
+    for o in base.get("origins", []):
+        if o.get("origin") != origin:
+            origins.append(o)
+            continue
+        # Keep the login's localStorage (the username the route guard reads), only set the theme.
+        items = [i for i in o.get("localStorage", []) if i.get("name") != "levelrail-theme"]
+        items.append({"name": "levelrail-theme", "value": theme})
+        origins.append({**o, "localStorage": items})
+    if not any(o.get("origin") == origin for o in origins):
+        origins.append({"origin": origin, "localStorage": [{"name": "levelrail-theme", "value": theme}]})
+    state["origins"] = origins
+    json.dump(state, open(path, "w"))
+PY
 
-sed "s#__BASE_URL__#${BASE_URL}#g" "$SCRIPT_DIR/shots.yml" >"$RENDERED_SHOTS"
+DARK_CFG="$SCRATCH_DIR/shots.dark.yml"
+LIGHT_CFG="$SCRATCH_DIR/shots.light.yml"
+sed -e "s#__BASE_URL__#${BASE_URL}#g" -e "s#__DEPLOY_ID__#${deploy_id}#g" -e "s#__RUN_ID__#${run_id}#g" \
+  "$SCRIPT_DIR/shots.yml" >"$DARK_CFG"
+sed -E '/^- output:/ s#\.png$#-light.png#' "$DARK_CFG" >"$LIGHT_CFG"
 
-log "capturing screenshots"
-(cd "$REPO_ROOT" && shot-scraper multi "$RENDERED_SHOTS" --auth "$STORAGE_STATE") \
-  || fail "shot-scraper failed"
+log "checking every shot page for real identifiers (IPs, emails, sslip hosts, hostname)"
+python3 "$SCRIPT_DIR/leak_check.py" "$DARK_CFG" "$STATE_DARK" || fail "a shot page shows a real identifier; fix the demo data first"
 
-log "done: docs/assets/screenshots/*.png written"
+log "capturing dark screenshots"
+# Pages that never reach the load event are captured by slow_shots.py instead.
+DARK_FAST="$SCRATCH_DIR/shots.dark.fast.yml"
+LIGHT_FAST="$SCRATCH_DIR/shots.light.fast.yml"
+SLOW_LOG="$SCRATCH_DIR/slow-shots.log"
+python3 "$SCRIPT_DIR/slow_shots.py" split "$DARK_CFG" "$DARK_FAST" || fail "could not split the shot config"
+python3 "$SCRIPT_DIR/slow_shots.py" split "$LIGHT_CFG" "$LIGHT_FAST" || fail "could not split the shot config"
+
+(cd "$REPO_ROOT" && shot-scraper multi "$DARK_FAST" --auth "$STATE_DARK" --timeout 90000) || fail "dark shot-scraper run failed"
+log "capturing light screenshots"
+(cd "$REPO_ROOT" && shot-scraper multi "$LIGHT_FAST" --auth "$STATE_LIGHT" --timeout 90000) || fail "light shot-scraper run failed"
+
+log "capturing slow pages (domcontentloaded, then networkidle); log at $SLOW_LOG"
+(cd "$REPO_ROOT" && python3 "$SCRIPT_DIR/slow_shots.py" run "$DARK_CFG" "$STATE_DARK" "$SLOW_LOG") || fail "dark slow-page capture failed"
+(cd "$REPO_ROOT" && python3 "$SCRIPT_DIR/slow_shots.py" run "$LIGHT_CFG" "$STATE_LIGHT" "$SLOW_LOG") || fail "light slow-page capture failed"
+
+# --- optimize ------------------------------------------------------------------
+#
+# Output is re-encoded losslessly and quantized to 256 colors only when it
+# is still over 400 KB. Every captured file is rewritten.
+python3 - "$REPO_ROOT" "$CAPTURE_START" <<'PY' || log "optimizer step skipped (Pillow unavailable)"
+import io, os, sys
+from PIL import Image
+
+repo, started = sys.argv[1], float(sys.argv[2])
+out_dir = os.path.join(repo, "docs/assets/screenshots")
+limit = 400 * 1024
+
+for name in sorted(os.listdir(out_dir)):
+    path = os.path.join(out_dir, name)
+    if not name.endswith(".png") or os.path.getmtime(path) < started:
+        continue
+    img = Image.open(path).convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    if buf.tell() > limit:
+        img = img.quantize(colors=256, method=Image.Quantize.FASTOCTREE).convert("RGB")
+        buf = io.BytesIO()
+        img.save(buf, format="PNG", optimize=True)
+    open(path, "wb").write(buf.getvalue())
+    print(f"wrote {name} ({len(buf.getvalue()) // 1024} KB)")
+PY
+
+log "done: docs/assets/screenshots/*.png written (dark and -light)"
