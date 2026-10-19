@@ -87,6 +87,7 @@
     "security": "Review the security gate",
     "deploys": "Open deploy history",
     "source": "Check the source settings",
+    "freeSpace": "Free up disk space",
     "retry": "Retry deploy"
   },
   "fromCache": {

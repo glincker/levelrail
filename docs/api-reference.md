@@ -1640,6 +1640,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/plugin-marketplace/sources | AbilityRoot | handleMarketplaceSources |
 | POST | /api/v1/plugin-marketplace/sources | AbilityRoot | handleMarketplaceAddSource |
 | DELETE | /api/v1/plugin-marketplace/sources/{id} | AbilityRoot | handleMarketplaceRemoveSource |
+| GET | /api/v1/resilience/disk | AbilityRead | handleGetDiskResilience |
+| POST | /api/v1/resilience/disk/free-space | AbilityRoot | handleFreeDiskSpace |
 
 ## See also
 

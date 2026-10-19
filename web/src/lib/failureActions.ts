@@ -14,6 +14,7 @@ export type FailureLabelKey =
   | 'security'
   | 'deploys'
   | 'source'
+  | 'freeSpace'
 
 export interface FailureAction {
   href: string
@@ -44,6 +45,10 @@ const SOURCE: FailureTarget = {
   labelKey: 'source',
 }
 const NODES: FailureTarget = { path: () => '/nodes', labelKey: 'nodes' }
+const FREE_SPACE: FailureTarget = {
+  path: () => '/settings/system-status#disk-resilience',
+  labelKey: 'freeSpace',
+}
 
 // Every code in internal/failure has a destination; unknown falls back to the log.
 const TARGETS: Record<string, FailureTarget> = {
@@ -64,7 +69,8 @@ const TARGETS: Record<string, FailureTarget> = {
   registry_auth_failed: REGISTRY,
   registry_push_failed: REGISTRY,
   platform_mismatch: NODES,
-  disk_full: NODES,
+  disk_full: FREE_SPACE,
+  image_corrupt: FREE_SPACE,
   docker_unreachable: NODES,
   port_not_listening: {
     path: (a) => `${app(a)}/health`,

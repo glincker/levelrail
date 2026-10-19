@@ -103,7 +103,7 @@ A required environment variable or secret has no value. Set it on the app and re
 Pushing the built image failed. Retryable. Check the registry credential, repository permissions and reachability.
 
 ### disk_full
-The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry.
+The host ran out of disk, or the build disk preflight found less free space than `APP_MIN_BUILD_DISK_MB`. Prune unused images and build cache, then retry. Deploys, backups and pulls are also refused before they start when the data or Docker volume is below `APP_DISK_CRITICAL_FREE_MB`; use **Free space now** on the System status page.
 
 ### docker_unreachable
 The control plane could not reach the Docker daemon on the target node. Retryable once the daemon is back.
@@ -113,6 +113,9 @@ The git host could not be reached and the commit is not in the source cache. Ret
 
 ### source_not_cached
 Deploy from cache was requested but the cache does not hold the commit. Deploy it once while the git host is reachable, or raise `APP_SOURCE_CACHE_MAX_BYTES` and `APP_SOURCE_CACHE_MAX_AGE` if it was pruned.
+
+### image_corrupt
+The image or one of its layers is corrupt or incomplete on the node. Retryable: redeploy so it is pulled or rebuilt again, and prune the node's image cache if it repeats. See [Resilience](/resilience).
 
 ### freeze_window_hold
 The deploy is held by a freeze window. Retryable: it is released when the window ends, or redeploy with an explicit override and a reason.

@@ -19,6 +19,7 @@ const KNOWN_CODES = [
   'missing_env',
   'registry_push_failed',
   'disk_full',
+  'image_corrupt',
   'freeze_window_hold',
   'approval_pending',
   'scan_gate_blocked',

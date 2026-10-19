@@ -175,6 +175,7 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 		}
 
 		var err error
+		sessionStart := time.Now()
 		if holder.Current().Expired(time.Now()) && !adoptIdentityFromDisk(holder, file, logger) {
 			err = errors.New("certificate expired")
 			delay = reconnectMaxDelay
@@ -191,20 +192,19 @@ func runReconnectLoop(ctx context.Context, addr string, renewer *agent.Renewer, 
 			}
 			logger.Error("control plane no longer accepts this node's certificate: generate a re-enroll token for this node in the dashboard or CLI, then run: "+reenrollCommandHint(),
 				slog.String("node_id", holder.Current().NodeID), slog.String("error", err.Error()))
-		} else {
+		}
+
+		wait, next := nextReconnect(delay, time.Since(sessionStart), randInt63n)
+		delay = next
+		if !agent.IsAuthRejection(err) && !holder.Current().Expired(time.Now()) {
 			logger.Warn("session ended, reconnecting",
-				slog.String("error", err.Error()), slog.Duration("delay", delay))
+				slog.String("error", err.Error()), slog.Duration("delay", wait))
 		}
 
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(delay):
-		}
-
-		delay *= 2
-		if delay > reconnectMaxDelay {
-			delay = reconnectMaxDelay
+		case <-time.After(wait):
 		}
 	}
 }

@@ -29,6 +29,7 @@ import {
 } from '../../queries/systemDoctor'
 import type { DoctorCheck } from '../../queries/systemDoctor'
 import { DoctorCheckRow } from '@/components/DoctorCheckRow'
+import { DiskResilienceCard } from '../../components/DiskResilienceCard'
 import { ResilienceReportCard } from '../../components/ResilienceReportCard'
 import { SettingsPageTitle } from '../../components/settings/SettingsPageTitle'
 
@@ -270,6 +271,7 @@ function SystemStatusPage() {
         icon={HeartbeatIcon}
         checks={other}
       />
+      <DiskResilienceCard />
       <ResilienceReportCard />
     </div>
   )

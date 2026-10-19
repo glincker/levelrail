@@ -14,6 +14,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/deploy"
 	"github.com/GLINCKER/levelrail/internal/deploytrace"
+	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -120,6 +121,9 @@ func (rt *Router) applyDeploy(w http.ResponseWriter, r *http.Request, existing s
 		return
 	}
 	// Rollbacks skip guardrails: restoring a known state must never be blocked.
+	if rollbackTo == "" && rt.refuseLowDisk(w, diskguard.OpPull) {
+		return
+	}
 	if rollbackTo == "" {
 		candidate := existing
 		if req.Image != "" {

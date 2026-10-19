@@ -165,6 +165,37 @@ levelrail-cli bench chaos report
 
 The measured numbers, with hardware and date, are in [benchmarks](/benchmarks#chaos-results). The same scenarios run as `go test ./test/e2e/reconcile -run TestChaos_Live` (skipped under `-short`). The first run of `daemon-unreachable` exposed that the ingress dropped every route while the Docker API was unreachable. It now keeps the last known backend per service.
 
+## Failure modes and their fixes
+
+Each row is covered by a test. The scenarios that need no Docker run with `go test -tags chaos ./test/chaos`; the agent and reconciler cases run in the normal short suite.
+
+| Failure | What happens | The condition you see | Fix |
+| --- | --- | --- | --- |
+| Docker daemon dies mid deploy | The deploy stops, no orphan container is left, the next pass converges | `docker_unreachable` | Check the node, then redeploy |
+| Disk fills (ENOSPC) | The write fails, the transaction rolls back, SQLite stays intact and writable | `disk_full` | **Free space now** on System status |
+| Disk is nearly full | Deploys, image pulls and backups are refused with HTTP 507 `low_disk` before they start; a rollback is never refused | `disk_full` | **Free space now** runs a forced cleanup pass |
+| Agent stream severed | The agent touches no container and reconnects; the control plane skips that node for the pass and picks it up again | node shows offline | None needed, reconnect is automatic |
+| Two connections from one node | The newest wins, the older session is closed and cannot unregister or mark the node offline | log line `duplicate connection` | Stop the duplicate agent process |
+| OOM kill during readiness | The deploy fails and the previous version keeps serving | `oom_killed` | Raise the memory limit |
+| Corrupt or missing image | The deploy fails, the current version keeps serving | `image_corrupt`, `image_pull_failed` | Redeploy, or prune the image cache |
+
+### Disk space guard
+
+The control plane watches its data directory and the Docker root every minute through the shared background loop, with no extra timer. A node's disk is covered by the existing node disk space alert rule.
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `APP_DISK_LOW_FREE_MB` | 1024 | Below this the volume is Low and a notice is sent once |
+| `APP_DISK_CRITICAL_FREE_MB` | 512 | Below this risky operations are refused |
+| `APP_DISK_RESERVE_MB` | 16 | Reserve file in the data directory, released at Critical so the database can still commit, restored once space returns |
+| `APP_DISK_DOCKER_ROOT` | `/var/lib/docker` | Docker storage path to watch; an unreadable path is reported Unknown and never blocks anything |
+
+`GET /api/v1/resilience/disk` returns the readings and `POST /api/v1/resilience/disk/free-space` runs the cleanup. From a terminal: `bench chaos disk` and `bench chaos free-space`.
+
+### Agent link
+
+An agent reconnects with exponential backoff from 1s to 30s plus up to 50 percent jitter, so a fleet that lost the control plane together does not return together. A session that stayed up for a minute resets the backoff. Commands are not queued while a node is offline: desired state stays in the database and each reconcile pass re-issues what is missing once the node is back, so nothing is lost and nothing is applied twice. Containers keep running on an offline node.
+
 ## Next steps
 
 <CardGroup cols={2}>

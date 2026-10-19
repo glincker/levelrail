@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
+	"github.com/GLINCKER/levelrail/internal/diskguard"
 	"github.com/GLINCKER/levelrail/internal/store"
 	"github.com/GLINCKER/levelrail/kit/cronexpr"
 )
@@ -256,7 +257,7 @@ func (rt *Router) handleTriggerBackup(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
 	db, ok := rt.loadDatabaseForRunner(w, r, name, "api: trigger backup: load database failed")
-	if !ok || refuseNoBackups(w, db.Engine) {
+	if !ok || refuseNoBackups(w, db.Engine) || rt.refuseLowDisk(w, diskguard.OpBackup) {
 		return
 	}
 

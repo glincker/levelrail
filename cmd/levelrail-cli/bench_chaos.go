@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/GLINCKER/levelrail/internal/apiclient"
 	"github.com/GLINCKER/levelrail/internal/chaos"
 )
 
@@ -19,7 +20,7 @@ func runBenchChaos(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return exitUsage
 	}
 	sub := args[0]
-	if sub != "list" && sub != "run" && sub != "report" {
+	if sub != "list" && sub != "run" && sub != "report" && sub != "disk" && sub != "free-space" {
 		_, _ = fmt.Fprint(stderr, benchChaosUsage(prog))
 		return exitUsage
 	}
@@ -39,6 +40,23 @@ func runBenchChaos(prog string, args []string, stdout, stderr io.Writer, lookupE
 			for _, i := range info {
 				_, _ = fmt.Fprintf(stdout, "%-24s %s\n    expects: %s\n", i.Name, i.Title, i.Expectation)
 			}
+		})
+	case "disk":
+		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+		d, err := client.GetDiskResilience(context.Background())
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		return finishChaos(stdout, stderr, of, d, func() { writeDiskTable(stdout, d) })
+	case "free-space":
+		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+		r, err := client.FreeDiskSpace(context.Background())
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, err)
+		}
+		return finishChaos(stdout, stderr, of, r, func() {
+			_, _ = fmt.Fprintf(stdout, "reclaimed %d MiB\n", r.ReclaimedBytes>>20)
+			writeDiskTable(stdout, r.Disk)
 		})
 	case "report":
 		client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
@@ -109,8 +127,14 @@ func finishChaos(stdout, stderr io.Writer, of outputFlags, data any, table func(
 	return exitOK
 }
 
+func writeDiskTable(w io.Writer, d apiclient.DiskResilience) {
+	for _, v := range d.Volumes {
+		_, _ = fmt.Fprintf(w, "%-8s %-9s %6d MiB free of %d MiB  %s\n", v.Name, v.Level, v.FreeBytes>>20, v.TotalBytes>>20, v.Path)
+	}
+}
+
 func benchChaosUsage(prog string) string {
-	return fmt.Sprintf(`Usage: %[1]s bench chaos <list|run|report> [flags]
+	return fmt.Sprintf(`Usage: %[1]s bench chaos <list|run|report|disk|free-space> [flags]
 
 Failure scenarios measured against throwaway local Docker containers (unique
 name prefix, always removed afterwards).
@@ -119,6 +143,8 @@ name prefix, always removed afterwards).
   run <scenario|all>   run live (needs a build with -tags chaoslive and a local
                        Docker daemon); prints a table, or JSON with --json
   report               the latest recorded results from the control plane
+  disk                 free space on the data and Docker volumes, and whether risky operations are refused
+  free-space           run a forced cleanup pass now (the fix for a low-disk refusal), needs a root token
 
   --record             run: store the results on the control plane
   --hardware TEXT      run: hardware note kept in each result
