@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { BellSlashIcon, PlusCircleIcon } from '@phosphor-icons/react/dist/ssr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -32,17 +33,20 @@ import type { Severity, Silence, SilenceMatchers } from '../types/alertNoise'
 const SEVERITIES: Severity[] = ['info', 'warning', 'critical']
 const GO_DURATION = /^(\d+(\.\d+)?(ns|us|µs|ms|s|m|h))+$/
 
-function describeMatchers(m: SilenceMatchers): string {
+function describeMatchers(
+  m: SilenceMatchers,
+  tm: TFunction<'maintenance'>,
+): string {
   const parts: string[] = []
   const add = (name: string, values: string[] | undefined) => {
     if (values && values.length > 0) parts.push(`${name}: ${values.join(', ')}`)
   }
-  add('app', m.apps)
-  add('rule', m.rule_ids)
-  add('node', m.nodes)
-  add('kind', m.kinds)
-  add('severity', m.severities)
-  add('metric', m.metrics)
+  add(tm('silence.matchApp'), m.apps)
+  add(tm('silence.matchRule'), m.rule_ids)
+  add(tm('silence.matchNode'), m.nodes)
+  add(tm('silence.matchKind'), m.kinds)
+  add(tm('silence.matchSeverity'), m.severities)
+  add(tm('silence.matchMetric'), m.metrics)
   for (const [k, v] of Object.entries(m.labels ?? {})) parts.push(`${k}=${v}`)
   return parts.join(' / ')
 }
@@ -55,6 +59,7 @@ function splitList(raw: string): string[] {
 }
 
 function CreateSilenceDialog() {
+  const { t: tm } = useTranslation('maintenance')
   const [open, setOpen] = useState(false)
   const [apps, setApps] = useState('')
   const [nodes, setNodes] = useState('')
@@ -72,12 +77,12 @@ function CreateSilenceDialog() {
       kinds: splitList(kinds),
       severities,
     }
-    if (describeMatchers(matchers) === '') {
-      setFormError('Pick at least one app, node, kind or severity to match.')
+    if (describeMatchers(matchers, tm) === '') {
+      setFormError(tm('silence.errorNoMatcher'))
       return
     }
     if (!GO_DURATION.test(duration)) {
-      setFormError('Duration must look like 30m, 4h or 24h.')
+      setFormError(tm('silence.errorDuration'))
       return
     }
     setFormError('')
@@ -86,7 +91,10 @@ function CreateSilenceDialog() {
       {
         onSuccess: () => {
           setOpen(false)
-          toast.add({ title: `Silenced for ${duration}.`, type: 'success' })
+          toast.add({
+            title: tm('silence.silencedFor', { duration }),
+            type: 'success',
+          })
         },
       },
     )
@@ -96,22 +104,21 @@ function CreateSilenceDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>
         <PlusCircleIcon className="size-4" aria-hidden="true" />
-        New silence
+        {tm('silence.newSilence')}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New silence</DialogTitle>
+          <DialogTitle>{tm('silence.newSilence')}</DialogTitle>
           <DialogDescription>
-            Matching alerts keep evaluating and appear in history as silenced,
-            but do not notify. Every filter you fill in must match.
+            {tm('silence.dialogDescription')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <Field>
-            <FieldLabel htmlFor="silence-apps">Apps</FieldLabel>
+            <FieldLabel htmlFor="silence-apps">{tm('silence.apps')}</FieldLabel>
             <Input
               id="silence-apps"
-              placeholder="web, worker"
+              placeholder={tm('silence.appsPlaceholder')}
               value={apps}
               onChange={(e) => {
                 setApps(e.target.value)
@@ -119,10 +126,12 @@ function CreateSilenceDialog() {
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="silence-nodes">Nodes</FieldLabel>
+            <FieldLabel htmlFor="silence-nodes">
+              {tm('silence.nodes')}
+            </FieldLabel>
             <Input
               id="silence-nodes"
-              placeholder="edge-1"
+              placeholder={tm('silence.nodesPlaceholder')}
               value={nodes}
               onChange={(e) => {
                 setNodes(e.target.value)
@@ -130,10 +139,12 @@ function CreateSilenceDialog() {
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="silence-kinds">Rule kinds</FieldLabel>
+            <FieldLabel htmlFor="silence-kinds">
+              {tm('silence.kinds')}
+            </FieldLabel>
             <Input
               id="silence-kinds"
-              placeholder="threshold, crashloop"
+              placeholder={tm('silence.kindsPlaceholder')}
               value={kinds}
               onChange={(e) => {
                 setKinds(e.target.value)
@@ -141,7 +152,9 @@ function CreateSilenceDialog() {
             />
           </Field>
           <fieldset className="flex flex-wrap gap-4">
-            <legend className="mb-1 text-sm font-medium">Severity</legend>
+            <legend className="mb-1 text-sm font-medium">
+              {tm('silence.severity')}
+            </legend>
             {SEVERITIES.map((s) => (
               <label key={s} className="flex items-center gap-2 text-sm">
                 <Checkbox
@@ -152,12 +165,14 @@ function CreateSilenceDialog() {
                     )
                   }}
                 />
-                {s}
+                {tm(`silence.severityLevel.${s}`)}
               </label>
             ))}
           </fieldset>
           <Field>
-            <FieldLabel htmlFor="silence-duration">Duration</FieldLabel>
+            <FieldLabel htmlFor="silence-duration">
+              {tm('silence.duration')}
+            </FieldLabel>
             <Input
               id="silence-duration"
               value={duration}
@@ -167,10 +182,12 @@ function CreateSilenceDialog() {
             />
           </Field>
           <Field>
-            <FieldLabel htmlFor="silence-reason">Reason</FieldLabel>
+            <FieldLabel htmlFor="silence-reason">
+              {tm('silence.reason')}
+            </FieldLabel>
             <Input
               id="silence-reason"
-              placeholder="planned database migration"
+              placeholder={tm('silence.reasonPlaceholder')}
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value)
@@ -191,10 +208,10 @@ function CreateSilenceDialog() {
               setOpen(false)
             }}
           >
-            Cancel
+            {tm('silence.cancel')}
           </Button>
           <Button type="button" disabled={create.isPending} onClick={submit}>
-            {create.isPending ? 'Creating...' : 'Create silence'}
+            {create.isPending ? tm('silence.creating') : tm('silence.create')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -224,12 +241,12 @@ function EndSilenceButton({ silence }: { silence: Silence }) {
       onClick={() => {
         expire.mutate(silence.id, {
           onSuccess: () => {
-            toast.add({ title: 'Silence ended.', type: 'success' })
+            toast.add({ title: tm('silence.ended'), type: 'success' })
           },
         })
       }}
     >
-      End now
+      {tm('silence.endNow')}
     </Button>
   )
 }
@@ -244,7 +261,7 @@ export function AlertSilencesPanel() {
     () => [
       {
         id: 'status',
-        header: 'Status',
+        header: tm('silence.colStatus'),
         primary: true,
         cell: (s) => (
           <Badge
@@ -256,16 +273,16 @@ export function AlertSilencesPanel() {
                   : 'muted'
             }
           >
-            {s.status}
+            {tm(`silence.status.${s.status}`)}
           </Badge>
         ),
       },
       {
         id: 'matches',
-        header: 'Matches',
+        header: tm('silence.colMatches'),
         cell: (s) => (
           <span className="block text-sm break-words">
-            {describeMatchers(s.matchers)}
+            {describeMatchers(s.matchers, tm)}
             {s.reason ? (
               <span className="block text-xs text-muted-foreground">
                 {s.reason}
@@ -276,7 +293,7 @@ export function AlertSilencesPanel() {
       },
       {
         id: 'until',
-        header: 'Until',
+        header: tm('silence.colUntil'),
         cell: (s) => (
           <span className="text-muted-foreground">
             {new Date(s.ends_at).toLocaleString()}
@@ -285,7 +302,7 @@ export function AlertSilencesPanel() {
       },
       {
         id: 'createdBy',
-        header: 'Created by',
+        header: tm('silence.colCreatedBy'),
         priority: 3,
         cell: (s) => (
           <span className="text-muted-foreground">
@@ -300,7 +317,7 @@ export function AlertSilencesPanel() {
   )
 
   return (
-    <section className="space-y-3" aria-label="Silences">
+    <section className="space-y-3" aria-label={tm('silence.sectionLabel')}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           <Checkbox
@@ -309,7 +326,7 @@ export function AlertSilencesPanel() {
               setShowExpired(v === true)
             }}
           />
-          Show expired
+          {tm('silence.showExpired')}
         </label>
         <CreateSilenceDialog />
       </div>
@@ -320,8 +337,8 @@ export function AlertSilencesPanel() {
       ) : silences.length === 0 ? (
         <EmptyState
           icon={<BellSlashIcon className="size-5" />}
-          title="No active silences"
-          description="Silence an alert from its row, or create a silence here for a planned change."
+          title={tm('silence.emptyTitle')}
+          description={tm('silence.emptyDescription')}
         />
       ) : (
         <ResponsiveTable

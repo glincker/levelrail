@@ -245,5 +245,33 @@
     "createSelected_other": "Create an app for each selected package ({{count}})",
     "createSelected_zero": "Create an app for each selected package",
     "envNote": "Required environment variables are not asked here. Add them on each app, then redeploy."
+  },
+  "fields": {
+    "basics": "Basics",
+    "name": "Name",
+    "namePlaceholder": "e.g. marketing-site",
+    "image": "Image",
+    "imagePlaceholder": "e.g. ghcr.io/you/app:latest",
+    "imageHint": "The image to run, including a tag. Don't have one built yet? Pick the git option in step 1 instead and we'll build it for you.",
+    "networking": "Networking",
+    "port": "Port",
+    "portPlaceholder": "e.g. 3000",
+    "portHint": "The port your app listens on inside its container, e.g. 3000 for a typical Next.js app.",
+    "healthCheck": "Health check",
+    "healthEnable": "Enable a health check",
+    "healthPath": "Path",
+    "healthHint": "Checked before cutting traffic to a new container, and to detect a crashed one afterward. Change or turn this off if your app doesn't serve this path.",
+    "hideAdvanced": "Hide advanced options",
+    "showAdvanced": "Show advanced options",
+    "strategy": "Deploy strategy",
+    "strategyDefault": "Default (blue-green)",
+    "strategyRecreate": "Recreate",
+    "strategyBlueGreen": "Blue-green",
+    "strategyRolling": "Rolling",
+    "strategyHint": "How new versions roll out. Blue-green starts the new version alongside the old one and switches traffic over once it's healthy.",
+    "replicas": "Replicas",
+    "replicasHint": "How many copies of your app run at once. Leave blank to run just one.",
+    "creating": "Creating...",
+    "create": "Create app"
   }
 }

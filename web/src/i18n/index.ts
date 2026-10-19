@@ -106,13 +106,17 @@ export const NAMESPACES = [
   'palette',
 ] as const
 
+// New language: add its code here and a locales/<code>/ folder; untranslated namespaces and keys fall back to en.
+export const SUPPORTED_LANGUAGES = ['en', 'es']
+
 void i18n
   .use(lazyBackend)
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
     fallbackLng: 'en',
-    supportedLngs: ['en'],
+    supportedLngs: SUPPORTED_LANGUAGES,
+    nonExplicitSupportedLngs: true,
     ns: ['common'],
     defaultNS: 'common',
     interpolation: {

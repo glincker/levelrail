@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { useTranslation } from 'react-i18next'
 import { Toast as ToastPrimitive } from '@base-ui/react/toast'
 
 import { cn } from '@/lib/utils'
@@ -119,10 +120,11 @@ function ToastClose({
   render = <Button variant="ghost" size="icon-sm" />,
   ...props
 }: ToastPrimitive.Close.Props) {
+  const { t } = useTranslation()
   return (
     <ToastPrimitive.Close
       data-slot="toast-close"
-      aria-label="Close toast"
+      aria-label={t('actions.closeToast')}
       render={render}
       className={cn(
         "relative shrink-0 text-muted-foreground after:absolute after:-inset-2 after:content-[''] hover:text-foreground",

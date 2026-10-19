@@ -98,4 +98,32 @@ describe('accessibility checks', () => {
     )
     expect(a11yViolations(container)).toEqual([])
   })
+
+  it('flags the structural problems the extended rules cover', () => {
+    const { container } = render(
+      <div>
+        <div role="dialog" />
+        <div role="tab" />
+        <button type="button" tabIndex={3}>
+          ok
+        </button>
+        <div aria-hidden="true">
+          <a href="/x">hidden link</a>
+        </div>
+        <input aria-labelledby="nope" />
+        <h2></h2>
+        <iframe />
+      </div>,
+    )
+    const found = a11yViolations(container).join('\n')
+    for (const needle of [
+      'ARIA role without a name',
+      'positive tabindex',
+      'focusable inside aria-hidden',
+      'missing id nope',
+      'empty heading',
+      'iframe without a title',
+    ])
+      expect(found).toContain(needle)
+  })
 })
