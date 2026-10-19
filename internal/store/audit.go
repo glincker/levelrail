@@ -133,6 +133,11 @@ type AuditEntryFilter struct {
 	PathLike []string
 	// ActionPrefixes keeps rows whose action starts with any of these.
 	ActionPrefixes []string
+	// OwnerUserID keeps only rows this user caused: their own sessions, the
+	// tokens they minted, and assistant turns run on their behalf.
+	OwnerUserID string
+	// ActorType keeps rows by "session", "token" or "system".
+	ActorType string
 }
 
 // AuditLikeLiteral escapes s for use inside an AuditEntryFilter.PathLike pattern.
@@ -189,6 +194,14 @@ func (db *DB) ListAuditEntries(ctx context.Context, limit int, before *time.Time
 	if filter.Action != "" {
 		conditions = append(conditions, `(action = ? OR action LIKE ? ESCAPE '\')`)
 		args = append(args, filter.Action, auditLikeEscaper.Replace(filter.Action)+".%")
+	}
+	if filter.ActorType != "" {
+		conditions = append(conditions, "actor_type = ?")
+		args = append(args, filter.ActorType)
+	}
+	if filter.OwnerUserID != "" {
+		conditions = append(conditions, `((actor_type = 'session' AND actor_id = ?) OR (actor_type = 'token' AND actor_id IN (SELECT id FROM api_tokens WHERE owner_user_id = ?)) OR on_behalf_of = ?)`)
+		args = append(args, filter.OwnerUserID, filter.OwnerUserID, "user:"+filter.OwnerUserID)
 	}
 	conditions, args = appendAnyLike(conditions, args, "path", filter.PathLike, "")
 	conditions, args = appendAnyLike(conditions, args, "action", escapeAll(filter.ActionPrefixes), "%")

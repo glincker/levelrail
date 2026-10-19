@@ -63,6 +63,7 @@ func NewServerWithOptions(client *apiclient.Client, opts Options) (*mcp.Server, 
 	registerPromoteTools(server, client)
 	registerNotificationTools(server, client)
 	registerAuditTools(server, client)
+	registerAccountTools(server, client)
 	registerIAMTools(server, client)
 	registerRoleTools(server, client)
 	registerOrganizationTools(server, client)

@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1380 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1393 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -349,6 +349,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/2fa/recovery-codes/regenerate", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/2fa/setup", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/2fa/verify", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/auth/account", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAccount", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/delete-account/check", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeleteAccountCheck", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/activity", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceActivity", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/pending-summary", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDevicePendingSummary", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/device/requests", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListDeviceAuthRequests", Description: ""},
@@ -356,7 +358,14 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/auth/device/token", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDeviceAuthToken", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/device/{user_code}/approve", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleApproveDeviceAuthRequest", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/device/{user_code}/deny", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDenyDeviceAuthRequest", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/email-change", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleEmailChangeStatus", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/email-change", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRequestEmailChange", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/email-change/confirm", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleConfirmEmailChange", Description: ""},
+	{Method: "POST", Path: "/api/v1/auth/export", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleStartExport", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/export/{id}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleExportStatus", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/export/{id}/download", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleDownloadExport", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/forgot-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleForgotPassword", Description: "Forgot/reset password: necessarily unauthenticated, gated by possession of the emailed token instead of a session or ability."},
+	{Method: "DELETE", Path: "/api/v1/auth/link/{provider}", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUnlinkProvider", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/login", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogin", Description: "Auth. Login and first-run registration are necessarily public; everything else requires an existing session."},
 	{Method: "POST", Path: "/api/v1/auth/login-approval/poll", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePollLoginApproval", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/login-approvals/{id}/approve", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleApproveLoginApproval", Description: ""},
@@ -366,6 +375,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/auth/login-options", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLoginOptions", Description: "Sign in with a code and new-device approval (login_code.go, login_approval.go). Request, redeem and poll are public and bound to a browser cookie; the rest act only on the caller's own account."},
 	{Method: "POST", Path: "/api/v1/auth/logout", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleLogout", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/my-access", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyAccess", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/my-activity", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyActivity", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/my-credentials", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleMyCredentials", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/oauth/providers", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListPublicOAuthProviders", Description: "OAuth sign-in (Google, GitHub). /providers, /start, /callback are all necessarily public; /link/start is requireAuth-gated (see its own doc comment)."},
 	{Method: "GET", Path: "/api/v1/auth/oauth/{provider}/callback", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleOAuthCallback", Description: ""},
 	{Method: "GET", Path: "/api/v1/auth/oauth/{provider}/link/start", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleOAuthLinkStart", Description: ""},
@@ -378,6 +389,8 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/auth/passkeys/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/auth/passkeys/{id}", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "", Description: ""},
 	{Method: "PUT", Path: "/api/v1/auth/password", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleChangePassword", Description: ""},
+	{Method: "GET", Path: "/api/v1/auth/preferences", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleGetPreferences", Description: ""},
+	{Method: "PUT", Path: "/api/v1/auth/preferences", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handlePutPreferences", Description: ""},
 	{Method: "PATCH", Path: "/api/v1/auth/profile", Ability: "Session", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleUpdateProfile", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/register", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleRegister", Description: ""},
 	{Method: "POST", Path: "/api/v1/auth/reset-password", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleResetPassword", Description: ""},

@@ -71,9 +71,11 @@ func (rt *Router) Handler() http.Handler {
 	rt.registerStandaloneDomainRoutes(mux)
 	rt.registerLogExplorerRoutes(mux)
 	rt.registerMobileRoutes(mux)
+	rt.registerAccountSelfRoutes(mux)
 
 	var h http.Handler = mux
 	h = rt.bodyLimitMiddleware(h)
+	h = rt.accountEventMiddleware(h)
 	h = experimentalGateMiddleware(h)
 	h = rt.accessPolicyMiddleware(h)
 	h = csrfOriginMiddleware(h)

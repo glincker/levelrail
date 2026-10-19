@@ -138,7 +138,7 @@ var Tree = map[string]*Node{
 	"builds":     {Subs: map[string]*Node{"list": nil, "show": nil, "cancel": nil, "retry": nil, "cache": nil, "prune": nil}},
 	"dashboards": {Subs: map[string]*Node{"list": nil, "show": nil, "create": nil, "export": nil, "import": nil, "delete": nil}},
 	"resources":  {Subs: map[string]*Node{"list": nil, "tag": nil, "untag": nil, "views": {Subs: map[string]*Node{"list": nil, "save": nil, "delete": nil}}}},
-	"auth": {Subs: map[string]*Node{"login": nil, "whoami": nil, "status": nil, "trust-server": nil, "session-link": nil, "code": nil, "approve": nil, "deny": nil, "code-login": nil, "devices": {Subs: map[string]*Node{"revoke": nil}}, "2fa": {Subs: map[string]*Node{
+	"auth": {Subs: map[string]*Node{"login": nil, "whoami": nil, "status": nil, "trust-server": nil, "session-link": nil, "code": nil, "approve": nil, "deny": nil, "code-login": nil, "activity": nil, "export": nil, "unlink": nil, "delete-account": nil, "preferences": {Subs: map[string]*Node{"get": nil, "set": nil}}, "devices": {Subs: map[string]*Node{"revoke": nil}}, "2fa": {Subs: map[string]*Node{
 		"status": nil, "setup": nil, "enable": nil, "disable": nil, "recovery-codes": nil,
 	}}}},
 	"profile": {Subs: map[string]*Node{"list": nil}},

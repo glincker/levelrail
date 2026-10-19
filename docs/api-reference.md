@@ -248,6 +248,19 @@ Endpoints for:
 | PATCH | /api/v1/auth/passkeys/{id} | Session |  |
 | POST | /api/v1/auth/passkey-login/begin | Public |  |
 | POST | /api/v1/auth/passkey-login/finish | Public |  |
+| GET | /api/v1/auth/my-activity | Public | handleMyActivity |
+| GET | /api/v1/auth/my-credentials | Public | handleMyCredentials |
+| GET | /api/v1/auth/preferences | Public | handleGetPreferences |
+| PUT | /api/v1/auth/preferences | Public | handlePutPreferences |
+| POST | /api/v1/auth/export | Public | handleStartExport |
+| GET | /api/v1/auth/export/{id} | Public | handleExportStatus |
+| GET | /api/v1/auth/export/{id}/download | Public | handleDownloadExport |
+| GET | /api/v1/auth/delete-account/check | Public | handleDeleteAccountCheck |
+| DELETE | /api/v1/auth/account | Public | handleDeleteAccount |
+| DELETE | /api/v1/auth/link/{provider} | Public | handleUnlinkProvider |
+| GET | /api/v1/auth/email-change | Public | handleEmailChangeStatus |
+| POST | /api/v1/auth/email-change | Public | handleRequestEmailChange |
+| POST | /api/v1/auth/email-change/confirm | Public | handleConfirmEmailChange |
 
 </Accordion>
 

@@ -13,6 +13,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { myAccessQueryOptions } from '../../queries/myAccess'
 import { publicOAuthProvidersQueryOptions } from '../../queries/oauth'
 import { tokenListQueryOptions } from '../../queries/tokens'
+import { UnlinkProviderButton } from './UnlinkProviderButton'
 
 export function LinkedProvidersCard() {
   const { t } = useTranslation('settings')
@@ -41,9 +42,15 @@ export function LinkedProvidersCard() {
                   {p.display_name || p.provider}
                 </span>
                 {linked.has(p.provider) ? (
-                  <Badge variant="success">
-                    {t('accountPage.providers.linked')}
-                  </Badge>
+                  <>
+                    <Badge variant="success">
+                      {t('accountPage.providers.linked')}
+                    </Badge>
+                    <UnlinkProviderButton
+                      provider={p.provider}
+                      label={p.display_name || p.provider}
+                    />
+                  </>
                 ) : (
                   <a
                     className={buttonVariants({

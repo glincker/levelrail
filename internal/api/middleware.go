@@ -118,6 +118,8 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 // radius than inline script (no code execution) and locking it down
 // would need per-request nonce plumbing through the embedded, otherwise
 // static web/dist/index.html, not worth it for the risk it removes.
+// img-src names one outside host, Gravatar, which the browser contacts only
+// after the user switches the opt-in Gravatar avatar on in their preferences.
 // connect-src 'self' already covers the exec terminal's WebSocket and
 // the log/deploy-log SSE streams: CSP3 upgrades a 'self' connect-src
 // match to ws/wss automatically for a same-origin WebSocket, no explicit
@@ -125,7 +127,7 @@ func panicRecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 const contentSecurityPolicy = "default-src 'self'; " +
 	"script-src 'self'; " +
 	"style-src 'self' 'unsafe-inline'; " +
-	"img-src 'self' data:; " +
+	"img-src 'self' data: https://www.gravatar.com; " +
 	"font-src 'self' data:; " +
 	"connect-src 'self'; " +
 	"object-src 'none'; " +

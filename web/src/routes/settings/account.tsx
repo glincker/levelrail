@@ -14,6 +14,15 @@ import {
   MyTokensCard,
 } from '../../components/account/AccountConnectionsCards'
 import { MyAccessCard } from '../../components/account/MyAccessCard'
+import { MyActivityCard } from '../../components/account/MyActivityCard'
+import { PreferencesCard } from '../../components/account/PreferencesCard'
+import { EmailChangeCard } from '../../components/account/EmailChangeCard'
+import { DataExportCard } from '../../components/account/DataExportCard'
+import { DangerZoneCard } from '../../components/account/DangerZoneCard'
+import {
+  ACCOUNT_PASSKEYS_ANCHOR,
+  ACCOUNT_PASSWORD_ANCHOR,
+} from '../../components/account/UnlinkProviderButton'
 import {
   SettingsCardSkeleton,
   SettingsHeaderSkeleton,
@@ -53,13 +62,22 @@ function AccountSettingsPage() {
     >
       <div className="space-y-6">
         <ProfileCard />
-        <ChangePasswordCard />
+        <PreferencesCard />
+        <EmailChangeCard />
+        <div id={ACCOUNT_PASSWORD_ANCHOR}>
+          <ChangePasswordCard />
+        </div>
         <TwoFactorCard />
-        <PasskeysCard />
+        <div id={ACCOUNT_PASSKEYS_ANCHOR}>
+          <PasskeysCard />
+        </div>
         <AccountSessionsCard />
         <LinkedProvidersCard />
         <MyTokensCard />
         <MyAccessCard />
+        <MyActivityCard />
+        <DataExportCard />
+        <DangerZoneCard />
       </div>
     </PageTemplate>
   )

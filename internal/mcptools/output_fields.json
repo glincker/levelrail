@@ -942,6 +942,16 @@
   "to",
   "totals"
  ],
+ "get_my_access": [
+  "abilities",
+  "capabilities",
+  "kind",
+  "linked_providers",
+  "name",
+  "policies",
+  "teams",
+  "tier"
+ ],
  "get_node": [
   "accepts_app_workloads",
   "accepts_build_workloads",
@@ -1625,6 +1635,28 @@
   "swap_group",
   "updated_at"
  ],
+ "list_my_activity": [
+  "entries",
+  "next_cursor"
+ ],
+ "list_my_sessions": [
+  "browser",
+  "created_at",
+  "current",
+  "expires_at",
+  "id",
+  "ip",
+  "last_seen_at",
+  "network"
+ ],
+ "list_my_tokens": [
+  "abilities",
+  "created_at",
+  "expires_at",
+  "id",
+  "last_used_at",
+  "name"
+ ],
  "list_node_moves": [
   "moves",
   "total",
@@ -1828,13 +1860,22 @@
   "archive_policies",
   "bucket",
   "created_at",
+  "default_for",
+  "directory",
   "endpoint",
   "id",
+  "kind",
+  "monthly_cost_usd",
   "name",
+  "node_id",
+  "objects",
+  "over_quota",
   "path_style",
   "preset",
   "provider",
-  "region"
+  "quota_bytes",
+  "region",
+  "used_bytes"
  ],
  "list_team_members": [
   "created_at",
@@ -2321,6 +2362,7 @@
   "ok"
  ],
  "test_storage_destination": [
+  "fix",
   "message",
   "ok",
   "reason",
@@ -2359,5 +2401,11 @@
   "failure",
   "poll_again",
   "status"
+ ],
+ "whoami": [
+  "abilities",
+  "expires_at",
+  "kind",
+  "name"
  ]
 }
