@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // DomainExpiryStore is what ending timed domain maintenance needs.
@@ -47,7 +47,7 @@ func (x *DomainExpirer) Run(ctx context.Context, interval time.Duration) error {
 	if interval <= 0 {
 		interval = DefaultInterval
 	}
-	return ticker.Run(ctx, interval, x.Logger, "domain maintenance expiry", x.Tick)
+	return footprint.Every(ctx, "domain maintenance expiry", interval, x.Logger, x.Tick)
 }
 
 // Tick ends every expired or orphaned domain maintenance, then syncs silences.

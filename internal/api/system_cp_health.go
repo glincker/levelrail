@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/cphealth"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/reconcile"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
@@ -31,11 +32,19 @@ type ControlPlaneDB interface {
 	ResetSlowQueries()
 }
 
+// TelemetryStore is the metrics database surface the health page reads and compacts.
+type TelemetryStore interface {
+	FileBytes(ctx context.Context) (int64, error)
+	Compact(ctx context.Context) error
+}
+
 // ControlPlaneProbe wires the health page to the running process.
 type ControlPlaneProbe struct {
 	DB             ControlPlaneDB
 	Reconcile      func() reconcile.Stats
 	ResyncInterval time.Duration
+	Telemetry      TelemetryStore
+	MemoryLimit    footprint.MemoryLimit
 }
 
 type cpHealthState struct {
@@ -84,6 +93,7 @@ type cpHealthResource struct {
 	DB         store.DBMetrics     `json:"db"`
 	Reconcile  cpReconcile         `json:"reconcile"`
 	Streams    cpStreams           `json:"streams"`
+	Footprint  cpFootprint         `json:"footprint"`
 	Thresholds cphealth.Thresholds `json:"thresholds"`
 	Findings   []cphealth.Finding  `json:"findings"`
 	Status     string              `json:"status"`
@@ -105,6 +115,15 @@ type cpReconcile struct {
 	Slowest     string  `json:"slowest_controller"`
 	LagSeconds  float64 `json:"lag_seconds"`
 	Pending     bool    `json:"pending"`
+}
+
+type cpFootprint struct {
+	RSSBytes       uint64                `json:"rss_bytes"`
+	Threads        int                   `json:"threads"`
+	CPUPercent     float64               `json:"cpu_percent"`
+	TelemetryBytes int64                 `json:"telemetry_bytes"`
+	MemoryLimit    footprint.MemoryLimit `json:"memory_limit"`
+	Loops          []footprint.LoopInfo  `json:"loops"`
 }
 
 type cpStreams struct {
@@ -131,6 +150,16 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		DB:      p.DB.Metrics(),
 		Streams: cpStreams{Active: rt.cpHealth.streams.Load(), Cap: rt.cpHealth.streamCap()},
 	}
+	proc := footprint.ReadProc()
+	res.Footprint = cpFootprint{
+		RSSBytes: proc.RSSBytes, Threads: proc.Threads, CPUPercent: proc.CPUPercent,
+		MemoryLimit: p.MemoryLimit, Loops: footprint.Loops(),
+	}
+	if p.Telemetry != nil {
+		if n, err := p.Telemetry.FileBytes(context.Background()); err == nil {
+			res.Footprint.TelemetryBytes = n
+		}
+	}
 	var rs reconcile.Stats
 	if p.Reconcile != nil {
 		rs = p.Reconcile()
@@ -148,6 +177,7 @@ func (rt *Router) cpHealthSnapshot() (cpHealthResource, bool) {
 		DBP95MS: res.DB.P95MS, DBWaitCount: res.DB.WaitCount, DBInUse: res.DB.InUse,
 		WALBytes: res.DB.WALBytes, SlowQueries: res.DB.SlowQueries,
 		ReconcilePass: rs.LastPass, LastPassAt: rs.LastPassAt, ResyncInterval: p.ResyncInterval,
+		RSSBytes: proc.RSSBytes, Threads: proc.Threads, TelemetryBytes: res.Footprint.TelemetryBytes,
 		Streams: int(res.Streams.Active), StreamCap: int(res.Streams.Cap), Now: now,
 	}, res.Thresholds)
 	sort.SliceStable(res.Findings, func(i, j int) bool {
@@ -172,6 +202,9 @@ func (rt *Router) handleGetCPHealth(w http.ResponseWriter, _ *http.Request) {
 	}
 	if res.Findings == nil {
 		res.Findings = []cphealth.Finding{}
+	}
+	if res.Footprint.Loops == nil {
+		res.Footprint.Loops = []footprint.LoopInfo{}
 	}
 	if res.DB.RecentSlow == nil {
 		res.DB.RecentSlow = []store.SlowQuery{}
@@ -202,6 +235,12 @@ func (rt *Router) handleCPHealthFix(w http.ResponseWriter, r *http.Request) {
 		err = p.DB.Optimize(r.Context())
 	case cphealth.FixResetSlowLog:
 		p.DB.ResetSlowQueries()
+	case cphealth.FixTelemetryPrune:
+		if p.Telemetry == nil {
+			writeError(w, http.StatusNotImplemented, "metrics database is not available")
+			return
+		}
+		err = p.Telemetry.Compact(r.Context())
 	default:
 		writeError(w, http.StatusBadRequest, "unknown fix")
 		return

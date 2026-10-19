@@ -10,7 +10,7 @@ import (
 
 func runSystemHealth(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "system health", "print control plane health as JSON to stdout and nothing else", stderr)
-	fix := fs.String("fix", "", "apply a fix: wal_checkpoint, db_optimize or reset_slow_log")
+	fix := fs.String("fix", "", "apply a fix: wal_checkpoint, db_optimize, reset_slow_log or telemetry_prune")
 	fs.Usage = func() {
 		_, _ = fmt.Fprint(stderr, systemUsage(prog)+"\nFlags:\n")
 		fs.PrintDefaults()
@@ -43,6 +43,11 @@ func printCPHealth(out io.Writer, h apiclient.CPHealth) {
 	_, _ = fmt.Fprintf(out, "db queue:    %d waits, %.0f ms total\nwal:         %d MiB of %d MiB db\n", h.DB.WaitCount, h.DB.WaitMS, h.DB.WALBytes>>20, h.DB.DBBytes>>20)
 	_, _ = fmt.Fprintf(out, "reconcile:   %d controllers, last pass %.0f ms, p95 %.0f ms, %.0f s since last pass\n", h.Reconcile.Controllers, h.Reconcile.LastPassMS, h.Reconcile.P95MS, h.Reconcile.LagSeconds)
 	_, _ = fmt.Fprintf(out, "streams:     %d of %d\n", h.Streams.Active, h.Streams.Cap)
+	fp := h.Footprint
+	_, _ = fmt.Fprintf(out, "footprint:   rss %d MiB, %d threads, cpu %.1f%%, metrics db %d MiB, memory limit %d MiB (%s)\n", fp.RSSBytes>>20, fp.Threads, fp.CPUPercent, fp.TelemetryBytes>>20, fp.MemoryLimit.LimitBytes>>20, fp.MemoryLimit.Source)
+	for _, l := range fp.Loops {
+		_, _ = fmt.Fprintf(out, "  loop %-28s every %6.0fs runs %-6d last %6.1f ms cost %.3f%%\n", l.Name, l.IntervalSecs, l.Runs, l.LastDuration, l.CostPercent)
+	}
 	for _, f := range h.Findings {
 		line := fmt.Sprintf("  [%s] %s: %.1f (limit %.1f)", f.Severity, f.ID, f.Value, f.Threshold)
 		if f.Fix != "" {

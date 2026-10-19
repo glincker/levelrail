@@ -1,0 +1,28 @@
+---
+title: "Performance budget"
+description: The rules every new control plane feature follows so idle cost stays flat as features grow.
+---
+
+The control plane is meant to stay small on a 2 vCPU, 8 GB box. Measured idle on such a box: about 200 MB RSS (peak 253 MB), 273 goroutines, 11 threads, 1.5 percent CPU. These rules keep that number from creeping up. Read them before adding a subsystem.
+
+## Rules
+
+1. **Lazy start.** A background loop starts only when its feature is enabled or has work. A disabled experimental feature must not start a goroutine, open a file or allocate a cache.
+2. **One loop primitive.** Periodic work goes through `footprint.Every` (jittered first tick, one recorded entry per loop) or registers with `footprint.Track` and calls `Observe` per run. Do not add a bare `time.NewTicker` loop. Every loop appears on the Control plane health page with its interval, last run and cost.
+3. **Context and shutdown.** Every loop takes a context and returns when it ends.
+4. **Bounded memory.** Every cache has a size or age cap. Large data (search index, exports, archives) lives in SQLite or on disk, never only in RAM. Plugin panel responses and marketplace indexes are capped and expire.
+5. **No per-request fan-out.** A request must not start work proportional to the number of apps, nodes or plugins. Aggregate in one query or read a cached snapshot.
+6. **Paginate lists.** List endpoints take `limit` and `offset` with a hard cap. UI lists over 50 rows are virtualized.
+7. **Bounded streams.** Long lived streams use `startLiveSSE` so they count against `APP_MAX_LIVE_STREAMS`.
+8. **MCP toolset budget.** New MCP tools must fit the per-toolset token budget in `internal/mcptools/budget_test.go`. Budgets are lowered, not raised.
+9. **Retention.** New stored telemetry has a retention default and is pruned. The metrics database is capped at 1 GiB and pruned hourly.
+
+## Memory limit
+
+At boot the control plane sets a soft Go memory limit of 80 percent of the container (cgroup) or host memory, so the garbage collector works harder before the kernel OOM killer acts. Override the share with `APP_GOMEMLIMIT_PERCENT` (0 disables it), or set `GOMEMLIMIT` yourself, which always wins. Limits under 128 MB are ignored. `GOGC` stays at the Go default (100); set `GOGC` in the environment to trade memory for CPU.
+
+## Guard
+
+`go test ./cmd/levelrail -run TestFootprint` boots the control plane on demo fixtures twice, with every experimental feature off and then on, idles 60 seconds each (`APP_FOOTPRINT_IDLE_SECONDS`) and compares goroutines and RSS with `cmd/levelrail/testdata/footprint_baseline.json`. It fails when goroutines exceed the ratchet by more than 5 or RSS grows more than 15 percent. It is skipped under `-short` and runs in the nightly lane. After an intended change, re-record with `FOOTPRINT_RECORD=1` and say why in the commit. Baselines are per OS, so the first Linux run logs that it has none until recorded.
+
+The harness measures the demo handler (the real router and stores on seeded data, without Docker, Caddy or agents), so it guards the API and store layers, not the container work of a live reconcile. Use the numbers on the health page of a real instance for that.

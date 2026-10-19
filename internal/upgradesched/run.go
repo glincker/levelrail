@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"time"
 
-	"github.com/GLINCKER/levelrail/kit/ticker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // DefaultInterval is how often Run evaluates schedules.
@@ -17,7 +17,7 @@ func (s *Scheduler) Run(ctx context.Context, interval time.Duration) error {
 	if interval <= 0 {
 		interval = DefaultInterval
 	}
-	return ticker.Run(ctx, interval, s.log(), "upgradesched", s.Tick)
+	return footprint.Every(ctx, "upgradesched", interval, s.log(), s.Tick)
 }
 
 // NewScheduleID returns a random schedule id.

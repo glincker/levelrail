@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 const (
@@ -185,12 +187,16 @@ func (db *DB) Optimize(ctx context.Context) error {
 func (db *DB) RunWALMaintenance(ctx context.Context) {
 	t := time.NewTicker(checkpointEvery)
 	defer t.Stop()
+	loop := footprint.Track("wal checkpoint", checkpointEvery)
+	defer loop.Active()()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			_ = db.CheckpointWAL(ctx, false)
+			start := time.Now()
+			err := db.CheckpointWAL(ctx, false)
+			loop.Observe(start, err)
 		}
 	}
 }

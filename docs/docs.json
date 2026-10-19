@@ -874,6 +874,7 @@
               "feature-status",
               "experimental-features",
               "performance",
+              "performance-budget",
               "benchmarks",
               "control-plane-health",
               "changelog",

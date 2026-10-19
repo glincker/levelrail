@@ -9,6 +9,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/demo"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/version"
 )
 
@@ -21,6 +22,8 @@ func run(logger *slog.Logger) error {
 		logger.Warn("ignoring unknown experimental feature", slog.String("error", err.Error()))
 	}
 	logger.Info("experimental features", slog.Any("enabled", experimental.EnabledList()))
+
+	footprint.ApplyMemoryLimit(os.Getenv, logger)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

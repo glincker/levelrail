@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/plugin/pluginpb"
 )
 
@@ -96,12 +97,16 @@ func (m *Manager) Run(ctx context.Context) {
 	m.Reconcile(ctx)
 	t := time.NewTicker(m.cfg.ReconcileInterval)
 	defer t.Stop()
+	loop := footprint.Track("plugin supervisor", m.cfg.ReconcileInterval)
+	defer loop.Active()()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
+			start := time.Now()
 			m.Reconcile(ctx)
+			loop.Observe(start, nil)
 		}
 	}
 }

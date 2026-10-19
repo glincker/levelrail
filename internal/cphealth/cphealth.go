@@ -18,9 +18,10 @@ const (
 
 // Fix ids the API can apply. Empty means the finding needs the operator.
 const (
-	FixWALCheckpoint = "wal_checkpoint"
-	FixDBOptimize    = "db_optimize"
-	FixResetSlowLog  = "reset_slow_log"
+	FixWALCheckpoint  = "wal_checkpoint"
+	FixDBOptimize     = "db_optimize"
+	FixResetSlowLog   = "reset_slow_log"
+	FixTelemetryPrune = "telemetry_prune"
 )
 
 // Finding ids.
@@ -34,6 +35,9 @@ const (
 	FindingReconcile  = "reconcile_pass"
 	FindingEventLag   = "event_lag"
 	FindingStreams    = "streams"
+	FindingRSS        = "rss"
+	FindingThreads    = "threads"
+	FindingTelemetry  = "telemetry_size"
 )
 
 // Inputs are the measurements one evaluation reads.
@@ -48,6 +52,9 @@ type Inputs struct {
 	ReconcilePass  time.Duration
 	LastPassAt     time.Time
 	ResyncInterval time.Duration
+	RSSBytes       uint64
+	Threads        int
+	TelemetryBytes int64
 	Streams        int
 	StreamCap      int
 	Now            time.Time
@@ -55,14 +62,17 @@ type Inputs struct {
 
 // Thresholds are the limits above which a measurement is flagged. Env vars override the defaults.
 type Thresholds struct {
-	Goroutines    int           `json:"goroutines"`
-	HeapBytes     uint64        `json:"heap_bytes"`
-	DBP95MS       float64       `json:"db_p95_ms"`
-	WALBytes      int64         `json:"wal_bytes"`
-	SlowQueries   int64         `json:"slow_queries"`
-	ReconcilePass time.Duration `json:"reconcile_pass_ns"`
-	EventLagMult  int           `json:"event_lag_multiple"`
-	StreamPercent int           `json:"stream_percent"`
+	Goroutines     int           `json:"goroutines"`
+	HeapBytes      uint64        `json:"heap_bytes"`
+	DBP95MS        float64       `json:"db_p95_ms"`
+	WALBytes       int64         `json:"wal_bytes"`
+	SlowQueries    int64         `json:"slow_queries"`
+	ReconcilePass  time.Duration `json:"reconcile_pass_ns"`
+	EventLagMult   int           `json:"event_lag_multiple"`
+	StreamPercent  int           `json:"stream_percent"`
+	RSSBytes       uint64        `json:"rss_bytes"`
+	Threads        int           `json:"threads"`
+	TelemetryBytes int64         `json:"telemetry_bytes"`
 }
 
 // Finding is one saturated or degraded measurement.
@@ -86,14 +96,17 @@ func DefaultThresholds(getenv func(string) string) Thresholds {
 		return def
 	}
 	return Thresholds{
-		Goroutines:    int(num("APP_CPHEALTH_GOROUTINES", 5000)),
-		HeapBytes:     uint64(num("APP_CPHEALTH_HEAP_MB", 1536)) << 20,
-		DBP95MS:       num("APP_CPHEALTH_DB_P95_MS", 100),
-		WALBytes:      int64(num("APP_CPHEALTH_WAL_MB", 128)) << 20,
-		SlowQueries:   int64(num("APP_CPHEALTH_SLOW_QUERIES", 25)),
-		ReconcilePass: time.Duration(num("APP_CPHEALTH_RECONCILE_PASS_S", 20) * float64(time.Second)),
-		EventLagMult:  int(num("APP_CPHEALTH_EVENT_LAG_MULTIPLE", 3)),
-		StreamPercent: int(num("APP_CPHEALTH_STREAM_PERCENT", 80)),
+		Goroutines:     int(num("APP_CPHEALTH_GOROUTINES", 5000)),
+		HeapBytes:      uint64(num("APP_CPHEALTH_HEAP_MB", 1536)) << 20,
+		DBP95MS:        num("APP_CPHEALTH_DB_P95_MS", 100),
+		WALBytes:       int64(num("APP_CPHEALTH_WAL_MB", 128)) << 20,
+		SlowQueries:    int64(num("APP_CPHEALTH_SLOW_QUERIES", 25)),
+		ReconcilePass:  time.Duration(num("APP_CPHEALTH_RECONCILE_PASS_S", 20) * float64(time.Second)),
+		EventLagMult:   int(num("APP_CPHEALTH_EVENT_LAG_MULTIPLE", 3)),
+		StreamPercent:  int(num("APP_CPHEALTH_STREAM_PERCENT", 80)),
+		RSSBytes:       uint64(num("APP_CPHEALTH_RSS_MB", 1024)) << 20,
+		Threads:        int(num("APP_CPHEALTH_THREADS", 200)),
+		TelemetryBytes: int64(num("APP_CPHEALTH_TELEMETRY_MB", 768)) << 20,
 	}
 }
 
@@ -115,6 +128,15 @@ func Evaluate(in Inputs, t Thresholds) []Finding {
 	}
 	if in.HeapBytes > t.HeapBytes {
 		add(FindingHeap, float64(in.HeapBytes), float64(t.HeapBytes), "")
+	}
+	if in.RSSBytes > t.RSSBytes {
+		add(FindingRSS, float64(in.RSSBytes), float64(t.RSSBytes), "")
+	}
+	if in.Threads > t.Threads {
+		add(FindingThreads, float64(in.Threads), float64(t.Threads), "")
+	}
+	if in.TelemetryBytes > t.TelemetryBytes {
+		add(FindingTelemetry, float64(in.TelemetryBytes), float64(t.TelemetryBytes), FixTelemetryPrune)
 	}
 	if in.DBP95MS > t.DBP95MS {
 		add(FindingDBLatency, in.DBP95MS, t.DBP95MS, FixDBOptimize)

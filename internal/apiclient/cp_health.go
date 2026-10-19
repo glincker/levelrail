@@ -47,7 +47,32 @@ type CPHealth struct {
 		Active int64 `json:"active"`
 		Cap    int64 `json:"cap"`
 	} `json:"streams"`
+	Footprint struct {
+		RSSBytes       uint64  `json:"rss_bytes"`
+		Threads        int     `json:"threads"`
+		CPUPercent     float64 `json:"cpu_percent"`
+		TelemetryBytes int64   `json:"telemetry_bytes"`
+		MemoryLimit    struct {
+			LimitBytes int64  `json:"limit_bytes"`
+			Source     string `json:"source"`
+			Percent    int    `json:"percent"`
+		} `json:"memory_limit"`
+		Loops []CPHealthLoop `json:"loops"`
+	} `json:"footprint"`
 	Findings []CPHealthFinding `json:"findings"`
+}
+
+// CPHealthLoop is one background loop with its last run and cost.
+type CPHealthLoop struct {
+	Name         string    `json:"name"`
+	IntervalSecs float64   `json:"interval_seconds"`
+	Runs         int64     `json:"runs"`
+	Errors       int64     `json:"errors"`
+	LastRunAt    time.Time `json:"last_run_at"`
+	LastDuration float64   `json:"last_duration_ms"`
+	CostPercent  float64   `json:"cost_percent"`
+	Running      bool      `json:"running"`
+	LastError    string    `json:"last_error,omitempty"`
 }
 
 // GetCPHealth calls GET /api/v1/system/control-plane-health.

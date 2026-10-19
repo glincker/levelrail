@@ -896,7 +896,8 @@
     "fixes": {
       "wal_checkpoint": "Checkpoint now",
       "db_optimize": "Refresh query stats",
-      "reset_slow_log": "Clear slow log"
+      "reset_slow_log": "Clear slow log",
+      "telemetry_prune": "Prune and compact metrics"
     },
     "metrics": {
       "goroutines": "Goroutines",
@@ -910,9 +911,32 @@
       "reconcile": "Last reconcile pass",
       "reconcileHint": "{{n}} controllers, p95 {{p95}} ms",
       "eventLag": "Since last reconcile pass",
-      "streams": "Live streams"
+      "streams": "Live streams",
+      "rss": "Memory in use (RSS)",
+      "rssHint": "Soft limit {{limit}} MiB",
+      "rssNoLimit": "No soft limit set",
+      "threads": "OS threads",
+      "cpu": "CPU since last check",
+      "telemetry": "Metrics database"
+    },
+    "loops": {
+      "title": "Background loops",
+      "empty": "No background loops have reported yet.",
+      "row": "every {{every}} s, {{runs}} runs, last {{ms}} ms, cost {{cost}} % of one core"
     },
     "findings": {
+      "rss": {
+        "title": "High memory use",
+        "hint": "The process is using a lot of RAM. Lower APP_GOMEMLIMIT_PERCENT or review the loops below."
+      },
+      "threads": {
+        "title": "Many OS threads",
+        "hint": "Usually blocked disk or network calls. Restart the control plane if it keeps climbing."
+      },
+      "telemetry_size": {
+        "title": "Metrics database is large",
+        "hint": "Pruning applies the retention and size cap, then returns free space to the disk."
+      },
       "goroutines": {
         "title": "Many goroutines",
         "hint": "Usually open streams or stuck jobs. Restart the control plane if it keeps climbing."

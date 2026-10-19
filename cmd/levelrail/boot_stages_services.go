@@ -13,6 +13,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/backup"
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/experimental"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/loadbalancer"
 	"github.com/GLINCKER/levelrail/internal/models"
@@ -190,7 +191,7 @@ func (s *bootState) wireRouter() {
 		Supervised: restartSupervised(os.LookupEnv, fileExists),
 		Trigger:    func() { s.restartRequested.Store(true); stop() },
 	})
-	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval})
+	apiRouter.SetControlPlaneProbe(api.ControlPlaneProbe{DB: db, Reconcile: engine.Stats, ResyncInterval: resyncInterval, Telemetry: telemetryDB, MemoryLimit: footprint.CurrentMemoryLimit()})
 	go db.RunWALMaintenance(ctx)
 	configureNodeCerts(apiRouter, agentServer, agentServer)
 	setupEdgeFirewall(ctx, logger, b, apiRouter, secretsManager)

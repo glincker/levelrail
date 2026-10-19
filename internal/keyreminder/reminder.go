@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // DefaultInterval is how often the policy is checked, not how often a notice goes out.
@@ -59,7 +59,7 @@ func (r *Reminder) Run(ctx context.Context, interval time.Duration) error {
 	if interval <= 0 {
 		interval = DefaultInterval
 	}
-	return ticker.Run(ctx, interval, r.Logger, "keyreminder", r.Tick)
+	return footprint.Every(ctx, "keyreminder", interval, r.Logger, r.Tick)
 }
 
 // Tick sends one notice when something is overdue and the last notice is

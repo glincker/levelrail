@@ -1281,7 +1281,7 @@ If no process supervisor was detected, the command prints the reason and the com
 ## System health {#system-health}
 
 ```
-levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log] [flags]
+levelrail-cli system health [--fix wal_checkpoint|db_optimize|reset_slow_log|telemetry_prune] [flags]
 ```
 
 Prints goroutines, heap, database latency and write queue, write ahead log size, reconcile pass timing and live stream use, with a finding for each value over its threshold. `--fix` applies one of the typed fixes and prints the result; it needs a root token. The API is `GET /api/v1/system/control-plane-health` and `POST /api/v1/system/control-plane-health/fix`. See [Control plane health](/control-plane-health).

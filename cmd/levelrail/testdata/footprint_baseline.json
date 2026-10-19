@@ -1,0 +1,18 @@
+{
+  "darwin/off": {
+    "mode": "off",
+    "rss_mb": 113.2092514038086,
+    "goroutines": 12,
+    "threads": 0,
+    "cpu_percent": 0.012132107003296155,
+    "loops": 0
+  },
+  "darwin/on": {
+    "mode": "on",
+    "rss_mb": 112.1936264038086,
+    "goroutines": 12,
+    "threads": 0,
+    "cpu_percent": 0.01215629211015229,
+    "loops": 0
+  }
+}

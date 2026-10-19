@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/store"
-	"github.com/GLINCKER/levelrail/kit/ticker"
 )
 
 // DefaultInterval is how often the announcer looks for windows entering
@@ -52,7 +52,7 @@ func (a *Announcer) Run(ctx context.Context, interval time.Duration) error {
 	if interval <= 0 {
 		interval = DefaultInterval
 	}
-	return ticker.Run(ctx, interval, a.Logger, "maintenance", a.Tick)
+	return footprint.Every(ctx, "maintenance", interval, a.Logger, a.Tick)
 }
 
 // Tick announces every window whose lead time has begun. A window stays

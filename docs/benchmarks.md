@@ -92,6 +92,19 @@ Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Go 1.26.9. The fixture 
 | 2000 | 2000 | 0 of 30000 | 0.18 | 0.45 | 4.93 | 54.9 | 0 |
 | 5000 | 5000 | 0 of 75000 | 0.16 | 6.16 | 16.45 | 40.7 | 0 |
 
+### Control plane idle footprint (2026-10-19)
+
+Live instance, 2 vCPU and 8 GB test box, all features at defaults, no apps under load: idle RSS 200 MB (peak 253 MB), 273 goroutines, 11 threads, 1.5 percent CPU, database p95 0.4 ms, reconcile pass 400 ms, metrics database 395 MB. The Control plane health page shows these numbers live, plus every background loop.
+
+Demo harness (`go test ./cmd/levelrail -run TestFootprint`, 60 s idle per run, Apple M4 Max, macOS; the router and stores on seeded demo data, no Docker, Caddy or agents). RSS here is the Go runtime's reserved memory, so it is higher than a Linux RSS and is only comparable run to run on the same OS:
+
+| Features | Goroutines | RSS MB | CPU percent |
+| --- | --- | --- | --- |
+| All experimental features off | 12 | 113 | 0.01 |
+| All experimental features on | 12 | 112 | 0.01 |
+
+The demo handler starts no feature loops, so on versus off is equal here. The ratchet guards the API and store layers against regressions; see [Performance budget](/performance-budget).
+
 ### Control plane at 1000 apps (2026-10-18)
 
 Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Go 1.26.9, SQLite through modernc.org/sqlite in WAL mode on local SSD. The test seeds 1000 apps, 5000 deploy attempts and 1000 reconcile status rows into a fresh database, then times store calls in process, 200 samples each (50 for the full scans). This measures the database layer behind the list endpoints and the status writes of a reconcile pass. It does not include HTTP, JSON encoding, Docker, or the container work a real reconcile does, so treat it as a floor, not an end to end figure.

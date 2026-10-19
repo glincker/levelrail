@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/footprint"
 )
 
 // RollupResult reports one Rollup run.
@@ -323,16 +325,26 @@ func (m *Maintainer) Run(ctx context.Context) {
 	prune := time.NewTicker(m.pruneEvery)
 	defer rollup.Stop()
 	defer prune.Stop()
+	rollupLoop := footprint.Track("telemetry rollup", m.rollupEvery)
+	pruneLoop := footprint.Track("telemetry prune", m.pruneEvery)
+	defer rollupLoop.Active()()
+	defer pruneLoop.Active()()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-rollup.C:
-			if err := m.RollupOnce(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			start := time.Now()
+			err := m.RollupOnce(ctx)
+			rollupLoop.Observe(start, err)
+			if err != nil && !errors.Is(err, context.Canceled) {
 				m.logger.ErrorContext(ctx, "metrics rollup failed", slog.String("error", err.Error()))
 			}
 		case <-prune.C:
-			if err := m.PruneOnce(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			start := time.Now()
+			err := m.PruneOnce(ctx)
+			pruneLoop.Observe(start, err)
+			if err != nil && !errors.Is(err, context.Canceled) {
 				m.logger.ErrorContext(ctx, "metrics prune failed", slog.String("error", err.Error()))
 			}
 		}

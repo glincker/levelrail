@@ -61,3 +61,27 @@ func TestLiveStreamCap(t *testing.T) {
 		t.Fatalf("second stream = ok %v code %d, want refused with 503", ok, rec.Code)
 	}
 }
+
+type fakeTelemetry struct{ compacts int }
+
+func (f *fakeTelemetry) FileBytes(context.Context) (int64, error) { return 900 << 20, nil }
+func (f *fakeTelemetry) Compact(context.Context) error            { f.compacts++; return nil }
+
+func TestCPHealthTelemetryFindingAndFix(t *testing.T) {
+	rt, db := newTestRouter(t)
+	cookie := loginTestSession(t, rt, db)
+	tel := &fakeTelemetry{}
+	rt.SetControlPlaneProbe(ControlPlaneProbe{DB: &fakeCPDB{}, Telemetry: tel, Reconcile: func() reconcile.Stats { return reconcile.Stats{} }})
+
+	rec := httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/system/control-plane-health", ""))
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"telemetry_size"`) || !strings.Contains(rec.Body.String(), `"loops"`) {
+		t.Fatalf("GET = %d %s", rec.Code, rec.Body.String())
+	}
+
+	rec = httptest.NewRecorder()
+	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodPost, "/api/v1/system/control-plane-health/fix", `{"fix":"telemetry_prune"}`))
+	if rec.Code != http.StatusOK || tel.compacts != 1 {
+		t.Fatalf("fix = %d, compacts %d, body %s", rec.Code, tel.compacts, rec.Body.String())
+	}
+}

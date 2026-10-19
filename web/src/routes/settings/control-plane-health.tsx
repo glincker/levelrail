@@ -31,6 +31,8 @@ function formatFinding(f: CPHealthFinding): { value: string; limit: string } {
   switch (f.id) {
     case 'heap':
     case 'wal_size':
+    case 'rss':
+    case 'telemetry_size':
       return {
         value: `${Math.round(f.value / MIB)} MiB`,
         limit: `${Math.round(f.threshold / MIB)} MiB`,
@@ -113,6 +115,26 @@ function MetricsGrid({ h }: { h: CPHealth }) {
       <Metric
         label={t('streams')}
         value={`${h.streams.active} / ${h.streams.cap}`}
+      />
+      <Metric
+        label={t('rss')}
+        value={`${Math.round(h.footprint.rss_bytes / MIB)} MiB`}
+        hint={
+          h.footprint.memory_limit.limit_bytes > 0
+            ? t('rssHint', {
+                limit: Math.round(h.footprint.memory_limit.limit_bytes / MIB),
+              })
+            : t('rssNoLimit')
+        }
+      />
+      <Metric label={t('threads')} value={String(h.footprint.threads)} />
+      <Metric
+        label={t('cpu')}
+        value={`${h.footprint.cpu_percent.toFixed(1)} %`}
+      />
+      <Metric
+        label={t('telemetry')}
+        value={`${Math.round(h.footprint.telemetry_bytes / MIB)} MiB`}
       />
     </div>
   )
@@ -234,6 +256,38 @@ function ControlPlaneHealthPage() {
           <Card>
             <CardContent>
               <MetricsGrid h={data} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('controlPlaneHealth.loops.title')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {data.footprint.loops.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t('controlPlaneHealth.loops.empty')}
+                </p>
+              ) : (
+                data.footprint.loops.map((l) => (
+                  <div
+                    key={l.name}
+                    className="flex flex-wrap items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="font-medium">{l.name}</span>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {t('controlPlaneHealth.loops.row', {
+                        every: Math.round(l.interval_seconds),
+                        runs: l.runs,
+                        ms: l.last_duration_ms.toFixed(1),
+                        cost: l.cost_percent.toFixed(3),
+                      })}
+                    </span>
+                    {l.last_error ? (
+                      <Badge variant="warning">{l.last_error}</Badge>
+                    ) : null}
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
           <Card>

@@ -13,8 +13,12 @@ export type CPHealthFindingId =
   | 'reconcile_pass'
   | 'event_lag'
   | 'streams'
+  | 'rss'
+  | 'threads'
+  | 'telemetry_size'
 
-export type CPHealthFix = 'wal_checkpoint' | 'db_optimize' | 'reset_slow_log'
+export type CPHealthFix =
+  'wal_checkpoint' | 'db_optimize' | 'reset_slow_log' | 'telemetry_prune'
 
 export interface CPHealthFinding {
   id: CPHealthFindingId
@@ -28,6 +32,18 @@ export interface CPHealthSlowQuery {
   sql: string
   duration_ms: number
   at: string
+}
+
+export interface CPHealthLoop {
+  name: string
+  interval_seconds: number
+  runs: number
+  errors: number
+  last_run_at: string
+  last_duration_ms: number
+  cost_percent: number
+  running: boolean
+  last_error?: string
 }
 
 // Matches internal/api's cpHealthResource.
@@ -65,6 +81,14 @@ export interface CPHealth {
     pending: boolean
   }
   streams: { active: number; cap: number }
+  footprint: {
+    rss_bytes: number
+    threads: number
+    cpu_percent: number
+    telemetry_bytes: number
+    memory_limit: { limit_bytes: number; source: string; percent: number }
+    loops: CPHealthLoop[]
+  }
   findings: CPHealthFinding[]
 }
 

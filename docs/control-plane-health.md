@@ -11,6 +11,7 @@ The control plane watches its own saturation so a busy instance tells you before
 - Database: query latency p50, p95 and p99, writes that waited for the single SQLite connection (the write queue), write ahead log size, and a slow query log.
 - Reconcile loop: last pass duration, p50 and p95, the slowest controller, and seconds since the last pass finished (event lag).
 - Live streams: open log, deploy and event streams against the cap.
+- Footprint: resident memory, OS threads, CPU, the metrics database size, the soft memory limit, and every background loop with its interval, last run and share of a core. See [Performance budget](/performance-budget).
 
 Latency covers statements issued through the store, over the last 512 queries. Slow statements keep the SQL text only, never arguments.
 
@@ -23,6 +24,7 @@ Each measurement above its threshold becomes a warning, or critical at twice the
 | Write ahead log is large | Checkpoint now (truncating checkpoint) | `system health --fix wal_checkpoint` |
 | Slow database queries | Refresh query stats (`PRAGMA optimize`) | `system health --fix db_optimize` |
 | Many slow queries | Clear slow log | `system health --fix reset_slow_log` |
+| Metrics database is large | Prune and compact metrics (retention, size cap, then VACUUM when over a quarter of the file is free) | `system health --fix telemetry_prune` |
 
 Goroutines, heap, reconcile pass, event lag and stream findings have no automatic fix. The page says what to look at, and a restart (`system restart`) is the last resort.
 
@@ -46,6 +48,10 @@ Applying a fix needs a root token. Reading health needs read access. The API is 
 | `APP_CPHEALTH_RECONCILE_PASS_S` | 20 | last reconcile pass |
 | `APP_CPHEALTH_EVENT_LAG_MULTIPLE` | 3 | resync intervals without a finished pass |
 | `APP_CPHEALTH_STREAM_PERCENT` | 80 | share of the stream cap in use |
+| `APP_CPHEALTH_RSS_MB` | 1024 | resident memory |
+| `APP_CPHEALTH_THREADS` | 200 | OS threads |
+| `APP_CPHEALTH_TELEMETRY_MB` | 768 | metrics database file |
+| `APP_GOMEMLIMIT_PERCENT` | 80 | soft Go memory limit as a share of container or host memory, 0 disables, ignored when `GOMEMLIMIT` is set |
 | `APP_DB_SLOW_QUERY_MS` | 200 | a statement slower than this is logged as slow |
 
 See [Benchmarks](/benchmarks#control-plane-at-1000-apps) for measured latency at 1000 apps.
