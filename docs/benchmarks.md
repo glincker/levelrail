@@ -184,6 +184,46 @@ No ceiling was reached: the top step ran with no client saturation, so the limit
 
 Not yet measured: daemon restart (real engine stop), disk pressure on the host volume with the collector in the loop, control plane restart under systemd socket activation, multi-replica kill, and everything across nodes or zones.
 
+## Deploy, rollout, concurrency and failover (2026-10-19)
+
+Measured by `levelrail-cli bench chaos run <scenario> --json` (build with `-tags chaoslive`; add `--markdown` for a table). Scenarios: `deploy-latency`, `rollout-under-traffic`, `ingress-concurrency`, `replica-failover`. Each builds its own local control plane slice (reconcile engine, embedded ingress, store) on a real local Docker engine and never touches a remote server. Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, Docker Desktop engine 28.3.0, Go 1.26.9, node:22-alpine trivial fixture, TLS through the embedded ingress on loopback, load driver on the same machine. The machine was busy with other builds (load average about 30 of 14 cores), so read every figure as a noisy upper bound on latency and a lower bound on throughput. One run per row unless stated.
+
+| Scenario | Result |
+| --- | --- |
+| Deploy latency, image to first answer from the new version | cold deploy 4.9 s; 5 redeploys p50 4.26 s, p95 5.53 s, min 3.65 s, max 5.53 s (includes the 3 s stability window the gate waits for; n=5, so p95 is the maximum) |
+| Rolling deploy of 2 replicas at 100 req/s open loop, 40 s | 0 of 4000 requests failed; p50 2.40 ms, p95 12.99 ms, p99 24.29 ms, max 80.6 ms; a probe saw both v1 and v2 answering during the run |
+| Kill 1 of 2 replicas at 100 req/s, 30 s | 0 of 3000 requests failed, error window 0 ms; second container running again 692 ms after the kill (200 ms poll) |
+| Ingress, closed loop, 1 replica, 8 s per step | see the concurrency table |
+
+Ingress at fixed concurrency, two runs (the first run's c32 reached 13512 req/s on a quieter moment, shown for the spread):
+
+| Concurrency | Run A req/s | p50 / p95 / p99 ms | Run B req/s | p50 / p95 / p99 ms | Errors |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 1880 | 0.38 / 1.19 / 2.69 | 813 | 0.95 / 2.74 / 6.64 | 0 |
+| 8 | 4352 | 1.37 / 4.54 / 7.88 | 3652 | 1.60 / 5.50 / 10.84 | 0 |
+| 32 | 9982 | 2.55 / 7.03 / 13.99 | 4320 | 5.47 / 16.85 / 43.33 | 0 |
+| 128 | 4636 | 11.21 / 102.64 / 387.39 | 4537 | 11.68 / 109.27 / 305.49 | 0 and 130 of 36665 |
+
+The 128 step is slower than 32 because client and server share this laptop; it is not an ingress limit.
+
+### Idle footprint, 0, 10 and 50 apps
+
+`BENCH_COUNTS="0 10 50" BENCH_SECONDS=30 scripts/bench-idle.sh`, dev-mode control plane, apps created then stopped (no containers). CPU 0.10, 0.60, 0.37 percent. RSS read 248, 128 and 84 MB, which is not monotonic: it reflects Go garbage collection timing after startup, not a footprint that shrinks with apps. API p95 stayed under 8 ms for the list, status and certificate endpoints at 50 apps (apps list p50 2.16 ms, p95 4.79 ms). Running containers are not included, so this is a floor for the control plane, not a fleet figure.
+
+### Limits table
+
+| Question | Status |
+| --- | --- |
+| Deploy latency, rollout under traffic, replica kill, ingress throughput on one laptop, trivial app | measured, single or double runs, noisy host |
+| Per app and per replica p50, p95, p99 | exists: `GET /api/v1/apps/{name}/traffic` and its CLI client report per upstream latency percentiles; not re-measured here |
+| Node agent link loss, drain, zone loss | not measured: needs a second node, no local equivalent |
+| Anything on a real server, real network or a real application | not measured |
+| Statistical confidence (more than 6 deploys, repeated runs, quiet host) | not measured |
+| Idle footprint with running containers, or at 100+ live apps | not measured by this harness |
+| Ingress ceiling | not found; the client was the limit at c128 |
+
+Dashboard: no page. This harness is an operator CLI plus these docs, a deliberate exception to the UI-with-every-feature rule because the output is a published measurement, not a control.
+
 ## Unified search
 
 Measured by `go test ./internal/api -run TestSearch_ThousandAppsP95` on 2026-10-18. Hardware: Apple M4 Max, 14 cores, 36 GB RAM, macOS 27.2, SQLite on local SSD. 1000 apps, an admin token, 6 query shapes (exact name, action phrase, scoped, short term, broad term), 60 requests per run through the full HTTP stack including authentication and the per-hit authorization filter, three runs.

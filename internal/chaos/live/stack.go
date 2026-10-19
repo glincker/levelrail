@@ -203,10 +203,15 @@ func (s *Stack) RestartControlPlane(ctx context.Context) error {
 
 // Ship records version as the desired release; mode is passed to the fixture app.
 func (s *Stack) Ship(ctx context.Context, version, mode string, memoryBytes int64) error {
+	return s.ShipReplicas(ctx, version, mode, memoryBytes, 1)
+}
+
+// ShipReplicas is Ship with an explicit replica count.
+func (s *Stack) ShipReplicas(ctx context.Context, version, mode string, memoryBytes int64, replicas int) error {
 	svc := store.DesiredService{
 		Name: s.Service, Port: 8080, Domains: []string{s.Domain},
-		Command: []string{"node", "-e", appScript},
-		Env:     map[string]string{"VERSION": version, "MODE": mode},
+		Command: []string{"node", "-e", appScript}, Replicas: replicas,
+		Env: map[string]string{"VERSION": version, "MODE": mode},
 		Health: &store.ServiceHealth{Readiness: &store.ServiceProbe{
 			Path: "/healthz", Interval: 300 * time.Millisecond, Timeout: time.Second,
 		}},
@@ -220,7 +225,10 @@ func (s *Stack) Ship(ctx context.Context, version, mode string, memoryBytes int6
 }
 
 // Client dials every request to the local ingress listener.
-func (s *Stack) Client() *http.Client {
+func (s *Stack) Client() *http.Client { return s.ClientIdle(64) }
+
+// ClientIdle is Client with room for idleConns kept-alive connections, so a high concurrency run does not churn TLS handshakes.
+func (s *Stack) ClientIdle(idleConns int) *http.Client {
 	return &http.Client{
 		Timeout: 5 * time.Second,
 		Transport: &http.Transport{
@@ -229,7 +237,7 @@ func (s *Stack) Client() *http.Client {
 				return d.DialContext(ctx, network, s.Addr)
 			},
 			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true}, //nolint:gosec // the local issuer's certificate is never trusted by this process
-			MaxIdleConnsPerHost: 64,
+			MaxIdleConnsPerHost: idleConns,
 		},
 	}
 }

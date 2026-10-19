@@ -198,3 +198,32 @@ func TestRunValidation(t *testing.T) {
 		t.Error("zero rate must fail")
 	}
 }
+
+func TestRunClosed(t *testing.T) {
+	var hits atomic.Int64
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		hits.Add(1)
+		time.Sleep(5 * time.Millisecond)
+	}))
+	defer srv.Close()
+
+	st, err := RunClosed(context.Background(), srv.Client(), srv.URL, 4, 300*time.Millisecond, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if st.Sent == 0 || st.Failed != 0 || int64(st.Sent) != hits.Load() {
+		t.Fatalf("sent %d failed %d hits %d", st.Sent, st.Failed, hits.Load())
+	}
+	if st.P50MS < 4 || st.AchievedRPS <= 0 {
+		t.Errorf("p50 %.2f rps %.1f", st.P50MS, st.AchievedRPS)
+	}
+	for _, bad := range []struct {
+		url string
+		w   int
+		d   time.Duration
+	}{{"", 1, time.Second}, {srv.URL, 0, time.Second}, {srv.URL, 1, 0}} {
+		if _, err := RunClosed(context.Background(), srv.Client(), bad.url, bad.w, bad.d, time.Second); err == nil {
+			t.Errorf("want error for %+v", bad)
+		}
+	}
+}

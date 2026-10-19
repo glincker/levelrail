@@ -14,7 +14,11 @@
     "control-plane-restart": "Control plane restart under traffic",
     "disk-pressure": "Scratch volume filled",
     "oom-during-readiness": "OOM kill during the readiness wait",
-    "ingress-steady": "Rising steady load through the ingress"
+    "ingress-steady": "Rising steady load through the ingress",
+    "deploy-latency": "Deploy latency from image to serving",
+    "rollout-under-traffic": "Rolling deploy of two replicas under traffic",
+    "ingress-concurrency": "Ingress throughput at fixed concurrency",
+    "replica-failover": "Kill one of two replicas under traffic"
   },
   "metrics": {
     "recovery": "Recovery",

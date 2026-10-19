@@ -27,6 +27,7 @@ func runBenchChaos(prog string, args []string, stdout, stderr io.Writer, lookupE
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "bench chaos "+sub, "print the result as JSON to stdout and nothing else", stderr)
 	record := fs.Bool("record", false, "run: store the results on the control plane so the resilience report shows them")
 	hardware := fs.String("hardware", "", "run: free-form hardware note kept in each result")
+	markdown := fs.Bool("markdown", false, "run: print a Markdown table of the results instead of the plain table")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, benchChaosUsage(prog)) }
 	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args[1:], apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
 	if !ok {
@@ -112,7 +113,17 @@ func runBenchChaos(prog string, args []string, stdout, stderr io.Writer, lookupE
 			return reportError(stdout, stderr, jsonOut, fmt.Errorf("record results: %w", err))
 		}
 	}
-	code := finishChaos(stdout, stderr, of, summary, func() { chaos.WriteTable(stdout, results) })
+	code := finishChaos(stdout, stderr, of, summary, func() {
+		if !*markdown {
+			chaos.WriteTable(stdout, results)
+			return
+		}
+		_, _ = fmt.Fprintln(stdout, "| Scenario | Date | Status | Recovery | Failed requests | Error window | What happened |")
+		_, _ = fmt.Fprintln(stdout, "| --- | --- | --- | --- | --- | --- | --- |")
+		for _, r := range results {
+			_, _ = fmt.Fprintln(stdout, chaos.MarkdownRow(r))
+		}
+	})
 	if code == exitOK && summary.Failed > 0 {
 		return exitUsage
 	}
@@ -136,8 +147,10 @@ func writeDiskTable(w io.Writer, d apiclient.DiskResilience) {
 func benchChaosUsage(prog string) string {
 	return fmt.Sprintf(`Usage: %[1]s bench chaos <list|run|report|disk|free-space> [flags]
 
-Failure scenarios measured against throwaway local Docker containers (unique
-name prefix, always removed afterwards).
+Failure and performance scenarios measured against throwaway local Docker
+containers (unique name prefix, always removed afterwards). Never run against a
+remote server: the scenarios build their own local stack. Scenarios include
+deploy-latency, rollout-under-traffic, ingress-concurrency and replica-failover.
 
   list                 the scenarios and the behaviour each one asserts
   run <scenario|all>   run live (needs a build with -tags chaoslive and a local
@@ -148,6 +161,7 @@ name prefix, always removed afterwards).
 
   --record             run: store the results on the control plane
   --hardware TEXT      run: hardware note kept in each result
+  --markdown           run: print the results as a Markdown table
   --json               print machine-readable output only
 
 Exit code 2 when any scenario assertion failed.
