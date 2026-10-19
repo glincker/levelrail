@@ -52,6 +52,20 @@ type Controller struct {
 	store   Store
 	timeout time.Duration
 	now     func() time.Time
+	// pendingExpiry removes a node that enrolled but never connected after this long; 0 disables it.
+	pendingExpiry time.Duration
+}
+
+// pendingCleaner is the optional store surface needed to expire a never-connected node.
+type pendingCleaner interface {
+	DeleteNode(ctx context.Context, id string) error
+	ListDesiredServicesByNode(ctx context.Context, nodeID string) ([]store.DesiredService, error)
+	ListDesiredDatabasesByNode(ctx context.Context, nodeID string) ([]store.DesiredDatabase, error)
+}
+
+// WithPendingExpiry frees the name and placement of a node that never connected within d.
+func WithPendingExpiry(d time.Duration) Option {
+	return func(c *Controller) { c.pendingExpiry = d }
 }
 
 // Option configures optional Controller behavior.
@@ -95,6 +109,9 @@ func (c *Controller) Reconcile(ctx context.Context) (reconcile.Result, error) {
 	}
 
 	if node.Status == store.NodeStatusPending {
+		if res, handled, err := c.expirePending(ctx, node); handled {
+			return res, err
+		}
 		return unknownResult("NeverConnected", "node enrolled but has not connected yet"), nil
 	}
 
@@ -158,4 +175,27 @@ func unknownResult(reason, message string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{{
 		Type: ConditionType, Status: reconcile.ConditionUnknown, Reason: reason, Message: message,
 	}}}
+}
+
+// expirePending deletes a node that has sat pending without ever connecting past pendingExpiry, so its name is reusable and it stops counting in placement.
+func (c *Controller) expirePending(ctx context.Context, node *store.Node) (reconcile.Result, bool, error) {
+	cleaner, ok := c.store.(pendingCleaner)
+	if !ok || c.pendingExpiry <= 0 || node.LastSeenAt != nil || c.now().Sub(node.CreatedAt) < c.pendingExpiry {
+		return reconcile.Result{}, false, nil
+	}
+	services, err := cleaner.ListDesiredServicesByNode(ctx, node.ID)
+	if err != nil {
+		return unknownResult("StoreError", err.Error()), true, fmt.Errorf("node-health/%s: list placed services: %w", c.nodeID, err)
+	}
+	databases, err := cleaner.ListDesiredDatabasesByNode(ctx, node.ID)
+	if err != nil {
+		return unknownResult("StoreError", err.Error()), true, fmt.Errorf("node-health/%s: list placed databases: %w", c.nodeID, err)
+	}
+	if len(services) > 0 || len(databases) > 0 {
+		return reconcile.Result{}, false, nil
+	}
+	if err := cleaner.DeleteNode(ctx, node.ID); err != nil {
+		return unknownResult("ExpireFailed", err.Error()), true, fmt.Errorf("node-health/%s: expire never-connected node: %w", c.nodeID, err)
+	}
+	return unknownResult("NeverConnectedExpired", "node never connected and was removed so its name can be reused"), true, nil
 }

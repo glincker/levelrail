@@ -150,7 +150,9 @@ type Scheduler struct {
 	// both nil is valid and leaves only the count/age rules.
 	Policies VolumePolicyLookup
 	GFS      GFSStore
-	Logger   *slog.Logger
+	// Tombstones, if set, keeps failed object deletes for retry instead of only logging them.
+	Tombstones TombstoneStore
+	Logger     *slog.Logger
 	// Now returns the current time, the same testable-clock field
 	// Runner.Now already establishes in runner.go: production code
 	// leaves it nil and Tick falls back to time.Now, tests set it for
@@ -292,6 +294,8 @@ func (s *Scheduler) Tick(ctx context.Context) error {
 	if verrs := s.tickServiceVolumes(ctx, now); verrs != nil {
 		errs = append(errs, verrs)
 	}
+
+	s.sweepTombstones(ctx)
 
 	return errors.Join(errs...)
 }
@@ -515,6 +519,7 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 			if err != nil {
 				s.log().Error("backup: scheduled retention delete: resolve destination failed",
 					slog.String("database", databaseName), slog.String("target_id", p.TargetID), slog.String("error", err.Error()))
+				recordTombstone(ctx, s.Tombstones, s.log(), p.TargetID, p.ObjectKey, err)
 				continue
 			}
 			destinations[p.TargetID] = dest
@@ -523,6 +528,7 @@ func (s *Scheduler) deletePrunedObjects(ctx context.Context, databaseName string
 		if err := s.Deleter.Delete(ctx, dest, p.ObjectKey); err != nil {
 			s.log().Error("backup: scheduled retention delete failed",
 				slog.String("database", databaseName), slog.String("object_key", p.ObjectKey), slog.String("error", err.Error()))
+			recordTombstone(ctx, s.Tombstones, s.log(), p.TargetID, p.ObjectKey, err)
 		}
 	}
 }

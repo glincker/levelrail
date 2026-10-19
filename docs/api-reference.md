@@ -96,6 +96,8 @@ System endpoints for:
 | GET | /api/v1/system/encryption-keys | AbilityRead | handleGetEncryptionKeys |
 | PUT | /api/v1/system/encryption-keys/policy | AbilityRoot | handleUpdateKeyPolicy |
 | POST | /api/v1/system/encryption-keys/rotate | AbilityRoot | handleRotateDEK |
+| GET | /api/v1/system/control-plane-dr/restore-plan | AbilityRead | handleGetControlPlaneRestorePlan |
+| POST | /api/v1/system/control-plane-dr/keys | AbilityWriteSensitive | handleGenerateControlPlaneDRKeypair |
 
 ## Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth
 

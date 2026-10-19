@@ -58,12 +58,14 @@ func (rt *Router) registerPublicRoutes(mux *http.ServeMux) {
 	// (control_plane_dr.go). Status reads are AbilityRead and carry public
 	// recipients only. Changing the destination or recipients is
 	// AbilityWriteSensitive; building an escrow bundle touches the master
-	// key, so it is AbilityRoot. Restore stays an offline CLI action.
+	// key, so it is AbilityRoot. Restore replaces the live database so it runs offline; restore-plan gives the steps and exact command.
 	mux.HandleFunc("GET /api/v1/system/control-plane-dr", rt.requireAbility(AbilityRead, rt.handleGetControlPlaneDR))
 	mux.HandleFunc("PUT /api/v1/system/control-plane-dr/settings", rt.requireAbility(AbilityWriteSensitive, rt.handleUpdateControlPlaneDR))
 	mux.HandleFunc("GET /api/v1/system/control-plane-dr/backups", rt.requireAbility(AbilityRead, rt.handleListControlPlaneDRBackups))
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/run", rt.requireAbility(AbilityWriteSensitive, rt.handleRunControlPlaneDRBackup))
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/drill", rt.requireAbility(AbilityWriteSensitive, rt.handleRunControlPlaneDRDrill))
+	mux.HandleFunc("GET /api/v1/system/control-plane-dr/restore-plan", rt.requireAbility(AbilityRead, rt.handleGetControlPlaneRestorePlan))
+	mux.HandleFunc("POST /api/v1/system/control-plane-dr/keys", rt.requireAbility(AbilityWriteSensitive, rt.handleGenerateControlPlaneDRKeypair))
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow", rt.requireAbility(AbilityRoot, rt.handleControlPlaneDREscrow))
 	mux.HandleFunc("POST /api/v1/system/control-plane-dr/escrow/ack", rt.requireAbility(AbilityWriteSensitive, rt.handleAckControlPlaneDREscrow))
 	// Orphaned named volumes: detection is a read (AbilityRead), the

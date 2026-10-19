@@ -334,10 +334,11 @@ func rootHandler(d rootDeps) (http.Handler, *api.Router) {
 			}),
 			// Shares the retention scheduler's deleter, so manual and automatic deletes clean up the same way.
 			api.WithBackupDeleter(&backup.DeleteRunner{
-				Store:   db,
-				Secrets: secretsManager,
-				Deleter: routedStorage(agentRegistry),
-				Logger:  logger,
+				Store:      db,
+				Secrets:    secretsManager,
+				Deleter:    routedStorage(agentRegistry),
+				Tombstones: db,
+				Logger:     logger,
 			}),
 			// Re-downloads and re-checks a succeeded backup's own stored
 			// object for corruption, never attempting a live restore: the

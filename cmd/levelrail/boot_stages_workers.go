@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
 	"github.com/GLINCKER/levelrail/internal/appsleep"
@@ -15,6 +16,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/cpbackup"
 	"github.com/GLINCKER/levelrail/internal/dbaccess"
 	"github.com/GLINCKER/levelrail/internal/deployurls"
+	"github.com/GLINCKER/levelrail/internal/footprint"
 	"github.com/GLINCKER/levelrail/internal/imageupdate"
 	ingressdriver "github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/objectstore"
@@ -139,6 +141,11 @@ func (s *bootState) startAlerting() {
 	alertingEngine.SetVersionSkew(db, upgrade.DefaultFetchers(b.RepoSlug()))
 	alertingEngine.SetBudgets(apiRouter)
 	go runUsageRollup(ctx, apiRouter)
+	go func() {
+		if err := footprint.Every(ctx, "database teardown retry", time.Minute, logger, apiRouter.RetryDatabaseTeardowns); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("database teardown retry stopped", slog.String("error", err.Error()))
+		}
+	}()
 	go runSpendCaps(ctx, apiRouter)
 	go runCostBudgets(ctx, apiRouter)
 	go runAutoscaler(ctx, apiRouter, autoscale.IntervalFromEnv(autoscale.OSEnv))
@@ -193,6 +200,7 @@ func (s *bootState) startSchedulers() {
 		// manual verify button already gives an operator on demand.
 		scheduler.Verifier = backupVerifyRunner
 		scheduler.Policies, scheduler.GFS = db, db
+		scheduler.Tombstones = db
 		startBackupDrills(ctx, logger, db, newBackupProtection(db, secretsManager, client, backupRunner, logger), alertingEngine)
 		scheduler.BaseBackups = newBaseBackupRunner(db, secretsManager, client, backupRunner, logger)
 		go func() {

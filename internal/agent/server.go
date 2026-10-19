@@ -143,6 +143,13 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		return nil, err
 	}
 
+	enrolled := false
+	defer func() {
+		if !enrolled {
+			s.releaseToken(tok.ID)
+		}
+	}()
+
 	nodeID, err := randomNodeID()
 	if err != nil {
 		s.logger.Error("agent: enroll: generate node id failed", slog.String("error", err.Error()))
@@ -167,6 +174,7 @@ func (s *Server) Enroll(ctx context.Context, req *agentpb.EnrollRequest) (*agent
 		s.logger.Error("agent: enroll: save node failed", slog.String("error", err.Error()))
 		return nil, status.Error(codes.Internal, "internal error")
 	}
+	enrolled = true
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 	s.recordEnrolled(ctx, store.SecurityKindEnroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 
@@ -221,6 +229,21 @@ func (s *Server) redeemToken(ctx context.Context, plaintext, purpose string) (*s
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 	return tok, nil
+}
+
+type tokenReleaser interface {
+	ReleaseNodeJoinToken(ctx context.Context, id string) error
+}
+
+// releaseToken un-spends a join token when enrollment failed after redeeming it (name collision, CSR or store error), so the operator can retry with the same token.
+func (s *Server) releaseToken(id string) {
+	r, ok := s.store.(tokenReleaser)
+	if !ok {
+		return
+	}
+	if err := r.ReleaseNodeJoinToken(context.Background(), id); err != nil {
+		s.logger.Error("agent: enroll: release join token failed", slog.String("token_id", id), slog.String("error", err.Error()))
+	}
 }
 
 func tokenPurpose(t *store.NodeJoinToken) string {

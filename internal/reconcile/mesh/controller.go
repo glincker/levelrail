@@ -46,6 +46,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/netip"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/network"
@@ -223,7 +225,7 @@ func (c *Controller) persist(ctx context.Context, inventory []network.NodeInfo, 
 	switch {
 	case len(failedNodes) > 0:
 		return condition("MeshDistributed", reconcile.ConditionFalse, "NodeUnreachable",
-			fmt.Sprintf("%d of %d nodes did not accept their mesh config this pass", len(failedNodes), len(result.Nodes)))
+			fmt.Sprintf("%d of %d nodes did not accept their mesh config this pass: %s", len(failedNodes), len(result.Nodes), failedNodeList(failedNodes)))
 	case persistErrs > 0:
 		return condition("MeshDistributed", reconcile.ConditionFalse, "PersistFailed",
 			fmt.Sprintf("every node was configured, but %d mesh state writes failed", persistErrs))
@@ -375,4 +377,18 @@ func failed(kind, reason, message string) reconcile.Result {
 	return reconcile.Result{Conditions: []reconcile.Condition{
 		condition(kind, reconcile.ConditionFalse, reason, message),
 	}}
+}
+
+const maxNamedFailedNodes = 5
+
+func failedNodeList(failed []network.NodeResult) string {
+	ids := make([]string, 0, len(failed))
+	for _, f := range failed {
+		ids = append(ids, f.NodeID)
+	}
+	sort.Strings(ids)
+	if len(ids) > maxNamedFailedNodes {
+		return strings.Join(ids[:maxNamedFailedNodes], ", ") + fmt.Sprintf(" and %d more", len(ids)-maxNamedFailedNodes)
+	}
+	return strings.Join(ids, ", ")
 }

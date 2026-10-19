@@ -156,7 +156,7 @@ A node accepts app workloads by default but not build workloads. See [Build node
 A node `pending` for more than five minutes (`APP_NODE_PENDING_STALE_AFTER`) is flagged "Never connected" in the dashboard, and `nodes list` prints `pending (never connected)` with the next step. The token was spent but the agent never opened a session, so it cannot be retried.
 
 1. Check the agent logs on the host. The usual causes are an unwritable identity directory or a wrong `APP_AGENT_ADVERTISE_HOST`.
-2. Delete the node with `levelrail-cli nodes delete <id>`.
+2. Click Clean up node on the node page (or run `levelrail-cli nodes delete <id>`). A node that never connects is also removed automatically after `APP_NODE_PENDING_EXPIRE_AFTER` (default one hour, `0` disables), which frees its name.
 3. Enroll again with a new token.
 
 </Accordion>

@@ -45,4 +45,5 @@ export interface NodeReenrollTokenResponse {
   expires_at: string
   ca_fingerprint?: string
   agent_binary: string
+  control_plane_address?: string
 }

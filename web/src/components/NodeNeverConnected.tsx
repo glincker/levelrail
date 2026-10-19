@@ -1,7 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import { useNavigate } from '@tanstack/react-router'
+import { BroomIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
+import { useDeleteNode } from '../queries/nodes'
 import type { NodeResource } from '../types/nodeDetail'
 
 function isNeverConnected(node: NodeResource): boolean {
@@ -22,6 +26,8 @@ export function NodeNeverConnectedBadge({ node }: { node: NodeResource }) {
 
 export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
   const { t } = useTranslation('nodes')
+  const navigate = useNavigate()
+  const deleteNode = useDeleteNode()
   if (!isNeverConnected(node)) {
     return null
   }
@@ -30,6 +36,34 @@ export function NodeNeverConnectedAlert({ node }: { node: NodeResource }) {
       <WarningIcon className="size-4" aria-hidden="true" />
       <AlertTitle>{t('neverConnected.title')}</AlertTitle>
       <AlertDescription>{t('neverConnected.description')}</AlertDescription>
+      <div className="mt-3 flex items-center gap-3">
+        <Button
+          type="button"
+          size="sm"
+          disabled={deleteNode.isPending}
+          onClick={() => {
+            deleteNode.mutate(node.id, {
+              onSuccess: () => {
+                toast.add({
+                  title: t('neverConnected.cleanedUp', { name: node.name }),
+                  type: 'success',
+                })
+                void navigate({ to: '/nodes' })
+              },
+            })
+          }}
+        >
+          <BroomIcon className="size-3.5" aria-hidden="true" />
+          {deleteNode.isPending
+            ? t('neverConnected.cleaningUp')
+            : t('neverConnected.cleanUp')}
+        </Button>
+        {deleteNode.isError ? (
+          <span role="alert" className="text-destructive text-sm">
+            {deleteNode.error.message}
+          </span>
+        ) : null}
+      </div>
     </Alert>
   )
 }

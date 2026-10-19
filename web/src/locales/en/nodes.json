@@ -2,7 +2,10 @@
   "neverConnected": {
     "badge": "Never connected",
     "title": "This node enrolled but its agent never connected",
-    "description": "The join token is already used, so the agent cannot retry on its own. Check the agent logs on the host (for example, the identity directory may not be writable), then delete this node and enrol it again with a new join token."
+    "description": "The join token is already used, so the agent cannot retry on its own. Check the agent logs on the host (for example, the identity directory may not be writable), then clean up this node and enrol it again with a new join token. A node that never connects is also removed automatically after a while.",
+    "cleanUp": "Clean up node",
+    "cleaningUp": "Cleaning up",
+    "cleanedUp": "Removed {{name}}, its name is free again"
   },
   "join": {
     "trigger": "Add node",

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -121,12 +122,15 @@ func (r *Runner) RunBackup(ctx context.Context, historyID, databaseName, engine,
 		errMsg = runErr.Error()
 	}
 	finishedAt := r.now().UTC().Format(time.RFC3339)
-	if err := r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt); err != nil {
+	if err := finishHistoryWithRetry(ctx, func() error {
+		return r.Store.FinishBackupHistory(ctx, historyID, status, size, checksum, errMsg, finishedAt)
+	}); err != nil {
 		return fmt.Errorf("backup: finish history %q: %w", historyID, err)
 	}
 	if setter, ok := r.Store.(contentSummaryStore); ok && runErr == nil && summary != "" {
-		// Best effort: without a summary a drill restores but skips the count comparison.
-		_ = setter.SetBackupContentSummary(ctx, historyID, summary)
+		if err := setter.SetBackupContentSummary(ctx, historyID, summary); err != nil {
+			slog.Warn("backup: content summary not saved, drill comparison unavailable", slog.String("history_id", historyID), slog.String("error", err.Error()))
+		}
 	}
 	return runErr
 }
@@ -346,4 +350,23 @@ func (c *countingReader) Read(p []byte) (int, error) {
 		c.hash.Write(p[:n]) //nolint:errcheck // hash.Hash.Write never returns an error, per its own documented contract
 	}
 	return n, err
+}
+
+var finishRetryDelays = []time.Duration{200 * time.Millisecond, time.Second, 3 * time.Second}
+
+// finishHistoryWithRetry keeps a transient store error from stranding an uploaded object behind a "running" row until the interrupted-sweep.
+func finishHistoryWithRetry(ctx context.Context, finish func() error) error {
+	err := finish()
+	for _, d := range finishRetryDelays {
+		if err == nil {
+			return nil
+		}
+		select {
+		case <-time.After(d):
+		case <-ctx.Done():
+			return err
+		}
+		err = finish()
+	}
+	return err
 }

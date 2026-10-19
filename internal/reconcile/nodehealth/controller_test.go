@@ -223,3 +223,52 @@ func TestController_Name(t *testing.T) {
 		t.Errorf("Name() = %q, want %q", got, want)
 	}
 }
+
+type expiringStore struct {
+	fakeStore
+	deleted  bool
+	services []store.DesiredService
+}
+
+func (e *expiringStore) DeleteNode(context.Context, string) error { e.deleted = true; return nil }
+func (e *expiringStore) ListDesiredServicesByNode(context.Context, string) ([]store.DesiredService, error) {
+	return e.services, nil
+}
+func (e *expiringStore) ListDesiredDatabasesByNode(context.Context, string) ([]store.DesiredDatabase, error) {
+	return nil, nil
+}
+
+func TestController_ExpiresNeverConnectedPendingNode(t *testing.T) {
+	now := time.Date(2026, 10, 19, 12, 0, 0, 0, time.UTC)
+	clock := func() time.Time { return now }
+	pending := func(age time.Duration) *store.Node {
+		return &store.Node{ID: "node-1", Status: store.NodeStatusPending, CreatedAt: now.Add(-age)}
+	}
+	tests := []struct {
+		name        string
+		node        *store.Node
+		services    []store.DesiredService
+		wantDeleted bool
+		wantReason  string
+	}{
+		{"fresh pending node is kept", pending(10 * time.Minute), nil, false, "NeverConnected"},
+		{"stale pending node is removed", pending(2 * time.Hour), nil, true, "NeverConnectedExpired"},
+		{"stale pending node with placements is kept", pending(2 * time.Hour), []store.DesiredService{{Name: "web"}}, false, "NeverConnected"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			es := &expiringStore{fakeStore: fakeStore{node: tt.node}, services: tt.services}
+			c := New("node-1", es, time.Minute, WithClock(clock), WithPendingExpiry(time.Hour))
+			res, err := c.Reconcile(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if es.deleted != tt.wantDeleted {
+				t.Fatalf("deleted = %v, want %v", es.deleted, tt.wantDeleted)
+			}
+			if got := res.Conditions[0].Reason; got != tt.wantReason {
+				t.Fatalf("reason = %q, want %q", got, tt.wantReason)
+			}
+		})
+	}
+}

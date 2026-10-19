@@ -302,11 +302,35 @@ func loadOrEnroll(ctx context.Context, addr, path string, logger *slog.Logger) (
 	if err != nil {
 		return nil, fmt.Errorf("enroll: %w", err)
 	}
-	if err := file.Save(id); err != nil {
-		return nil, fmt.Errorf("persist identity to %s: %w", path, err)
+	if err := saveIdentityVerified(ctx, file, id); err != nil {
+		return nil, fmt.Errorf("persist identity to %s (the join token is already spent: clean up this node in the dashboard and enroll again): %w", path, err)
 	}
 	logger.Info("enrolled", slog.String("node_id", id.NodeID))
 	return id, nil
+}
+
+// The join token is spent by now, so a transient write failure is retried and the file read back before the agent trusts it.
+func saveIdentityVerified(ctx context.Context, file *agent.IdentityFile, id *agent.Identity) error {
+	var err error
+	for attempt := 0; attempt < 4; attempt++ {
+		if attempt > 0 {
+			select {
+			case <-time.After(time.Duration(attempt) * 500 * time.Millisecond):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
+		if err = file.Save(id); err != nil {
+			continue
+		}
+		var got *agent.Identity
+		if got, err = file.Load(); err == nil && got.NodeID == id.NodeID {
+			return nil
+		} else if err == nil {
+			err = fmt.Errorf("identity read back with node id %q, want %q", got.NodeID, id.NodeID)
+		}
+	}
+	return err
 }
 
 func agentDataDir() string {

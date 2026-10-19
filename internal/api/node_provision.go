@@ -575,7 +575,7 @@ func (rt *Router) handleGetNodeProvision(w http.ResponseWriter, r *http.Request)
 // just be retried on the next poll.
 func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvision) store.NodeProvision {
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
-		if n, ok := findNodeByName(nodes, p.Name); ok {
+		if n, ok := findProvisionedNode(nodes, p.Name, p.CreatedAt); ok {
 			// Enrollment (internal/agent/server.go, frozen) always sets
 			// AcceptsAppWorkloads true and leaves AcceptsBuildWorkloads
 			// false, with no way to carry the operator's chosen Role
@@ -584,6 +584,7 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 			acceptsApp, acceptsBuild := p.Role != "build", p.Role == "build"
 			if werr := rt.nodes.UpdateNodeWorkloads(ctx, n.ID, acceptsApp, acceptsBuild); werr != nil {
 				rt.logger.Error("api: node provision: apply role to node failed", slog.String("provision_id", p.ID), slog.String("node_id", n.ID), slog.String("error", werr.Error()))
+				return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusEnrolling, p.IPAddress, "", "node enrolled but its role could not be applied yet, retrying: "+werr.Error())
 			}
 			return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusReady, p.IPAddress, n.ID, "")
 		}
@@ -592,7 +593,19 @@ func (rt *Router) refreshNodeProvision(ctx context.Context, p store.NodeProvisio
 	}
 
 	if timeout := nodeProvisionTimeout(); time.Since(p.CreatedAt) > timeout {
-		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusFailed, p.IPAddress, "", fmt.Sprintf("timed out after %s waiting for the node to enroll", timeout))
+		reason := fmt.Sprintf("timed out after %s waiting for the node to enroll", timeout)
+		if p.ProviderServerID != "" {
+			provisioner, ok, _, _ := rt.resolveNodeProvisioner(ctx, p.Provider)
+			if !ok {
+				return rt.saveNodeProvisionUpdate(ctx, p, p.Status, p.IPAddress, "", reason+"; the provider token is unavailable so the server was not deleted, delete server "+p.ProviderServerID+" in the provider console")
+			}
+			if derr := provisioner.DeleteServer(ctx, p.ProviderServerID); derr != nil {
+				rt.logger.Error("api: node provision: delete timed-out server failed", slog.String("provision_id", p.ID), slog.String("server_id", p.ProviderServerID), slog.String("error", derr.Error()))
+				return rt.saveNodeProvisionUpdate(ctx, p, p.Status, p.IPAddress, "", reason+"; deleting the server failed, retrying: "+derr.Error())
+			}
+			reason += "; the server was deleted"
+		}
+		return rt.saveNodeProvisionUpdate(ctx, p, store.NodeProvisionStatusFailed, p.IPAddress, "", reason)
 	}
 
 	provisioner, ok, _, _ := rt.resolveNodeProvisioner(ctx, p.Provider)

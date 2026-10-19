@@ -195,6 +195,8 @@ Every step above, and the failure cases (an interrupted restore, a tampered back
 | Newer schema, other install | refusal | `TestRestore_NewerSchemaRefused`, `TestRestore_InstallIDGuard` |
 </Accordion>
 
+The dashboard shows the same steps as a Restore plan under Disaster recovery (`GET /api/v1/system/control-plane-dr/restore-plan`), and can generate a recipient key pair in the settings form. The private key is shown once and never stored on the server.
+
 ## Runbook: the control plane machine is gone
 
 This is the exact sequence that was run, end to end, against a real S3 server

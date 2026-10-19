@@ -115,7 +115,7 @@ func dynamicSource(deps dynamicSourceDeps) reconcile.Source {
 		controllers = append(controllers, databaseControllersFor(ctx, deps, databases)...)
 		controllers = append(controllers, modelControllersFor(deps, modelRows)...)
 		for _, n := range nodes {
-			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout))
+			controllers = append(controllers, nodehealth.New(n.ID, deps.db, deps.heartbeatTimeout, nodehealth.WithPendingExpiry(nodePendingExpireAfter())))
 		}
 
 		ingressOpts := []ingressreconcile.Option{
@@ -420,4 +420,16 @@ func runtimeNodeID(deps dynamicSourceDeps, nodeID string) string {
 		return ""
 	}
 	return nodeID
+}
+
+// nodePendingExpireAfter reads APP_NODE_PENDING_EXPIRE_AFTER: how long an enrolled node may stay unconnected before it is removed. 0 disables.
+func nodePendingExpireAfter() time.Duration {
+	raw := os.Getenv("APP_NODE_PENDING_EXPIRE_AFTER")
+	if raw == "" {
+		return time.Hour
+	}
+	if d, err := time.ParseDuration(raw); err == nil && d >= 0 {
+		return d
+	}
+	return time.Hour
 }

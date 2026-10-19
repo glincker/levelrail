@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1418 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1420 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -1369,11 +1369,13 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/claim", Ability: "AbilityWrite", Group: "System", Handler: "handleClaimOrphanedContainer", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/remove", Ability: "AbilityRoot", Group: "System", Handler: "handleRemoveOrphanedContainer", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/containers/{name}/stop", Ability: "AbilityRoot", Group: "System", Handler: "handleStopOrphanedContainer", Description: "Orphaned containers only (containers_orphaned.go's requireOrphanedContainer re-confirms this server-side on every call, never trusting the client). Stop/remove are raw docker-level mutations fleet-wide, not scoped to one app's own desired state: AbilityRoot, the same tier system/prune and orphaned volume cleanup already sit behind. Claim creates an ordinary app through the same path POST /api/v1/apps itself uses, so it stays AbilityWrite, that route's own tier."},
-	{Method: "GET", Path: "/api/v1/system/control-plane-dr", Ability: "AbilityRead", Group: "System", Handler: "handleGetControlPlaneDR", Description: "Off-box encrypted control plane backups, restore drills and escrow (control_plane_dr.go). Status reads are AbilityRead and carry public recipients only. Changing the destination or recipients is AbilityWriteSensitive; building an escrow bundle touches the master key, so it is AbilityRoot. Restore stays an offline CLI action."},
+	{Method: "GET", Path: "/api/v1/system/control-plane-dr", Ability: "AbilityRead", Group: "System", Handler: "handleGetControlPlaneDR", Description: "Off-box encrypted control plane backups, restore drills and escrow (control_plane_dr.go). Status reads are AbilityRead and carry public recipients only. Changing the destination or recipients is AbilityWriteSensitive; building an escrow bundle touches the master key, so it is AbilityRoot. Restore replaces the live database so it runs offline; restore-plan gives the steps and exact command."},
 	{Method: "GET", Path: "/api/v1/system/control-plane-dr/backups", Ability: "AbilityRead", Group: "System", Handler: "handleListControlPlaneDRBackups", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-dr/drill", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleRunControlPlaneDRDrill", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-dr/escrow", Ability: "AbilityRoot", Group: "System", Handler: "handleControlPlaneDREscrow", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-dr/escrow/ack", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleAckControlPlaneDREscrow", Description: ""},
+	{Method: "POST", Path: "/api/v1/system/control-plane-dr/keys", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleGenerateControlPlaneDRKeypair", Description: ""},
+	{Method: "GET", Path: "/api/v1/system/control-plane-dr/restore-plan", Ability: "AbilityRead", Group: "System", Handler: "handleGetControlPlaneRestorePlan", Description: ""},
 	{Method: "POST", Path: "/api/v1/system/control-plane-dr/run", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleRunControlPlaneDRBackup", Description: ""},
 	{Method: "PUT", Path: "/api/v1/system/control-plane-dr/settings", Ability: "AbilityWriteSensitive", Group: "System", Handler: "handleUpdateControlPlaneDR", Description: ""},
 	{Method: "GET", Path: "/api/v1/system/control-plane-health", Ability: "AbilityRead", Group: "System", Handler: "handleGetCPHealth", Description: ""},

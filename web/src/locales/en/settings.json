@@ -2088,5 +2088,53 @@
       "title": "No storage destinations",
       "description": "Connect AWS S3, Cloudflare R2, Backblaze B2, MinIO, Wasabi, any S3-compatible bucket, or an enrolled node to store backups, archives and dumps."
     }
+  },
+  "controlPlaneDrKeygen": {
+    "trigger": "Generate key pair",
+    "title": "New backup recipient key",
+    "description": "The public key is added to the backup recipients. The private key is shown once and is never stored on this server.",
+    "warning": "Store the private key offline now (a password manager or a safe). Without it the backups cannot be decrypted.",
+    "copy": "Copy private key",
+    "download": "Download private key",
+    "use": "I saved it, add the public key"
+  },
+  "controlPlaneDrRestore": {
+    "title": "Restore plan",
+    "description": "Recovery replaces the control plane database, so it runs on the host with the control plane stopped. These are the steps for this install.",
+    "noBackup": "No complete off-box backup exists yet. Run a backup before you rely on recovery.",
+    "newest": "Newest backup: {{key}} ({{when}})",
+    "viaCli": "Restore command for the host",
+    "copy": "Copy command",
+    "copied": "Copied",
+    "warnings": {
+      "escrow_not_acknowledged": "The master key escrow is not acknowledged: a restore without the master key cannot read stored secrets.",
+      "drill_not_passed": "No restore drill has passed yet, so this plan is untested."
+    },
+    "steps": {
+      "backup_available": {
+        "title": "A complete backup is available",
+        "body": "The newest encrypted backup at the destination has both its data and manifest."
+      },
+      "identity_ready": {
+        "title": "Have a private key ready",
+        "body": "You need the private key that matches one of the backup recipients."
+      },
+      "master_key_escrow": {
+        "title": "Have the master key escrow ready",
+        "body": "The backup does not contain the master key. Restore it from your escrow bundle."
+      },
+      "stop_control_plane": {
+        "title": "Stop the control plane",
+        "body": "Restore refuses to run while the database is in use."
+      },
+      "run_restore": {
+        "title": "Run the restore on the host",
+        "body": "The current database is kept next to the restored one as a pre-restore copy."
+      },
+      "start_and_verify": {
+        "title": "Start the control plane and verify",
+        "body": "Check that apps, domains and nodes are back, then run a fresh backup."
+      }
+    }
   }
 }

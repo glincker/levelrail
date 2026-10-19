@@ -192,7 +192,7 @@ var Tree = map[string]*Node{
 		"schedule": {Subs: map[string]*Node{"set": nil, "clear": nil}},
 	}},
 	"archive":               {Subs: map[string]*Node{"ls": nil, "create": nil, "restore": nil, "verify": nil, "download": nil, "delete": nil, "policy": nil}},
-	"control-plane-backups": {Subs: map[string]*Node{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {Subs: map[string]*Node{"show": nil, "set": nil}}, "run-now": nil, "drill": {Subs: map[string]*Node{"run": nil, "status": nil}}, "escrow": nil, "keys": {Subs: map[string]*Node{"generate": nil}}, "help-dr": nil}},
+	"control-plane-backups": {Subs: map[string]*Node{"list": nil, "create": nil, "download": nil, "verify": nil, "delete": nil, "schedule": {Subs: map[string]*Node{"show": nil, "set": nil}}, "run-now": nil, "drill": {Subs: map[string]*Node{"run": nil, "status": nil}}, "escrow": nil, "restore-plan": nil, "keys": {Subs: map[string]*Node{"generate": nil}}, "help-dr": nil}},
 	"cloudflare-tunnel":     {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil}},
 	"vault":                 {Subs: map[string]*Node{"get": nil, "set": nil, "disconnect": nil}},
 	"ai": {Subs: map[string]*Node{

@@ -5,8 +5,10 @@ import (
 	"errors"
 	"log/slog"
 	"math"
+	"net"
 	"net/http"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/alerting"
@@ -171,6 +173,8 @@ type reenrollTokenResponse struct {
 	// AgentBinary is the agent executable's name, for building the
 	// "<agent> reenroll" command without hardcoding the product name.
 	AgentBinary string `json:"agent_binary"`
+	// ControlPlaneAddress is the host:port agents dial, when the operator configured one.
+	ControlPlaneAddress string `json:"control_plane_address,omitempty"`
 }
 
 // handleCreateNodeReenrollToken handles POST /api/v1/nodes/{id}/reenroll-token:
@@ -216,6 +220,7 @@ func (rt *Router) handleCreateNodeReenrollToken(w http.ResponseWriter, r *http.R
 	rt.logger.Info("api: node re-enrollment token issued", slog.String("node_id", id))
 	writeJSON(w, http.StatusCreated, reenrollTokenResponse{
 		Token: plaintext, NodeID: id, ExpiresAt: rec.ExpiresAt, CAFingerprint: rt.agentCAFingerprint, AgentBinary: rt.brand.BinaryName + "-agent",
+		ControlPlaneAddress: rt.agentDialAddress(),
 	})
 }
 
@@ -244,7 +249,7 @@ func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 	n, err := rt.nodes.GetNode(r.Context(), id)
 	if err != nil {
 		rt.logger.Error("api: revoke node cert: reload node failed", slog.String("node_id", id), slog.String("error", err.Error()))
-		writeError(w, http.StatusInternalServerError, "internal error")
+		writeJSON(w, http.StatusOK, nodeResource{ID: id})
 		return
 	}
 	res := toNodeResource(*n)
@@ -256,4 +261,11 @@ func (rt *Router) handleRevokeNodeCert(w http.ResponseWriter, r *http.Request) {
 // nodeResourceFromPath is the IAM resource for a node route: "node:<id>".
 func nodeResourceFromPath(r *http.Request) string {
 	return resourcePrefixNode + r.PathValue("id")
+}
+
+func (rt *Router) agentDialAddress() string {
+	if rt.doctorAgentAdvertiseHost == "" || rt.doctorAgentAdvertisePort <= 0 {
+		return ""
+	}
+	return net.JoinHostPort(rt.doctorAgentAdvertiseHost, strconv.Itoa(rt.doctorAgentAdvertisePort))
 }

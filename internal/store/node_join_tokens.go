@@ -115,6 +115,14 @@ func (db *DB) MarkNodeJoinTokenUsed(ctx context.Context, id string) error {
 	return ErrNodeJoinTokenAlreadyUsed
 }
 
+// ReleaseNodeJoinToken makes a token spent by a failed enrollment usable again.
+func (db *DB) ReleaseNodeJoinToken(ctx context.Context, id string) error {
+	if _, err := db.ExecContext(ctx, `UPDATE node_join_tokens SET used_at = NULL WHERE id = ?`, id); err != nil {
+		return fmt.Errorf("store: release node join token %q: %w", id, err)
+	}
+	return nil
+}
+
 func (db *DB) getNodeJoinTokenByID(ctx context.Context, id string) (*NodeJoinToken, error) {
 	row := db.QueryRowContext(ctx, `
 		SELECT id, token_hash, created_at, expires_at, used_at, purpose, COALESCE(node_id, '')

@@ -43,6 +43,14 @@ const base: ControlPlaneDr = {
   ],
 }
 
+const plan = { ready: false, steps: [], warnings: [], binary_name: 'cli' }
+
+function body(url: string): Response {
+  if (url.includes('/storage/destinations')) return json([])
+  if (url.includes('/restore-plan')) return json(plan)
+  return json(base)
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -80,11 +88,7 @@ describe('ControlPlaneDrCard', () => {
   })
 
   it('shows warnings, checklist progress and a partial drill note', async () => {
-    fetchMock.mockImplementation((url: string) =>
-      Promise.resolve(
-        url.includes('/storage/destinations') ? json([]) : json(base),
-      ),
-    )
+    fetchMock.mockImplementation((url: string) => Promise.resolve(body(url)))
     renderCard()
     expect(await screen.findByText('Disaster recovery')).toBeInTheDocument()
     expect(
@@ -105,9 +109,7 @@ describe('ControlPlaneDrCard', () => {
       if (init?.method === 'POST') {
         return Promise.resolve(json({ started: true }, 202))
       }
-      return Promise.resolve(
-        url.includes('/storage/destinations') ? json([]) : json(base),
-      )
+      return Promise.resolve(body(url))
     })
     renderCard()
     await user.click(await screen.findByRole('button', { name: /Run now/ }))

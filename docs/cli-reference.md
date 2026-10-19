@@ -1523,13 +1523,14 @@ levelrail-cli control-plane-backups drill run|status [flags]
 levelrail-cli control-plane-backups escrow [--out FILE] [--recipient KEY] [--upload] [--ack] [flags]
 levelrail-cli control-plane-backups escrow ack [flags]
 levelrail-cli control-plane-backups escrow open <file> --identity FILE [--extract DIR]
+levelrail-cli control-plane-backups restore-plan
 levelrail-cli control-plane-backups keys generate [--out FILE] [--hybrid]
 levelrail-cli control-plane-backups help-dr
 ```
 
 Snapshots of the control plane's own database, stored under `<data dir>/control-plane-backups/`. `create` takes one now (manual snapshots are never auto-deleted), `download` saves one to `--out FILE` (or raw bytes to stdout), `verify` re-checks the checksum, SQLite integrity and schema version without restoring (exit 1 if any check fails), `delete` removes one. Snapshots never contain the master key. Restore is an offline server command, `levelrail restore-db <file>`; see [Control plane backup and restore](/control-plane-backup).
 
-The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
+The `--offbox`, `schedule`, `run-now`, `drill`, `escrow` and `keys` subcommands drive encrypted off-box backups. `keys generate` makes an age key pair on your machine (private key to a `0600` file, public key to stdout). `schedule set` changes only the flags you pass (`--enable`, `--disable`, `--destination`, `--recipient`, `--schedule`, `--drill-schedule`, `--retain-daily`, `--retain-weekly`, `--retain-monthly`, `--escrow-destination`). `run-now` and `drill run` wait for the run and exit 1 if it failed; `drill status` exits 1 when the last drill failed or none has run. `escrow` writes the master key and agent CA key encrypted to your recipients (never uploaded unless `--upload`, and never to the backup bucket). `restore-plan` prints the ordered recovery steps with the newest complete backup and the exact restore command filled in. `help-dr` prints a static runbook. Restore an off-box backup on the server with `levelrail restore --from <s3://... | file> --identity FILE [--dry-run]`. See [Disaster recovery](/disaster-recovery).
 
 ### Orphaned volumes
 

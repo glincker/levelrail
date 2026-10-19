@@ -143,3 +143,36 @@ func (c *Client) AckControlPlaneEscrow(ctx context.Context) (ControlPlaneDR, err
 	err := c.do(ctx, http.MethodPost, controlPlaneDRPath+"/escrow/ack", nil, &out)
 	return out, err
 }
+
+// ControlPlaneRestoreStep is one ordered recovery step and whether it is done.
+type ControlPlaneRestoreStep struct {
+	ID    string `json:"id"`
+	State string `json:"state"`
+}
+
+// ControlPlaneRestoreBackup is the newest complete off-box backup.
+type ControlPlaneRestoreBackup struct {
+	Key       string `json:"key"`
+	CreatedAt string `json:"created_at"`
+	SizeBytes int64  `json:"size_bytes"`
+}
+
+// ControlPlaneRestorePlan mirrors the restore-plan response.
+type ControlPlaneRestorePlan struct {
+	Ready      bool                       `json:"ready"`
+	Backup     *ControlPlaneRestoreBackup `json:"backup,omitempty"`
+	InstallID  string                     `json:"install_id,omitempty"`
+	Source     string                     `json:"source,omitempty"`
+	Endpoint   string                     `json:"endpoint,omitempty"`
+	Command    string                     `json:"command,omitempty"`
+	Steps      []ControlPlaneRestoreStep  `json:"steps"`
+	Warnings   []string                   `json:"warnings"`
+	BinaryName string                     `json:"binary_name"`
+}
+
+// GetControlPlaneRestorePlan calls GET /api/v1/system/control-plane-dr/restore-plan.
+func (c *Client) GetControlPlaneRestorePlan(ctx context.Context) (ControlPlaneRestorePlan, error) {
+	var out ControlPlaneRestorePlan
+	err := c.do(ctx, http.MethodGet, controlPlaneDRPath+"/restore-plan", nil, &out)
+	return out, err
+}

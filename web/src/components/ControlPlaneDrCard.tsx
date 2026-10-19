@@ -18,6 +18,7 @@ import {
 } from '../queries/controlPlaneDr'
 import { ControlPlaneDrChecklistView } from './ControlPlaneDrChecklist'
 import { ControlPlaneDrEscrow } from './ControlPlaneDrEscrow'
+import { ControlPlaneDrRestore } from './ControlPlaneDrRestore'
 import { ControlPlaneDrSettings } from './ControlPlaneDrSettings'
 
 function drillSummary(d: ControlPlaneDrDrill): string {
@@ -125,6 +126,8 @@ export function ControlPlaneDrCard() {
         </dl>
 
         <ControlPlaneDrEscrow status={status} />
+
+        <ControlPlaneDrRestore configured={status.configured} />
 
         <div className="border-t border-border pt-4">
           <ControlPlaneDrSettings

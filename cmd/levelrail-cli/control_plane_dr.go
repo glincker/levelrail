@@ -29,6 +29,7 @@ func controlPlaneDRUsage(prog string) string {
   %[1]s control-plane-backups escrow [flags]                   write the master key, encrypted to your recipients, to a file
   %[1]s control-plane-backups escrow ack                       record that the bundle is stored offline
   %[1]s control-plane-backups escrow open <file> --identity F [--extract DIR]  decrypt a bundle locally
+  %[1]s control-plane-backups restore-plan                     ordered recovery steps with the newest backup and restore command filled in
   %[1]s control-plane-backups keys generate [--out FILE]       make an age keypair for backups (private key stays on this machine)
 
 schedule set flags: --enable | --disable, --destination ID, --recipient KEY (repeat),
@@ -43,6 +44,8 @@ func runControlPlaneDR(prog, sub string, args []string, stdout, stderr io.Writer
 		return runDRRun(prog, "run-now", args, stdout, stderr, lookupEnv)
 	case "escrow":
 		return runDREscrow(prog, args, stdout, stderr, lookupEnv)
+	case "restore-plan":
+		return runDRRestorePlan(prog, args, stdout, stderr, lookupEnv)
 	}
 	if len(args) > 0 {
 		switch args[0] {
@@ -320,4 +323,38 @@ func listOffbox(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return exitCodeForError(err)
 	}
 	return exitOK
+}
+
+func runDRRestorePlan(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenP, urlP, profileP, jsonP, outP, queryP := apiFlagSet(prog, "control-plane-backups restore-plan", "print the plan as JSON to stdout and nothing else", stderr)
+	client, jsonOut, of, code, ok := drClient(prog, fs, args, apiFlagPtrs{tokenP, urlP, profileP, jsonP, outP, queryP}, stderr, lookupEnv)
+	if !ok {
+		return code
+	}
+	plan, err := client.GetControlPlaneRestorePlan(context.Background())
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("get restore plan: %w", err))
+	}
+	if err := renderResult(stdout, of.Format, of.Query, plan, func() { printRestorePlan(stdout, plan) }); err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return exitCodeForError(err)
+	}
+	return exitOK
+}
+
+func printRestorePlan(out io.Writer, plan apiclient.ControlPlaneRestorePlan) {
+	if plan.Backup == nil {
+		_, _ = fmt.Fprintln(out, "No complete off-box backup found: run one first (control-plane-backups run-now).")
+	} else {
+		_, _ = fmt.Fprintf(out, "Newest backup: %s (%s)\n", plan.Backup.Key, plan.Backup.CreatedAt)
+	}
+	for i, s := range plan.Steps {
+		_, _ = fmt.Fprintf(out, "%d. [%s] %s\n", i+1, s.State, s.ID)
+	}
+	if plan.Command != "" {
+		_, _ = fmt.Fprintf(out, "Restore command (control plane stopped): %s\n", plan.Command)
+	}
+	for _, w := range plan.Warnings {
+		_, _ = fmt.Fprintf(out, "warning: %s\n", w)
+	}
 }

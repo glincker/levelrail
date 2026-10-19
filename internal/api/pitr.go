@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/backup"
@@ -166,6 +167,14 @@ func (rt *Router) handleEnablePITR(w http.ResponseWriter, r *http.Request) {
 	if db.Engine != store.EnginePostgres {
 		writeError(w, http.StatusBadRequest, fmt.Sprintf("point-in-time restore is only supported for postgres, not %q", db.Engine))
 		return
+	}
+
+	if db.BackupTargetID != "" {
+		target, err := rt.backupTargets.GetBackupTarget(r.Context(), db.BackupTargetID)
+		if err == nil && strings.HasPrefix(target.Endpoint, store.AgentEndpointScheme) {
+			writeError(w, http.StatusBadRequest, "point-in-time restore needs an S3 compatible backup target, not a node directory: pick an S3 target first")
+			return
+		}
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)

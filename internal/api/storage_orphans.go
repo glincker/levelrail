@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/docker"
-	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -274,28 +273,6 @@ func (rt *Router) appDeleteDataPlan(w http.ResponseWriter, r *http.Request, name
 		volumes = append(volumes, v.Name)
 	}
 	return purge, volumes, true
-}
-
-// teardownDatabaseAndPurge is teardownDatabaseContainer followed by removal of
-// the database's own volumes once its container is gone.
-func (rt *Router) teardownDatabaseAndPurge(name, nodeID string) {
-	if rt.execRuntime == nil {
-		return
-	}
-	runtime, err := rt.execRuntime(nodeID)
-	if err != nil {
-		rt.logger.Error("api: delete database data: resolve node runtime failed", slog.String("error", err.Error()), slog.String("name", name))
-		return
-	}
-	go func() { //nolint:gosec // deliberately outlives the request, same as teardownDatabaseContainer
-		ctx := context.Background()
-		if err := database.New(name, rt.databases, runtime).Teardown(ctx); err != nil {
-			rt.logger.Error("api: delete database data: teardown failed, data kept as orphaned data", slog.String("error", err.Error()), slog.String("name", name))
-			return
-		}
-		_, names := databaseVolumeNames(name)
-		rt.purgeVolumes(ctx, "database/"+name, names)
-	}()
 }
 
 // requireDeleteDataConfirm validates ?delete_data=true on a database or app

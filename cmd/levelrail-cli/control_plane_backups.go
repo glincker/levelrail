@@ -34,7 +34,7 @@ func runControlPlaneBackups(prog string, args []string, stdout, stderr io.Writer
 			}
 		}
 		return runControlPlaneBackupsList(prog, rest, stdout, stderr, lookupEnv)
-	case "schedule", "run-now", "drill", "escrow", "keys":
+	case "schedule", "run-now", "drill", "escrow", "keys", "restore-plan":
 		return runControlPlaneDR(prog, args[0], args[1:], stdout, stderr, lookupEnv)
 	case "create":
 		return runControlPlaneBackupsCreate(prog, args[1:], stdout, stderr, lookupEnv)
