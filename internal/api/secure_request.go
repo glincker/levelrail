@@ -14,7 +14,7 @@ func requestIsHTTPS(r *http.Request) bool {
 	if r.TLS != nil {
 		return true
 	}
-	if !peerIsLoopback(r) {
+	if !peerIsTrustedProxy(r) {
 		return false
 	}
 	proto, _, _ := strings.Cut(r.Header.Get("X-Forwarded-Proto"), ",")

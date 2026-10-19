@@ -28,9 +28,8 @@ func maybeBootstrapDevAdmin(ctx context.Context, s AuthStore, logger *slog.Logge
 	if !enabled {
 		return nil
 	}
-	logger.Warn("APP_DEV_MODE is enabled: bootstrapping fixed dev admin account, do not use this build in production",
+	logger.Warn("APP_DEV_MODE is enabled: bootstrapping fixed dev admin account (password not logged), do not use this build in production",
 		slog.String("username", devModeUsername),
-		slog.String("password", devModePassword),
 	)
 	return BootstrapAdmin(ctx, s, devModeUsername, devModePassword)
 }

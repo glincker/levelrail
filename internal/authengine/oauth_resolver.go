@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	theauth "github.com/glincker/theauth-go/v2"
@@ -26,7 +27,15 @@ import (
 	twitchprov "github.com/glincker/theauth-go/v2/provider/twitch"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
+
+// defaultOIDCClient refuses internal destinations (discovery and token calls go to operator-supplied issuers).
+var defaultOIDCClient = sync.OnceValue(func() *http.Client {
+	c := netguard.NewClient()
+	c.Timeout = oidcDiscoveryTimeout
+	return c
+})
 
 const oidcDiscoveryTimeout = 10 * time.Second
 
@@ -90,7 +99,7 @@ func (r *providerResolver) httpClient() *http.Client {
 	if r.rt.wiring.HTTP != nil {
 		return r.rt.wiring.HTTP
 	}
-	return &http.Client{Timeout: oidcDiscoveryTimeout}
+	return defaultOIDCClient()
 }
 
 func (r *providerResolver) build(ctx context.Context, s store.OAuthProviderSettings, secret string) (theauth.Provider, error) {

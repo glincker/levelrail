@@ -11,6 +11,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
 const (
@@ -36,6 +37,7 @@ func newOAuthHarness(t *testing.T, mode string) *oauthHarness {
 	if _, ok := os.LookupEnv(authengine.EnvOAuthProviderTTL); !ok {
 		t.Setenv(authengine.EnvOAuthProviderTTL, "0")
 	}
+	t.Setenv(netguard.AllowPrivateEnv, "true") // the fake IdP listens on loopback
 	h := &oauthHarness{t: t, mode: mode, db: openTestDB(t), idp: newFakeIDP(t), secrets: newFakeOAuthSecrets(), jar: map[string]*http.Cookie{}}
 	h.key = make([]byte, 32)
 	if _, err := rand.Read(h.key); err != nil {

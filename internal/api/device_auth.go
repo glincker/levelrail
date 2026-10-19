@@ -122,6 +122,10 @@ func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if allowed, retry := rt.devicePollLimit.allow(clientIP(r)); !allowed {
+		writeRateLimited(w, retry)
+		return
+	}
 	rt.libraryDeviceToken(w, r, req.DeviceCode)
 }
 

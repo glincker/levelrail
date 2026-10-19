@@ -196,6 +196,9 @@ type Router struct {
 	sessions               *sessionStore
 	mfaPending             *mfaPendingStore // always set, same "always present, not an Option" shape sessions itself has
 	passkeyLogin           *loginLimiter
+	setupTokenGuess        *loginLimiter // failed setup-token guesses per client IP
+	wakeTokenGuess         *loginLimiter // failed wake-token guesses per client IP
+	devicePollLimit        *apiRateLimiter
 	mfaVerify              *loginLimiter // separate budget from logins above: brute-forcing a 6-digit code after a correct password is a distinct attack this must independently rate limit
 	sessionTTL             time.Duration // 0 means "use defaultSessionTTL", set via WithSessionTTL
 	trustRoot              TrustRootProbe
@@ -868,6 +871,9 @@ func NewRouter(logger *slog.Logger, b *brand.Brand, s Store, opts ...Option) *Ro
 		importFiles:                 func() importplan.FileSource { return importplan.NewHTTPFiles() },
 		mfaPending:                  newMFAPendingStore(),
 		passkeyLogin:                newLoginLimiter(),
+		setupTokenGuess:             newLoginLimiter(),
+		wakeTokenGuess:              newLoginLimiter(),
+		devicePollLimit:             newAPIRateLimiter(devicePollPerMinute),
 		mfaVerify:                   newLoginLimiter(),
 		pushSubscriptions:           s,
 		oauthSettings:               s,

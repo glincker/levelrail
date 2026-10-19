@@ -21,7 +21,7 @@ However, this is not a fully unattended operation due to one constraint: the con
 
 **File-sourced** (default, no `APP_MASTER_KEY` set). The file is `<data dir>/master.key`, or the path in `APP_MASTER_KEY_FILE` if you set it. Point `APP_MASTER_KEY_FILE` at an absolute path outside the data directory (for example `/etc/levelrail/master.key`, mode `0600`) so a copy of the data directory alone cannot decrypt your secrets. A file with group or world permissions is refused at startup.
 
-Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action.
+Rotation automatically rewrites the file at `<data dir>/master.key` with the new key (atomically, so a crash never leaves a truncated file). On restart, the process picks up the new key with no further action. The new key is written to `master.key.new` (fsynced) before the database is touched, and renamed over `master.key` only after the rotation commits. If the process dies in between, the next start detects `master.key.new`, checks which key your stored secrets actually use, and finishes the swap (or discards the staged file if the rotation never committed), so you never end up with a key file that cannot decrypt your data. If the new key file cannot be staged, the rotation is refused and nothing changes.
 
 **Env-sourced** (`APP_MASTER_KEY` set):
 Rotation cannot rewrite an environment variable belonging to your process supervisor. The CLI output includes an explicit warning to update `APP_MASTER_KEY` in your systemd unit or Docker Compose file before the next restart. Restarting with the old value will make every secret permanently unreadable, since all DEKs are now wrapped only under the new key.
@@ -87,7 +87,7 @@ A stored DEK could not be unwrapped with the control plane's current master key.
 
 <Accordion title="`persistedToFile: false` with a warning about the key file">
 
-The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but writing the new key to `master.key` failed. Usually a permissions or disk-space problem. Fix it and copy the new key into place manually before the control plane restarts.
+The rotation itself succeeded (all DEKs are now wrapped under the new key and in use), but the final rename of `master.key.new` over `master.key` failed. Leave `master.key.new` in place: the next start applies it automatically. A failure to write `master.key.new` in the first place refuses the rotation before anything changes.
 
 </Accordion>
 
