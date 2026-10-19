@@ -51,3 +51,13 @@ func TestSettingsFixesListed(t *testing.T) {
 		t.Fatalf("got %d views, err %v", len(views), err)
 	}
 }
+
+func TestEffectiveDashboardURLFallsBackToTheEnvPin(t *testing.T) {
+	rt, _ := newFixitRouter(t)
+	ctx := context.Background()
+	t.Setenv(envDashboardURL, "https://pinned.example.com")
+	got, err := rt.effectiveDashboardURL(ctx)
+	if err != nil || got != "https://pinned.example.com" {
+		t.Fatalf("effectiveDashboardURL = %q, %v; want the env pin when nothing is saved", got, err)
+	}
+}

@@ -97,6 +97,15 @@ func (rt *Router) checkMasterKeyAge(ctx context.Context) (bool, string) {
 	return c.Status == doctorStatusWarn, c.Message
 }
 
+// effectiveDashboardURL is the saved dashboard URL, else the APP_DASHBOARD_URL pin the sign-in paths already honour.
+func (rt *Router) effectiveDashboardURL(ctx context.Context) (string, error) {
+	cur, err := rt.ingressSettings.GetDashboardURL(ctx)
+	if err != nil || cur != "" {
+		return cur, err
+	}
+	return strings.TrimSpace(os.Getenv(envDashboardURL)), nil
+}
+
 // dashboardHTTPSTarget is the https URL the dashboard should use, empty when
 // nothing needs fixing (no primary domain, ACME off, or already on it).
 func (rt *Router) dashboardHTTPSTarget(ctx context.Context) (target, current string, err error) {
@@ -104,7 +113,7 @@ func (rt *Router) dashboardHTTPSTarget(ctx context.Context) (target, current str
 	if err != nil {
 		return "", "", err
 	}
-	current, err = rt.ingressSettings.GetDashboardURL(ctx)
+	current, err = rt.effectiveDashboardURL(ctx)
 	if err != nil {
 		return "", "", err
 	}
@@ -191,7 +200,7 @@ func (rt *Router) passkeyRPFix() fixit.Fix {
 		Why:   "A passkey only works on the host it was registered for. This page is served from a different host than the dashboard URL.",
 		Risk:  fixit.RiskSafe,
 		Check: func(ctx context.Context) (fixit.Finding, error) {
-			cur, err := rt.ingressSettings.GetDashboardURL(ctx)
+			cur, err := rt.effectiveDashboardURL(ctx)
 			if err != nil || cur == "" {
 				return fixit.Finding{Detail: "no dashboard URL set"}, nil
 			}
