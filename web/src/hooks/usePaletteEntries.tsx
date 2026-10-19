@@ -1,0 +1,314 @@
+import * as React from 'react'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from '@tanstack/react-router'
+import {
+  ClockCounterClockwiseIcon,
+  FunnelIcon,
+  RobotIcon,
+  StackIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { toast } from '@/components/ui/toast'
+import { fuzzyFilter } from '@/lib/fuzzy'
+import { groupHits } from '@/lib/paletteGroups'
+import {
+  KIND_VALUES,
+  freeTerms,
+  scopeKeyCompletions,
+  type Chip,
+} from '@/lib/paletteQuery'
+import { isFeatureVisible } from '../lib/experimental'
+import {
+  useDeleteSavedSearch,
+  useSavedSearches,
+  type SearchHit,
+} from '../queries/search'
+import {
+  DEFAULT_QUICK_ACTION_KEYS,
+  GROUP_ORDER,
+  type PaletteItem,
+} from '../components/commandPaletteData'
+import type { PaletteEntry } from '../components/paletteList'
+import { hitToItem, kindIcon } from '../components/paletteHitItems'
+import { buildPaletteSuggestions } from '../components/shell/paletteSuggestions'
+import { useExperimentalFeatures } from './useExperimental'
+import { usePaletteAppActions } from './usePaletteAppActions'
+import type { usePaletteSearch } from './usePaletteSearch'
+
+const STATIC_SEARCH_GROUPS = new Set([
+  'Actions',
+  'Navigate',
+  'Settings',
+  'Domain actions',
+])
+const MAX_STATIC_MATCHES = 5
+const MAX_VALUE_SUGGESTIONS = 5
+
+function bucket(items: readonly PaletteItem[]): Map<string, PaletteItem[]> {
+  const byGroup = new Map<string, PaletteItem[]>()
+  for (const item of items) {
+    byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
+  }
+  return byGroup
+}
+
+interface Input {
+  ps: ReturnType<typeof usePaletteSearch>
+  baseItems: PaletteItem[]
+  recentKeys: string[]
+  recentSearches: string[]
+  expanded: ReadonlySet<string>
+  expand: (kind: string) => void
+  currentApp?: string
+}
+
+// Builds the flat header/item list the palette renders, for both the idle and the searching state.
+export function usePaletteEntries(input: Input): PaletteEntry[] {
+  const { ps, baseItems, recentKeys, recentSearches, expanded, expand } = input
+  const { currentApp } = input
+  const { t } = useTranslation('palette')
+  const navigate = useNavigate()
+  const experimental = useExperimentalFeatures()
+  const { restartApp } = usePaletteAppActions()
+  const saved = useSavedSearches()
+  const deleteSavedSearch = useDeleteSavedSearch().mutate
+
+  const searching = ps.serverQuery !== ''
+  const failed = searching && ps.search.isError
+  const hits = React.useMemo<SearchHit[]>(
+    () => (searching && !ps.search.isError ? (ps.search.data?.hits ?? []) : []),
+    [searching, ps.search.isError, ps.search.data],
+  )
+  const terms = React.useMemo(() => freeTerms(ps.text), [ps.text])
+  const savedRows = saved.data
+
+  const looseNavigate = React.useCallback(
+    (opts: { to: string; search?: Record<string, string> }) =>
+      void navigate(opts),
+    [navigate],
+  )
+
+  return React.useMemo<PaletteEntry[]>(() => {
+    const out: PaletteEntry[] = []
+    let index = 0
+    const push = (key: string, label: string, items: PaletteItem[]) => {
+      if (items.length === 0) return
+      out.push({ type: 'header', key: `h-${key}`, label })
+      for (const item of items) {
+        out.push({ type: 'item', key: item.key, item, index: index++ })
+      }
+    }
+    const groupLabel = (g: string) =>
+      t(`groups.${g}` as 'groups.Actions', { defaultValue: g })
+    const pushStatic = (items: PaletteItem[]) => {
+      const byGroup = bucket(items)
+      for (const g of GROUP_ORDER) {
+        push(`base-${g}`, groupLabel(g), byGroup.get(g) ?? [])
+      }
+    }
+    const q = ps.text.trim()
+
+    const tok = ps.token
+    if (tok) {
+      const head = ps.text.slice(0, tok.start)
+      const filters: PaletteItem[] = scopeKeyCompletions(tok.partialKey).map(
+        (key) => ({
+          key: `suggest-scope-${key}`,
+          label: `${key}:`,
+          group: 'filters',
+          icon: <FunnelIcon />,
+          keepOpen: true,
+          run: () => ps.setInput(`${head}${key}:`),
+        }),
+      )
+      if (tok.key) {
+        const key = tok.key
+        const want = tok.value.toLowerCase()
+        const values: string[] =
+          key === 'kind'
+            ? KIND_VALUES.filter((k) => k.startsWith(want))
+            : ps.suggestions
+                .filter((s) => s.kind === (key === 'env' ? 'environment' : key))
+                .map((s) => s.text)
+        for (const value of values.slice(0, MAX_VALUE_SUGGESTIONS)) {
+          const chip: Chip = { key, value }
+          filters.push({
+            key: `suggest-value-${key}-${value}`,
+            label: `${key}:${value}`,
+            group: 'filters',
+            icon: <FunnelIcon />,
+            keepOpen: true,
+            run: () => ps.acceptScope(chip),
+          })
+        }
+      }
+      push('filters', t('groups.filters'), filters)
+    }
+
+    if (!searching) {
+      const byKey = new Map(baseItems.map((i) => [i.key, i]))
+      const specs = buildPaletteSuggestions({
+        currentApp: currentApp ? decodeURIComponent(currentApp) : undefined,
+        apps: [],
+        recentKeys,
+        assistantEnabled: isFeatureVisible('ai-chat', experimental),
+      }).filter((sp) => sp.kind !== 'app-action')
+      const suggested: PaletteItem[] = specs.map((sp) => ({
+        key: sp.key,
+        label: sp.label,
+        group: 'Suggested',
+        icon: sp.kind === 'assistant' ? <RobotIcon /> : <StackIcon />,
+        run: () =>
+          void navigate(
+            sp.kind === 'assistant'
+              ? { to: '/ai-assistant' }
+              : { to: '/apps/$name', params: { name: sp.app ?? '' } },
+          ),
+      }))
+      const quick = DEFAULT_QUICK_ACTION_KEYS.flatMap((k) => {
+        const item = byKey.get(k)
+        return item
+          ? [
+              {
+                ...item,
+                key: `suggested-quick-${item.key}`,
+                group: 'Suggested',
+              },
+            ]
+          : []
+      })
+      push('Suggested', groupLabel('Suggested'), [...suggested, ...quick])
+      push(
+        'Recent',
+        groupLabel('Recent'),
+        recentKeys.flatMap((k) => {
+          const item = byKey.get(k)
+          return item
+            ? [{ ...item, key: `recent-${item.key}`, group: 'Recent' }]
+            : []
+        }),
+      )
+      push(
+        'recentSearches',
+        t('groups.recentSearches'),
+        recentSearches.map((s) => ({
+          key: `recent-search-${s}`,
+          label: s,
+          group: 'recentSearches',
+          icon: <ClockCounterClockwiseIcon />,
+          keepOpen: true,
+          run: () => ps.applyQuery(s),
+        })),
+      )
+      push(
+        'savedSearches',
+        t('groups.savedSearches'),
+        (savedRows ?? []).map((s) => ({
+          key: `saved-search-${s.id}`,
+          label: s.name,
+          subtitle: s.query,
+          group: 'savedSearches',
+          icon: kindIcon('saved'),
+          keepOpen: true,
+          run: () => ps.applyQuery(s.query),
+          removeLabel: t('saved.delete', { name: s.name }),
+          onRemove: () =>
+            deleteSavedSearch(s.id, {
+              onSuccess: () =>
+                toast.add({
+                  title: t('saved.deleted', { name: s.name }),
+                  type: 'success',
+                }),
+              onError: (e) =>
+                toast.add({
+                  title: t('saved.deleteFailed', { message: e.message }),
+                  type: 'error',
+                }),
+            }),
+        })),
+      )
+      pushStatic(baseItems)
+      return out
+    }
+
+    // Client-only matches: the built-in fallback when search fails, and a
+    // supplement to server hits otherwise. Chips mean a scoped search, so
+    // static entries would only add noise.
+    const clientItems = (hideSettings: boolean): PaletteItem[] => {
+      if (ps.chips.length > 0 || q === '') return []
+      const counts = new Map<string, number>()
+      return fuzzyFilter(
+        baseItems,
+        q,
+        (i) => i.label,
+        (i) => i.keywords,
+      ).filter((i) => {
+        if (!STATIC_SEARCH_GROUPS.has(i.group)) return false
+        if (hideSettings && i.group === 'Settings') return false
+        const n = (counts.get(i.group) ?? 0) + 1
+        counts.set(i.group, n)
+        return n <= MAX_STATIC_MATCHES
+      })
+    }
+
+    if (failed) {
+      pushStatic(clientItems(false))
+      return out
+    }
+
+    const applySaved = (hit: SearchHit) => {
+      const row = savedRows?.find((s) => `saved:${s.id}` === hit.ref)
+      if (row) ps.applyQuery(row.query)
+    }
+    for (const g of groupHits(hits, expanded)) {
+      const items = g.hits.map((h) => ({
+        ...hitToItem(h, {
+          terms,
+          t,
+          navigate: looseNavigate,
+          restartApp: (name) => {
+            restartApp(name)
+            toast.add({ title: t('restarting', { name }), type: 'success' })
+          },
+          applySaved,
+        }),
+        group: g.kind,
+      }))
+      if (g.total > g.hits.length) {
+        items.push({
+          key: `more-${g.kind}`,
+          label: t('showAll', { count: g.total }),
+          group: g.kind,
+          icon: kindIcon(g.kind),
+          keepOpen: true,
+          run: () => expand(g.kind),
+        })
+      }
+      push(
+        `kind-${g.kind}`,
+        t(`kind.${g.kind}` as 'kind.app', { defaultValue: g.kind }),
+        items,
+      )
+    }
+    pushStatic(clientItems(hits.some((h) => h.kind === 'setting')))
+    return out
+  }, [
+    t,
+    ps,
+    searching,
+    failed,
+    baseItems,
+    currentApp,
+    recentKeys,
+    recentSearches,
+    savedRows,
+    deleteSavedSearch,
+    experimental,
+    navigate,
+    hits,
+    terms,
+    expanded,
+    expand,
+    looseNavigate,
+    restartApp,
+  ])
+}

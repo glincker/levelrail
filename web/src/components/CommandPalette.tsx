@@ -1,77 +1,34 @@
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog'
-import { useNavigate, useRouterState } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowClockwiseIcon,
-  ClockCounterClockwiseIcon,
-  DatabaseIcon,
-  HardDrivesIcon,
-  KeyboardIcon,
-  RobotIcon,
-  WarningCircleIcon,
-  MagnifyingGlassIcon,
-  RocketLaunchIcon,
-  SquaresFourIcon,
-  StackIcon,
-  TerminalWindowIcon,
-} from '@phosphor-icons/react/dist/ssr'
+import { useRouterState } from '@tanstack/react-router'
+import { MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   DialogPortal,
   DialogOverlay,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { fuzzyFilter } from '@/lib/fuzzy'
 import {
   isRecentEligible,
   loadRecentKeys,
   pushRecentKey,
 } from '@/lib/recentItems'
-import { usePaletteAppActions } from '../hooks/usePaletteAppActions'
-import { usePageActions } from '@/lib/pageActions'
-import { appListQueryOptions } from '../queries/apps'
-import { databaseListQueryOptions } from '../queries/databases'
-import { nodeListQueryOptions } from '../queries/nodes'
-import { serviceTemplatesQueryOptions } from '../queries/serviceTemplates'
-import { domainsQueryOptions } from '../queries/domains'
-import { useTheme, type Theme } from './ThemeProvider'
-import {
-  DEFAULT_QUICK_ACTION_KEYS,
-  GROUP_ORDER,
-  ROUTE_ENTRIES,
-  routeEntryItem,
-  THEME_ACTION,
-  type PaletteItem,
-} from './commandPaletteData'
-import { PaletteFooter, ResultRow } from './commandPaletteEntries'
-import { domainFromPath, useTrafficPaletteItems } from './trafficPaletteItems'
-import { useResourcePaletteItems } from './resourcePaletteItems'
-import { isFeatureVisible } from '../lib/experimental'
-import { useExperimentalFeatures } from '../hooks/useExperimental'
-import { buildPaletteSuggestions } from './shell/paletteSuggestions'
-
-const MAX_APP_MATCHES = 3
-const MAX_NODE_MATCHES = 5
-const MAX_TEMPLATE_MATCHES = 5
-const MAX_DOMAIN_MATCHES = 5
-const MAX_DNS_RECORD_MATCHES = 5
-const CAPPED_SEARCH_GROUPS: readonly (readonly [string, number])[] = [
-  ['Nodes', MAX_NODE_MATCHES],
-  ['Templates', MAX_TEMPLATE_MATCHES],
-  ['Domains', MAX_DOMAIN_MATCHES],
-  ['DNS records', MAX_DNS_RECORD_MATCHES],
-]
-const NEXT_THEME: Record<Theme, Theme> = {
-  light: 'dark',
-  dark: 'system',
-  system: 'light',
-}
+import { chipLabel } from '@/lib/paletteQuery'
+import { loadRecentSearches, pushRecentSearch } from '@/lib/paletteSearches'
+import { usePaletteBaseItems } from '../hooks/usePaletteBaseItems'
+import { usePaletteEntries } from '../hooks/usePaletteEntries'
+import { usePaletteSearch } from '../hooks/usePaletteSearch'
+import { recordSearchUse } from '../queries/search'
+import type { PaletteItem } from './commandPaletteData'
+import { ChipBar, PaletteFooter } from './commandPaletteEntries'
+import { PaletteList } from './paletteList'
+import { SaveSearchButton, SaveSearchForm } from './paletteSaveSearch'
 
 // Command palette: Cmd+K (Mac) / Ctrl+K (elsewhere) opens it from anywhere
-// in the app shell. Self-contained state, but `open` can also be driven
-// externally (__root.tsx's header trigger) via the open/onOpenChange props.
+// in the app shell. `open` can also be driven externally (__root.tsx's
+// header trigger) via the open/onOpenChange props.
 export function CommandPalette({
   open: openProp,
   onOpenChange,
@@ -91,43 +48,37 @@ export function CommandPalette({
     [onOpenChange],
   )
 
-  const [query, setQuery] = React.useState('')
   const [activeIndex, setActiveIndex] = React.useState(0)
   const [recentKeys, setRecentKeys] = React.useState<string[]>(loadRecentKeys)
+  const [recentSearches, setRecentSearches] =
+    React.useState<string[]>(loadRecentSearches)
+  const [expanded, setExpanded] = React.useState<ReadonlySet<string>>(new Set())
+  const [pending, setPending] = React.useState<PaletteItem | null>(null)
+  const [saving, setSaving] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
-  const navigate = useNavigate()
-  const { t } = useTranslation()
-  const { theme, setTheme } = useTheme()
-  const { restartApp, redeployApp } = usePaletteAppActions()
-  const pageActions = usePageActions()
-  const experimental = useExperimentalFeatures()
+  const { t } = useTranslation('palette')
+  const ps = usePaletteSearch(open)
+  const baseItems = usePaletteBaseItems(onShowShortcuts)
   const currentApp = useRouterState({
     select: (st) => /^\/apps\/([^/]+)/.exec(st.location.pathname)?.[1],
   })
-  const currentDomain = useRouterState({
-    select: (st) => domainFromPath(st.location.pathname),
+  const expand = React.useCallback(
+    (kind: string) => setExpanded((prev) => new Set(prev).add(kind)),
+    [],
+  )
+  const entries = usePaletteEntries({
+    ps,
+    baseItems,
+    recentKeys,
+    recentSearches,
+    expanded,
+    expand,
+    currentApp,
   })
-
-  // Both lists come from the shared query cache: they only refetch when
-  // stale on open, never per keystroke (filtering is client-side).
-  const appsQuery = useQuery({ ...appListQueryOptions(), enabled: open })
-  const databasesQuery = useQuery({
-    ...databaseListQueryOptions(),
-    enabled: open,
-  })
-  const nodesQuery = useQuery({ ...nodeListQueryOptions(), enabled: open })
-  const templatesQuery = useQuery({
-    ...serviceTemplatesQueryOptions(),
-    enabled: open,
-  })
-  const domainsQuery = useQuery({ ...domainsQueryOptions(), enabled: open })
-  const traffic = useTrafficPaletteItems({
-    domains: domainsQuery.data ?? [],
-    query,
-    currentDomain,
-  })
-
-  const resources = useResourcePaletteItems(open, query)
+  const results = React.useMemo(
+    () => entries.flatMap((e) => (e.type === 'item' ? [e.item] : [])),
+    [entries],
+  )
 
   React.useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -140,15 +91,18 @@ export function CommandPalette({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [open, setOpen])
 
-  // Reset filter state at the moment `open` flips, computed during render
-  // (not an effect) per React's "adjusting state on prop change" pattern.
+  // Reset at the moment `open` flips, during render per React's "adjusting state on prop change" pattern.
   const [prevOpen, setPrevOpen] = React.useState(open)
   if (open !== prevOpen) {
     setPrevOpen(open)
     if (open) {
-      setQuery('')
+      ps.reset()
       setActiveIndex(0)
+      setPending(null)
+      setSaving(false)
+      setExpanded(new Set())
       setRecentKeys(loadRecentKeys())
+      setRecentSearches(loadRecentSearches())
     }
   }
 
@@ -160,283 +114,102 @@ export function CommandPalette({
     return undefined
   }, [open])
 
-  const baseItems = React.useMemo<PaletteItem[]>(() => {
-    const go =
-      (
-        to: string,
-        params?: Record<string, string>,
-        search?: Record<string, string>,
-      ) =>
-      () =>
-        void navigate(search ? { to, params, search } : { to, params })
-    const items: PaletteItem[] = ROUTE_ENTRIES.map((e) =>
-      routeEntryItem(e, experimental, go, t('shell.locked.paletteSubtitle')),
-    )
-    for (const a of pageActions) {
-      items.push({ ...a, group: 'Actions' })
-    }
-    items.push({
-      ...THEME_ACTION,
-      run: () => setTheme(NEXT_THEME[theme]),
-    })
-    if (onShowShortcuts) {
-      items.push({
-        key: 'action-shortcuts',
-        label: 'Keyboard shortcuts',
-        keywords: 'quick navigation hold l go to',
-        group: 'Actions',
-        icon: <KeyboardIcon />,
-        run: onShowShortcuts,
-      })
-    }
-    for (const app of appsQuery.data ?? []) {
-      items.push({
-        key: `app-${app.name}`,
-        label: app.name,
-        group: 'Apps',
-        icon: <StackIcon />,
-        run: go('/apps/$name', { name: app.name }),
-      })
-    }
-    for (const db of databasesQuery.data ?? []) {
-      items.push({
-        key: `db-${db.name}`,
-        label: db.name,
-        group: 'Databases',
-        icon: <DatabaseIcon />,
-        run: go('/databases/$name', { name: db.name }),
-      })
-    }
-    for (const node of nodesQuery.data ?? []) {
-      items.push({
-        key: `node-${node.id}`,
-        label: node.name,
-        group: 'Nodes',
-        icon: <HardDrivesIcon />,
-        run: go('/nodes/$id', { id: node.id }),
-      })
-    }
-    for (const template of templatesQuery.data ?? []) {
-      items.push({
-        key: `template-${template.id}`,
-        label: template.name,
-        group: 'Templates',
-        icon: <SquaresFourIcon />,
-        run: go('/templates/$id', { id: template.id }),
-      })
-    }
-    items.push(...traffic.base, ...resources.base)
-    return items
-  }, [
-    navigate,
-    setTheme,
-    theme,
-    appsQuery.data,
-    databasesQuery.data,
-    nodesQuery.data,
-    templatesQuery.data,
-    traffic.base,
-    resources.base,
-    onShowShortcuts,
-    pageActions,
-    experimental,
-    t,
-  ])
+  const searching = ps.serverQuery !== ''
+  const loading = searching && ps.search.isFetching && !ps.search.data
+  const failed = searching && ps.search.isError
+  const lastChip = ps.chips[ps.chips.length - 1]
 
-  const groups = React.useMemo(() => {
-    const q = query.trim()
-    const byGroup = new Map<string, PaletteItem[]>()
-    const go = (to: string, params?: Record<string, string>) => () =>
-      void navigate({ to, params })
+  const clearAll = React.useCallback(() => {
+    ps.reset()
+    setPending(null)
+    setSaving(false)
+    setExpanded(new Set())
+  }, [ps])
 
-    if (!q) {
-      const byKey = new Map(baseItems.map((i) => [i.key, i]))
-      const recent = recentKeys.flatMap((k) => {
-        const item = byKey.get(k)
-        return item
-          ? [{ ...item, key: `recent-${item.key}`, group: 'Recent' }]
-          : []
-      })
-      const appName = currentApp ? decodeURIComponent(currentApp) : undefined
-      const specs = buildPaletteSuggestions({
-        currentApp: appName,
-        apps: (appsQuery.data ?? []).map((a) => ({
-          name: a.name,
-          failing: a.status.variant === 'destructive',
-        })),
-        recentKeys,
-        assistantEnabled: isFeatureVisible('ai-chat', experimental),
-      })
-      const image = (n: string) =>
-        appsQuery.data?.find((a) => a.name === n)?.image ?? ''
-      const suggested: PaletteItem[] = specs.map((sp) => {
-        const app = sp.app ?? ''
-        const base = { key: sp.key, label: sp.label, group: 'Suggested' }
-        if (sp.kind === 'app-action' && sp.action === 'restart') {
-          return {
-            ...base,
-            icon: <ArrowClockwiseIcon />,
-            run: () => restartApp(app),
-          }
-        }
-        if (sp.kind === 'app-action') {
-          return {
-            ...base,
-            icon: <RocketLaunchIcon />,
-            run: () => redeployApp(app, image(app)),
-          }
-        }
-        if (sp.kind === 'assistant') {
-          return { ...base, icon: <RobotIcon />, run: go('/ai-assistant') }
-        }
-        return {
-          ...base,
-          icon:
-            sp.kind === 'failing-app' ? <WarningCircleIcon /> : <StackIcon />,
-          run: go('/apps/$name', { name: app }),
-        }
-      })
-      // Dynamic suggestions (current app, failing apps, recents, assistant)
-      // can all be empty for a first-time user; the quick actions below
-      // keep "Suggested" non-empty regardless.
-      const quickActions: PaletteItem[] = DEFAULT_QUICK_ACTION_KEYS.flatMap(
-        (k) => {
-          const item = byKey.get(k)
-          return item
-            ? [
-                {
-                  ...item,
-                  key: `suggested-quick-${item.key}`,
-                  group: 'Suggested',
-                },
-              ]
-            : []
-        },
-      )
-      byGroup.set('Suggested', [...suggested, ...quickActions])
-      if (recent.length > 0) byGroup.set('Recent', recent)
-      for (const item of baseItems) {
-        byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
-      }
-    } else {
-      const apps = fuzzyFilter(appsQuery.data ?? [], q, (a) => a.name)
-      const matches = q.length >= 2 ? apps : []
-      const appActions: PaletteItem[] = []
-      for (const app of matches.slice(0, MAX_APP_MATCHES)) {
-        const n = app.name
-        const act = (
-          id: string,
-          label: string,
-          icon: React.ReactNode,
-          run: () => void,
-        ): PaletteItem => ({
-          key: `app-action-${id}-${n}`,
-          label: `${label} ${n}`,
-          group: 'App actions',
-          icon,
-          run,
-        })
-        appActions.push(
-          act('restart', 'Restart', <ArrowClockwiseIcon />, () =>
-            restartApp(n),
-          ),
-          act('redeploy', 'Redeploy', <RocketLaunchIcon />, () =>
-            redeployApp(n, app.image),
-          ),
-          act(
-            'logs',
-            'Open logs for',
-            <TerminalWindowIcon />,
-            () =>
-              void navigate({ to: '/apps/$name/logs', params: { name: n } }),
-          ),
-          act(
-            'deploys',
-            'Open deploys for',
-            <ClockCounterClockwiseIcon />,
-            () =>
-              void navigate({ to: '/apps/$name/deploys', params: { name: n } }),
-          ),
-        )
-      }
-      if (appActions.length > 0) byGroup.set('App actions', appActions)
-      const matched = fuzzyFilter(
-        baseItems,
-        q,
-        (i) => i.label,
-        (i) => i.keywords,
-      )
-      for (const item of [...matched, ...traffic.search, ...resources.search]) {
-        byGroup.set(item.group, [...(byGroup.get(item.group) ?? []), item])
-      }
-      for (const [group, max] of CAPPED_SEARCH_GROUPS) {
-        const items = byGroup.get(group)
-        if (items && items.length > max) byGroup.set(group, items.slice(0, max))
-      }
-    }
-
-    return GROUP_ORDER.flatMap((group) => {
-      const items = byGroup.get(group)
-      return items && items.length > 0 ? [{ group, items }] : []
-    })
-  }, [
-    query,
-    baseItems,
-    recentKeys,
-    appsQuery.data,
-    navigate,
-    restartApp,
-    redeployApp,
-    currentApp,
-    experimental,
-    traffic.search,
-    resources.search,
-  ])
-
-  const results = React.useMemo(() => groups.flatMap((g) => g.items), [groups])
+  const close = React.useCallback(() => {
+    setOpen(false)
+    clearAll()
+  }, [setOpen, clearAll])
 
   const select = React.useCallback(
-    (item: PaletteItem) => {
-      const originalKey = item.key.replace(/^recent-/, '')
-      if (isRecentEligible(originalKey)) {
-        setRecentKeys(pushRecentKey(originalKey))
+    (item: PaletteItem, confirmed = false) => {
+      if (item.confirm && !confirmed) {
+        setPending(item)
+        return
+      }
+      setPending(null)
+      if (item.searchRef) {
+        void recordSearchUse(item.searchRef)
+        if (ps.serverQuery !== '') {
+          setRecentSearches(pushRecentSearch(ps.serverQuery))
+        }
+      } else {
+        const originalKey = item.key.replace(/^recent-/, '')
+        if (isRecentEligible(originalKey)) {
+          setRecentKeys(pushRecentKey(originalKey))
+        }
       }
       item.run()
-      setOpen(false)
-      setQuery('')
+      if (!item.keepOpen) close()
     },
-    [setOpen],
+    [close, ps.serverQuery],
   )
 
+  const layered =
+    pending !== null || saving || ps.text !== '' || ps.chips.length > 0
+
+  function dropLayer() {
+    if (pending) setPending(null)
+    else if (saving) setSaving(false)
+    else clearAll()
+  }
+
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const item = results[activeIndex]
+    const count = results.length
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActiveIndex((i) =>
-        results.length === 0 ? 0 : (i + 1) % results.length,
-      )
+      setActiveIndex((i) => (count === 0 ? 0 : (i + 1) % count))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActiveIndex((i) =>
-        results.length === 0 ? 0 : (i - 1 + results.length) % results.length,
-      )
+      setActiveIndex((i) => (count === 0 ? 0 : (i - 1 + count) % count))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const item = results[activeIndex]
-      if (item) select(item)
+      if ((e.metaKey || e.ctrlKey) && item?.secondary) {
+        item.secondary()
+        close()
+      } else if (pending) select(pending, true)
+      else if (item) select(item)
+    } else if (e.key === 'Tab') {
+      if (item?.secondary) {
+        e.preventDefault()
+        item.secondary()
+        close()
+      }
+    } else if (e.key === 'Backspace' && ps.text === '' && lastChip) {
+      e.preventDefault()
+      ps.popChip()
     } else if (e.key === 'Escape') {
       e.preventDefault()
-      setOpen(false)
+      if (layered) {
+        e.stopPropagation()
+        dropLayer()
+      } else setOpen(false)
     }
   }
 
   const optionId = (item: PaletteItem) => `command-palette-option-${item.key}`
   const activeItem = results[activeIndex]
-  let flatIndex = -1
 
   return (
     <DialogPrimitive.Root
       open={open}
-      onOpenChange={(next) => {
+      onOpenChange={(next, details) => {
+        if (!next && layered && details?.reason === 'escape-key') {
+          details.cancel?.()
+          dropLayer()
+          return
+        }
         setOpen(next)
       }}
     >
@@ -446,72 +219,121 @@ export function CommandPalette({
           data-slot="command-palette"
           className="glinui-glass-surface fixed top-24 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 gap-0 overflow-hidden text-sm text-popover-foreground duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
         >
-          <DialogTitle className="sr-only">Command palette</DialogTitle>
-          <div className="flex items-center gap-2 border-b border-border px-3">
+          <DialogTitle className="sr-only">{t('title')}</DialogTitle>
+          <div className="flex flex-wrap items-center gap-2 border-b border-border px-3">
             <MagnifyingGlassIcon className="size-4 shrink-0 text-muted-foreground" />
+            <ChipBar chips={ps.chips} onRemove={ps.removeChip} />
             <Input
               ref={inputRef}
               role="combobox"
-              aria-label="Search commands"
+              aria-label={t('searchLabel')}
               aria-expanded={open}
               aria-controls="command-palette-listbox"
               aria-autocomplete="list"
               aria-activedescendant={
                 activeItem ? optionId(activeItem) : undefined
               }
-              value={query}
+              value={ps.text}
               onChange={(e) => {
-                setQuery(e.target.value)
+                ps.setInput(e.target.value)
                 setActiveIndex(0)
+                setPending(null)
               }}
               onKeyDown={handleInputKeyDown}
-              placeholder="Search apps, actions, settings..."
-              className="h-11 border-none px-0 shadow-none focus-visible:ring-0"
+              placeholder={ps.chips.length > 0 ? '' : t('placeholder')}
+              className="h-11 min-w-32 flex-1 border-none px-0 shadow-none focus-visible:ring-0"
             />
           </div>
-          <div
-            id="command-palette-listbox"
-            role="listbox"
-            aria-label="Search results"
-            className="max-h-80 overflow-y-auto p-2"
-          >
-            {results.length === 0 ? (
-              <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
-                No results.
+          {pending ? (
+            <div
+              role="alert"
+              className="flex items-center gap-2 border-b border-border bg-muted/50 px-3 py-2"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">
+                  {t('confirm.title', { action: pending.label })}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t('confirm.description')}
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setPending(null)}
+              >
+                {t('confirm.cancel')}
+              </Button>
+              <Button size="sm" onClick={() => select(pending, true)}>
+                {t('confirm.run')}
+              </Button>
+            </div>
+          ) : null}
+          {loading ? (
+            <p
+              role="status"
+              className="px-3 py-2 text-xs text-muted-foreground"
+            >
+              {t('loading')}
+            </p>
+          ) : null}
+          {failed ? (
+            <div
+              role="alert"
+              className="flex items-center gap-2 px-3 py-2 text-xs"
+            >
+              <p className="min-w-0 flex-1 text-muted-foreground">
+                {t('error', { message: ps.search.error?.message ?? '' })}{' '}
+                {t('errorOffline')}
               </p>
-            ) : (
-              groups.map(({ group, items }) => (
-                <div
-                  key={group}
-                  role="group"
-                  aria-label={group}
-                  className="mb-2 last:mb-0"
-                >
-                  <p
-                    aria-hidden="true"
-                    className="px-2.5 py-1 text-xs font-medium text-muted-foreground"
-                  >
-                    {group}
-                  </p>
-                  {items.map((item) => {
-                    flatIndex += 1
-                    const index = flatIndex
-                    return (
-                      <ResultRow
-                        key={item.key}
-                        item={item}
-                        optionId={optionId(item)}
-                        active={index === activeIndex}
-                        query={query}
-                        onSelect={() => select(item)}
-                      />
-                    )
-                  })}
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => void ps.search.refetch()}
+              >
+                {t('retry')}
+              </Button>
+            </div>
+          ) : null}
+          {results.length === 0 && !loading ? (
+            <div
+              id="command-palette-listbox"
+              role="listbox"
+              aria-label={t('resultsLabel')}
+              className="p-2"
+            >
+              <p className="px-2.5 py-4 text-center text-sm text-muted-foreground">
+                {t('empty')} {searching && !failed ? t('emptyBroaden') : ''}
+              </p>
+              {lastChip ? (
+                <div className="flex justify-center pb-2">
+                  <Button size="xs" variant="outline" onClick={ps.popChip}>
+                    {t('emptyRemoveFilter', { chip: chipLabel(lastChip) })}
+                  </Button>
                 </div>
-              ))
-            )}
-          </div>
-          <PaletteFooter />
+              ) : null}
+            </div>
+          ) : (
+            <PaletteList
+              entries={entries}
+              label={t('resultsLabel')}
+              activeIndex={activeIndex}
+              query={ps.text}
+              optionId={optionId}
+              onSelect={select}
+            />
+          )}
+          {saving ? (
+            <SaveSearchForm
+              query={ps.serverQuery}
+              onDone={() => setSaving(false)}
+            />
+          ) : null}
+          <PaletteFooter>
+            {searching && !failed ? (
+              <SaveSearchButton onToggle={() => setSaving((s) => !s)} />
+            ) : null}
+          </PaletteFooter>
         </DialogPrimitive.Popup>
       </DialogPortal>
     </DialogPrimitive.Root>

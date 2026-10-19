@@ -4,6 +4,7 @@ import type storageBuckets from '../locales/en/storageBuckets.json'
 import type dashboards from '../locales/en/dashboards.json'
 import type passkeys from '../locales/en/passkeys.json'
 import type account from '../locales/en/account.json'
+import type palette from '../locales/en/palette.json'
 import type rules from '../locales/en/rules.json'
 import type deploys from '../locales/en/deploys.json'
 import type settings from '../locales/en/settings.json'
@@ -192,6 +193,7 @@ declare module 'i18next' {
       dashboards: typeof dashboards
       passkeys: typeof passkeys
       account: typeof account
+      palette: typeof palette
     }
   }
 }
