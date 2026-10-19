@@ -274,6 +274,13 @@ func (s *bootState) startSchedulers() {
 		}
 	}()
 
+	digestRunner := &alerting.DigestRunner{DB: alertingDB, Sender: deployDispatcher, Logger: logger}
+	go func() {
+		if err := digestRunner.Run(ctx, 10*time.Minute); err != nil && !errors.Is(err, context.Canceled) {
+			logger.Error("inbox digest stopped", slog.String("error", err.Error()))
+		}
+	}()
+
 	startSecretRotation(ctx, logger, db, apiRouter, secretsManager != nil)
 
 	startDatabaseUpgrades(ctx, logger, db, secretsManager, client, engine.Nudge, backupRunner, backupVerifyRunner, alertingDB, deployDispatcher,

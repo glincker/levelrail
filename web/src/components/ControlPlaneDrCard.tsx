@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { PlayIcon, ShieldCheckIcon } from '@phosphor-icons/react/dist/ssr'
 import {
   Card,
@@ -15,6 +17,7 @@ import {
   useRunControlPlaneDrBackup,
   useRunControlPlaneDrDrill,
   type ControlPlaneDrDrill,
+  type ControlPlaneDrReplica,
 } from '../queries/controlPlaneDr'
 import { ControlPlaneDrChecklistView } from './ControlPlaneDrChecklist'
 import { ControlPlaneDrEscrow } from './ControlPlaneDrEscrow'
@@ -30,7 +33,30 @@ function drillSummary(d: ControlPlaneDrDrill): string {
     : `passed ${when} in ${Math.max(1, Math.round(d.duration_ms / 1000))}s`
 }
 
+function replicaSummary(
+  r: ControlPlaneDrReplica,
+  t: TFunction<'controlPlaneReplica'>,
+): string {
+  const parts: string[] = []
+  parts.push(
+    r.last_ship_at === undefined
+      ? t('neverShipped', { seconds: r.interval_seconds })
+      : t('summary', {
+          seconds: r.interval_seconds,
+          age: formatAge(r.last_ship_at),
+          kb: Math.round((r.last_size_bytes ?? 0) / 1024),
+          ms: r.last_ship_ms ?? 0,
+        }),
+  )
+  if (r.pending_since !== undefined) {
+    parts.push(t('pending', { age: formatAge(r.pending_since) }))
+  }
+  if (r.last_error) parts.push(t('error', { message: r.last_error }))
+  return parts.join('; ')
+}
+
 export function ControlPlaneDrCard() {
+  const { t } = useTranslation('controlPlaneReplica')
   const { data: status, isLoading, isError } = useControlPlaneDr()
   const run = useRunControlPlaneDrBackup()
   const drill = useRunControlPlaneDrDrill()
@@ -115,6 +141,12 @@ export function ControlPlaneDrCard() {
               ? `, next ${new Date(status.next_backup_at).toLocaleString()}`
               : ''}
           </dd>
+          {status.replica ? (
+            <>
+              <dt className="text-muted-foreground">{t('label')}</dt>
+              <dd>{replicaSummary(status.replica, t)}</dd>
+            </>
+          ) : null}
           <dt className="text-muted-foreground">Last restore drill</dt>
           <dd>{drillSummary(status.last_drill)}</dd>
           <dt className="text-muted-foreground">Drill identity</dt>

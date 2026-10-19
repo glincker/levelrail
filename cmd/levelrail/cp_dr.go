@@ -31,6 +31,11 @@ func setupControlPlaneDR(ctx context.Context, logger *slog.Logger, db *store.DB,
 	svc.DrillIdentities = drillIdentities(logger)
 	router.SetControlPlaneDR(svc, escrowMaterialReader(masterKeyFilePath, dataDir, os.Getenv))
 	go svc.Run(ctx)
+	if interval := cpbackup.ReplicaInterval(os.LookupEnv); interval > 0 {
+		svc.Replica = &cpbackup.Replicator{Svc: svc, DBPath: filepath.Join(dataDir, storeFilename), Interval: interval}
+		go svc.Replica.Run(ctx)
+		logger.Info("control plane continuous replica enabled", slog.Duration("interval", interval))
+	}
 	return svc
 }
 

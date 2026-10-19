@@ -191,6 +191,7 @@ type Router struct {
 	lb                     lbDeps          // zero value is valid: load balancer routes return 501
 	iac                    iacDeps         // zero value is valid: lazily builds the in-process handler apply calls
 	alertNoise             AlertNoise      // nil is valid: silence, maintenance window and alert history routes return 501
+	inbox                  InboxStore      // nil is valid: notification inbox routes return 501
 	statusPage             StatusPageStore // nil is valid: status page routes return 501 and the public page stays off
 	statusView             StatusPageViewer
 	statusSampler          *statuspage.Service

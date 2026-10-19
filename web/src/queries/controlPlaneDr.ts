@@ -48,6 +48,17 @@ export interface ControlPlaneDr {
   drill_running: boolean
   checklist: ControlPlaneDrChecklist
   warnings: ControlPlaneDrWarning[]
+  replica?: ControlPlaneDrReplica
+}
+
+export interface ControlPlaneDrReplica {
+  enabled: boolean
+  interval_seconds: number
+  last_ship_at?: string
+  last_ship_ms?: number
+  last_size_bytes?: number
+  last_error?: string
+  pending_since?: string
 }
 
 export interface ControlPlaneDrSettings {

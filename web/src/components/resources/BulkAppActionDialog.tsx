@@ -98,7 +98,12 @@ export function BulkAppActionDialog({
   function run(dryRun: boolean) {
     setError(null)
     mutation.mutate(
-      { action, names, dry_run: dryRun },
+      {
+        action,
+        names,
+        dry_run: dryRun,
+        confirm_count: names.length,
+      },
       {
         onSuccess: (res) => {
           if (dryRun) {

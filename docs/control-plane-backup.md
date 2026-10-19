@@ -173,6 +173,10 @@ APP_DATA_DIR=/var/lib/levelrail-data levelrail restore-snapshot --yes latest
 
 A local snapshot is on the dead machine's disk, so it is of no use there. For a machine that is gone you need the encrypted off-box backup and the escrow bundle: follow the [step by step runbook](/disaster-recovery#runbook-the-control-plane-machine-is-gone), which was run end to end against a real S3 server. The master key must come with you (escrow bundle or `APP_MASTER_KEY`); a trailing newline in a recovered `master.key` is accepted.
 
+## Continuous replica (experimental, off by default)
+
+Scheduled backups bound data loss to a day. Set `APP_CONTROL_PLANE_REPLICA_INTERVAL` (for example `30s`, minimum `5s`) and the control plane re-ships an encrypted snapshot to the same destination whenever the database changed, into two alternating slots under `cp-replica/`. Recovery loses at most the interval plus the ship time. Measured on a laptop against a local S3 server: 88 KB database in 83 ms, 2.8 MB in 234 ms, 13.7 MB in 833 ms. `levelrail-cli control-plane-backups status` and the dashboard card show the last ship, its size and any pending changes. Rationale and the WAL shipping follow-up: ADR 037.
+
 ## Next steps
 
 <CardGroup cols={2}>

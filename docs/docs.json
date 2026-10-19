@@ -130,6 +130,7 @@
             "pages": [
               "troubleshooting",
               "email-notifications",
+              "alert-inbox",
               "event-webhooks",
               "attention-center"
             ]

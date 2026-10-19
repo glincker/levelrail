@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { BellRingingIcon } from '@phosphor-icons/react/dist/ssr'
+import { useTranslation } from 'react-i18next'
+import { AlertInboxPanel } from '../components/AlertInboxPanel'
 import { AlertHistoryTable } from '../components/AlertHistoryTable'
 import { AlertSilencesPanel } from '../components/AlertSilencesPanel'
 import { MaintenanceWindowsPanel } from '../components/MaintenanceWindowsPanel'
@@ -14,6 +16,7 @@ export const Route = createFileRoute('/alerts')({
 })
 
 function AlertsPage() {
+  const { t } = useTranslation('inbox')
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-3">
@@ -25,12 +28,16 @@ function AlertsPage() {
           description="History of every firing, plus silences and recurring maintenance windows. Muted alerts keep evaluating and stay in history."
         />
       </div>
-      <Tabs defaultValue="history">
+      <Tabs defaultValue="inbox">
         <TabsList>
+          <TabsTrigger value="inbox">{t('tab')}</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
           <TabsTrigger value="silences">Silences</TabsTrigger>
           <TabsTrigger value="maintenance">Maintenance</TabsTrigger>
         </TabsList>
+        <TabsContent value="inbox" className="pt-3">
+          <AlertInboxPanel />
+        </TabsContent>
         <TabsContent value="history" className="pt-3">
           <AlertHistoryTable />
         </TabsContent>

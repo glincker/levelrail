@@ -25,6 +25,8 @@ func runAlerts(prog string, args []string, stdout, stderr io.Writer, lookupEnv f
 			return dispatchSub(prog, "alerts maintenance", alertsMaintenanceUsage, maintenanceCommands(), args[1:], stdout, stderr, lookupEnv)
 		case "history":
 			return runAPICmd(prog, historyCommand(), args[1:], stdout, stderr, lookupEnv)
+		case "inbox":
+			return runAlertsInbox(prog, args[1:], stdout, stderr, lookupEnv)
 		}
 	}
 	return dispatchSub(prog, "alerts", alertsUsage, map[string]apiCmd{}, args, stdout, stderr, lookupEnv)
@@ -36,6 +38,7 @@ func alertsUsage(prog string) string {
   %[1]s alerts silence <app> <rule-id> [--for 1h]      silence one rule (quick action)
   %[1]s alerts maintenance list|create|update|delete   recurring silences (cron + duration + timezone)
   %[1]s alerts history [flags]                         firings and what happened to each notification
+  %[1]s alerts inbox list|count|read|prefs             your alert inbox, read state, routing and daily digest
 
 Alert rules themselves live under "%[1]s apps alerts".
 Run "%[1]s alerts <subcommand> -h" for its flags.

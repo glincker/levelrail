@@ -134,6 +134,21 @@ func (c *Client) StartNodeDrain(ctx context.Context, id, targetNodeID string) (N
 	return out, err
 }
 
+// NodeDrainPreview is the dry run of a drain: what would move, nothing changed.
+type NodeDrainPreview struct {
+	DryRun    bool     `json:"dry_run"`
+	NodeID    string   `json:"node_id"`
+	Services  []string `json:"services"`
+	Databases []string `json:"databases"`
+}
+
+// PreviewNodeDrain calls POST /api/v1/nodes/{id}/drain?dry_run=true.
+func (c *Client) PreviewNodeDrain(ctx context.Context, id string) (NodeDrainPreview, error) {
+	var out NodeDrainPreview
+	err := c.do(ctx, http.MethodPost, nodePath(id)+"/drain?dry_run=true", nil, &out)
+	return out, err
+}
+
 // GetNodeDrain calls GET /api/v1/node-drains/{id}.
 func (c *Client) GetNodeDrain(ctx context.Context, id string) (NodeDrainResource, error) {
 	var out NodeDrainResource

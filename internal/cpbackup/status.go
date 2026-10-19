@@ -62,6 +62,8 @@ type Status struct {
 	DrillRunning            bool        `json:"drill_running"`
 	Checklist               Checklist   `json:"checklist"`
 	Warnings                []Warning   `json:"warnings"`
+	// Replica is set only when the opt-in continuous replica is running.
+	Replica *ReplicaStatus `json:"replica,omitempty"`
 }
 
 func timePtr(t time.Time) *time.Time {
@@ -130,6 +132,10 @@ func (s *Service) Status(ctx context.Context) (Status, error) {
 		}
 	}
 	st.Warnings = s.warnings(ctx, cfg, eff, now)
+	if s.Replica != nil && s.Replica.Interval > 0 {
+		rs := s.Replica.Status()
+		st.Replica = &rs
+	}
 	return st, nil
 }
 

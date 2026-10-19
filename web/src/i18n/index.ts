@@ -94,6 +94,8 @@ export const NAMESPACES = [
   'deployDetail',
   'pipelines',
   'budget',
+  'inbox',
+  'controlPlaneReplica',
   'autoscale',
   'firewall',
   'rules',

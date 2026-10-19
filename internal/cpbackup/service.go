@@ -146,6 +146,8 @@ type Service struct {
 	// DrillIdentities, when set, decrypt backups during drills. Their public
 	// keys are added as recipients of every backup.
 	DrillIdentities []age.Identity
+	// Replica is the optional continuous replica loop, nil when off.
+	Replica *Replicator
 
 	backupMu sync.Mutex
 	drillMu  sync.Mutex

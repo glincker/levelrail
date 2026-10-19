@@ -16,10 +16,11 @@ import (
 func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "nodes drain", "print the drain as JSON to stdout and nothing else", stderr)
 	var target string
-	var wait bool
+	var wait, dryRun bool
 	var timeout, interval time.Duration
 	fs.StringVar(&target, "target", "", "node id to move everything to (default: the scheduler spreads)")
 	fs.BoolVar(&wait, "wait", false, "wait until the drain finishes")
+	fs.BoolVar(&dryRun, "dry-run", false, "list what would move without cordoning or moving anything")
 	fs.DurationVar(&timeout, "timeout", 30*time.Minute, "how long --wait waits")
 	fs.DurationVar(&interval, "poll-interval", 3*time.Second, "how often --wait polls")
 	fs.Usage = func() { _, _ = fmt.Fprint(stderr, nodesDrainUsage(prog)) }
@@ -34,6 +35,18 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 	}
 	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
 	ctx := context.Background()
+
+	if dryRun {
+		p, err := client.PreviewNodeDrain(ctx, id)
+		if err != nil {
+			return reportError(stdout, stderr, jsonOut, fmt.Errorf("preview drain of node %q: %w", id, err))
+		}
+		if err := renderResult(stdout, of.Format, of.Query, p, func() { printDrainPreview(stdout, p) }); err != nil {
+			_, _ = fmt.Fprintln(stderr, err)
+			return exitCodeForError(err)
+		}
+		return exitOK
+	}
 
 	d, err := client.StartNodeDrain(ctx, id, target)
 	if err != nil {
@@ -55,6 +68,16 @@ func runNodesDrain(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return exitAPIError
 	}
 	return exitOK
+}
+
+func printDrainPreview(out io.Writer, p apiclient.NodeDrainPreview) {
+	_, _ = fmt.Fprintf(out, "dry run: draining node %s would move %d service(s) and %d database(s); nothing changed\n", p.NodeID, len(p.Services), len(p.Databases))
+	for _, s := range p.Services {
+		_, _ = fmt.Fprintf(out, "  service   %s\n", s)
+	}
+	for _, d := range p.Databases {
+		_, _ = fmt.Fprintf(out, "  database  %s\n", d)
+	}
 }
 
 func printDrainHuman(out io.Writer, d apiclient.NodeDrainResource, waited bool) {
@@ -118,6 +141,7 @@ cannot be moved and are reported as blocked.
 
 Flags:
   --target string          node id to move everything to (default: the scheduler spreads)
+  --dry-run                list what would move, change nothing
   --wait                   wait until the drain finishes, exit non-zero if it fails
   --timeout duration       how long --wait waits (default 30m)
   --poll-interval duration how often --wait polls (default 3s)

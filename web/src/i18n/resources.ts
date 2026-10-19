@@ -65,6 +65,8 @@ import type archives from '../locales/en/archives.json'
 import type jobs from '../locales/en/jobs.json'
 import type pipelines from '../locales/en/pipelines.json'
 import type budget from '../locales/en/budget.json'
+import type inbox from '../locales/en/inbox.json'
+import type controlPlaneReplica from '../locales/en/controlPlaneReplica.json'
 import type autoscale from '../locales/en/autoscale.json'
 import type envEditor from '../locales/en/envEditor.json'
 import type resourceAdvisor from '../locales/en/resourceAdvisor.json'
@@ -155,6 +157,8 @@ declare module 'i18next' {
       jobs: typeof jobs
       pipelines: typeof pipelines
       budget: typeof budget
+      inbox: typeof inbox
+      controlPlaneReplica: typeof controlPlaneReplica
       autoscale: typeof autoscale
       envEditor: typeof envEditor
       resourceAdvisor: typeof resourceAdvisor

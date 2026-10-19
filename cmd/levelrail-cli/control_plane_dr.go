@@ -125,6 +125,15 @@ func printDRStatus(out io.Writer, st drStatus) {
 	if st.LastDrill.At != "" {
 		row("Drill result", drillLine(st.LastDrill))
 	}
+	if r := st.Replica; r != nil {
+		row("Replica", fmt.Sprintf("every %ds, last shipped %s, %d KB, %d ms", r.IntervalSeconds, orNone(r.LastShipAt), r.LastSizeBytes/1024, r.LastShipMs))
+		if r.PendingSince != "" {
+			row("Replica pending since", r.PendingSince)
+		}
+		if r.LastError != "" {
+			row("Replica error", r.LastError)
+		}
+	}
 	row("Escrow generated", orNone(st.EscrowGeneratedAt))
 	row("Escrow acknowledged", orNone(st.EscrowAckedAt))
 	_ = tw.Flush()

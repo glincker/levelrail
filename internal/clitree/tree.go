@@ -204,6 +204,7 @@ var Tree = map[string]*Node{
 		"silence":     nil,
 		"maintenance": {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 		"history":     nil,
+		"inbox":       {Subs: map[string]*Node{"list": nil, "count": nil, "read": nil, "prefs": nil}},
 	}},
 	"status-page": {Subs: map[string]*Node{
 		"get": nil, "set": nil, "preview": nil,

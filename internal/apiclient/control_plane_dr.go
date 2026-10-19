@@ -57,6 +57,18 @@ type ControlPlaneDR struct {
 	DrillRunning            bool                    `json:"drill_running"`
 	Checklist               ControlPlaneDRChecklist `json:"checklist"`
 	Warnings                []ControlPlaneDRWarning `json:"warnings"`
+	Replica                 *ControlPlaneReplica    `json:"replica,omitempty"`
+}
+
+// ControlPlaneReplica is the opt-in continuous replica state.
+type ControlPlaneReplica struct {
+	Enabled         bool   `json:"enabled"`
+	IntervalSeconds int    `json:"interval_seconds"`
+	LastShipAt      string `json:"last_ship_at,omitempty"`
+	LastShipMs      int64  `json:"last_ship_ms,omitempty"`
+	LastSizeBytes   int64  `json:"last_size_bytes,omitempty"`
+	LastError       string `json:"last_error,omitempty"`
+	PendingSince    string `json:"pending_since,omitempty"`
 }
 
 // ControlPlaneDRSettings is the body of PUT /system/control-plane-dr/settings.

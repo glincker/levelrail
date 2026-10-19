@@ -485,6 +485,10 @@ type drainNodeResponse struct {
 // same teardownServiceContainers/teardownDatabaseContainer call
 // handleSetAppNode/handleSetDatabaseNode make.
 func (rt *Router) handleDrainNode(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Query().Get("dry_run") == "true" {
+		rt.previewNodeDrain(w, r)
+		return
+	}
 	if rt.multiNode != nil {
 		rt.handleStartDrain(w, r)
 		return

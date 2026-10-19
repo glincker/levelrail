@@ -1664,6 +1664,11 @@ Routes that do not fit an existing group.
 | GET | /api/v1/resilience/disk | AbilityRead | handleGetDiskResilience |
 | POST | /api/v1/resilience/disk/free-space | AbilityRoot | handleFreeDiskSpace |
 | GET | /api/v1/alert-templates | AbilityRead | handleListAlertTemplates |
+| GET | /api/v1/inbox | AbilityRead | handleListInbox |
+| GET | /api/v1/inbox/unread-count | AbilityRead | handleInboxUnreadCount |
+| POST | /api/v1/inbox/read | AbilityWrite | handleInboxMarkRead |
+| GET | /api/v1/inbox/preferences | AbilityRead | handleGetInboxPrefs |
+| PUT | /api/v1/inbox/preferences | AbilityWrite | handlePutInboxPrefs |
 
 ## See also
 
