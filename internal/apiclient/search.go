@@ -13,21 +13,33 @@ type SearchActionInfo struct {
 	ID      string `json:"id"`
 	Ability string `json:"ability"`
 	Confirm bool   `json:"confirm"`
+	// MCPTool is the exact MCP tool to call, MCPArgs its filled-in arguments
+	// and MCPNeeds the inputs the caller must still supply.
+	MCPTool  string            `json:"mcp_tool,omitempty"`
+	MCPArgs  map[string]string `json:"mcp_args,omitempty"`
+	MCPNeeds []string          `json:"mcp_needs,omitempty"`
+}
+
+// SearchSpan is a half-open range of code points in a hit's title.
+type SearchSpan struct {
+	Start int `json:"start"`
+	End   int `json:"end"`
 }
 
 // SearchHit is one unified search result.
 type SearchHit struct {
-	Ref      string            `json:"ref"`
-	Kind     string            `json:"kind"`
-	Title    string            `json:"title"`
-	Subtitle string            `json:"subtitle,omitempty"`
-	AppName  string            `json:"app_name,omitempty"`
-	Env      string            `json:"env,omitempty"`
-	NodeName string            `json:"node_name,omitempty"`
-	Tags     []string          `json:"tags,omitempty"`
-	Href     string            `json:"href,omitempty"`
-	Score    float64           `json:"score"`
-	Action   *SearchActionInfo `json:"action,omitempty"`
+	Ref        string            `json:"ref"`
+	Kind       string            `json:"kind"`
+	Title      string            `json:"title"`
+	Subtitle   string            `json:"subtitle,omitempty"`
+	AppName    string            `json:"app_name,omitempty"`
+	Env        string            `json:"env,omitempty"`
+	NodeName   string            `json:"node_name,omitempty"`
+	Tags       []string          `json:"tags,omitempty"`
+	Href       string            `json:"href,omitempty"`
+	TitleSpans []SearchSpan      `json:"title_spans,omitempty"`
+	Score      float64           `json:"score"`
+	Action     *SearchActionInfo `json:"action,omitempty"`
 }
 
 // SearchResponse is a page of hits.

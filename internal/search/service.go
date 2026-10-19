@@ -151,24 +151,75 @@ func (s *Service) Search(ctx context.Context, c Caller, req Request) (Response, 
 		}
 		offset = n
 	}
+	hits, terms, err := s.ranked(ctx, c, req)
+	if err != nil {
+		return Response{}, err
+	}
+	if hits == nil {
+		return Response{Hits: []Hit{}}, nil
+	}
+	resp := Response{Total: len(hits), Hits: []Hit{}}
+	if offset >= len(hits) {
+		return resp, nil
+	}
+	end := min(offset+limit, len(hits))
+	for _, h := range hits[offset:end] {
+		hit := toHit(h)
+		hit.TitleSpans = highlightSpans(h.cd.doc.Title, terms)
+		resp.Hits = append(resp.Hits, hit)
+	}
+	if end < len(hits) {
+		resp.NextCursor = strconv.Itoa(end)
+	}
+	return resp, nil
+}
+
+// RankedNames returns the names of every authorized doc of kind matching q in
+// rank order, and false when the index has never been built. It filters through
+// the same Authorizer as Search.
+func (s *Service) RankedNames(ctx context.Context, c Caller, q string, kind Kind) ([]string, bool, error) {
+	if c.Authz == nil {
+		return nil, false, fmt.Errorf("%w: no authorizer", ErrInvalid)
+	}
+	s.ensureFresh(ctx)
+	s.mu.Lock()
+	warm := !s.lastRun.IsZero()
+	s.mu.Unlock()
+	if !warm {
+		return nil, false, nil
+	}
+	hits, _, err := s.ranked(ctx, c, Request{Q: q, Kind: kind})
+	if err != nil {
+		return nil, true, err
+	}
+	names := make([]string, 0, len(hits))
+	for _, h := range hits {
+		names = append(names, h.cd.doc.Name)
+	}
+	return names, true, nil
+}
+
+// ranked returns every authorized hit in rank order plus the lowercased text
+// terms; a nil slice means the query was empty.
+func (s *Service) ranked(ctx context.Context, c Caller, req Request) ([]scored, []string, error) {
 	q := ParseQuery(req.Q)
 	kind := req.Kind
 	if q.Kind != "" {
 		kind = q.Kind
 	}
 	if q.Empty() && kind == "" {
-		return Response{Hits: []Hit{}}, nil
+		return nil, nil, nil
 	}
 
 	var hits []scored
 	if kind != KindSaved {
 		cands, err := fetchCandidates(ctx, s.db, q, kind, matchStrict)
 		if err != nil {
-			return Response{}, err
+			return nil, nil, err
 		}
 		if len(cands) == 0 && len(q.Text) > 0 {
 			if cands, err = fetchCandidates(ctx, s.db, q, kind, matchLoose); err != nil {
-				return Response{}, err
+				return nil, nil, err
 			}
 		}
 		for _, cd := range cands {
@@ -180,14 +231,14 @@ func (s *Service) Search(ctx context.Context, c Caller, req Request) (Response, 
 	if kind == "" || kind == KindSaved {
 		saved, err := s.savedHits(ctx, c.PrincipalID, q)
 		if err != nil {
-			return Response{}, err
+			return nil, nil, err
 		}
 		hits = append(hits, saved...)
 	}
 
 	usage, err := s.usageFor(ctx, c.PrincipalID)
 	if err != nil {
-		return Response{}, err
+		return nil, nil, err
 	}
 	now := s.now()
 	terms := lowerTerms(q.Text)
@@ -200,19 +251,11 @@ func (s *Service) Search(ctx context.Context, c Caller, req Request) (Response, 
 		}
 		return hits[i].cd.doc.Ref < hits[j].cd.doc.Ref
 	})
+	if hits == nil {
+		hits = []scored{}
+	}
 
-	resp := Response{Total: len(hits), Hits: []Hit{}}
-	if offset >= len(hits) {
-		return resp, nil
-	}
-	end := min(offset+limit, len(hits))
-	for _, h := range hits[offset:end] {
-		resp.Hits = append(resp.Hits, toHit(h))
-	}
-	if end < len(hits) {
-		resp.NextCursor = strconv.Itoa(end)
-	}
-	return resp, nil
+	return hits, terms, nil
 }
 
 type scored struct {
@@ -260,6 +303,7 @@ func toHit(h scored) Hit {
 		Env: d.Env, NodeName: d.Node, Tags: d.Tags, Href: d.Href, Score: math.Round(h.score*1000) / 1000}
 	if d.Kind == KindAction {
 		hit.Action = &ActionInfo{ID: d.ActionID, Ability: d.Ability, Confirm: d.Confirm}
+		hit.Action.MCPTool, hit.Action.MCPArgs, hit.Action.MCPNeeds = actionCall(d)
 	}
 	return hit
 }

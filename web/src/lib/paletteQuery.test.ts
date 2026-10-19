@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupHits, highlightIndices } from './paletteGroups'
+import { groupHits, spanIndices } from './paletteGroups'
 import {
   buildServerQuery,
   mergeChips,
@@ -111,11 +111,17 @@ describe('groupHits', () => {
   })
 })
 
-describe('highlightIndices', () => {
-  it('marks every occurrence of each term', () => {
-    expect([...highlightIndices('api-api', ['api'])].sort()).toEqual([
-      0, 1, 2, 4, 5, 6,
-    ])
+describe('spanIndices', () => {
+  it('expands server spans into code point indices', () => {
+    expect(
+      [
+        ...spanIndices([
+          { start: 0, end: 3 },
+          { start: 4, end: 6 },
+        ]),
+      ].sort(),
+    ).toEqual([0, 1, 2, 4, 5])
+    expect(spanIndices(undefined).size).toBe(0)
   })
 })
 

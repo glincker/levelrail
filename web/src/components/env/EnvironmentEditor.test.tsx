@@ -121,6 +121,8 @@ function mockServer(overrides: Record<string, (call: Call) => Response> = {}) {
               },
             ]),
           )
+        case 'GET /api/v1/apps/demo/env/bound':
+          return Promise.resolve(json([]))
         case 'GET /api/v1/apps/demo/env/settings':
           return Promise.resolve(
             json({

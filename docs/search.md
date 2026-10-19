@@ -65,4 +65,8 @@ levelrail-cli search saved list
 
 The index refreshes within a couple of seconds of any change made through the API and fully every minute, so a hit can lag a change made outside the API by up to a minute. Measured latency at 1000 apps is in [benchmarks](/benchmarks).
 
-The MCP tools `search` and `search_actions` run the same search and only list what the token may see.
+Each hit carries `title_spans`, the character ranges of the title that matched (counted in Unicode code points), so clients highlight exactly what the server matched, including typo matches.
+
+`GET /api/v1/apps?q=` uses the same ranking: exact and prefix names first, typos tolerated, and apps the caller cannot read are never counted. Until the index has been built, or when nothing ranks, the list falls back to a plain substring match on name and image. `limit`, `offset` and `X-Total-Count` behave as before.
+
+The MCP tools `search` and `search_actions` run the same search and only list what the token may see. An action hit tells an agent what to run: `mcp_tool` is the exact tool name, `mcp_args` the arguments already filled in (the target `name`), and `mcp_needs` the inputs it must still supply, for example `image` for `deploy_app`. An empty `mcp_tool` means no tool exists for that action, so use the hit's `href`.

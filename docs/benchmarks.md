@@ -150,7 +150,20 @@ Measured by `go test ./internal/api -run TestSearch_ThousandAppsP95` on 2026-10-
 | p50 latency | not set | 10 to 11 ms |
 | p95 latency | under 50 ms | 17 to 21 ms |
 
-How to read this: the index holds roughly 8000 documents at 1000 apps (apps, domains, per-app actions, deployments, templates). Ranking looks at the best 500 candidates, so a very broad term costs the same as a narrow one. A caller with many IAM policies or team scoping pays more per hit than the admin token measured here, and that case is not yet measured.
+How to read this: the index holds roughly 8000 documents at 1000 apps (apps, domains, per-app actions, deployments, templates). Ranking looks at the best 500 candidates, so a very broad term costs the same as a narrow one.
+
+### Scoped caller
+
+Measured by `go test ./internal/api -run TestSearch_ScopedCallerP95` on 2026-10-19, same hardware, with other builds running on the machine (load average near 30, so read these as upper bounds). The caller is a developer in the default team (team scope active) holding 50 IAM deny policies on individual apps, using a session cookie. 6 query shapes, 30 requests per row, p50 and p95 in milliseconds.
+
+| Apps | Endpoint | p50 | p95 |
+| --- | --- | --- | --- |
+| 1000 | `/api/v1/search` | 9 | 17 |
+| 1000 | `/api/v1/apps?q=` (ranked, page of 50) | 12 | 15 |
+| 5000 | `/api/v1/search` | 19 | 49 |
+| 5000 | `/api/v1/apps?q=` (ranked, page of 50) | 31 | 37 |
+
+The first run of this case measured 31 ms p50 and 50 ms p95 at 1000 apps for search, over the budget, because every authorization check re-parsed all 50 policy documents. Parsed documents are now cached by their text, which removed the cost without a per-principal visible-set cache. The ranked apps list pages over names first and loads only the page's rows.
 
 ## What is tested without Docker
 

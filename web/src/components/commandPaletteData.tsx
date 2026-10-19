@@ -44,6 +44,7 @@ import {
   lockedSearch,
   type ExperimentalFeature,
 } from '../lib/experimental'
+import type { SearchSpan } from '../queries/search'
 import { chordFor } from './shell/navModel'
 
 export interface PaletteItem {
@@ -61,8 +62,8 @@ export interface PaletteItem {
   subtitle?: string
   /** True for a gated destination that is switched off. */
   locked?: boolean
-  /** Substring terms to highlight in the label (server hits). */
-  highlightTerms?: string[]
+  /** Label spans to highlight, computed by the server for search hits. */
+  highlightSpans?: SearchSpan[]
   /** Run without closing the palette (expand a group, apply a chip). */
   keepOpen?: boolean
   /** Ask for a confirm step before run (destructive server actions). */

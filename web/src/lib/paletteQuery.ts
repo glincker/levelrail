@@ -106,10 +106,3 @@ export function scopeKeyCompletions(partial: string): ChipKey[] {
   if (p.length < 1) return []
   return CHIP_KEYS.filter((k) => k.startsWith(p) && k !== p)
 }
-
-export function freeTerms(text: string): string[] {
-  return text
-    .split(/\s+/)
-    .filter((t) => t !== '' && !t.includes(':'))
-    .map((t) => t.toLowerCase())
-}

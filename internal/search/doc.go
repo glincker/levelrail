@@ -109,19 +109,25 @@ type ActionInfo struct {
 	ID      string `json:"id"`
 	Ability string `json:"ability"`
 	Confirm bool   `json:"confirm"`
+	// MCPTool, MCPArgs and MCPNeeds say which MCP tool runs this action, with
+	// which arguments filled in, and which inputs the agent must still supply.
+	MCPTool  string            `json:"mcp_tool,omitempty"`
+	MCPArgs  map[string]string `json:"mcp_args,omitempty"`
+	MCPNeeds []string          `json:"mcp_needs,omitempty"`
 }
 
 // Hit is one search result.
 type Hit struct {
-	Ref      string      `json:"ref"`
-	Kind     Kind        `json:"kind"`
-	Title    string      `json:"title"`
-	Subtitle string      `json:"subtitle,omitempty"`
-	AppName  string      `json:"app_name,omitempty"`
-	Env      string      `json:"env,omitempty"`
-	NodeName string      `json:"node_name,omitempty"`
-	Tags     []string    `json:"tags,omitempty"`
-	Href     string      `json:"href,omitempty"`
-	Score    float64     `json:"score"`
-	Action   *ActionInfo `json:"action,omitempty"`
+	Ref        string      `json:"ref"`
+	Kind       Kind        `json:"kind"`
+	Title      string      `json:"title"`
+	Subtitle   string      `json:"subtitle,omitempty"`
+	AppName    string      `json:"app_name,omitempty"`
+	Env        string      `json:"env,omitempty"`
+	NodeName   string      `json:"node_name,omitempty"`
+	Tags       []string    `json:"tags,omitempty"`
+	Href       string      `json:"href,omitempty"`
+	TitleSpans []Span      `json:"title_spans,omitempty"`
+	Score      float64     `json:"score"`
+	Action     *ActionInfo `json:"action,omitempty"`
 }

@@ -3,21 +3,22 @@ import { useTranslation } from 'react-i18next'
 import { LockSimpleIcon, XIcon } from '@phosphor-icons/react/dist/ssr'
 import { cn } from '@/lib/utils'
 import { fuzzyMatchIndices } from '@/lib/fuzzy'
-import { highlightIndices } from '@/lib/paletteGroups'
+import { spanIndices } from '@/lib/paletteGroups'
+import type { SearchSpan } from '@/queries/search'
 import { chipLabel, type Chip } from '@/lib/paletteQuery'
 import type { PaletteItem } from './commandPaletteData'
 
 function Highlighted({
   text,
   query,
-  terms,
+  spans,
 }: {
   text: string
   query: string
-  terms?: string[]
+  spans?: SearchSpan[]
 }) {
-  const hit = terms
-    ? highlightIndices(text, terms)
+  const hit = spans
+    ? spanIndices(spans)
     : new Set(fuzzyMatchIndices(query, text))
   if (hit.size === 0) return <>{text}</>
   const runs: { text: string; hit: boolean }[] = []
@@ -91,7 +92,7 @@ export function ResultRow({
         <Highlighted
           text={item.label}
           query={query}
-          terms={item.highlightTerms}
+          spans={item.highlightSpans}
         />
         {item.subtitle ? (
           <span className="ml-2 text-xs text-muted-foreground">

@@ -1,4 +1,4 @@
-import type { SearchHit } from '../queries/search'
+import type { SearchHit, SearchSpan } from '../queries/search'
 
 export interface HitGroup {
   kind: string
@@ -36,21 +36,13 @@ export function groupHits(
   })
 }
 
-// Characters of `text` covered by any term (substring, case-insensitive).
-// The API sends no spans, so matching happens here.
-export function highlightIndices(
-  text: string,
-  terms: readonly string[],
+// Code point indices covered by the server's title spans.
+export function spanIndices(
+  spans: readonly SearchSpan[] | undefined,
 ): Set<number> {
   const out = new Set<number>()
-  const lower = text.toLowerCase()
-  for (const term of terms) {
-    if (term === '') continue
-    let at = lower.indexOf(term)
-    while (at !== -1) {
-      for (let i = at; i < at + term.length; i++) out.add(i)
-      at = lower.indexOf(term, at + term.length)
-    }
+  for (const s of spans ?? []) {
+    for (let i = s.start; i < s.end; i++) out.add(i)
   }
   return out
 }

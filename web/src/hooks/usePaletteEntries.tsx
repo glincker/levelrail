@@ -10,12 +10,7 @@ import {
 import { toast } from '@/components/ui/toast'
 import { fuzzyFilter } from '@/lib/fuzzy'
 import { groupHits } from '@/lib/paletteGroups'
-import {
-  KIND_VALUES,
-  freeTerms,
-  scopeKeyCompletions,
-  type Chip,
-} from '@/lib/paletteQuery'
+import { KIND_VALUES, scopeKeyCompletions, type Chip } from '@/lib/paletteQuery'
 import { isFeatureVisible } from '../lib/experimental'
 import {
   useDeleteSavedSearch,
@@ -78,7 +73,6 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     () => (searching && !ps.search.isError ? (ps.search.data?.hits ?? []) : []),
     [searching, ps.search.isError, ps.search.data],
   )
-  const terms = React.useMemo(() => freeTerms(ps.text), [ps.text])
   const savedRows = saved.data
 
   const looseNavigate = React.useCallback(
@@ -262,7 +256,6 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     for (const g of groupHits(hits, expanded)) {
       const items = g.hits.map((h) => ({
         ...hitToItem(h, {
-          terms,
           t,
           navigate: looseNavigate,
           restartApp: (name) => {
@@ -305,7 +298,6 @@ export function usePaletteEntries(input: Input): PaletteEntry[] {
     experimental,
     navigate,
     hits,
-    terms,
     expanded,
     expand,
     looseNavigate,

@@ -26,6 +26,15 @@ export interface SearchActionInfo {
   id: string
   ability: string
   confirm: boolean
+  mcp_tool?: string
+  mcp_args?: Record<string, string>
+  mcp_needs?: string[]
+}
+
+// Half-open range of code points in a hit's title, from internal/search.
+export interface SearchSpan {
+  start: number
+  end: number
 }
 
 // Matches internal/search's Hit.
@@ -39,6 +48,7 @@ export interface SearchHit {
   node_name?: string
   tags?: string[]
   href?: string
+  title_spans?: SearchSpan[]
   score: number
   action?: SearchActionInfo
 }

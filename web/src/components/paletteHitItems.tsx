@@ -60,7 +60,6 @@ export function refName(ref: string): string {
 }
 
 export interface HitItemContext {
-  terms: string[]
   t: TFunction<'palette'>
   navigate: HrefNavigate
   restartApp: (name: string) => void
@@ -76,7 +75,7 @@ export function hitToItem(hit: SearchHit, ctx: HitItemContext): PaletteItem {
     group: hit.kind,
     icon: kindIcon(hit.kind),
     subtitle: isAction ? hit.app_name : hit.subtitle,
-    highlightTerms: ctx.terms,
+    highlightSpans: hit.title_spans ?? [],
     searchRef: hit.ref,
     run: () => {
       if (hit.href) navigateHref(navigate, hit.href)
