@@ -638,6 +638,10 @@ Endpoints for:
 | GET | /api/v1/notification-channels/{id}/deliveries | AbilityRead | handleListNotificationDeliveries |
 | POST | /api/v1/prometheus/read | AbilityRead | handlePrometheusRead |
 | POST | /api/v1/apps/{name}/alerts/{id}/silence | AbilityWrite | handleSilenceAlertRule |
+| POST | /api/v1/apps/{name}/alerts/apply-template | AbilityWrite | handleApplyAlertTemplate |
+| GET | /api/v1/notification-channels/{id}/quiet-hours | AbilityRead | handleGetChannelQuietHours |
+| PUT | /api/v1/notification-channels/{id}/quiet-hours | AbilityWrite | handlePutChannelQuietHours |
+| DELETE | /api/v1/notification-channels/{id}/quiet-hours | AbilityWrite | handleDeleteChannelQuietHours |
 
 ## Databases CRUD / Engines / Resources
 
@@ -1652,6 +1656,7 @@ Routes that do not fit an existing group.
 | DELETE | /api/v1/plugin-marketplace/sources/{id} | AbilityRoot | handleMarketplaceRemoveSource |
 | GET | /api/v1/resilience/disk | AbilityRead | handleGetDiskResilience |
 | POST | /api/v1/resilience/disk/free-space | AbilityRoot | handleFreeDiskSpace |
+| GET | /api/v1/alert-templates | AbilityRead | handleListAlertTemplates |
 
 ## See also
 

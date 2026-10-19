@@ -255,6 +255,11 @@ func (n *NoiseControl) deliver(ctx context.Context, sc alertScope, ev Event, eve
 		n.record(ctx, sc, r, event, OutcomeSilenced, hit.detail, hit.id, nil, now)
 		return
 	}
+	if event == EventFired && n.quietNow(ctx, r, now) {
+		n.holdIfFiring(ev, OutcomeQuiet, "")
+		n.record(ctx, sc, r, event, OutcomeQuiet, "channel quiet hours; sent when they end if still firing", "", nil, now)
+		return
+	}
 	if sc.nodeOffline && !ev.Resolved && event == EventFired {
 		n.holdIfFiring(ev, OutcomeInhibited, "")
 		n.record(ctx, sc, r, event, OutcomeInhibited, "node "+firstNonEmpty(sc.ac.NodeName, sc.ac.NodeID)+" is offline", "", nil, now)
@@ -310,6 +315,9 @@ func (n *NoiseControl) Recheck(ctx context.Context, r Rule, now time.Time, send 
 	if sc.nodeOffline && sup.outcome == OutcomeInhibited {
 		return
 	}
+	if n.quietNow(ctx, r, now) {
+		return
+	}
 	n.mu.Lock()
 	delete(n.suppressed, r.ID)
 	n.mu.Unlock()
@@ -334,10 +342,17 @@ func (n *NoiseControl) Sweep(ctx context.Context, now time.Time, send SendFunc) 
 	if prune {
 		n.lastPrune = now
 	}
+	held := make([]Rule, 0, len(n.suppressed))
+	for _, sup := range n.suppressed {
+		held = append(held, sup.ev.Rule)
+	}
 	n.mu.Unlock()
 
 	for _, evs := range due {
 		n.flushGroup(ctx, evs, now, send)
+	}
+	for _, r := range held {
+		n.Recheck(ctx, r, now, send)
 	}
 	for _, ev := range ended {
 		sc := n.describe(ctx, ev.Rule)

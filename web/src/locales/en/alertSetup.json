@@ -1,0 +1,34 @@
+{
+  "template": {
+    "label": "Alert template",
+    "profile": "App type",
+    "web": "Web app",
+    "worker": "Worker",
+    "database": "Database",
+    "webHint": "Crash loop, 5xx rate, slow responses, CPU and a 99.9% availability SLO.",
+    "workerHint": "Crash loop and CPU.",
+    "databaseHint": "Crash loop and CPU.",
+    "apply": "Add recommended rules",
+    "applying": "Adding...",
+    "created": "Added {{count}} alert rules",
+    "createdSkipped": "Added {{count}} alert rules, {{skipped}} already existed",
+    "allExist": "All recommended rules already exist",
+    "failed": "Could not add the recommended rules",
+    "noChannel": "No notification channel is connected, so these rules only show in alert history until you attach one."
+  },
+  "quiet": {
+    "title": "Quiet hours",
+    "description": "Hold warning and info alerts during a daily window and send them when it ends if they are still firing. Critical alerts always notify.",
+    "enabled": "Hold non-critical alerts",
+    "start": "From",
+    "end": "Until",
+    "timezone": "Time zone",
+    "save": "Save quiet hours",
+    "saving": "Saving...",
+    "saved": "Quiet hours saved",
+    "clear": "Remove",
+    "cleared": "Quiet hours removed",
+    "loadError": "Could not load quiet hours.",
+    "saveError": "Could not save quiet hours"
+  }
+}

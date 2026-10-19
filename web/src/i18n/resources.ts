@@ -21,6 +21,7 @@ import type nodes from '../locales/en/nodes.json'
 import type access from '../locales/en/access.json'
 import type logPipeline from '../locales/en/logPipeline.json'
 import type logBudgets from '../locales/en/logBudgets.json'
+import type alertSetup from '../locales/en/alertSetup.json'
 import type environments from '../locales/en/environments.json'
 import type exposure from '../locales/en/exposure.json'
 import type appExposure from '../locales/en/appExposure.json'
@@ -115,6 +116,7 @@ declare module 'i18next' {
       access: typeof access
       logPipeline: typeof logPipeline
       logBudgets: typeof logBudgets
+      alertSetup: typeof alertSetup
       environments: typeof environments
       exposure: typeof exposure
       appExposure: typeof appExposure

@@ -28,6 +28,8 @@ func runChannels(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return runChannelsTest(prog, args[1:], stdout, stderr, lookupEnv)
 	case "deliveries":
 		return runChannelsDeliveries(prog, args[1:], stdout, stderr, lookupEnv)
+	case "quiet-hours":
+		return runChannelsQuietHours(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown channels subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, channelsUsage(prog))
@@ -43,6 +45,7 @@ func channelsUsage(prog string) string {
   %[1]s channels delete <id> [flags]                                    disconnect a channel
   %[1]s channels test <id> [flags]                                       send a real test message to a connected channel
   %[1]s channels deliveries <id> [flags]                                lists a channel's recorded send history, newest first
+  %[1]s channels quiet-hours <id> [--start HH:MM --end HH:MM | --clear]  hold non-critical alerts during a daily window
 
 Valid --kind values: generic, slack, discord, telegram, email, pushover, pagerduty, teams, resend, ntfy, gotify, mattermost, lark, rocketchat, opsgenie, webex, googlechat.
 

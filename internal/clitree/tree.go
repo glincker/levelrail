@@ -82,7 +82,7 @@ var Tree = map[string]*Node{
 		"exec-access":             {Subs: map[string]*Node{"enable": nil, "disable": nil, "status": nil}},
 		"log-drain":               {Subs: map[string]*Node{"get": nil, "set": nil, "clear": nil}},
 		"scheduled-tasks":         {Subs: map[string]*Node{"create": nil, "list": nil, "get": nil, "update": nil, "delete": nil, "run": nil}},
-		"alerts":                  {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "slo": nil}},
+		"alerts":                  {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "slo": nil, "template": nil}},
 		"deploy-notify-targets":   {Subs: map[string]*Node{"list": nil, "create": nil, "delete": nil}},
 		"organizations": {Subs: map[string]*Node{
 			"create": nil, "list": nil, "get": nil, "delete": nil,
@@ -210,7 +210,7 @@ var Tree = map[string]*Node{
 		"components": {Subs: map[string]*Node{"list": nil, "add": nil, "delete": nil}},
 		"incidents":  {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil}},
 	}},
-	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil}},
+	"channels":           {Subs: map[string]*Node{"list": nil, "create": nil, "update": nil, "delete": nil, "test": nil, "deliveries": nil, "quiet-hours": nil}},
 	"push-subscriptions": {Subs: map[string]*Node{"list": nil, "revoke": nil}},
 	"shared-env":         {Subs: map[string]*Node{"list": nil, "set": nil, "delete": nil}},
 	"backup-targets":     {Subs: map[string]*Node{"list": nil, "get": nil, "create": nil, "update": nil, "delete": nil, "test": nil}},

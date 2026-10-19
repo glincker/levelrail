@@ -35,6 +35,7 @@ import {
   useUpdateNotificationChannel,
 } from '../queries/notificationChannels'
 import type { NotificationChannel } from '../types/notificationChannel'
+import { ChannelQuietHours } from './ChannelQuietHours'
 
 const KIND_ORDER = [
   'slack',
@@ -463,6 +464,9 @@ export function EditNotificationChannelDialog({
             </Button>
           </SheetFooter>
         </form>
+        <div className="px-4 pb-4">
+          <ChannelQuietHours channelId={channel.id} />
+        </div>
       </SheetContent>
     </Sheet>
   )

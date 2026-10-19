@@ -9,6 +9,7 @@ import {
   type ResponsiveColumn,
 } from '@/components/ui/responsive-table'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { AlertTemplatePicker } from './AlertTemplatePicker'
 import { CreateAlertRuleDialog } from './CreateAlertRuleDialog'
 import { EditAlertRuleDialog } from './EditAlertRuleDialog'
 import { LogRuleCondition } from './LogRuleCondition'
@@ -210,6 +211,7 @@ export function AlertRulesPanel({
         </div>
         <div className="flex items-center gap-3">
           {rules.length > 0 ? <StateSummary rules={rules} /> : null}
+          {rules.length > 0 ? <AlertTemplatePicker appName={appName} /> : null}
           <CreateAlertRuleDialog appName={appName} volumes={volumes} />
         </div>
       </div>
@@ -227,7 +229,10 @@ export function AlertRulesPanel({
             title="No alert rules yet"
             description="Get notified the moment a metric crosses a threshold or a container starts crashlooping, via webhook, Slack, or Discord."
             action={
-              <CreateAlertRuleDialog appName={appName} volumes={volumes} />
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <AlertTemplatePicker appName={appName} />
+                <CreateAlertRuleDialog appName={appName} volumes={volumes} />
+              </div>
             }
           />
         ) : (

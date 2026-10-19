@@ -699,6 +699,13 @@ An app with no traffic, or fewer than `APP_SLO_MIN_REQUESTS` requests in a tier'
 - Preview without creating a rule: `levelrail-cli apps alerts slo <app> [--slo 99.9]`, `GET /api/v1/apps/{name}/slo-preview`, or the `get_slo_status` MCP tool.
 - An app with traffic and no SLO rule gets a suggestion on its alerts page to create a default 99.9% availability SLO.
 
+## Alert templates
+
+An app's alerts page has an "Add recommended rules" button with an app type (web, worker, database). A web app gets crash loop, 5xx rate above 5%, p95 above 1s, CPU above 90% and a 99.9% availability SLO; workers and databases get crash loop and CPU. Rules that already exist by name are skipped, so it is safe to press twice. The new rules notify the first connected channel.
+
+- CLI: `levelrail-cli apps alerts template <app> --profile-type web [--channel ID]`
+- API: `GET /api/v1/alert-templates`, `POST /api/v1/apps/{name}/alerts/apply-template`
+
 ## Notification channels
 
 Channels are global destinations you connect once (Settings -> Notification channels). Attach them to alert rules by `channel_id` instead of retyping webhook URLs on every rule.
@@ -711,6 +718,13 @@ For most kinds, `notify_url` is a webhook URL. A few pack credentials into that 
 - `webpush` ignores `notify_url`: the destination is every browser subscription registered under Settings -> Notification channels -> Browser push.
 
 Both return a "not configured" error if the control plane has no master key set.
+
+### Quiet hours
+
+A channel can hold non-critical alerts during a daily window (Settings -> Notification channels -> edit). Warning and info alerts that fire inside the window are recorded in alert history as `quiet_hours` and sent when the window ends if they are still firing; if they resolve first, nothing is sent. Critical alerts always notify. The window is evaluated in the time zone you choose, and an end earlier than the start spans midnight.
+
+- CLI: `levelrail-cli channels quiet-hours <id> --start 22:00 --end 07:00 --timezone Europe/Berlin`, `--clear` to remove
+- API: `GET`, `PUT`, `DELETE /api/v1/notification-channels/{id}/quiet-hours`
 
 ### Destination checks and visibility
 

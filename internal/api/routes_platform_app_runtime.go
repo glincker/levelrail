@@ -40,6 +40,11 @@ func (rt *Router) registerAppRuntimeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/v1/apps/{name}/alerts", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleCreateAlertRule))
 	mux.HandleFunc("GET /api/v1/apps/{name}/alerts", rt.requireAbilityForResource(AbilityRead, appResourceFromPath, rt.handleListAlertRules))
 	mux.HandleFunc("PUT /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleUpdateAlertRule))
+	mux.HandleFunc("GET /api/v1/alert-templates", rt.requireAbility(AbilityRead, rt.handleListAlertTemplates))
+	mux.HandleFunc("POST /api/v1/apps/{name}/alerts/apply-template", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleApplyAlertTemplate))
+	mux.HandleFunc("GET /api/v1/notification-channels/{id}/quiet-hours", rt.requireAbility(AbilityRead, rt.handleGetChannelQuietHours))
+	mux.HandleFunc("PUT /api/v1/notification-channels/{id}/quiet-hours", rt.requireAbility(AbilityWrite, rt.handlePutChannelQuietHours))
+	mux.HandleFunc("DELETE /api/v1/notification-channels/{id}/quiet-hours", rt.requireAbility(AbilityWrite, rt.handleDeleteChannelQuietHours))
 	mux.HandleFunc("DELETE /api/v1/apps/{name}/alerts/{id}", rt.requireAbilityForResource(AbilityWrite, appResourceFromPath, rt.handleDeleteAlertRule))
 
 	// Health & readiness score: a read-only synthesis of signals this

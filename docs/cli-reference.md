@@ -412,6 +412,7 @@ levelrail-cli apps alerts create <app> --kind KIND [flags]
 levelrail-cli apps alerts update <app> <id> --kind KIND [flags]
 levelrail-cli apps alerts delete <app> <id> [flags]
 levelrail-cli apps alerts slo <app> [--slo 99.9] [--slo-latency-ms N]
+levelrail-cli apps alerts template <app> [--profile-type web|worker|database] [--channel ID]
 ```
 
 `apps alerts create` takes one of these kinds: `threshold` (needs `--metric`, `--comparator`, `--threshold`), `crashloop` (`--restart-count-threshold`, `--restart-window`), `cert_expiry`, `patch_status`, `scheduled_task_failure` (`--scheduled-task-id`, `--restart-count-threshold`), `node_disk_space`, `node_resource_usage`, `node_offline`, `domain_health`, `control_plane_backup_stale`, `log_archive_stale`, `backup_missing` (`--backup-resource-kind database` with `--backup-database-name`, or `volume` with `--backup-volume-name`) and `slo_burn` (`--slo`, optional `--slo-latency-ms`). Mute, schedule and review alerts with the top-level [Alerts](#alerts) commands.
@@ -875,6 +876,7 @@ levelrail-cli channels update <id> --name NAME --kind KIND --notify-url URL [fla
 levelrail-cli channels delete <id> [flags]
 levelrail-cli channels test <id> [flags]
 levelrail-cli channels deliveries <id> [flags]
+levelrail-cli channels quiet-hours <id> [--start HH:MM --end HH:MM [--timezone Z] | --clear]
 ```
 Valid `--kind` values: `generic`, `slack`, `discord`, `telegram`, `email`, `pushover`, `pagerduty`, `teams`, `resend`, `ntfy`, `gotify`, `mattermost`, `lark`, `rocketchat`, `opsgenie`, `webex`, `googlechat`. `update` fully replaces a channel's configuration. `--notify-device-login` opts a channel into a link-only notice when a CLI login is waiting. `test` sends a real test message; `deliveries` lists a channel's recorded send history, newest first. See [Email notifications](/email-notifications).
 

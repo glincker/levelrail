@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1428 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1433 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -44,6 +44,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "POST", Path: "/api/v1/models/{name}/wake", Ability: "AbilityWrite", Group: "AI Models / GPUs", Handler: "handleWakeModel", Description: ""},
 	{Method: "GET", Path: "/api/v1/apps/{name}/alerts", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleListAlertRules", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/alerts", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleCreateAlertRule", Description: "Alerting: threshold and crashloop rules scoped to one app, fanned through a *alerting.DB when configured (see WithAlertRules)."},
+	{Method: "POST", Path: "/api/v1/apps/{name}/alerts/apply-template", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleApplyAlertTemplate", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/alerts/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleDeleteAlertRule", Description: ""},
 	{Method: "PUT", Path: "/api/v1/apps/{name}/alerts/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleUpdateAlertRule", Description: ""},
 	{Method: "POST", Path: "/api/v1/apps/{name}/alerts/{id}/silence", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleSilenceAlertRule", Description: ""},
@@ -62,6 +63,9 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "DELETE", Path: "/api/v1/notification-channels/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleDeleteNotificationChannel", Description: ""},
 	{Method: "PUT", Path: "/api/v1/notification-channels/{id}", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleUpdateNotificationChannel", Description: ""},
 	{Method: "GET", Path: "/api/v1/notification-channels/{id}/deliveries", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleListNotificationDeliveries", Description: ""},
+	{Method: "DELETE", Path: "/api/v1/notification-channels/{id}/quiet-hours", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleDeleteChannelQuietHours", Description: ""},
+	{Method: "GET", Path: "/api/v1/notification-channels/{id}/quiet-hours", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleGetChannelQuietHours", Description: ""},
+	{Method: "PUT", Path: "/api/v1/notification-channels/{id}/quiet-hours", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handlePutChannelQuietHours", Description: ""},
 	{Method: "POST", Path: "/api/v1/notification-channels/{id}/test", Ability: "AbilityWrite", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handleTestExistingNotificationChannel", Description: ""},
 	{Method: "POST", Path: "/api/v1/prometheus/read", Ability: "AbilityRead", Group: "Alerts / Scheduled Tasks / Feature Flags / Notification Channels", Handler: "handlePrometheusRead", Description: "Prometheus remote read. Gated by requireAbility the same as every other read route, not left open: leaving a metrics endpoint unauthenticated would let any caller pull every service's resource usage. Prometheus's own remote_read config supports bearer-token auth (authorization.credentials), which is exactly an API token scoped to at least \"read\" (see the token management routes above); requireAbility already accepts one the same way it does for every JSON route, this isn't a special case."},
 	{Method: "DELETE", Path: "/api/v1/apps/{name}/database", Ability: "AbilityWrite", Group: "App Storage / Database Attach", Handler: "handleClearAppDatabase", Description: ""},
@@ -775,6 +779,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/alert-silences", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertSilences", Description: ""},
 	{Method: "POST", Path: "/api/v1/alert-silences", Ability: "AbilityWrite", Group: "Other", Handler: "handleCreateAlertSilence", Description: ""},
 	{Method: "DELETE", Path: "/api/v1/alert-silences/{id}", Ability: "AbilityWrite", Group: "Other", Handler: "handleExpireAlertSilence", Description: ""},
+	{Method: "GET", Path: "/api/v1/alert-templates", Ability: "AbilityRead", Group: "Other", Handler: "handleListAlertTemplates", Description: ""},
 	{Method: "POST", Path: "/api/v1/apply", Ability: "AbilityWrite", Group: "Other", Handler: "handleIaCApply", Description: ""},
 	{Method: "POST", Path: "/api/v1/apply/plan", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCPlan", Description: ""},
 	{Method: "GET", Path: "/api/v1/apply/schema", Ability: "AbilityRead", Group: "Other", Handler: "handleIaCSchema", Description: ""},

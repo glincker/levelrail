@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -44,6 +45,9 @@ func TestRun_SystemIntegrity(t *testing.T) {
 	if code, _ := exec("--check", "--full"); code != exitOK || calls[len(calls)-2] != "POST /api/v1/system/integrity/check" {
 		t.Fatalf("--check must POST a check before reading the state, calls %v", calls)
 	}
+	prev := promptHidden
+	promptHidden = func(io.Writer, string) (string, error) { return "pw", nil }
+	t.Cleanup(func() { promptHidden = prev })
 	code, out = exec("--restore", "latest")
 	if code != exitOK || restoreBody != "" || !strings.Contains(out, "staged snap.db") || !strings.Contains(out, "sudo systemctl restart levelrail") {
 		t.Fatalf("restore latest = %d %q (name sent %q)", code, out, restoreBody)

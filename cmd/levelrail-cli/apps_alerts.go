@@ -31,6 +31,8 @@ func runAppsAlerts(prog string, args []string, stdout, stderr io.Writer, lookupE
 		return runAppsAlertsDelete(prog, args[1:], stdout, stderr, lookupEnv)
 	case "slo":
 		return runAppsAlertsSLO(prog, args[1:], stdout, stderr, lookupEnv)
+	case "template":
+		return runAppsAlertsTemplate(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown apps alerts subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, appsAlertsUsage(prog))
@@ -56,6 +58,7 @@ func appsAlertsUsage(prog string) string {
   %[1]s apps alerts create <app> --kind backup_missing --backup-resource-kind volume --backup-volume-name NAME [flags]
   %[1]s apps alerts create <app> --kind slo_burn --slo 99.9 [--slo-latency-ms N] [flags]
   %[1]s apps alerts slo <app> [--slo 99.9] [--slo-latency-ms N]
+  %[1]s apps alerts template <app> [--profile-type web|worker|database] [--channel ID]
   %[1]s apps alerts update <app> <id> --kind KIND [flags]
   %[1]s apps alerts delete <app> <id> [flags]
 
