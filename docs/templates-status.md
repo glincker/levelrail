@@ -3,7 +3,7 @@ title: "Template status"
 description: Measured pass rate of the one-click template catalog from the local smoke run
 ---
 
-Measured by `scripts/catalog-smoke.sh`: each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.
+Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.
 
 Last run: 2026-10-19. **48 of 50 passed (96%).** Templates that need operator configuration are skipped and listed in the run output, not counted.
 

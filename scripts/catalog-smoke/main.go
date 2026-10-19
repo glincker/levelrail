@@ -251,7 +251,7 @@ type result struct {
 
 func report(args []string) error {
 	fs := flag.NewFlagSet("report", flag.ExitOnError)
-	results := fs.String("results", "", "results.tsv written by catalog-smoke.sh")
+	results := fs.String("results", "", "results.tsv written by the catalog smoke script")
 	out := fs.String("out", "docs/templates-status.md", "markdown file to write")
 	_ = fs.Parse(args)
 	raw, err := os.ReadFile(*results)
@@ -279,7 +279,7 @@ func report(args []string) error {
 	}
 	var b strings.Builder
 	b.WriteString("---\ntitle: \"Template status\"\ndescription: Measured pass rate of the one-click template catalog from the local smoke run\n---\n\n")
-	b.WriteString("Measured by `scripts/catalog-smoke.sh`: each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.\n\n")
+	b.WriteString("Measured by the catalog smoke script (scripts/catalog-smoke.sh): each template's compose file is brought up with `docker compose up --wait`, checked for running and healthy containers, then torn down with its volumes. Host ports are dropped so runs never collide. Regenerate with `scripts/catalog-smoke.sh -r` (all of the top 50) or pass `-i id1,id2` for a subset. A fail with an unhealthy container means the template's own healthcheck never passed on this host, so check that healthcheck and the image first.\n\n")
 	rate := 0.0
 	if len(rows) > 0 {
 		rate = float64(pass) * 100 / float64(len(rows))
