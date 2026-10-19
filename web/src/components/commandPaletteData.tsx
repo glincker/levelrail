@@ -61,6 +61,20 @@ export interface PaletteItem {
   subtitle?: string
   /** True for a gated destination that is switched off. */
   locked?: boolean
+  /** Substring terms to highlight in the label (server hits). */
+  highlightTerms?: string[]
+  /** Run without closing the palette (expand a group, apply a chip). */
+  keepOpen?: boolean
+  /** Ask for a confirm step before run (destructive server actions). */
+  confirm?: boolean
+  /** Tab / Cmd+Enter action and the hint word shown for it. */
+  secondary?: () => void
+  secondaryHint?: string
+  /** Trailing remove control, e.g. delete a saved search. */
+  onRemove?: () => void
+  removeLabel?: string
+  /** Search hit ref, recorded as usage on select. */
+  searchRef?: string
 }
 
 export interface RouteEntry {

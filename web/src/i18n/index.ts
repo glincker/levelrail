@@ -100,6 +100,7 @@ export const NAMESPACES = [
   'dashboards',
   'passkeys',
   'account',
+  'palette',
 ] as const
 
 void i18n

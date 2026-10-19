@@ -41,6 +41,17 @@ levelrail-cli search saved add prod-apis env:prod kind:app
 levelrail-cli search saved list
 ```
 
+## Command palette
+
+`Cmd+K` (or `Ctrl+K`) opens the palette, which searches through this service instead of downloading lists. Opening it sends no search request; typing sends one, 100 ms after you pause.
+
+- Results are grouped by kind in relevance order, four per group (six for actions) with a "Show all" row to expand.
+- Type `app:web ` or `env:prod ` and the finished scope becomes a chip. Backspace on empty text removes the last chip, and typing `ap` or `app:we` offers completions.
+- Actions are only the ones the API returned for you. Enter runs one, and destructive ones (deploy, restart, rollback, stop, back up) ask to confirm first. Tab or `Cmd+Enter` is the secondary action: logs for an app, a new tab for anything else.
+- Recent searches and saved searches show when the box is empty. "Save search" stores the current query, and the cross on a saved row deletes it.
+- If search is down the palette says so, offers Retry and keeps the built-in navigation commands working.
+- The settings page search box uses `kind:setting` through the same endpoint, so it also finds settings by their search keywords.
+
 ## API
 
 | Route | Purpose |
