@@ -14,6 +14,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/pkgregistry"
 	"github.com/GLINCKER/levelrail/internal/registryvendor"
+	"github.com/GLINCKER/levelrail/kit/netguard"
 	"github.com/GLINCKER/levelrail/internal/store"
 )
 
@@ -210,7 +211,8 @@ func probePackageRegistry(ctx context.Context, p store.PackageRegistry, secret s
 	} else {
 		req.Header.Set("Authorization", "Bearer "+secret)
 	}
-	client := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	client := netguard.NewClient()
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	resp, err := client.Do(req) //nolint:gosec // the URL is operator supplied by design, behind write:sensitive, and redirects are not followed so the credential never leaves the host
 	if err != nil {
 		return false, "Could not reach the registry from the control plane."

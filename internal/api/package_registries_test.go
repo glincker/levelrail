@@ -1,12 +1,15 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/GLINCKER/levelrail/internal/store"
 )
 
 func pkgRegistryRouter(t *testing.T, secrets *fakeRegistryCredentialSecretsSetter) (*Router, *http.Cookie) {
@@ -101,5 +104,24 @@ func TestRegistryVendorsAndUsage(t *testing.T) {
 	rt.Handler().ServeHTTP(rec, authedRequest(t, cookie, http.MethodGet, "/api/v1/registry-credentials/regcred_x/usage", ""))
 	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"services":[]`) {
 		t.Errorf("usage = %d %s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestProbePackageRegistry_BlocksSSRF(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	p := store.PackageRegistry{
+		URL: ts.URL,
+	}
+
+	ok, msg := probePackageRegistry(context.Background(), p, "secret123")
+	if ok {
+		t.Errorf("probePackageRegistry allowed connection to local test server %s", ts.URL)
+	}
+	if !strings.Contains(msg, "Could not reach the registry") {
+		t.Errorf("expected failure message about unreachable registry, got: %s", msg)
 	}
 }
