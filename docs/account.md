@@ -9,7 +9,7 @@ Settings, Account is the personal half of access: everything about your own sign
 
 - **Profile**: your email and a display name you can edit inline.
 - **Password**: change it; this signs out your other sessions.
-- **Two-factor** and **Passkeys**: enrol or remove second factors.
+- **Two-factor** and **Passkeys**: enrol or remove second factors. Passkeys show their provider, synced or device-bound status and last use, and can be renamed, tested and removed (see [Security](/security#passkeys)).
 - **Active sessions and trusted devices**: every browser signed in as you. End one, or sign out all others. Trusted devices are browsers that skip the new-device check; remove any you no longer use.
 - **Linked sign-in providers**: link an enabled identity provider to your account. Linking needs your live session, so a provider can never be attached by email alone.
 - **My API tokens**: how many active tokens you hold, with a link to manage them.

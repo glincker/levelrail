@@ -72,6 +72,11 @@ type Passkey struct {
 	Transports []string
 	CreatedAt  time.Time
 	LastUsedAt *time.Time
+	AAGUID     string
+	// Synced and BackedUp are nil for credentials registered before the flags were recorded.
+	Synced    *bool
+	BackedUp  *bool
+	SignCount uint32
 }
 
 type pendingEnrollment struct {
@@ -433,5 +438,8 @@ func (m *MFA) passkeyIDs(ctx context.Context, legacyID, id string) (uid, cid the
 }
 
 func toPasskey(c theauth.WebAuthnCredential) Passkey {
-	return Passkey{ID: c.ID.String(), Label: c.Name, Transports: c.Transports, CreatedAt: c.CreatedAt, LastUsedAt: c.LastUsedAt}
+	return Passkey{
+		ID: c.ID.String(), Label: c.Name, Transports: c.Transports, CreatedAt: c.CreatedAt, LastUsedAt: c.LastUsedAt,
+		AAGUID: FormatAAGUID(c.AAGUID), Synced: c.BackupEligible, BackedUp: c.BackupState, SignCount: c.SignCount,
+	}
 }
