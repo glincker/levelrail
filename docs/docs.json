@@ -108,7 +108,8 @@
               "guides/coolify-vs-levelrail",
               "guides/self-host-postgres-with-backups",
               "guides/zero-downtime-deploys-without-kubernetes",
-              "guides/control-levelrail-from-openclaw"
+              "guides/control-levelrail-from-openclaw",
+              "guides/use-a-mac-as-a-private-llm-server"
             ],
             "icon": "/assets/icons/compass.svg"
           },

@@ -65,6 +65,13 @@ func modelWiring(db *store.DB, secretsManager *secrets.Manager) (*models.Service
 	svc, gw := models.NewService(db, writer, hosts, ""), models.NewGateway(db, hosts, nil)
 	svc.SetKeyChangeHook(gw.Invalidate)
 	svc.SetLiveStats(gw.InFlight)
+	plumbing := models.EndpointPlumbing{Store: db}
+	if secretsManager != nil {
+		plumbing.Credentials = secretsManager
+		gw.SetCredentialReader(secretsManager)
+	}
+	svc.SetEndpoints(plumbing)
+	go svc.RunEndpointHealth(context.Background(), models.EndpointHealthInterval())
 	gw.StartMetering(context.Background(), db)
 	return svc, gw, hosts
 }
@@ -158,6 +165,9 @@ func modelControllersFor(deps dynamicSourceDeps, list []store.Model) []reconcile
 	}
 	controllers := make([]reconcile.Controller, 0, len(list))
 	for _, m := range list {
+		if m.Compute == store.ComputeExternal {
+			continue
+		}
 		rt, err := resolveNodeTransport(deps.runtime, deps.agentRegistry, modelRuntimeNode(nodes, m.NodeID))
 		if err != nil {
 			deps.logger.Warn("skipping model for this reconcile pass: node transport unavailable",

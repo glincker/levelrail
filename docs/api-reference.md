@@ -1181,6 +1181,9 @@ AI model resources on GPU nodes and the GPU node snapshots they schedule against
 | POST | /api/v1/models/{name}/sleep | AbilityWrite | handleSleepModel |
 | PUT | /api/v1/models/{name}/swap-group | AbilityWrite | handleSetModelSwapGroup |
 | POST | /api/v1/models/{name}/benchmark | AbilityWrite | handleModelBenchmark |
+| POST | /api/v1/models/{name}/endpoint/test | AbilityWrite | handleTestEndpoint |
+| PUT | /api/v1/models/{name}/endpoint/routing | AbilityWrite | handleSetEndpointRouting |
+| PUT | /api/v1/models/{name}/endpoint/credential | AbilityWriteSensitive | handleSetEndpointCredential |
 
 ## Other
 
@@ -1686,6 +1689,7 @@ Routes that do not fit an existing group.
 | PUT | /api/v1/inbox/preferences | AbilityWrite | handlePutInboxPrefs |
 | POST | /api/v1/images/signature-policy/validate | AbilityWrite | handleValidateImageSignaturePolicy |
 | POST | /api/v1/plugins/{name}/test | AbilityRoot | handleTestPlugin |
+| POST | /api/v1/model-endpoints/test | AbilityWrite | handleTestEndpointInput |
 
 ## See also
 

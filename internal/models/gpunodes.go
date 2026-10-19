@@ -87,7 +87,7 @@ func (s *Service) GPUNodes(ctx context.Context) ([]GPUNode, error) {
 	counts := map[string]int{}
 	claims := map[string][]gpu.Claim{}
 	for _, m := range list {
-		if m.Deleting {
+		if m.Deleting || m.Compute == ComputeExternal {
 			continue
 		}
 		id := s.placementID(m.NodeID)
@@ -155,7 +155,7 @@ func (s *Service) UnplacedWorkloads(ctx context.Context) ([]Unplaced, error) {
 		return nil, fmt.Errorf("models: list models: %w", err)
 	}
 	for _, m := range list {
-		if !m.Deleting {
+		if !m.Deleting && m.Compute != ComputeExternal {
 			work = append(work, workload{"model", m.Name, s.placementID(m.NodeID), ModelClaim(m)})
 		}
 	}

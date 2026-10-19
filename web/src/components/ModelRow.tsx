@@ -17,6 +17,7 @@ import { useRestartModel, useRotateModelApiKey } from '../queries/models'
 import type { ModelResource } from '../types/models'
 import { DeleteModelDialog } from './DeleteModelDialog'
 import { ModelKeyRevealDialog } from './ModelKeyRevealDialog'
+import { EndpointHealthBadge } from './models/EndpointHealthBadge'
 import { ModelDownloadProgress } from './models/ModelDownloadProgress'
 import { useState } from 'react'
 
@@ -76,7 +77,7 @@ export function ModelRow({ model }: { model: ModelResource }) {
           {model.name}
         </Link>
         <span className="block truncate font-mono text-xs text-muted-foreground">
-          {model.model}
+          {model.external ? model.external.base_url : model.model}
         </span>
       </span>
       <span className="min-w-0">
@@ -91,14 +92,20 @@ export function ModelRow({ model }: { model: ModelResource }) {
       </span>
       <span className="min-w-0 text-xs text-muted-foreground">
         <span className="block truncate">
-          {nodeLabel(model.node_id)}, {gpuSummary(model)}
+          {model.external
+            ? model.external.models.slice(0, 3).join(', ')
+            : `${nodeLabel(model.node_id)}, ${gpuSummary(model)}`}
         </span>
         {model.endpoint_url ? (
           <span className="block truncate font-mono">{model.endpoint_url}</span>
         ) : null}
       </span>
       <span className="min-w-0">
-        <ModelStatusBadge model={model} />
+        {model.external ? (
+          <EndpointHealthBadge state={model.external.health.state} />
+        ) : (
+          <ModelStatusBadge model={model} />
+        )}
       </span>
       <span
         className="min-w-0 truncate text-xs text-muted-foreground"

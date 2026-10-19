@@ -442,6 +442,10 @@ When a GPU app or model cannot run on its own node and no eligible GPU node has 
 
 Listing and reading models and GPUs needs the `read` ability. Deleting and restarting needs `write`. Listing keys and reading usage need `read`; revoking a key needs `write`. Deploying, creating or rotating a key and setting a HuggingFace token need `write:sensitive`. Model resources can be targeted by IAM policies as `model:<name>`. The AI assistant asks for confirmation before any of the mutating model tools.
 
+## Your own model server
+
+A server Levelrail does not run (Ollama or LM Studio on a Mac, an MLX server, a cloud API) can be registered as an inference endpoint under AI models, with a health badge, discovered models, per-key limits and usage, and an optional fallback to another model. Internal addresses need `APP_MODEL_ENDPOINT_ALLOW_PRIVATE_NETWORKS=true`. See [Use your Mac mini or MacBook as a private LLM server](/guides/use-a-mac-as-a-private-llm-server).
+
 ## Not in version 1
 
 AMD and Apple GPUs, MIG partitioning, CPU mode for Ollama and vLLM, control plane downloads for remote nodes, automatic model-to-node scheduling (you pick the node; apps are spread, see GPU scheduling), moving a model between nodes, per-model limit overrides, swap groups, and a Prometheus endpoint for usage.

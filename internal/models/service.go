@@ -75,6 +75,7 @@ type Service struct {
 	hostFacts     HostFactsFunc
 	cpuPolicy     *CPUPolicy
 	bench         benchDeps
+	ep            *EndpointPlumbing
 }
 
 // NewService builds a Service. secrets may be nil (HuggingFace tokens
@@ -108,6 +109,9 @@ type CreateInput struct {
 	WeightsFile string
 	// LicenseAck acknowledges the licence notice of a non-curated repository.
 	LicenseAck bool
+	// External registers a server Levelrail does not run; Spec.Name is the
+	// only other field read.
+	External *ExternalInput
 }
 
 // Created is the result of Create; APIKey is the plaintext, shown once.
@@ -138,6 +142,9 @@ func (s *Service) SetLocalNodeID(id string) { s.localID = id }
 
 // Create validates and stores a new model, returning its one-time API key.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
+	if in.External != nil {
+		return s.createExternal(ctx, in)
+	}
 	plan, err := s.planCPU(ctx, &in)
 	if err != nil {
 		return Created{}, err
@@ -212,6 +219,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Created, error) {
 // Delete tombstones the model; its controller removes the container and
 // row.
 func (s *Service) Delete(ctx context.Context, name string) error {
+	if s.ep != nil {
+		if _, err := s.ep.Store.GetInferenceEndpoint(ctx, name); err == nil {
+			return s.deleteExternal(ctx, name)
+		}
+	}
 	return s.store.MarkModelDeleting(ctx, name)
 }
 
@@ -261,6 +273,8 @@ type View struct {
 	// SharesGPUWith is every other model in the same non-empty
 	// SwapGroup on the same node, excluding this one.
 	SharesGPUWith []string
+	// Endpoint is set for external models.
+	Endpoint *EndpointView
 }
 
 func (s *Service) view(m store.Model, conds []reconcile.Condition, peers []string) View {
@@ -308,9 +322,13 @@ func (s *Service) List(ctx context.Context) ([]View, error) {
 	if err != nil {
 		return nil, fmt.Errorf("models: read conditions: %w", err)
 	}
+	eps, err := s.ListEndpoints(ctx)
+	if err != nil {
+		return nil, err
+	}
 	out := make([]View, len(list))
 	for i, m := range list {
-		out[i] = s.view(m, conds[ControllerName(m.Name)], swapGroupPeers(m, list))
+		out[i] = s.externalStatus(s.view(m, conds[ControllerName(m.Name)], swapGroupPeers(m, list)), eps)
 	}
 	return out, nil
 }
@@ -333,5 +351,28 @@ func (s *Service) Get(ctx context.Context, name string) (View, error) {
 	if err != nil {
 		return View{}, fmt.Errorf("models: read conditions: %w", err)
 	}
-	return s.view(*m, conds, peers), nil
+	v := s.view(*m, conds, peers)
+	if m.Compute == ComputeExternal {
+		eps, err := s.ListEndpoints(ctx)
+		if err != nil {
+			return View{}, err
+		}
+		v = s.externalStatus(v, eps)
+	}
+	return v, nil
+}
+
+// externalStatus replaces the reconcile status of an external model, which
+// has no controller, with its endpoint health.
+func (s *Service) externalStatus(v View, eps map[string]EndpointView) View {
+	if v.Model.Compute != ComputeExternal || v.Model.Deleting {
+		return v
+	}
+	e, ok := eps[v.Model.Name]
+	if !ok {
+		return v
+	}
+	v.Ready, v.Reason, v.Message = e.Ready, e.HealthState, e.HealthError
+	v.Endpoint = &e
+	return v
 }

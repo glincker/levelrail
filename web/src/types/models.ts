@@ -2,6 +2,7 @@
 // internal/api/models.go (modelResource, gpuNodeResource).
 
 import type { ModelBenchmark, ModelCompute, ModelDownload } from './modelsCpu'
+import type { ExternalEndpoint } from './modelEndpoints'
 
 export type ModelEngine = 'ollama' | 'vllm' | 'llamacpp'
 export type ModelResidency = 'always' | 'on_demand'
@@ -14,7 +15,7 @@ export interface ModelStatus {
 
 export interface ModelResource {
   name: string
-  engine: ModelEngine
+  engine: ModelEngine | 'external'
   model: string
   node_id: string
   gpu_count: number
@@ -23,6 +24,7 @@ export interface ModelResource {
   quantization?: string
   domain?: string
   endpoint_url?: string
+  external?: ExternalEndpoint
   api_key_prefix: string
   hf_token_set: boolean
   status: ModelStatus

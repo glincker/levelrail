@@ -28,7 +28,7 @@ func featureForPath(p string) (experimental.Feature, bool) {
 		p == "/api/v1/settings/ai-assistant", strings.HasPrefix(p, "/api/v1/settings/ai-assistant/"),
 		p == "/api/v1/ai/usage":
 		return experimental.AIChat, true
-	case p == "/api/v1/models" || strings.HasPrefix(p, "/api/v1/models/"):
+	case p == "/api/v1/models" || strings.HasPrefix(p, "/api/v1/models/"), p == "/api/v1/model-endpoints/test":
 		return experimental.AIModels, true
 	case p == "/api/v1/loadbalancers", lbAppPath.MatchString(p):
 		return experimental.LoadBalancer, true

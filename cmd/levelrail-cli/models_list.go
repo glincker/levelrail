@@ -95,6 +95,13 @@ func printModelHuman(out io.Writer, m apiclient.ModelDetail) {
 	if m.EndpointURL != "" {
 		_, _ = fmt.Fprintf(out, "base url:    %s\n", m.EndpointURL)
 	}
+	if e := m.External; e != nil {
+		_, _ = fmt.Fprintf(out, "upstream:    %s (%s API)\n", e.BaseURL, e.APIType)
+		printEndpointHealth(out, e)
+		if e.FallbackModel != "" {
+			_, _ = fmt.Fprintf(out, "fallback:    %s after %d ms, used %d times\n", e.FallbackModel, e.LatencyBudgetMS, e.FallbackCount)
+		}
+	}
 	if m.Compute == "cpu" {
 		_, _ = fmt.Fprintf(out, "compute:     cpu, up to %.2f CPUs and %d MiB memory, no swap, low priority\n", m.CPULimit, m.MemoryLimitMiB)
 		if m.Download != nil {

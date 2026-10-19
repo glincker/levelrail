@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CpuIcon, RobotIcon } from '@phosphor-icons/react/dist/ssr'
 import { DeployModelDialog } from '../../components/DeployModelDialog'
+import { AddEndpointDialog } from '../../components/models/AddEndpointDialog'
 import { GpuNodeCard } from '../../components/GpuNodeCard'
 import { ModelCacheCard } from '../../components/ModelCacheCard'
 import { ModelKeyRevealDialog } from '../../components/ModelKeyRevealDialog'
@@ -172,7 +173,12 @@ function ModelsPage() {
     <div className="space-y-6">
       <PageHeader
         title="AI models"
-        actions={<DeployModelDialog onDeployed={setCreated} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <AddEndpointDialog onAdded={setCreated} />
+            <DeployModelDialog onDeployed={setCreated} />
+          </div>
+        }
       />
       <section aria-labelledby="gpu-nodes-heading" className="space-y-3">
         <h2
