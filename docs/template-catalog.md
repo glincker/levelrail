@@ -21,11 +21,11 @@ This is a browsing list, not a how-to. For the API/CLI/UI mechanics (how a templ
 
 {/* BEGIN GENERATED CATALOG TABLE */}
 
-Generated from `internal/catalog.Templates` (358 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
+Generated from `internal/catalog.Templates` (359 entries as of this build). Run `go run ./scripts/gen-template-catalog-docs` after changing a `templates_*.go` file to refresh this section.
 
 | Category | Templates |
 | --- | --- |
-| [AI](#ai) | 31 |
+| [AI](#ai) | 32 |
 | [Analytics](#analytics) | 8 |
 | [Applications](#applications) | 19 |
 | [Automation](#automation) | 8 |
@@ -72,6 +72,7 @@ Generated from `internal/catalog.Templates` (358 entries as of this build). Run 
 | [Ollama: Phi-3 Mini](https://ollama.com/library/phi3) | Microsoft's Phi-3 Mini (3.8B), the smallest model in this catalog, good for constrained nodes. | `ollama-phi` |  |
 | [Ollama: Qwen 2.5 7B](https://ollama.com/library/qwen2.5) | Alibaba's Qwen 2.5 7B model, served locally through Ollama's HTTP API. | `ollama-qwen` |  |
 | [Open WebUI](https://docs.openwebui.com) | A self-hosted chat interface for running local large language models through Ollama. | `open-webui` |  |
+| [OpenClaw](https://docs.openclaw.ai/install) | A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose. | `openclaw` |  |
 | [Speaches](https://speaches.ai) | An OpenAI-compatible speech server: Whisper transcription and text-to-speech behind one API. | `speaches` |  |
 | [Stable Diffusion WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki) | A browser interface for generating and editing images with Stable Diffusion checkpoints. | `stable-diffusion-webui` | Requires GPU |
 | [Text Embeddings Inference](https://huggingface.co/docs/text-embeddings-inference) | A lean server that turns text into embeddings with popular open models, on CPU with no extra setup. | `text-embeddings-inference` |  |

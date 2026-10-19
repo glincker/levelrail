@@ -71,7 +71,9 @@ These four are on demand: none is in the default session, enable the toolset fir
 
 ## Scripted agent eval
 
-`go run ./scripts/mcp-eval` runs ten fixed agent tasks through the real MCP server (progressive session, so each task enables the toolset it needs) and prints pass or fail with the estimated tokens each one costs. It makes no model call and needs no network: by default it answers from an in-process demo API. Pass `-api URL -token TOKEN` to drive a real control plane instead (then it only checks that every call succeeds), and `-json` for machine output. It exits 1 when a task fails, so it can gate a change to the tool surface.
+`go run ./scripts/mcp-eval` runs thirteen fixed agent tasks (the last three are OpenClaw-style: list apps, read logs, deploy then roll back; `-app`, `-image` and `-prev-image` point them at a live app) through the real MCP server (progressive session, so each task enables the toolset it needs) and prints pass or fail with the estimated tokens each one costs. It makes no model call and needs no network: by default it answers from an in-process demo API. Pass `-api URL -token TOKEN` to drive a real control plane instead (then it only checks that every call succeeds), and `-json` for machine output. It exits 1 when a task fails, so it can gate a change to the tool surface.
+
+An agent that drives these tools from OpenClaw is walked through in [Control Levelrail from OpenClaw](/guides/control-levelrail-from-openclaw).
 
 ## Write tools (`--allow-write`)
 

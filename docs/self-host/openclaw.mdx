@@ -1,0 +1,73 @@
+---
+title: "Self-host OpenClaw with Docker"
+sidebarTitle: "OpenClaw"
+description: "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose."
+"og:url": "https://docs.levelrail.com/self-host/openclaw"
+---
+
+A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose.
+
+This page describes the Levelrail template for OpenClaw (AI). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.openclaw.ai/install.
+
+Recommended memory: about 2048 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `openclaw-gateway` | `ghcr.io/openclaw/openclaw:2026.10.5` | 18789 | `openclaw_data -&#62; /home/node/.openclaw` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `openclaw-gateway` | `OPENCLAW_CONFIG_DIR` | Preset in the template |
+| `openclaw-gateway` | `OPENCLAW_GATEWAY_PORT` | Preset in the template |
+| `openclaw-gateway` | `OPENCLAW_GATEWAY_TOKEN` | Generated at deploy |
+| `openclaw-gateway` | `OPENCLAW_STATE_DIR` | Preset in the template |
+| `openclaw-gateway` | `OPENCLAW_WORKSPACE_DIR` | Preset in the template |
+| `openclaw-gateway` | `TZ` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Security and requirements
+
+Level: **Standard**.
+
+What this template needs:
+
+- Publishes ports directly on the host (`openclaw-gateway`): 18789:18789.
+- Passwords and keys are generated at deploy time (`openclaw-gateway`): OPENCLAW_GATEWAY_TOKEN.
+- Stores data in named volumes (`openclaw-gateway`): openclaw_data.
+
+What Levelrail adds around it:
+
+- Automatic HTTPS and an ingress shield in front of every domain.
+- Secrets are generated, stored encrypted and masked in logs and the UI.
+- Named volumes can be backed up and restored.
+- Deploys are gated on the health check before traffic switches.
+- One-step rollback to the previous revision.
+- Exposure report shows what is reachable from outside.
+- Host firewall rules managed for published ports.
+
+## Deploy OpenClaw with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select OpenClaw. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy openclaw --name my-openclaw
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More AI templates
+
+- [AnythingLLM](/self-host/anythingllm)
+- [ComfyUI](/self-host/comfyui)
+- [Flowise](/self-host/flowise)
+- [Flowise (Postgres + Qdrant)](/self-host/flowise-postgres)
+- [Jupyter GPU Notebook](/self-host/jupyter-gpu)
+
+All templates are listed in the [self-host gallery](/self-host).

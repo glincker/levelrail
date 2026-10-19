@@ -24947,6 +24947,121 @@
   }
  },
  {
+  "id": "openclaw",
+  "name": "OpenClaw",
+  "slogan": "A self-hosted personal AI agent gateway that connects chat apps and tools to the model provider you choose.",
+  "category": "AI",
+  "docUrl": "https://docs.openclaw.ai/install",
+  "memoryMiB": 2048,
+  "needsConfig": false,
+  "services": [
+   {
+    "name": "openclaw-gateway",
+    "image": "ghcr.io/openclaw/openclaw:2026.10.5",
+    "ports": [
+     18789
+    ],
+    "volumes": [
+     "openclaw_data -> /home/node/.openclaw"
+    ]
+   }
+  ],
+  "env": [
+   {
+    "service": "openclaw-gateway",
+    "key": "OPENCLAW_CONFIG_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "openclaw-gateway",
+    "key": "OPENCLAW_GATEWAY_PORT",
+    "kind": "preset"
+   },
+   {
+    "service": "openclaw-gateway",
+    "key": "OPENCLAW_GATEWAY_TOKEN",
+    "kind": "generated"
+   },
+   {
+    "service": "openclaw-gateway",
+    "key": "OPENCLAW_STATE_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "openclaw-gateway",
+    "key": "OPENCLAW_WORKSPACE_DIR",
+    "kind": "preset"
+   },
+   {
+    "service": "openclaw-gateway",
+    "key": "TZ",
+    "kind": "preset"
+   }
+  ],
+  "requirements": {
+   "level": "standard",
+   "findings": [
+    {
+     "code": "published_ports",
+     "severity": "info",
+     "services": [
+      "openclaw-gateway"
+     ],
+     "detail": "18789:18789",
+     "message": "Publishes ports directly on the host"
+    },
+    {
+     "code": "generated_secrets",
+     "severity": "info",
+     "services": [
+      "openclaw-gateway"
+     ],
+     "detail": "OPENCLAW_GATEWAY_TOKEN",
+     "message": "Passwords and keys are generated at deploy time"
+    },
+    {
+     "code": "persistent_data",
+     "severity": "info",
+     "services": [
+      "openclaw-gateway"
+     ],
+     "detail": "openclaw_data",
+     "message": "Stores data in named volumes"
+    }
+   ],
+   "protections": [
+    {
+     "code": "https_ingress",
+     "label": "Automatic HTTPS and an ingress shield in front of every domain"
+    },
+    {
+     "code": "secret_masking",
+     "label": "Secrets are generated, stored encrypted and masked in logs and the UI"
+    },
+    {
+     "code": "volume_backups",
+     "label": "Named volumes can be backed up and restored"
+    },
+    {
+     "code": "health_gated_deploy",
+     "label": "Deploys are gated on the health check before traffic switches"
+    },
+    {
+     "code": "rollback",
+     "label": "One-step rollback to the previous revision"
+    },
+    {
+     "code": "exposure_report",
+     "label": "Exposure report shows what is reachable from outside"
+    },
+    {
+     "code": "firewall",
+     "label": "Host firewall rules managed for published ports"
+    }
+   ]
+  }
+ },
+ {
   "id": "openobserve",
   "name": "OpenObserve",
   "slogan": "A lightweight, single-binary observability platform for logs, metrics, and traces with a built-in UI.",

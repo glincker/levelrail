@@ -111,6 +111,7 @@ export const TEMPLATE_LOGO_LOADERS: Record<
   'ollama-phi': () => import('@thesvg/react/ollama'),
   'ollama-qwen': () => import('@thesvg/react/ollama'),
   'open-webui': () => import('@thesvg/react/open-webui'),
+  openclaw: () => import('@thesvg/react/openclaw'),
   outline: () => import('@thesvg/react/outline'),
   overseerr: () => import('@thesvg/react/overseerr'),
   'paperless-ngx': () => import('@thesvg/react/paperless-ngx'),

@@ -107,7 +107,8 @@
               "guides/index",
               "guides/coolify-vs-levelrail",
               "guides/self-host-postgres-with-backups",
-              "guides/zero-downtime-deploys-without-kubernetes"
+              "guides/zero-downtime-deploys-without-kubernetes",
+              "guides/control-levelrail-from-openclaw"
             ],
             "icon": "/assets/icons/compass.svg"
           },
@@ -449,6 +450,7 @@
               "self-host/ollama-phi",
               "self-host/ollama-qwen",
               "self-host/open-webui",
+              "self-host/openclaw",
               "self-host/speaches",
               "self-host/stable-diffusion-webui",
               "self-host/text-embeddings-inference",

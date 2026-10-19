@@ -1,4 +1,4 @@
-// Command mcp-eval runs ten scripted agent tasks through the real MCP server
+// Command mcp-eval runs scripted agent tasks through the real MCP server
 // and reports pass or fail and the estimated tokens each one costs.
 //
 // By default it serves canned responses from an in-process demo API, so it
@@ -62,6 +62,15 @@ var tasks = []task{
 		{"enable_toolset", map[string]any{"toolsets": []string{"metrics"}}, "metrics"},
 		{"get_cdn_overview", map[string]any{"window": "1h"}, `"window"`},
 	}},
+	{"openclaw: list apps", []call{{"list_apps", nil, `"web"`}}},
+	{"openclaw: read logs", []call{
+		{"enable_toolset", map[string]any{"toolsets": []string{"logs"}}, "logs"},
+		{"get_app_logs", map[string]any{"name": "$APP", "since": "1h", "tail": 20}, "listening"},
+	}},
+	{"openclaw: deploy then roll back", []call{
+		{"deploy_app", map[string]any{"name": "$APP", "image": "$IMAGE"}, `"name"`},
+		{"rollback_app", map[string]any{"name": "$APP", "image": "$PREV_IMAGE"}, `"name"`},
+	}},
 }
 
 var demoRoutes = map[string]string{
@@ -74,6 +83,21 @@ var demoRoutes = map[string]string{
 	"/api/v1/nodes/failure-simulation":   `{"zone":"eu-1","lost_node_ids":["n1"],"displaced":2,"placed":[],"unplaced":0,"zones":[]}`,
 	"/api/v1/audit-log/verify":           `{"ok":true,"checked":120,"problems":[]}`,
 	"/api/v1/cdn/overview":               `{"window":"1h","has_traffic":true,"requests":1200,"nodes":[]}`,
+	"/api/v1/apps/web/logs":              `{"entries":[{"timestamp":"2026-01-01T00:00:00Z","stream":"stdout","message":"gateway listening on :18789"}],"total":1}`,
+	"POST /api/v1/apps/web/deploys":      `{"name":"web","image":"nginx:2","port":80,"replicas":1,"strategy":"rolling"}`,
+}
+
+var subst *strings.Replacer
+
+func expand(in map[string]any) map[string]any {
+	out := make(map[string]any, len(in))
+	for k, v := range in {
+		if str, ok := v.(string); ok {
+			v = subst.Replace(str)
+		}
+		out[k] = v
+	}
+	return out
 }
 
 type result struct {
@@ -87,12 +111,19 @@ func main() {
 	api := flag.String("api", "", "base URL of a real control plane; default is the in-process demo API")
 	token := flag.String("token", "", "API token for -api")
 	asJSON := flag.Bool("json", false, "print results as JSON")
+	app := flag.String("app", "web", "app the openclaw tasks read, deploy and roll back (live mode)")
+	image := flag.String("image", "nginx:2", "image the openclaw deploy task points the app at (live mode)")
+	prev := flag.String("prev-image", "nginx:1", "image the openclaw rollback task restores (live mode)")
 	flag.Parse()
+	subst = strings.NewReplacer("$APP", *app, "$IMAGE", *image, "$PREV_IMAGE", *prev)
 
 	base, tok, live := *api, *token, *api != ""
 	if !live {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, ok := demoRoutes[r.URL.Path]
+			body, ok := demoRoutes[r.Method+" "+r.URL.Path]
+			if !ok {
+				body, ok = demoRoutes[r.URL.Path]
+			}
 			if !ok {
 				http.NotFound(w, r)
 				return
@@ -146,8 +177,9 @@ func run(ctx context.Context, base, tok string, live bool, t task) result {
 		return res
 	}
 	for _, c := range t.calls {
-		args, _ := json.Marshal(c.args)
-		out, err := session.CallTool(ctx, &mcp.CallToolParams{Name: c.tool, Arguments: c.args})
+		cargs := expand(c.args)
+		args, _ := json.Marshal(cargs)
+		out, err := session.CallTool(ctx, &mcp.CallToolParams{Name: c.tool, Arguments: cargs})
 		if err != nil {
 			res.Detail = fmt.Sprintf("%s: %v", c.tool, err)
 			res.Tokens = tokens
