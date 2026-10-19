@@ -326,7 +326,7 @@ func (m *Manager) start(ctx context.Context, rec Record, in *instance) error {
 
 func (m *Manager) connect(ctx context.Context, rec Record, sock string) (rpcClient, io.Closer, error) {
 	maxSend := m.cfg.MaxEventBytes + m.cfg.MaxConfigBytes + m.cfg.MaxSecretBytes + 4<<10
-	client, closer, err := m.dial(ctx, sock, maxSend, maxSend)
+	client, closer, err := m.dial(ctx, sock, maxSend, max(maxSend, m.cfg.MaxPanelBytes+4<<10))
 	if err != nil {
 		return nil, nil, err
 	}

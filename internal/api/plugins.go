@@ -20,11 +20,12 @@ func (rt *Router) SetPluginManager(m *plugin.Manager) { rt.plugins = m }
 
 type pluginResource struct {
 	plugin.Record
-	Running      bool           `json:"running"`
-	Health       string         `json:"health"`
-	Verification string         `json:"verification"`
-	Fix          string         `json:"fix"`
-	Panels       []plugin.Panel `json:"panels"`
+	Running      bool             `json:"running"`
+	Health       string           `json:"health"`
+	Verification string           `json:"verification"`
+	Fix          string           `json:"fix"`
+	Panels       []plugin.Panel   `json:"panels"`
+	Commands     []plugin.Command `json:"commands"`
 }
 
 type installPluginRequest struct {
@@ -90,11 +91,11 @@ func (rt *Router) pluginActor(r *http.Request) string {
 
 func (rt *Router) toPluginResource(ctx context.Context, m *plugin.Manager, rec plugin.Record) pluginResource {
 	st := m.StatusOf(ctx, rec)
-	panels := []plugin.Panel{}
+	panels, commands := []plugin.Panel{}, []plugin.Command{}
 	if man, err := plugin.ParseManifest([]byte(rec.Manifest)); err == nil {
-		panels = man.Contributes.Panels
+		panels, commands = man.Contributes.Panels, man.Contributes.Commands
 	}
-	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels}
+	return pluginResource{Record: rec, Running: m.Running(rec.Name), Health: st.Health, Verification: st.Verification, Fix: st.Fix, Panels: panels, Commands: commands}
 }
 
 func (rt *Router) writePluginError(w http.ResponseWriter, what string, err error) {

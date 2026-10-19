@@ -21,7 +21,9 @@ export interface PluginPanel {
   id: string
   title: string
   description: string
-  rows: { label: string; value: string }[]
+  rows: { label: string; value: string }[] | null
+  slot?: string
+  source?: { id: string; abilities: string[] }
 }
 
 export interface PluginVerification {

@@ -257,6 +257,32 @@ type fakeRPC struct {
 	sendErr     error
 	sent        []*pluginpb.SendRequest
 	block       chan struct{}
+	panelResp   *pluginpb.PanelDataResponse
+	panelErr    error
+	panelReqs   []*pluginpb.PanelDataRequest
+	actionResp  *pluginpb.PanelActionResponse
+	actionReqs  []*pluginpb.PanelActionRequest
+}
+
+func (r *fakeRPC) PanelData(ctx context.Context, req *pluginpb.PanelDataRequest) (*pluginpb.PanelDataResponse, error) {
+	if r.block != nil {
+		select {
+		case <-r.block:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.panelReqs = append(r.panelReqs, req)
+	return r.panelResp, r.panelErr
+}
+
+func (r *fakeRPC) PanelAction(_ context.Context, req *pluginpb.PanelActionRequest) (*pluginpb.PanelActionResponse, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.actionReqs = append(r.actionReqs, req)
+	return r.actionResp, r.panelErr
 }
 
 func (r *fakeRPC) Describe(context.Context, *pluginpb.DescribeRequest) (*pluginpb.DescribeResponse, error) {

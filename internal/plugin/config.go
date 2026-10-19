@@ -51,6 +51,7 @@ type Config struct {
 	MaxConfigBytes   int
 	MaxSecretBytes   int
 	MaxResponseBytes int
+	MaxPanelBytes    int
 }
 
 func (c Config) withDefaults() Config {
@@ -72,6 +73,7 @@ func (c Config) withDefaults() Config {
 	setInt(&c.MaxConfigBytes, 16<<10)
 	setInt(&c.MaxSecretBytes, 4<<10)
 	setInt(&c.MaxResponseBytes, 1<<10)
+	setInt(&c.MaxPanelBytes, 128<<10)
 	if c.Namespace == "" {
 		c.Namespace = "plugin"
 	}

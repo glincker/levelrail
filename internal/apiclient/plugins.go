@@ -7,30 +7,31 @@ import (
 
 // Plugin is one installed plugin as the control plane reports it.
 type Plugin struct {
-	Name               string        `json:"name"`
-	Version            string        `json:"version"`
-	Kind               string        `json:"kind"`
-	Publisher          string        `json:"publisher"`
-	Description        string        `json:"description"`
-	Image              string        `json:"image"`
-	Digest             string        `json:"digest"`
-	Manifest           string        `json:"manifest"`
-	KeyID              string        `json:"key_id"`
-	RequestedAbilities []string      `json:"requested_abilities"`
-	ApprovedAbilities  []string      `json:"approved_abilities"`
-	OutboundHosts      []string      `json:"outbound_hosts"`
-	ConfigJSON         string        `json:"config_json"`
-	State              string        `json:"state"`
-	Running            bool          `json:"running"`
-	Health             string        `json:"health"`
-	Verification       string        `json:"verification"`
-	Fix                string        `json:"fix"`
-	Panels             []PluginPanel `json:"panels"`
-	ApprovedAt         string        `json:"approved_at"`
-	ApprovedBy         string        `json:"approved_by"`
-	InstalledAt        string        `json:"installed_at"`
-	InstalledBy        string        `json:"installed_by"`
-	LastError          string        `json:"last_error"`
+	Name               string          `json:"name"`
+	Version            string          `json:"version"`
+	Kind               string          `json:"kind"`
+	Publisher          string          `json:"publisher"`
+	Description        string          `json:"description"`
+	Image              string          `json:"image"`
+	Digest             string          `json:"digest"`
+	Manifest           string          `json:"manifest"`
+	KeyID              string          `json:"key_id"`
+	RequestedAbilities []string        `json:"requested_abilities"`
+	ApprovedAbilities  []string        `json:"approved_abilities"`
+	OutboundHosts      []string        `json:"outbound_hosts"`
+	ConfigJSON         string          `json:"config_json"`
+	State              string          `json:"state"`
+	Running            bool            `json:"running"`
+	Health             string          `json:"health"`
+	Verification       string          `json:"verification"`
+	Fix                string          `json:"fix"`
+	Panels             []PluginPanel   `json:"panels"`
+	Commands           []PluginCommand `json:"commands"`
+	ApprovedAt         string          `json:"approved_at"`
+	ApprovedBy         string          `json:"approved_by"`
+	InstalledAt        string          `json:"installed_at"`
+	InstalledBy        string          `json:"installed_by"`
+	LastError          string          `json:"last_error"`
 }
 
 // PluginPanel is a read-only card a plugin contributes through its manifest.
@@ -39,6 +40,7 @@ type PluginPanel struct {
 	Title       string           `json:"title"`
 	Description string           `json:"description"`
 	Rows        []PluginPanelRow `json:"rows"`
+	Slot        string           `json:"slot"`
 }
 
 // PluginPanelRow is one label and plain-text value in a PluginPanel.

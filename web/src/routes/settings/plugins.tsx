@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
 import { ApprovalDialog } from '../../components/plugins/ApprovalDialog'
 import { InstallPluginDialog } from '../../components/plugins/InstallPluginDialog'
+import { PanelHost } from '../../components/plugins/PanelHost'
 import { PluginPanels } from '../../components/plugins/PluginPanels'
 import { PluginTable } from '../../components/plugins/PluginTable'
 import { TrustedKeysCard } from '../../components/plugins/TrustedKeysCard'
@@ -86,6 +87,7 @@ function PluginsPage() {
         />
       )}
       <PluginPanels plugins={plugins} />
+      <PanelHost slot="plugins" />
       <div id="plugin-trusted-keys">
         <TrustedKeysCard />
       </div>

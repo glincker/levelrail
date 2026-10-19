@@ -25,10 +25,14 @@ func pluginsUsage(prog string) string {
                                                           grant the listed abilities, never implied by install
   %[1]s plugins enable|disable|restart <name> [flags]     start, stop or restart a plugin (restart clears failure backoff)
   %[1]s plugins uninstall|remove <name> [flags]           stop and delete a plugin
+  %[1]s plugins run <plugin> <command> [--app NAME] [flags]
+                                                          run a command the plugin declares in its manifest (shows data or presses a button)
   %[1]s plugins trust add --name NAME --public-key B64 [flags]   trust a publisher's ed25519 public key
   %[1]s plugins trust list|remove <key-id> [flags]        show or revoke trusted keys
 
-Needs the plugins experimental feature and a root token. Nothing third party
+Managing plugins needs the plugins experimental feature and a root token. Running a
+plugin command needs read (data commands) or write:sensitive (buttons) and reaches only what the
+operator approved. Nothing third party
 loads until a key is trusted: the default trust list is empty.
 `, prog)
 }
@@ -71,6 +75,8 @@ func runPlugins(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runPluginsUpgrade(prog, rest, stdout, stderr, lookupEnv)
 	case "approve":
 		return runPluginsApprove(prog, rest, stdout, stderr, lookupEnv)
+	case "run":
+		return runPluginsRun(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
 		return runPluginsTrust(prog, rest, stdout, stderr, lookupEnv)
 	default:

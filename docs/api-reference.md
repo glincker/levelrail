@@ -1626,6 +1626,9 @@ Routes that do not fit an existing group.
 | POST | /api/v1/search/saved | AbilityWrite | handleSaveSearch |
 | DELETE | /api/v1/search/saved/{id} | AbilityWrite | handleDeleteSavedSearch |
 | POST | /api/v1/search/usage | AbilityWrite | handleSearchUsage |
+| GET | /api/v1/plugin-panels | AbilityRead | handleListPluginPanels |
+| GET | /api/v1/plugins/{name}/panels/{panel}/data | AbilityRead | handlePluginPanelData |
+| POST | /api/v1/plugins/{name}/panels/{panel}/actions/{action} | AbilityWriteSensitive | handlePluginPanelAction |
 
 ## See also
 

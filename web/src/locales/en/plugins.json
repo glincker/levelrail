@@ -145,5 +145,21 @@
   "panels": {
     "title": "Plugin panels",
     "from": "{{name}} by {{publisher}}"
+  },
+  "panelHost": {
+    "loadFailed": "This panel could not load its data.",
+    "retry": "Retry",
+    "empty": "Nothing to show.",
+    "showMore": "Show {{count}} more",
+    "widgetUnavailable": "this part of the panel is unavailable",
+    "confirm": "Confirm",
+    "actionDone": "Done",
+    "actionFailed": "The action did not complete",
+    "status": {
+      "ok": "OK",
+      "warning": "Warning",
+      "error": "Error",
+      "unknown": "Unknown"
+    }
   }
 }

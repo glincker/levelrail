@@ -107,7 +107,56 @@ Each plugin shows its health (healthy, unhealthy, stopped), its verification sta
 
 ## Contributed panels
 
-A manifest can contribute read-only panels (a title, a description and label/value rows of plain text). The dashboard renders them on the Plugins page from the manifest, labelled with the plugin and its publisher. A plugin never ships JavaScript into the dashboard.
+A manifest can contribute panels. A plugin never ships JavaScript, HTML or an iframe into the dashboard: it declares data and a closed set of widgets, and the dashboard renders them with its own components, labelled with the plugin and its publisher.
+
+A static panel is a title, a description and label/value rows of plain text, shown on the Plugins page.
+
+A dynamic panel (plugin kind `panel_provider`) has a `source` and `widgets`. The control plane calls the plugin's `PanelService.PanelData` for the source, binds the returned JSON document to the widgets and sends the dashboard only typed text and numbers. Where it shows is set by `slot`: `plugins` (the default, Settings > Plugins), `app-detail` (the app Overview page, scoped to that app), `settings` (Settings > General) or `dashboard` (the home page).
+
+Widgets: `stat`, `table`, `list`, `chart`, `markdown`, `status` and `button`. Each reads a dotted `field` path from the source's JSON. A button names an `action` and an optional `confirm` text (the dashboard asks before running it) and calls `PanelService.PanelAction`.
+
+```yaml
+api_version: 1
+name: deploy-panel
+version: 1.0.0
+kind: panel_provider
+publisher: Example Org
+image: registry.example.com/team/deploy-panel@sha256:<64 hex>
+abilities: [read]
+contributes:
+  panels:
+    - id: deploys
+      title: Recent deploys
+      slot: app-detail
+      source: { id: deploys, abilities: [read] }
+      widgets:
+        - { type: stat, title: Deploys this week, field: total, unit: deploys }
+        - type: table
+          title: Latest
+          field: rows
+          columns: [{ key: sha, label: Commit }, { key: status, label: Status }]
+        - { type: markdown, field: note }
+        - { type: button, action: refresh, label: Refresh, confirm: Refresh the list now? }
+  commands:
+    - { id: deploys, description: Show recent deploys, panel: deploys }
+    - { id: refresh, description: Refresh the list, panel: deploys, action: refresh }
+```
+
+The plugin answers `PanelData` with, for example, `{"total": 12, "rows": [{"sha": "a1b2c3", "status": "ok"}], "note": "All **green**."}`.
+
+What the control plane enforces on every panel call:
+
+- Only an enabled `panel_provider`, only a panel and action the manifest declares, and only abilities the operator approved. A panel source may use `read` only (never `read:sensitive`, never a write ability). Revoking the approval stops the panel immediately.
+- A call timeout (`APP_PLUGIN_CALL_TIMEOUT`, default 10 seconds), a concurrency cap and the circuit breaker shared with other plugin calls. Every call is audited as a plugin ability use before it is made, and a failed audit refuses the call.
+- A response size cap of 128 KiB, a table cap of 200 rows (the dashboard shows 50 at a time), cell and item length caps, and a nesting limit. Oversize or malformed data is rejected with a clear error, and a missing field fails only its own widget.
+- Markdown is reduced to paragraphs, lists, bold, code and http(s) links. Raw HTML, images, entities and `javascript:` or `data:` links are removed on the server, and the dashboard renders what is left as text nodes, never as HTML.
+- Scope: an app page passes `app_id`, and the control plane checks the caller may see that app before the plugin ever sees the id.
+
+Each panel shows its own loading, error and Retry state, so one failing plugin never blanks a page.
+
+### Commands
+
+`commands` add CLI subcommands run through the same checks: `levelrail-cli plugins run <plugin> <command> [--app NAME]` prints the panel data (needs `read`) or presses the button named by `action` (needs `write:sensitive`). Add `--json` for machine output.
 
 ## Use it as an alert channel
 
@@ -115,12 +164,12 @@ Once a plugin is enabled, add a notification channel whose kind is `plugin:<name
 
 ## Write a plugin
 
-The contract is `proto/plugin/v1/plugin.proto`: `Describe` (name, version, kind, requested abilities, config schema, with contract version negotiation), `Health`, and for notification channels `Send`. The plugin listens on the unix socket path in the `PLUGIN_SOCKET` environment variable. A complete example lives in `test/fixtures/plugin-notify`, including a small signer that creates a key and signs a manifest.
+The contract is `proto/plugin/v1/plugin.proto`: `Describe` (name, version, kind, requested abilities, config schema, with contract version negotiation), `Health`, for notification channels `Send`, and for panel providers `PanelService` (`PanelData`, `PanelAction`). The plugin listens on the unix socket path in the `PLUGIN_SOCKET` environment variable. A complete example lives in `test/fixtures/plugin-notify`, including a small signer that creates a key and signs a manifest.
 
 ## Not yet
 
 - A marketplace or any hosted index of plugins. You install a package you obtained yourself.
-- Richer UI extension points. Panels are static text rows; plugins cannot add pages, forms or CLI commands yet.
+- More UI extension points. Plugins can add panels and CLI commands, but not whole pages or forms yet.
 - Auto-update. Upgrades are an explicit operator action.
 - Other plugin kinds such as DNS or CDN providers, and plugins on remote nodes.
 - Per-host network enforcement and a supply chain scan of the plugin image.

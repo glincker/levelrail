@@ -37,7 +37,7 @@ func TestManifestValidationTable(t *testing.T) {
 		{"panel id uppercase", manifestV("1.0.0", testDigest, "[read]", "[]", "contributes:\n  panels:\n    - id: Status\n      title: S\n"), "manifest schema"},
 		{"panel without title", manifestV("1.0.0", testDigest, "[read]", "[]", "contributes:\n  panels:\n    - id: status\n"), "manifest schema"},
 		{"panel row extra key", manifestV("1.0.0", testDigest, "[read]", "[]", "contributes:\n  panels:\n    - id: s\n      title: S\n      rows:\n        - {label: a, value: b, script: x}\n"), "parse manifest"},
-		{"too many panels", manifestV("1.0.0", testDigest, "[read]", "[]", "contributes:\n  panels:\n"+strings.Repeat("    - {id: p, title: T}\n", 5)), "manifest schema"},
+		{"too many panels", manifestV("1.0.0", testDigest, "[read]", "[]", "contributes:\n  panels:\n"+strings.Repeat("    - {id: p, title: T}\n", 9)), "manifest schema"},
 		{"empty", nil, "manifest must be"},
 	}
 	for _, tc := range cases {

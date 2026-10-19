@@ -421,7 +421,7 @@ Usage:
   %[1]s profile list [flags]           list configured credentials profiles and their API URLs
   %[1]s tokens create|list|revoke [flags]   manage API tokens (requires a live session, see "%[1]s tokens -h")
   %[1]s mobile pair|devices [flags]   pair a phone with the mobile app and manage paired phones
-  %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|trust [flags]   signed plugins (needs the plugins experimental feature)
+  %[1]s plugins list|show|inspect|install|upgrade|approve|enable|disable|restart|uninstall|run|trust [flags]   signed plugins (needs the plugins experimental feature)
   %[1]s migrate coolify --url URL --token TOKEN [flags]   migrate apps from a Coolify instance
   %[1]s import platform coolify|dokploy|caprover --url URL [flags]   import apps from another platform, see "%[1]s import platform -h"
   %[1]s completion bash|zsh|fish                          print a shell completion script, see "%[1]s completion -h"
