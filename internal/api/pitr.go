@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -265,8 +264,7 @@ func (rt *Router) handleTriggerBaseBackup(w http.ResponseWriter, r *http.Request
 	}
 
 	var req triggerBaseBackupRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -340,8 +338,7 @@ func (rt *Router) handleTriggerPITRRestore(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req triggerPITRRestoreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.BaseBackupID == "" {

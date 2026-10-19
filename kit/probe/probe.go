@@ -182,7 +182,7 @@ func WithOnAttempt(fn func(Attempt)) Option {
 // makes every exec probe fail with FailureExecNotReady.
 func New(client *http.Client, exec Executor, limits Limits, opts ...Option) *Prober {
 	if client == nil {
-		client = http.DefaultClient
+		client = http.DefaultClient //nolint:forbidigo // probes target the local container, so the SSRF guard would block them
 	}
 	p := &Prober{client: client, exec: exec, limits: limits.withDefaults()}
 	for _, opt := range opts {

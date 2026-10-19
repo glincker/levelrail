@@ -2,8 +2,6 @@ package compliance
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"slices"
@@ -11,6 +9,7 @@ import (
 	"time"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // UserRemover removes an account together with its live sessions. The API
@@ -20,11 +19,11 @@ type UserRemover interface {
 }
 
 func newID(prefix string) (string, error) {
-	b := make([]byte, 9)
-	if _, err := rand.Read(b); err != nil {
+	s, err := ids.URL(9)
+	if err != nil {
 		return "", fmt.Errorf("compliance: generate id: %w", err)
 	}
-	return prefix + base64.RawURLEncoding.EncodeToString(b), nil
+	return prefix + s, nil
 }
 
 func stamp(t *time.Time) string {

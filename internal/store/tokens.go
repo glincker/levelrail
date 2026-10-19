@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/timeutil"
 )
 
 // APIToken is one non-interactive credential, the backend auth
@@ -228,7 +230,7 @@ func parseTimePtr(s sql.NullString) (*time.Time, error) {
 	if !s.Valid {
 		return nil, nil
 	}
-	parsed, err := time.Parse(time.RFC3339Nano, s.String)
+	parsed, err := timeutil.Parse(s.String)
 	if err != nil {
 		return nil, err
 	}

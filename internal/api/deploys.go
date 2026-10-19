@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -82,8 +81,7 @@ func (rt *Router) handleTriggerDeploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req deployTriggerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Image == "" {
@@ -256,8 +254,7 @@ func (rt *Router) handleSetAutoRollback(w http.ResponseWriter, r *http.Request) 
 	name := r.PathValue("name")
 
 	var req setAutoRollbackRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -329,8 +326,7 @@ func (rt *Router) handleSetAutoRollbackSLOBurn(w http.ResponseWriter, r *http.Re
 	name := r.PathValue("name")
 
 	var req setAutoRollbackSLOBurnRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if !validSLOBurnAutoRollbackModes[req.Mode] {

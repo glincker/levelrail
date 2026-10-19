@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"hash/fnv"
@@ -116,8 +115,7 @@ func (rt *Router) handleCreateFeatureFlag(w http.ResponseWriter, r *http.Request
 	}
 
 	var req featureFlagResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateFeatureFlagKey(req.Key); err != nil {
@@ -240,8 +238,7 @@ func (rt *Router) handleUpdateFeatureFlag(w http.ResponseWriter, r *http.Request
 	}
 
 	var req featureFlagResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateFeatureFlagInput(req.Name, req.RolloutPercentage); err != nil {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -177,8 +176,7 @@ func (req createSSHNodeProvisionRequest) credentials() (sshprovision.Credentials
 // progress" shape handleCreateNodeProvision already establishes.
 func (rt *Router) handleCreateSSHNodeProvision(w http.ResponseWriter, r *http.Request) {
 	var req createSSHNodeProvisionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Host == "" {
@@ -313,8 +311,7 @@ const sshPreflightTimeout = 45 * time.Second
 // confirm a fingerprint before any credential leaves the control plane.
 func (rt *Router) handleSSHProvisionPreflight(w http.ResponseWriter, r *http.Request) {
 	var req sshProvisionPreflightRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Host == "" {

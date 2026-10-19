@@ -3,10 +3,12 @@ package cliconsole
 import (
 	"net/url"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/internal/envredact"
 )
 
 const (
-	redacted          = "[redacted]"
+	redacted          = envredact.Marker
 	maxAuditLineBytes = 512
 )
 

@@ -302,8 +302,7 @@ func (rt *Router) handleBulkResourceTags(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	var req consoleBulkTagRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Action != bulkTagAdd && req.Action != bulkTagRemove {
@@ -465,8 +464,7 @@ func (rt *Router) handleSaveResourceView(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	var req resourceViewResource
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	req.Name = strings.TrimSpace(req.Name)

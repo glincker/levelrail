@@ -2,10 +2,6 @@ package api
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -13,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // VolumeCloneRestoreHistoryStore is the store surface the volume
@@ -79,8 +76,7 @@ func (rt *Router) handleVolumeCloneRestore(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req volumeCloneRestoreRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.BackupID == "" {
@@ -171,18 +167,14 @@ func defaultVolumeCloneName(serviceName, volumeName string) (string, error) {
 }
 
 func randomHexSuffix() (string, error) {
-	buf := make([]byte, 6)
-	if _, err := rand.Read(buf); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(buf), nil
+	return ids.Hex(6)
 }
 
 // The vcr_ prefix keeps these IDs distinct from database clone-restore and restore-history IDs in logs.
 func randomVolumeCloneRestoreID() (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	s, err := ids.URL(9)
+	if err != nil {
 		return "", fmt.Errorf("api: generate volume clone restore id: %w", err)
 	}
-	return "vcr_" + base64.RawURLEncoding.EncodeToString(buf), nil
+	return "vcr_" + s, nil
 }

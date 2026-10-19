@@ -3,10 +3,10 @@ package apiclient
 import (
 	"fmt"
 	"io"
-	"net/url"
-	"strings"
 	"sync/atomic"
 	"time"
+
+	"github.com/GLINCKER/levelrail/internal/envredact"
 )
 
 // debugTarget holds the writer every request traces to, nil (the zero
@@ -45,22 +45,7 @@ var sensitiveQueryParams = map[string]bool{
 // "REDACTED", leaving the rest (including the path, which this project's
 // routes never put a credential in) untouched.
 func redactURL(raw string) string {
-	u, err := url.Parse(raw)
-	if err != nil {
-		return raw
-	}
-	q := u.Query()
-	redacted := false
-	for key := range q {
-		if sensitiveQueryParams[strings.ToLower(key)] {
-			q.Set(key, "REDACTED")
-			redacted = true
-		}
-	}
-	if redacted {
-		u.RawQuery = q.Encode()
-	}
-	return u.String()
+	return envredact.URLQuery(raw, sensitiveQueryParams, "REDACTED")
 }
 
 // TraceRequest writes one --debug trace line for a completed (or failed)

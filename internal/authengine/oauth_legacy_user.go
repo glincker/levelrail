@@ -2,9 +2,7 @@ package authengine
 
 import (
 	"context"
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"strings"
@@ -15,6 +13,7 @@ import (
 	"github.com/glincker/theauth-go/v2/crypto"
 
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // ResolveOAuthUser returns the platform user id behind a library OAuth account.
@@ -90,11 +89,11 @@ func (rt *oauthRuntime) legacyUserFor(ctx context.Context, engineID string) (str
 }
 
 func randomID(prefix string) (string, error) {
-	buf := make([]byte, 9)
-	if _, err := rand.Read(buf); err != nil {
+	s, err := ids.URL(9)
+	if err != nil {
 		return "", fmt.Errorf("authengine: generate %sid: %w", prefix, err)
 	}
-	return prefix + base64.RawURLEncoding.EncodeToString(buf), nil
+	return prefix + s, nil
 }
 
 // LinkOAuthIdentity mirrors an identity linked through the in-house link flow into the

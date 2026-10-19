@@ -3,11 +3,12 @@ package compose
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/GLINCKER/levelrail/kit/ids"
 )
 
 // generationKinds are the SERVICE_<KIND>_... prefixes a real template
@@ -131,11 +132,11 @@ func randomString(alphabet string, length int) (string, error) {
 }
 
 func randomHex(length int) (string, error) {
-	buf := make([]byte, (length+1)/2)
-	if _, err := rand.Read(buf); err != nil {
+	s, err := ids.HexLen(length)
+	if err != nil {
 		return "", fmt.Errorf("compose: generate random hex: %w", err)
 	}
-	return hex.EncodeToString(buf)[:length], nil
+	return s, nil
 }
 
 // randomBase64 generates enough random bytes that URL-safe,

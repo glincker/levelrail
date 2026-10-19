@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -255,8 +254,7 @@ func (rt *Router) handleCreateNotificationChannel(w http.ResponseWriter, r *http
 	}
 
 	var req createNotificationChannelRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -316,8 +314,7 @@ func (rt *Router) handleUpdateNotificationChannel(w http.ResponseWriter, r *http
 	}
 
 	var req createNotificationChannelRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -391,8 +388,7 @@ func (rt *Router) handleTestNotificationChannel(w http.ResponseWriter, r *http.R
 	}
 
 	var req testNotificationChannelRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	kind, err := validateNotifyKind(req.Kind)

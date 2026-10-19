@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/httpx"
 )
 
 // Request header names and values shared by every client call.
@@ -131,7 +133,7 @@ func (c *Client) doHeaders(ctx context.Context, method, path string, body, out a
 // method (DeployCompose) that must build its own *http.Request because
 // its body isn't JSON.
 func decodeResponse(resp *http.Response, out any) error {
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadBody(resp.Body)
 	if err != nil {
 		return fmt.Errorf("read response body: %w", err)
 	}
@@ -3754,7 +3756,7 @@ func (c *Client) DownloadAuditLogCSV(ctx context.Context, opts ListAuditLogOptio
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
@@ -3846,7 +3848,7 @@ func (c *Client) DownloadDeployLog(ctx context.Context, name, deployID string) (
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}
@@ -3879,7 +3881,7 @@ func (c *Client) downloadRaw(ctx context.Context, path string) ([]byte, error) {
 	defer func() { _ = resp.Body.Close() }()
 	TraceRequest(http.MethodGet, c.baseURL+path, resp.Status, time.Since(start), nil)
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadAll(resp.Body, httpx.MaxDownload)
 	if err != nil {
 		return nil, fmt.Errorf("read response body: %w", err)
 	}

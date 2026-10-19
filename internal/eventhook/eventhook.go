@@ -21,6 +21,7 @@ import (
 
 	"github.com/GLINCKER/levelrail/internal/dataexport"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/backoff"
 	"github.com/GLINCKER/levelrail/kit/netguard"
 )
 
@@ -236,14 +237,7 @@ func Decide(cfg Config, attempts, status int, sendErr error) Outcome {
 // Backoff is the wait before attempt number attempts+1: exponential from
 // BackoffBase, capped at BackoffMax.
 func Backoff(cfg Config, attempts int) time.Duration {
-	d := cfg.BackoffBase
-	for i := 1; i < attempts && d < cfg.BackoffMax; i++ {
-		d *= 2
-	}
-	if d > cfg.BackoffMax {
-		d = cfg.BackoffMax
-	}
-	return d
+	return backoff.Exponential(cfg.BackoffBase, cfg.BackoffMax, attempts)
 }
 
 func (s *Service) deliverDue(ctx context.Context) {

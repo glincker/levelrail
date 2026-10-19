@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 	"slices"
@@ -91,8 +90,7 @@ func (rt *Router) handleDeviceAuthStart(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var req deviceStartRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 
@@ -113,8 +111,7 @@ type deviceTokenRequest struct {
 // endpoint even though nothing in this codebase does yet.
 func (rt *Router) handleDeviceAuthToken(w http.ResponseWriter, r *http.Request) {
 	var req deviceTokenRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.DeviceCode == "" {

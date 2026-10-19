@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -99,8 +98,7 @@ type createInviteResponse struct {
 // fully usable via copy/paste, not degrade into a dead end.
 func (rt *Router) handleCreateInvite(w http.ResponseWriter, r *http.Request) {
 	var req createInviteRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Email == "" {
@@ -334,8 +332,7 @@ func (rt *Router) handleAcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req acceptInviteRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Token == "" {

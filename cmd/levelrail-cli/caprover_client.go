@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/GLINCKER/levelrail/kit/httpx"
 )
 
 // CapRover returns real env values to any caller that can list apps, with no redaction gate.
@@ -151,7 +153,7 @@ func (c *CaproverClient) do(ctx context.Context, method, path string, body io.Re
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	data, err := io.ReadAll(resp.Body)
+	data, err := httpx.ReadBody(resp.Body)
 	if err != nil {
 		return fmt.Errorf("read response body: %w", err)
 	}

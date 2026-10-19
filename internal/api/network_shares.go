@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -158,8 +157,7 @@ func (rt *Router) handleGetNetworkShare(w http.ResponseWriter, r *http.Request) 
 // NFS share writes no secret at all.
 func (rt *Router) handleCreateNetworkShare(w http.ResponseWriter, r *http.Request) {
 	var req createNetworkShareRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateNetworkShareFields(req.Name, req.Protocol, req.Host, req.RemotePath, req.Username, req.Password, true); err != nil {
@@ -247,8 +245,7 @@ func (rt *Router) handleUpdateNetworkShare(w http.ResponseWriter, r *http.Reques
 	}
 
 	var req updateNetworkShareRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if err := validateNetworkShareFields(req.Name, req.Protocol, req.Host, req.RemotePath, req.Username, req.Password, false); err != nil {

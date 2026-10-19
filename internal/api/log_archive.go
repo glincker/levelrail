@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -124,8 +123,7 @@ func (rt *Router) handleSetLogArchivePolicy(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	var req logArchivePolicyRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	interval := defaultArchiveInterval
@@ -215,8 +213,7 @@ func (rt *Router) handleLogArchiveDump(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req logArchiveDumpRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	from, errFrom := time.Parse(time.RFC3339, req.From)

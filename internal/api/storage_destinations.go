@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -262,8 +261,7 @@ func (rt *Router) handleCreateStorageDestination(w http.ResponseWriter, r *http.
 		return
 	}
 	var req storageDestinationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Kind == storageKindAgent {
@@ -329,8 +327,7 @@ func (rt *Router) handleUpdateStorageDestination(w http.ResponseWriter, r *http.
 		return
 	}
 	var req storageDestinationRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if !rt.authorizeRefs(w, r, AbilityWriteSensitive, notFoundAs(http.StatusBadRequest, "unknown node_id"), nodeRef(strings.TrimSpace(req.NodeID))) {

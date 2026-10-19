@@ -15,6 +15,7 @@ import (
 	"github.com/GLINCKER/levelrail/internal/docker"
 	"github.com/GLINCKER/levelrail/internal/reconcile/database"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/kit/httpx"
 )
 
 // maxSearchAPIResponse caps one API response read back through exec; every
@@ -99,7 +100,7 @@ func parseRawHTTP(raw []byte) (int, []byte, error) {
 		return 0, nil, fmt.Errorf("parse response: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	payload, err := io.ReadAll(resp.Body)
+	payload, err := httpx.ReadBody(resp.Body)
 	if err != nil {
 		return 0, nil, fmt.Errorf("read response body: %w", err)
 	}

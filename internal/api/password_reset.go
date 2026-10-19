@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -53,8 +52,7 @@ type forgotPasswordRequest struct {
 // email matched an account or whether the send succeeded.
 func (rt *Router) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req forgotPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Email == "" {
@@ -122,8 +120,7 @@ func (rt *Router) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req resetPasswordRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+	if !decodeReq(w, r, &req) {
 		return
 	}
 	if req.Token == "" {
