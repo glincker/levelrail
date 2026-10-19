@@ -26,6 +26,8 @@ type betaFeatureResource struct {
 	Enabled         bool   `json:"enabled"`
 	EnabledBy       string `json:"enabled_by"`
 	Toggleable      bool   `json:"toggleable"`
+	AppliesLive     bool   `json:"applies_live"`
+	PendingRestart  bool   `json:"pending_restart"`
 	RequiresRestart bool   `json:"requires_restart"`
 	EnvHint         string `json:"env_hint"`
 	DocsPath        string `json:"docs_path"`
@@ -49,8 +51,8 @@ func LoadBetaFeatures(ctx context.Context, s BetaFeatureStore) error {
 	if err != nil {
 		return fmt.Errorf("load beta features: %w", err)
 	}
-	for _, f := range experimental.ToggleableList() {
-		experimental.SetRuntime(f, stored[string(f)])
+	for _, f := range experimental.All() {
+		experimental.ApplyAtBoot(f, stored[string(f)])
 	}
 	return nil
 }
@@ -59,7 +61,7 @@ func betaFeatureState(f experimental.Feature) betaFeatureResource {
 	info := experimental.Describe(f)
 	out := betaFeatureResource{
 		ID: string(f), Name: info.Name, Summary: info.Summary, Enabled: experimental.Enabled(f),
-		EnabledBy: betaSourceOff, Toggleable: experimental.Toggleable(f), RequiresRestart: info.RestartRequired,
+		EnabledBy: betaSourceOff, Toggleable: true, AppliesLive: experimental.Toggleable(f), PendingRestart: experimental.Pending(f), RequiresRestart: info.RestartRequired,
 		EnvHint: experimental.EnvHint(f), DocsPath: info.DocsPath, Maturity: info.Maturity,
 	}
 	switch {
@@ -85,10 +87,6 @@ func (rt *Router) handleSetBetaFeature(w http.ResponseWriter, r *http.Request) {
 	f := experimental.Feature(r.PathValue("feature"))
 	if !slices.Contains(experimental.All(), f) {
 		writeError(w, http.StatusNotFound, "no gated feature named "+string(f))
-		return
-	}
-	if !experimental.Toggleable(f) {
-		writeError(w, http.StatusConflict, string(f)+" is wired at startup and cannot be switched at runtime. "+experimental.EnvHint(f))
 		return
 	}
 	var req betaFeatureRequest

@@ -110,9 +110,9 @@ function BetaFeaturesPage() {
               variant="warning"
               title={t('banner.title', { name: banner.feature.name })}
             >
-              {banner.feature.toggleable
-                ? t('banner.body')
-                : t('banner.bodyRestart')}
+              {banner.feature.pending_restart
+                ? t('banner.bodyRestart')
+                : t('banner.body')}
             </Banner>
           ) : null}
           {banner.kind === 'ready' && back ? (

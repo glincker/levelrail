@@ -109,6 +109,8 @@ type BetaFeature struct {
 	Enabled         bool   `json:"enabled"`
 	EnabledBy       string `json:"enabled_by"`
 	Toggleable      bool   `json:"toggleable"`
+	AppliesLive     bool   `json:"applies_live"`
+	PendingRestart  bool   `json:"pending_restart"`
 	RequiresRestart bool   `json:"requires_restart"`
 	EnvHint         string `json:"env_hint"`
 	DocsPath        string `json:"docs_path"`

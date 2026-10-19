@@ -12,7 +12,13 @@ import {
 
 // Renders nothing for non-root users or when this install cannot
 // self-restart; callers keep their manual-command hint as the fallback.
-export function RestartControlPlaneButton() {
+export function RestartControlPlaneButton({
+  variant = 'outline',
+  label,
+}: {
+  variant?: 'outline' | 'default'
+  label?: string
+}) {
   const { t } = useTranslation('common')
   const isRoot = useIsRoot()
   const { data: info } = useSystemRestartInfo()
@@ -25,9 +31,9 @@ export function RestartControlPlaneButton() {
 
   return (
     <>
-      <Button variant="outline" disabled={busy} onClick={() => setOpen(true)}>
+      <Button variant={variant} disabled={busy} onClick={() => setOpen(true)}>
         <ArrowsClockwiseIcon className="size-4" aria-hidden="true" />
-        {t('controlPlaneRestart.action')}
+        {label ?? t('controlPlaneRestart.action')}
       </Button>
       <ConfirmDialog
         open={open}
@@ -38,7 +44,7 @@ export function RestartControlPlaneButton() {
           t('controlPlaneRestart.consequence1'),
           t('controlPlaneRestart.consequence2'),
         ]}
-        confirmLabel={t('controlPlaneRestart.action')}
+        confirmLabel={label ?? t('controlPlaneRestart.action')}
         pending={restart.isPending}
         error={restart.error?.message ?? null}
         onConfirm={() =>

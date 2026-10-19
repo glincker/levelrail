@@ -109,6 +109,8 @@ export interface BetaFeature {
   enabled: boolean
   enabled_by: 'env' | 'setting' | 'none'
   toggleable: boolean
+  applies_live: boolean
+  pending_restart: boolean
   requires_restart: boolean
   env_hint: string
   docs_path: string

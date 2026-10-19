@@ -57,7 +57,7 @@ func settingsUsage(prog string) string {
   %[1]s settings updates get [flags]                      show the current release channel and auto-update-check setting
   %[1]s settings updates set --channel CHANNEL [--auto-update] [flags]   configure the release channel and auto-update checking
   %[1]s settings domain-automation get|set [flags]        the add-a-domain-and-go-live policy
-  %[1]s settings beta-features list|enable|disable [feature]   gated features and how to turn them on
+  %[1]s settings beta-features list|set <feature> on|off   gated features, switch one (saved at once)
   %[1]s settings deploy-freeze show [flags]             show the fleet-wide deploy freeze windows
   %[1]s settings deploy-freeze set --cron EXPR --duration D [flags]   replace them with one window
   %[1]s settings deploy-freeze clear [flags]              clear the fleet-wide freeze windows

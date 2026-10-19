@@ -1,6 +1,6 @@
 {
   "title": "Beta features",
-  "description": "Every feature that is still being proven. Turn one on here, or see the exact setting to change when it needs a restart.",
+  "description": "Every feature that is still being proven. Switch one on here; if it is wired at startup, restart from the same card to apply it.",
   "groups": {
     "beta": "Beta",
     "experimental": "Experimental"
@@ -8,7 +8,7 @@
   "banner": {
     "title": "{{name}} is a beta feature",
     "body": "Turn it on to continue.",
-    "bodyRestart": "It needs a setting and a restart on the server, shown below.",
+    "bodyRestart": "Turn it on, then restart to apply it.",
     "ready": "{{name}} is on.",
     "takeMeThere": "Take me there",
     "unknown": "That feature is not known to this server."
@@ -24,20 +24,37 @@
     "on": "{{name}} turned on",
     "off": "{{name}} turned off",
     "error": "Could not change {{name}}: {{message}}",
-    "lockedByEnv": "Turned on by APP_EXPERIMENTAL on the server. Remove it there to switch it off."
+    "lockedByEnv": "Turned on by the server setting, so it cannot be switched off here."
   },
   "env": {
-    "heading": "Turn it on from the server",
-    "restart": "This feature is wired when the server starts, so it needs a restart after you change the setting.",
-    "copy": "Copy setting",
+    "copy": "Copy",
     "copied": "Copied",
     "line": "Setting line",
     "systemd": "systemd",
-    "docker": "Docker",
-    "systemdHow": "Add Environment={{line}} to the control plane unit, then run daemon-reload and restart it.",
-    "dockerHow": "Add -e {{line}} (or the compose environment entry) and recreate the container."
+    "docker": "Docker"
   },
   "docs": "Read the docs",
   "error": "Could not load beta features: {{message}}",
-  "readOnly": "Only an administrator can switch beta features."
+  "readOnly": "Only an administrator can switch beta features.",
+  "restart": {
+    "needed": "Saved. Restart to apply this change. Deploys and log streams in progress are interrupted and resume afterwards.",
+    "now": "Restart now",
+    "unsupported": "This install cannot restart itself because no process supervisor was detected. Restart the control plane, then re-check.",
+    "recheck": "Re-check",
+    "manual": "Restart from the server instead",
+    "askAdmin": "Saved. An administrator needs to restart the control plane to apply it."
+  },
+  "options": {
+    "open": "Use the CLI or server config instead",
+    "title": "Turn on {{name}} another way",
+    "description": "The switch on the card does the same thing. Use these if you prefer the command line or manage the server by config.",
+    "cli": "CLI",
+    "cliLine": "CLI command",
+    "cliRestartLine": "CLI command with restart",
+    "server": "Server config",
+    "reload": "Reload systemd",
+    "restartUnit": "Restart the unit",
+    "recreate": "Recreate the container",
+    "restartNote": "This feature is wired when the server starts, so a restart applies it."
+  }
 }

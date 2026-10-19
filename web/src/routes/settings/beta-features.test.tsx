@@ -19,6 +19,10 @@ vi.mock('@tanstack/react-router', async (importOriginal) => {
   return { ...actual, useRouter: () => ({ history: { push } }) }
 })
 vi.mock('@/components/HelpLink', () => ({ HelpLink: () => null }))
+vi.mock('@/hooks/useBrand', () => ({
+  useBrand: () => ({ BinaryName: 'tool', ShortName: 'tool' }),
+}))
+vi.mock('@/hooks/useIsRoot', () => ({ useIsRoot: () => true }))
 vi.mock('@/components/ui/toast', () => ({ toast: { add: vi.fn() } }))
 
 function feature(over: Partial<BetaFeature>): BetaFeature {
@@ -28,7 +32,9 @@ function feature(over: Partial<BetaFeature>): BetaFeature {
     summary: 'About x',
     enabled: false,
     enabled_by: 'none',
-    toggleable: false,
+    toggleable: true,
+    applies_live: false,
+    pending_restart: false,
     requires_restart: true,
     env_hint: '',
     docs_path: '/x',
@@ -52,7 +58,7 @@ beforeEach(() => {
       id: 'resource-advisor',
       name: 'Resource advisor',
       maturity: 'beta',
-      toggleable: true,
+      applies_live: true,
       requires_restart: false,
     }),
     feature({ id: 'load-balancer', name: 'Load balancer' }),
@@ -145,14 +151,26 @@ describe('Beta features page', () => {
     expect(scrollIntoView).toHaveBeenCalled()
   })
 
-  it('shows the exact env line for a startup-only feature', async () => {
+  it('gives a startup-only feature a switch and keeps the env line secondary', async () => {
     renderPage({ feature: 'load-balancer', from: '/loadbalancers' })
     expect(
-      await screen.findByText('APP_EXPERIMENTAL=load-balancer'),
+      await screen.findByRole('switch', { name: 'Turn on Load balancer' }),
+    ).toBeInTheDocument()
+    const openers = screen.getAllByRole('button', {
+      name: 'Use the CLI or server config instead',
+    })
+    await userEvent.setup().click(openers[openers.length - 1]!)
+    expect(
+      await screen.findByText(
+        'tool-cli settings beta-features set load-balancer on',
+      ),
     ).toBeInTheDocument()
     expect(
-      screen.getByText(/needs a restart after you change the setting/),
+      screen.getByText('Environment=APP_EXPERIMENTAL=load-balancer', {
+        exact: false,
+      }),
     ).toBeInTheDocument()
+    expect(screen.queryByText('Turn it on from the server')).toBeNull()
     expect(
       screen.getByText('Load balancer is a beta feature'),
     ).toBeInTheDocument()
