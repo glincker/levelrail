@@ -400,7 +400,7 @@ levelrail-cli apps scan enable <app> [flags]
 levelrail-cli apps scan disable <app> [flags]
 levelrail-cli apps scan status <app> [deploy-id] [flags]
 levelrail-cli apps scan run <app> [deploy-id] [flags]
-levelrail-cli apps scan gate <app> off|warn|block_on_critical [flags]
+levelrail-cli apps scan gate <app> off|warn|block_on_critical|block_on_high [flags]
 levelrail-cli apps scan override <app> --reason TEXT [flags]
 ```
 
@@ -1169,7 +1169,10 @@ levelrail-cli security sessions revoke-others [--user ID] [flags]
 levelrail-cli security policy get [flags]
 levelrail-cli security policy set [--approval-scope password_only|all_methods] [--max-token-lifetime-days N] [--warn-unused-days N] [--disable-unused-days N] [flags]
 levelrail-cli security hsts status|enable|disable [flags]
+levelrail-cli security reachability [--recheck] [--fix ID] [flags]
 ```
+
+`security reachability` (root) lists what the internet can reach per app and database. `--recheck` re-measures instead of using the cached audit, and `--fix ID` applies a finding's automatic fix and re-checks. See [Exposure report](/security-center#exposure-report).
 
 `security hsts enable` probes every public domain first and refuses until each serves a publicly trusted certificate. HSTS is off by default.
 

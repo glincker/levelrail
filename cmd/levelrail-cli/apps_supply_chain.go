@@ -30,7 +30,7 @@ func appsScanUsage(prog string) string {
   %[1]s apps scan disable <app>                turn it off (also sets the gate to off)
   %[1]s apps scan status <app> [deploy-id]     show settings and the latest scan result
   %[1]s apps scan run <app> [deploy-id]        scan a deploy's SBOM now
-  %[1]s apps scan gate <app> off|warn|block_on_critical
+  %[1]s apps scan gate <app> off|warn|block_on_critical|block_on_high
                                                what a scan may do to a release; block_on_critical
                                                keeps the previous release serving
   %[1]s apps scan override <app> --reason TEXT let the next blocked release through once
@@ -183,7 +183,7 @@ func runScanGate(prog string, args []string, stdout, stderr io.Writer, lookupEnv
 		return code
 	}
 	if len(c.fs.Args()) != 2 {
-		return c.invalid("expected an app name and one of off, warn, block_on_critical")
+		return c.invalid("expected an app name and one of off, warn, block_on_critical, block_on_high")
 	}
 	mode := c.fs.Arg(1)
 	res, err := c.client.SetSupplyChain(context.Background(), c.fs.Arg(0), apiclient.SupplyChainSettingsRequest{ScanGate: &mode})

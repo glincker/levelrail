@@ -18,7 +18,7 @@ type Store interface {
 	GetSettings(ctx context.Context, app string) (Settings, error)
 	// SaveSettings writes scan_enabled and scan_gate only and clears any override the new gate no longer allows.
 	SaveSettings(ctx context.Context, s Settings) error
-	// ArmOverride arms an override only while the stored gate is block_on_critical with scanning on.
+	// ArmOverride arms an override only while the stored gate is a blocking one with scanning on.
 	ArmOverride(ctx context.Context, app, reason string, at time.Time) (bool, error)
 	// ConsumeOverride returns and clears the armed override if it is newer than notBefore.
 	ConsumeOverride(ctx context.Context, app string, notBefore time.Time) (string, bool, error)
@@ -144,7 +144,7 @@ func (s *Service) ArmOverride(ctx context.Context, app, reason string) (Settings
 		return Settings{}, err
 	}
 	if !armed {
-		return Settings{}, fmt.Errorf("%w: override only applies to scan_gate block_on_critical", ErrInvalid)
+		return Settings{}, fmt.Errorf("%w: override only applies to a blocking scan_gate", ErrInvalid)
 	}
 	return s.deps.Store.GetSettings(ctx, app)
 }
@@ -195,7 +195,7 @@ func (s *Service) persist(ctx context.Context, rec Record) error {
 
 func (s *Service) applyGate(ctx context.Context, settings Settings, rec *Record, scan *ScanSummary) error {
 	override := ""
-	if settings.Gate == GateBlockOnCritical && scan != nil && scan.Counts.Critical > 0 {
+	if settings.Gate.blocking() && scan != nil && scan.Counts.Critical+gateHighCount(settings.Gate, scan) > 0 {
 		reason, ok, err := s.deps.Store.ConsumeOverride(ctx, rec.App, s.now().Add(-s.cfg.OverrideTTL))
 		if err != nil {
 			s.log.Warn("supplychain: consume override failed", slog.String("app", rec.App), slog.String("error", err.Error()))

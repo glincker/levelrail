@@ -47,6 +47,21 @@ levelrail-cli security posture
 levelrail-cli security posture --json
 ```
 
+## Exposure report
+
+The **Exposure** tab (admins) answers "what can the internet reach" for every app and database: its domains, its published host ports and whether a firewall rule narrows each one. `GET /api/v1/security/reachability` returns the same report (root).
+
+Each finding has a typed fix and a **Re-check** button re-measures it, including the score above:
+
+| Finding | Fix |
+| --- | --- |
+| An app is published on a direct host port | Automatic: **Serve through the proxy** recreates the container and closes the port (apps on the control plane's own node). Guided for apps on other nodes. |
+| A domain has no shield | Automatic: **Apply recommended shield** applies the recommended rate limits. |
+| A database or other container port is open to everyone | Guided: opens the database access page or the firewall controls where you pick the allowed addresses. |
+| The Docker API is reachable | Guided: opens the firewall controls. |
+
+From the CLI: `levelrail-cli security reachability`, `--recheck` and `--fix ID` (see the [CLI reference](/cli-reference)). The port findings are the same ones the [exposure audit](/exposure-audit) reports, so fixing them raises the score. A node whose firewall rules cannot be read is flagged, because its restricted ports may show as open.
+
 ## Sessions and devices
 
 The **Sessions and devices** tab, `GET /api/v1/security/sessions`, and `levelrail-cli security sessions list` show:

@@ -224,7 +224,7 @@ var Tree = map[string]*Node{
 			"attack-mode": {Subs: map[string]*Node{"on": nil, "off": nil}},
 		}},
 	}},
-	"security": {Subs: map[string]*Node{"posture": nil, "sessions": {Subs: map[string]*Node{"list": nil, "revoke": nil, "revoke-others": nil}},
+	"security": {Subs: map[string]*Node{"posture": nil, "reachability": nil, "sessions": {Subs: map[string]*Node{"list": nil, "revoke": nil, "revoke-others": nil}},
 		"policy": {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"hsts":   {Subs: map[string]*Node{"status": nil, "enable": nil, "disable": nil}}}},
 	"storage": {Subs: map[string]*Node{"providers": nil, "list": nil, "add": nil, "test": nil, "delete": nil,

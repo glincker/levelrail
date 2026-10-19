@@ -52,13 +52,13 @@ func (s *SQLStore) GetSettings(ctx context.Context, app string) (Settings, error
 
 // SaveSettings upserts scan_enabled and scan_gate only. It never writes the
 // override columns, and it clears a stored override when the gate is not
-// block_on_critical, so a settings write cannot arm, restore or extend one.
+// a blocking gate, so a settings write cannot arm, restore or extend one.
 func (s *SQLStore) SaveSettings(ctx context.Context, st Settings) error {
 	_, err := s.db.ExecContext(ctx, `
 		INSERT INTO app_supply_chain_settings (app_name, scan_enabled, scan_gate, override_reason, override_armed_at, updated_at) VALUES (?, ?, ?, '', '', ?)
 		ON CONFLICT(app_name) DO UPDATE SET scan_enabled = excluded.scan_enabled, scan_gate = excluded.scan_gate, updated_at = excluded.updated_at,
-			override_reason = CASE WHEN excluded.scan_gate = 'block_on_critical' AND excluded.scan_enabled = 1 THEN override_reason ELSE '' END,
-			override_armed_at = CASE WHEN excluded.scan_gate = 'block_on_critical' AND excluded.scan_enabled = 1 THEN override_armed_at ELSE '' END
+			override_reason = CASE WHEN excluded.scan_gate IN ('block_on_critical', 'block_on_high') AND excluded.scan_enabled = 1 THEN override_reason ELSE '' END,
+			override_armed_at = CASE WHEN excluded.scan_gate IN ('block_on_critical', 'block_on_high') AND excluded.scan_enabled = 1 THEN override_armed_at ELSE '' END
 	`, st.App, st.Enabled, string(st.Gate), fmtTime(time.Now()))
 	if err != nil {
 		return fmt.Errorf("store: save supply chain settings for %q: %w", st.App, err)
@@ -67,11 +67,11 @@ func (s *SQLStore) SaveSettings(ctx context.Context, st Settings) error {
 }
 
 // ArmOverride arms a one-shot override in a single statement, and only while
-// the stored gate is block_on_critical with scanning on. It reports whether
+// the stored gate is a blocking one with scanning on. It reports whether
 // an override was armed.
 func (s *SQLStore) ArmOverride(ctx context.Context, app, reason string, at time.Time) (bool, error) {
 	res, err := s.db.ExecContext(ctx, `UPDATE app_supply_chain_settings SET override_reason = ?, override_armed_at = ?, updated_at = ?
-		WHERE app_name = ? AND scan_gate = 'block_on_critical' AND scan_enabled = 1`, reason, fmtTime(at), fmtTime(time.Now()), app)
+		WHERE app_name = ? AND scan_gate IN ('block_on_critical', 'block_on_high') AND scan_enabled = 1`, reason, fmtTime(at), fmtTime(time.Now()), app)
 	if err != nil {
 		return false, fmt.Errorf("store: arm supply chain override for %q: %w", app, err)
 	}

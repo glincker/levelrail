@@ -136,6 +136,7 @@ const (
 	GateOff             GateMode = "off"
 	GateWarn            GateMode = "warn"
 	GateBlockOnCritical GateMode = "block_on_critical"
+	GateBlockOnHigh     GateMode = "block_on_high"
 )
 
 // Sentinel errors.
@@ -151,10 +152,10 @@ func ParseGateMode(s string) (GateMode, error) {
 	switch m := GateMode(s); m {
 	case "":
 		return GateOff, nil
-	case GateOff, GateWarn, GateBlockOnCritical:
+	case GateOff, GateWarn, GateBlockOnCritical, GateBlockOnHigh:
 		return m, nil
 	}
-	return "", fmt.Errorf("%w: scan_gate must be off, warn or block_on_critical", ErrInvalid)
+	return "", fmt.Errorf("%w: scan_gate must be off, warn, block_on_critical or block_on_high", ErrInvalid)
 }
 
 // Settings are the per-app scan settings.

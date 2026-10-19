@@ -14,6 +14,8 @@ import { SessionsPanel } from '../../components/security/SessionsPanel'
 import { PolicyPanel } from '../../components/security/PolicyPanel'
 import { RotationsPanel } from '../../components/security/RotationsPanel'
 import { CompliancePanel } from '../../components/security/CompliancePanel'
+import { ReachabilityPanel } from '../../components/security/ReachabilityPanel'
+import { useIsRoot } from '../../hooks/useIsRoot'
 
 const TABS = [
   'checklist',
@@ -21,6 +23,7 @@ const TABS = [
   'policy',
   'rotations',
   'compliance',
+  'exposure',
 ] as const
 type SecurityTab = (typeof TABS)[number]
 
@@ -49,6 +52,7 @@ function SecurityCenterPage() {
   const { tab = 'checklist' } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const posture = useQuery(postureQueryOptions())
+  const isRoot = useIsRoot()
   const setTab = (next: SecurityTab) => {
     void navigate({ search: next === 'checklist' ? {} : { tab: next } })
   }
@@ -76,6 +80,11 @@ function SecurityCenterPage() {
           <TabsTrigger value="compliance">
             {t('page.tabs.compliance')}
           </TabsTrigger>
+          {isRoot ? (
+            <TabsTrigger value="exposure">
+              {t('page.tabs.exposure')}
+            </TabsTrigger>
+          ) : null}
         </TabsList>
         <TabsContent value="checklist" className="space-y-6 pt-4">
           {posture.error ? (
@@ -123,6 +132,11 @@ function SecurityCenterPage() {
         <TabsContent value="compliance" className="pt-4">
           <CompliancePanel />
         </TabsContent>
+        {isRoot ? (
+          <TabsContent value="exposure" className="pt-4">
+            <ReachabilityPanel />
+          </TabsContent>
+        ) : null}
       </Tabs>
     </div>
   )

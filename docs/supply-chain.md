@@ -10,7 +10,7 @@ A Dockerfile build can record what is inside the image, and the control plane ca
 | --- | --- | --- |
 | SBOM and provenance | BuildKit attaches a software bill of materials (SPDX or CycloneDX) and a minimal SLSA provenance record to the build. The control plane keeps a compact package list per deploy and the SBOM document on disk. | Off. Turn on with `APP_BUILD_ATTEST=true`. |
 | Vulnerability scan | A one-shot Trivy or Grype container scans the SBOM. You get counts by severity and the most severe fixable findings per deploy. | Off per app. |
-| Scan gate | What a scan may do to a release: `off` (report only), `warn` or `block_on_critical`. | `off`. |
+| Scan gate | What a scan may do to a release: `off` (report only), `warn`, `block_on_critical` or `block_on_high`. | `off`. |
 
 Nothing runs while idle. There is no resident scanner: a scan starts a container, reads one file, prints JSON and the container is removed again.
 
@@ -65,6 +65,7 @@ Each deploy's **Supply chain** section (in the deployments drawer and on the per
 | `off` | recorded | goes live |
 | `warn` | recorded, deploy flagged with the reason | goes live |
 | `block_on_critical` | recorded | **does not go live** |
+| `block_on_high` | critical or high, recorded | **does not go live** |
 
 A blocked deploy fails with the reason, `desired state` is not changed and the previous release keeps serving. If the scanner is unavailable, times out or fails, the gate fails open and the deploy records that the scan did not complete. A scanner report that is not in the expected format counts as a failed scan, never as a clean one.
 
