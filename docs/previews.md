@@ -2,6 +2,7 @@
 title: "Preview environments per pull request"
 sidebarTitle: "Preview environments"
 description: "Per pull request preview environments on your own servers, with their own domain and DNS record, safe data and secret defaults, a TTL and cap, and idle sleep."
+"og:url": "https://docs.levelrail.com/previews"
 ---
 
 Open a pull request and Levelrail builds its head commit, deploys it as `<app>-pr-<n>` on its own domain, and posts one comment on the pull request with the URL. Push again and the same preview updates. Close or merge the pull request and everything the preview created is removed, including its DNS record.

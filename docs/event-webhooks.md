@@ -1,6 +1,7 @@
 ---
 title: "Event webhooks"
 description: Push signed events to your own HTTPS endpoint when something changes, with retries, a dead letter state, a delivery log and one click replay.
+"og:url": "https://docs.levelrail.com/event-webhooks"
 ---
 
 Event webhooks tell your own systems when something changed on the control plane: an app was deployed, a user was added, a token was revoked. Each event is a signed JSON POST to an HTTPS endpoint you choose. Delivery is queued and runs in the background, so a slow or dead endpoint never slows an API request or a deploy.

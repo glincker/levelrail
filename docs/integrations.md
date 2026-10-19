@@ -1,6 +1,7 @@
 ---
 title: "Integrations"
 description: Attach curated third-party tools (PostHog, Sentry, Datadog, and more) to an app, injecting their env vars automatically at deploy time.
+"og:url": "https://docs.levelrail.com/integrations"
 ---
 
 An integration is a third-party tool you can attach to an app from a small curated catalog. When you attach one, Levelrail stores the values it needs (an API key, a DSN) with the same envelope encryption every app secret uses. It then injects the tool's env vars into the app's container at the next build or deploy.

@@ -1,6 +1,7 @@
 ---
 title: "Resilience: what survives a control plane crash"
 description: "What survives when the control plane process crashes, what does not, and why, measured with a real SIGKILL against a real control plane, not assumed."
+"og:url": "https://docs.levelrail.com/resilience"
 ---
 
 This page answers one question: if the `levelrail` process dies outright (a panic, an OOM kill, `kill -9`, the host rebooting the process), what happens to your running apps and to node agents?

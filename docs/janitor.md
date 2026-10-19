@@ -2,6 +2,7 @@
 title: "Automatic cleanup"
 tag: "Beta"
 description: Reclaim disk on the control plane node on a schedule, with preview and quarantine before anything is deleted.
+"og:url": "https://docs.levelrail.com/janitor"
 ---
 
 Builds and deploys leave data behind. The janitor removes what nothing uses, in small bounded passes, and records what it did. Open it from Settings, Advanced, Automatic cleanup.

@@ -1,6 +1,7 @@
 ---
 title: "Build performance"
 description: Cap build time and parallel builds, and read the per-app build duration trend and cache hit rate.
+"og:url": "https://docs.levelrail.com/build-performance"
 ---
 
 Every build is timed, counted against a concurrency limit, and recorded. This page covers the two limits, what is recorded per build, and where to read the trend.

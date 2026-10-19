@@ -1,6 +1,7 @@
 ---
 title: "Resilience, in short"
 description: A short answer to what survives a control plane crash, with a link to the full measured page.
+"og:url": "https://docs.levelrail.com/resilience-summary"
 ---
 
 If the control plane process is killed outright, app containers that are already running keep running and keep serving traffic on their own. A node agent never takes a destructive action when it loses the connection. It retries with backoff until the control plane comes back.

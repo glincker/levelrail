@@ -1,6 +1,7 @@
 ---
 title: "API explorer"
 description: The in-dashboard API explorer under Settings, where signed-in operators browse every control plane route and try requests against their own instance.
+"og:url": "https://docs.levelrail.com/api-explorer"
 ---
 
 The API explorer lists every HTTP route the control plane registers and lets you fire a real request at it from the browser. Use it to find out what the API offers, or to prototype a script or integration before writing any code.

@@ -2,6 +2,7 @@
 title: "Experimental features"
 tag: "Experimental"
 description: Features hidden at launch, the APP_EXPERIMENTAL switch that turns them on, and what each surface does while a feature is off.
+"og:url": "https://docs.levelrail.com/experimental-features"
 ---
 
 Some features have unit tests but no end-to-end or real-infrastructure evidence (see [feature status](/feature-status)). They are off by default. To turn them on, set one env var:

@@ -1,6 +1,7 @@
 ---
 title: "Sign-in engine"
 description: How sign-in, API tokens, two-factor, passkeys and OAuth are served, and the settings that tune them.
+"og:url": "https://docs.levelrail.com/auth-engine"
 ---
 
 Sign-in, sessions, API tokens, device login, two-factor codes, passkeys and OAuth all run on one auth library built into the control plane. On a new install there is nothing to enable or migrate. The first account is created from the setup token and goes straight into the library.

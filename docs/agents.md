@@ -1,6 +1,7 @@
 ---
 title: Working with AI agents
 description: Connect an AI coding agent to your instance, scope its token, and give it the instructions it needs to deploy safely.
+"og:url": "https://docs.levelrail.com/agents"
 ---
 
 An agent talks to the platform the way you do: through the CLI (`levelrail-cli`) or the MCP server (`levelrail-mcp`). Everything it does goes through the normal API with the token you give it, so its access is exactly that token's abilities, and every change lands in the audit log under the agent's name.

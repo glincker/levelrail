@@ -1,6 +1,7 @@
 ---
 title: "Self-hosted Vercel alternative for Next.js and Docker apps"
 description: "Levelrail is an open source, self-hosted Vercel alternative: git push deploys, automatic TLS and preview environments per pull request."
+"og:url": "https://docs.levelrail.com/vercel-alternative"
 ---
 
 **Vercel-style deploys on servers you own**

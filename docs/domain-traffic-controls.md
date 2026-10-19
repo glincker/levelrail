@@ -1,6 +1,7 @@
 ---
 title: "Domain traffic controls"
 description: "Per-domain traffic controls in the embedded ingress: header rules, path forwarders, country rules, caching, redirects and raw ports, from the UI, CLI or API."
+"og:url": "https://docs.levelrail.com/domain-traffic-controls"
 ---
 
 Every domain an app owns has its own set of traffic controls, enforced by the embedded Caddy ingress before a request reaches the container:

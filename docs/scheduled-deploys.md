@@ -1,6 +1,7 @@
 ---
 title: "Scheduled deploys"
 description: Redeploy the latest commit on a branch on a recurring cron schedule, with freeze-window and restart-safe catch-up semantics.
+"og:url": "https://docs.levelrail.com/scheduled-deploys"
 ---
 
 A scheduled deploy redeploys the latest commit on a branch on a cron

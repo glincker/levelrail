@@ -1,6 +1,7 @@
 ---
 title: "Pipelines"
 description: Define CI/CD pipelines as YAML with triggers, jobs, matrix builds, approvals, and deploys, and run them on your own nodes.
+"og:url": "https://docs.levelrail.com/pipelines"
 ---
 
 A pipeline is a YAML file that describes what should happen when code changes: run tests in a container, build an image, wait for a person to approve, then deploy. Pipelines sit on top of the build and deploy features that already exist. They call those primitives; they never touch the reconciler, and no AI is involved in running one.

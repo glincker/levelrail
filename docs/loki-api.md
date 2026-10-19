@@ -1,6 +1,7 @@
 ---
 title: "Loki-compatible log API"
 description: Read your app logs from Grafana Explore through a Loki-compatible API served by the control plane, with no log shipper in between.
+"og:url": "https://docs.levelrail.com/loki-api"
 ---
 
 The control plane answers a read-only subset of the Loki HTTP API over the node-local log store. Add it to a self-hosted Grafana as a Loki data source and use Explore to search and tail app logs. Nothing is copied into another store.

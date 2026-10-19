@@ -2,6 +2,7 @@
 title: "Deploying and managing apps"
 sidebarTitle: "Deploying apps"
 description: Create, deploy, roll back, configure, promote, and operate an app on Levelrail, from the dashboard, CLI, or API.
+"og:url": "https://docs.levelrail.com/deploying-apps"
 ---
 
 ## What this covers

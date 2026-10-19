@@ -1,6 +1,7 @@
 ---
 title: "Dashboard screenshots"
 description: Regenerate real dashboard screenshots from a live control plane with metrics and logs.
+"og:url": "https://docs.levelrail.com/screenshots"
 ---
 
 The PNG files in `docs/assets/screenshots/` are captured from a real, running control plane. They show real deployed containers, real metrics, and real log lines, with no mocking or hand-editing.

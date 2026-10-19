@@ -1,6 +1,7 @@
 ---
 title: "Importing apps"
 description: Import an app from a repo URL, a docker run command, an image, a compose file or a Dockerfile, review the deployment plan, then deploy it.
+"og:url": "https://docs.levelrail.com/importing-apps"
 ---
 
 For a repository, the [New app wizard](/new-app-wizard) reads the files and pre-fills the build, port, health path, variables and databases for you.

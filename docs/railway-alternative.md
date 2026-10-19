@@ -1,6 +1,7 @@
 ---
 title: "Self-hosted Railway alternative with built-in observability"
 description: "Levelrail is an open source Railway alternative you run on your own servers: git push deploys, managed databases, domains with TLS."
+"og:url": "https://docs.levelrail.com/railway-alternative"
 ---
 
 **Railway-style simplicity on your own infrastructure**

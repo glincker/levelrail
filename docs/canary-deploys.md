@@ -1,6 +1,7 @@
 ---
 title: "Canary deploys"
 description: Send a share of an app's traffic to a new image in stages, promote it, or let the control plane roll it back when errors or latency rise.
+"og:url": "https://docs.levelrail.com/canary-deploys"
 ---
 
 Run a new image next to the current release and send it a percentage of

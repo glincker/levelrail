@@ -1,6 +1,7 @@
 ---
 title: "Deploying from GitHub Actions"
 description: Deploy a prebuilt image from a GitHub Actions workflow with the bundled composite action, no Go toolchain needed.
+"og:url": "https://docs.levelrail.com/github-actions"
 ---
 
 `.github/actions/deploy` is a composite GitHub Action that deploys an already-built image to a Levelrail app and waits for the rollout to converge before the job finishes. It wraps two CLI commands, `apps deploy` and `apps wait`, so anything it does you can also script in a shell step.

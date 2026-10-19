@@ -1,6 +1,7 @@
 ---
 title: "Promotions and release notes"
 description: Promote the same image from one environment to another without a rebuild, see what a promotion or a deploy changes (commits, env var keys, image digest), and generate release notes from the commits between two deploys.
+"og:url": "https://docs.levelrail.com/promotions-and-releases"
 ---
 
 A promotion moves a known-good image from one app to a sibling app in another environment of the same project. It reuses the image the source app is running, so nothing is rebuilt and the content you tested is the content you ship.

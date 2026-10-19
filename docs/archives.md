@@ -1,6 +1,7 @@
 ---
 title: "Archives"
 description: "Move cold audit events, deploy attempts and pipeline runs into compressed bundles instead of deleting them."
+"og:url": "https://docs.levelrail.com/archives"
 ---
 
 The control plane keeps audit events, deploy attempts and pipeline runs in its database. Archives move the old ones into zstd compressed NDJSON bundles under `<data dir>/archives`, so the live database stays small and nothing is lost. A bundle can be browsed, verified by restore, downloaded and put back.

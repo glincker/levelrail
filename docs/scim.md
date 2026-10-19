@@ -1,6 +1,7 @@
 ---
 title: "SCIM provisioning"
 description: "Provision and deprovision accounts and groups from Okta, Microsoft Entra ID or any SCIM 2.0 client, with hashed bearer tokens, instant revocation and audit."
+"og:url": "https://docs.levelrail.com/scim"
 ---
 
 > **Experimental, off by default.** SCIM provisioning and [SAML sign-in](sso-saml.md) sit behind the `saml-scim` beta feature: turn it on under **Settings, Beta features** or with `APP_EXPERIMENTAL=saml-scim`. While off, the routes answer `404` and the settings are hidden. The SCIM 2.0 endpoints are the sign-in library's native implementation; Levelrail authenticates the request first, then mirrors each change onto Levelrail accounts and roles. It is tested with a SCIM client in the test suite, not yet against a live Okta or Entra ID tenant (see [What has not been verified](#what-has-not-been-verified)).

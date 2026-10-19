@@ -2,6 +2,7 @@
 title: "Unified search"
 tag: "Beta"
 description: One search over apps, databases, nodes, domains, templates, settings and actions, filtered by what you are allowed to see.
+"og:url": "https://docs.levelrail.com/search"
 ---
 
 Search finds apps, databases, nodes, domains, deployments, templates, projects, environments, tags, settings pages and actions in one box. It works from the API, the CLI and the MCP server, and the dashboard command palette reads the same endpoint.

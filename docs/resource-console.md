@@ -1,6 +1,7 @@
 ---
 title: "Resource console"
 description: Search every app, database, node, domain, bucket and private network in one list, tag them in bulk with a preview, save views, and see cost grouped by tag.
+"og:url": "https://docs.levelrail.com/resource-console"
 ---
 
 The Resources page (`/resources`) lists every app, database, node, domain, storage bucket and private network you can see in one searchable, virtualized list. Use it to find things across kinds, label them, and answer "what does the payments team cost".

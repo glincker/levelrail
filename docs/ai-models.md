@@ -2,6 +2,7 @@
 title: "AI models"
 tag: "Experimental"
 description: Run Ollama, vLLM or llama.cpp models on NVIDIA GPU nodes, or small GGUF models on CPU with hard limits, as a first-class resource with an OpenAI-compatible endpoint protected by an API key.
+"og:url": "https://docs.levelrail.com/ai-models"
 ---
 
 A model is a first-class resource: an inference engine running as a container on a GPU node, a persistent volume holding the downloaded weights, and an OpenAI-compatible endpoint protected by an API key. You can manage it from the dashboard (**AI models**), the CLI (`levelrail-cli models`), the REST API (`/api/v1/models`) and the MCP server.

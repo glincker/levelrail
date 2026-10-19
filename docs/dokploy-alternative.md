@@ -1,6 +1,7 @@
 ---
 title: "Dokploy alternative: self-hosted deploys without Docker Swarm"
 description: "Levelrail is an open source Dokploy alternative that skips Docker Swarm: an agent on each node and a reconciler over the Docker Engine API."
+"og:url": "https://docs.levelrail.com/dokploy-alternative"
 ---
 
 **Self-hosted deploys without betting on Docker Swarm**

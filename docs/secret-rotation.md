@@ -1,6 +1,7 @@
 ---
 title: "Secret rotation policies"
 description: Give an app secret a rotation schedule, let the control plane generate and apply new values, and see what is due or stuck.
+"og:url": "https://docs.levelrail.com/secret-rotation"
 ---
 
 A rotation policy puts a schedule on one app secret: how often it should change, who owns it, and whether the control plane may generate the new value itself. This is separate from [master key rotation](master-key-rotation.md), which re-wraps the keys that protect every secret.

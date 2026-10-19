@@ -38,6 +38,7 @@ for (const t of templates) {
 title: ${q(`Self-host ${t.name} with Docker`)}
 sidebarTitle: ${q(t.name)}
 description: ${q(t.slogan)}
+"og:url": "https://docs.levelrail.com/${'self-host/'+t.id}"
 ---
 
 ${esc(t.slogan)}
@@ -77,6 +78,7 @@ const cats = [...byCat.keys()].sort()
 const index = `---
 title: "Self-host gallery"
 description: Browse self-hostable open-source apps you can deploy with Levelrail templates, with the services, ports, volumes and environment variables for each.
+"og:url": "https://docs.levelrail.com/self-host"
 ---
 
 ${templates.length} open-source apps you can run on your own server with a Levelrail template. Each page lists the services, ports, volumes and environment variables the template sets up, and how to deploy it. For how templates work, see the [service template catalog](/templates-and-registry).
@@ -114,7 +116,7 @@ const updates = cl
   .filter(Boolean)
 fs.writeFileSync(
   'docs/changelog.mdx',
-  `---\ntitle: "Changelog"\ndescription: Every Levelrail release with highlights, fixes and upgrade notes.\n---\n\n${updates.join('\n\n')}\n`,
+  `---\ntitle: "Changelog"\ndescription: Every Levelrail release with highlights, fixes and upgrade notes.\n"og:url": "https://docs.levelrail.com/changelog"\n---\n\n${updates.join('\n\n')}\n`,
 )
 
 // "All pages" index: every nav page with its description, so no page is an orphan
@@ -147,7 +149,7 @@ fs.writeFileSync(
   }
   fs.writeFileSync(
     'docs/all-pages.mdx',
-    `---\ntitle: "All pages"\ndescription: Every Levelrail documentation page with a one-line summary, grouped by section.\n---\n\nThe complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host).\n\n${sections.join('\n')}`,
+    `---\ntitle: "All pages"\ndescription: Every Levelrail documentation page with a one-line summary, grouped by section.\n"og:url": "https://docs.levelrail.com/all-pages"\n---\n\nThe complete index of the Levelrail docs. For a self-hosted app gallery, see the [template gallery](/self-host).\n\n${sections.join('\n')}`,
   )
 }
 
@@ -201,7 +203,7 @@ fs.writeFileSync(
     .join('\n')
   fs.writeFileSync(
     'docs/product-tour.mdx',
-    `---\ntitle: "Product tour"\nsidebarTitle: "Product tour"\ndescription: "A look at the Levelrail dashboard: apps, deploys, logs, databases, domains and nodes, each with a short explanation."\n---\n\nThe screenshots below come from a real running control plane, not mockups. Each one links to the page that explains it.\n\n${body}`,
+    `---\ntitle: "Product tour"\nsidebarTitle: "Product tour"\ndescription: "A look at the Levelrail dashboard: apps, deploys, logs, databases, domains and nodes, each with a short explanation."\n"og:url": "https://docs.levelrail.com/product-tour"\n---\n\nThe screenshots below come from a real running control plane, not mockups. Each one links to the page that explains it.\n\n${body}`,
   )
 }
 

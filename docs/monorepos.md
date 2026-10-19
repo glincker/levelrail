@@ -1,6 +1,7 @@
 ---
 title: "Monorepos"
 description: Detect workspaces, run one service per package from a single repository, and redeploy only the services a push actually changed.
+"og:url": "https://docs.levelrail.com/monorepos"
 ---
 
 A repository with several services should not rebuild all of them on every push. Detection lists the workspace packages in a connected repository, and each package carries a ready-made set of watch paths so a push only redeploys the services it touches.

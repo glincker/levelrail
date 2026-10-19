@@ -1,5 +1,6 @@
 ---
 description: "Estimated model context cost of the MCP tool list, by toolset."
+"og:url": "https://docs.levelrail.com/mcp-tool-surface"
 ---
 
 # MCP tool surface

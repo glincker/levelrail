@@ -2,6 +2,7 @@
 title: "Multi-node: adding and managing nodes"
 tag: "Beta"
 description: Enroll additional nodes, manage placement and health, migrate apps with their volumes, and configure the WireGuard mesh.
+"og:url": "https://docs.levelrail.com/multi-node"
 ---
 
 <div className="flex flex-wrap items-center gap-2 not-prose"><span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white p-1.5 ring-1 ring-black/10"><img src="https://cdn.jsdelivr.net/gh/glincker/thesvg@a7c5ddd3f529accdf86519cc8fb96cb76cef4efd/public/icons/wireguard/default.svg" alt="WireGuard" title="WireGuard" width="24" height="24" /></span></div>

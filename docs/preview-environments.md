@@ -1,6 +1,7 @@
 ---
 title: "Preview environments per pull request on your own servers"
 description: "Levelrail deploys a preview environment for each pull request on GitHub, GitLab, Bitbucket and Gitea and tears it down when the pull request closes."
+"og:url": "https://docs.levelrail.com/preview-environments"
 ---
 
 **Every pull request gets its own running copy**

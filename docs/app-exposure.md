@@ -1,6 +1,7 @@
 ---
 title: "App ports and exposure"
 description: Change an app's container port live, choose between proxy-only and direct IP and port access, and test reachability, without port fights between apps.
+"og:url": "https://docs.levelrail.com/app-exposure"
 ---
 
 Many apps declare the same container port (3000, 8080). That is fine: Docker gives each container its own host port, and the embedded ingress routes by hostname on ports 80 and 443, so apps never compete for those. The **Network** tab of an app adds the controls for the cases where you want more.

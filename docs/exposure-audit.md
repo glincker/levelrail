@@ -1,6 +1,7 @@
 ---
 title: "Exposure audit"
 description: "Find which published container ports are reachable from the internet, why ufw does not cover them, and how to restrict one with a reversible allow-list."
+"og:url": "https://docs.levelrail.com/exposure-audit"
 ---
 
 Docker publishes a container port by adding NAT rules that send traffic straight to the container. That traffic never reaches the INPUT chain, so `ufw` and a "firewall is active" check say nothing about it. A search engine or database container published on `0.0.0.0` is reachable by anyone, even on a host with `ufw` on and a deny default.

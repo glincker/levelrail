@@ -1,6 +1,7 @@
 ---
 title: "Images"
 description: "See every container image on a node with its size, layers and deploy lineage, promote an image between environments by digest without rebuilding, free disk space without losing a rollback target, and check image signatures."
+"og:url": "https://docs.levelrail.com/images"
 ---
 
 Every deploy leaves an image behind. The **Images** page shows what is on a node, which apps and deploys each image came from, and what can be removed.

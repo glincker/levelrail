@@ -1,6 +1,7 @@
 ---
 title: "Levelrail demo: install, deploy and roll back in minutes"
 description: "See Levelrail in action: install script, git push deploys, live logs, metrics with deploy markers, multi-node and one-click rollback."
+"og:url": "https://docs.levelrail.com/demo"
 ---
 
 **See a deploy from install to rollback**

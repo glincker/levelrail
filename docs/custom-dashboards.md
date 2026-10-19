@@ -1,6 +1,7 @@
 ---
 title: "Custom dashboards"
 description: Build your own views of metrics, logs, deploys, alerts and cost, share them, and keep them in version control.
+"og:url": "https://docs.levelrail.com/custom-dashboards"
 ---
 
 A custom dashboard is a named grid of widgets that you assemble yourself, against any app, database or node. Dashboards read the telemetry and resource endpoints the platform already has, so they add no new storage and no agents.

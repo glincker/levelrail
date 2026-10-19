@@ -1,6 +1,7 @@
 ---
 title: "Contribute to Levelrail: open source deployment platform"
 description: "Help build Levelrail: try it and report what breaks, pick a good first issue, improve docs, add templates or test multi-node. Apache 2.0, active development."
+"og:url": "https://docs.levelrail.com/get-involved"
 ---
 
 **Help build a deployment platform you would want to use**

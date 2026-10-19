@@ -1,6 +1,7 @@
 ---
 title: "Private networks and allow rules"
 description: "Group apps into named private networks, allow specific app to app paths, and fix blocked paths from the dashboard, CLI or API."
+"og:url": "https://docs.levelrail.com/private-networks"
 ---
 
 Every app already runs on its own Docker network, so two apps cannot reach each

@@ -1,6 +1,7 @@
 ---
 title: "External databases"
 description: Connect a database that already runs somewhere else, or adopt a running container, without moving or changing any data, and point apps at it.
+"og:url": "https://docs.levelrail.com/external-databases"
 ---
 
 An external database is one Levelrail connects to but does not run. Use it when

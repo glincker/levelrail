@@ -1,6 +1,7 @@
 ---
 title: "Security advisories"
 description: Every security issue Levelrail has found and fixed, with a stable ID, severity, affected versions, the fix, and how we disclose.
+"og:url": "https://docs.levelrail.com/security-advisories"
 ---
 
 This page lists security issues found in Levelrail and fixed, one row each, with a stable ID you can cite. We publish an entry when the fix has shipped, not before. Entries are never removed or renumbered.

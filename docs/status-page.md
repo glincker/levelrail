@@ -1,6 +1,7 @@
 ---
 title: "Public status page"
 description: An opt-in public status page with operator-chosen components, 90 day uptime bars, incidents, maintenance announcements and an RSS feed.
+"og:url": "https://docs.levelrail.com/status-page"
 ---
 
 The control plane can serve a read-only status page for your users. It is off until you turn it on. It lists only the components you choose, under public names you choose, and nothing else.

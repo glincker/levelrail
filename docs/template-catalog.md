@@ -1,6 +1,7 @@
 ---
 title: "Template catalog"
 description: Every service in Levelrail's one-click template catalog, grouped by category, generated straight from the Go source
+"og:url": "https://docs.levelrail.com/template-catalog"
 ---
 
 Every entry in `internal/catalog.Templates` as of this build, grouped by category. This page exists so you can browse the full breadth of what's deployable in one click without opening the dashboard.

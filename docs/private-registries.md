@@ -1,6 +1,7 @@
 ---
 title: "Private registries"
 description: Connect container registries with vendor presets and give builds private npm, PyPI, Maven, NuGet, Cargo, Go and RubyGems packages through secret mounts.
+"og:url": "https://docs.levelrail.com/private-registries"
 ---
 
 Two different things live under **Settings > Registry credentials** (`/settings/registry-credentials`):

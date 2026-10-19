@@ -1,6 +1,7 @@
 ---
 title: "White-labeling"
 description: "How the brand layer works, which names and prefixes it drives, the brand.yaml fields and APP_BRAND_* overrides, and what a fork must still change by hand."
+"og:url": "https://docs.levelrail.com/white-labeling"
 ---
 
 The product name is never hardcoded in the Go or web source. Every user-visible identity string comes from one `Brand` struct in `internal/brand`, loaded at startup from a `brand.yaml` file and optionally overridden by environment variables. This page covers what that layer controls, so you can run a renamed fork or just see why the platform names things the way it does.

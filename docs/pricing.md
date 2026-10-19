@@ -1,6 +1,7 @@
 ---
 title: "Pricing: Levelrail is free and open source (Apache 2.0)"
 description: "Levelrail costs nothing: Apache 2.0, one edition, no license key and no feature gated behind a plan. You only pay for your servers."
+"og:url": "https://docs.levelrail.com/pricing"
 ---
 
 **Free. One edition. No feature behind a paywall.**

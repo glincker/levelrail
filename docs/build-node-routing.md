@@ -1,6 +1,7 @@
 ---
 title: "Build node routing"
 description: Which node a deploy's build runs on, how to mark a node build-only, and what to do when a single node is under sustained load.
+"og:url": "https://docs.levelrail.com/build-node-routing"
 ---
 
 On a single node, every build runs locally, alongside the control plane and every running app. Nothing on this page needs deciding until you add a second node.

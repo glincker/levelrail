@@ -1,6 +1,7 @@
 ---
 title: "Verifying real ACME issuance against a live domain"
 description: "Verify real ACME certificate issuance against a live public domain with Let's Encrypt or another RFC 8555 CA: what to check, common failures, a recorded run."
+"og:url": "https://docs.levelrail.com/acme-verification-runbook"
 ---
 
 ACME issuer configuration, settings toggles, and form validation are covered by automated tests: config-shape unit tests in `internal/ingress/acme_test.go` and end-to-end tests against a local CA in `internal/ingress/acme_live_test.go`. Those tests cannot prove issuance against a real public CA with real DNS and real reachability on ports 80 and 443. This runbook is that verification.

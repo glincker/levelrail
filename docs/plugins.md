@@ -2,6 +2,7 @@
 title: "Plugins"
 tag: "Experimental"
 description: "Run signed, operator-approved plugins in locked-down containers. The first release supports notification channels."
+"og:url": "https://docs.levelrail.com/plugins"
 ---
 
 A plugin is a separate program that extends the control plane without being loaded into it. It runs in its own container, talks to the control plane over a local socket, and can only do what you approved. This first release supports one kind: a notification channel that delivers alert events somewhere the built-in channels do not.

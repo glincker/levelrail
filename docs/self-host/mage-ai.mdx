@@ -1,0 +1,50 @@
+---
+title: "Self-host Mage AI with Docker"
+sidebarTitle: "Mage AI"
+description: "A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI."
+"og:url": "https://docs.levelrail.com/self-host/mage-ai"
+---
+
+A data pipeline tool for building, running and monitoring ETL, streaming and dbt workflows in notebooks and a UI.
+
+This page describes the Levelrail template for Mage AI (Developer Tools). It deploys the services below as one Docker Compose app on your own server. Project site: https://docs.mage.ai/getting-started/setup.
+
+Recommended memory: about 1024 MiB.
+
+## Services, ports and volumes
+
+| Service | Image | Container ports | Volumes |
+| --- | --- | --- | --- |
+| `mage` | `mageai/mageai:0.9.78` | 6789 | `mage_data -&#62; /home/src` |
+
+## Environment variables
+
+| Service | Variable | Value |
+| --- | --- | --- |
+| `mage` | `ENV` | Preset in the template |
+| `mage` | `PROJECT_NAME` | Preset in the template |
+| `mage` | `USER_CODE_PATH` | Preset in the template |
+
+Passwords and keys marked as generated are created for you when the app is deployed and stored as secrets. Values are not shown here.
+
+## Deploy Mage AI with Levelrail
+
+In the dashboard, open **Apps**, choose **New app**, then **Browse templates**, and select Mage AI. Review the Compose body and deploy.
+
+With the CLI:
+
+```bash
+levelrail-cli templates deploy mage-ai --name my-mage-ai
+```
+
+See the [service template catalog](/templates-and-registry) for how templates work, and [Getting started](/getting-started) if you have not installed Levelrail yet.
+
+## More Developer Tools templates
+
+- [Appsmith](/self-host/appsmith)
+- [Appwrite](/self-host/appwrite)
+- [Browserless](/self-host/browserless)
+- [ByteStash](/self-host/bytestash)
+- [code-server](/self-host/code-server)
+
+All templates are listed in the [self-host gallery](/self-host).

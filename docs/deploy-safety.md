@@ -3,6 +3,7 @@ title: "Deploy safety"
 description: "What stands between a deploy trigger and serving: readiness gate, drain, pinned rollback targets, post-deploy watch with auto rollback, and freeze windows."
 "og:image": "https://docs.levelrail.com/public/og/deploy-safety.png"
 "twitter:image": "https://docs.levelrail.com/public/og/deploy-safety.png"
+"og:url": "https://docs.levelrail.com/deploy-safety"
 ---
 
 Between "a deploy was triggered" and "that exact content is serving",

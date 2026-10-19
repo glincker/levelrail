@@ -1,6 +1,7 @@
 ---
 title: "Sleep when idle"
 description: Stop an app that has had no requests for a while so it uses no memory or CPU, and wake it on the next request.
+"og:url": "https://docs.levelrail.com/sleep-when-idle"
 ---
 
 Opt an app into stopping after it has had no requests for a set time. A

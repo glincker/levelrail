@@ -3,6 +3,7 @@ title: "Levelrail CLI Reference"
 description: Complete reference of all Levelrail CLI commands, organized by group with examples and typical use cases.
 "og:image": "https://docs.levelrail.com/public/og/cli-reference.png"
 "twitter:image": "https://docs.levelrail.com/public/og/cli-reference.png"
+"og:url": "https://docs.levelrail.com/cli-reference"
 ---
 
 `levelrail-cli` is a scriptable client for the control plane's HTTP API. Everything it does goes through `/api/v1`, with the same tokens and permissions as the dashboard, so you need no SSH key and no open port on your servers. This page lists every command group with its subcommands and the flags you will use most. Run `levelrail-cli` with no arguments for the command list, or `levelrail-cli <command> <subcommand> -h` for any command's own flags.

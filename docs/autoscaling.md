@@ -2,6 +2,7 @@
 title: "Autoscaling"
 tag: "Beta"
 description: Scale an app's replicas up and down on CPU, memory or request load, between a minimum and a maximum you set, with cooldowns that stop it from flapping and a recorded reason for every decision.
+"og:url": "https://docs.levelrail.com/autoscaling"
 ---
 
 Autoscaling keeps an app's replica count in step with its load. You give an app a minimum, a maximum, a metric and a target. Every 30 seconds the control plane compares the metric with the target and, when it is clearly off, writes a new desired replica count. The normal reconciler then starts or stops containers to match.

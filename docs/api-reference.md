@@ -3,6 +3,7 @@ title: "REST API Reference"
 description: Complete HTTP API reference for the control plane, organized by resource group.
 "og:image": "https://docs.levelrail.com/public/og/api-reference.png"
 "twitter:image": "https://docs.levelrail.com/public/og/api-reference.png"
+"og:url": "https://docs.levelrail.com/api-reference"
 ---
 
 Route inventory for Levelrail's control plane HTTP API, organized by resource group matching `docs/feature-catalog.md`.

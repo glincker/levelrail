@@ -1,6 +1,7 @@
 ---
 title: "Deploy trace"
 description: The step-by-step pipeline every deploy records, with or without a build, and how to read it in the dashboard, the CLI and the log stream.
+"og:url": "https://docs.levelrail.com/deploy-trace"
 ---
 
 Every deploy records the same structured trace: a pre-built image, a rollback, an image tag deploy, a Compose stack and a Git build all produce it. Each step has a status, a start and end time, a duration and a short reason code. A failure names the step that failed and carries the underlying Docker or registry error text instead of a generic message.

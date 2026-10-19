@@ -2,6 +2,7 @@
 title: "Publishing plugins"
 tag: "Experimental"
 description: "Sign a plugin, make a marketplace index entry and sign an index, all offline."
+"og:url": "https://docs.levelrail.com/plugin-publishing"
 ---
 
 This page is for plugin publishers and for whoever maintains a marketplace index. Everything runs offline with `go run ./scripts/plugin-publish`; nothing is uploaded. Hosting the files and publishing the image are your steps.

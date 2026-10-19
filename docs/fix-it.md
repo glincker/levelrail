@@ -3,6 +3,7 @@ title: "Fix-it engine"
 icon: "/assets/icons/lifebuoy.svg"
 sidebarTitle: "Fix-it engine"
 description: Turn a failing readiness or doctor check into a previewable, verifiable fix.
+"og:url": "https://docs.levelrail.com/fix-it"
 ---
 
 A failing check used to be a sentence you had to translate into a command. The fix-it engine turns the common ones into typed fixes you can preview, apply, and re-verify from the dashboard or the CLI.

@@ -5,6 +5,7 @@ sidebarTitle: "Set variables and secrets"
 description: Masking, reveal policies, and protection for app environment variables and secrets.
 "og:image": "https://docs.levelrail.com/public/og/environment-and-secrets.png"
 "twitter:image": "https://docs.levelrail.com/public/og/environment-and-secrets.png"
+"og:url": "https://docs.levelrail.com/environment-and-secrets"
 ---
 
 An app's Environment tab is one editor for every variable the app reads at start: plain values, encrypted secrets, and Vault references. Values that look like credentials are masked everywhere they are read, and reading one back needs a fresh confirmation that is written to the audit log.

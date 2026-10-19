@@ -1,6 +1,7 @@
 ---
 title: "Deploy URLs"
 description: "Every recent successful deploy keeps its own address, so you can open and compare a past deployment without rolling back."
+"og:url": "https://docs.levelrail.com/deploy-urls"
 ---
 
 Each of an app's newest successful deploys keeps an address of its own, for

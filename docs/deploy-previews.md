@@ -1,6 +1,7 @@
 ---
 title: "Deploy previews"
 description: "Deploy thumbnails in three tiers, from free page metadata to a real screenshot in a short-lived browser container, with costs, cleanup and settings."
+"og:url": "https://docs.levelrail.com/deploy-previews"
 ---
 
 When a deploy goes live, the control plane can save a small thumbnail of the running app and show it in the app's deploy history. There are three modes per app, and the default costs about nothing.

@@ -1,6 +1,7 @@
 ---
 title: "Master key rotation"
 description: Rotate the envelope-encryption master key without losing access to stored secrets or causing downtime.
+"og:url": "https://docs.levelrail.com/master-key-rotation"
 ---
 
 All secrets (app env vars marked `secret: true`, email credentials, notification channel webhook URLs and keys, tokens, etc.) are encrypted with envelope encryption. Each owner (an app, a backup target, the email settings) gets its own random data encryption key (DEK), and every DEK is wrapped under a master key held in memory. Rotating the master key means re-wrapping every DEK under a new key without ever exposing plaintext secrets.

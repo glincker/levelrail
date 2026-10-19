@@ -3,6 +3,7 @@ title: "Debug an app with built-in logs and metrics"
 icon: "/assets/icons/chart-line-up.svg"
 sidebarTitle: "See logs and metrics"
 description: Find out why an app is failing or slow with Levelrail's built-in log search and metrics, with no Grafana or Loki to install.
+"og:url": "https://docs.levelrail.com/tutorials/debug-an-app-with-logs-and-metrics"
 ---
 
 Most self-hosted platforms tell you to install Grafana and a log stack before you can answer "what happened?". Levelrail stores metrics and logs on each node as part of the platform, so the answer is a command away. In this tutorial you will search an app's logs, follow them live, read CPU and memory over time, and use the health score and attention list to find what needs work first.

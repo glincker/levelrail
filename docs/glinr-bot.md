@@ -1,6 +1,7 @@
 ---
 title: glinr-bot
 description: "How the repo's GitHub App bot evaluates pull requests against a policy file, comments its reasoning and, in enforce mode, approves and arms auto-merge."
+"og:url": "https://docs.levelrail.com/glinr-bot"
 ---
 
 This GitHub App reads a policy file, checks each pull request against it, and

@@ -1,6 +1,7 @@
 ---
 title: "Starter kit templates"
 description: "Seven starter-kit templates that show multi-service Compose wiring patterns: web plus database, worker plus queue, reverse proxy plus backends."
+"og:url": "https://docs.levelrail.com/templates"
 ---
 
 The `Starter Kits` category of the [template catalog](/template-catalog) holds seven small multi-service templates. Unlike the rest of the catalog, where each entry deploys one open-source project, these show wiring patterns across two or three services: a web tier talking to a database, a worker pulling from a queue, a reverse proxy fanning out to backends.

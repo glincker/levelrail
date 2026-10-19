@@ -1,6 +1,7 @@
 ---
 title: "Managing apps at scale"
 description: Filter, tag, bulk-act on, clone and promote apps when you run dozens of them.
+"og:url": "https://docs.levelrail.com/managing-apps-at-scale"
 ---
 
 Once you run dozens of apps, you need ways to find them and act on several at once. This page covers filtering the list, environments and tags, bulk actions, cloning an app, and promoting a release from staging to production. You can do all of it from the dashboard, the CLI, or the API. Bulk actions and promotion are also MCP tools.

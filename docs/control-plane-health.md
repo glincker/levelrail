@@ -1,6 +1,7 @@
 ---
 title: "Control plane health"
 description: What the control plane measures about itself, which limits it enforces, and the fixes it can apply.
+"og:url": "https://docs.levelrail.com/control-plane-health"
 ---
 
 The control plane watches its own saturation so a busy instance tells you before it slows down. Open **Settings, Control plane health**, or run `levelrail-cli system health`.

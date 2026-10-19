@@ -1,6 +1,7 @@
 ---
 title: License and notices
 description: Levelrail is licensed under Apache 2.0 with one edition and no paid tier. What that means in plain language and where to read the full text.
+"og:url": "https://docs.levelrail.com/license-and-notices"
 ---
 
 Levelrail is licensed under the [Apache License, Version 2.0](https://github.com/glincker/levelrail/blob/main/LICENSE). There is one edition, with no license key and no feature gated behind a plan.

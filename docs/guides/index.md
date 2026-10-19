@@ -1,6 +1,7 @@
 ---
 title: Guides
 description: "Task-focused Levelrail guides: compare it with Coolify, self-host Postgres with verified backups, and ship zero-downtime deploys on plain Docker."
+"og:url": "https://docs.levelrail.com/guides/index"
 ---
 
 Guides answer a specific question end to end and link into the reference pages for detail. For step-by-step walkthroughs on a live server, see [tutorials](/tutorials).

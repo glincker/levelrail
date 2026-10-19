@@ -1,6 +1,7 @@
 ---
 title: "Your account"
 description: The Account page, your own profile, sign-in security, active sessions, API tokens and a plain-language view of what you can manage.
+"og:url": "https://docs.levelrail.com/account"
 ---
 
 Settings, Account is the personal half of access: everything about your own sign-in, in one place.

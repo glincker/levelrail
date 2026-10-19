@@ -2,6 +2,7 @@
 title: "Static pages"
 sidebarTitle: "Pages"
 description: Deploy static HTML sites directly from git with no container, served by the embedded ingress with full TLS and domain routing.
+"og:url": "https://docs.levelrail.com/pages"
 ---
 
 ## What this covers

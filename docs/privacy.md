@@ -1,6 +1,7 @@
 ---
 title: "Privacy and data handling: what Levelrail stores and sends"
 description: "Where your data lives with Levelrail: secrets, metrics and logs stay on your own servers and the product sends no usage telemetry."
+"og:url": "https://docs.levelrail.com/privacy"
 ---
 
 **Your data stays on your servers**

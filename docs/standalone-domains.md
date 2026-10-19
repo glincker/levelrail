@@ -1,6 +1,7 @@
 ---
 title: "Standalone domains"
 description: "Proxy a domain to a port on this server, a network address, an external URL, another app's port or a container, with no app needed, and find the DNS target."
+"og:url": "https://docs.levelrail.com/standalone-domains"
 ---
 
 A standalone domain is a hostname that is not linked to any app. The embedded ingress terminates TLS for it and proxies every request to a target you choose:

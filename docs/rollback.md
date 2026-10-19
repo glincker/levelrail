@@ -1,6 +1,7 @@
 ---
 title: "Rolling back the control plane"
 description: "How to roll the control plane back to a previous release: what the dashboard shows and what you run on the server."
+"og:url": "https://docs.levelrail.com/rollback"
 ---
 
 Settings > Updates lists the last five releases for a channel (stable, beta, or

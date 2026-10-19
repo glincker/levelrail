@@ -1,6 +1,7 @@
 ---
 title: "Upgrade safely"
 description: "Upgrade the control plane safely with pre-flight checks and automatic rollback."
+"og:url": "https://docs.levelrail.com/upgrade-safely"
 ---
 
 This is the runbook for moving a running server to a newer release. The self-update verifies the release, snapshots your data, tries the migrations on a copy, and puts the old binary and data back by itself when the new release does not become healthy.

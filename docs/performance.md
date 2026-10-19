@@ -1,6 +1,7 @@
 ---
 title: "Performance"
 description: Measured idle footprint of the control plane at 0, 100, and 500 apps, and how to reproduce it.
+"og:url": "https://docs.levelrail.com/performance"
 ---
 
 ## Method

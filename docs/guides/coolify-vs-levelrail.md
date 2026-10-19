@@ -1,6 +1,7 @@
 ---
 title: Coolify vs Levelrail for self-hosters
 description: "A fair Coolify vs Levelrail comparison for self-hosters: how each manages servers, what each does well, what Levelrail lacks, and how to choose between them."
+"og:url": "https://docs.levelrail.com/guides/coolify-vs-levelrail"
 ---
 
 Coolify and Levelrail both turn your own Linux servers into a place where you push code and get a running app with TLS. They get there differently, and each has real strengths. This guide is for deciding between them. The author works on Levelrail, so statements about Coolify stay inside what its public documentation says, and anything we have not checked is marked.

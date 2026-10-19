@@ -1,6 +1,7 @@
 ---
 title: "Connecting apps to databases"
 description: Connect apps to multiple databases and view reachability badges.
+"og:url": "https://docs.levelrail.com/connecting-apps-to-databases"
 ---
 
 An app can attach to exactly one database with the older `PUT /api/v1/apps/{name}/database` flow (see [Managing databases](/managing-databases#attach-a-database-to-an-app)). Connections are the newer, more general mechanism: an app can connect to as many databases as it needs, each one landing in its own env var.

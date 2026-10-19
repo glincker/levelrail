@@ -2,6 +2,7 @@
 title: "Control plane backup and restore"
 sidebarTitle: "Control plane backup"
 description: "Back up and restore the control plane's database with automatic snapshots and offline restore."
+"og:url": "https://docs.levelrail.com/control-plane-backup"
 ---
 
 The control plane keeps everything it knows (apps, domains, tokens, users, encrypted secrets, deploy history) in one SQLite database. A control plane backup is a consistent snapshot of that file, taken while the server keeps running.

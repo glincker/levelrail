@@ -1,6 +1,7 @@
 ---
 title: "Feature status"
 description: Per-feature maturity labels (stable, beta, hide-behind-flag) with the test, e2e, docs and real-infrastructure evidence behind each one.
+"og:url": "https://docs.levelrail.com/feature-status"
 ---
 
 This page labels every major feature by how much evidence backs it today. The evidence was first gathered on 2026-09-26. The e2e rows, counts, and template and MCP rows were re-checked against main on 2026-10-05. Every claim cites a path, and where evidence is missing the page says so.

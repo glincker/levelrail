@@ -1,6 +1,7 @@
 ---
 title: "CDN and caching"
 description: "The response cache in the ingress: what it stores and what it never does, cache rules, purge by URL, prefix, tag or all, hit rate and bandwidth saved, and how to put a third party CDN in front."
+"og:url": "https://docs.levelrail.com/cdn-and-caching"
 ---
 
 The ingress can keep responses in memory and answer repeat requests itself, so a busy static file or public page never reaches your app twice. It is one in-process cache, with no extra service to run. The **CDN and caches** section of the dashboard shows how well it works and lets you purge it.

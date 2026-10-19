@@ -1,6 +1,7 @@
 ---
 title: "Docker access and the API guard"
 description: Every Docker Engine API call Levelrail makes, why it needs it, and the guard that refuses everything else, including privileged containers and host mounts.
+"og:url": "https://docs.levelrail.com/docker-access"
 ---
 
 The Docker socket is root equivalent: anything that can talk to it can start a privileged container that mounts `/` from the host. The control plane and every node agent hold that socket, so a bug or a compromise in either one gives root on the machine.

@@ -1,6 +1,7 @@
 ---
 title: "Security overview"
 description: How Levelrail handles secrets, sessions, TLS, and access control, and where to find the detailed page for each.
+"og:url": "https://docs.levelrail.com/security"
 ---
 
 Levelrail keeps your secrets encrypted, signs every request in with a session or a scoped token, and never reaches into your servers over SSH after setup. This page explains how those pieces fit together and links to the detailed page for each. It is a map, not a duplicate.

@@ -1,6 +1,7 @@
 ---
 title: "Shared Go kit"
 description: Standard-library-only Go module with networking, scheduling, parsing and system helper packages.
+"og:url": "https://docs.levelrail.com/kit"
 ---
 
 `kit` is a Go module in this repository under `./kit`. It holds the small, self-contained building blocks the control plane and node agent share, packaged so other Go programs can import them too. Every package uses only the Go standard library, so the module has no third-party requirements.

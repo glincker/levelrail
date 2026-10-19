@@ -1,6 +1,7 @@
 ---
 title: "Deploying through git host outages"
 description: What still deploys when GitHub, GitLab or your own git server is down, how the source cache works, and how to deploy from it.
+"og:url": "https://docs.levelrail.com/git-host-outages"
 ---
 
 A deploy should not stop because someone else's server is down. The control plane keeps a bounded local mirror of every repository it fetches, so most deploys never need the git host again.

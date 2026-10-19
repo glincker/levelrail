@@ -1,6 +1,7 @@
 ---
 title: "Error tracking"
 description: Point any Sentry SDK at your control plane, group errors into issues, and see which deploy produced them.
+"og:url": "https://docs.levelrail.com/error-tracking"
 ---
 
 Apps report errors to the control plane with the Sentry SDK they already use. Events are grouped into issues, each tied to the deploy that was current when it arrived, and shown on the app's **Observe, Errors** page. Nothing leaves the node, and nothing is stored until you turn error tracking on for an app.

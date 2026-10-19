@@ -5,6 +5,7 @@ sidebarTitle: "Quickstart: first app"
 description: Install Levelrail on a Linux server, sign in, and deploy your first app in about ten minutes, from the dashboard or the CLI.
 "og:image": "https://docs.levelrail.com/public/og/getting-started.png"
 "twitter:image": "https://docs.levelrail.com/public/og/getting-started.png"
+"og:url": "https://docs.levelrail.com/getting-started"
 ---
 
 By the end of this page you have a Levelrail control plane on your own server and one app running on it with a health check, logs, and one-click rollback. Plan on about ten minutes.

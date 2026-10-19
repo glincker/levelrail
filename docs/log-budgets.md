@@ -1,6 +1,7 @@
 ---
 title: "Log volume budgets"
 description: Cap how much log data one app can store, see which apps are noisiest, and forecast when a budget will be reached.
+"og:url": "https://docs.levelrail.com/log-budgets"
 ---
 
 Log retention is time based (`APP_LOGS_RETENTION`), so one chatty app can fill the disk or push everyone else's history out. A budget caps the stored log bytes per app. When an app goes over, its oldest lines are trimmed. Other apps are never touched.

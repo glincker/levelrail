@@ -1,6 +1,7 @@
 ---
 title: "Threat model"
 description: Trust boundaries, assets, attackers, the mitigations that exist today with file references, known gaps, and how to report a vulnerability.
+"og:url": "https://docs.levelrail.com/threat-model"
 ---
 
 This page describes what Levelrail defends, against whom, and where it does not yet. It is written for operators deciding how much to trust an install and for contributors deciding where a change needs extra care. For the user-facing configuration side, see the [Security overview](/security).

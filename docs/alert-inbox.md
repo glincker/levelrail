@@ -1,6 +1,7 @@
 ---
 title: "Alert inbox"
 description: An in-app inbox of the alerts that reached you, with per-account read state, routing rules and an optional daily digest, plus the guardrails on mass actions.
+"og:url": "https://docs.levelrail.com/alert-inbox"
 ---
 
 The alert inbox is the first tab of **Alerts**, and the bell in the header links to it with your unread count. It lists firings and resolutions newest first, built from the same alert history the History tab shows, so nothing is duplicated and nothing new is sent.

@@ -1,6 +1,7 @@
 ---
 title: "Cost explorer and budgets"
 description: "Explore cost over time by app, project, tag, node or kind, see a month end forecast with a range, spot the biggest increases, and set named budgets that alert at thresholds and can pause or throttle apps."
+"og:url": "https://docs.levelrail.com/cost-explorer"
 ---
 
 The Cost explorer builds on [Usage and cost](/usage-and-cost). It uses the same prices and the same daily snapshots, and adds a trend view, a forecast with a range, top movers and named budgets. Like the rest of that page it is showback of your own prices, not an invoice.

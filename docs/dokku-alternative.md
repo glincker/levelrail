@@ -1,6 +1,7 @@
 ---
 title: "Dokku alternative: git push deploys with a dashboard and multi-server"
 description: "Levelrail is an open source Dokku alternative that adds a dashboard, deploy history with rollback, and built-in metrics and logs."
+"og:url": "https://docs.levelrail.com/dokku-alternative"
 ---
 
 **When one server and git push stops being enough**

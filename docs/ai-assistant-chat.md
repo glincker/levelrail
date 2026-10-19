@@ -2,6 +2,7 @@
 title: "In-app AI assistant chat"
 tag: "Experimental"
 description: The in-app AI assistant chat with your own key for Anthropic, OpenAI compatible, Gemini or self-hosted models, how to enable it behind the ai-chat experimental flag, and the confirmation gate that bounds what it can do.
+"og:url": "https://docs.levelrail.com/ai-assistant-chat"
 ---
 
 This is a chat panel in the dashboard, backed by the control plane's own `internal/ai` engine. It reads your apps, deploys, logs, metrics and diagnostics through the same tool surface the MCP server exposes, and it can propose actions. Every action that would change anything pauses for an explicit confirmation click first. AI in Levelrail only reads and suggests on top of the API, and this chat uses the same engine and confirmation gate described in [AI assistant integration](/ai-assistant#untrusted-text-and-the-assistants-confirmation-gate), as a dashboard panel and a CLI command.

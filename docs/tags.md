@@ -1,6 +1,7 @@
 ---
 title: "Tags"
 description: Label apps with tags such as team:payments, then filter the dashboard, CLI and API by them.
+"og:url": "https://docs.levelrail.com/tags"
 ---
 
 Tags are labels you attach to apps so you can group them by team, component, lifecycle stage, or whatever you like. An app can carry several. Tags only organize: they do not change how an app runs, restrict access, or gate a deploy.

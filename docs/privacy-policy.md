@@ -1,6 +1,7 @@
 ---
 title: Privacy policy
 description: What the Levelrail website collects, which browser storage it uses, and where to find how the software itself handles data.
+"og:url": "https://docs.levelrail.com/privacy-policy"
 ---
 
 Last updated: 2026-10-05.

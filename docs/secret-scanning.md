@@ -1,6 +1,7 @@
 ---
 title: "Secret scanning"
 description: "Find credentials committed to a repo or stored as plain env variables before a deploy builds, with a per-app off, warn or block policy and an allow-list."
+"og:url": "https://docs.levelrail.com/secret-scanning"
 ---
 
 Before a deploy builds, the control plane can check the build context for committed credentials and the environment values being injected for credentials stored as plain (non-secret) variables. It is on in `warn` mode by default and never stores or shows the value it found.

@@ -1,6 +1,7 @@
 ---
 title: "Self-hosted PaaS guide: what to look for and how Levelrail fits"
 description: "A practical guide to choosing a self-hosted PaaS: how it manages servers, deploys, rolls back, observes, secures and costs."
+"og:url": "https://docs.levelrail.com/self-hosted-paas"
 ---
 
 **What to look for in a self-hosted PaaS**

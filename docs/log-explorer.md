@@ -1,6 +1,7 @@
 ---
 title: "Log explorer"
 description: Search logs, save queries, group errors into signatures, and create alert rules.
+"og:url": "https://docs.levelrail.com/log-explorer"
 ---
 
 Logs are stored on the node that runs the container and searched from the control plane. The log explorer makes those searches reusable and turns them into alerts, without shipping logs anywhere.

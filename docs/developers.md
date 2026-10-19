@@ -1,6 +1,7 @@
 ---
 title: "Developers: API, CLI and MCP server for your Levelrail instance"
 description: "Build on Levelrail: the REST API at /api/v1 on your own instance, the levelrail-cli command line, the self-hosted MCP server, and scoped API tokens."
+"og:url": "https://docs.levelrail.com/developers"
 ---
 
 **Build on the API every Levelrail surface already uses**

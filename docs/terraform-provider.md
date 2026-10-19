@@ -1,6 +1,7 @@
 ---
 title: "Terraform and OpenTofu provider"
 description: "Manage projects, environments, apps, domains, databases and shared env variables from Terraform or OpenTofu, with import support and what is not covered."
+"og:url": "https://docs.levelrail.com/terraform-provider"
 ---
 
 The provider drives the same REST API as the dashboard and CLI, with your own token, so every policy and approval rule still applies. It lives in its own Go module, `terraform-provider/`, and never ships inside the control plane binary.

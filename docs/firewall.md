@@ -1,6 +1,7 @@
 ---
 title: "Firewall"
 description: "Filter web requests at the embedded ingress: ordered rules, IP lists, automatic bans, a browser challenge, bot and AI crawler handling, attack mode, and a live view of what was blocked."
+"og:url": "https://docs.levelrail.com/firewall"
 ---
 
 The firewall runs in the embedded ingress, in front of every host this control plane serves, before a request reaches an app. Rules apply the moment you save them: there is no redeploy and no ingress reload. Open **Firewall** in the sidebar, or use `levelrail-cli firewall ingress`.

@@ -1,6 +1,7 @@
 ---
 title: "Framework presets"
 description: "Deploy Next.js, Go, React/Vite, Spring Boot and eight more frameworks with the right port, health path, storage and env hints already filled in."
+"og:url": "https://docs.levelrail.com/frameworks"
 ---
 
 A framework preset is the set of defaults a framework needs to run well: the port it listens on, a health path, how it builds, the environment variables it will not boot without, and the paths worth keeping across deploys. The control plane detects the framework from your repository and fills these in, so a first deploy needs no manual build configuration.

@@ -1,6 +1,7 @@
 ---
 title: "Scheduled jobs"
 description: Run commands on a cron schedule against your app, in a fresh container with the app's env, secrets and volumes, with run history, logs, retries and alerts.
+"og:url": "https://docs.levelrail.com/scheduled-jobs"
 ---
 
 A job runs a command on a cron schedule for one app: a database migration, a

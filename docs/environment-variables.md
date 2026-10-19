@@ -1,6 +1,7 @@
 ---
 title: "Environment variables"
 description: Reference for operator-facing APP_ environment variables not covered on feature pages, with defaults, units, and which component reads each one.
+"og:url": "https://docs.levelrail.com/environment-variables"
 ---
 
 This page lists the `APP_*` environment variables you may want to set that no feature page already explains. Each row was checked against the code that reads it, and each default is the fallback in that code. Variables a feature page documents (for example the `APP_INGRESS_*` hardening limits in [Domains and ingress](/domains-and-ingress#edge-limits-client-ips-and-failover) or the `APP_PIPELINE_*` settings in [Pipelines](/pipelines)) stay on those pages. Branding variables (`APP_BRAND_*`) are in [White-labeling](/white-labeling).

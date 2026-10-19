@@ -1,6 +1,7 @@
 ---
 title: "Load and failover benchmarks"
 description: How to measure throughput, latency, ingress overhead and failover behavior under load, and which numbers are still unmeasured.
+"og:url": "https://docs.levelrail.com/benchmarks"
 ---
 
 This page describes the harness and publishes the few numbers measured so far. Anything not in a dated, hardware-labeled row is marked not yet measured. [Performance](/performance) covers the idle footprint instead.

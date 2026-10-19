@@ -1,6 +1,7 @@
 ---
 title: "Database access and network"
 description: "Manage database users, issue short-lived credentials, see who can reach a database, and control its network exposure, scope and TLS from the UI, CLI or API."
+"og:url": "https://docs.levelrail.com/database-access"
 ---
 
 Two tabs on every database give you the controls you would expect from a managed

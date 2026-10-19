@@ -1,6 +1,7 @@
 ---
 title: "Access control"
 description: Roles for multi-user access, per-user environment grants, the guest role, IAM policies on apps, databases and environments, and ready-made policy templates.
+"og:url": "https://docs.levelrail.com/access-control"
 ---
 
 Give each teammate the access they need and no more. A role bundles abilities, environment grants narrow a guest down to chosen environments, and IAM policies allow or deny access to individual apps, databases and environments.

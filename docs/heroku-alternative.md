@@ -1,6 +1,7 @@
 ---
 title: "Self-hosted Heroku alternative: git push to your own servers"
 description: "Levelrail is an open source Heroku alternative for your own Linux servers: git push deploys, managed Postgres and Redis, TLS, logs and rollback."
+"og:url": "https://docs.levelrail.com/heroku-alternative"
 ---
 
 **The Heroku workflow on a server you control**
