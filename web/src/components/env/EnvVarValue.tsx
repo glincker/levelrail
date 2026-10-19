@@ -41,7 +41,7 @@ function Countdown({ until }: { until: number }) {
   )
 }
 
-function Masked({ preview, label }: { preview?: string; label: string }) {
+function Masked({ label }: { label: string }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
       <span
@@ -51,14 +51,6 @@ function Masked({ preview, label }: { preview?: string; label: string }) {
         {MASKED_VALUE}
       </span>
       <span className="sr-only">{label}</span>
-      {preview ? (
-        <span
-          aria-hidden
-          className="truncate font-mono text-xs text-muted-foreground"
-        >
-          {preview}
-        </span>
-      ) : null}
     </span>
   )
 }
@@ -185,14 +177,7 @@ export function EnvVarValue({
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-1">
       {storedHidden ? (
-        <Masked
-          preview={row.type === 'plain' ? row.preview : undefined}
-          label={
-            row.preview
-              ? t('value.maskedWithPreview', { preview: row.preview })
-              : t('value.masked')
-          }
-        />
+        <Masked label={t('value.masked')} />
       ) : (
         <span className="truncate font-mono text-sm text-muted-foreground">
           {t('value.empty')}

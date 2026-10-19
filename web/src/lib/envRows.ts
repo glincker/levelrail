@@ -10,7 +10,6 @@ export type EnvVarType = 'plain' | 'secret' | 'vault'
 export interface EnvVarMeta {
   sensitive: boolean
   set: boolean
-  preview?: string
   value_redacted: boolean
   reason?: string
   override?: boolean
@@ -35,7 +34,6 @@ export interface EnvRow {
   value: string
   vault?: VaultRef
   sensitive: boolean
-  preview?: string
   origin: 'own' | 'inherited'
   tier?: EnvTier
   original?: RowSnapshot
@@ -112,7 +110,6 @@ export function buildRows(src: EnvRowSource): EnvRow[] {
       type: 'plain',
       value,
       sensitive: meta?.sensitive ?? value === MASKED_VALUE,
-      preview: meta?.preview,
       origin: 'own',
       original: { type: 'plain', value },
     })

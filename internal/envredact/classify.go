@@ -198,13 +198,3 @@ func Classify(key, value string, override *bool) (sensitive bool, reason string)
 	}
 	return false, ""
 }
-
-// Preview returns a short hint of value: at most four characters from
-// each end, and nothing at all for values shorter than sixteen.
-func Preview(value string) string {
-	r := []rune(value)
-	if len(r) < previewMinLen {
-		return ""
-	}
-	return string(r[:previewSideLen]) + "..." + string(r[len(r)-previewSideLen:])
-}

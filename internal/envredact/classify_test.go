@@ -1,6 +1,7 @@
 package envredact
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -60,24 +61,6 @@ func TestClassify(t *testing.T) {
 	}
 }
 
-func TestPreview(t *testing.T) {
-	tests := []struct{ in, want string }{
-		{"", ""},
-		{"short", ""},
-		{"fifteen-chars-x", ""},
-		{"sixteen-chars-xy", "sixt...s-xy"},
-		{"ubahjctJ2K65pks5W9D7RDdT0ZYAax7hOtRPFO9Tfmc=", "ubah...fmc="},
-	}
-	for _, tt := range tests {
-		if got := Preview(tt.in); got != tt.want {
-			t.Errorf("Preview(%q) = %q, want %q", tt.in, got, tt.want)
-		}
-		if got := Preview(tt.in); strings.Count(got, "") > 12 {
-			t.Errorf("Preview(%q) too long: %q", tt.in, got)
-		}
-	}
-}
-
 func TestMapNeverLeaksSensitiveValues(t *testing.T) {
 	env := map[string]string{
 		"PORT":       "3000",
@@ -90,8 +73,13 @@ func TestMapNeverLeaksSensitiveValues(t *testing.T) {
 		if out[k] != Placeholder || !meta[k].ValueRedacted || !meta[k].Sensitive {
 			t.Fatalf("%s not masked: %q %+v", k, out[k], meta[k])
 		}
-		if strings.Contains(meta[k].Preview, env[k]) && env[k] != "" {
-			t.Fatalf("%s preview leaks value", k)
+		raw, err := json.Marshal(meta[k])
+		if err != nil {
+			t.Fatal(err)
+		}
+		v := env[k]
+		if strings.Contains(string(raw), v[:4]) || strings.Contains(string(raw), v[len(v)-4:]) {
+			t.Fatalf("%s meta leaks a fragment of the value: %s", k, raw)
 		}
 	}
 	if out["PORT"] != "3000" || meta["PORT"].Sensitive {

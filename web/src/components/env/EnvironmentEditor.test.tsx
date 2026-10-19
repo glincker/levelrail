@@ -58,7 +58,6 @@ const app: AppDetail = {
       sensitive: true,
       set: true,
       value_redacted: true,
-      preview: 'the-...alue',
     },
   },
   secret_env: ['DB_PASSWORD'],

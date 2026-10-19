@@ -119,8 +119,12 @@ func TestEnvRedaction_EveryReadSurface(t *testing.T) {
 			t.Fatalf("%s not masked: %q", k, app.Env[k])
 		}
 	}
-	if app.EnvMeta["QUARTER_V1"].Preview != "ubah...fmc=" {
-		t.Fatalf("preview = %q", app.EnvMeta["QUARTER_V1"].Preview)
+	raw, err := json.Marshal(app.EnvMeta["QUARTER_V1"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "ubah") || strings.Contains(string(raw), "fmc=") {
+		t.Fatalf("meta leaks a fragment of the value: %s", raw)
 	}
 }
 

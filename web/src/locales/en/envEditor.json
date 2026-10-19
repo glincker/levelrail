@@ -26,7 +26,6 @@
   },
   "value": {
     "masked": "Hidden value",
-    "maskedWithPreview": "Hidden value, starts {{preview}}",
     "secretStored": "Encrypted, stored",
     "secretNew": "New value",
     "empty": "Empty",
