@@ -166,9 +166,31 @@ Once a plugin is enabled, add a notification channel whose kind is `plugin:<name
 
 The contract is `proto/plugin/v1/plugin.proto`: `Describe` (name, version, kind, requested abilities, config schema, with contract version negotiation), `Health`, for notification channels `Send`, and for panel providers `PanelService` (`PanelData`, `PanelAction`). The plugin listens on the unix socket path in the `PLUGIN_SOCKET` environment variable. A complete example lives in `test/fixtures/plugin-notify`, including a small signer that creates a key and signs a manifest.
 
+## Marketplace
+
+The Marketplace tab on the Plugins page lists plugins from signed indexes. An index is a JSON file signed by a root key; the control plane only shows listings whose index signature verifies against that source's root key. To publish your own, see [publishing plugins](/plugin-publishing).
+
+Sources: set `APP_MARKETPLACE_URL` and `APP_MARKETPLACE_ROOT_KEY` (base64 ed25519 public key) for a default source, and add more under Marketplace sources in the dashboard or with the CLI. With neither, the tab is empty and nothing is fetched. Fetches are https only, go through the same SSRF guard as every other outbound request, are capped at 1 MiB, cached with an ETag and refreshed once a day or when you press Re-check.
+
+An index that fails its signature, is malformed, is too large, or is older than one the control plane already saw (each index has a `generated_at` and an ever increasing `sequence`) is ignored and shown with a typed error and a Re-check button. A network failure keeps showing the last good copy, marked stale.
+
+Install is one confirmed step. The sheet shows the publisher, the publisher key fingerprint, the image digest, the abilities that will be approved and the outbound hosts. If the publisher key is not on your trust list you must tick "Trust the publisher key" too; the key is added labelled "added from marketplace", and declining does nothing. On confirm the control plane fetches the manifest again, checks that its name, version, digest, abilities and hosts equal the signed listing and that its signature verifies under the publisher key the index vouches for, then installs, approves exactly the abilities the sheet showed and enables. If the listing changed after you opened the sheet, the install is refused and you review again. A failed install removes the key and plugin it added. Installs and updates are written to the audit log.
+
+An update appears as an Update available badge. If it asks for an ability or outbound host the installed version did not, the sheet highlights it and you approve the exact new set; the control plane never approves more than you saw. It refuses to roll a plugin back to an older version and refuses a listing signed by a different publisher key than the installed plugin.
+
+```bash
+levelrail-cli plugins marketplace search chat
+levelrail-cli plugins marketplace info example-notify
+levelrail-cli plugins marketplace install example-notify --approve-abilities read --trust-publisher --yes
+levelrail-cli plugins marketplace update --all --approve-abilities read --yes
+levelrail-cli plugins marketplace sources add --url https://plugins.example.com/index.json --root-key <base64>
+```
+
+`--yes` is required to proceed and `--approve-abilities` must list exactly the abilities `info` shows. The MCP tool `list_marketplace_plugins` lists the same catalog read only; there is no install tool over MCP.
+
 ## Not yet
 
-- A marketplace or any hosted index of plugins. You install a package you obtained yourself.
+- A hosted public index. The control plane ships with no default source until the project publishes one.
 - More UI extension points. Plugins can add panels and CLI commands, but not whole pages or forms yet.
 - Auto-update. Upgrades are an explicit operator action.
 - Other plugin kinds such as DNS or CDN providers, and plugins on remote nodes.

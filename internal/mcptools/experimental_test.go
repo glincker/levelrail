@@ -26,7 +26,7 @@ func TestExperimentalToolsHiddenByDefault(t *testing.T) {
 		{experimental.IaC, []string{"plan_apply", "apply_resources"}},
 		{experimental.CloudflareTunnel, []string{"get_cloudflare_tunnel_status"}},
 		{experimental.AccessRoles, []string{"list_roles"}},
-		{experimental.Plugins, []string{"list_plugins", "get_plugin"}},
+		{experimental.Plugins, []string{"list_plugins", "get_plugin", "list_marketplace_plugins"}},
 		{experimental.GlobalEnvironments, []string{"list_global_environments", "move_app_environment"}},
 	}
 	for _, tc := range tests {

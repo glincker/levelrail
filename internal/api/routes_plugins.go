@@ -21,4 +21,11 @@ func (rt *Router) registerPluginRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/plugin-keys", rt.requireAbility(AbilityRoot, rt.handleListPluginKeys))
 	mux.HandleFunc("POST /api/v1/plugin-keys", rt.requireAbility(AbilityRoot, rt.handleAddPluginKey))
 	mux.HandleFunc("DELETE /api/v1/plugin-keys/{id}", rt.requireAbility(AbilityRoot, rt.handleRemovePluginKey))
+	mux.HandleFunc("GET /api/v1/plugin-marketplace", rt.requireAbility(AbilityRoot, rt.handleMarketplaceCatalog))
+	mux.HandleFunc("POST /api/v1/plugin-marketplace/refresh", rt.requireAbility(AbilityRoot, rt.handleMarketplaceRefresh))
+	mux.HandleFunc("POST /api/v1/plugin-marketplace/preview", rt.requireAbility(AbilityRoot, rt.handleMarketplacePreview))
+	mux.HandleFunc("POST /api/v1/plugin-marketplace/install", rt.requireAbility(AbilityRoot, rt.handleMarketplaceInstall))
+	mux.HandleFunc("GET /api/v1/plugin-marketplace/sources", rt.requireAbility(AbilityRoot, rt.handleMarketplaceSources))
+	mux.HandleFunc("POST /api/v1/plugin-marketplace/sources", rt.requireAbility(AbilityRoot, rt.handleMarketplaceAddSource))
+	mux.HandleFunc("DELETE /api/v1/plugin-marketplace/sources/{id}", rt.requireAbility(AbilityRoot, rt.handleMarketplaceRemoveSource))
 }

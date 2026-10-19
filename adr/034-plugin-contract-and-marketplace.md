@@ -107,6 +107,40 @@ every node, so the boundary is a security decision first.
    Existing built-in integrations move only when doing so removes complexity or
    idle cost. Horizon 1 and Horizon 2 work is not delayed by this.
 
+## Marketplace (slice 2)
+
+A marketplace is a signed JSON index the control plane fetches, not a hosted
+service. Decisions:
+
+- **Two key roles.** An index root key signs the whole index; publisher keys
+  sign manifests. The index lists the publisher keys it vouches for, so
+  trusting a source's root is how an operator delegates trust to publishers.
+- **Envelope.** `{format, payload, signature}` where `payload` is the base64 of
+  the index JSON exactly as signed and the signature covers its sha256 under
+  a domain tag. No canonicalization to get wrong. The signature is checked
+  before the payload is decoded.
+- **Freshness.** Each index carries `generated_at` and a monotonic `sequence`.
+  The control plane stores the highest sequence seen per source and rejects a
+  lower one, or an equal one with different content (replay and rollback).
+- **Fetching.** https only, `kit/netguard` client, 1 MiB cap, 15 s timeout, ETag
+  cache, daily refresh or on demand. Sources: an environment default plus
+  operator-added ones, each with its own root key.
+- **One confirmed install.** The confirm sheet shows publisher, key
+  fingerprint, digest and the exact abilities and hosts. The server re-fetches
+  the manifest and requires name, version, digest, abilities and hosts to
+  equal the signed listing and the manifest signature to verify under the
+  listed publisher key. It approves exactly the confirmed abilities, adds the
+  publisher key only when the operator ticked trust (labelled as added from the
+  marketplace), and removes what it added if a later step fails.
+- **Updates and downgrade.** A new ability or host needs the exact new approval.
+  A listing signed by a different key than the installed plugin, or an older
+  version than the installed one, is refused.
+- **MCP.** A read-only list tool exists; installs stay human-confirmed.
+
+Rejected: trusting the UI's idea of the ability list (the server decides),
+auto-trusting every key in an index without an operator action, and fetching
+an index through the plain HTTP client.
+
 ## Threat model and mitigations
 
 | Threat | Mitigation |

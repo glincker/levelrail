@@ -1632,6 +1632,13 @@ Routes that do not fit an existing group.
 | GET | /api/v1/plugin-panels | AbilityRead | handleListPluginPanels |
 | GET | /api/v1/plugins/{name}/panels/{panel}/data | AbilityRead | handlePluginPanelData |
 | POST | /api/v1/plugins/{name}/panels/{panel}/actions/{action} | AbilityWriteSensitive | handlePluginPanelAction |
+| GET | /api/v1/plugin-marketplace | AbilityRoot | handleMarketplaceCatalog |
+| POST | /api/v1/plugin-marketplace/refresh | AbilityRoot | handleMarketplaceRefresh |
+| POST | /api/v1/plugin-marketplace/preview | AbilityRoot | handleMarketplacePreview |
+| POST | /api/v1/plugin-marketplace/install | AbilityRoot | handleMarketplaceInstall |
+| GET | /api/v1/plugin-marketplace/sources | AbilityRoot | handleMarketplaceSources |
+| POST | /api/v1/plugin-marketplace/sources | AbilityRoot | handleMarketplaceAddSource |
+| DELETE | /api/v1/plugin-marketplace/sources/{id} | AbilityRoot | handleMarketplaceRemoveSource |
 
 ## See also
 

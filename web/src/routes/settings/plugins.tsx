@@ -7,9 +7,11 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { TableSkeleton } from '@/components/ui/table-skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ApprovalDialog } from '../../components/plugins/ApprovalDialog'
 import { InstallPluginDialog } from '../../components/plugins/InstallPluginDialog'
 import { PanelHost } from '../../components/plugins/PanelHost'
+import { MarketplaceTab } from '../../components/plugins/MarketplaceTab'
 import { PluginPanels } from '../../components/plugins/PluginPanels'
 import { PluginTable } from '../../components/plugins/PluginTable'
 import { TrustedKeysCard } from '../../components/plugins/TrustedKeysCard'
@@ -57,40 +59,51 @@ function PluginsPage() {
         </Button>
       }
     >
-      {error ? (
-        <Alert variant="destructive">
-          <AlertTitle>{t('loadFailed')}</AlertTitle>
-          <AlertDescription>
-            {error.message} {t('loadFailedHint')}
-          </AlertDescription>
-        </Alert>
-      ) : isLoading ? (
-        <TableSkeleton columnCount={5} rowCount={3} />
-      ) : plugins.length === 0 ? (
-        <EmptyState
-          className="gap-2 border-0 bg-transparent py-4"
-          icon={<PlugsConnectedIcon className="size-5" />}
-          title={t('empty.title')}
-          description={t('empty.description')}
-          action={
-            <Button type="button" onClick={() => setInstalling(true)}>
-              {t('empty.action')}
-            </Button>
-          }
-        />
-      ) : (
-        <PluginTable
-          plugins={plugins}
-          onReview={setReviewing}
-          onUpgrade={setUpgrading}
-          onTrustKeys={showKeys}
-        />
-      )}
-      <PluginPanels plugins={plugins} />
-      <PanelHost slot="plugins" />
-      <div id="plugin-trusted-keys">
-        <TrustedKeysCard />
-      </div>
+      <Tabs defaultValue="installed">
+        <TabsList>
+          <TabsTrigger value="installed">{t('tabs.installed')}</TabsTrigger>
+          <TabsTrigger value="marketplace">{t('tabs.marketplace')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="installed" className="space-y-4">
+          {error ? (
+            <Alert variant="destructive">
+              <AlertTitle>{t('loadFailed')}</AlertTitle>
+              <AlertDescription>
+                {error.message} {t('loadFailedHint')}
+              </AlertDescription>
+            </Alert>
+          ) : isLoading ? (
+            <TableSkeleton columnCount={5} rowCount={3} />
+          ) : plugins.length === 0 ? (
+            <EmptyState
+              className="gap-2 border-0 bg-transparent py-4"
+              icon={<PlugsConnectedIcon className="size-5" />}
+              title={t('empty.title')}
+              description={t('empty.description')}
+              action={
+                <Button type="button" onClick={() => setInstalling(true)}>
+                  {t('empty.action')}
+                </Button>
+              }
+            />
+          ) : (
+            <PluginTable
+              plugins={plugins}
+              onReview={setReviewing}
+              onUpgrade={setUpgrading}
+              onTrustKeys={showKeys}
+            />
+          )}
+          <PluginPanels plugins={plugins} />
+          <PanelHost slot="plugins" />
+          <div id="plugin-trusted-keys">
+            <TrustedKeysCard />
+          </div>
+        </TabsContent>
+        <TabsContent value="marketplace">
+          <MarketplaceTab />
+        </TabsContent>
+      </Tabs>
       <InstallPluginDialog
         open={installing}
         onClose={() => setInstalling(false)}

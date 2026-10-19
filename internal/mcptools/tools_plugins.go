@@ -27,6 +27,17 @@ func registerPluginTools(server *mcp.Server, client *apiclient.Client) {
 	})
 
 	addTool(server, &mcp.Tool{
+		Name:        "list_marketplace_plugins",
+		Description: "List plugins offered by the signed marketplace indexes: publisher, version, requested abilities, image digest, whether the publisher key is trusted and whether it is installed or has an update. Needs a root token and the plugins experimental feature. Read only: there is no install tool over MCP, installing needs a human confirmation in the dashboard or CLI.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, []apiclient.MarketplaceEntry, error) {
+		cat, err := client.MarketplaceCatalog(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("list marketplace plugins: %w", err)
+		}
+		return nil, cat.Entries, nil
+	})
+
+	addTool(server, &mcp.Tool{
 		Name:        "get_plugin",
 		Description: "Get one installed plugin: its signed manifest, abilities requested and approved, outbound hosts, health, verification status, last error and contributed panels. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in pluginNameInput) (*mcp.CallToolResult, apiclient.Plugin, error) {

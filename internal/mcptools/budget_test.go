@@ -24,7 +24,7 @@ const charsPerToken = 4
 // Override one with APP_MCP_TOKEN_BUDGET_<MODE>, where MODE is upper case with
 // dashes as underscores (e.g. READ_ONLY).
 var modeTokenBudgets = map[Mode]int{
-	ModeReadOnly: 41200,
+	ModeReadOnly: 41500,
 	ModeStandard: 52200,
 	ModeFull:     57200,
 }

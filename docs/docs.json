@@ -350,6 +350,7 @@
               "api-explorer",
               "mobile-api",
               "plugins",
+              "plugin-publishing",
               "mcp-tool-surface",
               "agent-tooling-audit",
               "kit",

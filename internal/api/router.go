@@ -162,6 +162,7 @@ type Router struct {
 	envProtect             envProtection
 	plugins                *plugin.Manager                     // plugin runtime, nil until SetPluginManager, see plugins.go
 	pluginFetch            plugin.FetchFunc                    // nil uses plugin.Fetch, overridable in tests
+	marketplace            *plugin.Marketplace                 // signed plugin index and one-click install, see plugins_marketplace.go
 	cliConsole             *cliConsoleState                    // web CLI console limits and config, see cli_console.go
 	mobile                 *mobileState                        // phone pairing rate limits, see mobile.go
 	secrets                SecretSetter                        // nil is valid: a control plane with no master key configured serves everything except secret-setting

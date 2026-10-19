@@ -184,6 +184,7 @@ func (s *bootState) wireRouter() {
 	}
 	if pluginMgr != nil {
 		apiRouter.SetPluginManager(pluginMgr)
+		apiRouter.SetPluginMarketplace(setupPluginMarketplace(logger, db, pluginMgr))
 	}
 	apiRouter.SetRestarter(api.Restarter{
 		Supervised: restartSupervised(os.LookupEnv, fileExists),

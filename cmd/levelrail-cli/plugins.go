@@ -29,6 +29,8 @@ func pluginsUsage(prog string) string {
                                                           run a command the plugin declares in its manifest (shows data or presses a button)
   %[1]s plugins trust add --name NAME --public-key B64 [flags]   trust a publisher's ed25519 public key
   %[1]s plugins trust list|remove <key-id> [flags]        show or revoke trusted keys
+  %[1]s plugins marketplace search|info|install|update|refresh|sources ...
+                                                          browse and one-step install from signed indexes (run it with no arguments for details)
 
 Managing plugins needs the plugins experimental feature and a root token. Running a
 plugin command needs read (data commands) or write:sensitive (buttons) and reaches only what the
@@ -79,6 +81,8 @@ func runPlugins(prog string, args []string, stdout, stderr io.Writer, lookupEnv 
 		return runPluginsRun(prog, rest, stdout, stderr, lookupEnv)
 	case "trust":
 		return runPluginsTrust(prog, rest, stdout, stderr, lookupEnv)
+	case "marketplace":
+		return runPluginsMarketplace(prog, rest, stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown plugins subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, pluginsUsage(prog))
