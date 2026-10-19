@@ -14,7 +14,7 @@ type openAPIRoute struct {
 	Description string
 }
 
-// openAPIRoutes holds all 1420 routes known to scripts/gen-api-reference at
+// openAPIRoutes holds all 1421 routes known to scripts/gen-api-reference at
 // generation time. Run `go run ./scripts/gen-api-reference` after changing
 // any routes*.go registration and commit the result.
 var openAPIRoutes = []openAPIRoute{
@@ -440,6 +440,7 @@ var openAPIRoutes = []openAPIRoute{
 	{Method: "GET", Path: "/api/v1/iam/resources", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMResources", Description: ""},
 	{Method: "POST", Path: "/api/v1/iam/resources/match", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMMatch", Description: ""},
 	{Method: "GET", Path: "/api/v1/iam/simulate", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMSimulate", Description: ""},
+	{Method: "GET", Path: "/api/v1/iam/suggestions", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleIAMSuggestions", Description: ""},
 	{Method: "GET", Path: "/api/v1/invites", Ability: "AbilityRead", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleListInvites", Description: ""},
 	{Method: "POST", Path: "/api/v1/invites", Ability: "AbilityWrite", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleCreateInvite", Description: "Team invites: create/revoke are AbilityWrite because an invite can never carry more than the caller holds; list is scoped to the caller's own invites; accept is public, gated by the emailed token."},
 	{Method: "POST", Path: "/api/v1/invites/accept", Ability: "Public", Group: "Auth / 2FA / Users / Roles / IAM / Device Auth / OAuth", Handler: "handleAcceptInvite", Description: ""},

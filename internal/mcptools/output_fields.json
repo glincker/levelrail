@@ -1440,6 +1440,7 @@
  "list_domains": [
   "automatic",
   "domain",
+  "issues",
   "kind",
   "reachable_reason",
   "reachable_url",
@@ -2379,6 +2380,11 @@
   "status",
   "target_id",
   "to"
+ ],
+ "suggest_least_privilege": [
+  "note",
+  "tokens",
+  "window_days"
  ],
  "sweep_stale_preview_environments": [
   "swept"

@@ -24,18 +24,18 @@ const charsPerToken = 4
 // Override one with APP_MCP_TOKEN_BUDGET_<MODE>, where MODE is upper case with
 // dashes as underscores (e.g. READ_ONLY).
 var modeTokenBudgets = map[Mode]int{
-	ModeReadOnly: 41000,
-	ModeStandard: 51700,
-	ModeFull:     56700,
+	ModeReadOnly: 41200,
+	ModeStandard: 51900,
+	ModeFull:     56900,
 }
 
 // compactTokenBudgets are the ceilings for the listing levelrail-mcp serves
 // by default (OmitOutputSchemas). Override with
 // APP_MCP_TOKEN_BUDGET_COMPACT_<MODE>.
 var compactTokenBudgets = map[Mode]int{
-	ModeReadOnly: 25100,
-	ModeStandard: 32000,
-	ModeFull:     35000,
+	ModeReadOnly: 25200,
+	ModeStandard: 32100,
+	ModeFull:     35100,
 }
 
 func budgetEnvKey(mode Mode) string {

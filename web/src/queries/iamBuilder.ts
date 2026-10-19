@@ -210,6 +210,7 @@ export const iamBuilderKeys = {
   effective: (type: string, id: string) =>
     [...iamBuilderKeys.all, 'effective', type, id] as const,
   analysis: () => [...iamBuilderKeys.all, 'analysis'] as const,
+  suggestions: () => [...iamBuilderKeys.all, 'suggestions'] as const,
   versions: (policyId: string) =>
     [...iamBuilderKeys.all, 'versions', policyId] as const,
 }
@@ -264,6 +265,33 @@ export const iamEffectiveQueryOptions = (type: string, id: string) =>
         `/api/v1/iam/principals/${encodeURIComponent(type)}/${encodeURIComponent(id)}/effective`,
       ),
     enabled: Boolean(type && id),
+  })
+
+export type SuggestionStatus = 'ok' | 'narrow' | 'idle'
+
+export interface IamTokenSuggestion {
+  token_id: string
+  name: string
+  agent_name?: string
+  granted: string[]
+  used: { ability: string; requests: number; last_used_at: string }[]
+  unused: string[]
+  suggested_abilities: string[]
+  status: SuggestionStatus
+  risk: FindingSeverity
+  reason: string
+}
+
+export interface IamSuggestions {
+  window_days: number
+  tokens: IamTokenSuggestion[]
+  note: string
+}
+
+export const iamSuggestionsQueryOptions = () =>
+  queryOptions({
+    queryKey: iamBuilderKeys.suggestions(),
+    queryFn: () => request<IamSuggestions>('/api/v1/iam/suggestions'),
   })
 
 export const iamAnalysisQueryOptions = () =>

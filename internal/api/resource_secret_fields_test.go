@@ -33,6 +33,7 @@ var sensitiveFieldAllowlist = map[string]string{ //nolint:gosec // field names a
 	"environmentCloneResultResource.CopiedSecretValues": "bool flag",
 	"securitySessionsResponse.Tokens":                   "token metadata list (tokenResource carries no secret)",
 	"myCredentialsResponse.Tokens":                      "token metadata list (tokenResource carries no secret)",
+	"suggestionsResponse.Tokens":                        "token ids, names and ability lists only, no token value or hash",
 	"userResource.MustChangePassword":                   "bool flag",
 	"ciExchangeResponse.Token":                          "the minted credential, returned to its requester by design",
 	"createNodeJoinTokenResponse.Token":                 "show-once join token at creation",

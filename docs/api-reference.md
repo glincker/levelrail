@@ -253,6 +253,7 @@ Endpoints for:
 | GET | /api/v1/auth/email-change | Public | handleEmailChangeStatus |
 | POST | /api/v1/auth/email-change | Public | handleRequestEmailChange |
 | POST | /api/v1/auth/email-change/confirm | Public | handleConfirmEmailChange |
+| GET | /api/v1/iam/suggestions | AbilityRead | handleIAMSuggestions |
 | GET | /api/v1/auth/2fa | Session |  |
 | POST | /api/v1/auth/2fa/setup | Session |  |
 | POST | /api/v1/auth/2fa/confirm | Session |  |

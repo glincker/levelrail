@@ -164,7 +164,10 @@ Conditions such as source IP, time window and MFA are not part of the evaluator,
 levelrail-cli iam simulate --principal token:TOKEN_ID --action deploy --resource app:web
 levelrail-cli iam effective --principal user:USER_ID
 levelrail-cli iam analyze --json
+levelrail-cli iam suggest --days 30
 ```
+
+The Analyzer tab and `iam suggest` also compare every active token with what the audit log shows it used (default 30 days). A token that holds `root` but only ever wrote, or never did anything, gets a narrower suggested ability list, and an idle token gets a Revoke button. Plain reads are not audited, so `read` is never flagged. The MCP tool `suggest_least_privilege` (iam toolset) returns the same data.
 
 ## API
 

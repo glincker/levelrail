@@ -302,6 +302,25 @@
     "rerun": "Run again",
     "count": "{{count}} findings"
   },
+  "suggestions": {
+    "title": "Least privilege",
+    "description": "Tokens compared with what the audit log shows they used in the last {{days}} days.",
+    "empty": "Every token only holds abilities it uses.",
+    "granted": "Granted",
+    "suggested": "Suggested",
+    "unused": "Unused",
+    "status": {
+      "ok": "In use",
+      "narrow": "Narrow",
+      "idle": "Idle"
+    },
+    "revoke": "Revoke token",
+    "revoked": "Token {{name}} revoked",
+    "confirmTitle": "Revoke {{name}}?",
+    "confirmDescription": "Anything using this token stops working. This cannot be undone.",
+    "pending": "Revoking",
+    "note": "Plain read requests are not audited, so read is never flagged as unused."
+  },
   "delete": {
     "title": "Delete {{name}}?",
     "description": "Everyone it is attached to loses its rules. This cannot be undone.",

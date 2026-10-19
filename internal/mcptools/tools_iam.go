@@ -74,6 +74,21 @@ func registerIAMTools(server *mcp.Server, client *apiclient.Client) {
 		}
 		return nil, res, nil
 	})
+
+	addTool(server, &mcp.Tool{
+		Name:        "suggest_least_privilege",
+		Description: "Suggest narrower abilities or revocation for each token from audit log usage. Read-only.",
+	}, func(ctx context.Context, _ *mcp.CallToolRequest, in suggestInput) (*mcp.CallToolResult, apiclient.IAMSuggestions, error) {
+		res, err := client.IAMSuggestions(ctx, in.Days)
+		if err != nil {
+			return nil, apiclient.IAMSuggestions{}, fmt.Errorf("suggest least privilege: %w", err)
+		}
+		return nil, res, nil
+	})
+}
+
+type suggestInput struct {
+	Days int `json:"days,omitempty" jsonschema:"window in days"`
 }
 
 type policyIDInput struct {

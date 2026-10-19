@@ -9,6 +9,7 @@ func (rt *Router) registerIAMBuilderRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/v1/iam/principals", rt.requireAbility(AbilityRead, rt.handleIAMPrincipals))
 	mux.HandleFunc("GET /api/v1/iam/principals/{principal_type}/{principal_id}/effective", rt.requireAbility(AbilityRead, rt.handleIAMEffective))
 	mux.HandleFunc("GET /api/v1/iam/simulate", rt.requireAbility(AbilityRead, rt.handleIAMSimulate))
+	mux.HandleFunc("GET /api/v1/iam/suggestions", rt.requireAbility(AbilityRead, rt.handleIAMSuggestions))
 	mux.HandleFunc("GET /api/v1/iam/analyze", rt.requireAbility(AbilityRead, rt.handleIAMAnalyze))
 	mux.HandleFunc("POST /api/v1/iam/policies/validate", rt.requireAbility(AbilityRead, rt.handleValidatePolicy))
 	mux.HandleFunc("POST /api/v1/iam/preview", rt.requireAbility(AbilityRead, rt.handleIAMPreview))

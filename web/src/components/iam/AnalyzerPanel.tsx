@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { TONE } from '../kit/tone'
 import type { Tone } from '../kit/tone'
+import { SuggestionsSection } from './SuggestionsSection'
 import { ReadinessRing } from '../setup/ReadinessRing'
 import { iamAnalysisQueryOptions } from '../../queries/iamBuilder'
 import type { FindingSeverity, IamFinding } from '../../queries/iamBuilder'
@@ -190,6 +191,7 @@ export function AnalyzerPanel({
           {t('analyzer.rerun')}
         </Button>
       </header>
+      <SuggestionsSection onOpenPrincipal={onOpenPrincipal} />
       {findings.length === 0 ? (
         <EmptyState
           className="gap-2 border-0 bg-transparent py-4"

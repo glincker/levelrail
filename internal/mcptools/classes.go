@@ -239,6 +239,7 @@ var toolTable = map[string]Meta{
 	"simulate_iam_access":                   {clsR, "iam", 0},
 	"get_iam_effective_permissions":         {clsR, "iam", 0},
 	"analyze_iam_policies":                  {clsR, "iam", unt},
+	"suggest_least_privilege":               {clsR, "iam", unt},
 	"list_organizations":                    {clsR, "orgs", 0},
 	"list_projects":                         {clsR, "orgs", 0},
 	"list_registry_credentials":             {clsR, "registry", sens},
