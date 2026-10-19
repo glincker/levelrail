@@ -11,7 +11,7 @@ import (
 func registerAlertTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_alert_rules",
-		Description: "List an app's configured alert rules (threshold, crashloop, cert_expiry, scheduled_task_failure, slo_burn and other kinds), including disabled ones and each rule's current firing state. A cert_expiry rule watches every certificate on the control plane platform-wide, not just this app's own domains. Surfaces what's already configured; does not create, edit, or delete a rule.",
+		Description: "List an app's alert rules of every kind, including disabled ones, with current firing state. A cert_expiry rule watches every certificate platform-wide. Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in appNameInput) (*mcp.CallToolResult, []apiclient.AlertRuleResource, error) {
 		rules, err := client.ListAlertRules(ctx, in.Name)
 		if err != nil {
@@ -22,7 +22,7 @@ func registerAlertTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "get_slo_status",
-		Description: "Show an app's error budget remaining and the burn rate per alert tier for a request-based SLO (availability by default, or latency with latency_ms), computed from ingress request metrics the way an slo_burn rule evaluates them. Burn rate is how many times faster than sustainable the budget is being spent. Read only, creates no rule.",
+		Description: "An app's error budget remaining and burn rate per alert tier for a request based SLO (availability, or latency with latency_ms). Read only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in sloStatusInput) (*mcp.CallToolResult, *apiclient.SLOPreviewResource, error) {
 		cfg := apiclient.AlertSLOConfig{Objective: "availability", Target: in.Target, LatencyMs: in.LatencyMs}
 		if in.LatencyMs > 0 {

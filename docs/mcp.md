@@ -59,6 +59,19 @@ All are `read` class and available in every mode. Tools marked untrusted return 
 
 [Preview environments](/previews) are listed by the existing `list_preview_environments`.
 
+These four are on demand: none is in the default session, enable the toolset first with `enable_toolset`.
+
+| Tool | Toolset | Answers |
+| --- | --- | --- |
+| `list_inbox` | `inbox` | Your notification inbox with the unread count. Takes `unread_only` and `limit`. |
+| `simulate_placement` | `nodes` | Dry run, root token. With `cpu_milli`, `memory_mib` and `count`: where the apps would land. With one of `zone` or `node`: what happens if it is lost. Creates and changes nothing. |
+| `get_cdn_overview` | `metrics` | Fleet edge view over `window` (`5m`, `1h`, `24h`): request rate, 5xx rate, cache hit ratio, traffic per node. |
+| `verify_audit_log` | `audit` | Walks the audit hash chain and reports edited, removed or truncated rows. Root token. |
+
+## Scripted agent eval
+
+`go run ./scripts/mcp-eval` runs ten fixed agent tasks through the real MCP server (progressive session, so each task enables the toolset it needs) and prints pass or fail with the estimated tokens each one costs. It makes no model call and needs no network: by default it answers from an in-process demo API. Pass `-api URL -token TOKEN` to drive a real control plane instead (then it only checks that every call succeeds), and `-json` for machine output. It exits 1 when a task fails, so it can gate a change to the tool surface.
+
 ## Write tools (`--allow-write`)
 
 Without the flag these tools are not registered: they are absent from `tools/list` and a call to them fails as an unknown tool before any API request is made.

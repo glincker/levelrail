@@ -1,5 +1,38 @@
 {
   "components": {
+    "parameters": {
+      "IdempotencyKey": {
+        "description": "Client chosen key, at most 255 characters. A retry with the same key and body from the same caller replays the first response for 24 hours instead of repeating the action. Reusing a key with a different body returns 422.",
+        "in": "header",
+        "name": "Idempotency-Key",
+        "required": false,
+        "schema": {
+          "maxLength": 255,
+          "type": "string"
+        }
+      },
+      "Limit": {
+        "description": "Maximum items to return. Capped at 500.",
+        "in": "query",
+        "name": "limit",
+        "required": false,
+        "schema": {
+          "maximum": 500,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "Offset": {
+        "description": "Items to skip before the first returned item.",
+        "in": "query",
+        "name": "offset",
+        "required": false,
+        "schema": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      }
+    },
     "schemas": {
       "ErrorResponse": {
         "properties": {
@@ -1536,6 +1569,14 @@
       "get": {
         "description": "Apps CRUD. requireAbility accepts either a session (implicitly root, there is exactly one human identity in Phase 1) or a bearer token scoped to at least the named ability, so a read-only MCP-issued token is provably unable to reach a write/deploy route, not just conventionally discouraged from calling it.\n\nRequires the `read` ability.",
         "operationId": "handleListApps",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -1602,6 +1643,11 @@
       "post": {
         "description": "Requires the `write` ability.",
         "operationId": "handleCreateApp",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -2032,6 +2078,14 @@
       "get": {
         "description": "Requires the `read` ability.",
         "operationId": "handleAppsSleepOverview",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -9512,6 +9566,9 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
           }
         ],
         "requestBody": {
@@ -38680,6 +38737,14 @@
       "get": {
         "description": "Passkeys (WebAuthn, passkeys.go). Registration acts on the caller's own account, so requireAuth like the 2FA routes above. /passkey-login/... is the sign-in ceremony, necessarily public, same shape as /2fa/verify.\n\nRequires a signed-in dashboard session.",
         "operationId": "Getapiv1authpasskeys",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -85718,6 +85783,14 @@
       "get": {
         "description": "Requires the `read` ability.",
         "operationId": "handleListAllPreviews",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -90958,6 +91031,11 @@
       "post": {
         "description": "Requires the `write:sensitive` ability.",
         "operationId": "handleCreateScheduledMaintenance",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -98121,6 +98199,14 @@
       "get": {
         "description": "Requires the `read` ability.",
         "operationId": "handleSleepFleet",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -102198,6 +102284,14 @@
       "get": {
         "description": "Requires the `read` ability.",
         "operationId": "handleListStorageOrphans",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -105485,6 +105579,14 @@
       "get": {
         "description": "Orphaned named volumes: detection is a read (AbilityRead), the cleanup that actually deletes one is the same AbilityRoot, fleet-wide, no-undo tier system/prune sits behind, not AbilityWrite.\n\nRequires the `read` ability.",
         "operationId": "handleListOrphans",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -107103,6 +107205,12 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "$ref": "#/components/parameters/Limit"
+          },
+          {
+            "$ref": "#/components/parameters/Offset"
           }
         ],
         "responses": {

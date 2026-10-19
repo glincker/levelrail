@@ -32,7 +32,7 @@ func registerCanaryTools(server *mcp.Server, client *apiclient.Client) {
 
 	addTool(server, &mcp.Tool{
 		Name:        "start_canary",
-		Description: "Run a new image beside an app and send it a share of traffic. With stages the control plane walks the share up (for example 10, 25, 50, 100 percent) and rolls the canary back by itself when its error rate or p95 latency breaches the thresholds against the stable release. Without stages it is a manual canary at weight. One canary per app, single-replica image apps only.",
+		Description: "Run a new image beside an app with a share of traffic. With stages the control plane steps the share up and rolls back on an error rate or p95 breach against stable; without stages it is a manual canary at weight. One per app, single-replica image apps only.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in canaryStartInput) (*mcp.CallToolResult, apiclient.CanaryResource, error) {
 		out, err := client.StartCanaryWith(ctx, in.Name, apiclient.CanaryStartRequest{
 			Image: in.Image, Weight: in.Weight, Stages: in.Stages, Interval: in.Interval,

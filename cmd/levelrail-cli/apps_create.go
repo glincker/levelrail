@@ -925,6 +925,7 @@ Git-build path (flags):
   --ref string            git ref/branch (default: current branch, then "main")
   --image-repo string     image name without a tag (required)
   --build-type string  "dockerfile" (default) or "railpack" (auto-detected build, no Dockerfile needed)
+  --framework string      framework preset that fills the port, build type and volumes; list them with "build frameworks"
   --dockerfile string   Dockerfile path relative to the repo root, --build-type dockerfile only (default: "Dockerfile")
   --base-directory string  subdirectory of the repo to build from, for a monorepo (default: repo root)
   --build-arg KEY=VALUE   Dockerfile build arg, repeatable, --build-type dockerfile only
@@ -941,6 +942,10 @@ Manifest path:
       no running container)
   build.args from app.yaml's own build.args flow through automatically for a dockerfile build;
     --build-arg overrides them entirely rather than merging
+
+Rollout (any path above):
+  --replicas int          number of container replicas (default 1, or the spec's replicas with --file)
+  --strategy string       deploy strategy: rolling, recreate or blue-green (default blue-green, or the spec's strategy with --file)
 
 Placement (any path above):
   --node-id string        node to place this app on; omitted auto-places it on the

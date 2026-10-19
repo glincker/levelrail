@@ -81,7 +81,9 @@ type sessionInfoResponse struct {
 	Email       string `json:"username"`
 	DisplayName string `json:"display_name"`
 	HasPassword bool   `json:"has_password"`
-	ExpiresAt   string `json:"expires_at"`
+	// EmailVerified is true once the address was confirmed, for example by a verified OAuth sign-in.
+	EmailVerified bool   `json:"email_verified"`
+	ExpiresAt     string `json:"expires_at"`
 }
 
 // Email stays under the 'username' wire key for frontend compatibility.
@@ -103,10 +105,11 @@ func (rt *Router) handleGetSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, sessionInfoResponse{
-		Email:       user.Email,
-		DisplayName: user.DisplayName,
-		HasPassword: user.PasswordHash != nil,
-		ExpiresAt:   sess.expiresAt.UTC().Format(time.RFC3339),
+		Email:         user.Email,
+		DisplayName:   user.DisplayName,
+		HasPassword:   user.PasswordHash != nil,
+		EmailVerified: rt.authEngine.EmailVerified(r.Context(), user.Email),
+		ExpiresAt:     sess.expiresAt.UTC().Format(time.RFC3339),
 	})
 }
 

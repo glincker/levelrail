@@ -88,6 +88,38 @@ func TestGenOpenAPI31(t *testing.T) {
 	}
 }
 
+func TestGenOpenAPI31ListAndIdempotencyParams(t *testing.T) {
+	routes := []route{
+		{method: "GET", path: "/api/v1/apps", ability: "AbilityRead", handler: "handleListApps"},
+		{method: "POST", path: "/api/v1/apps", ability: "AbilityWrite", handler: "handleCreateApp", idempotent: true},
+		{method: "POST", path: "/api/v1/other", ability: "AbilityWrite", handler: "handleOther"},
+	}
+	doc := decode(t, routes, nil)
+	refs := func(o map[string]any) string {
+		var out []string
+		params, _ := o["parameters"].([]any)
+		for _, p := range params {
+			out = append(out, p.(map[string]any)["$ref"].(string))
+		}
+		return strings.Join(out, ",")
+	}
+	if got := refs(op(t, doc, "/api/v1/apps", "get")); !strings.Contains(got, "/Limit") || !strings.Contains(got, "/Offset") {
+		t.Errorf("paged route refs = %q", got)
+	}
+	if got := refs(op(t, doc, "/api/v1/apps", "post")); !strings.HasSuffix(got, "/IdempotencyKey") {
+		t.Errorf("idempotent route refs = %q", got)
+	}
+	if _, ok := op(t, doc, "/api/v1/other", "post")["parameters"]; ok {
+		t.Error("plain route must not gain parameters")
+	}
+	comps := doc["components"].(map[string]any)["parameters"].(map[string]any)
+	for _, k := range []string{"Limit", "Offset", "IdempotencyKey"} {
+		if _, ok := comps[k]; !ok {
+			t.Errorf("missing components.parameters.%s", k)
+		}
+	}
+}
+
 func TestHumanizeHandler(t *testing.T) {
 	tests := map[string]string{
 		"handleListGPUNodes": "List GPU Nodes",

@@ -600,6 +600,15 @@
   "status_reason",
   "weight"
  ],
+ "get_cdn_overview": [
+  "cache",
+  "error_rate_5xx",
+  "has_traffic",
+  "nodes",
+  "rate_per_sec",
+  "requests",
+  "window"
+ ],
  "get_cloudflare_tunnel_status": [
   "enabled",
   "has_token",
@@ -626,6 +635,7 @@
   "next_backup_at",
   "next_drill_at",
   "recipients",
+  "replica",
   "retain_daily",
   "retain_monthly",
   "retain_weekly",
@@ -1530,6 +1540,10 @@
   "name",
   "updated_at"
  ],
+ "list_inbox": [
+  "items",
+  "unread"
+ ],
  "list_load_balancers": [
   "items",
   "limit",
@@ -2351,6 +2365,12 @@
   "principal_type",
   "resource"
  ],
+ "simulate_placement": [
+  "displaced",
+  "lost_node_ids",
+  "placed",
+  "unplaced"
+ ],
  "start_canary": [
   "active",
   "created_at",
@@ -2418,6 +2438,11 @@
   "name",
   "redeploy_needed",
   "secret"
+ ],
+ "verify_audit_log": [
+  "checked",
+  "ok",
+  "problems"
  ],
  "verify_control_plane_backup": [
   "checks",

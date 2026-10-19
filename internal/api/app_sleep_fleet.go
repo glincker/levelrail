@@ -31,6 +31,7 @@ type sleepFleetResource struct {
 	// ReclaimedBytes sums the memory limits of apps that are asleep right now.
 	ReclaimedBytes int64           `json:"reclaimed_bytes"`
 	Apps           []sleepFleetApp `json:"apps"`
+	Page           *pageInfo       `json:"page,omitempty"`
 }
 
 // handleSleepFleet handles GET /api/v1/sleep: every app with sleeping on that
@@ -52,6 +53,7 @@ func (rt *Router) handleSleepFleet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := buildSleepFleet(rows, svcs, canRead)
+	out.Apps, out.Page = pageWithInfo(w, r, out.Apps)
 	for i := range out.Apps {
 		out.Apps[i].WakeTiming = toWakeTimingResource(rt.wakeTiming(r.Context(), out.Apps[i].Name))
 	}

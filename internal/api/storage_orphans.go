@@ -48,7 +48,8 @@ type storageOrphansResponse struct {
 	TotalBytes int64                   `json:"total_bytes"`
 	// ThresholdBytes is the size above which the dashboard recommends a
 	// clean-up.
-	ThresholdBytes int64 `json:"threshold_bytes"`
+	ThresholdBytes int64     `json:"threshold_bytes"`
+	Page           *pageInfo `json:"page,omitempty"`
 }
 
 func orphanAttentionThreshold() int64 {
@@ -171,7 +172,9 @@ func (rt *Router) handleListStorageOrphans(w http.ResponseWriter, r *http.Reques
 		rt.internalError(w, "api: list storage orphans failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, storageOrphansResponse{Orphans: list, TotalBytes: total, ThresholdBytes: orphanAttentionThreshold()})
+	resp := storageOrphansResponse{TotalBytes: total, ThresholdBytes: orphanAttentionThreshold()}
+	resp.Orphans, resp.Page = pageWithInfo(w, r, list)
+	writeJSON(w, http.StatusOK, resp)
 }
 
 type reclaimOrphanRequest struct {

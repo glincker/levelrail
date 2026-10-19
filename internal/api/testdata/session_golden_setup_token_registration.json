@@ -32,7 +32,7 @@
   {
     "Step": "session",
     "Status": 200,
-    "Body": "{\"display_name\":\"first@example.test\",\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"first@example.test\"}",
+    "Body": "{\"display_name\":\"first@example.test\",\"email_verified\":false,\"expires_at\":\"\\u003cvolatile\\u003e\",\"has_password\":true,\"username\":\"first@example.test\"}",
     "Cookies": null,
     "Retry": false
   },

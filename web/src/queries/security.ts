@@ -19,6 +19,7 @@ export interface SessionInfo {
   username: string
   display_name: string
   has_password: boolean
+  email_verified: boolean
   expires_at: string
 }
 

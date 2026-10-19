@@ -18,7 +18,10 @@ import (
 	"strings"
 )
 
-type route struct{ method, path, ability, handler, description string }
+type route struct {
+	method, path, ability, handler, description string
+	idempotent                                  bool
+}
 
 func (r route) key() string { return r.method + " " + r.path }
 
@@ -68,6 +71,7 @@ func parseRoutes(dir string) ([]route, error) {
 			if h := regHndl.FindAllString(m[3], -1); h != nil {
 				r.handler = h[len(h)-1]
 			}
+			r.idempotent = strings.Contains(m[3], "rt.idempotent(")
 			r.description = precedingComment(lines, i)
 			out = append(out, r)
 		}

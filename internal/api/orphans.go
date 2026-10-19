@@ -39,6 +39,12 @@ func (rt *Router) loadOrphanDesired(ctx context.Context) (orphans.Desired, error
 	})
 }
 
+// orphanReportPage is the scan report with findings paged when limit or offset is sent.
+type orphanReportPage struct {
+	orphans.Report
+	Page *pageInfo `json:"page,omitempty"`
+}
+
 // handleListOrphans handles GET /api/v1/system/orphans: every leftover
 // container and volume across nodes, with where each stands against the
 // grace period. Read only.
@@ -52,7 +58,9 @@ func (rt *Router) handleListOrphans(w http.ResponseWriter, r *http.Request) {
 		rt.internalError(w, "api: scan orphans failed", err)
 		return
 	}
-	writeJSON(w, http.StatusOK, rep)
+	out := orphanReportPage{Report: rep}
+	out.Findings, out.Page = pageWithInfo(w, r, rep.Findings)
+	writeJSON(w, http.StatusOK, out)
 }
 
 // handleReapOrphans handles POST /api/v1/system/orphans/reap: one reaper

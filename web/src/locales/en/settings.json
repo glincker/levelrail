@@ -1384,6 +1384,8 @@
       "title": "Profile",
       "description": "Your own details. What you can manage is listed under My access below.",
       "email": "Email",
+      "emailVerified": "Verified",
+      "emailUnverified": "Unverified",
       "displayName": "Display name",
       "hasPassword": "This account signs in with a password.",
       "noPassword": "This account has no password set, only OAuth sign-in.",

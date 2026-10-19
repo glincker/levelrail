@@ -12,7 +12,7 @@ The control plane is meant to stay small on a 2 vCPU, 8 GB box. Measured idle on
 3. **Context and shutdown.** Every loop takes a context and returns when it ends.
 4. **Bounded memory.** Every cache has a size or age cap. Large data (search index, exports, archives) lives in SQLite or on disk, never only in RAM. Plugin panel responses and marketplace indexes are capped and expire.
 5. **No per-request fan-out.** A request must not start work proportional to the number of apps, nodes or plugins. Aggregate in one query or read a cached snapshot.
-6. **Paginate lists.** List endpoints take `limit` and `offset` with a hard cap. UI lists over 50 rows are virtualized.
+6. **Paginate lists.** List endpoints take `limit` and `offset` with a hard cap of 500. Array responses set `X-Total-Count`; struct-shaped responses (orphans, storage orphans, sleep fleet and sleep overview) keep their fields and add a `page` block (`total`, `limit`, `offset`, `next_offset` until the last page) once `limit` or `offset` is sent. Paged routes show `limit` and `offset` in the OpenAPI document, and routes that honor `Idempotency-Key` list that header. UI lists over 50 rows are virtualized.
 7. **Bounded streams.** Long lived streams use `startLiveSSE` so they count against `APP_MAX_LIVE_STREAMS`.
 8. **MCP toolset budget.** New MCP tools must fit the per-toolset token budget in `internal/mcptools/budget_test.go`. Budgets are lowered, not raised.
 9. **Retention.** New stored telemetry has a retention default and is pruned. The metrics database is capped at 1 GiB and pruned hourly.

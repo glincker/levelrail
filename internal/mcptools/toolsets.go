@@ -69,6 +69,7 @@ var toolsetDescriptions = map[string]string{
 	"global-environments": "Shared env sets across apps.",
 	"iac":                 "Plan and apply declarative resource files.",
 	"imports":             "Import plans for apps moving in from other platforms.",
+	"inbox":               "Your notification inbox: list and unread count.",
 	"iam":                 "Tokens, policies and access templates.",
 	"images":              "Registry images and credentials.",
 	"loadbalancer":        "Per-app load balancer settings and history.",

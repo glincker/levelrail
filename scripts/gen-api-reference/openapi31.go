@@ -25,6 +25,23 @@ var abilityScope = map[string]string{
 
 var regPathParam = regexp.MustCompile(`\{([A-Za-z0-9_]+)(?:\.\.\.)?\}`)
 
+// pagedRoutes lists the GET routes that honor limit and offset (internal/api/paging.go,
+// apps_list.go). Add a route here when it starts paging.
+var pagedRoutes = map[string]bool{
+	"GET /api/v1/apps":                true,
+	"GET /api/v1/system/orphans":      true,
+	"GET /api/v1/storage/orphans":     true,
+	"GET /api/v1/sleep":               true,
+	"GET /api/v1/apps/sleep/overview": true,
+	"GET /api/v1/tags/{id}/apps":      true,
+	"GET /api/v1/previews":            true,
+	"GET /api/v1/auth/passkeys":       true,
+}
+
+func paramRef(name string) map[string]any {
+	return map[string]any{"$ref": "#/components/parameters/" + name}
+}
+
 type brandInfo struct {
 	Name         string `yaml:"name"`
 	SupportEmail string `yaml:"support_email"`
@@ -154,6 +171,12 @@ func genOpenAPI31(routes []route, groups map[string]string, brand brandInfo) ([]
 				"name": m[1], "in": "path", "required": true, "schema": map[string]any{"type": "string"},
 			})
 		}
+		if pagedRoutes[r.key()] {
+			params = append(params, paramRef("Limit"), paramRef("Offset"))
+		}
+		if r.idempotent {
+			params = append(params, paramRef("IdempotencyKey"))
+		}
 		if len(params) > 0 {
 			op["parameters"] = params
 		}
@@ -211,6 +234,23 @@ func genOpenAPI31(routes []route, groups map[string]string, brand brandInfo) ([]
 				"sessionAuth": map[string]any{
 					"type": "apiKey", "in": "cookie", "name": "session_token",
 					"description": "Dashboard session cookie, set after signing in.",
+				},
+			},
+			"parameters": map[string]any{
+				"Limit": map[string]any{
+					"name": "limit", "in": "query", "required": false,
+					"description": "Maximum items to return. Capped at 500.",
+					"schema":      map[string]any{"type": "integer", "minimum": 1, "maximum": 500},
+				},
+				"Offset": map[string]any{
+					"name": "offset", "in": "query", "required": false,
+					"description": "Items to skip before the first returned item.",
+					"schema":      map[string]any{"type": "integer", "minimum": 0},
+				},
+				"IdempotencyKey": map[string]any{
+					"name": "Idempotency-Key", "in": "header", "required": false,
+					"description": "Client chosen key, at most 255 characters. A retry with the same key and body from the same caller replays the first response for 24 hours instead of repeating the action. Reusing a key with a different body returns 422.",
+					"schema":      map[string]any{"type": "string", "maxLength": 255},
 				},
 			},
 			"schemas": map[string]any{

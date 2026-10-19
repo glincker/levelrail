@@ -1,6 +1,11 @@
 import { useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { PencilSimpleIcon, WarningIcon } from '@phosphor-icons/react/dist/ssr'
+import {
+  PencilSimpleIcon,
+  SealCheckIcon,
+  WarningIcon,
+} from '@phosphor-icons/react/dist/ssr'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
@@ -61,7 +66,17 @@ export function ProfileCard() {
             <dt className="text-xs font-medium text-muted-foreground">
               {t('accountPage.profile.email')}
             </dt>
-            <dd className="text-foreground">{session.username}</dd>
+            <dd className="flex flex-wrap items-center gap-2 text-foreground">
+              {session.username}
+              <Badge variant={session.email_verified ? 'success' : 'muted'}>
+                {session.email_verified ? (
+                  <SealCheckIcon aria-hidden="true" />
+                ) : null}
+                {session.email_verified
+                  ? t('accountPage.profile.emailVerified')
+                  : t('accountPage.profile.emailUnverified')}
+              </Badge>
+            </dd>
           </div>
           <div className="space-y-1">
             <dt className="text-xs font-medium text-muted-foreground">

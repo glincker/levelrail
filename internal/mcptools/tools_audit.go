@@ -11,7 +11,7 @@ import (
 func registerAuditTools(server *mcp.Server, client *apiclient.Client) {
 	addTool(server, &mcp.Tool{
 		Name:        "list_audit_log",
-		Description: "List recorded write/deploy/root-tier requests across the control plane, newest first: who did what, when, from where, and whether it succeeded. Useful for answering 'who changed this env var and broke prod' or auditing recent admin activity. Entries made by an agent token carry agent_name and the MCP client name and version. Filter with q (text search), agent and status=failed.",
+		Description: "List recorded write, deploy and root requests, newest first: who did what, when, from where, and whether it succeeded. Agent token entries carry agent_name and MCP client. Filter with q, agent and status=failed.",
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in auditLogInput) (*mcp.CallToolResult, []apiclient.AuditLogEntryResource, error) {
 		entries, err := client.ListAuditLog(ctx, apiclient.ListAuditLogOptions{
 			Limit:      in.Limit,
