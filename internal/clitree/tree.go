@@ -345,7 +345,7 @@ var Tree = map[string]*Node{
 		"oauth":         {Subs: map[string]*Node{"list": nil, "set": nil}},
 		"email":         {Subs: map[string]*Node{"get": nil, "set": nil}},
 		"ingress":       {Subs: map[string]*Node{"get": nil, "set": nil, "https": {Subs: map[string]*Node{"status": nil, "enable": nil}}}},
-		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil}},
+		"dashboard-url": {Subs: map[string]*Node{"get": nil, "set": nil, "fix": nil}},
 		"ai-assistant": {Subs: map[string]*Node{"get": nil, "use": nil, "usage": nil,
 			"providers": {Subs: map[string]*Node{"list": nil, "set": nil, "test": nil, "remove": nil, "models": nil}},
 			"fallback":  {Subs: map[string]*Node{"set": nil}}}},

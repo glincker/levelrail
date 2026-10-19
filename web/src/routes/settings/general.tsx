@@ -37,6 +37,7 @@ import {
 import { DockerDiskUsageCard } from '@/components/settings/DockerDiskUsageCard'
 import { CertificatesCard } from '@/components/settings/CertificatesCard'
 import { MasterKeyCard } from '@/components/settings/MasterKeyCard'
+import { SettingsHealthCard } from '@/components/settings/SettingsHealthCard'
 import { DensityCard } from '@/components/settings/DensityCard'
 import { PageWidthCard } from '@/components/settings/PageWidthCard'
 
@@ -117,6 +118,8 @@ function GeneralSettingsPage() {
   return (
     <GeneralPageShell>
       <div className="space-y-(--glinr-page-gap)">
+        <SettingsHealthCard />
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">

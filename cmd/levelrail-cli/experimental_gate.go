@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/GLINCKER/levelrail/internal/experimental"
 )
@@ -73,4 +75,19 @@ func filterExperimentalUsage(usage string) string {
 		joined = strings.ReplaceAll(joined, ", and the BYOK AI assistant", "")
 	}
 	return joined
+}
+
+const betaSyncTimeout = 3 * time.Second
+
+// syncServerBetaFeatures lets the control plane's Settings switches decide what
+// a gated command may do. Failures keep the env-only answer.
+func syncServerBetaFeatures(prog string, args []string, lookupEnv func(string) (string, bool)) {
+	f, gated := experimentalFeatureFor(args)
+	help := len(args) > 0 && (args[0] == "help" || args[0] == "-h" || args[0] == "--help")
+	if !help && (!gated || experimental.Enabled(f)) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), betaSyncTimeout)
+	defer cancel()
+	_ = apiClientFromFlags(prog, "", "", "", lookupEnv).SyncBetaFeatures(ctx)
 }

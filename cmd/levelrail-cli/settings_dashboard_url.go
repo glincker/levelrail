@@ -28,6 +28,8 @@ func runSettingsDashboardURL(prog string, args []string, stdout, stderr io.Write
 		})
 	case "set":
 		return runSettingsDashboardURLSet(prog, args[1:], stdout, stderr, lookupEnv)
+	case "fix":
+		return runSettingsDashboardURLFix(prog, args[1:], stdout, stderr, lookupEnv)
 	default:
 		_, _ = fmt.Fprintf(stderr, "%s: unknown settings dashboard-url subcommand %q\n\n", prog, args[0])
 		_, _ = fmt.Fprint(stderr, settingsDashboardURLUsage(prog))
@@ -39,6 +41,11 @@ func settingsDashboardURLUsage(prog string) string {
 	return fmt.Sprintf(`Usage:
   %[1]s settings dashboard-url get [flags]
   %[1]s settings dashboard-url set --url URL [flags]
+  %[1]s settings dashboard-url fix [flags]
+
+fix switches the URL to https on the primary domain once that domain
+answers over https with a valid certificate. It moves passkeys and OAuth
+callbacks to the https host.
 
 The public URL operators use to reach the dashboard. Once it is https,
 sign-in over plain HTTP is refused (set APP_ALLOW_INSECURE_LOGIN=true on
@@ -72,4 +79,26 @@ func printDashboardURLHuman(out io.Writer, r dashboardURLResource) {
 		u = "(not set)"
 	}
 	_, _ = fmt.Fprintf(out, "dashboard_url: %s\n", u)
+}
+
+const dashboardHTTPSFixID = "settings.dashboard_url.https"
+
+func runSettingsDashboardURLFix(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
+	fs, tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP := apiFlagSet(prog, "settings dashboard-url fix", "print the fix result as JSON to stdout and nothing else", stderr)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintf(stderr, "Usage:\n  %s settings dashboard-url fix [flags]\n\nFlags:\n", prog)
+		fs.PrintDefaults()
+	}
+	tokenFlag, apiURLFlag, profileFlag, jsonOut, of, exitCode, ok := parseAPIFlags(fs, args, apiFlagPtrs{tokenFlagP, apiURLFlagP, profileFlagP, jsonOutP, outputFlagP, queryFlagP}, prog, stderr)
+	if !ok {
+		return exitCode
+	}
+	client := apiClientFromFlags(prog, apiURLFlag, tokenFlag, profileFlag, lookupEnv)
+	res, err := client.ApplyFix(context.Background(), dashboardHTTPSFixID, nil)
+	if err != nil {
+		return reportError(stdout, stderr, jsonOut, fmt.Errorf("fix dashboard url: %w", err))
+	}
+	return writeScheduledTaskResult(stdout, stderr, of, res, func() {
+		_, _ = fmt.Fprintf(stdout, "%s: %s\n", res.Outcome, res.Detail)
+	})
 }

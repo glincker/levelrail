@@ -135,7 +135,7 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 	if rt.brand != nil {
 		unit = strings.ToLower(rt.brand.ShortName)
 	}
-	return []fixit.Fix{
+	return append(rt.settingsFixes(), []fixit.Fix{
 		fixit.PublicAddressFix(fixit.PublicAddressDeps{
 			Check:      rt.meshCheck(network.CheckPublicAddress),
 			Candidates: rt.addressCandidates,
@@ -188,7 +188,7 @@ func (rt *Router) fixitFixes() []fixit.Fix {
 				return fixit.Finding{Failing: c.Status == doctorStatusWarn, Detail: c.Message, Command: c.Fix}, nil
 			},
 		}),
-	}
+	}...)
 }
 
 func (rt *Router) fixitCreateBackup(ctx context.Context) (string, error) {

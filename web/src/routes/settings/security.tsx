@@ -6,6 +6,7 @@ import { sessionQueryOptions, useSession } from '../../queries/security'
 import { formatAbsolute } from '../../lib/dateFormat'
 import { twoFactorStatusQueryOptions } from '../../queries/twoFactor'
 import { passkeysQueryOptions } from '../../queries/passkeys'
+import { CheckFix } from '../../components/fixit/FixAction'
 import { AuthEngineCard } from '../../components/AuthEngineCard'
 import { DockerGuardCard } from '../../components/DockerGuardCard'
 import { SignInSecurityCards } from '../../components/SignInSecurityCards'
@@ -56,6 +57,8 @@ function SecuritySettingsPage() {
   return (
     <SecurityPageShell>
       <div className="space-y-6">
+        <CheckFix checkId="dashboard_url_https" />
+
         <Card id="sessions">
           <CardHeader>
             <CardTitle>{t('securityPage.session.title')}</CardTitle>
