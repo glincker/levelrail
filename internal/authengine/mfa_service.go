@@ -327,7 +327,7 @@ func (m *MFA) PasskeyFinishRegistration(ctx context.Context, legacyID, challenge
 	}
 	cred, err := m.auth.FinishPasskeyRegistration(ctx, uid, challenge, label, body)
 	if isCode(err, theauth.CodeWebAuthn) {
-		return Passkey{}, ErrPasskeyRejected
+		return Passkey{}, fmt.Errorf("%w: %s", ErrPasskeyRejected, err.Error())
 	}
 	if err != nil {
 		return Passkey{}, fmt.Errorf("authengine: finish passkey registration: %w", err)
@@ -350,7 +350,7 @@ func (m *MFA) PasskeyFinishLogin(ctx context.Context, challenge string, body io.
 	_, sess, err := m.auth.FinishPasskeyLogin(ctx, challenge, body, userAgent, ip)
 	if err != nil {
 		if isCode(err, theauth.CodeWebAuthn) || errors.Is(err, theauth.ErrReplayDetected) {
-			return "", ErrPasskeyRejected
+			return "", fmt.Errorf("%w: %s", ErrPasskeyRejected, err.Error())
 		}
 		return "", fmt.Errorf("authengine: finish passkey login: %w", err)
 	}

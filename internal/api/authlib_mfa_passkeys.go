@@ -61,7 +61,7 @@ func (l *authLibMFA) finishRegistration(w http.ResponseWriter, r *http.Request) 
 	}
 	created, err := l.mfa.PasskeyFinishRegistration(r.Context(), user.ID, sessionID, label, http.MaxBytesReader(w, r.Body, passkeyBodyLimit))
 	if errors.Is(err, authengine.ErrPasskeyRejected) {
-		l.rt.logger.Warn("api: passkey registration finish failed", slog.String("user_id", user.ID))
+		l.rt.logger.Warn("api: passkey registration finish failed", slog.String("user_id", user.ID), slog.String("origin", r.Header.Get("Origin")), slog.String("reason", err.Error()))
 		writeError(w, http.StatusBadRequest, "could not verify passkey")
 		return
 	}
