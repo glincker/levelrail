@@ -62,9 +62,5 @@ test-results/
 .agents/
 skills-lock.json
 
-# marketing site (VitePress)
-site/.vitepress/dist/
-site/.vitepress/cache/
-
 __pycache__/
 *.pyc
