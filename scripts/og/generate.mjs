@@ -46,25 +46,31 @@ const read = (slug) => {
 }
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+const fontDir = join(root, 'scripts', 'og', 'fonts')
+const GRAIN = `url("data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><filter id="n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncR type="linear" slope="3" intercept="-1.15"/><feFuncG type="linear" slope="3" intercept="-1.15"/><feFuncB type="linear" slope="3" intercept="-1.15"/></feComponentTransfer></filter><rect width="100%" height="100%" filter="url(#n)"/></svg>')}")`
 const html = ({ label, title, desc }) => `<!doctype html><meta charset="utf-8"><style>
+@font-face{font-family:Inter;src:url(file://${fontDir}/inter-var.woff2);font-weight:100 900}
+@font-face{font-family:JB;src:url(file://${fontDir}/jetbrains-mono-var.woff2);font-weight:100 800}
 *{margin:0;box-sizing:border-box}
-body{width:1200px;height:630px;overflow:hidden;background:#000;color:#fff;font-family:Geist,Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;position:relative}
-.wash{position:absolute;inset:0;background:radial-gradient(54% 92% at 50% 0%,rgba(182,171,255,.5),transparent 72%),radial-gradient(38% 78% at 8% 0%,rgba(0,203,170,.42),transparent 72%),radial-gradient(36% 70% at 94% 0%,rgba(238,243,95,.34),transparent 72%)}
-.fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 15%,#000 78%)}
+body{width:1200px;height:630px;overflow:hidden;background:#050709;color:#fff;font-family:Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;position:relative}
+.wash{position:absolute;inset:0;background:radial-gradient(70% 100% at 100% 0%,rgba(47,179,220,.62),rgba(20,150,170,.28) 45%,transparent 75%),radial-gradient(45% 70% at 0% 0%,rgba(20,170,150,.2),transparent 70%),radial-gradient(50% 50% at 100% 100%,rgba(30,70,160,.25),transparent 70%)}
+.frame{position:absolute;left:790px;top:150px;width:620px;height:440px;transform-origin:0 0;transform:perspective(1240px) rotateY(-22deg) rotateX(9deg) rotateZ(-1.5deg);border-radius:16px;overflow:hidden;background:#0a0d10;box-shadow:0 0 0 1.5px rgba(92,196,232,.75),0 0 40px rgba(47,179,220,.35),-24px 40px 70px rgba(0,0,0,.8)}
+.frame img{width:620px;display:block;opacity:.96}
+.grain{position:absolute;inset:0;z-index:5;pointer-events:none;background-image:${GRAIN};background-size:300px 300px;opacity:.085;mix-blend-mode:screen}
 .c{position:absolute;inset:0;padding:64px 72px;display:flex;flex-direction:column}
 .top{display:flex;align-items:center;gap:16px}
 .top svg{width:52px;height:52px}
-.mono{font-family:"Geist Mono","SF Mono",ui-monospace,Menlo,monospace}
-.label{font-size:22px;letter-spacing:.1em;text-transform:uppercase;color:#cfcfd3}
-.main{margin-top:auto;margin-bottom:34px}
-h1{font-weight:300;font-size:${title.length > 44 ? 64 : 80}px;line-height:1.05;letter-spacing:-.025em;max-width:1000px}
-p{margin-top:22px;font-size:28px;line-height:1.35;color:#a9a9b2;max-width:960px}
-.foot{display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,.12);padding-top:20px;font-size:22px;color:#8d8d96}
-.foot b{color:#eef35f;font-weight:400}
-</style><div class="wash"></div><div class="fade"></div><div class="c">
+.mono{font-family:JB,"JetBrains Mono",Menlo,monospace}
+.label{font-size:22px;letter-spacing:.1em;text-transform:uppercase;color:#cfd6dc}
+.main{margin-top:auto;margin-bottom:34px;position:relative;z-index:10}
+h1{font-weight:700;font-size:${title.length > 30 ? 52 : 66}px;line-height:1.06;letter-spacing:-.035em;max-width:640px}
+p{margin-top:22px;font-size:24px;line-height:1.4;color:#98a3ab;max-width:600px}
+.foot{display:flex;gap:28px;width:640px;border-top:1px solid #232a30;padding-top:20px;font-size:22px;color:#6b757c}
+.foot b{color:#5cc4e8;font-weight:400}
+</style><div class="wash"></div><div class="frame"><img src="file://${join(root, 'docs/assets/screenshots/dashboard-home.png')}"></div><div class="c">
 <div class="top">${BRAND.logo}<span class="label mono">${esc(label)}</span></div>
 <div class="main"><h1>${esc(title)}</h1>${desc ? `<p>${esc(desc)}</p>` : ''}</div>
-<div class="foot mono"><span>${esc(host)}</span><b>${esc(BRAND.name)}</b></div></div>`
+<div class="foot mono"><span>${esc(host)}</span><b>${esc(BRAND.name)}</b></div></div><div class="grain"></div>`
 
 const clip = (s, n) => (s.length <= n ? s : s.slice(0, s.lastIndexOf(' ', n - 1)).replace(/[,.;:]$/, '') + '...')
 const tmp = mkdtempSync(join(tmpdir(), 'og-'))
@@ -78,7 +84,7 @@ const render = (name, card) => {
   for (let i = 0; ; i++) {
     try { execFileSync(CHROME, argv, { stdio: 'ignore', timeout: 30000 }); break } catch (e) { if (i === 2) throw e }
   }
-  if (process.env.OG_QUANTIZE !== '0') { try { execFileSync('magick', [out, '-colors', '128', '-define', 'png:compression-level=9', out], { stdio: 'ignore' }) } catch { /* optional */ } }
+  if (process.env.OG_QUANTIZE !== '0') { try { execFileSync('magick', [out, '-colors', '256', '-define', 'png:compression-level=9', out], { stdio: 'ignore' }) } catch { /* optional */ } }
   console.log(`${String(Math.round(statSync(out).size / 1024)).padStart(4)} KB  ${out.replace(root + '/', '')}`)
   return out
 }
