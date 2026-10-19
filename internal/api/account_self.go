@@ -37,6 +37,9 @@ func (rt *Router) accountDB() accountSelfStore {
 	return nil
 }
 
+// accountMutationMu serializes the checks and writes that must not interleave (last sign-in method, last root).
+var accountMutationMu sync.Mutex
+
 // accountCaller resolves the signed-in account behind a self-service call. A
 // session is the account itself; a token must belong to a user and hold need.
 // The account is never read from the request, only from the credential.
@@ -59,6 +62,19 @@ func (rt *Router) accountCaller(w http.ResponseWriter, r *http.Request, need str
 	}
 	if !hasAbility(rec.Abilities, need) {
 		writeError(w, http.StatusForbidden, "token lacks the required ability (needs "+need+")")
+		return "", false, false
+	}
+	if rec.AgentName != "" {
+		writeError(w, http.StatusForbidden, "agent tokens cannot manage an account")
+		return "", false, false
+	}
+	attached, err := rt.policies.ListPoliciesForPrincipal(r.Context(), store.PrincipalTypeToken, rec.ID)
+	if err != nil {
+		rt.internalError(w, "api: account caller: list token policies failed", err)
+		return "", false, false
+	}
+	if len(attached) > 0 {
+		writeError(w, http.StatusForbidden, "a scoped token cannot manage an account")
 		return "", false, false
 	}
 	return rec.OwnerUserID, false, true

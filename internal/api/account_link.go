@@ -55,6 +55,8 @@ func (rt *Router) handleUnlinkProvider(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotImplemented, "linked providers are not available on this server")
 		return
 	}
+	accountMutationMu.Lock()
+	defer accountMutationMu.Unlock()
 	left, err := rt.signInMethodsLeft(r.Context(), userID, provider)
 	if err != nil {
 		rt.internalError(w, "api: unlink provider: count sign-in methods failed", err)

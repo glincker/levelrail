@@ -172,6 +172,47 @@ func TestMyActivity_TokenAccess(t *testing.T) {
 	}
 }
 
+func TestAccountRoutes_RefuseAgentAndScopedTokens(t *testing.T) {
+	h := newCodeHarness(t, false)
+	ctx := context.Background()
+	abilities := []string{AbilityRead, AbilityReadSensitive}
+	owner := store.User{ID: "user_acct_owner", Email: "acct-owner@example.com", DisplayName: "Owner", Abilities: abilities, CreatedAt: time.Now()}
+	if err := h.db.CreateUser(ctx, owner); err != nil {
+		t.Fatal(err)
+	}
+	plainAgent := "acct-secret-agent"
+	if err := h.db.SaveAPIToken(ctx, store.APIToken{ID: "agent", Name: "agent", TokenHash: hashToken(plainAgent), Abilities: abilities, OwnerUserID: owner.ID, AgentName: "bot"}); err != nil {
+		t.Fatal(err)
+	}
+	scoped := seedOwnedToken(t, h, "scoped", owner.ID, abilities)
+	policyID, err := store.NewPolicyID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.db.SavePolicy(ctx, store.Policy{ID: policyID, Name: "scope-test", Document: `{"statements":[]}`}); err != nil {
+		t.Fatal(err)
+	}
+	attachID, err := store.NewPolicyAttachmentID()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := h.db.AttachPolicy(ctx, attachID, policyID, store.PrincipalTypeToken, "scoped"); err != nil {
+		t.Fatal(err)
+	}
+	plain := seedOwnedToken(t, h, "plain", owner.ID, abilities)
+	for name, tc := range map[string]struct {
+		token string
+		want  int
+	}{"agent token": {plainAgent, http.StatusForbidden}, "scoped token": {scoped, http.StatusForbidden}, "plain owner token": {plain, http.StatusOK}} {
+		t.Run(name, func(t *testing.T) {
+			rec := serve(h.rt, bearerRequest(http.MethodGet, "/api/v1/auth/my-activity", "", tc.token))
+			if rec.Code != tc.want {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, tc.want, rec.Body.String())
+			}
+		})
+	}
+}
+
 func TestPreferences(t *testing.T) {
 	h := newCodeHarness(t, false)
 	own := h.userSession()

@@ -45,7 +45,9 @@ func (rt *Router) deleteBlockers(ctx context.Context, user *store.User) ([]delet
 	if n <= 1 {
 		out = append(out, deleteBlocker{Code: deleteBlockLastUser, FixPath: "/settings/users"})
 	}
-	if slices.Contains(user.Abilities, AbilityRoot) && rt.roles != nil {
+	if slices.Contains(user.Abilities, AbilityRoot) && rt.roles == nil {
+		out = append(out, deleteBlocker{Code: deleteBlockLastRoot, FixPath: "/settings/users"})
+	} else if slices.Contains(user.Abilities, AbilityRoot) {
 		others, err := rt.roles.CountRootUsersExcept(ctx, user.ID)
 		if err != nil {
 			return nil, fmt.Errorf("count root users: %w", err)
@@ -157,6 +159,8 @@ func (rt *Router) handleDeleteAccount(w http.ResponseWriter, r *http.Request) {
 	if !rt.accountDeleteProven(w, r, userID, viaSession, req.stepUpProof) {
 		return
 	}
+	accountMutationMu.Lock()
+	defer accountMutationMu.Unlock()
 	blockers, err := rt.deleteBlockers(r.Context(), user)
 	if err != nil {
 		rt.internalError(w, "api: delete account failed", err)
