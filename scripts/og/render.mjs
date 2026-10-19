@@ -26,7 +26,7 @@ const CHIPS = ["Apache 2.0", "300+ templates", "No Kubernetes"];
 
 // h1 line 2 is the accent line.
 const COPY = {
-  vercel: { cta: "Get started", h1: "Your own Vercel.<br><em>One binary.</em>", sub: "The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.", chips: CHIPS },
+  vercel: { cta: "Get started", h1: "Your own Vercel.<br><em>On your server.</em>", sub: "The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.", chips: CHIPS },
   push: { cta: "Get started", h1: "Push to git.<br><em>Get a running app.</em>", sub: "Self-hosted deploys with HTTPS, live logs, metrics and one-click rollback.", chips: CHIPS },
   docs: { cta: "Read the docs", h1: "Deploy, observe,<br><em>roll back.</em>", sub: "Install and run the platform on your own servers.", chips: ["Guides", "CLI", "API", "Templates"] },
   install: { cta: "Install in minutes", h1: "One command.<br><em>Your own cloud.</em>", sub: "Install on a fresh Linux box and open the dashboard in minutes.", chips: ["curl | sh", "Single binary", "Docker"] },

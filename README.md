@@ -1,5 +1,7 @@
 <div align="center">
-<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, one binary. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
+<img src="docs/assets/brand/social/github-social-1280x640.jpg" alt="Levelrail: your own Vercel, on your server. The lightweight, self-hosted alternative to Vercel, Heroku and Coolify." width="880">
+<br>
+<img src="docs/assets/brand/levelrail-default.svg" alt="Levelrail logo" width="48" height="48">
 <h1>Levelrail</h1>
 <p><strong>The lightweight, self-hosted alternative to Vercel, Heroku and Coolify.</strong><br>
 Push to git. Get HTTPS, logs, metrics and one-click rollback on your own servers.</p>
