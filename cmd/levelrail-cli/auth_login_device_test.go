@@ -97,6 +97,8 @@ func TestRun_AuthLoginDevice_FullFlow(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
+		case "/api/v1/instance":
+			_, _ = w.Write([]byte(`{"instance_id":"inst_TESTTESTTESTTEST","name":"Test","fingerprint":"aaaa-bbbb"}`))
 		case "/api/v1/auth/device/start":
 			startCalls++
 			w.WriteHeader(http.StatusCreated)
@@ -138,6 +140,12 @@ func TestRun_AuthLoginDevice_FullFlow(t *testing.T) {
 	}
 	if creds.Token != "plaintext-value" {
 		t.Errorf("saved token = %q, want plaintext-value", creds.Token)
+	}
+	if creds.InstanceID != "inst_TESTTESTTESTTEST" || creds.Fingerprint != "aaaa-bbbb" {
+		t.Errorf("saved pin = %q %q, want the server identity pinned at login", creds.InstanceID, creds.Fingerprint)
+	}
+	if !strings.Contains(stderr.String(), "aaaa-bbbb") {
+		t.Errorf("stderr = %q, want the fingerprint printed for comparison", stderr.String())
 	}
 }
 

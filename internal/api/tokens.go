@@ -34,6 +34,9 @@ type tokenResource struct {
 	Agent *agentIdentity `json:"agent,omitempty"`
 	// Scope is set when the token is limited to one team.
 	Scope *tokenScopeResource `json:"scope,omitempty"`
+	// InstanceID is the server the token is bound to; LastIP is where it was last seen.
+	InstanceID string `json:"instance_id,omitempty"`
+	LastIP     string `json:"last_ip,omitempty"`
 }
 
 func toTokenResource(t store.APIToken) tokenResource {

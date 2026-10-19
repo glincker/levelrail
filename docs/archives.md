@@ -75,7 +75,7 @@ levelrail-cli archive policy --enabled=true --keep-days 365
 | `POST` | `/api/v1/archives/{id}/restore` |
 | `POST` | `/api/v1/archives/{id}/verify` |
 
-All need a root-scoped token. The MCP tool `list_archives` reads the list and policy.
+Listing and creating archives need `write:sensitive`; restoring, verifying, deleting, browsing and the policy need a root-scoped token. The MCP tool `list_archives` reads the list and policy.
 
 </Tab>
 </Tabs>

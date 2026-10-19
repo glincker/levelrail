@@ -1584,8 +1584,8 @@ Routes that do not fit an existing group.
 | GET | /api/v1/pipelines/templates/{id} | AbilityRead | handleGetPipelineTemplate |
 | GET | /api/v1/project-templates | AbilityRead | handleListProjectTemplates |
 | POST | /api/v1/project-templates/{id}/render | AbilityRead | handleRenderProjectTemplate |
-| GET | /api/v1/archives | AbilityRoot | handleListArchives |
-| POST | /api/v1/archives | AbilityRoot | handleCreateArchive |
+| GET | /api/v1/archives | AbilityWriteSensitive | handleListArchives |
+| POST | /api/v1/archives | AbilityWriteSensitive | handleCreateArchive |
 | GET | /api/v1/archives/policy | AbilityRoot | handleGetArchivePolicy |
 | PUT | /api/v1/archives/policy | AbilityRoot | handlePutArchivePolicy |
 | GET | /api/v1/archives/{id} | AbilityRoot | handleGetArchive |
@@ -1601,6 +1601,9 @@ Routes that do not fit an existing group.
 | GET | /api/v1/frameworks/{id} | AbilityRead | handleGetFramework |
 | GET | /api/v1/frameworks/{id}/dockerfile | AbilityRead | handleGetFrameworkDockerfile |
 | POST | /api/v1/ci/oidc-exchange | Public | handleCIOIDCExchange |
+| GET | /api/v1/instance | Public | handleInstance |
+| GET | /api/v1/instance/identity | AbilityRead | handleInstanceIdentity |
+| POST | /api/v1/instance/confirm-same | AbilityRoot | handleConfirmSameInstance |
 
 ## See also
 

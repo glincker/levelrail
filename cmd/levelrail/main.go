@@ -328,6 +328,12 @@ func run(logger *slog.Logger) error {
 		logger.Warn("beta feature switches not loaded", slog.String("error", err.Error()))
 	}
 
+	if moved, merr := db.ReconcileInstanceHost(ctx, dataDirFromEnv()); merr != nil {
+		logger.Warn("instance host check failed", slog.String("error", merr.Error()))
+	} else if moved {
+		logger.Warn("database restored onto a new host: instance identity rotated, CLI tokens bound to the old one are refused until an owner confirms it is the same instance")
+	}
+
 	// Resolved before the Docker client so every container created from the first pass carries it.
 	instanceID, err := db.GetOrCreateInstanceID(ctx)
 	if err != nil {

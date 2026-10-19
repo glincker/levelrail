@@ -66,7 +66,7 @@ func NewClient(baseURL, token string, opts ...Option) *Client {
 	c := &Client{
 		baseURL: strings.TrimRight(baseURL, "/"),
 		token:   token,
-		hc:      &http.Client{Timeout: 15 * time.Minute, Transport: scopeTransport{base: http.DefaultTransport}},
+		hc:      &http.Client{Timeout: 15 * time.Minute, Transport: pinTransport{base: scopeTransport{base: http.DefaultTransport}}},
 	}
 	for _, opt := range opts {
 		opt(c)

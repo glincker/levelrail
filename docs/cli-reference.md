@@ -29,6 +29,8 @@ Each command resolves its target in this order, and an explicit flag always wins
 | Control plane URL | `--api-url` | `APP_API_URL` | `http://localhost:8080` |
 | Profile | `--profile` | `APP_PROFILE` | `default` |
 
+Login pins the server. `auth login` prints the server's name and fingerprint (compare it with the one on the approval page) and saves its identity in the profile. Every later request first checks that the URL still answers as that server and refuses to send the token otherwise, naming the fix: `auth login --reauth` to log in to the new server, or `auth trust-server` to pin the one now answering. A profile saved before pinning existed asks once to confirm the fingerprint (`--yes` or `APP_TRUST_SERVER=yes` for scripts). `APP_API_TOKEN` keeps working and only prints a warning when the profile pins a different server. `auth status` and `auth whoami` show the pinned server.
+
 Manage more than one control plane with named profiles: `levelrail-cli auth login --profile staging`, then `--profile staging` on any command. `levelrail-cli profile list` shows them.
 ## Scripting: `--json` and exit codes
 
@@ -633,7 +635,10 @@ levelrail-cli models cache prune [--dry-run] [volume...] [flags]
 
 ```
 levelrail-cli auth login [--device] [--profile NAME] [flags]
+levelrail-cli auth login --reauth [--device] [flags]
 levelrail-cli auth whoami [--access] [flags]
+levelrail-cli auth status [flags]
+levelrail-cli auth trust-server [--yes] [flags]
 levelrail-cli auth session-link [flags]
 levelrail-cli auth code [flags]
 levelrail-cli auth approve <id> --match N [flags]

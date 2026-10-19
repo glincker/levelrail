@@ -140,6 +140,9 @@ export interface TokenResource {
   last_used_at?: string
   expires_at?: string
   revoked_at?: string
+  // Server the token is bound to and the address it was last seen from.
+  instance_id?: string
+  last_ip?: string
 }
 
 export interface CreateTokenRequest {

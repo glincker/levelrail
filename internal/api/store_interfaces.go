@@ -530,6 +530,7 @@ type Store interface {
 	DatabaseStore
 	AuthStore
 	TokenStore
+	InstanceStore
 	NodeStore
 	CertStore
 	StaticSiteStore

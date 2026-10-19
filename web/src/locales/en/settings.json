@@ -194,6 +194,8 @@
   },
   "tokens": {
     "tableLabel": "API tokens",
+    "lastIp": "Last IP",
+    "server": "Server",
     "emptyTitle": "No tokens yet",
     "emptyBody": "Create a scoped, revocable credential for the CLI, CI, or an MCP integration.",
     "name": "Name",
@@ -1223,6 +1225,22 @@
     "help": "CLI reference",
     "copy": "Copy",
     "copied": "Copied",
+    "server": {
+      "title": "This server",
+      "body": "The CLI pins this identity at login and refuses to send a token to any other server. Compare the fingerprint with what the CLI prints.",
+      "name": "Name",
+      "id": "Instance",
+      "fingerprint": "Fingerprint",
+      "movedTitle": "This instance was restored onto a new host",
+      "movedBody": "Its identity changed, so CLI tokens issued before the move are refused. If this is the same instance (a restore or migration you made), confirm it to accept those tokens again. If you did not move it, leave it and log in to the CLI again.",
+      "confirmLabel": "Type \"{{phrase}}\" to confirm",
+      "confirmAction": "Confirm same instance",
+      "confirmed": "Instance identity restored. CLI tokens work again."
+    },
+    "tokens": {
+      "title": "CLI tokens",
+      "body": "Each CLI login is a token bound to this server. Revoke one to cut that machine off."
+    },
     "waitingCount_one": "{{count}} login waiting",
     "waitingCount_other": "{{count}} logins waiting",
     "rail": {

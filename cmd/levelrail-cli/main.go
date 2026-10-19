@@ -21,6 +21,8 @@ func main() {
 func run(prog string, args []string, stdout, stderr io.Writer, lookupEnv func(string) (string, bool)) int {
 	args, debug := extractDebugFlag(args)
 	args, scopeFlags = extractScopeFlags(args)
+	installServerTrust(prog, args, stderr, lookupEnv)
+	apiclient.ResetServerPins()
 	if debug {
 		apiclient.SetDebugTrace(stderr)
 	} else {

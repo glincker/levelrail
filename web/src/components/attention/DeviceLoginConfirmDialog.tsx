@@ -21,6 +21,7 @@ import {
   type DeviceAuthRequest,
 } from '../../queries/deviceAuth'
 import { useNow } from '../../hooks/useNow'
+import { useInstanceInfo } from '../../queries/instance'
 
 // Approval is never one click: the operator sees the code large and must
 // confirm it matches the terminal before anything is granted.
@@ -36,6 +37,7 @@ export function DeviceLoginConfirmDialog({
   const { t } = useTranslation('attention', { useSuspense: false })
   const approve = useApproveDeviceAuthRequest()
   const now = useNow()
+  const { data: server } = useInstanceInfo()
   const remaining = msUntilExpiry(request, now)
   const expired = remaining <= 0
   const name = requesterLabel(request) || t('deviceLogin.unknownDevice')
@@ -71,6 +73,30 @@ export function DeviceLoginConfirmDialog({
                 })}
           </p>
         </div>
+        <dl className="grid gap-x-3 gap-y-1 text-xs sm:grid-cols-[auto_1fr]">
+          <dt className="text-muted-foreground">
+            {t('deviceLogin.serverLabel')}
+          </dt>
+          <dd data-testid="device-confirm-server">
+            {server ? server.name : '-'}
+          </dd>
+          <dt className="text-muted-foreground">
+            {t('deviceLogin.fingerprintLabel')}
+          </dt>
+          <dd
+            className="font-mono break-all"
+            data-testid="device-confirm-fingerprint"
+          >
+            {server ? server.fingerprint : '-'}
+          </dd>
+          <dt className="text-muted-foreground">
+            {t('deviceLogin.abilitiesLabel')}
+          </dt>
+          <dd>{request.abilities?.join(', ') || '-'}</dd>
+        </dl>
+        <p className="text-xs text-muted-foreground">
+          {t('deviceLogin.fingerprintHint')}
+        </p>
         {request.ip_mismatch ? (
           <Alert variant="destructive">
             <WarningIcon />

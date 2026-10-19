@@ -27,6 +27,8 @@ export interface DeviceAuthRequest {
   user_agent: string
   // True when the requesting IP differs from this session's own IP.
   ip_mismatch: boolean
+  // What approving would grant: the approver's own abilities, never silently root.
+  abilities?: string[]
 }
 
 export type DeviceLoginState = 'waiting' | 'expired' | 'denied' | 'approved'
