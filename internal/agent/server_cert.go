@@ -98,6 +98,7 @@ func (s *Server) Reenroll(ctx context.Context, req *agentpb.ReenrollRequest) (*a
 		s.logger.Error("agent: reenroll: record cert failed", slog.String("node_id", nodeID), slog.String("error", err.Error()))
 		return nil, status.Error(codes.Internal, "internal error")
 	}
+	s.Disconnect(nodeID)
 	s.recordAgentInfo(ctx, nodeID, req.GetAgent())
 	s.recordEnrolled(ctx, store.SecurityKindReenroll, nodeID, tok.ID, req.GetCaPinState(), issued)
 	s.logger.Info("agent: node re-enrolled", slog.String("node_id", nodeID), slog.Time("not_after", issued.NotAfter))

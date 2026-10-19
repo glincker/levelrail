@@ -29,6 +29,7 @@ Anyone with `read` gets the score and counts, plus a short checklist for their o
 | Admins can sign in with a code | medium | `auth.code_login` | one click: turn it off |
 | HSTS is off while real certificates are in place | medium | HSTS setting and certificates | one click: probe, then turn it on |
 | Node agents older than the minimum version | medium | each node's reported agent version | Nodes |
+| Routed domains without an enabled shield | low | per-domain shield policies, skipped while a proxy hides client IPs | Domains, Shield |
 | No admin has a passkey | low | registered passkeys | Settings > Security |
 | API tokens unused for a long time | low | last use, `warn_unused_days` | Settings > API tokens |
 | Old sessions still signed in | low | sessions older than `APP_SECURITY_SESSION_MAX_AGE_DAYS` (default 7) | Sessions tab |

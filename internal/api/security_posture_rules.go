@@ -94,6 +94,8 @@ type postureInput struct {
 	InsecureDomains   []string
 	RealCert          bool
 	HSTS              bool
+	ShieldKnown       bool
+	UnshieldedDomains []string
 	OutdatedAgents    []string
 	AgentsKnown       bool
 	Anomalies         []loginAnomaly
@@ -208,6 +210,7 @@ func evaluatePosture(in postureInput) []postureItem {
 		staleSecretsRule(in),
 		tlsRule(in),
 		hstsRule(in),
+		shieldRule(in),
 		agentsRule(in),
 		anomalyRule(in),
 	}
@@ -332,6 +335,17 @@ func hstsRule(in postureInput) postureItem {
 		return pass(id, postureMedium)
 	}
 	return failing(id, postureMedium, nil, actionFix("enable_hsts", nil, "/domains"))
+}
+
+func shieldRule(in postureInput) postureItem {
+	const id = "domains_unshielded"
+	switch {
+	case !in.ShieldKnown:
+		return unknown(id, postureLow, "domain shields could not be read")
+	case len(in.UnshieldedDomains) == 0:
+		return pass(id, postureLow)
+	}
+	return failing(id, postureLow, slices.Clone(in.UnshieldedDomains), linkFix("/domains"))
 }
 
 func agentsRule(in postureInput) postureItem {

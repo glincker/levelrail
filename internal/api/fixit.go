@@ -40,6 +40,7 @@ type fixitState struct {
 	once     sync.Once
 	engine   *fixit.Engine
 	override atomic.Pointer[string]
+	observed atomic.Pointer[edgeDetection]
 	// env is injectable for tests; nil reads the real host.
 	host func() fixit.HostEnv
 }

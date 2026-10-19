@@ -42,6 +42,7 @@ func healthyPosture() postureInput {
 		ACMEEnabled:       true,
 		RealCert:          true,
 		HSTS:              true,
+		ShieldKnown:       true,
 		AgentsKnown:       true,
 	}
 }
@@ -95,6 +96,8 @@ func TestEvaluatePosture_EachRuleFails(t *testing.T) {
 		{"secrets_old", postureStatusFail, func(in *postureInput) { in.StaleSecrets = &stale }},
 		{"tls_not_public", postureStatusFail, func(in *postureInput) { in.InsecureDomains = []string{"app.example.com"} }},
 		{"hsts_off", postureStatusFail, func(in *postureInput) { in.HSTS = false }},
+		{"domains_unshielded", postureStatusFail, func(in *postureInput) { in.UnshieldedDomains = []string{"app.example.com"} }},
+		{"domains_unshielded", postureStatusUnknown, func(in *postureInput) { in.ShieldKnown = false }},
 		{"agents_outdated", postureStatusFail, func(in *postureInput) { in.OutdatedAgents = []string{"node-2"} }},
 		{"login_anomalies", postureStatusFail, func(in *postureInput) {
 			in.Anomalies = []loginAnomaly{{Kind: anomalyKindIP, Subject: "203.0.113.9", Count: 20, At: postureNow}}

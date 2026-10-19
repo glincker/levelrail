@@ -182,6 +182,7 @@ func (rt *Router) edgeResource(r *http.Request, st IngressEdgeStore) (edgeSettin
 	trustedEnv := strings.TrimSpace(getenv(ingress.EnvTrustedProxies))
 	active := trustedEnv != "" || strings.TrimSpace(s.TrustedProxies) != ""
 	det := detectUpstreamProxy(r)
+	rt.observeUpstreamProxy(r.Context(), det)
 	res := edgeSettingsResource{
 		TrustedProxies:       s.TrustedProxies,
 		TrustedProxiesSource: edgeSource(ingress.EnvTrustedProxies, getenv, strings.TrimSpace(s.TrustedProxies) != ""),

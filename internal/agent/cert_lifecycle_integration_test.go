@@ -401,6 +401,26 @@ func TestCertLifecycle_ReenrollAfterRevoke(t *testing.T) {
 	}
 }
 
+func TestCertLifecycle_ReenrollEndsTheOldSession(t *testing.T) {
+	db := openLiveTestStore(t)
+	ca, _ := GenerateCA()
+	ts := startCertTestServer(t, ca, db)
+	old := enrollNode(t, db, ts, "stream-node")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	live := ts.srv.trackSession(old.NodeID, nil)
+	mintToken(t, db, "reenroll-stream", store.NodeJoinTokenPurposeReenroll, old.NodeID)
+	if _, err := DialReenroll(ctx, ts.addr, "reenroll-stream", "", WithTrustedCA(old.CACertPEM)); err != nil {
+		t.Fatalf("DialReenroll() error = %v", err)
+	}
+	select {
+	case <-live.kick:
+	default:
+		t.Fatal("a stream opened with the replaced certificate must be closed on re-enroll")
+	}
+}
+
 func mustCSR(t *testing.T) []byte {
 	t.Helper()
 	_, csr, err := NewKeyAndCSR("x")

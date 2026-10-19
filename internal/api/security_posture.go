@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -12,7 +13,9 @@ import (
 	"github.com/GLINCKER/levelrail/internal/attention"
 	"github.com/GLINCKER/levelrail/internal/authengine"
 	"github.com/GLINCKER/levelrail/internal/exposure"
+	"github.com/GLINCKER/levelrail/internal/ingress"
 	"github.com/GLINCKER/levelrail/internal/store"
+	"github.com/GLINCKER/levelrail/internal/trafficpolicy"
 	"github.com/GLINCKER/levelrail/kit/semver"
 )
 
@@ -135,6 +138,7 @@ func (rt *Router) collectPosture(ctx context.Context, now time.Time) postureInpu
 	}
 	rt.collectPostureSecrets(ctx, &in, now)
 	rt.collectPostureTLS(ctx, &in, now)
+	rt.collectPostureShield(ctx, &in)
 	if nodes, err := rt.nodes.ListNodes(ctx); err == nil {
 		in.AgentsKnown = true
 		for _, n := range nodes {
@@ -376,4 +380,45 @@ func (rt *Router) flaggedAccountItems(r *http.Request, abilities []string) []att
 		items = append(items, it)
 	}
 	return items
+}
+
+// collectPostureShield lists routed domains without an enabled shield. It stays
+// unknown while a proxy hides client IPs, because a per-client limit would hit everyone.
+func (rt *Router) collectPostureShield(ctx context.Context, in *postureInput) {
+	if rt.domainPolicy.store == nil || rt.domains == nil {
+		return
+	}
+	hidden := false
+	if s, err := rt.ingressSettings.GetIngressSettings(ctx); err == nil &&
+		(s.TLSTerminatedUpstream || s.DNSProxied) &&
+		strings.TrimSpace(rt.domainPolicy.env(ingress.EnvTrustedProxies)) == "" && !rt.edgeTrustedProxiesSet(ctx) {
+		hidden = true
+	}
+	if hidden {
+		return
+	}
+	domains, err := rt.domains.ListServiceDomains(ctx)
+	if err != nil {
+		return
+	}
+	seen := map[string]bool{}
+	for _, d := range domains {
+		key := strings.ToLower(strings.TrimSpace(d.Domain))
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		row, found, err := rt.domainPolicy.store.GetDomainTrafficPolicy(ctx, key, trafficpolicy.KindShield)
+		if err != nil {
+			return
+		}
+		var sh trafficpolicy.Shield
+		if found {
+			_ = json.Unmarshal(row.Spec, &sh)
+		}
+		if !found || !sh.Enabled {
+			in.UnshieldedDomains = append(in.UnshieldedDomains, key)
+		}
+	}
+	in.ShieldKnown = true
 }
