@@ -56,6 +56,9 @@ func MFAConfigFromEnv(base MFAConfig) MFAConfig {
 		}
 		if origin != "" {
 			base.RPOrigins = append(base.RPOrigins, origin)
+			if https := httpsTwin(origin); https != "" {
+				base.RPOrigins = appendUnique(base.RPOrigins, https)
+			}
 		}
 	}
 	for _, o := range strings.Split(os.Getenv(EnvWebAuthnOrigins), ",") {
@@ -103,6 +106,19 @@ func deriveRP(dashboardURL string) (rpID, origin string) {
 		return "", ""
 	}
 	return host, u.Scheme + "://" + u.Host
+}
+
+// httpsTwin is the https origin for an http one: a TLS-fronted dashboard saved
+// with an http:// URL still serves https, and WebAuthn only runs on https or localhost.
+func httpsTwin(origin string) string {
+	rest, ok := strings.CutPrefix(origin, "http://")
+	if !ok {
+		return ""
+	}
+	if h := strings.Split(rest, ":")[0]; h == "localhost" || strings.HasSuffix(h, ".localhost") {
+		return ""
+	}
+	return "https://" + rest
 }
 
 func appendUnique(list []string, v string) []string {

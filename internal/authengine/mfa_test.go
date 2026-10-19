@@ -191,6 +191,8 @@ func TestMFAConfigFromEnv(t *testing.T) {
 	}{
 		{name: "derived from the dashboard url", dashboard: "https://deploy.example.com", wantRPID: "deploy.example.com", wantOrigin: []string{"https://deploy.example.com"}, wantClone: "reject"},
 		{name: "port stays in the origin only", dashboard: "https://deploy.example.com:8443", wantRPID: "deploy.example.com", wantOrigin: []string{"https://deploy.example.com:8443"}, wantClone: "reject"},
+		{name: "http dashboard url also accepts its https twin", dashboard: "http://server.example.com", wantRPID: "server.example.com", wantOrigin: []string{"http://server.example.com", "https://server.example.com"}, wantClone: "reject"},
+		{name: "localhost stays http only", dashboard: "http://localhost:8080", wantRPID: "localhost", wantOrigin: []string{"http://localhost:8080"}, wantClone: "reject"},
 		{name: "ip hosts yield no relying party", dashboard: "http://203.0.113.9:9000", wantClone: "reject"},
 		{name: "env overrides and extra origins", dashboard: "https://deploy.example.com", env: map[string]string{
 			authengine.EnvWebAuthnRPID: "example.com", authengine.EnvWebAuthnOrigins: "https://a.example.com/, https://deploy.example.com",

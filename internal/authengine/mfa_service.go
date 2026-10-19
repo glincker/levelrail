@@ -240,6 +240,15 @@ func mapCodeError(err error) error {
 	return fmt.Errorf("authengine: verify second factor: %w", err)
 }
 
+// errorChain joins every wrapped cause, since the library's own message drops the underlying WebAuthn error.
+func errorChain(err error) string {
+	var parts []string
+	for e := err; e != nil; e = errors.Unwrap(e) {
+		parts = append(parts, e.Error())
+	}
+	return strings.Join(parts, ": ")
+}
+
 func isCode(err error, code string) bool {
 	var te *theauth.TheAuthError
 	return errors.As(err, &te) && te.Code == code
@@ -327,7 +336,7 @@ func (m *MFA) PasskeyFinishRegistration(ctx context.Context, legacyID, challenge
 	}
 	cred, err := m.auth.FinishPasskeyRegistration(ctx, uid, challenge, label, body)
 	if isCode(err, theauth.CodeWebAuthn) {
-		return Passkey{}, fmt.Errorf("%w: %s", ErrPasskeyRejected, err.Error())
+		return Passkey{}, fmt.Errorf("%w: %s", ErrPasskeyRejected, errorChain(err))
 	}
 	if err != nil {
 		return Passkey{}, fmt.Errorf("authengine: finish passkey registration: %w", err)
@@ -350,7 +359,7 @@ func (m *MFA) PasskeyFinishLogin(ctx context.Context, challenge string, body io.
 	_, sess, err := m.auth.FinishPasskeyLogin(ctx, challenge, body, userAgent, ip)
 	if err != nil {
 		if isCode(err, theauth.CodeWebAuthn) || errors.Is(err, theauth.ErrReplayDetected) {
-			return "", fmt.Errorf("%w: %s", ErrPasskeyRejected, err.Error())
+			return "", fmt.Errorf("%w: %s", ErrPasskeyRejected, errorChain(err))
 		}
 		return "", fmt.Errorf("authengine: finish passkey login: %w", err)
 	}
